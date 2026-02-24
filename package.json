@@ -9,9 +9,12 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@flesh-and-blood/cards": "^3.6.222",
+    "@flesh-and-blood/types": "^3.6.217",
     "next": "16.1.6",
     "react": "19.2.3",
-    "react-dom": "19.2.3"
+    "react-dom": "19.2.3",
+    "recharts": "^3.7.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

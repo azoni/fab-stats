@@ -1,26 +1,68 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-fab-bg: #0c0a0e;
+  --color-fab-surface: #16131a;
+  --color-fab-surface-hover: #1e1a24;
+  --color-fab-border: #2d2735;
+  --color-fab-gold: #c9a84c;
+  --color-fab-gold-light: #dfc06a;
+  --color-fab-gold-dark: #9a7b2e;
+  --color-fab-red: #8b1a1a;
+  --color-fab-red-light: #b22222;
+  --color-fab-crimson: #6b0f1a;
+  --color-fab-win: #4ade80;
+  --color-fab-loss: #f87171;
+  --color-fab-draw: #facc15;
+  --color-fab-text: #ede8f0;
+  --color-fab-muted: #9590a0;
+  --color-fab-dim: #5c5768;
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+body {
+  background: var(--color-fab-bg);
+  color: var(--color-fab-text);
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Subtle noise texture overlay */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.015;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+}
+
+/* Gold accent glow for headings */
+.text-fab-gold {
+  text-shadow: 0 0 20px rgba(201, 168, 76, 0.15);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-fab-bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-fab-border);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-fab-dim);
+}
+
+/* Selection */
+::selection {
+  background: rgba(201, 168, 76, 0.3);
+  color: var(--color-fab-text);
 }

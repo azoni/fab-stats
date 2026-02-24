@@ -1,65 +1,378 @@
-import Image from "next/image";
+"use client";
+import { useState, useMemo } from "react";
+import Link from "next/link";
+import { useMatches } from "@/hooks/useMatches";
+import { computeOverallStats, computeHeroStats, computeEventTypeStats, computeVenueStats } from "@/lib/stats";
+import { MatchCard } from "@/components/matches/MatchCard";
+import { MatchResult, GameFormat } from "@/types";
 
-export default function Home() {
+export default function Dashboard() {
+  const { matches, isLoaded } = useMatches();
+  const [filterFormat, setFilterFormat] = useState<string>("all");
+  const [filterRated, setFilterRated] = useState<string>("all");
+
+  const allFormats = useMemo(() => {
+    const formats = new Set(matches.map((m) => m.format));
+    return Array.from(formats).sort();
+  }, [matches]);
+
+  const filteredMatches = useMemo(() => {
+    return matches.filter((m) => {
+      if (filterFormat !== "all" && m.format !== filterFormat) return false;
+      if (filterRated === "rated" && m.rated !== true) return false;
+      if (filterRated === "unrated" && m.rated === true) return false;
+      return true;
+    });
+  }, [matches, filterFormat, filterRated]);
+
+  if (!isLoaded) {
+    return <DashboardSkeleton />;
+  }
+
+  if (matches.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-24 text-center">
+        <div className="text-6xl mb-4">⚔️</div>
+        <h1 className="text-2xl font-bold text-fab-gold mb-2">
+          Welcome to FaB Stats
+        </h1>
+        <p className="text-fab-muted mb-6 max-w-md">
+          Track your Flesh and Blood matches, analyze your performance, and
+          dominate the meta.
+        </p>
+        <Link
+          href="/matches/new"
+          className="px-6 py-3 rounded-md font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors"
+        >
+          Log Your First Match
+        </Link>
+      </div>
+    );
+  }
+
+  const isFiltered = filterFormat !== "all" || filterRated !== "all";
+  const fm = filteredMatches;
+
+  const overall = computeOverallStats(fm);
+  const heroStats = computeHeroStats(fm);
+  const eventTypeStats = computeEventTypeStats(fm);
+  const venueStats = computeVenueStats(fm).filter((v) => v.venue !== "Unknown");
+  const recentMatches = [...fm]
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    .slice(0, 5);
+  const realHeroStats = heroStats.filter((h) => h.heroName !== "Unknown");
+  const hasRealHeroData = realHeroStats.length > 0;
+  const topHeroes = [...realHeroStats]
+    .filter((h) => h.totalMatches >= 1)
+    .sort((a, b) => b.winRate - a.winRate)
+    .slice(0, 3);
+
+  const { streaks } = overall;
+
+  // Build last 30 results for the streak visual
+  const last30 = [...fm]
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    .slice(0, 30)
+    .reverse();
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+    <div className="space-y-8">
+      {/* Header with filters */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <h1 className="text-2xl font-bold text-fab-gold">Dashboard</h1>
+        <div className="flex gap-3 flex-wrap">
+          <select
+            value={filterFormat}
+            onChange={(e) => setFilterFormat(e.target.value)}
+            className="bg-fab-surface border border-fab-border text-fab-text text-sm rounded-lg px-3 py-1.5 focus:outline-none focus:border-fab-gold"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
+            <option value="all">All Formats</option>
+            {allFormats.map((f) => (
+              <option key={f} value={f}>{f}</option>
+            ))}
+          </select>
+          <select
+            value={filterRated}
+            onChange={(e) => setFilterRated(e.target.value)}
+            className="bg-fab-surface border border-fab-border text-fab-text text-sm rounded-lg px-3 py-1.5 focus:outline-none focus:border-fab-gold"
+          >
+            <option value="all">All Events</option>
+            <option value="rated">Rated Only</option>
+            <option value="unrated">Unrated Only</option>
+          </select>
+        </div>
+      </div>
+
+      {isFiltered && (
+        <p className="text-sm text-fab-dim -mt-4">
+          Showing {fm.length} of {matches.length} matches
+        </p>
+      )}
+
+      {fm.length === 0 ? (
+        <div className="text-center py-16">
+          <p className="text-fab-muted text-lg">No matches found for this filter.</p>
+          <button
+            onClick={() => { setFilterFormat("all"); setFilterRated("all"); }}
+            className="mt-4 text-fab-gold hover:text-fab-gold-light text-sm"
+          >
+            Clear Filters
+          </button>
+        </div>
+      ) : (
+        <>
+          {/* Streak Banner */}
+          <div className={`rounded-xl p-6 border-2 ${
+            streaks.currentStreak?.type === MatchResult.Win
+              ? "bg-fab-win/8 border-fab-win/30"
+              : streaks.currentStreak?.type === MatchResult.Loss
+                ? "bg-fab-loss/8 border-fab-loss/30"
+                : "bg-fab-surface border-fab-border"
+          }`}>
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <div>
+                <p className="text-xs text-fab-muted uppercase tracking-wider mb-1">Current Streak</p>
+                <div className="flex items-baseline gap-3">
+                  <span className={`text-5xl font-black ${
+                    streaks.currentStreak?.type === MatchResult.Win
+                      ? "text-fab-win"
+                      : streaks.currentStreak?.type === MatchResult.Loss
+                        ? "text-fab-loss"
+                        : "text-fab-dim"
+                  }`}>
+                    {streaks.currentStreak ? streaks.currentStreak.count : 0}
+                  </span>
+                  <span className={`text-2xl font-bold ${
+                    streaks.currentStreak?.type === MatchResult.Win
+                      ? "text-fab-win"
+                      : streaks.currentStreak?.type === MatchResult.Loss
+                        ? "text-fab-loss"
+                        : "text-fab-dim"
+                  }`}>
+                    {streaks.currentStreak
+                      ? streaks.currentStreak.type === MatchResult.Win ? "WINS" : "LOSSES"
+                      : "N/A"}
+                  </span>
+                </div>
+              </div>
+              <div className="flex gap-6">
+                <div className="text-center">
+                  <p className="text-2xl font-bold text-fab-win">{streaks.longestWinStreak}</p>
+                  <p className="text-xs text-fab-dim">Best Win Streak</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-2xl font-bold text-fab-loss">{streaks.longestLossStreak}</p>
+                  <p className="text-xs text-fab-dim">Worst Loss Streak</p>
+                </div>
+              </div>
+            </div>
+            {/* Last 30 results dots */}
+            <div className="mt-4 flex gap-1 flex-wrap">
+              {last30.map((m, i) => (
+                <div
+                  key={i}
+                  className={`w-3 h-3 rounded-full ${
+                    m.result === MatchResult.Win ? "bg-fab-win" : m.result === MatchResult.Loss ? "bg-fab-loss" : "bg-fab-draw"
+                  }`}
+                  title={`${new Date(m.date).toLocaleDateString()} - ${m.result}`}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Quick Stats */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <StatCard label="Total Matches" value={overall.totalMatches} />
+            <StatCard
+              label="Win Rate"
+              value={`${overall.overallWinRate.toFixed(1)}%`}
+              color={overall.overallWinRate >= 50 ? "text-fab-win" : "text-fab-loss"}
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+            <StatCard
+              label="Record"
+              value={`${overall.totalWins}W - ${overall.totalLosses}L`}
+            />
+            <StatCard
+              label="Draws"
+              value={overall.totalDraws}
+            />
+          </div>
+
+          {/* Event Type Breakdown */}
+          {eventTypeStats.length > 0 && (
+            <div>
+              <h2 className="text-lg font-semibold text-fab-text mb-4">Win Rate by Event Type</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {eventTypeStats.filter((e) => e.eventType !== "Other" || eventTypeStats.length === 1).map((et) => (
+                  <div key={et.eventType} className="bg-fab-surface border border-fab-border rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-semibold text-fab-text">{et.eventType}</span>
+                      <span className="text-xs text-fab-dim">{et.totalMatches} matches</span>
+                    </div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <div className="flex-1 h-3 bg-fab-bg rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-fab-win rounded-full transition-all"
+                          style={{ width: `${et.winRate}%` }}
+                        />
+                      </div>
+                      <span className={`text-sm font-bold w-12 text-right ${et.winRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>
+                        {et.winRate.toFixed(0)}%
+                      </span>
+                    </div>
+                    <p className="text-xs text-fab-dim">
+                      {et.wins}W - {et.losses}L{et.draws > 0 ? ` - ${et.draws}D` : ""}
+                    </p>
+                  </div>
+                ))}
+                {eventTypeStats.find((e) => e.eventType === "Other") && eventTypeStats.length > 1 && (
+                  <div className="bg-fab-surface border border-fab-border rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-semibold text-fab-text">Other</span>
+                      <span className="text-xs text-fab-dim">{eventTypeStats.find((e) => e.eventType === "Other")!.totalMatches} matches</span>
+                    </div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <div className="flex-1 h-3 bg-fab-bg rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-fab-win rounded-full transition-all"
+                          style={{ width: `${eventTypeStats.find((e) => e.eventType === "Other")!.winRate}%` }}
+                        />
+                      </div>
+                      <span className={`text-sm font-bold w-12 text-right ${eventTypeStats.find((e) => e.eventType === "Other")!.winRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>
+                        {eventTypeStats.find((e) => e.eventType === "Other")!.winRate.toFixed(0)}%
+                      </span>
+                    </div>
+                    <p className="text-xs text-fab-dim">
+                      {eventTypeStats.find((e) => e.eventType === "Other")!.wins}W - {eventTypeStats.find((e) => e.eventType === "Other")!.losses}L
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Venue Breakdown */}
+          {venueStats.length > 0 && (
+            <div>
+              <h2 className="text-lg font-semibold text-fab-text mb-4">Win Rate by Venue</h2>
+              <div className="space-y-2">
+                {venueStats.map((v) => (
+                  <div key={v.venue} className="bg-fab-surface border border-fab-border rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-semibold text-fab-text">{v.venue}</span>
+                      <span className="text-xs text-fab-dim">{v.totalMatches} matches</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 h-3 bg-fab-bg rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-fab-win rounded-full transition-all"
+                          style={{ width: `${v.winRate}%` }}
+                        />
+                      </div>
+                      <span className={`text-sm font-bold w-12 text-right ${v.winRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>
+                        {v.winRate.toFixed(0)}%
+                      </span>
+                      <span className="text-xs text-fab-dim w-20 text-right">
+                        {v.wins}W-{v.losses}L{v.draws > 0 ? `-${v.draws}D` : ""}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Recent Matches */}
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-fab-text">Recent Matches</h2>
+              <Link href="/matches" className="text-sm text-fab-gold hover:text-fab-gold-light">
+                View All
+              </Link>
+            </div>
+            <div className="space-y-2">
+              {recentMatches.map((match) => (
+                <MatchCard key={match.id} match={match} />
+              ))}
+            </div>
+          </div>
+
+          {/* Top Heroes — only show when we have real hero data */}
+          {hasRealHeroData && topHeroes.length > 0 && (
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-fab-text">Top Heroes</h2>
+                <Link href="/heroes" className="text-sm text-fab-gold hover:text-fab-gold-light">
+                  View All
+                </Link>
+              </div>
+              <div className="space-y-3">
+                {topHeroes.map((hero, i) => (
+                  <div
+                    key={hero.heroName}
+                    className="bg-fab-surface border border-fab-border rounded-lg p-4"
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-fab-gold font-bold">#{i + 1}</span>
+                        <span className="font-semibold text-fab-text">{hero.heroName}</span>
+                      </div>
+                      <span className="text-sm text-fab-muted">
+                        {hero.totalMatches} matches
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 h-2 bg-fab-bg rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-fab-win rounded-full transition-all"
+                          style={{ width: `${hero.winRate}%` }}
+                        />
+                      </div>
+                      <span className={`text-sm font-semibold ${hero.winRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>
+                        {hero.winRate.toFixed(0)}%
+                      </span>
+                    </div>
+                    <div className="mt-1 text-xs text-fab-dim">
+                      {hero.wins}W - {hero.losses}L{hero.draws > 0 ? ` - ${hero.draws}D` : ""}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+function StatCard({
+  label,
+  value,
+  color = "text-fab-text",
+}: {
+  label: string;
+  value: string | number;
+  color?: string;
+}) {
+  return (
+    <div className="bg-fab-surface border border-fab-border rounded-lg p-4">
+      <p className="text-xs text-fab-muted mb-1">{label}</p>
+      <p className={`text-2xl font-bold ${color}`}>{value}</p>
+    </div>
+  );
+}
+
+function DashboardSkeleton() {
+  return (
+    <div className="space-y-8">
+      <div className="h-8 w-40 bg-fab-surface rounded animate-pulse" />
+      <div className="bg-fab-surface border border-fab-border rounded-xl p-6 h-32 animate-pulse" />
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {[...Array(4)].map((_, i) => (
+          <div key={i} className="bg-fab-surface border border-fab-border rounded-lg p-4 h-20 animate-pulse" />
+        ))}
+      </div>
     </div>
   );
 }
