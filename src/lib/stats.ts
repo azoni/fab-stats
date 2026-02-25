@@ -387,6 +387,26 @@ function isPlayoffRound(roundInfo: string): boolean {
     /Quarter/i.test(roundInfo);
 }
 
+/** Get a sortable order for a playoff round label */
+function getPlayoffRoundOrder(roundInfo: string): number {
+  // Descriptive labels have known stages
+  if (/Quarter/i.test(roundInfo) || /Top\s*8/i.test(roundInfo)) return 1;
+  if (/Semi/i.test(roundInfo) || /Top\s*4/i.test(roundInfo)) return 2;
+  if (/Finals?$/i.test(roundInfo)) return 3;
+  // P-numbered: "Round P1" → 1, "Round P2" → 2, etc.
+  const pMatch = roundInfo.match(/P(\d+)/i);
+  if (pMatch) return parseInt(pMatch[1], 10);
+  return 0;
+}
+
+/** Determine the bracket stage from a round label */
+function getStageFromLabel(roundInfo: string): "quarterfinal" | "semifinal" | "final" | null {
+  if (/Finals?$/i.test(roundInfo)) return "final";
+  if (/Semi/i.test(roundInfo) || /Top\s*4/i.test(roundInfo)) return "semifinal";
+  if (/Quarter/i.test(roundInfo) || /Top\s*8/i.test(roundInfo)) return "quarterfinal";
+  return null;
+}
+
 export function computePlayoffFinishes(eventStats: EventStats[]): PlayoffFinish[] {
   const finishes: PlayoffFinish[] = [];
 
@@ -403,36 +423,61 @@ export function computePlayoffFinishes(eventStats: EventStats[]): PlayoffFinish[
 
     if (playoffMatches.length === 0) continue;
 
-    // Determine finish from win/loss progression
-    const wins = playoffMatches.filter((m) => m.result === MatchResult.Win).length;
+    // Sort playoff matches by round order
+    playoffMatches.sort((a, b) => {
+      const aInfo = a.notes?.split(" | ")[1]?.trim() || "";
+      const bInfo = b.notes?.split(" | ")[1]?.trim() || "";
+      return getPlayoffRoundOrder(aInfo) - getPlayoffRoundOrder(bInfo);
+    });
+
     const lastMatch = playoffMatches[playoffMatches.length - 1];
     const wonLast = lastMatch.result === MatchResult.Win;
+    const lastRoundInfo = lastMatch.notes?.split(" | ")[1]?.trim() || "";
+    const lastStage = getStageFromLabel(lastRoundInfo);
+    const lastRoundNum = getPlayoffRoundOrder(lastRoundInfo);
+    const maxRoundNum = Math.max(...playoffMatches.map((m) => getPlayoffRoundOrder(m.notes?.split(" | ")[1]?.trim() || "")));
 
     let finishType: PlayoffFinish["type"];
 
-    if (wins >= 3) {
-      // Won 3+ playoff matches = champion
-      finishType = "champion";
-    } else if (wins >= 2 && wonLast) {
-      // Won 2+ and won the last one = champion (at least Top 4 bracket)
-      finishType = "champion";
-    } else if (wins >= 2) {
-      // Won 2+ but lost the last = finalist
-      finishType = "finalist";
-    } else if (wins === 1 && !wonLast) {
-      // Won 1, lost the next = top 4
-      finishType = "top4";
-    } else if (wins === 1 && wonLast) {
-      // Won 1 match, no loss recorded — check round label
-      const roundInfo = lastMatch.notes?.split(" | ")[1]?.trim() || "";
-      if (/Finals?$/i.test(roundInfo)) {
-        finishType = "champion";
-      } else {
-        finishType = "top4";
-      }
+    // 1. Try descriptive labels first — most reliable
+    if (lastStage === "final") {
+      finishType = wonLast ? "champion" : "finalist";
+    } else if (lastStage === "semifinal") {
+      finishType = wonLast ? "finalist" : "top4";
+    } else if (lastStage === "quarterfinal") {
+      finishType = wonLast ? "top4" : "top8";
     } else {
-      // 0 wins = top 8
-      finishType = "top8";
+      // 2. P-numbered rounds — infer stage from round number
+      if (maxRoundNum >= 3) {
+        // Bracket has 3+ rounds (Top 8): P1=QF, P2=SF, P3=Finals
+        if (lastRoundNum >= 3) {
+          finishType = wonLast ? "champion" : "finalist";
+        } else if (lastRoundNum === 2) {
+          finishType = wonLast ? "finalist" : "top4";
+        } else {
+          finishType = wonLast ? "top4" : "top8";
+        }
+      } else if (maxRoundNum === 2) {
+        // 2 rounds — could be Top 4 (SF+Finals) or Top 8 (player lost in SF)
+        // Use event type: BH/Calling/PT/Nats/Worlds typically have Top 8 brackets
+        const eventType = (event.eventType || "Other").toLowerCase();
+        const isLargeEvent = /battle hardened|calling|pro tour|nationals|worlds/i.test(eventType);
+
+        if (lastRoundNum === 2) {
+          if (isLargeEvent) {
+            // Large events → Top 8 bracket → P2 = Semifinals
+            finishType = wonLast ? "finalist" : "top4";
+          } else {
+            // Smaller events → Top 4 bracket → P2 = Finals
+            finishType = wonLast ? "champion" : "finalist";
+          }
+        } else {
+          finishType = wonLast ? "top4" : "top8";
+        }
+      } else {
+        // 1 round or unknown
+        finishType = wonLast ? "top4" : "top8";
+      }
     }
 
     finishes.push({
@@ -457,8 +502,16 @@ function getEventName(match: MatchRecord): string {
 
 function getRoundNumber(match: MatchRecord): number {
   if (match.notes) {
+    // Handle "Round P{N}" for playoff rounds — sort after swiss rounds
+    const playoffMatch = match.notes.match(/Round\s+P(\d+)/i);
+    if (playoffMatch) return 1000 + parseInt(playoffMatch[1], 10);
     const roundMatch = match.notes.match(/Round\s+(\d+)/i);
     if (roundMatch) return parseInt(roundMatch[1], 10);
+    // Descriptive playoff labels sort after swiss
+    const roundInfo = match.notes.split(" | ")[1]?.trim() || "";
+    if (/Quarter|Top\s*8/i.test(roundInfo)) return 1001;
+    if (/Semi|Top\s*4/i.test(roundInfo)) return 1002;
+    if (/Finals?$/i.test(roundInfo)) return 1003;
   }
   return 0;
 }
