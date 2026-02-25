@@ -45,15 +45,22 @@ export interface AdminDashboardData {
   users: AdminUserStats[];
 }
 
-/** Check if an email is in the admin list */
+/** Check if an email is in the admin list (cached for 10 minutes) */
+let adminCache: { emails: string[]; ts: number } | null = null;
+const ADMIN_CACHE_TTL = 10 * 60 * 1000; // 10 minutes
+
 export async function checkIsAdmin(
   email: string | null
 ): Promise<boolean> {
   if (!email) return false;
   try {
+    if (adminCache && Date.now() - adminCache.ts < ADMIN_CACHE_TTL) {
+      return adminCache.emails.includes(email.toLowerCase());
+    }
     const snap = await getDoc(doc(db, "admin", "config"));
     if (!snap.exists()) return false;
     const config = snap.data() as AdminConfig;
+    adminCache = { emails: config.adminEmails, ts: Date.now() };
     return config.adminEmails.includes(email.toLowerCase());
   } catch {
     return false;
