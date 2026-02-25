@@ -1,7 +1,10 @@
 "use client";
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo } from "react";
+import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
+import { useMatches } from "@/hooks/useMatches";
 import { updateProfile, uploadProfilePhoto } from "@/lib/firestore-storage";
+import { SparklesIcon } from "@/components/icons/NavIcons";
 
 function resizeImage(file: File, maxSize: number): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -22,6 +25,53 @@ function resizeImage(file: File, maxSize: number): Promise<string> {
     img.onerror = () => reject(new Error("Failed to load image"));
     img.src = URL.createObjectURL(file);
   });
+}
+
+function YearInReview() {
+  const { matches } = useMatches();
+
+  const years = useMemo(() => {
+    const yearSet = new Set<string>();
+    for (const m of matches) {
+      const y = m.date?.split("-")[0];
+      if (y && y.length === 4) yearSet.add(y);
+    }
+    return Array.from(yearSet).sort((a, b) => b.localeCompare(a));
+  }, [matches]);
+
+  if (years.length === 0) return null;
+
+  return (
+    <div className="bg-fab-surface border border-fab-border rounded-lg p-6 mb-4">
+      <h2 className="text-sm font-semibold text-fab-text mb-4 flex items-center gap-2">
+        <SparklesIcon className="w-4 h-4 text-fab-gold" />
+        Year in Review
+      </h2>
+      <div className="space-y-2">
+        {years.map((year) => {
+          const count = matches.filter((m) => m.date.startsWith(year)).length;
+          return (
+            <Link
+              key={year}
+              href={`/wrapped?year=${year}`}
+              className="flex items-center justify-between p-3 rounded-lg bg-fab-bg hover:bg-fab-gold/10 border border-fab-border hover:border-fab-gold/30 transition-colors group"
+            >
+              <div className="flex items-center gap-3">
+                <span className="text-2xl font-black text-fab-gold">{year}</span>
+                <span className="text-sm text-fab-muted">Wrapped</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-fab-dim">{count} matches</span>
+                <svg className="w-4 h-4 text-fab-dim group-hover:text-fab-gold transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                </svg>
+              </div>
+            </Link>
+          );
+        })}
+      </div>
+    </div>
+  );
 }
 
 export default function SettingsPage() {
@@ -73,12 +123,13 @@ export default function SettingsPage() {
     return (
       <div className="max-w-lg mx-auto">
         <h1 className="text-2xl font-bold text-fab-gold mb-4">Settings</h1>
-        <div className="bg-fab-surface border border-fab-border rounded-lg p-6 text-center">
+        <div className="bg-fab-surface border border-fab-border rounded-lg p-6 text-center mb-4">
           <p className="text-fab-muted mb-4">Sign up to customize your profile, set a display name, and upload a profile photo.</p>
           <a href="/login" className="inline-block px-6 py-2.5 rounded-lg font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors">
             Sign Up
           </a>
         </div>
+        <YearInReview />
       </div>
     );
   }
@@ -195,6 +246,8 @@ export default function SettingsPage() {
           {saving ? "Saving..." : saved ? "Saved!" : "Save Changes"}
         </button>
       </form>
+
+      <YearInReview />
 
       {/* Danger zone */}
       <div className="bg-fab-surface border border-fab-border rounded-lg p-6">
