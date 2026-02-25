@@ -225,7 +225,8 @@ export async function searchUsernames(
   maxResults = 20
 ): Promise<{ username: string; userId: string }[]> {
   if (!prefix.trim()) return [];
-  const lower = prefix.toLowerCase();
+  // Strip commas and extra spaces so "Biggs, Ryan" becomes "biggs ryan"
+  const lower = prefix.toLowerCase().replace(/,/g, "").replace(/\s+/g, " ").trim();
   const end = lower.slice(0, -1) + String.fromCharCode(lower.charCodeAt(lower.length - 1) + 1);
 
   // Search by username prefix
@@ -244,21 +245,36 @@ export async function searchUsernames(
     limit(maxResults)
   );
 
-  const [usernameSnap, nameSnap] = await Promise.all([
-    getDocs(usernameQ),
-    getDocs(nameQ),
-  ]);
+  const queries = [getDocs(usernameQ), getDocs(nameQ)];
+
+  // Also try reversed word order: "biggs ryan" → "ryan biggs"
+  const words = lower.split(" ");
+  if (words.length >= 2) {
+    const reversed = [...words].reverse().join(" ");
+    const revEnd = reversed.slice(0, -1) + String.fromCharCode(reversed.charCodeAt(reversed.length - 1) + 1);
+    const revQ = query(
+      collection(db, "usernames"),
+      where("searchName", ">=", reversed),
+      where("searchName", "<", revEnd),
+      limit(maxResults)
+    );
+    queries.push(getDocs(revQ));
+  }
+
+  const snaps = await Promise.all(queries);
 
   const seen = new Set<string>();
   const results: { username: string; userId: string }[] = [];
 
-  for (const d of [...usernameSnap.docs, ...nameSnap.docs]) {
-    if (seen.has(d.id)) continue;
-    seen.add(d.id);
-    results.push({
-      username: d.id,
-      userId: (d.data() as { userId: string }).userId,
-    });
+  for (const snap of snaps) {
+    for (const d of snap.docs) {
+      if (seen.has(d.id)) continue;
+      seen.add(d.id);
+      results.push({
+        username: d.id,
+        userId: (d.data() as { userId: string }).userId,
+      });
+    }
   }
 
   return results.slice(0, maxResults);
