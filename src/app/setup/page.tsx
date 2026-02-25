@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { isUsernameTaken, createProfile } from "@/lib/firestore-storage";
@@ -7,8 +7,13 @@ import { isUsernameTaken, createProfile } from "@/lib/firestore-storage";
 const USERNAME_REGEX = /^[a-z0-9_-]{3,20}$/;
 
 export default function SetupPage() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const router = useRouter();
+
+  // Navigate to dashboard once profile subscription confirms creation
+  useEffect(() => {
+    if (profile) router.replace("/");
+  }, [profile, router]);
   const [username, setUsername] = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -73,7 +78,7 @@ export default function SetupPage() {
         photoUrl: user.photoURL || undefined,
         isPublic: true,
       });
-      router.push("/");
+      // Navigation handled by useEffect watching profile
     } catch (err) {
       if (err instanceof Error && err.message.includes("already taken")) {
         setError("That username is taken. Try another.");
