@@ -209,9 +209,9 @@ function LeaderboardRow({
 
       {/* Avatar */}
       {entry.photoUrl ? (
-        <img src={entry.photoUrl} alt="" className="w-10 h-10 rounded-full shrink-0" />
+        <img src={entry.photoUrl} alt="" className={`w-10 h-10 rounded-full shrink-0 ${rank === 1 ? "ring-2 ring-yellow-400" : rank === 2 ? "ring-2 ring-gray-300" : rank === 3 ? "ring-2 ring-amber-600" : ""}`} />
       ) : (
-        <div className="w-10 h-10 rounded-full bg-fab-gold/20 flex items-center justify-center text-fab-gold text-sm font-bold shrink-0">
+        <div className={`w-10 h-10 rounded-full bg-fab-gold/20 flex items-center justify-center text-fab-gold text-sm font-bold shrink-0 ${rank === 1 ? "ring-2 ring-yellow-400" : rank === 2 ? "ring-2 ring-gray-300" : rank === 3 ? "ring-2 ring-amber-600" : ""}`}>
           {initials}
         </div>
       )}

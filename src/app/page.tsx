@@ -3,12 +3,17 @@ import { useState, useMemo, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useMatches } from "@/hooks/useMatches";
 import { useAuth } from "@/contexts/AuthContext";
-import { computeOverallStats, computeHeroStats, computeEventTypeStats, computeVenueStats, computeEventStats, computeOpponentStats } from "@/lib/stats";
+import { computeOverallStats, computeHeroStats, computeEventTypeStats, computeVenueStats, computeEventStats, computeOpponentStats, computeBestFinish } from "@/lib/stats";
 import { evaluateAchievements } from "@/lib/achievements";
 import { computeHeroMastery } from "@/lib/mastery";
 import { AchievementShowcase, AchievementBadges } from "@/components/gamification/AchievementShowcase";
 import { HeroMasteryList } from "@/components/gamification/HeroMasteryCard";
 import { updateLeaderboardEntry } from "@/lib/leaderboard";
+import { useLeaderboard } from "@/hooks/useLeaderboard";
+import { computeEventBadges } from "@/lib/events";
+import { computeUserRanks, getBestRank } from "@/lib/leaderboard-ranks";
+import { EventBadges } from "@/components/profile/EventBadges";
+import { LeaderboardCrowns } from "@/components/profile/LeaderboardCrowns";
 import { MatchCard } from "@/components/matches/MatchCard";
 import { EventCard } from "@/components/events/EventCard";
 import { ShieldIcon } from "@/components/icons/NavIcons";
@@ -17,6 +22,7 @@ import { MatchResult, GameFormat } from "@/types";
 export default function Dashboard() {
   const { matches, isLoaded } = useMatches();
   const { user, profile } = useAuth();
+  const { entries: lbEntries } = useLeaderboard();
   const [filterFormat, setFilterFormat] = useState<string>("all");
   const [filterRated, setFilterRated] = useState<string>("all");
   const leaderboardUpdated = useRef(false);
@@ -100,11 +106,19 @@ export default function Dashboard() {
     .slice(0, 5);
 
   const opponentStats = computeOpponentStats(fm).filter((o) => o.totalMatches >= 3);
+  const allOpponentStats = computeOpponentStats(fm);
   const achievements = evaluateAchievements(fm, overall, heroStats, opponentStats);
   const masteries = computeHeroMastery(heroStats);
   const nemesis = opponentStats.length > 0
     ? opponentStats.reduce((worst, o) => (o.winRate < worst.winRate ? o : worst))
     : null;
+  const bestFriend = allOpponentStats.length > 0
+    ? allOpponentStats.reduce((most, o) => (o.totalMatches > most.totalMatches ? o : most))
+    : null;
+  const bestFinish = computeBestFinish(eventStats);
+  const eventBadges = computeEventBadges(eventStats);
+  const userRanks = user ? computeUserRanks(lbEntries, user.uid) : [];
+  const bestRank = getBestRank(userRanks);
 
   const { streaks } = overall;
 
@@ -116,13 +130,13 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-8">
-      {/* Profile Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      {/* Profile Header + Streak */}
+      <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
         <div className="flex items-center gap-4">
           {profile?.photoUrl ? (
-            <img src={profile.photoUrl} alt="" className="w-12 h-12 rounded-full" />
+            <img src={profile.photoUrl} alt="" className={`w-16 h-16 rounded-full ${bestRank === 1 ? "ring-2 ring-offset-2 ring-offset-fab-bg ring-yellow-400" : bestRank === 2 ? "ring-2 ring-offset-2 ring-offset-fab-bg ring-gray-300" : bestRank === 3 ? "ring-2 ring-offset-2 ring-offset-fab-bg ring-amber-600" : ""}`} />
           ) : profile ? (
-            <div className="w-12 h-12 rounded-full bg-fab-gold/20 flex items-center justify-center text-fab-gold text-xl font-bold">
+            <div className={`w-16 h-16 rounded-full bg-fab-gold/20 flex items-center justify-center text-fab-gold text-2xl font-bold ${bestRank === 1 ? "ring-2 ring-offset-2 ring-offset-fab-bg ring-yellow-400" : bestRank === 2 ? "ring-2 ring-offset-2 ring-offset-fab-bg ring-gray-300" : bestRank === 3 ? "ring-2 ring-offset-2 ring-offset-fab-bg ring-amber-600" : ""}`}>
               {profile.displayName.charAt(0).toUpperCase()}
             </div>
           ) : null}
@@ -136,28 +150,87 @@ export default function Dashboard() {
             {achievements.length > 0 && <AchievementBadges earned={achievements} max={4} />}
           </div>
         </div>
-        <div className="flex gap-3 flex-wrap">
-          <select
-            value={filterFormat}
-            onChange={(e) => setFilterFormat(e.target.value)}
-            className="bg-fab-surface border border-fab-border text-fab-text text-sm rounded-lg px-3 py-1.5 focus:outline-none focus:border-fab-gold"
-          >
-            <option value="all">All Formats</option>
-            {allFormats.map((f) => (
-              <option key={f} value={f}>{f}</option>
+        {/* Compact Streak */}
+        <div className={`rounded-lg px-4 py-3 border ${
+          streaks.currentStreak?.type === MatchResult.Win
+            ? "bg-fab-win/8 border-fab-win/30"
+            : streaks.currentStreak?.type === MatchResult.Loss
+              ? "bg-fab-loss/8 border-fab-loss/30"
+              : "bg-fab-surface border-fab-border"
+        }`}>
+          <div className="flex items-center gap-4">
+            <div>
+              <p className="text-[10px] text-fab-muted uppercase tracking-wider">Streak</p>
+              <div className="flex items-baseline gap-1.5">
+                <span className={`text-2xl font-black ${
+                  streaks.currentStreak?.type === MatchResult.Win
+                    ? "text-fab-win"
+                    : streaks.currentStreak?.type === MatchResult.Loss
+                      ? "text-fab-loss"
+                      : "text-fab-dim"
+                }`}>
+                  {streaks.currentStreak ? streaks.currentStreak.count : 0}
+                </span>
+                <span className={`text-sm font-bold ${
+                  streaks.currentStreak?.type === MatchResult.Win
+                    ? "text-fab-win"
+                    : streaks.currentStreak?.type === MatchResult.Loss
+                      ? "text-fab-loss"
+                      : "text-fab-dim"
+                }`}>
+                  {streaks.currentStreak
+                    ? streaks.currentStreak.type === MatchResult.Win ? "W" : "L"
+                    : "—"}
+                </span>
+              </div>
+            </div>
+            <div className="flex gap-3 text-center">
+              <div>
+                <p className="text-sm font-bold text-fab-win">{streaks.longestWinStreak}</p>
+                <p className="text-[10px] text-fab-dim">Best</p>
+              </div>
+              <div>
+                <p className="text-sm font-bold text-fab-loss">{streaks.longestLossStreak}</p>
+                <p className="text-[10px] text-fab-dim">Worst</p>
+              </div>
+            </div>
+          </div>
+          <div className="mt-2 flex gap-0.5 flex-wrap">
+            {last30.map((m, i) => (
+              <div
+                key={i}
+                className={`w-2 h-2 rounded-full ${
+                  m.result === MatchResult.Win ? "bg-fab-win" : m.result === MatchResult.Loss ? "bg-fab-loss" : "bg-fab-draw"
+                }`}
+                title={`${new Date(m.date).toLocaleDateString()} - ${m.result}`}
+              />
             ))}
-          </select>
-          <select
-            value={filterRated}
-            onChange={(e) => setFilterRated(e.target.value)}
-            className="bg-fab-surface border border-fab-border text-fab-text text-sm rounded-lg px-3 py-1.5 focus:outline-none focus:border-fab-gold"
-            title="Rated events affect your official GEM Elo rating"
-          >
-            <option value="all">Rated &amp; Unrated</option>
-            <option value="rated">Rated Only (affects Elo)</option>
-            <option value="unrated">Casual / Unrated Only</option>
-          </select>
+          </div>
         </div>
+      </div>
+
+      {/* Filters */}
+      <div className="flex gap-3 flex-wrap -mt-4">
+        <select
+          value={filterFormat}
+          onChange={(e) => setFilterFormat(e.target.value)}
+          className="bg-fab-surface border border-fab-border text-fab-text text-sm rounded-lg px-3 py-1.5 focus:outline-none focus:border-fab-gold"
+        >
+          <option value="all">All Formats</option>
+          {allFormats.map((f) => (
+            <option key={f} value={f}>{f}</option>
+          ))}
+        </select>
+        <select
+          value={filterRated}
+          onChange={(e) => setFilterRated(e.target.value)}
+          className="bg-fab-surface border border-fab-border text-fab-text text-sm rounded-lg px-3 py-1.5 focus:outline-none focus:border-fab-gold"
+          title="Rated events affect your official GEM Elo rating"
+        >
+          <option value="all">Rated &amp; Unrated</option>
+          <option value="rated">Rated Only (affects Elo)</option>
+          <option value="unrated">Casual / Unrated Only</option>
+        </select>
       </div>
 
       {isFiltered && (
@@ -178,65 +251,6 @@ export default function Dashboard() {
         </div>
       ) : (
         <>
-          {/* Streak Banner */}
-          <div className={`rounded-xl p-6 border-2 ${
-            streaks.currentStreak?.type === MatchResult.Win
-              ? "bg-fab-win/8 border-fab-win/30"
-              : streaks.currentStreak?.type === MatchResult.Loss
-                ? "bg-fab-loss/8 border-fab-loss/30"
-                : "bg-fab-surface border-fab-border"
-          }`}>
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-              <div>
-                <p className="text-xs text-fab-muted uppercase tracking-wider mb-1">Current Streak</p>
-                <div className="flex items-baseline gap-3">
-                  <span className={`text-5xl font-black ${
-                    streaks.currentStreak?.type === MatchResult.Win
-                      ? "text-fab-win"
-                      : streaks.currentStreak?.type === MatchResult.Loss
-                        ? "text-fab-loss"
-                        : "text-fab-dim"
-                  }`}>
-                    {streaks.currentStreak ? streaks.currentStreak.count : 0}
-                  </span>
-                  <span className={`text-2xl font-bold ${
-                    streaks.currentStreak?.type === MatchResult.Win
-                      ? "text-fab-win"
-                      : streaks.currentStreak?.type === MatchResult.Loss
-                        ? "text-fab-loss"
-                        : "text-fab-dim"
-                  }`}>
-                    {streaks.currentStreak
-                      ? streaks.currentStreak.type === MatchResult.Win ? "WINS" : "LOSSES"
-                      : "N/A"}
-                  </span>
-                </div>
-              </div>
-              <div className="flex gap-6">
-                <div className="text-center">
-                  <p className="text-2xl font-bold text-fab-win">{streaks.longestWinStreak}</p>
-                  <p className="text-xs text-fab-dim">Best Win Streak</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-2xl font-bold text-fab-loss">{streaks.longestLossStreak}</p>
-                  <p className="text-xs text-fab-dim">Worst Loss Streak</p>
-                </div>
-              </div>
-            </div>
-            {/* Last 30 results dots */}
-            <div className="mt-4 flex gap-1 flex-wrap">
-              {last30.map((m, i) => (
-                <div
-                  key={i}
-                  className={`w-3 h-3 rounded-full ${
-                    m.result === MatchResult.Win ? "bg-fab-win" : m.result === MatchResult.Loss ? "bg-fab-loss" : "bg-fab-draw"
-                  }`}
-                  title={`${new Date(m.date).toLocaleDateString()} - ${m.result}`}
-                />
-              ))}
-            </div>
-          </div>
-
           {/* Quick Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <StatCard label="Total Matches" value={overall.totalMatches} />
@@ -249,11 +263,22 @@ export default function Dashboard() {
               label="Record"
               value={`${overall.totalWins}W - ${overall.totalLosses}L`}
             />
-            <StatCard
-              label="Draws"
-              value={overall.totalDraws}
-            />
+            {bestFinish ? (
+              <StatCard
+                label="Best Finish"
+                value={bestFinish.label}
+                subtext={bestFinish.eventName}
+                color="text-fab-gold"
+              />
+            ) : (
+              <StatCard label="Draws" value={overall.totalDraws} />
+            )}
           </div>
+          {bestFinish && (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 -mt-4">
+              <StatCard label="Draws" value={overall.totalDraws} />
+            </div>
+          )}
 
           {/* Achievements */}
           <AchievementShowcase earned={achievements} />
@@ -261,29 +286,47 @@ export default function Dashboard() {
           {/* Hero Mastery */}
           <HeroMasteryList masteries={masteries} />
 
-          {/* Nemesis */}
-          {nemesis && (
-            <div className="bg-fab-loss/8 border-2 border-fab-loss/30 rounded-xl p-5">
-              <div className="flex items-center gap-2 mb-3">
-                <svg className="w-6 h-6 text-fab-loss" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="12" r="10" />
-                  <path d="M8 9l2 2M14 9l2 2" />
-                  <path d="M8 16c1.5-1.5 4.5-1.5 6 0" fill="none" />
-                </svg>
-                <h2 className="text-lg font-semibold text-fab-text">Your Nemesis</h2>
-              </div>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xl font-bold text-fab-loss">{nemesis.opponentName}</p>
-                  <p className="text-sm text-fab-dim mt-1">
-                    {nemesis.wins}W - {nemesis.losses}L{nemesis.draws > 0 ? ` - ${nemesis.draws}D` : ""} ({nemesis.winRate.toFixed(0)}% win rate)
+          {/* Leaderboard Rankings */}
+          <LeaderboardCrowns ranks={userRanks} />
+
+          {/* Major Event Badges */}
+          <EventBadges badges={eventBadges} />
+
+          {/* Nemesis + Best Friend */}
+          {(nemesis || bestFriend) && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {nemesis && (
+                <div className="bg-fab-loss/8 border border-fab-loss/30 rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <svg className="w-4 h-4 text-fab-loss" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="12" r="10" />
+                      <path d="M8 9l2 2M14 9l2 2" />
+                      <path d="M8 16c1.5-1.5 4.5-1.5 6 0" fill="none" />
+                    </svg>
+                    <span className="text-xs text-fab-muted uppercase tracking-wider">Nemesis</span>
+                  </div>
+                  <p className="font-bold text-fab-loss truncate">{nemesis.opponentName}</p>
+                  <p className="text-xs text-fab-dim mt-1">
+                    {nemesis.wins}W-{nemesis.losses}L{nemesis.draws > 0 ? `-${nemesis.draws}D` : ""} ({nemesis.winRate.toFixed(0)}%)
                   </p>
                 </div>
-                <div className="text-right">
-                  <p className="text-3xl font-black text-fab-loss">{nemesis.winRate.toFixed(0)}%</p>
-                  <p className="text-xs text-fab-dim">{nemesis.totalMatches} games</p>
+              )}
+              {bestFriend && (
+                <div className="bg-fab-gold/5 border border-fab-gold/20 rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <svg className="w-4 h-4 text-fab-gold" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M16 21v-2a4 4 0 00-4-4H8a4 4 0 00-4-4v2" />
+                      <circle cx="10" cy="7" r="4" />
+                      <path d="M20 8v6M23 11h-6" />
+                    </svg>
+                    <span className="text-xs text-fab-muted uppercase tracking-wider">Most Played</span>
+                  </div>
+                  <p className="font-bold text-fab-text truncate">{bestFriend.opponentName}</p>
+                  <p className="text-xs text-fab-dim mt-1">
+                    {bestFriend.totalMatches} matches ({bestFriend.wins}W-{bestFriend.losses}L{bestFriend.draws > 0 ? `-${bestFriend.draws}D` : ""})
+                  </p>
                 </div>
-              </div>
+              )}
             </div>
           )}
 
@@ -415,15 +458,18 @@ function StatCard({
   label,
   value,
   color = "text-fab-text",
+  subtext,
 }: {
   label: string;
   value: string | number;
   color?: string;
+  subtext?: string;
 }) {
   return (
     <div className="bg-fab-surface border border-fab-border rounded-lg p-4">
       <p className="text-xs text-fab-muted mb-1">{label}</p>
       <p className={`text-2xl font-bold ${color}`}>{value}</p>
+      {subtext && <p className="text-[10px] text-fab-dim mt-0.5 truncate">{subtext}</p>}
     </div>
   );
 }

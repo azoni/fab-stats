@@ -223,6 +223,8 @@ export function computeRollingWinRate(
 
 function guessEventTypeFromNotes(notes: string): string {
   const lower = notes.toLowerCase();
+  if (lower.includes("world")) return "Worlds";
+  if (lower.includes("pro tour")) return "Pro Tour";
   if (lower.includes("proquest")) return "ProQuest";
   if (lower.includes("calling")) return "The Calling";
   if (lower.includes("battle hardened")) return "Battle Hardened";
@@ -296,6 +298,45 @@ export function computeVenueStats(matches: MatchRecord[]): VenueStats[] {
       };
     })
     .sort((a, b) => b.totalMatches - a.totalMatches);
+}
+
+export function computeBestFinish(
+  eventStats: EventStats[]
+): { label: string; eventName: string; eventDate: string } | null {
+  // Rank: Champion (5) > Finalist (4) > Top 4 (3) > Top 8 (2) > Playoff (1)
+  const rankMap: Record<string, number> = {
+    Finals: 4,
+    "Top 4": 3,
+    "Top 8": 2,
+    Playoff: 1,
+  };
+
+  let best: { rank: number; label: string; eventName: string; eventDate: string } | null = null;
+
+  for (const event of eventStats) {
+    for (const match of event.matches) {
+      const roundInfo = match.notes?.split(" | ")[1]?.trim();
+      if (!roundInfo) continue;
+
+      let rank = rankMap[roundInfo] ?? 0;
+      if (rank === 0) continue;
+
+      // Finals + Win = Champion (rank 5)
+      let label = roundInfo;
+      if (roundInfo === "Finals" && match.result === MatchResult.Win) {
+        rank = 5;
+        label = "Champion";
+      } else if (roundInfo === "Finals") {
+        label = "Finalist";
+      }
+
+      if (!best || rank > best.rank) {
+        best = { rank, label, eventName: event.eventName, eventDate: event.eventDate };
+      }
+    }
+  }
+
+  return best ? { label: best.label, eventName: best.eventName, eventDate: best.eventDate } : null;
 }
 
 function getEventName(match: MatchRecord): string {
