@@ -18,7 +18,7 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const SITE_URL = "https://fabstats.netlify.app";
+const SITE_URL = "https://fabstats.net";
 const SITE_NAME = "FaB Stats";
 const SITE_DESCRIPTION =
   "Track your Flesh and Blood TCG match history, win rates, hero matchups, opponent records, and event performance. Import from GEM in one click.";
@@ -105,6 +105,12 @@ export default function RootLayout({
               <LayoutShell>{children}</LayoutShell>
             </div>
           </main>
+          <footer className="hidden md:block text-center py-4 text-[11px] text-fab-dim">
+            Built by{" "}
+            <a href="https://azoni.ai/" target="_blank" rel="noopener noreferrer" className="text-fab-gold/60 hover:text-fab-gold transition-colors">
+              azoni
+            </a>
+          </footer>
           <FeedbackFab />
           <MobileNav />
         </AuthProvider>
