@@ -1,6 +1,7 @@
 "use client";
 import { useState, useMemo } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useLeaderboard } from "@/hooks/useLeaderboard";
 import { useMatches } from "@/hooks/useMatches";
 import { useAuth } from "@/contexts/AuthContext";
@@ -44,7 +45,9 @@ export default function LeaderboardPage() {
   const { entries, loading } = useLeaderboard();
   const { matches } = useMatches();
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<Tab>("winrate");
+  const searchParams = useSearchParams();
+  const initialTab = (searchParams.get("tab") as Tab) || "winrate";
+  const [activeTab, setActiveTab] = useState<Tab>(tabs.some((t) => t.id === initialTab) ? initialTab : "winrate");
   const [page, setPage] = useState(0);
 
   // Build h2h lookup: opponent display name → stats from the current user's matches

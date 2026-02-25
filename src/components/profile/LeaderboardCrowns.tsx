@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { LeaderboardRank } from "@/lib/leaderboard-ranks";
 
 const rankStyle: Record<1 | 2 | 3 | 4 | 5, { bg: string; text: string; medal: string }> = {
@@ -18,16 +19,17 @@ export function LeaderboardCrowns({ ranks }: { ranks: LeaderboardRank[] }) {
         {ranks.map((r) => {
           const style = rankStyle[r.rank];
           return (
-            <div
+            <Link
               key={r.tab}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-fab-border ${style.bg}`}
+              href={`/leaderboard?tab=${r.tab}`}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-fab-border ${style.bg} hover:border-fab-gold/30 transition-colors`}
             >
               <svg className={`w-3.5 h-3.5 ${style.text}`} viewBox="0 0 24 24" fill="currentColor">
                 <path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 16.8l-6.2 4.5 2.4-7.4L2 9.4h7.6z" />
               </svg>
               <span className="text-xs text-fab-text font-medium">{r.tabLabel}</span>
               <span className={`text-xs font-bold ${style.text}`}>{style.medal}</span>
-            </div>
+            </Link>
           );
         })}
       </div>
