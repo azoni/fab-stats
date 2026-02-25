@@ -125,18 +125,66 @@ export function computeStreaks(sortedMatches: MatchRecord[]): StreakInfo {
   return { currentStreak, longestWinStreak, longestLossStreak };
 }
 
-export function computeOpponentStats(matches: MatchRecord[]): OpponentStats[] {
-  const oppMap = new Map<string, MatchRecord[]>();
+/** Normalize an opponent name: trim, handle "Last, First" → "First Last" */
+function normalizeOpponentName(raw: string): string {
+  const trimmed = raw.trim();
+  if (!trimmed) return "unknown";
+  const commaMatch = trimmed.match(/^(.+?),\s+(.+)$/);
+  if (commaMatch) {
+    return `${commaMatch[2]} ${commaMatch[1]}`.toLowerCase();
+  }
+  return trimmed.toLowerCase();
+}
 
+export function computeOpponentStats(matches: MatchRecord[]): OpponentStats[] {
+  // Build gemId → most recent display name
+  const gemIdToName = new Map<string, { name: string; date: string }>();
   for (const match of matches) {
-    const name = match.opponentName?.trim() || "Unknown";
-    const existing = oppMap.get(name) ?? [];
+    if (match.opponentGemId) {
+      const name = match.opponentName?.trim() || "Unknown";
+      const existing = gemIdToName.get(match.opponentGemId);
+      if (!existing || match.date > existing.date) {
+        gemIdToName.set(match.opponentGemId, { name, date: match.date });
+      }
+    }
+  }
+
+  // Build normalized name → best display name (most recent, for name-only matches)
+  const normalizedToDisplay = new Map<string, { name: string; date: string }>();
+  for (const match of matches) {
+    if (!match.opponentGemId) {
+      const raw = match.opponentName?.trim() || "Unknown";
+      const norm = normalizeOpponentName(raw);
+      const existing = normalizedToDisplay.get(norm);
+      if (!existing || match.date > existing.date) {
+        normalizedToDisplay.set(norm, { name: raw, date: match.date });
+      }
+    }
+  }
+
+  // Group matches by key (gemId or normalized name)
+  const oppMap = new Map<string, MatchRecord[]>();
+  for (const match of matches) {
+    let key: string;
+    if (match.opponentGemId) {
+      key = `gemid:${match.opponentGemId}`;
+    } else {
+      key = `name:${normalizeOpponentName(match.opponentName?.trim() || "Unknown")}`;
+    }
+    const existing = oppMap.get(key) ?? [];
     existing.push(match);
-    oppMap.set(name, existing);
+    oppMap.set(key, existing);
   }
 
   return Array.from(oppMap.entries())
-    .map(([opponentName, oppMatches]) => {
+    .map(([key, oppMatches]) => {
+      let opponentName: string;
+      if (key.startsWith("gemid:")) {
+        opponentName = gemIdToName.get(key.slice(6))?.name || "Unknown";
+      } else {
+        opponentName = normalizedToDisplay.get(key.slice(5))?.name || "Unknown";
+      }
+
       const wins = oppMatches.filter((m) => m.result === MatchResult.Win).length;
       const losses = oppMatches.filter((m) => m.result === MatchResult.Loss).length;
       const draws = oppMatches.filter((m) => m.result === MatchResult.Draw).length;

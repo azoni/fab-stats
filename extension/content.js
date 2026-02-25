@@ -685,6 +685,8 @@
         else if (resultText === "draw" || resultText === "d") result = "draw";
         else return;
 
+        const gemIdMatch = oppRaw.match(/\((\d+)\)\s*$/);
+        const opponentGemId = gemIdMatch ? gemIdMatch[1] : "";
         const opponent = oppRaw.replace(/\s*\(\d+\)\s*$/, "").trim();
 
         // Determine round label for playoffs
@@ -711,6 +713,7 @@
           round: parseInt(roundText) || 0,
           roundLabel: roundLabel,
           opponent,
+          opponentGemId,
           result,
         });
       }

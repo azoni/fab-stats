@@ -23,9 +23,9 @@ export default function NotificationsPage() {
   const router = useRouter();
   const [usernameCache, setUsernameCache] = useState<Record<string, string>>({});
 
-  // Look up usernames for matchOwnerUids so we can navigate to their profiles
+  // Look up usernames for UIDs so we can navigate to profiles
   useEffect(() => {
-    const uids = [...new Set(notifications.map((n) => n.matchOwnerUid))];
+    const uids = [...new Set(notifications.map((n) => n.matchOwnerUid || n.senderUid).filter(Boolean))] as string[];
     const missing = uids.filter((uid) => !usernameCache[uid]);
     if (missing.length === 0) return;
 
@@ -67,9 +67,13 @@ export default function NotificationsPage() {
 
   async function handleClick(notification: UserNotification) {
     await markAsRead(notification.id);
-    const username = usernameCache[notification.matchOwnerUid];
-    if (username) {
-      router.push(`/player/${username}`);
+    if (notification.type === "message" && notification.senderUid) {
+      router.push(`/inbox/${notification.senderUid}`);
+    } else if (notification.matchOwnerUid) {
+      const username = usernameCache[notification.matchOwnerUid];
+      if (username) {
+        router.push(`/player/${username}`);
+      }
     }
   }
 
@@ -124,25 +128,47 @@ export default function NotificationsPage() {
 
                 {/* Author avatar */}
                 <div className="shrink-0">
-                  {n.commentAuthorPhoto ? (
-                    <img src={n.commentAuthorPhoto} alt="" className="w-8 h-8 rounded-full" />
-                  ) : (
-                    <div className="w-8 h-8 rounded-full bg-fab-gold/20 flex items-center justify-center text-fab-gold text-sm font-bold">
-                      {n.commentAuthorName.charAt(0).toUpperCase()}
-                    </div>
-                  )}
+                  {(() => {
+                    const photo = n.type === "message" ? n.senderPhoto : n.commentAuthorPhoto;
+                    const name = n.type === "message" ? (n.senderName || "?") : (n.commentAuthorName || "?");
+                    return photo ? (
+                      <img src={photo} alt="" className="w-8 h-8 rounded-full" />
+                    ) : (
+                      <div className="w-8 h-8 rounded-full bg-fab-gold/20 flex items-center justify-center text-fab-gold text-sm font-bold">
+                        {name.charAt(0).toUpperCase()}
+                      </div>
+                    );
+                  })()}
                 </div>
 
                 {/* Content */}
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-fab-text">
-                    <span className="font-semibold">{n.commentAuthorName}</span>{" "}
-                    commented on your match{" "}
-                    <span className="text-fab-muted">{n.matchSummary}</span>
-                  </p>
-                  <p className="text-xs text-fab-dim mt-1 truncate">
-                    &quot;{n.commentPreview}&quot;
-                  </p>
+                  {n.type === "message" ? (
+                    <>
+                      <p className="text-sm text-fab-text">
+                        <span className="font-semibold">{n.senderName}</span>{" "}
+                        sent you a message
+                      </p>
+                      {n.messagePreview && (
+                        <p className="text-xs text-fab-dim mt-1 truncate">
+                          &quot;{n.messagePreview}&quot;
+                        </p>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-sm text-fab-text">
+                        <span className="font-semibold">{n.commentAuthorName}</span>{" "}
+                        commented on your match{" "}
+                        <span className="text-fab-muted">{n.matchSummary}</span>
+                      </p>
+                      {n.commentPreview && (
+                        <p className="text-xs text-fab-dim mt-1 truncate">
+                          &quot;{n.commentPreview}&quot;
+                        </p>
+                      )}
+                    </>
+                  )}
                   <p className="text-xs text-fab-dim mt-1">{timeAgo(n.createdAt)}</p>
                 </div>
 

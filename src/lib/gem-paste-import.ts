@@ -115,9 +115,12 @@ function parseResult(text: string): MatchResult | null {
   return null;
 }
 
-function parseOpponentName(raw: string): string {
-  const match = raw.match(/^(.+?)\s*\(\d+\)\s*$/);
-  return match ? match[1].trim() : raw.trim();
+function parseOpponentName(raw: string): { name: string; gemId: string } {
+  const match = raw.match(/^(.+?)\s*\((\d+)\)\s*$/);
+  if (match) {
+    return { name: match[1].trim(), gemId: match[2] };
+  }
+  return { name: raw.trim(), gemId: "" };
 }
 
 /**
@@ -209,11 +212,13 @@ export function parseGemPaste(text: string): PasteImportResult {
       }
       const result = parseResult(matchMatch[3]);
       if (result) {
+        const parsedOpp = parseOpponentName(matchMatch[2]);
         currentMatches.push({
           date: currentEvent.date,
           heroPlayed: "Unknown",
           opponentHero: "Unknown",
-          opponentName: parseOpponentName(matchMatch[2]),
+          opponentName: parsedOpp.name,
+          opponentGemId: parsedOpp.gemId || undefined,
           result,
           format: currentEvent.format,
           notes: `${currentEvent.name} | Round ${matchMatch[1]}`,
@@ -293,6 +298,7 @@ export function parseExtensionJson(json: string): PasteImportResult {
     round?: number;
     roundLabel?: string;
     opponent?: string;
+    opponentGemId?: string;
     result?: string;
   }>;
 
@@ -346,6 +352,7 @@ export function parseExtensionJson(json: string): PasteImportResult {
       heroPlayed: entry.hero || "Unknown",
       opponentHero: "Unknown",
       opponentName: entry.opponent || "Unknown",
+      opponentGemId: entry.opponentGemId || undefined,
       result,
       format,
       notes: `${eventName} | ${roundInfo}`,

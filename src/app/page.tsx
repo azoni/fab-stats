@@ -314,7 +314,7 @@ export default function Dashboard() {
                       <circle cx="10" cy="7" r="4" />
                       <path d="M20 8v6M23 11h-6" />
                     </svg>
-                    <span className="text-xs text-fab-muted uppercase tracking-wider">Most Played</span>
+                    <span className="text-xs text-fab-muted uppercase tracking-wider">Best Friend</span>
                   </div>
                   <p className="font-bold text-fab-text truncate">{bestFriend.opponentName}</p>
                   <p className="text-xs text-fab-dim mt-1">

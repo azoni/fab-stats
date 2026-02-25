@@ -4,6 +4,7 @@ export interface MatchRecord {
   heroPlayed: string;
   opponentHero: string;
   opponentName?: string;
+  opponentGemId?: string;
   result: MatchResult;
   format: GameFormat;
   notes?: string;
@@ -160,14 +161,22 @@ export interface MatchComment {
 
 export interface UserNotification {
   id: string;
-  type: "comment";
-  matchId: string;
-  matchOwnerUid: string;
-  commentAuthorUid: string;
-  commentAuthorName: string;
+  type: "comment" | "message";
+  // Comment fields
+  matchId?: string;
+  matchOwnerUid?: string;
+  commentAuthorUid?: string;
+  commentAuthorName?: string;
   commentAuthorPhoto?: string;
-  commentPreview: string;
-  matchSummary: string;
+  commentPreview?: string;
+  matchSummary?: string;
+  // Message fields
+  conversationId?: string;
+  senderUid?: string;
+  senderName?: string;
+  senderPhoto?: string;
+  messagePreview?: string;
+  // Common
   createdAt: string;
   read: boolean;
 }
@@ -256,4 +265,25 @@ export interface HeroMastery {
   winRate: number;
   nextTier: MasteryTier | null;
   progress: number; // 0-100 toward next tier
+}
+
+// ── Messaging ──
+
+export interface Conversation {
+  id: string;
+  participants: [string, string];
+  participantInfo: Record<string, { displayName: string; photoUrl?: string; username: string }>;
+  lastMessage: string;
+  lastMessageAt: string;
+  createdAt: string;
+}
+
+export interface Message {
+  id: string;
+  senderUid: string;
+  senderName: string;
+  senderPhoto?: string;
+  text: string;
+  createdAt: string;
+  isAdmin: boolean;
 }

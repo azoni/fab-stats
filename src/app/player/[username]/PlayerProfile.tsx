@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { getProfileByUsername, getMatchesByUserId } from "@/lib/firestore-storage";
@@ -17,6 +17,7 @@ import { computeEventBadges } from "@/lib/events";
 import { useLeaderboard } from "@/hooks/useLeaderboard";
 import { computeUserRanks, getBestRank } from "@/lib/leaderboard-ranks";
 import { QuestionCircleIcon, LockIcon } from "@/components/icons/NavIcons";
+import { useAuth } from "@/contexts/AuthContext";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import type { MatchRecord, UserProfile, Achievement } from "@/types";
@@ -33,6 +34,7 @@ export default function PlayerProfile() {
   const pathname = usePathname();
   const username = pathname.split("/").pop() || "";
   const [state, setState] = useState<PageState>({ status: "loading" });
+  const { isAdmin } = useAuth();
   const { entries: lbEntries } = useLeaderboard();
 
   // Update tab title and OG meta tags from generic pre-rendered values to actual username
@@ -157,11 +159,29 @@ export default function PlayerProfile() {
   }
 
   const { profile, matches, isOwner } = state;
+  const [filterFormat, setFilterFormat] = useState<string>("all");
+  const [filterRated, setFilterRated] = useState<string>("all");
+
+  const allFormats = useMemo(() => {
+    const formats = new Set(matches.map((m) => m.format));
+    return Array.from(formats).sort();
+  }, [matches]);
+
+  const fm = useMemo(() => {
+    return matches.filter((m) => {
+      if (filterFormat !== "all" && m.format !== filterFormat) return false;
+      if (filterRated === "rated" && m.rated !== true) return false;
+      if (filterRated === "unrated" && m.rated === true) return false;
+      return true;
+    });
+  }, [matches, filterFormat, filterRated]);
+
+  const isFiltered = filterFormat !== "all" || filterRated !== "all";
 
   if (matches.length === 0) {
     return (
       <div className="space-y-8">
-        <ProfileHeader profile={profile} />
+        <ProfileHeader profile={profile} isAdmin={isAdmin} isOwner={isOwner} />
         <div className="text-center py-16">
           <p className="text-fab-muted">This player hasn&apos;t logged any matches yet.</p>
         </div>
@@ -169,19 +189,19 @@ export default function PlayerProfile() {
     );
   }
 
-  const overall = computeOverallStats(matches);
-  const heroStats = computeHeroStats(matches);
-  const opponentStats = computeOpponentStats(matches).filter((o) => o.totalMatches >= 3);
-  const allOpponentStats = computeOpponentStats(matches);
-  const eventTypeStats = computeEventTypeStats(matches);
-  const venueStats = computeVenueStats(matches).filter((v) => v.venue !== "Unknown");
-  const eventStats = computeEventStats(matches);
+  const overall = computeOverallStats(fm);
+  const heroStats = computeHeroStats(fm);
+  const opponentStats = computeOpponentStats(fm).filter((o) => o.totalMatches >= 3);
+  const allOpponentStats = computeOpponentStats(fm);
+  const eventTypeStats = computeEventTypeStats(fm);
+  const venueStats = computeVenueStats(fm).filter((v) => v.venue !== "Unknown");
+  const eventStats = computeEventStats(fm);
   const recentEvents = eventStats.slice(0, 5);
-  const recentMatches = [...matches]
+  const recentMatches = [...fm]
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     .slice(0, 5);
   const { streaks } = overall;
-  const achievements = evaluateAchievements(matches, overall, heroStats, opponentStats);
+  const achievements = evaluateAchievements(fm, overall, heroStats, opponentStats);
   const masteries = computeHeroMastery(heroStats);
   const nemesis = opponentStats.length > 0
     ? opponentStats.reduce((worst, o) => (o.winRate < worst.winRate ? o : worst))
@@ -194,19 +214,16 @@ export default function PlayerProfile() {
   const userRanks = computeUserRanks(lbEntries, profile.uid);
   const bestRank = getBestRank(userRanks);
 
-  const last30 = [...matches]
+  const last30 = [...fm]
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     .slice(0, 30)
     .reverse();
-
-  const nemesisName = nemesis ? (isOwner ? nemesis.opponentName : "Opponent") : null;
-  const bestFriendName = bestFriend ? (isOwner ? bestFriend.opponentName : "Opponent") : null;
 
   return (
     <div className="space-y-8">
       {/* Profile Header + Streak */}
       <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-        <ProfileHeader profile={profile} achievements={achievements} bestRank={bestRank} />
+        <ProfileHeader profile={profile} achievements={achievements} bestRank={bestRank} isAdmin={isAdmin} isOwner={isOwner} />
         {/* Compact Streak */}
         <div className={`rounded-lg px-5 py-4 border ${
           streaks.currentStreak?.type === MatchResult.Win
@@ -266,6 +283,47 @@ export default function PlayerProfile() {
         </div>
       </div>
 
+      {/* Filters */}
+      <div className="flex gap-3 flex-wrap items-center">
+        <select
+          value={filterFormat}
+          onChange={(e) => setFilterFormat(e.target.value)}
+          className="bg-fab-surface border border-fab-border text-fab-text text-sm rounded-lg px-3 py-1.5 focus:outline-none focus:border-fab-gold"
+        >
+          <option value="all">All Formats</option>
+          {allFormats.map((f) => (
+            <option key={f} value={f}>{f}</option>
+          ))}
+        </select>
+        <select
+          value={filterRated}
+          onChange={(e) => setFilterRated(e.target.value)}
+          className="bg-fab-surface border border-fab-border text-fab-text text-sm rounded-lg px-3 py-1.5 focus:outline-none focus:border-fab-gold"
+          title="Rated events affect your official GEM Elo rating"
+        >
+          <option value="all">Rated &amp; Unrated</option>
+          <option value="rated">Rated Only</option>
+          <option value="unrated">Unrated Only</option>
+        </select>
+        {isFiltered && (
+          <span className="text-sm text-fab-dim">
+            Showing {fm.length} of {matches.length} matches
+          </span>
+        )}
+      </div>
+
+      {fm.length === 0 && isFiltered ? (
+        <div className="text-center py-16">
+          <p className="text-fab-muted text-lg">No matches found for this filter.</p>
+          <button
+            onClick={() => { setFilterFormat("all"); setFilterRated("all"); }}
+            className="mt-4 text-fab-gold hover:underline text-sm"
+          >
+            Clear Filters
+          </button>
+        </div>
+      ) : (
+      <>
       {/* Leaderboard Rankings */}
       <LeaderboardCrowns ranks={userRanks} />
 
@@ -299,8 +357,8 @@ export default function PlayerProfile() {
       {/* Major Event Badges */}
       <EventBadges badges={eventBadges} />
 
-      {/* Nemesis + Most Played (owner only) */}
-      {isOwner && (nemesis || bestFriend) && (
+      {/* Nemesis + Best Friend */}
+      {(nemesis || bestFriend) && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {nemesis && (
             <div className="bg-fab-loss/8 border border-fab-loss/30 rounded-lg p-4">
@@ -326,7 +384,7 @@ export default function PlayerProfile() {
                   <circle cx="10" cy="7" r="4" />
                   <path d="M20 8v6M23 11h-6" />
                 </svg>
-                <span className="text-xs text-fab-muted uppercase tracking-wider">Most Played</span>
+                <span className="text-xs text-fab-muted uppercase tracking-wider">Best Friend</span>
               </div>
               <p className="font-bold text-fab-text truncate">{bestFriend.opponentName}</p>
               <p className="text-xs text-fab-dim mt-1">
@@ -412,11 +470,13 @@ export default function PlayerProfile() {
           ))}
         </div>
       </div>
+      </>
+      )}
     </div>
   );
 }
 
-function ProfileHeader({ profile, achievements, bestRank }: { profile: UserProfile; achievements?: Achievement[]; bestRank?: 1 | 2 | 3 | null }) {
+function ProfileHeader({ profile, achievements, bestRank, isAdmin, isOwner }: { profile: UserProfile; achievements?: Achievement[]; bestRank?: 1 | 2 | 3 | null; isAdmin?: boolean; isOwner?: boolean }) {
   const ringClass = bestRank === 1 ? "rank-border-gold" : bestRank === 2 ? "rank-border-silver" : bestRank === 3 ? "rank-border-bronze" : "";
   return (
     <div className="flex items-center gap-4">
@@ -431,6 +491,17 @@ function ProfileHeader({ profile, achievements, bestRank }: { profile: UserProfi
         <h1 className="text-2xl font-bold text-fab-gold">{profile.displayName}</h1>
         <p className="text-sm text-fab-dim mb-1">@{profile.username}</p>
         {achievements && achievements.length > 0 && <AchievementBadges earned={achievements} max={4} />}
+        {isAdmin && !isOwner && (
+          <Link
+            href={`/inbox/${profile.uid}`}
+            className="inline-flex items-center gap-1.5 mt-1 text-xs text-fab-gold hover:text-fab-gold-light transition-colors"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+            </svg>
+            Message
+          </Link>
+        )}
       </div>
     </div>
   );

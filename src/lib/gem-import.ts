@@ -158,7 +158,7 @@ export function parseGemCsv(csvText: string): GemImportResult {
       continue;
     }
 
-    const { name: opponentName } = parseOpponent(opponent);
+    const { name: opponentName, gemId } = parseOpponent(opponent);
     const roundInfo = round ? `Round ${round}` : "";
     const ratingInfo = ratingChange ? `Rating: ${ratingChange}` : "";
     const notesParts = [eventName, roundInfo, ratingInfo].filter(Boolean);
@@ -168,6 +168,7 @@ export function parseGemCsv(csvText: string): GemImportResult {
       heroPlayed: "Unknown",
       opponentHero: "Unknown",
       opponentName: opponentName,
+      opponentGemId: gemId || undefined,
       result,
       format: guessFormat(eventName),
       notes: notesParts.join(" | "),
