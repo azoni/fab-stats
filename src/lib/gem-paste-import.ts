@@ -94,6 +94,18 @@ function isMetadataLine(line: string): boolean {
   return /^(Classic Constructed|Blitz|Sealed|Draft|Clash|Ultimate Pit Fight|Rated|Not Rated|Unrated|XP Modifier|Competitive|Casual|Record|Rating)/i.test(line);
 }
 
+/** Check if a line is definitely not a venue (days of the week, prize descriptions, etc.) */
+function isNotVenue(line: string): boolean {
+  const lower = line.toLowerCase().trim();
+  // Days of the week
+  if (/^(monday|tuesday|wednesday|thursday|friday|saturday|sunday)$/i.test(lower)) return true;
+  // Prize / reward descriptions (e.g. "4x Cold Foil ...", "2x Channel Thunder Steppe ...")
+  if (/^\d+x\s/i.test(line)) return true;
+  // Lines mentioning prize/award language
+  if (/awarded to|promo cards?/i.test(line)) return true;
+  return false;
+}
+
 function parseDate(dateStr: string): string {
   const cleaned = dateStr
     .replace(/,\s*\d{1,2}:\d{2}\s*(AM|PM)/i, "")
@@ -134,7 +146,7 @@ function extractEventNameAndVenue(
   shortDatePattern: RegExp
 ): { eventName: string; venue: string } {
   const qualifying = contextLines.filter(
-    (cl) => cl.length > 3 && !datePattern.test(cl) && !shortDatePattern.test(cl) && !isMetadataLine(cl)
+    (cl) => cl.length > 3 && !datePattern.test(cl) && !shortDatePattern.test(cl) && !isMetadataLine(cl) && !isNotVenue(cl)
   );
 
   if (qualifying.length === 0) {
@@ -270,7 +282,7 @@ export function parseGemPaste(text: string): PasteImportResult {
 
       // Detect venue from post-date context if not already found from pre-date
       if (!currentEvent.venue && currentEvent.contextLines.length <= 5 && line.length > 3) {
-        if (!isMetadataLine(line) && !isEventNameLike(line) && guessFormat(line) === GameFormat.Other) {
+        if (!isMetadataLine(line) && !isEventNameLike(line) && !isNotVenue(line) && guessFormat(line) === GameFormat.Other) {
           currentEvent.venue = line;
         }
       }
