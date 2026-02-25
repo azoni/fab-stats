@@ -25,7 +25,7 @@ function SettingsIcon(props: { className?: string }) {
 }
 
 const tabs: { href: string; label: string; icon: ReactNode }[] = [
-  { href: "/", label: "Home", icon: <DashboardIcon /> },
+  { href: "/", label: "Profile", icon: <DashboardIcon /> },
   { href: "/matches", label: "Matches", icon: <SwordsIcon /> },
   { href: "/events", label: "Events", icon: <CalendarIcon /> },
   { href: "/leaderboard", label: "Rankings", icon: <TrophyIcon /> },

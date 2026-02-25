@@ -12,7 +12,7 @@ import type { ReactNode } from "react";
 import type { Creator } from "@/types";
 
 const coreLinks: { href: string; label: string; icon: ReactNode }[] = [
-  { href: "/", label: "Dashboard", icon: <DashboardIcon className="w-4 h-4" /> },
+  { href: "/", label: "Profile", icon: <DashboardIcon className="w-4 h-4" /> },
   { href: "/leaderboard", label: "Leaderboard", icon: <TrophyIcon className="w-4 h-4" /> },
   { href: "/matches", label: "Matches", icon: <SwordsIcon className="w-4 h-4" /> },
   { href: "/events", label: "Events", icon: <CalendarIcon className="w-4 h-4" /> },

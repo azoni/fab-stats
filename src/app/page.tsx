@@ -6,7 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { computeOverallStats, computeHeroStats, computeEventTypeStats, computeVenueStats, computeEventStats, computeOpponentStats } from "@/lib/stats";
 import { evaluateAchievements } from "@/lib/achievements";
 import { computeHeroMastery } from "@/lib/mastery";
-import { AchievementShowcase } from "@/components/gamification/AchievementShowcase";
+import { AchievementShowcase, AchievementBadges } from "@/components/gamification/AchievementShowcase";
 import { HeroMasteryList } from "@/components/gamification/HeroMasteryCard";
 import { updateLeaderboardEntry } from "@/lib/leaderboard";
 import { MatchCard } from "@/components/matches/MatchCard";
@@ -116,9 +116,26 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-8">
-      {/* Header with filters */}
+      {/* Profile Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <h1 className="text-2xl font-bold text-fab-gold">Dashboard</h1>
+        <div className="flex items-center gap-4">
+          {profile?.photoUrl ? (
+            <img src={profile.photoUrl} alt="" className="w-12 h-12 rounded-full" />
+          ) : profile ? (
+            <div className="w-12 h-12 rounded-full bg-fab-gold/20 flex items-center justify-center text-fab-gold text-xl font-bold">
+              {profile.displayName.charAt(0).toUpperCase()}
+            </div>
+          ) : null}
+          <div>
+            <h1 className="text-2xl font-bold text-fab-gold">
+              {profile?.displayName || "My Profile"}
+            </h1>
+            {profile?.username && (
+              <p className="text-sm text-fab-dim">@{profile.username}</p>
+            )}
+            {achievements.length > 0 && <AchievementBadges earned={achievements} max={4} />}
+          </div>
+        </div>
         <div className="flex gap-3 flex-wrap">
           <select
             value={filterFormat}
@@ -248,7 +265,11 @@ export default function Dashboard() {
           {nemesis && (
             <div className="bg-fab-loss/8 border-2 border-fab-loss/30 rounded-xl p-5">
               <div className="flex items-center gap-2 mb-3">
-                <span className="text-2xl">😈</span>
+                <svg className="w-6 h-6 text-fab-loss" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M8 9l2 2M14 9l2 2" />
+                  <path d="M8 16c1.5-1.5 4.5-1.5 6 0" fill="none" />
+                </svg>
                 <h2 className="text-lg font-semibold text-fab-text">Your Nemesis</h2>
               </div>
               <div className="flex items-center justify-between">
