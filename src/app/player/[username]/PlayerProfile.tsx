@@ -39,6 +39,7 @@ export default function PlayerProfile() {
   const { entries: lbEntries } = useLeaderboard();
   const [filterFormat, setFilterFormat] = useState<string>("all");
   const [filterRated, setFilterRated] = useState<string>("all");
+  const [filterHero, setFilterHero] = useState<string>("all");
 
   const loadedMatches = state.status === "loaded" ? state.matches : [];
 
@@ -52,15 +53,21 @@ export default function PlayerProfile() {
     return Array.from(types).sort() as string[];
   }, [loadedMatches]);
 
+  const allHeroes = useMemo(() => {
+    const heroes = new Set(loadedMatches.map((m) => m.heroPlayed).filter((h) => h && h !== "Unknown"));
+    return Array.from(heroes).sort();
+  }, [loadedMatches]);
+
   const fm = useMemo(() => {
     return loadedMatches.filter((m) => {
       if (filterFormat !== "all" && m.format !== filterFormat) return false;
       if (filterRated === "rated" && m.rated !== true) return false;
       if (filterRated === "unrated" && m.rated === true) return false;
       if (filterRated !== "all" && filterRated !== "rated" && filterRated !== "unrated" && m.eventType !== filterRated) return false;
+      if (filterHero !== "all" && m.heroPlayed !== filterHero) return false;
       return true;
     });
-  }, [loadedMatches, filterFormat, filterRated]);
+  }, [loadedMatches, filterFormat, filterRated, filterHero]);
 
   // Update tab title and OG meta tags from generic pre-rendered values to actual username
   useEffect(() => {
@@ -190,7 +197,7 @@ export default function PlayerProfile() {
 
   const { profile, matches, isOwner } = state;
 
-  const isFiltered = filterFormat !== "all" || filterRated !== "all";
+  const isFiltered = filterFormat !== "all" || filterRated !== "all" || filterHero !== "all";
 
   if (matches.length === 0) {
     return (
@@ -323,6 +330,18 @@ export default function PlayerProfile() {
             <option key={t} value={t}>{t}</option>
           ))}
         </select>
+        {allHeroes.length > 1 && (
+          <select
+            value={filterHero}
+            onChange={(e) => setFilterHero(e.target.value)}
+            className="bg-fab-surface border border-fab-border text-fab-text text-sm rounded-lg px-3 py-1.5 focus:outline-none focus:border-fab-gold"
+          >
+            <option value="all">All Heroes</option>
+            {allHeroes.map((h) => (
+              <option key={h} value={h}>{h}</option>
+            ))}
+          </select>
+        )}
         {isFiltered && (
           <span className="text-sm text-fab-dim">
             Showing {fm.length} of {matches.length} matches
@@ -334,7 +353,7 @@ export default function PlayerProfile() {
         <div className="text-center py-16">
           <p className="text-fab-muted text-lg">No matches found for this filter.</p>
           <button
-            onClick={() => { setFilterFormat("all"); setFilterRated("all"); }}
+            onClick={() => { setFilterFormat("all"); setFilterRated("all"); setFilterHero("all"); }}
             className="mt-4 text-fab-gold hover:underline text-sm"
           >
             Clear Filters

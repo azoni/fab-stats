@@ -26,6 +26,7 @@ export default function Dashboard() {
   const { entries: lbEntries } = useLeaderboard();
   const [filterFormat, setFilterFormat] = useState<string>("all");
   const [filterRated, setFilterRated] = useState<string>("all");
+  const [filterHero, setFilterHero] = useState<string>("all");
   const leaderboardUpdated = useRef(false);
 
   // Sync leaderboard entry when matches are loaded
@@ -45,15 +46,21 @@ export default function Dashboard() {
     return Array.from(types).sort() as string[];
   }, [matches]);
 
+  const allHeroes = useMemo(() => {
+    const heroes = new Set(matches.map((m) => m.heroPlayed).filter((h) => h && h !== "Unknown"));
+    return Array.from(heroes).sort();
+  }, [matches]);
+
   const filteredMatches = useMemo(() => {
     return matches.filter((m) => {
       if (filterFormat !== "all" && m.format !== filterFormat) return false;
       if (filterRated === "rated" && m.rated !== true) return false;
       if (filterRated === "unrated" && m.rated === true) return false;
       if (filterRated !== "all" && filterRated !== "rated" && filterRated !== "unrated" && m.eventType !== filterRated) return false;
+      if (filterHero !== "all" && m.heroPlayed !== filterHero) return false;
       return true;
     });
-  }, [matches, filterFormat, filterRated]);
+  }, [matches, filterFormat, filterRated, filterHero]);
 
   if (!isLoaded) {
     return <DashboardSkeleton />;
@@ -99,7 +106,7 @@ export default function Dashboard() {
     );
   }
 
-  const isFiltered = filterFormat !== "all" || filterRated !== "all";
+  const isFiltered = filterFormat !== "all" || filterRated !== "all" || filterHero !== "all";
   const fm = filteredMatches;
 
   const overall = computeOverallStats(fm);
@@ -251,6 +258,18 @@ export default function Dashboard() {
             <option key={t} value={t}>{t}</option>
           ))}
         </select>
+        {allHeroes.length > 1 && (
+          <select
+            value={filterHero}
+            onChange={(e) => setFilterHero(e.target.value)}
+            className="bg-fab-surface border border-fab-border text-fab-text text-sm rounded-lg px-3 py-1.5 focus:outline-none focus:border-fab-gold"
+          >
+            <option value="all">All Heroes</option>
+            {allHeroes.map((h) => (
+              <option key={h} value={h}>{h}</option>
+            ))}
+          </select>
+        )}
       </div>
 
       {isFiltered && (
@@ -263,7 +282,7 @@ export default function Dashboard() {
         <div className="text-center py-16">
           <p className="text-fab-muted text-lg">No matches found for this filter.</p>
           <button
-            onClick={() => { setFilterFormat("all"); setFilterRated("all"); }}
+            onClick={() => { setFilterFormat("all"); setFilterRated("all"); setFilterHero("all"); }}
             className="mt-4 text-fab-gold hover:text-fab-gold-light text-sm"
           >
             Clear Filters
