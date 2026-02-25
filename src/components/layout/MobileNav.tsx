@@ -48,6 +48,14 @@ function InboxIcon(props: { className?: string }) {
   );
 }
 
+function AdminIcon(props: { className?: string }) {
+  return (
+    <svg className={props.className || "w-5 h-5"} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+    </svg>
+  );
+}
+
 function MoreDotsIcon(props: { className?: string }) {
   return (
     <svg className={props.className || "w-5 h-5"} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -65,20 +73,21 @@ const tabs: { href: string; label: string; icon: ReactNode }[] = [
   { href: "/search", label: "Discover", icon: <SearchIcon /> },
 ];
 
-const moreLinks: { href: string; label: string; icon: ReactNode; authOnly?: boolean }[] = [
+const moreLinks: { href: string; label: string; icon: ReactNode; authOnly?: boolean; adminOnly?: boolean }[] = [
   { href: "/events", label: "Events", icon: <CalendarIcon /> },
   { href: "/opponents", label: "Opponents", icon: <OpponentsIcon />, authOnly: true },
   { href: "/trends", label: "Trends", icon: <TrendsIcon />, authOnly: true },
   { href: "/import", label: "Import Matches", icon: <ImportIcon />, authOnly: true },
   { href: "/inbox", label: "Inbox", icon: <InboxIcon />, authOnly: true },
   { href: "/notifications", label: "Notifications", icon: <BellIcon />, authOnly: true },
+  { href: "/admin", label: "Admin", icon: <AdminIcon />, adminOnly: true },
   { href: "/settings", label: "Settings", icon: <SettingsIcon />, authOnly: true },
   { href: "/changelog", label: "Changelog", icon: <ChangelogIcon /> },
 ];
 
 export function MobileNav() {
   const pathname = usePathname();
-  const { user, isGuest } = useAuth();
+  const { user, isGuest, isAdmin } = useAuth();
   const { unreadCount } = useNotifications();
   const [mounted, setMounted] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
@@ -94,7 +103,7 @@ export function MobileNav() {
   if (!mounted) return null;
 
   const isAuthed = user || isGuest;
-  const visibleMoreLinks = moreLinks.filter((l) => !l.authOnly || isAuthed);
+  const visibleMoreLinks = moreLinks.filter((l) => (!l.authOnly || isAuthed) && (!l.adminOnly || isAdmin));
   const isMoreActive = visibleMoreLinks.some((l) => pathname === l.href);
 
   return (
