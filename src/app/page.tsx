@@ -39,11 +39,17 @@ export default function Dashboard() {
     return Array.from(formats).sort();
   }, [matches]);
 
+  const allEventTypes = useMemo(() => {
+    const types = new Set(matches.map((m) => m.eventType).filter(Boolean));
+    return Array.from(types).sort() as string[];
+  }, [matches]);
+
   const filteredMatches = useMemo(() => {
     return matches.filter((m) => {
       if (filterFormat !== "all" && m.format !== filterFormat) return false;
       if (filterRated === "rated" && m.rated !== true) return false;
       if (filterRated === "unrated" && m.rated === true) return false;
+      if (filterRated !== "all" && filterRated !== "rated" && filterRated !== "unrated" && m.eventType !== filterRated) return false;
       return true;
     });
   }, [matches, filterFormat, filterRated]);
@@ -234,11 +240,14 @@ export default function Dashboard() {
           value={filterRated}
           onChange={(e) => setFilterRated(e.target.value)}
           className="bg-fab-surface border border-fab-border text-fab-text text-sm rounded-lg px-3 py-1.5 focus:outline-none focus:border-fab-gold"
-          title="Rated events affect your official GEM Elo rating"
+          title="Filter by rated status or event type"
         >
-          <option value="all">Rated &amp; Unrated</option>
-          <option value="rated">Rated Only (affects Elo)</option>
-          <option value="unrated">Casual / Unrated Only</option>
+          <option value="all">All</option>
+          <option value="rated">Rated Only</option>
+          <option value="unrated">Unrated Only</option>
+          {allEventTypes.map((t) => (
+            <option key={t} value={t}>{t}</option>
+          ))}
         </select>
       </div>
 
@@ -292,16 +301,6 @@ export default function Dashboard() {
                 color="text-fab-gold"
               />
             ) : null}
-            {(() => {
-              const armory = eventTypeStats.find((e) => e.eventType === "Armory");
-              return armory ? (
-                <StatCard
-                  label="Armory Record"
-                  value={`${armory.wins}W - ${armory.losses}L${armory.draws > 0 ? ` - ${armory.draws}D` : ""}`}
-                  subtext={`${armory.winRate.toFixed(1)}% across ${armory.totalMatches} matches`}
-                />
-              ) : null;
-            })()}
           </div>
 
           {/* Achievements */}
