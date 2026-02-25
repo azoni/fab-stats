@@ -94,11 +94,10 @@ export default function Dashboard() {
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     .slice(0, 5);
 
-  const nemesis = useMemo(() => {
-    const opponents = computeOpponentStats(fm).filter((o) => o.totalMatches >= 3);
-    if (opponents.length === 0) return null;
-    return opponents.reduce((worst, o) => (o.winRate < worst.winRate ? o : worst));
-  }, [fm]);
+  const opponentStats = computeOpponentStats(fm).filter((o) => o.totalMatches >= 3);
+  const nemesis = opponentStats.length > 0
+    ? opponentStats.reduce((worst, o) => (o.winRate < worst.winRate ? o : worst))
+    : null;
 
   const { streaks } = overall;
 
