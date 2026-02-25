@@ -1,6 +1,7 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
 import { allHeroes, searchHeroes } from "@/lib/heroes";
+import { CloseIcon } from "@/components/icons/NavIcons";
 import type { HeroInfo } from "@/types";
 
 interface HeroSelectProps {
@@ -77,9 +78,9 @@ export function HeroSelect({ value, onChange, label }: HeroSelectProps) {
                 onChange("");
                 setQuery("");
               }}
-              className="ml-auto text-fab-dim hover:text-fab-muted text-xs"
+              className="ml-auto text-fab-dim hover:text-fab-muted"
             >
-              ✕
+              <CloseIcon className="w-3.5 h-3.5" />
             </button>
           </div>
         ) : (

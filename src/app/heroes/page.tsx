@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useMatches } from "@/hooks/useMatches";
 import { computeHeroStats } from "@/lib/stats";
+import { ChevronUpIcon, ChevronDownIcon } from "@/components/icons/NavIcons";
 
 export default function HeroesPage() {
   const { matches, isLoaded } = useMatches();
@@ -79,7 +80,7 @@ export default function HeroesPage() {
                         {hero.winRate.toFixed(0)}%
                       </span>
                     </div>
-                    <span className="text-fab-dim text-xs">{expanded === hero.heroName ? "▲" : "▼"}</span>
+                    {expanded === hero.heroName ? <ChevronUpIcon className="w-4 h-4 text-fab-dim" /> : <ChevronDownIcon className="w-4 h-4 text-fab-dim" />}
                   </div>
                 </div>
               </button>

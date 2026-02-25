@@ -1,0 +1,50 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper: check if the authenticated user is an admin
+    function isAdmin() {
+      return request.auth != null
+        && request.auth.token.email in
+           get(/databases/$(database)/documents/admin/config).data.adminEmails;
+    }
+
+    // ── User profiles ──
+    match /users/{userId}/profile/{docId} {
+      // Owner can read/write their own profile
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+      // Anyone can read public profiles (for /player/username pages)
+      allow read: if resource.data.isPublic == true;
+      // Admin can read all profiles
+      allow read: if isAdmin();
+    }
+
+    // ── Match records ──
+    match /users/{userId}/matches/{matchId} {
+      // Owner can read/write their own matches
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+      // Public read: if the user's profile is public
+      allow read: if get(/databases/$(database)/documents/users/$(userId)/profile/main).data.isPublic == true;
+      // Admin can read all matches (for aggregate stats)
+      allow read: if isAdmin();
+    }
+
+    // ── Username reservations ──
+    match /usernames/{username} {
+      // Anyone can read (for availability checks, search, profile lookups)
+      allow read: if true;
+      // Only allow create if userId matches the authenticated user
+      allow create: if request.auth != null
+                    && request.resource.data.userId == request.auth.uid;
+    }
+
+    // ── Admin configuration ──
+    match /admin/{docId} {
+      // Admin can read config
+      allow read: if isAdmin();
+      // No client writes — manage via Firebase Console only
+      allow write: if false;
+    }
+  }
+}

@@ -1,12 +1,14 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { DashboardIcon, SwordsIcon, OpponentsIcon, TrendsIcon, ImportIcon, PlusIcon } from "@/components/icons/NavIcons";
+import { DashboardIcon, SwordsIcon, OpponentsIcon, TrendsIcon, ImportIcon, CalendarIcon } from "@/components/icons/NavIcons";
+import { useAuth } from "@/contexts/AuthContext";
 import type { ReactNode } from "react";
 
 const navLinks: { href: string; label: string; icon: ReactNode }[] = [
   { href: "/", label: "Dashboard", icon: <DashboardIcon className="w-4 h-4" /> },
   { href: "/matches", label: "Matches", icon: <SwordsIcon className="w-4 h-4" /> },
+  { href: "/events", label: "Events", icon: <CalendarIcon className="w-4 h-4" /> },
   { href: "/opponents", label: "Opponents", icon: <OpponentsIcon className="w-4 h-4" /> },
   { href: "/trends", label: "Trends", icon: <TrendsIcon className="w-4 h-4" /> },
   { href: "/import", label: "Import", icon: <ImportIcon className="w-4 h-4" /> },
@@ -14,6 +16,7 @@ const navLinks: { href: string; label: string; icon: ReactNode }[] = [
 
 export function Navbar() {
   const pathname = usePathname();
+  const { user, profile, signOut, isGuest, isAdmin } = useAuth();
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-fab-surface/95 backdrop-blur-md border-b border-fab-border">
@@ -27,27 +30,90 @@ export function Navbar() {
             <span className="text-xl font-bold text-fab-gold tracking-tight">FaB Stats</span>
           </Link>
           <div className="hidden md:flex items-center gap-1">
-            {navLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                  pathname === link.href
-                    ? "text-fab-gold bg-fab-gold/10"
-                    : "text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover"
-                }`}
-              >
-                {link.icon}
-                {link.label}
-              </Link>
-            ))}
-            <Link
-              href="/matches/new"
-              className="ml-2 flex items-center gap-1.5 px-4 py-2 rounded-md text-sm font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors"
-            >
-              <PlusIcon className="w-4 h-4" />
-              Log Match
-            </Link>
+            {(user || isGuest) && (
+              <>
+                {navLinks.map((link) => (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className={`flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                      pathname === link.href
+                        ? "text-fab-gold bg-fab-gold/10"
+                        : "text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover"
+                    }`}
+                  >
+                    {link.icon}
+                    {link.label}
+                  </Link>
+                ))}
+                <Link
+                  href="/search"
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                    pathname === "/search"
+                      ? "text-fab-gold bg-fab-gold/10"
+                      : "text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover"
+                  }`}
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                  Search
+                </Link>
+                <div className="ml-3 pl-3 border-l border-fab-border flex items-center gap-2">
+                  {isGuest ? (
+                    <>
+                      <span className="text-xs text-fab-dim">Guest</span>
+                      <Link
+                        href="/login"
+                        className="text-xs text-fab-gold hover:text-fab-gold-light transition-colors"
+                      >
+                        Sign Up
+                      </Link>
+                    </>
+                  ) : profile ? (
+                    <Link
+                      href={`/player/${profile.username}`}
+                      className="text-xs text-fab-dim hover:text-fab-gold transition-colors truncate max-w-32"
+                    >
+                      @{profile.username}
+                    </Link>
+                  ) : (
+                    <span className="text-xs text-fab-dim truncate max-w-32">{user?.email}</span>
+                  )}
+                  {!isGuest && (
+                    <Link
+                      href="/settings"
+                      className={`p-1 rounded transition-colors ${
+                        pathname === "/settings"
+                          ? "text-fab-gold"
+                          : "text-fab-muted hover:text-fab-text"
+                      }`}
+                      title="Settings"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                    </Link>
+                  )}
+                  {isAdmin && (
+                    <Link
+                      href="/admin"
+                      className={`p-1 rounded transition-colors ${
+                        pathname === "/admin"
+                          ? "text-fab-gold"
+                          : "text-fab-muted hover:text-fab-text"
+                      }`}
+                      title="Admin"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                      </svg>
+                    </Link>
+                  )}
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>

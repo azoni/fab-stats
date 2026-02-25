@@ -3,6 +3,7 @@ import { useState, useMemo } from "react";
 import { useMatches } from "@/hooks/useMatches";
 import { computeOpponentStats } from "@/lib/stats";
 import { MatchCard } from "@/components/matches/MatchCard";
+import { ChevronUpIcon, ChevronDownIcon } from "@/components/icons/NavIcons";
 import { MatchResult, type OpponentStats } from "@/types";
 
 function guessEventTypeFromNotes(notes: string): string {
@@ -231,7 +232,7 @@ function OpponentRow({ opp, isExpanded, onToggle }: { opp: OpponentStats; isExpa
                 {opp.winRate.toFixed(0)}%
               </span>
             </div>
-            <span className="text-fab-dim text-xs">{isExpanded ? "▲" : "▼"}</span>
+            {isExpanded ? <ChevronUpIcon className="w-4 h-4 text-fab-dim" /> : <ChevronDownIcon className="w-4 h-4 text-fab-dim" />}
           </div>
         </div>
 

@@ -1,0 +1,289 @@
+"use client";
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import { getProfileByUsername, getMatchesByUserId } from "@/lib/firestore-storage";
+import { computeOverallStats, computeEventTypeStats, computeVenueStats, computeEventStats } from "@/lib/stats";
+import { MatchCard } from "@/components/matches/MatchCard";
+import { EventCard } from "@/components/events/EventCard";
+import { QuestionCircleIcon, LockIcon } from "@/components/icons/NavIcons";
+import type { MatchRecord, UserProfile } from "@/types";
+import { MatchResult } from "@/types";
+
+type PageState =
+  | { status: "loading" }
+  | { status: "not_found" }
+  | { status: "private" }
+  | { status: "loaded"; profile: UserProfile; matches: MatchRecord[] };
+
+export default function PlayerProfile({ username }: { username: string }) {
+  const [state, setState] = useState<PageState>({ status: "loading" });
+
+  useEffect(() => {
+    async function load() {
+      setState({ status: "loading" });
+
+      const profile = await getProfileByUsername(username);
+      if (!profile) {
+        setState({ status: "not_found" });
+        return;
+      }
+
+      if (!profile.isPublic) {
+        setState({ status: "private" });
+        return;
+      }
+
+      const matches = await getMatchesByUserId(profile.uid);
+      setState({ status: "loaded", profile, matches });
+    }
+
+    load();
+  }, [username]);
+
+  if (state.status === "loading") {
+    return (
+      <div className="space-y-8">
+        <div className="h-8 w-48 bg-fab-surface rounded animate-pulse" />
+        <div className="bg-fab-surface border border-fab-border rounded-xl p-6 h-32 animate-pulse" />
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="bg-fab-surface border border-fab-border rounded-lg p-4 h-20 animate-pulse" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (state.status === "not_found") {
+    return (
+      <div className="text-center py-24">
+        <QuestionCircleIcon className="w-14 h-14 text-fab-muted mb-4 mx-auto" />
+        <h1 className="text-2xl font-bold text-fab-text mb-2">Player Not Found</h1>
+        <p className="text-fab-muted mb-6">No player with the username &quot;{username}&quot; exists.</p>
+        <Link href="/search" className="text-fab-gold hover:text-fab-gold-light">
+          Search for players
+        </Link>
+      </div>
+    );
+  }
+
+  if (state.status === "private") {
+    return (
+      <div className="text-center py-24">
+        <LockIcon className="w-14 h-14 text-fab-muted mb-4 mx-auto" />
+        <h1 className="text-2xl font-bold text-fab-text mb-2">Private Profile</h1>
+        <p className="text-fab-muted mb-6">This player&apos;s profile is set to private.</p>
+        <Link href="/search" className="text-fab-gold hover:text-fab-gold-light">
+          Search for players
+        </Link>
+      </div>
+    );
+  }
+
+  const { profile, matches } = state;
+
+  if (matches.length === 0) {
+    return (
+      <div className="space-y-8">
+        <ProfileHeader profile={profile} />
+        <div className="text-center py-16">
+          <p className="text-fab-muted">This player hasn&apos;t logged any matches yet.</p>
+        </div>
+      </div>
+    );
+  }
+
+  const overall = computeOverallStats(matches);
+  const eventTypeStats = computeEventTypeStats(matches);
+  const venueStats = computeVenueStats(matches).filter((v) => v.venue !== "Unknown");
+  const eventStats = computeEventStats(matches);
+  const recentEvents = eventStats.slice(0, 5);
+  const recentMatches = [...matches]
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    .slice(0, 5);
+  const { streaks } = overall;
+
+  const last30 = [...matches]
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    .slice(0, 30)
+    .reverse();
+
+  return (
+    <div className="space-y-8">
+      <ProfileHeader profile={profile} />
+
+      {/* Streak Banner */}
+      <div className={`rounded-xl p-6 border-2 ${
+        streaks.currentStreak?.type === MatchResult.Win
+          ? "bg-fab-win/8 border-fab-win/30"
+          : streaks.currentStreak?.type === MatchResult.Loss
+            ? "bg-fab-loss/8 border-fab-loss/30"
+            : "bg-fab-surface border-fab-border"
+      }`}>
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <p className="text-xs text-fab-muted uppercase tracking-wider mb-1">Current Streak</p>
+            <div className="flex items-baseline gap-3">
+              <span className={`text-5xl font-black ${
+                streaks.currentStreak?.type === MatchResult.Win
+                  ? "text-fab-win"
+                  : streaks.currentStreak?.type === MatchResult.Loss
+                    ? "text-fab-loss"
+                    : "text-fab-dim"
+              }`}>
+                {streaks.currentStreak ? streaks.currentStreak.count : 0}
+              </span>
+              <span className={`text-2xl font-bold ${
+                streaks.currentStreak?.type === MatchResult.Win
+                  ? "text-fab-win"
+                  : streaks.currentStreak?.type === MatchResult.Loss
+                    ? "text-fab-loss"
+                    : "text-fab-dim"
+              }`}>
+                {streaks.currentStreak
+                  ? streaks.currentStreak.type === MatchResult.Win ? "WINS" : "LOSSES"
+                  : "N/A"}
+              </span>
+            </div>
+          </div>
+          <div className="flex gap-6">
+            <div className="text-center">
+              <p className="text-2xl font-bold text-fab-win">{streaks.longestWinStreak}</p>
+              <p className="text-xs text-fab-dim">Best Win Streak</p>
+            </div>
+            <div className="text-center">
+              <p className="text-2xl font-bold text-fab-loss">{streaks.longestLossStreak}</p>
+              <p className="text-xs text-fab-dim">Worst Loss Streak</p>
+            </div>
+          </div>
+        </div>
+        <div className="mt-4 flex gap-1 flex-wrap">
+          {last30.map((m, i) => (
+            <div
+              key={i}
+              className={`w-3 h-3 rounded-full ${
+                m.result === MatchResult.Win ? "bg-fab-win" : m.result === MatchResult.Loss ? "bg-fab-loss" : "bg-fab-draw"
+              }`}
+              title={`${new Date(m.date).toLocaleDateString()} - ${m.result}`}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* Quick Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <StatCard label="Total Matches" value={overall.totalMatches} />
+        <StatCard
+          label="Win Rate"
+          value={`${overall.overallWinRate.toFixed(1)}%`}
+          color={overall.overallWinRate >= 50 ? "text-fab-win" : "text-fab-loss"}
+        />
+        <StatCard label="Record" value={`${overall.totalWins}W - ${overall.totalLosses}L`} />
+        <StatCard label="Draws" value={overall.totalDraws} />
+      </div>
+
+      {/* Recent Events */}
+      {recentEvents.length > 0 && (
+        <div>
+          <h2 className="text-lg font-semibold text-fab-text mb-4">Recent Events</h2>
+          <div className="space-y-2">
+            {recentEvents.map((event) => (
+              <EventCard key={`${event.eventName}-${event.eventDate}`} event={event} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Event Type Breakdown */}
+      {eventTypeStats.length > 0 && (
+        <div>
+          <h2 className="text-lg font-semibold text-fab-text mb-4">Win Rate by Event Type</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {eventTypeStats.map((et) => (
+              <div key={et.eventType} className="bg-fab-surface border border-fab-border rounded-lg p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-semibold text-fab-text">{et.eventType}</span>
+                  <span className="text-xs text-fab-dim">{et.totalMatches} matches</span>
+                </div>
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="flex-1 h-3 bg-fab-bg rounded-full overflow-hidden">
+                    <div className="h-full bg-fab-win rounded-full" style={{ width: `${et.winRate}%` }} />
+                  </div>
+                  <span className={`text-sm font-bold w-12 text-right ${et.winRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>
+                    {et.winRate.toFixed(0)}%
+                  </span>
+                </div>
+                <p className="text-xs text-fab-dim">{et.wins}W - {et.losses}L{et.draws > 0 ? ` - ${et.draws}D` : ""}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Venue Breakdown */}
+      {venueStats.length > 0 && (
+        <div>
+          <h2 className="text-lg font-semibold text-fab-text mb-4">Win Rate by Venue</h2>
+          <div className="space-y-2">
+            {venueStats.map((v) => (
+              <div key={v.venue} className="bg-fab-surface border border-fab-border rounded-lg p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-semibold text-fab-text">{v.venue}</span>
+                  <span className="text-xs text-fab-dim">{v.totalMatches} matches</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 h-3 bg-fab-bg rounded-full overflow-hidden">
+                    <div className="h-full bg-fab-win rounded-full" style={{ width: `${v.winRate}%` }} />
+                  </div>
+                  <span className={`text-sm font-bold w-12 text-right ${v.winRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>
+                    {v.winRate.toFixed(0)}%
+                  </span>
+                  <span className="text-xs text-fab-dim w-20 text-right">
+                    {v.wins}W-{v.losses}L{v.draws > 0 ? `-${v.draws}D` : ""}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Recent Matches */}
+      <div>
+        <h2 className="text-lg font-semibold text-fab-text mb-4">Recent Matches</h2>
+        <div className="space-y-2">
+          {recentMatches.map((match) => (
+            <MatchCard key={match.id} match={match} />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ProfileHeader({ profile }: { profile: UserProfile }) {
+  return (
+    <div className="flex items-center gap-4">
+      {profile.photoUrl ? (
+        <img src={profile.photoUrl} alt="" className="w-12 h-12 rounded-full" />
+      ) : (
+        <div className="w-12 h-12 rounded-full bg-fab-gold/20 flex items-center justify-center text-fab-gold text-xl font-bold">
+          {profile.displayName.charAt(0).toUpperCase()}
+        </div>
+      )}
+      <div>
+        <h1 className="text-2xl font-bold text-fab-gold">{profile.displayName}</h1>
+        <p className="text-sm text-fab-dim">@{profile.username}</p>
+      </div>
+    </div>
+  );
+}
+
+function StatCard({ label, value, color = "text-fab-text" }: { label: string; value: string | number; color?: string }) {
+  return (
+    <div className="bg-fab-surface border border-fab-border rounded-lg p-4">
+      <p className="text-xs text-fab-muted mb-1">{label}</p>
+      <p className={`text-2xl font-bold ${color}`}>{value}</p>
+    </div>
+  );
+}

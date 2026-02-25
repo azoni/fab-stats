@@ -1,4 +1,6 @@
 "use client";
+import Link from "next/link";
+import { CloseIcon } from "@/components/icons/NavIcons";
 import { MatchResult, type MatchRecord } from "@/types";
 
 interface MatchCardProps {
@@ -12,11 +14,27 @@ const resultStyles = {
   [MatchResult.Draw]: { bg: "bg-fab-draw/10", border: "border-fab-draw/30", text: "text-fab-draw", label: "DRAW" },
 };
 
+const playoffBadgeStyles: Record<string, { bg: string; text: string }> = {
+  "Finals": { bg: "bg-yellow-500/20", text: "text-yellow-400" },
+  "Top 4": { bg: "bg-amber-500/15", text: "text-amber-400" },
+  "Top 8": { bg: "bg-orange-500/15", text: "text-orange-400" },
+  "Playoff": { bg: "bg-fab-gold/10", text: "text-fab-gold" },
+};
+
+function getPlayoffBadge(roundInfo: string | undefined): { label: string; bg: string; text: string } | null {
+  if (!roundInfo) return null;
+  for (const [label, style] of Object.entries(playoffBadgeStyles)) {
+    if (roundInfo === label) return { label, ...style };
+  }
+  return null;
+}
+
 export function MatchCard({ match, onDelete }: MatchCardProps) {
   const style = resultStyles[match.result];
   const hasRealHeroes = match.heroPlayed !== "Unknown" || match.opponentHero !== "Unknown";
   const eventName = match.notes?.split(" | ")[0];
   const roundInfo = match.notes?.split(" | ")[1];
+  const playoffBadge = getPlayoffBadge(roundInfo);
 
   return (
     <div className={`${style.bg} border ${style.border} rounded-lg p-4`}>
@@ -31,8 +49,20 @@ export function MatchCard({ match, onDelete }: MatchCardProps) {
           ) : match.opponentName ? (
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-fab-dim">vs</span>
-              <span className="font-semibold text-fab-text">{match.opponentName}</span>
-              {roundInfo && <span className="text-xs text-fab-dim">({roundInfo})</span>}
+              <Link
+                href={`/search?q=${encodeURIComponent(match.opponentName)}`}
+                className="font-semibold text-fab-text hover:text-fab-gold transition-colors"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {match.opponentName}
+              </Link>
+              {playoffBadge ? (
+                <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${playoffBadge.bg} ${playoffBadge.text}`}>
+                  {playoffBadge.label}
+                </span>
+              ) : roundInfo ? (
+                <span className="text-xs text-fab-dim">({roundInfo})</span>
+              ) : null}
             </div>
           ) : (
             <span className="text-fab-dim text-sm">Match</span>
@@ -57,10 +87,10 @@ export function MatchCard({ match, onDelete }: MatchCardProps) {
           {onDelete && (
             <button
               onClick={() => onDelete(match.id)}
-              className="text-fab-dim hover:text-fab-loss text-xs transition-colors"
+              className="text-fab-dim hover:text-fab-loss transition-colors"
               title="Delete match"
             >
-              ✕
+              <CloseIcon className="w-3.5 h-3.5" />
             </button>
           )}
         </div>

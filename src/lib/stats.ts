@@ -8,6 +8,7 @@ import type {
   TrendDataPoint,
   VenueStats,
   EventTypeStats,
+  EventStats,
 } from "@/types";
 import { MatchResult } from "@/types";
 
@@ -295,4 +296,56 @@ export function computeVenueStats(matches: MatchRecord[]): VenueStats[] {
       };
     })
     .sort((a, b) => b.totalMatches - a.totalMatches);
+}
+
+function getEventName(match: MatchRecord): string {
+  if (match.notes) {
+    const parts = match.notes.split(" | ");
+    if (parts[0]?.trim()) return parts[0].trim();
+  }
+  return `${match.date} - ${match.format}`;
+}
+
+function getRoundNumber(match: MatchRecord): number {
+  if (match.notes) {
+    const roundMatch = match.notes.match(/Round\s+(\d+)/i);
+    if (roundMatch) return parseInt(roundMatch[1], 10);
+  }
+  return 0;
+}
+
+export function computeEventStats(matches: MatchRecord[]): EventStats[] {
+  const map = new Map<string, MatchRecord[]>();
+
+  for (const match of matches) {
+    const name = getEventName(match);
+    const existing = map.get(name) ?? [];
+    existing.push(match);
+    map.set(name, existing);
+  }
+
+  return Array.from(map.entries())
+    .map(([eventName, group]) => {
+      const sorted = [...group].sort((a, b) => getRoundNumber(a) - getRoundNumber(b));
+      const first = sorted[0];
+      const wins = group.filter((m) => m.result === MatchResult.Win).length;
+      const losses = group.filter((m) => m.result === MatchResult.Loss).length;
+      const draws = group.filter((m) => m.result === MatchResult.Draw).length;
+
+      return {
+        eventName,
+        eventDate: first.date,
+        format: first.format,
+        venue: first.venue,
+        eventType: getEventType(first),
+        rated: first.rated,
+        totalMatches: group.length,
+        wins,
+        losses,
+        draws,
+        winRate: group.length > 0 ? (wins / group.length) * 100 : 0,
+        matches: sorted,
+      };
+    })
+    .sort((a, b) => new Date(b.eventDate).getTime() - new Date(a.eventDate).getTime());
 }

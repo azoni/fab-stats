@@ -1,19 +1,23 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { DashboardIcon, SwordsIcon, PlusIcon, OpponentsIcon, TrendsIcon } from "@/components/icons/NavIcons";
+import { DashboardIcon, SwordsIcon, ImportIcon, OpponentsIcon, CalendarIcon } from "@/components/icons/NavIcons";
+import { useAuth } from "@/contexts/AuthContext";
 import type { ReactNode } from "react";
 
 const tabs: { href: string; label: string; icon: ReactNode }[] = [
   { href: "/", label: "Home", icon: <DashboardIcon /> },
   { href: "/matches", label: "Matches", icon: <SwordsIcon /> },
-  { href: "/matches/new", label: "Log", icon: <PlusIcon /> },
+  { href: "/import", label: "Import", icon: <ImportIcon /> },
+  { href: "/events", label: "Events", icon: <CalendarIcon /> },
   { href: "/opponents", label: "Opponents", icon: <OpponentsIcon /> },
-  { href: "/trends", label: "Trends", icon: <TrendsIcon /> },
 ];
 
 export function MobileNav() {
   const pathname = usePathname();
+  const { user, isGuest } = useAuth();
+
+  if (!user && !isGuest) return null;
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-fab-surface/95 backdrop-blur-md border-t border-fab-border">

@@ -2,8 +2,10 @@
 import { useState, useMemo } from "react";
 import Link from "next/link";
 import { useMatches } from "@/hooks/useMatches";
-import { computeOverallStats, computeHeroStats, computeEventTypeStats, computeVenueStats } from "@/lib/stats";
+import { computeOverallStats, computeHeroStats, computeEventTypeStats, computeVenueStats, computeEventStats } from "@/lib/stats";
 import { MatchCard } from "@/components/matches/MatchCard";
+import { EventCard } from "@/components/events/EventCard";
+import { ShieldIcon } from "@/components/icons/NavIcons";
 import { MatchResult, GameFormat } from "@/types";
 
 export default function Dashboard() {
@@ -32,7 +34,7 @@ export default function Dashboard() {
   if (matches.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-24 text-center">
-        <div className="text-6xl mb-4">⚔️</div>
+        <ShieldIcon className="w-16 h-16 text-fab-gold mb-4" />
         <h1 className="text-2xl font-bold text-fab-gold mb-2">
           Welcome to FaB Stats
         </h1>
@@ -41,10 +43,10 @@ export default function Dashboard() {
           dominate the meta.
         </p>
         <Link
-          href="/matches/new"
+          href="/import"
           className="px-6 py-3 rounded-md font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors"
         >
-          Log Your First Match
+          Import Your Matches
         </Link>
       </div>
     );
@@ -57,6 +59,8 @@ export default function Dashboard() {
   const heroStats = computeHeroStats(fm);
   const eventTypeStats = computeEventTypeStats(fm);
   const venueStats = computeVenueStats(fm).filter((v) => v.venue !== "Unknown");
+  const eventStats = computeEventStats(fm);
+  const recentEvents = eventStats.slice(0, 5);
   const recentMatches = [...fm]
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     .slice(0, 5);
@@ -197,6 +201,25 @@ export default function Dashboard() {
               value={overall.totalDraws}
             />
           </div>
+
+          {/* Recent Events */}
+          {recentEvents.length > 0 && (
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-fab-text">Recent Events</h2>
+                {eventStats.length > 5 && (
+                  <Link href="/events" className="text-sm text-fab-gold hover:text-fab-gold-light">
+                    View All ({eventStats.length})
+                  </Link>
+                )}
+              </div>
+              <div className="space-y-2">
+                {recentEvents.map((event) => (
+                  <EventCard key={`${event.eventName}-${event.eventDate}`} event={event} />
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Event Type Breakdown */}
           {eventTypeStats.length > 0 && (

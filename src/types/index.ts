@@ -114,6 +114,30 @@ export interface HeroInfo {
   imageUrl: string;
 }
 
+export interface UserProfile {
+  uid: string;
+  username: string;
+  displayName: string;
+  photoUrl?: string;
+  createdAt: string;
+  isPublic: boolean;
+}
+
+export interface EventStats {
+  eventName: string;
+  eventDate: string;
+  format: string;
+  venue?: string;
+  eventType?: string;
+  rated?: boolean;
+  totalMatches: number;
+  wins: number;
+  losses: number;
+  draws: number;
+  winRate: number;
+  matches: MatchRecord[];
+}
+
 export interface AppData {
   version: number;
   matches: MatchRecord[];

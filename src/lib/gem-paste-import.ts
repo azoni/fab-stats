@@ -255,6 +255,90 @@ export function parseGemPaste(text: string): PasteImportResult {
   return { events, totalMatches };
 }
 
+export function parseExtensionJson(json: string): PasteImportResult {
+  const raw = JSON.parse(json) as Array<{
+    event?: string;
+    date?: string;
+    venue?: string;
+    eventType?: string;
+    format?: string;
+    rated?: boolean;
+    hero?: string;
+    round?: number;
+    roundLabel?: string;
+    opponent?: string;
+    result?: string;
+  }>;
+
+  const eventMap = new Map<
+    string,
+    {
+      info: { date: string; format: GameFormat; rated: boolean; venue: string; eventType: string };
+      matches: Omit<MatchRecord, "id" | "createdAt">[];
+    }
+  >();
+
+  for (const entry of raw) {
+    const eventName = entry.event || "Unknown Event";
+
+    // Detect format from explicit field, falling back to event name
+    let format = guessFormat(entry.format || "");
+    if (format === GameFormat.Other) {
+      format = guessFormat(eventName);
+    }
+
+    if (!eventMap.has(eventName)) {
+      eventMap.set(eventName, {
+        info: {
+          date: entry.date || new Date().toISOString().split("T")[0],
+          format,
+          rated: entry.rated || false,
+          venue: entry.venue || "",
+          eventType: entry.eventType || "Other",
+        },
+        matches: [],
+      });
+    }
+
+    const group = eventMap.get(eventName)!;
+    const result = parseResult(entry.result || "");
+    if (!result) continue;
+
+    // Build round info: use roundLabel for playoffs, otherwise "Round N"
+    const roundInfo = entry.roundLabel
+      ? entry.roundLabel
+      : `Round ${entry.round || 0}`;
+
+    group.matches.push({
+      date: entry.date || group.info.date,
+      heroPlayed: entry.hero || "Unknown",
+      opponentHero: "Unknown",
+      opponentName: entry.opponent || "Unknown",
+      result,
+      format,
+      notes: `${eventName} | ${roundInfo}`,
+      venue: entry.venue || undefined,
+      eventType: entry.eventType || undefined,
+      rated: entry.rated,
+    });
+  }
+
+  const events: PasteImportEvent[] = [...eventMap.entries()].map(([name, data]) => ({
+    eventName: name,
+    eventDate: data.info.date,
+    format: data.info.format,
+    rated: data.info.rated,
+    venue: data.info.venue,
+    eventType: data.info.eventType,
+    matches: data.matches,
+  }));
+
+  return {
+    events,
+    totalMatches: events.reduce((sum, e) => sum + e.matches.length, 0),
+  };
+}
+
 function buildEventFromContext(contextLines: string[]): {
   name: string;
   date: string;

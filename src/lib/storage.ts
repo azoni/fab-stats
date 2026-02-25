@@ -75,3 +75,28 @@ export function importData(jsonString: string): void {
 export function clearAllData(): void {
   setAppData({ version: CURRENT_VERSION, matches: [] });
 }
+
+function matchFingerprint(m: { date: string; opponentName?: string; notes?: string; result: string }): string {
+  return `${m.date}|${(m.opponentName || "").toLowerCase()}|${m.notes || ""}|${m.result}`;
+}
+
+export function importMatchesLocal(
+  matches: Omit<MatchRecord, "id" | "createdAt">[]
+): number {
+  const data = getAppData();
+  const existing = new Set(data.matches.map((m) => matchFingerprint(m)));
+
+  const newMatches = matches.filter((m) => !existing.has(matchFingerprint(m)));
+  if (newMatches.length === 0) return 0;
+
+  const now = new Date().toISOString();
+  for (const match of newMatches) {
+    data.matches.push({
+      ...match,
+      id: crypto.randomUUID(),
+      createdAt: now,
+    });
+  }
+  setAppData(data);
+  return newMatches.length;
+}
