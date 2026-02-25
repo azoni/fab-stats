@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { useParams } from "next/navigation";
+import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { getProfileByUsername, getMatchesByUserId } from "@/lib/firestore-storage";
 import { computeOverallStats, computeEventTypeStats, computeVenueStats, computeEventStats } from "@/lib/stats";
@@ -20,8 +20,8 @@ type PageState =
   | { status: "loaded"; profile: UserProfile; matches: MatchRecord[] };
 
 export default function PlayerProfile() {
-  const params = useParams<{ username: string }>();
-  const username = params.username;
+  const pathname = usePathname();
+  const username = pathname.split("/").pop() || "";
   const [state, setState] = useState<PageState>({ status: "loading" });
 
   useEffect(() => {
