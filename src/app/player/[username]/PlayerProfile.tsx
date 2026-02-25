@@ -37,6 +37,24 @@ export default function PlayerProfile() {
   const [state, setState] = useState<PageState>({ status: "loading" });
   const { isAdmin } = useAuth();
   const { entries: lbEntries } = useLeaderboard();
+  const [filterFormat, setFilterFormat] = useState<string>("all");
+  const [filterRated, setFilterRated] = useState<string>("all");
+
+  const loadedMatches = state.status === "loaded" ? state.matches : [];
+
+  const allFormats = useMemo(() => {
+    const formats = new Set(loadedMatches.map((m) => m.format));
+    return Array.from(formats).sort();
+  }, [loadedMatches]);
+
+  const fm = useMemo(() => {
+    return loadedMatches.filter((m) => {
+      if (filterFormat !== "all" && m.format !== filterFormat) return false;
+      if (filterRated === "rated" && m.rated !== true) return false;
+      if (filterRated === "unrated" && m.rated === true) return false;
+      return true;
+    });
+  }, [loadedMatches, filterFormat, filterRated]);
 
   // Update tab title and OG meta tags from generic pre-rendered values to actual username
   useEffect(() => {
@@ -165,22 +183,6 @@ export default function PlayerProfile() {
   }
 
   const { profile, matches, isOwner } = state;
-  const [filterFormat, setFilterFormat] = useState<string>("all");
-  const [filterRated, setFilterRated] = useState<string>("all");
-
-  const allFormats = useMemo(() => {
-    const formats = new Set(matches.map((m) => m.format));
-    return Array.from(formats).sort();
-  }, [matches]);
-
-  const fm = useMemo(() => {
-    return matches.filter((m) => {
-      if (filterFormat !== "all" && m.format !== filterFormat) return false;
-      if (filterRated === "rated" && m.rated !== true) return false;
-      if (filterRated === "unrated" && m.rated === true) return false;
-      return true;
-    });
-  }, [matches, filterFormat, filterRated]);
 
   const isFiltered = filterFormat !== "all" || filterRated !== "all";
 
