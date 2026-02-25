@@ -253,7 +253,7 @@ export default function PlayerProfile({ username }: { username: string }) {
         <h2 className="text-lg font-semibold text-fab-text mb-4">Recent Matches</h2>
         <div className="space-y-2">
           {recentMatches.map((match) => (
-            <MatchCard key={match.id} match={match} />
+            <MatchCard key={match.id} match={match} matchOwnerUid={profile.uid} enableComments />
           ))}
         </div>
       </div>

@@ -39,7 +39,11 @@ function SearchContent() {
   const [loading, setLoading] = useState(false);
 
   async function doSearch(q: string) {
-    if (!q.trim()) return;
+    if (!q.trim()) {
+      setResults([]);
+      setSearched(false);
+      return;
+    }
     setLoading(true);
     setSearched(true);
 
@@ -64,6 +68,19 @@ function SearchContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialQuery]);
 
+  // Debounced auto-search as user types
+  useEffect(() => {
+    if (query === initialQuery) return; // skip initial
+    if (!query.trim()) {
+      setResults([]);
+      setSearched(false);
+      return;
+    }
+    const timer = setTimeout(() => doSearch(query), 300);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query]);
+
   function handleSearch(e: React.FormEvent) {
     e.preventDefault();
     doSearch(query);
@@ -78,7 +95,7 @@ function SearchContent() {
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search by username..."
+          placeholder="Search by name or username..."
           className="flex-1 bg-fab-surface border border-fab-border text-fab-text rounded-lg px-4 py-2.5 focus:outline-none focus:border-fab-gold"
         />
         <button
@@ -122,7 +139,14 @@ function SearchContent() {
                 )}
                 <div>
                   <p className="font-semibold text-fab-text">{r.profile?.displayName || r.username}</p>
-                  <p className="text-sm text-fab-dim">@{r.username}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm text-fab-dim">@{r.username}</p>
+                    {r.profile?.firstName && (
+                      <p className="text-sm text-fab-muted">
+                        {r.profile.firstName}{r.profile.lastName ? ` ${r.profile.lastName}` : ""}
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
             </Link>

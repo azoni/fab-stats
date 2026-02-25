@@ -1,10 +1,12 @@
 "use client";
 import Link from "next/link";
 import { useMatches } from "@/hooks/useMatches";
+import { useAuth } from "@/contexts/AuthContext";
 import { MatchList } from "@/components/matches/MatchList";
 
 export default function MatchesPage() {
-  const { matches, isLoaded, deleteMatch } = useMatches();
+  const { matches, isLoaded } = useMatches();
+  const { user } = useAuth();
 
   if (!isLoaded) {
     return (
@@ -54,7 +56,7 @@ export default function MatchesPage() {
           </div>
         </div>
       ) : (
-        <MatchList matches={matches} onDelete={deleteMatch} />
+        <MatchList matches={matches} matchOwnerUid={user?.uid} enableComments />
       )}
     </div>
   );

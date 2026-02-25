@@ -10,6 +10,7 @@ export interface MatchRecord {
   venue?: string;
   eventType?: string;
   rated?: boolean;
+  commentCount?: number;
   createdAt: string;
 }
 
@@ -40,6 +41,7 @@ export enum MatchResult {
 export enum GameFormat {
   Blitz = "Blitz",
   ClassicConstructed = "Classic Constructed",
+  SilverAge = "Silver Age",
   Draft = "Draft",
   Sealed = "Sealed",
   Clash = "Clash",
@@ -118,6 +120,9 @@ export interface UserProfile {
   uid: string;
   username: string;
   displayName: string;
+  firstName?: string;
+  lastName?: string;
+  searchName?: string;
   photoUrl?: string;
   createdAt: string;
   isPublic: boolean;
@@ -141,4 +146,28 @@ export interface EventStats {
 export interface AppData {
   version: number;
   matches: MatchRecord[];
+}
+
+export interface MatchComment {
+  id: string;
+  authorUid: string;
+  authorName: string;
+  authorPhoto?: string;
+  text: string;
+  createdAt: string;
+  editedAt?: string;
+}
+
+export interface UserNotification {
+  id: string;
+  type: "comment";
+  matchId: string;
+  matchOwnerUid: string;
+  commentAuthorUid: string;
+  commentAuthorName: string;
+  commentAuthorPhoto?: string;
+  commentPreview: string;
+  matchSummary: string;
+  createdAt: string;
+  read: boolean;
 }

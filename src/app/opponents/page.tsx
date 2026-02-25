@@ -1,6 +1,7 @@
 "use client";
 import { useState, useMemo } from "react";
 import { useMatches } from "@/hooks/useMatches";
+import { useAuth } from "@/contexts/AuthContext";
 import { computeOpponentStats } from "@/lib/stats";
 import { MatchCard } from "@/components/matches/MatchCard";
 import { ChevronUpIcon, ChevronDownIcon } from "@/components/icons/NavIcons";
@@ -21,6 +22,7 @@ function guessEventTypeFromNotes(notes: string): string {
 
 export default function OpponentsPage() {
   const { matches, isLoaded } = useMatches();
+  const { user } = useAuth();
   const [expanded, setExpanded] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<"matches" | "winRate" | "lossRate" | "name" | "recent">("matches");
   const [filterFormat, setFilterFormat] = useState("all");
@@ -162,6 +164,7 @@ export default function OpponentsPage() {
             opp={opp}
             isExpanded={expanded === opp.opponentName}
             onToggle={() => setExpanded(expanded === opp.opponentName ? null : opp.opponentName)}
+            matchOwnerUid={user?.uid}
           />
         ))}
       </div>
@@ -169,7 +172,7 @@ export default function OpponentsPage() {
   );
 }
 
-function OpponentRow({ opp, isExpanded, onToggle }: { opp: OpponentStats; isExpanded: boolean; onToggle: () => void }) {
+function OpponentRow({ opp, isExpanded, onToggle, matchOwnerUid }: { opp: OpponentStats; isExpanded: boolean; onToggle: () => void; matchOwnerUid?: string }) {
   // Compute streak vs this opponent (most recent results)
   const sortedMatches = [...opp.matches].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   let currentStreak = 0;
@@ -291,7 +294,7 @@ function OpponentRow({ opp, isExpanded, onToggle }: { opp: OpponentStats; isExpa
             <p className="text-xs text-fab-muted mb-2">Match History ({sortedMatches.length})</p>
             <div className="space-y-2">
               {sortedMatches.map((match) => (
-                <MatchCard key={match.id} match={match} />
+                <MatchCard key={match.id} match={match} matchOwnerUid={matchOwnerUid} enableComments />
               ))}
             </div>
           </div>

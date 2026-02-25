@@ -79,6 +79,8 @@ export default function SettingsPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [displayName, setDisplayName] = useState(profile?.displayName || "");
+  const [firstName, setFirstName] = useState(profile?.firstName || "");
+  const [lastName, setLastName] = useState(profile?.lastName || "");
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -91,7 +93,13 @@ export default function SettingsPage() {
     setSaving(true);
     setSaved(false);
     try {
-      await updateProfile(user.uid, { displayName: displayName.trim() });
+      const searchName = [firstName, lastName, displayName].filter(Boolean).join(" ").toLowerCase();
+      await updateProfile(user.uid, {
+        displayName: displayName.trim(),
+        firstName: firstName.trim() || undefined,
+        lastName: lastName.trim() || undefined,
+        searchName: searchName || undefined,
+      });
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     } catch {
@@ -230,6 +238,38 @@ export default function SettingsPage() {
             maxLength={50}
           />
         </div>
+
+        <div className="mb-4 grid grid-cols-2 gap-3">
+          <div>
+            <label htmlFor="firstName" className="block text-sm text-fab-muted mb-1">
+              First Name <span className="text-fab-dim">(optional)</span>
+            </label>
+            <input
+              id="firstName"
+              type="text"
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+              className="w-full bg-fab-bg border border-fab-border text-fab-text rounded-lg px-3 py-2 focus:outline-none focus:border-fab-gold"
+              maxLength={30}
+            />
+          </div>
+          <div>
+            <label htmlFor="lastName" className="block text-sm text-fab-muted mb-1">
+              Last Name <span className="text-fab-dim">(optional)</span>
+            </label>
+            <input
+              id="lastName"
+              type="text"
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+              className="w-full bg-fab-bg border border-fab-border text-fab-text rounded-lg px-3 py-2 focus:outline-none focus:border-fab-gold"
+              maxLength={30}
+            />
+          </div>
+        </div>
+        <p className="text-xs text-fab-dim mb-4">
+          Your real name helps opponents find your profile from match results.
+        </p>
 
         <div className="mb-4">
           <label className="block text-sm text-fab-muted mb-1">Email</label>

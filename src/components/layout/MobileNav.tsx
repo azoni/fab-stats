@@ -1,8 +1,10 @@
 "use client";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { DashboardIcon, SwordsIcon, ImportIcon, OpponentsIcon, CalendarIcon } from "@/components/icons/NavIcons";
 import { useAuth } from "@/contexts/AuthContext";
+import { useNotifications } from "@/hooks/useNotifications";
 import type { ReactNode } from "react";
 
 function SearchIcon(props: { className?: string }) {
@@ -33,8 +35,11 @@ const tabs: { href: string; label: string; icon: ReactNode }[] = [
 export function MobileNav() {
   const pathname = usePathname();
   const { user, isGuest } = useAuth();
+  const { unreadCount } = useNotifications();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
-  if (!user && !isGuest) return null;
+  if (!mounted || (!user && !isGuest)) return null;
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-fab-surface/95 backdrop-blur-md border-t border-fab-border">
@@ -64,12 +69,15 @@ export function MobileNav() {
         </Link>
         <Link
           href="/settings"
-          className={`flex flex-col items-center gap-0.5 px-2 py-1 text-xs transition-colors ${
+          className={`relative flex flex-col items-center gap-0.5 px-2 py-1 text-xs transition-colors ${
             pathname === "/settings" ? "text-fab-gold" : "text-fab-muted"
           }`}
         >
           <SettingsIcon />
           <span className="mt-0.5">More</span>
+          {unreadCount > 0 && (
+            <span className="absolute top-0 right-0 w-2 h-2 rounded-full bg-fab-loss" />
+          )}
         </Link>
       </div>
     </nav>

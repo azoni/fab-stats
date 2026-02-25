@@ -265,190 +265,190 @@
       rated: false,
     };
 
-    let container = matchTable.parentElement;
-    for (let i = 0; i < 12 && container; i++) {
-      const headings = container.querySelectorAll("h1, h2, h3, h4, h5");
-      let foundName = false;
+    const isGenericHeading = (text) =>
+      /^(Results|Matches|Decklists|Event History|History|Dashboard|Profile)$/i.test(text);
 
-      for (const h of headings) {
-        const text = h.textContent.trim();
-        if (
-          /^(Results|Matches|Decklists|Event History|History|Dashboard|Profile)$/i.test(
-            text
-          )
-        )
-          continue;
-        if (text.length > 5 && text.length < 250) {
-          info.name = text;
-          foundName = true;
-          break;
-        }
-      }
+    // Walk up from the table, checking preceding siblings at each level
+    // for the closest heading that belongs to THIS event (not other events).
+    // This prevents picking up headings from other events in a shared container.
+    let current = matchTable;
+    let foundName = false;
+    let container = null;
 
-      if (foundName) {
-        const fullText = container.textContent || "";
-
-        // Extract date
-        const dateMatch = fullText.match(
-          /(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?\s+\d{4}/i
-        );
-        if (dateMatch) {
-          const d = new Date(dateMatch[0]);
-          if (!isNaN(d.getTime())) {
-            info.date = d.toISOString().split("T")[0];
-          }
-        }
-
-        // Extract format
-        if (/Classic Constructed/i.test(fullText))
-          info.format = "Classic Constructed";
-        else if (/\bBlitz\b/i.test(fullText)) info.format = "Blitz";
-        else if (/\bDraft\b/i.test(fullText)) info.format = "Draft";
-        else if (/\bSealed\b/i.test(fullText)) info.format = "Sealed";
-        else if (/\bClash\b/i.test(fullText)) info.format = "Clash";
-        else if (/Ultimate Pit Fight|UPF/i.test(fullText))
-          info.format = "Ultimate Pit Fight";
-
-        // Fallback: check event name for format keywords
-        if (!info.format) {
-          const name = info.name;
-          if (/Classic Constructed/i.test(name))
-            info.format = "Classic Constructed";
-          else if (/\bBlitz\b/i.test(name)) info.format = "Blitz";
-          else if (/\bDraft\b/i.test(name)) info.format = "Draft";
-          else if (/\bSealed\b/i.test(name)) info.format = "Sealed";
-          else if (/\bClash\b/i.test(name)) info.format = "Clash";
-          else if (/Ultimate Pit Fight|UPF/i.test(name))
-            info.format = "Ultimate Pit Fight";
-        }
-
-        // Extract rated
-        if (
-          /\bRated\b/.test(fullText) &&
-          !/Not Rated|Unrated/i.test(fullText)
-        )
-          info.rated = true;
-
-        // Extract event type
-        if (/proquest/i.test(fullText)) info.eventType = "ProQuest";
-        else if (/\bcalling\b/i.test(fullText)) info.eventType = "The Calling";
-        else if (/battle hardened/i.test(fullText))
-          info.eventType = "Battle Hardened";
-        else if (/road to nationals/i.test(fullText))
-          info.eventType = "Road to Nationals";
-        else if (/\bnationals?\b/i.test(fullText))
-          info.eventType = "Nationals";
-        else if (/skirmish/i.test(fullText)) info.eventType = "Skirmish";
-        else if (/armory/i.test(fullText)) info.eventType = "Armory";
-        else if (/pre.?release/i.test(fullText))
-          info.eventType = "Pre-Release";
-
-        // ── Venue extraction (4-tier fallback) ──────────────────
-
-        const allEls = container.querySelectorAll("span, a, p, div, small");
-
-        // Tier 1: Elements with venue/location/store attributes
-        for (const el of allEls) {
-          const t = el.textContent.trim();
-          if (t.length < 3 || t.length > 100 || el.children.length > 2)
-            continue;
-          const title = el.getAttribute("title") || "";
-          const ariaLabel = el.getAttribute("aria-label") || "";
-          if (
-            /venue|location|store|shop/i.test(title) ||
-            /venue|location|store|shop/i.test(ariaLabel)
-          ) {
-            info.venue = t;
+    for (let depth = 0; depth < 10 && current; depth++) {
+      let sib = current.previousElementSibling;
+      while (sib) {
+        if (/^H[1-5]$/i.test(sib.tagName)) {
+          const text = sib.textContent.trim();
+          if (!isGenericHeading(text) && text.length > 5 && text.length < 250) {
+            info.name = text;
+            foundName = true;
+            container = current.parentElement;
             break;
           }
         }
-
-        // Tier 2: Look for elements with "(closed)" — strong venue indicator
-        if (!info.venue) {
-          for (const el of allEls) {
-            if (el.closest("table")) continue;
-            const t = el.textContent.trim();
-            if (t.length > 5 && t.length < 120 && el.children.length <= 2) {
-              if (/\(closed\)|\(temporarily closed\)/i.test(t)) {
-                info.venue = t
-                  .replace(/\s*\((?:temporarily\s+)?closed\)\s*/i, "")
-                  .trim();
-                break;
-              }
-            }
-          }
-        }
-
-        // Tier 3: Look for leaf elements that match store-like names
-        if (!info.venue) {
-          for (const el of allEls) {
-            if (el.closest("table")) continue;
-            const t = el.textContent.trim();
-            if (t.length < 5 || t.length > 100) continue;
-            if (el.children.length > 1) continue;
-            if (t === info.name) continue;
-            if (t.includes("\n")) continue;
-
-            if (
-              /January|February|March|April|May|June|July|August|September|October|November|December/i.test(
-                t
-              )
-            )
-              continue;
-            if (/^\d{1,2}[/\-]\d{1,2}[/\-]\d{2,4}/.test(t)) continue;
-            if (
-              /Classic Constructed|Blitz|Draft|Sealed|Clash|Ultimate Pit Fight/i.test(
-                t
-              )
-            )
-              continue;
-            if (
-              /Armory|ProQuest|Calling|Battle Hardened|Road to Nationals|Nationals|Skirmish|Pre.?Release/i.test(
-                t
-              )
-            )
-              continue;
-            if (/XP Modifier|Not rated|^Rated$/i.test(t)) continue;
-            if (/View Results|Results|Matches|Decklists/i.test(t)) continue;
-            if (/^\d+[WLD]|\b(Win|Loss|Draw)\b/i.test(t)) continue;
-            if (/^(Round|Playoff|Opponent|Result|Hero|Total)/i.test(t))
-              continue;
-            if (/^\d+$/.test(t)) continue;
-            if (/Event$|Event Type|Event description/i.test(t)) continue;
-            if (/Rating Change|Pending/i.test(t)) continue;
-
-            if (
-              /game|games|hobby|card|comics|shop|store|castle|kastle|mox|channel|fireball|face.to.face|good.games|guf/i.test(
-                t
-              ) ||
-              /\(closed\)/i.test(t)
-            ) {
-              info.venue = t
-                .replace(/\s*\((?:temporarily\s+)?closed\)\s*/i, "")
-                .trim();
+        if (!foundName) {
+          const headings = sib.querySelectorAll("h1, h2, h3, h4, h5");
+          for (let hi = headings.length - 1; hi >= 0; hi--) {
+            const text = headings[hi].textContent.trim();
+            if (!isGenericHeading(text) && text.length > 5 && text.length < 250) {
+              info.name = text;
+              foundName = true;
+              container = current.parentElement;
               break;
             }
           }
         }
+        if (foundName) break;
+        sib = sib.previousElementSibling;
+      }
+      if (foundName) break;
+      current = current.parentElement;
+    }
 
-        // Tier 4: Extract venue from event name (pattern: "Venue - EventType Format")
-        if (!info.venue && info.name.includes(" - ")) {
-          const dashParts = info.name.split(/\s+[-\u2013\u2014]\s+/);
-          if (dashParts.length >= 2) {
-            const afterDash = dashParts.slice(1).join(" ");
-            if (
-              /armory|proquest|calling|battle hardened|skirmish|nationals|pre.?release|weekly|classic constructed|blitz|draft|sealed|clash|upf|ultimate pit fight/i.test(
-                afterDash
-              )
-            ) {
-              info.venue = dashParts[0].trim();
-            }
-          }
-        }
+    if (!container) container = matchTable.parentElement;
+    if (!foundName) return info;
 
+    // Gather context from a few levels above the container
+    let contextEl = container;
+    for (let i = 0; i < 4 && contextEl && contextEl.parentElement; i++) {
+      contextEl = contextEl.parentElement;
+    }
+    const fullText = contextEl.textContent || "";
+
+    // Extract date
+    const dateMatch = fullText.match(
+      /(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?\s+\d{4}/i
+    );
+    if (dateMatch) {
+      const d = new Date(dateMatch[0]);
+      if (!isNaN(d.getTime())) {
+        info.date = d.toISOString().split("T")[0];
+      }
+    }
+
+    // Extract format
+    if (/Classic Constructed/i.test(fullText))
+      info.format = "Classic Constructed";
+    else if (/\bSilver Age\b/i.test(fullText)) info.format = "Silver Age";
+    else if (/\bBlitz\b/i.test(fullText)) info.format = "Blitz";
+    else if (/\bDraft\b/i.test(fullText)) info.format = "Draft";
+    else if (/\bSealed\b/i.test(fullText)) info.format = "Sealed";
+    else if (/\bClash\b/i.test(fullText)) info.format = "Clash";
+    else if (/Ultimate Pit Fight|UPF/i.test(fullText))
+      info.format = "Ultimate Pit Fight";
+
+    // Fallback: check event name for format keywords
+    if (!info.format) {
+      const name = info.name;
+      if (/Classic Constructed/i.test(name))
+        info.format = "Classic Constructed";
+      else if (/\bSilver Age\b/i.test(name)) info.format = "Silver Age";
+      else if (/\bBlitz\b/i.test(name)) info.format = "Blitz";
+      else if (/\bDraft\b/i.test(name)) info.format = "Draft";
+      else if (/\bSealed\b/i.test(name)) info.format = "Sealed";
+      else if (/\bClash\b/i.test(name)) info.format = "Clash";
+      else if (/Ultimate Pit Fight|UPF/i.test(name))
+        info.format = "Ultimate Pit Fight";
+    }
+
+    // Extract rated
+    if (/\bRated\b/.test(fullText) && !/Not Rated|Unrated/i.test(fullText))
+      info.rated = true;
+
+    // Extract event type
+    if (/proquest/i.test(fullText)) info.eventType = "ProQuest";
+    else if (/\bcalling\b/i.test(fullText)) info.eventType = "The Calling";
+    else if (/battle hardened/i.test(fullText))
+      info.eventType = "Battle Hardened";
+    else if (/road to nationals/i.test(fullText))
+      info.eventType = "Road to Nationals";
+    else if (/\bnationals?\b/i.test(fullText)) info.eventType = "Nationals";
+    else if (/skirmish/i.test(fullText)) info.eventType = "Skirmish";
+    else if (/armory/i.test(fullText)) info.eventType = "Armory";
+    else if (/pre.?release/i.test(fullText)) info.eventType = "Pre-Release";
+
+    // ── Venue extraction (4-tier fallback) ──────────────────
+
+    const allEls = container.querySelectorAll("span, a, p, div, small");
+
+    // Tier 1: Elements with venue/location/store attributes
+    for (const el of allEls) {
+      const t = el.textContent.trim();
+      if (t.length < 3 || t.length > 100 || el.children.length > 2) continue;
+      const title = el.getAttribute("title") || "";
+      const ariaLabel = el.getAttribute("aria-label") || "";
+      if (
+        /venue|location|store|shop/i.test(title) ||
+        /venue|location|store|shop/i.test(ariaLabel)
+      ) {
+        info.venue = t;
         break;
       }
-      container = container.parentElement;
+    }
+
+    // Tier 2: Look for elements with "(closed)" — strong venue indicator
+    if (!info.venue) {
+      for (const el of allEls) {
+        if (el.closest("table")) continue;
+        const t = el.textContent.trim();
+        if (t.length > 5 && t.length < 120 && el.children.length <= 2) {
+          if (/\(closed\)|\(temporarily closed\)/i.test(t)) {
+            info.venue = t
+              .replace(/\s*\((?:temporarily\s+)?closed\)\s*/i, "")
+              .trim();
+            break;
+          }
+        }
+      }
+    }
+
+    // Tier 3: Look for leaf elements that match store-like names
+    if (!info.venue) {
+      for (const el of allEls) {
+        if (el.closest("table")) continue;
+        const t = el.textContent.trim();
+        if (t.length < 5 || t.length > 100) continue;
+        if (el.children.length > 1) continue;
+        if (t === info.name) continue;
+        if (t.includes("\n")) continue;
+        if (/January|February|March|April|May|June|July|August|September|October|November|December/i.test(t)) continue;
+        if (/^\d{1,2}[/\-]\d{1,2}[/\-]\d{2,4}/.test(t)) continue;
+        if (/Classic Constructed|Blitz|Draft|Sealed|Clash|Ultimate Pit Fight/i.test(t)) continue;
+        if (/Armory|ProQuest|Calling|Battle Hardened|Road to Nationals|Nationals|Skirmish|Pre.?Release/i.test(t)) continue;
+        if (/XP Modifier|Not rated|^Rated$/i.test(t)) continue;
+        if (/View Results|Results|Matches|Decklists/i.test(t)) continue;
+        if (/^\d+[WLD]|\b(Win|Loss|Draw)\b/i.test(t)) continue;
+        if (/^(Round|Playoff|Opponent|Result|Hero|Total)/i.test(t)) continue;
+        if (/^\d+$/.test(t)) continue;
+        if (/Event$|Event Type|Event description/i.test(t)) continue;
+        if (/Rating Change|Pending/i.test(t)) continue;
+
+        if (
+          /game|games|hobby|card|comics|shop|store|castle|kastle|mox|channel|fireball|face.to.face|good.games|guf/i.test(t) ||
+          /\(closed\)/i.test(t)
+        ) {
+          info.venue = t
+            .replace(/\s*\((?:temporarily\s+)?closed\)\s*/i, "")
+            .trim();
+          break;
+        }
+      }
+    }
+
+    // Tier 4: Extract venue from event name (pattern: "Venue - EventType Format")
+    if (!info.venue && info.name.includes(" - ")) {
+      const dashParts = info.name.split(/\s+[-\u2013\u2014]\s+/);
+      if (dashParts.length >= 2) {
+        const afterDash = dashParts.slice(1).join(" ");
+        if (
+          /armory|proquest|calling|battle hardened|skirmish|nationals|pre.?release|weekly|classic constructed|blitz|draft|sealed|clash|upf|ultimate pit fight/i.test(
+            afterDash
+          )
+        ) {
+          info.venue = dashParts[0].trim();
+        }
+      }
     }
 
     return info;

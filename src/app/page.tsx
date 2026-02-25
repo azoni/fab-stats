@@ -2,7 +2,8 @@
 import { useState, useMemo } from "react";
 import Link from "next/link";
 import { useMatches } from "@/hooks/useMatches";
-import { computeOverallStats, computeHeroStats, computeEventTypeStats, computeVenueStats, computeEventStats } from "@/lib/stats";
+import { useAuth } from "@/contexts/AuthContext";
+import { computeOverallStats, computeEventTypeStats, computeVenueStats, computeEventStats } from "@/lib/stats";
 import { MatchCard } from "@/components/matches/MatchCard";
 import { EventCard } from "@/components/events/EventCard";
 import { ShieldIcon } from "@/components/icons/NavIcons";
@@ -10,6 +11,7 @@ import { MatchResult, GameFormat } from "@/types";
 
 export default function Dashboard() {
   const { matches, isLoaded } = useMatches();
+  const { user } = useAuth();
   const [filterFormat, setFilterFormat] = useState<string>("all");
   const [filterRated, setFilterRated] = useState<string>("all");
 
@@ -56,7 +58,6 @@ export default function Dashboard() {
   const fm = filteredMatches;
 
   const overall = computeOverallStats(fm);
-  const heroStats = computeHeroStats(fm);
   const eventTypeStats = computeEventTypeStats(fm);
   const venueStats = computeVenueStats(fm).filter((v) => v.venue !== "Unknown");
   const eventStats = computeEventStats(fm);
@@ -64,12 +65,6 @@ export default function Dashboard() {
   const recentMatches = [...fm]
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     .slice(0, 5);
-  const realHeroStats = heroStats.filter((h) => h.heroName !== "Unknown");
-  const hasRealHeroData = realHeroStats.length > 0;
-  const topHeroes = [...realHeroStats]
-    .filter((h) => h.totalMatches >= 1)
-    .sort((a, b) => b.winRate - a.winRate)
-    .slice(0, 3);
 
   const { streaks } = overall;
 
@@ -316,54 +311,11 @@ export default function Dashboard() {
             </div>
             <div className="space-y-2">
               {recentMatches.map((match) => (
-                <MatchCard key={match.id} match={match} />
+                <MatchCard key={match.id} match={match} matchOwnerUid={user?.uid} enableComments />
               ))}
             </div>
           </div>
 
-          {/* Top Heroes — only show when we have real hero data */}
-          {hasRealHeroData && topHeroes.length > 0 && (
-            <div>
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold text-fab-text">Top Heroes</h2>
-                <Link href="/heroes" className="text-sm text-fab-gold hover:text-fab-gold-light">
-                  View All
-                </Link>
-              </div>
-              <div className="space-y-3">
-                {topHeroes.map((hero, i) => (
-                  <div
-                    key={hero.heroName}
-                    className="bg-fab-surface border border-fab-border rounded-lg p-4"
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <span className="text-fab-gold font-bold">#{i + 1}</span>
-                        <span className="font-semibold text-fab-text">{hero.heroName}</span>
-                      </div>
-                      <span className="text-sm text-fab-muted">
-                        {hero.totalMatches} matches
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="flex-1 h-2 bg-fab-bg rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-fab-win rounded-full transition-all"
-                          style={{ width: `${hero.winRate}%` }}
-                        />
-                      </div>
-                      <span className={`text-sm font-semibold ${hero.winRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>
-                        {hero.winRate.toFixed(0)}%
-                      </span>
-                    </div>
-                    <div className="mt-1 text-xs text-fab-dim">
-                      {hero.wins}W - {hero.losses}L{hero.draws > 0 ? ` - ${hero.draws}D` : ""}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
         </>
       )}
     </div>

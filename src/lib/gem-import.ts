@@ -52,6 +52,7 @@ function guessFormat(eventName: string): GameFormat {
   const lower = eventName.toLowerCase();
   if (lower.includes("blitz")) return GameFormat.Blitz;
   if (lower.includes("classic constructed") || lower.includes(" cc")) return GameFormat.ClassicConstructed;
+  if (lower.includes("silver age")) return GameFormat.SilverAge;
   if (lower.includes("draft")) return GameFormat.Draft;
   if (lower.includes("sealed")) return GameFormat.Sealed;
   if (lower.includes("clash")) return GameFormat.Clash;

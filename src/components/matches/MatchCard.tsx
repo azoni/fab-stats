@@ -1,11 +1,13 @@
 "use client";
+import { useState } from "react";
 import Link from "next/link";
-import { CloseIcon } from "@/components/icons/NavIcons";
+import { CommentSection } from "@/components/comments/CommentSection";
 import { MatchResult, type MatchRecord } from "@/types";
 
 interface MatchCardProps {
   match: MatchRecord;
-  onDelete?: (id: string) => void;
+  matchOwnerUid?: string;
+  enableComments?: boolean;
 }
 
 const resultStyles = {
@@ -29,72 +31,86 @@ function getPlayoffBadge(roundInfo: string | undefined): { label: string; bg: st
   return null;
 }
 
-export function MatchCard({ match, onDelete }: MatchCardProps) {
+export function MatchCard({ match, matchOwnerUid, enableComments = false }: MatchCardProps) {
+  const [showComments, setShowComments] = useState(false);
   const style = resultStyles[match.result];
-  const hasRealHeroes = match.heroPlayed !== "Unknown" || match.opponentHero !== "Unknown";
   const eventName = match.notes?.split(" | ")[0];
   const roundInfo = match.notes?.split(" | ")[1];
   const playoffBadge = getPlayoffBadge(roundInfo);
+  const commentCount = match.commentCount || 0;
+
+  const roundBadge = playoffBadge ? (
+    <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${playoffBadge.bg} ${playoffBadge.text}`}>
+      {playoffBadge.label}
+    </span>
+  ) : roundInfo ? (
+    <span className="text-xs text-fab-dim">({roundInfo})</span>
+  ) : null;
 
   return (
-    <div className={`${style.bg} border ${style.border} rounded-lg p-4`}>
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex-1 min-w-0">
-          {hasRealHeroes ? (
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="font-semibold text-fab-text">{match.heroPlayed}</span>
-              <span className="text-fab-dim">vs</span>
-              <span className="font-semibold text-fab-text">{match.opponentHero}</span>
-            </div>
-          ) : match.opponentName ? (
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-fab-dim">vs</span>
-              <Link
-                href={`/search?q=${encodeURIComponent(match.opponentName)}`}
-                className="font-semibold text-fab-text hover:text-fab-gold transition-colors"
-                onClick={(e) => e.stopPropagation()}
-              >
-                {match.opponentName}
-              </Link>
-              {playoffBadge ? (
-                <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${playoffBadge.bg} ${playoffBadge.text}`}>
-                  {playoffBadge.label}
-                </span>
-              ) : roundInfo ? (
-                <span className="text-xs text-fab-dim">({roundInfo})</span>
-              ) : null}
-            </div>
-          ) : (
-            <span className="text-fab-dim text-sm">Match</span>
-          )}
-          <div className="flex items-center gap-3 mt-1 text-xs text-fab-muted flex-wrap">
-            <span>{new Date(match.date).toLocaleDateString()}</span>
-            <span className="px-2 py-0.5 rounded bg-fab-surface text-fab-muted">
-              {match.format}
-            </span>
-            {hasRealHeroes && match.opponentName && (
-              <span>vs {match.opponentName}</span>
+    <div className={`${style.bg} border ${style.border} rounded-lg`}>
+      <div className="p-4">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex-1 min-w-0">
+            {match.opponentName ? (
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-fab-dim">vs</span>
+                <Link
+                  href={`/search?q=${encodeURIComponent(match.opponentName)}`}
+                  className="font-semibold text-fab-text hover:text-fab-gold transition-colors"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {match.opponentName}
+                </Link>
+                {roundBadge}
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-fab-dim text-sm">Match</span>
+                {roundBadge}
+              </div>
             )}
-            {eventName && (
-              <span className="truncate">{eventName}</span>
-            )}
+            <div className="flex items-center gap-3 mt-1 text-xs text-fab-muted flex-wrap">
+              <span>{new Date(match.date).toLocaleDateString()}</span>
+              <span className="px-2 py-0.5 rounded bg-fab-surface text-fab-muted">
+                {match.format}
+              </span>
+              {eventName && (
+                <span className="truncate">{eventName}</span>
+              )}
+            </div>
           </div>
-        </div>
-        <div className="flex items-center gap-3">
           <span className={`text-sm font-bold ${style.text}`}>
             {style.label}
           </span>
-          {onDelete && (
-            <button
-              onClick={() => onDelete(match.id)}
-              className="text-fab-dim hover:text-fab-loss transition-colors"
-              title="Delete match"
-            >
-              <CloseIcon className="w-3.5 h-3.5" />
-            </button>
-          )}
         </div>
+
+        {/* Comment toggle */}
+        {enableComments && matchOwnerUid && (
+          <div className="flex items-center mt-2 pt-2 border-t border-fab-border/30">
+            <button
+              onClick={() => setShowComments(!showComments)}
+              className="flex items-center gap-1.5 text-xs text-fab-dim hover:text-fab-gold transition-colors"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+              </svg>
+              {commentCount > 0 ? (
+                <span>{commentCount} comment{commentCount !== 1 ? "s" : ""}</span>
+              ) : (
+                <span>Comment</span>
+              )}
+            </button>
+          </div>
+        )}
       </div>
+
+      {/* Comment section */}
+      {showComments && enableComments && matchOwnerUid && (
+        <div className="px-4 pb-4">
+          <CommentSection match={match} matchOwnerUid={matchOwnerUid} />
+        </div>
+      )}
     </div>
   );
 }

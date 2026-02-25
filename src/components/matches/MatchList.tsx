@@ -5,10 +5,11 @@ import { MatchResult, GameFormat, type MatchRecord } from "@/types";
 
 interface MatchListProps {
   matches: MatchRecord[];
-  onDelete: (id: string) => void;
+  matchOwnerUid?: string;
+  enableComments?: boolean;
 }
 
-export function MatchList({ matches, onDelete }: MatchListProps) {
+export function MatchList({ matches, matchOwnerUid, enableComments }: MatchListProps) {
   const [filterResult, setFilterResult] = useState<string>("all");
   const [filterFormat, setFilterFormat] = useState<string>("all");
   const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
@@ -72,7 +73,7 @@ export function MatchList({ matches, onDelete }: MatchListProps) {
       ) : (
         <div className="space-y-2">
           {filtered.map((match) => (
-            <MatchCard key={match.id} match={match} onDelete={onDelete} />
+            <MatchCard key={match.id} match={match} matchOwnerUid={matchOwnerUid} enableComments={enableComments} />
           ))}
         </div>
       )}

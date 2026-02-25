@@ -28,6 +28,30 @@ service cloud.firestore {
       allow read: if get(/databases/$(database)/documents/users/$(userId)/profile/main).data.isPublic == true;
       // Admin can read all matches (for aggregate stats)
       allow read: if isAdmin();
+      // Any authenticated user can update ONLY commentCount
+      allow update: if request.auth != null
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['commentCount']);
+
+      // ── Comments on matches ──
+      match /comments/{commentId} {
+        allow read: if request.auth != null && (
+          request.auth.uid == userId ||
+          get(/databases/$(database)/documents/users/$(userId)/profile/main).data.isPublic == true
+        );
+        allow create: if request.auth != null
+          && request.resource.data.authorUid == request.auth.uid;
+        allow update: if request.auth != null
+          && resource.data.authorUid == request.auth.uid
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['text', 'editedAt']);
+        allow delete: if request.auth != null
+          && (resource.data.authorUid == request.auth.uid || request.auth.uid == userId);
+      }
+    }
+
+    // ── Notifications ──
+    match /users/{userId}/notifications/{notificationId} {
+      allow read, update, delete: if request.auth != null && request.auth.uid == userId;
+      allow create: if request.auth != null;
     }
 
     // ── Username reservations ──
@@ -37,6 +61,10 @@ service cloud.firestore {
       // Only allow create if userId matches the authenticated user
       allow create: if request.auth != null
                     && request.resource.data.userId == request.auth.uid;
+      // Owner can update searchable fields (displayName, searchName)
+      allow update: if request.auth != null
+                    && resource.data.userId == request.auth.uid
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['displayName', 'searchName']);
     }
 
     // ── Admin configuration ──

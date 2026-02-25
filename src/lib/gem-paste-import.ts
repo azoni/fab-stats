@@ -42,6 +42,7 @@ function isNoise(line: string): boolean {
 function guessFormat(text: string): GameFormat {
   const lower = text.toLowerCase();
   if (lower.includes("classic constructed")) return GameFormat.ClassicConstructed;
+  if (lower.includes("silver age")) return GameFormat.SilverAge;
   if (lower.includes("blitz")) return GameFormat.Blitz;
   if (lower.includes("draft")) return GameFormat.Draft;
   if (lower.includes("sealed")) return GameFormat.Sealed;
@@ -273,6 +274,7 @@ export function parseExtensionJson(json: string): PasteImportResult {
   const eventMap = new Map<
     string,
     {
+      name: string;
       info: { date: string; format: GameFormat; rated: boolean; venue: string; eventType: string };
       matches: Omit<MatchRecord, "id" | "createdAt">[];
     }
@@ -280,6 +282,10 @@ export function parseExtensionJson(json: string): PasteImportResult {
 
   for (const entry of raw) {
     const eventName = entry.event || "Unknown Event";
+    const eventDate = entry.date || new Date().toISOString().split("T")[0];
+
+    // Group by name + date to prevent merging different events with the same name
+    const groupKey = `${eventName}|${eventDate}`;
 
     // Detect format from explicit field, falling back to event name
     let format = guessFormat(entry.format || "");
@@ -287,10 +293,11 @@ export function parseExtensionJson(json: string): PasteImportResult {
       format = guessFormat(eventName);
     }
 
-    if (!eventMap.has(eventName)) {
-      eventMap.set(eventName, {
+    if (!eventMap.has(groupKey)) {
+      eventMap.set(groupKey, {
+        name: eventName,
         info: {
-          date: entry.date || new Date().toISOString().split("T")[0],
+          date: eventDate,
           format,
           rated: entry.rated || false,
           venue: entry.venue || "",
@@ -300,7 +307,7 @@ export function parseExtensionJson(json: string): PasteImportResult {
       });
     }
 
-    const group = eventMap.get(eventName)!;
+    const group = eventMap.get(groupKey)!;
     const result = parseResult(entry.result || "");
     if (!result) continue;
 
@@ -323,8 +330,8 @@ export function parseExtensionJson(json: string): PasteImportResult {
     });
   }
 
-  const events: PasteImportEvent[] = [...eventMap.entries()].map(([name, data]) => ({
-    eventName: name,
+  const events: PasteImportEvent[] = [...eventMap.entries()].map(([, data]) => ({
+    eventName: data.name,
     eventDate: data.info.date,
     format: data.info.format,
     rated: data.info.rated,

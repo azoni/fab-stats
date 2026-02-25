@@ -10,6 +10,8 @@ export default function SetupPage() {
   const { user } = useAuth();
   const router = useRouter();
   const [username, setUsername] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [displayName, setDisplayName] = useState(
     user?.displayName || user?.email?.split("@")[0] || ""
   );
@@ -61,9 +63,13 @@ export default function SetupPage() {
 
     setSubmitting(true);
     try {
+      const searchName = [firstName, lastName, displayName].filter(Boolean).join(" ").toLowerCase();
       await createProfile(user.uid, {
         username,
         displayName: displayName.trim(),
+        firstName: firstName.trim() || undefined,
+        lastName: lastName.trim() || undefined,
+        searchName: searchName || undefined,
         photoUrl: user.photoURL || undefined,
         isPublic: true,
       });
@@ -139,6 +145,40 @@ export default function SetupPage() {
               maxLength={50}
             />
           </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label htmlFor="firstName" className="block text-sm text-fab-muted mb-1">
+                First Name <span className="text-fab-dim">(optional)</span>
+              </label>
+              <input
+                id="firstName"
+                type="text"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                className="w-full bg-fab-surface border border-fab-border text-fab-text rounded-lg px-3 py-2 focus:outline-none focus:border-fab-gold"
+                placeholder="Charlie"
+                maxLength={30}
+              />
+            </div>
+            <div>
+              <label htmlFor="lastName" className="block text-sm text-fab-muted mb-1">
+                Last Name <span className="text-fab-dim">(optional)</span>
+              </label>
+              <input
+                id="lastName"
+                type="text"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                className="w-full bg-fab-surface border border-fab-border text-fab-text rounded-lg px-3 py-2 focus:outline-none focus:border-fab-gold"
+                placeholder="Smith"
+                maxLength={30}
+              />
+            </div>
+          </div>
+          <p className="text-xs text-fab-dim -mt-3">
+            Your real name helps opponents find your profile from match results.
+          </p>
 
           {error && (
             <p className="text-fab-loss text-sm">{error}</p>

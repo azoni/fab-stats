@@ -1,7 +1,9 @@
 "use client";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { DashboardIcon, SwordsIcon, OpponentsIcon, TrendsIcon, ImportIcon, CalendarIcon } from "@/components/icons/NavIcons";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { useAuth } from "@/contexts/AuthContext";
 import type { ReactNode } from "react";
 
@@ -17,6 +19,8 @@ const navLinks: { href: string; label: string; icon: ReactNode }[] = [
 export function Navbar() {
   const pathname = usePathname();
   const { user, profile, signOut, isGuest, isAdmin } = useAuth();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-fab-surface/95 backdrop-blur-md border-b border-fab-border">
@@ -30,7 +34,7 @@ export function Navbar() {
             <span className="text-xl font-bold text-fab-gold tracking-tight">FaB Stats</span>
           </Link>
           <div className="hidden md:flex items-center gap-1">
-            {(user || isGuest) && (
+            {mounted && (user || isGuest) && (
               <>
                 {navLinks.map((link) => (
                   <Link
@@ -80,6 +84,7 @@ export function Navbar() {
                   ) : (
                     <span className="text-xs text-fab-dim truncate max-w-32">{user?.email}</span>
                   )}
+                  {!isGuest && <NotificationBell />}
                   {!isGuest && (
                     <Link
                       href="/settings"

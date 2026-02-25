@@ -184,7 +184,11 @@ export async function createProfile(
       throw new Error("Username is already taken");
     }
 
-    transaction.set(usernameRef, { userId });
+    transaction.set(usernameRef, {
+      userId,
+      displayName: profile.displayName,
+      searchName: profile.searchName || profile.displayName.toLowerCase(),
+    });
     transaction.set(doc(db, "users", userId, "profile", "main"), {
       ...profile,
       username,
@@ -220,25 +224,60 @@ export async function searchUsernames(
   const lower = prefix.toLowerCase();
   const end = lower.slice(0, -1) + String.fromCharCode(lower.charCodeAt(lower.length - 1) + 1);
 
-  const q = query(
+  // Search by username prefix
+  const usernameQ = query(
     collection(db, "usernames"),
     where("__name__", ">=", lower),
     where("__name__", "<", end),
     limit(maxResults)
   );
-  const snap = await getDocs(q);
-  return snap.docs.map((d) => ({
-    username: d.id,
-    userId: (d.data() as { userId: string }).userId,
-  }));
+
+  // Search by searchName prefix (first/last/display name)
+  const nameQ = query(
+    collection(db, "usernames"),
+    where("searchName", ">=", lower),
+    where("searchName", "<", end),
+    limit(maxResults)
+  );
+
+  const [usernameSnap, nameSnap] = await Promise.all([
+    getDocs(usernameQ),
+    getDocs(nameQ),
+  ]);
+
+  const seen = new Set<string>();
+  const results: { username: string; userId: string }[] = [];
+
+  for (const d of [...usernameSnap.docs, ...nameSnap.docs]) {
+    if (seen.has(d.id)) continue;
+    seen.add(d.id);
+    results.push({
+      username: d.id,
+      userId: (d.data() as { userId: string }).userId,
+    });
+  }
+
+  return results.slice(0, maxResults);
 }
 
 export async function updateProfile(
   userId: string,
-  updates: Partial<Pick<UserProfile, "displayName" | "photoUrl" | "isPublic">>
+  updates: Partial<Pick<UserProfile, "displayName" | "photoUrl" | "isPublic" | "firstName" | "lastName" | "searchName">>
 ): Promise<void> {
   const profileRef = doc(db, "users", userId, "profile", "main");
   await updateDoc(profileRef, updates);
+
+  // Sync searchable fields to usernames collection for name search
+  if (updates.displayName || updates.searchName) {
+    const profile = await getProfile(userId);
+    if (profile) {
+      const usernameRef = doc(db, "usernames", profile.username);
+      const usernameUpdates: Record<string, string> = {};
+      if (updates.displayName) usernameUpdates.displayName = updates.displayName;
+      if (updates.searchName) usernameUpdates.searchName = updates.searchName;
+      await updateDoc(usernameRef, usernameUpdates);
+    }
+  }
 }
 
 export async function uploadProfilePhoto(

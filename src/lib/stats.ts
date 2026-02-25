@@ -319,13 +319,16 @@ export function computeEventStats(matches: MatchRecord[]): EventStats[] {
 
   for (const match of matches) {
     const name = getEventName(match);
-    const existing = map.get(name) ?? [];
+    // Group by name + date to prevent merging different events with the same name
+    const key = `${name}|${match.date}`;
+    const existing = map.get(key) ?? [];
     existing.push(match);
-    map.set(name, existing);
+    map.set(key, existing);
   }
 
   return Array.from(map.entries())
-    .map(([eventName, group]) => {
+    .map(([key, group]) => {
+      const eventName = key.split("|")[0];
       const sorted = [...group].sort((a, b) => getRoundNumber(a) - getRoundNumber(b));
       const first = sorted[0];
       const wins = group.filter((m) => m.result === MatchResult.Win).length;
