@@ -78,7 +78,7 @@ function guessEventType(lines: string[]): string {
   if (all.includes("battle hardened") || /\bbh\b/.test(all)) return "Battle Hardened";
   if (all.includes("proquest") || all.includes("pro quest") || /\bpq\b/.test(all)) return "ProQuest";
   if (all.includes("skirmish")) return "Skirmish";
-  if (all.includes("road to nationals") || /\brtn\b/.test(all)) return "Road to Nationals";
+  if (all.includes("road to national") || /\brtn\b/.test(all)) return "Road to Nationals";
   if (all.includes("national")) return "Nationals";
   if (all.includes("calling")) return "The Calling";
   if (all.includes("pre release") || all.includes("pre-release")) return "Pre-Release";

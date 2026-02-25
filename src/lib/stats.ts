@@ -278,7 +278,7 @@ function guessEventTypeFromNotes(notes: string): string {
   if (lower.includes("battle hardened") || /\bbh\b/.test(lower)) return "Battle Hardened";
   if (lower.includes("proquest") || lower.includes("pro quest") || /\bpq\b/.test(lower)) return "ProQuest";
   if (lower.includes("skirmish")) return "Skirmish";
-  if (lower.includes("road to nationals") || /\brtn\b/.test(lower)) return "Road to Nationals";
+  if (lower.includes("road to national") || /\brtn\b/.test(lower)) return "Road to Nationals";
   if (lower.includes("national")) return "Nationals";
   if (lower.includes("calling")) return "The Calling";
   if (lower.includes("pre release") || lower.includes("pre-release")) return "Pre-Release";
@@ -300,7 +300,7 @@ export function refineEventType(eventType: string, eventName: string): string {
   if (lower.includes("pro tour")) return "Pro Tour";
   if (lower.includes("world")) return "Worlds";
   if (lower.includes("skirmish")) return "Skirmish";
-  if (lower.includes("road to nationals") || /\brtn\b/.test(lower)) return "Road to Nationals";
+  if (lower.includes("road to national") || /\brtn\b/.test(lower)) return "Road to Nationals";
   if (lower.includes("national")) return "Nationals";
   if (lower.includes("calling")) return "The Calling";
   // Fall back to provided eventType
