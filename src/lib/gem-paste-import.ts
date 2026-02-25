@@ -72,13 +72,16 @@ function expandEventName(name: string): string {
 
 function guessEventType(lines: string[]): string {
   const all = lines.join(" ").toLowerCase();
-  if (all.includes("proquest") || /\bpq\b/.test(all)) return "ProQuest";
-  if (all.includes("calling")) return "The Calling";
+  if (all.includes("world")) return "Worlds";
+  if (all.includes("pro tour")) return "Pro Tour";
+  // Check specific tournament types before convention names like "calling"
   if (all.includes("battle hardened") || /\bbh\b/.test(all)) return "Battle Hardened";
-  if (all.includes("pre release") || all.includes("pre-release")) return "Pre-Release";
+  if (all.includes("proquest") || all.includes("pro quest") || /\bpq\b/.test(all)) return "ProQuest";
   if (all.includes("skirmish")) return "Skirmish";
   if (all.includes("road to nationals") || /\brtn\b/.test(all)) return "Road to Nationals";
   if (all.includes("national")) return "Nationals";
+  if (all.includes("calling")) return "The Calling";
+  if (all.includes("pre release") || all.includes("pre-release")) return "Pre-Release";
   if (all.includes("armory")) return "Armory";
   if (all.includes("on demand")) return "On Demand";
   return "Other";

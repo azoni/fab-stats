@@ -14,13 +14,15 @@ const VALID_HERO_NAMES = new Set(knownHeroes.map((h) => h.name));
 
 function guessEventTypeFromNotes(notes: string): string {
   const lower = notes.toLowerCase();
-  if (lower.includes("proquest")) return "ProQuest";
-  if (lower.includes("calling")) return "The Calling";
-  if (lower.includes("battle hardened")) return "Battle Hardened";
-  if (lower.includes("pre release") || lower.includes("pre-release")) return "Pre-Release";
+  if (lower.includes("world")) return "Worlds";
+  if (lower.includes("pro tour")) return "Pro Tour";
+  if (lower.includes("battle hardened") || /\bbh\b/.test(lower)) return "Battle Hardened";
+  if (lower.includes("proquest") || lower.includes("pro quest") || /\bpq\b/.test(lower)) return "ProQuest";
   if (lower.includes("skirmish")) return "Skirmish";
-  if (lower.includes("road to nationals")) return "Road to Nationals";
+  if (lower.includes("road to nationals") || /\brtn\b/.test(lower)) return "Road to Nationals";
   if (lower.includes("national")) return "Nationals";
+  if (lower.includes("calling")) return "The Calling";
+  if (lower.includes("pre release") || lower.includes("pre-release")) return "Pre-Release";
   if (lower.includes("armory")) return "Armory";
   return "Other";
 }

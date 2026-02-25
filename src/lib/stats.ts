@@ -273,15 +273,35 @@ function guessEventTypeFromNotes(notes: string): string {
   const lower = notes.toLowerCase();
   if (lower.includes("world")) return "Worlds";
   if (lower.includes("pro tour")) return "Pro Tour";
-  if (lower.includes("proquest")) return "ProQuest";
-  if (lower.includes("calling")) return "The Calling";
-  if (lower.includes("battle hardened")) return "Battle Hardened";
-  if (lower.includes("pre release") || lower.includes("pre-release")) return "Pre-Release";
+  // Check specific tournament types before convention names like "calling"
+  // e.g. "Calling Seattle - Battle Hardened..." should be "Battle Hardened"
+  if (lower.includes("battle hardened") || /\bbh\b/.test(lower)) return "Battle Hardened";
+  if (lower.includes("proquest") || lower.includes("pro quest") || /\bpq\b/.test(lower)) return "ProQuest";
   if (lower.includes("skirmish")) return "Skirmish";
-  if (lower.includes("road to nationals")) return "Road to Nationals";
+  if (lower.includes("road to nationals") || /\brtn\b/.test(lower)) return "Road to Nationals";
   if (lower.includes("national")) return "Nationals";
+  if (lower.includes("calling")) return "The Calling";
+  if (lower.includes("pre release") || lower.includes("pre-release")) return "Pre-Release";
   if (lower.includes("armory")) return "Armory";
   return "Other";
+}
+
+/** Derive the best event type from both the explicit eventType and the event name.
+ *  Event names like "Calling Seattle - Battle Hardened..." should be "Battle Hardened"
+ *  even if the eventType was set to something else by the import source. */
+function refineEventType(eventType: string, eventName: string): string {
+  const lower = eventName.toLowerCase();
+  // Check specific tournament types in event name — order matters
+  if (lower.includes("battle hardened") || /\bbh\b/.test(lower)) return "Battle Hardened";
+  if (lower.includes("proquest") || lower.includes("pro quest") || /\bpq\b/.test(lower)) return "ProQuest";
+  if (lower.includes("pro tour")) return "Pro Tour";
+  if (lower.includes("world")) return "Worlds";
+  if (lower.includes("skirmish")) return "Skirmish";
+  if (lower.includes("road to nationals") || /\brtn\b/.test(lower)) return "Road to Nationals";
+  if (lower.includes("national")) return "Nationals";
+  if (lower.includes("calling")) return "The Calling";
+  // Fall back to provided eventType
+  return eventType;
 }
 
 function getEventType(match: MatchRecord): string {
@@ -448,6 +468,11 @@ export function computePlayoffFinishes(eventStats: EventStats[]): PlayoffFinish[
       finishType = wonLast ? "top4" : "top8";
     } else {
       // 2. P-numbered rounds — infer stage from round number
+      // Determine bracket size using event type, event name, and swiss round count
+      const refinedType = refineEventType(event.eventType || "Other", event.eventName);
+      const swissCount = event.matches.length - playoffMatches.length;
+      const hasTop8Bracket = /battle hardened|calling|pro tour|nationals|worlds|proquest|pro quest|road to nationals|skirmish/i.test(refinedType) || swissCount >= 5;
+
       if (maxRoundNum >= 3) {
         // Bracket has 3+ rounds (Top 8): P1=QF, P2=SF, P3=Finals
         if (lastRoundNum >= 3) {
@@ -458,17 +483,12 @@ export function computePlayoffFinishes(eventStats: EventStats[]): PlayoffFinish[
           finishType = wonLast ? "top4" : "top8";
         }
       } else if (maxRoundNum === 2) {
-        // 2 rounds — could be Top 4 (SF+Finals) or Top 8 (player lost in SF)
-        // Use event type: BH/Calling/PT/Nats/Worlds typically have Top 8 brackets
-        const eventType = (event.eventType || "Other").toLowerCase();
-        const isLargeEvent = /battle hardened|calling|pro tour|nationals|worlds/i.test(eventType);
-
         if (lastRoundNum === 2) {
-          if (isLargeEvent) {
-            // Large events → Top 8 bracket → P2 = Semifinals
+          if (hasTop8Bracket) {
+            // Top 8 bracket → P2 = Semifinals
             finishType = wonLast ? "finalist" : "top4";
           } else {
-            // Smaller events → Top 4 bracket → P2 = Finals
+            // Top 4 bracket → P2 = Finals
             finishType = wonLast ? "champion" : "finalist";
           }
         } else {
@@ -480,12 +500,15 @@ export function computePlayoffFinishes(eventStats: EventStats[]): PlayoffFinish[
       }
     }
 
+    // Use refined event type for accurate tier grouping
+    const refinedEventType = refineEventType(event.eventType || "Other", event.eventName);
+
     finishes.push({
       type: finishType,
       eventName: event.eventName,
       eventDate: event.eventDate,
       format: event.format,
-      eventType: event.eventType || "Other",
+      eventType: refinedEventType,
     });
   }
 
