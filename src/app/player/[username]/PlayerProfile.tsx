@@ -486,15 +486,23 @@ export default function PlayerProfile() {
 
 function ProfileHeader({ profile, achievements, bestRank, isAdmin, isOwner }: { profile: UserProfile; achievements?: Achievement[]; bestRank?: 1 | 2 | 3 | null; isAdmin?: boolean; isOwner?: boolean }) {
   const ringClass = bestRank === 1 ? "rank-border-gold" : bestRank === 2 ? "rank-border-silver" : bestRank === 3 ? "rank-border-bronze" : "";
+  const isCreator = profile.username === "azoni";
   return (
     <div className="flex items-center gap-4">
-      {profile.photoUrl ? (
-        <img src={profile.photoUrl} alt="" className={`w-16 h-16 rounded-full ${ringClass}`} />
-      ) : (
-        <div className={`w-16 h-16 rounded-full bg-fab-gold/20 flex items-center justify-center text-fab-gold text-2xl font-bold ${ringClass}`}>
-          {profile.displayName.charAt(0).toUpperCase()}
-        </div>
-      )}
+      <div className="relative shrink-0">
+        {isCreator && (
+          <svg className="absolute -top-4 left-1/2 -translate-x-1/2 w-7 h-7 text-fab-gold drop-shadow-[0_0_6px_rgba(201,168,76,0.6)] z-10" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M2.5 19h19v3h-19zM22.5 7l-5 4-5.5-7-5.5 7-5-4 2 12h17z" />
+          </svg>
+        )}
+        {profile.photoUrl ? (
+          <img src={profile.photoUrl} alt="" className={`w-16 h-16 rounded-full ${ringClass}`} />
+        ) : (
+          <div className={`w-16 h-16 rounded-full bg-fab-gold/20 flex items-center justify-center text-fab-gold text-2xl font-bold ${ringClass}`}>
+            {profile.displayName.charAt(0).toUpperCase()}
+          </div>
+        )}
+      </div>
       <div>
         <h1 className="text-2xl font-bold text-fab-gold">{profile.displayName}</h1>
         <p className="text-sm text-fab-dim mb-1">@{profile.username}</p>

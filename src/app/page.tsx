@@ -133,11 +133,20 @@ export default function Dashboard() {
       {/* Profile Header + Streak */}
       <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
         <div className="flex items-center gap-4">
-          {profile?.photoUrl ? (
-            <img src={profile.photoUrl} alt="" className={`w-16 h-16 rounded-full ${bestRank === 1 ? "rank-border-gold" : bestRank === 2 ? "rank-border-silver" : bestRank === 3 ? "rank-border-bronze" : ""}`} />
-          ) : profile ? (
-            <div className={`w-16 h-16 rounded-full bg-fab-gold/20 flex items-center justify-center text-fab-gold text-2xl font-bold ${bestRank === 1 ? "rank-border-gold" : bestRank === 2 ? "rank-border-silver" : bestRank === 3 ? "rank-border-bronze" : ""}`}>
-              {profile.displayName.charAt(0).toUpperCase()}
+          {profile ? (
+            <div className="relative shrink-0">
+              {profile.username === "azoni" && (
+                <svg className="absolute -top-4 left-1/2 -translate-x-1/2 w-7 h-7 text-fab-gold drop-shadow-[0_0_6px_rgba(201,168,76,0.6)] z-10" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M2.5 19h19v3h-19zM22.5 7l-5 4-5.5-7-5.5 7-5-4 2 12h17z" />
+                </svg>
+              )}
+              {profile.photoUrl ? (
+                <img src={profile.photoUrl} alt="" className={`w-16 h-16 rounded-full ${bestRank === 1 ? "rank-border-gold" : bestRank === 2 ? "rank-border-silver" : bestRank === 3 ? "rank-border-bronze" : ""}`} />
+              ) : (
+                <div className={`w-16 h-16 rounded-full bg-fab-gold/20 flex items-center justify-center text-fab-gold text-2xl font-bold ${bestRank === 1 ? "rank-border-gold" : bestRank === 2 ? "rank-border-silver" : bestRank === 3 ? "rank-border-bronze" : ""}`}>
+                  {profile.displayName.charAt(0).toUpperCase()}
+                </div>
+              )}
             </div>
           ) : null}
           <div>

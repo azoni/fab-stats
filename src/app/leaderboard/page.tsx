@@ -8,6 +8,8 @@ import { computeOpponentStats } from "@/lib/stats";
 import { TrophyIcon } from "@/components/icons/NavIcons";
 import type { LeaderboardEntry, OpponentStats } from "@/types";
 
+const SITE_CREATOR = "azoni";
+
 type Tab = "winrate" | "volume" | "mostwins" | "streaks" | "draws" | "events" | "eventgrinder" | "rated" | "heroes" | "dedication" | "hotstreak";
 
 const tabs: { id: Tab; label: string }[] = [
@@ -213,10 +215,20 @@ function LeaderboardRow({
           ? "text-amber-600"
           : "text-fab-dim";
 
+  const isCreator = entry.username === SITE_CREATOR;
+  const rankBorder = rank === 1 ? "rank-border-gold" : rank === 2 ? "rank-border-silver" : rank === 3 ? "rank-border-bronze" : "";
+  const cardClass = rank === 1
+    ? "leaderboard-card-gold"
+    : rank === 2
+      ? "leaderboard-card-silver"
+      : rank === 3
+        ? "leaderboard-card-bronze"
+        : "bg-fab-surface border border-fab-border";
+
   return (
     <Link
       href={`/player/${entry.username}`}
-      className="flex items-center gap-3 bg-fab-surface border border-fab-border rounded-lg p-4 hover:border-fab-gold/30 transition-colors"
+      className={`flex items-center gap-3 rounded-lg p-4 hover:border-fab-gold/30 transition-colors ${cardClass}`}
     >
       {/* Rank */}
       <span className={`text-lg font-black w-8 text-center shrink-0 ${medal}`}>
@@ -224,13 +236,20 @@ function LeaderboardRow({
       </span>
 
       {/* Avatar */}
-      {entry.photoUrl ? (
-        <img src={entry.photoUrl} alt="" className={`w-10 h-10 rounded-full shrink-0 ${rank === 1 ? "rank-border-gold" : rank === 2 ? "rank-border-silver" : rank === 3 ? "rank-border-bronze" : ""}`} />
-      ) : (
-        <div className={`w-10 h-10 rounded-full bg-fab-gold/20 flex items-center justify-center text-fab-gold text-sm font-bold shrink-0 ${rank === 1 ? "rank-border-gold" : rank === 2 ? "rank-border-silver" : rank === 3 ? "rank-border-bronze" : ""}`}>
-          {initials}
-        </div>
-      )}
+      <div className="relative shrink-0">
+        {isCreator && (
+          <svg className="absolute -top-3 left-1/2 -translate-x-1/2 w-5 h-5 text-fab-gold drop-shadow-[0_0_4px_rgba(201,168,76,0.6)]" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M2.5 19h19v3h-19zM22.5 7l-5 4-5.5-7-5.5 7-5-4 2 12h17z" />
+          </svg>
+        )}
+        {entry.photoUrl ? (
+          <img src={entry.photoUrl} alt="" className={`w-10 h-10 rounded-full ${rankBorder}`} />
+        ) : (
+          <div className={`w-10 h-10 rounded-full bg-fab-gold/20 flex items-center justify-center text-fab-gold text-sm font-bold ${rankBorder}`}>
+            {initials}
+          </div>
+        )}
+      </div>
 
       {/* Name */}
       <div className="min-w-0 flex-1">
