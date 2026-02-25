@@ -106,6 +106,9 @@ export default function RootLayout({
             </div>
           </main>
           <footer className="hidden md:block text-center py-4 text-[11px] text-fab-dim space-y-1">
+            <p className="text-fab-gold/40">
+              Beta — Stats and data may be inaccurate. Always verify with official sources.
+            </p>
             <p>
               Built by{" "}
               <a href="https://azoni.ai/" target="_blank" rel="noopener noreferrer" className="text-fab-gold/60 hover:text-fab-gold transition-colors">
