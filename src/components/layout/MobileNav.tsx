@@ -70,12 +70,12 @@ const tabs: { href: string; label: string; icon: ReactNode }[] = [
   { href: "/", label: "Profile", icon: <DashboardIcon /> },
   { href: "/matches", label: "Matches", icon: <SwordsIcon /> },
   { href: "/leaderboard", label: "Rankings", icon: <TrophyIcon /> },
+  { href: "/opponents", label: "Opponents", icon: <OpponentsIcon /> },
   { href: "/search", label: "Discover", icon: <SearchIcon /> },
 ];
 
 const moreLinks: { href: string; label: string; icon: ReactNode; authOnly?: boolean; adminOnly?: boolean }[] = [
   { href: "/events", label: "Events", icon: <CalendarIcon /> },
-  { href: "/opponents", label: "Opponents", icon: <OpponentsIcon />, authOnly: true },
   { href: "/trends", label: "Trends", icon: <TrendsIcon />, authOnly: true },
   { href: "/import", label: "Import Matches", icon: <ImportIcon />, authOnly: true },
   { href: "/inbox", label: "Inbox", icon: <InboxIcon />, authOnly: true },

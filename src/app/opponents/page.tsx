@@ -226,7 +226,13 @@ function OpponentRow({ opp, isExpanded, onToggle, matchOwnerUid }: { opp: Oppone
         <div className="flex items-center justify-between gap-4">
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <span className="font-semibold text-fab-text text-lg">{opp.opponentName}</span>
+              <Link
+                href={`/search?q=${encodeURIComponent(opp.opponentName)}`}
+                onClick={(e) => e.stopPropagation()}
+                className="font-semibold text-fab-text text-lg hover:text-fab-gold transition-colors"
+              >
+                {opp.opponentName}
+              </Link>
               {currentStreak > 1 && streakType && (
                 <span className={`text-xs px-2 py-0.5 rounded font-semibold ${
                   streakType === MatchResult.Win ? "bg-fab-win/15 text-fab-win" : "bg-fab-loss/15 text-fab-loss"
