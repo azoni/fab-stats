@@ -22,6 +22,7 @@ export default function AdminPage() {
   const [expandedUid, setExpandedUid] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<FeedbackItem[]>([]);
   const [feedbackFilter, setFeedbackFilter] = useState<"all" | "new" | "reviewed" | "done">("all");
+  const [usersExpanded, setUsersExpanded] = useState(false);
   const [backfilling, setBackfilling] = useState(false);
   const [backfillProgress, setBackfillProgress] = useState("");
   const [creatorsList, setCreatorsList] = useState<Creator[]>([]);
@@ -154,10 +155,19 @@ export default function AdminPage() {
 
           {/* Users table */}
           <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden">
-            <div className="px-4 py-3 border-b border-fab-border">
+            <button
+              onClick={() => setUsersExpanded(!usersExpanded)}
+              className="w-full px-4 py-3 border-b border-fab-border flex items-center justify-between group"
+            >
               <h2 className="text-sm font-semibold text-fab-text">All Users ({data.users.length})</h2>
-            </div>
-            <div className="overflow-x-auto">
+              <svg
+                className={`w-4 h-4 text-fab-muted group-hover:text-fab-text transition-transform ${usersExpanded ? "rotate-180" : ""}`}
+                fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+              </svg>
+            </button>
+            {usersExpanded && <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-fab-border text-fab-muted text-left">
@@ -236,7 +246,7 @@ export default function AdminPage() {
                   })}
                 </tbody>
               </table>
-            </div>
+            </div>}
           </div>
 
           {/* Feedback */}

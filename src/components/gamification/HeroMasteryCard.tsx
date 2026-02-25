@@ -5,7 +5,7 @@ import { tierConfig } from "@/lib/mastery";
 import { AchievementIcon } from "./AchievementIcons";
 
 export function HeroMasteryList({ masteries }: { masteries: HeroMastery[] }) {
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(false);
 
   if (masteries.length === 0) return null;
 

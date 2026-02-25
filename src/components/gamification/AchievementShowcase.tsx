@@ -5,7 +5,7 @@ import { rarityColors, getAllAchievements } from "@/lib/achievements";
 import { AchievementIcon } from "./AchievementIcons";
 
 export function AchievementShowcase({ earned }: { earned: Achievement[] }) {
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(false);
   const [showAll, setShowAll] = useState(false);
 
   if (earned.length === 0) return null;
