@@ -6,7 +6,7 @@ import { DashboardIcon, SwordsIcon, OpponentsIcon, TrendsIcon, ImportIcon, Calen
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCreators } from "@/hooks/useCreators";
-import { collection, collectionGroup, getCountFromServer } from "firebase/firestore";
+import { collection, getCountFromServer, getAggregateFromServer, sum } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import type { ReactNode } from "react";
 import type { Creator } from "@/types";
@@ -73,15 +73,15 @@ export function Navbar() {
       fetchCount(userCacheKey, collection(db, "usernames"), setUserCount);
     }
 
-    // Match count
+    // Match count (sum totalMatches from public leaderboard collection)
     const matchCacheKey = "fab_match_count";
     const matchCached = localStorage.getItem(matchCacheKey);
     if (matchCached) {
       const { count, ts } = JSON.parse(matchCached);
       if (Date.now() - ts < CACHE_TTL) { setMatchCount(count); }
-      else { fetchCount(matchCacheKey, collectionGroup(db, "matches"), setMatchCount); }
+      else { fetchMatchTotal(); }
     } else {
-      fetchCount(matchCacheKey, collectionGroup(db, "matches"), setMatchCount);
+      fetchMatchTotal();
     }
 
     function fetchCount(key: string, ref: Parameters<typeof getCountFromServer>[0], setter: (n: number) => void) {
@@ -90,6 +90,16 @@ export function Navbar() {
           const count = snap.data().count;
           setter(count);
           localStorage.setItem(key, JSON.stringify({ count, ts: Date.now() }));
+        })
+        .catch(() => {});
+    }
+
+    function fetchMatchTotal() {
+      getAggregateFromServer(collection(db, "leaderboard"), { total: sum("totalMatches") })
+        .then((snap) => {
+          const total = snap.data().total;
+          setMatchCount(total);
+          localStorage.setItem(matchCacheKey, JSON.stringify({ count: total, ts: Date.now() }));
         })
         .catch(() => {});
     }
