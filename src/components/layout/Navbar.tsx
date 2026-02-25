@@ -1,13 +1,15 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { DashboardIcon, SwordsIcon, OpponentsIcon, TrendsIcon, ImportIcon, CalendarIcon, TrophyIcon } from "@/components/icons/NavIcons";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { useAuth } from "@/contexts/AuthContext";
+import { useCreators } from "@/hooks/useCreators";
 import { collection, getCountFromServer } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import type { ReactNode } from "react";
+import type { Creator } from "@/types";
 
 const coreLinks: { href: string; label: string; icon: ReactNode }[] = [
   { href: "/", label: "Dashboard", icon: <DashboardIcon className="w-4 h-4" /> },
@@ -25,6 +27,7 @@ const authLinks: { href: string; label: string; icon: ReactNode }[] = [
 export function Navbar() {
   const pathname = usePathname();
   const { user, profile, isGuest, isAdmin } = useAuth();
+  const creators = useCreators();
   const [mounted, setMounted] = useState(false);
   const [userCount, setUserCount] = useState(0);
   useEffect(() => setMounted(true), []);
@@ -108,6 +111,7 @@ export function Navbar() {
                   </svg>
                   Discover
                 </Link>
+                {creators.length > 0 && <CreatorsDropdown creators={creators} />}
                 <div className="ml-3 pl-3 border-l border-fab-border flex items-center gap-2">
                   {!user && !isGuest ? (
                     <Link
@@ -175,5 +179,99 @@ export function Navbar() {
         </div>
       </div>
     </nav>
+  );
+}
+
+export const platformIcons: Record<Creator["platform"], ReactNode> = {
+  youtube: (
+    <svg className="w-4 h-4 text-red-500" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M23.498 6.186a3.016 3.016 0 00-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 00.502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 002.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 002.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
+    </svg>
+  ),
+  twitch: (
+    <svg className="w-4 h-4 text-purple-400" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714z" />
+    </svg>
+  ),
+  twitter: (
+    <svg className="w-4 h-4 text-sky-400" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+    </svg>
+  ),
+  website: (
+    <svg className="w-4 h-4 text-fab-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+    </svg>
+  ),
+};
+
+function CreatorsDropdown({ creators }: { creators: Creator[] }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    if (open) document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [open]);
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        onClick={() => setOpen(!open)}
+        className={`flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+          open
+            ? "text-fab-gold bg-fab-gold/10"
+            : "text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover"
+        }`}
+      >
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+        </svg>
+        Creators
+        <svg className={`w-3 h-3 transition-transform ${open ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+        </svg>
+      </button>
+
+      {open && (
+        <div className="absolute top-full right-0 mt-1 w-64 bg-fab-surface border border-fab-border rounded-lg shadow-xl overflow-hidden z-50">
+          <div className="p-2">
+            <p className="px-2 py-1.5 text-xs text-fab-dim font-medium uppercase tracking-wider">
+              Featured Creators
+            </p>
+            {creators.map((creator) => (
+              <a
+                key={creator.name}
+                href={creator.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-3 px-2 py-2.5 rounded-md hover:bg-fab-surface-hover transition-colors group"
+                onClick={() => setOpen(false)}
+              >
+                {creator.imageUrl ? (
+                  <img src={creator.imageUrl} alt="" className="w-8 h-8 rounded-full object-cover shrink-0" />
+                ) : (
+                  platformIcons[creator.platform]
+                )}
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium text-fab-text group-hover:text-fab-gold transition-colors truncate">
+                    {creator.name}
+                  </p>
+                  <p className="text-xs text-fab-dim truncate">{creator.description}</p>
+                </div>
+                <svg className="w-3.5 h-3.5 text-fab-dim shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+                </svg>
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

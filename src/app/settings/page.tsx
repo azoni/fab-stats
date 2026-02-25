@@ -13,6 +13,8 @@ import {
 } from "firebase/auth";
 import { SparklesIcon } from "@/components/icons/NavIcons";
 import { FeedbackModal } from "@/components/feedback/FeedbackModal";
+import { useCreators } from "@/hooks/useCreators";
+import { platformIcons } from "@/components/layout/Navbar";
 
 function resizeImage(file: File, maxSize: number): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -84,6 +86,7 @@ function YearInReview() {
 
 export default function SettingsPage() {
   const { user, profile, signOut, isGuest } = useAuth();
+  const creators = useCreators();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [displayName, setDisplayName] = useState(profile?.displayName || "");
@@ -315,6 +318,38 @@ export default function SettingsPage() {
           Send Feedback
         </button>
       </div>
+
+      {/* Creators */}
+      {creators.length > 0 && (
+        <div className="bg-fab-surface border border-fab-border rounded-lg p-6 mb-4">
+          <h2 className="text-sm font-semibold text-fab-text mb-2">Featured Creators</h2>
+          <p className="text-xs text-fab-dim mb-3">Check out these FaB content creators.</p>
+          <div className="space-y-2">
+            {creators.map((c) => (
+              <a
+                key={c.name}
+                href={c.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-3 p-3 rounded-lg bg-fab-bg hover:bg-fab-gold/10 border border-fab-border hover:border-fab-gold/30 transition-colors group"
+              >
+                {c.imageUrl ? (
+                  <img src={c.imageUrl} alt="" className="w-8 h-8 rounded-full object-cover shrink-0" />
+                ) : (
+                  <span className="shrink-0">{platformIcons[c.platform]}</span>
+                )}
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium text-fab-text group-hover:text-fab-gold transition-colors truncate">{c.name}</p>
+                  <p className="text-xs text-fab-dim truncate">{c.description}</p>
+                </div>
+                <svg className="w-3.5 h-3.5 text-fab-dim shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+                </svg>
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Account */}
       <div className="bg-fab-surface border border-fab-border rounded-lg p-6">

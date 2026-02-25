@@ -5,7 +5,8 @@ import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
 import { getAdminDashboardData, backfillLeaderboard, type AdminDashboardData, type AdminUserStats } from "@/lib/admin";
 import { getAllFeedback, updateFeedbackStatus } from "@/lib/feedback";
-import type { FeedbackItem } from "@/types";
+import { getCreators, saveCreators } from "@/lib/creators";
+import type { FeedbackItem, Creator } from "@/types";
 
 type SortKey = "matchCount" | "createdAt" | "username";
 type SortDir = "asc" | "desc";
@@ -23,6 +24,9 @@ export default function AdminPage() {
   const [feedbackFilter, setFeedbackFilter] = useState<"all" | "new" | "reviewed" | "done">("all");
   const [backfilling, setBackfilling] = useState(false);
   const [backfillProgress, setBackfillProgress] = useState("");
+  const [creatorsList, setCreatorsList] = useState<Creator[]>([]);
+  const [savingCreators, setSavingCreators] = useState(false);
+  const [creatorsSaved, setCreatorsSaved] = useState(false);
 
   // Redirect non-admins
   useEffect(() => {
@@ -35,9 +39,10 @@ export default function AdminPage() {
     setFetching(true);
     setError("");
     try {
-      const [result, fb] = await Promise.all([getAdminDashboardData(), getAllFeedback()]);
+      const [result, fb, cr] = await Promise.all([getAdminDashboardData(), getAllFeedback(), getCreators()]);
       setData(result);
       setFeedback(fb);
+      setCreatorsList(cr);
     } catch {
       setError("Failed to load admin data.");
     } finally {
@@ -317,6 +322,96 @@ export default function AdminPage() {
                   ))}
               </div>
             )}
+          </div>
+
+          {/* Creators Management */}
+          <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden mt-6">
+            <div className="px-4 py-3 border-b border-fab-border flex items-center justify-between">
+              <h2 className="text-sm font-semibold text-fab-text">Featured Creators ({creatorsList.length})</h2>
+              <div className="flex items-center gap-2">
+                {creatorsSaved && <span className="text-xs text-fab-win">Saved!</span>}
+                <button
+                  onClick={async () => {
+                    setSavingCreators(true);
+                    setCreatorsSaved(false);
+                    try {
+                      await saveCreators(creatorsList);
+                      setCreatorsSaved(true);
+                      setTimeout(() => setCreatorsSaved(false), 2000);
+                    } catch {
+                      setError("Failed to save creators.");
+                    } finally {
+                      setSavingCreators(false);
+                    }
+                  }}
+                  disabled={savingCreators}
+                  className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors disabled:opacity-50"
+                >
+                  {savingCreators ? "Saving..." : "Save Creators"}
+                </button>
+              </div>
+            </div>
+            <div className="p-4 space-y-3">
+              {creatorsList.map((c, i) => (
+                <div key={i} className="bg-fab-bg border border-fab-border rounded-lg p-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs text-fab-dim font-medium">Creator {i + 1}</span>
+                    <button
+                      onClick={() => setCreatorsList((prev) => prev.filter((_, j) => j !== i))}
+                      className="text-xs text-fab-loss hover:text-fab-loss/80 transition-colors"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <input
+                      type="text"
+                      placeholder="Name"
+                      value={c.name}
+                      onChange={(e) => setCreatorsList((prev) => prev.map((cr, j) => j === i ? { ...cr, name: e.target.value } : cr))}
+                      className="bg-fab-surface border border-fab-border text-fab-text text-sm rounded px-2 py-1.5 focus:outline-none focus:border-fab-gold"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Description"
+                      value={c.description}
+                      onChange={(e) => setCreatorsList((prev) => prev.map((cr, j) => j === i ? { ...cr, description: e.target.value } : cr))}
+                      className="bg-fab-surface border border-fab-border text-fab-text text-sm rounded px-2 py-1.5 focus:outline-none focus:border-fab-gold"
+                    />
+                    <input
+                      type="text"
+                      placeholder="URL"
+                      value={c.url}
+                      onChange={(e) => setCreatorsList((prev) => prev.map((cr, j) => j === i ? { ...cr, url: e.target.value } : cr))}
+                      className="bg-fab-surface border border-fab-border text-fab-text text-sm rounded px-2 py-1.5 focus:outline-none focus:border-fab-gold col-span-1"
+                    />
+                    <select
+                      value={c.platform}
+                      onChange={(e) => setCreatorsList((prev) => prev.map((cr, j) => j === i ? { ...cr, platform: e.target.value as Creator["platform"] } : cr))}
+                      className="bg-fab-surface border border-fab-border text-fab-text text-sm rounded px-2 py-1.5 focus:outline-none focus:border-fab-gold cursor-pointer"
+                    >
+                      <option value="youtube">YouTube</option>
+                      <option value="twitch">Twitch</option>
+                      <option value="twitter">Twitter/X</option>
+                      <option value="website">Website</option>
+                    </select>
+                    <input
+                      type="text"
+                      placeholder="Image URL (optional)"
+                      value={c.imageUrl || ""}
+                      onChange={(e) => setCreatorsList((prev) => prev.map((cr, j) => j === i ? { ...cr, imageUrl: e.target.value || undefined } : cr))}
+                      className="bg-fab-surface border border-fab-border text-fab-text text-sm rounded px-2 py-1.5 focus:outline-none focus:border-fab-gold col-span-2"
+                    />
+                  </div>
+                </div>
+              ))}
+              <button
+                onClick={() => setCreatorsList((prev) => [...prev, { name: "", description: "", url: "", platform: "youtube" }])}
+                className="w-full py-2 rounded-lg text-sm font-medium border border-dashed border-fab-border text-fab-muted hover:text-fab-text hover:border-fab-gold/30 transition-colors"
+              >
+                + Add Creator
+              </button>
+            </div>
           </div>
         </>
       ) : null}

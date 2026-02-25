@@ -215,6 +215,14 @@ export interface FeedEvent {
   createdAt: string;
 }
 
+export interface Creator {
+  name: string;
+  description: string;
+  url: string;
+  platform: "youtube" | "twitch" | "twitter" | "website";
+  imageUrl?: string;
+}
+
 export interface FeedbackItem {
   id: string;
   userId: string;
