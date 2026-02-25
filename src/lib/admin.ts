@@ -3,7 +3,6 @@ import {
   getDoc,
   getDocs,
   collection,
-  getCountFromServer,
 } from "firebase/firestore";
 import { db } from "./firebase";
 import type { UserProfile } from "@/types";
@@ -67,39 +66,47 @@ export async function checkIsAdmin(
   }
 }
 
+/** Admin dashboard data cache (5 minutes) */
+let dashboardCache: { data: AdminDashboardData; ts: number } | null = null;
+const DASHBOARD_CACHE_TTL = 5 * 60 * 1000;
+
 /** Fetch all user profiles + match counts for the admin dashboard */
 export async function getAdminDashboardData(): Promise<AdminDashboardData> {
-  // Step 1: Get all usernames (public collection)
-  const usernamesSnap = await getDocs(collection(db, "usernames"));
+  if (dashboardCache && Date.now() - dashboardCache.ts < DASHBOARD_CACHE_TTL) {
+    return dashboardCache.data;
+  }
+  // Step 1: Get all usernames + leaderboard entries in parallel (2 queries total)
+  const [usernamesSnap, leaderboardSnap] = await Promise.all([
+    getDocs(collection(db, "usernames")),
+    getDocs(collection(db, "leaderboard")),
+  ]);
+
   const userEntries = usernamesSnap.docs.map((d) => ({
     username: d.id,
     userId: (d.data() as { userId: string }).userId,
   }));
 
-  // Step 2: Fetch all leaderboard entries for enrichment
-  const leaderboardSnap = await getDocs(collection(db, "leaderboard"));
   const leaderboardMap = new Map<string, Record<string, unknown>>();
   for (const d of leaderboardSnap.docs) {
     leaderboardMap.set(d.id, d.data());
   }
 
-  // Step 3: Fetch each profile + match count in parallel
+  // Step 2: Fetch each profile (no more per-user getCountFromServer!)
+  // Match counts come from leaderboard entries instead.
   const users: AdminUserStats[] = [];
   let totalMatches = 0;
 
   const results = await Promise.allSettled(
     userEntries.map(async ({ username, userId }) => {
-      const [profileSnap, countSnap] = await Promise.all([
-        getDoc(doc(db, "users", userId, "profile", "main")),
-        getCountFromServer(collection(db, "users", userId, "matches")),
-      ]);
+      const profileSnap = await getDoc(doc(db, "users", userId, "profile", "main"));
 
-      const matchCount = countSnap.data().count;
+      // Use leaderboard totalMatches instead of aggregation query
+      const lb = leaderboardMap.get(userId);
+      const matchCount = lb ? (lb.totalMatches as number) || 0 : 0;
       totalMatches += matchCount;
 
       if (profileSnap.exists()) {
         const profile = profileSnap.data() as UserProfile;
-        const lb = leaderboardMap.get(userId);
         const stats: AdminUserStats = {
           uid: profile.uid,
           username: profile.username || username,
@@ -137,7 +144,7 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     }
   }
 
-  // Step 4: Compute time-based stats
+  // Step 3: Compute time-based stats
   const now = Date.now();
   const weekAgo = now - 7 * 24 * 60 * 60 * 1000;
   const monthAgo = now - 30 * 24 * 60 * 60 * 1000;
@@ -149,11 +156,13 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     (u) => new Date(u.createdAt).getTime() >= monthAgo
   ).length;
 
-  return {
+  const result = {
     totalUsers: users.length,
     totalMatches,
     newUsersThisWeek,
     newUsersThisMonth,
     users,
   };
+  dashboardCache = { data: result, ts: Date.now() };
+  return result;
 }
