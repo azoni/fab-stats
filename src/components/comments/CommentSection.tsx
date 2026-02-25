@@ -2,6 +2,7 @@
 import { useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useComments } from "@/hooks/useComments";
+import { computeMatchFingerprint } from "@/lib/match-fingerprint";
 import { CommentItem } from "./CommentItem";
 import { CommentInput } from "./CommentInput";
 import Link from "next/link";
@@ -26,8 +27,9 @@ function getMatchSummary(match: MatchRecord): string {
 
 export function CommentSection({ match, matchOwnerUid }: CommentSectionProps) {
   const { user, isGuest } = useAuth();
+  const fingerprint = computeMatchFingerprint(match);
   const { comments, loading, loaded, load, addComment, editComment, removeComment } =
-    useComments(matchOwnerUid, match.id);
+    useComments(fingerprint, matchOwnerUid, match.id);
 
   useEffect(() => {
     load();

@@ -1,3 +1,11 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Privacy Policy",
+  description:
+    "FaB Stats privacy policy — how we handle your Flesh and Blood match data and account information.",
+};
+
 export default function PrivacyPage() {
   return (
     <div className="max-w-2xl mx-auto py-12 px-4">

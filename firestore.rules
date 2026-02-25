@@ -67,6 +67,28 @@ service cloud.firestore {
                     && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['displayName', 'searchName']);
     }
 
+    // ── Shared match comment threads ──
+    match /matchThreads/{threadId} {
+      // Any authenticated user can read/create/update thread docs
+      allow read, create, update: if request.auth != null;
+
+      // Comments within shared threads
+      match /comments/{commentId} {
+        allow read: if request.auth != null;
+        // Create: authorUid must match the authenticated user
+        allow create: if request.auth != null
+          && request.resource.data.authorUid == request.auth.uid;
+        // Update: only the comment author, only text + editedAt
+        allow update: if request.auth != null
+          && resource.data.authorUid == request.auth.uid
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['text', 'editedAt']);
+        // Delete: comment author OR any match participant (match owners)
+        allow delete: if request.auth != null
+          && (resource.data.authorUid == request.auth.uid
+              || request.auth.uid in get(/databases/$(database)/documents/matchThreads/$(threadId)).data.participants);
+      }
+    }
+
     // ── Admin configuration ──
     match /admin/{docId} {
       // Any authenticated user can read (needed for admin check — only contains email list)

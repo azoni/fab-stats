@@ -1,0 +1,87 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0c0a0e"/>
+      <stop offset="100%" stop-color="#161222"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#c9a84c"/>
+      <stop offset="100%" stop-color="#e8c860"/>
+    </linearGradient>
+    <linearGradient id="shield" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#c9a84c" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="#c9a84c" stop-opacity="0.05"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#bg)"/>
+
+  <!-- Subtle grid pattern -->
+  <g opacity="0.03" stroke="#c9a84c" stroke-width="0.5">
+    <line x1="0" y1="0" x2="1200" y2="630"/>
+    <line x1="400" y1="0" x2="400" y2="630"/>
+    <line x1="800" y1="0" x2="800" y2="630"/>
+    <line x1="0" y1="210" x2="1200" y2="210"/>
+    <line x1="0" y1="420" x2="1200" y2="420"/>
+  </g>
+
+  <!-- Top border accent -->
+  <rect x="0" y="0" width="1200" height="3" fill="url(#gold)"/>
+
+  <!-- Large shield background watermark -->
+  <g transform="translate(820, 80) scale(3.5)" opacity="0.04">
+    <path d="M16 4L6 9v7c0 6.2 4.3 11.9 10 13.7 5.7-1.8 10-7.5 10-13.7V9L16 4z" fill="#c9a84c"/>
+  </g>
+
+  <!-- Shield icon -->
+  <g transform="translate(80, 155) scale(4)">
+    <path d="M16 4L6 9v7c0 6.2 4.3 11.9 10 13.7 5.7-1.8 10-7.5 10-13.7V9L16 4z" stroke="#c9a84c" stroke-width="1.2" fill="url(#shield)"/>
+    <path d="M16 9l-1.8 5.5H9.5l3.7 2.7-1.4 4.3L16 18.8l4.2 2.7-1.4-4.3 3.7-2.7h-4.7L16 9z" fill="#c9a84c"/>
+  </g>
+
+  <!-- Title -->
+  <text x="220" y="240" font-family="system-ui, -apple-system, sans-serif" font-size="72" font-weight="800" fill="#c9a84c">FaB Stats</text>
+
+  <!-- Tagline -->
+  <text x="220" y="300" font-family="system-ui, -apple-system, sans-serif" font-size="28" font-weight="400" fill="#a09bae">Track your Flesh and Blood match history</text>
+
+  <!-- Feature pills -->
+  <g transform="translate(220, 340)">
+    <rect x="0" y="0" width="140" height="36" rx="18" fill="#c9a84c" fill-opacity="0.12" stroke="#c9a84c" stroke-opacity="0.3" stroke-width="1"/>
+    <text x="70" y="23" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#c9a84c">Win Rates</text>
+
+    <rect x="156" y="0" width="140" height="36" rx="18" fill="#c9a84c" fill-opacity="0.12" stroke="#c9a84c" stroke-opacity="0.3" stroke-width="1"/>
+    <text x="226" y="23" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#c9a84c">Matchups</text>
+
+    <rect x="312" y="0" width="140" height="36" rx="18" fill="#c9a84c" fill-opacity="0.12" stroke="#c9a84c" stroke-opacity="0.3" stroke-width="1"/>
+    <text x="382" y="23" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#c9a84c">Opponents</text>
+
+    <rect x="468" y="0" width="140" height="36" rx="18" fill="#c9a84c" fill-opacity="0.12" stroke="#c9a84c" stroke-opacity="0.3" stroke-width="1"/>
+    <text x="538" y="23" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#c9a84c">Events</text>
+  </g>
+
+  <!-- Stats preview boxes -->
+  <g transform="translate(220, 420)">
+    <!-- Win rate box -->
+    <rect x="0" y="0" width="160" height="90" rx="12" fill="#1a1625" stroke="#2a2435" stroke-width="1"/>
+    <text x="80" y="35" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12" fill="#6b6580">WIN RATE</text>
+    <text x="80" y="72" text-anchor="middle" font-family="system-ui, sans-serif" font-size="36" font-weight="800" fill="#22c55e">67%</text>
+
+    <!-- Matches box -->
+    <rect x="176" y="0" width="160" height="90" rx="12" fill="#1a1625" stroke="#2a2435" stroke-width="1"/>
+    <text x="256" y="35" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12" fill="#6b6580">MATCHES</text>
+    <text x="256" y="72" text-anchor="middle" font-family="system-ui, sans-serif" font-size="36" font-weight="800" fill="#e8e4f0">142</text>
+
+    <!-- Record box -->
+    <rect x="352" y="0" width="200" height="90" rx="12" fill="#1a1625" stroke="#2a2435" stroke-width="1"/>
+    <text x="452" y="35" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12" fill="#6b6580">RECORD</text>
+    <text x="452" y="72" text-anchor="middle" font-family="system-ui, sans-serif" font-size="36" font-weight="800"><tspan fill="#22c55e">95</tspan><tspan fill="#6b6580">W </tspan><tspan fill="#ef4444">47</tspan><tspan fill="#6b6580">L</tspan></text>
+  </g>
+
+  <!-- URL at bottom -->
+  <text x="600" y="590" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="500" fill="#6b6580">fabstats.netlify.app</text>
+
+  <!-- Bottom border accent -->
+  <rect x="0" y="627" width="1200" height="3" fill="url(#gold)"/>
+</svg>

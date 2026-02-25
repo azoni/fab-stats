@@ -17,11 +17,72 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const SITE_URL = "https://fabstats.netlify.app";
+const SITE_NAME = "FaB Stats";
+const SITE_DESCRIPTION =
+  "Track your Flesh and Blood TCG match history, win rates, hero matchups, opponent records, and event performance. Import from GEM in one click.";
+
 export const metadata: Metadata = {
-  title: "FaB Stats - Flesh and Blood Player Tracker",
-  description: "Track your Flesh and Blood TCG match stats, win rates, and performance trends",
+  title: {
+    default: "FaB Stats - Flesh and Blood Match Tracker",
+    template: "%s | FaB Stats",
+  },
+  description: SITE_DESCRIPTION,
+  metadataBase: new URL(SITE_URL),
   icons: {
     icon: "/favicon.svg",
+    apple: "/favicon.svg",
+  },
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: SITE_URL,
+    siteName: SITE_NAME,
+    title: "FaB Stats - Flesh and Blood Match Tracker",
+    description: SITE_DESCRIPTION,
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "FaB Stats - Track your Flesh and Blood match history",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "FaB Stats - Flesh and Blood Match Tracker",
+    description: SITE_DESCRIPTION,
+    images: ["/og-image.png"],
+  },
+  keywords: [
+    "Flesh and Blood",
+    "FaB",
+    "TCG",
+    "match tracker",
+    "win rate",
+    "hero matchups",
+    "opponent stats",
+    "GEM",
+    "tournament",
+    "ProQuest",
+    "Battle Hardened",
+    "Road to Nationals",
+    "Classic Constructed",
+    "Blitz",
+  ],
+  robots: {
+    index: true,
+    follow: true,
+  },
+  alternates: {
+    canonical: SITE_URL,
+  },
+  manifest: "/manifest.json",
+  other: {
+    "theme-color": "#c9a84c",
+    "apple-mobile-web-app-capable": "yes",
+    "apple-mobile-web-app-status-bar-style": "black-translucent",
   },
 };
 

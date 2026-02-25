@@ -6,32 +6,41 @@ import {
   addComment as addCommentFirestore,
   updateComment as updateCommentFirestore,
   deleteComment as deleteCommentFirestore,
+  registerParticipant,
 } from "@/lib/comments";
 import type { MatchComment } from "@/types";
 
-export function useComments(ownerUid: string, matchId: string) {
+export function useComments(
+  fingerprint: string,
+  matchOwnerUid: string,
+  matchId: string
+) {
   const { user, profile } = useAuth();
   const [comments, setComments] = useState<MatchComment[]>([]);
   const [loading, setLoading] = useState(false);
   const [loaded, setLoaded] = useState(false);
 
   const load = useCallback(async () => {
-    if (!ownerUid || !matchId || loaded) return;
+    if (!fingerprint || loaded) return;
     setLoading(true);
     try {
-      const data = await getComments(ownerUid, matchId);
+      const data = await getComments(fingerprint);
       setComments(data);
+      // Register the match owner as a participant in the shared thread
+      if (matchOwnerUid) {
+        registerParticipant(fingerprint, matchOwnerUid);
+      }
       setLoaded(true);
     } catch (err) {
       console.error("Failed to load comments:", err);
     } finally {
       setLoading(false);
     }
-  }, [ownerUid, matchId, loaded]);
+  }, [fingerprint, matchOwnerUid, loaded]);
 
   const addComment = useCallback(
     async (text: string, matchSummary: string) => {
-      if (!user || !profile) return;
+      if (!user || !profile || !fingerprint) return;
       const comment = {
         authorUid: user.uid,
         authorName: profile.displayName,
@@ -39,15 +48,22 @@ export function useComments(ownerUid: string, matchId: string) {
         text,
         createdAt: "",
       };
-      const created = await addCommentFirestore(ownerUid, matchId, comment, matchSummary);
+      const created = await addCommentFirestore(
+        fingerprint,
+        comment,
+        matchOwnerUid,
+        matchId,
+        matchSummary
+      );
       setComments((prev) => [...prev, created]);
     },
-    [user, profile, ownerUid, matchId]
+    [user, profile, fingerprint, matchOwnerUid, matchId]
   );
 
   const editComment = useCallback(
     async (commentId: string, newText: string) => {
-      await updateCommentFirestore(ownerUid, matchId, commentId, newText);
+      if (!fingerprint) return;
+      await updateCommentFirestore(fingerprint, commentId, newText);
       setComments((prev) =>
         prev.map((c) =>
           c.id === commentId
@@ -56,16 +72,30 @@ export function useComments(ownerUid: string, matchId: string) {
         )
       );
     },
-    [ownerUid, matchId]
+    [fingerprint]
   );
 
   const removeComment = useCallback(
     async (commentId: string) => {
-      await deleteCommentFirestore(ownerUid, matchId, commentId);
+      if (!fingerprint) return;
+      await deleteCommentFirestore(
+        fingerprint,
+        commentId,
+        matchOwnerUid,
+        matchId
+      );
       setComments((prev) => prev.filter((c) => c.id !== commentId));
     },
-    [ownerUid, matchId]
+    [fingerprint, matchOwnerUid, matchId]
   );
 
-  return { comments, loading, loaded, load, addComment, editComment, removeComment };
+  return {
+    comments,
+    loading,
+    loaded,
+    load,
+    addComment,
+    editComment,
+    removeComment,
+  };
 }

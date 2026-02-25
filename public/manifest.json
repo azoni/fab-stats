@@ -1,0 +1,16 @@
+{
+  "name": "FaB Stats - Flesh and Blood Match Tracker",
+  "short_name": "FaB Stats",
+  "description": "Track your Flesh and Blood TCG match history, win rates, hero matchups, and event performance.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0c0a0e",
+  "theme_color": "#c9a84c",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

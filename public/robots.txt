@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /settings
+Disallow: /setup
+Disallow: /notifications
+
+Sitemap: https://fabstats.netlify.app/sitemap.xml
