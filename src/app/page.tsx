@@ -3,7 +3,8 @@ import { useState, useMemo, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useMatches } from "@/hooks/useMatches";
 import { useAuth } from "@/contexts/AuthContext";
-import { computeOverallStats, computeHeroStats, computeEventTypeStats, computeVenueStats, computeEventStats, computeOpponentStats, computeBestFinish } from "@/lib/stats";
+import { computeOverallStats, computeHeroStats, computeEventTypeStats, computeVenueStats, computeEventStats, computeOpponentStats, computeBestFinish, computePlayoffFinishes } from "@/lib/stats";
+import type { PlayoffFinish } from "@/lib/stats";
 import { evaluateAchievements } from "@/lib/achievements";
 import { computeHeroMastery } from "@/lib/mastery";
 import { AchievementShowcase, AchievementBadges } from "@/components/gamification/AchievementShowcase";
@@ -122,6 +123,7 @@ export default function Dashboard() {
     ? allOpponentStats.reduce((most, o) => (o.totalMatches > most.totalMatches ? o : most))
     : null;
   const bestFinish = computeBestFinish(eventStats);
+  const playoffFinishes = computePlayoffFinishes(eventStats);
   const eventBadges = computeEventBadges(eventStats);
   const userRanks = user ? computeUserRanks(lbEntries, user.uid) : [];
   const bestRank = getBestRank(userRanks);
@@ -302,6 +304,9 @@ export default function Dashboard() {
               />
             ) : null}
           </div>
+
+          {/* Playoff Finishes */}
+          {playoffFinishes.length > 0 && <PlayoffFinishesSection finishes={playoffFinishes} />}
 
           {/* Achievements */}
           <AchievementShowcase earned={achievements} />
@@ -490,6 +495,51 @@ function StatCard({
       <p className="text-xs text-fab-muted mb-1">{label}</p>
       <p className={`text-2xl font-bold ${color}`}>{value}</p>
       {subtext && <p className="text-[10px] text-fab-dim mt-0.5 truncate">{subtext}</p>}
+    </div>
+  );
+}
+
+function PlayoffFinishesSection({ finishes }: { finishes: PlayoffFinish[] }) {
+  const champions = finishes.filter((f) => f.type === "champion");
+  const finalists = finishes.filter((f) => f.type === "finalist");
+  const top4 = finishes.filter((f) => f.type === "top4");
+  const top8 = finishes.filter((f) => f.type === "top8");
+
+  const categories = [
+    { label: "Wins", items: champions, icon: "\u{1F3C6}", color: "text-fab-gold", bg: "bg-fab-gold/10 border-fab-gold/30" },
+    { label: "Finals", items: finalists, icon: "\u{1F948}", color: "text-gray-300", bg: "bg-gray-400/10 border-gray-400/30" },
+    { label: "Top 4", items: top4, icon: "\u{1F949}", color: "text-amber-600", bg: "bg-amber-600/10 border-amber-600/30" },
+    { label: "Top 8", items: top8, icon: "\u{1F3AF}", color: "text-blue-400", bg: "bg-blue-400/10 border-blue-400/30" },
+  ].filter((c) => c.items.length > 0);
+
+  if (categories.length === 0) return null;
+
+  return (
+    <div>
+      <h2 className="text-lg font-semibold text-fab-text mb-4">Playoff Finishes</h2>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {categories.map((cat) => (
+          <div key={cat.label} className={`rounded-lg border p-4 ${cat.bg}`}>
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-xl">{cat.icon}</span>
+              <div>
+                <p className={`text-2xl font-black ${cat.color}`}>{cat.items.length}</p>
+                <p className="text-xs text-fab-muted">{cat.label}</p>
+              </div>
+            </div>
+            <div className="space-y-1 mt-2">
+              {cat.items.slice(0, 3).map((f) => (
+                <p key={`${f.eventName}-${f.eventDate}`} className="text-xs text-fab-dim truncate" title={f.eventName}>
+                  {f.eventName}
+                </p>
+              ))}
+              {cat.items.length > 3 && (
+                <p className="text-xs text-fab-dim">+{cat.items.length - 3} more</p>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
