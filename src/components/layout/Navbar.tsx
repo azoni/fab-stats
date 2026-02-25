@@ -18,11 +18,20 @@ const coreLinks: { href: string; label: string; icon: ReactNode }[] = [
   { href: "/events", label: "Events", icon: <CalendarIcon className="w-4 h-4" /> },
 ];
 
-const authLinks: { href: string; label: string; icon: ReactNode }[] = [
-  { href: "/opponents", label: "Opponents", icon: <OpponentsIcon className="w-4 h-4" /> },
-  { href: "/trends", label: "Trends", icon: <TrendsIcon className="w-4 h-4" /> },
-  { href: "/import", label: "Import", icon: <ImportIcon className="w-4 h-4" /> },
+const moreLinks: { href: string; label: string; icon: ReactNode; authOnly?: boolean }[] = [
+  { href: "/opponents", label: "Opponents", icon: <OpponentsIcon className="w-4 h-4" />, authOnly: true },
+  { href: "/trends", label: "Trends", icon: <TrendsIcon className="w-4 h-4" />, authOnly: true },
+  { href: "/import", label: "Import", icon: <ImportIcon className="w-4 h-4" />, authOnly: true },
+  { href: "/search", label: "Discover", icon: <SearchIcon className="w-4 h-4" /> },
 ];
+
+function SearchIcon({ className = "w-4 h-4" }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+    </svg>
+  );
+}
 
 export function Navbar() {
   const pathname = usePathname();
@@ -50,6 +59,8 @@ export function Navbar() {
       })
       .catch(() => {});
   }, []);
+
+  const isAuthenticated = user && !isGuest;
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-fab-surface/95 backdrop-blur-md border-b border-fab-border">
@@ -84,34 +95,11 @@ export function Navbar() {
                     {link.label}
                   </Link>
                 ))}
-                {user && !isGuest && authLinks.map((link) => (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    className={`flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                      pathname === link.href
-                        ? "text-fab-gold bg-fab-gold/10"
-                        : "text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover"
-                    }`}
-                  >
-                    {link.icon}
-                    {link.label}
-                  </Link>
-                ))}
-                <Link
-                  href="/search"
-                  className={`flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                    pathname === "/search"
-                      ? "text-fab-gold bg-fab-gold/10"
-                      : "text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover"
-                  }`}
-                >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
-                  Discover
-                </Link>
-                {creators.length > 0 && <CreatorsDropdown creators={creators} />}
+                <MoreDropdown
+                  pathname={pathname}
+                  isAuthenticated={!!isAuthenticated}
+                  creators={creators}
+                />
                 <div className="ml-3 pl-3 border-l border-fab-border flex items-center gap-2">
                   {!user && !isGuest ? (
                     <Link
@@ -140,8 +128,8 @@ export function Navbar() {
                   ) : (
                     <span className="text-xs text-fab-dim truncate max-w-32">{user?.email}</span>
                   )}
-                  {user && !isGuest && <NotificationBell />}
-                  {user && !isGuest && (
+                  {isAuthenticated && <NotificationBell />}
+                  {isAuthenticated && (
                     <Link
                       href="/settings"
                       className={`p-1 rounded transition-colors ${
@@ -205,7 +193,15 @@ export const platformIcons: Record<Creator["platform"], ReactNode> = {
   ),
 };
 
-function CreatorsDropdown({ creators }: { creators: Creator[] }) {
+function MoreDropdown({
+  pathname,
+  isAuthenticated,
+  creators,
+}: {
+  pathname: string;
+  isAuthenticated: boolean;
+  creators: Creator[];
+}) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -219,20 +215,25 @@ function CreatorsDropdown({ creators }: { creators: Creator[] }) {
     return () => document.removeEventListener("mousedown", handleClick);
   }, [open]);
 
+  const visibleLinks = moreLinks.filter((l) => !l.authOnly || isAuthenticated);
+  const isMoreActive = visibleLinks.some((l) => pathname === l.href);
+
   return (
     <div className="relative" ref={ref}>
       <button
         onClick={() => setOpen(!open)}
         className={`flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-          open
+          open || isMoreActive
             ? "text-fab-gold bg-fab-gold/10"
             : "text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover"
         }`}
       >
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+          <circle cx="12" cy="5" r="1" fill="currentColor" />
+          <circle cx="12" cy="12" r="1" fill="currentColor" />
+          <circle cx="12" cy="19" r="1" fill="currentColor" />
         </svg>
-        Creators
+        More
         <svg className={`w-3 h-3 transition-transform ${open ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
         </svg>
@@ -241,35 +242,57 @@ function CreatorsDropdown({ creators }: { creators: Creator[] }) {
       {open && (
         <div className="absolute top-full right-0 mt-1 w-64 bg-fab-surface border border-fab-border rounded-lg shadow-xl overflow-hidden z-50">
           <div className="p-2">
-            <p className="px-2 py-1.5 text-xs text-fab-dim font-medium uppercase tracking-wider">
-              Featured Creators
-            </p>
-            {creators.map((creator) => (
-              <a
-                key={creator.name}
-                href={creator.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-3 px-2 py-2.5 rounded-md hover:bg-fab-surface-hover transition-colors group"
+            {visibleLinks.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
                 onClick={() => setOpen(false)}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors ${
+                  pathname === link.href
+                    ? "text-fab-gold bg-fab-gold/10"
+                    : "text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover"
+                }`}
               >
-                {creator.imageUrl ? (
-                  <img src={creator.imageUrl} alt="" className="w-8 h-8 rounded-full object-cover shrink-0" />
-                ) : (
-                  platformIcons[creator.platform]
-                )}
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-fab-text group-hover:text-fab-gold transition-colors truncate">
-                    {creator.name}
-                  </p>
-                  <p className="text-xs text-fab-dim truncate">{creator.description}</p>
-                </div>
-                <svg className="w-3.5 h-3.5 text-fab-dim shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
-                </svg>
-              </a>
+                {link.icon}
+                {link.label}
+              </Link>
             ))}
           </div>
+          {creators.length > 0 && (
+            <>
+              <div className="border-t border-fab-border" />
+              <div className="p-2">
+                <p className="px-3 py-1.5 text-xs text-fab-dim font-medium uppercase tracking-wider">
+                  Featured Creators
+                </p>
+                {creators.map((creator) => (
+                  <a
+                    key={creator.name}
+                    href={creator.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-md hover:bg-fab-surface-hover transition-colors group"
+                    onClick={() => setOpen(false)}
+                  >
+                    {creator.imageUrl ? (
+                      <img src={creator.imageUrl} alt="" className="w-6 h-6 rounded-full object-cover shrink-0" />
+                    ) : (
+                      platformIcons[creator.platform]
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-fab-text group-hover:text-fab-gold transition-colors truncate">
+                        {creator.name}
+                      </p>
+                      <p className="text-xs text-fab-dim truncate">{creator.description}</p>
+                    </div>
+                    <svg className="w-3.5 h-3.5 text-fab-dim shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+                    </svg>
+                  </a>
+                ))}
+              </div>
+            </>
+          )}
         </div>
       )}
     </div>

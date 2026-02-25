@@ -3,13 +3,18 @@ import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { getProfileByUsername, getMatchesByUserId } from "@/lib/firestore-storage";
-import { computeOverallStats, computeEventTypeStats, computeVenueStats, computeEventStats } from "@/lib/stats";
+import { computeOverallStats, computeHeroStats, computeEventTypeStats, computeVenueStats, computeEventStats, computeOpponentStats } from "@/lib/stats";
+import { evaluateAchievements } from "@/lib/achievements";
+import { computeHeroMastery } from "@/lib/mastery";
+import { AchievementShowcase } from "@/components/gamification/AchievementShowcase";
+import { AchievementBadges } from "@/components/gamification/AchievementShowcase";
+import { HeroMasteryList } from "@/components/gamification/HeroMasteryCard";
 import { MatchCard } from "@/components/matches/MatchCard";
 import { EventCard } from "@/components/events/EventCard";
 import { QuestionCircleIcon, LockIcon } from "@/components/icons/NavIcons";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase";
-import type { MatchRecord, UserProfile } from "@/types";
+import type { MatchRecord, UserProfile, Achievement } from "@/types";
 import { MatchResult } from "@/types";
 
 type PageState =
@@ -159,6 +164,8 @@ export default function PlayerProfile() {
   }
 
   const overall = computeOverallStats(matches);
+  const heroStats = computeHeroStats(matches);
+  const opponentStats = computeOpponentStats(matches);
   const eventTypeStats = computeEventTypeStats(matches);
   const venueStats = computeVenueStats(matches).filter((v) => v.venue !== "Unknown");
   const eventStats = computeEventStats(matches);
@@ -167,6 +174,8 @@ export default function PlayerProfile() {
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     .slice(0, 5);
   const { streaks } = overall;
+  const achievements = evaluateAchievements(matches, overall, heroStats, opponentStats);
+  const masteries = computeHeroMastery(heroStats);
 
   const last30 = [...matches]
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
@@ -175,7 +184,7 @@ export default function PlayerProfile() {
 
   return (
     <div className="space-y-8">
-      <ProfileHeader profile={profile} />
+      <ProfileHeader profile={profile} achievements={achievements} />
 
       {/* Streak Banner */}
       <div className={`rounded-xl p-6 border-2 ${
@@ -246,6 +255,12 @@ export default function PlayerProfile() {
         <StatCard label="Record" value={`${overall.totalWins}W - ${overall.totalLosses}L`} />
         <StatCard label="Draws" value={overall.totalDraws} />
       </div>
+
+      {/* Achievements */}
+      <AchievementShowcase earned={achievements} />
+
+      {/* Hero Mastery */}
+      <HeroMasteryList masteries={masteries} />
 
       {/* Recent Events */}
       {recentEvents.length > 0 && (
@@ -326,7 +341,7 @@ export default function PlayerProfile() {
   );
 }
 
-function ProfileHeader({ profile }: { profile: UserProfile }) {
+function ProfileHeader({ profile, achievements }: { profile: UserProfile; achievements?: Achievement[] }) {
   return (
     <div className="flex items-center gap-4">
       {profile.photoUrl ? (
@@ -338,7 +353,8 @@ function ProfileHeader({ profile }: { profile: UserProfile }) {
       )}
       <div>
         <h1 className="text-2xl font-bold text-fab-gold">{profile.displayName}</h1>
-        <p className="text-sm text-fab-dim">@{profile.username}</p>
+        <p className="text-sm text-fab-dim mb-1">@{profile.username}</p>
+        {achievements && achievements.length > 0 && <AchievementBadges earned={achievements} max={4} />}
       </div>
     </div>
   );

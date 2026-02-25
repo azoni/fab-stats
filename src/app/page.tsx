@@ -3,7 +3,11 @@ import { useState, useMemo, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useMatches } from "@/hooks/useMatches";
 import { useAuth } from "@/contexts/AuthContext";
-import { computeOverallStats, computeEventTypeStats, computeVenueStats, computeEventStats, computeOpponentStats } from "@/lib/stats";
+import { computeOverallStats, computeHeroStats, computeEventTypeStats, computeVenueStats, computeEventStats, computeOpponentStats } from "@/lib/stats";
+import { evaluateAchievements } from "@/lib/achievements";
+import { computeHeroMastery } from "@/lib/mastery";
+import { AchievementShowcase } from "@/components/gamification/AchievementShowcase";
+import { HeroMasteryList } from "@/components/gamification/HeroMasteryCard";
 import { updateLeaderboardEntry } from "@/lib/leaderboard";
 import { MatchCard } from "@/components/matches/MatchCard";
 import { EventCard } from "@/components/events/EventCard";
@@ -86,6 +90,7 @@ export default function Dashboard() {
   const fm = filteredMatches;
 
   const overall = computeOverallStats(fm);
+  const heroStats = computeHeroStats(fm);
   const eventTypeStats = computeEventTypeStats(fm);
   const venueStats = computeVenueStats(fm).filter((v) => v.venue !== "Unknown");
   const eventStats = computeEventStats(fm);
@@ -95,6 +100,8 @@ export default function Dashboard() {
     .slice(0, 5);
 
   const opponentStats = computeOpponentStats(fm).filter((o) => o.totalMatches >= 3);
+  const achievements = evaluateAchievements(fm, overall, heroStats, opponentStats);
+  const masteries = computeHeroMastery(heroStats);
   const nemesis = opponentStats.length > 0
     ? opponentStats.reduce((worst, o) => (o.winRate < worst.winRate ? o : worst))
     : null;
@@ -230,6 +237,12 @@ export default function Dashboard() {
               value={overall.totalDraws}
             />
           </div>
+
+          {/* Achievements */}
+          <AchievementShowcase earned={achievements} />
+
+          {/* Hero Mastery */}
+          <HeroMasteryList masteries={masteries} />
 
           {/* Nemesis */}
           {nemesis && (

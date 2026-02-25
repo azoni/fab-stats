@@ -233,3 +233,27 @@ export interface FeedbackItem {
   status: "new" | "reviewed" | "done";
   createdAt: string;
 }
+
+// Gamification
+export type AchievementCategory = "milestone" | "streak" | "mastery" | "exploration" | "fun";
+
+export interface Achievement {
+  id: string;
+  name: string;
+  description: string;
+  category: AchievementCategory;
+  icon: string;
+  rarity: "common" | "uncommon" | "rare" | "epic" | "legendary";
+}
+
+export type MasteryTier = "novice" | "apprentice" | "skilled" | "expert" | "master";
+
+export interface HeroMastery {
+  heroName: string;
+  tier: MasteryTier;
+  matches: number;
+  wins: number;
+  winRate: number;
+  nextTier: MasteryTier | null;
+  progress: number; // 0-100 toward next tier
+}
