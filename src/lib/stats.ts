@@ -408,8 +408,8 @@ export function computeEventStats(matches: MatchRecord[]): EventStats[] {
 
   for (const match of matches) {
     const name = getEventName(match);
-    // Group by name + date to prevent merging different events with the same name
-    const key = `${name}|${match.date}`;
+    // Group by name + date + venue + format to prevent merging different events
+    const key = `${name}|${match.date}|${match.venue || ""}|${match.format}`;
     const existing = map.get(key) ?? [];
     existing.push(match);
     map.set(key, existing);
@@ -417,7 +417,7 @@ export function computeEventStats(matches: MatchRecord[]): EventStats[] {
 
   return Array.from(map.entries())
     .map(([key, group]) => {
-      const eventName = key.split("|")[0];
+      const [eventName] = key.split("|");
       const sorted = [...group].sort((a, b) => getRoundNumber(a) - getRoundNumber(b));
       const first = sorted[0];
       const wins = group.filter((m) => m.result === MatchResult.Win).length;
