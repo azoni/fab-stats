@@ -5,12 +5,13 @@ import { useLeaderboard } from "@/hooks/useLeaderboard";
 import { TrophyIcon } from "@/components/icons/NavIcons";
 import type { LeaderboardEntry } from "@/types";
 
-type Tab = "winrate" | "volume" | "streaks" | "events" | "rated";
+type Tab = "winrate" | "volume" | "streaks" | "draws" | "events" | "rated";
 
 const tabs: { id: Tab; label: string }[] = [
   { id: "winrate", label: "Win Rate" },
   { id: "volume", label: "Most Matches" },
   { id: "streaks", label: "Streaks" },
+  { id: "draws", label: "Draws" },
   { id: "events", label: "Events" },
   { id: "rated", label: "Rated" },
 ];
@@ -35,6 +36,10 @@ export default function LeaderboardPage() {
         return [...entries]
           .filter((e) => e.longestWinStreak > 0)
           .sort((a, b) => b.longestWinStreak - a.longestWinStreak || b.totalMatches - a.totalMatches);
+      case "draws":
+        return [...entries]
+          .filter((e) => e.totalDraws > 0)
+          .sort((a, b) => b.totalDraws - a.totalDraws || b.totalMatches - a.totalMatches);
       case "events":
         return [...entries]
           .filter((e) => e.eventsPlayed > 0)
@@ -181,6 +186,14 @@ function LeaderboardRow({
               {entry.currentStreakType === "win" && entry.currentStreakCount > 1
                 ? ` / ${entry.currentStreakCount} current`
                 : ""}
+            </p>
+          </>
+        )}
+        {tab === "draws" && (
+          <>
+            <p className="text-lg font-bold text-fab-text">{entry.totalDraws}</p>
+            <p className="text-xs text-fab-dim">
+              {entry.totalMatches} matches ({formatRate(entry.winRate)})
             </p>
           </>
         )}
