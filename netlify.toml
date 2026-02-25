@@ -24,6 +24,12 @@
   to = "/player/_.html"
   status = 200
 
+# Serve pre-rendered inbox page for all /inbox/* URLs
+[[redirects]]
+  from = "/inbox/*"
+  to = "/inbox/_.html"
+  status = 200
+
 # SPA fallback for all other routes
 [[redirects]]
   from = "/*"

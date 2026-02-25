@@ -69,7 +69,7 @@ export default function NotificationsPage() {
     await markAsRead(notification.id);
     if (notification.type === "message" && notification.senderUid) {
       router.push(`/inbox/${notification.senderUid}`);
-    } else if (notification.matchOwnerUid) {
+    } else if (notification.type === "comment" && notification.matchOwnerUid) {
       const username = usernameCache[notification.matchOwnerUid];
       if (username) {
         router.push(`/player/${username}`);
