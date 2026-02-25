@@ -45,6 +45,17 @@ export default function PlayerProfile() {
   const [filterHero, setFilterHero] = useState<string>("all");
   const [showRawData, setShowRawData] = useState(false);
 
+  // Build set of opponent display names that have opted in to being visible
+  const visibleOpponents = useMemo(() => {
+    const names = new Set<string>();
+    for (const entry of lbEntries) {
+      if (entry.showNameOnProfiles) {
+        names.add(entry.displayName);
+      }
+    }
+    return names;
+  }, [lbEntries]);
+
   const loadedMatches = state.status === "loaded" ? state.matches : [];
 
   const allFormats = useMemo(() => {
@@ -483,7 +494,7 @@ export default function PlayerProfile() {
           <h2 className="text-lg font-semibold text-fab-text mb-4">Recent Events</h2>
           <div className="space-y-2">
             {recentEvents.map((event) => (
-              <EventCard key={`${event.eventName}-${event.eventDate}`} event={event} obfuscateOpponents={!isOwner && !isAdmin} />
+              <EventCard key={`${event.eventName}-${event.eventDate}`} event={event} obfuscateOpponents={!isOwner && !isAdmin} visibleOpponents={visibleOpponents} />
             ))}
           </div>
         </div>
@@ -548,7 +559,7 @@ export default function PlayerProfile() {
         <h2 className="text-lg font-semibold text-fab-text mb-4">Recent Matches</h2>
         <div className="space-y-2">
           {recentMatches.map((match) => (
-            <MatchCard key={match.id} match={match} matchOwnerUid={profile.uid} enableComments obfuscateOpponents={!isOwner && !isAdmin} />
+            <MatchCard key={match.id} match={match} matchOwnerUid={profile.uid} enableComments obfuscateOpponents={!isOwner && !isAdmin} visibleOpponents={visibleOpponents} />
           ))}
         </div>
       </div>

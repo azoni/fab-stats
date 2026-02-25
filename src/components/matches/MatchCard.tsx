@@ -9,6 +9,7 @@ interface MatchCardProps {
   matchOwnerUid?: string;
   enableComments?: boolean;
   obfuscateOpponents?: boolean;
+  visibleOpponents?: Set<string>;
 }
 
 const resultStyles = {
@@ -32,7 +33,7 @@ function getPlayoffBadge(roundInfo: string | undefined): { label: string; bg: st
   return null;
 }
 
-export function MatchCard({ match, matchOwnerUid, enableComments = false, obfuscateOpponents = false }: MatchCardProps) {
+export function MatchCard({ match, matchOwnerUid, enableComments = false, obfuscateOpponents = false, visibleOpponents }: MatchCardProps) {
   const [showComments, setShowComments] = useState(false);
   const style = resultStyles[match.result];
   const eventName = match.notes?.split(" | ")[0];
@@ -56,7 +57,7 @@ export function MatchCard({ match, matchOwnerUid, enableComments = false, obfusc
             {match.opponentName ? (
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-fab-dim">vs</span>
-                {obfuscateOpponents ? (
+                {obfuscateOpponents && !(visibleOpponents?.has(match.opponentName!)) ? (
                   <span className="font-semibold text-fab-dim">Opponent</span>
                 ) : (
                   <Link

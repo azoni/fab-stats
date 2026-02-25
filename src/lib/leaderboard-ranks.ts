@@ -55,6 +55,16 @@ const RANK_TABS: RankTab[] = [
     sort: (a, b) => b.totalDraws - a.totalDraws || b.totalMatches - a.totalMatches,
   },
   {
+    id: "drawrate",
+    label: "Draw %",
+    filter: (e) => e.totalDraws > 0 && e.totalMatches >= 10,
+    sort: (a, b) => {
+      const aRate = (a.totalDraws / a.totalMatches) * 100;
+      const bRate = (b.totalDraws / b.totalMatches) * 100;
+      return bRate - aRate || b.totalDraws - a.totalDraws;
+    },
+  },
+  {
     id: "events",
     label: "Events",
     filter: (e) => e.eventsPlayed > 0,

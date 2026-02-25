@@ -128,6 +128,7 @@ export interface UserProfile {
   createdAt: string;
   isPublic: boolean;
   earnings?: number;
+  showNameOnProfiles?: boolean;
 }
 
 export interface EventStats {
@@ -217,6 +218,7 @@ export interface LeaderboardEntry {
   armoryWins: number;
   armoryWinRate: number;
   armoryEvents: number;
+  showNameOnProfiles?: boolean;
   updatedAt: string;
 }
 

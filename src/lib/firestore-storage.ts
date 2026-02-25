@@ -275,7 +275,7 @@ export async function searchUsernames(
 
 export async function updateProfile(
   userId: string,
-  updates: Partial<Pick<UserProfile, "displayName" | "photoUrl" | "isPublic" | "firstName" | "lastName" | "searchName" | "earnings">>
+  updates: Partial<Pick<UserProfile, "displayName" | "photoUrl" | "isPublic" | "firstName" | "lastName" | "searchName" | "earnings" | "showNameOnProfiles">>
 ): Promise<void> {
   const profileRef = doc(db, "users", userId, "profile", "main");
   await updateDoc(profileRef, updates);

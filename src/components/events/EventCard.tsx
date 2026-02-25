@@ -8,6 +8,7 @@ import type { EventStats } from "@/types";
 interface EventCardProps {
   event: EventStats;
   obfuscateOpponents?: boolean;
+  visibleOpponents?: Set<string>;
 }
 
 const resultColors = {
@@ -22,7 +23,7 @@ const resultLabels = {
   [MatchResult.Draw]: "D",
 };
 
-export function EventCard({ event, obfuscateOpponents = false }: EventCardProps) {
+export function EventCard({ event, obfuscateOpponents = false, visibleOpponents }: EventCardProps) {
   const [expanded, setExpanded] = useState(false);
 
   return (
@@ -93,7 +94,7 @@ export function EventCard({ event, obfuscateOpponents = false }: EventCardProps)
                       )}
                     </td>
                     <td className="px-4 py-2.5">
-                      {obfuscateOpponents ? (
+                      {obfuscateOpponents && !(match.opponentName && visibleOpponents?.has(match.opponentName)) ? (
                         <span className="text-fab-dim">Opponent</span>
                       ) : match.opponentName ? (
                         <Link

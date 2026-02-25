@@ -11,7 +11,7 @@ import type { LeaderboardEntry, OpponentStats } from "@/types";
 
 const SITE_CREATOR = "azoni";
 
-type Tab = "winrate" | "volume" | "mostwins" | "streaks" | "draws" | "events" | "eventgrinder" | "rated" | "heroes" | "dedication" | "hotstreak" | "weeklymatches" | "weeklywins" | "earnings" | "armorywinrate" | "armoryattendance" | "armorymatches";
+type Tab = "winrate" | "volume" | "mostwins" | "streaks" | "draws" | "drawrate" | "events" | "eventgrinder" | "rated" | "heroes" | "dedication" | "hotstreak" | "weeklymatches" | "weeklywins" | "earnings" | "armorywinrate" | "armoryattendance" | "armorymatches";
 
 const tabs: { id: Tab; label: string }[] = [
   { id: "winrate", label: "Win Rate" },
@@ -31,6 +31,7 @@ const tabs: { id: Tab; label: string }[] = [
   { id: "armoryattendance", label: "Armory Attendance" },
   { id: "armorymatches", label: "Armory Matches" },
   { id: "draws", label: "Draws" },
+  { id: "drawrate", label: "Draw %" },
 ];
 
 function formatRate(rate: number): string {
@@ -87,6 +88,14 @@ export default function LeaderboardPage() {
         return [...entries]
           .filter((e) => e.totalDraws > 0)
           .sort((a, b) => b.totalDraws - a.totalDraws || b.totalMatches - a.totalMatches);
+      case "drawrate":
+        return [...entries]
+          .filter((e) => e.totalDraws > 0 && e.totalMatches >= 10)
+          .sort((a, b) => {
+            const aRate = (a.totalDraws / a.totalMatches) * 100;
+            const bRate = (b.totalDraws / b.totalMatches) * 100;
+            return bRate - aRate || b.totalDraws - a.totalDraws;
+          });
       case "events":
         return [...entries]
           .filter((e) => e.eventsPlayed > 0)
@@ -185,7 +194,9 @@ export default function LeaderboardPage() {
                           ? "No players have attended Armory events yet."
                           : activeTab === "armorymatches"
                             ? "No players have Armory matches yet."
-                            : "Import matches to appear on the leaderboard."}
+                            : activeTab === "drawrate"
+                              ? "Players need at least 10 matches and 1 draw to appear here."
+                              : "Import matches to appear on the leaderboard."}
           </p>
         </div>
       )}
@@ -375,6 +386,16 @@ function LeaderboardRow({
             <p className="text-lg font-bold text-fab-text">{entry.totalDraws}</p>
             <p className="text-xs text-fab-dim">
               {entry.totalMatches} matches ({formatRate(entry.winRate)})
+            </p>
+          </>
+        )}
+        {tab === "drawrate" && (
+          <>
+            <p className="text-lg font-bold text-fab-draw">
+              {formatRate((entry.totalDraws / entry.totalMatches) * 100)}
+            </p>
+            <p className="text-xs text-fab-dim">
+              {entry.totalDraws} draws / {entry.totalMatches} matches
             </p>
           </>
         )}

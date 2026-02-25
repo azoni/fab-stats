@@ -106,6 +106,8 @@ export default function SettingsPage() {
   const [exporting, setExporting] = useState(false);
   const [isPublic, setIsPublic] = useState(profile?.isPublic ?? false);
   const [togglingPublic, setTogglingPublic] = useState(false);
+  const [showNameOnProfiles, setShowNameOnProfiles] = useState(profile?.showNameOnProfiles ?? false);
+  const [togglingName, setTogglingName] = useState(false);
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
@@ -361,6 +363,42 @@ export default function SettingsPage() {
             <span
               className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${
                 isPublic ? "translate-x-5" : ""
+              }`}
+            />
+          </button>
+        </div>
+
+        <div className="flex items-center justify-between mt-4 pt-4 border-t border-fab-border">
+          <div>
+            <p className="text-sm text-fab-text">Show Name on Opponent Profiles</p>
+            <p className="text-xs text-fab-dim mt-0.5">
+              {showNameOnProfiles
+                ? "Your display name is visible when you appear as an opponent on other players' profiles."
+                : "Your name is hidden when you appear as an opponent on other players' profiles."}
+            </p>
+          </div>
+          <button
+            onClick={async () => {
+              if (!user) return;
+              setTogglingName(true);
+              try {
+                const next = !showNameOnProfiles;
+                await updateProfile(user.uid, { showNameOnProfiles: next });
+                setShowNameOnProfiles(next);
+              } catch {
+                setError("Failed to update name visibility setting.");
+              } finally {
+                setTogglingName(false);
+              }
+            }}
+            disabled={togglingName}
+            className={`relative w-11 h-6 rounded-full transition-colors shrink-0 ${
+              showNameOnProfiles ? "bg-fab-win" : "bg-fab-border"
+            } ${togglingName ? "opacity-50" : ""}`}
+          >
+            <span
+              className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${
+                showNameOnProfiles ? "translate-x-5" : ""
               }`}
             />
           </button>

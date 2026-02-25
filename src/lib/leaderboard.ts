@@ -117,6 +117,7 @@ export async function updateLeaderboardEntry(
     armoryWins,
     armoryWinRate: armoryMatchList.length > 0 ? (armoryWins / armoryMatchList.length) * 100 : 0,
     armoryEvents,
+    showNameOnProfiles: profile.showNameOnProfiles ?? false,
     updatedAt: new Date().toISOString(),
   };
 
