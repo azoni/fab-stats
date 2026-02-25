@@ -6,6 +6,7 @@ import { MobileNav } from "@/components/layout/MobileNav";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { LayoutShell } from "@/components/auth/LayoutShell";
 import { GuestBanner } from "@/components/auth/GuestBanner";
+import { FeedbackFab } from "@/components/feedback/FeedbackFab";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -104,6 +105,7 @@ export default function RootLayout({
               <LayoutShell>{children}</LayoutShell>
             </div>
           </main>
+          <FeedbackFab />
           <MobileNav />
         </AuthProvider>
       </body>
