@@ -13,6 +13,7 @@ import Link from "next/link";
 import { MatchCard } from "@/components/matches/MatchCard";
 import { CheckCircleIcon, FileIcon, ChevronDownIcon, ChevronUpIcon } from "@/components/icons/NavIcons";
 import { MatchResult, type MatchRecord } from "@/types";
+import { allHeroes } from "@/lib/heroes";
 
 const BOOKMARKLET_HREF = `javascript:void((async function(){var els=document.querySelectorAll('a,button,summary,span,div,[role=button]');var n=0;for(var i=0;i<els.length;i++){var t=(els[i].textContent||'').trim();if(t.match(/View Results/i)&&t.length<30){els[i].click();n++;await new Promise(function(r){setTimeout(r,600)})}}alert('Expanded '+n+' events. Press Ctrl+A, Ctrl+C to copy.')})())`;
 
@@ -42,6 +43,7 @@ export default function ImportPage() {
   const [clearing, setClearing] = useState(false);
   const [confirmClear, setConfirmClear] = useState(false);
   const [cleared, setCleared] = useState(false);
+  const [heroOverrides, setHeroOverrides] = useState<Record<number, string>>({});
 
   // Auto-detect extension data from URL hash (#ext=base64data)
   useEffect(() => {
@@ -67,19 +69,26 @@ export default function ImportPage() {
     }
   }, []);
 
-  // Filtered events
+  // Filtered events (with original index for hero overrides)
   const filteredEvents = useMemo(() => {
-    if (!pasteResult) return [];
-    return pasteResult.events.filter((e) => {
-      if (filterFormat !== "all" && e.format !== filterFormat) return false;
-      if (filterEventType !== "all" && e.eventType !== filterEventType) return false;
-      return true;
-    });
+    if (!pasteResult) return [] as { event: PasteImportResult["events"][0]; origIdx: number }[];
+    return pasteResult.events
+      .map((e, i) => ({ event: e, origIdx: i }))
+      .filter(({ event: e }) => {
+        if (filterFormat !== "all" && e.format !== filterFormat) return false;
+        if (filterEventType !== "all" && e.eventType !== filterEventType) return false;
+        return true;
+      });
   }, [pasteResult, filterFormat, filterEventType]);
 
   const filteredMatches = useMemo(() => {
-    return filteredEvents.flatMap((e) => e.matches);
-  }, [filteredEvents]);
+    return filteredEvents.flatMap(({ event, origIdx }) =>
+      event.matches.map((m) => {
+        const hero = heroOverrides[origIdx];
+        return hero ? { ...m, heroPlayed: hero } : m;
+      })
+    );
+  }, [filteredEvents, heroOverrides]);
 
   const availableFormats = useMemo(() => {
     if (!pasteResult) return [];
@@ -112,7 +121,13 @@ export default function ImportPage() {
       }
 
       if (result.totalMatches === 0) {
-        setError("No matches found. Make sure you've clicked \"View Results\" on each event on the GEM page before selecting all and copying.");
+        if (result.skippedEventNames.length > 0) {
+          setError(
+            `Found ${result.skippedEventNames.length} event${result.skippedEventNames.length === 1 ? "" : "s"} but none had match results to import (${result.skippedEventNames.join(", ")}). Teaching events and events without completed rounds are skipped.`
+          );
+        } else {
+          setError("No matches found. Make sure you've clicked \"View Results\" on each event on the GEM page before selecting all and copying.");
+        }
         return;
       }
       setPasteResult(result);
@@ -197,6 +212,7 @@ export default function ImportPage() {
     setExpandedEvent(null);
     setMethod(null);
     setAutoDetected(false);
+    setHeroOverrides({});
   }
 
   async function handleClearAll() {
@@ -631,10 +647,12 @@ export default function ImportPage() {
             <div>
               <h2 className="text-sm font-semibold text-fab-text mb-3">Events ({filteredEvents.length})</h2>
               <div className="space-y-2">
-                {filteredEvents.map((event, i) => {
+                {filteredEvents.map(({ event, origIdx }, i) => {
                   const wins = event.matches.filter((m) => m.result === MatchResult.Win).length;
                   const losses = event.matches.filter((m) => m.result === MatchResult.Loss).length;
                   const isExpanded = expandedEvent === i;
+                  const heroValue = heroOverrides[origIdx] || event.matches[0]?.heroPlayed || "";
+                  const needsHero = !heroOverrides[origIdx] && event.matches.every((m) => m.heroPlayed === "Unknown");
 
                   return (
                     <div key={i} className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden">
@@ -664,16 +682,45 @@ export default function ImportPage() {
                         </div>
                       </button>
                       {isExpanded && (
-                        <div className="border-t border-fab-border px-4 pb-4 space-y-2 pt-3">
-                          {event.matches.map((match, j) => (
-                            <MatchCard key={j} match={{ ...match, id: `preview-${i}-${j}`, createdAt: "" }} />
-                          ))}
+                        <div className="border-t border-fab-border px-4 pb-4 pt-3 space-y-3">
+                          <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                            <label className="text-xs text-fab-muted whitespace-nowrap">Hero:</label>
+                            <select
+                              value={heroValue === "Unknown" ? "" : heroValue}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setHeroOverrides((prev) => val ? { ...prev, [origIdx]: val } : (() => { const { [origIdx]: _, ...rest } = prev; return rest; })());
+                              }}
+                              className={`bg-fab-bg border rounded px-2 py-1 text-sm outline-none focus:border-fab-gold ${needsHero ? "border-fab-draw/50 text-fab-draw" : "border-fab-border text-fab-text"}`}
+                            >
+                              <option value="">{needsHero ? "Select hero..." : "Unknown"}</option>
+                              {allHeroes.map((h) => (
+                                <option key={h.name} value={h.name}>{h.name}</option>
+                              ))}
+                            </select>
+                            {needsHero && <span className="text-[10px] text-fab-draw">Optional</span>}
+                          </div>
+                          <div className="space-y-2">
+                            {event.matches.map((match, j) => (
+                              <MatchCard key={j} match={{ ...match, heroPlayed: heroOverrides[origIdx] || match.heroPlayed, id: `preview-${i}-${j}`, createdAt: "" }} />
+                            ))}
+                          </div>
                         </div>
                       )}
                     </div>
                   );
                 })}
               </div>
+            </div>
+          )}
+
+          {/* Skipped events note */}
+          {pasteResult && pasteResult.skippedEventNames.length > 0 && (
+            <div className="bg-fab-draw/10 border border-fab-draw/30 rounded-lg p-4 text-sm">
+              <p className="text-fab-draw font-medium mb-1">
+                {pasteResult.skippedEventNames.length} event{pasteResult.skippedEventNames.length === 1 ? "" : "s"} skipped (no match results)
+              </p>
+              <p className="text-fab-muted">{pasteResult.skippedEventNames.join(", ")}</p>
             </div>
           )}
 

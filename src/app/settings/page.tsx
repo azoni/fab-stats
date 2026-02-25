@@ -102,6 +102,8 @@ export default function SettingsPage() {
   const [deletePassword, setDeletePassword] = useState("");
   const [needsPassword, setNeedsPassword] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [isPublic, setIsPublic] = useState(profile?.isPublic ?? false);
+  const [togglingPublic, setTogglingPublic] = useState(false);
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
@@ -304,6 +306,46 @@ export default function SettingsPage() {
           {saving ? "Saving..." : saved ? "Saved!" : "Save Changes"}
         </button>
       </form>
+
+      {/* Privacy */}
+      <div className="bg-fab-surface border border-fab-border rounded-lg p-6 mb-4">
+        <h2 className="text-sm font-semibold text-fab-text mb-2">Privacy</h2>
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm text-fab-text">Public Profile</p>
+            <p className="text-xs text-fab-dim mt-0.5">
+              {isPublic
+                ? "Anyone can view your profile, match history, and stats. Opponent names are hidden from viewers."
+                : "Your profile is private. Only you can see your data."}
+            </p>
+          </div>
+          <button
+            onClick={async () => {
+              if (!user) return;
+              setTogglingPublic(true);
+              try {
+                const next = !isPublic;
+                await updateProfile(user.uid, { isPublic: next });
+                setIsPublic(next);
+              } catch {
+                setError("Failed to update privacy setting.");
+              } finally {
+                setTogglingPublic(false);
+              }
+            }}
+            disabled={togglingPublic}
+            className={`relative w-11 h-6 rounded-full transition-colors shrink-0 ${
+              isPublic ? "bg-fab-win" : "bg-fab-border"
+            } ${togglingPublic ? "opacity-50" : ""}`}
+          >
+            <span
+              className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${
+                isPublic ? "translate-x-5" : ""
+              }`}
+            />
+          </button>
+        </div>
+      </div>
 
       <YearInReview />
 

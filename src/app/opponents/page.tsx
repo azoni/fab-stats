@@ -1,6 +1,7 @@
 "use client";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useMatches } from "@/hooks/useMatches";
 import { useAuth } from "@/contexts/AuthContext";
 import { computeOpponentStats } from "@/lib/stats";
@@ -22,6 +23,7 @@ function guessEventTypeFromNotes(notes: string): string {
 }
 
 export default function OpponentsPage() {
+  const searchParams = useSearchParams();
   const { matches, isLoaded } = useMatches();
   const { user } = useAuth();
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -29,6 +31,15 @@ export default function OpponentsPage() {
   const [filterFormat, setFilterFormat] = useState("all");
   const [filterEventType, setFilterEventType] = useState("all");
   const [search, setSearch] = useState("");
+
+  // Pre-fill search from URL query param (e.g. /opponents?q=PlayerName)
+  useEffect(() => {
+    const q = searchParams.get("q");
+    if (q) {
+      setSearch(q);
+      setExpanded(q);
+    }
+  }, [searchParams]);
 
   const allFormats = useMemo(() => {
     return [...new Set(matches.map((m) => m.format))];

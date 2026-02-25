@@ -2,8 +2,11 @@
 import { useState, useMemo } from "react";
 import Link from "next/link";
 import { useLeaderboard } from "@/hooks/useLeaderboard";
+import { useMatches } from "@/hooks/useMatches";
+import { useAuth } from "@/contexts/AuthContext";
+import { computeOpponentStats } from "@/lib/stats";
 import { TrophyIcon } from "@/components/icons/NavIcons";
-import type { LeaderboardEntry } from "@/types";
+import type { LeaderboardEntry, OpponentStats } from "@/types";
 
 type Tab = "winrate" | "volume" | "streaks" | "draws" | "events" | "rated" | "nemesis";
 
@@ -29,7 +32,20 @@ function formatRate(rate: number): string {
 
 export default function LeaderboardPage() {
   const { entries, loading } = useLeaderboard();
+  const { matches } = useMatches();
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<Tab>("winrate");
+
+  // Build h2h lookup: opponent display name → stats from the current user's matches
+  const h2hMap = useMemo(() => {
+    if (!user || matches.length === 0) return new Map<string, OpponentStats>();
+    const oppStats = computeOpponentStats(matches);
+    const map = new Map<string, OpponentStats>();
+    for (const opp of oppStats) {
+      map.set(opp.opponentName.toLowerCase(), opp);
+    }
+    return map;
+  }, [user, matches]);
 
   const ranked = useMemo(() => {
     switch (activeTab) {
@@ -144,7 +160,7 @@ export default function LeaderboardPage() {
       {!loading && activeTab !== "nemesis" && ranked.length > 0 && (
         <div className="space-y-2">
           {ranked.map((entry, i) => (
-            <LeaderboardRow key={entry.userId} entry={entry} rank={i + 1} tab={activeTab} />
+            <LeaderboardRow key={entry.userId} entry={entry} rank={i + 1} tab={activeTab} h2h={h2hMap.get(entry.displayName.toLowerCase())} isMe={entry.userId === user?.uid} />
           ))}
         </div>
       )}
@@ -156,10 +172,14 @@ function LeaderboardRow({
   entry,
   rank,
   tab,
+  h2h,
+  isMe,
 }: {
   entry: LeaderboardEntry;
   rank: number;
   tab: Tab;
+  h2h?: OpponentStats;
+  isMe?: boolean;
 }) {
   const initials = entry.displayName
     .split(" ")
@@ -200,6 +220,19 @@ function LeaderboardRow({
       <div className="min-w-0 flex-1">
         <p className="font-semibold text-fab-text truncate">{entry.displayName}</p>
         <p className="text-xs text-fab-dim truncate">@{entry.username}</p>
+        {h2h && !isMe && (
+          <Link
+            href={`/opponents?q=${encodeURIComponent(entry.displayName)}`}
+            onClick={(e) => e.stopPropagation()}
+            className="inline-flex items-center gap-1 mt-1 text-[10px] px-1.5 py-0.5 rounded bg-fab-bg border border-fab-border hover:border-fab-gold/30 transition-colors"
+            title={`Your record: ${h2h.wins}W ${h2h.losses}L across ${h2h.totalMatches} matches`}
+          >
+            <span className="text-fab-muted">H2H</span>
+            <span className={h2h.winRate >= 50 ? "text-fab-win font-semibold" : "text-fab-loss font-semibold"}>
+              {h2h.wins}-{h2h.losses}{h2h.draws > 0 ? `-${h2h.draws}` : ""}
+            </span>
+          </Link>
+        )}
       </div>
 
       {/* Stat */}

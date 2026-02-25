@@ -14,6 +14,7 @@ export interface PasteImportEvent {
 export interface PasteImportResult {
   events: PasteImportEvent[];
   totalMatches: number;
+  skippedEventNames: string[];
 }
 
 const NOISE_PATTERNS = [
@@ -175,18 +176,23 @@ export function parseGemPaste(text: string): PasteImportResult {
   } | null = null;
   let currentMatches: Omit<MatchRecord, "id" | "createdAt">[] = [];
   let contextLines: string[] = [];
+  const skippedEventNames: string[] = [];
 
   function saveCurrentEvent() {
-    if (currentMatches.length > 0 && currentEvent) {
-      events.push({
-        eventName: currentEvent.name,
-        eventDate: currentEvent.date,
-        format: currentEvent.format,
-        rated: currentEvent.rated,
-        venue: currentEvent.venue,
-        eventType: currentEvent.eventType,
-        matches: currentMatches,
-      });
+    if (currentEvent) {
+      if (currentMatches.length > 0) {
+        events.push({
+          eventName: currentEvent.name,
+          eventDate: currentEvent.date,
+          format: currentEvent.format,
+          rated: currentEvent.rated,
+          venue: currentEvent.venue,
+          eventType: currentEvent.eventType,
+          matches: currentMatches,
+        });
+      } else {
+        skippedEventNames.push(currentEvent.name);
+      }
       currentMatches = [];
     }
   }
@@ -272,7 +278,7 @@ export function parseGemPaste(text: string): PasteImportResult {
   saveCurrentEvent();
 
   const totalMatches = events.reduce((sum, e) => sum + e.matches.length, 0);
-  return { events, totalMatches };
+  return { events, totalMatches, skippedEventNames };
 }
 
 export function parseExtensionJson(json: string): PasteImportResult {
@@ -362,6 +368,7 @@ export function parseExtensionJson(json: string): PasteImportResult {
   return {
     events,
     totalMatches: events.reduce((sum, e) => sum + e.matches.length, 0),
+    skippedEventNames: [],
   };
 }
 
