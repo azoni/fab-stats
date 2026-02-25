@@ -599,9 +599,15 @@ function PlayoffFinishesSection({ finishes }: { finishes: PlayoffFinish[] }) {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold text-fab-text">Playoff Finishes</h2>
-        <span className="text-sm text-fab-dim">{finishes.length} total</span>
+      <div className="mb-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-fab-text flex items-center gap-2">
+            Playoff Finishes
+            <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400 border border-amber-500/30">Beta</span>
+          </h2>
+          <span className="text-sm text-fab-dim">{finishes.length} total</span>
+        </div>
+        <p className="text-xs text-fab-dim mt-1">Playoff detection is a work in progress and may not be fully accurate.</p>
       </div>
       <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden">
         <table className="w-full text-sm">

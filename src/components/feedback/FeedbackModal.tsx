@@ -1,7 +1,9 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { submitFeedback } from "@/lib/feedback";
+import { getAdminUid } from "@/lib/admin";
 
 interface FeedbackModalProps {
   open: boolean;
@@ -9,12 +11,20 @@ interface FeedbackModalProps {
 }
 
 export function FeedbackModal({ open, onClose }: FeedbackModalProps) {
-  const { profile } = useAuth();
+  const { profile, isAdmin } = useAuth();
+  const router = useRouter();
   const [type, setType] = useState<"bug" | "feature">("bug");
   const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState("");
+  const [adminUid, setAdminUid] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (open && !isAdmin) {
+      getAdminUid().then(setAdminUid);
+    }
+  }, [open, isAdmin]);
 
   if (!open) return null;
 
@@ -54,6 +64,7 @@ export function FeedbackModal({ open, onClose }: FeedbackModalProps) {
             Thanks for your feedback!
           </div>
         ) : (
+          <>
           <form onSubmit={handleSubmit}>
             <div className="flex gap-2 mb-4">
               <button
@@ -115,6 +126,24 @@ export function FeedbackModal({ open, onClose }: FeedbackModalProps) {
               </button>
             </div>
           </form>
+
+          {adminUid && !isAdmin && (
+            <div className="mt-4 pt-4 border-t border-fab-border text-center">
+              <button
+                onClick={() => {
+                  onClose();
+                  router.push(`/inbox/${adminUid}`);
+                }}
+                className="inline-flex items-center gap-1.5 text-sm text-fab-muted hover:text-fab-gold transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                </svg>
+                Or message the admin directly
+              </button>
+            </div>
+          )}
+          </>
         )}
       </div>
     </div>
