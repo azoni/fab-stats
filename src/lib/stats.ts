@@ -351,40 +351,21 @@ export function computeVenueStats(matches: MatchRecord[]): VenueStats[] {
 export function computeBestFinish(
   eventStats: EventStats[]
 ): { label: string; eventName: string; eventDate: string } | null {
-  // Rank: Champion (5) > Finalist (4) > Top 4 (3) > Top 8 (2) > Playoff (1)
-  const rankMap: Record<string, number> = {
-    Finals: 4,
-    "Top 4": 3,
-    "Top 8": 2,
-    Playoff: 1,
-  };
+  // Use playoff finish data for best finish (reuses same logic)
+  const finishes = computePlayoffFinishes(eventStats);
+  if (finishes.length === 0) return null;
 
-  let best: { rank: number; label: string; eventName: string; eventDate: string } | null = null;
+  const rankMap: Record<string, number> = { top8: 1, top4: 2, finalist: 3, champion: 4 };
+  const labelMap: Record<string, string> = { top8: "Top 8", top4: "Top 4", finalist: "Finalist", champion: "Champion" };
 
-  for (const event of eventStats) {
-    for (const match of event.matches) {
-      const roundInfo = match.notes?.split(" | ")[1]?.trim();
-      if (!roundInfo) continue;
-
-      let rank = rankMap[roundInfo] ?? 0;
-      if (rank === 0) continue;
-
-      // Finals + Win = Champion (rank 5)
-      let label = roundInfo;
-      if (roundInfo === "Finals" && match.result === MatchResult.Win) {
-        rank = 5;
-        label = "Champion";
-      } else if (roundInfo === "Finals") {
-        label = "Finalist";
-      }
-
-      if (!best || rank > best.rank) {
-        best = { rank, label, eventName: event.eventName, eventDate: event.eventDate };
-      }
+  let best = finishes[0];
+  for (const f of finishes) {
+    if ((rankMap[f.type] || 0) > (rankMap[best.type] || 0)) {
+      best = f;
     }
   }
 
-  return best ? { label: best.label, eventName: best.eventName, eventDate: best.eventDate } : null;
+  return { label: labelMap[best.type] || best.type, eventName: best.eventName, eventDate: best.eventDate };
 }
 
 export interface PlayoffFinish {
@@ -395,48 +376,72 @@ export interface PlayoffFinish {
   eventType: string;
 }
 
-export function computePlayoffFinishes(eventStats: EventStats[]): PlayoffFinish[] {
-  const rankMap: Record<string, number> = {
-    Finals: 4,
-    "Top 4": 3,
-    "Top 8": 2,
-    Playoff: 1,
-  };
+function isPlayoffRound(roundInfo: string): boolean {
+  return /^Round P/i.test(roundInfo) ||
+    /^P\d/i.test(roundInfo) ||
+    /Top\s*8/i.test(roundInfo) ||
+    /Top\s*4/i.test(roundInfo) ||
+    /Finals?$/i.test(roundInfo) ||
+    /Semi/i.test(roundInfo) ||
+    /Playoff/i.test(roundInfo) ||
+    /Quarter/i.test(roundInfo);
+}
 
+export function computePlayoffFinishes(eventStats: EventStats[]): PlayoffFinish[] {
   const finishes: PlayoffFinish[] = [];
 
   for (const event of eventStats) {
-    let bestRank = 0;
-    let bestLabel = "";
+    // Collect playoff matches
+    const playoffMatches: MatchRecord[] = [];
 
     for (const match of event.matches) {
-      const roundInfo = match.notes?.split(" | ")[1]?.trim();
-      if (!roundInfo) continue;
-
-      let rank = rankMap[roundInfo] ?? 0;
-      if (rank === 0) continue;
-
-      if (roundInfo === "Finals" && match.result === MatchResult.Win) {
-        rank = 5;
-        if (rank > bestRank) { bestRank = rank; bestLabel = "champion"; }
-      } else if (roundInfo === "Finals") {
-        if (rank > bestRank) { bestRank = rank; bestLabel = "finalist"; }
-      } else if (roundInfo === "Top 4") {
-        if (rank > bestRank) { bestRank = rank; bestLabel = "top4"; }
-      } else if (roundInfo === "Top 8" || roundInfo === "Playoff") {
-        if (rank > bestRank) { bestRank = rank; bestLabel = "top8"; }
+      const roundInfo = match.notes?.split(" | ")[1]?.trim() || "";
+      if (isPlayoffRound(roundInfo)) {
+        playoffMatches.push(match);
       }
     }
 
-    if (bestRank > 0) {
-      finishes.push({
-        type: bestLabel as PlayoffFinish["type"],
-        eventName: event.eventName,
-        eventDate: event.eventDate,
-        format: event.format,
-        eventType: event.eventType || "Other",
-      });
+    if (playoffMatches.length === 0) continue;
+
+    // Determine finish from win/loss progression
+    const wins = playoffMatches.filter((m) => m.result === MatchResult.Win).length;
+    const lastMatch = playoffMatches[playoffMatches.length - 1];
+    const wonLast = lastMatch.result === MatchResult.Win;
+
+    let finishType: PlayoffFinish["type"];
+
+    if (wins >= 3) {
+      // Won 3+ playoff matches = champion
+      finishType = "champion";
+    } else if (wins >= 2 && wonLast) {
+      // Won 2+ and won the last one = champion (at least Top 4 bracket)
+      finishType = "champion";
+    } else if (wins >= 2) {
+      // Won 2+ but lost the last = finalist
+      finishType = "finalist";
+    } else if (wins === 1 && !wonLast) {
+      // Won 1, lost the next = top 4
+      finishType = "top4";
+    } else if (wins === 1 && wonLast) {
+      // Won 1 match, no loss recorded — check round label
+      const roundInfo = lastMatch.notes?.split(" | ")[1]?.trim() || "";
+      if (/Finals?$/i.test(roundInfo)) {
+        finishType = "champion";
+      } else {
+        finishType = "top4";
+      }
+    } else {
+      // 0 wins = top 8
+      finishType = "top8";
     }
+
+    finishes.push({
+      type: finishType,
+      eventName: event.eventName,
+      eventDate: event.eventDate,
+      format: event.format,
+      eventType: event.eventType || "Other",
+    });
   }
 
   return finishes.sort((a, b) => new Date(b.eventDate).getTime() - new Date(a.eventDate).getTime());

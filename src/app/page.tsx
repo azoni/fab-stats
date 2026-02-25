@@ -19,6 +19,9 @@ import { MatchCard } from "@/components/matches/MatchCard";
 import { EventCard } from "@/components/events/EventCard";
 import { ShieldIcon } from "@/components/icons/NavIcons";
 import { MatchResult, GameFormat } from "@/types";
+import { allHeroes as knownHeroes } from "@/lib/heroes";
+
+const VALID_HERO_NAMES = new Set(knownHeroes.map((h) => h.name));
 
 export default function Dashboard() {
   const { matches, isLoaded } = useMatches();
@@ -47,7 +50,7 @@ export default function Dashboard() {
   }, [matches]);
 
   const allHeroes = useMemo(() => {
-    const heroes = new Set(matches.map((m) => m.heroPlayed).filter((h) => h && h !== "Unknown"));
+    const heroes = new Set(matches.map((m) => m.heroPlayed).filter((h) => h && VALID_HERO_NAMES.has(h)));
     return Array.from(heroes).sort();
   }, [matches]);
 

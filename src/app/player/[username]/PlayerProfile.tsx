@@ -23,6 +23,9 @@ import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import type { MatchRecord, UserProfile, Achievement } from "@/types";
 import { MatchResult } from "@/types";
+import { allHeroes as knownHeroes } from "@/lib/heroes";
+
+const VALID_HERO_NAMES = new Set(knownHeroes.map((h) => h.name));
 
 type PageState =
   | { status: "loading" }
@@ -54,7 +57,7 @@ export default function PlayerProfile() {
   }, [loadedMatches]);
 
   const allHeroes = useMemo(() => {
-    const heroes = new Set(loadedMatches.map((m) => m.heroPlayed).filter((h) => h && h !== "Unknown"));
+    const heroes = new Set(loadedMatches.map((m) => m.heroPlayed).filter((h) => h && VALID_HERO_NAMES.has(h)));
     return Array.from(heroes).sort();
   }, [loadedMatches]);
 
