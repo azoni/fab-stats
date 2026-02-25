@@ -30,6 +30,11 @@ export default function Dashboard() {
   const [filterFormat, setFilterFormat] = useState<string>("all");
   const [filterRated, setFilterRated] = useState<string>("all");
   const [filterHero, setFilterHero] = useState<string>("all");
+  const [announcementDismissed, setAnnouncementDismissed] = useState(true);
+
+  useEffect(() => {
+    setAnnouncementDismissed(localStorage.getItem("fab_announcement_v1") === "dismissed");
+  }, []);
   const leaderboardUpdated = useRef(false);
 
   // Sync leaderboard entry when matches are loaded
@@ -148,6 +153,27 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-8">
+      {/* Announcement Banner */}
+      {!announcementDismissed && (
+        <div className="relative bg-fab-gold/10 border border-fab-gold/30 rounded-lg p-4 pr-10">
+          <button
+            onClick={() => {
+              setAnnouncementDismissed(true);
+              localStorage.setItem("fab_announcement_v1", "dismissed");
+            }}
+            className="absolute top-3 right-3 text-fab-dim hover:text-fab-text transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+          <p className="text-xs font-medium text-fab-gold uppercase tracking-wider mb-1">From the Developer</p>
+          <p className="text-sm text-fab-text">
+            Thank you all for joining — the response on day one has been incredible. I&apos;ve read every feature request and bug report, and I&apos;m actively working through them. Don&apos;t hesitate to reach out about anything at all.
+          </p>
+        </div>
+      )}
+
       {/* Profile Header + Streak */}
       <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
         <div className="flex items-center gap-4">
