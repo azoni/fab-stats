@@ -28,8 +28,22 @@ export function Navbar() {
   const [userCount, setUserCount] = useState(0);
   useEffect(() => setMounted(true), []);
   useEffect(() => {
+    const CACHE_KEY = "fab_user_count";
+    const CACHE_TTL = 60 * 60 * 1000; // 1 hour
+    const cached = localStorage.getItem(CACHE_KEY);
+    if (cached) {
+      const { count, ts } = JSON.parse(cached);
+      if (Date.now() - ts < CACHE_TTL) {
+        setUserCount(count);
+        return;
+      }
+    }
     getCountFromServer(collection(db, "usernames"))
-      .then((snap) => setUserCount(snap.data().count))
+      .then((snap) => {
+        const count = snap.data().count;
+        setUserCount(count);
+        localStorage.setItem(CACHE_KEY, JSON.stringify({ count, ts: Date.now() }));
+      })
       .catch(() => {});
   }, []);
 
