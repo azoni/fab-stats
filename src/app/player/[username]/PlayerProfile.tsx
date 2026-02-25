@@ -545,6 +545,49 @@ function ProfileHeader({ profile, achievements, bestRank, isAdmin, isOwner }: { 
 
 import type { PlayoffFinish } from "@/lib/stats";
 
+function PlayoffTrophyIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className || "w-5 h-5"} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M5 3h14v2h2v4c0 1.1-.9 2-2 2h-1.2A5 5 0 0112 15.9V18h3v2h2v2H7v-2h2v-2h3v-2.1A5 5 0 016.2 11H5c-1.1 0-2-.9-2-2V5h2V3zm2 2v4a3 3 0 003 3h4a3 3 0 003-3V5H7zM5 7v2h1.07A5.06 5.06 0 015.02 7H5zm14 0h-.02c-.02.68-.15 1.36-.37 2H19V7z" />
+    </svg>
+  );
+}
+
+function PlayoffMedalIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className || "w-5 h-5"} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M8 2l2 4h4l2-4" />
+      <circle cx="12" cy="14" r="6" fill="currentColor" opacity="0.15" stroke="currentColor" />
+      <circle cx="12" cy="14" r="6" />
+      <path d="M9 14l2 2 4-4" />
+    </svg>
+  );
+}
+
+function PlayoffPodiumIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className || "w-5 h-5"} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="2" y="14" width="6" height="8" rx="1" fill="currentColor" opacity="0.15" />
+      <rect x="9" y="8" width="6" height="14" rx="1" fill="currentColor" opacity="0.15" />
+      <rect x="16" y="11" width="6" height="11" rx="1" fill="currentColor" opacity="0.15" />
+      <rect x="2" y="14" width="6" height="8" rx="1" />
+      <rect x="9" y="8" width="6" height="14" rx="1" />
+      <rect x="16" y="11" width="6" height="11" rx="1" />
+    </svg>
+  );
+}
+
+function PlayoffBracketIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className || "w-5 h-5"} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 4h4v4H4zM4 16h4v4H4zM16 10h4v4h-4z" fill="currentColor" opacity="0.15" />
+      <path d="M4 4h4v4H4zM4 16h4v4H4zM16 10h4v4h-4z" />
+      <path d="M8 6h4v14H8" fill="none" />
+      <path d="M12 12h4" />
+    </svg>
+  );
+}
+
 function PlayoffFinishes({ finishes }: { finishes: PlayoffFinish[] }) {
   const champions = finishes.filter((f) => f.type === "champion");
   const finalists = finishes.filter((f) => f.type === "finalist");
@@ -552,10 +595,10 @@ function PlayoffFinishes({ finishes }: { finishes: PlayoffFinish[] }) {
   const top8 = finishes.filter((f) => f.type === "top8");
 
   const categories = [
-    { label: "Wins", items: champions, icon: "\u{1F3C6}", color: "text-fab-gold", bg: "bg-fab-gold/10 border-fab-gold/30" },
-    { label: "Finals", items: finalists, icon: "\u{1F948}", color: "text-gray-300", bg: "bg-gray-400/10 border-gray-400/30" },
-    { label: "Top 4", items: top4, icon: "\u{1F949}", color: "text-amber-600", bg: "bg-amber-600/10 border-amber-600/30" },
-    { label: "Top 8", items: top8, icon: "\u{1F3AF}", color: "text-blue-400", bg: "bg-blue-400/10 border-blue-400/30" },
+    { label: "Wins", items: champions, icon: <PlayoffTrophyIcon className="w-6 h-6 text-fab-gold" />, color: "text-fab-gold", bg: "bg-fab-gold/10 border-fab-gold/30" },
+    { label: "Finals", items: finalists, icon: <PlayoffMedalIcon className="w-6 h-6 text-gray-300" />, color: "text-gray-300", bg: "bg-gray-400/10 border-gray-400/30" },
+    { label: "Top 4", items: top4, icon: <PlayoffPodiumIcon className="w-6 h-6 text-amber-600" />, color: "text-amber-600", bg: "bg-amber-600/10 border-amber-600/30" },
+    { label: "Top 8", items: top8, icon: <PlayoffBracketIcon className="w-6 h-6 text-blue-400" />, color: "text-blue-400", bg: "bg-blue-400/10 border-blue-400/30" },
   ].filter((c) => c.items.length > 0);
 
   if (categories.length === 0) return null;
@@ -567,7 +610,7 @@ function PlayoffFinishes({ finishes }: { finishes: PlayoffFinish[] }) {
         {categories.map((cat) => (
           <div key={cat.label} className={`rounded-lg border p-4 ${cat.bg}`}>
             <div className="flex items-center gap-2 mb-2">
-              <span className="text-xl">{cat.icon}</span>
+              {cat.icon}
               <div>
                 <p className={`text-2xl font-black ${cat.color}`}>{cat.items.length}</p>
                 <p className="text-xs text-fab-muted">{cat.label}</p>
