@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { isUsernameTaken, createProfile } from "@/lib/firestore-storage";
@@ -24,6 +25,7 @@ export default function SetupPage() {
   const [checking, setChecking] = useState(false);
   const [available, setAvailable] = useState<boolean | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   async function checkUsername(value: string) {
     const lower = value.toLowerCase();
@@ -185,13 +187,28 @@ export default function SetupPage() {
             Your real name helps opponents find your profile from match results.
           </p>
 
+          <label className="flex items-start gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={acceptedTerms}
+              onChange={(e) => setAcceptedTerms(e.target.checked)}
+              className="mt-0.5 accent-fab-gold"
+            />
+            <span className="text-xs text-fab-muted">
+              I agree to the{" "}
+              <Link href="/terms" className="text-fab-gold hover:underline" target="_blank">Terms of Service</Link>
+              {" "}and{" "}
+              <Link href="/privacy" className="text-fab-gold hover:underline" target="_blank">Privacy Policy</Link>
+            </span>
+          </label>
+
           {error && (
             <p className="text-fab-loss text-sm">{error}</p>
           )}
 
           <button
             type="submit"
-            disabled={submitting || available === false || !USERNAME_REGEX.test(username)}
+            disabled={submitting || available === false || !USERNAME_REGEX.test(username) || !acceptedTerms}
             className="w-full py-2.5 rounded-lg font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors disabled:opacity-50"
           >
             {submitting ? "Creating..." : "Create Profile"}

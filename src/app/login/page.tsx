@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -31,6 +32,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -104,6 +106,12 @@ export default function LoginPage() {
           </svg>
           Continue with Google
         </button>
+        <p className="text-[11px] text-fab-dim text-center -mt-2 mb-2">
+          By signing in, you agree to our{" "}
+          <Link href="/terms" className="text-fab-gold/60 hover:underline" target="_blank">Terms</Link>
+          {" "}&amp;{" "}
+          <Link href="/privacy" className="text-fab-gold/60 hover:underline" target="_blank">Privacy Policy</Link>
+        </p>
 
         <div className="relative mb-4">
           <div className="absolute inset-0 flex items-center">
@@ -172,13 +180,30 @@ export default function LoginPage() {
             />
           </div>
 
+          {mode === "register" && (
+            <label className="flex items-start gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={acceptedTerms}
+                onChange={(e) => setAcceptedTerms(e.target.checked)}
+                className="mt-0.5 accent-fab-gold"
+              />
+              <span className="text-xs text-fab-muted">
+                I agree to the{" "}
+                <Link href="/terms" className="text-fab-gold hover:underline" target="_blank">Terms of Service</Link>
+                {" "}and{" "}
+                <Link href="/privacy" className="text-fab-gold hover:underline" target="_blank">Privacy Policy</Link>
+              </span>
+            </label>
+          )}
+
           {error && (
             <p className="text-fab-loss text-sm">{error}</p>
           )}
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || (mode === "register" && !acceptedTerms)}
             className="w-full py-2.5 rounded-lg font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors disabled:opacity-50"
           >
             {loading

@@ -3,7 +3,7 @@ import { useState, useRef, useMemo } from "react";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
 import { useMatches } from "@/hooks/useMatches";
-import { updateProfile, uploadProfilePhoto, deleteAccountData } from "@/lib/firestore-storage";
+import { updateProfile, uploadProfilePhoto, deleteAccountData, getMatchesByUserId } from "@/lib/firestore-storage";
 import {
   deleteUser,
   reauthenticateWithPopup,
@@ -102,6 +102,7 @@ export default function SettingsPage() {
   const [deletePassword, setDeletePassword] = useState("");
   const [needsPassword, setNeedsPassword] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [isPublic, setIsPublic] = useState(profile?.isPublic ?? false);
   const [togglingPublic, setTogglingPublic] = useState(false);
 
@@ -406,6 +407,50 @@ export default function SettingsPage() {
             <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
           </svg>
         </Link>
+      </div>
+
+      {/* Your Data */}
+      <div className="bg-fab-surface border border-fab-border rounded-lg p-6 mb-4">
+        <h2 className="text-sm font-semibold text-fab-text mb-2">Your Data</h2>
+        <p className="text-xs text-fab-dim mb-3">Download all your data in JSON format (profile, matches, statistics).</p>
+        <button
+          onClick={async () => {
+            if (!user) return;
+            setExporting(true);
+            try {
+              const allMatches = await getMatchesByUserId(user.uid);
+              const exportData = {
+                exportedAt: new Date().toISOString(),
+                profile: {
+                  uid: profile.uid,
+                  username: profile.username,
+                  displayName: profile.displayName,
+                  firstName: profile.firstName,
+                  lastName: profile.lastName,
+                  isPublic: profile.isPublic,
+                  createdAt: profile.createdAt,
+                },
+                matches: allMatches.map(({ id, ...m }) => ({ id, ...m })),
+                totalMatches: allMatches.length,
+              };
+              const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: "application/json" });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = `fabstats-${profile.username}-${new Date().toISOString().split("T")[0]}.json`;
+              a.click();
+              URL.revokeObjectURL(url);
+            } catch {
+              setError("Failed to export data. Please try again.");
+            } finally {
+              setExporting(false);
+            }
+          }}
+          disabled={exporting}
+          className="px-4 py-2 rounded-lg text-sm font-semibold bg-fab-surface border border-fab-border text-fab-muted hover:text-fab-text hover:border-fab-gold/30 transition-colors disabled:opacity-50"
+        >
+          {exporting ? "Exporting..." : "Download My Data"}
+        </button>
       </div>
 
       {/* Account */}

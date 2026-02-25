@@ -105,11 +105,20 @@ export default function RootLayout({
               <LayoutShell>{children}</LayoutShell>
             </div>
           </main>
-          <footer className="hidden md:block text-center py-4 text-[11px] text-fab-dim">
-            Built by{" "}
-            <a href="https://azoni.ai/" target="_blank" rel="noopener noreferrer" className="text-fab-gold/60 hover:text-fab-gold transition-colors">
-              azoni
-            </a>
+          <footer className="hidden md:block text-center py-4 text-[11px] text-fab-dim space-y-1">
+            <p>
+              Built by{" "}
+              <a href="https://azoni.ai/" target="_blank" rel="noopener noreferrer" className="text-fab-gold/60 hover:text-fab-gold transition-colors">
+                azoni
+              </a>
+              {" "}&middot;{" "}
+              <a href="/terms" className="hover:text-fab-text transition-colors">Terms</a>
+              {" "}&middot;{" "}
+              <a href="/privacy" className="hover:text-fab-text transition-colors">Privacy</a>
+            </p>
+            <p>
+              Flesh and Blood is a trademark of Legend Story Studios. Not affiliated with or endorsed by LSS.
+            </p>
           </footer>
           <FeedbackFab />
           <MobileNav />
