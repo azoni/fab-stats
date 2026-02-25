@@ -6,6 +6,8 @@ import { computeOverallStats, computeEventTypeStats, computeVenueStats, computeE
 import { MatchCard } from "@/components/matches/MatchCard";
 import { EventCard } from "@/components/events/EventCard";
 import { QuestionCircleIcon, LockIcon } from "@/components/icons/NavIcons";
+import { onAuthStateChanged } from "firebase/auth";
+import { auth } from "@/lib/firebase";
 import type { MatchRecord, UserProfile } from "@/types";
 import { MatchResult } from "@/types";
 
@@ -20,6 +22,13 @@ export default function PlayerProfile({ username }: { username: string }) {
   const [state, setState] = useState<PageState>({ status: "loading" });
 
   useEffect(() => {
+    // Wait for Firebase Auth to settle before reading Firestore
+    // This ensures the auth token is attached so rules can evaluate properly
+    const unsubscribe = onAuthStateChanged(auth, () => {
+      unsubscribe();
+      load();
+    });
+
     async function load() {
       setState({ status: "loading" });
 
@@ -42,7 +51,7 @@ export default function PlayerProfile({ username }: { username: string }) {
       }
     }
 
-    load();
+    return () => unsubscribe();
   }, [username]);
 
   if (state.status === "loading") {

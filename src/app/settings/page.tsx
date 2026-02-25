@@ -4,7 +4,13 @@ import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
 import { useMatches } from "@/hooks/useMatches";
 import { updateProfile, uploadProfilePhoto, deleteAccountData } from "@/lib/firestore-storage";
-import { deleteUser } from "firebase/auth";
+import {
+  deleteUser,
+  reauthenticateWithPopup,
+  GoogleAuthProvider,
+  EmailAuthProvider,
+  reauthenticateWithCredential,
+} from "firebase/auth";
 import { SparklesIcon } from "@/components/icons/NavIcons";
 
 function resizeImage(file: File, maxSize: number): Promise<string> {
@@ -89,6 +95,8 @@ export default function SettingsPage() {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const [deletePassword, setDeletePassword] = useState("");
+  const [needsPassword, setNeedsPassword] = useState(false);
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
@@ -325,7 +333,7 @@ export default function SettingsPage() {
                   <li>All your match history</li>
                   <li>Your profile and username</li>
                   <li>Your leaderboard entry</li>
-                  <li>Your Firebase account</li>
+                  <li>Your account login</li>
                 </ul>
                 <p className="text-xs text-fab-muted mb-2">
                   Type <strong className="text-fab-loss">delete</strong> to confirm:
@@ -337,20 +345,69 @@ export default function SettingsPage() {
                   placeholder="delete"
                   className="w-full bg-fab-bg border border-fab-border text-fab-text rounded-lg px-3 py-2 mb-3 focus:outline-none focus:border-fab-loss text-sm"
                 />
+                {needsPassword && (
+                  <div className="mb-3">
+                    <p className="text-xs text-fab-muted mb-1">
+                      Enter your password to confirm:
+                    </p>
+                    <input
+                      type="password"
+                      value={deletePassword}
+                      onChange={(e) => setDeletePassword(e.target.value)}
+                      placeholder="Your password"
+                      className="w-full bg-fab-bg border border-fab-border text-fab-text rounded-lg px-3 py-2 focus:outline-none focus:border-fab-loss text-sm"
+                    />
+                  </div>
+                )}
                 <div className="flex gap-2">
                   <button
                     onClick={async () => {
                       if (!user) return;
                       setDeleting(true);
+                      setError("");
+                      const isGoogle = user.providerData.some(
+                        (p) => p.providerId === "google.com"
+                      );
                       try {
+                        // Step 1: Re-authenticate to get a fresh token
+                        if (isGoogle) {
+                          await reauthenticateWithPopup(user, new GoogleAuthProvider());
+                        } else if (user.email && deletePassword) {
+                          const credential = EmailAuthProvider.credential(
+                            user.email,
+                            deletePassword
+                          );
+                          await reauthenticateWithCredential(user, credential);
+                        } else if (!isGoogle && !deletePassword) {
+                          setNeedsPassword(true);
+                          setDeleting(false);
+                          setError("Please enter your password to confirm deletion.");
+                          return;
+                        }
+
+                        // Step 2: Delete Firestore data (while auth is still valid)
                         await deleteAccountData(user.uid);
+
+                        // Step 3: Delete Firebase Auth account
                         await deleteUser(user);
-                      } catch {
-                        setError("Failed to delete account. You may need to sign in again first.");
+                      } catch (err: unknown) {
+                        const code = (err as { code?: string })?.code;
+                        if (code === "auth/requires-recent-login") {
+                          if (isGoogle) {
+                            setError("Please allow the Google sign-in popup to confirm deletion.");
+                          } else {
+                            setNeedsPassword(true);
+                            setError("Please enter your password to confirm deletion.");
+                          }
+                        } else if (code === "auth/wrong-password" || code === "auth/invalid-credential") {
+                          setError("Incorrect password. Please try again.");
+                        } else {
+                          setError("Failed to delete account. Please try again.");
+                        }
                         setDeleting(false);
                       }
                     }}
-                    disabled={deleting || deleteConfirmText !== "delete"}
+                    disabled={deleting || deleteConfirmText !== "delete" || (needsPassword && !deletePassword)}
                     className="px-4 py-2 rounded-md text-sm font-semibold bg-fab-loss text-white hover:bg-fab-loss/80 transition-colors disabled:opacity-50"
                   >
                     {deleting ? "Deleting..." : "Permanently Delete Account"}
@@ -359,6 +416,8 @@ export default function SettingsPage() {
                     onClick={() => {
                       setConfirmDelete(false);
                       setDeleteConfirmText("");
+                      setDeletePassword("");
+                      setNeedsPassword(false);
                     }}
                     className="px-4 py-2 rounded-md text-sm font-semibold bg-fab-surface border border-fab-border text-fab-muted hover:text-fab-text transition-colors"
                   >
