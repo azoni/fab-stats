@@ -36,6 +36,14 @@ export function Navbar() {
             <span className="text-xl font-bold text-fab-gold tracking-tight">FaB Stats</span>
           </Link>
           <div className="hidden md:flex items-center gap-1">
+            {mounted && !user && !isGuest && (
+              <Link
+                href="/login"
+                className="px-4 py-2 rounded-lg text-sm font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors"
+              >
+                Sign In
+              </Link>
+            )}
             {mounted && (user || isGuest) && (
               <>
                 {navLinks.map((link) => (
