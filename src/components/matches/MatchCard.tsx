@@ -8,6 +8,7 @@ interface MatchCardProps {
   match: MatchRecord;
   matchOwnerUid?: string;
   enableComments?: boolean;
+  obfuscateOpponents?: boolean;
 }
 
 const resultStyles = {
@@ -31,7 +32,7 @@ function getPlayoffBadge(roundInfo: string | undefined): { label: string; bg: st
   return null;
 }
 
-export function MatchCard({ match, matchOwnerUid, enableComments = false }: MatchCardProps) {
+export function MatchCard({ match, matchOwnerUid, enableComments = false, obfuscateOpponents = false }: MatchCardProps) {
   const [showComments, setShowComments] = useState(false);
   const style = resultStyles[match.result];
   const eventName = match.notes?.split(" | ")[0];
@@ -55,13 +56,17 @@ export function MatchCard({ match, matchOwnerUid, enableComments = false }: Matc
             {match.opponentName ? (
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-fab-dim">vs</span>
-                <Link
-                  href={`/search?q=${encodeURIComponent(match.opponentName)}`}
-                  className="font-semibold text-fab-text hover:text-fab-gold transition-colors"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  {match.opponentName}
-                </Link>
+                {obfuscateOpponents ? (
+                  <span className="font-semibold text-fab-dim">Opponent</span>
+                ) : (
+                  <Link
+                    href={`/search?q=${encodeURIComponent(match.opponentName)}`}
+                    className="font-semibold text-fab-text hover:text-fab-gold transition-colors"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {match.opponentName}
+                  </Link>
+                )}
                 {roundBadge}
               </div>
             ) : (

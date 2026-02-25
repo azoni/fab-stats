@@ -17,7 +17,7 @@ type PageState =
   | { status: "not_found" }
   | { status: "private" }
   | { status: "error"; message?: string }
-  | { status: "loaded"; profile: UserProfile; matches: MatchRecord[] };
+  | { status: "loaded"; profile: UserProfile; matches: MatchRecord[]; isOwner: boolean };
 
 export default function PlayerProfile() {
   const pathname = usePathname();
@@ -45,12 +45,12 @@ export default function PlayerProfile() {
     let cancelled = false;
 
     // Wait for Firebase Auth to settle before reading Firestore
-    const unsubscribe = onAuthStateChanged(auth, () => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       unsubscribe();
-      if (!cancelled) load();
+      if (!cancelled) load(currentUser?.uid);
     });
 
-    async function load() {
+    async function load(viewerUid?: string) {
       setState({ status: "loading" });
 
       try {
@@ -75,7 +75,8 @@ export default function PlayerProfile() {
         }
 
         if (!cancelled) {
-          setState({ status: "loaded", profile, matches });
+          const isOwner = !!viewerUid && viewerUid === profile.uid;
+          setState({ status: "loaded", profile, matches, isOwner });
         }
       } catch (err) {
         console.error("Failed to load profile:", err);
@@ -144,7 +145,7 @@ export default function PlayerProfile() {
     );
   }
 
-  const { profile, matches } = state;
+  const { profile, matches, isOwner } = state;
 
   if (matches.length === 0) {
     return (
@@ -252,7 +253,7 @@ export default function PlayerProfile() {
           <h2 className="text-lg font-semibold text-fab-text mb-4">Recent Events</h2>
           <div className="space-y-2">
             {recentEvents.map((event) => (
-              <EventCard key={`${event.eventName}-${event.eventDate}`} event={event} />
+              <EventCard key={`${event.eventName}-${event.eventDate}`} event={event} obfuscateOpponents={!isOwner} />
             ))}
           </div>
         </div>
@@ -317,7 +318,7 @@ export default function PlayerProfile() {
         <h2 className="text-lg font-semibold text-fab-text mb-4">Recent Matches</h2>
         <div className="space-y-2">
           {recentMatches.map((match) => (
-            <MatchCard key={match.id} match={match} matchOwnerUid={profile.uid} enableComments />
+            <MatchCard key={match.id} match={match} matchOwnerUid={profile.uid} enableComments obfuscateOpponents={!isOwner} />
           ))}
         </div>
       </div>

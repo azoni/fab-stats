@@ -4,17 +4,19 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { DashboardIcon, SwordsIcon, OpponentsIcon, TrendsIcon, ImportIcon, CalendarIcon, TrophyIcon } from "@/components/icons/NavIcons";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
-import { FeedbackModal } from "@/components/feedback/FeedbackModal";
 import { useAuth } from "@/contexts/AuthContext";
 import { collection, getCountFromServer } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import type { ReactNode } from "react";
 
-const navLinks: { href: string; label: string; icon: ReactNode }[] = [
+const coreLinks: { href: string; label: string; icon: ReactNode }[] = [
   { href: "/", label: "Dashboard", icon: <DashboardIcon className="w-4 h-4" /> },
   { href: "/leaderboard", label: "Leaderboard", icon: <TrophyIcon className="w-4 h-4" /> },
   { href: "/matches", label: "Matches", icon: <SwordsIcon className="w-4 h-4" /> },
   { href: "/events", label: "Events", icon: <CalendarIcon className="w-4 h-4" /> },
+];
+
+const authLinks: { href: string; label: string; icon: ReactNode }[] = [
   { href: "/opponents", label: "Opponents", icon: <OpponentsIcon className="w-4 h-4" /> },
   { href: "/trends", label: "Trends", icon: <TrendsIcon className="w-4 h-4" /> },
   { href: "/import", label: "Import", icon: <ImportIcon className="w-4 h-4" /> },
@@ -22,14 +24,13 @@ const navLinks: { href: string; label: string; icon: ReactNode }[] = [
 
 export function Navbar() {
   const pathname = usePathname();
-  const { user, profile, signOut, isGuest, isAdmin } = useAuth();
+  const { user, profile, isGuest, isAdmin } = useAuth();
   const [mounted, setMounted] = useState(false);
-  const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [userCount, setUserCount] = useState(0);
   useEffect(() => setMounted(true), []);
   useEffect(() => {
     const CACHE_KEY = "fab_user_count";
-    const CACHE_TTL = 60 * 60 * 1000; // 1 hour
+    const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
     const cached = localStorage.getItem(CACHE_KEY);
     if (cached) {
       const { count, ts } = JSON.parse(cached);
@@ -48,7 +49,6 @@ export function Navbar() {
   }, []);
 
   return (
-    <>
     <nav className="fixed top-0 left-0 right-0 z-50 bg-fab-surface/95 backdrop-blur-md border-b border-fab-border">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-14 items-center justify-between">
@@ -67,7 +67,21 @@ export function Navbar() {
           <div className="hidden md:flex items-center gap-1">
             {mounted && (
               <>
-                {navLinks.map((link) => (
+                {coreLinks.map((link) => (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className={`flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                      pathname === link.href
+                        ? "text-fab-gold bg-fab-gold/10"
+                        : "text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover"
+                    }`}
+                  >
+                    {link.icon}
+                    {link.label}
+                  </Link>
+                ))}
+                {user && !isGuest && authLinks.map((link) => (
                   <Link
                     key={link.href}
                     href={link.href}
@@ -124,17 +138,6 @@ export function Navbar() {
                   )}
                   {user && !isGuest && <NotificationBell />}
                   {user && !isGuest && (
-                    <button
-                      onClick={() => setFeedbackOpen(true)}
-                      className="p-1 rounded transition-colors text-fab-muted hover:text-fab-text"
-                      title="Send Feedback"
-                    >
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                      </svg>
-                    </button>
-                  )}
-                  {user && !isGuest && (
                     <Link
                       href="/settings"
                       className={`p-1 rounded transition-colors ${
@@ -172,7 +175,5 @@ export function Navbar() {
         </div>
       </div>
     </nav>
-    {user && !isGuest && <FeedbackModal open={feedbackOpen} onClose={() => setFeedbackOpen(false)} />}
-    </>
   );
 }

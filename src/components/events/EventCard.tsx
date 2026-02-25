@@ -7,6 +7,7 @@ import type { EventStats } from "@/types";
 
 interface EventCardProps {
   event: EventStats;
+  obfuscateOpponents?: boolean;
 }
 
 const resultColors = {
@@ -21,7 +22,7 @@ const resultLabels = {
   [MatchResult.Draw]: "D",
 };
 
-export function EventCard({ event }: EventCardProps) {
+export function EventCard({ event, obfuscateOpponents = false }: EventCardProps) {
   const [expanded, setExpanded] = useState(false);
 
   return (
@@ -92,7 +93,9 @@ export function EventCard({ event }: EventCardProps) {
                       )}
                     </td>
                     <td className="px-4 py-2.5">
-                      {match.opponentName ? (
+                      {obfuscateOpponents ? (
+                        <span className="text-fab-dim">Opponent</span>
+                      ) : match.opponentName ? (
                         <Link
                           href={`/search?q=${encodeURIComponent(match.opponentName)}`}
                           className="text-fab-text hover:text-fab-gold transition-colors"
