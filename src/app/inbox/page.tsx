@@ -1,7 +1,10 @@
 "use client";
+import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { useConversations } from "@/hooks/useConversations";
+import { getAdminUid } from "@/lib/admin";
 
 function formatTime(iso: string): string {
   const d = new Date(iso);
@@ -15,8 +18,16 @@ function formatTime(iso: string): string {
 }
 
 export default function InboxPage() {
-  const { user, isGuest } = useAuth();
+  const { user, isGuest, isAdmin } = useAuth();
   const { conversations, loaded } = useConversations();
+  const router = useRouter();
+  const [adminUid, setAdminUid] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (user && !isAdmin) {
+      getAdminUid().then(setAdminUid);
+    }
+  }, [user, isAdmin]);
 
   if (!user || isGuest) {
     return (
@@ -30,7 +41,20 @@ export default function InboxPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-fab-gold mb-2">Inbox</h1>
+      <div className="flex items-center justify-between mb-2">
+        <h1 className="text-2xl font-bold text-fab-gold">Inbox</h1>
+        {adminUid && !isAdmin && (
+          <button
+            onClick={() => router.push(`/inbox/${adminUid}`)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-fab-surface border border-fab-border text-fab-muted hover:text-fab-gold hover:border-fab-gold/30 transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+            </svg>
+            Message Admin
+          </button>
+        )}
+      </div>
       <p className="text-fab-muted text-sm mb-6">Your conversations</p>
 
       {!loaded && (

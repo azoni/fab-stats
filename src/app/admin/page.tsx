@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
-import { getAdminDashboardData, backfillLeaderboard, type AdminDashboardData, type AdminUserStats } from "@/lib/admin";
+import { getAdminDashboardData, backfillLeaderboard, broadcastMessage, type AdminDashboardData, type AdminUserStats } from "@/lib/admin";
 import { getAllFeedback, updateFeedbackStatus } from "@/lib/feedback";
 import { getCreators, saveCreators } from "@/lib/creators";
 import type { FeedbackItem, Creator } from "@/types";
@@ -12,7 +12,7 @@ type SortKey = "matchCount" | "createdAt" | "username";
 type SortDir = "asc" | "desc";
 
 export default function AdminPage() {
-  const { user, isAdmin, loading } = useAuth();
+  const { user, profile, isAdmin, loading } = useAuth();
   const router = useRouter();
   const [data, setData] = useState<AdminDashboardData | null>(null);
   const [fetching, setFetching] = useState(true);
@@ -28,6 +28,10 @@ export default function AdminPage() {
   const [creatorsList, setCreatorsList] = useState<Creator[]>([]);
   const [savingCreators, setSavingCreators] = useState(false);
   const [creatorsSaved, setCreatorsSaved] = useState(false);
+  const [broadcastText, setBroadcastText] = useState("");
+  const [broadcasting, setBroadcasting] = useState(false);
+  const [broadcastProgress, setBroadcastProgress] = useState("");
+  const [broadcastResult, setBroadcastResult] = useState("");
 
   // Redirect non-admins
   useEffect(() => {
@@ -421,6 +425,61 @@ export default function AdminPage() {
               >
                 + Add Creator
               </button>
+            </div>
+          </div>
+
+          {/* Broadcast Message */}
+          <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden mt-6">
+            <div className="px-4 py-3 border-b border-fab-border">
+              <h2 className="text-sm font-semibold text-fab-text">Broadcast Message</h2>
+              <p className="text-xs text-fab-dim mt-0.5">Send a message to all users. Appears in their inbox and as a notification.</p>
+            </div>
+            <div className="p-4 space-y-3">
+              <textarea
+                value={broadcastText}
+                onChange={(e) => setBroadcastText(e.target.value)}
+                placeholder="Type your message here..."
+                rows={3}
+                disabled={broadcasting}
+                className="w-full bg-fab-bg border border-fab-border text-fab-text text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-fab-gold resize-none disabled:opacity-50"
+              />
+              <div className="flex items-center justify-between">
+                <div className="text-xs text-fab-dim">
+                  {broadcastProgress && <span>{broadcastProgress}</span>}
+                  {broadcastResult && <span className={broadcastResult.includes("failed") ? "text-fab-loss" : "text-fab-win"}>{broadcastResult}</span>}
+                </div>
+                <button
+                  onClick={async () => {
+                    if (!profile || !broadcastText.trim()) return;
+                    setBroadcasting(true);
+                    setBroadcastProgress("Starting...");
+                    setBroadcastResult("");
+                    try {
+                      const targets = data!.users
+                        .filter((u) => u.uid !== profile.uid)
+                        .map((u) => ({ uid: u.uid, displayName: u.displayName, photoUrl: u.photoUrl, username: u.username }));
+                      const { sent, failed } = await broadcastMessage(
+                        profile,
+                        targets,
+                        broadcastText.trim(),
+                        (done, total) => setBroadcastProgress(`Sending... ${done}/${total} users`)
+                      );
+                      setBroadcastProgress("");
+                      setBroadcastResult(`Sent to ${sent} users${failed > 0 ? `, ${failed} failed` : ""}`);
+                      setBroadcastText("");
+                    } catch {
+                      setBroadcastProgress("");
+                      setBroadcastResult("Broadcast failed");
+                    } finally {
+                      setBroadcasting(false);
+                    }
+                  }}
+                  disabled={broadcasting || !broadcastText.trim()}
+                  className="px-4 py-2 rounded-lg text-sm font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors disabled:opacity-50"
+                >
+                  {broadcasting ? "Sending..." : "Send to All Users"}
+                </button>
+              </div>
             </div>
           </div>
         </>

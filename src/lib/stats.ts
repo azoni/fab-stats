@@ -291,6 +291,9 @@ function guessEventTypeFromNotes(notes: string): string {
  *  even if the eventType was set to something else by the import source. */
 function refineEventType(eventType: string, eventName: string): string {
   const lower = eventName.toLowerCase();
+  // Check local event types first (GEM often misclassifies armory/pre-release with season names)
+  if (lower.includes("armory")) return "Armory";
+  if (lower.includes("pre-release") || lower.includes("prerelease")) return "Pre-Release";
   // Check specific tournament types in event name — order matters
   if (lower.includes("battle hardened") || /\bbh\b/.test(lower)) return "Battle Hardened";
   if (lower.includes("proquest") || lower.includes("pro quest") || /\bpq\b/.test(lower)) return "ProQuest";
@@ -305,7 +308,8 @@ function refineEventType(eventType: string, eventName: string): string {
 }
 
 function getEventType(match: MatchRecord): string {
-  if (match.eventType) return match.eventType;
+  const eventName = match.notes?.split(" | ")[0] || "";
+  if (match.eventType) return refineEventType(match.eventType, eventName);
   if (match.notes) return guessEventTypeFromNotes(match.notes);
   return "Other";
 }

@@ -8,6 +8,7 @@ import {
 } from "firebase/firestore";
 import { db } from "./firebase";
 import { updateLeaderboardEntry } from "./leaderboard";
+import { getOrCreateConversation, sendMessage, sendMessageNotification } from "./messages";
 import type { UserProfile, MatchRecord } from "@/types";
 
 interface AdminConfig {
@@ -215,4 +216,81 @@ export async function backfillLeaderboard(
   }
 
   return { updated, failed };
+}
+
+/** Get the admin user's UID by looking up the "azoni" username doc */
+let adminUidCache: { uid: string; ts: number } | null = null;
+
+export async function getAdminUid(): Promise<string | null> {
+  if (adminUidCache && Date.now() - adminUidCache.ts < ADMIN_CACHE_TTL) {
+    return adminUidCache.uid;
+  }
+  try {
+    const snap = await getDoc(doc(db, "usernames", "azoni"));
+    if (!snap.exists()) return null;
+    const { userId } = snap.data() as { userId: string };
+    adminUidCache = { uid: userId, ts: Date.now() };
+    return userId;
+  } catch {
+    return null;
+  }
+}
+
+/** Broadcast a message from admin to all target users */
+export async function broadcastMessage(
+  adminProfile: UserProfile,
+  targetUsers: { uid: string; displayName: string; photoUrl?: string; username: string }[],
+  messageText: string,
+  onProgress?: (done: number, total: number) => void
+): Promise<{ sent: number; failed: number }> {
+  let sent = 0;
+  let failed = 0;
+  let done = 0;
+
+  const BATCH_SIZE = 5;
+  for (let i = 0; i < targetUsers.length; i += BATCH_SIZE) {
+    const batch = targetUsers.slice(i, i + BATCH_SIZE);
+    const results = await Promise.allSettled(
+      batch.map(async (targetUser) => {
+        // Build a minimal UserProfile for the target user
+        const otherProfile: UserProfile = {
+          uid: targetUser.uid,
+          displayName: targetUser.displayName,
+          photoUrl: targetUser.photoUrl,
+          username: targetUser.username,
+          createdAt: "",
+          isPublic: true,
+        };
+
+        const conversationId = await getOrCreateConversation(adminProfile, otherProfile);
+
+        await sendMessage(
+          conversationId,
+          adminProfile.uid,
+          adminProfile.displayName,
+          adminProfile.photoUrl,
+          messageText,
+          true
+        );
+
+        await sendMessageNotification(
+          targetUser.uid,
+          conversationId,
+          adminProfile.uid,
+          adminProfile.displayName,
+          adminProfile.photoUrl,
+          messageText
+        );
+      })
+    );
+
+    for (const r of results) {
+      done++;
+      if (r.status === "fulfilled") sent++;
+      else failed++;
+    }
+    onProgress?.(done, targetUsers.length);
+  }
+
+  return { sent, failed };
 }
