@@ -39,8 +39,8 @@ export default function Dashboard() {
           Welcome to FaB Stats
         </h1>
         <p className="text-fab-muted mb-6 max-w-md">
-          Track your Flesh and Blood matches, analyze your performance, and
-          dominate the meta.
+          Import your tournament history to see your win rate, streaks,
+          opponent stats, and more — all in one place.
         </p>
         <Link
           href="/import"
@@ -99,10 +99,11 @@ export default function Dashboard() {
             value={filterRated}
             onChange={(e) => setFilterRated(e.target.value)}
             className="bg-fab-surface border border-fab-border text-fab-text text-sm rounded-lg px-3 py-1.5 focus:outline-none focus:border-fab-gold"
+            title="Rated events affect your official GEM Elo rating"
           >
-            <option value="all">All Events</option>
-            <option value="rated">Rated Only</option>
-            <option value="unrated">Unrated Only</option>
+            <option value="all">Rated &amp; Unrated</option>
+            <option value="rated">Rated Only (affects Elo)</option>
+            <option value="unrated">Casual / Unrated Only</option>
           </select>
         </div>
       </div>

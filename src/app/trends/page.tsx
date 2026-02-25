@@ -51,8 +51,8 @@ export default function TrendsPage() {
   if (matches.length < 2) {
     return (
       <div className="text-center py-16 text-fab-dim">
-        <p className="text-lg mb-1">Not enough data for trends</p>
-        <p className="text-sm">Log more matches to see performance charts</p>
+        <p className="text-lg mb-1">Not enough data yet</p>
+        <p className="text-sm">Import a few more matches and charts will appear here showing how your performance changes over time.</p>
       </div>
     );
   }
@@ -72,7 +72,10 @@ export default function TrendsPage() {
 
   return (
     <div className="space-y-8">
-      <h1 className="text-2xl font-bold text-fab-gold">Performance Trends</h1>
+      <div>
+        <h1 className="text-2xl font-bold text-fab-gold">Performance Trends</h1>
+        <p className="text-fab-muted text-sm mt-1">See how your win rate and activity change over time</p>
+      </div>
 
       {/* Rolling Win Rate */}
       {rollingData.length > 0 && (

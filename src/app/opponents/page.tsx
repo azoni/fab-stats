@@ -94,7 +94,7 @@ export default function OpponentsPage() {
     return (
       <div className="text-center py-16 text-fab-dim">
         <p className="text-lg mb-1">No opponent data yet</p>
-        <p className="text-sm">Import your GEM history or log matches with opponent names</p>
+        <p className="text-sm">Import your tournament history to see your win rate against each opponent</p>
       </div>
     );
   }
@@ -106,7 +106,7 @@ export default function OpponentsPage() {
     <div>
       <h1 className="text-2xl font-bold text-fab-gold mb-2">Opponents</h1>
       <p className="text-fab-muted text-sm mb-4">
-        {totalOpponents} opponents across {totalMatches} matches
+        Your head-to-head record against {totalOpponents} opponents across {totalMatches} matches
       </p>
 
       {/* Filters */}

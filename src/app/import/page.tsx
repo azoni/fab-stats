@@ -105,7 +105,7 @@ export default function ImportPage() {
       }
 
       if (result.totalMatches === 0) {
-        setError("No matches found. Make sure you've expanded all events on the GEM page before copying.");
+        setError("No matches found. Make sure you've clicked \"View Results\" on each event on the GEM page before selecting all and copying.");
         return;
       }
       setPasteResult(result);
@@ -211,11 +211,11 @@ export default function ImportPage() {
     <div>
       <h1 className="text-2xl font-bold text-fab-gold mb-2">Import Your Matches</h1>
       <p className="text-fab-muted text-sm mb-6">
-        Import your match history from{" "}
+        Pull in your match history from{" "}
         <a href="https://gem.fabtcg.com/profile/history/" target="_blank" rel="noopener noreferrer" className="text-fab-gold hover:text-fab-gold-light underline">
-          GEM (Game Event Manager)
+          GEM
         </a>
-        . Choose your preferred method below.
+        {" "}— the official Flesh and Blood tournament site where your event results are recorded. Pick a method below to get started.
       </p>
 
       {error && (
@@ -388,7 +388,7 @@ export default function ImportPage() {
                   </div>
 
                   <div className="bg-fab-draw/10 border border-fab-draw/20 rounded-lg px-3 py-2 text-xs text-fab-dim">
-                    <strong className="text-fab-draw">Note:</strong> GEM paginates your history. Import each page separately — duplicates are automatically skipped. Hero names won&apos;t be detected (use the Chrome Extension for that).
+                    <strong className="text-fab-draw">Note:</strong> If GEM shows multiple pages of history, import each page separately — we&apos;ll skip any duplicates automatically. This method can&apos;t detect which hero you played (use the Chrome Extension for that).
                   </div>
 
                   <textarea
@@ -581,13 +581,13 @@ export default function ImportPage() {
           {/* Hero note */}
           {allMatches.every((m) => m.heroPlayed === "Unknown") ? (
             <div className="bg-fab-draw/10 border border-fab-draw/30 rounded-lg p-4 text-sm">
-              <p className="text-fab-draw font-medium mb-1">Hero data not available</p>
-              <p className="text-fab-muted">GEM paste doesn&apos;t include hero info. Use the Chrome Extension for automatic hero detection, or edit heroes later on the Matches page.</p>
+              <p className="text-fab-draw font-medium mb-1">Hero info not included</p>
+              <p className="text-fab-muted">This import method can&apos;t tell which hero you played. You can use the Chrome Extension to import with hero detection, or edit individual matches later.</p>
             </div>
           ) : allMatches.some((m) => m.heroPlayed === "Unknown") ? (
             <div className="bg-fab-draw/10 border border-fab-draw/30 rounded-lg p-4 text-sm">
-              <p className="text-fab-draw font-medium mb-1">Some heroes not detected</p>
-              <p className="text-fab-muted">Heroes set to &quot;Unknown&quot; can be edited later on the Matches page.</p>
+              <p className="text-fab-draw font-medium mb-1">Some heroes couldn&apos;t be detected</p>
+              <p className="text-fab-muted">You can fix these later — just tap any match on the Matches page to edit it.</p>
             </div>
           ) : null}
 

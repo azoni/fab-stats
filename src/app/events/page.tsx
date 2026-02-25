@@ -41,7 +41,10 @@ export default function EventsPage() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <h1 className="text-2xl font-bold text-fab-gold">Events</h1>
+        <div>
+          <h1 className="text-2xl font-bold text-fab-gold">Events</h1>
+          <p className="text-fab-muted text-sm mt-1">Your tournaments and their results, grouped by event</p>
+        </div>
         <div className="flex gap-3 flex-wrap">
           {allFormats.length > 1 && (
             <select
@@ -74,7 +77,7 @@ export default function EventsPage() {
         <div className="text-center py-16">
           <p className="text-fab-muted">
             {eventStats.length === 0
-              ? "No events found. Import your matches to see events here."
+              ? "No events yet. Import your match history to see your tournaments here."
               : "No events match the current filters."}
           </p>
         </div>

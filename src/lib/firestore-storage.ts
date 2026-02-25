@@ -47,10 +47,12 @@ export async function addMatchFirestore(
   match: Omit<MatchRecord, "id" | "createdAt">
 ): Promise<MatchRecord> {
   const now = new Date().toISOString();
-  const docRef = await addDoc(matchesCollection(userId), {
-    ...match,
-    createdAt: now,
-  });
+  // Firestore rejects undefined values — strip them before writing
+  const clean: Record<string, unknown> = { createdAt: now };
+  for (const [k, v] of Object.entries(match)) {
+    if (v !== undefined) clean[k] = v;
+  }
+  const docRef = await addDoc(matchesCollection(userId), clean);
   return { ...match, id: docRef.id, createdAt: now };
 }
 
@@ -60,7 +62,12 @@ export async function updateMatchFirestore(
   updates: Partial<Omit<MatchRecord, "id" | "createdAt">>
 ): Promise<void> {
   const docRef = doc(db, "users", userId, "matches", matchId);
-  await updateDoc(docRef, updates);
+  // Strip undefined values before writing to Firestore
+  const clean: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(updates)) {
+    if (v !== undefined) clean[k] = v;
+  }
+  await updateDoc(docRef, clean);
 }
 
 export async function deleteMatchFirestore(
@@ -106,7 +113,12 @@ export async function importMatchesFirestore(
 
     for (const match of chunk) {
       const docRef = doc(matchesCollection(userId));
-      batch.set(docRef, { ...match, createdAt: now });
+      // Firestore rejects undefined values — strip them before writing
+      const clean: Record<string, unknown> = { createdAt: now };
+      for (const [k, v] of Object.entries(match)) {
+        if (v !== undefined) clean[k] = v;
+      }
+      batch.set(docRef, clean);
     }
 
     await batch.commit();

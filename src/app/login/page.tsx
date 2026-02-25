@@ -86,7 +86,7 @@ export default function LoginPage() {
             <span className="text-2xl font-bold text-fab-gold">FaB Stats</span>
           </div>
           <p className="text-fab-muted text-sm">
-            Track your Flesh and Blood matches
+            Track your Flesh and Blood tournament results
           </p>
         </div>
 
@@ -195,7 +195,7 @@ export default function LoginPage() {
             <div className="w-full border-t border-fab-border" />
           </div>
           <div className="relative flex justify-center text-xs">
-            <span className="bg-fab-bg px-3 text-fab-dim">or</span>
+            <span className="bg-fab-bg px-3 text-fab-dim">just want to try it out?</span>
           </div>
         </div>
 
@@ -204,12 +204,12 @@ export default function LoginPage() {
             enterGuestMode();
             router.push("/");
           }}
-          className="w-full py-2.5 rounded-lg font-semibold bg-fab-surface border border-fab-border text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover transition-colors"
+          className="w-full py-2.5 rounded-lg font-semibold bg-fab-surface border border-fab-gold/30 text-fab-text hover:bg-fab-gold/10 hover:border-fab-gold/50 transition-colors"
         >
           Continue as Guest
         </button>
         <p className="text-xs text-fab-dim text-center mt-2">
-          Guest data is stored in this browser only. Sign up to save across devices.
+          No account needed — start importing right away. Your data stays in this browser. You can sign up later to sync across devices.
         </p>
       </div>
     </div>
