@@ -392,6 +392,7 @@ export interface PlayoffFinish {
   eventName: string;
   eventDate: string;
   format: string;
+  eventType: string;
 }
 
 export function computePlayoffFinishes(eventStats: EventStats[]): PlayoffFinish[] {
@@ -433,6 +434,7 @@ export function computePlayoffFinishes(eventStats: EventStats[]): PlayoffFinish[
         eventName: event.eventName,
         eventDate: event.eventDate,
         format: event.format,
+        eventType: event.eventType || "Other",
       });
     }
   }
