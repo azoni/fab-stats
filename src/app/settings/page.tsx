@@ -393,6 +393,21 @@ export default function SettingsPage() {
         </div>
       )}
 
+      {/* Changelog */}
+      <div className="bg-fab-surface border border-fab-border rounded-lg p-6 mb-4">
+        <h2 className="text-sm font-semibold text-fab-text mb-2">Changelog</h2>
+        <p className="text-xs text-fab-dim mb-3">See what&apos;s new, improved, and fixed.</p>
+        <Link
+          href="/changelog"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold bg-fab-surface border border-fab-border text-fab-muted hover:text-fab-text hover:border-fab-gold/30 transition-colors"
+        >
+          View Changelog
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+          </svg>
+        </Link>
+      </div>
+
       {/* Account */}
       <div className="bg-fab-surface border border-fab-border rounded-lg p-6">
         <h2 className="text-sm font-semibold text-fab-text mb-4">Account</h2>

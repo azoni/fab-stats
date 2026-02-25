@@ -7,6 +7,7 @@ function isPublicPath(pathname: string): boolean {
   if (pathname.startsWith("/player/")) return true;
   if (pathname === "/search") return true;
   if (pathname === "/privacy") return true;
+  if (pathname === "/changelog") return true;
   return false;
 }
 
