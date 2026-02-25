@@ -32,6 +32,7 @@ export default function ChatPage() {
   const { user, profile, isAdmin } = useAuth();
   const [otherProfile, setOtherProfile] = useState<UserProfile | null>(null);
   const [conversationId, setConversationId] = useState<string | null>(null);
+  const [existenceChecked, setExistenceChecked] = useState(false);
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -45,12 +46,13 @@ export default function ChatPage() {
     }).catch(() => {});
   }, [otherUid]);
 
-  // Only subscribe to messages if the conversation already exists
+  // Check if conversation already exists; subscribe to messages if so
   useEffect(() => {
     if (!user || !otherUid || otherUid === "_") return;
     const id = getConversationId(user.uid, otherUid);
     conversationExists(id).then((exists) => {
       if (exists) setConversationId(id);
+      setExistenceChecked(true);
     });
   }, [user, otherUid]);
 
@@ -141,13 +143,13 @@ export default function ChatPage() {
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto space-y-3 pb-4">
-        {!loaded && (
+        {!loaded && !existenceChecked && (
           <div className="text-center py-8">
             <p className="text-fab-dim text-sm">Loading messages...</p>
           </div>
         )}
 
-        {loaded && messages.length === 0 && (
+        {(loaded || (existenceChecked && !conversationId)) && messages.length === 0 && (
           <div className="text-center py-8">
             <p className="text-fab-dim text-sm">No messages yet. Start the conversation!</p>
           </div>

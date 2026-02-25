@@ -132,21 +132,21 @@ export function subscribeToConversations(
   userId: string,
   callback: (conversations: Conversation[]) => void
 ): Unsubscribe {
+  // Use array-contains only (no orderBy) to avoid requiring a composite index.
+  // Sort client-side instead.
   const q = query(
     collection(db, "conversations"),
     where("participants", "array-contains", userId),
-    orderBy("lastMessageAt", "desc"),
     limit(50)
   );
 
   return onSnapshot(q, (snapshot) => {
-    const conversations = snapshot.docs.map((d) => ({
-      id: d.id,
-      ...d.data(),
-    })) as Conversation[];
+    const conversations = snapshot.docs
+      .map((d) => ({ id: d.id, ...d.data() }) as Conversation)
+      .sort((a, b) => new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime());
     callback(conversations);
-  }, () => {
-    // Silently handle permission errors (e.g. during auth state transitions)
+  }, (err) => {
+    console.error("Failed to load conversations:", err);
     callback([]);
   });
 }
@@ -169,8 +169,8 @@ export function subscribeToMessages(
       ...d.data(),
     })) as Message[];
     callback(messages);
-  }, () => {
-    // Silently handle permission errors
+  }, (err) => {
+    console.error("Failed to load messages:", err);
     callback([]);
   });
 }
