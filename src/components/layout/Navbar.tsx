@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { DashboardIcon, SwordsIcon, OpponentsIcon, TrendsIcon, ImportIcon, CalendarIcon, TrophyIcon } from "@/components/icons/NavIcons";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
+import { FeedbackModal } from "@/components/feedback/FeedbackModal";
 import { useAuth } from "@/contexts/AuthContext";
 import type { ReactNode } from "react";
 
@@ -21,9 +22,11 @@ export function Navbar() {
   const pathname = usePathname();
   const { user, profile, signOut, isGuest, isAdmin } = useAuth();
   const [mounted, setMounted] = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
   useEffect(() => setMounted(true), []);
 
   return (
+    <>
     <nav className="fixed top-0 left-0 right-0 z-50 bg-fab-surface/95 backdrop-blur-md border-b border-fab-border">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-14 items-center justify-between">
@@ -94,6 +97,17 @@ export function Navbar() {
                   )}
                   {user && !isGuest && <NotificationBell />}
                   {user && !isGuest && (
+                    <button
+                      onClick={() => setFeedbackOpen(true)}
+                      className="p-1 rounded transition-colors text-fab-muted hover:text-fab-text"
+                      title="Send Feedback"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                      </svg>
+                    </button>
+                  )}
+                  {user && !isGuest && (
                     <Link
                       href="/settings"
                       className={`p-1 rounded transition-colors ${
@@ -131,5 +145,7 @@ export function Navbar() {
         </div>
       </div>
     </nav>
+    {user && !isGuest && <FeedbackModal open={feedbackOpen} onClose={() => setFeedbackOpen(false)} />}
+    </>
   );
 }

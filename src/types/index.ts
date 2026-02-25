@@ -211,3 +211,14 @@ export interface FeedEvent {
   topHeroes?: string[];
   createdAt: string;
 }
+
+export interface FeedbackItem {
+  id: string;
+  userId: string;
+  username: string;
+  displayName: string;
+  type: "bug" | "feature";
+  message: string;
+  status: "new" | "reviewed" | "done";
+  createdAt: string;
+}

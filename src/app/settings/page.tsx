@@ -12,6 +12,7 @@ import {
   reauthenticateWithCredential,
 } from "firebase/auth";
 import { SparklesIcon } from "@/components/icons/NavIcons";
+import { FeedbackModal } from "@/components/feedback/FeedbackModal";
 
 function resizeImage(file: File, maxSize: number): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -97,6 +98,7 @@ export default function SettingsPage() {
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [deletePassword, setDeletePassword] = useState("");
   const [needsPassword, setNeedsPassword] = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
@@ -170,6 +172,7 @@ export default function SettingsPage() {
     .slice(0, 2);
 
   return (
+    <>
     <div className="max-w-lg mx-auto">
       <h1 className="text-2xl font-bold text-fab-gold mb-6">Settings</h1>
 
@@ -301,6 +304,18 @@ export default function SettingsPage() {
 
       <YearInReview />
 
+      {/* Feedback */}
+      <div className="bg-fab-surface border border-fab-border rounded-lg p-6 mb-4">
+        <h2 className="text-sm font-semibold text-fab-text mb-2">Feedback</h2>
+        <p className="text-xs text-fab-dim mb-3">Found a bug or have a feature idea? Let us know.</p>
+        <button
+          onClick={() => setFeedbackOpen(true)}
+          className="px-4 py-2 rounded-lg text-sm font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors"
+        >
+          Send Feedback
+        </button>
+      </div>
+
       {/* Account */}
       <div className="bg-fab-surface border border-fab-border rounded-lg p-6">
         <h2 className="text-sm font-semibold text-fab-text mb-4">Account</h2>
@@ -430,5 +445,7 @@ export default function SettingsPage() {
         </div>
       </div>
     </div>
+    <FeedbackModal open={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
+    </>
   );
 }

@@ -105,6 +105,13 @@ service cloud.firestore {
         && request.resource.data.userId == request.auth.uid;
     }
 
+    // ── Feedback (bug reports / feature requests) ──
+    match /feedback/{feedbackId} {
+      allow create: if request.auth != null
+        && request.resource.data.userId == request.auth.uid;
+      allow read, update: if isAdmin();
+    }
+
     // ── Admin configuration ──
     match /admin/{docId} {
       // Any authenticated user can read (needed for admin check — only contains email list)
