@@ -31,6 +31,19 @@ const badgeLabels: Record<ChangeType, string> = {
 
 const changelog: Entry[] = [
   {
+    date: "February 25, 2026",
+    changes: [
+      { type: "new", text: "Weekly Matches and Weekly Wins leaderboard tabs — see who's grinding this week" },
+      { type: "new", text: "5-tier ranked border system — Grandmaster (prismatic), Diamond (cyan), Gold, Silver, Bronze for top 5 on every leaderboard" },
+      { type: "new", text: "Creator crown on azoni's profile — site admin/creator badge" },
+      { type: "new", text: "Clickable opponent names — tap any opponent to find their profile" },
+      { type: "improved", text: "Opponents tab promoted to main navbar on desktop and mobile" },
+      { type: "improved", text: "Leaderboard card borders now have animated rotating gradients for top 5 ranks" },
+      { type: "fixed", text: "Messaging permission errors when starting a new conversation" },
+      { type: "fixed", text: "SEO: corrected domain across robots.txt and sitemap, added page metadata" },
+    ],
+  },
+  {
     date: "February 23, 2026",
     changes: [
       { type: "new", text: "Public/private profile toggle in Settings — control who can see your profile" },
