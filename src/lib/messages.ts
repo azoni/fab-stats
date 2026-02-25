@@ -20,10 +20,15 @@ export function getConversationId(uid1: string, uid2: string): string {
   return [uid1, uid2].sort().join("_");
 }
 
-/** Check if a conversation document exists */
+/** Check if a conversation document exists (returns false on permission error for non-existent docs) */
 export async function conversationExists(conversationId: string): Promise<boolean> {
-  const snap = await getDoc(doc(db, "conversations", conversationId));
-  return snap.exists();
+  try {
+    const snap = await getDoc(doc(db, "conversations", conversationId));
+    return snap.exists();
+  } catch {
+    // Firestore denies reads on non-existent docs when rules reference resource.data
+    return false;
+  }
 }
 
 /** Get or create a conversation between two users */
@@ -33,9 +38,17 @@ export async function getOrCreateConversation(
 ): Promise<string> {
   const convId = getConversationId(currentUser.uid, otherUser.uid);
   const convRef = doc(db, "conversations", convId);
-  const snap = await getDoc(convRef);
 
-  if (!snap.exists()) {
+  // Check if conversation already exists (getDoc throws for non-existent docs due to rules)
+  let exists = false;
+  try {
+    const snap = await getDoc(convRef);
+    exists = snap.exists();
+  } catch {
+    // Permission denied = doc doesn't exist (rules can't evaluate resource.data on missing docs)
+  }
+
+  if (!exists) {
     const now = new Date().toISOString();
     await setDoc(convRef, {
       participants: [currentUser.uid, otherUser.uid].sort(),
@@ -132,6 +145,9 @@ export function subscribeToConversations(
       ...d.data(),
     })) as Conversation[];
     callback(conversations);
+  }, () => {
+    // Silently handle permission errors (e.g. during auth state transitions)
+    callback([]);
   });
 }
 
@@ -153,5 +169,8 @@ export function subscribeToMessages(
       ...d.data(),
     })) as Message[];
     callback(messages);
+  }, () => {
+    // Silently handle permission errors
+    callback([]);
   });
 }
