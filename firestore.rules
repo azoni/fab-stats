@@ -69,8 +69,8 @@ service cloud.firestore {
 
     // ── Admin configuration ──
     match /admin/{docId} {
-      // Admin can read config
-      allow read: if isAdmin();
+      // Any authenticated user can read (needed for admin check — only contains email list)
+      allow read: if request.auth != null;
       // No client writes — manage via Firebase Console only
       allow write: if false;
     }

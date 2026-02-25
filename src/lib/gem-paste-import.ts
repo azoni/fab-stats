@@ -51,16 +51,35 @@ function guessFormat(text: string): GameFormat {
   return GameFormat.Other;
 }
 
+const EVENT_ABBREVIATIONS: Record<string, string> = {
+  "rtn": "Road to Nationals",
+  "pq": "ProQuest",
+  "bh": "Battle Hardened",
+  "upf": "Ultimate Pit Fight",
+};
+
+/** Expand known abbreviations in event names */
+function expandEventName(name: string): string {
+  const lowerFull = name.trim().toLowerCase();
+  if (EVENT_ABBREVIATIONS[lowerFull]) return EVENT_ABBREVIATIONS[lowerFull];
+  let result = name;
+  for (const [abbr, expanded] of Object.entries(EVENT_ABBREVIATIONS)) {
+    result = result.replace(new RegExp("\\b" + abbr + "\\b", "gi"), expanded);
+  }
+  return result;
+}
+
 function guessEventType(lines: string[]): string {
   const all = lines.join(" ").toLowerCase();
-  if (all.includes("proquest")) return "ProQuest";
+  if (all.includes("proquest") || /\bpq\b/.test(all)) return "ProQuest";
   if (all.includes("calling")) return "The Calling";
-  if (all.includes("battle hardened")) return "Battle Hardened";
+  if (all.includes("battle hardened") || /\bbh\b/.test(all)) return "Battle Hardened";
   if (all.includes("pre release") || all.includes("pre-release")) return "Pre-Release";
   if (all.includes("skirmish")) return "Skirmish";
-  if (all.includes("road to nationals")) return "Road to Nationals";
+  if (all.includes("road to nationals") || /\brtn\b/.test(all)) return "Road to Nationals";
   if (all.includes("national")) return "Nationals";
   if (all.includes("armory")) return "Armory";
+  if (all.includes("on demand")) return "On Demand";
   return "Other";
 }
 
@@ -212,7 +231,7 @@ export function parseGemPaste(text: string): PasteImportResult {
       const { eventName, venue: preVenue } = extractEventNameAndVenue(contextLines, datePattern, shortDatePattern);
 
       currentEvent = {
-        name: eventName,
+        name: expandEventName(eventName),
         date: parseDate(dateMatch[0]),
         format: GameFormat.Other,
         rated: false,
@@ -281,7 +300,7 @@ export function parseExtensionJson(json: string): PasteImportResult {
   >();
 
   for (const entry of raw) {
-    const eventName = entry.event || "Unknown Event";
+    const eventName = expandEventName(entry.event || "Unknown Event");
     const eventDate = entry.date || new Date().toISOString().split("T")[0];
 
     // Group by name + date to prevent merging different events with the same name
@@ -367,7 +386,7 @@ function buildEventFromContext(contextLines: string[]): {
   const { eventName, venue } = extractEventNameAndVenue(contextLines, datePattern, shortDatePattern);
 
   return {
-    name: eventName,
+    name: expandEventName(eventName),
     date,
     format: guessFormat(contextLines.join(" ")),
     rated: contextLines.some((l) => l.toLowerCase() === "rated"),

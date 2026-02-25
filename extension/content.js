@@ -253,6 +253,42 @@
     return expanded;
   }
 
+  // ── Event Name Abbreviation Mapping ──────────────────────────
+
+  // Common GEM abbreviations → expanded names (case-insensitive keys)
+  const EVENT_ABBREVIATIONS = {
+    "rtn": "Road to Nationals",
+    "pq": "ProQuest",
+    "bh": "Battle Hardened",
+    "upf": "Ultimate Pit Fight",
+    "cc": "Classic Constructed",
+    "sa": "Silver Age",
+  };
+
+  /**
+   * Expand known abbreviations in event names.
+   * "RtN" → "Road to Nationals"
+   * "DapperGames RTN" → "DapperGames Road to Nationals"
+   * "PQ Las Vegas" → "ProQuest Las Vegas"
+   * Only replaces when the abbreviation appears as a whole word.
+   */
+  function expandEventName(name) {
+    // Check if the ENTIRE name (trimmed, lowered) is an abbreviation
+    const lowerFull = name.trim().toLowerCase();
+    if (EVENT_ABBREVIATIONS[lowerFull]) {
+      return EVENT_ABBREVIATIONS[lowerFull];
+    }
+
+    // Replace abbreviations that appear as whole words in the name
+    let result = name;
+    for (const [abbr, expanded] of Object.entries(EVENT_ABBREVIATIONS)) {
+      // Word-boundary match, case-insensitive
+      const regex = new RegExp("\\b" + abbr + "\\b", "gi");
+      result = result.replace(regex, expanded);
+    }
+    return result;
+  }
+
   // ── Extract Event Info ────────────────────────────────────────
 
   function extractEventInfo(matchTable) {
@@ -268,66 +304,99 @@
     const isGenericHeading = (text) =>
       /^(Results|Matches|Decklists|Event History|History|Dashboard|Profile)$/i.test(text);
 
-    // Walk up from the table, checking preceding siblings at each level
-    // for the closest heading that belongs to THIS event (not other events).
-    // This prevents picking up headings from other events in a shared container.
+    // ── Step 1: Find the closest non-generic heading ──
+    // Walk up from the match table, checking preceding siblings at each level.
+    // Track both the heading's sibling element and the match table's ancestor
+    // at that same level, so we can scope context to just this event.
     let current = matchTable;
-    let foundName = false;
-    let container = null;
+    let headingSib = null; // the sibling element that is (or contains) the heading
+    let tableAncestor = null; // matchTable's ancestor at the same sibling level
 
     for (let depth = 0; depth < 10 && current; depth++) {
       let sib = current.previousElementSibling;
       while (sib) {
+        let found = false;
         if (/^H[1-5]$/i.test(sib.tagName)) {
           const text = sib.textContent.trim();
-          if (!isGenericHeading(text) && text.length > 5 && text.length < 250) {
+          if (!isGenericHeading(text) && text.length > 2 && text.length < 250) {
             info.name = text;
-            foundName = true;
-            container = current.parentElement;
-            break;
+            found = true;
           }
         }
-        if (!foundName) {
+        if (!found) {
           const headings = sib.querySelectorAll("h1, h2, h3, h4, h5");
           for (let hi = headings.length - 1; hi >= 0; hi--) {
             const text = headings[hi].textContent.trim();
-            if (!isGenericHeading(text) && text.length > 5 && text.length < 250) {
+            if (!isGenericHeading(text) && text.length > 2 && text.length < 250) {
               info.name = text;
-              foundName = true;
-              container = current.parentElement;
+              found = true;
               break;
             }
           }
         }
-        if (foundName) break;
+        if (found) {
+          headingSib = sib;
+          tableAncestor = current;
+          break;
+        }
         sib = sib.previousElementSibling;
       }
-      if (foundName) break;
+      if (headingSib) break;
       current = current.parentElement;
     }
 
-    if (!container) container = matchTable.parentElement;
-    if (!foundName) return info;
+    if (!headingSib) return info;
 
-    // Gather context from a few levels above the container
-    let contextEl = container;
-    for (let i = 0; i < 4 && contextEl && contextEl.parentElement; i++) {
-      contextEl = contextEl.parentElement;
+    // Expand abbreviations in the event name (e.g. "RtN" → "Road to Nationals")
+    info.name = expandEventName(info.name);
+
+    // ── Step 2: Collect scoped context text ──
+    // Only gather text from elements between the heading and the match table.
+    // This prevents picking up metadata from neighboring events.
+
+    // Include up to 3 elements before the heading (for date labels like "Feb. 22, 2026")
+    // but stop at other event headings or tables.
+    const preTexts = [];
+    let prev = headingSib.previousElementSibling;
+    for (let i = 0; i < 3 && prev; i++) {
+      const t = (prev.textContent || "").trim();
+      if (/^H[1-5]$/i.test(prev.tagName) && !isGenericHeading(t)) break;
+      if (prev.querySelector && prev.querySelector("table")) break;
+      preTexts.unshift(t);
+      prev = prev.previousElementSibling;
     }
-    const fullText = contextEl.textContent || "";
 
-    // Extract date
-    const dateMatch = fullText.match(
+    // Collect elements from heading through to the table ancestor
+    const scopeEls = [];
+    let el = headingSib;
+    while (el) {
+      scopeEls.push(el);
+      if (el === tableAncestor || el.contains(matchTable)) break;
+      el = el.nextElementSibling;
+    }
+
+    const fullText =
+      preTexts.join(" ") + " " + scopeEls.map((e) => e.textContent || "").join(" ");
+
+    // ── Step 3: Extract metadata from scoped text ──
+
+    // Date (try full month names first, then abbreviated)
+    let dateMatch = fullText.match(
       /(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?\s+\d{4}/i
     );
+    if (!dateMatch) {
+      dateMatch = fullText.match(
+        /(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\.?\s+\d{1,2},?\s+\d{4}/i
+      );
+    }
     if (dateMatch) {
-      const d = new Date(dateMatch[0]);
+      const d = new Date(dateMatch[0].replace(/(\w{3})\./, "$1"));
       if (!isNaN(d.getTime())) {
         info.date = d.toISOString().split("T")[0];
       }
     }
 
-    // Extract format
+    // Format
     if (/Classic Constructed/i.test(fullText))
       info.format = "Classic Constructed";
     else if (/\bSilver Age\b/i.test(fullText)) info.format = "Silver Age";
@@ -352,12 +421,12 @@
         info.format = "Ultimate Pit Fight";
     }
 
-    // Extract rated
+    // Rated
     if (/\bRated\b/.test(fullText) && !/Not Rated|Unrated/i.test(fullText))
       info.rated = true;
 
-    // Extract event type
-    if (/proquest/i.test(fullText)) info.eventType = "ProQuest";
+    // Event type
+    if (/proquest|pro quest/i.test(fullText)) info.eventType = "ProQuest";
     else if (/\bcalling\b/i.test(fullText)) info.eventType = "The Calling";
     else if (/battle hardened/i.test(fullText))
       info.eventType = "Battle Hardened";
@@ -367,17 +436,24 @@
     else if (/skirmish/i.test(fullText)) info.eventType = "Skirmish";
     else if (/armory/i.test(fullText)) info.eventType = "Armory";
     else if (/pre.?release/i.test(fullText)) info.eventType = "Pre-Release";
+    else if (/on demand/i.test(fullText)) info.eventType = "On Demand";
 
-    // ── Venue extraction (4-tier fallback) ──────────────────
+    // ── Step 4: Venue extraction (scoped to event elements) ──
 
-    const allEls = container.querySelectorAll("span, a, p, div, small");
+    // Build list of DOM elements to search — only from between heading and table
+    const venueEls = [];
+    for (const scopeEl of scopeEls) {
+      for (const child of scopeEl.querySelectorAll("span, a, p, div, small")) {
+        venueEls.push(child);
+      }
+    }
 
     // Tier 1: Elements with venue/location/store attributes
-    for (const el of allEls) {
-      const t = el.textContent.trim();
-      if (t.length < 3 || t.length > 100 || el.children.length > 2) continue;
-      const title = el.getAttribute("title") || "";
-      const ariaLabel = el.getAttribute("aria-label") || "";
+    for (const vel of venueEls) {
+      const t = vel.textContent.trim();
+      if (t.length < 3 || t.length > 100 || vel.children.length > 2) continue;
+      const title = vel.getAttribute("title") || "";
+      const ariaLabel = vel.getAttribute("aria-label") || "";
       if (
         /venue|location|store|shop/i.test(title) ||
         /venue|location|store|shop/i.test(ariaLabel)
@@ -389,10 +465,10 @@
 
     // Tier 2: Look for elements with "(closed)" — strong venue indicator
     if (!info.venue) {
-      for (const el of allEls) {
-        if (el.closest("table")) continue;
-        const t = el.textContent.trim();
-        if (t.length > 5 && t.length < 120 && el.children.length <= 2) {
+      for (const vel of venueEls) {
+        if (vel.closest("table")) continue;
+        const t = vel.textContent.trim();
+        if (t.length > 5 && t.length < 120 && vel.children.length <= 2) {
           if (/\(closed\)|\(temporarily closed\)/i.test(t)) {
             info.venue = t
               .replace(/\s*\((?:temporarily\s+)?closed\)\s*/i, "")
@@ -405,16 +481,16 @@
 
     // Tier 3: Look for leaf elements that match store-like names
     if (!info.venue) {
-      for (const el of allEls) {
-        if (el.closest("table")) continue;
-        const t = el.textContent.trim();
+      for (const vel of venueEls) {
+        if (vel.closest("table")) continue;
+        const t = vel.textContent.trim();
         if (t.length < 5 || t.length > 100) continue;
-        if (el.children.length > 1) continue;
+        if (vel.children.length > 1) continue;
         if (t === info.name) continue;
         if (t.includes("\n")) continue;
         if (/January|February|March|April|May|June|July|August|September|October|November|December/i.test(t)) continue;
         if (/^\d{1,2}[/\-]\d{1,2}[/\-]\d{2,4}/.test(t)) continue;
-        if (/Classic Constructed|Blitz|Draft|Sealed|Clash|Ultimate Pit Fight/i.test(t)) continue;
+        if (/Classic Constructed|Blitz|Draft|Sealed|Clash|Ultimate Pit Fight|Silver Age/i.test(t)) continue;
         if (/Armory|ProQuest|Calling|Battle Hardened|Road to Nationals|Nationals|Skirmish|Pre.?Release/i.test(t)) continue;
         if (/XP Modifier|Not rated|^Rated$/i.test(t)) continue;
         if (/View Results|Results|Matches|Decklists/i.test(t)) continue;

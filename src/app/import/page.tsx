@@ -3,7 +3,7 @@ import { useState, useRef, useMemo, useCallback, useEffect } from "react";
 import { parseGemCsv } from "@/lib/gem-import";
 import { parseGemPaste, parseExtensionJson, type PasteImportResult } from "@/lib/gem-paste-import";
 import { useAuth } from "@/contexts/AuthContext";
-import { importMatchesFirestore } from "@/lib/firestore-storage";
+import { importMatchesFirestore, clearAllMatchesFirestore } from "@/lib/firestore-storage";
 import { importMatchesLocal } from "@/lib/storage";
 import { useRouter } from "next/navigation";
 import { MatchCard } from "@/components/matches/MatchCard";
@@ -35,6 +35,9 @@ export default function ImportPage() {
   const [skippedCount, setSkippedCount] = useState(0);
   const [importing, setImporting] = useState(false);
   const [autoDetected, setAutoDetected] = useState(false);
+  const [clearing, setClearing] = useState(false);
+  const [confirmClear, setConfirmClear] = useState(false);
+  const [cleared, setCleared] = useState(false);
 
   // Auto-detect extension data from URL hash (#ext=base64data)
   useEffect(() => {
@@ -172,6 +175,19 @@ export default function ImportPage() {
     setExpandedEvent(null);
     setMethod(null);
     setAutoDetected(false);
+  }
+
+  async function handleClearAll() {
+    if (!user) return;
+    setClearing(true);
+    try {
+      await clearAllMatchesFirestore(user.uid);
+      setCleared(true);
+      setConfirmClear(false);
+    } catch {
+      setError("Failed to clear matches. Please try again.");
+    }
+    setClearing(false);
   }
 
   const hasResults = pasteResult || csvMatches;
@@ -455,6 +471,54 @@ export default function ImportPage() {
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {/* ── Clear & Re-import ────────────────────────────────────── */}
+      {user && !hasResults && !cleared && (
+        <div className="mt-8 pt-6 border-t border-fab-border">
+          <h2 className="text-sm font-semibold text-fab-text mb-2">Clear All Matches</h2>
+          <p className="text-xs text-fab-dim mb-3">
+            If your existing data has wrong event associations (from an older extension version), you can clear everything and re-import with the updated extension.
+          </p>
+          {!confirmClear ? (
+            <button
+              onClick={() => setConfirmClear(true)}
+              className="px-4 py-2 rounded-md text-sm font-semibold bg-fab-surface border border-fab-loss/30 text-fab-loss hover:bg-fab-loss/10 transition-colors"
+            >
+              Clear All Matches...
+            </button>
+          ) : (
+            <div className="bg-fab-loss/10 border border-fab-loss/30 rounded-lg p-4">
+              <p className="text-sm text-fab-loss font-semibold mb-2">Are you sure?</p>
+              <p className="text-xs text-fab-muted mb-3">
+                This will permanently delete all your match data. You&apos;ll need to re-import from GEM afterward.
+              </p>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleClearAll}
+                  disabled={clearing}
+                  className="px-4 py-2 rounded-md text-sm font-semibold bg-fab-loss text-white hover:bg-fab-loss/80 transition-colors disabled:opacity-50"
+                >
+                  {clearing ? "Clearing..." : "Yes, Delete All Matches"}
+                </button>
+                <button
+                  onClick={() => setConfirmClear(false)}
+                  className="px-4 py-2 rounded-md text-sm font-semibold bg-fab-surface border border-fab-border text-fab-muted hover:text-fab-text transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Cleared success message */}
+      {cleared && !hasResults && (
+        <div className="bg-fab-win/10 border border-fab-win/30 rounded-lg p-4 mb-6">
+          <p className="text-fab-win font-semibold mb-1">All matches cleared!</p>
+          <p className="text-fab-muted text-sm">Now re-import your matches using the Chrome Extension above for the best results.</p>
         </div>
       )}
 
