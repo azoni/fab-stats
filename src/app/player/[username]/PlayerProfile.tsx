@@ -24,6 +24,13 @@ export default function PlayerProfile() {
   const username = pathname.split("/").pop() || "";
   const [state, setState] = useState<PageState>({ status: "loading" });
 
+  // Update tab title from pre-rendered "_" to actual username
+  useEffect(() => {
+    if (username) {
+      document.title = `${username}'s FaB Stats | FaB Stats`;
+    }
+  }, [username]);
+
   useEffect(() => {
     if (!username) return;
 
