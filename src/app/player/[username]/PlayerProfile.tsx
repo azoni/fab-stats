@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
+import { useParams } from "next/navigation";
 import Link from "next/link";
 import { getProfileByUsername, getMatchesByUserId } from "@/lib/firestore-storage";
 import { computeOverallStats, computeEventTypeStats, computeVenueStats, computeEventStats } from "@/lib/stats";
@@ -15,18 +16,23 @@ type PageState =
   | { status: "loading" }
   | { status: "not_found" }
   | { status: "private" }
-  | { status: "error" }
+  | { status: "error"; message?: string }
   | { status: "loaded"; profile: UserProfile; matches: MatchRecord[] };
 
-export default function PlayerProfile({ username }: { username: string }) {
+export default function PlayerProfile() {
+  const params = useParams<{ username: string }>();
+  const username = params.username;
   const [state, setState] = useState<PageState>({ status: "loading" });
 
   useEffect(() => {
+    if (!username) return;
+
+    let cancelled = false;
+
     // Wait for Firebase Auth to settle before reading Firestore
-    // This ensures the auth token is attached so rules can evaluate properly
     const unsubscribe = onAuthStateChanged(auth, () => {
       unsubscribe();
-      load();
+      if (!cancelled) load();
     });
 
     async function load() {
@@ -34,6 +40,7 @@ export default function PlayerProfile({ username }: { username: string }) {
 
       try {
         const profile = await getProfileByUsername(username);
+        if (cancelled) return;
         if (!profile) {
           setState({ status: "not_found" });
           return;
@@ -44,14 +51,29 @@ export default function PlayerProfile({ username }: { username: string }) {
           return;
         }
 
-        const matches = await getMatchesByUserId(profile.uid);
-        setState({ status: "loaded", profile, matches });
-      } catch {
-        setState({ status: "error" });
+        // Load matches separately — show profile even if matches fail
+        let matches: MatchRecord[] = [];
+        try {
+          matches = await getMatchesByUserId(profile.uid);
+        } catch (matchErr) {
+          console.error("Failed to load matches for public profile:", matchErr);
+        }
+
+        if (!cancelled) {
+          setState({ status: "loaded", profile, matches });
+        }
+      } catch (err) {
+        console.error("Failed to load profile:", err);
+        if (!cancelled) {
+          setState({ status: "error", message: err instanceof Error ? err.message : undefined });
+        }
       }
     }
 
-    return () => unsubscribe();
+    return () => {
+      cancelled = true;
+      unsubscribe();
+    };
   }, [username]);
 
   if (state.status === "loading") {

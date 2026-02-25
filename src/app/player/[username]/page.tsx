@@ -30,11 +30,6 @@ export async function generateMetadata({
   };
 }
 
-export default async function PlayerProfilePage({
-  params,
-}: {
-  params: Promise<{ username: string }>;
-}) {
-  const { username } = await params;
-  return <PlayerProfile username={username} />;
+export default async function PlayerProfilePage() {
+  return <PlayerProfile />;
 }

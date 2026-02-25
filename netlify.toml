@@ -5,6 +5,14 @@
 [build.environment]
   SECRETS_SCAN_SMART_DETECTION_ENABLED = "false"
 
+# Serve pre-rendered player page for all /player/* URLs
+# so the correct RSC payload and layout are used
+[[redirects]]
+  from = "/player/*"
+  to = "/player/_/index.html"
+  status = 200
+
+# SPA fallback for all other routes
 [[redirects]]
   from = "/*"
   to = "/index.html"
