@@ -101,5 +101,5 @@ export function useMatches() {
     [user, isGuest]
   );
 
-  return { matches, isLoaded, addMatch, deleteMatch, updateMatch };
+  return { matches, isLoaded, allLoaded, addMatch, deleteMatch, updateMatch };
 }

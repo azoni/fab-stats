@@ -3,6 +3,7 @@ import { useState, useEffect, useMemo } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { getProfileByUsername, getMatchesByUserId } from "@/lib/firestore-storage";
+import { updateLeaderboardEntry } from "@/lib/leaderboard";
 import { computeOverallStats, computeHeroStats, computeEventTypeStats, computeVenueStats, computeEventStats, computeOpponentStats, computeBestFinish } from "@/lib/stats";
 import { evaluateAchievements } from "@/lib/achievements";
 import { computeHeroMastery } from "@/lib/mastery";
@@ -90,6 +91,11 @@ export default function PlayerProfile() {
         if (!cancelled) {
           const isOwner = !!viewerUid && viewerUid === profile.uid;
           setState({ status: "loaded", profile, matches, isOwner });
+
+          // Sync leaderboard entry when the owner views their profile
+          if (isOwner && matches.length > 0) {
+            updateLeaderboardEntry(profile, matches).catch(() => {});
+          }
         }
       } catch (err) {
         console.error("Failed to load profile:", err);
