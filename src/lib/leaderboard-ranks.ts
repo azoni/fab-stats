@@ -105,6 +105,12 @@ const RANK_TABS: RankTab[] = [
   {
     id: "armoryattendance",
     label: "Armory Attendance",
+    filter: (e) => (e.armoryEvents ?? 0) > 0,
+    sort: (a, b) => (b.armoryEvents ?? 0) - (a.armoryEvents ?? 0) || b.armoryMatches - a.armoryMatches,
+  },
+  {
+    id: "armorymatches",
+    label: "Armory Matches",
     filter: (e) => e.armoryMatches > 0,
     sort: (a, b) => b.armoryMatches - a.armoryMatches || b.armoryWins - a.armoryWins,
   },

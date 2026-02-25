@@ -11,7 +11,7 @@ import type { LeaderboardEntry, OpponentStats } from "@/types";
 
 const SITE_CREATOR = "azoni";
 
-type Tab = "winrate" | "volume" | "mostwins" | "streaks" | "draws" | "events" | "eventgrinder" | "rated" | "heroes" | "dedication" | "hotstreak" | "weeklymatches" | "weeklywins" | "earnings" | "armorywinrate" | "armoryattendance";
+type Tab = "winrate" | "volume" | "mostwins" | "streaks" | "draws" | "events" | "eventgrinder" | "rated" | "heroes" | "dedication" | "hotstreak" | "weeklymatches" | "weeklywins" | "earnings" | "armorywinrate" | "armoryattendance" | "armorymatches";
 
 const tabs: { id: Tab; label: string }[] = [
   { id: "winrate", label: "Win Rate" },
@@ -29,6 +29,7 @@ const tabs: { id: Tab; label: string }[] = [
   { id: "earnings", label: "Earnings" },
   { id: "armorywinrate", label: "Armory Win %" },
   { id: "armoryattendance", label: "Armory Attendance" },
+  { id: "armorymatches", label: "Armory Matches" },
   { id: "draws", label: "Draws" },
 ];
 
@@ -120,6 +121,10 @@ export default function LeaderboardPage() {
           .sort((a, b) => b.armoryWinRate - a.armoryWinRate || b.armoryMatches - a.armoryMatches);
       case "armoryattendance":
         return [...entries]
+          .filter((e) => (e.armoryEvents ?? 0) > 0)
+          .sort((a, b) => (b.armoryEvents ?? 0) - (a.armoryEvents ?? 0) || b.armoryMatches - a.armoryMatches);
+      case "armorymatches":
+        return [...entries]
           .filter((e) => e.armoryMatches > 0)
           .sort((a, b) => b.armoryMatches - a.armoryMatches || b.armoryWins - a.armoryWins);
       default:
@@ -177,8 +182,10 @@ export default function LeaderboardPage() {
                       : activeTab === "armorywinrate"
                         ? "Players need at least 5 Armory matches to appear here."
                         : activeTab === "armoryattendance"
-                          ? "No players have Armory matches yet."
-                          : "Import matches to appear on the leaderboard."}
+                          ? "No players have attended Armory events yet."
+                          : activeTab === "armorymatches"
+                            ? "No players have Armory matches yet."
+                            : "Import matches to appear on the leaderboard."}
           </p>
         </div>
       )}
@@ -439,6 +446,12 @@ function LeaderboardRow({
           </>
         )}
         {tab === "armoryattendance" && (
+          <>
+            <p className="text-lg font-bold text-fab-text">{entry.armoryEvents ?? 0}</p>
+            <p className="text-xs text-fab-dim">{entry.armoryMatches} matches across events</p>
+          </>
+        )}
+        {tab === "armorymatches" && (
           <>
             <p className="text-lg font-bold text-fab-text">{entry.armoryMatches}</p>
             <p className="text-xs text-fab-dim">{entry.armoryWins} wins ({entry.armoryMatches > 0 ? formatRate(entry.armoryWinRate) : "0%"})</p>

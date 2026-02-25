@@ -216,6 +216,7 @@ export interface LeaderboardEntry {
   armoryMatches: number;
   armoryWins: number;
   armoryWinRate: number;
+  armoryEvents: number;
   updatedAt: string;
 }
 

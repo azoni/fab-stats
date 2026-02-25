@@ -43,6 +43,7 @@ export default function PlayerProfile() {
   const [filterFormat, setFilterFormat] = useState<string>("all");
   const [filterRated, setFilterRated] = useState<string>("all");
   const [filterHero, setFilterHero] = useState<string>("all");
+  const [showRawData, setShowRawData] = useState(false);
 
   const loadedMatches = state.status === "loaded" ? state.matches : [];
 
@@ -350,7 +351,38 @@ export default function PlayerProfile() {
             Showing {fm.length} of {matches.length} matches
           </span>
         )}
+        {isAdmin && (
+          <button
+            onClick={() => setShowRawData(true)}
+            className="ml-auto text-xs px-2 py-1 rounded bg-fab-surface border border-fab-border text-fab-dim hover:text-fab-text transition-colors"
+          >
+            Raw Data
+          </button>
+        )}
       </div>
+
+      {/* Admin Raw Data Modal */}
+      {showRawData && isAdmin && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setShowRawData(false)}>
+          <div className="bg-fab-surface border border-fab-border rounded-lg w-[90vw] max-w-4xl max-h-[80vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-4 py-3 border-b border-fab-border">
+              <h3 className="text-sm font-semibold text-fab-text">{profile.displayName} — {matches.length} matches</h3>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => { navigator.clipboard.writeText(JSON.stringify(matches, null, 2)); }}
+                  className="text-xs px-3 py-1 rounded bg-fab-gold text-fab-bg font-semibold hover:bg-fab-gold-light transition-colors"
+                >
+                  Copy JSON
+                </button>
+                <button onClick={() => setShowRawData(false)} className="text-fab-dim hover:text-fab-text text-lg px-2">&times;</button>
+              </div>
+            </div>
+            <pre className="flex-1 overflow-auto p-4 text-xs text-fab-dim font-mono whitespace-pre-wrap">
+              {JSON.stringify(matches, null, 2)}
+            </pre>
+          </div>
+        </div>
+      )}
 
       {fm.length === 0 && isFiltered ? (
         <div className="text-center py-16">
@@ -516,7 +548,7 @@ export default function PlayerProfile() {
         <h2 className="text-lg font-semibold text-fab-text mb-4">Recent Matches</h2>
         <div className="space-y-2">
           {recentMatches.map((match) => (
-            <MatchCard key={match.id} match={match} matchOwnerUid={profile.uid} enableComments obfuscateOpponents={!isOwner} />
+            <MatchCard key={match.id} match={match} matchOwnerUid={profile.uid} enableComments obfuscateOpponents={!isOwner && !isAdmin} />
           ))}
         </div>
       </div>
