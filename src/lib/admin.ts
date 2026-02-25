@@ -182,26 +182,36 @@ export async function backfillLeaderboard(
 
   let updated = 0;
   let failed = 0;
+  let done = 0;
 
-  for (const { userId } of userEntries) {
-    try {
-      const profileSnap = await getDoc(doc(db, "users", userId, "profile", "main"));
-      if (!profileSnap.exists()) continue;
-      const profile = profileSnap.data() as UserProfile;
+  const BATCH_SIZE = 5;
+  for (let i = 0; i < userEntries.length; i += BATCH_SIZE) {
+    const batch = userEntries.slice(i, i + BATCH_SIZE);
+    const results = await Promise.allSettled(
+      batch.map(async ({ userId }) => {
+        const profileSnap = await getDoc(doc(db, "users", userId, "profile", "main"));
+        if (!profileSnap.exists()) return false;
+        const profile = profileSnap.data() as UserProfile;
 
-      const matchesSnap = await getDocs(
-        query(collection(db, "users", userId, "matches"), orderBy("createdAt", "desc"))
-      );
-      const matches = matchesSnap.docs.map((d) => ({ id: d.id, ...d.data() })) as MatchRecord[];
+        const matchesSnap = await getDocs(
+          query(collection(db, "users", userId, "matches"), orderBy("createdAt", "desc"))
+        );
+        const matches = matchesSnap.docs.map((d) => ({ id: d.id, ...d.data() })) as MatchRecord[];
 
-      if (matches.length > 0) {
-        await updateLeaderboardEntry(profile, matches);
-        updated++;
-      }
-    } catch {
-      failed++;
+        if (matches.length > 0) {
+          await updateLeaderboardEntry(profile, matches);
+          return true;
+        }
+        return false;
+      })
+    );
+
+    for (const r of results) {
+      done++;
+      if (r.status === "fulfilled" && r.value) updated++;
+      else if (r.status === "rejected") failed++;
     }
-    onProgress?.(updated + failed, userEntries.length);
+    onProgress?.(done, userEntries.length);
   }
 
   return { updated, failed };

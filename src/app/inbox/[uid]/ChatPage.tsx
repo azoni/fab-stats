@@ -4,7 +4,7 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
 import { useMessages } from "@/hooks/useMessages";
-import { getConversationId, sendMessage, sendMessageNotification, getOrCreateConversation } from "@/lib/messages";
+import { getConversationId, sendMessage, sendMessageNotification, getOrCreateConversation, conversationExists } from "@/lib/messages";
 import { getProfile } from "@/lib/firestore-storage";
 import type { UserProfile } from "@/types";
 
@@ -45,10 +45,13 @@ export default function ChatPage() {
     }).catch(() => {});
   }, [otherUid]);
 
-  // Set conversation ID
+  // Only subscribe to messages if the conversation already exists
   useEffect(() => {
     if (!user || !otherUid || otherUid === "_") return;
-    setConversationId(getConversationId(user.uid, otherUid));
+    const id = getConversationId(user.uid, otherUid);
+    conversationExists(id).then((exists) => {
+      if (exists) setConversationId(id);
+    });
   }, [user, otherUid]);
 
   // Auto-scroll to bottom
@@ -65,17 +68,19 @@ export default function ChatPage() {
   }
 
   async function handleSend() {
-    if (!text.trim() || !conversationId || !user || !profile || sending) return;
+    if (!text.trim() || !user || !profile || sending) return;
 
     setSending(true);
     try {
-      // Ensure conversation exists (for admin-initiated conversations)
+      const convId = getConversationId(user.uid, otherUid);
+
+      // Ensure conversation exists before sending
       if (otherProfile) {
         await getOrCreateConversation(profile, otherProfile);
       }
 
       await sendMessage(
-        conversationId,
+        convId,
         user.uid,
         profile.displayName,
         profile.photoUrl,
@@ -83,10 +88,15 @@ export default function ChatPage() {
         isAdmin
       );
 
+      // Start the listener now that the conversation exists
+      if (!conversationId) {
+        setConversationId(convId);
+      }
+
       // Notify the other user
       await sendMessageNotification(
         otherUid,
-        conversationId,
+        convId,
         user.uid,
         profile.displayName,
         profile.photoUrl,

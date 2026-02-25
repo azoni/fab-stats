@@ -20,6 +20,12 @@ export function getConversationId(uid1: string, uid2: string): string {
   return [uid1, uid2].sort().join("_");
 }
 
+/** Check if a conversation document exists */
+export async function conversationExists(conversationId: string): Promise<boolean> {
+  const snap = await getDoc(doc(db, "conversations", conversationId));
+  return snap.exists();
+}
+
 /** Get or create a conversation between two users */
 export async function getOrCreateConversation(
   currentUser: UserProfile,
