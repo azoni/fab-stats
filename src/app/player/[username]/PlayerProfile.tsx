@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, Fragment } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { getProfileByUsername, getMatchesByUserId } from "@/lib/firestore-storage";
@@ -545,89 +545,144 @@ function ProfileHeader({ profile, achievements, bestRank, isAdmin, isOwner }: { 
 
 import type { PlayoffFinish } from "@/lib/stats";
 
-function PlayoffTrophyIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className || "w-5 h-5"} viewBox="0 0 24 24" fill="currentColor">
-      <path d="M5 3h14v2h2v4c0 1.1-.9 2-2 2h-1.2A5 5 0 0112 15.9V18h3v2h2v2H7v-2h2v-2h3v-2.1A5 5 0 016.2 11H5c-1.1 0-2-.9-2-2V5h2V3zm2 2v4a3 3 0 003 3h4a3 3 0 003-3V5H7zM5 7v2h1.07A5.06 5.06 0 015.02 7H5zm14 0h-.02c-.02.68-.15 1.36-.37 2H19V7z" />
-    </svg>
-  );
-}
-
-function PlayoffMedalIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className || "w-5 h-5"} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M8 2l2 4h4l2-4" />
-      <circle cx="12" cy="14" r="6" fill="currentColor" opacity="0.15" stroke="currentColor" />
-      <circle cx="12" cy="14" r="6" />
-      <path d="M9 14l2 2 4-4" />
-    </svg>
-  );
-}
-
-function PlayoffPodiumIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className || "w-5 h-5"} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="2" y="14" width="6" height="8" rx="1" fill="currentColor" opacity="0.15" />
-      <rect x="9" y="8" width="6" height="14" rx="1" fill="currentColor" opacity="0.15" />
-      <rect x="16" y="11" width="6" height="11" rx="1" fill="currentColor" opacity="0.15" />
-      <rect x="2" y="14" width="6" height="8" rx="1" />
-      <rect x="9" y="8" width="6" height="14" rx="1" />
-      <rect x="16" y="11" width="6" height="11" rx="1" />
-    </svg>
-  );
-}
-
-function PlayoffBracketIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className || "w-5 h-5"} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M4 4h4v4H4zM4 16h4v4H4zM16 10h4v4h-4z" fill="currentColor" opacity="0.15" />
-      <path d="M4 4h4v4H4zM4 16h4v4H4zM16 10h4v4h-4z" />
-      <path d="M8 6h4v14H8" fill="none" />
-      <path d="M12 12h4" />
-    </svg>
-  );
-}
+const PLAYOFF_TIER_GROUPS = [
+  { label: "PQ / RTN", types: ["ProQuest", "Road to Nationals", "Skirmish"] },
+  { label: "BH / Calling", types: ["Battle Hardened", "The Calling"] },
+  { label: "PT / Nats / Worlds", types: ["Pro Tour", "Nationals", "Worlds"] },
+];
 
 function PlayoffFinishes({ finishes }: { finishes: PlayoffFinish[] }) {
-  const champions = finishes.filter((f) => f.type === "champion");
-  const finalists = finishes.filter((f) => f.type === "finalist");
-  const top4 = finishes.filter((f) => f.type === "top4");
-  const top8 = finishes.filter((f) => f.type === "top8");
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
-  const categories = [
-    { label: "Wins", items: champions, icon: <PlayoffTrophyIcon className="w-6 h-6 text-fab-gold" />, color: "text-fab-gold", bg: "bg-fab-gold/10 border-fab-gold/30" },
-    { label: "Finals", items: finalists, icon: <PlayoffMedalIcon className="w-6 h-6 text-gray-300" />, color: "text-gray-300", bg: "bg-gray-400/10 border-gray-400/30" },
-    { label: "Top 4", items: top4, icon: <PlayoffPodiumIcon className="w-6 h-6 text-amber-600" />, color: "text-amber-600", bg: "bg-amber-600/10 border-amber-600/30" },
-    { label: "Top 8", items: top8, icon: <PlayoffBracketIcon className="w-6 h-6 text-blue-400" />, color: "text-blue-400", bg: "bg-blue-400/10 border-blue-400/30" },
-  ].filter((c) => c.items.length > 0);
+  const tierData = useMemo(() => {
+    const result: { label: string; finishes: PlayoffFinish[]; top8: number; top4: number; finals: number; wins: number; total: number }[] = [];
+    const categorized = new Set<string>();
 
-  if (categories.length === 0) return null;
+    for (const group of PLAYOFF_TIER_GROUPS) {
+      const tierFinishes = finishes.filter((f) => group.types.includes(f.eventType));
+      if (tierFinishes.length === 0) continue;
+      group.types.forEach((t) => categorized.add(t));
+      result.push({
+        label: group.label,
+        finishes: tierFinishes,
+        top8: tierFinishes.filter((f) => f.type === "top8").length,
+        top4: tierFinishes.filter((f) => f.type === "top4").length,
+        finals: tierFinishes.filter((f) => f.type === "finalist").length,
+        wins: tierFinishes.filter((f) => f.type === "champion").length,
+        total: tierFinishes.length,
+      });
+    }
+
+    const otherFinishes = finishes.filter((f) => !categorized.has(f.eventType));
+    if (otherFinishes.length > 0) {
+      result.push({
+        label: "Other",
+        finishes: otherFinishes,
+        top8: otherFinishes.filter((f) => f.type === "top8").length,
+        top4: otherFinishes.filter((f) => f.type === "top4").length,
+        finals: otherFinishes.filter((f) => f.type === "finalist").length,
+        wins: otherFinishes.filter((f) => f.type === "champion").length,
+        total: otherFinishes.length,
+      });
+    }
+
+    return result;
+  }, [finishes]);
+
+  if (tierData.length === 0) return null;
+
+  const totals = {
+    top8: finishes.filter((f) => f.type === "top8").length,
+    top4: finishes.filter((f) => f.type === "top4").length,
+    finals: finishes.filter((f) => f.type === "finalist").length,
+    wins: finishes.filter((f) => f.type === "champion").length,
+    total: finishes.length,
+  };
+
+  const toggle = (label: string) => setExpanded((prev) => ({ ...prev, [label]: !prev[label] }));
+
+  const finishLabel = (type: string) => {
+    switch (type) {
+      case "champion": return "Winner";
+      case "finalist": return "Finals";
+      case "top4": return "Top 4";
+      case "top8": return "Top 8";
+      default: return type;
+    }
+  };
+
+  const finishColor = (type: string) => {
+    switch (type) {
+      case "champion": return "text-fab-gold";
+      case "finalist": return "text-gray-300";
+      case "top4": return "text-amber-600";
+      case "top8": return "text-blue-400";
+      default: return "text-fab-dim";
+    }
+  };
 
   return (
     <div>
-      <h2 className="text-lg font-semibold text-fab-text mb-4">Playoff Finishes</h2>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        {categories.map((cat) => (
-          <div key={cat.label} className={`rounded-lg border p-4 ${cat.bg}`}>
-            <div className="flex items-center gap-2 mb-2">
-              {cat.icon}
-              <div>
-                <p className={`text-2xl font-black ${cat.color}`}>{cat.items.length}</p>
-                <p className="text-xs text-fab-muted">{cat.label}</p>
-              </div>
-            </div>
-            <div className="space-y-1 mt-2">
-              {cat.items.slice(0, 3).map((f) => (
-                <p key={`${f.eventName}-${f.eventDate}`} className="text-xs text-fab-dim truncate" title={f.eventName}>
-                  {f.eventName}
-                </p>
-              ))}
-              {cat.items.length > 3 && (
-                <p className="text-xs text-fab-dim">+{cat.items.length - 3} more</p>
-              )}
-            </div>
-          </div>
-        ))}
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-lg font-semibold text-fab-text">Playoff Finishes</h2>
+        <span className="text-sm text-fab-dim">{finishes.length} total</span>
+      </div>
+      <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-fab-border">
+              <th className="text-left px-4 py-2.5 text-xs text-fab-muted font-medium uppercase tracking-wider">Tier</th>
+              <th className="text-center px-2 py-2.5 text-xs text-blue-400 font-medium">Top 8</th>
+              <th className="text-center px-2 py-2.5 text-xs text-amber-600 font-medium">Top 4</th>
+              <th className="text-center px-2 py-2.5 text-xs text-gray-300 font-medium">Finals</th>
+              <th className="text-center px-2 py-2.5 text-xs text-fab-gold font-medium">Wins</th>
+              <th className="text-center px-2 py-2.5 text-xs text-fab-muted font-medium">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            {tierData.map((tier) => (
+              <Fragment key={tier.label}>
+                <tr
+                  className="border-b border-fab-border/50 hover:bg-fab-bg/50 cursor-pointer transition-colors"
+                  onClick={() => toggle(tier.label)}
+                >
+                  <td className="px-4 py-2.5 font-medium text-fab-text">
+                    <span className="flex items-center gap-2">
+                      <svg className={`w-3 h-3 text-fab-dim transition-transform ${expanded[tier.label] ? "rotate-90" : ""}`} fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M6 4l8 6-8 6V4z" />
+                      </svg>
+                      {tier.label}
+                    </span>
+                  </td>
+                  <td className="text-center px-2 py-2.5 text-blue-400">{tier.top8 || <span className="text-fab-dim">-</span>}</td>
+                  <td className="text-center px-2 py-2.5 text-amber-600">{tier.top4 || <span className="text-fab-dim">-</span>}</td>
+                  <td className="text-center px-2 py-2.5 text-gray-300">{tier.finals || <span className="text-fab-dim">-</span>}</td>
+                  <td className="text-center px-2 py-2.5 text-fab-gold">{tier.wins || <span className="text-fab-dim">-</span>}</td>
+                  <td className="text-center px-2 py-2.5 font-bold text-fab-text">{tier.total}</td>
+                </tr>
+                {expanded[tier.label] && tier.finishes.map((f) => (
+                  <tr key={`${f.eventName}-${f.eventDate}`} className="border-b border-fab-border/30 bg-fab-bg/30">
+                    <td className="px-4 pl-9 py-1.5 text-xs text-fab-dim truncate max-w-[200px]" title={f.eventName}>
+                      {f.eventName}
+                    </td>
+                    <td colSpan={4} className="text-center px-2 py-1.5">
+                      <span className={`text-xs font-medium ${finishColor(f.type)}`}>{finishLabel(f.type)}</span>
+                    </td>
+                    <td />
+                  </tr>
+                ))}
+              </Fragment>
+            ))}
+            <tr className="bg-fab-bg/50">
+              <td className="px-4 py-2.5 font-semibold text-fab-muted text-xs uppercase tracking-wider">Total</td>
+              <td className="text-center px-2 py-2.5 text-blue-400 font-bold">{totals.top8 || "-"}</td>
+              <td className="text-center px-2 py-2.5 text-amber-600 font-bold">{totals.top4 || "-"}</td>
+              <td className="text-center px-2 py-2.5 text-gray-300 font-bold">{totals.finals || "-"}</td>
+              <td className="text-center px-2 py-2.5 text-fab-gold font-bold">{totals.wins || "-"}</td>
+              <td className="text-center px-2 py-2.5 font-black text-fab-text">{totals.total}</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
   );
