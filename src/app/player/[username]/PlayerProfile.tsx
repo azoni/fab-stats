@@ -484,8 +484,8 @@ export default function PlayerProfile() {
   );
 }
 
-function ProfileHeader({ profile, achievements, bestRank, isAdmin, isOwner }: { profile: UserProfile; achievements?: Achievement[]; bestRank?: 1 | 2 | 3 | null; isAdmin?: boolean; isOwner?: boolean }) {
-  const ringClass = bestRank === 1 ? "rank-border-gold" : bestRank === 2 ? "rank-border-silver" : bestRank === 3 ? "rank-border-bronze" : "";
+function ProfileHeader({ profile, achievements, bestRank, isAdmin, isOwner }: { profile: UserProfile; achievements?: Achievement[]; bestRank?: 1 | 2 | 3 | 4 | 5 | null; isAdmin?: boolean; isOwner?: boolean }) {
+  const ringClass = bestRank === 1 ? "rank-border-grandmaster" : bestRank === 2 ? "rank-border-diamond" : bestRank === 3 ? "rank-border-gold" : bestRank === 4 ? "rank-border-silver" : bestRank === 5 ? "rank-border-bronze" : "";
   const isCreator = profile.username === "azoni";
   return (
     <div className="flex items-center gap-4">

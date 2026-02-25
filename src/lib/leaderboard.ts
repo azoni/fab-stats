@@ -15,6 +15,15 @@ function leaderboardCollection() {
   return collection(db, "leaderboard");
 }
 
+/** Get ISO date string (YYYY-MM-DD) for Monday of the current week */
+export function getWeekStart(): string {
+  const now = new Date();
+  const day = now.getDay(); // 0=Sun, 1=Mon, ..., 6=Sat
+  const diff = day === 0 ? 6 : day - 1; // days since Monday
+  const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - diff);
+  return monday.toISOString().split("T")[0];
+}
+
 export async function updateLeaderboardEntry(
   profile: UserProfile,
   matches: MatchRecord[]
@@ -64,6 +73,11 @@ export async function updateLeaderboardEntry(
     ? oppStats.reduce((worst, o) => (o.winRate < worst.winRate ? o : worst))
     : null;
 
+  // Weekly stats
+  const weekStart = getWeekStart();
+  const weeklyMatches = matches.filter((m) => m.date >= weekStart);
+  const weeklyWins = weeklyMatches.filter((m) => m.result === MatchResult.Win).length;
+
   const entry: Omit<LeaderboardEntry, never> = {
     userId: profile.uid,
     username: profile.username,
@@ -90,6 +104,9 @@ export async function updateLeaderboardEntry(
     nemesis: nemesisOpp?.opponentName,
     nemesisWinRate: nemesisOpp?.winRate,
     nemesisMatches: nemesisOpp?.totalMatches,
+    weeklyMatches: weeklyMatches.length,
+    weeklyWins,
+    weekStart,
     updatedAt: new Date().toISOString(),
   };
 

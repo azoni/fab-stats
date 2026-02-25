@@ -1,12 +1,15 @@
+import { getWeekStart } from "./leaderboard";
 import type { LeaderboardEntry } from "@/types";
 
 export interface LeaderboardRank {
   tab: string;
   tabLabel: string;
-  rank: 1 | 2 | 3;
+  rank: 1 | 2 | 3 | 4 | 5;
 }
 
 type RankTab = { id: string; label: string; filter: (e: LeaderboardEntry) => boolean; sort: (a: LeaderboardEntry, b: LeaderboardEntry) => number };
+
+const currentWeekStart = getWeekStart();
 
 const RANK_TABS: RankTab[] = [
   {
@@ -20,6 +23,24 @@ const RANK_TABS: RankTab[] = [
     label: "Most Matches",
     filter: () => true,
     sort: (a, b) => b.totalMatches - a.totalMatches,
+  },
+  {
+    id: "mostwins",
+    label: "Most Wins",
+    filter: (e) => e.totalWins > 0,
+    sort: (a, b) => b.totalWins - a.totalWins || b.winRate - a.winRate,
+  },
+  {
+    id: "weeklymatches",
+    label: "Weekly Matches",
+    filter: (e) => e.weekStart === currentWeekStart && e.weeklyMatches > 0,
+    sort: (a, b) => b.weeklyMatches - a.weeklyMatches || b.weeklyWins - a.weeklyWins,
+  },
+  {
+    id: "weeklywins",
+    label: "Weekly Wins",
+    filter: (e) => e.weekStart === currentWeekStart && e.weeklyWins > 0,
+    sort: (a, b) => b.weeklyWins - a.weeklyWins || b.weeklyMatches - a.weeklyMatches,
   },
   {
     id: "streaks",
@@ -64,12 +85,6 @@ const RANK_TABS: RankTab[] = [
     sort: (a, b) => b.currentStreakCount - a.currentStreakCount || b.winRate - a.winRate,
   },
   {
-    id: "mostwins",
-    label: "Most Wins",
-    filter: (e) => e.totalWins > 0,
-    sort: (a, b) => b.totalWins - a.totalWins || b.winRate - a.winRate,
-  },
-  {
     id: "eventgrinder",
     label: "Event Grinder",
     filter: (e) => e.eventsPlayed > 0,
@@ -83,15 +98,15 @@ export function computeUserRanks(entries: LeaderboardEntry[], userId: string): L
   for (const tab of RANK_TABS) {
     const sorted = entries.filter(tab.filter).sort(tab.sort);
     const idx = sorted.findIndex((e) => e.userId === userId);
-    if (idx >= 0 && idx < 3) {
-      ranks.push({ tab: tab.id, tabLabel: tab.label, rank: (idx + 1) as 1 | 2 | 3 });
+    if (idx >= 0 && idx < 5) {
+      ranks.push({ tab: tab.id, tabLabel: tab.label, rank: (idx + 1) as 1 | 2 | 3 | 4 | 5 });
     }
   }
 
   return ranks;
 }
 
-export function getBestRank(ranks: LeaderboardRank[]): 1 | 2 | 3 | null {
+export function getBestRank(ranks: LeaderboardRank[]): 1 | 2 | 3 | 4 | 5 | null {
   if (ranks.length === 0) return null;
-  return Math.min(...ranks.map((r) => r.rank)) as 1 | 2 | 3;
+  return Math.min(...ranks.map((r) => r.rank)) as 1 | 2 | 3 | 4 | 5;
 }

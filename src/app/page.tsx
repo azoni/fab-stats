@@ -141,9 +141,9 @@ export default function Dashboard() {
                 </svg>
               )}
               {profile.photoUrl ? (
-                <img src={profile.photoUrl} alt="" className={`w-16 h-16 rounded-full ${bestRank === 1 ? "rank-border-gold" : bestRank === 2 ? "rank-border-silver" : bestRank === 3 ? "rank-border-bronze" : ""}`} />
+                <img src={profile.photoUrl} alt="" className={`w-16 h-16 rounded-full ${bestRank === 1 ? "rank-border-grandmaster" : bestRank === 2 ? "rank-border-diamond" : bestRank === 3 ? "rank-border-gold" : bestRank === 4 ? "rank-border-silver" : bestRank === 5 ? "rank-border-bronze" : ""}`} />
               ) : (
-                <div className={`w-16 h-16 rounded-full bg-fab-gold/20 flex items-center justify-center text-fab-gold text-2xl font-bold ${bestRank === 1 ? "rank-border-gold" : bestRank === 2 ? "rank-border-silver" : bestRank === 3 ? "rank-border-bronze" : ""}`}>
+                <div className={`w-16 h-16 rounded-full bg-fab-gold/20 flex items-center justify-center text-fab-gold text-2xl font-bold ${bestRank === 1 ? "rank-border-grandmaster" : bestRank === 2 ? "rank-border-diamond" : bestRank === 3 ? "rank-border-gold" : bestRank === 4 ? "rank-border-silver" : bestRank === 5 ? "rank-border-bronze" : ""}`}>
                   {profile.displayName.charAt(0).toUpperCase()}
                 </div>
               )}

@@ -5,17 +5,20 @@ import { useLeaderboard } from "@/hooks/useLeaderboard";
 import { useMatches } from "@/hooks/useMatches";
 import { useAuth } from "@/contexts/AuthContext";
 import { computeOpponentStats } from "@/lib/stats";
+import { getWeekStart } from "@/lib/leaderboard";
 import { TrophyIcon } from "@/components/icons/NavIcons";
 import type { LeaderboardEntry, OpponentStats } from "@/types";
 
 const SITE_CREATOR = "azoni";
 
-type Tab = "winrate" | "volume" | "mostwins" | "streaks" | "draws" | "events" | "eventgrinder" | "rated" | "heroes" | "dedication" | "hotstreak";
+type Tab = "winrate" | "volume" | "mostwins" | "streaks" | "draws" | "events" | "eventgrinder" | "rated" | "heroes" | "dedication" | "hotstreak" | "weeklymatches" | "weeklywins";
 
 const tabs: { id: Tab; label: string }[] = [
   { id: "winrate", label: "Win Rate" },
   { id: "volume", label: "Most Matches" },
   { id: "mostwins", label: "Most Wins" },
+  { id: "weeklymatches", label: "Weekly Matches" },
+  { id: "weeklywins", label: "Weekly Wins" },
   { id: "streaks", label: "Streaks" },
   { id: "hotstreak", label: "Hot Streak" },
   { id: "events", label: "Event Wins" },
@@ -50,6 +53,8 @@ export default function LeaderboardPage() {
     return map;
   }, [user, matches]);
 
+  const currentWeekStart = useMemo(() => getWeekStart(), []);
+
   const ranked = useMemo(() => {
     switch (activeTab) {
       case "winrate":
@@ -62,6 +67,14 @@ export default function LeaderboardPage() {
         return [...entries]
           .filter((e) => e.totalWins > 0)
           .sort((a, b) => b.totalWins - a.totalWins || b.winRate - a.winRate);
+      case "weeklymatches":
+        return [...entries]
+          .filter((e) => e.weekStart === currentWeekStart && e.weeklyMatches > 0)
+          .sort((a, b) => b.weeklyMatches - a.weeklyMatches || b.weeklyWins - a.weeklyWins);
+      case "weeklywins":
+        return [...entries]
+          .filter((e) => e.weekStart === currentWeekStart && e.weeklyWins > 0)
+          .sort((a, b) => b.weeklyWins - a.weeklyWins || b.weeklyMatches - a.weeklyMatches);
       case "streaks":
         return [...entries]
           .filter((e) => e.longestWinStreak > 0)
@@ -97,7 +110,7 @@ export default function LeaderboardPage() {
       default:
         return entries;
     }
-  }, [entries, activeTab]);
+  }, [entries, activeTab, currentWeekStart]);
 
   return (
     <div>
@@ -142,7 +155,9 @@ export default function LeaderboardPage() {
                 ? "Players need at least 5 rated matches to appear here."
                 : activeTab === "hotstreak"
                   ? "No one is on a 2+ win streak right now."
-                  : "Import matches to appear on the leaderboard."}
+                  : activeTab === "weeklymatches" || activeTab === "weeklywins"
+                    ? "No one has logged matches this week yet."
+                    : "Import matches to appear on the leaderboard."}
           </p>
         </div>
       )}
@@ -208,22 +223,34 @@ function LeaderboardRow({
 
   const medal =
     rank === 1
-      ? "text-yellow-400"
+      ? "text-fuchsia-400"
       : rank === 2
-        ? "text-gray-300"
+        ? "text-sky-400"
         : rank === 3
-          ? "text-amber-600"
-          : "text-fab-dim";
+          ? "text-yellow-400"
+          : rank === 4
+            ? "text-gray-300"
+            : rank === 5
+              ? "text-amber-600"
+              : "text-fab-dim";
 
   const isCreator = entry.username === SITE_CREATOR;
-  const rankBorder = rank === 1 ? "rank-border-gold" : rank === 2 ? "rank-border-silver" : rank === 3 ? "rank-border-bronze" : "";
-  const cardClass = rank === 1
-    ? "leaderboard-card-gold"
-    : rank === 2
-      ? "leaderboard-card-silver"
-      : rank === 3
-        ? "leaderboard-card-bronze"
-        : "bg-fab-surface border border-fab-border";
+
+  const rankBorder =
+    rank === 1 ? "rank-border-grandmaster"
+    : rank === 2 ? "rank-border-diamond"
+    : rank === 3 ? "rank-border-gold"
+    : rank === 4 ? "rank-border-silver"
+    : rank === 5 ? "rank-border-bronze"
+    : "";
+
+  const cardClass =
+    rank === 1 ? "leaderboard-card-grandmaster"
+    : rank === 2 ? "leaderboard-card-diamond"
+    : rank === 3 ? "leaderboard-card-gold"
+    : rank === 4 ? "leaderboard-card-silver"
+    : rank === 5 ? "leaderboard-card-bronze"
+    : "bg-fab-surface border border-fab-border";
 
   return (
     <Link
@@ -285,6 +312,22 @@ function LeaderboardRow({
             <p className="text-lg font-bold text-fab-text">{entry.totalMatches}</p>
             <p className="text-xs text-fab-dim">
               {entry.totalWins}W-{entry.totalLosses}L{entry.totalDraws > 0 ? `-${entry.totalDraws}D` : ""} ({formatRate(entry.winRate)})
+            </p>
+          </>
+        )}
+        {tab === "weeklymatches" && (
+          <>
+            <p className="text-lg font-bold text-fab-text">{entry.weeklyMatches}</p>
+            <p className="text-xs text-fab-dim">
+              {entry.weeklyWins}W this week
+            </p>
+          </>
+        )}
+        {tab === "weeklywins" && (
+          <>
+            <p className="text-lg font-bold text-fab-win">{entry.weeklyWins}</p>
+            <p className="text-xs text-fab-dim">
+              of {entry.weeklyMatches} matches
             </p>
           </>
         )}
@@ -364,4 +407,3 @@ function LeaderboardRow({
     </Link>
   );
 }
-

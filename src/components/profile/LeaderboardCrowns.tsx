@@ -1,9 +1,11 @@
 import type { LeaderboardRank } from "@/lib/leaderboard-ranks";
 
-const rankStyle: Record<1 | 2 | 3, { bg: string; text: string; medal: string }> = {
-  1: { bg: "bg-yellow-400/15", text: "text-yellow-400", medal: "1st" },
-  2: { bg: "bg-gray-300/15", text: "text-gray-300", medal: "2nd" },
-  3: { bg: "bg-amber-600/15", text: "text-amber-600", medal: "3rd" },
+const rankStyle: Record<1 | 2 | 3 | 4 | 5, { bg: string; text: string; medal: string }> = {
+  1: { bg: "bg-fuchsia-400/15", text: "text-fuchsia-400", medal: "1st" },
+  2: { bg: "bg-sky-400/15", text: "text-sky-400", medal: "2nd" },
+  3: { bg: "bg-yellow-400/15", text: "text-yellow-400", medal: "3rd" },
+  4: { bg: "bg-gray-300/15", text: "text-gray-300", medal: "4th" },
+  5: { bg: "bg-amber-600/15", text: "text-amber-600", medal: "5th" },
 };
 
 export function LeaderboardCrowns({ ranks }: { ranks: LeaderboardRank[] }) {

@@ -208,6 +208,9 @@ export interface LeaderboardEntry {
   nemesis?: string;
   nemesisWinRate?: number;
   nemesisMatches?: number;
+  weeklyMatches: number;
+  weeklyWins: number;
+  weekStart: string;
   updatedAt: string;
 }
 
