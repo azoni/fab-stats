@@ -2,14 +2,13 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { DashboardIcon, SwordsIcon, OpponentsIcon, TrendsIcon, ImportIcon, CalendarIcon, FeedIcon, TrophyIcon } from "@/components/icons/NavIcons";
+import { DashboardIcon, SwordsIcon, OpponentsIcon, TrendsIcon, ImportIcon, CalendarIcon, TrophyIcon } from "@/components/icons/NavIcons";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { useAuth } from "@/contexts/AuthContext";
 import type { ReactNode } from "react";
 
 const navLinks: { href: string; label: string; icon: ReactNode }[] = [
   { href: "/", label: "Dashboard", icon: <DashboardIcon className="w-4 h-4" /> },
-  { href: "/feed", label: "Feed", icon: <FeedIcon className="w-4 h-4" /> },
   { href: "/leaderboard", label: "Leaderboard", icon: <TrophyIcon className="w-4 h-4" /> },
   { href: "/matches", label: "Matches", icon: <SwordsIcon className="w-4 h-4" /> },
   { href: "/events", label: "Events", icon: <CalendarIcon className="w-4 h-4" /> },
@@ -36,15 +35,7 @@ export function Navbar() {
             <span className="text-xl font-bold text-fab-gold tracking-tight">FaB Stats</span>
           </Link>
           <div className="hidden md:flex items-center gap-1">
-            {mounted && !user && !isGuest && (
-              <Link
-                href="/login"
-                className="px-4 py-2 rounded-lg text-sm font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors"
-              >
-                Sign In
-              </Link>
-            )}
-            {mounted && (user || isGuest) && (
+            {mounted && (
               <>
                 {navLinks.map((link) => (
                   <Link
@@ -71,10 +62,17 @@ export function Navbar() {
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                   </svg>
-                  Search
+                  Discover
                 </Link>
                 <div className="ml-3 pl-3 border-l border-fab-border flex items-center gap-2">
-                  {isGuest ? (
+                  {!user && !isGuest ? (
+                    <Link
+                      href="/login"
+                      className="px-4 py-2 rounded-lg text-sm font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors"
+                    >
+                      Sign In
+                    </Link>
+                  ) : isGuest ? (
                     <>
                       <span className="text-xs text-fab-dim">Guest</span>
                       <Link
@@ -94,8 +92,8 @@ export function Navbar() {
                   ) : (
                     <span className="text-xs text-fab-dim truncate max-w-32">{user?.email}</span>
                   )}
-                  {!isGuest && <NotificationBell />}
-                  {!isGuest && (
+                  {user && !isGuest && <NotificationBell />}
+                  {user && !isGuest && (
                     <Link
                       href="/settings"
                       className={`p-1 rounded transition-colors ${

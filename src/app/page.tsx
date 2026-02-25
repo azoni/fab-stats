@@ -53,12 +53,31 @@ export default function Dashboard() {
           Import your tournament history to see your win rate, streaks,
           opponent stats, and more — all in one place.
         </p>
-        <Link
-          href="/import"
-          className="px-6 py-3 rounded-md font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors"
-        >
-          Import Your Matches
-        </Link>
+        <div className="flex gap-3 flex-wrap justify-center">
+          {user ? (
+            <Link
+              href="/import"
+              className="px-6 py-3 rounded-md font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors"
+            >
+              Import Your Matches
+            </Link>
+          ) : (
+            <>
+              <Link
+                href="/login"
+                className="px-6 py-3 rounded-md font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors"
+              >
+                Sign Up to Get Started
+              </Link>
+              <Link
+                href="/leaderboard"
+                className="px-6 py-3 rounded-md font-semibold bg-fab-surface border border-fab-border text-fab-text hover:bg-fab-surface-hover transition-colors"
+              >
+                Browse Leaderboard
+              </Link>
+            </>
+          )}
+        </div>
       </div>
     );
   }

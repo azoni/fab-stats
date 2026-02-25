@@ -1,5 +1,6 @@
 "use client";
 import { useState, useMemo } from "react";
+import Link from "next/link";
 import { useMatches } from "@/hooks/useMatches";
 import { useAuth } from "@/contexts/AuthContext";
 import { computeOpponentStats } from "@/lib/stats";
@@ -96,7 +97,17 @@ export default function OpponentsPage() {
     return (
       <div className="text-center py-16 text-fab-dim">
         <p className="text-lg mb-1">No opponent data yet</p>
-        <p className="text-sm">Import your tournament history to see your win rate against each opponent</p>
+        <p className="text-sm mb-4">
+          {user ? "Import your tournament history to see your win rate against each opponent" : "Sign up and import your matches to see head-to-head stats against every opponent"}
+        </p>
+        {!user && (
+          <Link
+            href="/login"
+            className="inline-block px-6 py-3 rounded-md font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors"
+          >
+            Sign Up to Get Started
+          </Link>
+        )}
       </div>
     );
   }

@@ -3,6 +3,9 @@ import { Suspense, useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { searchUsernames, getProfile } from "@/lib/firestore-storage";
+import { useFeed } from "@/hooks/useFeed";
+import { FeedCard } from "@/components/feed/FeedCard";
+import { FeedIcon } from "@/components/icons/NavIcons";
 import type { UserProfile } from "@/types";
 
 interface SearchResult {
@@ -21,7 +24,7 @@ export default function SearchPage() {
 function SearchSkeleton() {
   return (
     <div>
-      <h1 className="text-2xl font-bold text-fab-gold mb-6">Find Players</h1>
+      <h1 className="text-2xl font-bold text-fab-gold mb-6">Discover</h1>
       <div className="flex gap-3 mb-8">
         <div className="flex-1 h-11 bg-fab-surface border border-fab-border rounded-lg animate-pulse" />
         <div className="w-24 h-11 bg-fab-surface rounded-lg animate-pulse" />
@@ -37,6 +40,7 @@ function SearchContent() {
   const [results, setResults] = useState<SearchResult[]>([]);
   const [searched, setSearched] = useState(false);
   const [loading, setLoading] = useState(false);
+  const { events: feedEvents, loading: feedLoading } = useFeed();
 
   async function doSearch(q: string) {
     if (!q.trim()) {
@@ -86,9 +90,14 @@ function SearchContent() {
     doSearch(query);
   }
 
+  const showFeed = !query.trim() && !searched;
+
   return (
     <div>
-      <h1 className="text-2xl font-bold text-fab-gold mb-6">Find Players</h1>
+      <h1 className="text-2xl font-bold text-fab-gold mb-2">Discover</h1>
+      <p className="text-fab-muted text-sm mb-6">
+        Search for players or see what the community is up to.
+      </p>
 
       <form onSubmit={handleSearch} className="flex gap-3 mb-8">
         <input
@@ -107,6 +116,7 @@ function SearchContent() {
         </button>
       </form>
 
+      {/* Search results */}
       {loading && (
         <div className="space-y-3">
           {[...Array(3)].map((_, i) => (
@@ -151,6 +161,41 @@ function SearchContent() {
               </div>
             </Link>
           ))}
+        </div>
+      )}
+
+      {/* Activity feed (shown when not searching) */}
+      {showFeed && (
+        <div>
+          <h2 className="text-lg font-semibold text-fab-text mb-4">Recent Activity</h2>
+
+          {feedLoading && (
+            <div className="space-y-3">
+              {[...Array(5)].map((_, i) => (
+                <div
+                  key={i}
+                  className="bg-fab-surface border border-fab-border rounded-lg p-4 h-24 animate-pulse"
+                />
+              ))}
+            </div>
+          )}
+
+          {!feedLoading && feedEvents.length === 0 && (
+            <div className="text-center py-12">
+              <FeedIcon className="w-12 h-12 text-fab-muted mb-3 mx-auto" />
+              <p className="text-fab-muted text-sm">
+                No activity yet. When players import their matches, it will show up here.
+              </p>
+            </div>
+          )}
+
+          {!feedLoading && feedEvents.length > 0 && (
+            <div className="space-y-3">
+              {feedEvents.map((event) => (
+                <FeedCard key={event.id} event={event} />
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>

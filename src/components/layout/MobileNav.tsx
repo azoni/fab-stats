@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { DashboardIcon, SwordsIcon, CalendarIcon, FeedIcon, TrophyIcon } from "@/components/icons/NavIcons";
+import { DashboardIcon, SwordsIcon, CalendarIcon, TrophyIcon } from "@/components/icons/NavIcons";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNotifications } from "@/hooks/useNotifications";
 import type { ReactNode } from "react";
@@ -26,7 +26,6 @@ function SettingsIcon(props: { className?: string }) {
 
 const tabs: { href: string; label: string; icon: ReactNode }[] = [
   { href: "/", label: "Home", icon: <DashboardIcon /> },
-  { href: "/feed", label: "Feed", icon: <FeedIcon /> },
   { href: "/matches", label: "Matches", icon: <SwordsIcon /> },
   { href: "/events", label: "Events", icon: <CalendarIcon /> },
   { href: "/leaderboard", label: "Rankings", icon: <TrophyIcon /> },
@@ -39,7 +38,9 @@ export function MobileNav() {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
-  if (!mounted || (!user && !isGuest)) return null;
+  if (!mounted) return null;
+
+  const isAuthed = user || isGuest;
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-fab-surface/95 backdrop-blur-md border-t border-fab-border">
@@ -65,20 +66,34 @@ export function MobileNav() {
           }`}
         >
           <SearchIcon />
-          <span className="mt-0.5">Search</span>
+          <span className="mt-0.5">Discover</span>
         </Link>
-        <Link
-          href="/settings"
-          className={`relative flex flex-col items-center gap-0.5 px-2 py-1 text-xs transition-colors ${
-            pathname === "/settings" ? "text-fab-gold" : "text-fab-muted"
-          }`}
-        >
-          <SettingsIcon />
-          <span className="mt-0.5">More</span>
-          {unreadCount > 0 && (
-            <span className="absolute top-0 right-0 w-2 h-2 rounded-full bg-fab-loss" />
-          )}
-        </Link>
+        {isAuthed ? (
+          <Link
+            href="/settings"
+            className={`relative flex flex-col items-center gap-0.5 px-2 py-1 text-xs transition-colors ${
+              pathname === "/settings" ? "text-fab-gold" : "text-fab-muted"
+            }`}
+          >
+            <SettingsIcon />
+            <span className="mt-0.5">More</span>
+            {unreadCount > 0 && (
+              <span className="absolute top-0 right-0 w-2 h-2 rounded-full bg-fab-loss" />
+            )}
+          </Link>
+        ) : (
+          <Link
+            href="/login"
+            className={`flex flex-col items-center gap-0.5 px-2 py-1 text-xs transition-colors ${
+              pathname === "/login" ? "text-fab-gold" : "text-fab-muted"
+            }`}
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+            </svg>
+            <span className="mt-0.5">Sign In</span>
+          </Link>
+        )}
       </div>
     </nav>
   );

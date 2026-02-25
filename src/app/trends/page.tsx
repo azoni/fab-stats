@@ -1,6 +1,8 @@
 "use client";
 import { useState } from "react";
+import Link from "next/link";
 import { useMatches } from "@/hooks/useMatches";
+import { useAuth } from "@/contexts/AuthContext";
 import { computeTrends, computeRollingWinRate } from "@/lib/stats";
 import { GameFormat, MatchResult } from "@/types";
 import {
@@ -41,6 +43,7 @@ const FORMAT_COLORS = [
 
 export default function TrendsPage() {
   const { matches, isLoaded } = useMatches();
+  const { user } = useAuth();
   const [granularity, setGranularity] = useState<"weekly" | "monthly">("weekly");
   const [windowSize, setWindowSize] = useState(10);
 
@@ -52,7 +55,17 @@ export default function TrendsPage() {
     return (
       <div className="text-center py-16 text-fab-dim">
         <p className="text-lg mb-1">Not enough data yet</p>
-        <p className="text-sm">Import a few more matches and charts will appear here showing how your performance changes over time.</p>
+        <p className="text-sm mb-4">
+          {user ? "Import a few more matches and charts will appear here showing how your performance changes over time." : "Sign up and import your matches to see performance trends and charts."}
+        </p>
+        {!user && (
+          <Link
+            href="/login"
+            className="inline-block px-6 py-3 rounded-md font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors"
+          >
+            Sign Up to Get Started
+          </Link>
+        )}
       </div>
     );
   }

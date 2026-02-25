@@ -24,11 +24,19 @@ export default function PlayerProfile() {
   const username = pathname.split("/").pop() || "";
   const [state, setState] = useState<PageState>({ status: "loading" });
 
-  // Update tab title from pre-rendered "_" to actual username
+  // Update tab title and OG meta tags from generic pre-rendered values to actual username
   useEffect(() => {
-    if (username) {
-      document.title = `${username}'s FaB Stats | FaB Stats`;
-    }
+    if (!username || username === "_") return;
+    document.title = `${username}'s FaB Stats | FaB Stats`;
+    const desc = `View ${username}'s Flesh and Blood match history, win rates, and tournament results on FaB Stats.`;
+    const ogTitle = document.querySelector('meta[property="og:title"]');
+    const ogDesc = document.querySelector('meta[property="og:description"]');
+    const twTitle = document.querySelector('meta[name="twitter:title"]');
+    const twDesc = document.querySelector('meta[name="twitter:description"]');
+    if (ogTitle) ogTitle.setAttribute("content", `${username}'s FaB Stats | FaB Stats`);
+    if (ogDesc) ogDesc.setAttribute("content", desc);
+    if (twTitle) twTitle.setAttribute("content", `${username}'s FaB Stats | FaB Stats`);
+    if (twDesc) twDesc.setAttribute("content", desc);
   }, [username]);
 
   useEffect(() => {

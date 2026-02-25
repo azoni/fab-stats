@@ -11,12 +11,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (loading) return;
 
-    if (!user && !isGuest) {
-      router.replace("/login");
-      return;
-    }
-
-    // Redirect to setup if profile not created (but not if already on /setup)
+    // Redirect to setup if authed user hasn't created profile yet
     if (needsSetup && pathname !== "/setup") {
       router.replace("/setup");
     }
@@ -30,9 +25,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (!user && !isGuest) return null;
-
-  // Allow /setup through even though needsSetup is true
+  // Authed user still needs to set up profile
   if (needsSetup && pathname !== "/setup") return null;
 
   return <>{children}</>;

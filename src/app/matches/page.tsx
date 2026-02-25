@@ -28,31 +28,46 @@ export default function MatchesPage() {
             <p className="text-fab-muted text-sm mt-1">All your individual game results — tap any match to edit it</p>
           )}
         </div>
-        <Link
-          href="/matches/new"
-          className="px-4 py-2 rounded-md text-sm font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors shrink-0"
-        >
-          + Log Match
-        </Link>
+        {user && (
+          <Link
+            href="/matches/new"
+            className="px-4 py-2 rounded-md text-sm font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors shrink-0"
+          >
+            + Log Match
+          </Link>
+        )}
       </div>
 
       {matches.length === 0 ? (
         <div className="text-center py-16 text-fab-dim">
           <p className="text-lg mb-2">No matches yet</p>
-          <p className="text-sm mb-4">Import your tournament history or log a match manually to get started</p>
+          <p className="text-sm mb-4">
+            {user ? "Import your tournament history or log a match manually to get started" : "Sign up to track your Flesh and Blood tournament results"}
+          </p>
           <div className="flex gap-3 justify-center flex-wrap">
-            <Link
-              href="/import"
-              className="inline-block px-6 py-3 rounded-md font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors"
-            >
-              Import Matches
-            </Link>
-            <Link
-              href="/matches/new"
-              className="inline-block px-6 py-3 rounded-md font-semibold bg-fab-surface border border-fab-border text-fab-text hover:bg-fab-surface-hover transition-colors"
-            >
-              Log Manually
-            </Link>
+            {user ? (
+              <>
+                <Link
+                  href="/import"
+                  className="inline-block px-6 py-3 rounded-md font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors"
+                >
+                  Import Matches
+                </Link>
+                <Link
+                  href="/matches/new"
+                  className="inline-block px-6 py-3 rounded-md font-semibold bg-fab-surface border border-fab-border text-fab-text hover:bg-fab-surface-hover transition-colors"
+                >
+                  Log Manually
+                </Link>
+              </>
+            ) : (
+              <Link
+                href="/login"
+                className="inline-block px-6 py-3 rounded-md font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors"
+              >
+                Sign Up to Get Started
+              </Link>
+            )}
           </div>
         </div>
       ) : (

@@ -1,11 +1,14 @@
 "use client";
 import { useState, useMemo } from "react";
+import Link from "next/link";
 import { useMatches } from "@/hooks/useMatches";
+import { useAuth } from "@/contexts/AuthContext";
 import { computeEventStats } from "@/lib/stats";
 import { EventCard } from "@/components/events/EventCard";
 
 export default function EventsPage() {
   const { matches, isLoaded } = useMatches();
+  const { user } = useAuth();
   const [filterFormat, setFilterFormat] = useState("all");
   const [filterEventType, setFilterEventType] = useState("all");
 
@@ -75,11 +78,21 @@ export default function EventsPage() {
 
       {filtered.length === 0 ? (
         <div className="text-center py-16">
-          <p className="text-fab-muted">
+          <p className="text-fab-muted mb-4">
             {eventStats.length === 0
-              ? "No events yet. Import your match history to see your tournaments here."
+              ? user
+                ? "No events yet. Import your match history to see your tournaments here."
+                : "Sign up and import your matches to see your tournament history here."
               : "No events match the current filters."}
           </p>
+          {eventStats.length === 0 && !user && (
+            <Link
+              href="/login"
+              className="inline-block px-6 py-3 rounded-md font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors"
+            >
+              Sign Up to Get Started
+            </Link>
+          )}
         </div>
       ) : (
         <div className="space-y-2">

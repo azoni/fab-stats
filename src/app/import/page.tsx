@@ -9,6 +9,7 @@ import { createImportFeedEvent } from "@/lib/feed";
 import { updateLeaderboardEntry } from "@/lib/leaderboard";
 import { getMatchesByUserId } from "@/lib/firestore-storage";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { MatchCard } from "@/components/matches/MatchCard";
 import { CheckCircleIcon, FileIcon, ChevronDownIcon, ChevronUpIcon } from "@/components/icons/NavIcons";
 import { MatchResult, type MatchRecord } from "@/types";
@@ -254,6 +255,19 @@ export default function ImportPage() {
         </a>
         {" "}— the official Flesh and Blood tournament site where your event results are recorded. Pick a method below to get started.
       </p>
+
+      {!user && !isGuest && (
+        <div className="bg-fab-gold/10 border border-fab-gold/30 rounded-lg p-4 mb-6">
+          <p className="text-fab-gold font-semibold mb-1">Sign up to save your matches</p>
+          <p className="text-fab-muted text-sm mb-3">Create a free account to import and track your tournament history, view stats, and appear on the leaderboard.</p>
+          <Link
+            href="/login"
+            className="inline-block px-4 py-2 rounded-lg text-sm font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors"
+          >
+            Sign Up
+          </Link>
+        </div>
+      )}
 
       {error && (
         <div className="bg-fab-loss/10 border border-fab-loss/30 text-fab-loss rounded-md px-4 py-3 text-sm mb-4">{error}</div>

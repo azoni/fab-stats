@@ -25,7 +25,7 @@ export function useMatches() {
     if (isGuest || !user) {
       if (!isGuest) {
         setMatches([]);
-        setIsLoaded(false);
+        setIsLoaded(true);
       }
       return;
     }
