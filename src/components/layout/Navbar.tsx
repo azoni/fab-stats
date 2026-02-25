@@ -6,6 +6,8 @@ import { DashboardIcon, SwordsIcon, OpponentsIcon, TrendsIcon, ImportIcon, Calen
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { FeedbackModal } from "@/components/feedback/FeedbackModal";
 import { useAuth } from "@/contexts/AuthContext";
+import { collection, getCountFromServer } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 import type { ReactNode } from "react";
 
 const navLinks: { href: string; label: string; icon: ReactNode }[] = [
@@ -23,7 +25,13 @@ export function Navbar() {
   const { user, profile, signOut, isGuest, isAdmin } = useAuth();
   const [mounted, setMounted] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [userCount, setUserCount] = useState(0);
   useEffect(() => setMounted(true), []);
+  useEffect(() => {
+    getCountFromServer(collection(db, "usernames"))
+      .then((snap) => setUserCount(snap.data().count))
+      .catch(() => {});
+  }, []);
 
   return (
     <>
@@ -36,6 +44,11 @@ export function Navbar() {
               <path d="M16 8l-2 6h-5l4 3-1.5 5L16 19l4.5 3L19 17l4-3h-5L16 8z" fill="currentColor" />
             </svg>
             <span className="text-xl font-bold text-fab-gold tracking-tight">FaB Stats</span>
+            {userCount > 0 && (
+              <span className="hidden sm:inline text-[10px] text-fab-dim font-normal ml-1 self-end mb-0.5">
+                {userCount} players
+              </span>
+            )}
           </Link>
           <div className="hidden md:flex items-center gap-1">
             {mounted && (
