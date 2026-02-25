@@ -45,6 +45,24 @@ const RANK_TABS: RankTab[] = [
     filter: (e) => e.ratedMatches >= 5,
     sort: (a, b) => b.ratedWinRate - a.ratedWinRate || b.ratedMatches - a.ratedMatches,
   },
+  {
+    id: "heroes",
+    label: "Hero Variety",
+    filter: (e) => e.uniqueHeroes > 0,
+    sort: (a, b) => b.uniqueHeroes - a.uniqueHeroes || b.totalMatches - a.totalMatches,
+  },
+  {
+    id: "dedication",
+    label: "Hero Loyalty",
+    filter: (e) => e.topHeroMatches > 0,
+    sort: (a, b) => b.topHeroMatches - a.topHeroMatches || b.totalMatches - a.totalMatches,
+  },
+  {
+    id: "hotstreak",
+    label: "Hot Streak",
+    filter: (e) => e.currentStreakType === "win" && e.currentStreakCount >= 2,
+    sort: (a, b) => b.currentStreakCount - a.currentStreakCount || b.winRate - a.winRate,
+  },
 ];
 
 export function computeUserRanks(entries: LeaderboardEntry[], userId: string): LeaderboardRank[] {

@@ -208,18 +208,18 @@ export default function PlayerProfile() {
       <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
         <ProfileHeader profile={profile} achievements={achievements} bestRank={bestRank} />
         {/* Compact Streak */}
-        <div className={`rounded-lg px-4 py-3 border ${
+        <div className={`rounded-lg px-5 py-4 border ${
           streaks.currentStreak?.type === MatchResult.Win
             ? "bg-fab-win/8 border-fab-win/30"
             : streaks.currentStreak?.type === MatchResult.Loss
               ? "bg-fab-loss/8 border-fab-loss/30"
               : "bg-fab-surface border-fab-border"
         }`}>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-5">
             <div>
-              <p className="text-[10px] text-fab-muted uppercase tracking-wider">Streak</p>
+              <p className="text-xs text-fab-muted uppercase tracking-wider">Streak</p>
               <div className="flex items-baseline gap-1.5">
-                <span className={`text-2xl font-black ${
+                <span className={`text-3xl font-black ${
                   streaks.currentStreak?.type === MatchResult.Win
                     ? "text-fab-win"
                     : streaks.currentStreak?.type === MatchResult.Loss
@@ -228,7 +228,7 @@ export default function PlayerProfile() {
                 }`}>
                   {streaks.currentStreak ? streaks.currentStreak.count : 0}
                 </span>
-                <span className={`text-sm font-bold ${
+                <span className={`text-base font-bold ${
                   streaks.currentStreak?.type === MatchResult.Win
                     ? "text-fab-win"
                     : streaks.currentStreak?.type === MatchResult.Loss
@@ -241,22 +241,22 @@ export default function PlayerProfile() {
                 </span>
               </div>
             </div>
-            <div className="flex gap-3 text-center">
+            <div className="flex gap-4 text-center">
               <div>
-                <p className="text-sm font-bold text-fab-win">{streaks.longestWinStreak}</p>
+                <p className="text-base font-bold text-fab-win">{streaks.longestWinStreak}</p>
                 <p className="text-[10px] text-fab-dim">Best</p>
               </div>
               <div>
-                <p className="text-sm font-bold text-fab-loss">{streaks.longestLossStreak}</p>
+                <p className="text-base font-bold text-fab-loss">{streaks.longestLossStreak}</p>
                 <p className="text-[10px] text-fab-dim">Worst</p>
               </div>
             </div>
           </div>
-          <div className="mt-2 flex gap-0.5 flex-wrap">
+          <div className="mt-2.5 flex gap-0.5 flex-wrap">
             {last30.map((m, i) => (
               <div
                 key={i}
-                className={`w-2 h-2 rounded-full ${
+                className={`w-2.5 h-2.5 rounded-full ${
                   m.result === MatchResult.Win ? "bg-fab-win" : m.result === MatchResult.Loss ? "bg-fab-loss" : "bg-fab-draw"
                 }`}
                 title={`${new Date(m.date).toLocaleDateString()} - ${m.result}`}
@@ -266,6 +266,9 @@ export default function PlayerProfile() {
         </div>
       </div>
 
+      {/* Leaderboard Rankings */}
+      <LeaderboardCrowns ranks={userRanks} />
+
       {/* Quick Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <StatCard label="Total Matches" value={overall.totalMatches} />
@@ -274,7 +277,7 @@ export default function PlayerProfile() {
           value={`${overall.overallWinRate.toFixed(1)}%`}
           color={overall.overallWinRate >= 50 ? "text-fab-win" : "text-fab-loss"}
         />
-        <StatCard label="Record" value={`${overall.totalWins}W - ${overall.totalLosses}L`} />
+        <StatCard label="Record" value={`${overall.totalWins}W - ${overall.totalLosses}L - ${overall.totalDraws}D`} />
         {bestFinish ? (
           <StatCard
             label="Best Finish"
@@ -283,14 +286,9 @@ export default function PlayerProfile() {
             color="text-fab-gold"
           />
         ) : (
-          <StatCard label="Draws" value={overall.totalDraws} />
+          <StatCard label="Events" value={eventStats.length} />
         )}
       </div>
-      {bestFinish && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 -mt-4">
-          <StatCard label="Draws" value={overall.totalDraws} />
-        </div>
-      )}
 
       {/* Achievements */}
       <AchievementShowcase earned={achievements} />
@@ -298,14 +296,11 @@ export default function PlayerProfile() {
       {/* Hero Mastery */}
       <HeroMasteryList masteries={masteries} />
 
-      {/* Leaderboard Rankings */}
-      <LeaderboardCrowns ranks={userRanks} />
-
       {/* Major Event Badges */}
       <EventBadges badges={eventBadges} />
 
-      {/* Nemesis + Most Played */}
-      {(nemesis || bestFriend) && (
+      {/* Nemesis + Most Played (owner only) */}
+      {isOwner && (nemesis || bestFriend) && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {nemesis && (
             <div className="bg-fab-loss/8 border border-fab-loss/30 rounded-lg p-4">
@@ -317,7 +312,7 @@ export default function PlayerProfile() {
                 </svg>
                 <span className="text-xs text-fab-muted uppercase tracking-wider">Nemesis</span>
               </div>
-              <p className="font-bold text-fab-loss truncate">{nemesisName}</p>
+              <p className="font-bold text-fab-loss truncate">{nemesis.opponentName}</p>
               <p className="text-xs text-fab-dim mt-1">
                 {nemesis.wins}W-{nemesis.losses}L{nemesis.draws > 0 ? `-${nemesis.draws}D` : ""} ({nemesis.winRate.toFixed(0)}%)
               </p>
@@ -333,7 +328,7 @@ export default function PlayerProfile() {
                 </svg>
                 <span className="text-xs text-fab-muted uppercase tracking-wider">Most Played</span>
               </div>
-              <p className="font-bold text-fab-text truncate">{bestFriendName}</p>
+              <p className="font-bold text-fab-text truncate">{bestFriend.opponentName}</p>
               <p className="text-xs text-fab-dim mt-1">
                 {bestFriend.totalMatches} matches ({bestFriend.wins}W-{bestFriend.losses}L{bestFriend.draws > 0 ? `-${bestFriend.draws}D` : ""})
               </p>
@@ -422,7 +417,7 @@ export default function PlayerProfile() {
 }
 
 function ProfileHeader({ profile, achievements, bestRank }: { profile: UserProfile; achievements?: Achievement[]; bestRank?: 1 | 2 | 3 | null }) {
-  const ringClass = bestRank === 1 ? "ring-2 ring-offset-2 ring-offset-fab-bg ring-yellow-400" : bestRank === 2 ? "ring-2 ring-offset-2 ring-offset-fab-bg ring-gray-300" : bestRank === 3 ? "ring-2 ring-offset-2 ring-offset-fab-bg ring-amber-600" : "";
+  const ringClass = bestRank === 1 ? "rank-border-gold" : bestRank === 2 ? "rank-border-silver" : bestRank === 3 ? "rank-border-bronze" : "";
   return (
     <div className="flex items-center gap-4">
       {profile.photoUrl ? (

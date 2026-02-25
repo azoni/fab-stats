@@ -8,7 +8,7 @@ import { computeOpponentStats } from "@/lib/stats";
 import { TrophyIcon } from "@/components/icons/NavIcons";
 import type { LeaderboardEntry, OpponentStats } from "@/types";
 
-type Tab = "winrate" | "volume" | "streaks" | "draws" | "events" | "rated" | "nemesis";
+type Tab = "winrate" | "volume" | "streaks" | "draws" | "events" | "rated" | "heroes" | "dedication" | "hotstreak" | "nemesis";
 
 const tabs: { id: Tab; label: string }[] = [
   { id: "winrate", label: "Win Rate" },
@@ -17,6 +17,9 @@ const tabs: { id: Tab; label: string }[] = [
   { id: "draws", label: "Draws" },
   { id: "events", label: "Events" },
   { id: "rated", label: "Rated" },
+  { id: "heroes", label: "Hero Variety" },
+  { id: "dedication", label: "Hero Loyalty" },
+  { id: "hotstreak", label: "Hot Streak" },
   { id: "nemesis", label: "Nemesis" },
 ];
 
@@ -71,6 +74,18 @@ export default function LeaderboardPage() {
         return [...entries]
           .filter((e) => e.ratedMatches >= 5)
           .sort((a, b) => b.ratedWinRate - a.ratedWinRate || b.ratedMatches - a.ratedMatches);
+      case "heroes":
+        return [...entries]
+          .filter((e) => e.uniqueHeroes > 0)
+          .sort((a, b) => b.uniqueHeroes - a.uniqueHeroes || b.totalMatches - a.totalMatches);
+      case "dedication":
+        return [...entries]
+          .filter((e) => e.topHeroMatches > 0)
+          .sort((a, b) => b.topHeroMatches - a.topHeroMatches || b.totalMatches - a.totalMatches);
+      case "hotstreak":
+        return [...entries]
+          .filter((e) => e.currentStreakType === "win" && e.currentStreakCount >= 2)
+          .sort((a, b) => b.currentStreakCount - a.currentStreakCount || b.winRate - a.winRate);
       default:
         return entries;
     }
@@ -152,7 +167,9 @@ export default function LeaderboardPage() {
               ? "Players need at least 10 matches to appear here."
               : activeTab === "rated"
                 ? "Players need at least 5 rated matches to appear here."
-                : "Import matches to appear on the leaderboard."}
+                : activeTab === "hotstreak"
+                  ? "No one is on a 2+ win streak right now."
+                  : "Import matches to appear on the leaderboard."}
           </p>
         </div>
       )}
@@ -209,9 +226,9 @@ function LeaderboardRow({
 
       {/* Avatar */}
       {entry.photoUrl ? (
-        <img src={entry.photoUrl} alt="" className={`w-10 h-10 rounded-full shrink-0 ${rank === 1 ? "ring-2 ring-yellow-400" : rank === 2 ? "ring-2 ring-gray-300" : rank === 3 ? "ring-2 ring-amber-600" : ""}`} />
+        <img src={entry.photoUrl} alt="" className={`w-10 h-10 rounded-full shrink-0 ${rank === 1 ? "rank-border-gold" : rank === 2 ? "rank-border-silver" : rank === 3 ? "rank-border-bronze" : ""}`} />
       ) : (
-        <div className={`w-10 h-10 rounded-full bg-fab-gold/20 flex items-center justify-center text-fab-gold text-sm font-bold shrink-0 ${rank === 1 ? "ring-2 ring-yellow-400" : rank === 2 ? "ring-2 ring-gray-300" : rank === 3 ? "ring-2 ring-amber-600" : ""}`}>
+        <div className={`w-10 h-10 rounded-full bg-fab-gold/20 flex items-center justify-center text-fab-gold text-sm font-bold shrink-0 ${rank === 1 ? "rank-border-gold" : rank === 2 ? "rank-border-silver" : rank === 3 ? "rank-border-bronze" : ""}`}>
           {initials}
         </div>
       )}
@@ -289,6 +306,24 @@ function LeaderboardRow({
               {entry.ratedWins}W / {entry.ratedMatches} rated
               {entry.ratedWinStreak > 0 ? ` / ${entry.ratedWinStreak} streak` : ""}
             </p>
+          </>
+        )}
+        {tab === "heroes" && (
+          <>
+            <p className="text-lg font-bold text-purple-400">{entry.uniqueHeroes}</p>
+            <p className="text-xs text-fab-dim">heroes played</p>
+          </>
+        )}
+        {tab === "dedication" && (
+          <>
+            <p className="text-lg font-bold text-fab-gold">{entry.topHeroMatches}</p>
+            <p className="text-xs text-fab-dim truncate max-w-[120px]">{entry.topHero}</p>
+          </>
+        )}
+        {tab === "hotstreak" && (
+          <>
+            <p className="text-lg font-bold text-fab-win">{entry.currentStreakCount}</p>
+            <p className="text-xs text-fab-dim">wins running</p>
           </>
         )}
       </div>

@@ -134,9 +134,9 @@ export default function Dashboard() {
       <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
         <div className="flex items-center gap-4">
           {profile?.photoUrl ? (
-            <img src={profile.photoUrl} alt="" className={`w-16 h-16 rounded-full ${bestRank === 1 ? "ring-2 ring-offset-2 ring-offset-fab-bg ring-yellow-400" : bestRank === 2 ? "ring-2 ring-offset-2 ring-offset-fab-bg ring-gray-300" : bestRank === 3 ? "ring-2 ring-offset-2 ring-offset-fab-bg ring-amber-600" : ""}`} />
+            <img src={profile.photoUrl} alt="" className={`w-16 h-16 rounded-full ${bestRank === 1 ? "rank-border-gold" : bestRank === 2 ? "rank-border-silver" : bestRank === 3 ? "rank-border-bronze" : ""}`} />
           ) : profile ? (
-            <div className={`w-16 h-16 rounded-full bg-fab-gold/20 flex items-center justify-center text-fab-gold text-2xl font-bold ${bestRank === 1 ? "ring-2 ring-offset-2 ring-offset-fab-bg ring-yellow-400" : bestRank === 2 ? "ring-2 ring-offset-2 ring-offset-fab-bg ring-gray-300" : bestRank === 3 ? "ring-2 ring-offset-2 ring-offset-fab-bg ring-amber-600" : ""}`}>
+            <div className={`w-16 h-16 rounded-full bg-fab-gold/20 flex items-center justify-center text-fab-gold text-2xl font-bold ${bestRank === 1 ? "rank-border-gold" : bestRank === 2 ? "rank-border-silver" : bestRank === 3 ? "rank-border-bronze" : ""}`}>
               {profile.displayName.charAt(0).toUpperCase()}
             </div>
           ) : null}
@@ -150,19 +150,19 @@ export default function Dashboard() {
             {achievements.length > 0 && <AchievementBadges earned={achievements} max={4} />}
           </div>
         </div>
-        {/* Compact Streak */}
-        <div className={`rounded-lg px-4 py-3 border ${
+        {/* Streak Card */}
+        <div className={`rounded-lg px-5 py-4 border ${
           streaks.currentStreak?.type === MatchResult.Win
             ? "bg-fab-win/8 border-fab-win/30"
             : streaks.currentStreak?.type === MatchResult.Loss
               ? "bg-fab-loss/8 border-fab-loss/30"
               : "bg-fab-surface border-fab-border"
         }`}>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-5">
             <div>
-              <p className="text-[10px] text-fab-muted uppercase tracking-wider">Streak</p>
+              <p className="text-xs text-fab-muted uppercase tracking-wider">Streak</p>
               <div className="flex items-baseline gap-1.5">
-                <span className={`text-2xl font-black ${
+                <span className={`text-3xl font-black ${
                   streaks.currentStreak?.type === MatchResult.Win
                     ? "text-fab-win"
                     : streaks.currentStreak?.type === MatchResult.Loss
@@ -171,7 +171,7 @@ export default function Dashboard() {
                 }`}>
                   {streaks.currentStreak ? streaks.currentStreak.count : 0}
                 </span>
-                <span className={`text-sm font-bold ${
+                <span className={`text-base font-bold ${
                   streaks.currentStreak?.type === MatchResult.Win
                     ? "text-fab-win"
                     : streaks.currentStreak?.type === MatchResult.Loss
@@ -184,22 +184,22 @@ export default function Dashboard() {
                 </span>
               </div>
             </div>
-            <div className="flex gap-3 text-center">
+            <div className="flex gap-4 text-center">
               <div>
-                <p className="text-sm font-bold text-fab-win">{streaks.longestWinStreak}</p>
+                <p className="text-base font-bold text-fab-win">{streaks.longestWinStreak}</p>
                 <p className="text-[10px] text-fab-dim">Best</p>
               </div>
               <div>
-                <p className="text-sm font-bold text-fab-loss">{streaks.longestLossStreak}</p>
+                <p className="text-base font-bold text-fab-loss">{streaks.longestLossStreak}</p>
                 <p className="text-[10px] text-fab-dim">Worst</p>
               </div>
             </div>
           </div>
-          <div className="mt-2 flex gap-0.5 flex-wrap">
+          <div className="mt-2.5 flex gap-0.5 flex-wrap">
             {last30.map((m, i) => (
               <div
                 key={i}
-                className={`w-2 h-2 rounded-full ${
+                className={`w-2.5 h-2.5 rounded-full ${
                   m.result === MatchResult.Win ? "bg-fab-win" : m.result === MatchResult.Loss ? "bg-fab-loss" : "bg-fab-draw"
                 }`}
                 title={`${new Date(m.date).toLocaleDateString()} - ${m.result}`}
@@ -251,6 +251,9 @@ export default function Dashboard() {
         </div>
       ) : (
         <>
+          {/* Leaderboard Rankings */}
+          <LeaderboardCrowns ranks={userRanks} />
+
           {/* Quick Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <StatCard label="Total Matches" value={overall.totalMatches} />
@@ -261,7 +264,7 @@ export default function Dashboard() {
             />
             <StatCard
               label="Record"
-              value={`${overall.totalWins}W - ${overall.totalLosses}L`}
+              value={`${overall.totalWins}W - ${overall.totalLosses}L - ${overall.totalDraws}D`}
             />
             {bestFinish ? (
               <StatCard
@@ -271,23 +274,15 @@ export default function Dashboard() {
                 color="text-fab-gold"
               />
             ) : (
-              <StatCard label="Draws" value={overall.totalDraws} />
+              <StatCard label="Events" value={eventStats.length} />
             )}
           </div>
-          {bestFinish && (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 -mt-4">
-              <StatCard label="Draws" value={overall.totalDraws} />
-            </div>
-          )}
 
           {/* Achievements */}
           <AchievementShowcase earned={achievements} />
 
           {/* Hero Mastery */}
           <HeroMasteryList masteries={masteries} />
-
-          {/* Leaderboard Rankings */}
-          <LeaderboardCrowns ranks={userRanks} />
 
           {/* Major Event Badges */}
           <EventBadges badges={eventBadges} />
