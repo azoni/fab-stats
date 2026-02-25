@@ -2,6 +2,9 @@
 import { useState, useMemo } from "react";
 import { MatchCard } from "./MatchCard";
 import { MatchResult, GameFormat, type MatchRecord } from "@/types";
+import { allHeroes as knownHeroes } from "@/lib/heroes";
+
+const VALID_HERO_NAMES = new Set(knownHeroes.map((h) => h.name));
 
 interface MatchListProps {
   matches: MatchRecord[];
@@ -12,7 +15,13 @@ interface MatchListProps {
 export function MatchList({ matches, matchOwnerUid, enableComments }: MatchListProps) {
   const [filterResult, setFilterResult] = useState<string>("all");
   const [filterFormat, setFilterFormat] = useState<string>("all");
+  const [filterHero, setFilterHero] = useState<string>("all");
   const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
+
+  const allHeroes = useMemo(() => {
+    const heroes = new Set(matches.map((m) => m.heroPlayed).filter((h) => h && VALID_HERO_NAMES.has(h)));
+    return Array.from(heroes).sort();
+  }, [matches]);
 
   const filtered = useMemo(() => {
     let result = [...matches];
@@ -23,6 +32,9 @@ export function MatchList({ matches, matchOwnerUid, enableComments }: MatchListP
     if (filterFormat !== "all") {
       result = result.filter((m) => m.format === filterFormat);
     }
+    if (filterHero !== "all") {
+      result = result.filter((m) => m.heroPlayed === filterHero);
+    }
 
     result.sort((a, b) => {
       const diff = new Date(b.date).getTime() - new Date(a.date).getTime();
@@ -30,7 +42,7 @@ export function MatchList({ matches, matchOwnerUid, enableComments }: MatchListP
     });
 
     return result;
-  }, [matches, filterResult, filterFormat, sortOrder]);
+  }, [matches, filterResult, filterFormat, filterHero, sortOrder]);
 
   return (
     <div>
@@ -56,6 +68,19 @@ export function MatchList({ matches, matchOwnerUid, enableComments }: MatchListP
             <option key={f} value={f}>{f}</option>
           ))}
         </select>
+
+        {allHeroes.length > 1 && (
+          <select
+            value={filterHero}
+            onChange={(e) => setFilterHero(e.target.value)}
+            className="bg-fab-surface border border-fab-border rounded-md px-3 py-1.5 text-fab-text text-sm outline-none"
+          >
+            <option value="all">All Heroes</option>
+            {allHeroes.map((h) => (
+              <option key={h} value={h}>{h}</option>
+            ))}
+          </select>
+        )}
 
         <button
           onClick={() => setSortOrder(sortOrder === "newest" ? "oldest" : "newest")}

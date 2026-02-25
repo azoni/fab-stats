@@ -8,6 +8,9 @@ import { computeOpponentStats } from "@/lib/stats";
 import { MatchCard } from "@/components/matches/MatchCard";
 import { ChevronUpIcon, ChevronDownIcon } from "@/components/icons/NavIcons";
 import { MatchResult, type OpponentStats } from "@/types";
+import { allHeroes as knownHeroes } from "@/lib/heroes";
+
+const VALID_HERO_NAMES = new Set(knownHeroes.map((h) => h.name));
 
 function guessEventTypeFromNotes(notes: string): string {
   const lower = notes.toLowerCase();
@@ -30,6 +33,7 @@ export default function OpponentsPage() {
   const [sortBy, setSortBy] = useState<"matches" | "winRate" | "lossRate" | "name" | "recent">("matches");
   const [filterFormat, setFilterFormat] = useState("all");
   const [filterEventType, setFilterEventType] = useState("all");
+  const [filterHero, setFilterHero] = useState("all");
   const [search, setSearch] = useState("");
 
   // Pre-fill search from URL query param (e.g. /opponents?q=PlayerName)
@@ -55,6 +59,11 @@ export default function OpponentsPage() {
     return [...types].sort();
   }, [matches]);
 
+  const allHeroes = useMemo(() => {
+    const heroes = new Set(matches.map((m) => m.heroPlayed).filter((h) => h && VALID_HERO_NAMES.has(h)));
+    return Array.from(heroes).sort();
+  }, [matches]);
+
   const filteredMatches = useMemo(() => {
     let filtered = matches;
     if (filterFormat !== "all") {
@@ -66,8 +75,11 @@ export default function OpponentsPage() {
         return et === filterEventType;
       });
     }
+    if (filterHero !== "all") {
+      filtered = filtered.filter((m) => m.heroPlayed === filterHero);
+    }
     return filtered;
-  }, [matches, filterFormat, filterEventType]);
+  }, [matches, filterFormat, filterEventType, filterHero]);
 
   const opponentStats = useMemo(() => computeOpponentStats(filteredMatches), [filteredMatches]);
 
@@ -174,6 +186,18 @@ export default function OpponentsPage() {
             <option value="all">All Event Types</option>
             {allEventTypes.map((t) => (
               <option key={t} value={t}>{t}</option>
+            ))}
+          </select>
+        )}
+        {allHeroes.length > 1 && (
+          <select
+            value={filterHero}
+            onChange={(e) => setFilterHero(e.target.value)}
+            className="bg-fab-surface border border-fab-border rounded-md px-3 py-1.5 text-fab-text text-sm outline-none"
+          >
+            <option value="all">All Heroes</option>
+            {allHeroes.map((h) => (
+              <option key={h} value={h}>{h}</option>
             ))}
           </select>
         )}

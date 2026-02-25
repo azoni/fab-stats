@@ -451,7 +451,7 @@ export default function PlayerProfile() {
           <h2 className="text-lg font-semibold text-fab-text mb-4">Recent Events</h2>
           <div className="space-y-2">
             {recentEvents.map((event) => (
-              <EventCard key={`${event.eventName}-${event.eventDate}`} event={event} obfuscateOpponents={!isOwner} />
+              <EventCard key={`${event.eventName}-${event.eventDate}`} event={event} obfuscateOpponents={!isOwner && !isAdmin} />
             ))}
           </div>
         </div>

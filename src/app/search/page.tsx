@@ -1,6 +1,6 @@
 "use client";
 import { Suspense, useState, useEffect } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { searchUsernames, getProfile } from "@/lib/firestore-storage";
 import { useFeed } from "@/hooks/useFeed";
@@ -35,6 +35,7 @@ function SearchSkeleton() {
 
 function SearchContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const initialQuery = searchParams.get("q") || "";
   const [query, setQuery] = useState(initialQuery);
   const [results, setResults] = useState<SearchResult[]>([]);
@@ -42,7 +43,7 @@ function SearchContent() {
   const [loading, setLoading] = useState(false);
   const { events: feedEvents, loading: feedLoading } = useFeed();
 
-  async function doSearch(q: string) {
+  async function doSearch(q: string, autoRedirect = false) {
     if (!q.trim()) {
       setResults([]);
       setSearched(false);
@@ -60,14 +61,22 @@ function SearchContent() {
       }))
     );
 
-    setResults(withProfiles.filter((r) => r.profile?.isPublic));
+    const filtered = withProfiles.filter((r) => r.profile?.isPublic);
+
+    // Auto-redirect to profile if exactly one result and came from a link (not manual search)
+    if (autoRedirect && filtered.length === 1) {
+      router.replace(`/player/${filtered[0].username}`);
+      return;
+    }
+
+    setResults(filtered);
     setLoading(false);
   }
 
-  // Auto-search if ?q= is provided
+  // Auto-search if ?q= is provided (with auto-redirect for linked searches)
   useEffect(() => {
     if (initialQuery) {
-      doSearch(initialQuery);
+      doSearch(initialQuery, true);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialQuery]);
