@@ -92,6 +92,7 @@ export default function SettingsPage() {
   const [displayName, setDisplayName] = useState(profile?.displayName || "");
   const [firstName, setFirstName] = useState(profile?.firstName || "");
   const [lastName, setLastName] = useState(profile?.lastName || "");
+  const [earnings, setEarnings] = useState(profile?.earnings?.toString() || "");
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -119,6 +120,7 @@ export default function SettingsPage() {
         firstName: firstName.trim() || undefined,
         lastName: lastName.trim() || undefined,
         searchName: searchName || undefined,
+        earnings: earnings ? parseFloat(earnings) : undefined,
       });
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
@@ -291,6 +293,23 @@ export default function SettingsPage() {
         <p className="text-xs text-fab-dim mb-4">
           Your real name helps opponents find your profile from match results.
         </p>
+
+        <div className="mb-4">
+          <label htmlFor="earnings" className="block text-sm text-fab-muted mb-1">
+            Lifetime Earnings ($) <span className="text-fab-dim">(optional)</span>
+          </label>
+          <input
+            id="earnings"
+            type="number"
+            min="0"
+            step="0.01"
+            value={earnings}
+            onChange={(e) => setEarnings(e.target.value)}
+            placeholder="0.00"
+            className="w-full bg-fab-bg border border-fab-border text-fab-text rounded-lg px-3 py-2 focus:outline-none focus:border-fab-gold"
+          />
+          <p className="text-xs text-fab-dim mt-1">Total prize money earned from FaB tournaments.</p>
+        </div>
 
         <div className="mb-4">
           <label className="block text-sm text-fab-muted mb-1">Email</label>

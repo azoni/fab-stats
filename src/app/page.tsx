@@ -285,6 +285,23 @@ export default function Dashboard() {
             ) : (
               <StatCard label="Events" value={eventStats.length} />
             )}
+            {profile?.earnings ? (
+              <StatCard
+                label="Earnings"
+                value={`$${profile.earnings.toLocaleString()}`}
+                color="text-fab-gold"
+              />
+            ) : null}
+            {(() => {
+              const armory = eventTypeStats.find((e) => e.eventType === "Armory");
+              return armory ? (
+                <StatCard
+                  label="Armory Record"
+                  value={`${armory.wins}W - ${armory.losses}L${armory.draws > 0 ? ` - ${armory.draws}D` : ""}`}
+                  subtext={`${armory.winRate.toFixed(1)}% across ${armory.totalMatches} matches`}
+                />
+              ) : null;
+            })()}
           </div>
 
           {/* Achievements */}

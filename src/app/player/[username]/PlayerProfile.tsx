@@ -354,6 +354,23 @@ export default function PlayerProfile() {
         ) : (
           <StatCard label="Events" value={eventStats.length} />
         )}
+        {profile.earnings ? (
+          <StatCard
+            label="Earnings"
+            value={`$${profile.earnings.toLocaleString()}`}
+            color="text-fab-gold"
+          />
+        ) : null}
+        {(() => {
+          const armory = eventTypeStats.find((e) => e.eventType === "Armory");
+          return armory ? (
+            <StatCard
+              label="Armory Record"
+              value={`${armory.wins}W - ${armory.losses}L${armory.draws > 0 ? ` - ${armory.draws}D` : ""}`}
+              subtext={`${armory.winRate.toFixed(1)}% across ${armory.totalMatches} matches`}
+            />
+          ) : null;
+        })()}
       </div>
 
       {/* Achievements */}
@@ -403,7 +420,48 @@ export default function PlayerProfile() {
         </div>
       )}
 
-      {/* Recent Events */}
+      {/* Event Standings */}
+      {eventStats.length > 0 && (
+        <div>
+          <h2 className="text-lg font-semibold text-fab-text mb-4">Event Standings</h2>
+          <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden mb-3">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-xs text-fab-muted border-b border-fab-border">
+                  <th className="text-left px-4 py-2 font-medium">Event</th>
+                  <th className="text-left px-4 py-2 font-medium hidden sm:table-cell">Date</th>
+                  <th className="text-right px-4 py-2 font-medium">Record</th>
+                  <th className="text-right px-4 py-2 font-medium">Win %</th>
+                </tr>
+              </thead>
+              <tbody>
+                {eventStats.slice(0, 10).map((event) => (
+                  <tr key={`${event.eventName}-${event.eventDate}`} className="border-t border-fab-border/50">
+                    <td className="px-4 py-2.5">
+                      <div className="font-medium text-fab-text truncate max-w-[180px]">{event.eventName}</div>
+                      <div className="text-xs text-fab-dim sm:hidden">{new Date(event.eventDate).toLocaleDateString()}</div>
+                    </td>
+                    <td className="px-4 py-2.5 text-fab-dim hidden sm:table-cell whitespace-nowrap text-xs">
+                      {new Date(event.eventDate).toLocaleDateString()}
+                    </td>
+                    <td className={`px-4 py-2.5 text-right font-bold ${event.wins > event.losses ? "text-fab-win" : event.wins < event.losses ? "text-fab-loss" : "text-fab-draw"}`}>
+                      {event.wins}-{event.losses}{event.draws > 0 ? `-${event.draws}` : ""}
+                    </td>
+                    <td className={`px-4 py-2.5 text-right font-medium ${event.winRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>
+                      {event.winRate.toFixed(0)}%
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {eventStats.length > 10 && (
+            <p className="text-xs text-fab-dim text-center">Showing 10 of {eventStats.length} events</p>
+          )}
+        </div>
+      )}
+
+      {/* Recent Events (expandable details) */}
       {recentEvents.length > 0 && (
         <div>
           <h2 className="text-lg font-semibold text-fab-text mb-4">Recent Events</h2>

@@ -78,6 +78,10 @@ export async function updateLeaderboardEntry(
   const weeklyMatches = matches.filter((m) => m.date >= weekStart);
   const weeklyWins = weeklyMatches.filter((m) => m.result === MatchResult.Win).length;
 
+  // Armory stats
+  const armoryMatchList = matches.filter((m) => m.eventType === "Armory");
+  const armoryWins = armoryMatchList.filter((m) => m.result === MatchResult.Win).length;
+
   const entry: Omit<LeaderboardEntry, never> = {
     userId: profile.uid,
     username: profile.username,
@@ -107,6 +111,10 @@ export async function updateLeaderboardEntry(
     weeklyMatches: weeklyMatches.length,
     weeklyWins,
     weekStart,
+    earnings: profile.earnings,
+    armoryMatches: armoryMatchList.length,
+    armoryWins,
+    armoryWinRate: armoryMatchList.length > 0 ? (armoryWins / armoryMatchList.length) * 100 : 0,
     updatedAt: new Date().toISOString(),
   };
 

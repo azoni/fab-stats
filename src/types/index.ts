@@ -127,6 +127,7 @@ export interface UserProfile {
   photoUrl?: string;
   createdAt: string;
   isPublic: boolean;
+  earnings?: number;
 }
 
 export interface EventStats {
@@ -211,6 +212,10 @@ export interface LeaderboardEntry {
   weeklyMatches: number;
   weeklyWins: number;
   weekStart: string;
+  earnings?: number;
+  armoryMatches: number;
+  armoryWins: number;
+  armoryWinRate: number;
   updatedAt: string;
 }
 

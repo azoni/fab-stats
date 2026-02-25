@@ -90,6 +90,24 @@ const RANK_TABS: RankTab[] = [
     filter: (e) => e.eventsPlayed > 0,
     sort: (a, b) => b.eventsPlayed - a.eventsPlayed || b.eventWins - a.eventWins,
   },
+  {
+    id: "earnings",
+    label: "Earnings",
+    filter: (e) => (e.earnings ?? 0) > 0,
+    sort: (a, b) => (b.earnings ?? 0) - (a.earnings ?? 0),
+  },
+  {
+    id: "armorywinrate",
+    label: "Armory Win %",
+    filter: (e) => e.armoryMatches >= 5,
+    sort: (a, b) => b.armoryWinRate - a.armoryWinRate || b.armoryMatches - a.armoryMatches,
+  },
+  {
+    id: "armoryattendance",
+    label: "Armory Attendance",
+    filter: (e) => e.armoryMatches > 0,
+    sort: (a, b) => b.armoryMatches - a.armoryMatches || b.armoryWins - a.armoryWins,
+  },
 ];
 
 export function computeUserRanks(entries: LeaderboardEntry[], userId: string): LeaderboardRank[] {

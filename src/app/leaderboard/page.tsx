@@ -11,7 +11,7 @@ import type { LeaderboardEntry, OpponentStats } from "@/types";
 
 const SITE_CREATOR = "azoni";
 
-type Tab = "winrate" | "volume" | "mostwins" | "streaks" | "draws" | "events" | "eventgrinder" | "rated" | "heroes" | "dedication" | "hotstreak" | "weeklymatches" | "weeklywins";
+type Tab = "winrate" | "volume" | "mostwins" | "streaks" | "draws" | "events" | "eventgrinder" | "rated" | "heroes" | "dedication" | "hotstreak" | "weeklymatches" | "weeklywins" | "earnings" | "armorywinrate" | "armoryattendance";
 
 const tabs: { id: Tab; label: string }[] = [
   { id: "winrate", label: "Win Rate" },
@@ -26,6 +26,9 @@ const tabs: { id: Tab; label: string }[] = [
   { id: "rated", label: "Rated" },
   { id: "heroes", label: "Hero Variety" },
   { id: "dedication", label: "Hero Loyalty" },
+  { id: "earnings", label: "Earnings" },
+  { id: "armorywinrate", label: "Armory Win %" },
+  { id: "armoryattendance", label: "Armory Attendance" },
   { id: "draws", label: "Draws" },
 ];
 
@@ -107,6 +110,18 @@ export default function LeaderboardPage() {
         return [...entries]
           .filter((e) => e.eventsPlayed > 0)
           .sort((a, b) => b.eventsPlayed - a.eventsPlayed || b.eventWins - a.eventWins);
+      case "earnings":
+        return [...entries]
+          .filter((e) => (e.earnings ?? 0) > 0)
+          .sort((a, b) => (b.earnings ?? 0) - (a.earnings ?? 0));
+      case "armorywinrate":
+        return [...entries]
+          .filter((e) => e.armoryMatches >= 5)
+          .sort((a, b) => b.armoryWinRate - a.armoryWinRate || b.armoryMatches - a.armoryMatches);
+      case "armoryattendance":
+        return [...entries]
+          .filter((e) => e.armoryMatches > 0)
+          .sort((a, b) => b.armoryMatches - a.armoryMatches || b.armoryWins - a.armoryWins);
       default:
         return entries;
     }
@@ -157,7 +172,13 @@ export default function LeaderboardPage() {
                   ? "No one is on a 2+ win streak right now."
                   : activeTab === "weeklymatches" || activeTab === "weeklywins"
                     ? "No one has logged matches this week yet."
-                    : "Import matches to appear on the leaderboard."}
+                    : activeTab === "earnings"
+                      ? "No players have entered their earnings yet."
+                      : activeTab === "armorywinrate"
+                        ? "Players need at least 5 Armory matches to appear here."
+                        : activeTab === "armoryattendance"
+                          ? "No players have Armory matches yet."
+                          : "Import matches to appear on the leaderboard."}
           </p>
         </div>
       )}
@@ -401,6 +422,26 @@ function LeaderboardRow({
             <p className="text-xs text-fab-dim">
               events ({entry.eventWins} wins)
             </p>
+          </>
+        )}
+        {tab === "earnings" && (
+          <>
+            <p className="text-lg font-bold text-fab-gold">${(entry.earnings ?? 0).toLocaleString()}</p>
+            <p className="text-xs text-fab-dim">lifetime earnings</p>
+          </>
+        )}
+        {tab === "armorywinrate" && (
+          <>
+            <p className={`text-lg font-bold ${entry.armoryWinRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>
+              {formatRate(entry.armoryWinRate)}
+            </p>
+            <p className="text-xs text-fab-dim">{entry.armoryWins}W / {entry.armoryMatches} armory</p>
+          </>
+        )}
+        {tab === "armoryattendance" && (
+          <>
+            <p className="text-lg font-bold text-fab-text">{entry.armoryMatches}</p>
+            <p className="text-xs text-fab-dim">{entry.armoryWins} wins ({entry.armoryMatches > 0 ? formatRate(entry.armoryWinRate) : "0%"})</p>
           </>
         )}
       </div>
