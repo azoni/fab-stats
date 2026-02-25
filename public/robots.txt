@@ -4,5 +4,7 @@ Disallow: /admin
 Disallow: /settings
 Disallow: /setup
 Disallow: /notifications
+Disallow: /inbox
+Disallow: /matches/new
 
-Sitemap: https://fabstats.netlify.app/sitemap.xml
+Sitemap: https://fabstats.net/sitemap.xml

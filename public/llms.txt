@@ -1,0 +1,48 @@
+# FaB Stats
+
+> Flesh and Blood TCG match tracker and statistics platform.
+
+FaB Stats is a free, fan-made web application for tracking Flesh and Blood Trading Card Game match history, statistics, and tournament performance.
+
+## Features
+
+- **Match Tracking**: Log wins, losses, and draws with hero, opponent, format, and event details.
+- **GEM Import**: Import match history directly from the official GEM (Game Event Manager) tournament system via a Chrome extension or userscript.
+- **Statistics Dashboard**: View overall win rate, hero matchups, opponent records, event breakdowns, venue stats, and streak tracking.
+- **Leaderboard**: Public leaderboard with categories including Win Rate, Most Matches, Streaks, Event Wins, Hero Variety, Hero Loyalty, Rated, and Hot Streak.
+- **Public Profiles**: Share your stats with the community at fabstats.net/player/{username}.
+- **Achievements & Mastery**: Earn badges and track hero mastery progression.
+- **Event Badges**: Automatic recognition for ProQuest, Battle Hardened, Road to Nationals, and other official event types.
+
+## Formats Supported
+
+- Classic Constructed
+- Blitz
+- Draft
+- Sealed
+- Living Legend
+- All official Flesh and Blood formats
+
+## Links
+
+- Website: https://fabstats.net
+- Leaderboard: https://fabstats.net/leaderboard
+- Player Search: https://fabstats.net/search
+- Terms of Service: https://fabstats.net/terms
+- Privacy Policy: https://fabstats.net/privacy
+
+## Technical Details
+
+- Built with Next.js (static export)
+- Firebase Authentication and Firestore
+- Hosted on Netlify
+- Chrome extension for GEM data import
+
+## Contact
+
+- Email: charltonuw@gmail.com
+- Built by azoni (https://azoni.ai)
+
+## Legal
+
+Flesh and Blood is a registered trademark of Legend Story Studios (LSS). FaB Stats is a fan-made tool and is not produced, endorsed, supported, or affiliated with Legend Story Studios.
