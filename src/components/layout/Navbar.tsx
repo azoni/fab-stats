@@ -6,7 +6,7 @@ import { DashboardIcon, SwordsIcon, OpponentsIcon, TrendsIcon, ImportIcon, Calen
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCreators } from "@/hooks/useCreators";
-import { collection, getCountFromServer } from "firebase/firestore";
+import { collection, collectionGroup, getCountFromServer } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import type { ReactNode } from "react";
 import type { Creator } from "@/types";
@@ -57,25 +57,42 @@ export function Navbar() {
   const creators = useCreators();
   const [mounted, setMounted] = useState(false);
   const [userCount, setUserCount] = useState(0);
+  const [matchCount, setMatchCount] = useState(0);
   useEffect(() => setMounted(true), []);
   useEffect(() => {
-    const CACHE_KEY = "fab_user_count";
     const CACHE_TTL = 30 * 60 * 1000; // 30 minutes
-    const cached = localStorage.getItem(CACHE_KEY);
-    if (cached) {
-      const { count, ts } = JSON.parse(cached);
-      if (Date.now() - ts < CACHE_TTL) {
-        setUserCount(count);
-        return;
-      }
+
+    // User count
+    const userCacheKey = "fab_user_count";
+    const userCached = localStorage.getItem(userCacheKey);
+    if (userCached) {
+      const { count, ts } = JSON.parse(userCached);
+      if (Date.now() - ts < CACHE_TTL) { setUserCount(count); }
+      else { fetchCount(userCacheKey, collection(db, "usernames"), setUserCount); }
+    } else {
+      fetchCount(userCacheKey, collection(db, "usernames"), setUserCount);
     }
-    getCountFromServer(collection(db, "usernames"))
-      .then((snap) => {
-        const count = snap.data().count;
-        setUserCount(count);
-        localStorage.setItem(CACHE_KEY, JSON.stringify({ count, ts: Date.now() }));
-      })
-      .catch(() => {});
+
+    // Match count
+    const matchCacheKey = "fab_match_count";
+    const matchCached = localStorage.getItem(matchCacheKey);
+    if (matchCached) {
+      const { count, ts } = JSON.parse(matchCached);
+      if (Date.now() - ts < CACHE_TTL) { setMatchCount(count); }
+      else { fetchCount(matchCacheKey, collectionGroup(db, "matches"), setMatchCount); }
+    } else {
+      fetchCount(matchCacheKey, collectionGroup(db, "matches"), setMatchCount);
+    }
+
+    function fetchCount(key: string, ref: Parameters<typeof getCountFromServer>[0], setter: (n: number) => void) {
+      getCountFromServer(ref)
+        .then((snap) => {
+          const count = snap.data().count;
+          setter(count);
+          localStorage.setItem(key, JSON.stringify({ count, ts: Date.now() }));
+        })
+        .catch(() => {});
+    }
   }, []);
 
   const isAuthenticated = user && !isGuest;
@@ -90,9 +107,11 @@ export function Navbar() {
               <path d="M16 8l-2 6h-5l4 3-1.5 5L16 19l4.5 3L19 17l4-3h-5L16 8z" fill="currentColor" />
             </svg>
             <span className="text-xl font-bold text-fab-gold tracking-tight">FaB Stats</span>
-            {userCount > 0 && (
-              <span className="hidden sm:inline text-[10px] text-fab-dim font-normal ml-1 self-end mb-0.5">
-                {userCount} players
+            {(userCount > 0 || matchCount > 0) && (
+              <span className="hidden sm:inline text-xs text-fab-muted font-medium ml-1.5 self-end mb-0.5">
+                {userCount > 0 && <>{userCount.toLocaleString()} players</>}
+                {userCount > 0 && matchCount > 0 && <span className="text-fab-dim mx-1">·</span>}
+                {matchCount > 0 && <>{matchCount.toLocaleString()} matches</>}
               </span>
             )}
           </Link>
