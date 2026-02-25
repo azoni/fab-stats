@@ -45,11 +45,18 @@ export function subscribeFeed(
   limitCount = 50
 ): Unsubscribe {
   const q = query(feedCollection(), orderBy("createdAt", "desc"), limit(limitCount));
-  return onSnapshot(q, (snapshot) => {
-    const events = snapshot.docs.map((d) => ({
-      id: d.id,
-      ...d.data(),
-    })) as FeedEvent[];
-    callback(events);
-  });
+  return onSnapshot(
+    q,
+    (snapshot) => {
+      const events = snapshot.docs.map((d) => ({
+        id: d.id,
+        ...d.data(),
+      })) as FeedEvent[];
+      callback(events);
+    },
+    (error) => {
+      console.error("Feed subscription error:", error);
+      callback([]);
+    }
+  );
 }
