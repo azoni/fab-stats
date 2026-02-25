@@ -162,14 +162,14 @@ function LeaderboardRow({
             <p className={`text-lg font-bold ${entry.winRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>
               {formatRate(entry.winRate)}
             </p>
-            <p className="text-xs text-fab-dim">{entry.totalWins}W-{entry.totalLosses}L</p>
+            <p className="text-xs text-fab-dim">{entry.totalWins}W-{entry.totalLosses}L{entry.totalDraws > 0 ? `-${entry.totalDraws}D` : ""}</p>
           </>
         )}
         {tab === "volume" && (
           <>
             <p className="text-lg font-bold text-fab-text">{entry.totalMatches}</p>
             <p className="text-xs text-fab-dim">
-              {entry.totalWins}W-{entry.totalLosses}L ({formatRate(entry.winRate)})
+              {entry.totalWins}W-{entry.totalLosses}L{entry.totalDraws > 0 ? `-${entry.totalDraws}D` : ""} ({formatRate(entry.winRate)})
             </p>
           </>
         )}
