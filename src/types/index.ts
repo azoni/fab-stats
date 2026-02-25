@@ -196,6 +196,9 @@ export interface LeaderboardEntry {
   uniqueHeroes: number;
   topHero: string;
   topHeroMatches: number;
+  nemesis?: string;
+  nemesisWinRate?: number;
+  nemesisMatches?: number;
   updatedAt: string;
 }
 

@@ -7,7 +7,7 @@ import {
   type Unsubscribe,
 } from "firebase/firestore";
 import { db } from "./firebase";
-import { computeOverallStats, computeEventStats } from "./stats";
+import { computeOverallStats, computeEventStats, computeOpponentStats } from "./stats";
 import type { LeaderboardEntry, MatchRecord, UserProfile } from "@/types";
 import { MatchResult } from "@/types";
 
@@ -56,6 +56,14 @@ export async function updateLeaderboardEntry(
   const topHero = heroEntries[0]?.[0] || "Unknown";
   const topHeroMatches = heroEntries[0]?.[1] || 0;
 
+  // Nemesis — opponent with worst win rate (min 3 matches)
+  const oppStats = computeOpponentStats(matches).filter(
+    (o) => o.totalMatches >= 3 && o.opponentName !== "Unknown"
+  );
+  const nemesisOpp = oppStats.length > 0
+    ? oppStats.reduce((worst, o) => (o.winRate < worst.winRate ? o : worst))
+    : null;
+
   const entry: Omit<LeaderboardEntry, never> = {
     userId: profile.uid,
     username: profile.username,
@@ -79,6 +87,9 @@ export async function updateLeaderboardEntry(
     uniqueHeroes: heroCount.size,
     topHero,
     topHeroMatches,
+    nemesis: nemesisOpp?.opponentName,
+    nemesisWinRate: nemesisOpp?.winRate,
+    nemesisMatches: nemesisOpp?.totalMatches,
     updatedAt: new Date().toISOString(),
   };
 
