@@ -5,6 +5,11 @@
 [build.environment]
   SECRETS_SCAN_SMART_DETECTION_ENABLED = "false"
 
+# Edge function rewrites OG meta tags with actual username
+[[edge_functions]]
+  path = "/player/*"
+  function = "og-rewrite"
+
 # Serve pre-rendered player page for all /player/* URLs
 # so the correct RSC payload and layout are used
 [[redirects]]
