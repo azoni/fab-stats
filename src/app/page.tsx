@@ -3,7 +3,7 @@ import { useState, useMemo, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useMatches } from "@/hooks/useMatches";
 import { useAuth } from "@/contexts/AuthContext";
-import { computeOverallStats, computeEventTypeStats, computeVenueStats, computeEventStats } from "@/lib/stats";
+import { computeOverallStats, computeEventTypeStats, computeVenueStats, computeEventStats, computeOpponentStats } from "@/lib/stats";
 import { updateLeaderboardEntry } from "@/lib/leaderboard";
 import { MatchCard } from "@/components/matches/MatchCard";
 import { EventCard } from "@/components/events/EventCard";
@@ -93,6 +93,12 @@ export default function Dashboard() {
   const recentMatches = [...fm]
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     .slice(0, 5);
+
+  const nemesis = useMemo(() => {
+    const opponents = computeOpponentStats(fm).filter((o) => o.totalMatches >= 3);
+    if (opponents.length === 0) return null;
+    return opponents.reduce((worst, o) => (o.winRate < worst.winRate ? o : worst));
+  }, [fm]);
 
   const { streaks } = overall;
 
@@ -225,6 +231,28 @@ export default function Dashboard() {
               value={overall.totalDraws}
             />
           </div>
+
+          {/* Nemesis */}
+          {nemesis && (
+            <div className="bg-fab-loss/8 border-2 border-fab-loss/30 rounded-xl p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-2xl">😈</span>
+                <h2 className="text-lg font-semibold text-fab-text">Your Nemesis</h2>
+              </div>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xl font-bold text-fab-loss">{nemesis.opponentName}</p>
+                  <p className="text-sm text-fab-dim mt-1">
+                    {nemesis.wins}W - {nemesis.losses}L{nemesis.draws > 0 ? ` - ${nemesis.draws}D` : ""} ({nemesis.winRate.toFixed(0)}% win rate)
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-3xl font-black text-fab-loss">{nemesis.winRate.toFixed(0)}%</p>
+                  <p className="text-xs text-fab-dim">{nemesis.totalMatches} games</p>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Recent Events */}
           {recentEvents.length > 0 && (
