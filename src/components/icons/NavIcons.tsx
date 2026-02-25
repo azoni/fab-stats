@@ -146,6 +146,28 @@ export function ChevronUpIcon({ className = iconClass }: { className?: string })
   );
 }
 
+export function FeedIcon({ className = iconClass }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 11a9 9 0 019-9" />
+      <path d="M4 4a16 16 0 0116 16" />
+      <circle cx="5" cy="19" r="2" fill="currentColor" fillOpacity="0.3" />
+    </svg>
+  );
+}
+
+export function TrophyIcon({ className = iconClass }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M6 9H4a2 2 0 01-2-2V5a2 2 0 012-2h2" />
+      <path d="M18 9h2a2 2 0 002-2V5a2 2 0 00-2-2h-2" />
+      <path d="M6 3h12v7a6 6 0 01-12 0V3z" fill="currentColor" fillOpacity="0.1" />
+      <path d="M9 21h6" />
+      <path d="M12 16v5" />
+    </svg>
+  );
+}
+
 export function SparklesIcon({ className = iconClass }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">

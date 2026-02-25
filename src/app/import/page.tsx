@@ -5,6 +5,9 @@ import { parseGemPaste, parseExtensionJson, type PasteImportResult } from "@/lib
 import { useAuth } from "@/contexts/AuthContext";
 import { importMatchesFirestore, clearAllMatchesFirestore } from "@/lib/firestore-storage";
 import { importMatchesLocal } from "@/lib/storage";
+import { createImportFeedEvent } from "@/lib/feed";
+import { updateLeaderboardEntry } from "@/lib/leaderboard";
+import { getMatchesByUserId } from "@/lib/firestore-storage";
 import { useRouter } from "next/navigation";
 import { MatchCard } from "@/components/matches/MatchCard";
 import { CheckCircleIcon, FileIcon, ChevronDownIcon, ChevronUpIcon } from "@/components/icons/NavIcons";
@@ -16,7 +19,7 @@ type ImportMethod = "extension" | "paste" | "csv" | null;
 
 export default function ImportPage() {
   const router = useRouter();
-  const { user, isGuest } = useAuth();
+  const { user, profile, isGuest } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const bookmarkletRef = useCallback((node: HTMLAnchorElement | null) => {
     if (node) node.setAttribute("href", BOOKMARKLET_HREF);
@@ -161,6 +164,24 @@ export default function ImportPage() {
     setSkippedCount(matches.length - count);
     setImported(true);
     setImporting(false);
+
+    // Post to activity feed + update leaderboard (non-blocking, only for signed-in users with a profile)
+    if (user && profile && count > 0) {
+      const heroCounts: Record<string, number> = {};
+      for (const m of matches) {
+        if (m.heroPlayed && m.heroPlayed !== "Unknown") {
+          heroCounts[m.heroPlayed] = (heroCounts[m.heroPlayed] || 0) + 1;
+        }
+      }
+      const topHeroes = Object.entries(heroCounts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 3)
+        .map(([hero]) => hero);
+      createImportFeedEvent(profile, count, topHeroes).catch(() => {});
+      getMatchesByUserId(user.uid)
+        .then((allMatches) => updateLeaderboardEntry(profile, allMatches))
+        .catch(() => {});
+    }
   }
 
   function handleReset() {

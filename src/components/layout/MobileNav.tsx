@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { DashboardIcon, SwordsIcon, ImportIcon, OpponentsIcon, CalendarIcon } from "@/components/icons/NavIcons";
+import { DashboardIcon, SwordsIcon, CalendarIcon, FeedIcon, TrophyIcon } from "@/components/icons/NavIcons";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNotifications } from "@/hooks/useNotifications";
 import type { ReactNode } from "react";
@@ -26,10 +26,10 @@ function SettingsIcon(props: { className?: string }) {
 
 const tabs: { href: string; label: string; icon: ReactNode }[] = [
   { href: "/", label: "Home", icon: <DashboardIcon /> },
+  { href: "/feed", label: "Feed", icon: <FeedIcon /> },
   { href: "/matches", label: "Matches", icon: <SwordsIcon /> },
-  { href: "/import", label: "Import", icon: <ImportIcon /> },
   { href: "/events", label: "Events", icon: <CalendarIcon /> },
-  { href: "/opponents", label: "Opponents", icon: <OpponentsIcon /> },
+  { href: "/leaderboard", label: "Rankings", icon: <TrophyIcon /> },
 ];
 
 export function MobileNav() {

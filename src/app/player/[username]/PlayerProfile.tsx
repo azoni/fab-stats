@@ -13,6 +13,7 @@ type PageState =
   | { status: "loading" }
   | { status: "not_found" }
   | { status: "private" }
+  | { status: "error" }
   | { status: "loaded"; profile: UserProfile; matches: MatchRecord[] };
 
 export default function PlayerProfile({ username }: { username: string }) {
@@ -22,19 +23,23 @@ export default function PlayerProfile({ username }: { username: string }) {
     async function load() {
       setState({ status: "loading" });
 
-      const profile = await getProfileByUsername(username);
-      if (!profile) {
-        setState({ status: "not_found" });
-        return;
-      }
+      try {
+        const profile = await getProfileByUsername(username);
+        if (!profile) {
+          setState({ status: "not_found" });
+          return;
+        }
 
-      if (!profile.isPublic) {
-        setState({ status: "private" });
-        return;
-      }
+        if (!profile.isPublic) {
+          setState({ status: "private" });
+          return;
+        }
 
-      const matches = await getMatchesByUserId(profile.uid);
-      setState({ status: "loaded", profile, matches });
+        const matches = await getMatchesByUserId(profile.uid);
+        setState({ status: "loaded", profile, matches });
+      } catch {
+        setState({ status: "error" });
+      }
     }
 
     load();
@@ -73,6 +78,19 @@ export default function PlayerProfile({ username }: { username: string }) {
         <LockIcon className="w-14 h-14 text-fab-muted mb-4 mx-auto" />
         <h1 className="text-2xl font-bold text-fab-text mb-2">Private Profile</h1>
         <p className="text-fab-muted mb-6">This player&apos;s profile is set to private.</p>
+        <Link href="/search" className="text-fab-gold hover:text-fab-gold-light">
+          Search for players
+        </Link>
+      </div>
+    );
+  }
+
+  if (state.status === "error") {
+    return (
+      <div className="text-center py-24">
+        <QuestionCircleIcon className="w-14 h-14 text-fab-muted mb-4 mx-auto" />
+        <h1 className="text-2xl font-bold text-fab-text mb-2">Something Went Wrong</h1>
+        <p className="text-fab-muted mb-6">Could not load this profile. You may need to sign in first.</p>
         <Link href="/search" className="text-fab-gold hover:text-fab-gold-light">
           Search for players
         </Link>

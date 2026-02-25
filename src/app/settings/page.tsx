@@ -3,7 +3,8 @@ import { useState, useRef, useMemo } from "react";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
 import { useMatches } from "@/hooks/useMatches";
-import { updateProfile, uploadProfilePhoto } from "@/lib/firestore-storage";
+import { updateProfile, uploadProfilePhoto, deleteAccountData } from "@/lib/firestore-storage";
+import { deleteUser } from "firebase/auth";
 import { SparklesIcon } from "@/components/icons/NavIcons";
 
 function resizeImage(file: File, maxSize: number): Promise<string> {
@@ -85,6 +86,9 @@ export default function SettingsPage() {
   const [uploading, setUploading] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
@@ -289,15 +293,82 @@ export default function SettingsPage() {
 
       <YearInReview />
 
-      {/* Danger zone */}
+      {/* Account */}
       <div className="bg-fab-surface border border-fab-border rounded-lg p-6">
         <h2 className="text-sm font-semibold text-fab-text mb-4">Account</h2>
-        <button
-          onClick={() => signOut()}
-          className="px-6 py-2 rounded-lg font-semibold bg-fab-surface border border-fab-loss/30 text-fab-loss hover:bg-fab-loss/10 transition-colors"
-        >
-          Sign Out
-        </button>
+        <div className="space-y-4">
+          <button
+            onClick={() => signOut()}
+            className="px-6 py-2 rounded-lg font-semibold bg-fab-surface border border-fab-border text-fab-muted hover:text-fab-text transition-colors"
+          >
+            Sign Out
+          </button>
+
+          <div className="pt-4 border-t border-fab-border">
+            <h3 className="text-sm font-semibold text-fab-loss mb-2">Delete Account</h3>
+            <p className="text-xs text-fab-dim mb-3">
+              Permanently delete your account and all data. This cannot be undone.
+            </p>
+            {!confirmDelete ? (
+              <button
+                onClick={() => setConfirmDelete(true)}
+                className="px-4 py-2 rounded-md text-sm font-semibold bg-fab-surface border border-fab-loss/30 text-fab-loss hover:bg-fab-loss/10 transition-colors"
+              >
+                Delete My Account...
+              </button>
+            ) : (
+              <div className="bg-fab-loss/10 border border-fab-loss/30 rounded-lg p-4">
+                <p className="text-sm text-fab-loss font-semibold mb-2">
+                  This will permanently delete:
+                </p>
+                <ul className="text-xs text-fab-muted mb-3 space-y-1 list-disc list-inside">
+                  <li>All your match history</li>
+                  <li>Your profile and username</li>
+                  <li>Your leaderboard entry</li>
+                  <li>Your Firebase account</li>
+                </ul>
+                <p className="text-xs text-fab-muted mb-2">
+                  Type <strong className="text-fab-loss">delete</strong> to confirm:
+                </p>
+                <input
+                  type="text"
+                  value={deleteConfirmText}
+                  onChange={(e) => setDeleteConfirmText(e.target.value)}
+                  placeholder="delete"
+                  className="w-full bg-fab-bg border border-fab-border text-fab-text rounded-lg px-3 py-2 mb-3 focus:outline-none focus:border-fab-loss text-sm"
+                />
+                <div className="flex gap-2">
+                  <button
+                    onClick={async () => {
+                      if (!user) return;
+                      setDeleting(true);
+                      try {
+                        await deleteAccountData(user.uid);
+                        await deleteUser(user);
+                      } catch {
+                        setError("Failed to delete account. You may need to sign in again first.");
+                        setDeleting(false);
+                      }
+                    }}
+                    disabled={deleting || deleteConfirmText !== "delete"}
+                    className="px-4 py-2 rounded-md text-sm font-semibold bg-fab-loss text-white hover:bg-fab-loss/80 transition-colors disabled:opacity-50"
+                  >
+                    {deleting ? "Deleting..." : "Permanently Delete Account"}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setConfirmDelete(false);
+                      setDeleteConfirmText("");
+                    }}
+                    className="px-4 py-2 rounded-md text-sm font-semibold bg-fab-surface border border-fab-border text-fab-muted hover:text-fab-text transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

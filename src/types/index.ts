@@ -171,3 +171,43 @@ export interface UserNotification {
   createdAt: string;
   read: boolean;
 }
+
+export interface LeaderboardEntry {
+  userId: string;
+  username: string;
+  displayName: string;
+  photoUrl?: string;
+  isPublic: boolean;
+  totalMatches: number;
+  totalWins: number;
+  totalLosses: number;
+  totalDraws: number;
+  winRate: number;
+  longestWinStreak: number;
+  currentWinStreak: number;
+  currentStreakType: "win" | "loss" | null;
+  currentStreakCount: number;
+  ratedMatches: number;
+  ratedWins: number;
+  ratedWinRate: number;
+  ratedWinStreak: number;
+  eventsPlayed: number;
+  eventWins: number;
+  uniqueHeroes: number;
+  topHero: string;
+  topHeroMatches: number;
+  updatedAt: string;
+}
+
+export interface FeedEvent {
+  id: string;
+  type: "import";
+  userId: string;
+  username: string;
+  displayName: string;
+  photoUrl?: string;
+  isPublic: boolean;
+  matchCount: number;
+  topHeroes?: string[];
+  createdAt: string;
+}

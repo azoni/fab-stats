@@ -189,12 +189,16 @@ export async function createProfile(
       displayName: profile.displayName,
       searchName: profile.searchName || profile.displayName.toLowerCase(),
     });
-    transaction.set(doc(db, "users", userId, "profile", "main"), {
-      ...profile,
+    // Strip undefined values — Firestore rejects them
+    const profileData: Record<string, unknown> = {
       username,
       uid: userId,
       createdAt: new Date().toISOString(),
-    });
+    };
+    for (const [k, v] of Object.entries(profile)) {
+      if (v !== undefined) profileData[k] = v;
+    }
+    transaction.set(doc(db, "users", userId, "profile", "main"), profileData);
   });
 }
 
@@ -285,4 +289,33 @@ export async function uploadProfilePhoto(
   dataUrl: string
 ): Promise<void> {
   await updateProfile(userId, { photoUrl: dataUrl });
+}
+
+export async function deleteAccountData(userId: string): Promise<void> {
+  // Get profile to find username
+  const profile = await getProfile(userId);
+
+  // Delete all matches
+  await clearAllMatchesFirestore(userId);
+
+  // Delete notifications
+  const notifSnap = await getDocs(collection(db, "users", userId, "notifications"));
+  if (notifSnap.docs.length > 0) {
+    const batch = writeBatch(db);
+    notifSnap.docs.forEach((d) => batch.delete(d.ref));
+    await batch.commit();
+  }
+
+  // Delete profile
+  await deleteDoc(doc(db, "users", userId, "profile", "main"));
+
+  // Delete username reservation
+  if (profile?.username) {
+    await deleteDoc(doc(db, "usernames", profile.username));
+  }
+
+  // Delete leaderboard entry
+  try {
+    await deleteDoc(doc(db, "leaderboard", userId));
+  } catch { /* may not exist */ }
 }

@@ -1,0 +1,100 @@
+"use client";
+import Link from "next/link";
+import type { FeedEvent } from "@/types";
+
+interface FeedCardProps {
+  event: FeedEvent;
+}
+
+function formatTimeAgo(isoString: string): string {
+  const now = Date.now();
+  const then = new Date(isoString).getTime();
+  const diff = now - then;
+
+  const minutes = Math.floor(diff / 60000);
+  if (minutes < 1) return "just now";
+  if (minutes < 60) return `${minutes}m ago`;
+
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days}d ago`;
+
+  return new Date(isoString).toLocaleDateString();
+}
+
+export function FeedCard({ event }: FeedCardProps) {
+  const initials = event.displayName
+    .split(" ")
+    .map((w) => w[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+
+  return (
+    <div className="bg-fab-surface border border-fab-border rounded-lg p-4">
+      <div className="flex items-start gap-3">
+        {/* Avatar */}
+        {event.photoUrl ? (
+          <img
+            src={event.photoUrl}
+            alt=""
+            className="w-10 h-10 rounded-full shrink-0"
+          />
+        ) : (
+          <div className="w-10 h-10 rounded-full bg-fab-gold/20 flex items-center justify-center text-fab-gold text-sm font-bold shrink-0">
+            {initials}
+          </div>
+        )}
+
+        {/* Content */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="font-semibold text-fab-text">
+              {event.displayName}
+            </span>
+            <span className="text-xs text-fab-dim">@{event.username}</span>
+            <span className="text-xs text-fab-dim">{formatTimeAgo(event.createdAt)}</span>
+          </div>
+
+          <p className="text-sm text-fab-muted mt-1">
+            imported{" "}
+            <span className="font-semibold text-fab-text">
+              {event.matchCount}
+            </span>{" "}
+            match{event.matchCount !== 1 ? "es" : ""}
+          </p>
+
+          {/* Hero pills */}
+          {event.topHeroes && event.topHeroes.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mt-2">
+              {event.topHeroes.map((hero) => (
+                <span
+                  key={hero}
+                  className="px-2 py-0.5 rounded-full bg-fab-gold/10 text-fab-gold text-xs font-medium"
+                >
+                  {hero}
+                </span>
+              ))}
+            </div>
+          )}
+
+          {/* View profile link */}
+          <div className="mt-2">
+            {event.isPublic ? (
+              <Link
+                href={`/player/${event.username}`}
+                className="text-xs text-fab-gold hover:text-fab-gold-light transition-colors font-medium"
+              >
+                View Profile &rarr;
+              </Link>
+            ) : (
+              <span className="text-xs text-fab-dim">Private Profile</span>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
