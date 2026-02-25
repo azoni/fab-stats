@@ -20,21 +20,19 @@ import { ShieldIcon } from "@/components/icons/NavIcons";
 import { MatchResult, GameFormat } from "@/types";
 
 export default function Dashboard() {
-  const { matches, isLoaded, allLoaded } = useMatches();
+  const { matches, isLoaded } = useMatches();
   const { user, profile } = useAuth();
   const { entries: lbEntries } = useLeaderboard();
   const [filterFormat, setFilterFormat] = useState<string>("all");
   const [filterRated, setFilterRated] = useState<string>("all");
   const leaderboardUpdated = useRef(false);
 
-  // Sync leaderboard entry when all matches are loaded
+  // Sync leaderboard entry when matches are loaded
   useEffect(() => {
     if (!isLoaded || !profile || matches.length === 0 || leaderboardUpdated.current) return;
-    // Wait for full history if there are more matches to load
-    if (!allLoaded && matches.length >= 200) return;
     leaderboardUpdated.current = true;
     updateLeaderboardEntry(profile, matches).catch(() => {});
-  }, [isLoaded, allLoaded, profile, matches]);
+  }, [isLoaded, profile, matches]);
 
   const allFormats = useMemo(() => {
     const formats = new Set(matches.map((m) => m.format));

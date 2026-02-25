@@ -3,7 +3,6 @@ import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   subscribeToMatches,
-  getMatchesByUserId,
   addMatchFirestore,
   updateMatchFirestore,
   deleteMatchFirestore,
@@ -16,15 +15,12 @@ import {
 } from "@/lib/storage";
 import type { MatchRecord } from "@/types";
 
-const MATCH_SUBSCRIPTION_LIMIT = 200;
-
 export function useMatches() {
   const { user, isGuest } = useAuth();
   const [matches, setMatches] = useState<MatchRecord[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
-  const [allLoaded, setAllLoaded] = useState(false);
 
-  // Firestore subscription for authenticated users (limited to recent matches)
+  // Firestore subscription for authenticated users
   useEffect(() => {
     if (isGuest || !user) {
       if (!isGuest) {
@@ -35,25 +31,13 @@ export function useMatches() {
     }
 
     setIsLoaded(false);
-    setAllLoaded(false);
     const unsubscribe = subscribeToMatches(user.uid, (newMatches) => {
       setMatches(newMatches);
       setIsLoaded(true);
-    }, MATCH_SUBSCRIPTION_LIMIT);
+    });
 
     return unsubscribe;
   }, [user, isGuest]);
-
-  // Auto-fetch full history when subscription hits its limit
-  useEffect(() => {
-    if (!user || isGuest || allLoaded) return;
-    if (matches.length < MATCH_SUBSCRIPTION_LIMIT) return;
-
-    getMatchesByUserId(user.uid).then((all) => {
-      setMatches(all);
-      setAllLoaded(true);
-    }).catch(() => {});
-  }, [user, isGuest, allLoaded, matches.length]);
 
   // localStorage read for guest users
   useEffect(() => {
@@ -101,5 +85,5 @@ export function useMatches() {
     [user, isGuest]
   );
 
-  return { matches, isLoaded, allLoaded, addMatch, deleteMatch, updateMatch };
+  return { matches, isLoaded, addMatch, deleteMatch, updateMatch };
 }
