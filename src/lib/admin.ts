@@ -20,6 +20,21 @@ export interface AdminUserStats {
   createdAt: string;
   isPublic: boolean;
   matchCount: number;
+  // Leaderboard stats (if available)
+  winRate?: number;
+  totalWins?: number;
+  totalLosses?: number;
+  totalDraws?: number;
+  longestWinStreak?: number;
+  currentStreakType?: "win" | "loss" | null;
+  currentStreakCount?: number;
+  topHero?: string;
+  topHeroMatches?: number;
+  eventsPlayed?: number;
+  eventWins?: number;
+  ratedMatches?: number;
+  ratedWinRate?: number;
+  updatedAt?: string;
 }
 
 export interface AdminDashboardData {
@@ -54,7 +69,14 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     userId: (d.data() as { userId: string }).userId,
   }));
 
-  // Step 2: Fetch each profile + match count in parallel
+  // Step 2: Fetch all leaderboard entries for enrichment
+  const leaderboardSnap = await getDocs(collection(db, "leaderboard"));
+  const leaderboardMap = new Map<string, Record<string, unknown>>();
+  for (const d of leaderboardSnap.docs) {
+    leaderboardMap.set(d.id, d.data());
+  }
+
+  // Step 3: Fetch each profile + match count in parallel
   const users: AdminUserStats[] = [];
   let totalMatches = 0;
 
@@ -70,7 +92,8 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
 
       if (profileSnap.exists()) {
         const profile = profileSnap.data() as UserProfile;
-        return {
+        const lb = leaderboardMap.get(userId);
+        const stats: AdminUserStats = {
           uid: profile.uid,
           username: profile.username || username,
           displayName: profile.displayName,
@@ -78,7 +101,24 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
           createdAt: profile.createdAt,
           isPublic: profile.isPublic,
           matchCount,
-        } as AdminUserStats;
+        };
+        if (lb) {
+          stats.winRate = lb.winRate as number;
+          stats.totalWins = lb.totalWins as number;
+          stats.totalLosses = lb.totalLosses as number;
+          stats.totalDraws = lb.totalDraws as number;
+          stats.longestWinStreak = lb.longestWinStreak as number;
+          stats.currentStreakType = lb.currentStreakType as "win" | "loss" | null;
+          stats.currentStreakCount = lb.currentStreakCount as number;
+          stats.topHero = lb.topHero as string;
+          stats.topHeroMatches = lb.topHeroMatches as number;
+          stats.eventsPlayed = lb.eventsPlayed as number;
+          stats.eventWins = lb.eventWins as number;
+          stats.ratedMatches = lb.ratedMatches as number;
+          stats.ratedWinRate = lb.ratedWinRate as number;
+          stats.updatedAt = lb.updatedAt as string;
+        }
+        return stats;
       }
       return null;
     })
@@ -90,7 +130,7 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     }
   }
 
-  // Step 3: Compute time-based stats
+  // Step 4: Compute time-based stats
   const now = Date.now();
   const weekAgo = now - 7 * 24 * 60 * 60 * 1000;
   const monthAgo = now - 30 * 24 * 60 * 60 * 1000;
