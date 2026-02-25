@@ -2,9 +2,9 @@ import {
   collection,
   doc,
   setDoc,
-  onSnapshot,
+  getDocs,
   query,
-  type Unsubscribe,
+  where,
 } from "firebase/firestore";
 import { db } from "./firebase";
 import { computeOverallStats, computeEventStats, computeOpponentStats } from "./stats";
@@ -100,16 +100,28 @@ export async function updateLeaderboardEntry(
   if (profile.photoUrl) clean.photoUrl = profile.photoUrl;
 
   await setDoc(doc(leaderboardCollection(), profile.uid), clean);
+  invalidateLeaderboardCache();
 }
 
-export function subscribeLeaderboard(
-  callback: (entries: LeaderboardEntry[]) => void
-): Unsubscribe {
-  const q = query(leaderboardCollection());
-  return onSnapshot(q, (snapshot) => {
-    const entries = snapshot.docs
-      .map((d) => d.data() as LeaderboardEntry)
-      .filter((e) => e.isPublic);
-    callback(entries);
-  });
+// ── Cached one-time fetch (replaces real-time subscription) ──
+
+let cachedEntries: LeaderboardEntry[] | null = null;
+let cacheTimestamp = 0;
+const CACHE_TTL = 60_000; // 60 seconds
+
+export async function getLeaderboardEntries(): Promise<LeaderboardEntry[]> {
+  const now = Date.now();
+  if (cachedEntries && now - cacheTimestamp < CACHE_TTL) {
+    return cachedEntries;
+  }
+  const q = query(leaderboardCollection(), where("isPublic", "==", true));
+  const snapshot = await getDocs(q);
+  cachedEntries = snapshot.docs.map((d) => d.data() as LeaderboardEntry);
+  cacheTimestamp = now;
+  return cachedEntries;
+}
+
+export function invalidateLeaderboardCache() {
+  cachedEntries = null;
+  cacheTimestamp = 0;
 }

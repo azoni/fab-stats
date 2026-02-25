@@ -30,9 +30,10 @@ function matchesCollection(userId: string) {
 
 export function subscribeToMatches(
   userId: string,
-  callback: (matches: MatchRecord[]) => void
+  callback: (matches: MatchRecord[]) => void,
+  maxResults = 200
 ): Unsubscribe {
-  const q = query(matchesCollection(userId), orderBy("createdAt", "desc"));
+  const q = query(matchesCollection(userId), orderBy("createdAt", "desc"), limit(maxResults));
   return onSnapshot(q, (snapshot) => {
     const matches = snapshot.docs.map((d) => ({
       id: d.id,
@@ -131,21 +132,14 @@ export async function importMatchesFirestore(
 export async function clearAllMatchesFirestore(
   userId: string
 ): Promise<void> {
-  const q = query(matchesCollection(userId));
-  return new Promise((resolve) => {
-    const unsubscribe = onSnapshot(q, async (snapshot) => {
-      unsubscribe();
-      const batchSize = 500;
-      const docs = snapshot.docs;
+  const snapshot = await getDocs(query(matchesCollection(userId)));
+  const batchSize = 500;
 
-      for (let i = 0; i < docs.length; i += batchSize) {
-        const batch = writeBatch(db);
-        docs.slice(i, i + batchSize).forEach((d) => batch.delete(d.ref));
-        await batch.commit();
-      }
-      resolve();
-    });
-  });
+  for (let i = 0; i < snapshot.docs.length; i += batchSize) {
+    const batch = writeBatch(db);
+    snapshot.docs.slice(i, i + batchSize).forEach((d) => batch.delete(d.ref));
+    await batch.commit();
+  }
 }
 
 // ── Profile functions ──

@@ -51,7 +51,7 @@ export function Navbar() {
   useEffect(() => setMounted(true), []);
   useEffect(() => {
     const CACHE_KEY = "fab_user_count";
-    const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+    const CACHE_TTL = 30 * 60 * 1000; // 30 minutes
     const cached = localStorage.getItem(CACHE_KEY);
     if (cached) {
       const { count, ts } = JSON.parse(cached);

@@ -8,36 +8,34 @@ import { computeOpponentStats } from "@/lib/stats";
 import { TrophyIcon } from "@/components/icons/NavIcons";
 import type { LeaderboardEntry, OpponentStats } from "@/types";
 
-type Tab = "winrate" | "volume" | "streaks" | "draws" | "events" | "rated" | "heroes" | "dedication" | "hotstreak" | "nemesis";
+type Tab = "winrate" | "volume" | "mostwins" | "streaks" | "draws" | "events" | "eventgrinder" | "rated" | "heroes" | "dedication" | "hotstreak";
 
 const tabs: { id: Tab; label: string }[] = [
   { id: "winrate", label: "Win Rate" },
   { id: "volume", label: "Most Matches" },
+  { id: "mostwins", label: "Most Wins" },
   { id: "streaks", label: "Streaks" },
-  { id: "draws", label: "Draws" },
-  { id: "events", label: "Events" },
+  { id: "hotstreak", label: "Hot Streak" },
+  { id: "events", label: "Event Wins" },
+  { id: "eventgrinder", label: "Event Grinder" },
   { id: "rated", label: "Rated" },
   { id: "heroes", label: "Hero Variety" },
   { id: "dedication", label: "Hero Loyalty" },
-  { id: "hotstreak", label: "Hot Streak" },
-  { id: "nemesis", label: "Nemesis" },
+  { id: "draws", label: "Draws" },
 ];
-
-interface NemesisRanking {
-  name: string;
-  count: number;
-  victims: { username: string; displayName: string; winRate: number }[];
-}
 
 function formatRate(rate: number): string {
   return `${rate.toFixed(1)}%`;
 }
+
+const PAGE_SIZE = 50;
 
 export default function LeaderboardPage() {
   const { entries, loading } = useLeaderboard();
   const { matches } = useMatches();
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<Tab>("winrate");
+  const [page, setPage] = useState(0);
 
   // Build h2h lookup: opponent display name → stats from the current user's matches
   const h2hMap = useMemo(() => {
@@ -58,6 +56,10 @@ export default function LeaderboardPage() {
           .sort((a, b) => b.winRate - a.winRate || b.totalMatches - a.totalMatches);
       case "volume":
         return [...entries].sort((a, b) => b.totalMatches - a.totalMatches);
+      case "mostwins":
+        return [...entries]
+          .filter((e) => e.totalWins > 0)
+          .sort((a, b) => b.totalWins - a.totalWins || b.winRate - a.winRate);
       case "streaks":
         return [...entries]
           .filter((e) => e.longestWinStreak > 0)
@@ -86,27 +88,14 @@ export default function LeaderboardPage() {
         return [...entries]
           .filter((e) => e.currentStreakType === "win" && e.currentStreakCount >= 2)
           .sort((a, b) => b.currentStreakCount - a.currentStreakCount || b.winRate - a.winRate);
+      case "eventgrinder":
+        return [...entries]
+          .filter((e) => e.eventsPlayed > 0)
+          .sort((a, b) => b.eventsPlayed - a.eventsPlayed || b.eventWins - a.eventWins);
       default:
         return entries;
     }
   }, [entries, activeTab]);
-
-  // Aggregate nemesis data: count how many players each opponent is nemesis to
-  const nemesisRankings = useMemo<NemesisRanking[]>(() => {
-    const map = new Map<string, NemesisRanking>();
-    for (const e of entries) {
-      if (!e.nemesis) continue;
-      const existing = map.get(e.nemesis);
-      const victim = { username: e.username, displayName: e.displayName, winRate: e.nemesisWinRate ?? 0 };
-      if (existing) {
-        existing.count++;
-        existing.victims.push(victim);
-      } else {
-        map.set(e.nemesis, { name: e.nemesis, count: 1, victims: [victim] });
-      }
-    }
-    return [...map.values()].sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
-  }, [entries]);
 
   return (
     <div>
@@ -120,7 +109,7 @@ export default function LeaderboardPage() {
         {tabs.map((tab) => (
           <button
             key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
+            onClick={() => { setActiveTab(tab.id); setPage(0); }}
             className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
               activeTab === tab.id
                 ? "bg-fab-gold/15 text-fab-gold"
@@ -140,25 +129,7 @@ export default function LeaderboardPage() {
         </div>
       )}
 
-      {!loading && activeTab === "nemesis" && (
-        nemesisRankings.length === 0 ? (
-          <div className="text-center py-16">
-            <TrophyIcon className="w-14 h-14 text-fab-muted mb-4 mx-auto" />
-            <h2 className="text-lg font-semibold text-fab-text mb-2">No nemesis data yet</h2>
-            <p className="text-fab-muted text-sm">
-              Players need at least 3 matches against an opponent to establish a nemesis.
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {nemesisRankings.map((n, i) => (
-              <NemesisRow key={n.name} nemesis={n} rank={i + 1} />
-            ))}
-          </div>
-        )
-      )}
-
-      {!loading && activeTab !== "nemesis" && ranked.length === 0 && (
+      {!loading && ranked.length === 0 && (
         <div className="text-center py-16">
           <TrophyIcon className="w-14 h-14 text-fab-muted mb-4 mx-auto" />
           <h2 className="text-lg font-semibold text-fab-text mb-2">No entries yet</h2>
@@ -174,13 +145,41 @@ export default function LeaderboardPage() {
         </div>
       )}
 
-      {!loading && activeTab !== "nemesis" && ranked.length > 0 && (
-        <div className="space-y-2">
-          {ranked.map((entry, i) => (
-            <LeaderboardRow key={entry.userId} entry={entry} rank={i + 1} tab={activeTab} h2h={h2hMap.get(entry.displayName.toLowerCase())} isMe={entry.userId === user?.uid} />
-          ))}
-        </div>
-      )}
+      {!loading && ranked.length > 0 && (() => {
+        const pageStart = page * PAGE_SIZE;
+        const pageEntries = ranked.slice(pageStart, pageStart + PAGE_SIZE);
+        const totalPages = Math.ceil(ranked.length / PAGE_SIZE);
+        return (
+          <>
+            <div className="space-y-2">
+              {pageEntries.map((entry, i) => (
+                <LeaderboardRow key={entry.userId} entry={entry} rank={pageStart + i + 1} tab={activeTab} h2h={h2hMap.get(entry.displayName.toLowerCase())} isMe={entry.userId === user?.uid} />
+              ))}
+            </div>
+            {totalPages > 1 && (
+              <div className="flex items-center justify-center gap-3 mt-6">
+                <button
+                  disabled={page === 0}
+                  onClick={() => setPage((p) => p - 1)}
+                  className="px-4 py-2 rounded-lg text-sm font-medium bg-fab-surface border border-fab-border text-fab-muted hover:text-fab-text disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  Previous
+                </button>
+                <span className="text-sm text-fab-muted">
+                  {page + 1} / {totalPages}
+                </span>
+                <button
+                  disabled={page >= totalPages - 1}
+                  onClick={() => setPage((p) => p + 1)}
+                  className="px-4 py-2 rounded-lg text-sm font-medium bg-fab-surface border border-fab-border text-fab-muted hover:text-fab-text disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  Next
+                </button>
+              </div>
+            )}
+          </>
+        );
+      })()}
     </div>
   );
 }
@@ -326,42 +325,24 @@ function LeaderboardRow({
             <p className="text-xs text-fab-dim">wins running</p>
           </>
         )}
+        {tab === "mostwins" && (
+          <>
+            <p className="text-lg font-bold text-fab-win">{entry.totalWins}</p>
+            <p className="text-xs text-fab-dim">
+              wins ({formatRate(entry.winRate)})
+            </p>
+          </>
+        )}
+        {tab === "eventgrinder" && (
+          <>
+            <p className="text-lg font-bold text-fab-gold">{entry.eventsPlayed}</p>
+            <p className="text-xs text-fab-dim">
+              events ({entry.eventWins} wins)
+            </p>
+          </>
+        )}
       </div>
     </Link>
   );
 }
 
-function NemesisRow({ nemesis, rank }: { nemesis: NemesisRanking; rank: number }) {
-  const medal =
-    rank === 1
-      ? "text-yellow-400"
-      : rank === 2
-        ? "text-gray-300"
-        : rank === 3
-          ? "text-amber-600"
-          : "text-fab-dim";
-
-  return (
-    <div className="flex items-center gap-3 bg-fab-surface border border-fab-border rounded-lg p-4">
-      <span className={`text-lg font-black w-8 text-center shrink-0 ${medal}`}>
-        {rank}
-      </span>
-      <div className="w-10 h-10 rounded-full bg-fab-loss/20 flex items-center justify-center text-fab-loss text-lg shrink-0">
-        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" />
-          <path strokeLinecap="round" strokeLinejoin="round" d="M9.879 16.121A3 3 0 1012.015 11L11 14H9c0 .768.293 1.536.879 2.121z" />
-        </svg>
-      </div>
-      <div className="min-w-0 flex-1">
-        <p className="font-semibold text-fab-text truncate">{nemesis.name}</p>
-        <p className="text-xs text-fab-dim truncate">
-          feared by {nemesis.victims.map((v) => v.displayName).join(", ")}
-        </p>
-      </div>
-      <div className="text-right shrink-0">
-        <p className="text-lg font-bold text-fab-loss">{nemesis.count}</p>
-        <p className="text-xs text-fab-dim">{nemesis.count === 1 ? "player" : "players"} fear them</p>
-      </div>
-    </div>
-  );
-}

@@ -63,6 +63,18 @@ const RANK_TABS: RankTab[] = [
     filter: (e) => e.currentStreakType === "win" && e.currentStreakCount >= 2,
     sort: (a, b) => b.currentStreakCount - a.currentStreakCount || b.winRate - a.winRate,
   },
+  {
+    id: "mostwins",
+    label: "Most Wins",
+    filter: (e) => e.totalWins > 0,
+    sort: (a, b) => b.totalWins - a.totalWins || b.winRate - a.winRate,
+  },
+  {
+    id: "eventgrinder",
+    label: "Event Grinder",
+    filter: (e) => e.eventsPlayed > 0,
+    sort: (a, b) => b.eventsPlayed - a.eventsPlayed || b.eventWins - a.eventWins,
+  },
 ];
 
 export function computeUserRanks(entries: LeaderboardEntry[], userId: string): LeaderboardRank[] {

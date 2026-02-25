@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { subscribeLeaderboard } from "@/lib/leaderboard";
+import { getLeaderboardEntries } from "@/lib/leaderboard";
 import type { LeaderboardEntry } from "@/types";
 
 export function useLeaderboard() {
@@ -8,12 +8,10 @@ export function useLeaderboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsub = subscribeLeaderboard((data) => {
-      setEntries(data);
-      setLoading(false);
-    });
-
-    return () => unsub();
+    getLeaderboardEntries()
+      .then(setEntries)
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, []);
 
   return { entries, loading };

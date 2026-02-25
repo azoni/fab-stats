@@ -8,6 +8,7 @@ import {
   query,
   orderBy,
   where,
+  limit,
   writeBatch,
   type Unsubscribe,
 } from "firebase/firestore";
@@ -22,7 +23,7 @@ export function subscribeToNotifications(
   userId: string,
   callback: (notifications: UserNotification[]) => void
 ): Unsubscribe {
-  const q = query(notificationsCollection(userId), orderBy("createdAt", "desc"));
+  const q = query(notificationsCollection(userId), orderBy("createdAt", "desc"), limit(50));
   return onSnapshot(q, (snapshot) => {
     const notifications = snapshot.docs.map((d) => ({
       id: d.id,
@@ -53,6 +54,20 @@ export async function markAllAsRead(userId: string): Promise<void> {
     batch.update(d.ref, { read: true });
   }
   await batch.commit();
+
+  // Clean up old notifications (>30 days) to prevent unbounded growth
+  const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+  const oldQ = query(
+    notificationsCollection(userId),
+    where("createdAt", "<", cutoff),
+    limit(100)
+  );
+  const oldSnap = await getDocs(oldQ);
+  if (!oldSnap.empty) {
+    const cleanupBatch = writeBatch(db);
+    oldSnap.docs.forEach((d) => cleanupBatch.delete(d.ref));
+    await cleanupBatch.commit();
+  }
 }
 
 export async function deleteNotification(

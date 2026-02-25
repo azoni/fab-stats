@@ -114,37 +114,35 @@ export async function addComment(
     participants = [matchOwnerUid];
   }
 
-  // Notify all participants except the commenter
-  for (const uid of participants) {
-    if (uid === comment.authorUid) continue;
+  // Notify all participants except the commenter (in parallel)
+  await Promise.allSettled(
+    participants
+      .filter((uid) => uid !== comment.authorUid)
+      .map((uid) => {
+        const notification: Omit<UserNotification, "id"> = {
+          type: "comment",
+          matchId,
+          matchOwnerUid: uid,
+          commentAuthorUid: comment.authorUid,
+          commentAuthorName: comment.authorName,
+          commentAuthorPhoto: comment.authorPhoto,
+          commentPreview: comment.text.slice(0, 80),
+          matchSummary,
+          createdAt: now,
+          read: false,
+        };
 
-    const notification: Omit<UserNotification, "id"> = {
-      type: "comment",
-      matchId,
-      matchOwnerUid: uid,
-      commentAuthorUid: comment.authorUid,
-      commentAuthorName: comment.authorName,
-      commentAuthorPhoto: comment.authorPhoto,
-      commentPreview: comment.text.slice(0, 80),
-      matchSummary,
-      createdAt: now,
-      read: false,
-    };
+        const notifClean: Record<string, unknown> = {};
+        for (const [k, v] of Object.entries(notification)) {
+          if (v !== undefined) notifClean[k] = v;
+        }
 
-    const notifClean: Record<string, unknown> = {};
-    for (const [k, v] of Object.entries(notification)) {
-      if (v !== undefined) notifClean[k] = v;
-    }
-
-    try {
-      await addDoc(
-        collection(db, "users", uid, "notifications"),
-        notifClean
-      );
-    } catch {
-      // Notification delivery is non-critical
-    }
-  }
+        return addDoc(
+          collection(db, "users", uid, "notifications"),
+          notifClean
+        );
+      })
+  );
 
   return { ...data, id: docRef.id };
 }
