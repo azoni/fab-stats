@@ -4,7 +4,7 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { getProfileByUsername, getMatchesByUserId } from "@/lib/firestore-storage";
 import { updateLeaderboardEntry } from "@/lib/leaderboard";
-import { computeOverallStats, computeHeroStats, computeEventTypeStats, computeVenueStats, computeEventStats, computeOpponentStats, computeBestFinish, computePlayoffFinishes } from "@/lib/stats";
+import { computeOverallStats, computeHeroStats, computeEventTypeStats, computeVenueStats, computeEventStats, computeOpponentStats, computeBestFinish, computePlayoffFinishes, refineEventType } from "@/lib/stats";
 import { evaluateAchievements } from "@/lib/achievements";
 import { computeHeroMastery } from "@/lib/mastery";
 import { AchievementShowcase } from "@/components/gamification/AchievementShowcase";
@@ -63,8 +63,13 @@ export default function PlayerProfile() {
     return Array.from(formats).sort();
   }, [loadedMatches]);
 
+  const getCorrectedEventType = (m: { eventType?: string; notes?: string }) => {
+    const eventName = m.notes?.split(" | ")[0] || "";
+    return m.eventType ? refineEventType(m.eventType, eventName) : undefined;
+  };
+
   const allEventTypes = useMemo(() => {
-    const types = new Set(loadedMatches.map((m) => m.eventType).filter(Boolean));
+    const types = new Set(loadedMatches.map((m) => getCorrectedEventType(m)).filter(Boolean));
     return Array.from(types).sort() as string[];
   }, [loadedMatches]);
 
@@ -78,7 +83,7 @@ export default function PlayerProfile() {
       if (filterFormat !== "all" && m.format !== filterFormat) return false;
       if (filterRated === "rated" && m.rated !== true) return false;
       if (filterRated === "unrated" && m.rated === true) return false;
-      if (filterRated !== "all" && filterRated !== "rated" && filterRated !== "unrated" && m.eventType !== filterRated) return false;
+      if (filterRated !== "all" && filterRated !== "rated" && filterRated !== "unrated" && getCorrectedEventType(m) !== filterRated) return false;
       if (filterHero !== "all" && m.heroPlayed !== filterHero) return false;
       return true;
     });

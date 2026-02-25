@@ -289,7 +289,7 @@ function guessEventTypeFromNotes(notes: string): string {
 /** Derive the best event type from both the explicit eventType and the event name.
  *  Event names like "Calling Seattle - Battle Hardened..." should be "Battle Hardened"
  *  even if the eventType was set to something else by the import source. */
-function refineEventType(eventType: string, eventName: string): string {
+export function refineEventType(eventType: string, eventName: string): string {
   const lower = eventName.toLowerCase();
   // Check local event types first (GEM often misclassifies armory/pre-release with season names)
   if (lower.includes("armory")) return "Armory";
