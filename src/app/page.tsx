@@ -1,9 +1,10 @@
 "use client";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useMatches } from "@/hooks/useMatches";
 import { useAuth } from "@/contexts/AuthContext";
 import { computeOverallStats, computeEventTypeStats, computeVenueStats, computeEventStats } from "@/lib/stats";
+import { updateLeaderboardEntry } from "@/lib/leaderboard";
 import { MatchCard } from "@/components/matches/MatchCard";
 import { EventCard } from "@/components/events/EventCard";
 import { ShieldIcon } from "@/components/icons/NavIcons";
@@ -11,9 +12,17 @@ import { MatchResult, GameFormat } from "@/types";
 
 export default function Dashboard() {
   const { matches, isLoaded } = useMatches();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [filterFormat, setFilterFormat] = useState<string>("all");
   const [filterRated, setFilterRated] = useState<string>("all");
+  const leaderboardUpdated = useRef(false);
+
+  // Sync leaderboard entry when dashboard loads with matches
+  useEffect(() => {
+    if (!isLoaded || !profile || matches.length === 0 || leaderboardUpdated.current) return;
+    leaderboardUpdated.current = true;
+    updateLeaderboardEntry(profile, matches).catch(() => {});
+  }, [isLoaded, profile, matches]);
 
   const allFormats = useMemo(() => {
     const formats = new Set(matches.map((m) => m.format));
