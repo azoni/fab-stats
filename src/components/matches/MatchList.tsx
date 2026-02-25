@@ -3,6 +3,7 @@ import { useState, useMemo } from "react";
 import { MatchCard } from "./MatchCard";
 import { MatchResult, GameFormat, type MatchRecord } from "@/types";
 import { allHeroes as knownHeroes } from "@/lib/heroes";
+import { getEventType } from "@/lib/stats";
 
 const VALID_HERO_NAMES = new Set(knownHeroes.map((h) => h.name));
 
@@ -16,11 +17,17 @@ export function MatchList({ matches, matchOwnerUid, enableComments }: MatchListP
   const [filterResult, setFilterResult] = useState<string>("all");
   const [filterFormat, setFilterFormat] = useState<string>("all");
   const [filterHero, setFilterHero] = useState<string>("all");
+  const [filterEventType, setFilterEventType] = useState<string>("all");
   const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
 
   const allHeroes = useMemo(() => {
     const heroes = new Set(matches.map((m) => m.heroPlayed).filter((h) => h && VALID_HERO_NAMES.has(h)));
     return Array.from(heroes).sort();
+  }, [matches]);
+
+  const allEventTypes = useMemo(() => {
+    const types = new Set(matches.map((m) => getEventType(m)).filter(Boolean));
+    return Array.from(types).sort();
   }, [matches]);
 
   const filtered = useMemo(() => {
@@ -35,6 +42,9 @@ export function MatchList({ matches, matchOwnerUid, enableComments }: MatchListP
     if (filterHero !== "all") {
       result = result.filter((m) => m.heroPlayed === filterHero);
     }
+    if (filterEventType !== "all") {
+      result = result.filter((m) => getEventType(m) === filterEventType);
+    }
 
     result.sort((a, b) => {
       const diff = new Date(b.date).getTime() - new Date(a.date).getTime();
@@ -42,7 +52,7 @@ export function MatchList({ matches, matchOwnerUid, enableComments }: MatchListP
     });
 
     return result;
-  }, [matches, filterResult, filterFormat, filterHero, sortOrder]);
+  }, [matches, filterResult, filterFormat, filterHero, filterEventType, sortOrder]);
 
   return (
     <div>
@@ -78,6 +88,19 @@ export function MatchList({ matches, matchOwnerUid, enableComments }: MatchListP
             <option value="all">All Heroes</option>
             {allHeroes.map((h) => (
               <option key={h} value={h}>{h}</option>
+            ))}
+          </select>
+        )}
+
+        {allEventTypes.length > 1 && (
+          <select
+            value={filterEventType}
+            onChange={(e) => setFilterEventType(e.target.value)}
+            className="bg-fab-surface border border-fab-border rounded-md px-3 py-1.5 text-fab-text text-sm outline-none"
+          >
+            <option value="all">All Event Types</option>
+            {allEventTypes.map((t) => (
+              <option key={t} value={t}>{t}</option>
             ))}
           </select>
         )}

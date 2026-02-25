@@ -307,7 +307,7 @@ export function refineEventType(eventType: string, eventName: string): string {
   return eventType;
 }
 
-function getEventType(match: MatchRecord): string {
+export function getEventType(match: MatchRecord): string {
   const eventName = match.notes?.split(" | ")[0] || "";
   if (match.eventType) return refineEventType(match.eventType, eventName);
   if (match.notes) return guessEventTypeFromNotes(match.notes);
