@@ -3,9 +3,12 @@ import {
   getDoc,
   getDocs,
   collection,
+  query,
+  orderBy,
 } from "firebase/firestore";
 import { db } from "./firebase";
-import type { UserProfile } from "@/types";
+import { updateLeaderboardEntry } from "./leaderboard";
+import type { UserProfile, MatchRecord } from "@/types";
 
 interface AdminConfig {
   adminEmails: string[];
@@ -165,4 +168,41 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
   };
   dashboardCache = { data: result, ts: Date.now() };
   return result;
+}
+
+/** Backfill leaderboard entries for all users (re-computes nemesis, etc.) */
+export async function backfillLeaderboard(
+  onProgress?: (done: number, total: number) => void
+): Promise<{ updated: number; failed: number }> {
+  const usernamesSnap = await getDocs(collection(db, "usernames"));
+  const userEntries = usernamesSnap.docs.map((d) => ({
+    username: d.id,
+    userId: (d.data() as { userId: string }).userId,
+  }));
+
+  let updated = 0;
+  let failed = 0;
+
+  for (const { userId } of userEntries) {
+    try {
+      const profileSnap = await getDoc(doc(db, "users", userId, "profile", "main"));
+      if (!profileSnap.exists()) continue;
+      const profile = profileSnap.data() as UserProfile;
+
+      const matchesSnap = await getDocs(
+        query(collection(db, "users", userId, "matches"), orderBy("createdAt", "desc"))
+      );
+      const matches = matchesSnap.docs.map((d) => ({ id: d.id, ...d.data() })) as MatchRecord[];
+
+      if (matches.length > 0) {
+        await updateLeaderboardEntry(profile, matches);
+        updated++;
+      }
+    } catch {
+      failed++;
+    }
+    onProgress?.(updated + failed, userEntries.length);
+  }
+
+  return { updated, failed };
 }

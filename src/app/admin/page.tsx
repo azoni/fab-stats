@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
-import { getAdminDashboardData, type AdminDashboardData, type AdminUserStats } from "@/lib/admin";
+import { getAdminDashboardData, backfillLeaderboard, type AdminDashboardData, type AdminUserStats } from "@/lib/admin";
 import { getAllFeedback, updateFeedbackStatus } from "@/lib/feedback";
 import type { FeedbackItem } from "@/types";
 
@@ -21,6 +21,8 @@ export default function AdminPage() {
   const [expandedUid, setExpandedUid] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<FeedbackItem[]>([]);
   const [feedbackFilter, setFeedbackFilter] = useState<"all" | "new" | "reviewed" | "done">("all");
+  const [backfilling, setBackfilling] = useState(false);
+  const [backfillProgress, setBackfillProgress] = useState("");
 
   // Redirect non-admins
   useEffect(() => {
@@ -90,13 +92,38 @@ export default function AdminPage() {
     <div className="max-w-5xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-fab-gold">Admin Dashboard</h1>
-        <button
-          onClick={fetchData}
-          disabled={fetching}
-          className="px-4 py-2 rounded-lg text-sm font-semibold bg-fab-surface border border-fab-border text-fab-text hover:border-fab-gold transition-colors disabled:opacity-50"
-        >
-          {fetching ? "Loading..." : "Refresh"}
-        </button>
+        <div className="flex items-center gap-2">
+          {backfillProgress && (
+            <span className="text-xs text-fab-dim">{backfillProgress}</span>
+          )}
+          <button
+            onClick={async () => {
+              setBackfilling(true);
+              setBackfillProgress("Starting...");
+              try {
+                const { updated, failed } = await backfillLeaderboard((done, total) => {
+                  setBackfillProgress(`${done}/${total} users`);
+                });
+                setBackfillProgress(`Done: ${updated} updated, ${failed} failed`);
+              } catch {
+                setBackfillProgress("Backfill failed");
+              } finally {
+                setBackfilling(false);
+              }
+            }}
+            disabled={backfilling}
+            className="px-4 py-2 rounded-lg text-sm font-semibold bg-fab-surface border border-fab-border text-fab-muted hover:text-fab-text hover:border-fab-gold transition-colors disabled:opacity-50"
+          >
+            {backfilling ? "Backfilling..." : "Backfill Leaderboard"}
+          </button>
+          <button
+            onClick={fetchData}
+            disabled={fetching}
+            className="px-4 py-2 rounded-lg text-sm font-semibold bg-fab-surface border border-fab-border text-fab-text hover:border-fab-gold transition-colors disabled:opacity-50"
+          >
+            {fetching ? "Loading..." : "Refresh"}
+          </button>
+        </div>
       </div>
 
       {error && (
