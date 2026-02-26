@@ -99,7 +99,7 @@ export default async function handler(
       )
     : `View ${escapeHtml(username)}'s Flesh and Blood tournament stats, win rate, and match history on FaB Stats.`;
 
-  const ogImageUrl = `https://fabstats.net/.netlify/functions/og-image?username=${encodeURIComponent(username)}`;
+  const ogImageUrl = `https://www.fabstats.net/.netlify/functions/og-image?username=${encodeURIComponent(username)}`;
 
   // Replace OG meta tags
   html = html.replace(
@@ -165,7 +165,7 @@ export default async function handler(
   );
 
   // Set canonical URL
-  const canonicalUrl = `https://fabstats.net/player/${encodeURIComponent(username)}`;
+  const canonicalUrl = `https://www.fabstats.net/player/${encodeURIComponent(username)}`;
   if (html.includes('og:url')) {
     html = html.replace(
       /(<meta\s+property="og:url"\s+content=")([^"]*?)(")/,

@@ -174,7 +174,7 @@ export default async function handler(
   const desc = escapeHtml(descParts.join(" · "));
   const escapedTitle = escapeHtml(title);
 
-  const ogImageUrl = `https://fabstats.net/.netlify/functions/og-image?type=meta`;
+  const ogImageUrl = `https://www.fabstats.net/.netlify/functions/og-image?type=meta`;
 
   // Replace OG meta tags
   html = html.replace(
@@ -219,7 +219,7 @@ export default async function handler(
   // Set canonical URL
   html = html.replace(
     /(<meta\s+property="og:url"\s+content=")([^"]*?)(")/,
-    `$1https://fabstats.net/meta$3`
+    `$1https://www.fabstats.net/meta$3`
   );
 
   return new Response(html, {
