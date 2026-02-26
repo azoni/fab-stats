@@ -40,6 +40,8 @@ export default function AdminPage() {
   const [linkProgress, setLinkProgress] = useState("");
   const [backfillingGemIds, setBackfillingGemIds] = useState(false);
   const [gemIdProgress, setGemIdProgress] = useState("");
+  const [toolsOpen, setToolsOpen] = useState(false);
+  const anyToolRunning = fixingDates || backfilling || backfillingGemIds || linkingMatches;
 
   // Redirect non-admins
   useEffect(() => {
@@ -109,91 +111,14 @@ export default function AdminPage() {
 
   return (
     <div className="max-w-5xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-4">
         <h1 className="text-2xl font-bold text-fab-gold">Admin Dashboard</h1>
-        <div className="flex items-center gap-2 flex-wrap">
-          {(backfillProgress || fixDatesProgress || linkProgress || gemIdProgress) && (
-            <span className="text-xs text-fab-dim">{linkProgress || gemIdProgress || fixDatesProgress || backfillProgress}</span>
-          )}
+        <div className="flex items-center gap-2">
           <button
-            onClick={async () => {
-              setFixingDates(true);
-              setFixDatesProgress("Starting...");
-              try {
-                const { usersChecked, matchesFixed, usersAffected, usersFailed } = await fixMatchDates((done, total, log) => {
-                  setFixDatesProgress(`${done}/${total} — ${log}`);
-                });
-                setFixDatesProgress(`Done: ${matchesFixed} matches fixed across ${usersAffected} users (${usersChecked} checked${usersFailed > 0 ? `, ${usersFailed} failed` : ""})`);
-              } catch (err) {
-                setFixDatesProgress(`Fix dates failed: ${err instanceof Error ? err.message : String(err)}`);
-              } finally {
-                setFixingDates(false);
-              }
-            }}
-            disabled={fixingDates || backfilling}
-            className="px-4 py-2 rounded-lg text-sm font-semibold bg-fab-surface border border-fab-border text-fab-muted hover:text-fab-text hover:border-fab-gold transition-colors disabled:opacity-50"
+            onClick={() => setToolsOpen(!toolsOpen)}
+            className="px-4 py-2 rounded-lg text-sm font-semibold bg-fab-surface border border-fab-border text-fab-muted hover:text-fab-text hover:border-fab-gold transition-colors"
           >
-            {fixingDates ? "Fixing..." : "Fix Match Dates"}
-          </button>
-          <button
-            onClick={async () => {
-              setBackfilling(true);
-              setBackfillProgress("Starting...");
-              try {
-                const { updated, skipped, failed } = await backfillLeaderboard((done, total) => {
-                  setBackfillProgress(`${done}/${total} users`);
-                });
-                setBackfillProgress(`Done: ${updated} updated, ${skipped} skipped, ${failed} failed`);
-              } catch {
-                setBackfillProgress("Backfill failed");
-              } finally {
-                setBackfilling(false);
-              }
-            }}
-            disabled={backfilling || fixingDates}
-            className="px-4 py-2 rounded-lg text-sm font-semibold bg-fab-surface border border-fab-border text-fab-muted hover:text-fab-text hover:border-fab-gold transition-colors disabled:opacity-50"
-          >
-            {backfilling ? "Backfilling..." : "Backfill Leaderboard"}
-          </button>
-          <button
-            onClick={async () => {
-              setBackfillingGemIds(true);
-              setGemIdProgress("Starting...");
-              try {
-                const { registered, skipped, failed } = await backfillGemIds((done, total, msg) => {
-                  setGemIdProgress(`${done}/${total} — ${msg}`);
-                });
-                setGemIdProgress(`Done: ${registered} registered, ${skipped} skipped, ${failed} failed`);
-              } catch {
-                setGemIdProgress("GEM ID backfill failed");
-              } finally {
-                setBackfillingGemIds(false);
-              }
-            }}
-            disabled={backfillingGemIds || linkingMatches || backfilling || fixingDates}
-            className="px-4 py-2 rounded-lg text-sm font-semibold bg-fab-surface border border-fab-border text-fab-muted hover:text-fab-text hover:border-fab-gold transition-colors disabled:opacity-50"
-          >
-            {backfillingGemIds ? "Registering..." : "Backfill GEM IDs"}
-          </button>
-          <button
-            onClick={async () => {
-              setLinkingMatches(true);
-              setLinkProgress("Starting...");
-              try {
-                const { usersProcessed, totalLinked, heroesShared, heroesReceived, failed } = await backfillMatchLinking((done, total, msg) => {
-                  setLinkProgress(`${done}/${total} — ${msg}`);
-                });
-                setLinkProgress(`Done: ${usersProcessed} users, ${totalLinked} linked, ${heroesShared + heroesReceived} heroes exchanged${failed > 0 ? `, ${failed} failed` : ""}`);
-              } catch {
-                setLinkProgress("Match linking failed");
-              } finally {
-                setLinkingMatches(false);
-              }
-            }}
-            disabled={linkingMatches || backfillingGemIds || backfilling || fixingDates}
-            className="px-4 py-2 rounded-lg text-sm font-semibold bg-fab-surface border border-fab-border text-fab-muted hover:text-fab-text hover:border-fab-gold transition-colors disabled:opacity-50"
-          >
-            {linkingMatches ? "Linking..." : "Link Matches"}
+            Tools {toolsOpen ? "▲" : "▼"}
           </button>
           <button
             onClick={fetchData}
@@ -204,6 +129,96 @@ export default function AdminPage() {
           </button>
         </div>
       </div>
+
+      {toolsOpen && (
+        <div className="mb-6 p-4 rounded-lg bg-fab-surface border border-fab-border space-y-3">
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              onClick={async () => {
+                setFixingDates(true);
+                setFixDatesProgress("Starting...");
+                try {
+                  const { usersChecked, matchesFixed, usersAffected, usersFailed } = await fixMatchDates((done, total, log) => {
+                    setFixDatesProgress(`${done}/${total} — ${log}`);
+                  });
+                  setFixDatesProgress(`Done: ${matchesFixed} matches fixed across ${usersAffected} users (${usersChecked} checked${usersFailed > 0 ? `, ${usersFailed} failed` : ""})`);
+                } catch (err) {
+                  setFixDatesProgress(`Fix dates failed: ${err instanceof Error ? err.message : String(err)}`);
+                } finally {
+                  setFixingDates(false);
+                }
+              }}
+              disabled={anyToolRunning}
+              className="px-3 py-1.5 rounded text-xs font-medium bg-fab-bg border border-fab-border text-fab-muted hover:text-fab-text hover:border-fab-gold transition-colors disabled:opacity-50"
+            >
+              {fixingDates ? "Fixing..." : "Fix Match Dates"}
+            </button>
+            <button
+              onClick={async () => {
+                setBackfilling(true);
+                setBackfillProgress("Starting...");
+                try {
+                  const { updated, skipped, failed } = await backfillLeaderboard((done, total) => {
+                    setBackfillProgress(`${done}/${total} users`);
+                  });
+                  setBackfillProgress(`Done: ${updated} updated, ${skipped} skipped, ${failed} failed`);
+                } catch {
+                  setBackfillProgress("Backfill failed");
+                } finally {
+                  setBackfilling(false);
+                }
+              }}
+              disabled={anyToolRunning}
+              className="px-3 py-1.5 rounded text-xs font-medium bg-fab-bg border border-fab-border text-fab-muted hover:text-fab-text hover:border-fab-gold transition-colors disabled:opacity-50"
+            >
+              {backfilling ? "Backfilling..." : "Backfill Leaderboard"}
+            </button>
+            <button
+              onClick={async () => {
+                setBackfillingGemIds(true);
+                setGemIdProgress("Starting...");
+                try {
+                  const { registered, skipped, failed } = await backfillGemIds((done, total, msg) => {
+                    setGemIdProgress(`${done}/${total} — ${msg}`);
+                  });
+                  setGemIdProgress(`Done: ${registered} registered, ${skipped} skipped, ${failed} failed`);
+                } catch {
+                  setGemIdProgress("GEM ID backfill failed");
+                } finally {
+                  setBackfillingGemIds(false);
+                }
+              }}
+              disabled={anyToolRunning}
+              className="px-3 py-1.5 rounded text-xs font-medium bg-fab-bg border border-fab-border text-fab-muted hover:text-fab-text hover:border-fab-gold transition-colors disabled:opacity-50"
+            >
+              {backfillingGemIds ? "Registering..." : "Backfill GEM IDs"}
+            </button>
+            <button
+              onClick={async () => {
+                setLinkingMatches(true);
+                setLinkProgress("Starting...");
+                try {
+                  const { usersProcessed, totalLinked, heroesShared, heroesReceived, failed } = await backfillMatchLinking((done, total, msg) => {
+                    setLinkProgress(`${done}/${total} — ${msg}`);
+                  });
+                  setLinkProgress(`Done: ${usersProcessed} users, ${totalLinked} linked, ${heroesShared + heroesReceived} heroes exchanged${failed > 0 ? `, ${failed} failed` : ""}`);
+                } catch {
+                  setLinkProgress("Match linking failed");
+                } finally {
+                  setLinkingMatches(false);
+                }
+              }}
+              disabled={anyToolRunning}
+              className="px-3 py-1.5 rounded text-xs font-medium bg-fab-bg border border-fab-border text-fab-muted hover:text-fab-text hover:border-fab-gold transition-colors disabled:opacity-50"
+            >
+              {linkingMatches ? "Linking..." : "Link Matches"}
+            </button>
+          </div>
+          {(backfillProgress || fixDatesProgress || linkProgress || gemIdProgress) && (
+            <p className="text-xs text-fab-dim">{linkProgress || gemIdProgress || fixDatesProgress || backfillProgress}</p>
+          )}
+        </div>
+      )}
 
       {error && (
         <div className="bg-fab-loss/10 border border-fab-loss/30 rounded-lg p-3 mb-4 text-fab-loss text-sm">
