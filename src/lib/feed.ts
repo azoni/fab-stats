@@ -1,14 +1,15 @@
 import {
   collection,
   addDoc,
-  getDocs,
+  onSnapshot,
   query,
   orderBy,
   limit,
   where,
+  type Unsubscribe,
 } from "firebase/firestore";
 import { db } from "./firebase";
-import type { FeedEvent, UserProfile } from "@/types";
+import type { FeedEvent, UserProfile, ImportSource } from "@/types";
 
 function feedCollection() {
   return collection(db, "feedEvents");
@@ -17,7 +18,8 @@ function feedCollection() {
 export async function createImportFeedEvent(
   profile: UserProfile,
   matchCount: number,
-  topHeroes: string[]
+  topHeroes: string[],
+  source?: ImportSource
 ): Promise<void> {
   // Don't publish feed events for private profiles
   if (!profile.isPublic) return;
@@ -29,6 +31,7 @@ export async function createImportFeedEvent(
     displayName: profile.displayName,
     isPublic: profile.isPublic,
     matchCount,
+    source,
     createdAt: new Date().toISOString(),
   };
 
@@ -43,8 +46,23 @@ export async function createImportFeedEvent(
   await addDoc(feedCollection(), clean);
 }
 
-export async function getFeedEvents(limitCount = 50): Promise<FeedEvent[]> {
+export function subscribeFeed(
+  callback: (events: FeedEvent[]) => void,
+  limitCount = 50
+): Unsubscribe {
   const q = query(feedCollection(), where("isPublic", "==", true), orderBy("createdAt", "desc"), limit(limitCount));
-  const snap = await getDocs(q);
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() })) as FeedEvent[];
+  return onSnapshot(
+    q,
+    (snapshot) => {
+      const events = snapshot.docs.map((d) => ({
+        id: d.id,
+        ...d.data(),
+      })) as FeedEvent[];
+      callback(events);
+    },
+    (error) => {
+      console.error("Feed subscription error:", error);
+      callback([]);
+    }
+  );
 }
