@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
-import { getAdminDashboardData, backfillLeaderboard, broadcastMessage, type AdminDashboardData, type AdminUserStats } from "@/lib/admin";
+import { getAdminDashboardData, backfillLeaderboard, broadcastMessage, fixMatchDates, type AdminDashboardData, type AdminUserStats } from "@/lib/admin";
 import { getAllFeedback, updateFeedbackStatus } from "@/lib/feedback";
 import { getCreators, saveCreators } from "@/lib/creators";
 import { getAnalytics } from "@/lib/analytics";
@@ -34,6 +34,8 @@ export default function AdminPage() {
   const [broadcastProgress, setBroadcastProgress] = useState("");
   const [broadcastResult, setBroadcastResult] = useState("");
   const [analyticsData, setAnalyticsData] = useState<{ pageViews: Record<string, number>; creatorClicks: Record<string, number> } | null>(null);
+  const [fixingDates, setFixingDates] = useState(false);
+  const [fixDatesProgress, setFixDatesProgress] = useState("");
 
   // Redirect non-admins
   useEffect(() => {
@@ -105,10 +107,30 @@ export default function AdminPage() {
     <div className="max-w-5xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-fab-gold">Admin Dashboard</h1>
-        <div className="flex items-center gap-2">
-          {backfillProgress && (
-            <span className="text-xs text-fab-dim">{backfillProgress}</span>
+        <div className="flex items-center gap-2 flex-wrap">
+          {(backfillProgress || fixDatesProgress) && (
+            <span className="text-xs text-fab-dim">{fixDatesProgress || backfillProgress}</span>
           )}
+          <button
+            onClick={async () => {
+              setFixingDates(true);
+              setFixDatesProgress("Starting...");
+              try {
+                const { usersChecked, matchesFixed, usersAffected } = await fixMatchDates((done, total, log) => {
+                  setFixDatesProgress(`${done}/${total} — ${log}`);
+                });
+                setFixDatesProgress(`Done: ${matchesFixed} matches fixed across ${usersAffected} users (${usersChecked} checked)`);
+              } catch {
+                setFixDatesProgress("Fix dates failed");
+              } finally {
+                setFixingDates(false);
+              }
+            }}
+            disabled={fixingDates || backfilling}
+            className="px-4 py-2 rounded-lg text-sm font-semibold bg-fab-surface border border-fab-border text-fab-muted hover:text-fab-text hover:border-fab-gold transition-colors disabled:opacity-50"
+          >
+            {fixingDates ? "Fixing..." : "Fix Match Dates"}
+          </button>
           <button
             onClick={async () => {
               setBackfilling(true);
@@ -124,7 +146,7 @@ export default function AdminPage() {
                 setBackfilling(false);
               }
             }}
-            disabled={backfilling}
+            disabled={backfilling || fixingDates}
             className="px-4 py-2 rounded-lg text-sm font-semibold bg-fab-surface border border-fab-border text-fab-muted hover:text-fab-text hover:border-fab-gold transition-colors disabled:opacity-50"
           >
             {backfilling ? "Backfilling..." : "Backfill Leaderboard"}

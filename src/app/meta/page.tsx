@@ -44,6 +44,12 @@ export default function MetaPage() {
     }
   }, [heroStats, sortBy, search]);
 
+  // Always use the global max for consistent progress bars across sort modes
+  const maxMatches = useMemo(
+    () => Math.max(...heroStats.map((h) => h.totalMatches), 1),
+    [heroStats],
+  );
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -157,7 +163,7 @@ export default function MetaPage() {
       ) : (
         <div className="space-y-2">
           {sortedHeroes.map((hero, i) => (
-            <HeroMetaRow key={hero.hero} hero={hero} index={i} sortBy={sortBy} maxMatches={sortedHeroes[0]?.totalMatches || 1} />
+            <HeroMetaRow key={hero.hero} hero={hero} index={i} sortBy={sortBy} maxMatches={maxMatches} />
           ))}
         </div>
       )}

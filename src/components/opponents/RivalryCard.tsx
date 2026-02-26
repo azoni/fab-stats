@@ -106,7 +106,7 @@ export function RivalryCard({ data }: { data: RivalryData }) {
 
       {/* Footer */}
       <div className="bg-fab-bg px-5 py-2 border-t border-fab-border">
-        <p className="text-[10px] text-fab-dim text-center">fab-stats.com</p>
+        <p className="text-[10px] text-fab-dim text-center">fabstats.net</p>
       </div>
     </div>
   );

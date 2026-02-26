@@ -425,19 +425,16 @@ function OpponentRow({ opp, isExpanded, onToggle, matchOwnerUid, playerName }: {
                       const file = new File([blob], "rivalry.png", { type: "image/png" });
                       await navigator.share({ title: "FaB Stats Rivalry", text: shareText, files: [file] });
                     } else if (blob && navigator.clipboard?.write) {
-                      // Desktop: copy image + link to clipboard
+                      // Desktop: copy image only to clipboard
                       await navigator.clipboard.write([
-                        new ClipboardItem({
-                          "image/png": blob,
-                          "text/plain": new Blob([shareText], { type: "text/plain" }),
-                        }),
+                        new ClipboardItem({ "image/png": blob }),
                       ]);
                       setShareStatus("copied");
                       setTimeout(() => setShareStatus("idle"), 2000);
                       return;
                     } else {
-                      // Fallback: just copy the link
-                      await navigator.clipboard.writeText(shareText);
+                      // Fallback: copy link text
+                      await navigator.clipboard.writeText(url);
                       setShareStatus("copied");
                       setTimeout(() => setShareStatus("idle"), 2000);
                       return;
@@ -445,7 +442,7 @@ function OpponentRow({ opp, isExpanded, onToggle, matchOwnerUid, playerName }: {
                   } catch {
                     // If image capture fails, fall back to link-only
                     try {
-                      await navigator.clipboard.writeText(shareText);
+                      await navigator.clipboard.writeText(url);
                     } catch { /* ignore */ }
                   }
                   setShareStatus("idle");

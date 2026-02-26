@@ -60,12 +60,30 @@ export function computeMetaStats(
       }
       if (hasMatchingData) playersWithData.add(entry.userId);
     } else if (!isFiltered) {
-      // Unfiltered: use existing heroBreakdown logic
+      // Unfiltered: use overall totals for overview stats
       totalMatches += entry.totalMatches;
       totalWins += entry.totalWins;
       playersWithData.add(entry.userId);
 
-      if (entry.heroBreakdown) {
+      // Prefer heroBreakdownDetailed for hero data (heroBreakdown is top-5 only)
+      if (entry.heroBreakdownDetailed && entry.heroBreakdownDetailed.length > 0) {
+        // Aggregate across all formats/eventTypes per hero
+        const heroTotals = new Map<string, { matches: number; wins: number }>();
+        for (const hb of entry.heroBreakdownDetailed) {
+          if (!validHeroNames.has(hb.hero)) continue;
+          const cur = heroTotals.get(hb.hero) || { matches: 0, wins: 0 };
+          cur.matches += hb.matches;
+          cur.wins += hb.wins;
+          heroTotals.set(hb.hero, cur);
+        }
+        for (const [hero, data] of heroTotals) {
+          const cur = heroAgg.get(hero) || { players: new Set<string>(), matches: 0, wins: 0 };
+          cur.players.add(entry.userId);
+          cur.matches += data.matches;
+          cur.wins += data.wins;
+          heroAgg.set(hero, cur);
+        }
+      } else if (entry.heroBreakdown) {
         for (const hb of entry.heroBreakdown) {
           if (!validHeroNames.has(hb.hero)) continue;
           const cur = heroAgg.get(hb.hero) || { players: new Set<string>(), matches: 0, wins: 0 };
