@@ -56,12 +56,19 @@ export function EventCard({ event, obfuscateOpponents = false, visibleOpponents,
   // Only show hero column when matches have different heroes (otherwise it's in the header)
   const showHeroColumn = heroes.size > 1;
 
+  // The hero that would be saved: user's pick or fallback to the shared hero
+  const effectiveHero = batchHero || sharedHero || "";
+  // Show save button when the effective hero differs from what some matches have
+  const needsApply = !!effectiveHero && event.matches.some(
+    (m) => m.heroPlayed !== effectiveHero
+  );
+
   async function handleBatchSave() {
-    if (!onBatchUpdateHero || !batchHero) return;
+    if (!onBatchUpdateHero || !effectiveHero) return;
     setSaving(true);
     try {
       const ids = event.matches.map((m) => m.id);
-      await onBatchUpdateHero(ids, batchHero);
+      await onBatchUpdateHero(ids, effectiveHero);
       setBatchHero("");
       if (missingGemId) setShowGemNudge(true);
     } finally {
@@ -133,7 +140,7 @@ export function EventCard({ event, obfuscateOpponents = false, visibleOpponents,
                     format={event.format}
                   />
                 </div>
-                {batchHero && batchHero !== sharedHero && (
+                {needsApply && (
                   <button
                     onClick={handleBatchSave}
                     disabled={saving}
