@@ -12,6 +12,8 @@ export interface MatchRecord {
   eventType?: string;
   rated?: boolean;
   commentCount?: number;
+  source?: "extension" | "csv" | "paste" | "manual";
+  extensionVersion?: string;
   createdAt: string;
 }
 
@@ -258,12 +260,19 @@ export interface Creator {
   imageUrl?: string;
 }
 
+export interface FeaturedEventPlayer {
+  name: string;
+  username?: string;
+  hero?: string;
+}
+
 export interface FeaturedEvent {
   name: string;
   date: string;
   format: string;
   description?: string;
-  playerUsernames: string[];
+  imageUrl?: string;
+  players: FeaturedEventPlayer[];
 }
 
 export interface FeedbackItem {

@@ -8,7 +8,8 @@ import { getAllFeedback, updateFeedbackStatus } from "@/lib/feedback";
 import { getCreators, saveCreators } from "@/lib/creators";
 import { getEvents, saveEvents } from "@/lib/featured-events";
 import { getAnalytics } from "@/lib/analytics";
-import type { FeedbackItem, Creator, FeaturedEvent } from "@/types";
+import { searchHeroes } from "@/lib/heroes";
+import type { FeedbackItem, Creator, FeaturedEvent, FeaturedEventPlayer } from "@/types";
 
 type SortKey = "matchCount" | "createdAt" | "username";
 type SortDir = "asc" | "desc";
@@ -589,16 +590,39 @@ export default function AdminPage() {
                     />
                     <input
                       type="text"
-                      placeholder="Player usernames (comma-separated)"
-                      value={ev.playerUsernames.join(", ")}
-                      onChange={(e) => setEventsList((prev) => prev.map((ev2, j) => j === i ? { ...ev2, playerUsernames: e.target.value.split(",").map((u) => u.trim()).filter(Boolean) } : ev2))}
+                      placeholder="Image URL (optional)"
+                      value={ev.imageUrl || ""}
+                      onChange={(e) => setEventsList((prev) => prev.map((ev2, j) => j === i ? { ...ev2, imageUrl: e.target.value || undefined } : ev2))}
                       className="bg-fab-surface border border-fab-border text-fab-text text-sm rounded px-2 py-1.5 focus:outline-none focus:border-fab-gold col-span-2"
                     />
+                  </div>
+
+                  {/* Players */}
+                  <div className="mt-3 border-t border-fab-border pt-3">
+                    <p className="text-xs text-fab-dim font-medium mb-2">Players (Top 8+)</p>
+                    <div className="space-y-2">
+                      {(ev.players || []).map((player, pi) => (
+                        <EventPlayerRow
+                          key={pi}
+                          player={player}
+                          index={pi}
+                          users={data?.users || []}
+                          onChange={(updated) => setEventsList((prev) => prev.map((ev2, j) => j === i ? { ...ev2, players: ev2.players.map((p, pj) => pj === pi ? updated : p) } : ev2))}
+                          onRemove={() => setEventsList((prev) => prev.map((ev2, j) => j === i ? { ...ev2, players: ev2.players.filter((_, pj) => pj !== pi) } : ev2))}
+                        />
+                      ))}
+                      <button
+                        onClick={() => setEventsList((prev) => prev.map((ev2, j) => j === i ? { ...ev2, players: [...(ev2.players || []), { name: "" }] } : ev2))}
+                        className="w-full py-1.5 rounded text-xs font-medium border border-dashed border-fab-border text-fab-muted hover:text-fab-text hover:border-fab-gold/30 transition-colors"
+                      >
+                        + Add Player
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}
               <button
-                onClick={() => setEventsList((prev) => [...prev, { name: "", date: "", format: "", playerUsernames: [] }])}
+                onClick={() => setEventsList((prev) => [...prev, { name: "", date: "", format: "", players: [] }])}
                 className="w-full py-2 rounded-lg text-sm font-medium border border-dashed border-fab-border text-fab-muted hover:text-fab-text hover:border-fab-gold/30 transition-colors"
               >
                 + Add Event
@@ -924,6 +948,159 @@ function ActivitySection({ analytics }: { analytics: { pageViews: Record<string,
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function EventPlayerRow({
+  player,
+  index,
+  users,
+  onChange,
+  onRemove,
+}: {
+  player: FeaturedEventPlayer;
+  index: number;
+  users: AdminUserStats[];
+  onChange: (p: FeaturedEventPlayer) => void;
+  onRemove: () => void;
+}) {
+  const [nameQuery, setNameQuery] = useState("");
+  const [heroQuery, setHeroQuery] = useState("");
+  const [showUserDropdown, setShowUserDropdown] = useState(false);
+  const [showHeroDropdown, setShowHeroDropdown] = useState(false);
+  const userRef = React.useRef<HTMLDivElement>(null);
+  const heroRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (userRef.current && !userRef.current.contains(e.target as Node)) setShowUserDropdown(false);
+      if (heroRef.current && !heroRef.current.contains(e.target as Node)) setShowHeroDropdown(false);
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  const userResults = nameQuery.trim()
+    ? users.filter((u) =>
+        u.displayName.toLowerCase().includes(nameQuery.toLowerCase()) ||
+        u.username.toLowerCase().includes(nameQuery.toLowerCase())
+      ).slice(0, 8)
+    : [];
+
+  const heroResults = heroQuery.trim()
+    ? searchHeroes(heroQuery).slice(0, 8)
+    : [];
+
+  return (
+    <div className="flex items-center gap-2">
+      <span className="text-xs text-fab-dim w-5 text-right shrink-0">{index + 1}.</span>
+
+      {/* Player name with autocomplete */}
+      <div ref={userRef} className="relative flex-1">
+        <input
+          type="text"
+          placeholder="Player name"
+          value={showUserDropdown ? nameQuery : player.name}
+          onChange={(e) => {
+            setNameQuery(e.target.value);
+            setShowUserDropdown(true);
+            onChange({ ...player, name: e.target.value, username: undefined });
+          }}
+          onFocus={() => {
+            setNameQuery(player.name);
+            if (player.name) setShowUserDropdown(true);
+          }}
+          onBlur={() => {
+            // Delay to allow dropdown click
+            setTimeout(() => {
+              if (!player.username && nameQuery.trim()) {
+                onChange({ ...player, name: nameQuery.trim() });
+              }
+            }, 200);
+          }}
+          className="w-full bg-fab-surface border border-fab-border text-fab-text text-xs rounded px-2 py-1.5 focus:outline-none focus:border-fab-gold"
+        />
+        {player.username && (
+          <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-fab-gold">@{player.username}</span>
+        )}
+        {showUserDropdown && userResults.length > 0 && (
+          <div className="absolute z-50 mt-1 w-full max-h-48 overflow-y-auto bg-fab-surface border border-fab-border rounded shadow-lg">
+            {userResults.map((u) => (
+              <button
+                key={u.uid}
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => {
+                  onChange({ ...player, name: u.displayName, username: u.username });
+                  setNameQuery(u.displayName);
+                  setShowUserDropdown(false);
+                }}
+                className="w-full text-left px-2 py-1.5 text-xs flex items-center gap-2 hover:bg-fab-surface-hover transition-colors"
+              >
+                {u.photoUrl ? (
+                  <img src={u.photoUrl} alt="" className="w-5 h-5 rounded-full" />
+                ) : (
+                  <div className="w-5 h-5 rounded-full bg-fab-gold/20 flex items-center justify-center text-fab-gold text-[10px] font-bold">
+                    {u.displayName.charAt(0).toUpperCase()}
+                  </div>
+                )}
+                <span className="font-medium text-fab-text">{u.displayName}</span>
+                <span className="text-fab-dim">@{u.username}</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Hero with autocomplete */}
+      <div ref={heroRef} className="relative w-36 shrink-0">
+        <input
+          type="text"
+          placeholder="Hero"
+          value={showHeroDropdown ? heroQuery : (player.hero || "")}
+          onChange={(e) => {
+            setHeroQuery(e.target.value);
+            setShowHeroDropdown(true);
+            onChange({ ...player, hero: e.target.value || undefined });
+          }}
+          onFocus={() => {
+            setHeroQuery(player.hero || "");
+            if (player.hero) setShowHeroDropdown(true);
+          }}
+          className="w-full bg-fab-surface border border-fab-border text-fab-text text-xs rounded px-2 py-1.5 focus:outline-none focus:border-fab-gold"
+        />
+        {showHeroDropdown && heroResults.length > 0 && (
+          <div className="absolute z-50 mt-1 w-56 max-h-48 overflow-y-auto bg-fab-surface border border-fab-border rounded shadow-lg">
+            {heroResults.map((h) => (
+              <button
+                key={h.name}
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => {
+                  onChange({ ...player, hero: h.name });
+                  setHeroQuery(h.name);
+                  setShowHeroDropdown(false);
+                }}
+                className="w-full text-left px-2 py-1.5 text-xs flex items-center gap-2 hover:bg-fab-surface-hover transition-colors"
+              >
+                <span className="font-medium text-fab-text">{h.name}</span>
+                <span className="text-fab-dim">{h.classes.join(" / ")}{h.young ? " (Young)" : ""}</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <button
+        onClick={onRemove}
+        className="text-fab-loss hover:text-fab-loss/80 transition-colors shrink-0"
+        title="Remove player"
+      >
+        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
     </div>
   );
 }
