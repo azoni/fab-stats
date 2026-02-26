@@ -316,6 +316,19 @@ interface MetaPageData {
   bestWinRate: MetaHeroAgg | null;
 }
 
+function isLikelyHeroName(name: string): boolean {
+  if (!name || name.length < 2) return false;
+  const lower = name.toLowerCase().trim();
+  const blocked = [
+    "not rated", "rated", "unrated", "competitive", "casual",
+    "classic constructed", "blitz", "draft", "sealed", "clash",
+    "ultimate pit fight", "other", "unknown",
+  ];
+  if (blocked.includes(lower)) return false;
+  if (/\b(19|20)\d{2}\b/.test(name)) return false;
+  return true;
+}
+
 async function fetchMetaData(): Promise<MetaPageData | null> {
   const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
   const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
@@ -365,7 +378,7 @@ async function fetchMetaData(): Promise<MetaPageData | null> {
           const fields = item?.mapValue?.fields;
           if (!fields) continue;
           const hero = fields.hero?.stringValue;
-          if (!hero) continue;
+          if (!hero || !isLikelyHeroName(hero)) continue;
           const matches = Number(fields.matches?.integerValue || 0);
           const wins = Number(fields.wins?.integerValue || 0);
           const cur = heroMap.get(hero) || { matches: 0, wins: 0, players: new Set<string>() };
@@ -374,7 +387,7 @@ async function fetchMetaData(): Promise<MetaPageData | null> {
           cur.players.add(docPath);
           heroMap.set(hero, cur);
         }
-      } else if (f.topHero?.stringValue && f.topHero.stringValue !== "Unknown") {
+      } else if (f.topHero?.stringValue && isLikelyHeroName(f.topHero.stringValue)) {
         const hero = f.topHero.stringValue;
         const matches = Number(f.topHeroMatches?.integerValue || 0);
         const wr = Number(f.winRate?.doubleValue ?? f.winRate?.integerValue ?? 0);

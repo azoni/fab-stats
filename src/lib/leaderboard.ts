@@ -11,6 +11,19 @@ import { computeOverallStats, computeEventStats, computeOpponentStats, computePl
 import type { LeaderboardEntry, MatchRecord, UserProfile } from "@/types";
 import { MatchResult } from "@/types";
 
+function isValidHeroName(name: string): boolean {
+  if (!name || name.length < 2) return false;
+  const lower = name.toLowerCase().trim();
+  const blocked = [
+    "not rated", "rated", "unrated", "competitive", "casual",
+    "classic constructed", "blitz", "draft", "sealed", "clash",
+    "ultimate pit fight", "other", "unknown",
+  ];
+  if (blocked.includes(lower)) return false;
+  if (/\b(19|20)\d{2}\b/.test(name)) return false;
+  return true;
+}
+
 function leaderboardCollection() {
   return collection(db, "leaderboard");
 }
@@ -63,7 +76,7 @@ export async function updateLeaderboardEntry(
   // Hero diversity + breakdown
   const heroData = new Map<string, { matches: number; wins: number }>();
   for (const m of matches) {
-    if (m.heroPlayed && m.heroPlayed !== "Unknown") {
+    if (m.heroPlayed && isValidHeroName(m.heroPlayed)) {
       const cur = heroData.get(m.heroPlayed) || { matches: 0, wins: 0 };
       cur.matches++;
       if (m.result === MatchResult.Win) cur.wins++;
@@ -83,7 +96,7 @@ export async function updateLeaderboardEntry(
   // Hero breakdown by format + event type (for meta page filtering)
   const heroDetailedData = new Map<string, { matches: number; wins: number }>();
   for (const m of matches) {
-    if (m.heroPlayed && m.heroPlayed !== "Unknown") {
+    if (m.heroPlayed && isValidHeroName(m.heroPlayed)) {
       const et = getEventType(m);
       const key = `${m.heroPlayed}|${m.format}|${et}`;
       const cur = heroDetailedData.get(key) || { matches: 0, wins: 0 };
