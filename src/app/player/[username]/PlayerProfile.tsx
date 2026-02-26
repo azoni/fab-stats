@@ -265,11 +265,10 @@ export default function PlayerProfile() {
 
   return (
     <div className="space-y-8">
-      {/* Profile Header + Trophy Case + Streak */}
+      {/* Profile Header + Streak */}
       <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
         <ProfileHeader profile={profile} achievements={achievements} bestRank={bestRank} isAdmin={isAdmin} isOwner={isOwner} isFavorited={!isOwner && !!currentUser && !isGuest && isFavorited(profile.uid)} onToggleFavorite={!isOwner && !!currentUser && !isGuest ? () => toggleFavorite(profile) : undefined} />
-        <div className="flex items-start gap-3 shrink-0">
-          {playoffFinishes.length > 0 && <TrophyCase finishes={playoffFinishes} />}
+        <div className="shrink-0">
           {/* Compact Streak */}
           <div className={`rounded-lg px-3 py-3 border ${
             streaks.currentStreak?.type === MatchResult.Win
@@ -329,6 +328,9 @@ export default function PlayerProfile() {
           </div>
         </div>
       </div>
+
+      {/* Trophy Case — full width */}
+      {playoffFinishes.length > 0 && <TrophyCase finishes={playoffFinishes} />}
 
       {/* Filters */}
       <div className="flex gap-3 flex-wrap items-center">

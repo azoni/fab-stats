@@ -149,14 +149,11 @@ export function TrophyCase({ finishes }: { finishes: PlayoffFinish[] }) {
     return TYPE_SORT[a.type] - TYPE_SORT[b.type];
   });
 
-  const shown = sorted.slice(0, 12);
-  const extra = sorted.length - shown.length;
-
   return (
-    <div className="bg-fab-surface/50 border border-fab-border rounded-lg px-3 py-3 max-w-[320px]">
+    <div className="bg-fab-surface/50 border border-fab-border rounded-lg px-4 py-3">
       <p className="text-[10px] text-fab-muted uppercase tracking-wider mb-2 font-medium">Trophy Case</p>
-      <div className="flex flex-wrap gap-1.5 items-end justify-center">
-        {shown.map((f, i) => {
+      <div className="flex flex-wrap gap-2 items-end">
+        {sorted.map((f, i) => {
           const tier = TIER_MAP[f.eventType] || "badge";
           const abbr = EVENT_ABBR[f.eventType] || f.eventType.slice(0, 2).toUpperCase();
           const id = `tc${i}`;
@@ -170,7 +167,6 @@ export function TrophyCase({ finishes }: { finishes: PlayoffFinish[] }) {
           );
         })}
       </div>
-      {extra > 0 && <p className="text-[9px] text-fab-dim text-center mt-1.5">+{extra} more</p>}
     </div>
   );
 }
