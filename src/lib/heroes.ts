@@ -47,9 +47,13 @@ export function searchHeroes(query: string, format?: string): HeroInfo[] {
   );
 }
 
-/** Filter heroes by game format. Returns all heroes if format has no mapping. */
+/** Filter heroes by game format. Returns all heroes if format has no mapping.
+ *  Living Legend heroes are always included for constructed formats since users
+ *  may need to record historical matches played before the hero was LL'd. */
 export function getHeroesForFormat(format: string): HeroInfo[] {
   // "Other" or unknown formats → show all heroes
   if (!format || format === "Other") return allHeroes;
-  return allHeroes.filter((h) => h.legalFormats.includes(format));
+  return allHeroes.filter(
+    (h) => h.legalFormats.includes(format) || h.legalFormats.includes("Living Legend")
+  );
 }

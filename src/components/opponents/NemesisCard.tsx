@@ -104,11 +104,12 @@ interface NemesisData {
   winRate: number;
   matches: number;
   recentResults: MatchResult[];
+  filterLabel?: string;
 }
 
 export function NemesisCard({ data, theme }: { data: NemesisData; theme?: NemesisTheme }) {
   const t = theme || NEMESIS_THEMES[0];
-  const { playerName, nemesisName, wins, losses, draws, winRate, matches, recentResults } = data;
+  const { playerName, nemesisName, wins, losses, draws, winRate, matches, recentResults, filterLabel } = data;
 
   return (
     <div style={{ backgroundColor: t.surface, borderColor: t.border, width: 380 }} className="border rounded-xl overflow-hidden">
@@ -123,6 +124,9 @@ export function NemesisCard({ data, theme }: { data: NemesisData; theme?: Nemesi
             <path d="M12 2C6.48 2 2 6.48 2 12c0 3.07 1.4 5.82 3.59 7.65L7 18v-2H5.5C4.12 12.02 5.28 8.42 8 6.22V10l2-2 2 2V6.22c2.72 2.2 3.88 5.8 2.5 9.78H13v2l1.41 1.65C16.6 17.82 18 15.07 18 12h-1V9h1c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-1c-.55 0-1 .45-1 1v1h-2V4c0-.55-.45-1-1-1h-2c-.55 0-1 .45-1 1v1H8V4c0-.55-.45-1-1-1H6c-1.1 0-2 .9-2 2v2c0 1.1.9 2 2 2h1v3H6C3.79 12 2 13.79 2 16v1" />
           </svg>
         </div>
+        {filterLabel && (
+          <p style={{ color: t.dim }} className="text-[9px] text-center mt-1 uppercase tracking-wider">{filterLabel}</p>
+        )}
       </div>
 
       <div className="px-5 pt-5 pb-4">
@@ -216,6 +220,7 @@ export function buildNemesisUrl(
   losses: number,
   draws: number,
   recentResults: MatchResult[],
+  filterLabel?: string,
 ): string {
   const params = new URLSearchParams({
     p: playerName,
@@ -227,5 +232,6 @@ export function buildNemesisUrl(
   if (recentResults.length > 0) {
     params.set("r", recentResults.map((r) => r === MatchResult.Win ? "W" : r === MatchResult.Loss ? "L" : "D").join(""));
   }
+  if (filterLabel) params.set("fl", filterLabel);
   return `${baseUrl}/opponents/nemesis?${params.toString()}`;
 }

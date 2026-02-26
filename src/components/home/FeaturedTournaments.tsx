@@ -10,6 +10,9 @@ interface FeaturedTournamentsProps {
   leaderboardEntries: LeaderboardEntry[];
 }
 
+// Tournament bracket placements: 1st, 2nd, 3-4th, 5-8th
+const BRACKET_PLACEMENT = [1, 2, 3, 3, 5, 5, 5, 5];
+
 export function FeaturedTournaments({ events, leaderboardEntries }: FeaturedTournamentsProps) {
   if (events.length === 0) return null;
 
@@ -77,7 +80,7 @@ export function FeaturedTournaments({ events, leaderboardEntries }: FeaturedTour
                       return (
                         <div key={pi} className="flex items-center gap-2 py-1">
                           <span className="text-xs text-fab-dim w-5 text-right shrink-0 font-bold">
-                            {pi + 1}.
+                            {(BRACKET_PLACEMENT[pi] ?? pi + 1)}.
                           </span>
 
                           {lbEntry ? (

@@ -200,6 +200,17 @@ export default function PlayerProfile() {
   const bestRank = useMemo(() => getBestRank(userRanks), [userRanks]);
   const last30 = useMemo(() => sortedByDateDesc.slice(0, 30).reverse(), [sortedByDateDesc]);
 
+  // Build a human-readable label for active filters (shown on share cards)
+  const filterLabel = useMemo(() => {
+    const parts: string[] = [];
+    if (filterFormat !== "all") parts.push(filterFormat);
+    if (filterRated === "rated") parts.push("Rated");
+    else if (filterRated === "unrated") parts.push("Unrated");
+    else if (filterRated !== "all") parts.push(filterRated);
+    if (filterHero !== "all") parts.push(filterHero);
+    return parts.length > 0 ? parts.join(" / ") : undefined;
+  }, [filterFormat, filterRated, filterHero]);
+
   if (state.status === "loading") {
     return (
       <div className="space-y-8">
@@ -514,6 +525,7 @@ export default function PlayerProfile() {
               <p className="text-xs text-fab-dim mt-1">
                 {nemesis.wins}W-{nemesis.losses}L{nemesis.draws > 0 ? `-${nemesis.draws}D` : ""} ({nemesis.winRate.toFixed(0)}%)
               </p>
+              {filterLabel && <p className="text-[10px] text-fab-dim mt-1">{filterLabel}</p>}
             </div>
           )}
           {bestFriend && (
@@ -530,6 +542,7 @@ export default function PlayerProfile() {
               <p className="text-xs text-fab-dim mt-1">
                 {bestFriend.totalMatches} matches ({bestFriend.wins}W-{bestFriend.losses}L{bestFriend.draws > 0 ? `-${bestFriend.draws}D` : ""})
               </p>
+              {filterLabel && <p className="text-[10px] text-fab-dim mt-1">{filterLabel}</p>}
             </div>
           )}
         </div>
@@ -544,6 +557,7 @@ export default function PlayerProfile() {
             .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
             .slice(0, 20)
             .map((m) => m.result)}
+          filterLabel={filterLabel}
           onClose={() => setNemesisShareOpen(false)}
         />
       )}
@@ -936,11 +950,13 @@ function NemesisShareModal({
   playerName,
   nemesis,
   recentResults,
+  filterLabel,
   onClose,
 }: {
   playerName: string;
   nemesis: { opponentName: string; wins: number; losses: number; draws: number; winRate: number; totalMatches: number };
   recentResults: MatchResult[];
+  filterLabel?: string;
   onClose: () => void;
 }) {
   const cardRef = useRef<HTMLDivElement>(null);
@@ -956,6 +972,7 @@ function NemesisShareModal({
     winRate: nemesis.winRate,
     matches: nemesis.totalMatches,
     recentResults,
+    filterLabel,
   };
 
   async function handleCopy() {
@@ -967,6 +984,7 @@ function NemesisShareModal({
       nemesis.losses,
       nemesis.draws,
       recentResults,
+      filterLabel,
     );
     const shareText = `${playerName}'s nemesis: ${nemesis.opponentName} (${nemesis.wins}W-${nemesis.losses}L${nemesis.draws > 0 ? `-${nemesis.draws}D` : ""}, ${nemesis.winRate.toFixed(0)}%)\n${url}`;
 
@@ -995,7 +1013,7 @@ function NemesisShareModal({
       }
     } catch {
       try {
-        const url2 = buildNemesisUrl(window.location.origin, playerName, nemesis.opponentName, nemesis.wins, nemesis.losses, nemesis.draws, recentResults);
+        const url2 = buildNemesisUrl(window.location.origin, playerName, nemesis.opponentName, nemesis.wins, nemesis.losses, nemesis.draws, recentResults, filterLabel);
         await navigator.clipboard.writeText(url2);
       } catch { /* ignore */ }
     }

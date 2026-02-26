@@ -15,6 +15,7 @@ function NemesisContent() {
   const matches = wins + losses + draws;
   const winRate = matches > 0 ? (wins / matches) * 100 : 0;
 
+  const filterLabel = params.get("fl") || undefined;
   const recentStr = params.get("r") || "";
   const recentResults: MatchResult[] = recentStr.split("").map((c) => {
     if (c === "W") return MatchResult.Win;
@@ -45,6 +46,7 @@ function NemesisContent() {
           winRate,
           matches,
           recentResults: recentResults.slice(0, 20),
+          filterLabel,
         }}
       />
       <div className="text-center mt-6">

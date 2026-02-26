@@ -72,48 +72,65 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-8">
-      {/* Welcome hero for visitors */}
+      {/* Welcome card — matches the logged-in profile card style */}
       {!hasMatches && (
-        <div className="flex flex-col items-center justify-center py-16 text-center">
-          <ShieldIcon className="w-16 h-16 text-fab-gold mb-4" />
-          <h1 className="text-2xl font-bold text-fab-gold mb-2">
-            Welcome to FaB Stats
-          </h1>
-          <p className="text-fab-muted mb-6 max-w-md">
-            Import your tournament history to see your win rate, streaks,
-            opponent stats, and more — all in one place.
+        <div className="bg-fab-surface border border-fab-border rounded-lg p-5">
+          <div className="flex items-center gap-4 mb-4">
+            <div className="w-14 h-14 rounded-full bg-fab-gold/20 flex items-center justify-center shrink-0">
+              <ShieldIcon className="w-7 h-7 text-fab-gold" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h1 className="text-xl font-bold text-fab-gold">FaB Stats</h1>
+              <p className="text-xs text-fab-dim">Track your Flesh and Blood tournament history</p>
+            </div>
+          </div>
+
+          <p className="text-sm text-fab-muted mb-4">
+            Import your matches to see your win rate, streaks, opponent stats, and more — all in one place.
           </p>
-          <div className="flex gap-3 flex-wrap justify-center">
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+            <div>
+              <p className="text-[10px] text-fab-dim uppercase tracking-wider">Win Rate</p>
+              <p className="text-lg font-bold text-fab-dim">&mdash;</p>
+            </div>
+            <div>
+              <p className="text-[10px] text-fab-dim uppercase tracking-wider">Record</p>
+              <p className="text-lg font-bold text-fab-dim">&mdash;</p>
+            </div>
+            <div>
+              <p className="text-[10px] text-fab-dim uppercase tracking-wider">Top Hero</p>
+              <p className="text-lg font-bold text-fab-dim">&mdash;</p>
+            </div>
+            <div>
+              <p className="text-[10px] text-fab-dim uppercase tracking-wider">Matches</p>
+              <p className="text-lg font-bold text-fab-dim">0</p>
+            </div>
+          </div>
+
+          <div className="flex gap-3 flex-wrap">
             {user ? (
               <Link
                 href="/import"
-                className="px-6 py-3 rounded-md font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors"
+                className="px-5 py-2 rounded-md text-sm font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors"
               >
                 Import Your Matches
               </Link>
             ) : (
-              <>
-                <Link
-                  href="/login"
-                  className="px-6 py-3 rounded-md font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors"
-                >
-                  Sign Up to Get Started
-                </Link>
-                <Link
-                  href="/leaderboard"
-                  className="px-6 py-3 rounded-md font-semibold bg-fab-surface border border-fab-border text-fab-text hover:bg-fab-surface-hover transition-colors"
-                >
-                  Browse Leaderboard
-                </Link>
-              </>
+              <Link
+                href="/login"
+                className="px-5 py-2 rounded-md text-sm font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors"
+              >
+                Sign Up to Get Started
+              </Link>
             )}
+            <Link
+              href="/leaderboard"
+              className="px-5 py-2 rounded-md text-sm font-semibold bg-fab-bg border border-fab-border text-fab-text hover:bg-fab-surface-hover transition-colors"
+            >
+              Browse Leaderboard
+            </Link>
           </div>
-          <Link
-            href="/docs"
-            className="text-sm text-fab-dim hover:text-fab-gold transition-colors mt-2"
-          >
-            Learn how it works &rarr;
-          </Link>
         </div>
       )}
 
@@ -293,7 +310,6 @@ export default function Dashboard() {
         leaderboardEntries={lbEntries}
         topHeroes={communityTopHeroes}
         feedEvents={feedEvents}
-        profileUsername={hasMatches ? undefined : profile?.username}
       />
 
       {/* Best Finish share modal */}
