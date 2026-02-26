@@ -23,8 +23,21 @@ const resultLabels = {
   [MatchResult.Draw]: "D",
 };
 
+const playoffRank: Record<string, number> = { "Finals": 3, "Top 4": 2, "Top 8": 1, "Playoff": 1 };
+
 export function EventCard({ event, obfuscateOpponents = false, visibleOpponents }: EventCardProps) {
   const [expanded, setExpanded] = useState(false);
+
+  // Determine best playoff placement from match rounds
+  let bestPlayoff: string | null = null;
+  let bestRank = 0;
+  for (const match of event.matches) {
+    const roundInfo = match.notes?.split(" | ")[1];
+    if (roundInfo && playoffRank[roundInfo] && playoffRank[roundInfo] > bestRank) {
+      bestRank = playoffRank[roundInfo];
+      bestPlayoff = roundInfo === "Playoff" ? "Top 8" : roundInfo;
+    }
+  }
 
   return (
     <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden">
@@ -38,6 +51,13 @@ export function EventCard({ event, obfuscateOpponents = false, visibleOpponents 
               <span className="font-semibold text-fab-text">{event.eventName}</span>
               {event.rated && (
                 <span className="px-1.5 py-0.5 rounded bg-fab-gold/15 text-fab-gold text-xs">Rated</span>
+              )}
+              {bestPlayoff && (
+                <span className={`px-1.5 py-0.5 rounded text-xs font-bold ${
+                  bestPlayoff === "Finals" ? "bg-yellow-500/20 text-yellow-400" :
+                  bestPlayoff === "Top 4" ? "bg-amber-500/15 text-amber-400" :
+                  "bg-orange-500/15 text-orange-400"
+                }`}>{bestPlayoff}</span>
               )}
             </div>
             <div className="flex items-center gap-2 mt-1 text-xs text-fab-dim">

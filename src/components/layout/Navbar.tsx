@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { DashboardIcon, SwordsIcon, OpponentsIcon, TrendsIcon, ImportIcon, CalendarIcon, TrophyIcon } from "@/components/icons/NavIcons";
+import { SwordsIcon, OpponentsIcon, TrendsIcon, ImportIcon, CalendarIcon, TrophyIcon } from "@/components/icons/NavIcons";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCreators } from "@/hooks/useCreators";
@@ -12,7 +12,6 @@ import type { ReactNode } from "react";
 import type { Creator } from "@/types";
 
 const coreLinks: { href: string; label: string; icon: ReactNode }[] = [
-  { href: "/", label: "Profile", icon: <DashboardIcon className="w-4 h-4" /> },
   { href: "/leaderboard", label: "Leaderboard", icon: <TrophyIcon className="w-4 h-4" /> },
   { href: "/matches", label: "Matches", icon: <SwordsIcon className="w-4 h-4" /> },
   { href: "/events", label: "Events", icon: <CalendarIcon className="w-4 h-4" /> },

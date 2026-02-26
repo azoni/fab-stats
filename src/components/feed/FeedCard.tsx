@@ -51,9 +51,13 @@ export function FeedCard({ event }: FeedCardProps) {
         {/* Content */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-semibold text-fab-text">
-              {event.displayName}
-            </span>
+            {event.isPublic ? (
+              <Link href={`/player/${event.username}`} className="font-semibold text-fab-text hover:text-fab-gold transition-colors">
+                {event.displayName}
+              </Link>
+            ) : (
+              <span className="font-semibold text-fab-text">{event.displayName}</span>
+            )}
             <span className="text-xs text-fab-dim">@{event.username}</span>
             <span className="text-xs text-fab-dim">{formatTimeAgo(event.createdAt)}</span>
           </div>
@@ -79,20 +83,6 @@ export function FeedCard({ event }: FeedCardProps) {
               ))}
             </div>
           )}
-
-          {/* View profile link */}
-          <div className="mt-2">
-            {event.isPublic ? (
-              <Link
-                href={`/player/${event.username}`}
-                className="text-xs text-fab-gold hover:text-fab-gold-light transition-colors font-medium"
-              >
-                View Profile &rarr;
-              </Link>
-            ) : (
-              <span className="text-xs text-fab-dim">Private Profile</span>
-            )}
-          </div>
         </div>
       </div>
     </div>
