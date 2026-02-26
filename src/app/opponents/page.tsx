@@ -1,5 +1,5 @@
 "use client";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useMatches } from "@/hooks/useMatches";
@@ -10,7 +10,8 @@ import { ChevronUpIcon, ChevronDownIcon } from "@/components/icons/NavIcons";
 import { MatchResult, type OpponentStats } from "@/types";
 import { allHeroes as knownHeroes } from "@/lib/heroes";
 import { getEventType } from "@/lib/stats";
-import { buildRivalryUrl } from "@/components/opponents/RivalryCard";
+import { RivalryCard, buildRivalryUrl } from "@/components/opponents/RivalryCard";
+import { toBlob } from "html-to-image";
 
 const VALID_HERO_NAMES = new Set(knownHeroes.map((h) => h.name));
 const PAGE_SIZE = 25;
@@ -259,7 +260,8 @@ export default function OpponentsPage() {
 }
 
 function OpponentRow({ opp, isExpanded, onToggle, matchOwnerUid, playerName }: { opp: OpponentStats; isExpanded: boolean; onToggle: () => void; matchOwnerUid?: string; playerName?: string }) {
-  const [shareStatus, setShareStatus] = useState<"idle" | "copied">("idle");
+  const [shareStatus, setShareStatus] = useState<"idle" | "copied" | "sharing">("idle");
+  const cardRef = useRef<HTMLDivElement>(null);
   // Compute streak vs this opponent (most recent results)
   const sortedMatches = [...opp.matches].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   let currentStreak = 0;
@@ -286,7 +288,7 @@ function OpponentRow({ opp, isExpanded, onToggle, matchOwnerUid, playerName }: {
   const lastDate = new Date(Math.max(...dates)).toLocaleDateString();
 
   return (
-    <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden">
+    <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden relative">
       <button onClick={onToggle} className="w-full p-4 text-left hover:bg-fab-surface-hover transition-colors">
         <div className="flex items-center justify-between gap-4">
           <div className="min-w-0">
@@ -370,10 +372,31 @@ function OpponentRow({ opp, isExpanded, onToggle, matchOwnerUid, playerName }: {
             </div>
           </div>
 
+          {/* Hidden card for image capture */}
+          {playerName && (
+            <div style={{ position: "absolute", left: "-9999px", top: 0 }} aria-hidden>
+              <div ref={cardRef}>
+                <RivalryCard data={{
+                  playerName,
+                  opponentName: opp.opponentName,
+                  wins: opp.wins,
+                  losses: opp.losses,
+                  draws: opp.draws,
+                  winRate: opp.winRate,
+                  matches: opp.totalMatches,
+                  recentResults: sortedMatches.slice(0, 20).reverse().map((m) => m.result),
+                  playerHeroes: opp.heroesPlayed.filter((h) => h !== "Unknown"),
+                  opponentHeroes: opp.opponentHeroes.filter((h) => h !== "Unknown"),
+                }} />
+              </div>
+            </div>
+          )}
+
           {/* Share button */}
           {playerName && (
             <div className="px-4 pb-2">
               <button
+                disabled={shareStatus === "sharing"}
                 onClick={async () => {
                   const recentResults = sortedMatches.slice(0, 20).reverse().map((m) => m.result);
                   const url = buildRivalryUrl(
@@ -387,23 +410,51 @@ function OpponentRow({ opp, isExpanded, onToggle, matchOwnerUid, playerName }: {
                     opp.heroesPlayed.filter((h) => h !== "Unknown"),
                     opp.opponentHeroes.filter((h) => h !== "Unknown")
                   );
-                  const shareText = `${playerName} vs ${opp.opponentName}: ${opp.wins}W-${opp.losses}L${opp.draws > 0 ? `-${opp.draws}D` : ""} (${opp.winRate.toFixed(0)}%)`;
-                  if (navigator.share) {
+                  const shareText = `${playerName} vs ${opp.opponentName}: ${opp.wins}W-${opp.losses}L${opp.draws > 0 ? `-${opp.draws}D` : ""} (${opp.winRate.toFixed(0)}%)\n${url}`;
+
+                  setShareStatus("sharing");
+                  try {
+                    // Capture the rivalry card as an image
+                    const blob = cardRef.current
+                      ? await toBlob(cardRef.current, { pixelRatio: 2, backgroundColor: "#0c0a0e" })
+                      : null;
+
+                    if (blob && navigator.share && navigator.canShare?.({ files: [new File([blob], "rivalry.png", { type: "image/png" })] })) {
+                      // Mobile: share image + link via native share sheet
+                      const file = new File([blob], "rivalry.png", { type: "image/png" });
+                      await navigator.share({ title: "FaB Stats Rivalry", text: shareText, files: [file] });
+                    } else if (blob && navigator.clipboard?.write) {
+                      // Desktop: copy image + link to clipboard
+                      await navigator.clipboard.write([
+                        new ClipboardItem({
+                          "image/png": blob,
+                          "text/plain": new Blob([shareText], { type: "text/plain" }),
+                        }),
+                      ]);
+                      setShareStatus("copied");
+                      setTimeout(() => setShareStatus("idle"), 2000);
+                      return;
+                    } else {
+                      // Fallback: just copy the link
+                      await navigator.clipboard.writeText(shareText);
+                      setShareStatus("copied");
+                      setTimeout(() => setShareStatus("idle"), 2000);
+                      return;
+                    }
+                  } catch {
+                    // If image capture fails, fall back to link-only
                     try {
-                      await navigator.share({ title: "FaB Stats Rivalry", text: shareText, url });
-                    } catch { /* user cancelled */ }
-                  } else {
-                    await navigator.clipboard.writeText(url);
-                    setShareStatus("copied");
-                    setTimeout(() => setShareStatus("idle"), 2000);
+                      await navigator.clipboard.writeText(shareText);
+                    } catch { /* ignore */ }
                   }
+                  setShareStatus("idle");
                 }}
                 className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium bg-fab-bg border border-fab-border text-fab-muted hover:text-fab-text hover:border-fab-gold/30 transition-colors"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
                 </svg>
-                {shareStatus === "copied" ? "Link Copied!" : "Share Rivalry"}
+                {shareStatus === "sharing" ? "Capturing..." : shareStatus === "copied" ? "Image Copied!" : "Share Rivalry"}
               </button>
             </div>
           )}
