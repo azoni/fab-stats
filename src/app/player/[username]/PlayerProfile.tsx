@@ -420,7 +420,7 @@ export default function PlayerProfile() {
           value={`${overall.overallWinRate.toFixed(1)}%`}
           color={overall.overallWinRate >= 50 ? "text-fab-win" : "text-fab-loss"}
         />
-        <StatCard label="Record" value={`${overall.totalWins}W - ${overall.totalLosses}L - ${overall.totalDraws}D`} />
+        <StatCard label="Record" value={`${overall.totalWins}W - ${overall.totalLosses}L - ${overall.totalDraws}D${overall.totalByes > 0 ? ` - ${overall.totalByes}B` : ""}`} />
         {bestFinish ? (
           <StatCard
             label="Best Finish"

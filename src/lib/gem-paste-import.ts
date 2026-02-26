@@ -72,7 +72,8 @@ export function expandEventName(name: string): string {
 
 export function guessEventType(lines: string[]): string {
   const all = lines.join(" ").toLowerCase();
-  if (all.includes("world")) return "Worlds";
+  if (all.includes("world premiere")) return "Pre-Release";
+  if (all.includes("worlds") || all.includes("world championship")) return "Worlds";
   if (all.includes("pro tour")) return "Pro Tour";
   // Check specific tournament types before convention names like "calling"
   if (all.includes("battle hardened") || /\bbh\b/.test(all)) return "Battle Hardened";
@@ -106,7 +107,9 @@ function isNotVenue(line: string): boolean {
   // Prize / reward descriptions (e.g. "4x Cold Foil ...", "2x Channel Thunder Steppe ...")
   if (/^\d+x\s/i.test(line)) return true;
   // Lines mentioning prize/award language
-  if (/awarded to|promo cards?/i.test(line)) return true;
+  if (/awarded to|promo cards?|cold foil|rainbow foil|extended art/i.test(line)) return true;
+  // Player count lines
+  if (/^\d+\s*(players?|participants?)$/i.test(lower)) return true;
   return false;
 }
 
@@ -136,6 +139,7 @@ export function parseResult(text: string): MatchResult | null {
   if (lower === "win") return MatchResult.Win;
   if (lower === "loss") return MatchResult.Loss;
   if (lower === "draw") return MatchResult.Draw;
+  if (lower === "bye") return MatchResult.Bye;
   return null;
 }
 
@@ -254,8 +258,27 @@ export function parseGemPaste(text: string): PasteImportResult {
       continue;
     }
 
-    // Bye rows
-    if (/^\d+\s+Bye/i.test(line)) continue;
+    // Bye rows — import as BYE match
+    const byeRowMatch = line.match(/^(\d+)\s+Bye/i);
+    if (byeRowMatch) {
+      if (!currentEvent) {
+        currentEvent = buildEventFromContext(contextLines);
+        contextLines = [];
+      }
+      currentMatches.push({
+        date: currentEvent.date,
+        heroPlayed: "Unknown",
+        opponentHero: "Unknown",
+        opponentName: "BYE",
+        result: MatchResult.Bye,
+        format: currentEvent.format,
+        notes: `${currentEvent.name} | Round ${byeRowMatch[1]}`,
+        venue: currentEvent.venue || undefined,
+        eventType: currentEvent.eventType || undefined,
+        rated: currentEvent.rated,
+      });
+      continue;
+    }
 
     // Date line = new event boundary
     const dateMatch = line.match(datePattern) || line.match(shortDatePattern);

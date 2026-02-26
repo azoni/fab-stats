@@ -21,16 +21,18 @@ interface QuickEventImportModalProps {
 type Phase = "input" | "review" | "importing" | "complete";
 type InputMethod = "paste" | "screenshot";
 
-const resultColors = {
+const resultColors: Record<string, string> = {
   [MatchResult.Win]: "text-fab-win",
   [MatchResult.Loss]: "text-fab-loss",
   [MatchResult.Draw]: "text-fab-draw",
+  [MatchResult.Bye]: "text-fab-dim",
 };
 
-const resultLabels = {
+const resultLabels: Record<string, string> = {
   [MatchResult.Win]: "W",
   [MatchResult.Loss]: "L",
   [MatchResult.Draw]: "D",
+  [MatchResult.Bye]: "B",
 };
 
 export function QuickEventImportModal({ open, onClose, onImportComplete }: QuickEventImportModalProps) {

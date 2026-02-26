@@ -15,11 +15,13 @@ import { MatchResult } from "@/types";
 export function computeOverallStats(matches: MatchRecord[]): OverallStats {
   const sorted = [...matches].sort(
     (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+      || new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
   );
   const totalMatches = sorted.length;
   const totalWins = sorted.filter((m) => m.result === MatchResult.Win).length;
   const totalLosses = sorted.filter((m) => m.result === MatchResult.Loss).length;
   const totalDraws = sorted.filter((m) => m.result === MatchResult.Draw).length;
+  const totalByes = sorted.filter((m) => m.result === MatchResult.Bye).length;
   const overallWinRate = totalMatches > 0 ? (totalWins / totalMatches) * 100 : 0;
 
   return {
@@ -27,6 +29,7 @@ export function computeOverallStats(matches: MatchRecord[]): OverallStats {
     totalWins,
     totalLosses,
     totalDraws,
+    totalByes,
     overallWinRate,
     streaks: computeStreaks(sorted),
   };
@@ -214,6 +217,7 @@ export function computeTrends(
 ): TrendDataPoint[] {
   const sorted = [...matches].sort(
     (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+      || new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
   );
 
   if (sorted.length === 0) return [];
@@ -252,6 +256,7 @@ export function computeRollingWinRate(
 ): { index: number; winRate: number; date: string }[] {
   const sorted = [...matches].sort(
     (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+      || new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
   );
 
   const results: { index: number; winRate: number; date: string }[] = [];
@@ -271,7 +276,8 @@ export function computeRollingWinRate(
 
 function guessEventTypeFromNotes(notes: string): string {
   const lower = notes.toLowerCase();
-  if (lower.includes("world")) return "Worlds";
+  if (lower.includes("world premiere")) return "Pre-Release";
+  if (lower.includes("worlds") || lower.includes("world championship")) return "Worlds";
   if (lower.includes("pro tour")) return "Pro Tour";
   // Check specific tournament types before convention names like "calling"
   // e.g. "Calling Seattle - Battle Hardened..." should be "Battle Hardened"
@@ -294,12 +300,13 @@ export function refineEventType(eventType: string, eventName: string): string {
   const lower = eventName.toLowerCase();
   // Check local event types first (GEM often misclassifies armory/pre-release with season names)
   if (lower.includes("armory")) return "Armory";
+  if (lower.includes("world premiere")) return "Pre-Release";
   if (lower.includes("pre-release") || lower.includes("prerelease")) return "Pre-Release";
   // Check specific tournament types in event name — order matters
   if (lower.includes("battle hardened") || /\bbh\b/.test(lower)) return "Battle Hardened";
   if (lower.includes("proquest") || lower.includes("pro quest") || /\bpq\b/.test(lower)) return "ProQuest";
   if (lower.includes("pro tour")) return "Pro Tour";
-  if (lower.includes("world")) return "Worlds";
+  if (lower.includes("worlds") || lower.includes("world championship")) return "Worlds";
   if (lower.includes("skirmish")) return "Skirmish";
   if (lower.includes("road to national") || /\brtn\b/.test(lower)) return "Road to Nationals";
   if (lower.includes("national")) return "Nationals";
@@ -316,8 +323,30 @@ export function getEventType(match: MatchRecord): string {
   return "Other";
 }
 
+function sanitizeVenue(raw: string): string | null {
+  const trimmed = raw.trim();
+  if (!trimmed || trimmed.length <= 2) return null;
+  const lower = trimmed.toLowerCase();
+  // Days of the week
+  if (/^(monday|tuesday|wednesday|thursday|friday|saturday|sunday)$/i.test(lower)) return null;
+  // Prize / reward descriptions (e.g. "4x Cold Foil ...")
+  if (/^\d+x\s/i.test(trimmed)) return null;
+  // Prize / award language
+  if (/awarded to|promo cards?|cold foil|rainbow foil|extended art/i.test(lower)) return null;
+  // Pure numbers, rating changes, XP
+  if (/^\d+$/.test(trimmed) || /^[+-]\d+$/.test(trimmed)) return null;
+  // Score lines
+  if (/^\d+\s*-\s*\d+(\s*-\s*\d+)?$/.test(trimmed)) return null;
+  // Metadata lines mistakenly stored as venue
+  if (/^(Classic Constructed|Blitz|Sealed|Draft|Clash|Rated|Not Rated|Unrated|Competitive|Casual)$/i.test(lower)) return null;
+  // Player count lines
+  if (/^\d+\s*(players?|participants?)$/i.test(lower)) return null;
+  return trimmed;
+}
+
 function getVenue(match: MatchRecord): string {
-  return match.venue || "Unknown";
+  if (!match.venue) return "Unknown";
+  return sanitizeVenue(match.venue) || "Unknown";
 }
 
 export function computeEventTypeStats(matches: MatchRecord[]): EventTypeStats[] {
@@ -413,31 +442,10 @@ function isPlayoffRound(roundInfo: string): boolean {
     /Quarter/i.test(roundInfo);
 }
 
-/** Get a sortable order for a playoff round label */
-function getPlayoffRoundOrder(roundInfo: string): number {
-  // Descriptive labels have known stages
-  if (/Quarter/i.test(roundInfo) || /Top\s*8/i.test(roundInfo)) return 1;
-  if (/Semi/i.test(roundInfo) || /Top\s*4/i.test(roundInfo)) return 2;
-  if (/Finals?$/i.test(roundInfo)) return 3;
-  // P-numbered: "Round P1" → 1, "Round P2" → 2, etc.
-  const pMatch = roundInfo.match(/P(\d+)/i);
-  if (pMatch) return parseInt(pMatch[1], 10);
-  return 0;
-}
-
-/** Determine the bracket stage from a round label */
-function getStageFromLabel(roundInfo: string): "quarterfinal" | "semifinal" | "final" | null {
-  if (/Finals?$/i.test(roundInfo)) return "final";
-  if (/Semi/i.test(roundInfo) || /Top\s*4/i.test(roundInfo)) return "semifinal";
-  if (/Quarter/i.test(roundInfo) || /Top\s*8/i.test(roundInfo)) return "quarterfinal";
-  return null;
-}
-
 export function computePlayoffFinishes(eventStats: EventStats[]): PlayoffFinish[] {
   const finishes: PlayoffFinish[] = [];
 
   for (const event of eventStats) {
-    // Collect playoff matches
     const playoffMatches: MatchRecord[] = [];
 
     for (const match of event.matches) {
@@ -449,61 +457,22 @@ export function computePlayoffFinishes(eventStats: EventStats[]): PlayoffFinish[
 
     if (playoffMatches.length === 0) continue;
 
-    // Sort playoff matches by round order
-    playoffMatches.sort((a, b) => {
-      const aInfo = a.notes?.split(" | ")[1]?.trim() || "";
-      const bInfo = b.notes?.split(" | ")[1]?.trim() || "";
-      return getPlayoffRoundOrder(aInfo) - getPlayoffRoundOrder(bInfo);
-    });
-
-    const lastMatch = playoffMatches[playoffMatches.length - 1];
-    const wonLast = lastMatch.result === MatchResult.Win;
-    const lastRoundInfo = lastMatch.notes?.split(" | ")[1]?.trim() || "";
-    const lastStage = getStageFromLabel(lastRoundInfo);
-    const lastRoundNum = getPlayoffRoundOrder(lastRoundInfo);
-    const maxRoundNum = Math.max(...playoffMatches.map((m) => getPlayoffRoundOrder(m.notes?.split(" | ")[1]?.trim() || "")));
+    const playoffWins = playoffMatches.filter((m) => m.result === MatchResult.Win).length;
+    const playoffLosses = playoffMatches.filter((m) => m.result === MatchResult.Loss).length;
 
     let finishType: PlayoffFinish["type"];
 
-    // 1. Try descriptive labels first — most reliable
-    if (lastStage === "final") {
-      finishType = wonLast ? "champion" : "finalist";
-    } else if (lastStage === "semifinal") {
-      finishType = wonLast ? "finalist" : "top4";
-    } else if (lastStage === "quarterfinal") {
-      finishType = wonLast ? "top4" : "top8";
+    // No losses in playoffs = won the whole bracket
+    if (playoffLosses === 0 && playoffWins > 0) {
+      finishType = "champion";
+    } else if (playoffWins >= 3) {
+      finishType = "champion";
+    } else if (playoffWins === 2) {
+      finishType = "finalist";
+    } else if (playoffWins === 1) {
+      finishType = "top4";
     } else {
-      // 2. P-numbered rounds — infer stage from round number
-      // Determine bracket size using event type, event name, and swiss round count
-      const refinedType = refineEventType(event.eventType || "Other", event.eventName);
-      const swissCount = event.matches.length - playoffMatches.length;
-      const hasTop8Bracket = /battle hardened|calling|pro tour|nationals|worlds|proquest|pro quest|road to nationals|skirmish|championship/i.test(refinedType) || swissCount >= 5;
-
-      if (maxRoundNum >= 3) {
-        // Bracket has 3+ rounds (Top 8): P1=QF, P2=SF, P3=Finals
-        if (lastRoundNum >= 3) {
-          finishType = wonLast ? "champion" : "finalist";
-        } else if (lastRoundNum === 2) {
-          finishType = wonLast ? "finalist" : "top4";
-        } else {
-          finishType = wonLast ? "top4" : "top8";
-        }
-      } else if (maxRoundNum === 2) {
-        if (lastRoundNum === 2) {
-          if (hasTop8Bracket) {
-            // Top 8 bracket → P2 = Semifinals
-            finishType = wonLast ? "finalist" : "top4";
-          } else {
-            // Top 4 bracket → P2 = Finals
-            finishType = wonLast ? "champion" : "finalist";
-          }
-        } else {
-          finishType = wonLast ? "top4" : "top8";
-        }
-      } else {
-        // 1 round or unknown
-        finishType = wonLast ? "top4" : "top8";
-      }
+      finishType = "top8";
     }
 
     // Use refined event type for accurate tier grouping
@@ -545,13 +514,24 @@ function getRoundNumber(match: MatchRecord): number {
   return 0;
 }
 
+const MULTI_FORMAT_EVENT_TYPES = new Set(["Nationals", "Pro Tour", "Worlds"]);
+
+function isMultiFormatEvent(match: MatchRecord): boolean {
+  if (match.eventType && MULTI_FORMAT_EVENT_TYPES.has(match.eventType)) return true;
+  const name = getEventName(match).toLowerCase();
+  return /\b(nationals|national championship|pro tour|worlds|world championship)\b/.test(name);
+}
+
 export function computeEventStats(matches: MatchRecord[]): EventStats[] {
   const map = new Map<string, MatchRecord[]>();
 
   for (const match of matches) {
     const name = getEventName(match);
-    // Group by name + date + venue + format to prevent merging different events
-    const key = `${name}|${match.date}|${match.venue || ""}|${match.format}`;
+    // For major multi-format events (Nationals, Pro Tour, Worlds), drop format from
+    // the grouping key so CC + Draft rounds stay as one event.
+    const key = isMultiFormatEvent(match)
+      ? `${name}|${match.date}|${match.venue || ""}`
+      : `${name}|${match.date}|${match.venue || ""}|${match.format}`;
     const existing = map.get(key) ?? [];
     existing.push(match);
     map.set(key, existing);
@@ -566,10 +546,21 @@ export function computeEventStats(matches: MatchRecord[]): EventStats[] {
       const losses = group.filter((m) => m.result === MatchResult.Loss).length;
       const draws = group.filter((m) => m.result === MatchResult.Draw).length;
 
+      // Compute unique formats — ordered by first appearance in sorted rounds
+      const seen = new Set<string>();
+      const formats: string[] = [];
+      for (const m of sorted) {
+        if (!seen.has(m.format)) {
+          seen.add(m.format);
+          formats.push(m.format);
+        }
+      }
+
       return {
         eventName,
         eventDate: first.date,
-        format: first.format,
+        format: formats[0],
+        formats,
         venue: first.venue,
         eventType: getEventType(first),
         rated: first.rated,

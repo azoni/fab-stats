@@ -14,7 +14,7 @@ import {
   updateMatch as storageUpdateMatch,
   deleteMatch as storageDeleteMatch,
 } from "@/lib/storage";
-import type { MatchRecord } from "@/types";
+import type { MatchRecord, GameFormat } from "@/types";
 
 export function useMatches() {
   const { user, isGuest } = useAuth();
@@ -101,11 +101,26 @@ export function useMatches() {
     [user, isGuest]
   );
 
+  const batchUpdateFormat = useCallback(
+    async (matchIds: string[], format: GameFormat) => {
+      if (isGuest) {
+        for (const id of matchIds) {
+          storageUpdateMatch(id, { format });
+        }
+        setMatches(getAllMatches());
+        return;
+      }
+      if (!user) return;
+      await batchUpdateMatchesFirestore(user.uid, matchIds, { format });
+    },
+    [user, isGuest]
+  );
+
   const refreshMatches = useCallback(() => {
     if (isGuest) {
       setMatches(getAllMatches());
     }
   }, [isGuest]);
 
-  return { matches, isLoaded, addMatch, deleteMatch, updateMatch, batchUpdateHero, refreshMatches };
+  return { matches, isLoaded, addMatch, deleteMatch, updateMatch, batchUpdateHero, batchUpdateFormat, refreshMatches };
 }

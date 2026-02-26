@@ -254,7 +254,7 @@ export default function Dashboard() {
               <div
                 key={i}
                 className={`w-2.5 h-2.5 rounded-full ${
-                  m.result === MatchResult.Win ? "bg-fab-win" : m.result === MatchResult.Loss ? "bg-fab-loss" : "bg-fab-draw"
+                  m.result === MatchResult.Win ? "bg-fab-win" : m.result === MatchResult.Loss ? "bg-fab-loss" : m.result === MatchResult.Bye ? "bg-fab-muted" : "bg-fab-draw"
                 }`}
                 title={`${new Date(m.date).toLocaleDateString()} - ${m.result}`}
               />
@@ -336,7 +336,7 @@ export default function Dashboard() {
             />
             <StatCard
               label="Record"
-              value={`${overall.totalWins}W - ${overall.totalLosses}L - ${overall.totalDraws}D`}
+              value={`${overall.totalWins}W - ${overall.totalLosses}L - ${overall.totalDraws}D${overall.totalByes > 0 ? ` - ${overall.totalByes}B` : ""}`}
             />
             {bestFinish ? (
               <StatCard

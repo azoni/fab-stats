@@ -18,10 +18,11 @@ interface MatchCardProps {
   missingGemId?: boolean;
 }
 
-const resultStyles = {
+const resultStyles: Record<string, { bg: string; border: string; text: string; label: string }> = {
   [MatchResult.Win]: { bg: "bg-fab-win/10", border: "border-fab-win/30", text: "text-fab-win", label: "WIN" },
   [MatchResult.Loss]: { bg: "bg-fab-loss/10", border: "border-fab-loss/30", text: "text-fab-loss", label: "LOSS" },
   [MatchResult.Draw]: { bg: "bg-fab-draw/10", border: "border-fab-draw/30", text: "text-fab-draw", label: "DRAW" },
+  [MatchResult.Bye]: { bg: "bg-fab-muted/10", border: "border-fab-muted/30", text: "text-fab-dim", label: "BYE" },
 };
 
 const playoffBadgeStyles: Record<string, { bg: string; text: string }> = {

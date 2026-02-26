@@ -16,7 +16,7 @@ const RANK_TABS: RankTab[] = [
   {
     id: "winrate",
     label: "Win Rate",
-    filter: (e) => e.totalMatches >= 10,
+    filter: (e) => e.totalMatches >= 100,
     sort: (a, b) => b.winRate - a.winRate || b.totalMatches - a.totalMatches,
   },
   {
@@ -142,6 +142,12 @@ const RANK_TABS: RankTab[] = [
     label: "Armory Matches",
     filter: (e) => e.armoryMatches > 0,
     sort: (a, b) => b.armoryMatches - a.armoryMatches || b.armoryWins - a.armoryWins,
+  },
+  {
+    id: "byes",
+    label: "Byes",
+    filter: (e) => (e.totalByes ?? 0) > 0,
+    sort: (a, b) => (b.totalByes ?? 0) - (a.totalByes ?? 0) || b.totalMatches - a.totalMatches,
   },
 ];
 

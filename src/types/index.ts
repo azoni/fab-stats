@@ -37,6 +37,7 @@ export enum MatchResult {
   Win = "win",
   Loss = "loss",
   Draw = "draw",
+  Bye = "bye",
 }
 
 export enum GameFormat {
@@ -95,6 +96,7 @@ export interface OverallStats {
   totalWins: number;
   totalLosses: number;
   totalDraws: number;
+  totalByes: number;
   overallWinRate: number;
   streaks: StreakInfo;
 }
@@ -137,6 +139,7 @@ export interface EventStats {
   eventName: string;
   eventDate: string;
   format: string;
+  formats: string[];
   venue?: string;
   eventType?: string;
   rated?: boolean;
@@ -195,6 +198,7 @@ export interface LeaderboardEntry {
   totalWins: number;
   totalLosses: number;
   totalDraws: number;
+  totalByes: number;
   winRate: number;
   longestWinStreak: number;
   currentWinStreak: number;

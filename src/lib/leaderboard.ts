@@ -147,6 +147,7 @@ export async function updateLeaderboardEntry(
     totalWins: overall.totalWins,
     totalLosses: overall.totalLosses,
     totalDraws: overall.totalDraws,
+    totalByes: overall.totalByes,
     winRate: overall.overallWinRate,
     longestWinStreak: streaks.longestWinStreak,
     currentWinStreak: streaks.currentStreak?.type === MatchResult.Win ? streaks.currentStreak.count : 0,

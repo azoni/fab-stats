@@ -120,6 +120,7 @@ export function MatchList({ matches, matchOwnerUid, enableComments, editable, on
             <option value={MatchResult.Win}>Wins</option>
             <option value={MatchResult.Loss}>Losses</option>
             <option value={MatchResult.Draw}>Draws</option>
+            <option value={MatchResult.Bye}>Byes</option>
           </select>
 
           <select

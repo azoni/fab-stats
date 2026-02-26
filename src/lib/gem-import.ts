@@ -45,7 +45,7 @@ function parseResult(raw: string): MatchResult | null {
   if (lower === "win") return MatchResult.Win;
   if (lower === "loss") return MatchResult.Loss;
   if (lower === "draw") return MatchResult.Draw;
-  // Byes and Unknown are skipped
+  if (lower === "bye") return MatchResult.Bye;
   return null;
 }
 
@@ -146,20 +146,15 @@ export function parseGemCsv(csvText: string): GemImportResult {
     const round = get("round");
     const ratingChange = get("rating change");
 
-    // Skip byes and unknown results
+    // Skip unknown results
     const result = parseResult(resultStr);
     if (!result) {
       skipped++;
       continue;
     }
 
-    // Skip bye opponents
-    if (opponent.toLowerCase() === "bye") {
-      skipped++;
-      continue;
-    }
-
-    const { name: opponentName, gemId } = parseOpponent(opponent);
+    const isBye = result === MatchResult.Bye || opponent.toLowerCase() === "bye";
+    const { name: opponentName, gemId } = parseOpponent(isBye ? "BYE" : opponent);
     const roundInfo = round ? `Round ${round}` : "";
     const ratingInfo = ratingChange ? `Rating: ${ratingChange}` : "";
     const notesParts = [eventName, roundInfo, ratingInfo].filter(Boolean);
@@ -170,7 +165,7 @@ export function parseGemCsv(csvText: string): GemImportResult {
       opponentHero: "Unknown",
       opponentName: opponentName,
       opponentGemId: gemId || undefined,
-      result,
+      result: isBye ? MatchResult.Bye : result,
       format: guessFormat(eventName),
       notes: notesParts.join(" | "),
     });

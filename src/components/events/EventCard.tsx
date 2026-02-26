@@ -1,11 +1,11 @@
 "use client";
-import { useState } from "react";
+import { useState, Fragment } from "react";
 import Link from "next/link";
 import { ChevronDownIcon, ChevronUpIcon } from "@/components/icons/NavIcons";
 import { HeroSelect } from "@/components/heroes/HeroSelect";
 import { getHeroByName } from "@/lib/heroes";
 import { HeroClassIcon } from "@/components/heroes/HeroClassIcon";
-import { MatchResult } from "@/types";
+import { MatchResult, GameFormat } from "@/types";
 import type { EventStats } from "@/types";
 
 interface EventCardProps {
@@ -14,28 +14,35 @@ interface EventCardProps {
   visibleOpponents?: Set<string>;
   editable?: boolean;
   onBatchUpdateHero?: (matchIds: string[], hero: string) => Promise<void>;
+  onBatchUpdateFormat?: (matchIds: string[], format: GameFormat) => Promise<void>;
   missingGemId?: boolean;
 }
 
-const resultColors = {
+const resultColors: Record<string, string> = {
   [MatchResult.Win]: "text-fab-win",
   [MatchResult.Loss]: "text-fab-loss",
   [MatchResult.Draw]: "text-fab-draw",
+  [MatchResult.Bye]: "text-fab-dim",
 };
 
-const resultLabels = {
+const resultLabels: Record<string, string> = {
   [MatchResult.Win]: "W",
   [MatchResult.Loss]: "L",
   [MatchResult.Draw]: "D",
+  [MatchResult.Bye]: "B",
 };
 
 const playoffRank: Record<string, number> = { "Finals": 4, "Top 4": 3, "Top 8": 2, "Playoff": 2, "Skirmish": 1 };
 
-export function EventCard({ event, obfuscateOpponents = false, visibleOpponents, editable = false, onBatchUpdateHero, missingGemId }: EventCardProps) {
+export function EventCard({ event, obfuscateOpponents = false, visibleOpponents, editable = false, onBatchUpdateHero, onBatchUpdateFormat, missingGemId }: EventCardProps) {
   const [expanded, setExpanded] = useState(false);
   const [batchHero, setBatchHero] = useState("");
   const [saving, setSaving] = useState(false);
   const [showGemNudge, setShowGemNudge] = useState(false);
+  const [batchFormat, setBatchFormat] = useState("");
+  const [formatFromRound, setFormatFromRound] = useState(1);
+  const [formatToRound, setFormatToRound] = useState(event.matches.length);
+  const [savingFormat, setSavingFormat] = useState(false);
 
   // Determine best playoff placement from match rounds
   let bestPlayoff: string | null = null;
@@ -76,6 +83,33 @@ export function EventCard({ event, obfuscateOpponents = false, visibleOpponents,
     }
   }
 
+  async function handleBatchFormatSave() {
+    if (!onBatchUpdateFormat || !batchFormat) return;
+    setSavingFormat(true);
+    try {
+      const ids = event.matches
+        .slice(formatFromRound - 1, formatToRound)
+        .map((m) => m.id);
+      await onBatchUpdateFormat(ids, batchFormat as GameFormat);
+      setBatchFormat("");
+    } finally {
+      setSavingFormat(false);
+    }
+  }
+
+  // Compute format segments for divider rows (groups of consecutive matches with same format)
+  const isMultiFormat = event.formats.length > 1;
+  const formatSegments: { format: string; startIdx: number; endIdx: number }[] = [];
+  if (isMultiFormat) {
+    let segStart = 0;
+    for (let i = 1; i <= event.matches.length; i++) {
+      if (i === event.matches.length || event.matches[i].format !== event.matches[segStart].format) {
+        formatSegments.push({ format: event.matches[segStart].format, startIdx: segStart, endIdx: i - 1 });
+        segStart = i;
+      }
+    }
+  }
+
   return (
     <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden">
       <button
@@ -109,10 +143,12 @@ export function EventCard({ event, obfuscateOpponents = false, visibleOpponents,
               {event.venue && event.venue !== "Unknown" && <span>at {event.venue}</span>}
             </div>
           </div>
-          <div className="flex items-center gap-3 shrink-0">
-            <span className="px-2 py-0.5 rounded bg-fab-bg text-fab-dim text-xs">{event.format}</span>
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+            {event.formats.map((f) => (
+              <span key={f} className="hidden sm:inline px-2 py-0.5 rounded bg-fab-bg text-fab-dim text-xs">{f}</span>
+            ))}
             {event.eventType && event.eventType !== "Other" && (
-              <span className="px-2 py-0.5 rounded bg-fab-bg text-fab-dim text-xs">{event.eventType}</span>
+              <span className="hidden sm:inline px-2 py-0.5 rounded bg-fab-bg text-fab-dim text-xs">{event.eventType}</span>
             )}
             <span className={`text-sm font-bold ${event.wins > event.losses ? "text-fab-win" : event.wins < event.losses ? "text-fab-loss" : "text-fab-draw"}`}>
               {event.wins}-{event.losses}{event.draws > 0 ? `-${event.draws}` : ""}
@@ -158,6 +194,54 @@ export function EventCard({ event, obfuscateOpponents = false, visibleOpponents,
             </div>
           )}
 
+          {/* Batch format edit */}
+          {editable && onBatchUpdateFormat && (
+            <div className="px-4 py-3 bg-fab-bg/50 border-b border-fab-border/50">
+              <label className="block text-xs font-medium text-fab-muted mb-1.5">Set format for rounds</label>
+              <div className="flex items-end gap-2 flex-wrap">
+                <select
+                  value={batchFormat}
+                  onChange={(e) => setBatchFormat(e.target.value)}
+                  className="bg-fab-surface border border-fab-border rounded-md px-2 py-1.5 text-fab-text text-xs outline-none focus:border-fab-gold/50"
+                >
+                  <option value="">Select format</option>
+                  {Object.values(GameFormat).map((f) => (
+                    <option key={f} value={f}>{f}</option>
+                  ))}
+                </select>
+                <div className="flex items-center gap-1 text-xs text-fab-muted">
+                  <span>from</span>
+                  <input
+                    type="number"
+                    min={1}
+                    max={event.matches.length}
+                    value={formatFromRound}
+                    onChange={(e) => setFormatFromRound(Math.max(1, Math.min(event.matches.length, Number(e.target.value))))}
+                    className="w-12 bg-fab-surface border border-fab-border rounded-md px-1.5 py-1.5 text-fab-text text-xs text-center outline-none focus:border-fab-gold/50"
+                  />
+                  <span>to</span>
+                  <input
+                    type="number"
+                    min={1}
+                    max={event.matches.length}
+                    value={formatToRound}
+                    onChange={(e) => setFormatToRound(Math.max(1, Math.min(event.matches.length, Number(e.target.value))))}
+                    className="w-12 bg-fab-surface border border-fab-border rounded-md px-1.5 py-1.5 text-fab-text text-xs text-center outline-none focus:border-fab-gold/50"
+                  />
+                </div>
+                {batchFormat && (
+                  <button
+                    onClick={handleBatchFormatSave}
+                    disabled={savingFormat}
+                    className="px-3 py-1.5 rounded text-xs font-medium bg-fab-gold text-fab-bg hover:bg-fab-gold-light disabled:opacity-50 transition-colors shrink-0"
+                  >
+                    {savingFormat ? "Saving..." : "Apply"}
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
           <table className="w-full text-sm">
             <thead>
               <tr className="text-xs text-fab-muted">
@@ -178,8 +262,21 @@ export function EventCard({ event, obfuscateOpponents = false, visibleOpponents,
                 const matchHero = match.heroPlayed && match.heroPlayed !== "Unknown" ? match.heroPlayed : null;
                 const matchHeroInfo = matchHero ? getHeroByName(matchHero) : null;
 
+                // Format divider: show when this match starts a new format segment
+                const segment = isMultiFormat ? formatSegments.find((s) => s.startIdx === i) : null;
+                const colSpan = 2 + (showHeroColumn ? 1 : 0) + 1;
+
                 return (
-                  <tr key={match.id} className="border-t border-fab-border/50">
+                  <Fragment key={match.id}>{segment && (
+                    <tr key={`seg-${i}`} className="border-t border-fab-border/50">
+                      <td colSpan={colSpan} className="px-4 py-1.5 text-center">
+                        <span className="text-xs font-medium text-fab-muted">
+                          {segment.format} (Rounds {segment.startIdx + 1}–{segment.endIdx + 1})
+                        </span>
+                      </td>
+                    </tr>
+                  )}
+                  <tr className="border-t border-fab-border/50">
                     <td className="px-4 py-2.5">
                       {isPlayoff ? (
                         <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${
@@ -223,7 +320,7 @@ export function EventCard({ event, obfuscateOpponents = false, visibleOpponents,
                     <td className={`px-4 py-2.5 text-right font-bold ${resultColors[match.result]}`}>
                       {resultLabels[match.result]}
                     </td>
-                  </tr>
+                  </tr></Fragment>
                 );
               })}
             </tbody>

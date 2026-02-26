@@ -12,30 +12,31 @@ import type { LeaderboardEntry, OpponentStats } from "@/types";
 
 const SITE_CREATOR = "azoni";
 
-type Tab = "winrate" | "volume" | "mostwins" | "streaks" | "draws" | "drawrate" | "events" | "eventgrinder" | "rated" | "heroes" | "dedication" | "hotstreak" | "weeklymatches" | "weeklywins" | "monthlymatches" | "monthlywins" | "monthlywinrate" | "earnings" | "armorywinrate" | "armoryattendance" | "armorymatches";
+type Tab = "winrate" | "volume" | "mostwins" | "streaks" | "draws" | "drawrate" | "byes" | "events" | "eventgrinder" | "rated" | "heroes" | "dedication" | "hotstreak" | "weeklymatches" | "weeklywins" | "monthlymatches" | "monthlywins" | "monthlywinrate" | "earnings" | "armorywinrate" | "armoryattendance" | "armorymatches";
 
-const tabs: { id: Tab; label: string }[] = [
-  { id: "winrate", label: "Win Rate" },
-  { id: "volume", label: "Most Matches" },
-  { id: "mostwins", label: "Most Wins" },
-  { id: "weeklymatches", label: "Weekly Matches" },
-  { id: "weeklywins", label: "Weekly Wins" },
-  { id: "monthlymatches", label: "Monthly Matches" },
-  { id: "monthlywins", label: "Monthly Wins" },
-  { id: "monthlywinrate", label: "Monthly Win %" },
-  { id: "streaks", label: "Streaks" },
-  { id: "hotstreak", label: "Hot Streak" },
-  { id: "events", label: "Event Wins" },
-  { id: "eventgrinder", label: "Event Grinder" },
-  { id: "rated", label: "Rated" },
-  { id: "heroes", label: "Hero Variety" },
-  { id: "dedication", label: "Hero Loyalty" },
-  { id: "earnings", label: "Earnings" },
-  { id: "armorywinrate", label: "Armory Win %" },
-  { id: "armoryattendance", label: "Armory Attendance" },
-  { id: "armorymatches", label: "Armory Matches" },
-  { id: "draws", label: "Draws" },
-  { id: "drawrate", label: "Draw %" },
+const tabs: { id: Tab; label: string; description: string }[] = [
+  { id: "winrate", label: "Win Rate", description: "Highest overall win percentage. Requires 100+ matches." },
+  { id: "volume", label: "Most Matches", description: "Players who have logged the most matches." },
+  { id: "mostwins", label: "Most Wins", description: "Players with the most total wins." },
+  { id: "weeklymatches", label: "Weekly Matches", description: "Most matches played this week." },
+  { id: "weeklywins", label: "Weekly Wins", description: "Most wins this week." },
+  { id: "monthlymatches", label: "Monthly Matches", description: "Most matches played this month." },
+  { id: "monthlywins", label: "Monthly Wins", description: "Most wins this month." },
+  { id: "monthlywinrate", label: "Monthly Win %", description: "Highest win rate this month. Requires 5+ matches." },
+  { id: "streaks", label: "Streaks", description: "Longest win streak of all time." },
+  { id: "hotstreak", label: "Hot Streak", description: "Longest active win streak right now." },
+  { id: "events", label: "Event Wins", description: "Most event tournament victories." },
+  { id: "eventgrinder", label: "Event Grinder", description: "Most events attended." },
+  { id: "rated", label: "Rated", description: "Highest win rate in rated matches. Requires 5+ rated matches." },
+  { id: "heroes", label: "Hero Variety", description: "Most unique heroes played." },
+  { id: "dedication", label: "Hero Loyalty", description: "Most matches played with a single hero." },
+  { id: "earnings", label: "Earnings", description: "Highest lifetime prize earnings." },
+  { id: "armorywinrate", label: "Armory Win %", description: "Highest win rate at Armory events. Requires 5+ matches." },
+  { id: "armoryattendance", label: "Armory Attendance", description: "Most Armory events attended." },
+  { id: "armorymatches", label: "Armory Matches", description: "Most matches played at Armory events." },
+  { id: "draws", label: "Draws", description: "Most draws of all time." },
+  { id: "drawrate", label: "Draw %", description: "Highest draw rate. Requires 10+ matches." },
+  { id: "byes", label: "Byes", description: "Most byes received." },
 ];
 
 function formatRate(rate: number): string {
@@ -71,7 +72,7 @@ export default function LeaderboardPage() {
     switch (activeTab) {
       case "winrate":
         return [...entries]
-          .filter((e) => e.totalMatches >= 10)
+          .filter((e) => e.totalMatches >= 100)
           .sort((a, b) => b.winRate - a.winRate || b.totalMatches - a.totalMatches);
       case "volume":
         return [...entries].sort((a, b) => b.totalMatches - a.totalMatches);
@@ -155,6 +156,10 @@ export default function LeaderboardPage() {
         return [...entries]
           .filter((e) => e.armoryMatches > 0)
           .sort((a, b) => b.armoryMatches - a.armoryMatches || b.armoryWins - a.armoryWins);
+      case "byes":
+        return [...entries]
+          .filter((e) => (e.totalByes ?? 0) > 0)
+          .sort((a, b) => (b.totalByes ?? 0) - (a.totalByes ?? 0) || b.totalMatches - a.totalMatches);
       default:
         return entries;
     }
@@ -184,6 +189,10 @@ export default function LeaderboardPage() {
         ))}
       </div>
 
+      <p className="text-fab-muted text-sm mb-4">
+        {tabs.find((t) => t.id === activeTab)?.description}
+      </p>
+
       {loading && (
         <div className="space-y-2">
           {[...Array(8)].map((_, i) => (
@@ -198,7 +207,7 @@ export default function LeaderboardPage() {
           <h2 className="text-lg font-semibold text-fab-text mb-2">No entries yet</h2>
           <p className="text-fab-muted text-sm">
             {activeTab === "winrate"
-              ? "Players need at least 10 matches to appear here."
+              ? "Players need at least 100 matches to appear here."
               : activeTab === "rated"
                 ? "Players need at least 5 rated matches to appear here."
                 : activeTab === "hotstreak"
@@ -219,7 +228,9 @@ export default function LeaderboardPage() {
                             ? "No players have Armory matches yet."
                             : activeTab === "drawrate"
                               ? "Players need at least 10 matches and 1 draw to appear here."
-                              : "Import matches to appear on the leaderboard."}
+                              : activeTab === "byes"
+                                ? "No players have received byes yet."
+                                : "Import matches to appear on the leaderboard."}
           </p>
         </div>
       )}
@@ -525,6 +536,14 @@ function LeaderboardRow({
           <>
             <p className="text-lg font-bold text-fab-text">{entry.armoryMatches}</p>
             <p className="text-xs text-fab-dim">{entry.armoryWins} wins ({entry.armoryMatches > 0 ? formatRate(entry.armoryWinRate) : "0%"})</p>
+          </>
+        )}
+        {tab === "byes" && (
+          <>
+            <p className="text-lg font-bold text-fab-text">{entry.totalByes ?? 0}</p>
+            <p className="text-xs text-fab-dim">
+              {entry.totalMatches} matches
+            </p>
           </>
         )}
       </div>

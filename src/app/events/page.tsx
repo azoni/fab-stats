@@ -8,6 +8,7 @@ import { computeEventStats } from "@/lib/stats";
 import { updateLeaderboardEntry } from "@/lib/leaderboard";
 import { propagateHeroToOpponent } from "@/lib/match-linking";
 import { EventCard } from "@/components/events/EventCard";
+import { type GameFormat } from "@/types";
 import { QuickEventImportModal } from "@/components/events/QuickEventImportModal";
 
 type View = "timeline" | "standings";
@@ -15,7 +16,7 @@ const PAGE_SIZE = 25;
 
 export default function EventsPage() {
   const searchParams = useSearchParams();
-  const { matches, isLoaded, refreshMatches, batchUpdateHero } = useMatches();
+  const { matches, isLoaded, refreshMatches, batchUpdateHero, batchUpdateFormat } = useMatches();
   const { user, profile } = useAuth();
   const [filterFormat, setFilterFormat] = useState("all");
   const [filterEventType, setFilterEventType] = useState("all");
@@ -47,6 +48,19 @@ export default function EventsPage() {
     [batchUpdateHero, profile, matches, user]
   );
 
+  const handleBatchUpdateFormat = useCallback(
+    async (matchIds: string[], format: GameFormat) => {
+      await batchUpdateFormat(matchIds, format);
+      if (profile && matches.length > 0) {
+        const updated = matches.map((m) =>
+          matchIds.includes(m.id) ? { ...m, format } : m
+        );
+        updateLeaderboardEntry(profile, updated).catch(() => {});
+      }
+    },
+    [batchUpdateFormat, profile, matches]
+  );
+
   // Auto-open import modal from ?import=1 (e.g. from navbar "Log Event")
   useEffect(() => {
     if (searchParams.get("import") === "1") {
@@ -62,7 +76,7 @@ export default function EventsPage() {
   const eventStats = useMemo(() => computeEventStats(matches), [matches]);
 
   const allFormats = useMemo(() => {
-    return [...new Set(eventStats.map((e) => e.format))].sort();
+    return [...new Set(eventStats.flatMap((e) => e.formats))].sort();
   }, [eventStats]);
 
   const allEventTypes = useMemo(() => {
@@ -88,7 +102,7 @@ export default function EventsPage() {
     let result = eventStats;
 
     if (filterFormat !== "all") {
-      result = result.filter((e) => e.format === filterFormat);
+      result = result.filter((e) => e.formats.includes(filterFormat));
     }
     if (filterEventType !== "all") {
       result = result.filter((e) => e.eventType === filterEventType);
@@ -105,7 +119,7 @@ export default function EventsPage() {
         const haystack = [
           e.eventName,
           e.venue,
-          e.format,
+          ...e.formats,
           e.eventType,
           e.eventDate,
           ...e.matches.map((m) => m.opponentName),
@@ -250,7 +264,7 @@ export default function EventsPage() {
           </p>
           <div className="space-y-2">
             {pageEvents.map((event) => (
-              <EventCard key={`${event.eventName}-${event.eventDate}`} event={event} editable={!!user} onBatchUpdateHero={handleBatchUpdateHero} missingGemId={!!user && !profile?.gemId} />
+              <EventCard key={`${event.eventName}-${event.eventDate}`} event={event} editable={!!user} onBatchUpdateHero={handleBatchUpdateHero} onBatchUpdateFormat={handleBatchUpdateFormat} missingGemId={!!user && !profile?.gemId} />
             ))}
           </div>
         </>
@@ -284,7 +298,11 @@ export default function EventsPage() {
                       {new Date(event.eventDate).toLocaleDateString()}
                     </td>
                     <td className="px-4 py-3 hidden md:table-cell">
-                      <span className="px-2 py-0.5 rounded bg-fab-bg text-fab-dim text-xs">{event.format}</span>
+                      <div className="flex gap-1 flex-wrap">
+                        {event.formats.map((f) => (
+                          <span key={f} className="px-2 py-0.5 rounded bg-fab-bg text-fab-dim text-xs">{f}</span>
+                        ))}
+                      </div>
                     </td>
                     <td className={`px-4 py-3 text-right font-bold ${event.wins > event.losses ? "text-fab-win" : event.wins < event.losses ? "text-fab-loss" : "text-fab-draw"}`}>
                       {event.wins}-{event.losses}{event.draws > 0 ? `-${event.draws}` : ""}
