@@ -7,6 +7,7 @@ import { getAdminDashboardData, backfillLeaderboard, broadcastMessage, fixMatchD
 import { getAllFeedback, updateFeedbackStatus } from "@/lib/feedback";
 import { getCreators, saveCreators } from "@/lib/creators";
 import { getEvents, saveEvents } from "@/lib/featured-events";
+import { lookupEvents, type LookupEvent } from "@/lib/event-lookup";
 import { getAnalytics } from "@/lib/analytics";
 import { searchHeroes } from "@/lib/heroes";
 import { GameFormat } from "@/types";
@@ -47,6 +48,9 @@ export default function AdminPage() {
   const [eventsList, setEventsList] = useState<FeaturedEvent[]>([]);
   const [savingEvents, setSavingEvents] = useState(false);
   const [eventsSaved, setEventsSaved] = useState(false);
+  const [lookupOpen, setLookupOpen] = useState(false);
+  const [lookupLoading, setLookupLoading] = useState(false);
+  const [lookupResults, setLookupResults] = useState<LookupEvent[]>([]);
   const [broadcastText, setBroadcastText] = useState("");
   const [broadcasting, setBroadcasting] = useState(false);
   const [broadcastProgress, setBroadcastProgress] = useState("");
@@ -672,12 +676,72 @@ export default function AdminPage() {
                   </div>
                 </div>
               ))}
-              <button
-                onClick={() => setEventsList((prev) => [...prev, { name: "", date: "", format: "", eventType: "", players: [] }])}
-                className="w-full py-2 rounded-lg text-sm font-medium border border-dashed border-fab-border text-fab-muted hover:text-fab-text hover:border-fab-gold/30 transition-colors"
-              >
-                + Add Event
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setEventsList((prev) => [...prev, { name: "", date: "", format: "", eventType: "", players: [] }])}
+                  className="flex-1 py-2 rounded-lg text-sm font-medium border border-dashed border-fab-border text-fab-muted hover:text-fab-text hover:border-fab-gold/30 transition-colors"
+                >
+                  + Add Event
+                </button>
+                <button
+                  onClick={async () => {
+                    if (lookupOpen) {
+                      setLookupOpen(false);
+                      return;
+                    }
+                    setLookupOpen(true);
+                    setLookupLoading(true);
+                    try {
+                      const results = await lookupEvents();
+                      setLookupResults(results);
+                    } catch (err) {
+                      console.error("Event lookup error:", err);
+                      setError("Failed to lookup events");
+                    } finally {
+                      setLookupLoading(false);
+                    }
+                  }}
+                  className="flex-1 py-2 rounded-lg text-sm font-medium border border-dashed border-fab-gold/40 text-fab-gold hover:bg-fab-gold/5 transition-colors"
+                >
+                  {lookupLoading ? "Loading..." : lookupOpen ? "Close Lookup" : "Lookup Event"}
+                </button>
+              </div>
+
+              {/* Event lookup results */}
+              {lookupOpen && !lookupLoading && lookupResults.length > 0 && (
+                <div className="mt-2 bg-fab-bg border border-fab-border rounded-lg overflow-hidden max-h-80 overflow-y-auto">
+                  <p className="px-3 py-2 text-xs text-fab-dim border-b border-fab-border font-medium">
+                    Recent events from fabtcgmeta.com — click to import
+                  </p>
+                  {lookupResults.map((ev, i) => (
+                    <button
+                      key={`${ev.name}-${i}`}
+                      onClick={() => {
+                        setEventsList((prev) => [...prev, {
+                          name: ev.name,
+                          date: ev.date,
+                          format: ev.format,
+                          eventType: ev.eventType,
+                          players: ev.players.map((p) => ({
+                            name: p.name,
+                            hero: p.hero,
+                          })),
+                        }]);
+                        setLookupOpen(false);
+                      }}
+                      className="w-full text-left px-3 py-2 text-sm hover:bg-fab-surface transition-colors border-b border-fab-border last:border-b-0"
+                    >
+                      <span className="font-medium text-fab-text">{ev.name}</span>
+                      <span className="text-fab-dim ml-2">{ev.date}</span>
+                      <span className="text-fab-muted ml-2">{ev.format}</span>
+                      <span className="text-fab-dim ml-2">({ev.players.length} players)</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+              {lookupOpen && !lookupLoading && lookupResults.length === 0 && (
+                <p className="mt-2 text-sm text-fab-dim text-center py-3">No events found</p>
+              )}
             </div>
           </div>
 

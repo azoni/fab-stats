@@ -239,6 +239,8 @@ export interface LeaderboardEntry {
   updatedAt: string;
 }
 
+export type ImportSource = "extension" | "csv" | "paste" | "manual";
+
 export interface FeedEvent {
   id: string;
   type: "import";
@@ -249,6 +251,7 @@ export interface FeedEvent {
   isPublic: boolean;
   matchCount: number;
   topHeroes?: string[];
+  source?: ImportSource;
   createdAt: string;
 }
 

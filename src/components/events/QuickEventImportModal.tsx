@@ -163,7 +163,7 @@ export function QuickEventImportModal({ open, onClose, onImportComplete }: Quick
     if (user && profile && count > 0) {
       const hero = heroPlayed !== "Unknown" ? heroPlayed : undefined;
       const topHeroes = hero ? [hero] : [];
-      createImportFeedEvent(profile, count, topHeroes).catch(() => {});
+      createImportFeedEvent(profile, count, topHeroes, "paste").catch(() => {});
       getMatchesByUserId(user.uid)
         .then((allMatches) => updateLeaderboardEntry(profile, allMatches))
         .catch(() => {});

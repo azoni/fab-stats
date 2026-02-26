@@ -251,7 +251,7 @@ export default function ImportPage() {
         .sort((a, b) => b[1] - a[1])
         .slice(0, 3)
         .map(([hero]) => hero);
-      createImportFeedEvent(profile, count, topHeroes).catch(() => {});
+      createImportFeedEvent(profile, count, topHeroes, method || undefined).catch(() => {});
       getMatchesByUserId(user.uid)
         .then((allUserMatches) => updateLeaderboardEntry(profile, allUserMatches))
         .catch(() => {});

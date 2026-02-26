@@ -86,6 +86,9 @@ export function FeedCard({ event }: FeedCardProps) {
               {event.matchCount}
             </span>{" "}
             match{event.matchCount !== 1 ? "es" : ""}
+            {event.source && (
+              <span className="text-fab-dim"> via {event.source === "csv" ? "CSV" : event.source}</span>
+            )}
           </p>
 
           {/* Hero pills */}

@@ -27,9 +27,23 @@ export async function getEvents(): Promise<FeaturedEvent[]> {
   }
 }
 
+// Strip undefined values so Firestore doesn't reject the document
+function stripUndefined(obj: unknown): unknown {
+  if (Array.isArray(obj)) return obj.map(stripUndefined);
+  if (obj !== null && typeof obj === "object") {
+    const clean: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(obj as Record<string, unknown>)) {
+      if (v !== undefined) clean[k] = stripUndefined(v);
+    }
+    return clean;
+  }
+  return obj;
+}
+
 export async function saveEvents(list: FeaturedEvent[]): Promise<void> {
-  await setDoc(doc(db, "admin", "featuredEvents"), { list });
+  const cleaned = stripUndefined(list) as FeaturedEvent[];
+  await setDoc(doc(db, "admin", "featuredEvents"), { list: cleaned });
   try {
-    localStorage.setItem(CACHE_KEY, JSON.stringify({ list, ts: Date.now() }));
+    localStorage.setItem(CACHE_KEY, JSON.stringify({ list: cleaned, ts: Date.now() }));
   } catch {}
 }
