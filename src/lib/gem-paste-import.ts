@@ -84,6 +84,7 @@ export function guessEventType(lines: string[]): string {
   if (all.includes("pre release") || all.includes("pre-release")) return "Pre-Release";
   if (all.includes("armory")) return "Armory";
   if (all.includes("on demand")) return "On Demand";
+  if (all.includes("championship") || all.includes("invitation") || all.includes("invitational")) return "Championship";
   return "Other";
 }
 

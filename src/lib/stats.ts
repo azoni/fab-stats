@@ -283,6 +283,7 @@ function guessEventTypeFromNotes(notes: string): string {
   if (lower.includes("calling")) return "The Calling";
   if (lower.includes("pre release") || lower.includes("pre-release")) return "Pre-Release";
   if (lower.includes("armory")) return "Armory";
+  if (lower.includes("championship") || lower.includes("invitation") || lower.includes("invitational")) return "Championship";
   return "Other";
 }
 
@@ -303,6 +304,7 @@ export function refineEventType(eventType: string, eventName: string): string {
   if (lower.includes("road to national") || /\brtn\b/.test(lower)) return "Road to Nationals";
   if (lower.includes("national")) return "Nationals";
   if (lower.includes("calling")) return "The Calling";
+  if (lower.includes("championship") || lower.includes("invitation") || lower.includes("invitational")) return "Championship";
   // Fall back to provided eventType
   return eventType;
 }
@@ -475,7 +477,7 @@ export function computePlayoffFinishes(eventStats: EventStats[]): PlayoffFinish[
       // Determine bracket size using event type, event name, and swiss round count
       const refinedType = refineEventType(event.eventType || "Other", event.eventName);
       const swissCount = event.matches.length - playoffMatches.length;
-      const hasTop8Bracket = /battle hardened|calling|pro tour|nationals|worlds|proquest|pro quest|road to nationals|skirmish/i.test(refinedType) || swissCount >= 5;
+      const hasTop8Bracket = /battle hardened|calling|pro tour|nationals|worlds|proquest|pro quest|road to nationals|skirmish|championship/i.test(refinedType) || swissCount >= 5;
 
       if (maxRoundNum >= 3) {
         // Bracket has 3+ rounds (Top 8): P1=QF, P2=SF, P3=Finals
