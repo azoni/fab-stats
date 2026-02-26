@@ -186,7 +186,7 @@ export default async function handler(
   const desc = escapeHtml(descParts.join(" · "));
   const escapedTitle = escapeHtml(title);
 
-  const ogImageUrl = `https://www.fabstats.net/.netlify/functions/og-image?type=meta`;
+  const ogImageUrl = `https://www.fabstats.net/og/meta.png`;
 
   // Replace OG meta tags
   html = html.replace(

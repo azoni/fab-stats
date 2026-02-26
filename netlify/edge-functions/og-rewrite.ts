@@ -111,7 +111,7 @@ export default async function handler(
       )
     : `View ${escapeHtml(username)}'s Flesh and Blood tournament stats, win rate, and match history on FaB Stats.`;
 
-  const ogImageUrl = `https://www.fabstats.net/.netlify/functions/og-image?username=${encodeURIComponent(username)}`;
+  const ogImageUrl = `https://www.fabstats.net/og/player/${encodeURIComponent(username)}.png`;
 
   // Replace OG meta tags
   html = html.replace(

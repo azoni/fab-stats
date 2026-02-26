@@ -18,6 +18,17 @@
   path = "/meta"
   function = "og-rewrite-meta"
 
+# Proxy OG image function through clean URLs for crawler compatibility + CDN caching
+[[redirects]]
+  from = "/og/player/:username.png"
+  to = "/.netlify/functions/og-image?username=:username"
+  status = 200
+
+[[redirects]]
+  from = "/og/meta.png"
+  to = "/.netlify/functions/og-image?type=meta"
+  status = 200
+
 # Force redirect from netlify subdomain to custom domain
 [[redirects]]
   from = "https://fabstats.netlify.app/*"
