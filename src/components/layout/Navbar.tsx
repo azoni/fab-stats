@@ -22,7 +22,6 @@ const coreLinks: { href: string; label: string; icon: ReactNode }[] = [
 const moreLinks: { href: string; label: string; icon: ReactNode; authOnly?: boolean }[] = [
   { href: "/trends", label: "Trends", icon: <TrendsIcon className="w-4 h-4" />, authOnly: true },
   { href: "/import", label: "Import", icon: <ImportIcon className="w-4 h-4" /> },
-  { href: "/inbox", label: "Inbox", icon: <InboxIcon className="w-4 h-4" />, authOnly: true },
   { href: "/changelog", label: "Changelog", icon: <ChangelogIcon className="w-4 h-4" /> },
 ];
 
@@ -30,14 +29,6 @@ function ChangelogIcon({ className = "w-4 h-4" }: { className?: string }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-    </svg>
-  );
-}
-
-function InboxIcon({ className = "w-4 h-4" }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
     </svg>
   );
 }
@@ -175,6 +166,36 @@ export function Navbar() {
                     <span className="text-xs text-fab-dim truncate max-w-32">{user?.email}</span>
                   )}
                   {isAuthenticated && <NotificationBell />}
+                  {isAuthenticated && (
+                    <Link
+                      href="/inbox"
+                      className={`p-1 rounded transition-colors ${
+                        pathname === "/inbox" || pathname.startsWith("/inbox/")
+                          ? "text-fab-gold"
+                          : "text-fab-muted hover:text-fab-text"
+                      }`}
+                      title="Inbox"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
+                      </svg>
+                    </Link>
+                  )}
+                  {isAuthenticated && (
+                    <Link
+                      href="/favorites"
+                      className={`p-1 rounded transition-colors ${
+                        pathname === "/favorites"
+                          ? "text-fab-gold"
+                          : "text-fab-muted hover:text-fab-text"
+                      }`}
+                      title="Favorites"
+                    >
+                      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
+                      </svg>
+                    </Link>
+                  )}
                   {isAuthenticated && (
                     <Link
                       href="/settings"

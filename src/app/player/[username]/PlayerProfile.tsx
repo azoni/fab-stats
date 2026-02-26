@@ -19,6 +19,7 @@ import { useLeaderboard } from "@/hooks/useLeaderboard";
 import { computeUserRanks, getBestRank } from "@/lib/leaderboard-ranks";
 import { QuestionCircleIcon, LockIcon } from "@/components/icons/NavIcons";
 import { useAuth } from "@/contexts/AuthContext";
+import { useFavorites } from "@/hooks/useFavorites";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import type { MatchRecord, UserProfile, Achievement } from "@/types";
@@ -38,8 +39,9 @@ export default function PlayerProfile() {
   const pathname = usePathname();
   const username = pathname.split("/").pop() || "";
   const [state, setState] = useState<PageState>({ status: "loading" });
-  const { isAdmin } = useAuth();
+  const { isAdmin, user: currentUser, isGuest } = useAuth();
   const { entries: lbEntries } = useLeaderboard();
+  const { isFavorited, toggleFavorite } = useFavorites();
   const [filterFormat, setFilterFormat] = useState<string>("all");
   const [filterRated, setFilterRated] = useState<string>("all");
   const [filterHero, setFilterHero] = useState<string>("all");
@@ -222,7 +224,7 @@ export default function PlayerProfile() {
   if (matches.length === 0) {
     return (
       <div className="space-y-8">
-        <ProfileHeader profile={profile} isAdmin={isAdmin} isOwner={isOwner} />
+        <ProfileHeader profile={profile} isAdmin={isAdmin} isOwner={isOwner} isFavorited={!isOwner && !!currentUser && !isGuest && isFavorited(profile.uid)} onToggleFavorite={!isOwner && !!currentUser && !isGuest ? () => toggleFavorite(profile) : undefined} />
         <div className="text-center py-16">
           <p className="text-fab-muted">This player hasn&apos;t logged any matches yet.</p>
         </div>
@@ -265,7 +267,7 @@ export default function PlayerProfile() {
     <div className="space-y-8">
       {/* Profile Header + Streak */}
       <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-        <ProfileHeader profile={profile} achievements={achievements} bestRank={bestRank} isAdmin={isAdmin} isOwner={isOwner} />
+        <ProfileHeader profile={profile} achievements={achievements} bestRank={bestRank} isAdmin={isAdmin} isOwner={isOwner} isFavorited={!isOwner && !!currentUser && !isGuest && isFavorited(profile.uid)} onToggleFavorite={!isOwner && !!currentUser && !isGuest ? () => toggleFavorite(profile) : undefined} />
         {/* Compact Streak */}
         <div className={`rounded-lg px-5 py-4 border ${
           streaks.currentStreak?.type === MatchResult.Win
@@ -574,7 +576,7 @@ export default function PlayerProfile() {
   );
 }
 
-function ProfileHeader({ profile, achievements, bestRank, isAdmin, isOwner }: { profile: UserProfile; achievements?: Achievement[]; bestRank?: 1 | 2 | 3 | 4 | 5 | null; isAdmin?: boolean; isOwner?: boolean }) {
+function ProfileHeader({ profile, achievements, bestRank, isAdmin, isOwner, isFavorited, onToggleFavorite }: { profile: UserProfile; achievements?: Achievement[]; bestRank?: 1 | 2 | 3 | 4 | 5 | null; isAdmin?: boolean; isOwner?: boolean; isFavorited?: boolean; onToggleFavorite?: () => void }) {
   const ringClass = bestRank === 1 ? "rank-border-grandmaster" : bestRank === 2 ? "rank-border-diamond" : bestRank === 3 ? "rank-border-gold" : bestRank === 4 ? "rank-border-silver" : bestRank === 5 ? "rank-border-bronze" : "";
   const isCreator = profile.username === "azoni";
   return (
@@ -594,7 +596,20 @@ function ProfileHeader({ profile, achievements, bestRank, isAdmin, isOwner }: { 
         )}
       </div>
       <div>
-        <h1 className="text-2xl font-bold text-fab-gold">{profile.displayName}</h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-2xl font-bold text-fab-gold">{profile.displayName}</h1>
+          {onToggleFavorite && (
+            <button
+              onClick={onToggleFavorite}
+              className="p-1 rounded transition-colors hover:bg-fab-surface"
+              title={isFavorited ? "Remove from favorites" : "Add to favorites"}
+            >
+              <svg className={`w-5 h-5 ${isFavorited ? "text-fab-gold" : "text-fab-dim hover:text-fab-gold"}`} viewBox="0 0 24 24" fill={isFavorited ? "currentColor" : "none"} stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
+              </svg>
+            </button>
+          )}
+        </div>
         <p className="text-sm text-fab-dim mb-1">@{profile.username}</p>
         {achievements && achievements.length > 0 && <AchievementBadges earned={achievements} max={4} />}
         {isAdmin && !isOwner && (

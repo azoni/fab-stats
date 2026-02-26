@@ -33,7 +33,7 @@ export default function Dashboard() {
   const [announcementDismissed, setAnnouncementDismissed] = useState(true);
 
   useEffect(() => {
-    setAnnouncementDismissed(localStorage.getItem("fab_announcement_v1") === "dismissed");
+    setAnnouncementDismissed(localStorage.getItem("fab_announcement_v2") === "dismissed");
   }, []);
   const leaderboardUpdated = useRef(false);
 
@@ -159,7 +159,7 @@ export default function Dashboard() {
           <button
             onClick={() => {
               setAnnouncementDismissed(true);
-              localStorage.setItem("fab_announcement_v1", "dismissed");
+              localStorage.setItem("fab_announcement_v2", "dismissed");
             }}
             className="absolute top-3 right-3 text-fab-dim hover:text-fab-text transition-colors"
           >
@@ -169,7 +169,7 @@ export default function Dashboard() {
           </button>
           <p className="text-xs font-medium text-fab-gold uppercase tracking-wider mb-1">From the Developer</p>
           <p className="text-sm text-fab-text">
-            Thank you all for joining — the response on day one has been incredible. I&apos;ve read every feature request and bug report, and I&apos;m actively working through them. Don&apos;t hesitate to reach out about anything at all.
+            Edit match history to add your hero is coming really soon. Stay tuned!
           </p>
         </div>
       )}
