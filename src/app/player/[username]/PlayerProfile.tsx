@@ -617,9 +617,9 @@ function ProfileHeader({ profile, achievements, bestRank, isAdmin, isOwner, isFa
           </svg>
         )}
         {profile.photoUrl ? (
-          <img src={profile.photoUrl} alt="" className={`w-16 h-16 rounded-full ${ringClass}`} />
+          <img src={profile.photoUrl} alt="" className={`w-20 h-20 rounded-full ${ringClass}`} />
         ) : (
-          <div className={`w-16 h-16 rounded-full bg-fab-gold/20 flex items-center justify-center text-fab-gold text-2xl font-bold ${ringClass}`}>
+          <div className={`w-20 h-20 rounded-full bg-fab-gold/20 flex items-center justify-center text-fab-gold text-3xl font-bold ${ringClass}`}>
             {profile.displayName.charAt(0).toUpperCase()}
           </div>
         )}

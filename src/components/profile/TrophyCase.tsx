@@ -153,7 +153,7 @@ export function TrophyCase({ finishes }: { finishes: PlayoffFinish[] }) {
   const extra = sorted.length - shown.length;
 
   return (
-    <div className="bg-fab-surface/50 border border-fab-border rounded-lg px-3 py-3 max-w-[240px]">
+    <div className="bg-fab-surface/50 border border-fab-border rounded-lg px-3 py-3 max-w-[320px]">
       <p className="text-[10px] text-fab-muted uppercase tracking-wider mb-2 font-medium">Trophy Case</p>
       <div className="flex flex-wrap gap-1.5 items-end justify-center">
         {shown.map((f, i) => {

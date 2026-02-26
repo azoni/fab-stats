@@ -285,7 +285,7 @@ function guessEventTypeFromNotes(notes: string): string {
   if (lower.includes("proquest") || lower.includes("pro quest") || /\bpq\b/.test(lower)) return "ProQuest";
   if (lower.includes("skirmish")) return "Skirmish";
   if (lower.includes("road to national") || /\brtn\b/.test(lower)) return "Road to Nationals";
-  if (lower.includes("national")) return "Nationals";
+  if (/\bnational/.test(lower)) return "Nationals";
   if (lower.includes("calling")) return "The Calling";
   if (lower.includes("pre release") || lower.includes("pre-release")) return "Pre-Release";
   if (lower.includes("armory")) return "Armory";
@@ -309,7 +309,7 @@ export function refineEventType(eventType: string, eventName: string): string {
   if (lower.includes("worlds") || lower.includes("world championship")) return "Worlds";
   if (lower.includes("skirmish")) return "Skirmish";
   if (lower.includes("road to national") || /\brtn\b/.test(lower)) return "Road to Nationals";
-  if (lower.includes("national")) return "Nationals";
+  if (/\bnational/.test(lower)) return "Nationals";
   if (lower.includes("calling")) return "The Calling";
   if (lower.includes("championship") || lower.includes("invitation") || lower.includes("invitational")) return "Championship";
   // Fall back to provided eventType
@@ -460,12 +460,24 @@ export function computePlayoffFinishes(eventStats: EventStats[]): PlayoffFinish[
     const playoffWins = playoffMatches.filter((m) => m.result === MatchResult.Win).length;
     const playoffLosses = playoffMatches.filter((m) => m.result === MatchResult.Loss).length;
 
+    // Detect which rounds were played from explicit round names
+    const roundInfos = playoffMatches.map((m) => (m.notes?.split(" | ")[1]?.trim() || "").toLowerCase());
+    const playedFinals = roundInfos.some((r) => /finals?$/i.test(r) || /\bfinal\b/i.test(r));
+    const playedSemis = roundInfos.some((r) => /semi/i.test(r) || /top\s*4/i.test(r));
+
     let finishType: PlayoffFinish["type"];
 
     // No losses in playoffs = won the whole bracket
     if (playoffLosses === 0 && playoffWins > 0) {
       finishType = "champion";
+    } else if (playedFinals) {
+      // Played in finals but has a loss → lost the finals
+      finishType = "finalist";
+    } else if (playedSemis) {
+      // Played in semis but not finals → lost in semis
+      finishType = "top4";
     } else if (playoffWins >= 3) {
+      // Generic playoff rounds (Round P style) — use win count heuristic
       finishType = "champion";
     } else if (playoffWins === 2) {
       finishType = "finalist";
