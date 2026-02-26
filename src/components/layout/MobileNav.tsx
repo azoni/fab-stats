@@ -213,9 +213,9 @@ export function MobileNav() {
       </div>
 
       {/* Floating Import Button */}
-      {isAuthed && pathname !== "/import" && !moreOpen && (
+      {isAuthed && pathname !== "/events" && !moreOpen && (
         <Link
-          href="/import"
+          href="/events?import=1"
           className="fixed bottom-20 right-4 z-40 md:hidden w-14 h-14 rounded-full bg-fab-gold text-fab-bg flex items-center justify-center shadow-lg active:bg-fab-gold-light transition-colors"
         >
           <ImportIcon className="w-6 h-6" />
