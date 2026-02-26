@@ -77,6 +77,12 @@ service cloud.firestore {
         && (!("messagePreview" in request.resource.data) || maxLen(request.resource.data.messagePreview, 500));
     }
 
+    // ── Favorites ──
+    match /users/{userId}/favorites/{favoriteId} {
+      // Only the owner can read/write their own favorites
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
     // ── Username reservations ──
     match /usernames/{username} {
       // Anyone can read (for availability checks, search, profile lookups)
