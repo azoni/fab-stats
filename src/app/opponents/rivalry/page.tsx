@@ -14,6 +14,10 @@ export default function RivalryPage() {
   const matches = wins + losses + draws;
   const winRate = matches > 0 ? (wins / matches) * 100 : 0;
 
+  const ratedWins = parseInt(params.get("rw") || "0", 10);
+  const ratedLosses = parseInt(params.get("rl") || "0", 10);
+  const ratedDraws = parseInt(params.get("rd") || "0", 10);
+
   const recentStr = params.get("r") || "";
   const recentResults: MatchResult[] = recentStr.split("").map((c) => {
     if (c === "W") return MatchResult.Win;
@@ -46,6 +50,9 @@ export default function RivalryPage() {
           draws,
           winRate,
           matches,
+          ratedWins,
+          ratedLosses,
+          ratedDraws,
           recentResults: recentResults.slice(0, 20),
           playerHeroes,
           opponentHeroes,

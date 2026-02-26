@@ -278,6 +278,12 @@ function OpponentRow({ opp, isExpanded, onToggle, matchOwnerUid, playerName }: {
     }
   }
 
+  // Rated stats
+  const ratedMatches = opp.matches.filter((m) => m.rated);
+  const ratedWins = ratedMatches.filter((m) => m.result === MatchResult.Win).length;
+  const ratedLosses = ratedMatches.filter((m) => m.result === MatchResult.Loss).length;
+  const ratedDraws = ratedMatches.filter((m) => m.result === MatchResult.Draw).length;
+
   // Unique events
   const events = [...new Set(opp.matches.map((m) => m.notes?.split(" | ")[0]).filter(Boolean))];
   // Unique formats
@@ -384,6 +390,9 @@ function OpponentRow({ opp, isExpanded, onToggle, matchOwnerUid, playerName }: {
                   draws: opp.draws,
                   winRate: opp.winRate,
                   matches: opp.totalMatches,
+                  ratedWins,
+                  ratedLosses,
+                  ratedDraws,
                   recentResults: sortedMatches.slice(0, 20).reverse().map((m) => m.result),
                   playerHeroes: opp.heroesPlayed.filter((h) => h !== "Unknown"),
                   opponentHeroes: opp.opponentHeroes.filter((h) => h !== "Unknown"),
@@ -408,7 +417,10 @@ function OpponentRow({ opp, isExpanded, onToggle, matchOwnerUid, playerName }: {
                     opp.draws,
                     recentResults,
                     opp.heroesPlayed.filter((h) => h !== "Unknown"),
-                    opp.opponentHeroes.filter((h) => h !== "Unknown")
+                    opp.opponentHeroes.filter((h) => h !== "Unknown"),
+                    ratedWins,
+                    ratedLosses,
+                    ratedDraws,
                   );
                   const shareText = `${playerName} vs ${opp.opponentName}: ${opp.wins}W-${opp.losses}L${opp.draws > 0 ? `-${opp.draws}D` : ""} (${opp.winRate.toFixed(0)}%)\n${url}`;
 
