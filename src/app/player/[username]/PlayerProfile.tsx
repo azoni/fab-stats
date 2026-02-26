@@ -159,6 +159,36 @@ export default function PlayerProfile() {
     };
   }, [username]);
 
+  const profileUid = state.status === "loaded" ? state.profile.uid : "";
+
+  const overall = useMemo(() => computeOverallStats(fm), [fm]);
+  const heroStats = useMemo(() => computeHeroStats(fm), [fm]);
+  const allOpponentStats = useMemo(() => computeOpponentStats(fm), [fm]);
+  const opponentStats = useMemo(() => allOpponentStats.filter((o) => o.totalMatches >= 3), [allOpponentStats]);
+  const eventTypeStats = useMemo(() => computeEventTypeStats(fm), [fm]);
+  const venueStats = useMemo(() => computeVenueStats(fm).filter((v) => v.venue !== "Unknown"), [fm]);
+  const eventStats = useMemo(() => computeEventStats(fm), [fm]);
+  const recentEvents = useMemo(() => eventStats.slice(0, 5), [eventStats]);
+  const sortedByDateDesc = useMemo(() =>
+    [...fm].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
+    [fm]
+  );
+  const recentMatches = useMemo(() => sortedByDateDesc.slice(0, 5), [sortedByDateDesc]);
+  const achievements = useMemo(() => evaluateAchievements(fm, overall, heroStats, opponentStats), [fm, overall, heroStats, opponentStats]);
+  const masteries = useMemo(() => computeHeroMastery(heroStats), [heroStats]);
+  const nemesis = useMemo(() => opponentStats.length > 0
+    ? opponentStats.reduce((worst, o) => (o.winRate < worst.winRate ? o : worst))
+    : null, [opponentStats]);
+  const bestFriend = useMemo(() => allOpponentStats.length > 0
+    ? allOpponentStats.reduce((most, o) => (o.totalMatches > most.totalMatches ? o : most))
+    : null, [allOpponentStats]);
+  const bestFinish = useMemo(() => computeBestFinish(eventStats), [eventStats]);
+  const playoffFinishes = useMemo(() => computePlayoffFinishes(eventStats), [eventStats]);
+  const eventBadges = useMemo(() => computeEventBadges(eventStats), [eventStats]);
+  const userRanks = useMemo(() => profileUid ? computeUserRanks(lbEntries, profileUid) : [], [lbEntries, profileUid]);
+  const bestRank = useMemo(() => getBestRank(userRanks), [userRanks]);
+  const last30 = useMemo(() => sortedByDateDesc.slice(0, 30).reverse(), [sortedByDateDesc]);
+
   if (state.status === "loading") {
     return (
       <div className="space-y-8">
@@ -215,6 +245,7 @@ export default function PlayerProfile() {
   const { profile, matches, isOwner } = state;
 
   const isFiltered = filterFormat !== "all" || filterRated !== "all" || filterHero !== "all";
+  const { streaks } = overall;
 
   if (matches.length === 0) {
     return (
@@ -226,36 +257,6 @@ export default function PlayerProfile() {
       </div>
     );
   }
-
-  const overall = useMemo(() => computeOverallStats(fm), [fm]);
-  const heroStats = useMemo(() => computeHeroStats(fm), [fm]);
-  const allOpponentStats = useMemo(() => computeOpponentStats(fm), [fm]);
-  const opponentStats = useMemo(() => allOpponentStats.filter((o) => o.totalMatches >= 3), [allOpponentStats]);
-  const eventTypeStats = useMemo(() => computeEventTypeStats(fm), [fm]);
-  const venueStats = useMemo(() => computeVenueStats(fm).filter((v) => v.venue !== "Unknown"), [fm]);
-  const eventStats = useMemo(() => computeEventStats(fm), [fm]);
-  const recentEvents = useMemo(() => eventStats.slice(0, 5), [eventStats]);
-  const sortedByDateDesc = useMemo(() =>
-    [...fm].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
-    [fm]
-  );
-  const recentMatches = useMemo(() => sortedByDateDesc.slice(0, 5), [sortedByDateDesc]);
-  const { streaks } = overall;
-  const achievements = useMemo(() => evaluateAchievements(fm, overall, heroStats, opponentStats), [fm, overall, heroStats, opponentStats]);
-  const masteries = useMemo(() => computeHeroMastery(heroStats), [heroStats]);
-  const nemesis = useMemo(() => opponentStats.length > 0
-    ? opponentStats.reduce((worst, o) => (o.winRate < worst.winRate ? o : worst))
-    : null, [opponentStats]);
-  const bestFriend = useMemo(() => allOpponentStats.length > 0
-    ? allOpponentStats.reduce((most, o) => (o.totalMatches > most.totalMatches ? o : most))
-    : null, [allOpponentStats]);
-  const bestFinish = useMemo(() => computeBestFinish(eventStats), [eventStats]);
-  const playoffFinishes = useMemo(() => computePlayoffFinishes(eventStats), [eventStats]);
-  const eventBadges = useMemo(() => computeEventBadges(eventStats), [eventStats]);
-  const userRanks = useMemo(() => computeUserRanks(lbEntries, profile.uid), [lbEntries, profile.uid]);
-  const bestRank = useMemo(() => getBestRank(userRanks), [userRanks]);
-
-  const last30 = useMemo(() => sortedByDateDesc.slice(0, 30).reverse(), [sortedByDateDesc]);
 
   return (
     <div className="space-y-8">
