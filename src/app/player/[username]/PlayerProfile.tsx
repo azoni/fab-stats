@@ -14,6 +14,7 @@ import { MatchCard } from "@/components/matches/MatchCard";
 import { EventCard } from "@/components/events/EventCard";
 import { EventBadges } from "@/components/profile/EventBadges";
 import { LeaderboardCrowns } from "@/components/profile/LeaderboardCrowns";
+import { TrophyCase } from "@/components/profile/TrophyCase";
 import { computeEventBadges } from "@/lib/events";
 import { useLeaderboard } from "@/hooks/useLeaderboard";
 import { computeUserRanks, getBestRank } from "@/lib/leaderboard-ranks";
@@ -263,64 +264,67 @@ export default function PlayerProfile() {
 
   return (
     <div className="space-y-8">
-      {/* Profile Header + Streak */}
+      {/* Profile Header + Trophy Case + Streak */}
       <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
         <ProfileHeader profile={profile} achievements={achievements} bestRank={bestRank} isAdmin={isAdmin} isOwner={isOwner} isFavorited={!isOwner && !!currentUser && !isGuest && isFavorited(profile.uid)} onToggleFavorite={!isOwner && !!currentUser && !isGuest ? () => toggleFavorite(profile) : undefined} />
-        {/* Compact Streak */}
-        <div className={`rounded-lg px-5 py-4 border ${
-          streaks.currentStreak?.type === MatchResult.Win
-            ? "bg-fab-win/8 border-fab-win/30"
-            : streaks.currentStreak?.type === MatchResult.Loss
-              ? "bg-fab-loss/8 border-fab-loss/30"
-              : "bg-fab-surface border-fab-border"
-        }`}>
-          <div className="flex items-center gap-5">
-            <div>
-              <p className="text-xs text-fab-muted uppercase tracking-wider">Streak</p>
-              <div className="flex items-baseline gap-1.5">
-                <span className={`text-3xl font-black ${
-                  streaks.currentStreak?.type === MatchResult.Win
-                    ? "text-fab-win"
-                    : streaks.currentStreak?.type === MatchResult.Loss
-                      ? "text-fab-loss"
-                      : "text-fab-dim"
-                }`}>
-                  {streaks.currentStreak ? streaks.currentStreak.count : 0}
-                </span>
-                <span className={`text-base font-bold ${
-                  streaks.currentStreak?.type === MatchResult.Win
-                    ? "text-fab-win"
-                    : streaks.currentStreak?.type === MatchResult.Loss
-                      ? "text-fab-loss"
-                      : "text-fab-dim"
-                }`}>
-                  {streaks.currentStreak
-                    ? streaks.currentStreak.type === MatchResult.Win ? "W" : "L"
-                    : "\u2014"}
-                </span>
+        <div className="flex items-start gap-3 shrink-0">
+          {playoffFinishes.length > 0 && <TrophyCase finishes={playoffFinishes} />}
+          {/* Compact Streak */}
+          <div className={`rounded-lg px-3 py-3 border ${
+            streaks.currentStreak?.type === MatchResult.Win
+              ? "bg-fab-win/8 border-fab-win/30"
+              : streaks.currentStreak?.type === MatchResult.Loss
+                ? "bg-fab-loss/8 border-fab-loss/30"
+                : "bg-fab-surface border-fab-border"
+          }`}>
+            <div className="flex items-center gap-3">
+              <div>
+                <p className="text-[10px] text-fab-muted uppercase tracking-wider">Streak</p>
+                <div className="flex items-baseline gap-1">
+                  <span className={`text-2xl font-black ${
+                    streaks.currentStreak?.type === MatchResult.Win
+                      ? "text-fab-win"
+                      : streaks.currentStreak?.type === MatchResult.Loss
+                        ? "text-fab-loss"
+                        : "text-fab-dim"
+                  }`}>
+                    {streaks.currentStreak ? streaks.currentStreak.count : 0}
+                  </span>
+                  <span className={`text-sm font-bold ${
+                    streaks.currentStreak?.type === MatchResult.Win
+                      ? "text-fab-win"
+                      : streaks.currentStreak?.type === MatchResult.Loss
+                        ? "text-fab-loss"
+                        : "text-fab-dim"
+                  }`}>
+                    {streaks.currentStreak
+                      ? streaks.currentStreak.type === MatchResult.Win ? "W" : "L"
+                      : "\u2014"}
+                  </span>
+                </div>
+              </div>
+              <div className="flex gap-3 text-center">
+                <div>
+                  <p className="text-sm font-bold text-fab-win">{streaks.longestWinStreak}</p>
+                  <p className="text-[10px] text-fab-dim">Best</p>
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-fab-loss">{streaks.longestLossStreak}</p>
+                  <p className="text-[10px] text-fab-dim">Worst</p>
+                </div>
               </div>
             </div>
-            <div className="flex gap-4 text-center">
-              <div>
-                <p className="text-base font-bold text-fab-win">{streaks.longestWinStreak}</p>
-                <p className="text-[10px] text-fab-dim">Best</p>
-              </div>
-              <div>
-                <p className="text-base font-bold text-fab-loss">{streaks.longestLossStreak}</p>
-                <p className="text-[10px] text-fab-dim">Worst</p>
-              </div>
+            <div className="mt-2 flex gap-0.5 flex-wrap max-w-[160px]">
+              {last30.map((m, i) => (
+                <div
+                  key={i}
+                  className={`w-2 h-2 rounded-full ${
+                    m.result === MatchResult.Win ? "bg-fab-win" : m.result === MatchResult.Loss ? "bg-fab-loss" : "bg-fab-draw"
+                  }`}
+                  title={`${new Date(m.date).toLocaleDateString()} - ${m.result}`}
+                />
+              ))}
             </div>
-          </div>
-          <div className="mt-2.5 flex gap-0.5 flex-wrap">
-            {last30.map((m, i) => (
-              <div
-                key={i}
-                className={`w-2.5 h-2.5 rounded-full ${
-                  m.result === MatchResult.Win ? "bg-fab-win" : m.result === MatchResult.Loss ? "bg-fab-loss" : "bg-fab-draw"
-                }`}
-                title={`${new Date(m.date).toLocaleDateString()} - ${m.result}`}
-              />
-            ))}
           </div>
         </div>
       </div>
@@ -647,12 +651,12 @@ function ProfileHeader({ profile, achievements, bestRank, isAdmin, isOwner, isFa
             title="Copy profile link"
           >
             {linkCopied ? (
-              <svg className="w-5 h-5 text-fab-win" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <svg className="w-4 h-4 text-fab-win" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
               </svg>
             ) : (
-              <svg className="w-5 h-5 text-fab-dim hover:text-fab-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m9.86-2.54a4.5 4.5 0 00-1.242-7.244l-4.5-4.5a4.5 4.5 0 00-6.364 6.364L4.34 8.798" />
+              <svg className="w-4 h-4 text-fab-dim hover:text-fab-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 8.25H7.5a2.25 2.25 0 00-2.25 2.25v9a2.25 2.25 0 002.25 2.25h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25H15m0-3l-3-3m0 0l-3 3m3-3v11.25" />
               </svg>
             )}
           </button>
