@@ -4,6 +4,7 @@ import { useSearchParams } from "next/navigation";
 import { useMatches } from "@/hooks/useMatches";
 import { computeWrappedStats } from "@/lib/wrapped";
 import { getHeroByName } from "@/lib/heroes";
+import { HeroClassIcon } from "@/components/heroes/HeroClassIcon";
 import {
   BarChart,
   Bar,
@@ -85,11 +86,7 @@ function HeroImage({ heroName }: { heroName: string }) {
   return (
     <div className="relative inline-block mb-4">
       <div className="absolute inset-0 rounded-xl bg-fab-gold/20 blur-xl" />
-      <img
-        src={hero.imageUrl}
-        alt={hero.name}
-        className="relative w-48 h-48 object-cover rounded-xl border-2 border-fab-gold/30"
-      />
+      <HeroClassIcon heroClass={hero.classes[0]} size="xl" className="relative border-2 border-fab-gold/30" />
     </div>
   );
 }

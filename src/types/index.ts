@@ -224,6 +224,7 @@ export interface LeaderboardEntry {
   armoryEvents: number;
   showNameOnProfiles?: boolean;
   heroBreakdown?: { hero: string; matches: number; wins: number; winRate: number }[];
+  heroBreakdownDetailed?: { hero: string; format: string; eventType: string; matches: number; wins: number; winRate: number }[];
   updatedAt: string;
 }
 

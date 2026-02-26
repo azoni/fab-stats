@@ -7,7 +7,7 @@ import {
   where,
 } from "firebase/firestore";
 import { db } from "./firebase";
-import { computeOverallStats, computeEventStats, computeOpponentStats } from "./stats";
+import { computeOverallStats, computeEventStats, computeOpponentStats, getEventType } from "./stats";
 import type { LeaderboardEntry, MatchRecord, UserProfile } from "@/types";
 import { MatchResult } from "@/types";
 
@@ -80,6 +80,32 @@ export async function updateLeaderboardEntry(
     winRate: data.matches > 0 ? (data.wins / data.matches) * 100 : 0,
   }));
 
+  // Hero breakdown by format + event type (for meta page filtering)
+  const heroDetailedData = new Map<string, { matches: number; wins: number }>();
+  for (const m of matches) {
+    if (m.heroPlayed && m.heroPlayed !== "Unknown") {
+      const et = getEventType(m);
+      const key = `${m.heroPlayed}|${m.format}|${et}`;
+      const cur = heroDetailedData.get(key) || { matches: 0, wins: 0 };
+      cur.matches++;
+      if (m.result === MatchResult.Win) cur.wins++;
+      heroDetailedData.set(key, cur);
+    }
+  }
+  const heroBreakdownDetailed = [...heroDetailedData.entries()]
+    .sort((a, b) => b[1].matches - a[1].matches)
+    .map(([key, data]) => {
+      const [hero, format, eventType] = key.split("|");
+      return {
+        hero,
+        format,
+        eventType,
+        matches: data.matches,
+        wins: data.wins,
+        winRate: data.matches > 0 ? Math.round((data.wins / data.matches) * 1000) / 10 : 0,
+      };
+    });
+
   // Nemesis — opponent with worst win rate (min 3 matches)
   const oppStats = computeOpponentStats(matches).filter(
     (o) => o.totalMatches >= 3 && o.opponentName !== "Unknown"
@@ -143,6 +169,7 @@ export async function updateLeaderboardEntry(
     armoryEvents,
     showNameOnProfiles: profile.showNameOnProfiles ?? false,
     heroBreakdown,
+    heroBreakdownDetailed,
     updatedAt: new Date().toISOString(),
   };
 
@@ -169,7 +196,30 @@ export async function getLeaderboardEntries(): Promise<LeaderboardEntry[]> {
   }
   const q = query(leaderboardCollection(), where("isPublic", "==", true));
   const snapshot = await getDocs(q);
-  cachedEntries = snapshot.docs.map((d) => d.data() as LeaderboardEntry);
+
+  // Fix stale weekly/monthly stats — zero out if the stored period doesn't match current
+  const currentWeekStart = getWeekStart();
+  const currentMonthStart = getMonthStart();
+
+  cachedEntries = snapshot.docs.map((d) => {
+    const entry = d.data() as LeaderboardEntry;
+
+    if (entry.weekStart !== currentWeekStart) {
+      entry.weeklyMatches = 0;
+      entry.weeklyWins = 0;
+      entry.weekStart = currentWeekStart;
+    }
+
+    if (entry.monthStart !== currentMonthStart) {
+      entry.monthlyMatches = 0;
+      entry.monthlyWins = 0;
+      entry.monthlyWinRate = 0;
+      entry.monthStart = currentMonthStart;
+    }
+
+    return entry;
+  });
+
   cacheTimestamp = now;
   return cachedEntries;
 }

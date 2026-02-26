@@ -18,9 +18,7 @@ for (const card of heroCards) {
       life: card.life,
       intellect: card.intellect,
       young: card.young,
-      imageUrl: card.defaultImage
-        ? `https://storage.googleapis.com/fabmaster/media/images/${card.defaultImage}.width-450.format-webp.webp`
-        : "",
+      imageUrl: "",
     });
   }
 }

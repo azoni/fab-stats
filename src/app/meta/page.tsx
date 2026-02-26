@@ -1,19 +1,30 @@
 "use client";
 import { useMemo, useState } from "react";
 import { useLeaderboard } from "@/hooks/useLeaderboard";
-import { computeMetaStats, type HeroMetaStats } from "@/lib/meta-stats";
-import { allHeroes } from "@/lib/heroes";
+import { computeMetaStats, getAvailableFormats, getAvailableEventTypes, type HeroMetaStats } from "@/lib/meta-stats";
+import { getHeroByName } from "@/lib/heroes";
+import { HeroClassIcon } from "@/components/heroes/HeroClassIcon";
 
 type SortKey = "popularity" | "winrate" | "players" | "matches";
-
-const heroImageMap = new Map(allHeroes.map((h) => [h.name, h.imageUrl]));
 
 export default function MetaPage() {
   const { entries, loading } = useLeaderboard();
   const [sortBy, setSortBy] = useState<SortKey>("popularity");
   const [search, setSearch] = useState("");
+  const [filterFormat, setFilterFormat] = useState("all");
+  const [filterEventType, setFilterEventType] = useState("all");
 
-  const { overview, heroStats } = useMemo(() => computeMetaStats(entries), [entries]);
+  const allFormats = useMemo(() => getAvailableFormats(entries), [entries]);
+  const allEventTypes = useMemo(() => getAvailableEventTypes(entries), [entries]);
+
+  const { overview, heroStats } = useMemo(
+    () => computeMetaStats(
+      entries,
+      filterFormat !== "all" ? filterFormat : undefined,
+      filterEventType !== "all" ? filterEventType : undefined,
+    ),
+    [entries, filterFormat, filterEventType],
+  );
 
   const sortedHeroes = useMemo(() => {
     let list = [...heroStats];
@@ -78,7 +89,7 @@ export default function MetaPage() {
         </div>
       </div>
 
-      {/* Sort + Search */}
+      {/* Filters + Sort + Search */}
       <div className="flex flex-wrap items-center gap-2 mb-4">
         <input
           type="text"
@@ -87,6 +98,30 @@ export default function MetaPage() {
           placeholder="Search heroes..."
           className="bg-fab-surface border border-fab-border rounded-md px-3 py-1.5 text-fab-text text-sm placeholder:text-fab-dim focus:outline-none focus:border-fab-gold w-40"
         />
+        {allFormats.length > 1 && (
+          <select
+            value={filterFormat}
+            onChange={(e) => setFilterFormat(e.target.value)}
+            className="bg-fab-surface border border-fab-border rounded-md px-3 py-1.5 text-fab-text text-sm outline-none"
+          >
+            <option value="all">All Formats</option>
+            {allFormats.map((f) => (
+              <option key={f} value={f}>{f}</option>
+            ))}
+          </select>
+        )}
+        {allEventTypes.length > 1 && (
+          <select
+            value={filterEventType}
+            onChange={(e) => setFilterEventType(e.target.value)}
+            className="bg-fab-surface border border-fab-border rounded-md px-3 py-1.5 text-fab-text text-sm outline-none"
+          >
+            <option value="all">All Event Types</option>
+            {allEventTypes.map((t) => (
+              <option key={t} value={t}>{t}</option>
+            ))}
+          </select>
+        )}
         <div className="flex gap-1 ml-auto">
           {([
             { id: "popularity", label: "Popular" },
@@ -113,7 +148,11 @@ export default function MetaPage() {
       {sortedHeroes.length === 0 ? (
         <div className="text-center py-16">
           <p className="text-fab-muted">No hero data available yet.</p>
-          <p className="text-fab-dim text-sm mt-1">Players need to import matches for meta data to appear.</p>
+          <p className="text-fab-dim text-sm mt-1">
+            {filterFormat !== "all" || filterEventType !== "all"
+              ? "No data for the selected filters. Players need to re-import matches for filtered stats."
+              : "Players need to import matches for meta data to appear."}
+          </p>
         </div>
       ) : (
         <div className="space-y-2">
@@ -127,7 +166,7 @@ export default function MetaPage() {
 }
 
 function HeroMetaRow({ hero, index, sortBy, maxMatches }: { hero: HeroMetaStats; index: number; sortBy: SortKey; maxMatches: number }) {
-  const imageUrl = heroImageMap.get(hero.hero);
+  const heroInfo = getHeroByName(hero.hero);
 
   return (
     <div className="bg-fab-surface border border-fab-border rounded-lg p-4 flex items-center gap-4">
@@ -136,14 +175,8 @@ function HeroMetaRow({ hero, index, sortBy, maxMatches }: { hero: HeroMetaStats;
         {index + 1}
       </span>
 
-      {/* Hero Image */}
-      {imageUrl ? (
-        <img src={imageUrl} alt="" className="w-10 h-10 rounded-full object-cover shrink-0" />
-      ) : (
-        <div className="w-10 h-10 rounded-full bg-fab-gold/20 flex items-center justify-center text-fab-gold text-sm font-bold shrink-0">
-          {hero.hero.charAt(0)}
-        </div>
-      )}
+      {/* Hero Icon */}
+      <HeroClassIcon heroClass={heroInfo?.classes[0]} size="lg" />
 
       {/* Name + bar */}
       <div className="flex-1 min-w-0">
