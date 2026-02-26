@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build:ext": "node scripts/zip-extension.mjs",
+    "build": "npm run build:ext && next build",
     "start": "next start",
     "lint": "eslint"
   },
