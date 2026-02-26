@@ -34,7 +34,7 @@ export default function Dashboard() {
   const [announcementDismissed, setAnnouncementDismissed] = useState(true);
 
   useEffect(() => {
-    setAnnouncementDismissed(localStorage.getItem("fab_announcement_v3") === "dismissed");
+    setAnnouncementDismissed(localStorage.getItem("fab_announcement_v4") === "dismissed");
   }, []);
   const leaderboardUpdated = useRef(false);
 
@@ -160,7 +160,7 @@ export default function Dashboard() {
           <button
             onClick={() => {
               setAnnouncementDismissed(true);
-              localStorage.setItem("fab_announcement_v3", "dismissed");
+              localStorage.setItem("fab_announcement_v4", "dismissed");
             }}
             className="absolute top-3 right-3 text-fab-dim hover:text-fab-text transition-colors"
           >
@@ -170,7 +170,7 @@ export default function Dashboard() {
           </button>
           <p className="text-xs font-medium text-fab-gold uppercase tracking-wider mb-1">From the Developer</p>
           <p className="text-sm text-fab-text">
-            You can now edit your hero on matches! Expand any event and set the hero you played.
+            New: Favorite players to track them easily, log single matches after they happen, and share head-to-head rivalry cards from your Opponents page!
           </p>
         </div>
       )}

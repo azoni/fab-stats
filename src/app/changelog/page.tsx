@@ -33,6 +33,9 @@ const changelog: Entry[] = [
   {
     date: "February 26, 2026",
     changes: [
+      { type: "new", text: "Favorite players — star any player to keep them at the top of your Opponents list" },
+      { type: "new", text: "Quick Match Log — log a single match result after it happens without a full import" },
+      { type: "new", text: "Shareable H2H rivalry cards — share your head-to-head record from the Opponents page" },
       { type: "new", text: "Monthly leaderboard categories — Monthly Matches, Monthly Wins, and Monthly Win Rate tabs" },
       { type: "new", text: "Community Meta page (beta) — see the most popular and best-performing heroes across all players" },
       { type: "new", text: "Hero Mastery expanded to 8 tiers — Grandmaster, Legend, and Mythic for dedicated hero mains" },
