@@ -265,10 +265,10 @@ export default function PlayerProfile() {
 
   return (
     <div className="space-y-8">
-      {/* Profile Header + Filters + Streak */}
+      {/* Profile Header + Streak */}
       <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-        <ProfileHeader profile={profile} achievements={achievements} bestRank={bestRank} isAdmin={isAdmin} isOwner={isOwner} isFavorited={!isOwner && !!currentUser && !isGuest && isFavorited(profile.uid)} onToggleFavorite={!isOwner && !!currentUser && !isGuest ? () => toggleFavorite(profile) : undefined} />
-        <div className="shrink-0 flex flex-col gap-2 items-end">
+        <div className="flex flex-col gap-3">
+          <ProfileHeader profile={profile} achievements={achievements} bestRank={bestRank} isAdmin={isAdmin} isOwner={isOwner} isFavorited={!isOwner && !!currentUser && !isGuest && isFavorited(profile.uid)} onToggleFavorite={!isOwner && !!currentUser && !isGuest ? () => toggleFavorite(profile) : undefined} />
           {/* Filters */}
           <div className="flex gap-2 flex-wrap items-center">
             <select
@@ -314,14 +314,16 @@ export default function PlayerProfile() {
                 Raw Data
               </button>
             )}
+            {isFiltered && (
+              <span className="text-xs text-fab-dim">
+                Showing {fm.length} of {matches.length} matches
+              </span>
+            )}
           </div>
-          {isFiltered && (
-            <span className="text-xs text-fab-dim">
-              Showing {fm.length} of {matches.length} matches
-            </span>
-          )}
+        </div>
+        <div className="shrink-0">
           {/* Compact Streak */}
-          <div className={`rounded-lg px-3 py-3 border ${
+          <div className={`rounded-lg px-4 py-3 border min-w-[200px] ${
             streaks.currentStreak?.type === MatchResult.Win
               ? "bg-fab-win/8 border-fab-win/30"
               : streaks.currentStreak?.type === MatchResult.Loss
@@ -365,7 +367,7 @@ export default function PlayerProfile() {
                 </div>
               </div>
             </div>
-            <div className="mt-2 flex gap-0.5 flex-wrap max-w-[160px]">
+            <div className="mt-2 flex gap-0.5 flex-wrap max-w-[200px]">
               {last30.map((m, i) => (
                 <div
                   key={i}
