@@ -40,10 +40,9 @@ export function CommunityHighlights({
         <div className="flex flex-col gap-6">
           <MetaSnapshot topHeroes={topHeroes} />
           {rightColumnExtra || <LeaderboardPreview entries={leaderboardEntries} />}
+          <RecentActivity events={feedEvents} />
         </div>
       </div>
-
-      <RecentActivity events={feedEvents} />
     </div>
   );
 }

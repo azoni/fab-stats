@@ -9,6 +9,7 @@ export default function TournamentsPage() {
   const events = useFeaturedEvents();
   const { entries: lbEntries, loading } = useLeaderboard();
   const [filterFormat, setFilterFormat] = useState("all");
+  const [filterEventType, setFilterEventType] = useState("all");
 
   const entryMap = useMemo(() => new Map(lbEntries.map((e) => [e.username, e])), [lbEntries]);
 
@@ -20,9 +21,20 @@ export default function TournamentsPage() {
     return Array.from(set).sort();
   }, [events]);
 
+  const eventTypes = useMemo(() => {
+    const set = new Set<string>();
+    for (const e of events) {
+      if (e.eventType) set.add(e.eventType);
+    }
+    return Array.from(set).sort();
+  }, [events]);
+
   const filtered = useMemo(
-    () => filterFormat === "all" ? events : events.filter((e) => e.format === filterFormat),
-    [events, filterFormat],
+    () => events.filter((e) =>
+      (filterFormat === "all" || e.format === filterFormat) &&
+      (filterEventType === "all" || e.eventType === filterEventType)
+    ),
+    [events, filterFormat, filterEventType],
   );
 
   if (loading) {
@@ -43,31 +55,63 @@ export default function TournamentsPage() {
         </Link>
       </div>
 
-      {formats.length > 1 && (
-        <div className="flex gap-2 flex-wrap">
-          <button
-            onClick={() => setFilterFormat("all")}
-            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-              filterFormat === "all"
-                ? "bg-fab-gold text-fab-bg"
-                : "bg-fab-surface border border-fab-border text-fab-muted hover:text-fab-text"
-            }`}
-          >
-            All
-          </button>
-          {formats.map((f) => (
-            <button
-              key={f}
-              onClick={() => setFilterFormat(f)}
-              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                filterFormat === f
-                  ? "bg-fab-gold text-fab-bg"
-                  : "bg-fab-surface border border-fab-border text-fab-muted hover:text-fab-text"
-              }`}
-            >
-              {f}
-            </button>
-          ))}
+      {(formats.length > 1 || eventTypes.length > 1) && (
+        <div className="flex gap-2 flex-wrap items-center">
+          {formats.length > 1 && (
+            <>
+              <button
+                onClick={() => setFilterFormat("all")}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                  filterFormat === "all"
+                    ? "bg-fab-gold text-fab-bg"
+                    : "bg-fab-surface border border-fab-border text-fab-muted hover:text-fab-text"
+                }`}
+              >
+                All Formats
+              </button>
+              {formats.map((f) => (
+                <button
+                  key={f}
+                  onClick={() => setFilterFormat(f)}
+                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                    filterFormat === f
+                      ? "bg-fab-gold text-fab-bg"
+                      : "bg-fab-surface border border-fab-border text-fab-muted hover:text-fab-text"
+                  }`}
+                >
+                  {f}
+                </button>
+              ))}
+            </>
+          )}
+          {eventTypes.length > 1 && (
+            <>
+              {formats.length > 1 && <div className="w-px h-6 bg-fab-border self-center" />}
+              <button
+                onClick={() => setFilterEventType("all")}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                  filterEventType === "all"
+                    ? "bg-fab-gold text-fab-bg"
+                    : "bg-fab-surface border border-fab-border text-fab-muted hover:text-fab-text"
+                }`}
+              >
+                All Events
+              </button>
+              {eventTypes.map((et) => (
+                <button
+                  key={et}
+                  onClick={() => setFilterEventType(et)}
+                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                    filterEventType === et
+                      ? "bg-fab-gold text-fab-bg"
+                      : "bg-fab-surface border border-fab-border text-fab-muted hover:text-fab-text"
+                  }`}
+                >
+                  {et}
+                </button>
+              ))}
+            </>
+          )}
         </div>
       )}
 
@@ -80,7 +124,7 @@ export default function TournamentsPage() {
       ) : (
         <div className="space-y-4">
           {filtered.map((event, i) => (
-            <TournamentCard key={`${event.name}-${i}`} event={event} entryMap={entryMap} />
+            <TournamentCard key={`${event.name}-${i}`} event={event} entryMap={entryMap} fullImage />
           ))}
         </div>
       )}

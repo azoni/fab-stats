@@ -11,9 +11,11 @@ const BRACKET_PLACEMENT = [1, 2, 3, 3, 5, 5, 5, 5];
 interface TournamentCardProps {
   event: FeaturedEvent;
   entryMap: Map<string, LeaderboardEntry>;
+  /** Show full-height image instead of cropped thumbnail */
+  fullImage?: boolean;
 }
 
-export function TournamentCard({ event, entryMap }: TournamentCardProps) {
+export function TournamentCard({ event, entryMap, fullImage }: TournamentCardProps) {
   const dateStr = (() => {
     try {
       return localDate(event.date).toLocaleDateString("en-US", {
@@ -31,13 +33,21 @@ export function TournamentCard({ event, entryMap }: TournamentCardProps) {
   return (
     <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden">
       {event.imageUrl && (
-        <div className="w-full h-40 sm:h-48 overflow-hidden">
+        fullImage ? (
           <img
             src={event.imageUrl}
             alt={event.name}
-            className="w-full h-full object-cover"
+            className="w-full"
           />
-        </div>
+        ) : (
+          <div className="w-full h-40 sm:h-48 overflow-hidden">
+            <img
+              src={event.imageUrl}
+              alt={event.name}
+              className="w-full h-full object-cover"
+            />
+          </div>
+        )
       )}
       <div className="p-4">
         <div className="min-w-0">

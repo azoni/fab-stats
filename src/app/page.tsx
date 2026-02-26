@@ -333,14 +333,6 @@ export default function Dashboard() {
                   <EventCard key={`${event.eventName}-${event.eventDate}`} event={event} />
                 ))}
               </div>
-              {!showAllEvents && eventStats.length > EVENTS_PREVIEW && profile?.username && (
-                <Link
-                  href={`/player/${profile.username}`}
-                  className="block text-center text-sm text-fab-dim hover:text-fab-gold transition-colors mt-3"
-                >
-                  View full profile for all events &rarr;
-                </Link>
-              )}
             </div>
           ) : undefined
         }
