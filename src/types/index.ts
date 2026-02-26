@@ -258,6 +258,14 @@ export interface Creator {
   imageUrl?: string;
 }
 
+export interface FeaturedEvent {
+  name: string;
+  date: string;
+  format: string;
+  description?: string;
+  playerUsernames: string[];
+}
+
 export interface FeedbackItem {
   id: string;
   userId: string;

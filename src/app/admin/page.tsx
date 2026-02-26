@@ -6,8 +6,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { getAdminDashboardData, backfillLeaderboard, broadcastMessage, fixMatchDates, backfillGemIds, backfillMatchLinking, type AdminDashboardData, type AdminUserStats } from "@/lib/admin";
 import { getAllFeedback, updateFeedbackStatus } from "@/lib/feedback";
 import { getCreators, saveCreators } from "@/lib/creators";
+import { getEvents, saveEvents } from "@/lib/featured-events";
 import { getAnalytics } from "@/lib/analytics";
-import type { FeedbackItem, Creator } from "@/types";
+import type { FeedbackItem, Creator, FeaturedEvent } from "@/types";
 
 type SortKey = "matchCount" | "createdAt" | "username";
 type SortDir = "asc" | "desc";
@@ -29,6 +30,9 @@ export default function AdminPage() {
   const [creatorsList, setCreatorsList] = useState<Creator[]>([]);
   const [savingCreators, setSavingCreators] = useState(false);
   const [creatorsSaved, setCreatorsSaved] = useState(false);
+  const [eventsList, setEventsList] = useState<FeaturedEvent[]>([]);
+  const [savingEvents, setSavingEvents] = useState(false);
+  const [eventsSaved, setEventsSaved] = useState(false);
   const [broadcastText, setBroadcastText] = useState("");
   const [broadcasting, setBroadcasting] = useState(false);
   const [broadcastProgress, setBroadcastProgress] = useState("");
@@ -54,10 +58,11 @@ export default function AdminPage() {
     setFetching(true);
     setError("");
     try {
-      const [result, fb, cr, analytics] = await Promise.all([getAdminDashboardData(), getAllFeedback(), getCreators(), getAnalytics()]);
+      const [result, fb, cr, ev, analytics] = await Promise.all([getAdminDashboardData(), getAllFeedback(), getCreators(), getEvents(), getAnalytics()]);
       setData(result);
       setFeedback(fb);
       setCreatorsList(cr);
+      setEventsList(ev);
       setAnalyticsData(analytics);
     } catch {
       setError("Failed to load admin data.");
@@ -511,6 +516,92 @@ export default function AdminPage() {
                 className="w-full py-2 rounded-lg text-sm font-medium border border-dashed border-fab-border text-fab-muted hover:text-fab-text hover:border-fab-gold/30 transition-colors"
               >
                 + Add Creator
+              </button>
+            </div>
+          </div>
+
+          {/* Featured Events Management */}
+          <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden mt-6">
+            <div className="px-4 py-3 border-b border-fab-border flex items-center justify-between">
+              <h2 className="text-sm font-semibold text-fab-text">Featured Events ({eventsList.length})</h2>
+              <div className="flex items-center gap-2">
+                {eventsSaved && <span className="text-xs text-fab-win">Saved!</span>}
+                <button
+                  onClick={async () => {
+                    setSavingEvents(true);
+                    setEventsSaved(false);
+                    try {
+                      await saveEvents(eventsList);
+                      setEventsSaved(true);
+                      setTimeout(() => setEventsSaved(false), 2000);
+                    } catch {
+                      setError("Failed to save events.");
+                    } finally {
+                      setSavingEvents(false);
+                    }
+                  }}
+                  disabled={savingEvents}
+                  className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors disabled:opacity-50"
+                >
+                  {savingEvents ? "Saving..." : "Save Events"}
+                </button>
+              </div>
+            </div>
+            <div className="p-4 space-y-3">
+              {eventsList.map((ev, i) => (
+                <div key={i} className="bg-fab-bg border border-fab-border rounded-lg p-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs text-fab-dim font-medium">Event {i + 1}</span>
+                    <button
+                      onClick={() => setEventsList((prev) => prev.filter((_, j) => j !== i))}
+                      className="text-xs text-fab-loss hover:text-fab-loss/80 transition-colors"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <input
+                      type="text"
+                      placeholder="Event Name"
+                      value={ev.name}
+                      onChange={(e) => setEventsList((prev) => prev.map((ev2, j) => j === i ? { ...ev2, name: e.target.value } : ev2))}
+                      className="bg-fab-surface border border-fab-border text-fab-text text-sm rounded px-2 py-1.5 focus:outline-none focus:border-fab-gold"
+                    />
+                    <input
+                      type="date"
+                      value={ev.date}
+                      onChange={(e) => setEventsList((prev) => prev.map((ev2, j) => j === i ? { ...ev2, date: e.target.value } : ev2))}
+                      className="bg-fab-surface border border-fab-border text-fab-text text-sm rounded px-2 py-1.5 focus:outline-none focus:border-fab-gold"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Format (e.g. Classic Constructed)"
+                      value={ev.format}
+                      onChange={(e) => setEventsList((prev) => prev.map((ev2, j) => j === i ? { ...ev2, format: e.target.value } : ev2))}
+                      className="bg-fab-surface border border-fab-border text-fab-text text-sm rounded px-2 py-1.5 focus:outline-none focus:border-fab-gold"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Description (optional)"
+                      value={ev.description || ""}
+                      onChange={(e) => setEventsList((prev) => prev.map((ev2, j) => j === i ? { ...ev2, description: e.target.value || undefined } : ev2))}
+                      className="bg-fab-surface border border-fab-border text-fab-text text-sm rounded px-2 py-1.5 focus:outline-none focus:border-fab-gold"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Player usernames (comma-separated)"
+                      value={ev.playerUsernames.join(", ")}
+                      onChange={(e) => setEventsList((prev) => prev.map((ev2, j) => j === i ? { ...ev2, playerUsernames: e.target.value.split(",").map((u) => u.trim()).filter(Boolean) } : ev2))}
+                      className="bg-fab-surface border border-fab-border text-fab-text text-sm rounded px-2 py-1.5 focus:outline-none focus:border-fab-gold col-span-2"
+                    />
+                  </div>
+                </div>
+              ))}
+              <button
+                onClick={() => setEventsList((prev) => [...prev, { name: "", date: "", format: "", playerUsernames: [] }])}
+                className="w-full py-2 rounded-lg text-sm font-medium border border-dashed border-fab-border text-fab-muted hover:text-fab-text hover:border-fab-gold/30 transition-colors"
+              >
+                + Add Event
               </button>
             </div>
           </div>

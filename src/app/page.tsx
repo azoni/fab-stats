@@ -20,6 +20,12 @@ import { EventCard } from "@/components/events/EventCard";
 import { ShieldIcon } from "@/components/icons/NavIcons";
 import { MatchResult, GameFormat } from "@/types";
 import { WeeklyDigest } from "@/components/dashboard/WeeklyDigest";
+import { CommunityHighlights } from "@/components/home/CommunityHighlights";
+import { useFeaturedEvents } from "@/hooks/useFeaturedEvents";
+import { useFeed } from "@/hooks/useFeed";
+import { useCommunityStats } from "@/hooks/useCommunityStats";
+import { computeMetaStats } from "@/lib/meta-stats";
+import { selectFeaturedProfiles } from "@/lib/featured-profiles";
 import { allHeroes as knownHeroes } from "@/lib/heroes";
 
 const VALID_HERO_NAMES = new Set(knownHeroes.map((h) => h.name));
@@ -28,6 +34,9 @@ export default function Dashboard() {
   const { matches, isLoaded } = useMatches();
   const { user, profile } = useAuth();
   const { entries: lbEntries } = useLeaderboard();
+  const featuredEvents = useFeaturedEvents();
+  const { events: feedEvents } = useFeed();
+  const { userCount, matchCount: communityMatchCount } = useCommunityStats();
   const [filterFormat, setFilterFormat] = useState<string>("all");
   const [filterRated, setFilterRated] = useState<string>("all");
   const [filterHero, setFilterHero] = useState<string>("all");
@@ -107,46 +116,66 @@ export default function Dashboard() {
   const bestRank = useMemo(() => getBestRank(userRanks), [userRanks]);
   const last30 = useMemo(() => sortedByDateDesc.slice(0, 30).reverse(), [sortedByDateDesc]);
 
+  // Community section data
+  const communityMeta = useMemo(() => computeMetaStats(lbEntries), [lbEntries]);
+  const topHeroes = useMemo(() => communityMeta.heroStats.slice(0, 5), [communityMeta]);
+  const featuredProfiles = useMemo(() => selectFeaturedProfiles(lbEntries), [lbEntries]);
+  const activeThisWeek = useMemo(() => lbEntries.filter((e) => e.weeklyMatches > 0).length, [lbEntries]);
+
   if (!isLoaded) {
     return <DashboardSkeleton />;
   }
 
   if (matches.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-24 text-center">
-        <ShieldIcon className="w-16 h-16 text-fab-gold mb-4" />
-        <h1 className="text-2xl font-bold text-fab-gold mb-2">
-          Welcome to FaB Stats
-        </h1>
-        <p className="text-fab-muted mb-6 max-w-md">
-          Import your tournament history to see your win rate, streaks,
-          opponent stats, and more — all in one place.
-        </p>
-        <div className="flex gap-3 flex-wrap justify-center">
-          {user ? (
-            <Link
-              href="/import"
-              className="px-6 py-3 rounded-md font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors"
-            >
-              Import Your Matches
-            </Link>
-          ) : (
-            <>
+      <div className="space-y-8">
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+          <ShieldIcon className="w-16 h-16 text-fab-gold mb-4" />
+          <h1 className="text-2xl font-bold text-fab-gold mb-2">
+            Welcome to FaB Stats
+          </h1>
+          <p className="text-fab-muted mb-6 max-w-md">
+            Import your tournament history to see your win rate, streaks,
+            opponent stats, and more — all in one place.
+          </p>
+          <div className="flex gap-3 flex-wrap justify-center">
+            {user ? (
               <Link
-                href="/login"
+                href="/import"
                 className="px-6 py-3 rounded-md font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors"
               >
-                Sign Up to Get Started
+                Import Your Matches
               </Link>
-              <Link
-                href="/leaderboard"
-                className="px-6 py-3 rounded-md font-semibold bg-fab-surface border border-fab-border text-fab-text hover:bg-fab-surface-hover transition-colors"
-              >
-                Browse Leaderboard
-              </Link>
-            </>
-          )}
+            ) : (
+              <>
+                <Link
+                  href="/login"
+                  className="px-6 py-3 rounded-md font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors"
+                >
+                  Sign Up to Get Started
+                </Link>
+                <Link
+                  href="/leaderboard"
+                  className="px-6 py-3 rounded-md font-semibold bg-fab-surface border border-fab-border text-fab-text hover:bg-fab-surface-hover transition-colors"
+                >
+                  Browse Leaderboard
+                </Link>
+              </>
+            )}
+          </div>
         </div>
+
+        <CommunityHighlights
+          userCount={userCount}
+          matchCount={communityMatchCount}
+          activeThisWeek={activeThisWeek}
+          featuredProfiles={featuredProfiles}
+          featuredEvents={featuredEvents}
+          leaderboardEntries={lbEntries}
+          topHeroes={topHeroes}
+          feedEvents={feedEvents}
+          profileUsername={profile?.username}
+        />
       </div>
     );
   }
@@ -594,6 +623,18 @@ export default function Dashboard() {
 
         </>
       )}
+
+      <CommunityHighlights
+        userCount={userCount}
+        matchCount={communityMatchCount}
+        activeThisWeek={activeThisWeek}
+        featuredProfiles={featuredProfiles}
+        featuredEvents={featuredEvents}
+        leaderboardEntries={lbEntries}
+        topHeroes={topHeroes}
+        feedEvents={feedEvents}
+        profileUsername={profile?.username}
+      />
     </div>
   );
 }

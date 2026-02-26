@@ -6,9 +6,8 @@ import { SwordsIcon, OpponentsIcon, TrendsIcon, ImportIcon, CalendarIcon, Trophy
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCreators } from "@/hooks/useCreators";
-import { collection, getCountFromServer, getAggregateFromServer, sum } from "firebase/firestore";
-import { db } from "@/lib/firebase";
 import { trackPageView, trackCreatorClick } from "@/lib/analytics";
+import { useCommunityStats } from "@/hooks/useCommunityStats";
 import type { ReactNode } from "react";
 import type { Creator } from "@/types";
 
@@ -59,60 +58,13 @@ export function Navbar() {
   const { user, profile, isGuest, isAdmin } = useAuth();
   const creators = useCreators();
   const [mounted, setMounted] = useState(false);
-  const [userCount, setUserCount] = useState(0);
-  const [matchCount, setMatchCount] = useState(0);
+  const { userCount, matchCount } = useCommunityStats();
   useEffect(() => setMounted(true), []);
 
   // Track page views on route change
   useEffect(() => {
     if (mounted) trackPageView(pathname);
   }, [pathname, mounted]);
-
-  useEffect(() => {
-    const CACHE_TTL = 30 * 60 * 1000; // 30 minutes
-
-    // User count
-    const userCacheKey = "fab_user_count";
-    const userCached = localStorage.getItem(userCacheKey);
-    if (userCached) {
-      const { count, ts } = JSON.parse(userCached);
-      if (Date.now() - ts < CACHE_TTL) { setUserCount(count); }
-      else { fetchCount(userCacheKey, collection(db, "usernames"), setUserCount); }
-    } else {
-      fetchCount(userCacheKey, collection(db, "usernames"), setUserCount);
-    }
-
-    // Match count (sum totalMatches from public leaderboard collection)
-    const matchCacheKey = "fab_match_count";
-    const matchCached = localStorage.getItem(matchCacheKey);
-    if (matchCached) {
-      const { count, ts } = JSON.parse(matchCached);
-      if (Date.now() - ts < CACHE_TTL) { setMatchCount(count); }
-      else { fetchMatchTotal(); }
-    } else {
-      fetchMatchTotal();
-    }
-
-    function fetchCount(key: string, ref: Parameters<typeof getCountFromServer>[0], setter: (n: number) => void) {
-      getCountFromServer(ref)
-        .then((snap) => {
-          const count = snap.data().count;
-          setter(count);
-          localStorage.setItem(key, JSON.stringify({ count, ts: Date.now() }));
-        })
-        .catch(() => {});
-    }
-
-    function fetchMatchTotal() {
-      getAggregateFromServer(collection(db, "leaderboard"), { total: sum("totalMatches") })
-        .then((snap) => {
-          const total = snap.data().total;
-          setMatchCount(total);
-          localStorage.setItem(matchCacheKey, JSON.stringify({ count: total, ts: Date.now() }));
-        })
-        .catch(() => {});
-    }
-  }, []);
 
   const isAuthenticated = user && !isGuest;
 
