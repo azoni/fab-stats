@@ -9,23 +9,10 @@ import { MatchCard } from "@/components/matches/MatchCard";
 import { ChevronUpIcon, ChevronDownIcon } from "@/components/icons/NavIcons";
 import { MatchResult, type OpponentStats } from "@/types";
 import { allHeroes as knownHeroes } from "@/lib/heroes";
+import { getEventType } from "@/lib/stats";
 
 const VALID_HERO_NAMES = new Set(knownHeroes.map((h) => h.name));
-
-function guessEventTypeFromNotes(notes: string): string {
-  const lower = notes.toLowerCase();
-  if (lower.includes("world")) return "Worlds";
-  if (lower.includes("pro tour")) return "Pro Tour";
-  if (lower.includes("battle hardened") || /\bbh\b/.test(lower)) return "Battle Hardened";
-  if (lower.includes("proquest") || lower.includes("pro quest") || /\bpq\b/.test(lower)) return "ProQuest";
-  if (lower.includes("skirmish")) return "Skirmish";
-  if (lower.includes("road to national") || /\brtn\b/.test(lower)) return "Road to Nationals";
-  if (lower.includes("national")) return "Nationals";
-  if (lower.includes("calling")) return "The Calling";
-  if (lower.includes("pre release") || lower.includes("pre-release")) return "Pre-Release";
-  if (lower.includes("armory")) return "Armory";
-  return "Other";
-}
+const PAGE_SIZE = 25;
 
 export default function OpponentsPage() {
   const searchParams = useSearchParams();
@@ -37,6 +24,7 @@ export default function OpponentsPage() {
   const [filterEventType, setFilterEventType] = useState("all");
   const [filterHero, setFilterHero] = useState("all");
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
 
   // Pre-fill search from URL query param (e.g. /opponents?q=PlayerName)
   useEffect(() => {
@@ -47,6 +35,11 @@ export default function OpponentsPage() {
     }
   }, [searchParams]);
 
+  // Reset to page 1 when filters/search/sort change
+  useEffect(() => {
+    setPage(1);
+  }, [filterFormat, filterEventType, filterHero, sortBy, search]);
+
   const allFormats = useMemo(() => {
     return [...new Set(matches.map((m) => m.format))];
   }, [matches]);
@@ -54,7 +47,7 @@ export default function OpponentsPage() {
   const allEventTypes = useMemo(() => {
     const types = new Set<string>();
     for (const m of matches) {
-      const et = m.eventType || guessEventTypeFromNotes(m.notes || "");
+      const et = m.eventType || getEventType(m);
       if (et && et !== "Other") types.add(et);
     }
     if (types.size < matches.length) types.add("Other");
@@ -73,7 +66,7 @@ export default function OpponentsPage() {
     }
     if (filterEventType !== "all") {
       filtered = filtered.filter((m) => {
-        const et = m.eventType || guessEventTypeFromNotes(m.notes || "");
+        const et = m.eventType || getEventType(m);
         return et === filterEventType;
       });
     }
@@ -114,6 +107,11 @@ export default function OpponentsPage() {
     return list;
   }, [opponentStats, sortBy, search]);
 
+  const totalPages = Math.max(1, Math.ceil(displayList.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const startIdx = (safePage - 1) * PAGE_SIZE;
+  const pageOpponents = displayList.slice(startIdx, startIdx + PAGE_SIZE);
+
   if (!isLoaded) {
     return <div className="h-8 w-48 bg-fab-surface rounded animate-pulse" />;
   }
@@ -138,24 +136,28 @@ export default function OpponentsPage() {
   }
 
   const totalOpponents = opponentStats.filter((o) => o.opponentName !== "Unknown").length;
-  const totalMatches = opponentStats.reduce((s, o) => s + o.totalMatches, 0);
+  const totalMatchCount = opponentStats.reduce((s, o) => s + o.totalMatches, 0);
 
   return (
     <div>
       <h1 className="text-2xl font-bold text-fab-gold mb-2">Opponents</h1>
       <p className="text-fab-muted text-sm mb-4">
-        Your head-to-head record against {totalOpponents} opponents across {totalMatches} matches
+        Your head-to-head record against {totalOpponents} opponents across {totalMatchCount} matches
       </p>
 
-      {/* Filters */}
-      <div className="flex flex-wrap gap-2 mb-4">
+      {/* Search */}
+      <div className="mb-3">
         <input
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search opponent..."
-          className="bg-fab-surface border border-fab-border rounded-md px-3 py-1.5 text-fab-text text-sm outline-none focus:border-fab-gold/50 placeholder:text-fab-dim w-48"
+          placeholder="Search opponents..."
+          className="w-full bg-fab-surface border border-fab-border rounded-lg px-3 py-2 text-fab-text text-sm placeholder:text-fab-dim focus:outline-none focus:border-fab-gold"
         />
+      </div>
+
+      {/* Filters */}
+      <div className="flex flex-wrap gap-2 mb-4">
         <select
           value={sortBy}
           onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
@@ -205,17 +207,53 @@ export default function OpponentsPage() {
         )}
       </div>
 
-      <div className="space-y-2">
-        {displayList.map((opp) => (
-          <OpponentRow
-            key={opp.opponentName}
-            opp={opp}
-            isExpanded={expanded === opp.opponentName}
-            onToggle={() => setExpanded(expanded === opp.opponentName ? null : opp.opponentName)}
-            matchOwnerUid={user?.uid}
-          />
-        ))}
-      </div>
+      {displayList.length === 0 ? (
+        <div className="text-center py-12 text-fab-dim">
+          <p className="text-lg mb-1">No opponents found</p>
+          <p className="text-sm">Try adjusting your filters{search ? " or search" : ""}</p>
+        </div>
+      ) : (
+        <>
+          <p className="text-xs text-fab-dim mb-2">
+            Showing {startIdx + 1}-{Math.min(startIdx + PAGE_SIZE, displayList.length)} of {displayList.length} opponent{displayList.length !== 1 ? "s" : ""}
+          </p>
+
+          <div className="space-y-2">
+            {pageOpponents.map((opp) => (
+              <OpponentRow
+                key={opp.opponentName}
+                opp={opp}
+                isExpanded={expanded === opp.opponentName}
+                onToggle={() => setExpanded(expanded === opp.opponentName ? null : opp.opponentName)}
+                matchOwnerUid={user?.uid}
+              />
+            ))}
+          </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-3 mt-4">
+              <button
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={safePage <= 1}
+                className="px-3 py-1.5 rounded-md text-sm font-medium bg-fab-surface border border-fab-border text-fab-muted hover:text-fab-text disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              >
+                Previous
+              </button>
+              <span className="text-sm text-fab-dim">
+                Page {safePage} of {totalPages}
+              </span>
+              <button
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={safePage >= totalPages}
+                className="px-3 py-1.5 rounded-md text-sm font-medium bg-fab-surface border border-fab-border text-fab-muted hover:text-fab-text disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              >
+                Next
+              </button>
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 }

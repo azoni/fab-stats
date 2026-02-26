@@ -16,13 +16,13 @@ const coreLinks: { href: string; label: string; icon: ReactNode }[] = [
   { href: "/matches", label: "Matches", icon: <SwordsIcon className="w-4 h-4" /> },
   { href: "/events", label: "Events", icon: <CalendarIcon className="w-4 h-4" /> },
   { href: "/opponents", label: "Opponents", icon: <OpponentsIcon className="w-4 h-4" /> },
+  { href: "/search", label: "Discover", icon: <SearchIcon className="w-4 h-4" /> },
 ];
 
 const moreLinks: { href: string; label: string; icon: ReactNode; authOnly?: boolean }[] = [
   { href: "/trends", label: "Trends", icon: <TrendsIcon className="w-4 h-4" />, authOnly: true },
-  { href: "/import", label: "Import", icon: <ImportIcon className="w-4 h-4" />, authOnly: true },
+  { href: "/import", label: "Import", icon: <ImportIcon className="w-4 h-4" /> },
   { href: "/inbox", label: "Inbox", icon: <InboxIcon className="w-4 h-4" />, authOnly: true },
-  { href: "/search", label: "Discover", icon: <SearchIcon className="w-4 h-4" /> },
   { href: "/changelog", label: "Changelog", icon: <ChangelogIcon className="w-4 h-4" /> },
 ];
 

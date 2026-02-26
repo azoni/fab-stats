@@ -23,6 +23,7 @@ const playoffBadgeStyles: Record<string, { bg: string; text: string }> = {
   "Top 4": { bg: "bg-amber-500/15", text: "text-amber-400" },
   "Top 8": { bg: "bg-orange-500/15", text: "text-orange-400" },
   "Playoff": { bg: "bg-fab-gold/10", text: "text-fab-gold" },
+  "Skirmish": { bg: "bg-blue-500/15", text: "text-blue-400" },
 };
 
 function getPlayoffBadge(roundInfo: string | undefined): { label: string; bg: string; text: string } | null {
@@ -83,6 +84,9 @@ export function MatchCard({ match, matchOwnerUid, enableComments = false, obfusc
               </span>
               {eventName && (
                 <span className="truncate">{eventName}</span>
+              )}
+              {match.venue && match.venue !== "Unknown" && (
+                <span className="text-fab-dim">{match.venue}</span>
               )}
             </div>
           </div>

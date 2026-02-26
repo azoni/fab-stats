@@ -85,5 +85,11 @@ export function useMatches() {
     [user, isGuest]
   );
 
-  return { matches, isLoaded, addMatch, deleteMatch, updateMatch };
+  const refreshMatches = useCallback(() => {
+    if (isGuest) {
+      setMatches(getAllMatches());
+    }
+  }, [isGuest]);
+
+  return { matches, isLoaded, addMatch, deleteMatch, updateMatch, refreshMatches };
 }

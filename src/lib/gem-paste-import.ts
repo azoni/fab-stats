@@ -36,11 +36,11 @@ const NOISE_PATTERNS = [
   /^\d+\s*(Players?|Participants?)$/i, // "24 Players"
 ];
 
-function isNoise(line: string): boolean {
+export function isNoise(line: string): boolean {
   return NOISE_PATTERNS.some((p) => p.test(line));
 }
 
-function guessFormat(text: string): GameFormat {
+export function guessFormat(text: string): GameFormat {
   const lower = text.toLowerCase();
   if (lower.includes("classic constructed")) return GameFormat.ClassicConstructed;
   if (lower.includes("silver age")) return GameFormat.SilverAge;
@@ -60,7 +60,7 @@ const EVENT_ABBREVIATIONS: Record<string, string> = {
 };
 
 /** Expand known abbreviations in event names */
-function expandEventName(name: string): string {
+export function expandEventName(name: string): string {
   const lowerFull = name.trim().toLowerCase();
   if (EVENT_ABBREVIATIONS[lowerFull]) return EVENT_ABBREVIATIONS[lowerFull];
   let result = name;
@@ -70,7 +70,7 @@ function expandEventName(name: string): string {
   return result;
 }
 
-function guessEventType(lines: string[]): string {
+export function guessEventType(lines: string[]): string {
   const all = lines.join(" ").toLowerCase();
   if (all.includes("world")) return "Worlds";
   if (all.includes("pro tour")) return "Pro Tour";
@@ -93,7 +93,7 @@ function isEventNameLike(line: string): boolean {
 }
 
 /** Check if a line looks like event metadata rather than a venue name */
-function isMetadataLine(line: string): boolean {
+export function isMetadataLine(line: string): boolean {
   return /^(Classic Constructed|Blitz|Sealed|Draft|Clash|Ultimate Pit Fight|Rated|Not Rated|Unrated|XP Modifier|Competitive|Casual|Record|Rating)/i.test(line);
 }
 
@@ -109,7 +109,7 @@ function isNotVenue(line: string): boolean {
   return false;
 }
 
-function parseDate(dateStr: string): string {
+export function parseDate(dateStr: string): string {
   const cleaned = dateStr
     .replace(/,\s*\d{1,2}:\d{2}\s*(AM|PM)/i, "")
     .replace(/noon/gi, "")
@@ -122,7 +122,7 @@ function parseDate(dateStr: string): string {
   return new Date().toISOString().split("T")[0];
 }
 
-function parseResult(text: string): MatchResult | null {
+export function parseResult(text: string): MatchResult | null {
   const lower = text.toLowerCase().trim();
   if (lower === "win") return MatchResult.Win;
   if (lower === "loss") return MatchResult.Loss;
@@ -130,7 +130,7 @@ function parseResult(text: string): MatchResult | null {
   return null;
 }
 
-function parseOpponentName(raw: string): { name: string; gemId: string } {
+export function parseOpponentName(raw: string): { name: string; gemId: string } {
   const match = raw.match(/^(.+?)\s*\((\d+)\)\s*$/);
   if (match) {
     return { name: match[1].trim(), gemId: match[2] };

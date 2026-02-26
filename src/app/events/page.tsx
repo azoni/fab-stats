@@ -1,19 +1,29 @@
 "use client";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { useMatches } from "@/hooks/useMatches";
 import { useAuth } from "@/contexts/AuthContext";
 import { computeEventStats } from "@/lib/stats";
 import { EventCard } from "@/components/events/EventCard";
+import { QuickEventImportModal } from "@/components/events/QuickEventImportModal";
 
 type View = "timeline" | "standings";
+const PAGE_SIZE = 25;
 
 export default function EventsPage() {
-  const { matches, isLoaded } = useMatches();
+  const { matches, isLoaded, refreshMatches } = useMatches();
   const { user } = useAuth();
   const [filterFormat, setFilterFormat] = useState("all");
   const [filterEventType, setFilterEventType] = useState("all");
   const [view, setView] = useState<View>("timeline");
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [importModalOpen, setImportModalOpen] = useState(false);
+
+  // Reset to page 1 when filters/search change
+  useEffect(() => {
+    setPage(1);
+  }, [filterFormat, filterEventType, search]);
 
   const eventStats = useMemo(() => computeEventStats(matches), [matches]);
 
@@ -26,12 +36,40 @@ export default function EventsPage() {
   }, [eventStats]);
 
   const filtered = useMemo(() => {
-    return eventStats.filter((e) => {
-      if (filterFormat !== "all" && e.format !== filterFormat) return false;
-      if (filterEventType !== "all" && e.eventType !== filterEventType) return false;
-      return true;
-    });
-  }, [eventStats, filterFormat, filterEventType]);
+    let result = eventStats;
+
+    if (filterFormat !== "all") {
+      result = result.filter((e) => e.format === filterFormat);
+    }
+    if (filterEventType !== "all") {
+      result = result.filter((e) => e.eventType === filterEventType);
+    }
+
+    const q = search.trim().toLowerCase();
+    if (q) {
+      result = result.filter((e) => {
+        const haystack = [
+          e.eventName,
+          e.venue,
+          e.format,
+          e.eventType,
+          e.eventDate,
+          ...e.matches.map((m) => m.opponentName),
+        ]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
+        return haystack.includes(q);
+      });
+    }
+
+    return result;
+  }, [eventStats, filterFormat, filterEventType, search]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const startIdx = (safePage - 1) * PAGE_SIZE;
+  const pageEvents = filtered.slice(startIdx, startIdx + PAGE_SIZE);
 
   if (!isLoaded) {
     return (
@@ -71,31 +109,55 @@ export default function EventsPage() {
               Standings
             </button>
           </div>
-          {allFormats.length > 1 && (
-            <select
-              value={filterFormat}
-              onChange={(e) => setFilterFormat(e.target.value)}
-              className="bg-fab-surface border border-fab-border text-fab-text text-sm rounded-lg px-3 py-1.5 focus:outline-none focus:border-fab-gold"
-            >
-              <option value="all">All Formats</option>
-              {allFormats.map((f) => (
-                <option key={f} value={f}>{f}</option>
-              ))}
-            </select>
-          )}
-          {allEventTypes.length > 1 && (
-            <select
-              value={filterEventType}
-              onChange={(e) => setFilterEventType(e.target.value)}
-              className="bg-fab-surface border border-fab-border text-fab-text text-sm rounded-lg px-3 py-1.5 focus:outline-none focus:border-fab-gold"
-            >
-              <option value="all">All Event Types</option>
-              {allEventTypes.map((t) => (
-                <option key={t} value={t}>{t}</option>
-              ))}
-            </select>
-          )}
+          <button
+            onClick={() => setImportModalOpen(true)}
+            className="flex items-center gap-1.5 bg-fab-surface border border-fab-border text-fab-text text-sm font-medium rounded-lg px-3 py-1.5 hover:bg-fab-surface-hover transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+            </svg>
+            Import Event
+          </button>
         </div>
+      </div>
+
+      {/* Search */}
+      <div className="mb-3">
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search events..."
+          className="w-full bg-fab-surface border border-fab-border rounded-lg px-3 py-2 text-fab-text text-sm placeholder:text-fab-dim focus:outline-none focus:border-fab-gold"
+        />
+      </div>
+
+      {/* Filters */}
+      <div className="flex flex-wrap gap-2 mb-4">
+        {allFormats.length > 1 && (
+          <select
+            value={filterFormat}
+            onChange={(e) => setFilterFormat(e.target.value)}
+            className="bg-fab-surface border border-fab-border rounded-md px-3 py-1.5 text-fab-text text-sm outline-none"
+          >
+            <option value="all">All Formats</option>
+            {allFormats.map((f) => (
+              <option key={f} value={f}>{f}</option>
+            ))}
+          </select>
+        )}
+        {allEventTypes.length > 1 && (
+          <select
+            value={filterEventType}
+            onChange={(e) => setFilterEventType(e.target.value)}
+            className="bg-fab-surface border border-fab-border rounded-md px-3 py-1.5 text-fab-text text-sm outline-none"
+          >
+            <option value="all">All Event Types</option>
+            {allEventTypes.map((t) => (
+              <option key={t} value={t}>{t}</option>
+            ))}
+          </select>
+        )}
       </div>
 
       {filtered.length === 0 ? (
@@ -117,15 +179,21 @@ export default function EventsPage() {
           )}
         </div>
       ) : view === "timeline" ? (
-        <div className="space-y-2">
-          <p className="text-sm text-fab-dim">{filtered.length} event{filtered.length !== 1 ? "s" : ""}</p>
-          {filtered.map((event) => (
-            <EventCard key={`${event.eventName}-${event.eventDate}`} event={event} />
-          ))}
-        </div>
+        <>
+          <p className="text-xs text-fab-dim mb-2">
+            Showing {startIdx + 1}-{Math.min(startIdx + PAGE_SIZE, filtered.length)} of {filtered.length} event{filtered.length !== 1 ? "s" : ""}
+          </p>
+          <div className="space-y-2">
+            {pageEvents.map((event) => (
+              <EventCard key={`${event.eventName}-${event.eventDate}`} event={event} />
+            ))}
+          </div>
+        </>
       ) : (
-        <div>
-          <p className="text-sm text-fab-dim mb-3">{filtered.length} event{filtered.length !== 1 ? "s" : ""}</p>
+        <>
+          <p className="text-xs text-fab-dim mb-2">
+            Showing {startIdx + 1}-{Math.min(startIdx + PAGE_SIZE, filtered.length)} of {filtered.length} event{filtered.length !== 1 ? "s" : ""}
+          </p>
           <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden">
             <table className="w-full text-sm">
               <thead>
@@ -138,7 +206,7 @@ export default function EventsPage() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((event) => (
+                {pageEvents.map((event) => (
                   <tr key={`${event.eventName}-${event.eventDate}`} className="border-t border-fab-border/50 hover:bg-fab-surface-hover transition-colors">
                     <td className="px-4 py-3">
                       <div className="font-medium text-fab-text truncate max-w-[200px]">{event.eventName}</div>
@@ -164,8 +232,37 @@ export default function EventsPage() {
               </tbody>
             </table>
           </div>
+        </>
+      )}
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-3 mt-4">
+          <button
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={safePage <= 1}
+            className="px-3 py-1.5 rounded-md text-sm font-medium bg-fab-surface border border-fab-border text-fab-muted hover:text-fab-text disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+          >
+            Previous
+          </button>
+          <span className="text-sm text-fab-dim">
+            Page {safePage} of {totalPages}
+          </span>
+          <button
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            disabled={safePage >= totalPages}
+            className="px-3 py-1.5 rounded-md text-sm font-medium bg-fab-surface border border-fab-border text-fab-muted hover:text-fab-text disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+          >
+            Next
+          </button>
         </div>
       )}
+
+      <QuickEventImportModal
+        open={importModalOpen}
+        onClose={() => setImportModalOpen(false)}
+        onImportComplete={refreshMatches}
+      />
     </div>
   );
 }
