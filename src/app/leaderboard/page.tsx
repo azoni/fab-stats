@@ -12,12 +12,11 @@ import type { LeaderboardEntry, OpponentStats } from "@/types";
 
 const SITE_CREATOR = "azoni";
 
-type Tab = "winrate" | "volume" | "mostwins" | "streaks" | "draws" | "drawrate" | "byes" | "byerate" | "events" | "eventgrinder" | "rated" | "heroes" | "dedication" | "loyaltyrate" | "hotstreak" | "weeklymatches" | "weeklywins" | "monthlymatches" | "monthlywins" | "monthlywinrate" | "earnings" | "armorywinrate" | "armoryattendance" | "armorymatches" | "top8s" | "top8s_armory" | "top8s_skirmish" | "top8s_pq" | "top8s_bh" | "top8s_rtn" | "top8s_calling" | "top8s_nationals";
+type Tab = "winrate" | "volume" | "mostwins" | "streaks" | "draws" | "drawrate" | "byes" | "byerate" | "events" | "eventgrinder" | "rated" | "heroes" | "dedication" | "loyaltyrate" | "hotstreak" | "weeklymatches" | "weeklywins" | "monthlymatches" | "monthlywins" | "monthlywinrate" | "earnings" | "armorywinrate" | "armoryattendance" | "armorymatches" | "top8s" | "top8s_skirmish" | "top8s_pq" | "top8s_bh" | "top8s_rtn" | "top8s_calling" | "top8s_nationals";
 
 const tabs: { id: Tab; label: string; description: string }[] = [
   { id: "winrate", label: "Win Rate", description: "Highest overall win percentage. Requires 100+ matches." },
   { id: "top8s", label: "Top 8s", description: "Most playoff finishes (Top 8 or better) across all events." },
-  { id: "top8s_armory", label: "Armory Top 8s", description: "Most Top 8+ finishes at Armory events." },
   { id: "top8s_skirmish", label: "Skirmish Top 8s", description: "Most Top 8+ finishes at Skirmish events." },
   { id: "top8s_pq", label: "PQ Top 8s", description: "Most Top 8+ finishes at ProQuest events." },
   { id: "top8s_bh", label: "BH Top 8s", description: "Most Top 8+ finishes at Battle Hardened events." },
@@ -50,7 +49,6 @@ const tabs: { id: Tab; label: string; description: string }[] = [
 ];
 
 const TOP8_EVENT_TYPE_MAP: Record<string, string> = {
-  top8s_armory: "Armory",
   top8s_skirmish: "Skirmish",
   top8s_pq: "ProQuest",
   top8s_bh: "Battle Hardened",
@@ -205,7 +203,6 @@ export default function LeaderboardPage() {
         return [...entries]
           .filter((e) => (e.totalTop8s ?? 0) > 0)
           .sort((a, b) => (b.totalTop8s ?? 0) - (a.totalTop8s ?? 0) || b.eventWins - a.eventWins);
-      case "top8s_armory":
       case "top8s_skirmish":
       case "top8s_pq":
       case "top8s_bh":

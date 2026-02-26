@@ -446,6 +446,10 @@ export function computePlayoffFinishes(eventStats: EventStats[]): PlayoffFinish[
   const finishes: PlayoffFinish[] = [];
 
   for (const event of eventStats) {
+    // Skip event types that don't have formal Top 8 brackets
+    const refinedEventType = refineEventType(event.eventType || "Other", event.eventName);
+    if (refinedEventType === "Armory" || refinedEventType === "Pre-Release" || refinedEventType === "Other") continue;
+
     const playoffMatches: MatchRecord[] = [];
 
     for (const match of event.matches) {
@@ -486,9 +490,6 @@ export function computePlayoffFinishes(eventStats: EventStats[]): PlayoffFinish[
     } else {
       finishType = "top8";
     }
-
-    // Use refined event type for accurate tier grouping
-    const refinedEventType = refineEventType(event.eventType || "Other", event.eventName);
 
     finishes.push({
       type: finishType,
