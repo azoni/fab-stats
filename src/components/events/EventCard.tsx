@@ -40,11 +40,13 @@ export function EventCard({ event, obfuscateOpponents = false, visibleOpponents,
   const [heroFrom, setHeroFrom] = useState("1");
   const [heroTo, setHeroTo] = useState(String(event.matches.length));
   const [saving, setSaving] = useState(false);
+  const [heroSaved, setHeroSaved] = useState(false);
   const [showGemNudge, setShowGemNudge] = useState(false);
   const [batchFormat, setBatchFormat] = useState("");
   const [formatFrom, setFormatFrom] = useState("1");
   const [formatTo, setFormatTo] = useState(String(event.matches.length));
   const [savingFormat, setSavingFormat] = useState(false);
+  const [formatSaved, setFormatSaved] = useState(false);
   const [error, setError] = useState("");
 
   // Determine best playoff placement from match rounds
@@ -85,7 +87,15 @@ export function EventCard({ event, obfuscateOpponents = false, visibleOpponents,
       const to = parseInt(heroTo, 10) || event.matches.length;
       const ids = event.matches.slice(from - 1, to).map((m) => m.id);
       await onBatchUpdateHero(ids, effectiveHero);
+      // Advance range to remaining rounds so user can apply a different hero next
+      const nextFrom = to + 1;
+      if (nextFrom <= event.matches.length) {
+        setHeroFrom(String(nextFrom));
+        setHeroTo(String(event.matches.length));
+      }
       setBatchHero("");
+      setHeroSaved(true);
+      setTimeout(() => setHeroSaved(false), 2000);
       if (missingGemId) setShowGemNudge(true);
     } catch {
       setError("Failed to save hero. Please try again.");
@@ -103,7 +113,15 @@ export function EventCard({ event, obfuscateOpponents = false, visibleOpponents,
       const to = parseInt(formatTo, 10) || event.matches.length;
       const ids = event.matches.slice(from - 1, to).map((m) => m.id);
       await onBatchUpdateFormat(ids, batchFormat as GameFormat);
+      // Advance range to remaining rounds so user can apply a different format next
+      const nextFrom = to + 1;
+      if (nextFrom <= event.matches.length) {
+        setFormatFrom(String(nextFrom));
+        setFormatTo(String(event.matches.length));
+      }
       setBatchFormat("");
+      setFormatSaved(true);
+      setTimeout(() => setFormatSaved(false), 2000);
     } catch {
       setError("Failed to save format. Please try again.");
     } finally {
@@ -213,7 +231,9 @@ export function EventCard({ event, obfuscateOpponents = false, visibleOpponents,
                     className="w-12 bg-fab-surface border border-fab-border rounded-md px-1.5 py-1.5 text-fab-text text-xs text-center outline-none focus:border-fab-gold/50"
                   />
                 </div>
-                {effectiveHero && (
+                {heroSaved ? (
+                  <span className="px-3 py-1.5 rounded text-xs font-medium bg-green-500/20 text-green-400 shrink-0">Saved!</span>
+                ) : effectiveHero ? (
                   <button
                     onClick={handleBatchSave}
                     disabled={saving}
@@ -221,7 +241,7 @@ export function EventCard({ event, obfuscateOpponents = false, visibleOpponents,
                   >
                     {saving ? "Saving..." : "Apply"}
                   </button>
-                )}
+                ) : null}
               </div>
               {showGemNudge && (
                 <p className="text-xs text-fab-muted mt-2">
@@ -268,7 +288,9 @@ export function EventCard({ event, obfuscateOpponents = false, visibleOpponents,
                     className="w-12 bg-fab-surface border border-fab-border rounded-md px-1.5 py-1.5 text-fab-text text-xs text-center outline-none focus:border-fab-gold/50"
                   />
                 </div>
-                {batchFormat && (
+                {formatSaved ? (
+                  <span className="px-3 py-1.5 rounded text-xs font-medium bg-green-500/20 text-green-400 shrink-0">Saved!</span>
+                ) : batchFormat ? (
                   <button
                     onClick={handleBatchFormatSave}
                     disabled={savingFormat}
@@ -276,7 +298,7 @@ export function EventCard({ event, obfuscateOpponents = false, visibleOpponents,
                   >
                     {savingFormat ? "Saving..." : "Apply"}
                   </button>
-                )}
+                ) : null}
               </div>
             </div>
           )}

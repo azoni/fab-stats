@@ -439,7 +439,8 @@ function isPlayoffRound(roundInfo: string): boolean {
     /Finals?$/i.test(roundInfo) ||
     /Semi/i.test(roundInfo) ||
     /Playoff/i.test(roundInfo) ||
-    /Quarter/i.test(roundInfo);
+    /Quarter/i.test(roundInfo) ||
+    /Skirmish/i.test(roundInfo);
 }
 
 export function computePlayoffFinishes(eventStats: EventStats[]): PlayoffFinish[] {

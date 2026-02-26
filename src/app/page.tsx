@@ -5,7 +5,7 @@ import { useMatches } from "@/hooks/useMatches";
 import { useAuth } from "@/contexts/AuthContext";
 import { computeOverallStats, computeHeroStats, computeEventTypeStats, computeVenueStats, computeEventStats, computeOpponentStats, computeBestFinish, computePlayoffFinishes } from "@/lib/stats";
 import type { PlayoffFinish } from "@/lib/stats";
-import { evaluateAchievements } from "@/lib/achievements";
+import { evaluateAchievements, getAchievementProgress } from "@/lib/achievements";
 import { computeHeroMastery } from "@/lib/mastery";
 import { AchievementShowcase, AchievementBadges } from "@/components/gamification/AchievementShowcase";
 import { HeroMasteryList } from "@/components/gamification/HeroMasteryCard";
@@ -33,6 +33,8 @@ export default function Dashboard() {
   const [filterHero, setFilterHero] = useState<string>("all");
   const [announcementDismissed, setAnnouncementDismissed] = useState(true);
   const [shareCopied, setShareCopied] = useState(false);
+  const [showVenues, setShowVenues] = useState(false);
+  const [showRecentMatches, setShowRecentMatches] = useState(false);
 
   useEffect(() => {
     setAnnouncementDismissed(localStorage.getItem("fab_announcement_v4") === "dismissed");
@@ -89,6 +91,7 @@ export default function Dashboard() {
   const allOpponentStats = useMemo(() => computeOpponentStats(fm), [fm]);
   const opponentStats = useMemo(() => allOpponentStats.filter((o) => o.totalMatches >= 3), [allOpponentStats]);
   const achievements = useMemo(() => evaluateAchievements(fm, overall, heroStats, opponentStats), [fm, overall, heroStats, opponentStats]);
+  const achievementProgress = useMemo(() => getAchievementProgress(fm, overall, heroStats, opponentStats), [fm, overall, heroStats, opponentStats]);
   const masteries = useMemo(() => computeHeroMastery(heroStats), [heroStats]);
   const nemesis = useMemo(() => opponentStats.length > 0
     ? opponentStats.reduce((worst, o) => (o.winRate < worst.winRate ? o : worst))
@@ -389,7 +392,7 @@ export default function Dashboard() {
           {playoffFinishes.length > 0 && <PlayoffFinishesSection finishes={playoffFinishes} />}
 
           {/* Achievements */}
-          <AchievementShowcase earned={achievements} />
+          <AchievementShowcase earned={achievements} progress={achievementProgress} />
 
           {/* Hero Mastery */}
           <HeroMasteryList masteries={masteries} />
@@ -510,7 +513,19 @@ export default function Dashboard() {
           {/* Venue Breakdown */}
           {venueStats.length > 0 && (
             <div>
-              <h2 className="text-lg font-semibold text-fab-text mb-4">Win Rate by Venue</h2>
+              <button
+                onClick={() => setShowVenues(!showVenues)}
+                className="w-full flex items-center justify-between mb-4 group"
+              >
+                <h2 className="text-lg font-semibold text-fab-text">Win Rate by Venue</h2>
+                <svg
+                  className={`w-4 h-4 text-fab-muted group-hover:text-fab-text transition-transform ${showVenues ? "rotate-180" : ""}`}
+                  fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                </svg>
+              </button>
+              {showVenues && (
               <div className="space-y-2">
                 {venueStats.map((v) => (
                   <div key={v.venue} className="bg-fab-surface border border-fab-border rounded-lg p-4">
@@ -535,22 +550,36 @@ export default function Dashboard() {
                   </div>
                 ))}
               </div>
+              )}
             </div>
           )}
 
           {/* Recent Matches */}
           <div>
-            <div className="flex items-center justify-between mb-4">
+            <button
+              onClick={() => setShowRecentMatches(!showRecentMatches)}
+              className="w-full flex items-center justify-between mb-4 group"
+            >
               <h2 className="text-lg font-semibold text-fab-text">Recent Matches</h2>
-              <Link href="/matches" className="text-sm text-fab-gold hover:text-fab-gold-light">
-                View All
-              </Link>
-            </div>
+              <div className="flex items-center gap-3">
+                <Link href="/matches" className="text-sm text-fab-gold hover:text-fab-gold-light" onClick={(e) => e.stopPropagation()}>
+                  View All
+                </Link>
+                <svg
+                  className={`w-4 h-4 text-fab-muted group-hover:text-fab-text transition-transform ${showRecentMatches ? "rotate-180" : ""}`}
+                  fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                </svg>
+              </div>
+            </button>
+            {showRecentMatches && (
             <div className="space-y-2">
               {recentMatches.map((match) => (
                 <MatchCard key={match.id} match={match} matchOwnerUid={user?.uid} enableComments />
               ))}
             </div>
+            )}
           </div>
 
         </>

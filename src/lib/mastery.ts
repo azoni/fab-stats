@@ -1,4 +1,5 @@
 import type { HeroStats, HeroMastery, MasteryTier } from "@/types";
+import { getHeroByName } from "./heroes";
 
 interface TierDef {
   tier: MasteryTier;
@@ -18,7 +19,8 @@ const TIERS: TierDef[] = [
 ];
 
 export function computeHeroMastery(heroStats: HeroStats[]): HeroMastery[] {
-  return heroStats.map((h) => {
+  const validHeroes = heroStats.filter((h) => getHeroByName(h.heroName));
+  return validHeroes.map((h) => {
     const tierIndex = TIERS.findIndex((t) => h.totalMatches >= t.minMatches);
     const currentTierDef = tierIndex >= 0 ? TIERS[tierIndex] : TIERS[TIERS.length - 1];
     const nextTierDef = tierIndex > 0 ? TIERS[tierIndex - 1] : null;

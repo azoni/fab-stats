@@ -4,7 +4,7 @@ import type { Achievement } from "@/types";
 import { rarityColors, getAllAchievements } from "@/lib/achievements";
 import { AchievementIcon } from "./AchievementIcons";
 
-export function AchievementShowcase({ earned }: { earned: Achievement[] }) {
+export function AchievementShowcase({ earned, progress }: { earned: Achievement[]; progress?: Record<string, { current: number; target: number }> }) {
   const [expanded, setExpanded] = useState(false);
   const [showAll, setShowAll] = useState(true);
 
@@ -81,6 +81,21 @@ export function AchievementShowcase({ earned }: { earned: Achievement[] }) {
                     {a.name}
                   </p>
                   <p className={`text-[10px] truncate ${isEarned ? "text-fab-dim" : "text-fab-dim/40"}`}>{a.description}</p>
+                  {!isEarned && progress?.[a.id] && (() => {
+                    const p = progress[a.id];
+                    const pct = Math.min(100, Math.round((p.current / p.target) * 100));
+                    return (
+                      <div className="mt-1.5">
+                        <div className="h-1 rounded-full bg-fab-border/50 overflow-hidden">
+                          <div
+                            className="h-full rounded-full bg-fab-dim/60 transition-all"
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                        <p className="text-[9px] text-fab-dim/50 mt-0.5">{p.current}/{p.target}</p>
+                      </div>
+                    );
+                  })()}
                   {isEarned && (
                     <span className={`absolute top-1.5 right-1.5 text-[8px] font-bold uppercase ${colors.text}`}>
                       {a.rarity}

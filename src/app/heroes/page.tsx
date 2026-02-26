@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useMatches } from "@/hooks/useMatches";
 import { computeHeroStats } from "@/lib/stats";
+import { getHeroByName } from "@/lib/heroes";
 import { ChevronUpIcon, ChevronDownIcon } from "@/components/icons/NavIcons";
 
 export default function HeroesPage() {
@@ -13,7 +14,7 @@ export default function HeroesPage() {
     return <div className="h-8 w-48 bg-fab-surface rounded animate-pulse" />;
   }
 
-  const heroStats = computeHeroStats(matches).filter((h) => h.heroName !== "Unknown");
+  const heroStats = computeHeroStats(matches).filter((h) => getHeroByName(h.heroName));
   const sorted = [...heroStats].sort((a, b) => {
     if (sortBy === "winRate") return b.winRate - a.winRate;
     if (sortBy === "name") return a.heroName.localeCompare(b.heroName);

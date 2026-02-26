@@ -5,7 +5,7 @@ import Link from "next/link";
 import { getProfileByUsername, getMatchesByUserId } from "@/lib/firestore-storage";
 import { updateLeaderboardEntry } from "@/lib/leaderboard";
 import { computeOverallStats, computeHeroStats, computeEventTypeStats, computeVenueStats, computeEventStats, computeOpponentStats, computeBestFinish, computePlayoffFinishes, getEventType } from "@/lib/stats";
-import { evaluateAchievements } from "@/lib/achievements";
+import { evaluateAchievements, getAchievementProgress } from "@/lib/achievements";
 import { computeHeroMastery } from "@/lib/mastery";
 import { AchievementShowcase } from "@/components/gamification/AchievementShowcase";
 import { AchievementBadges } from "@/components/gamification/AchievementShowcase";
@@ -46,6 +46,8 @@ export default function PlayerProfile() {
   const [filterRated, setFilterRated] = useState<string>("all");
   const [filterHero, setFilterHero] = useState<string>("all");
   const [showRawData, setShowRawData] = useState(false);
+  const [showVenues, setShowVenues] = useState(false);
+  const [showRecentMatches, setShowRecentMatches] = useState(false);
 
   // Build set of opponent display names that have opted in to being visible
   const visibleOpponents = useMemo(() => {
@@ -175,6 +177,7 @@ export default function PlayerProfile() {
   );
   const recentMatches = useMemo(() => sortedByDateDesc.slice(0, 5), [sortedByDateDesc]);
   const achievements = useMemo(() => evaluateAchievements(fm, overall, heroStats, opponentStats), [fm, overall, heroStats, opponentStats]);
+  const achievementProgress = useMemo(() => getAchievementProgress(fm, overall, heroStats, opponentStats), [fm, overall, heroStats, opponentStats]);
   const masteries = useMemo(() => computeHeroMastery(heroStats), [heroStats]);
   const nemesis = useMemo(() => opponentStats.length > 0
     ? opponentStats.reduce((worst, o) => (o.winRate < worst.winRate ? o : worst))
@@ -444,7 +447,7 @@ export default function PlayerProfile() {
       {playoffFinishes.length > 0 && <PlayoffFinishes finishes={playoffFinishes} />}
 
       {/* Achievements */}
-      <AchievementShowcase earned={achievements} />
+      <AchievementShowcase earned={achievements} progress={achievementProgress} />
 
       {/* Hero Mastery */}
       <HeroMasteryList masteries={masteries} />
@@ -531,7 +534,19 @@ export default function PlayerProfile() {
       {/* Venue Breakdown */}
       {venueStats.length > 0 && (
         <div>
-          <h2 className="text-lg font-semibold text-fab-text mb-4">Win Rate by Venue</h2>
+          <button
+            onClick={() => setShowVenues(!showVenues)}
+            className="w-full flex items-center justify-between mb-4 group"
+          >
+            <h2 className="text-lg font-semibold text-fab-text">Win Rate by Venue</h2>
+            <svg
+              className={`w-4 h-4 text-fab-muted group-hover:text-fab-text transition-transform ${showVenues ? "rotate-180" : ""}`}
+              fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+            </svg>
+          </button>
+          {showVenues && (
           <div className="space-y-2">
             {venueStats.map((v) => (
               <div key={v.venue} className="bg-fab-surface border border-fab-border rounded-lg p-4">
@@ -553,17 +568,31 @@ export default function PlayerProfile() {
               </div>
             ))}
           </div>
+          )}
         </div>
       )}
 
       {/* Recent Matches */}
       <div>
-        <h2 className="text-lg font-semibold text-fab-text mb-4">Recent Matches</h2>
+        <button
+          onClick={() => setShowRecentMatches(!showRecentMatches)}
+          className="w-full flex items-center justify-between mb-4 group"
+        >
+          <h2 className="text-lg font-semibold text-fab-text">Recent Matches</h2>
+          <svg
+            className={`w-4 h-4 text-fab-muted group-hover:text-fab-text transition-transform ${showRecentMatches ? "rotate-180" : ""}`}
+            fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+          </svg>
+        </button>
+        {showRecentMatches && (
         <div className="space-y-2">
           {recentMatches.map((match) => (
             <MatchCard key={match.id} match={match} matchOwnerUid={profile.uid} enableComments obfuscateOpponents={!isOwner && !isAdmin} visibleOpponents={visibleOpponents} />
           ))}
         </div>
+        )}
       </div>
       </>
       )}

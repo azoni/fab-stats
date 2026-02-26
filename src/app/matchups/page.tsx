@@ -1,6 +1,7 @@
 "use client";
 import { useMatches } from "@/hooks/useMatches";
 import { computeHeroStats } from "@/lib/stats";
+import { getHeroByName } from "@/lib/heroes";
 
 export default function MatchupsPage() {
   const { matches, isLoaded } = useMatches();
@@ -9,7 +10,7 @@ export default function MatchupsPage() {
     return <div className="h-8 w-48 bg-fab-surface rounded animate-pulse" />;
   }
 
-  const heroStats = computeHeroStats(matches).filter((h) => h.heroName !== "Unknown");
+  const heroStats = computeHeroStats(matches).filter((h) => getHeroByName(h.heroName));
   const allOpponents = [...new Set(matches.map((m) => m.opponentHero).filter((h) => h !== "Unknown"))].sort();
 
   if (heroStats.length === 0 || allOpponents.length === 0) {

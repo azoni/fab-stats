@@ -8,8 +8,14 @@ interface CheckContext {
   opponentStats: OpponentStats[];
 }
 
+interface AchievementProgress {
+  current: number;
+  target: number;
+}
+
 interface AchievementDef extends Achievement {
   check: (ctx: CheckContext) => boolean;
+  progress?: (ctx: CheckContext) => AchievementProgress;
 }
 
 const ACHIEVEMENTS: AchievementDef[] = [
@@ -22,6 +28,7 @@ const ACHIEVEMENTS: AchievementDef[] = [
     icon: "drop",
     rarity: "common",
     check: (ctx) => ctx.matches.length >= 1,
+    progress: (ctx) => ({ current: ctx.matches.length, target: 1 }),
   },
   {
     id: "getting_started",
@@ -31,6 +38,7 @@ const ACHIEVEMENTS: AchievementDef[] = [
     icon: "list",
     rarity: "common",
     check: (ctx) => ctx.matches.length >= 10,
+    progress: (ctx) => ({ current: ctx.matches.length, target: 10 }),
   },
   {
     id: "dedicated",
@@ -40,6 +48,7 @@ const ACHIEVEMENTS: AchievementDef[] = [
     icon: "chart",
     rarity: "uncommon",
     check: (ctx) => ctx.matches.length >= 50,
+    progress: (ctx) => ({ current: ctx.matches.length, target: 50 }),
   },
   {
     id: "centurion",
@@ -49,6 +58,7 @@ const ACHIEVEMENTS: AchievementDef[] = [
     icon: "badge",
     rarity: "rare",
     check: (ctx) => ctx.matches.length >= 100,
+    progress: (ctx) => ({ current: ctx.matches.length, target: 100 }),
   },
   {
     id: "veteran",
@@ -58,6 +68,7 @@ const ACHIEVEMENTS: AchievementDef[] = [
     icon: "medal",
     rarity: "epic",
     check: (ctx) => ctx.matches.length >= 250,
+    progress: (ctx) => ({ current: ctx.matches.length, target: 250 }),
   },
   {
     id: "legend",
@@ -67,6 +78,7 @@ const ACHIEVEMENTS: AchievementDef[] = [
     icon: "pillar",
     rarity: "legendary",
     check: (ctx) => ctx.matches.length >= 500,
+    progress: (ctx) => ({ current: ctx.matches.length, target: 500 }),
   },
 
   // ── Win milestones ──
@@ -78,6 +90,7 @@ const ACHIEVEMENTS: AchievementDef[] = [
     icon: "check",
     rarity: "common",
     check: (ctx) => ctx.overall.totalWins >= 1,
+    progress: (ctx) => ({ current: ctx.overall.totalWins, target: 1 }),
   },
   {
     id: "ten_wins",
@@ -87,6 +100,7 @@ const ACHIEVEMENTS: AchievementDef[] = [
     icon: "flame",
     rarity: "common",
     check: (ctx) => ctx.overall.totalWins >= 10,
+    progress: (ctx) => ({ current: ctx.overall.totalWins, target: 10 }),
   },
   {
     id: "fifty_wins",
@@ -96,6 +110,7 @@ const ACHIEVEMENTS: AchievementDef[] = [
     icon: "swords",
     rarity: "uncommon",
     check: (ctx) => ctx.overall.totalWins >= 50,
+    progress: (ctx) => ({ current: ctx.overall.totalWins, target: 50 }),
   },
   {
     id: "hundred_wins",
@@ -105,6 +120,7 @@ const ACHIEVEMENTS: AchievementDef[] = [
     icon: "crown",
     rarity: "rare",
     check: (ctx) => ctx.overall.totalWins >= 100,
+    progress: (ctx) => ({ current: ctx.overall.totalWins, target: 100 }),
   },
 
   // ── Streak ──
@@ -116,6 +132,7 @@ const ACHIEVEMENTS: AchievementDef[] = [
     icon: "flame",
     rarity: "common",
     check: (ctx) => ctx.overall.streaks.longestWinStreak >= 3,
+    progress: (ctx) => ({ current: ctx.overall.streaks.longestWinStreak, target: 3 }),
   },
   {
     id: "streak_5",
@@ -125,6 +142,7 @@ const ACHIEVEMENTS: AchievementDef[] = [
     icon: "star",
     rarity: "uncommon",
     check: (ctx) => ctx.overall.streaks.longestWinStreak >= 5,
+    progress: (ctx) => ({ current: ctx.overall.streaks.longestWinStreak, target: 5 }),
   },
   {
     id: "streak_10",
@@ -134,6 +152,7 @@ const ACHIEVEMENTS: AchievementDef[] = [
     icon: "bolt",
     rarity: "rare",
     check: (ctx) => ctx.overall.streaks.longestWinStreak >= 10,
+    progress: (ctx) => ({ current: ctx.overall.streaks.longestWinStreak, target: 10 }),
   },
   {
     id: "streak_15",
@@ -143,6 +162,7 @@ const ACHIEVEMENTS: AchievementDef[] = [
     icon: "gem",
     rarity: "epic",
     check: (ctx) => ctx.overall.streaks.longestWinStreak >= 15,
+    progress: (ctx) => ({ current: ctx.overall.streaks.longestWinStreak, target: 15 }),
   },
 
   // ── Mastery ──
@@ -154,6 +174,7 @@ const ACHIEVEMENTS: AchievementDef[] = [
     icon: "shield",
     rarity: "uncommon",
     check: (ctx) => ctx.heroStats.some((h) => h.totalMatches >= 20),
+    progress: (ctx) => ({ current: Math.max(0, ...ctx.heroStats.map((h) => h.totalMatches)), target: 20 }),
   },
   {
     id: "hero_specialist",
@@ -163,6 +184,7 @@ const ACHIEVEMENTS: AchievementDef[] = [
     icon: "target",
     rarity: "rare",
     check: (ctx) => ctx.heroStats.some((h) => h.totalMatches >= 50),
+    progress: (ctx) => ({ current: Math.max(0, ...ctx.heroStats.map((h) => h.totalMatches)), target: 50 }),
   },
   {
     id: "hero_master",
@@ -172,6 +194,10 @@ const ACHIEVEMENTS: AchievementDef[] = [
     icon: "trophy",
     rarity: "epic",
     check: (ctx) => ctx.heroStats.some((h) => h.totalMatches >= 30 && h.winRate >= 60),
+    progress: (ctx) => {
+      const best = ctx.heroStats.filter((h) => h.totalMatches >= 10).sort((a, b) => b.winRate - a.winRate)[0];
+      return { current: best ? Math.min(best.totalMatches, 30) : 0, target: 30 };
+    },
   },
 
   // ── Exploration ──
@@ -183,6 +209,7 @@ const ACHIEVEMENTS: AchievementDef[] = [
     icon: "compass",
     rarity: "common",
     check: (ctx) => ctx.heroStats.length >= 3,
+    progress: (ctx) => ({ current: ctx.heroStats.length, target: 3 }),
   },
   {
     id: "versatile",
@@ -192,6 +219,7 @@ const ACHIEVEMENTS: AchievementDef[] = [
     icon: "masks",
     rarity: "uncommon",
     check: (ctx) => ctx.heroStats.length >= 5,
+    progress: (ctx) => ({ current: ctx.heroStats.length, target: 5 }),
   },
   {
     id: "jack_of_all",
@@ -201,6 +229,7 @@ const ACHIEVEMENTS: AchievementDef[] = [
     icon: "cards",
     rarity: "rare",
     check: (ctx) => ctx.heroStats.length >= 10,
+    progress: (ctx) => ({ current: ctx.heroStats.length, target: 10 }),
   },
   {
     id: "format_hopper",
@@ -213,6 +242,7 @@ const ACHIEVEMENTS: AchievementDef[] = [
       const formats = new Set(ctx.matches.map((m) => m.format));
       return formats.size >= 3;
     },
+    progress: (ctx) => ({ current: new Set(ctx.matches.map((m) => m.format)).size, target: 3 }),
   },
   {
     id: "social_butterfly",
@@ -222,6 +252,7 @@ const ACHIEVEMENTS: AchievementDef[] = [
     icon: "people",
     rarity: "uncommon",
     check: (ctx) => ctx.opponentStats.filter((o) => o.opponentName !== "Unknown").length >= 10,
+    progress: (ctx) => ({ current: ctx.opponentStats.filter((o) => o.opponentName !== "Unknown").length, target: 10 }),
   },
   {
     id: "globetrotter",
@@ -234,6 +265,7 @@ const ACHIEVEMENTS: AchievementDef[] = [
       const venues = new Set(ctx.matches.map((m) => m.venue).filter(Boolean));
       return venues.size >= 3;
     },
+    progress: (ctx) => ({ current: new Set(ctx.matches.map((m) => m.venue).filter(Boolean)).size, target: 3 }),
   },
 
   // ── Fun ──
@@ -245,6 +277,7 @@ const ACHIEVEMENTS: AchievementDef[] = [
     icon: "handshake",
     rarity: "common",
     check: (ctx) => ctx.overall.totalDraws >= 1,
+    progress: (ctx) => ({ current: ctx.overall.totalDraws, target: 1 }),
   },
   {
     id: "swiss_diplomat",
@@ -254,6 +287,7 @@ const ACHIEVEMENTS: AchievementDef[] = [
     icon: "dove",
     rarity: "uncommon",
     check: (ctx) => ctx.overall.totalDraws >= 5,
+    progress: (ctx) => ({ current: ctx.overall.totalDraws, target: 5 }),
   },
   {
     id: "comeback_king",
@@ -263,6 +297,7 @@ const ACHIEVEMENTS: AchievementDef[] = [
     icon: "trending",
     rarity: "uncommon",
     check: (ctx) => ctx.matches.length >= 20 && ctx.overall.overallWinRate >= 50,
+    progress: (ctx) => ({ current: ctx.matches.length, target: 20 }),
   },
   {
     id: "blitz_runner",
@@ -272,6 +307,7 @@ const ACHIEVEMENTS: AchievementDef[] = [
     icon: "bolt",
     rarity: "common",
     check: (ctx) => ctx.matches.filter((m) => m.format === GameFormat.Blitz).length >= 10,
+    progress: (ctx) => ({ current: ctx.matches.filter((m) => m.format === GameFormat.Blitz).length, target: 10 }),
   },
   {
     id: "constructed_grinder",
@@ -281,6 +317,7 @@ const ACHIEVEMENTS: AchievementDef[] = [
     icon: "hammer",
     rarity: "common",
     check: (ctx) => ctx.matches.filter((m) => m.format === GameFormat.ClassicConstructed).length >= 10,
+    progress: (ctx) => ({ current: ctx.matches.filter((m) => m.format === GameFormat.ClassicConstructed).length, target: 10 }),
   },
   {
     id: "rival",
@@ -290,6 +327,7 @@ const ACHIEVEMENTS: AchievementDef[] = [
     icon: "versus",
     rarity: "uncommon",
     check: (ctx) => ctx.opponentStats.some((o) => o.totalMatches >= 5 && o.opponentName !== "Unknown"),
+    progress: (ctx) => ({ current: Math.max(0, ...ctx.opponentStats.filter((o) => o.opponentName !== "Unknown").map((o) => o.totalMatches)), target: 5 }),
   },
   {
     id: "nemesis_slayer",
@@ -310,6 +348,7 @@ const ACHIEVEMENTS: AchievementDef[] = [
     icon: "star-badge",
     rarity: "uncommon",
     check: (ctx) => ctx.matches.filter((m) => m.rated).length >= 10,
+    progress: (ctx) => ({ current: ctx.matches.filter((m) => m.rated).length, target: 10 }),
   },
 ];
 
@@ -321,12 +360,29 @@ export function evaluateAchievements(
   opponentStats: OpponentStats[],
 ): Achievement[] {
   const ctx: CheckContext = { matches, overall, heroStats, opponentStats };
-  return ACHIEVEMENTS.filter((a) => a.check(ctx)).map(({ check: _, ...rest }) => rest);
+  return ACHIEVEMENTS.filter((a) => a.check(ctx)).map(({ check: _, progress: _p, ...rest }) => rest);
 }
 
 /** Get all possible achievements (for progress display) */
 export function getAllAchievements(): Achievement[] {
-  return ACHIEVEMENTS.map(({ check: _, ...rest }) => rest);
+  return ACHIEVEMENTS.map(({ check: _, progress: _p, ...rest }) => rest);
+}
+
+/** Compute progress for all achievements */
+export function getAchievementProgress(
+  matches: MatchRecord[],
+  overall: OverallStats,
+  heroStats: HeroStats[],
+  opponentStats: OpponentStats[],
+): Record<string, { current: number; target: number }> {
+  const ctx: CheckContext = { matches, overall, heroStats, opponentStats };
+  const result: Record<string, { current: number; target: number }> = {};
+  for (const a of ACHIEVEMENTS) {
+    if (a.progress) {
+      result[a.id] = a.progress(ctx);
+    }
+  }
+  return result;
 }
 
 /** Rarity colors for styling */
