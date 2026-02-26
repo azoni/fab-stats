@@ -16,6 +16,7 @@ import { useFeaturedEvents } from "@/hooks/useFeaturedEvents";
 import { useFeed } from "@/hooks/useFeed";
 import { computeMetaStats } from "@/lib/meta-stats";
 import { selectFeaturedProfiles } from "@/lib/featured-profiles";
+import { localDate } from "@/lib/constants";
 
 export default function Dashboard() {
   const { matches, isLoaded } = useMatches();
@@ -201,7 +202,7 @@ export default function Dashboard() {
                   className={`w-2 h-2 rounded-full ${
                     m.result === MatchResult.Win ? "bg-fab-win" : m.result === MatchResult.Loss ? "bg-fab-loss" : m.result === MatchResult.Bye ? "bg-fab-muted" : "bg-fab-draw"
                   }`}
-                  title={`${new Date(m.date).toLocaleDateString()} - ${m.result}`}
+                  title={`${localDate(m.date).toLocaleDateString()} - ${m.result}`}
                 />
               ))}
             </div>

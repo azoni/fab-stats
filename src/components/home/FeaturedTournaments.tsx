@@ -3,6 +3,7 @@ import Link from "next/link";
 import { getHeroByName } from "@/lib/heroes";
 import { HeroClassIcon } from "@/components/heroes/HeroClassIcon";
 import type { FeaturedEvent, LeaderboardEntry } from "@/types";
+import { localDate } from "@/lib/constants";
 
 interface FeaturedTournamentsProps {
   events: FeaturedEvent[];
@@ -21,7 +22,7 @@ export function FeaturedTournaments({ events, leaderboardEntries }: FeaturedTour
         {events.map((event, i) => {
           const dateStr = (() => {
             try {
-              return new Date(event.date).toLocaleDateString("en-US", {
+              return localDate(event.date).toLocaleDateString("en-US", {
                 month: "short",
                 day: "numeric",
                 year: "numeric",

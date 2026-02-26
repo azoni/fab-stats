@@ -20,6 +20,7 @@ import {
   ResponsiveContainer,
   Legend,
 } from "recharts";
+import { localDate } from "@/lib/constants";
 
 const COLORS = {
   gold: "#c9a84c",
@@ -81,7 +82,7 @@ export default function TrendsPage() {
   const dayOfWeekData = useMemo(() => {
     const days = DAYS.map(() => ({ w: 0, l: 0, d: 0 }));
     for (const m of matches) {
-      const day = new Date(m.date).getDay();
+      const day = localDate(m.date).getDay();
       if (m.result === MatchResult.Win) days[day].w++;
       else if (m.result === MatchResult.Loss) days[day].l++;
       else days[day].d++;

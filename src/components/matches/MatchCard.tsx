@@ -6,6 +6,7 @@ import { HeroSelect } from "@/components/heroes/HeroSelect";
 import { getHeroByName } from "@/lib/heroes";
 import { HeroClassIcon } from "@/components/heroes/HeroClassIcon";
 import { MatchResult, type MatchRecord } from "@/types";
+import { localDate } from "@/lib/constants";
 
 interface MatchCardProps {
   match: MatchRecord;
@@ -173,7 +174,7 @@ export function MatchCard({ match, matchOwnerUid, enableComments = false, obfusc
             )}
 
             <div className="flex items-center gap-3 mt-1 text-xs text-fab-muted flex-wrap">
-              <span>{new Date(match.date).toLocaleDateString()}</span>
+              <span>{localDate(match.date).toLocaleDateString()}</span>
               <span className="px-2 py-0.5 rounded bg-fab-surface text-fab-muted">
                 {match.format}
               </span>

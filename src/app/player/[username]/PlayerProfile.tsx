@@ -26,6 +26,7 @@ import { auth } from "@/lib/firebase";
 import type { MatchRecord, UserProfile, Achievement } from "@/types";
 import { MatchResult } from "@/types";
 import { allHeroes as knownHeroes } from "@/lib/heroes";
+import { localDate } from "@/lib/constants";
 
 const VALID_HERO_NAMES = new Set(knownHeroes.map((h) => h.name));
 
@@ -374,7 +375,7 @@ export default function PlayerProfile() {
                   className={`w-2 h-2 rounded-full ${
                     m.result === MatchResult.Win ? "bg-fab-win" : m.result === MatchResult.Loss ? "bg-fab-loss" : "bg-fab-draw"
                   }`}
-                  title={`${new Date(m.date).toLocaleDateString()} - ${m.result}`}
+                  title={`${localDate(m.date).toLocaleDateString()} - ${m.result}`}
                 />
               ))}
             </div>
@@ -425,11 +426,11 @@ export default function PlayerProfile() {
 
       {/* Quick Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <StatCard label="Total Matches" value={overall.totalMatches} />
         <StatCard
-          label="Win Rate"
-          value={`${overall.overallWinRate.toFixed(1)}%`}
-          color={overall.overallWinRate >= 50 ? "text-fab-win" : "text-fab-loss"}
+          label="Total Matches"
+          value={overall.totalMatches}
+          subtext={`${overall.overallWinRate.toFixed(1)}% Win Rate`}
+          subtextColor={overall.overallWinRate >= 50 ? "text-fab-win" : "text-fab-loss"}
         />
         <StatCard label="Record" value={`${overall.totalWins}W - ${overall.totalLosses}L - ${overall.totalDraws}D${overall.totalByes > 0 ? ` - ${overall.totalByes}B` : ""}`} />
         {bestFinish ? (
@@ -448,7 +449,9 @@ export default function PlayerProfile() {
             value={`$${profile.earnings.toLocaleString()}`}
             color="text-fab-gold"
           />
-        ) : null}
+        ) : (
+          <StatCard label="Events" value={eventStats.length} />
+        )}
       </div>
 
       {/* Playoff Finishes */}
@@ -847,12 +850,12 @@ function PlayoffFinishes({ finishes }: { finishes: PlayoffFinish[] }) {
   );
 }
 
-function StatCard({ label, value, color = "text-fab-text", subtext }: { label: string; value: string | number; color?: string; subtext?: string }) {
+function StatCard({ label, value, color = "text-fab-text", subtext, subtextColor }: { label: string; value: string | number; color?: string; subtext?: string; subtextColor?: string }) {
   return (
     <div className="bg-fab-surface border border-fab-border rounded-lg p-4">
       <p className="text-xs text-fab-muted mb-1">{label}</p>
       <p className={`text-2xl font-bold ${color}`}>{value}</p>
-      {subtext && <p className="text-[10px] text-fab-dim mt-0.5 truncate">{subtext}</p>}
+      {subtext && <p className={`text-[10px] mt-0.5 truncate ${subtextColor || "text-fab-dim"}`}>{subtext}</p>}
     </div>
   );
 }

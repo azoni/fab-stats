@@ -8,8 +8,8 @@ interface FeedCardProps {
 
 function formatTimeAgo(isoString: string): string {
   const now = Date.now();
-  const then = new Date(isoString).getTime();
-  const diff = now - then;
+  const date = new Date(isoString);
+  const diff = now - date.getTime();
 
   const minutes = Math.floor(diff / 60000);
   if (minutes < 1) return "just now";
@@ -21,7 +21,23 @@ function formatTimeAgo(isoString: string): string {
   const days = Math.floor(hours / 24);
   if (days < 7) return `${days}d ago`;
 
-  return new Date(isoString).toLocaleDateString();
+  const isThisYear = date.getFullYear() === new Date().getFullYear();
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    ...(isThisYear ? {} : { year: "numeric" }),
+  });
+}
+
+function formatFullTimestamp(isoString: string): string {
+  const date = new Date(isoString);
+  return date.toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
 }
 
 export function FeedCard({ event }: FeedCardProps) {
@@ -59,7 +75,9 @@ export function FeedCard({ event }: FeedCardProps) {
               <span className="font-semibold text-fab-text">{event.displayName}</span>
             )}
             <span className="text-xs text-fab-dim">@{event.username}</span>
-            <span className="text-xs text-fab-dim">{formatTimeAgo(event.createdAt)}</span>
+            <span className="text-xs text-fab-dim" title={formatFullTimestamp(event.createdAt)}>
+              {formatTimeAgo(event.createdAt)}
+            </span>
           </div>
 
           <p className="text-sm text-fab-muted mt-1">

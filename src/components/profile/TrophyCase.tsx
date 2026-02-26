@@ -1,6 +1,7 @@
 "use client";
 
 import type { PlayoffFinish } from "@/lib/stats";
+import { localDate } from "@/lib/constants";
 
 type FinishTier = "badge" | "medal" | "trophy";
 
@@ -157,7 +158,7 @@ export function TrophyCase({ finishes }: { finishes: PlayoffFinish[] }) {
           const tier = TIER_MAP[f.eventType] || "badge";
           const abbr = EVENT_ABBR[f.eventType] || f.eventType.slice(0, 2).toUpperCase();
           const id = `tc${i}`;
-          const date = (() => { try { return new Date(f.eventDate).toLocaleDateString("en-US", { month: "short", year: "numeric" }); } catch { return ""; } })();
+          const date = (() => { try { return localDate(f.eventDate).toLocaleDateString("en-US", { month: "short", year: "numeric" }); } catch { return ""; } })();
           const tip = `${PLACEMENT_TEXT[f.type]} — ${f.eventName}${date ? ` (${date})` : ""}`;
           return (
             <div key={`${f.eventName}-${f.eventDate}-${i}`} className="flex flex-col items-center" title={tip}>

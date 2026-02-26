@@ -8,6 +8,7 @@ import { createImportFeedEvent } from "@/lib/feed";
 import { updateLeaderboardEntry } from "@/lib/leaderboard";
 import { allHeroes } from "@/lib/heroes";
 import { MatchResult } from "@/types";
+import { localDate } from "@/lib/constants";
 import type { PasteImportEvent } from "@/lib/gem-paste-import";
 
 const VALID_HERO_NAMES = allHeroes.map((h) => h.name).sort();
@@ -299,7 +300,7 @@ export function QuickEventImportModal({ open, onClose, onImportComplete }: Quick
                   )}
                 </div>
                 <div className="flex items-center gap-2 text-xs text-fab-dim flex-wrap">
-                  <span>{new Date(parsedEvent.eventDate).toLocaleDateString()}</span>
+                  <span>{localDate(parsedEvent.eventDate).toLocaleDateString()}</span>
                   {parsedEvent.venue && <span>at {parsedEvent.venue}</span>}
                   <span className="px-1.5 py-0.5 rounded bg-fab-bg text-fab-dim">{parsedEvent.format}</span>
                   {parsedEvent.eventType && parsedEvent.eventType !== "Other" && (

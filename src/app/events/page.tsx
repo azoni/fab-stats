@@ -8,6 +8,7 @@ import { computeEventStats } from "@/lib/stats";
 import { updateLeaderboardEntry } from "@/lib/leaderboard";
 import { propagateHeroToOpponent } from "@/lib/match-linking";
 import { EventCard } from "@/components/events/EventCard";
+import { localDate } from "@/lib/constants";
 import { type GameFormat } from "@/types";
 import { QuickEventImportModal } from "@/components/events/QuickEventImportModal";
 
@@ -289,13 +290,13 @@ export default function EventsPage() {
                   <tr key={`${event.eventName}-${event.eventDate}`} className="border-t border-fab-border/50 hover:bg-fab-surface-hover transition-colors">
                     <td className="px-4 py-3">
                       <div className="font-medium text-fab-text truncate max-w-[200px]">{event.eventName}</div>
-                      <div className="text-xs text-fab-dim sm:hidden">{new Date(event.eventDate).toLocaleDateString()}</div>
+                      <div className="text-xs text-fab-dim sm:hidden">{localDate(event.eventDate).toLocaleDateString()}</div>
                       {event.venue && event.venue !== "Unknown" && (
                         <div className="text-xs text-fab-dim truncate max-w-[200px]">{event.venue}</div>
                       )}
                     </td>
                     <td className="px-4 py-3 text-fab-dim hidden sm:table-cell whitespace-nowrap">
-                      {new Date(event.eventDate).toLocaleDateString()}
+                      {localDate(event.eventDate).toLocaleDateString()}
                     </td>
                     <td className="px-4 py-3 hidden md:table-cell">
                       <div className="flex gap-1 flex-wrap">

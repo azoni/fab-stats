@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import type { EventBadge, EventTier } from "@/lib/events";
+import { localDate } from "@/lib/constants";
 
 const tierConfig: Record<EventTier, { color: string; bg: string; border: string; icon: ReactNode }> = {
   "battle-hardened": {
@@ -78,7 +79,7 @@ export function EventBadges({ badges }: { badges: EventBadge[] }) {
       <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide sm:flex-wrap sm:overflow-visible">
         {badges.map((badge, i) => {
           const config = tierConfig[badge.tier];
-          const dateStr = new Date(badge.date).toLocaleDateString("en-US", { month: "short", year: "numeric" });
+          const dateStr = localDate(badge.date).toLocaleDateString("en-US", { month: "short", year: "numeric" });
           return (
             <div
               key={`${badge.eventName}-${badge.date}-${i}`}

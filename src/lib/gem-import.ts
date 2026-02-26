@@ -168,6 +168,7 @@ export function parseGemCsv(csvText: string): GemImportResult {
       result: isBye ? MatchResult.Bye : result,
       format: guessFormat(eventName),
       notes: notesParts.join(" | "),
+      source: "csv",
     });
   }
 

@@ -6,6 +6,7 @@ import { HeroSelect } from "@/components/heroes/HeroSelect";
 import { getHeroByName } from "@/lib/heroes";
 import { HeroClassIcon } from "@/components/heroes/HeroClassIcon";
 import { MatchResult, GameFormat } from "@/types";
+import { localDate } from "@/lib/constants";
 import type { EventStats } from "@/types";
 
 interface EventCardProps {
@@ -171,7 +172,7 @@ export function EventCard({ event, obfuscateOpponents = false, visibleOpponents,
               )}
             </div>
             <div className="flex items-center gap-2 mt-1 text-xs text-fab-dim">
-              <span>{new Date(event.eventDate).toLocaleDateString()}</span>
+              <span>{localDate(event.eventDate).toLocaleDateString()}</span>
               {event.venue && event.venue !== "Unknown" && <span>at {event.venue}</span>}
             </div>
           </div>

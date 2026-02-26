@@ -11,6 +11,7 @@ import type {
   EventStats,
 } from "@/types";
 import { MatchResult } from "@/types";
+import { localDate } from "@/lib/constants";
 
 export function computeOverallStats(matches: MatchRecord[]): OverallStats {
   const sorted = [...matches].sort(
@@ -225,7 +226,7 @@ export function computeTrends(
   const groups = new Map<string, MatchRecord[]>();
 
   for (const match of sorted) {
-    const d = new Date(match.date);
+    const d = localDate(match.date);
     let key: string;
     if (granularity === "weekly") {
       const startOfWeek = new Date(d);
@@ -403,6 +404,19 @@ export function computeVenueStats(matches: MatchRecord[]): VenueStats[] {
     .sort((a, b) => b.totalMatches - a.totalMatches);
 }
 
+const EVENT_PRESTIGE: Record<string, number> = {
+  "Worlds": 10,
+  "Pro Tour": 9,
+  "The Calling": 8,
+  "Nationals": 7,
+  "Battle Hardened": 6,
+  "Road to Nationals": 5,
+  "ProQuest": 4,
+  "Championship": 3,
+  "Skirmish": 2,
+  "On Demand": 1,
+};
+
 export function computeBestFinish(
   eventStats: EventStats[]
 ): { label: string; eventName: string; eventDate: string } | null {
@@ -415,8 +429,17 @@ export function computeBestFinish(
 
   let best = finishes[0];
   for (const f of finishes) {
-    if ((rankMap[f.type] || 0) > (rankMap[best.type] || 0)) {
+    const fRank = rankMap[f.type] || 0;
+    const bestRank = rankMap[best.type] || 0;
+    if (fRank > bestRank) {
       best = f;
+    } else if (fRank === bestRank) {
+      // Same finish type — prefer more prestigious event
+      const fPrestige = EVENT_PRESTIGE[f.eventType] || 0;
+      const bestPrestige = EVENT_PRESTIGE[best.eventType] || 0;
+      if (fPrestige > bestPrestige) {
+        best = f;
+      }
     }
   }
 

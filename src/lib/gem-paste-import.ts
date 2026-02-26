@@ -253,6 +253,7 @@ export function parseGemPaste(text: string): PasteImportResult {
           venue: currentEvent.venue || undefined,
           eventType: currentEvent.eventType || undefined,
           rated: currentEvent.rated,
+          source: "paste",
         });
       }
       continue;
@@ -276,6 +277,7 @@ export function parseGemPaste(text: string): PasteImportResult {
         venue: currentEvent.venue || undefined,
         eventType: currentEvent.eventType || undefined,
         rated: currentEvent.rated,
+        source: "paste",
       });
       continue;
     }
@@ -347,6 +349,7 @@ export function parseExtensionJson(json: string): PasteImportResult {
     opponent?: string;
     opponentGemId?: string;
     result?: string;
+    extensionVersion?: string;
   }>;
 
   const eventMap = new Map<
@@ -406,6 +409,8 @@ export function parseExtensionJson(json: string): PasteImportResult {
       venue: entry.venue || undefined,
       eventType: entry.eventType || undefined,
       rated: entry.rated,
+      source: "extension",
+      extensionVersion: entry.extensionVersion || undefined,
     });
   }
 

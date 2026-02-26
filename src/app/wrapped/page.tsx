@@ -17,6 +17,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
+import { localDate } from "@/lib/constants";
 
 const COLORS = {
   gold: "#c9a84c",
@@ -139,8 +140,7 @@ export default function WrappedPage() {
     0;
 
   const formatDate = (d: string) => {
-    const date = new Date(d);
-    return date.toLocaleDateString("en-US", {
+    return localDate(d).toLocaleDateString("en-US", {
       month: "short",
       day: "numeric",
     });

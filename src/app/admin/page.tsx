@@ -239,13 +239,28 @@ export default function AdminPage() {
       ) : data ? (
         <>
           {/* Key metrics */}
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
-            <MetricCard label="Total Users" value={data.totalUsers} />
-            <MetricCard label="Total Matches" value={data.totalMatches} />
-            <MetricCard label="New (7d)" value={data.newUsersThisWeek} />
-            <MetricCard label="New (30d)" value={data.newUsersThisMonth} />
-            <MetricCard label="New Feedback" value={feedback.filter((f) => f.status === "new").length} />
-          </div>
+          {(() => {
+            const activePlayers = data.users.filter((u) => u.matchCount > 0).length;
+            const publicUsers = data.users.filter((u) => u.isPublic).length;
+            const privateUsers = data.totalUsers - publicUsers;
+            const avgMatches = activePlayers > 0 ? Math.round(data.totalMatches / activePlayers) : 0;
+            return (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+                <MetricCard label="Total Users" value={data.totalUsers} />
+                <MetricCard label="Active Players" value={activePlayers} subtext={`${data.totalUsers - activePlayers} with 0 matches`} />
+                <MetricCard label="Public" value={publicUsers} subtext={`${privateUsers} private`} />
+                <MetricCard label="Total Matches" value={data.totalMatches} subtext={`${avgMatches} avg per player`} />
+                <MetricCard label="New (7d)" value={data.newUsersThisWeek} />
+                <MetricCard label="New (30d)" value={data.newUsersThisMonth} />
+                <MetricCard label="New Feedback" value={feedback.filter((f) => f.status === "new").length} />
+                <MetricCard label="Avg Win Rate" value={(() => {
+                  const withWr = data.users.filter((u) => u.winRate !== undefined && u.matchCount >= 10);
+                  if (withWr.length === 0) return 0;
+                  return Math.round((withWr.reduce((s, u) => s + (u.winRate ?? 0), 0) / withWr.length) * 10) / 10;
+                })()} subtext="players with 10+ matches" suffix="%" />
+              </div>
+            );
+          })()}
 
           {/* Page Activity */}
           {analyticsData && <ActivitySection analytics={analyticsData} />}
@@ -766,11 +781,14 @@ function UserExpandedStats({ user: u }: { user: AdminUserStats }) {
   );
 }
 
-function MetricCard({ label, value }: { label: string; value: number }) {
+function MetricCard({ label, value, subtext, suffix }: { label: string; value: number; subtext?: string; suffix?: string }) {
   return (
     <div className="bg-fab-surface border border-fab-border rounded-lg p-4">
-      <div className="text-2xl font-bold text-fab-text">{value.toLocaleString()}</div>
+      <div className="text-2xl font-bold text-fab-text">
+        {value.toLocaleString()}{suffix && <span className="text-sm text-fab-muted ml-0.5">{suffix}</span>}
+      </div>
       <div className="text-xs text-fab-muted mt-1">{label}</div>
+      {subtext && <div className="text-[10px] text-fab-dim mt-0.5">{subtext}</div>}
     </div>
   );
 }

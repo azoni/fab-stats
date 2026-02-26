@@ -8,6 +8,7 @@ import { computeOpponentStats } from "@/lib/stats";
 import { MatchCard } from "@/components/matches/MatchCard";
 import { ChevronUpIcon, ChevronDownIcon } from "@/components/icons/NavIcons";
 import { MatchResult, type OpponentStats } from "@/types";
+import { localDate } from "@/lib/constants";
 import { allHeroes as knownHeroes } from "@/lib/heroes";
 import { getEventType } from "@/lib/stats";
 import { RivalryCard, buildRivalryUrl, CARD_THEMES, type CardTheme } from "@/components/opponents/RivalryCard";
@@ -290,7 +291,7 @@ function OpponentRow({ opp, isExpanded, onToggle, matchOwnerUid, playerName }: {
   // Unique formats
   const formats = [...new Set(opp.matches.map((m) => m.format))];
   // Date range
-  const dates = opp.matches.map((m) => new Date(m.date).getTime());
+  const dates = opp.matches.map((m) => localDate(m.date).getTime());
   const firstDate = new Date(Math.min(...dates)).toLocaleDateString();
   const lastDate = new Date(Math.max(...dates)).toLocaleDateString();
 
@@ -349,7 +350,7 @@ function OpponentRow({ opp, isExpanded, onToggle, matchOwnerUid, playerName }: {
               className={`w-2.5 h-2.5 rounded-full ${
                 m.result === MatchResult.Win ? "bg-fab-win" : m.result === MatchResult.Loss ? "bg-fab-loss" : "bg-fab-draw"
               }`}
-              title={`${new Date(m.date).toLocaleDateString()} - ${m.result}`}
+              title={`${localDate(m.date).toLocaleDateString()} - ${m.result}`}
             />
           ))}
         </div>
