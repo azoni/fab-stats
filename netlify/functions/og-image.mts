@@ -89,13 +89,19 @@ async function loadFonts(): Promise<{ regular: ArrayBuffer; bold: ArrayBuffer }>
     return { regular: fontCache, bold: fontBoldCache };
   }
 
+  async function fetchFont(url: string): Promise<ArrayBuffer> {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`Font fetch failed: ${res.status} ${url}`);
+    const buf = await res.arrayBuffer();
+    // Sanity check: font files start with known signatures, not HTML
+    const head = new Uint8Array(buf.slice(0, 4));
+    if (head[0] === 0x3C) throw new Error(`Font URL returned HTML instead of font data: ${url}`);
+    return buf;
+  }
+
   const [regular, bold] = await Promise.all([
-    fetch("https://fonts.gstatic.com/s/inter/v18/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuLyfAZ9hiA.woff").then(
-      (r) => r.arrayBuffer()
-    ),
-    fetch("https://fonts.gstatic.com/s/inter/v18/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuFuYAZ9hiA.woff").then(
-      (r) => r.arrayBuffer()
-    ),
+    fetchFont("https://cdn.jsdelivr.net/fontsource/fonts/inter@latest/latin-400-normal.woff2"),
+    fetchFont("https://cdn.jsdelivr.net/fontsource/fonts/inter@latest/latin-700-normal.woff2"),
   ]);
 
   fontCache = regular;
