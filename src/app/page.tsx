@@ -118,39 +118,39 @@ export default function Dashboard() {
   const isFiltered = filterFormat !== "all" || filterRated !== "all" || filterHero !== "all";
   const fm = filteredMatches;
 
-  const overall = computeOverallStats(fm);
-  const heroStats = computeHeroStats(fm);
-  const eventTypeStats = computeEventTypeStats(fm);
-  const venueStats = computeVenueStats(fm).filter((v) => v.venue !== "Unknown");
-  const eventStats = computeEventStats(fm);
-  const recentEvents = eventStats.slice(0, 5);
-  const recentMatches = [...fm]
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-    .slice(0, 5);
+  const overall = useMemo(() => computeOverallStats(fm), [fm]);
+  const heroStats = useMemo(() => computeHeroStats(fm), [fm]);
+  const eventTypeStats = useMemo(() => computeEventTypeStats(fm), [fm]);
+  const venueStats = useMemo(() => computeVenueStats(fm).filter((v) => v.venue !== "Unknown"), [fm]);
+  const eventStats = useMemo(() => computeEventStats(fm), [fm]);
+  const recentEvents = useMemo(() => eventStats.slice(0, 5), [eventStats]);
 
-  const opponentStats = computeOpponentStats(fm).filter((o) => o.totalMatches >= 3);
-  const allOpponentStats = computeOpponentStats(fm);
-  const achievements = evaluateAchievements(fm, overall, heroStats, opponentStats);
-  const masteries = computeHeroMastery(heroStats);
-  const nemesis = opponentStats.length > 0
+  const sortedByDateDesc = useMemo(() =>
+    [...fm].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
+    [fm]
+  );
+  const recentMatches = useMemo(() => sortedByDateDesc.slice(0, 5), [sortedByDateDesc]);
+
+  const allOpponentStats = useMemo(() => computeOpponentStats(fm), [fm]);
+  const opponentStats = useMemo(() => allOpponentStats.filter((o) => o.totalMatches >= 3), [allOpponentStats]);
+  const achievements = useMemo(() => evaluateAchievements(fm, overall, heroStats, opponentStats), [fm, overall, heroStats, opponentStats]);
+  const masteries = useMemo(() => computeHeroMastery(heroStats), [heroStats]);
+  const nemesis = useMemo(() => opponentStats.length > 0
     ? opponentStats.reduce((worst, o) => (o.winRate < worst.winRate ? o : worst))
-    : null;
-  const bestFriend = allOpponentStats.length > 0
+    : null, [opponentStats]);
+  const bestFriend = useMemo(() => allOpponentStats.length > 0
     ? allOpponentStats.reduce((most, o) => (o.totalMatches > most.totalMatches ? o : most))
-    : null;
-  const bestFinish = computeBestFinish(eventStats);
-  const playoffFinishes = computePlayoffFinishes(eventStats);
-  const eventBadges = computeEventBadges(eventStats);
-  const userRanks = user ? computeUserRanks(lbEntries, user.uid) : [];
-  const bestRank = getBestRank(userRanks);
+    : null, [allOpponentStats]);
+  const bestFinish = useMemo(() => computeBestFinish(eventStats), [eventStats]);
+  const playoffFinishes = useMemo(() => computePlayoffFinishes(eventStats), [eventStats]);
+  const eventBadges = useMemo(() => computeEventBadges(eventStats), [eventStats]);
+  const userRanks = useMemo(() => user ? computeUserRanks(lbEntries, user.uid) : [], [user, lbEntries]);
+  const bestRank = useMemo(() => getBestRank(userRanks), [userRanks]);
 
   const { streaks } = overall;
 
   // Build last 30 results for the streak visual
-  const last30 = [...fm]
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-    .slice(0, 30)
-    .reverse();
+  const last30 = useMemo(() => sortedByDateDesc.slice(0, 30).reverse(), [sortedByDateDesc]);
 
   return (
     <div className="space-y-8">
@@ -170,7 +170,7 @@ export default function Dashboard() {
           </button>
           <p className="text-xs font-medium text-fab-gold uppercase tracking-wider mb-1">From the Developer</p>
           <p className="text-sm text-fab-text">
-            New: Favorite players to track them easily, log single matches after they happen, and share head-to-head rivalry cards from your Opponents page!
+            New: Edit the hero and format on any match or for an entire event from your Events page. Plus, favorite players, log single matches, and share head-to-head rivalry cards!
           </p>
         </div>
       )}
