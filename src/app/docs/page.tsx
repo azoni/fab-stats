@@ -406,6 +406,17 @@ export default function DocsPage() {
             meta shifts across different competitive tiers. Data updates as players import matches.
           </p>
         </section>
+
+        {/* Tournaments */}
+        <section>
+          <h2 className="text-lg font-semibold text-fab-text mb-3">Tournaments</h2>
+          <p className="text-sm text-fab-muted">
+            The Tournaments page showcases recent featured tournaments with top-8 results.
+            Player names link to their profiles when they have an account on FaB Stats.
+            Use the format filter to narrow results to a specific format. The homepage
+            shows the two most recent tournaments with a link to view all.
+          </p>
+        </section>
       </div>
     </div>
   );
