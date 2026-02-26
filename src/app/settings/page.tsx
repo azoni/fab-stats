@@ -37,8 +37,17 @@ function resizeImage(file: File, maxSize: number): Promise<string> {
   });
 }
 
+function ChevronIcon({ open }: { open: boolean }) {
+  return (
+    <svg className={`w-4 h-4 text-fab-dim transition-transform ${open ? "rotate-180" : ""}`} viewBox="0 0 20 20" fill="currentColor">
+      <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clipRule="evenodd" />
+    </svg>
+  );
+}
+
 function YearInReview() {
   const { matches } = useMatches();
+  const [open, setOpen] = useState(false);
 
   const years = useMemo(() => {
     const currentYear = new Date().getFullYear().toString();
@@ -54,33 +63,38 @@ function YearInReview() {
 
   return (
     <div className="bg-fab-surface border border-fab-border rounded-lg p-6 mb-4">
-      <h2 className="text-sm font-semibold text-fab-text mb-4 flex items-center gap-2">
-        <SparklesIcon className="w-4 h-4 text-fab-gold" />
-        Year in Review
-      </h2>
-      <div className="space-y-2">
-        {years.map((year) => {
-          const count = matches.filter((m) => m.date.startsWith(year)).length;
-          return (
-            <Link
-              key={year}
-              href={`/wrapped?year=${year}`}
-              className="flex items-center justify-between p-3 rounded-lg bg-fab-bg hover:bg-fab-gold/10 border border-fab-border hover:border-fab-gold/30 transition-colors group"
-            >
-              <div className="flex items-center gap-3">
-                <span className="text-2xl font-black text-fab-gold">{year}</span>
-                <span className="text-sm text-fab-muted">Wrapped</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-fab-dim">{count} matches</span>
-                <svg className="w-4 h-4 text-fab-dim group-hover:text-fab-gold transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                </svg>
-              </div>
-            </Link>
-          );
-        })}
-      </div>
+      <button onClick={() => setOpen(!open)} className="flex items-center justify-between w-full text-left">
+        <h2 className="text-sm font-semibold text-fab-text flex items-center gap-2">
+          <SparklesIcon className="w-4 h-4 text-fab-gold" />
+          Year in Review
+        </h2>
+        <ChevronIcon open={open} />
+      </button>
+      {open && (
+        <div className="space-y-2 mt-4">
+          {years.map((year) => {
+            const count = matches.filter((m) => m.date.startsWith(year)).length;
+            return (
+              <Link
+                key={year}
+                href={`/wrapped?year=${year}`}
+                className="flex items-center justify-between p-3 rounded-lg bg-fab-bg hover:bg-fab-gold/10 border border-fab-border hover:border-fab-gold/30 transition-colors group"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl font-black text-fab-gold">{year}</span>
+                  <span className="text-sm text-fab-muted">Wrapped</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-fab-dim">{count} matches</span>
+                  <svg className="w-4 h-4 text-fab-dim group-hover:text-fab-gold transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                  </svg>
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
@@ -112,6 +126,8 @@ export default function SettingsPage() {
   const [togglingName, setTogglingName] = useState(false);
   const [hideFromSpotlight, setHideFromSpotlight] = useState(profile?.hideFromSpotlight ?? false);
   const [togglingSpotlight, setTogglingSpotlight] = useState(false);
+  const [privacyOpen, setPrivacyOpen] = useState(false);
+  const [creatorsOpen, setCreatorsOpen] = useState(false);
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
@@ -370,114 +386,121 @@ export default function SettingsPage() {
 
       {/* Privacy */}
       <div className="bg-fab-surface border border-fab-border rounded-lg p-6 mb-4">
-        <h2 className="text-sm font-semibold text-fab-text mb-2">Privacy</h2>
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm text-fab-text">Public Profile</p>
-            <p className="text-xs text-fab-dim mt-0.5">
-              {isPublic
-                ? "Anyone can view your profile, match history, and stats. Opponent names are hidden from viewers."
-                : "Your profile is private. Only you can see your data."}
-            </p>
-          </div>
-          <button
-            onClick={async () => {
-              if (!user) return;
-              setTogglingPublic(true);
-              try {
-                const next = !isPublic;
-                await updateProfile(user.uid, { isPublic: next });
-                setIsPublic(next);
-              } catch {
-                setError("Failed to update privacy setting.");
-              } finally {
-                setTogglingPublic(false);
-              }
-            }}
-            disabled={togglingPublic}
-            className={`relative w-11 h-6 rounded-full transition-colors shrink-0 ${
-              isPublic ? "bg-fab-win" : "bg-fab-border"
-            } ${togglingPublic ? "opacity-50" : ""}`}
-          >
-            <span
-              className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${
-                isPublic ? "translate-x-5" : ""
-              }`}
-            />
-          </button>
-        </div>
+        <button onClick={() => setPrivacyOpen(!privacyOpen)} className="flex items-center justify-between w-full text-left">
+          <h2 className="text-sm font-semibold text-fab-text">Privacy</h2>
+          <ChevronIcon open={privacyOpen} />
+        </button>
+        {privacyOpen && (
+          <div className="mt-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-fab-text">Public Profile</p>
+                <p className="text-xs text-fab-dim mt-0.5">
+                  {isPublic
+                    ? "Anyone can view your profile, match history, and stats. Opponent names are hidden from viewers."
+                    : "Your profile is private. Only you can see your data."}
+                </p>
+              </div>
+              <button
+                onClick={async () => {
+                  if (!user) return;
+                  setTogglingPublic(true);
+                  try {
+                    const next = !isPublic;
+                    await updateProfile(user.uid, { isPublic: next });
+                    setIsPublic(next);
+                  } catch {
+                    setError("Failed to update privacy setting.");
+                  } finally {
+                    setTogglingPublic(false);
+                  }
+                }}
+                disabled={togglingPublic}
+                className={`relative w-11 h-6 rounded-full transition-colors shrink-0 ${
+                  isPublic ? "bg-fab-win" : "bg-fab-border"
+                } ${togglingPublic ? "opacity-50" : ""}`}
+              >
+                <span
+                  className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${
+                    isPublic ? "translate-x-5" : ""
+                  }`}
+                />
+              </button>
+            </div>
 
-        <div className="flex items-center justify-between mt-4 pt-4 border-t border-fab-border">
-          <div>
-            <p className="text-sm text-fab-text">Show Name on Opponent Profiles</p>
-            <p className="text-xs text-fab-dim mt-0.5">
-              {showNameOnProfiles
-                ? "Your display name is visible when you appear as an opponent on other players' profiles."
-                : "Your name is hidden when you appear as an opponent on other players' profiles."}
-            </p>
-          </div>
-          <button
-            onClick={async () => {
-              if (!user) return;
-              setTogglingName(true);
-              try {
-                const next = !showNameOnProfiles;
-                await updateProfile(user.uid, { showNameOnProfiles: next });
-                setShowNameOnProfiles(next);
-              } catch {
-                setError("Failed to update name visibility setting.");
-              } finally {
-                setTogglingName(false);
-              }
-            }}
-            disabled={togglingName}
-            className={`relative w-11 h-6 rounded-full transition-colors shrink-0 ${
-              showNameOnProfiles ? "bg-fab-win" : "bg-fab-border"
-            } ${togglingName ? "opacity-50" : ""}`}
-          >
-            <span
-              className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${
-                showNameOnProfiles ? "translate-x-5" : ""
-              }`}
-            />
-          </button>
-        </div>
+            <div className="flex items-center justify-between mt-4 pt-4 border-t border-fab-border">
+              <div>
+                <p className="text-sm text-fab-text">Show Name on Opponent Profiles</p>
+                <p className="text-xs text-fab-dim mt-0.5">
+                  {showNameOnProfiles
+                    ? "Your display name is visible when you appear as an opponent on other players' profiles."
+                    : "Your name is hidden when you appear as an opponent on other players' profiles."}
+                </p>
+              </div>
+              <button
+                onClick={async () => {
+                  if (!user) return;
+                  setTogglingName(true);
+                  try {
+                    const next = !showNameOnProfiles;
+                    await updateProfile(user.uid, { showNameOnProfiles: next });
+                    setShowNameOnProfiles(next);
+                  } catch {
+                    setError("Failed to update name visibility setting.");
+                  } finally {
+                    setTogglingName(false);
+                  }
+                }}
+                disabled={togglingName}
+                className={`relative w-11 h-6 rounded-full transition-colors shrink-0 ${
+                  showNameOnProfiles ? "bg-fab-win" : "bg-fab-border"
+                } ${togglingName ? "opacity-50" : ""}`}
+              >
+                <span
+                  className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${
+                    showNameOnProfiles ? "translate-x-5" : ""
+                  }`}
+                />
+              </button>
+            </div>
 
-        <div className="flex items-center justify-between mt-4 pt-4 border-t border-fab-border">
-          <div>
-            <p className="text-sm text-fab-text">Hide from Player Spotlight</p>
-            <p className="text-xs text-fab-dim mt-0.5">
-              {hideFromSpotlight
-                ? "You won't appear in the Player Spotlight section on the homepage."
-                : "You may be featured in the Player Spotlight on the homepage based on your activity."}
-            </p>
+            <div className="flex items-center justify-between mt-4 pt-4 border-t border-fab-border">
+              <div>
+                <p className="text-sm text-fab-text">Hide from Player Spotlight</p>
+                <p className="text-xs text-fab-dim mt-0.5">
+                  {hideFromSpotlight
+                    ? "You won't appear in the Player Spotlight section on the homepage."
+                    : "You may be featured in the Player Spotlight on the homepage based on your activity."}
+                </p>
+              </div>
+              <button
+                onClick={async () => {
+                  if (!user) return;
+                  setTogglingSpotlight(true);
+                  try {
+                    const next = !hideFromSpotlight;
+                    await updateProfile(user.uid, { hideFromSpotlight: next });
+                    setHideFromSpotlight(next);
+                  } catch {
+                    setError("Failed to update spotlight setting.");
+                  } finally {
+                    setTogglingSpotlight(false);
+                  }
+                }}
+                disabled={togglingSpotlight}
+                className={`relative w-11 h-6 rounded-full transition-colors shrink-0 ${
+                  hideFromSpotlight ? "bg-fab-win" : "bg-fab-border"
+                } ${togglingSpotlight ? "opacity-50" : ""}`}
+              >
+                <span
+                  className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${
+                    hideFromSpotlight ? "translate-x-5" : ""
+                  }`}
+                />
+              </button>
+            </div>
           </div>
-          <button
-            onClick={async () => {
-              if (!user) return;
-              setTogglingSpotlight(true);
-              try {
-                const next = !hideFromSpotlight;
-                await updateProfile(user.uid, { hideFromSpotlight: next });
-                setHideFromSpotlight(next);
-              } catch {
-                setError("Failed to update spotlight setting.");
-              } finally {
-                setTogglingSpotlight(false);
-              }
-            }}
-            disabled={togglingSpotlight}
-            className={`relative w-11 h-6 rounded-full transition-colors shrink-0 ${
-              hideFromSpotlight ? "bg-fab-win" : "bg-fab-border"
-            } ${togglingSpotlight ? "opacity-50" : ""}`}
-          >
-            <span
-              className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${
-                hideFromSpotlight ? "translate-x-5" : ""
-              }`}
-            />
-          </button>
-        </div>
+        )}
       </div>
 
       <YearInReview />
@@ -497,32 +520,39 @@ export default function SettingsPage() {
       {/* Creators */}
       {creators.length > 0 && (
         <div className="bg-fab-surface border border-fab-border rounded-lg p-6 mb-4">
-          <h2 className="text-sm font-semibold text-fab-text mb-2">Featured Creators</h2>
-          <p className="text-xs text-fab-dim mb-3">Check out these FaB content creators.</p>
-          <div className="space-y-2">
-            {creators.map((c) => (
-              <a
-                key={c.name}
-                href={c.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-3 p-3 rounded-lg bg-fab-bg hover:bg-fab-gold/10 border border-fab-border hover:border-fab-gold/30 transition-colors group"
-              >
-                {c.imageUrl ? (
-                  <img src={c.imageUrl} alt="" className="w-8 h-8 rounded-full object-cover shrink-0" />
-                ) : (
-                  <span className="shrink-0">{platformIcons[c.platform]}</span>
-                )}
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-fab-text group-hover:text-fab-gold transition-colors truncate">{c.name}</p>
-                  <p className="text-xs text-fab-dim truncate">{c.description}</p>
-                </div>
-                <svg className="w-3.5 h-3.5 text-fab-dim shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
-                </svg>
-              </a>
-            ))}
-          </div>
+          <button onClick={() => setCreatorsOpen(!creatorsOpen)} className="flex items-center justify-between w-full text-left">
+            <h2 className="text-sm font-semibold text-fab-text">Featured Creators</h2>
+            <ChevronIcon open={creatorsOpen} />
+          </button>
+          {creatorsOpen && (
+            <div className="mt-4">
+              <p className="text-xs text-fab-dim mb-3">Check out these FaB content creators.</p>
+              <div className="space-y-2">
+                {creators.map((c) => (
+                  <a
+                    key={c.name}
+                    href={c.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-3 p-3 rounded-lg bg-fab-bg hover:bg-fab-gold/10 border border-fab-border hover:border-fab-gold/30 transition-colors group"
+                  >
+                    {c.imageUrl ? (
+                      <img src={c.imageUrl} alt="" className="w-8 h-8 rounded-full object-cover shrink-0" />
+                    ) : (
+                      <span className="shrink-0">{platformIcons[c.platform]}</span>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-fab-text group-hover:text-fab-gold transition-colors truncate">{c.name}</p>
+                      <p className="text-xs text-fab-dim truncate">{c.description}</p>
+                    </div>
+                    <svg className="w-3.5 h-3.5 text-fab-dim shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+                    </svg>
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
