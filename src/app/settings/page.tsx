@@ -109,6 +109,8 @@ export default function SettingsPage() {
   const [togglingPublic, setTogglingPublic] = useState(false);
   const [showNameOnProfiles, setShowNameOnProfiles] = useState(profile?.showNameOnProfiles ?? false);
   const [togglingName, setTogglingName] = useState(false);
+  const [hideFromSpotlight, setHideFromSpotlight] = useState(profile?.hideFromSpotlight ?? false);
+  const [togglingSpotlight, setTogglingSpotlight] = useState(false);
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
@@ -435,6 +437,42 @@ export default function SettingsPage() {
             <span
               className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${
                 showNameOnProfiles ? "translate-x-5" : ""
+              }`}
+            />
+          </button>
+        </div>
+
+        <div className="flex items-center justify-between mt-4 pt-4 border-t border-fab-border">
+          <div>
+            <p className="text-sm text-fab-text">Hide from Player Spotlight</p>
+            <p className="text-xs text-fab-dim mt-0.5">
+              {hideFromSpotlight
+                ? "You won't appear in the Player Spotlight section on the homepage."
+                : "You may be featured in the Player Spotlight on the homepage based on your activity."}
+            </p>
+          </div>
+          <button
+            onClick={async () => {
+              if (!user) return;
+              setTogglingSpotlight(true);
+              try {
+                const next = !hideFromSpotlight;
+                await updateProfile(user.uid, { hideFromSpotlight: next });
+                setHideFromSpotlight(next);
+              } catch {
+                setError("Failed to update spotlight setting.");
+              } finally {
+                setTogglingSpotlight(false);
+              }
+            }}
+            disabled={togglingSpotlight}
+            className={`relative w-11 h-6 rounded-full transition-colors shrink-0 ${
+              hideFromSpotlight ? "bg-fab-win" : "bg-fab-border"
+            } ${togglingSpotlight ? "opacity-50" : ""}`}
+          >
+            <span
+              className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${
+                hideFromSpotlight ? "translate-x-5" : ""
               }`}
             />
           </button>

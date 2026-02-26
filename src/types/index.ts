@@ -134,6 +134,7 @@ export interface UserProfile {
   isPublic: boolean;
   earnings?: number;
   showNameOnProfiles?: boolean;
+  hideFromSpotlight?: boolean;
   gemId?: string;
 }
 
@@ -231,6 +232,7 @@ export interface LeaderboardEntry {
   armoryWinRate: number;
   armoryEvents: number;
   showNameOnProfiles?: boolean;
+  hideFromSpotlight?: boolean;
   heroBreakdown?: { hero: string; matches: number; wins: number; winRate: number }[];
   heroBreakdownDetailed?: { hero: string; format: string; eventType: string; matches: number; wins: number; winRate: number }[];
   totalTop8s?: number;

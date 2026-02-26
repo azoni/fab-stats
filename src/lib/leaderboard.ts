@@ -201,6 +201,7 @@ export async function updateLeaderboardEntry(
     armoryWinRate: armoryMatchList.length > 0 ? (armoryWins / armoryMatchList.length) * 100 : 0,
     armoryEvents,
     showNameOnProfiles: profile.showNameOnProfiles ?? false,
+    hideFromSpotlight: profile.hideFromSpotlight ?? false,
     heroBreakdown,
     heroBreakdownDetailed,
     totalTop8s,

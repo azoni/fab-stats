@@ -13,7 +13,7 @@ interface CandidatePool {
 }
 
 export function selectFeaturedProfiles(entries: LeaderboardEntry[]): FeaturedProfile[] {
-  const publicEntries = entries.filter((e) => e.isPublic && e.username);
+  const publicEntries = entries.filter((e) => e.isPublic && e.username && !e.hideFromSpotlight);
   if (publicEntries.length === 0) return [];
 
   const pools: CandidatePool[] = [
