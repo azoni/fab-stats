@@ -326,7 +326,7 @@
     };
 
     const isGenericHeading = (text) =>
-      /^(Results|Matches|Decklists|Event History|History|Dashboard|Profile)$/i.test(text);
+      /^(Results|Matches|Decklists|Event History|History|Dashboard|Profile|Prizes?|Prize Structure|Standings|Team Standings|Tournament (Structure|Information)|Participation Prize|View Results|Round \d+)$/i.test(text);
 
     // ── Step 1: Find the closest non-generic heading ──
     // Walk up from the match table, checking preceding siblings at each level.
