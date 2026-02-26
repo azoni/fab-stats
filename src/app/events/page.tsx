@@ -17,7 +17,7 @@ const PAGE_SIZE = 25;
 
 export default function EventsPage() {
   const searchParams = useSearchParams();
-  const { matches, isLoaded, refreshMatches, batchUpdateHero, batchUpdateFormat } = useMatches();
+  const { matches, isLoaded, refreshMatches, batchUpdateHero, batchUpdateFormat, batchDeleteMatches } = useMatches();
   const { user, profile } = useAuth();
   const [filterFormat, setFilterFormat] = useState("all");
   const [filterEventType, setFilterEventType] = useState("all");
@@ -60,6 +60,18 @@ export default function EventsPage() {
       }
     },
     [batchUpdateFormat, profile, matches]
+  );
+
+  const handleDeleteEvent = useCallback(
+    async (matchIds: string[]) => {
+      await batchDeleteMatches(matchIds);
+      if (profile && matches.length > 0) {
+        const idSet = new Set(matchIds);
+        const remaining = matches.filter((m) => !idSet.has(m.id));
+        updateLeaderboardEntry(profile, remaining).catch(() => {});
+      }
+    },
+    [batchDeleteMatches, profile, matches]
   );
 
   // Auto-open import modal from ?import=1 (e.g. from navbar "Log Event")
@@ -265,7 +277,7 @@ export default function EventsPage() {
           </p>
           <div className="space-y-2">
             {pageEvents.map((event) => (
-              <EventCard key={`${event.eventName}-${event.eventDate}`} event={event} editable={!!user} onBatchUpdateHero={handleBatchUpdateHero} onBatchUpdateFormat={handleBatchUpdateFormat} missingGemId={!!user && !profile?.gemId} />
+              <EventCard key={`${event.eventName}-${event.eventDate}`} event={event} editable={!!user} onBatchUpdateHero={handleBatchUpdateHero} onBatchUpdateFormat={handleBatchUpdateFormat} onDeleteEvent={handleDeleteEvent} missingGemId={!!user && !profile?.gemId} />
             ))}
           </div>
         </>

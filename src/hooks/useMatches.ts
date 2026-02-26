@@ -7,6 +7,7 @@ import {
   updateMatchFirestore,
   deleteMatchFirestore,
   batchUpdateMatchesFirestore,
+  batchDeleteMatchesFirestore,
 } from "@/lib/firestore-storage";
 import {
   getAllMatches,
@@ -159,6 +160,23 @@ export function useMatches() {
     [user, isGuest]
   );
 
+  const batchDeleteMatches = useCallback(
+    async (matchIds: string[]) => {
+      if (isGuest) {
+        for (const id of matchIds) storageDeleteMatch(id);
+        setMatches(getAllMatches());
+        return;
+      }
+      if (!user) return;
+      await batchDeleteMatchesFirestore(user.uid, matchIds);
+      const idSet = new Set(matchIds);
+      const updated = (cachedMatches || []).filter((m) => !idSet.has(m.id));
+      updateCache(user.uid, updated);
+      setMatches(updated);
+    },
+    [user, isGuest]
+  );
+
   const refreshMatches = useCallback(async () => {
     if (isGuest) {
       setMatches(getAllMatches());
@@ -170,5 +188,5 @@ export function useMatches() {
     setMatches(data);
   }, [user, isGuest]);
 
-  return { matches, isLoaded, addMatch, deleteMatch, updateMatch, batchUpdateHero, batchUpdateFormat, refreshMatches };
+  return { matches, isLoaded, addMatch, deleteMatch, updateMatch, batchUpdateHero, batchUpdateFormat, batchDeleteMatches, refreshMatches };
 }

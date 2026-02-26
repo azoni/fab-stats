@@ -16,6 +16,7 @@ interface EventCardProps {
   editable?: boolean;
   onBatchUpdateHero?: (matchIds: string[], hero: string) => Promise<void>;
   onBatchUpdateFormat?: (matchIds: string[], format: GameFormat) => Promise<void>;
+  onDeleteEvent?: (matchIds: string[]) => Promise<void>;
   missingGemId?: boolean;
 }
 
@@ -35,7 +36,7 @@ const resultLabels: Record<string, string> = {
 
 const playoffRank: Record<string, number> = { "Finals": 4, "Top 4": 3, "Top 8": 2, "Playoff": 2, "Skirmish": 1 };
 
-export function EventCard({ event, obfuscateOpponents = false, visibleOpponents, editable = false, onBatchUpdateHero, onBatchUpdateFormat, missingGemId }: EventCardProps) {
+export function EventCard({ event, obfuscateOpponents = false, visibleOpponents, editable = false, onBatchUpdateHero, onBatchUpdateFormat, onDeleteEvent, missingGemId }: EventCardProps) {
   const [expanded, setExpanded] = useState(false);
   const [batchHero, setBatchHero] = useState("");
   const [batchFormat, setBatchFormat] = useState("");
@@ -45,6 +46,8 @@ export function EventCard({ event, obfuscateOpponents = false, visibleOpponents,
   const [saved, setSaved] = useState(false);
   const [showGemNudge, setShowGemNudge] = useState(false);
   const [error, setError] = useState("");
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   // Determine best playoff placement from match rounds
   let bestPlayoff: string | null = null;
@@ -334,6 +337,50 @@ export function EventCard({ event, obfuscateOpponents = false, visibleOpponents,
               })}
             </tbody>
           </table>
+
+          {/* Delete event */}
+          {editable && onDeleteEvent && (
+            <div className="px-4 py-3 border-t border-fab-border/50 flex items-center justify-end gap-2">
+              {confirmDelete ? (
+                <>
+                  <span className="text-xs text-red-400 mr-auto">Delete {event.matches.length} match{event.matches.length !== 1 ? "es" : ""} from this event?</span>
+                  <button
+                    onClick={() => setConfirmDelete(false)}
+                    disabled={deleting}
+                    className="px-3 py-1.5 rounded text-xs font-medium bg-fab-surface border border-fab-border text-fab-muted hover:text-fab-text transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={async () => {
+                      setDeleting(true);
+                      try {
+                        await onDeleteEvent(event.matches.map((m) => m.id));
+                      } catch {
+                        setError("Failed to delete event. Please try again.");
+                      }
+                      setDeleting(false);
+                      setConfirmDelete(false);
+                    }}
+                    disabled={deleting}
+                    className="px-3 py-1.5 rounded text-xs font-medium bg-red-500/20 text-red-400 hover:bg-red-500/30 disabled:opacity-50 transition-colors"
+                  >
+                    {deleting ? "Deleting..." : "Confirm Delete"}
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={() => setConfirmDelete(true)}
+                  className="flex items-center gap-1 px-3 py-1.5 rounded text-xs font-medium text-fab-dim hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                  Delete Event
+                </button>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>

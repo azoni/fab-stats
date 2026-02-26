@@ -148,6 +148,18 @@ export async function batchUpdateMatchesFirestore(
   }
 }
 
+export async function batchDeleteMatchesFirestore(
+  userId: string,
+  matchIds: string[]
+): Promise<void> {
+  const batchSize = 500;
+  for (let i = 0; i < matchIds.length; i += batchSize) {
+    const batch = writeBatch(db);
+    matchIds.slice(i, i + batchSize).forEach((id) => batch.delete(doc(db, "users", userId, "matches", id)));
+    await batch.commit();
+  }
+}
+
 export async function clearAllMatchesFirestore(
   userId: string
 ): Promise<void> {
