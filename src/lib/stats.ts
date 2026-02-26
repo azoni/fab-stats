@@ -567,12 +567,9 @@ function getRoundNumber(match: MatchRecord): number {
   return 0;
 }
 
-const MULTI_FORMAT_EVENT_TYPES = new Set(["Nationals", "Pro Tour", "Worlds"]);
-
-function isMultiFormatEvent(match: MatchRecord): boolean {
-  if (match.eventType && MULTI_FORMAT_EVENT_TYPES.has(match.eventType)) return true;
-  const name = getEventName(match).toLowerCase();
-  return /\b(nationals|national championship|pro tour|worlds|world championship)\b/.test(name);
+/** Check if the match has an explicit event name (from GEM/notes) vs a generated fallback. */
+function hasExplicitEventName(match: MatchRecord): boolean {
+  return !!(match.notes?.split(" | ")[0]?.trim());
 }
 
 export function computeEventStats(matches: MatchRecord[]): EventStats[] {
@@ -580,9 +577,11 @@ export function computeEventStats(matches: MatchRecord[]): EventStats[] {
 
   for (const match of matches) {
     const name = getEventName(match);
-    // For major multi-format events (Nationals, Pro Tour, Worlds), drop format from
-    // the grouping key so CC + Draft rounds stay as one event.
-    const key = isMultiFormatEvent(match)
+    // Named events (from GEM import): group by name+date+venue so editing
+    // format on individual rounds doesn't split the event.
+    // Unnamed events (manual entry): the fallback name already includes format,
+    // so format is implicitly part of the key.
+    const key = hasExplicitEventName(match)
       ? `${name}|${match.date}|${match.venue || ""}`
       : `${name}|${match.date}|${match.venue || ""}|${match.format}`;
     const existing = map.get(key) ?? [];

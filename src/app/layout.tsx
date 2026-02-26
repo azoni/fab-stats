@@ -6,6 +6,7 @@ import { MobileNav } from "@/components/layout/MobileNav";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { LayoutShell } from "@/components/auth/LayoutShell";
 import { GuestBanner } from "@/components/auth/GuestBanner";
+import { FeatureBanner } from "@/components/auth/FeatureBanner";
 import { FeedbackFab } from "@/components/feedback/FeedbackFab";
 
 const geistSans = Geist({
@@ -102,6 +103,7 @@ export default function RootLayout({
           <main className="min-h-screen pb-20 md:pb-8 pt-16">
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6">
               <GuestBanner />
+              <FeatureBanner />
               <LayoutShell>{children}</LayoutShell>
             </div>
           </main>
