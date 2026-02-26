@@ -278,7 +278,12 @@ export async function updateProfile(
   updates: Partial<Pick<UserProfile, "displayName" | "photoUrl" | "isPublic" | "firstName" | "lastName" | "searchName" | "earnings" | "showNameOnProfiles">>
 ): Promise<void> {
   const profileRef = doc(db, "users", userId, "profile", "main");
-  await updateDoc(profileRef, updates);
+  // Strip undefined values — Firestore rejects them
+  const clean: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(updates)) {
+    if (v !== undefined) clean[k] = v;
+  }
+  await updateDoc(profileRef, clean);
 
   // Sync searchable fields to usernames collection for name search
   if (updates.displayName || updates.searchName) {

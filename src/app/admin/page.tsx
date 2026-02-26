@@ -623,18 +623,35 @@ const ROUTE_LABELS: Record<string, string> = {
 
 function ActivitySection({ analytics }: { analytics: { pageViews: Record<string, number>; creatorClicks: Record<string, number> } }) {
   const [expanded, setExpanded] = useState(true);
+  const [profilesExpanded, setProfilesExpanded] = useState(false);
 
-  const pageViewEntries = Object.entries(analytics.pageViews)
-    .sort(([, a], [, b]) => b - a);
-  const totalPageViews = pageViewEntries.reduce((sum, [, count]) => sum + count, 0);
+  // Separate player profile views from regular page views
+  const playerEntries: [string, number][] = [];
+  const routeEntries: [string, number][] = [];
+  for (const [key, count] of Object.entries(analytics.pageViews)) {
+    if (key.startsWith("player_")) {
+      playerEntries.push([key, count]);
+    } else {
+      routeEntries.push([key, count]);
+    }
+  }
+  playerEntries.sort(([, a], [, b]) => b - a);
+  const playerProfileTotal = playerEntries.reduce((sum, [, c]) => sum + c, 0);
+
+  // Insert aggregated "Player Profiles" into route entries
+  if (playerProfileTotal > 0) {
+    routeEntries.push(["__player_profiles__", playerProfileTotal]);
+  }
+  routeEntries.sort(([, a], [, b]) => b - a);
+
+  const totalPageViews = routeEntries.reduce((sum, [, count]) => sum + count, 0);
 
   const creatorClickEntries = Object.entries(analytics.creatorClicks)
     .sort(([, a], [, b]) => b - a);
   const totalCreatorClicks = creatorClickEntries.reduce((sum, [, count]) => sum + count, 0);
 
   function routeLabel(key: string): string {
-    // Handle player routes like "player_username"
-    if (key.startsWith("player_")) return `/player/${key.slice(7)}`;
+    if (key === "__player_profiles__") return `Player Profiles (${playerEntries.length})`;
     return ROUTE_LABELS[key] || `/${key.replace(/_/g, "/")}`;
   }
 
@@ -662,26 +679,60 @@ function ActivitySection({ analytics }: { analytics: { pageViews: Record<string,
             <div>
               <h3 className="text-xs text-fab-muted uppercase tracking-wider font-medium mb-3">Page Views</h3>
               <div className="space-y-1.5">
-                {pageViewEntries.map(([route, count]) => {
+                {routeEntries.map(([route, count]) => {
                   const pct = totalPageViews > 0 ? (count / totalPageViews) * 100 : 0;
+                  const isProfiles = route === "__player_profiles__";
                   return (
-                    <div key={route} className="flex items-center gap-2">
-                      <div className="w-32 text-xs text-fab-text truncate" title={routeLabel(route)}>
-                        {routeLabel(route)}
+                    <div key={route}>
+                      <div
+                        className={`flex items-center gap-2 ${isProfiles ? "cursor-pointer" : ""}`}
+                        onClick={isProfiles ? () => setProfilesExpanded(!profilesExpanded) : undefined}
+                      >
+                        <div className="w-32 text-xs text-fab-text truncate flex items-center gap-1" title={routeLabel(route)}>
+                          {isProfiles && (
+                            <svg
+                              className={`w-3 h-3 text-fab-dim shrink-0 transition-transform ${profilesExpanded ? "rotate-90" : ""}`}
+                              fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+                            >
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                            </svg>
+                          )}
+                          <span className="truncate">{routeLabel(route)}</span>
+                        </div>
+                        <div className="flex-1 h-4 bg-fab-bg rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-fab-gold/30 rounded-full transition-all"
+                            style={{ width: `${Math.max(pct, 1)}%` }}
+                          />
+                        </div>
+                        <div className="w-16 text-right text-xs font-mono text-fab-dim">
+                          {count.toLocaleString()}
+                        </div>
                       </div>
-                      <div className="flex-1 h-4 bg-fab-bg rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-fab-gold/30 rounded-full transition-all"
-                          style={{ width: `${Math.max(pct, 1)}%` }}
-                        />
-                      </div>
-                      <div className="w-16 text-right text-xs font-mono text-fab-dim">
-                        {count.toLocaleString()}
-                      </div>
+                      {isProfiles && profilesExpanded && (
+                        <div className="ml-4 mt-1 mb-1 space-y-1 border-l border-fab-border pl-3">
+                          {playerEntries.map(([pKey, pCount]) => (
+                            <div key={pKey} className="flex items-center gap-2">
+                              <div className="w-28 text-[11px] text-fab-dim truncate" title={`/player/${pKey.slice(7)}`}>
+                                {pKey.slice(7)}
+                              </div>
+                              <div className="flex-1 h-3 bg-fab-bg rounded-full overflow-hidden">
+                                <div
+                                  className="h-full bg-fab-gold/20 rounded-full"
+                                  style={{ width: `${Math.max((pCount / playerProfileTotal) * 100, 1)}%` }}
+                                />
+                              </div>
+                              <div className="w-12 text-right text-[11px] font-mono text-fab-dim">
+                                {pCount.toLocaleString()}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   );
                 })}
-                {pageViewEntries.length === 0 && (
+                {routeEntries.length === 0 && (
                   <p className="text-xs text-fab-dim">No page view data yet.</p>
                 )}
               </div>

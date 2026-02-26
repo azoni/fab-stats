@@ -65,9 +65,13 @@ export default function MetaPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-fab-gold mb-2">Community Meta</h1>
+      <div className="flex items-center gap-2 mb-2">
+        <h1 className="text-2xl font-bold text-fab-gold">Community Meta</h1>
+        <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-fab-gold/15 text-fab-gold">Beta</span>
+      </div>
       <p className="text-fab-muted text-sm mb-6">
         Hero usage and performance across {overview.totalPlayers} public players on FaB Stats.
+        Data may be incomplete as players need to re-import matches for full accuracy.
       </p>
 
       {/* Community Overview */}

@@ -10,7 +10,7 @@ import { ChevronUpIcon, ChevronDownIcon } from "@/components/icons/NavIcons";
 import { MatchResult, type OpponentStats } from "@/types";
 import { allHeroes as knownHeroes } from "@/lib/heroes";
 import { getEventType } from "@/lib/stats";
-import { RivalryCard, buildRivalryUrl } from "@/components/opponents/RivalryCard";
+import { RivalryCard, buildRivalryUrl, CARD_THEMES, type CardTheme } from "@/components/opponents/RivalryCard";
 import { toBlob } from "html-to-image";
 
 const VALID_HERO_NAMES = new Set(knownHeroes.map((h) => h.name));
@@ -261,6 +261,7 @@ export default function OpponentsPage() {
 
 function OpponentRow({ opp, isExpanded, onToggle, matchOwnerUid, playerName }: { opp: OpponentStats; isExpanded: boolean; onToggle: () => void; matchOwnerUid?: string; playerName?: string }) {
   const [shareStatus, setShareStatus] = useState<"idle" | "copied" | "sharing">("idle");
+  const [showShareModal, setShowShareModal] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
   // Compute streak vs this opponent (most recent results)
   const sortedMatches = [...opp.matches].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
@@ -378,95 +379,35 @@ function OpponentRow({ opp, isExpanded, onToggle, matchOwnerUid, playerName }: {
             </div>
           </div>
 
-          {/* Hidden card for image capture */}
-          {playerName && (
-            <div style={{ position: "absolute", left: "-9999px", top: 0 }} aria-hidden>
-              <div ref={cardRef}>
-                <RivalryCard data={{
-                  playerName,
-                  opponentName: opp.opponentName,
-                  wins: opp.wins,
-                  losses: opp.losses,
-                  draws: opp.draws,
-                  winRate: opp.winRate,
-                  matches: opp.totalMatches,
-                  ratedWins,
-                  ratedLosses,
-                  ratedDraws,
-                  recentResults: sortedMatches.slice(0, 20).reverse().map((m) => m.result),
-                  playerHeroes: opp.heroesPlayed.filter((h) => h !== "Unknown"),
-                  opponentHeroes: opp.opponentHeroes.filter((h) => h !== "Unknown"),
-                }} />
-              </div>
-            </div>
-          )}
-
           {/* Share button */}
           {playerName && (
             <div className="px-4 pb-2">
               <button
-                disabled={shareStatus === "sharing"}
-                onClick={async () => {
-                  const recentResults = sortedMatches.slice(0, 20).reverse().map((m) => m.result);
-                  const url = buildRivalryUrl(
-                    window.location.origin,
-                    playerName,
-                    opp.opponentName,
-                    opp.wins,
-                    opp.losses,
-                    opp.draws,
-                    recentResults,
-                    opp.heroesPlayed.filter((h) => h !== "Unknown"),
-                    opp.opponentHeroes.filter((h) => h !== "Unknown"),
-                    ratedWins,
-                    ratedLosses,
-                    ratedDraws,
-                  );
-                  const shareText = `${playerName} vs ${opp.opponentName}: ${opp.wins}W-${opp.losses}L${opp.draws > 0 ? `-${opp.draws}D` : ""} (${opp.winRate.toFixed(0)}%)\n${url}`;
-
-                  setShareStatus("sharing");
-                  try {
-                    // Capture the rivalry card as an image
-                    const blob = cardRef.current
-                      ? await toBlob(cardRef.current, { pixelRatio: 2, backgroundColor: "#0c0a0e" })
-                      : null;
-
-                    const isMobile = "ontouchstart" in window || navigator.maxTouchPoints > 0;
-                    if (isMobile && blob && navigator.share && navigator.canShare?.({ files: [new File([blob], "rivalry.png", { type: "image/png" })] })) {
-                      // Mobile: share image + link via native share sheet
-                      const file = new File([blob], "rivalry.png", { type: "image/png" });
-                      await navigator.share({ title: "FaB Stats Rivalry", text: shareText, files: [file] });
-                    } else if (blob && navigator.clipboard?.write) {
-                      // Desktop: copy image only to clipboard
-                      await navigator.clipboard.write([
-                        new ClipboardItem({ "image/png": blob }),
-                      ]);
-                      setShareStatus("copied");
-                      setTimeout(() => setShareStatus("idle"), 2000);
-                      return;
-                    } else {
-                      // Fallback: copy link text
-                      await navigator.clipboard.writeText(url);
-                      setShareStatus("copied");
-                      setTimeout(() => setShareStatus("idle"), 2000);
-                      return;
-                    }
-                  } catch {
-                    // If image capture fails, fall back to link-only
-                    try {
-                      await navigator.clipboard.writeText(url);
-                    } catch { /* ignore */ }
-                  }
-                  setShareStatus("idle");
-                }}
+                onClick={() => setShowShareModal(true)}
                 className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium bg-fab-bg border border-fab-border text-fab-muted hover:text-fab-text hover:border-fab-gold/30 transition-colors"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
                 </svg>
-                {shareStatus === "sharing" ? "Capturing..." : shareStatus === "copied" ? "Image Copied!" : "Share Rivalry"}
+                Share
               </button>
             </div>
+          )}
+
+          {/* Share modal with theme picker */}
+          {showShareModal && playerName && (
+            <ShareModal
+              cardRef={cardRef}
+              playerName={playerName}
+              opp={opp}
+              ratedWins={ratedWins}
+              ratedLosses={ratedLosses}
+              ratedDraws={ratedDraws}
+              recentResults={sortedMatches.slice(0, 20).reverse().map((m) => m.result)}
+              shareStatus={shareStatus}
+              setShareStatus={setShareStatus}
+              onClose={() => setShowShareModal(false)}
+            />
           )}
 
           {/* Events list */}
@@ -492,6 +433,156 @@ function OpponentRow({ opp, isExpanded, onToggle, matchOwnerUid, playerName }: {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function ShareModal({
+  cardRef,
+  playerName,
+  opp,
+  ratedWins,
+  ratedLosses,
+  ratedDraws,
+  recentResults,
+  shareStatus,
+  setShareStatus,
+  onClose,
+}: {
+  cardRef: React.RefObject<HTMLDivElement | null>;
+  playerName: string;
+  opp: OpponentStats;
+  ratedWins: number;
+  ratedLosses: number;
+  ratedDraws: number;
+  recentResults: MatchResult[];
+  shareStatus: "idle" | "copied" | "sharing";
+  setShareStatus: (s: "idle" | "copied" | "sharing") => void;
+  onClose: () => void;
+}) {
+  const [selectedTheme, setSelectedTheme] = useState(CARD_THEMES[0]);
+
+  const rivalryData = {
+    playerName,
+    opponentName: opp.opponentName,
+    wins: opp.wins,
+    losses: opp.losses,
+    draws: opp.draws,
+    winRate: opp.winRate,
+    matches: opp.totalMatches,
+    ratedWins,
+    ratedLosses,
+    ratedDraws,
+    recentResults,
+    playerHeroes: opp.heroesPlayed.filter((h) => h !== "Unknown"),
+    opponentHeroes: opp.opponentHeroes.filter((h) => h !== "Unknown"),
+  };
+
+  async function handleCopy() {
+    const url = buildRivalryUrl(
+      window.location.origin,
+      playerName,
+      opp.opponentName,
+      opp.wins,
+      opp.losses,
+      opp.draws,
+      recentResults,
+      opp.heroesPlayed.filter((h) => h !== "Unknown"),
+      opp.opponentHeroes.filter((h) => h !== "Unknown"),
+      ratedWins,
+      ratedLosses,
+      ratedDraws,
+    );
+    const shareText = `${playerName} vs ${opp.opponentName}: ${opp.wins}W-${opp.losses}L${opp.draws > 0 ? `-${opp.draws}D` : ""} (${opp.winRate.toFixed(0)}%)\n${url}`;
+
+    setShareStatus("sharing");
+    try {
+      const blob = cardRef.current
+        ? await toBlob(cardRef.current, { pixelRatio: 2, backgroundColor: selectedTheme.bg })
+        : null;
+
+      const isMobile = "ontouchstart" in window || navigator.maxTouchPoints > 0;
+      if (isMobile && blob && navigator.share && navigator.canShare?.({ files: [new File([blob], "h2h.png", { type: "image/png" })] })) {
+        const file = new File([blob], "h2h.png", { type: "image/png" });
+        await navigator.share({ title: "FaB Stats", text: shareText, files: [file] });
+      } else if (blob && navigator.clipboard?.write) {
+        await navigator.clipboard.write([
+          new ClipboardItem({ "image/png": blob }),
+        ]);
+        setShareStatus("copied");
+        setTimeout(() => { setShareStatus("idle"); onClose(); }, 1500);
+        return;
+      } else {
+        await navigator.clipboard.writeText(url);
+        setShareStatus("copied");
+        setTimeout(() => { setShareStatus("idle"); onClose(); }, 1500);
+        return;
+      }
+    } catch {
+      try {
+        const url2 = buildRivalryUrl(window.location.origin, playerName, opp.opponentName, opp.wins, opp.losses, opp.draws, recentResults, [], [], ratedWins, ratedLosses, ratedDraws);
+        await navigator.clipboard.writeText(url2);
+      } catch { /* ignore */ }
+    }
+    setShareStatus("idle");
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
+      <div className="bg-fab-surface border border-fab-border rounded-xl max-w-lg w-full mx-4 overflow-hidden" onClick={(e) => e.stopPropagation()}>
+        {/* Modal header */}
+        <div className="flex items-center justify-between px-4 py-3 border-b border-fab-border">
+          <h3 className="text-sm font-semibold text-fab-text">Share Head to Head</h3>
+          <button onClick={onClose} className="text-fab-muted hover:text-fab-text transition-colors">
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Card preview */}
+        <div className="p-4 flex justify-center overflow-x-auto">
+          <div ref={cardRef}>
+            <RivalryCard data={rivalryData} theme={selectedTheme} />
+          </div>
+        </div>
+
+        {/* Theme picker */}
+        <div className="px-4 pb-3">
+          <p className="text-[10px] text-fab-muted uppercase tracking-wider font-medium mb-2">Theme</p>
+          <div className="flex gap-2">
+            {CARD_THEMES.map((theme) => (
+              <button
+                key={theme.id}
+                onClick={() => setSelectedTheme(theme)}
+                className={`flex-1 rounded-lg p-2 text-center transition-all border ${
+                  selectedTheme.id === theme.id
+                    ? "border-fab-gold ring-1 ring-fab-gold/30"
+                    : "border-fab-border hover:border-fab-muted"
+                }`}
+              >
+                <div className="flex gap-0.5 justify-center mb-1">
+                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: theme.bg }} />
+                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: theme.accent }} />
+                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: theme.win }} />
+                </div>
+                <p className="text-[10px] text-fab-muted">{theme.label}</p>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Copy button */}
+        <div className="px-4 pb-4">
+          <button
+            onClick={handleCopy}
+            disabled={shareStatus === "sharing"}
+            className="w-full py-2.5 rounded-lg text-sm font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors disabled:opacity-50"
+          >
+            {shareStatus === "sharing" ? "Capturing..." : shareStatus === "copied" ? "Copied!" : "Copy Image"}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
