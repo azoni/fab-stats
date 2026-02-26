@@ -105,52 +105,35 @@ async function loadFonts(): Promise<{ regular: ArrayBuffer; bold: ArrayBuffer }>
 
 // ── Card renderer ──
 
-function pillBadge(text: string, color: string, bg: string): VNode {
-  return {
-    type: "div",
-    props: {
-      style: {
-        display: "flex",
-        alignItems: "center",
-        padding: "8px 16px",
-        borderRadius: 20,
-        background: bg,
-        fontSize: 16,
-        fontWeight: 700,
-        color,
-      },
-      children: text,
-    },
-  };
-}
-
 function renderCard(player: PlayerData | null): VNode {
   if (!player) return renderGenericCard();
 
   const gold = "#c9a84c";
+  const goldDim = "#a08838";
   const muted = "#6b6580";
-  const cardBg = "#1a1625";
-  const cardBorder = "#2a2435";
+  const surface = "#1a1625";
+  const border = "#2a2435";
   const textLight = "#e8e4f0";
   const wrColor = player.winRate >= 50 ? "#22c55e" : "#ef4444";
-  const wrBg = player.winRate >= 50 ? "rgba(34,197,94,0.12)" : "rgba(239,68,68,0.12)";
-  const record = `${player.totalWins}W - ${player.totalLosses}L${player.totalDraws > 0 ? ` - ${player.totalDraws}D` : ""}`;
 
-  // Build highlight pills
-  const pills: VNode[] = [];
+  // ── Build stat tiles for the bottom row ──
+  const statTiles: { label: string; value: string; color: string }[] = [
+    { label: "RECORD", value: `${player.totalWins}W-${player.totalLosses}L${player.totalDraws > 0 ? `-${player.totalDraws}D` : ""}`, color: textLight },
+    { label: "TOP HERO", value: player.topHero, color: gold },
+  ];
   if (player.totalTop8s > 0) {
-    pills.push(pillBadge(`${player.totalTop8s} Top 8${player.totalTop8s !== 1 ? "s" : ""}`, gold, "rgba(201,168,76,0.15)"));
+    statTiles.push({ label: "TOP 8s", value: String(player.totalTop8s), color: gold });
   }
   if (player.longestWinStreak >= 3) {
-    pills.push(pillBadge(`${player.longestWinStreak} best streak`, "#22c55e", "rgba(34,197,94,0.12)"));
+    statTiles.push({ label: "BEST STREAK", value: `${player.longestWinStreak}W`, color: "#22c55e" });
   }
-  if (player.eventsPlayed > 0) {
-    pills.push(pillBadge(`${player.eventsPlayed} events`, textLight, "rgba(232,228,240,0.08)"));
+  if (player.eventsPlayed > 0 && statTiles.length < 4) {
+    statTiles.push({ label: "EVENTS", value: String(player.eventsPlayed), color: textLight });
   }
 
-  // Win rate bar: filled portion
-  const barWidth = 320;
-  const fillWidth = Math.round((player.winRate / 100) * barWidth);
+  // Win rate bar
+  const barWidth = 400;
+  const fillWidth = Math.max(4, Math.round((player.winRate / 100) * barWidth));
 
   return {
     type: "div",
@@ -160,189 +143,166 @@ function renderCard(player: PlayerData | null): VNode {
         height: 630,
         display: "flex",
         flexDirection: "column" as const,
-        background: "linear-gradient(135deg, #0c0a0e 0%, #161222 50%, #0e0b14 100%)",
+        background: "#0c0a10",
         fontFamily: "Inter",
+        position: "relative" as const,
       },
       children: [
-        // Top gold bar
-        { type: "div", props: { style: { width: 1200, height: 4, background: "linear-gradient(90deg, #c9a84c, #e8c860, #c9a84c)" } } },
-        // Main content — two columns
+        // Top accent bar
+        { type: "div", props: { style: { width: 1200, height: 4, background: `linear-gradient(90deg, ${gold}, #e8c860, ${gold})` } } },
+
+        // Main content
         {
           type: "div",
           props: {
-            style: { display: "flex", flex: 1, padding: "44px 56px 36px" },
+            style: { display: "flex", flexDirection: "column" as const, flex: 1, padding: "40px 60px 32px" },
             children: [
-              // ─── LEFT COLUMN ───
+              // ── TOP: Branding + Player identity ──
               {
                 type: "div",
                 props: {
-                  style: { display: "flex", flexDirection: "column" as const, flex: 1, justifyContent: "space-between" },
+                  style: { display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 32 },
                   children: [
-                    // Top section
+                    // Left: Avatar + Name
                     {
                       type: "div",
                       props: {
-                        style: { display: "flex", flexDirection: "column" as const },
+                        style: { display: "flex", alignItems: "center", gap: 24 },
                         children: [
-                          // Branding row with BETA badge
+                          // Avatar
+                          player.photoUrl
+                            ? { type: "img", props: { src: player.photoUrl, width: 88, height: 88, style: { borderRadius: 44, border: `3px solid ${gold}` } } }
+                            : {
+                                type: "div",
+                                props: {
+                                  style: {
+                                    width: 88, height: 88, borderRadius: 44,
+                                    background: `linear-gradient(135deg, rgba(201,168,76,0.25), rgba(201,168,76,0.08))`,
+                                    border: `3px solid ${gold}`,
+                                    display: "flex", alignItems: "center", justifyContent: "center",
+                                    fontSize: 38, fontWeight: 700, color: gold,
+                                  },
+                                  children: player.displayName.charAt(0).toUpperCase(),
+                                },
+                              },
+                          // Name stack
                           {
                             type: "div",
                             props: {
-                              style: { display: "flex", alignItems: "center", marginBottom: 36 },
+                              style: { display: "flex", flexDirection: "column" as const },
                               children: [
-                                {
-                                  type: "div",
-                                  props: {
-                                    style: { width: 28, height: 28, marginRight: 10, display: "flex" },
-                                    children: {
-                                      type: "svg",
-                                      props: {
-                                        width: 28, height: 28, viewBox: "0 0 32 32",
-                                        children: [
-                                          { type: "path", props: { d: "M16 4L6 9v7c0 6.2 4.3 11.9 10 13.7 5.7-1.8 10-7.5 10-13.7V9L16 4z", fill: gold, opacity: 0.3 } },
-                                          { type: "path", props: { d: "M16 4L6 9v7c0 6.2 4.3 11.9 10 13.7 5.7-1.8 10-7.5 10-13.7V9L16 4z", stroke: gold, strokeWidth: 1.5, fill: "none" } },
-                                        ],
-                                      },
-                                    },
-                                  },
-                                },
-                                { type: "span", props: { style: { fontSize: 20, fontWeight: 700, color: gold, letterSpacing: "-0.02em" }, children: "FaB Stats" } },
-                                {
-                                  type: "span",
-                                  props: {
-                                    style: {
-                                      fontSize: 10,
-                                      fontWeight: 700,
-                                      color: gold,
-                                      background: "rgba(201,168,76,0.15)",
-                                      padding: "2px 8px",
-                                      borderRadius: 6,
-                                      marginLeft: 10,
-                                      letterSpacing: "0.08em",
-                                    },
-                                    children: "BETA",
-                                  },
-                                },
+                                { type: "div", props: { style: { fontSize: 42, fontWeight: 700, color: textLight, letterSpacing: "-0.03em", lineHeight: 1.15 }, children: player.displayName } },
+                                { type: "div", props: { style: { fontSize: 20, color: muted, marginTop: 4 }, children: `@${player.username}` } },
                               ],
                             },
                           },
-                          // Avatar + Name + Username
-                          {
-                            type: "div",
-                            props: {
-                              style: { display: "flex", alignItems: "center", gap: 20, marginBottom: 20 },
-                              children: [
-                                player.photoUrl
-                                  ? { type: "img", props: { src: player.photoUrl, width: 80, height: 80, style: { borderRadius: 40, border: `3px solid ${gold}` } } }
-                                  : {
-                                      type: "div",
-                                      props: {
-                                        style: {
-                                          width: 80, height: 80, borderRadius: 40, background: "rgba(201,168,76,0.15)",
-                                          border: `3px solid ${gold}`, display: "flex", alignItems: "center", justifyContent: "center",
-                                          fontSize: 36, fontWeight: 700, color: gold,
-                                        },
-                                        children: player.displayName.charAt(0).toUpperCase(),
-                                      },
-                                    },
-                                {
-                                  type: "div",
-                                  props: {
-                                    style: { display: "flex", flexDirection: "column" as const },
-                                    children: [
-                                      { type: "div", props: { style: { fontSize: 44, fontWeight: 700, color: textLight, letterSpacing: "-0.03em", lineHeight: 1.1 }, children: player.displayName } },
-                                      { type: "div", props: { style: { fontSize: 20, color: muted, marginTop: 6 }, children: `@${player.username}` } },
-                                    ],
-                                  },
-                                },
-                              ],
-                            },
-                          },
-                          // Record line
-                          {
-                            type: "div",
-                            props: {
-                              style: { fontSize: 22, fontWeight: 700, color: textLight, marginBottom: 20, letterSpacing: "0.02em" },
-                              children: record,
-                            },
-                          },
-                          // Highlight pills
-                          pills.length > 0 ? {
-                            type: "div",
-                            props: {
-                              style: { display: "flex", gap: 10, flexWrap: "wrap" as const },
-                              children: pills,
-                            },
-                          } : { type: "div", props: { style: { display: "flex" } } },
                         ],
                       },
                     },
-                    // Bottom: URL
+                    // Right: Branding
                     {
                       type: "div",
                       props: {
-                        style: { fontSize: 16, color: muted, marginTop: 16 },
-                        children: `fabstats.net/player/${player.username}`,
+                        style: { display: "flex", alignItems: "center", gap: 10, marginTop: 8 },
+                        children: [
+                          {
+                            type: "div",
+                            props: {
+                              style: { width: 24, height: 24, display: "flex" },
+                              children: {
+                                type: "svg",
+                                props: {
+                                  width: 24, height: 24, viewBox: "0 0 32 32",
+                                  children: [
+                                    { type: "path", props: { d: "M16 4L6 9v7c0 6.2 4.3 11.9 10 13.7 5.7-1.8 10-7.5 10-13.7V9L16 4z", fill: gold, opacity: 0.3 } },
+                                    { type: "path", props: { d: "M16 4L6 9v7c0 6.2 4.3 11.9 10 13.7 5.7-1.8 10-7.5 10-13.7V9L16 4z", stroke: gold, strokeWidth: 1.5, fill: "none" } },
+                                  ],
+                                },
+                              },
+                            },
+                          },
+                          { type: "span", props: { style: { fontSize: 18, fontWeight: 700, color: goldDim }, children: "FaB Stats" } },
+                        ],
                       },
                     },
                   ],
                 },
               },
-              // ─── RIGHT COLUMN ───
+
+              // ── MIDDLE: Giant win rate hero section ──
               {
                 type: "div",
                 props: {
-                  style: { display: "flex", flexDirection: "column" as const, width: 380, gap: 16, marginLeft: 40 },
+                  style: {
+                    display: "flex", alignItems: "center", gap: 48,
+                    background: `linear-gradient(135deg, ${surface}, #141020)`,
+                    border: `1px solid ${border}`,
+                    borderRadius: 24, padding: "36px 48px",
+                    flex: 1,
+                  },
                   children: [
-                    // Win Rate card
+                    // Win rate big number
                     {
                       type: "div",
                       props: {
-                        style: {
-                          display: "flex", flexDirection: "column" as const, alignItems: "center",
-                          background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 20, padding: "36px 32px 32px",
-                          flex: 1,
-                        },
+                        style: { display: "flex", flexDirection: "column" as const, alignItems: "center", minWidth: 280 },
                         children: [
-                          { type: "span", props: { style: { fontSize: 13, fontWeight: 600, color: muted, letterSpacing: "0.1em", marginBottom: 12 }, children: "WIN RATE" } },
-                          { type: "span", props: { style: { fontSize: 72, fontWeight: 700, color: wrColor, lineHeight: 1, letterSpacing: "-0.03em" }, children: `${player.winRate.toFixed(1)}%` } },
-                          // Win rate bar
+                          { type: "span", props: { style: { fontSize: 14, fontWeight: 700, color: muted, letterSpacing: "0.12em", marginBottom: 8 }, children: "WIN RATE" } },
+                          { type: "span", props: { style: { fontSize: 96, fontWeight: 700, color: wrColor, lineHeight: 1, letterSpacing: "-0.04em" }, children: `${player.winRate.toFixed(1)}%` } },
+                          // Progress bar
                           {
                             type: "div",
                             props: {
-                              style: { display: "flex", width: barWidth, height: 10, background: "rgba(107,101,128,0.2)", borderRadius: 5, marginTop: 20, overflow: "hidden" },
+                              style: { display: "flex", width: barWidth, height: 8, background: "rgba(107,101,128,0.15)", borderRadius: 4, marginTop: 16 },
                               children: [
-                                { type: "div", props: { style: { width: fillWidth, height: 10, background: wrColor, borderRadius: 5 } } },
+                                { type: "div", props: { style: { width: fillWidth, height: 8, background: wrColor, borderRadius: 4 } } },
                               ],
                             },
                           },
-                          // Match count under bar
-                          { type: "span", props: { style: { fontSize: 16, color: muted, marginTop: 12 }, children: `${player.totalMatches} matches` } },
+                          { type: "span", props: { style: { fontSize: 16, color: muted, marginTop: 10 }, children: `${player.totalMatches} matches played` } },
                         ],
                       },
                     },
-                    // Top Hero card
+                    // Divider
+                    { type: "div", props: { style: { width: 1, height: 140, background: border } } },
+                    // Stat tiles (2x2 grid-like)
                     {
                       type: "div",
                       props: {
-                        style: {
-                          display: "flex", flexDirection: "column" as const, alignItems: "center",
-                          background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 20, padding: "24px 32px",
-                        },
-                        children: [
-                          { type: "span", props: { style: { fontSize: 13, fontWeight: 600, color: muted, letterSpacing: "0.1em", marginBottom: 8 }, children: "TOP HERO" } },
-                          { type: "span", props: { style: { fontSize: 32, fontWeight: 700, color: gold, letterSpacing: "-0.02em" }, children: player.topHero } },
-                        ],
+                        style: { display: "flex", flexWrap: "wrap" as const, gap: 24, flex: 1, justifyContent: "center" },
+                        children: statTiles.map((t) => ({
+                          type: "div",
+                          props: {
+                            style: { display: "flex", flexDirection: "column" as const, alignItems: "center", minWidth: 140 },
+                            children: [
+                              { type: "span", props: { style: { fontSize: 12, fontWeight: 700, color: muted, letterSpacing: "0.1em", marginBottom: 6 }, children: t.label } },
+                              { type: "span", props: { style: { fontSize: 28, fontWeight: 700, color: t.color, letterSpacing: "-0.02em" }, children: t.value } },
+                            ],
+                          },
+                        })),
                       },
                     },
+                  ],
+                },
+              },
+
+              // ── BOTTOM: URL ──
+              {
+                type: "div",
+                props: {
+                  style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 20 },
+                  children: [
+                    { type: "span", props: { style: { fontSize: 16, color: muted }, children: `fabstats.net/player/${player.username}` } },
+                    { type: "span", props: { style: { fontSize: 14, color: goldDim, letterSpacing: "0.06em" }, children: "Flesh and Blood TCG Stats Tracker" } },
                   ],
                 },
               },
             ],
           },
         },
-        // Bottom gold bar
-        { type: "div", props: { style: { width: 1200, height: 4, background: "linear-gradient(90deg, #c9a84c, #e8c860, #c9a84c)" } } },
+
+        // Bottom accent bar
+        { type: "div", props: { style: { width: 1200, height: 4, background: `linear-gradient(90deg, ${gold}, #e8c860, ${gold})` } } },
       ],
     },
   };
@@ -680,7 +640,8 @@ export default async function handler(req: Request) {
       },
     });
   } catch (err) {
-    console.error("OG image generation error:", err);
-    return new Response("Internal error", { status: 500 });
+    const msg = err instanceof Error ? `${err.message}\n${err.stack}` : String(err);
+    console.error("OG image generation error:", msg);
+    return new Response(`OG error: ${err instanceof Error ? err.message : String(err)}`, { status: 500 });
   }
 }

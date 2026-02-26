@@ -5,6 +5,9 @@
 [build.environment]
   SECRETS_SCAN_SMART_DETECTION_ENABLED = "false"
 
+[functions]
+  included_files = ["node_modules/@resvg/resvg-js-*/**"]
+
 # Edge function rewrites OG meta tags with actual username
 [[edge_functions]]
   path = "/player/*"

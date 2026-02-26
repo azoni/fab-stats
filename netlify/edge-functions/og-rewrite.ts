@@ -143,6 +143,12 @@ export default async function handler(
     );
   }
 
+  // Ensure twitter:card is summary_large_image
+  html = html.replace(
+    /(<meta\s+name="twitter:card"\s+content=")([^"]*?)(")/,
+    `$1summary_large_image$3`
+  );
+
   // Set canonical URL
   html = html.replace(
     /(<meta\s+property="og:url"\s+content=")([^"]*?)(")/,
