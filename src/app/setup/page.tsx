@@ -102,6 +102,18 @@ export default function SetupPage() {
           <p className="text-fab-muted text-sm">
             Pick a username so other players can find you.
           </p>
+          <button
+            type="button"
+            onClick={async () => {
+              const { signOut } = await import("firebase/auth");
+              const { auth } = await import("@/lib/firebase");
+              await signOut(auth);
+              router.push("/login");
+            }}
+            className="text-xs text-fab-gold/70 hover:text-fab-gold mt-2 transition-colors"
+          >
+            &larr; Back to sign in
+          </button>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">

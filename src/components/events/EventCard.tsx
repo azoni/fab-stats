@@ -23,7 +23,7 @@ const resultLabels = {
   [MatchResult.Draw]: "D",
 };
 
-const playoffRank: Record<string, number> = { "Finals": 3, "Top 4": 2, "Top 8": 1, "Playoff": 1 };
+const playoffRank: Record<string, number> = { "Finals": 4, "Top 4": 3, "Top 8": 2, "Playoff": 2, "Skirmish": 1 };
 
 export function EventCard({ event, obfuscateOpponents = false, visibleOpponents }: EventCardProps) {
   const [expanded, setExpanded] = useState(false);
@@ -56,7 +56,8 @@ export function EventCard({ event, obfuscateOpponents = false, visibleOpponents 
                 <span className={`px-1.5 py-0.5 rounded text-xs font-bold ${
                   bestPlayoff === "Finals" ? "bg-yellow-500/20 text-yellow-400" :
                   bestPlayoff === "Top 4" ? "bg-amber-500/15 text-amber-400" :
-                  "bg-orange-500/15 text-orange-400"
+                  bestPlayoff === "Top 8" ? "bg-orange-500/15 text-orange-400" :
+                  "bg-blue-500/15 text-blue-400"
                 }`}>{bestPlayoff}</span>
               )}
             </div>
@@ -97,7 +98,7 @@ export function EventCard({ event, obfuscateOpponents = false, visibleOpponents 
                 const roundInfo = match.notes?.split(" | ")[1];
                 const roundMatch = roundInfo?.match(/Round\s+(\d+)/i);
                 const round = roundMatch ? roundMatch[1] : `${i + 1}`;
-                const isPlayoff = roundInfo && /^(Top 8|Top 4|Finals|Playoff)$/.test(roundInfo);
+                const isPlayoff = roundInfo && /^(Top 8|Top 4|Finals|Playoff|Skirmish)$/.test(roundInfo);
 
                 return (
                   <tr key={match.id} className="border-t border-fab-border/50">
@@ -107,6 +108,7 @@ export function EventCard({ event, obfuscateOpponents = false, visibleOpponents 
                           roundInfo === "Finals" ? "bg-yellow-500/20 text-yellow-400" :
                           roundInfo === "Top 4" ? "bg-amber-500/15 text-amber-400" :
                           roundInfo === "Top 8" ? "bg-orange-500/15 text-orange-400" :
+                          roundInfo === "Skirmish" ? "bg-blue-500/15 text-blue-400" :
                           "bg-fab-gold/10 text-fab-gold"
                         }`}>{roundInfo}</span>
                       ) : (
