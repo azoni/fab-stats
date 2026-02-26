@@ -6,7 +6,7 @@ import { AchievementIcon } from "./AchievementIcons";
 
 export function AchievementShowcase({ earned }: { earned: Achievement[] }) {
   const [expanded, setExpanded] = useState(false);
-  const [showAll, setShowAll] = useState(false);
+  const [showAll, setShowAll] = useState(true);
 
   if (earned.length === 0) return null;
 
@@ -49,7 +49,7 @@ export function AchievementShowcase({ earned }: { earned: Achievement[] }) {
               onClick={() => setShowAll(!showAll)}
               className="text-xs text-fab-gold hover:text-fab-gold-light transition-colors"
             >
-              {showAll ? "Show Earned" : "Show All"}
+              {showAll ? "Earned Only" : "Show All"}
             </button>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
@@ -62,18 +62,25 @@ export function AchievementShowcase({ earned }: { earned: Achievement[] }) {
                   className={`relative rounded-lg border p-3 transition-colors ${
                     isEarned
                       ? `${colors.bg} ${colors.border}`
-                      : "bg-fab-surface/50 border-fab-border opacity-40"
+                      : "bg-fab-surface/30 border-fab-border/50"
                   }`}
                   title={`${a.name}: ${a.description}${!isEarned ? " (Locked)" : ""}`}
                 >
-                  <AchievementIcon
-                    icon={a.icon}
-                    className={`w-6 h-6 mb-1 ${isEarned ? colors.text : "text-fab-dim"}`}
-                  />
-                  <p className={`text-xs font-semibold truncate ${isEarned ? colors.text : "text-fab-dim"}`}>
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <AchievementIcon
+                      icon={a.icon}
+                      className={`w-6 h-6 ${isEarned ? colors.text : "text-fab-dim/50"}`}
+                    />
+                    {!isEarned && (
+                      <svg className="w-3.5 h-3.5 text-fab-dim/40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+                      </svg>
+                    )}
+                  </div>
+                  <p className={`text-xs font-semibold truncate ${isEarned ? colors.text : "text-fab-dim/60"}`}>
                     {a.name}
                   </p>
-                  <p className="text-[10px] text-fab-dim truncate">{a.description}</p>
+                  <p className={`text-[10px] truncate ${isEarned ? "text-fab-dim" : "text-fab-dim/40"}`}>{a.description}</p>
                   {isEarned && (
                     <span className={`absolute top-1.5 right-1.5 text-[8px] font-bold uppercase ${colors.text}`}>
                       {a.rarity}

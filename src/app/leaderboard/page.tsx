@@ -12,7 +12,7 @@ import type { LeaderboardEntry, OpponentStats } from "@/types";
 
 const SITE_CREATOR = "azoni";
 
-type Tab = "winrate" | "volume" | "mostwins" | "streaks" | "draws" | "drawrate" | "byes" | "byerate" | "events" | "eventgrinder" | "rated" | "heroes" | "dedication" | "hotstreak" | "weeklymatches" | "weeklywins" | "monthlymatches" | "monthlywins" | "monthlywinrate" | "earnings" | "armorywinrate" | "armoryattendance" | "armorymatches";
+type Tab = "winrate" | "volume" | "mostwins" | "streaks" | "draws" | "drawrate" | "byes" | "byerate" | "events" | "eventgrinder" | "rated" | "heroes" | "dedication" | "loyaltyrate" | "hotstreak" | "weeklymatches" | "weeklywins" | "monthlymatches" | "monthlywins" | "monthlywinrate" | "earnings" | "armorywinrate" | "armoryattendance" | "armorymatches";
 
 const tabs: { id: Tab; label: string; description: string }[] = [
   { id: "winrate", label: "Win Rate", description: "Highest overall win percentage. Requires 100+ matches." },
@@ -30,6 +30,7 @@ const tabs: { id: Tab; label: string; description: string }[] = [
   { id: "rated", label: "Rated", description: "Highest win rate in rated matches. Requires 5+ rated matches." },
   { id: "heroes", label: "Hero Variety", description: "Most unique heroes played." },
   { id: "dedication", label: "Hero Loyalty", description: "Most matches played with a single hero." },
+  { id: "loyaltyrate", label: "Loyalty %", description: "Highest percentage of matches with a single hero. Requires 20+ matches." },
   { id: "earnings", label: "Earnings", description: "Highest lifetime prize earnings." },
   { id: "armorywinrate", label: "Armory Win %", description: "Highest win rate at Armory events. Requires 5+ matches." },
   { id: "armoryattendance", label: "Armory Attendance", description: "Most Armory events attended." },
@@ -133,6 +134,14 @@ export default function LeaderboardPage() {
         return [...entries]
           .filter((e) => e.topHeroMatches > 0)
           .sort((a, b) => b.topHeroMatches - a.topHeroMatches || b.totalMatches - a.totalMatches);
+      case "loyaltyrate":
+        return [...entries]
+          .filter((e) => e.topHeroMatches > 0 && e.totalMatches >= 20)
+          .sort((a, b) => {
+            const aRate = (a.topHeroMatches / a.totalMatches) * 100;
+            const bRate = (b.topHeroMatches / b.totalMatches) * 100;
+            return bRate - aRate || b.topHeroMatches - a.topHeroMatches;
+          });
       case "hotstreak":
         return [...entries]
           .filter((e) => e.currentStreakType === "win" && e.currentStreakCount >= 2)
@@ -241,7 +250,9 @@ export default function LeaderboardPage() {
                                 ? "No players have received byes yet."
                                 : activeTab === "byerate"
                                   ? "Players need at least 10 matches and 1 bye to appear here."
-                                  : "Import matches to appear on the leaderboard."}
+                                  : activeTab === "loyaltyrate"
+                                    ? "Players need at least 20 matches to appear here."
+                                    : "Import matches to appear on the leaderboard."}
           </p>
         </div>
       )}
@@ -499,6 +510,12 @@ function LeaderboardRow({
           <>
             <p className="text-lg font-bold text-fab-gold">{entry.topHeroMatches}</p>
             <p className="text-xs text-fab-dim truncate max-w-[120px]">{entry.topHero}</p>
+          </>
+        )}
+        {tab === "loyaltyrate" && (
+          <>
+            <p className="text-lg font-bold text-fab-gold">{entry.totalMatches > 0 ? formatRate((entry.topHeroMatches / entry.totalMatches) * 100) : "0%"}</p>
+            <p className="text-xs text-fab-dim truncate max-w-[120px]">{entry.topHero} ({entry.topHeroMatches}/{entry.totalMatches})</p>
           </>
         )}
         {tab === "hotstreak" && (
