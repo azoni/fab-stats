@@ -415,7 +415,7 @@ function buildEventFromContext(contextLines: string[]): {
   const datePattern = /(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?\s+\d{4}/i;
   const shortDatePattern = /(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\.?\s+\d{1,2},?\s+\d{4}/i;
 
-  let date = new Date().toISOString().split("T")[0];
+  let date = "";
   for (const line of contextLines) {
     const m = line.match(datePattern) || line.match(shortDatePattern);
     if (m) { date = parseDate(m[0]); break; }
