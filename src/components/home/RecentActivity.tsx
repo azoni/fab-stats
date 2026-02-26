@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { FeedCard } from "@/components/feed/FeedCard";
+import { GroupedFeedCard, groupConsecutiveEvents } from "@/components/feed/FeedCard";
 import type { FeedEvent } from "@/types";
 
 interface RecentActivityProps {
@@ -9,6 +9,8 @@ interface RecentActivityProps {
 
 export function RecentActivity({ events }: RecentActivityProps) {
   if (events.length === 0) return null;
+
+  const groups = groupConsecutiveEvents(events).slice(0, 5);
 
   return (
     <div>
@@ -19,8 +21,8 @@ export function RecentActivity({ events }: RecentActivityProps) {
         </Link>
       </div>
       <div className="space-y-2">
-        {events.slice(0, 5).map((event) => (
-          <FeedCard key={event.id} event={event} />
+        {groups.map((group) => (
+          <GroupedFeedCard key={group.events[0].id} group={group} />
         ))}
       </div>
     </div>

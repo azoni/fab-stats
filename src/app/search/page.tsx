@@ -4,7 +4,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { searchUsernames, getProfile } from "@/lib/firestore-storage";
 import { useFeed } from "@/hooks/useFeed";
-import { FeedCard } from "@/components/feed/FeedCard";
+import { GroupedFeedCard, groupConsecutiveEvents } from "@/components/feed/FeedCard";
 import { FeedIcon } from "@/components/icons/NavIcons";
 import type { UserProfile } from "@/types";
 
@@ -200,8 +200,8 @@ function SearchContent() {
 
           {!feedLoading && feedEvents.length > 0 && (
             <div className="space-y-3">
-              {feedEvents.map((event) => (
-                <FeedCard key={event.id} event={event} />
+              {groupConsecutiveEvents(feedEvents).map((group) => (
+                <GroupedFeedCard key={group.events[0].id} group={group} />
               ))}
             </div>
           )}
