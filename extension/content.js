@@ -71,7 +71,7 @@
 
   let overlay = null;
 
-  function showOverlay(status, detail, matchCount) {
+  function showOverlay(status, detail, matchCount, progress) {
     btn.style.display = "none";
 
     if (!overlay) {
@@ -105,6 +105,28 @@
           '<div style="font-size:13px;color:#888;margin-bottom:16px;">found so far</div>'
         : "";
 
+    // Progress bar + ETA
+    let progressLine = "";
+    if (progress && progress.total > 1) {
+      const pct = Math.round((progress.current / progress.total) * 100);
+      const remaining = progress.total - progress.current;
+      const etaSeconds = remaining * progress.secPerPage;
+      const etaMin = Math.floor(etaSeconds / 60);
+      const etaSec = Math.round(etaSeconds % 60);
+      const etaText = etaMin > 0
+        ? "~" + etaMin + "m " + etaSec + "s remaining"
+        : "~" + etaSec + "s remaining";
+      progressLine =
+        '<div style="margin-bottom:16px;">' +
+          '<div style="font-size:12px;color:#888;margin-bottom:6px;">Page ' +
+          progress.current + " of " + progress.total +
+          ' <span style="color:#555;">\u00b7 ' + etaText + "</span></div>" +
+          '<div style="width:100%;height:6px;background:#333;border-radius:3px;overflow:hidden;">' +
+            '<div style="width:' + pct + "%;height:100%;background:linear-gradient(90deg,#d4af37,#c9a84c);border-radius:3px;transition:width 0.3s;\"></div>" +
+          "</div>" +
+        "</div>";
+    }
+
     overlay.innerHTML =
       '<div style="background:#1a1a2e;border:2px solid #d4af37;border-radius:16px;padding:32px 40px;max-width:420px;width:90%;text-align:center;box-shadow:0 16px 48px rgba(0,0,0,0.6);">' +
       spinner +
@@ -115,6 +137,7 @@
       detail +
       "</div>" +
       matchLine +
+      progressLine +
       '<div style="font-size:11px;color:#555;margin-top:8px;">Keep this tab open \u2014 do not navigate away</div>' +
       "</div>";
   }
@@ -782,6 +805,22 @@
     return null;
   }
 
+  // ── Total Page Count ─────────────────────────────────────────
+
+  function getTotalPages() {
+    let max = getCurrentPage();
+    const links = document.querySelectorAll("a[href]");
+    for (const link of links) {
+      const href = link.getAttribute("href") || "";
+      const m = href.match(/[?&]page=(\d+)/);
+      if (m) {
+        const p = parseInt(m[1]);
+        if (p > max) max = p;
+      }
+    }
+    return max;
+  }
+
   // ── Navigate to Page 1 ───────────────────────────────────────
 
   function getPage1Url() {
@@ -795,11 +834,28 @@
   async function scrapePage(state) {
     const page = getCurrentPage();
 
+    // Detect total pages on first visit (or update if higher found)
+    const detectedTotal = getTotalPages();
+    if (!state.totalPages || detectedTotal > state.totalPages) {
+      state.totalPages = detectedTotal;
+    }
+
+    // Track timing for ETA — measure seconds per page from previous pages
+    const pageStartTime = Date.now();
+    const secPerPage = state.pagesScraped > 0 && state.startTime
+      ? ((pageStartTime - state.startTime) / 1000) / state.pagesScraped
+      : 15; // default estimate: ~15s per page
+
+    const progress = state.totalPages > 1
+      ? { current: page, total: state.totalPages, secPerPage: secPerPage }
+      : null;
+
     try {
       showOverlay(
         "Expanding events...",
         "Page " + page + " \u2014 Opening all collapsed sections",
-        state.matches.length
+        state.matches.length,
+        progress
       );
       const tablesBefore = document.querySelectorAll("table").length;
       await expandAllSections();
@@ -813,10 +869,11 @@
       showOverlay(
         "Reading matches...",
         "Page " + page + " \u2014 Scraping match tables",
-        state.matches.length
+        state.matches.length,
+        progress
       );
       const pageMatches = scrapeAllEvents();
-      console.log("[FaB Stats] Page " + page + ": " + pageMatches.length + " matches — events: " +
+      console.log("[FaB Stats] Page " + page + "/" + (state.totalPages || "?") + ": " + pageMatches.length + " matches — events: " +
         [...new Set(pageMatches.map((m) => m.event))].join(", "));
       state.matches = state.matches.concat(pageMatches);
       state.pagesScraped++;
@@ -831,13 +888,14 @@
       }
 
       showOverlay(
-        "Moving to page " + (page + 1) + "...",
+        "Moving to page " + (page + 1) + " of " + state.totalPages + "...",
         "Found " +
           pageMatches.length +
           " matches on this page (" +
           state.matches.length +
           " total)",
-        state.matches.length
+        state.matches.length,
+        progress
       );
       state.nextUrl = nextUrl;
       sessionStorage.setItem(SCRAPE_KEY, JSON.stringify(state));
@@ -925,7 +983,7 @@
     const currentPage = getCurrentPage();
     if (currentPage !== 1) {
       showOverlay("Starting export...", "Navigating to page 1", 0);
-      const state = { matches: [], pagesScraped: 0 };
+      const state = { matches: [], pagesScraped: 0, startTime: Date.now(), totalPages: 0 };
       sessionStorage.setItem(SCRAPE_KEY, JSON.stringify(state));
       await sleep(500);
       window.location.href = getPage1Url();
@@ -933,7 +991,7 @@
     }
 
     try {
-      const state = { matches: [], pagesScraped: 0 };
+      const state = { matches: [], pagesScraped: 0, startTime: Date.now(), totalPages: 0 };
       await scrapePage(state);
     } catch (err) {
       showError(err.message || String(err));
