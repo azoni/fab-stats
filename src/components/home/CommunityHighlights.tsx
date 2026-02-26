@@ -1,6 +1,5 @@
 "use client";
 import Link from "next/link";
-import { CommunityPulse } from "./CommunityPulse";
 import { FeaturedProfiles } from "./FeaturedProfiles";
 import { FeaturedTournaments } from "./FeaturedTournaments";
 import { MetaSnapshot } from "./MetaSnapshot";
@@ -10,9 +9,6 @@ import type { HeroMetaStats } from "@/lib/meta-stats";
 import type { FeaturedEvent, FeedEvent, LeaderboardEntry } from "@/types";
 
 interface CommunityHighlightsProps {
-  userCount: number;
-  matchCount: number;
-  activeThisWeek: number;
   featuredProfiles: FeaturedProfile[];
   featuredEvents: FeaturedEvent[];
   leaderboardEntries: LeaderboardEntry[];
@@ -22,9 +18,6 @@ interface CommunityHighlightsProps {
 }
 
 export function CommunityHighlights({
-  userCount,
-  matchCount,
-  activeThisWeek,
   featuredProfiles,
   featuredEvents,
   leaderboardEntries,
@@ -53,12 +46,6 @@ export function CommunityHighlights({
           View Your Public Profile
         </Link>
       )}
-
-      <CommunityPulse
-        userCount={userCount}
-        matchCount={matchCount}
-        activeThisWeek={activeThisWeek}
-      />
 
       <FeaturedProfiles profiles={featuredProfiles} />
 

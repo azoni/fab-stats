@@ -14,7 +14,6 @@ import { MatchResult } from "@/types";
 import { CommunityHighlights } from "@/components/home/CommunityHighlights";
 import { useFeaturedEvents } from "@/hooks/useFeaturedEvents";
 import { useFeed } from "@/hooks/useFeed";
-import { useCommunityStats } from "@/hooks/useCommunityStats";
 import { computeMetaStats } from "@/lib/meta-stats";
 import { selectFeaturedProfiles } from "@/lib/featured-profiles";
 
@@ -24,7 +23,6 @@ export default function Dashboard() {
   const { entries: lbEntries } = useLeaderboard();
   const featuredEvents = useFeaturedEvents();
   const { events: feedEvents } = useFeed();
-  const { userCount, matchCount: communityMatchCount } = useCommunityStats();
   const [shareCopied, setShareCopied] = useState(false);
 
   const leaderboardUpdated = useRef(false);
@@ -45,7 +43,10 @@ export default function Dashboard() {
   const bestFinish = useMemo(() => computeBestFinish(eventStats), [eventStats]);
   const userRanks = useMemo(() => user ? computeUserRanks(lbEntries, user.uid) : [], [user, lbEntries]);
   const bestRank = useMemo(() => getBestRank(userRanks), [userRanks]);
-  const topHero = useMemo(() => heroStats.length > 0 ? heroStats[0] : null, [heroStats]);
+  const topHero = useMemo(() => {
+    const known = heroStats.filter((h) => h.heroName !== "Unknown");
+    return known.length > 0 ? known[0] : null;
+  }, [heroStats]);
 
   const sortedByDateDesc = useMemo(() =>
     [...matches].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
@@ -57,7 +58,7 @@ export default function Dashboard() {
   const communityMeta = useMemo(() => computeMetaStats(lbEntries), [lbEntries]);
   const communityTopHeroes = useMemo(() => communityMeta.heroStats.slice(0, 5), [communityMeta]);
   const featuredProfiles = useMemo(() => selectFeaturedProfiles(lbEntries), [lbEntries]);
-  const activeThisWeek = useMemo(() => lbEntries.filter((e) => e.weeklyMatches > 0).length, [lbEntries]);
+
 
   if (!isLoaded) {
     return <DashboardSkeleton />;
@@ -251,9 +252,6 @@ export default function Dashboard() {
 
       {/* Community content */}
       <CommunityHighlights
-        userCount={userCount}
-        matchCount={communityMatchCount}
-        activeThisWeek={activeThisWeek}
         featuredProfiles={featuredProfiles}
         featuredEvents={featuredEvents}
         leaderboardEntries={lbEntries}
