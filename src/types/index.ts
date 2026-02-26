@@ -270,6 +270,7 @@ export interface FeaturedEvent {
   name: string;
   date: string;
   format: string;
+  eventType: string;
   description?: string;
   imageUrl?: string;
   players: FeaturedEventPlayer[];

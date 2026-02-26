@@ -53,6 +53,7 @@ export function FeaturedTournaments({ events, leaderboardEntries }: FeaturedTour
                   <p className="font-semibold text-fab-text">{event.name}</p>
                   <p className="text-xs text-fab-dim mt-0.5">
                     {dateStr}
+                    {event.eventType && <> &middot; {event.eventType}</>}
                     {event.format && <> &middot; {event.format}</>}
                   </p>
                   {event.description && (

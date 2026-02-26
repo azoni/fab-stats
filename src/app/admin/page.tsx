@@ -9,7 +9,20 @@ import { getCreators, saveCreators } from "@/lib/creators";
 import { getEvents, saveEvents } from "@/lib/featured-events";
 import { getAnalytics } from "@/lib/analytics";
 import { searchHeroes } from "@/lib/heroes";
+import { GameFormat } from "@/types";
 import type { FeedbackItem, Creator, FeaturedEvent, FeaturedEventPlayer } from "@/types";
+
+const FEATURED_EVENT_TYPES = [
+  "Armory",
+  "Skirmish",
+  "ProQuest",
+  "Road to Nationals",
+  "Battle Hardened",
+  "The Calling",
+  "Nationals",
+  "Pro Tour",
+  "Worlds",
+] as const;
 
 type SortKey = "matchCount" | "createdAt" | "username";
 type SortDir = "asc" | "desc";
@@ -589,19 +602,32 @@ export default function AdminPage() {
                       onChange={(e) => setEventsList((prev) => prev.map((ev2, j) => j === i ? { ...ev2, date: e.target.value } : ev2))}
                       className="bg-fab-surface border border-fab-border text-fab-text text-sm rounded px-2 py-1.5 focus:outline-none focus:border-fab-gold"
                     />
-                    <input
-                      type="text"
-                      placeholder="Format (e.g. Classic Constructed)"
+                    <select
                       value={ev.format}
                       onChange={(e) => setEventsList((prev) => prev.map((ev2, j) => j === i ? { ...ev2, format: e.target.value } : ev2))}
                       className="bg-fab-surface border border-fab-border text-fab-text text-sm rounded px-2 py-1.5 focus:outline-none focus:border-fab-gold"
-                    />
+                    >
+                      <option value="">Format</option>
+                      {Object.values(GameFormat).map((f) => (
+                        <option key={f} value={f}>{f}</option>
+                      ))}
+                    </select>
+                    <select
+                      value={ev.eventType || ""}
+                      onChange={(e) => setEventsList((prev) => prev.map((ev2, j) => j === i ? { ...ev2, eventType: e.target.value } : ev2))}
+                      className="bg-fab-surface border border-fab-border text-fab-text text-sm rounded px-2 py-1.5 focus:outline-none focus:border-fab-gold"
+                    >
+                      <option value="">Event Type</option>
+                      {FEATURED_EVENT_TYPES.map((t) => (
+                        <option key={t} value={t}>{t}</option>
+                      ))}
+                    </select>
                     <input
                       type="text"
                       placeholder="Description (optional)"
                       value={ev.description || ""}
                       onChange={(e) => setEventsList((prev) => prev.map((ev2, j) => j === i ? { ...ev2, description: e.target.value || undefined } : ev2))}
-                      className="bg-fab-surface border border-fab-border text-fab-text text-sm rounded px-2 py-1.5 focus:outline-none focus:border-fab-gold"
+                      className="bg-fab-surface border border-fab-border text-fab-text text-sm rounded px-2 py-1.5 focus:outline-none focus:border-fab-gold col-span-2"
                     />
                     <input
                       type="text"
@@ -637,7 +663,7 @@ export default function AdminPage() {
                 </div>
               ))}
               <button
-                onClick={() => setEventsList((prev) => [...prev, { name: "", date: "", format: "", players: [] }])}
+                onClick={() => setEventsList((prev) => [...prev, { name: "", date: "", format: "", eventType: "", players: [] }])}
                 className="w-full py-2 rounded-lg text-sm font-medium border border-dashed border-fab-border text-fab-muted hover:text-fab-text hover:border-fab-gold/30 transition-colors"
               >
                 + Add Event
