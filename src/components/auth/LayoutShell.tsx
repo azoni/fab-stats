@@ -8,6 +8,7 @@ function isPublicPath(pathname: string): boolean {
   if (pathname === "/search") return true;
   if (pathname === "/privacy") return true;
   if (pathname === "/changelog") return true;
+  if (pathname === "/docs") return true;
   return false;
 }
 
