@@ -30,7 +30,6 @@ export default function Dashboard() {
   const { events: feedEvents } = useFeed();
   const [shareCopied, setShareCopied] = useState(false);
   const [bestFinishShareOpen, setBestFinishShareOpen] = useState(false);
-  const [showAllEvents, setShowAllEvents] = useState(false);
 
   const leaderboardUpdated = useRef(false);
 
@@ -320,16 +319,16 @@ export default function Dashboard() {
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg font-semibold text-fab-text">Your Events</h2>
                 {eventStats.length > EVENTS_PREVIEW && (
-                  <button
-                    onClick={() => setShowAllEvents(!showAllEvents)}
+                  <Link
+                    href="/events"
                     className="text-sm text-fab-gold hover:text-fab-gold-light transition-colors"
                   >
-                    {showAllEvents ? "Show less" : `View all ${eventStats.length}`}
-                  </button>
+                    View all {eventStats.length}
+                  </Link>
                 )}
               </div>
               <div className="space-y-2">
-                {(showAllEvents ? eventStats : eventStats.slice(0, EVENTS_PREVIEW)).map((event) => (
+                {eventStats.slice(0, EVENTS_PREVIEW).map((event) => (
                   <EventCard key={`${event.eventName}-${event.eventDate}`} event={event} />
                 ))}
               </div>
