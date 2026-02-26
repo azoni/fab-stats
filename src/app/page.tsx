@@ -165,6 +165,22 @@ export default function Dashboard() {
                     )}
                   </button>
                 )}
+                {profile?.username && (
+                  <button
+                    onClick={() => {
+                      const url = `${window.location.origin}/player/${profile.username}`;
+                      const text = `Check out my Flesh and Blood stats on FaB Stats (Beta)!\n\n${url}`;
+                      window.open(`https://x.com/intent/tweet?text=${encodeURIComponent(text)}`, "_blank", "noopener,noreferrer");
+                    }}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-fab-bg border border-fab-border text-fab-dim hover:text-fab-text hover:border-fab-muted transition-colors shrink-0"
+                    title="Share on X"
+                  >
+                    <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                    </svg>
+                    <span className="text-xs font-semibold">Post</span>
+                  </button>
+                )}
               </div>
               {profile?.username && (
                 <p className="text-xs text-fab-dim">@{profile.username}</p>
