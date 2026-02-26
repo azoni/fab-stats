@@ -419,7 +419,8 @@ function OpponentRow({ opp, isExpanded, onToggle, matchOwnerUid, playerName }: {
                       ? await toBlob(cardRef.current, { pixelRatio: 2, backgroundColor: "#0c0a0e" })
                       : null;
 
-                    if (blob && navigator.share && navigator.canShare?.({ files: [new File([blob], "rivalry.png", { type: "image/png" })] })) {
+                    const isMobile = "ontouchstart" in window || navigator.maxTouchPoints > 0;
+                    if (isMobile && blob && navigator.share && navigator.canShare?.({ files: [new File([blob], "rivalry.png", { type: "image/png" })] })) {
                       // Mobile: share image + link via native share sheet
                       const file = new File([blob], "rivalry.png", { type: "image/png" });
                       await navigator.share({ title: "FaB Stats Rivalry", text: shareText, files: [file] });

@@ -117,10 +117,18 @@ export function parseDate(dateStr: string): string {
     .trim();
   const d = new Date(cleaned);
   if (!isNaN(d.getTime())) return d.toISOString().split("T")[0];
+  // Try removing abbreviated month periods (e.g. "Feb." → "Feb")
   const noPeriod = cleaned.replace(/(\w{3})\./g, "$1");
   const d2 = new Date(noPeriod);
   if (!isNaN(d2.getTime())) return d2.toISOString().split("T")[0];
-  return new Date().toISOString().split("T")[0];
+  // Try DD/MM/YYYY or DD-MM-YYYY format
+  const dmyMatch = cleaned.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+  if (dmyMatch) {
+    const d3 = new Date(`${dmyMatch[3]}-${dmyMatch[2].padStart(2, "0")}-${dmyMatch[1].padStart(2, "0")}`);
+    if (!isNaN(d3.getTime())) return d3.toISOString().split("T")[0];
+  }
+  // Return empty string instead of today's date — caller must handle missing dates
+  return "";
 }
 
 export function parseResult(text: string): MatchResult | null {

@@ -27,7 +27,8 @@ function parseDate(dateStr: string): string {
   if (!isNaN(d2.getTime())) {
     return d2.toISOString().split("T")[0];
   }
-  return new Date().toISOString().split("T")[0];
+  // Return empty string instead of today's date — caller must handle missing dates
+  return "";
 }
 
 function parseOpponent(raw: string): { name: string; gemId: string } {
