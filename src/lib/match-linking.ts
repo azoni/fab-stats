@@ -104,6 +104,42 @@ export async function linkMatchesWithOpponents(
   return { linkedCount, heroesReceived, heroesShared };
 }
 
+/**
+ * After a hero edit, propagate the change to the linked opponent's match.
+ * Looks up the opponent via opponentGemId, finds the matching record,
+ * and sets their opponentHero to the new hero value.
+ */
+export async function propagateHeroToOpponent(
+  userId: string,
+  match: MatchRecord,
+  newHero: string
+): Promise<void> {
+  if (!match.opponentGemId) return;
+  if (!newHero || newHero === "Unknown") return;
+
+  const opponentUserId = await lookupGemId(match.opponentGemId);
+  if (!opponentUserId || opponentUserId === userId) return;
+
+  let opponentMatches: MatchRecord[];
+  try {
+    opponentMatches = await getMatchesByUserId(opponentUserId);
+  } catch {
+    return;
+  }
+
+  const key = matchKey(match);
+  const linked = opponentMatches.find(
+    (om) => matchKey(om) === key && om.result === OPPOSITE_RESULT[match.result]
+  );
+  if (!linked) return;
+
+  try {
+    await updateOpponentHeroForUser(opponentUserId, linked.id, newHero);
+  } catch {
+    // Cross-user write failed — skip silently
+  }
+}
+
 /** Build a lookup key from a match record: "date|eventName|round" */
 function matchKey(m: MatchRecord): string {
   const eventName = m.notes?.split(" | ")[0] || "";

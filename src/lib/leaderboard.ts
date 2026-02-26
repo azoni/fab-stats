@@ -117,13 +117,21 @@ export async function updateLeaderboardEntry(
 
   // Weekly stats
   const weekStart = getWeekStart();
-  const weeklyMatches = matches.filter((m) => m.date >= weekStart);
-  const weeklyWins = weeklyMatches.filter((m) => m.result === MatchResult.Win).length;
+  let weeklyMatchList = matches.filter((m) => m.date >= weekStart);
+  // Guard against bulk-import pollution: if nearly all matches land in "this week"
+  // the dates are almost certainly wrong (set to the import date, not the event date)
+  if (weeklyMatchList.length > matches.length * 0.8 && matches.length > 30) {
+    weeklyMatchList = [];
+  }
+  const weeklyWins = weeklyMatchList.filter((m) => m.result === MatchResult.Win).length;
 
   // Monthly stats
   const monthStart = getMonthStart();
-  const monthlyMatches = matches.filter((m) => m.date >= monthStart);
-  const monthlyWins = monthlyMatches.filter((m) => m.result === MatchResult.Win).length;
+  let monthlyMatchList = matches.filter((m) => m.date >= monthStart);
+  if (monthlyMatchList.length > matches.length * 0.8 && matches.length > 50) {
+    monthlyMatchList = [];
+  }
+  const monthlyWins = monthlyMatchList.filter((m) => m.result === MatchResult.Win).length;
 
   // Armory stats
   const armoryMatchList = matches.filter((m) => m.eventType === "Armory");
@@ -156,12 +164,12 @@ export async function updateLeaderboardEntry(
     nemesis: nemesisOpp?.opponentName,
     nemesisWinRate: nemesisOpp?.winRate,
     nemesisMatches: nemesisOpp?.totalMatches,
-    weeklyMatches: weeklyMatches.length,
+    weeklyMatches: weeklyMatchList.length,
     weeklyWins,
     weekStart,
-    monthlyMatches: monthlyMatches.length,
+    monthlyMatches: monthlyMatchList.length,
     monthlyWins,
-    monthlyWinRate: monthlyMatches.length > 0 ? (monthlyWins / monthlyMatches.length) * 100 : 0,
+    monthlyWinRate: monthlyMatchList.length > 0 ? (monthlyWins / monthlyMatchList.length) * 100 : 0,
     monthStart,
     earnings: profile.earnings,
     armoryMatches: armoryMatchList.length,
@@ -217,6 +225,18 @@ export async function getLeaderboardEntries(): Promise<LeaderboardEntry[]> {
       entry.monthlyWins = 0;
       entry.monthlyWinRate = 0;
       entry.monthStart = currentMonthStart;
+    }
+
+    // Sanitize bulk-import pollution: if weekly/monthly matches are suspiciously
+    // close to total matches, the dates are almost certainly wrong
+    if (entry.weeklyMatches > entry.totalMatches * 0.8 && entry.totalMatches > 30) {
+      entry.weeklyMatches = 0;
+      entry.weeklyWins = 0;
+    }
+    if (entry.monthlyMatches > entry.totalMatches * 0.8 && entry.totalMatches > 50) {
+      entry.monthlyMatches = 0;
+      entry.monthlyWins = 0;
+      entry.monthlyWinRate = 0;
     }
 
     return entry;

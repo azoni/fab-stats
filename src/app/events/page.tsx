@@ -6,6 +6,7 @@ import { useMatches } from "@/hooks/useMatches";
 import { useAuth } from "@/contexts/AuthContext";
 import { computeEventStats } from "@/lib/stats";
 import { updateLeaderboardEntry } from "@/lib/leaderboard";
+import { propagateHeroToOpponent } from "@/lib/match-linking";
 import { EventCard } from "@/components/events/EventCard";
 import { QuickEventImportModal } from "@/components/events/QuickEventImportModal";
 
@@ -32,8 +33,17 @@ export default function EventsPage() {
         );
         updateLeaderboardEntry(profile, updated).catch(() => {});
       }
+      // Propagate hero edit to linked opponents (non-blocking)
+      if (user) {
+        const affectedMatches = matches.filter(
+          (m) => matchIds.includes(m.id) && m.opponentGemId
+        );
+        for (const match of affectedMatches) {
+          propagateHeroToOpponent(user.uid, match, hero).catch(() => {});
+        }
+      }
     },
-    [batchUpdateHero, profile, matches]
+    [batchUpdateHero, profile, matches, user]
   );
 
   // Auto-open import modal from ?import=1 (e.g. from navbar "Log Event")

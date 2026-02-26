@@ -167,7 +167,7 @@ export function MatchCard({ match, matchOwnerUid, enableComments = false, obfusc
 
             {showGemNudge && !editing && (
               <p className="text-xs text-fab-muted mt-1">
-                Hero saved! <Link href="/settings" className="text-fab-gold hover:underline">Add your GEM ID in Settings</Link> so opponents can see what hero you played.
+                Hero saved! <Link href="/settings" className="text-fab-gold hover:underline">Add your GEM ID in Settings</Link> to share hero data with opponents automatically.
               </p>
             )}
 
