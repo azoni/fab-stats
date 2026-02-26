@@ -34,11 +34,13 @@ export function TournamentCard({ event, entryMap, fullImage }: TournamentCardPro
     <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden">
       {event.imageUrl && (
         fullImage ? (
-          <img
-            src={event.imageUrl}
-            alt={event.name}
-            className="w-full"
-          />
+          <div className="w-full max-h-56 overflow-hidden bg-black/20">
+            <img
+              src={event.imageUrl}
+              alt={event.name}
+              className="w-full h-full object-contain"
+            />
+          </div>
         ) : (
           <div className="w-full h-40 sm:h-48 overflow-hidden">
             <img

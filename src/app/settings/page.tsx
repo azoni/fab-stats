@@ -41,10 +41,11 @@ function YearInReview() {
   const { matches } = useMatches();
 
   const years = useMemo(() => {
+    const currentYear = new Date().getFullYear().toString();
     const yearSet = new Set<string>();
     for (const m of matches) {
       const y = m.date?.split("-")[0];
-      if (y && y.length === 4) yearSet.add(y);
+      if (y && y.length === 4 && y !== currentYear) yearSet.add(y);
     }
     return Array.from(yearSet).sort((a, b) => b.localeCompare(a));
   }, [matches]);

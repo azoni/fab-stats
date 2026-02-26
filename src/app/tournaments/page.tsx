@@ -55,65 +55,63 @@ export default function TournamentsPage() {
         </Link>
       </div>
 
-      {(formats.length > 1 || eventTypes.length > 1) && (
-        <div className="flex gap-2 flex-wrap items-center">
-          {formats.length > 1 && (
-            <>
+      <div className="flex gap-2 flex-wrap items-center">
+        {formats.length > 0 && (
+          <>
+            <button
+              onClick={() => setFilterFormat("all")}
+              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                filterFormat === "all"
+                  ? "bg-fab-gold text-fab-bg"
+                  : "bg-fab-surface border border-fab-border text-fab-muted hover:text-fab-text"
+              }`}
+            >
+              All Formats
+            </button>
+            {formats.map((f) => (
               <button
-                onClick={() => setFilterFormat("all")}
+                key={f}
+                onClick={() => setFilterFormat(f)}
                 className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                  filterFormat === "all"
+                  filterFormat === f
                     ? "bg-fab-gold text-fab-bg"
                     : "bg-fab-surface border border-fab-border text-fab-muted hover:text-fab-text"
                 }`}
               >
-                All Formats
+                {f}
               </button>
-              {formats.map((f) => (
-                <button
-                  key={f}
-                  onClick={() => setFilterFormat(f)}
-                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                    filterFormat === f
-                      ? "bg-fab-gold text-fab-bg"
-                      : "bg-fab-surface border border-fab-border text-fab-muted hover:text-fab-text"
-                  }`}
-                >
-                  {f}
-                </button>
-              ))}
-            </>
-          )}
-          {eventTypes.length > 1 && (
-            <>
-              {formats.length > 1 && <div className="w-px h-6 bg-fab-border self-center" />}
+            ))}
+          </>
+        )}
+        {eventTypes.length > 0 && (
+          <>
+            {formats.length > 0 && <div className="w-px h-6 bg-fab-border self-center" />}
+            <button
+              onClick={() => setFilterEventType("all")}
+              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                filterEventType === "all"
+                  ? "bg-fab-gold text-fab-bg"
+                  : "bg-fab-surface border border-fab-border text-fab-muted hover:text-fab-text"
+              }`}
+            >
+              All Events
+            </button>
+            {eventTypes.map((et) => (
               <button
-                onClick={() => setFilterEventType("all")}
+                key={et}
+                onClick={() => setFilterEventType(et)}
                 className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                  filterEventType === "all"
+                  filterEventType === et
                     ? "bg-fab-gold text-fab-bg"
                     : "bg-fab-surface border border-fab-border text-fab-muted hover:text-fab-text"
                 }`}
               >
-                All Events
+                {et}
               </button>
-              {eventTypes.map((et) => (
-                <button
-                  key={et}
-                  onClick={() => setFilterEventType(et)}
-                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                    filterEventType === et
-                      ? "bg-fab-gold text-fab-bg"
-                      : "bg-fab-surface border border-fab-border text-fab-muted hover:text-fab-text"
-                  }`}
-                >
-                  {et}
-                </button>
-              ))}
-            </>
-          )}
-        </div>
-      )}
+            ))}
+          </>
+        )}
+      </div>
 
       {filtered.length === 0 ? (
         <div className="bg-fab-surface border border-fab-border rounded-lg p-8 text-center">
