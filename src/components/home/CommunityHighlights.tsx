@@ -49,12 +49,14 @@ export function CommunityHighlights({
 
       <FeaturedProfiles profiles={featuredProfiles} />
 
-      <FeaturedTournaments
-        events={featuredEvents}
-        leaderboardEntries={leaderboardEntries}
-      />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <FeaturedTournaments
+          events={featuredEvents}
+          leaderboardEntries={leaderboardEntries}
+        />
 
-      <MetaSnapshot topHeroes={topHeroes} />
+        <MetaSnapshot topHeroes={topHeroes} />
+      </div>
 
       <RecentActivity events={feedEvents} />
     </div>

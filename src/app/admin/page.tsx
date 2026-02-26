@@ -8,10 +8,11 @@ import { getAllFeedback, updateFeedbackStatus } from "@/lib/feedback";
 import { getCreators, saveCreators } from "@/lib/creators";
 import { getEvents, saveEvents } from "@/lib/featured-events";
 import { lookupEvents, type LookupEvent } from "@/lib/event-lookup";
+import { getOrCreateConversation, sendMessage, sendMessageNotification } from "@/lib/messages";
 import { getAnalytics } from "@/lib/analytics";
 import { searchHeroes } from "@/lib/heroes";
 import { GameFormat } from "@/types";
-import type { FeedbackItem, Creator, FeaturedEvent, FeaturedEventPlayer } from "@/types";
+import type { FeedbackItem, Creator, FeaturedEvent, FeaturedEventPlayer, UserProfile } from "@/types";
 
 const FEATURED_EVENT_TYPES = [
   "Armory",
@@ -39,6 +40,10 @@ export default function AdminPage() {
   const [expandedUid, setExpandedUid] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<FeedbackItem[]>([]);
   const [feedbackFilter, setFeedbackFilter] = useState<"all" | "new" | "reviewed" | "done">("new");
+  const [replyingTo, setReplyingTo] = useState<string | null>(null);
+  const [replyText, setReplyText] = useState("");
+  const [replySending, setReplySending] = useState(false);
+  const [replySent, setReplySent] = useState<string | null>(null);
   const [usersExpanded, setUsersExpanded] = useState(false);
   const [backfilling, setBackfilling] = useState(false);
   const [backfillProgress, setBackfillProgress] = useState("");
@@ -436,6 +441,79 @@ export default function AdminPage() {
                             </span>
                           </div>
                           <p className="text-sm text-fab-text whitespace-pre-wrap break-words">{f.message}</p>
+
+                          {/* Reply button / sent confirmation */}
+                          <div className="mt-2">
+                            {replySent === f.id ? (
+                              <span className="text-xs text-fab-win">Sent!</span>
+                            ) : replyingTo === f.id ? null : (
+                              <button
+                                onClick={() => { setReplyingTo(f.id); setReplyText(""); }}
+                                className="text-xs text-fab-muted hover:text-fab-gold transition-colors"
+                              >
+                                Reply
+                              </button>
+                            )}
+                          </div>
+
+                          {/* Inline reply form */}
+                          {replyingTo === f.id && (
+                            <div className="mt-2 space-y-2">
+                              <textarea
+                                value={replyText}
+                                onChange={(e) => setReplyText(e.target.value)}
+                                placeholder="Type your reply..."
+                                rows={3}
+                                className="w-full bg-fab-bg border border-fab-border text-fab-text text-sm rounded px-2 py-1.5 focus:outline-none focus:border-fab-gold resize-none"
+                              />
+                              <div className="flex items-center gap-2">
+                                <button
+                                  disabled={!replyText.trim() || replySending}
+                                  onClick={async () => {
+                                    if (!profile || !replyText.trim()) return;
+                                    setReplySending(true);
+                                    try {
+                                      const userProfile = {
+                                        uid: f.userId,
+                                        username: f.username,
+                                        displayName: f.displayName,
+                                        photoUrl: "",
+                                        isPublic: true,
+                                      } as UserProfile;
+                                      const convId = await getOrCreateConversation(profile, userProfile);
+                                      const quote = f.message.length > 100 ? f.message.slice(0, 100) + "..." : f.message;
+                                      const fullMessage = `Re: your ${f.type === "bug" ? "bug report" : "feature request"} — "${quote}"\n\n${replyText.trim()}`;
+                                      await sendMessage(convId, profile.uid, profile.displayName, profile.photoUrl, fullMessage, true);
+                                      await sendMessageNotification(f.userId, convId, profile.uid, profile.displayName, profile.photoUrl, fullMessage.slice(0, 100));
+                                      setReplyingTo(null);
+                                      setReplyText("");
+                                      setReplySent(f.id);
+                                      setTimeout(() => setReplySent(null), 2000);
+                                      // Auto-mark as reviewed if new
+                                      if (f.status === "new") {
+                                        await updateFeedbackStatus(f.id, "reviewed");
+                                        setFeedback((prev) => prev.map((item) => item.id === f.id ? { ...item, status: "reviewed" } : item));
+                                      }
+                                    } catch (err) {
+                                      console.error("Reply error:", err);
+                                      setError("Failed to send reply.");
+                                    } finally {
+                                      setReplySending(false);
+                                    }
+                                  }}
+                                  className="px-3 py-1 rounded text-xs font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors disabled:opacity-50"
+                                >
+                                  {replySending ? "Sending..." : "Send"}
+                                </button>
+                                <button
+                                  onClick={() => { setReplyingTo(null); setReplyText(""); }}
+                                  className="text-xs text-fab-dim hover:text-fab-muted transition-colors"
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            </div>
+                          )}
                         </div>
                         <select
                           value={f.status}

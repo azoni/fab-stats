@@ -555,7 +555,7 @@ export default function PlayerProfile() {
           bestFinish={bestFinish}
           totalMatches={overall.totalMatches}
           winRate={overall.overallWinRate}
-          topHero={heroStats.length > 0 ? heroStats[0].heroName : undefined}
+          topHero={bestFinish.hero}
           onClose={() => setBestFinishShareOpen(false)}
         />
       )}

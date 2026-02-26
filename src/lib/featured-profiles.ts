@@ -34,7 +34,7 @@ export function selectFeaturedProfiles(entries: LeaderboardEntry[]): FeaturedPro
       stat: (e) => `${e.currentStreakCount}W streak`,
     },
     {
-      reason: "Win Rate King",
+      reason: "Top Win Rate",
       candidates: publicEntries
         .filter((e) => e.totalMatches >= 100)
         .sort((a, b) => b.winRate - a.winRate)

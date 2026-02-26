@@ -38,16 +38,12 @@ const playoffRank: Record<string, number> = { "Finals": 4, "Top 4": 3, "Top 8": 
 export function EventCard({ event, obfuscateOpponents = false, visibleOpponents, editable = false, onBatchUpdateHero, onBatchUpdateFormat, missingGemId }: EventCardProps) {
   const [expanded, setExpanded] = useState(false);
   const [batchHero, setBatchHero] = useState("");
-  const [heroFrom, setHeroFrom] = useState("1");
-  const [heroTo, setHeroTo] = useState(String(event.matches.length));
-  const [saving, setSaving] = useState(false);
-  const [heroSaved, setHeroSaved] = useState(false);
-  const [showGemNudge, setShowGemNudge] = useState(false);
   const [batchFormat, setBatchFormat] = useState("");
-  const [formatFrom, setFormatFrom] = useState("1");
-  const [formatTo, setFormatTo] = useState(String(event.matches.length));
-  const [savingFormat, setSavingFormat] = useState(false);
-  const [formatSaved, setFormatSaved] = useState(false);
+  const [roundFrom, setRoundFrom] = useState("1");
+  const [roundTo, setRoundTo] = useState(String(event.matches.length));
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [showGemNudge, setShowGemNudge] = useState(false);
   const [error, setError] = useState("");
 
   // Determine best playoff placement from match rounds
@@ -80,53 +76,35 @@ export function EventCard({ event, obfuscateOpponents = false, visibleOpponents,
   }
 
   async function handleBatchSave() {
-    if (!onBatchUpdateHero || !effectiveHero) return;
+    const heroToSave = batchHero || sharedHero || "";
+    if (!heroToSave && !batchFormat) return;
     setError("");
     setSaving(true);
     try {
-      const from = parseInt(heroFrom, 10) || 1;
-      const to = parseInt(heroTo, 10) || event.matches.length;
+      const from = parseInt(roundFrom, 10) || 1;
+      const to = parseInt(roundTo, 10) || event.matches.length;
       const ids = event.matches.slice(from - 1, to).map((m) => m.id);
-      await onBatchUpdateHero(ids, effectiveHero);
-      // Advance range to remaining rounds so user can apply a different hero next
+      if (heroToSave && onBatchUpdateHero) {
+        await onBatchUpdateHero(ids, heroToSave);
+      }
+      if (batchFormat && onBatchUpdateFormat) {
+        await onBatchUpdateFormat(ids, batchFormat as GameFormat);
+      }
+      // Advance range to remaining rounds so user can apply next segment
       const nextFrom = to + 1;
       if (nextFrom <= event.matches.length) {
-        setHeroFrom(String(nextFrom));
-        setHeroTo(String(event.matches.length));
+        setRoundFrom(String(nextFrom));
+        setRoundTo(String(event.matches.length));
       }
       setBatchHero("");
-      setHeroSaved(true);
-      setTimeout(() => setHeroSaved(false), 2000);
-      if (missingGemId) setShowGemNudge(true);
+      setBatchFormat("");
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+      if (missingGemId && heroToSave) setShowGemNudge(true);
     } catch {
-      setError("Failed to save hero. Please try again.");
+      setError("Failed to save. Please try again.");
     } finally {
       setSaving(false);
-    }
-  }
-
-  async function handleBatchFormatSave() {
-    if (!onBatchUpdateFormat || !batchFormat) return;
-    setError("");
-    setSavingFormat(true);
-    try {
-      const from = parseInt(formatFrom, 10) || 1;
-      const to = parseInt(formatTo, 10) || event.matches.length;
-      const ids = event.matches.slice(from - 1, to).map((m) => m.id);
-      await onBatchUpdateFormat(ids, batchFormat as GameFormat);
-      // Advance range to remaining rounds so user can apply a different format next
-      const nextFrom = to + 1;
-      if (nextFrom <= event.matches.length) {
-        setFormatFrom(String(nextFrom));
-        setFormatTo(String(event.matches.length));
-      }
-      setBatchFormat("");
-      setFormatSaved(true);
-      setTimeout(() => setFormatSaved(false), 2000);
-    } catch {
-      setError("Failed to save format. Please try again.");
-    } finally {
-      setSavingFormat(false);
     }
   }
 
@@ -197,28 +175,42 @@ export function EventCard({ event, obfuscateOpponents = false, visibleOpponents,
 
       {expanded && (
         <div className="border-t border-fab-border">
-          {/* Batch hero edit */}
-          {editable && onBatchUpdateHero && (
+          {/* Batch hero + format edit (combined) */}
+          {editable && (onBatchUpdateHero || onBatchUpdateFormat) && (
             <div className="px-4 py-3 bg-fab-bg/50 border-b border-fab-border/50">
-              <label className="block text-xs font-medium text-fab-muted mb-1.5">Set hero for rounds</label>
+              <label className="block text-xs font-medium text-fab-muted mb-1.5">Set hero &amp; format for rounds</label>
               <div className="flex items-end gap-2 flex-wrap">
-                <div className="w-48">
-                  <HeroSelect
-                    value={batchHero || sharedHero || ""}
-                    onChange={setBatchHero}
-                    label="Hero played"
-                    format={event.format}
-                  />
-                </div>
+                {onBatchUpdateHero && (
+                  <div className="w-48">
+                    <HeroSelect
+                      value={batchHero || sharedHero || ""}
+                      onChange={setBatchHero}
+                      label="Hero played"
+                      format={batchFormat || event.format}
+                    />
+                  </div>
+                )}
+                {onBatchUpdateFormat && (
+                  <select
+                    value={batchFormat}
+                    onChange={(e) => setBatchFormat(e.target.value)}
+                    className="bg-fab-surface border border-fab-border rounded-md px-2 py-1.5 text-fab-text text-xs outline-none focus:border-fab-gold/50"
+                  >
+                    <option value="">Format</option>
+                    {Object.values(GameFormat).map((f) => (
+                      <option key={f} value={f}>{f}</option>
+                    ))}
+                  </select>
+                )}
                 <div className="flex items-center gap-1 text-xs text-fab-muted">
                   <span>from</span>
                   <input
                     type="number"
                     min={1}
                     max={event.matches.length}
-                    value={heroFrom}
-                    onChange={(e) => setHeroFrom(e.target.value)}
-                    onBlur={() => setHeroFrom(clampRound(heroFrom))}
+                    value={roundFrom}
+                    onChange={(e) => setRoundFrom(e.target.value)}
+                    onBlur={() => setRoundFrom(clampRound(roundFrom))}
                     className="w-12 bg-fab-surface border border-fab-border rounded-md px-1.5 py-1.5 text-fab-text text-xs text-center outline-none focus:border-fab-gold/50"
                   />
                   <span>to</span>
@@ -226,15 +218,15 @@ export function EventCard({ event, obfuscateOpponents = false, visibleOpponents,
                     type="number"
                     min={1}
                     max={event.matches.length}
-                    value={heroTo}
-                    onChange={(e) => setHeroTo(e.target.value)}
-                    onBlur={() => setHeroTo(clampRound(heroTo))}
+                    value={roundTo}
+                    onChange={(e) => setRoundTo(e.target.value)}
+                    onBlur={() => setRoundTo(clampRound(roundTo))}
                     className="w-12 bg-fab-surface border border-fab-border rounded-md px-1.5 py-1.5 text-fab-text text-xs text-center outline-none focus:border-fab-gold/50"
                   />
                 </div>
-                {heroSaved ? (
+                {saved ? (
                   <span className="px-3 py-1.5 rounded text-xs font-medium bg-green-500/20 text-green-400 shrink-0">Saved!</span>
-                ) : effectiveHero ? (
+                ) : (batchHero || sharedHero || batchFormat) ? (
                   <button
                     onClick={handleBatchSave}
                     disabled={saving}
@@ -246,61 +238,9 @@ export function EventCard({ event, obfuscateOpponents = false, visibleOpponents,
               </div>
               {showGemNudge && (
                 <p className="text-xs text-fab-muted mt-2">
-                  Hero saved! <Link href="/settings" className="text-fab-gold hover:underline">Add your GEM ID in Settings</Link> to share hero data with opponents automatically.
+                  Saved! <Link href="/settings" className="text-fab-gold hover:underline">Add your GEM ID in Settings</Link> to share hero data with opponents automatically.
                 </p>
               )}
-            </div>
-          )}
-
-          {/* Batch format edit */}
-          {editable && onBatchUpdateFormat && (
-            <div className="px-4 py-3 bg-fab-bg/50 border-b border-fab-border/50">
-              <label className="block text-xs font-medium text-fab-muted mb-1.5">Set format for rounds</label>
-              <div className="flex items-end gap-2 flex-wrap">
-                <select
-                  value={batchFormat}
-                  onChange={(e) => setBatchFormat(e.target.value)}
-                  className="bg-fab-surface border border-fab-border rounded-md px-2 py-1.5 text-fab-text text-xs outline-none focus:border-fab-gold/50"
-                >
-                  <option value="">Select format</option>
-                  {Object.values(GameFormat).map((f) => (
-                    <option key={f} value={f}>{f}</option>
-                  ))}
-                </select>
-                <div className="flex items-center gap-1 text-xs text-fab-muted">
-                  <span>from</span>
-                  <input
-                    type="number"
-                    min={1}
-                    max={event.matches.length}
-                    value={formatFrom}
-                    onChange={(e) => setFormatFrom(e.target.value)}
-                    onBlur={() => setFormatFrom(clampRound(formatFrom))}
-                    className="w-12 bg-fab-surface border border-fab-border rounded-md px-1.5 py-1.5 text-fab-text text-xs text-center outline-none focus:border-fab-gold/50"
-                  />
-                  <span>to</span>
-                  <input
-                    type="number"
-                    min={1}
-                    max={event.matches.length}
-                    value={formatTo}
-                    onChange={(e) => setFormatTo(e.target.value)}
-                    onBlur={() => setFormatTo(clampRound(formatTo))}
-                    className="w-12 bg-fab-surface border border-fab-border rounded-md px-1.5 py-1.5 text-fab-text text-xs text-center outline-none focus:border-fab-gold/50"
-                  />
-                </div>
-                {formatSaved ? (
-                  <span className="px-3 py-1.5 rounded text-xs font-medium bg-green-500/20 text-green-400 shrink-0">Saved!</span>
-                ) : batchFormat ? (
-                  <button
-                    onClick={handleBatchFormatSave}
-                    disabled={savingFormat}
-                    className="px-3 py-1.5 rounded text-xs font-medium bg-fab-gold text-fab-bg hover:bg-fab-gold-light disabled:opacity-50 transition-colors shrink-0"
-                  >
-                    {savingFormat ? "Saving..." : "Apply"}
-                  </button>
-                ) : null}
-              </div>
             </div>
           )}
 

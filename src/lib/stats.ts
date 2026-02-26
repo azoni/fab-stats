@@ -422,7 +422,7 @@ const EVENT_PRESTIGE: Record<string, number> = {
 
 export function computeBestFinish(
   eventStats: EventStats[]
-): { label: string; eventName: string; eventDate: string } | null {
+): { label: string; eventName: string; eventDate: string; hero?: string } | null {
   // Use playoff finish data for best finish (reuses same logic)
   const finishes = computePlayoffFinishes(eventStats);
   if (finishes.length === 0) return null;
@@ -446,7 +446,21 @@ export function computeBestFinish(
     }
   }
 
-  return { label: labelMap[best.type] || best.type, eventName: best.eventName, eventDate: best.eventDate };
+  // Find the hero played at this event (most common non-Unknown hero)
+  const ev = eventStats.find((e) => e.eventName === best.eventName && e.eventDate === best.eventDate);
+  let hero: string | undefined;
+  if (ev) {
+    const heroCounts: Record<string, number> = {};
+    for (const m of ev.matches) {
+      if (m.heroPlayed && m.heroPlayed !== "Unknown") {
+        heroCounts[m.heroPlayed] = (heroCounts[m.heroPlayed] || 0) + 1;
+      }
+    }
+    const sorted = Object.entries(heroCounts).sort((a, b) => b[1] - a[1]);
+    if (sorted.length > 0) hero = sorted[0][0];
+  }
+
+  return { label: labelMap[best.type] || best.type, eventName: best.eventName, eventDate: best.eventDate, hero };
 }
 
 export interface PlayoffFinish {
