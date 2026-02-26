@@ -1,4 +1,7 @@
 import type { LeaderboardEntry } from "@/types";
+import { allHeroes } from "@/lib/heroes";
+
+const validHeroNames = new Set(allHeroes.map((h) => h.name));
 
 export interface HeroMetaStats {
   hero: string;
@@ -36,13 +39,14 @@ export function computeMetaStats(entries: LeaderboardEntry[]): {
 
     if (entry.heroBreakdown) {
       for (const hb of entry.heroBreakdown) {
+        if (!validHeroNames.has(hb.hero)) continue;
         const cur = heroAgg.get(hb.hero) || { players: 0, matches: 0, wins: 0 };
         cur.players++;
         cur.matches += hb.matches;
         cur.wins += hb.wins;
         heroAgg.set(hb.hero, cur);
       }
-    } else if (entry.topHero && entry.topHero !== "Unknown") {
+    } else if (entry.topHero && entry.topHero !== "Unknown" && validHeroNames.has(entry.topHero)) {
       // Fallback for entries without heroBreakdown — use topHero with estimated stats
       const cur = heroAgg.get(entry.topHero) || { players: 0, matches: 0, wins: 0 };
       cur.players++;
