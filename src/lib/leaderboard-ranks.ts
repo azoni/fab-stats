@@ -149,6 +149,16 @@ const RANK_TABS: RankTab[] = [
     filter: (e) => (e.totalByes ?? 0) > 0,
     sort: (a, b) => (b.totalByes ?? 0) - (a.totalByes ?? 0) || b.totalMatches - a.totalMatches,
   },
+  {
+    id: "byerate",
+    label: "Bye %",
+    filter: (e) => (e.totalByes ?? 0) > 0 && e.totalMatches >= 10,
+    sort: (a, b) => {
+      const aRate = ((a.totalByes ?? 0) / a.totalMatches) * 100;
+      const bRate = ((b.totalByes ?? 0) / b.totalMatches) * 100;
+      return bRate - aRate || (b.totalByes ?? 0) - (a.totalByes ?? 0);
+    },
+  },
 ];
 
 export function computeUserRanks(entries: LeaderboardEntry[], userId: string): LeaderboardRank[] {

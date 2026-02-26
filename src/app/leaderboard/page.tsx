@@ -12,7 +12,7 @@ import type { LeaderboardEntry, OpponentStats } from "@/types";
 
 const SITE_CREATOR = "azoni";
 
-type Tab = "winrate" | "volume" | "mostwins" | "streaks" | "draws" | "drawrate" | "byes" | "events" | "eventgrinder" | "rated" | "heroes" | "dedication" | "hotstreak" | "weeklymatches" | "weeklywins" | "monthlymatches" | "monthlywins" | "monthlywinrate" | "earnings" | "armorywinrate" | "armoryattendance" | "armorymatches";
+type Tab = "winrate" | "volume" | "mostwins" | "streaks" | "draws" | "drawrate" | "byes" | "byerate" | "events" | "eventgrinder" | "rated" | "heroes" | "dedication" | "hotstreak" | "weeklymatches" | "weeklywins" | "monthlymatches" | "monthlywins" | "monthlywinrate" | "earnings" | "armorywinrate" | "armoryattendance" | "armorymatches";
 
 const tabs: { id: Tab; label: string; description: string }[] = [
   { id: "winrate", label: "Win Rate", description: "Highest overall win percentage. Requires 100+ matches." },
@@ -37,6 +37,7 @@ const tabs: { id: Tab; label: string; description: string }[] = [
   { id: "draws", label: "Draws", description: "Most draws of all time." },
   { id: "drawrate", label: "Draw %", description: "Highest draw rate. Requires 10+ matches." },
   { id: "byes", label: "Byes", description: "Most byes received." },
+  { id: "byerate", label: "Bye %", description: "Highest bye rate. Requires 10+ matches." },
 ];
 
 function formatRate(rate: number): string {
@@ -160,6 +161,14 @@ export default function LeaderboardPage() {
         return [...entries]
           .filter((e) => (e.totalByes ?? 0) > 0)
           .sort((a, b) => (b.totalByes ?? 0) - (a.totalByes ?? 0) || b.totalMatches - a.totalMatches);
+      case "byerate":
+        return [...entries]
+          .filter((e) => (e.totalByes ?? 0) > 0 && e.totalMatches >= 10)
+          .sort((a, b) => {
+            const aRate = ((a.totalByes ?? 0) / a.totalMatches) * 100;
+            const bRate = ((b.totalByes ?? 0) / b.totalMatches) * 100;
+            return bRate - aRate || (b.totalByes ?? 0) - (a.totalByes ?? 0);
+          });
       default:
         return entries;
     }
@@ -230,7 +239,9 @@ export default function LeaderboardPage() {
                               ? "Players need at least 10 matches and 1 draw to appear here."
                               : activeTab === "byes"
                                 ? "No players have received byes yet."
-                                : "Import matches to appear on the leaderboard."}
+                                : activeTab === "byerate"
+                                  ? "Players need at least 10 matches and 1 bye to appear here."
+                                  : "Import matches to appear on the leaderboard."}
           </p>
         </div>
       )}
@@ -542,7 +553,15 @@ function LeaderboardRow({
           <>
             <p className="text-lg font-bold text-fab-text">{entry.totalByes ?? 0}</p>
             <p className="text-xs text-fab-dim">
-              {entry.totalMatches} matches
+              {entry.totalMatches} matches ({entry.totalMatches > 0 ? formatRate(((entry.totalByes ?? 0) / entry.totalMatches) * 100) : "0%"})
+            </p>
+          </>
+        )}
+        {tab === "byerate" && (
+          <>
+            <p className="text-lg font-bold text-fab-text">{entry.totalMatches > 0 ? formatRate(((entry.totalByes ?? 0) / entry.totalMatches) * 100) : "0%"}</p>
+            <p className="text-xs text-fab-dim">
+              {entry.totalByes ?? 0} byes in {entry.totalMatches} matches
             </p>
           </>
         )}
