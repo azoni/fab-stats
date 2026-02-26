@@ -129,6 +129,7 @@ export interface UserProfile {
   isPublic: boolean;
   earnings?: number;
   showNameOnProfiles?: boolean;
+  gemId?: string;
 }
 
 export interface EventStats {

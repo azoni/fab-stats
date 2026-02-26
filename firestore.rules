@@ -52,6 +52,11 @@ service cloud.firestore {
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['commentCount'])
         && request.resource.data.commentCount is int
         && request.resource.data.commentCount >= 0;
+      // Cross-player match linking: any authenticated user can set opponentHero
+      allow update: if request.auth != null
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['opponentHero'])
+        && request.resource.data.opponentHero is string
+        && request.resource.data.opponentHero.size() <= 100;
 
       // ── Comments on matches ──
       match /comments/{commentId} {
@@ -97,6 +102,18 @@ service cloud.firestore {
                     && resource.data.userId == request.auth.uid
                     && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['displayName', 'searchName']);
       // Owner can delete their own username reservation (account deletion)
+      allow delete: if request.auth != null
+                    && resource.data.userId == request.auth.uid;
+    }
+
+    // ── GEM ID lookup (maps GEM player ID → userId) ──
+    match /gemIds/{gemId} {
+      // Anyone authenticated can read (needed for cross-player match linking)
+      allow read: if request.auth != null;
+      // Create/update: only if userId matches the authenticated user
+      allow create, update: if request.auth != null
+                            && request.resource.data.userId == request.auth.uid;
+      // Delete: only the owner
       allow delete: if request.auth != null
                     && resource.data.userId == request.auth.uid;
     }

@@ -12,9 +12,11 @@ interface MatchListProps {
   matches: MatchRecord[];
   matchOwnerUid?: string;
   enableComments?: boolean;
+  editable?: boolean;
+  onUpdateMatch?: (id: string, updates: Partial<Omit<MatchRecord, "id" | "createdAt">>) => Promise<void>;
 }
 
-export function MatchList({ matches, matchOwnerUid, enableComments }: MatchListProps) {
+export function MatchList({ matches, matchOwnerUid, enableComments, editable, onUpdateMatch }: MatchListProps) {
   const [filterResult, setFilterResult] = useState<string>("all");
   const [filterFormat, setFilterFormat] = useState<string>("all");
   const [filterHero, setFilterHero] = useState<string>("all");
@@ -173,7 +175,7 @@ export function MatchList({ matches, matchOwnerUid, enableComments }: MatchListP
 
           <div className="space-y-2">
             {pageMatches.map((match) => (
-              <MatchCard key={match.id} match={match} matchOwnerUid={matchOwnerUid} enableComments={enableComments} />
+              <MatchCard key={match.id} match={match} matchOwnerUid={matchOwnerUid} enableComments={enableComments} editable={editable} onUpdateMatch={onUpdateMatch} />
             ))}
           </div>
 

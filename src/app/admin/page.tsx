@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
-import { getAdminDashboardData, backfillLeaderboard, broadcastMessage, fixMatchDates, type AdminDashboardData, type AdminUserStats } from "@/lib/admin";
+import { getAdminDashboardData, backfillLeaderboard, broadcastMessage, fixMatchDates, backfillGemIds, backfillMatchLinking, type AdminDashboardData, type AdminUserStats } from "@/lib/admin";
 import { getAllFeedback, updateFeedbackStatus } from "@/lib/feedback";
 import { getCreators, saveCreators } from "@/lib/creators";
 import { getAnalytics } from "@/lib/analytics";
@@ -36,6 +36,10 @@ export default function AdminPage() {
   const [analyticsData, setAnalyticsData] = useState<{ pageViews: Record<string, number>; creatorClicks: Record<string, number> } | null>(null);
   const [fixingDates, setFixingDates] = useState(false);
   const [fixDatesProgress, setFixDatesProgress] = useState("");
+  const [linkingMatches, setLinkingMatches] = useState(false);
+  const [linkProgress, setLinkProgress] = useState("");
+  const [backfillingGemIds, setBackfillingGemIds] = useState(false);
+  const [gemIdProgress, setGemIdProgress] = useState("");
 
   // Redirect non-admins
   useEffect(() => {
@@ -108,8 +112,8 @@ export default function AdminPage() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-fab-gold">Admin Dashboard</h1>
         <div className="flex items-center gap-2 flex-wrap">
-          {(backfillProgress || fixDatesProgress) && (
-            <span className="text-xs text-fab-dim">{fixDatesProgress || backfillProgress}</span>
+          {(backfillProgress || fixDatesProgress || linkProgress || gemIdProgress) && (
+            <span className="text-xs text-fab-dim">{linkProgress || gemIdProgress || fixDatesProgress || backfillProgress}</span>
           )}
           <button
             onClick={async () => {
@@ -150,6 +154,46 @@ export default function AdminPage() {
             className="px-4 py-2 rounded-lg text-sm font-semibold bg-fab-surface border border-fab-border text-fab-muted hover:text-fab-text hover:border-fab-gold transition-colors disabled:opacity-50"
           >
             {backfilling ? "Backfilling..." : "Backfill Leaderboard"}
+          </button>
+          <button
+            onClick={async () => {
+              setBackfillingGemIds(true);
+              setGemIdProgress("Starting...");
+              try {
+                const { registered, skipped, failed } = await backfillGemIds((done, total, msg) => {
+                  setGemIdProgress(`${done}/${total} — ${msg}`);
+                });
+                setGemIdProgress(`Done: ${registered} registered, ${skipped} skipped, ${failed} failed`);
+              } catch {
+                setGemIdProgress("GEM ID backfill failed");
+              } finally {
+                setBackfillingGemIds(false);
+              }
+            }}
+            disabled={backfillingGemIds || linkingMatches || backfilling || fixingDates}
+            className="px-4 py-2 rounded-lg text-sm font-semibold bg-fab-surface border border-fab-border text-fab-muted hover:text-fab-text hover:border-fab-gold transition-colors disabled:opacity-50"
+          >
+            {backfillingGemIds ? "Registering..." : "Backfill GEM IDs"}
+          </button>
+          <button
+            onClick={async () => {
+              setLinkingMatches(true);
+              setLinkProgress("Starting...");
+              try {
+                const { usersProcessed, totalLinked, heroesShared, heroesReceived, failed } = await backfillMatchLinking((done, total, msg) => {
+                  setLinkProgress(`${done}/${total} — ${msg}`);
+                });
+                setLinkProgress(`Done: ${usersProcessed} users, ${totalLinked} linked, ${heroesShared + heroesReceived} heroes exchanged${failed > 0 ? `, ${failed} failed` : ""}`);
+              } catch {
+                setLinkProgress("Match linking failed");
+              } finally {
+                setLinkingMatches(false);
+              }
+            }}
+            disabled={linkingMatches || backfillingGemIds || backfilling || fixingDates}
+            className="px-4 py-2 rounded-lg text-sm font-semibold bg-fab-surface border border-fab-border text-fab-muted hover:text-fab-text hover:border-fab-gold transition-colors disabled:opacity-50"
+          >
+            {linkingMatches ? "Linking..." : "Link Matches"}
           </button>
           <button
             onClick={fetchData}

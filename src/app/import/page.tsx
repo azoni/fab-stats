@@ -3,9 +3,11 @@ import { useState, useRef, useMemo, useCallback, useEffect } from "react";
 import { parseGemCsv } from "@/lib/gem-import";
 import { parseGemPaste, parseExtensionJson, type PasteImportResult } from "@/lib/gem-paste-import";
 import { useAuth } from "@/contexts/AuthContext";
-import { importMatchesFirestore, clearAllMatchesFirestore } from "@/lib/firestore-storage";
+import { importMatchesFirestore, clearAllMatchesFirestore, updateProfile, registerGemId } from "@/lib/firestore-storage";
 import { importMatchesLocal } from "@/lib/storage";
 import { createImportFeedEvent } from "@/lib/feed";
+import { linkMatchesWithOpponents } from "@/lib/match-linking";
+import type { GemMetadata } from "@/lib/gem-import";
 import { updateLeaderboardEntry } from "@/lib/leaderboard";
 import { getMatchesByUserId } from "@/lib/firestore-storage";
 import { useRouter } from "next/navigation";
@@ -34,6 +36,7 @@ export default function ImportPage() {
   const [pasteText, setPasteText] = useState("");
   const [pasteResult, setPasteResult] = useState<PasteImportResult | null>(null);
   const [csvMatches, setCsvMatches] = useState<Omit<MatchRecord, "id" | "createdAt">[] | null>(null);
+  const [csvMetadata, setCsvMetadata] = useState<GemMetadata | null>(null);
   const [error, setError] = useState("");
   const [imported, setImported] = useState(false);
   const [importedCount, setImportedCount] = useState(0);
@@ -176,6 +179,7 @@ export default function ImportPage() {
         return;
       }
       setCsvMatches(parsed.matches);
+      setCsvMetadata(parsed.metadata);
     } catch {
       setError("Failed to parse the CSV file.");
     }
@@ -251,12 +255,24 @@ export default function ImportPage() {
       getMatchesByUserId(user.uid)
         .then((allUserMatches) => updateLeaderboardEntry(profile, allUserMatches))
         .catch(() => {});
+
+      // Auto-save GEM ID from CSV metadata if the user doesn't have one yet
+      if (csvMetadata?.gemId && !profile.gemId) {
+        updateProfile(user.uid, { gemId: csvMetadata.gemId }).catch(() => {});
+        registerGemId(user.uid, csvMetadata.gemId).catch(() => {});
+      }
+
+      // Cross-player match linking (non-blocking)
+      getMatchesByUserId(user.uid)
+        .then((allMatches) => linkMatchesWithOpponents(user.uid, allMatches))
+        .catch(() => {});
     }
   }
 
   function handleReset() {
     setPasteResult(null);
     setCsvMatches(null);
+    setCsvMetadata(null);
     setPasteText("");
     setError("");
     setImported(false);

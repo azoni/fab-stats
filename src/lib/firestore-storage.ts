@@ -128,6 +128,26 @@ export async function importMatchesFirestore(
   return imported;
 }
 
+export async function batchUpdateMatchesFirestore(
+  userId: string,
+  matchIds: string[],
+  changes: Partial<Omit<MatchRecord, "id" | "createdAt">>
+): Promise<void> {
+  const clean: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(changes)) {
+    if (v !== undefined) clean[k] = v;
+  }
+  const batchSize = 500;
+  for (let i = 0; i < matchIds.length; i += batchSize) {
+    const batch = writeBatch(db);
+    const chunk = matchIds.slice(i, i + batchSize);
+    for (const matchId of chunk) {
+      batch.update(doc(db, "users", userId, "matches", matchId), clean);
+    }
+    await batch.commit();
+  }
+}
+
 export async function clearAllMatchesFirestore(
   userId: string
 ): Promise<void> {
@@ -275,7 +295,7 @@ export async function searchUsernames(
 
 export async function updateProfile(
   userId: string,
-  updates: Partial<Pick<UserProfile, "displayName" | "photoUrl" | "isPublic" | "firstName" | "lastName" | "searchName" | "earnings" | "showNameOnProfiles">>
+  updates: Partial<Pick<UserProfile, "displayName" | "photoUrl" | "isPublic" | "firstName" | "lastName" | "searchName" | "earnings" | "showNameOnProfiles" | "gemId">>
 ): Promise<void> {
   const profileRef = doc(db, "users", userId, "profile", "main");
   // Strip undefined values — Firestore rejects them
@@ -305,6 +325,31 @@ export async function uploadProfilePhoto(
   await updateProfile(userId, { photoUrl: dataUrl });
 }
 
+// ── GEM ID functions ──
+
+export async function registerGemId(userId: string, gemId: string): Promise<void> {
+  await setDoc(doc(db, "gemIds", gemId), { userId });
+}
+
+export async function lookupGemId(gemId: string): Promise<string | null> {
+  const snap = await getDoc(doc(db, "gemIds", gemId));
+  if (!snap.exists()) return null;
+  return (snap.data() as { userId: string }).userId;
+}
+
+export async function deleteGemId(gemId: string): Promise<void> {
+  await deleteDoc(doc(db, "gemIds", gemId));
+}
+
+export async function updateOpponentHeroForUser(
+  targetUserId: string,
+  matchId: string,
+  opponentHero: string
+): Promise<void> {
+  const matchRef = doc(db, "users", targetUserId, "matches", matchId);
+  await updateDoc(matchRef, { opponentHero });
+}
+
 export async function deleteAccountData(userId: string): Promise<void> {
   // Get profile to find username
   const profile = await getProfile(userId);
@@ -326,6 +371,13 @@ export async function deleteAccountData(userId: string): Promise<void> {
   // Delete username reservation
   if (profile?.username) {
     await deleteDoc(doc(db, "usernames", profile.username));
+  }
+
+  // Delete GEM ID reservation
+  if (profile?.gemId) {
+    try {
+      await deleteGemId(profile.gemId);
+    } catch { /* may not exist */ }
   }
 
   // Delete leaderboard entry

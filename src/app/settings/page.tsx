@@ -3,7 +3,7 @@ import { useState, useRef, useMemo } from "react";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
 import { useMatches } from "@/hooks/useMatches";
-import { updateProfile, uploadProfilePhoto, deleteAccountData, getMatchesByUserId } from "@/lib/firestore-storage";
+import { updateProfile, uploadProfilePhoto, deleteAccountData, getMatchesByUserId, registerGemId, deleteGemId } from "@/lib/firestore-storage";
 import {
   deleteUser,
   reauthenticateWithPopup,
@@ -93,6 +93,7 @@ export default function SettingsPage() {
   const [firstName, setFirstName] = useState(profile?.firstName || "");
   const [lastName, setLastName] = useState(profile?.lastName || "");
   const [earnings, setEarnings] = useState(profile?.earnings?.toString() || "");
+  const [gemId, setGemId] = useState(profile?.gemId || "");
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -117,13 +118,23 @@ export default function SettingsPage() {
     setSaved(false);
     try {
       const searchName = [firstName, lastName, displayName].filter(Boolean).join(" ").toLowerCase();
+      const trimmedGemId = gemId.trim();
+      const oldGemId = profile?.gemId;
+
       await updateProfile(user.uid, {
         displayName: displayName.trim(),
         firstName: firstName.trim() || undefined,
         lastName: lastName.trim() || undefined,
         searchName: searchName || undefined,
         earnings: earnings ? parseFloat(earnings) : undefined,
+        gemId: trimmedGemId || undefined,
       });
+
+      // Update gemIds lookup collection if GEM ID changed
+      if (trimmedGemId !== (oldGemId || "")) {
+        if (oldGemId) deleteGemId(oldGemId).catch(() => {});
+        if (trimmedGemId) registerGemId(user.uid, trimmedGemId).catch(() => {});
+      }
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     } catch {
@@ -311,6 +322,23 @@ export default function SettingsPage() {
             className="w-full bg-fab-bg border border-fab-border text-fab-text rounded-lg px-3 py-2 focus:outline-none focus:border-fab-gold"
           />
           <p className="text-xs text-fab-dim mt-1">Total prize money earned from FaB tournaments.</p>
+        </div>
+
+        <div className="mb-4">
+          <label htmlFor="gemId" className="block text-sm text-fab-muted mb-1">
+            GEM ID <span className="text-fab-dim">(optional)</span>
+          </label>
+          <input
+            id="gemId"
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            value={gemId}
+            onChange={(e) => setGemId(e.target.value.replace(/\D/g, ""))}
+            placeholder="e.g. 12345678"
+            className="w-full bg-fab-bg border border-fab-border text-fab-text rounded-lg px-3 py-2 focus:outline-none focus:border-fab-gold"
+          />
+          <p className="text-xs text-fab-dim mt-1">Your GEM player ID. Used to link matches with opponents on the platform.</p>
         </div>
 
         <div className="mb-4">

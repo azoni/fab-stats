@@ -2,6 +2,7 @@ import {
   doc,
   getDoc,
   getDocs,
+  setDoc,
   updateDoc,
   collection,
   query,
@@ -9,6 +10,7 @@ import {
 } from "firebase/firestore";
 import { db } from "./firebase";
 import { updateLeaderboardEntry } from "./leaderboard";
+import { linkMatchesWithOpponents } from "./match-linking";
 import { getOrCreateConversation, sendMessage, sendMessageNotification } from "./messages";
 import type { UserProfile, MatchRecord } from "@/types";
 
@@ -423,4 +425,115 @@ export async function fixMatchDates(
   }
 
   return { usersChecked, matchesFixed, usersAffected, usersFailed };
+}
+
+/**
+ * Backfill GEM IDs for users who imported via CSV.
+ * Re-reads each user's matches to find opponentGemId patterns, and
+ * for users whose profile has no gemId, tries to extract it from their
+ * match data (the player's own GEM ID appears as opponentGemId on their
+ * opponents' records — but we can also look at the username doc for clues).
+ *
+ * For CSV users specifically, re-parsing the CSV isn't possible from here,
+ * so this creates gemIds/{gemId} entries for users who already have a gemId
+ * on their profile (set via settings or auto-captured on re-import).
+ */
+export async function backfillGemIds(
+  onProgress?: (done: number, total: number, message?: string) => void
+): Promise<{ registered: number; skipped: number; failed: number }> {
+  const usernamesSnap = await getDocs(collection(db, "usernames"));
+  const userEntries = usernamesSnap.docs.map((d) => ({
+    username: d.id,
+    userId: (d.data() as { userId: string }).userId,
+  }));
+
+  let registered = 0;
+  let skipped = 0;
+  let failed = 0;
+  let done = 0;
+
+  const BATCH_SIZE = 25;
+  for (let i = 0; i < userEntries.length; i += BATCH_SIZE) {
+    const batch = userEntries.slice(i, i + BATCH_SIZE);
+    const results = await Promise.allSettled(
+      batch.map(async ({ userId }) => {
+        const profileSnap = await getDoc(doc(db, "users", userId, "profile", "main"));
+        if (!profileSnap.exists()) return "skip";
+        const profile = profileSnap.data() as UserProfile;
+
+        if (!profile.gemId) return "skip";
+
+        // Check if gemIds doc already exists
+        const gemSnap = await getDoc(doc(db, "gemIds", profile.gemId));
+        if (gemSnap.exists()) return "skip";
+
+        // Register it
+        await setDoc(doc(db, "gemIds", profile.gemId), { userId });
+        return "registered";
+      })
+    );
+
+    for (const r of results) {
+      done++;
+      if (r.status === "fulfilled") {
+        if (r.value === "registered") registered++;
+        else skipped++;
+      } else {
+        failed++;
+      }
+    }
+    onProgress?.(done, userEntries.length, `${registered} GEM IDs registered`);
+  }
+
+  return { registered, skipped, failed };
+}
+
+/**
+ * Backfill match linking across all users with registered GEM IDs.
+ * Iterates all users, runs the linking algorithm for each.
+ */
+export async function backfillMatchLinking(
+  onProgress?: (done: number, total: number, message?: string) => void
+): Promise<{ usersProcessed: number; totalLinked: number; heroesShared: number; heroesReceived: number; failed: number }> {
+  const usernamesSnap = await getDocs(collection(db, "usernames"));
+  const userEntries = usernamesSnap.docs.map((d) => ({
+    username: d.id,
+    userId: (d.data() as { userId: string }).userId,
+  }));
+
+  let usersProcessed = 0;
+  let totalLinked = 0;
+  let heroesShared = 0;
+  let heroesReceived = 0;
+  let failedCount = 0;
+  let done = 0;
+
+  // Process one user at a time to avoid overwhelming Firestore
+  for (const { userId } of userEntries) {
+    try {
+      const matchesSnap = await getDocs(
+        query(collection(db, "users", userId, "matches"), orderBy("createdAt", "desc"))
+      );
+      const matches = matchesSnap.docs.map((d) => ({ id: d.id, ...d.data() })) as MatchRecord[];
+
+      // Only process if they have matches with opponentGemId
+      const hasGemIds = matches.some((m) => m.opponentGemId);
+      if (hasGemIds) {
+        const result = await linkMatchesWithOpponents(userId, matches);
+        totalLinked += result.linkedCount;
+        heroesShared += result.heroesShared;
+        heroesReceived += result.heroesReceived;
+        if (result.linkedCount > 0) usersProcessed++;
+      }
+    } catch {
+      failedCount++;
+    }
+
+    done++;
+    if (done % 5 === 0 || done === userEntries.length) {
+      onProgress?.(done, userEntries.length, `${totalLinked} matches linked, ${heroesShared + heroesReceived} heroes exchanged`);
+    }
+  }
+
+  return { usersProcessed, totalLinked, heroesShared, heroesReceived, failed: failedCount };
 }

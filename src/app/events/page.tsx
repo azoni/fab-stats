@@ -1,10 +1,11 @@
 "use client";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useMatches } from "@/hooks/useMatches";
 import { useAuth } from "@/contexts/AuthContext";
 import { computeEventStats } from "@/lib/stats";
+import { updateLeaderboardEntry } from "@/lib/leaderboard";
 import { EventCard } from "@/components/events/EventCard";
 import { QuickEventImportModal } from "@/components/events/QuickEventImportModal";
 
@@ -13,14 +14,27 @@ const PAGE_SIZE = 25;
 
 export default function EventsPage() {
   const searchParams = useSearchParams();
-  const { matches, isLoaded, refreshMatches } = useMatches();
-  const { user } = useAuth();
+  const { matches, isLoaded, refreshMatches, batchUpdateHero } = useMatches();
+  const { user, profile } = useAuth();
   const [filterFormat, setFilterFormat] = useState("all");
   const [filterEventType, setFilterEventType] = useState("all");
   const [view, setView] = useState<View>("timeline");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [importModalOpen, setImportModalOpen] = useState(false);
+
+  const handleBatchUpdateHero = useCallback(
+    async (matchIds: string[], hero: string) => {
+      await batchUpdateHero(matchIds, hero);
+      if (profile && matches.length > 0) {
+        const updated = matches.map((m) =>
+          matchIds.includes(m.id) ? { ...m, heroPlayed: hero } : m
+        );
+        updateLeaderboardEntry(profile, updated).catch(() => {});
+      }
+    },
+    [batchUpdateHero, profile, matches]
+  );
 
   // Auto-open import modal from ?import=1 (e.g. from navbar "Log Event")
   useEffect(() => {
@@ -192,7 +206,7 @@ export default function EventsPage() {
           </p>
           <div className="space-y-2">
             {pageEvents.map((event) => (
-              <EventCard key={`${event.eventName}-${event.eventDate}`} event={event} />
+              <EventCard key={`${event.eventName}-${event.eventDate}`} event={event} editable={!!user} onBatchUpdateHero={handleBatchUpdateHero} />
             ))}
           </div>
         </>

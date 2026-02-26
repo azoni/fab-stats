@@ -1,12 +1,26 @@
 "use client";
+import { useCallback } from "react";
 import Link from "next/link";
 import { useMatches } from "@/hooks/useMatches";
 import { useAuth } from "@/contexts/AuthContext";
 import { MatchList } from "@/components/matches/MatchList";
+import { updateLeaderboardEntry } from "@/lib/leaderboard";
+import type { MatchRecord } from "@/types";
 
 export default function MatchesPage() {
-  const { matches, isLoaded } = useMatches();
-  const { user } = useAuth();
+  const { matches, isLoaded, updateMatch } = useMatches();
+  const { user, profile } = useAuth();
+
+  const handleUpdateMatch = useCallback(
+    async (id: string, updates: Partial<Omit<MatchRecord, "id" | "createdAt">>) => {
+      await updateMatch(id, updates);
+      if (profile && matches.length > 0) {
+        const updated = matches.map((m) => m.id === id ? { ...m, ...updates } : m);
+        updateLeaderboardEntry(profile, updated).catch(() => {});
+      }
+    },
+    [updateMatch, profile, matches]
+  );
 
   if (!isLoaded) {
     return (
@@ -71,7 +85,7 @@ export default function MatchesPage() {
           </div>
         </div>
       ) : (
-        <MatchList matches={matches} matchOwnerUid={user?.uid} enableComments />
+        <MatchList matches={matches} matchOwnerUid={user?.uid} enableComments editable={!!user} onUpdateMatch={handleUpdateMatch} />
       )}
     </div>
   );

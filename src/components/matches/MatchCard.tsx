@@ -2,6 +2,9 @@
 import { useState } from "react";
 import Link from "next/link";
 import { CommentSection } from "@/components/comments/CommentSection";
+import { HeroSelect } from "@/components/heroes/HeroSelect";
+import { getHeroByName } from "@/lib/heroes";
+import { HeroClassIcon } from "@/components/heroes/HeroClassIcon";
 import { MatchResult, type MatchRecord } from "@/types";
 
 interface MatchCardProps {
@@ -10,6 +13,8 @@ interface MatchCardProps {
   enableComments?: boolean;
   obfuscateOpponents?: boolean;
   visibleOpponents?: Set<string>;
+  editable?: boolean;
+  onUpdateMatch?: (id: string, updates: Partial<Omit<MatchRecord, "id" | "createdAt">>) => Promise<void>;
 }
 
 const resultStyles = {
@@ -34,13 +39,23 @@ function getPlayoffBadge(roundInfo: string | undefined): { label: string; bg: st
   return null;
 }
 
-export function MatchCard({ match, matchOwnerUid, enableComments = false, obfuscateOpponents = false, visibleOpponents }: MatchCardProps) {
+export function MatchCard({ match, matchOwnerUid, enableComments = false, obfuscateOpponents = false, visibleOpponents, editable = false, onUpdateMatch }: MatchCardProps) {
   const [showComments, setShowComments] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [editHero, setEditHero] = useState(match.heroPlayed || "");
+  const [editOppHero, setEditOppHero] = useState(match.opponentHero || "");
+  const [saving, setSaving] = useState(false);
+
   const style = resultStyles[match.result];
   const eventName = match.notes?.split(" | ")[0];
   const roundInfo = match.notes?.split(" | ")[1];
   const playoffBadge = getPlayoffBadge(roundInfo);
   const commentCount = match.commentCount || 0;
+
+  const hasHero = match.heroPlayed && match.heroPlayed !== "Unknown";
+  const hasOppHero = match.opponentHero && match.opponentHero !== "Unknown";
+  const heroInfo = hasHero ? getHeroByName(match.heroPlayed!) : null;
+  const oppHeroInfo = hasOppHero ? getHeroByName(match.opponentHero!) : null;
 
   const roundBadge = playoffBadge ? (
     <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${playoffBadge.bg} ${playoffBadge.text}`}>
@@ -49,6 +64,22 @@ export function MatchCard({ match, matchOwnerUid, enableComments = false, obfusc
   ) : roundInfo ? (
     <span className="text-xs text-fab-dim">({roundInfo})</span>
   ) : null;
+
+  async function handleSaveHeroes() {
+    if (!onUpdateMatch) return;
+    setSaving(true);
+    try {
+      const updates: Partial<MatchRecord> = {};
+      if (editHero !== (match.heroPlayed || "")) updates.heroPlayed = editHero || "Unknown";
+      if (editOppHero !== (match.opponentHero || "")) updates.opponentHero = editOppHero || undefined;
+      if (Object.keys(updates).length > 0) {
+        await onUpdateMatch(match.id, updates);
+      }
+      setEditing(false);
+    } finally {
+      setSaving(false);
+    }
+  }
 
   return (
     <div className={`${style.bg} border ${style.border} rounded-lg`}>
@@ -77,6 +108,60 @@ export function MatchCard({ match, matchOwnerUid, enableComments = false, obfusc
                 {roundBadge}
               </div>
             )}
+
+            {/* Hero info row */}
+            {(hasHero || hasOppHero) && !editing && (
+              <div className="flex items-center gap-1.5 mt-1">
+                {hasHero && heroInfo && (
+                  <div className="flex items-center gap-1">
+                    <HeroClassIcon heroClass={heroInfo.classes[0]} size="sm" />
+                    <span className="text-xs text-fab-muted">{match.heroPlayed}</span>
+                  </div>
+                )}
+                {hasHero && hasOppHero && (
+                  <span className="text-xs text-fab-dim">vs</span>
+                )}
+                {hasOppHero && oppHeroInfo && (
+                  <div className="flex items-center gap-1">
+                    <HeroClassIcon heroClass={oppHeroInfo.classes[0]} size="sm" />
+                    <span className="text-xs text-fab-muted">{match.opponentHero}</span>
+                  </div>
+                )}
+                {editable && onUpdateMatch && (
+                  <button
+                    onClick={() => {
+                      setEditHero(match.heroPlayed || "");
+                      setEditOppHero(match.opponentHero || "");
+                      setEditing(true);
+                    }}
+                    className="ml-1 text-fab-dim hover:text-fab-gold transition-colors"
+                    title="Edit heroes"
+                  >
+                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                    </svg>
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* Editable: show edit button when no hero set */}
+            {!hasHero && !hasOppHero && !editing && editable && onUpdateMatch && (
+              <button
+                onClick={() => {
+                  setEditHero("");
+                  setEditOppHero("");
+                  setEditing(true);
+                }}
+                className="flex items-center gap-1 mt-1 text-xs text-fab-dim hover:text-fab-gold transition-colors"
+              >
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                </svg>
+                Set hero
+              </button>
+            )}
+
             <div className="flex items-center gap-3 mt-1 text-xs text-fab-muted flex-wrap">
               <span>{new Date(match.date).toLocaleDateString()}</span>
               <span className="px-2 py-0.5 rounded bg-fab-surface text-fab-muted">
@@ -94,6 +179,32 @@ export function MatchCard({ match, matchOwnerUid, enableComments = false, obfusc
             {style.label}
           </span>
         </div>
+
+        {/* Inline hero edit */}
+        {editing && (
+          <div className="mt-3 pt-3 border-t border-fab-border/30 space-y-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <HeroSelect value={editHero} onChange={setEditHero} label="Your Hero" />
+              <HeroSelect value={editOppHero} onChange={setEditOppHero} label="Opponent's Hero" />
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleSaveHeroes}
+                disabled={saving}
+                className="px-3 py-1 rounded text-xs font-medium bg-fab-gold text-fab-bg hover:bg-fab-gold-light disabled:opacity-50 transition-colors"
+              >
+                {saving ? "Saving..." : "Save"}
+              </button>
+              <button
+                onClick={() => setEditing(false)}
+                disabled={saving}
+                className="px-3 py-1 rounded text-xs font-medium text-fab-muted hover:text-fab-text transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Comment toggle */}
         {enableComments && matchOwnerUid && (

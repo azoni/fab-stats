@@ -6,6 +6,7 @@ import {
   addMatchFirestore,
   updateMatchFirestore,
   deleteMatchFirestore,
+  batchUpdateMatchesFirestore,
 } from "@/lib/firestore-storage";
 import {
   getAllMatches,
@@ -85,11 +86,26 @@ export function useMatches() {
     [user, isGuest]
   );
 
+  const batchUpdateHero = useCallback(
+    async (matchIds: string[], heroPlayed: string) => {
+      if (isGuest) {
+        for (const id of matchIds) {
+          storageUpdateMatch(id, { heroPlayed });
+        }
+        setMatches(getAllMatches());
+        return;
+      }
+      if (!user) return;
+      await batchUpdateMatchesFirestore(user.uid, matchIds, { heroPlayed });
+    },
+    [user, isGuest]
+  );
+
   const refreshMatches = useCallback(() => {
     if (isGuest) {
       setMatches(getAllMatches());
     }
   }, [isGuest]);
 
-  return { matches, isLoaded, addMatch, deleteMatch, updateMatch, refreshMatches };
+  return { matches, isLoaded, addMatch, deleteMatch, updateMatch, batchUpdateHero, refreshMatches };
 }
