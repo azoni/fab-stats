@@ -24,6 +24,7 @@ import { useFavorites } from "@/hooks/useFavorites";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { NemesisCard, NEMESIS_THEMES, buildNemesisUrl, type NemesisTheme } from "@/components/opponents/NemesisCard";
+import { BestFinishCard, FINISH_THEMES, buildBestFinishUrl, type FinishTheme } from "@/components/profile/BestFinishCard";
 import { toBlob } from "html-to-image";
 import type { MatchRecord, UserProfile, Achievement } from "@/types";
 import { MatchResult } from "@/types";
@@ -54,6 +55,7 @@ export default function PlayerProfile() {
   const [showEventTypes, setShowEventTypes] = useState(false);
   const [showRecentMatches, setShowRecentMatches] = useState(false);
   const [nemesisShareOpen, setNemesisShareOpen] = useState(false);
+  const [bestFinishShareOpen, setBestFinishShareOpen] = useState(false);
 
   // Build set of opponent display names that have opted in to being visible
   const visibleOpponents = useMemo(() => {
@@ -437,12 +439,26 @@ export default function PlayerProfile() {
         />
         <StatCard label="Record" value={`${overall.totalWins}W - ${overall.totalLosses}L - ${overall.totalDraws}D${overall.totalByes > 0 ? ` - ${overall.totalByes}B` : ""}`} />
         {bestFinish ? (
-          <StatCard
-            label="Best Finish"
-            value={bestFinish.label}
-            subtext={bestFinish.eventName}
-            color="text-fab-gold"
-          />
+          <div className="relative group">
+            <StatCard
+              label="Best Finish"
+              value={bestFinish.label}
+              subtext={bestFinish.eventName}
+              color="text-fab-gold"
+            />
+            {isOwner && (
+              <button
+                onClick={() => setBestFinishShareOpen(true)}
+                className="absolute top-2 right-2 flex items-center gap-1 px-1.5 py-0.5 rounded text-fab-dim hover:text-fab-gold hover:bg-fab-gold/10 transition-colors opacity-0 group-hover:opacity-100"
+                title="Share best finish"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 8.25H7.5a2.25 2.25 0 00-2.25 2.25v9a2.25 2.25 0 002.25 2.25h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25H15m0-3l-3-3m0 0l-3 3m3-3v11.25" />
+                </svg>
+                <span className="text-[9px] font-semibold uppercase tracking-wider">Share</span>
+              </button>
+            )}
+          </div>
         ) : (
           <StatCard label="Events" value={eventStats.length} />
         )}
@@ -484,12 +500,13 @@ export default function PlayerProfile() {
                 {isOwner && (
                   <button
                     onClick={() => setNemesisShareOpen(true)}
-                    className="ml-auto text-fab-dim hover:text-fab-loss transition-colors"
+                    className="ml-auto flex items-center gap-1 px-2 py-1 rounded-md text-fab-dim hover:text-fab-loss hover:bg-fab-loss/10 transition-colors"
                     title="Share nemesis card"
                   >
-                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M9 8.25H7.5a2.25 2.25 0 00-2.25 2.25v9a2.25 2.25 0 002.25 2.25h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25H15m0-3l-3-3m0 0l-3 3m3-3v11.25" />
                     </svg>
+                    <span className="text-[10px] font-semibold uppercase tracking-wider">Share</span>
                   </button>
                 )}
               </div>
@@ -528,6 +545,18 @@ export default function PlayerProfile() {
             .slice(0, 20)
             .map((m) => m.result)}
           onClose={() => setNemesisShareOpen(false)}
+        />
+      )}
+
+      {/* Best finish share modal */}
+      {bestFinishShareOpen && bestFinish && (
+        <BestFinishShareModal
+          playerName={profile.displayName}
+          bestFinish={bestFinish}
+          totalMatches={overall.totalMatches}
+          winRate={overall.overallWinRate}
+          topHero={heroStats.length > 0 ? heroStats[0].heroName : undefined}
+          onClose={() => setBestFinishShareOpen(false)}
         />
       )}
 
@@ -707,6 +736,22 @@ function ProfileHeader({ profile, achievements, bestRank, isAdmin, isOwner, isFa
               </svg>
             )}
           </button>
+          {isOwner && (
+            <button
+              onClick={() => {
+                const url = `${window.location.origin}/player/${profile.username}`;
+                const text = `Check out my Flesh and Blood stats on FaB Stats (Beta)!\n\n${url}`;
+                window.open(`https://x.com/intent/tweet?text=${encodeURIComponent(text)}`, "_blank", "noopener,noreferrer");
+              }}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-fab-surface border border-fab-border text-fab-dim hover:text-fab-text hover:border-fab-muted transition-colors"
+              title="Share on X"
+            >
+              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+              </svg>
+              <span className="text-xs font-semibold">Post</span>
+            </button>
+          )}
         </div>
         <p className="text-sm text-fab-dim mb-1">@{profile.username}</p>
         {achievements && achievements.length > 0 && <AchievementBadges earned={achievements} max={4} />}
@@ -1008,6 +1053,140 @@ function NemesisShareModal({
             onClick={handleCopy}
             disabled={shareStatus === "sharing"}
             className="w-full py-2.5 rounded-lg text-sm font-semibold bg-fab-loss text-white hover:bg-fab-loss/80 transition-colors disabled:opacity-50"
+          >
+            {shareStatus === "sharing" ? "Capturing..." : shareStatus === "copied" ? "Copied!" : "Copy Image"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function BestFinishShareModal({
+  playerName,
+  bestFinish,
+  totalMatches,
+  winRate,
+  topHero,
+  onClose,
+}: {
+  playerName: string;
+  bestFinish: { label: string; eventName: string; eventDate: string };
+  totalMatches: number;
+  winRate: number;
+  topHero?: string;
+  onClose: () => void;
+}) {
+  const cardRef = useRef<HTMLDivElement>(null);
+  const [selectedTheme, setSelectedTheme] = useState(FINISH_THEMES[0]);
+  const [shareStatus, setShareStatus] = useState<"idle" | "copied" | "sharing">("idle");
+
+  const finishData = {
+    playerName,
+    finishLabel: bestFinish.label,
+    eventName: bestFinish.eventName,
+    eventDate: bestFinish.eventDate,
+    totalMatches,
+    winRate,
+    topHero,
+  };
+
+  async function handleCopy() {
+    const url = buildBestFinishUrl(
+      window.location.origin,
+      playerName,
+      bestFinish.label,
+      bestFinish.eventName,
+      bestFinish.eventDate,
+      totalMatches,
+      winRate,
+      topHero,
+    );
+    const shareText = `${playerName} — ${bestFinish.label} at ${bestFinish.eventName}\n${url}`;
+
+    setShareStatus("sharing");
+    try {
+      const blob = cardRef.current
+        ? await toBlob(cardRef.current, { pixelRatio: 2, backgroundColor: selectedTheme.bg })
+        : null;
+
+      const isMobile = "ontouchstart" in window || navigator.maxTouchPoints > 0;
+      if (isMobile && blob && navigator.share && navigator.canShare?.({ files: [new File([blob], "best-finish.png", { type: "image/png" })] })) {
+        const file = new File([blob], "best-finish.png", { type: "image/png" });
+        await navigator.share({ title: "FaB Stats — Best Finish", text: shareText, files: [file] });
+      } else if (blob && navigator.clipboard?.write) {
+        await navigator.clipboard.write([
+          new ClipboardItem({ "image/png": blob }),
+        ]);
+        setShareStatus("copied");
+        setTimeout(() => { setShareStatus("idle"); onClose(); }, 1500);
+        return;
+      } else {
+        await navigator.clipboard.writeText(url);
+        setShareStatus("copied");
+        setTimeout(() => { setShareStatus("idle"); onClose(); }, 1500);
+        return;
+      }
+    } catch {
+      try {
+        const url2 = buildBestFinishUrl(window.location.origin, playerName, bestFinish.label, bestFinish.eventName, bestFinish.eventDate, totalMatches, winRate, topHero);
+        await navigator.clipboard.writeText(url2);
+      } catch { /* ignore */ }
+    }
+    setShareStatus("idle");
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
+      <div className="bg-fab-surface border border-fab-border rounded-xl max-w-lg w-full mx-4 overflow-hidden" onClick={(e) => e.stopPropagation()}>
+        {/* Modal header */}
+        <div className="flex items-center justify-between px-4 py-3 border-b border-fab-border">
+          <h3 className="text-sm font-semibold text-fab-text">Share Best Finish</h3>
+          <button onClick={onClose} className="text-fab-muted hover:text-fab-text transition-colors">
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Card preview */}
+        <div className="p-4 flex justify-center overflow-x-auto">
+          <div ref={cardRef}>
+            <BestFinishCard data={finishData} theme={selectedTheme} />
+          </div>
+        </div>
+
+        {/* Theme picker */}
+        <div className="px-4 pb-3">
+          <p className="text-[10px] text-fab-muted uppercase tracking-wider font-medium mb-2">Theme</p>
+          <div className="flex gap-2">
+            {FINISH_THEMES.map((theme) => (
+              <button
+                key={theme.id}
+                onClick={() => setSelectedTheme(theme)}
+                className={`flex-1 rounded-lg p-2 text-center transition-all border ${
+                  selectedTheme.id === theme.id
+                    ? "border-fab-gold ring-1 ring-fab-gold/30"
+                    : "border-fab-border hover:border-fab-muted"
+                }`}
+              >
+                <div className="flex gap-0.5 justify-center mb-1">
+                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: theme.bg }} />
+                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: theme.accent }} />
+                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: theme.trophy }} />
+                </div>
+                <p className="text-[10px] text-fab-muted">{theme.label}</p>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Copy button */}
+        <div className="px-4 pb-4">
+          <button
+            onClick={handleCopy}
+            disabled={shareStatus === "sharing"}
+            className="w-full py-2.5 rounded-lg text-sm font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors disabled:opacity-50"
           >
             {shareStatus === "sharing" ? "Capturing..." : shareStatus === "copied" ? "Copied!" : "Copy Image"}
           </button>
