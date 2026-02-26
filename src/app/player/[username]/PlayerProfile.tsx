@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useMemo, Fragment } from "react";
+import { useState, useEffect, useMemo, useRef, Fragment } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { getProfileByUsername, getMatchesByUserId } from "@/lib/firestore-storage";
@@ -23,6 +23,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useFavorites } from "@/hooks/useFavorites";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase";
+import { NemesisCard, NEMESIS_THEMES, buildNemesisUrl, type NemesisTheme } from "@/components/opponents/NemesisCard";
+import { toBlob } from "html-to-image";
 import type { MatchRecord, UserProfile, Achievement } from "@/types";
 import { MatchResult } from "@/types";
 import { allHeroes as knownHeroes } from "@/lib/heroes";
@@ -51,6 +53,7 @@ export default function PlayerProfile() {
   const [showVenues, setShowVenues] = useState(false);
   const [showEventTypes, setShowEventTypes] = useState(false);
   const [showRecentMatches, setShowRecentMatches] = useState(false);
+  const [nemesisShareOpen, setNemesisShareOpen] = useState(false);
 
   // Build set of opponent display names that have opted in to being visible
   const visibleOpponents = useMemo(() => {
@@ -478,6 +481,17 @@ export default function PlayerProfile() {
                   <path d="M8 16c1.5-1.5 4.5-1.5 6 0" fill="none" />
                 </svg>
                 <span className="text-xs text-fab-muted uppercase tracking-wider">Nemesis</span>
+                {isOwner && (
+                  <button
+                    onClick={() => setNemesisShareOpen(true)}
+                    className="ml-auto text-fab-dim hover:text-fab-loss transition-colors"
+                    title="Share nemesis card"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 8.25H7.5a2.25 2.25 0 00-2.25 2.25v9a2.25 2.25 0 002.25 2.25h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25H15m0-3l-3-3m0 0l-3 3m3-3v11.25" />
+                    </svg>
+                  </button>
+                )}
               </div>
               <p className="font-bold text-fab-loss truncate">{nemesis.opponentName}</p>
               <p className="text-xs text-fab-dim mt-1">
@@ -502,6 +516,19 @@ export default function PlayerProfile() {
             </div>
           )}
         </div>
+      )}
+
+      {/* Nemesis share modal */}
+      {nemesisShareOpen && nemesis && (
+        <NemesisShareModal
+          playerName={profile.displayName}
+          nemesis={nemesis}
+          recentResults={nemesis.matches
+            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+            .slice(0, 20)
+            .map((m) => m.result)}
+          onClose={() => setNemesisShareOpen(false)}
+        />
       )}
 
       {/* Recent Events */}
@@ -856,6 +883,136 @@ function StatCard({ label, value, color = "text-fab-text", subtext, subtextColor
       <p className="text-xs text-fab-muted mb-1">{label}</p>
       <p className={`text-2xl font-bold ${color}`}>{value}</p>
       {subtext && <p className={`text-[10px] mt-0.5 truncate ${subtextColor || "text-fab-dim"}`}>{subtext}</p>}
+    </div>
+  );
+}
+
+function NemesisShareModal({
+  playerName,
+  nemesis,
+  recentResults,
+  onClose,
+}: {
+  playerName: string;
+  nemesis: { opponentName: string; wins: number; losses: number; draws: number; winRate: number; totalMatches: number };
+  recentResults: MatchResult[];
+  onClose: () => void;
+}) {
+  const cardRef = useRef<HTMLDivElement>(null);
+  const [selectedTheme, setSelectedTheme] = useState(NEMESIS_THEMES[0]);
+  const [shareStatus, setShareStatus] = useState<"idle" | "copied" | "sharing">("idle");
+
+  const nemesisData = {
+    playerName,
+    nemesisName: nemesis.opponentName,
+    wins: nemesis.wins,
+    losses: nemesis.losses,
+    draws: nemesis.draws,
+    winRate: nemesis.winRate,
+    matches: nemesis.totalMatches,
+    recentResults,
+  };
+
+  async function handleCopy() {
+    const url = buildNemesisUrl(
+      window.location.origin,
+      playerName,
+      nemesis.opponentName,
+      nemesis.wins,
+      nemesis.losses,
+      nemesis.draws,
+      recentResults,
+    );
+    const shareText = `${playerName}'s nemesis: ${nemesis.opponentName} (${nemesis.wins}W-${nemesis.losses}L${nemesis.draws > 0 ? `-${nemesis.draws}D` : ""}, ${nemesis.winRate.toFixed(0)}%)\n${url}`;
+
+    setShareStatus("sharing");
+    try {
+      const blob = cardRef.current
+        ? await toBlob(cardRef.current, { pixelRatio: 2, backgroundColor: selectedTheme.bg })
+        : null;
+
+      const isMobile = "ontouchstart" in window || navigator.maxTouchPoints > 0;
+      if (isMobile && blob && navigator.share && navigator.canShare?.({ files: [new File([blob], "nemesis.png", { type: "image/png" })] })) {
+        const file = new File([blob], "nemesis.png", { type: "image/png" });
+        await navigator.share({ title: "FaB Stats — Nemesis", text: shareText, files: [file] });
+      } else if (blob && navigator.clipboard?.write) {
+        await navigator.clipboard.write([
+          new ClipboardItem({ "image/png": blob }),
+        ]);
+        setShareStatus("copied");
+        setTimeout(() => { setShareStatus("idle"); onClose(); }, 1500);
+        return;
+      } else {
+        await navigator.clipboard.writeText(url);
+        setShareStatus("copied");
+        setTimeout(() => { setShareStatus("idle"); onClose(); }, 1500);
+        return;
+      }
+    } catch {
+      try {
+        const url2 = buildNemesisUrl(window.location.origin, playerName, nemesis.opponentName, nemesis.wins, nemesis.losses, nemesis.draws, recentResults);
+        await navigator.clipboard.writeText(url2);
+      } catch { /* ignore */ }
+    }
+    setShareStatus("idle");
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
+      <div className="bg-fab-surface border border-fab-border rounded-xl max-w-lg w-full mx-4 overflow-hidden" onClick={(e) => e.stopPropagation()}>
+        {/* Modal header */}
+        <div className="flex items-center justify-between px-4 py-3 border-b border-fab-border">
+          <h3 className="text-sm font-semibold text-fab-text">Share Nemesis Card</h3>
+          <button onClick={onClose} className="text-fab-muted hover:text-fab-text transition-colors">
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Card preview */}
+        <div className="p-4 flex justify-center overflow-x-auto">
+          <div ref={cardRef}>
+            <NemesisCard data={nemesisData} theme={selectedTheme} />
+          </div>
+        </div>
+
+        {/* Theme picker */}
+        <div className="px-4 pb-3">
+          <p className="text-[10px] text-fab-muted uppercase tracking-wider font-medium mb-2">Theme</p>
+          <div className="flex gap-2">
+            {NEMESIS_THEMES.map((theme) => (
+              <button
+                key={theme.id}
+                onClick={() => setSelectedTheme(theme)}
+                className={`flex-1 rounded-lg p-2 text-center transition-all border ${
+                  selectedTheme.id === theme.id
+                    ? "border-fab-loss ring-1 ring-fab-loss/30"
+                    : "border-fab-border hover:border-fab-muted"
+                }`}
+              >
+                <div className="flex gap-0.5 justify-center mb-1">
+                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: theme.bg }} />
+                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: theme.accent }} />
+                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: theme.loss }} />
+                </div>
+                <p className="text-[10px] text-fab-muted">{theme.label}</p>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Copy button */}
+        <div className="px-4 pb-4">
+          <button
+            onClick={handleCopy}
+            disabled={shareStatus === "sharing"}
+            className="w-full py-2.5 rounded-lg text-sm font-semibold bg-fab-loss text-white hover:bg-fab-loss/80 transition-colors disabled:opacity-50"
+          >
+            {shareStatus === "sharing" ? "Capturing..." : shareStatus === "copied" ? "Copied!" : "Copy Image"}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
