@@ -7,7 +7,7 @@ import {
   where,
 } from "firebase/firestore";
 import { db } from "./firebase";
-import { computeOverallStats, computeEventStats, computeOpponentStats, getEventType } from "./stats";
+import { computeOverallStats, computeEventStats, computeOpponentStats, computePlayoffFinishes, getEventType } from "./stats";
 import type { LeaderboardEntry, MatchRecord, UserProfile } from "@/types";
 import { MatchResult } from "@/types";
 
@@ -138,6 +138,14 @@ export async function updateLeaderboardEntry(
   const armoryWins = armoryMatchList.filter((m) => m.result === MatchResult.Win).length;
   const armoryEvents = events.filter((e) => e.eventType === "Armory").length;
 
+  // Playoff finishes (top 8+)
+  const playoffFinishes = computePlayoffFinishes(events);
+  const totalTop8s = playoffFinishes.length;
+  const top8sByEventType: Record<string, number> = {};
+  for (const f of playoffFinishes) {
+    top8sByEventType[f.eventType] = (top8sByEventType[f.eventType] || 0) + 1;
+  }
+
   const entry: Omit<LeaderboardEntry, never> = {
     userId: profile.uid,
     username: profile.username,
@@ -180,6 +188,8 @@ export async function updateLeaderboardEntry(
     showNameOnProfiles: profile.showNameOnProfiles ?? false,
     heroBreakdown,
     heroBreakdownDetailed,
+    totalTop8s,
+    top8sByEventType,
     createdAt: profile.createdAt,
     updatedAt: new Date().toISOString(),
   };

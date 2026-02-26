@@ -12,7 +12,7 @@ import type { LeaderboardEntry, OpponentStats } from "@/types";
 
 const SITE_CREATOR = "azoni";
 
-type Tab = "winrate" | "volume" | "mostwins" | "streaks" | "draws" | "drawrate" | "byes" | "byerate" | "events" | "eventgrinder" | "rated" | "heroes" | "dedication" | "loyaltyrate" | "hotstreak" | "weeklymatches" | "weeklywins" | "monthlymatches" | "monthlywins" | "monthlywinrate" | "earnings" | "armorywinrate" | "armoryattendance" | "armorymatches";
+type Tab = "winrate" | "volume" | "mostwins" | "streaks" | "draws" | "drawrate" | "byes" | "byerate" | "events" | "eventgrinder" | "rated" | "heroes" | "dedication" | "loyaltyrate" | "hotstreak" | "weeklymatches" | "weeklywins" | "monthlymatches" | "monthlywins" | "monthlywinrate" | "earnings" | "armorywinrate" | "armoryattendance" | "armorymatches" | "top8s" | "top8s_armory" | "top8s_skirmish" | "top8s_pq" | "top8s_bh" | "top8s_rtn" | "top8s_calling" | "top8s_nationals";
 
 const tabs: { id: Tab; label: string; description: string }[] = [
   { id: "winrate", label: "Win Rate", description: "Highest overall win percentage. Requires 100+ matches." },
@@ -35,11 +35,34 @@ const tabs: { id: Tab; label: string; description: string }[] = [
   { id: "armorywinrate", label: "Armory Win %", description: "Highest win rate at Armory events. Requires 5+ matches." },
   { id: "armoryattendance", label: "Armory Attendance", description: "Most Armory events attended." },
   { id: "armorymatches", label: "Armory Matches", description: "Most matches played at Armory events." },
+  { id: "top8s", label: "Top 8s", description: "Most playoff finishes (Top 8 or better) across all events." },
+  { id: "top8s_armory", label: "Armory Top 8s", description: "Most Top 8+ finishes at Armory events." },
+  { id: "top8s_skirmish", label: "Skirmish Top 8s", description: "Most Top 8+ finishes at Skirmish events." },
+  { id: "top8s_pq", label: "PQ Top 8s", description: "Most Top 8+ finishes at ProQuest events." },
+  { id: "top8s_bh", label: "BH Top 8s", description: "Most Top 8+ finishes at Battle Hardened events." },
+  { id: "top8s_rtn", label: "RTN Top 8s", description: "Most Top 8+ finishes at Road to Nationals events." },
+  { id: "top8s_calling", label: "Calling Top 8s", description: "Most Top 8+ finishes at The Calling events." },
+  { id: "top8s_nationals", label: "Nationals Top 8s", description: "Most Top 8+ finishes at Nationals events." },
   { id: "draws", label: "Draws", description: "Most draws of all time." },
   { id: "drawrate", label: "Draw %", description: "Highest draw rate. Requires 10+ matches." },
   { id: "byes", label: "Byes", description: "Most byes received." },
   { id: "byerate", label: "Bye %", description: "Highest bye rate. Requires 10+ matches." },
 ];
+
+const TOP8_EVENT_TYPE_MAP: Record<string, string> = {
+  top8s_armory: "Armory",
+  top8s_skirmish: "Skirmish",
+  top8s_pq: "ProQuest",
+  top8s_bh: "Battle Hardened",
+  top8s_rtn: "Road to Nationals",
+  top8s_calling: "The Calling",
+  top8s_nationals: "Nationals",
+};
+
+function getTop8Count(entry: LeaderboardEntry, eventType?: string): number {
+  if (!eventType) return entry.totalTop8s ?? 0;
+  return entry.top8sByEventType?.[eventType] ?? 0;
+}
 
 function formatRate(rate: number): string {
   return `${rate.toFixed(1)}%`;
@@ -178,6 +201,22 @@ export default function LeaderboardPage() {
             const bRate = ((b.totalByes ?? 0) / b.totalMatches) * 100;
             return bRate - aRate || (b.totalByes ?? 0) - (a.totalByes ?? 0);
           });
+      case "top8s":
+        return [...entries]
+          .filter((e) => (e.totalTop8s ?? 0) > 0)
+          .sort((a, b) => (b.totalTop8s ?? 0) - (a.totalTop8s ?? 0) || b.eventWins - a.eventWins);
+      case "top8s_armory":
+      case "top8s_skirmish":
+      case "top8s_pq":
+      case "top8s_bh":
+      case "top8s_rtn":
+      case "top8s_calling":
+      case "top8s_nationals": {
+        const eventType = TOP8_EVENT_TYPE_MAP[activeTab];
+        return [...entries]
+          .filter((e) => getTop8Count(e, eventType) > 0)
+          .sort((a, b) => getTop8Count(b, eventType) - getTop8Count(a, eventType) || (b.totalTop8s ?? 0) - (a.totalTop8s ?? 0));
+      }
       default:
         return entries;
     }
@@ -252,7 +291,9 @@ export default function LeaderboardPage() {
                                   ? "Players need at least 10 matches and 1 bye to appear here."
                                   : activeTab === "loyaltyrate"
                                     ? "Players need at least 20 matches to appear here."
-                                    : "Import matches to appear on the leaderboard."}
+                                    : activeTab.startsWith("top8s")
+                                      ? "No players have Top 8 finishes in this category yet."
+                                      : "Import matches to appear on the leaderboard."}
           </p>
         </div>
       )}
@@ -580,6 +621,18 @@ function LeaderboardRow({
             <p className="text-xs text-fab-dim">
               {entry.totalByes ?? 0} byes in {entry.totalMatches} matches
             </p>
+          </>
+        )}
+        {tab === "top8s" && (
+          <>
+            <p className="text-lg font-bold text-fab-gold">{entry.totalTop8s ?? 0}</p>
+            <p className="text-xs text-fab-dim">playoff finishes</p>
+          </>
+        )}
+        {tab.startsWith("top8s_") && TOP8_EVENT_TYPE_MAP[tab] && (
+          <>
+            <p className="text-lg font-bold text-fab-gold">{getTop8Count(entry, TOP8_EVENT_TYPE_MAP[tab])}</p>
+            <p className="text-xs text-fab-dim">{(entry.totalTop8s ?? 0)} total Top 8s</p>
           </>
         )}
       </div>

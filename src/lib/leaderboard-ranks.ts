@@ -159,6 +159,54 @@ const RANK_TABS: RankTab[] = [
       return bRate - aRate || (b.totalByes ?? 0) - (a.totalByes ?? 0);
     },
   },
+  {
+    id: "top8s",
+    label: "Top 8s",
+    filter: (e) => (e.totalTop8s ?? 0) > 0,
+    sort: (a, b) => (b.totalTop8s ?? 0) - (a.totalTop8s ?? 0) || b.eventWins - a.eventWins,
+  },
+  {
+    id: "top8s_armory",
+    label: "Armory Top 8s",
+    filter: (e) => (e.top8sByEventType?.["Armory"] ?? 0) > 0,
+    sort: (a, b) => (b.top8sByEventType?.["Armory"] ?? 0) - (a.top8sByEventType?.["Armory"] ?? 0) || (b.totalTop8s ?? 0) - (a.totalTop8s ?? 0),
+  },
+  {
+    id: "top8s_skirmish",
+    label: "Skirmish Top 8s",
+    filter: (e) => (e.top8sByEventType?.["Skirmish"] ?? 0) > 0,
+    sort: (a, b) => (b.top8sByEventType?.["Skirmish"] ?? 0) - (a.top8sByEventType?.["Skirmish"] ?? 0) || (b.totalTop8s ?? 0) - (a.totalTop8s ?? 0),
+  },
+  {
+    id: "top8s_pq",
+    label: "PQ Top 8s",
+    filter: (e) => (e.top8sByEventType?.["ProQuest"] ?? 0) > 0,
+    sort: (a, b) => (b.top8sByEventType?.["ProQuest"] ?? 0) - (a.top8sByEventType?.["ProQuest"] ?? 0) || (b.totalTop8s ?? 0) - (a.totalTop8s ?? 0),
+  },
+  {
+    id: "top8s_bh",
+    label: "BH Top 8s",
+    filter: (e) => (e.top8sByEventType?.["Battle Hardened"] ?? 0) > 0,
+    sort: (a, b) => (b.top8sByEventType?.["Battle Hardened"] ?? 0) - (a.top8sByEventType?.["Battle Hardened"] ?? 0) || (b.totalTop8s ?? 0) - (a.totalTop8s ?? 0),
+  },
+  {
+    id: "top8s_rtn",
+    label: "RTN Top 8s",
+    filter: (e) => (e.top8sByEventType?.["Road to Nationals"] ?? 0) > 0,
+    sort: (a, b) => (b.top8sByEventType?.["Road to Nationals"] ?? 0) - (a.top8sByEventType?.["Road to Nationals"] ?? 0) || (b.totalTop8s ?? 0) - (a.totalTop8s ?? 0),
+  },
+  {
+    id: "top8s_calling",
+    label: "Calling Top 8s",
+    filter: (e) => (e.top8sByEventType?.["The Calling"] ?? 0) > 0,
+    sort: (a, b) => (b.top8sByEventType?.["The Calling"] ?? 0) - (a.top8sByEventType?.["The Calling"] ?? 0) || (b.totalTop8s ?? 0) - (a.totalTop8s ?? 0),
+  },
+  {
+    id: "top8s_nationals",
+    label: "Nationals Top 8s",
+    filter: (e) => (e.top8sByEventType?.["Nationals"] ?? 0) > 0,
+    sort: (a, b) => (b.top8sByEventType?.["Nationals"] ?? 0) - (a.top8sByEventType?.["Nationals"] ?? 0) || (b.totalTop8s ?? 0) - (a.totalTop8s ?? 0),
+  },
 ];
 
 export function computeUserRanks(entries: LeaderboardEntry[], userId: string): LeaderboardRank[] {

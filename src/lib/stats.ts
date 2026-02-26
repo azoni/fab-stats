@@ -439,9 +439,16 @@ function isPlayoffRound(roundInfo: string): boolean {
     /Finals?$/i.test(roundInfo) ||
     /Semi/i.test(roundInfo) ||
     /Playoff/i.test(roundInfo) ||
-    /Quarter/i.test(roundInfo) ||
-    /Skirmish/i.test(roundInfo);
+    /Quarter/i.test(roundInfo);
 }
+
+/** Event types that are always competitive and should appear in the playoff table
+ *  even if no explicit playoff rounds (Top 8, Finals, etc.) are detected. */
+const COMPETITIVE_EVENT_TYPES = new Set([
+  "ProQuest", "Road to Nationals", "Skirmish",
+  "Battle Hardened", "The Calling",
+  "Pro Tour", "Nationals", "Worlds", "Championship",
+]);
 
 export function computePlayoffFinishes(eventStats: EventStats[]): PlayoffFinish[] {
   const finishes: PlayoffFinish[] = [];
@@ -456,28 +463,39 @@ export function computePlayoffFinishes(eventStats: EventStats[]): PlayoffFinish[
       }
     }
 
-    if (playoffMatches.length === 0) continue;
-
-    const playoffWins = playoffMatches.filter((m) => m.result === MatchResult.Win).length;
-    const playoffLosses = playoffMatches.filter((m) => m.result === MatchResult.Loss).length;
+    // Use refined event type for accurate tier grouping
+    const refinedEventType = refineEventType(event.eventType || "Other", event.eventName);
 
     let finishType: PlayoffFinish["type"];
 
-    // No losses in playoffs = won the whole bracket
-    if (playoffLosses === 0 && playoffWins > 0) {
-      finishType = "champion";
-    } else if (playoffWins >= 3) {
-      finishType = "champion";
-    } else if (playoffWins === 2) {
-      finishType = "finalist";
-    } else if (playoffWins === 1) {
-      finishType = "top4";
-    } else {
-      finishType = "top8";
-    }
+    if (playoffMatches.length === 0) {
+      // No explicit playoff rounds — include known competitive events based on overall record
+      if (!COMPETITIVE_EVENT_TYPES.has(refinedEventType)) continue;
 
-    // Use refined event type for accurate tier grouping
-    const refinedEventType = refineEventType(event.eventType || "Other", event.eventName);
+      if (event.losses === 0 && event.wins > 0) {
+        finishType = "champion";
+      } else if (event.losses <= 1 && event.wins >= 3) {
+        finishType = "finalist";
+      } else {
+        finishType = "top8";
+      }
+    } else {
+      const playoffWins = playoffMatches.filter((m) => m.result === MatchResult.Win).length;
+      const playoffLosses = playoffMatches.filter((m) => m.result === MatchResult.Loss).length;
+
+      // No losses in playoffs = won the whole bracket
+      if (playoffLosses === 0 && playoffWins > 0) {
+        finishType = "champion";
+      } else if (playoffWins >= 3) {
+        finishType = "champion";
+      } else if (playoffWins === 2) {
+        finishType = "finalist";
+      } else if (playoffWins === 1) {
+        finishType = "top4";
+      } else {
+        finishType = "top8";
+      }
+    }
 
     finishes.push({
       type: finishType,
