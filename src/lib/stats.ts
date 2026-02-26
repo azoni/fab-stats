@@ -110,7 +110,10 @@ export function computeStreaks(sortedMatches: MatchRecord[]): StreakInfo {
       currentLossStreak++;
       currentWinStreak = 0;
       longestLossStreak = Math.max(longestLossStreak, currentLossStreak);
+    } else if (match.result === MatchResult.Bye) {
+      // Byes are skipped — they don't break or extend streaks
     } else {
+      // Draws break streaks
       currentWinStreak = 0;
       currentLossStreak = 0;
     }

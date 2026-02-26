@@ -65,6 +65,8 @@ export async function updateLeaderboardEntry(
     if (m.result === MatchResult.Win) {
       currentRatedStreak++;
       ratedWinStreak = Math.max(ratedWinStreak, currentRatedStreak);
+    } else if (m.result === MatchResult.Bye) {
+      // Byes don't break or extend streaks
     } else {
       currentRatedStreak = 0;
     }

@@ -63,8 +63,8 @@ export default function DocsPage() {
               your win streak and loss streak to zero.
             </p>
             <p>
-              <span className="font-medium text-fab-text">Byes break streaks</span> — Byes are treated
-              the same as draws for streak purposes. They do not extend a win streak.
+              <span className="font-medium text-fab-text">Byes are ignored</span> — Byes don&apos;t count
+              as a win and don&apos;t break your streak. They&apos;re skipped entirely in streak calculations.
             </p>
           </div>
           <p className="text-xs text-fab-dim mt-2">
