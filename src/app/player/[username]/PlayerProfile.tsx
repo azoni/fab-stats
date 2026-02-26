@@ -601,6 +601,7 @@ export default function PlayerProfile() {
 }
 
 function ProfileHeader({ profile, achievements, bestRank, isAdmin, isOwner, isFavorited, onToggleFavorite }: { profile: UserProfile; achievements?: Achievement[]; bestRank?: 1 | 2 | 3 | 4 | 5 | null; isAdmin?: boolean; isOwner?: boolean; isFavorited?: boolean; onToggleFavorite?: () => void }) {
+  const [linkCopied, setLinkCopied] = useState(false);
   const ringClass = bestRank === 1 ? "rank-border-grandmaster" : bestRank === 2 ? "rank-border-diamond" : bestRank === 3 ? "rank-border-gold" : bestRank === 4 ? "rank-border-silver" : bestRank === 5 ? "rank-border-bronze" : "";
   const isCreator = profile.username === "azoni";
   return (
@@ -633,6 +634,28 @@ function ProfileHeader({ profile, achievements, bestRank, isAdmin, isOwner, isFa
               </svg>
             </button>
           )}
+          <button
+            onClick={async () => {
+              const url = `${window.location.origin}/player/${profile.username}`;
+              try {
+                await navigator.clipboard.writeText(url);
+                setLinkCopied(true);
+                setTimeout(() => setLinkCopied(false), 2000);
+              } catch {}
+            }}
+            className="p-1 rounded transition-colors hover:bg-fab-surface"
+            title="Copy profile link"
+          >
+            {linkCopied ? (
+              <svg className="w-5 h-5 text-fab-win" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+            ) : (
+              <svg className="w-5 h-5 text-fab-dim hover:text-fab-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m9.86-2.54a4.5 4.5 0 00-1.242-7.244l-4.5-4.5a4.5 4.5 0 00-6.364 6.364L4.34 8.798" />
+              </svg>
+            )}
+          </button>
         </div>
         <p className="text-sm text-fab-dim mb-1">@{profile.username}</p>
         {achievements && achievements.length > 0 && <AchievementBadges earned={achievements} max={4} />}
