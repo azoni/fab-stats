@@ -22,7 +22,7 @@ export default function AdminPage() {
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [expandedUid, setExpandedUid] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<FeedbackItem[]>([]);
-  const [feedbackFilter, setFeedbackFilter] = useState<"all" | "new" | "reviewed" | "done">("all");
+  const [feedbackFilter, setFeedbackFilter] = useState<"all" | "new" | "reviewed" | "done">("new");
   const [usersExpanded, setUsersExpanded] = useState(false);
   const [backfilling, setBackfilling] = useState(false);
   const [backfillProgress, setBackfillProgress] = useState("");

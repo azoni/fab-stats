@@ -170,6 +170,7 @@ export async function updateLeaderboardEntry(
     showNameOnProfiles: profile.showNameOnProfiles ?? false,
     heroBreakdown,
     heroBreakdownDetailed,
+    createdAt: profile.createdAt,
     updatedAt: new Date().toISOString(),
   };
 

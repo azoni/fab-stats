@@ -96,56 +96,67 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     leaderboardMap.set(d.id, d.data());
   }
 
-  // Step 2: Fetch each profile (no more per-user getCountFromServer!)
-  // Match counts come from leaderboard entries instead.
+  // Step 2: Build user stats from leaderboard data (no per-user profile fetches!)
+  // Only fetch profiles for users WITHOUT leaderboard entries.
   const users: AdminUserStats[] = [];
   let totalMatches = 0;
+  const usersNeedingProfile: { username: string; userId: string }[] = [];
 
-  const results = await Promise.allSettled(
-    userEntries.map(async ({ username, userId }) => {
-      const profileSnap = await getDoc(doc(db, "users", userId, "profile", "main"));
-
-      // Use leaderboard totalMatches instead of aggregation query
-      const lb = leaderboardMap.get(userId);
-      const matchCount = lb ? (lb.totalMatches as number) || 0 : 0;
+  for (const { username, userId } of userEntries) {
+    const lb = leaderboardMap.get(userId);
+    if (lb) {
+      const matchCount = (lb.totalMatches as number) || 0;
       totalMatches += matchCount;
+      users.push({
+        uid: userId,
+        username: (lb.username as string) || username,
+        displayName: (lb.displayName as string) || username,
+        photoUrl: lb.photoUrl as string | undefined,
+        createdAt: (lb.createdAt as string) || (lb.updatedAt as string) || "",
+        isPublic: (lb.isPublic as boolean) ?? true,
+        matchCount,
+        winRate: lb.winRate as number,
+        totalWins: lb.totalWins as number,
+        totalLosses: lb.totalLosses as number,
+        totalDraws: lb.totalDraws as number,
+        longestWinStreak: lb.longestWinStreak as number,
+        currentStreakType: lb.currentStreakType as "win" | "loss" | null,
+        currentStreakCount: lb.currentStreakCount as number,
+        topHero: lb.topHero as string,
+        topHeroMatches: lb.topHeroMatches as number,
+        eventsPlayed: lb.eventsPlayed as number,
+        eventWins: lb.eventWins as number,
+        ratedMatches: lb.ratedMatches as number,
+        ratedWinRate: lb.ratedWinRate as number,
+        updatedAt: lb.updatedAt as string,
+      });
+    } else {
+      usersNeedingProfile.push({ username, userId });
+    }
+  }
 
-      if (profileSnap.exists()) {
-        const profile = profileSnap.data() as UserProfile;
-        const stats: AdminUserStats = {
-          uid: profile.uid,
-          username: profile.username || username,
-          displayName: profile.displayName,
-          photoUrl: profile.photoUrl,
-          createdAt: profile.createdAt,
-          isPublic: profile.isPublic,
-          matchCount,
-        };
-        if (lb) {
-          stats.winRate = lb.winRate as number;
-          stats.totalWins = lb.totalWins as number;
-          stats.totalLosses = lb.totalLosses as number;
-          stats.totalDraws = lb.totalDraws as number;
-          stats.longestWinStreak = lb.longestWinStreak as number;
-          stats.currentStreakType = lb.currentStreakType as "win" | "loss" | null;
-          stats.currentStreakCount = lb.currentStreakCount as number;
-          stats.topHero = lb.topHero as string;
-          stats.topHeroMatches = lb.topHeroMatches as number;
-          stats.eventsPlayed = lb.eventsPlayed as number;
-          stats.eventWins = lb.eventWins as number;
-          stats.ratedMatches = lb.ratedMatches as number;
-          stats.ratedWinRate = lb.ratedWinRate as number;
-          stats.updatedAt = lb.updatedAt as string;
+  // Fetch profiles only for users without leaderboard data (typically very few)
+  if (usersNeedingProfile.length > 0) {
+    const results = await Promise.allSettled(
+      usersNeedingProfile.map(async ({ username, userId }) => {
+        const profileSnap = await getDoc(doc(db, "users", userId, "profile", "main"));
+        if (profileSnap.exists()) {
+          const profile = profileSnap.data() as UserProfile;
+          return {
+            uid: profile.uid,
+            username: profile.username || username,
+            displayName: profile.displayName,
+            photoUrl: profile.photoUrl,
+            createdAt: profile.createdAt,
+            isPublic: profile.isPublic,
+            matchCount: 0,
+          } as AdminUserStats;
         }
-        return stats;
-      }
-      return null;
-    })
-  );
-
-  for (const result of results) {
-    if (result.status === "fulfilled" && result.value) {
-      users.push(result.value);
+        return null;
+      })
+    );
+    for (const r of results) {
+      if (r.status === "fulfilled" && r.value) users.push(r.value);
     }
   }
 

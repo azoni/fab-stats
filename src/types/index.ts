@@ -225,6 +225,7 @@ export interface LeaderboardEntry {
   showNameOnProfiles?: boolean;
   heroBreakdown?: { hero: string; matches: number; wins: number; winRate: number }[];
   heroBreakdownDetailed?: { hero: string; format: string; eventType: string; matches: number; wins: number; winRate: number }[];
+  createdAt?: string;
   updatedAt: string;
 }
 
