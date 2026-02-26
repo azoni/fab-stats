@@ -94,6 +94,7 @@ export async function updateLeaderboardEntry(
   }
   const heroBreakdownDetailed = [...heroDetailedData.entries()]
     .sort((a, b) => b[1].matches - a[1].matches)
+    .slice(0, 30)
     .map(([key, data]) => {
       const [hero, format, eventType] = key.split("|");
       return {
@@ -188,7 +189,7 @@ export async function updateLeaderboardEntry(
 
 let cachedEntries: LeaderboardEntry[] | null = null;
 let cacheTimestamp = 0;
-const CACHE_TTL = 60_000; // 60 seconds
+const CACHE_TTL = 5 * 60_000; // 5 minutes
 
 export async function getLeaderboardEntries(): Promise<LeaderboardEntry[]> {
   const now = Date.now();
