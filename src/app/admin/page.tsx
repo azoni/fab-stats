@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { getAdminDashboardData, backfillLeaderboard, broadcastMessage, type AdminDashboardData, type AdminUserStats } from "@/lib/admin";
 import { getAllFeedback, updateFeedbackStatus } from "@/lib/feedback";
 import { getCreators, saveCreators } from "@/lib/creators";
+import { getAnalytics } from "@/lib/analytics";
 import type { FeedbackItem, Creator } from "@/types";
 
 type SortKey = "matchCount" | "createdAt" | "username";
@@ -32,6 +33,7 @@ export default function AdminPage() {
   const [broadcasting, setBroadcasting] = useState(false);
   const [broadcastProgress, setBroadcastProgress] = useState("");
   const [broadcastResult, setBroadcastResult] = useState("");
+  const [analyticsData, setAnalyticsData] = useState<{ pageViews: Record<string, number>; creatorClicks: Record<string, number> } | null>(null);
 
   // Redirect non-admins
   useEffect(() => {
@@ -44,10 +46,11 @@ export default function AdminPage() {
     setFetching(true);
     setError("");
     try {
-      const [result, fb, cr] = await Promise.all([getAdminDashboardData(), getAllFeedback(), getCreators()]);
+      const [result, fb, cr, analytics] = await Promise.all([getAdminDashboardData(), getAllFeedback(), getCreators(), getAnalytics()]);
       setData(result);
       setFeedback(fb);
       setCreatorsList(cr);
+      setAnalyticsData(analytics);
     } catch {
       setError("Failed to load admin data.");
     } finally {
@@ -156,6 +159,9 @@ export default function AdminPage() {
             <MetricCard label="New (30d)" value={data.newUsersThisMonth} />
             <MetricCard label="New Feedback" value={feedback.filter((f) => f.status === "new").length} />
           </div>
+
+          {/* Page Activity */}
+          {analyticsData && <ActivitySection analytics={analyticsData} />}
 
           {/* Users table */}
           <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden">
@@ -569,6 +575,132 @@ function MetricCard({ label, value }: { label: string; value: number }) {
     <div className="bg-fab-surface border border-fab-border rounded-lg p-4">
       <div className="text-2xl font-bold text-fab-text">{value.toLocaleString()}</div>
       <div className="text-xs text-fab-muted mt-1">{label}</div>
+    </div>
+  );
+}
+
+const ROUTE_LABELS: Record<string, string> = {
+  _home: "Home (/)",
+  leaderboard: "Leaderboard",
+  matches: "Matches",
+  events: "Events",
+  opponents: "Opponents",
+  trends: "Trends",
+  meta: "Meta",
+  search: "Discover",
+  import: "Import",
+  settings: "Settings",
+  login: "Login",
+  changelog: "Changelog",
+  admin: "Admin",
+  favorites: "Favorites",
+  inbox: "Inbox",
+  privacy: "Privacy",
+  feedback: "Feedback",
+};
+
+function ActivitySection({ analytics }: { analytics: { pageViews: Record<string, number>; creatorClicks: Record<string, number> } }) {
+  const [expanded, setExpanded] = useState(true);
+
+  const pageViewEntries = Object.entries(analytics.pageViews)
+    .sort(([, a], [, b]) => b - a);
+  const totalPageViews = pageViewEntries.reduce((sum, [, count]) => sum + count, 0);
+
+  const creatorClickEntries = Object.entries(analytics.creatorClicks)
+    .sort(([, a], [, b]) => b - a);
+  const totalCreatorClicks = creatorClickEntries.reduce((sum, [, count]) => sum + count, 0);
+
+  function routeLabel(key: string): string {
+    // Handle player routes like "player_username"
+    if (key.startsWith("player_")) return `/player/${key.slice(7)}`;
+    return ROUTE_LABELS[key] || `/${key.replace(/_/g, "/")}`;
+  }
+
+  return (
+    <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden mb-6">
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="w-full px-4 py-3 border-b border-fab-border flex items-center justify-between group"
+      >
+        <h2 className="text-sm font-semibold text-fab-text">
+          Page Activity
+          <span className="text-fab-dim font-normal ml-2">({totalPageViews.toLocaleString()} total views)</span>
+        </h2>
+        <svg
+          className={`w-4 h-4 text-fab-muted group-hover:text-fab-text transition-transform ${expanded ? "rotate-180" : ""}`}
+          fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+        </svg>
+      </button>
+      {expanded && (
+        <div className="p-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Route Views */}
+            <div>
+              <h3 className="text-xs text-fab-muted uppercase tracking-wider font-medium mb-3">Page Views</h3>
+              <div className="space-y-1.5">
+                {pageViewEntries.map(([route, count]) => {
+                  const pct = totalPageViews > 0 ? (count / totalPageViews) * 100 : 0;
+                  return (
+                    <div key={route} className="flex items-center gap-2">
+                      <div className="w-32 text-xs text-fab-text truncate" title={routeLabel(route)}>
+                        {routeLabel(route)}
+                      </div>
+                      <div className="flex-1 h-4 bg-fab-bg rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-fab-gold/30 rounded-full transition-all"
+                          style={{ width: `${Math.max(pct, 1)}%` }}
+                        />
+                      </div>
+                      <div className="w-16 text-right text-xs font-mono text-fab-dim">
+                        {count.toLocaleString()}
+                      </div>
+                    </div>
+                  );
+                })}
+                {pageViewEntries.length === 0 && (
+                  <p className="text-xs text-fab-dim">No page view data yet.</p>
+                )}
+              </div>
+            </div>
+
+            {/* Creator Clicks */}
+            <div>
+              <h3 className="text-xs text-fab-muted uppercase tracking-wider font-medium mb-3">
+                Creator Link Clicks
+                {totalCreatorClicks > 0 && (
+                  <span className="text-fab-dim font-normal ml-2">({totalCreatorClicks.toLocaleString()} total)</span>
+                )}
+              </h3>
+              <div className="space-y-1.5">
+                {creatorClickEntries.map(([name, count]) => {
+                  const pct = totalCreatorClicks > 0 ? (count / totalCreatorClicks) * 100 : 0;
+                  return (
+                    <div key={name} className="flex items-center gap-2">
+                      <div className="w-32 text-xs text-fab-text truncate" title={name}>
+                        {name}
+                      </div>
+                      <div className="flex-1 h-4 bg-fab-bg rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-purple-500/30 rounded-full transition-all"
+                          style={{ width: `${Math.max(pct, 1)}%` }}
+                        />
+                      </div>
+                      <div className="w-16 text-right text-xs font-mono text-fab-dim">
+                        {count.toLocaleString()}
+                      </div>
+                    </div>
+                  );
+                })}
+                {creatorClickEntries.length === 0 && (
+                  <p className="text-xs text-fab-dim">No creator click data yet.</p>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

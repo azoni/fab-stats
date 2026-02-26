@@ -1,6 +1,7 @@
 "use client";
 import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useMatches } from "@/hooks/useMatches";
 import { useAuth } from "@/contexts/AuthContext";
 import { computeEventStats } from "@/lib/stats";
@@ -11,6 +12,7 @@ type View = "timeline" | "standings";
 const PAGE_SIZE = 25;
 
 export default function EventsPage() {
+  const searchParams = useSearchParams();
   const { matches, isLoaded, refreshMatches } = useMatches();
   const { user } = useAuth();
   const [filterFormat, setFilterFormat] = useState("all");
@@ -19,6 +21,13 @@ export default function EventsPage() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [importModalOpen, setImportModalOpen] = useState(false);
+
+  // Auto-open import modal from ?import=1 (e.g. from navbar "Log Event")
+  useEffect(() => {
+    if (searchParams.get("import") === "1") {
+      setImportModalOpen(true);
+    }
+  }, [searchParams]);
 
   // Reset to page 1 when filters/search change
   useEffect(() => {

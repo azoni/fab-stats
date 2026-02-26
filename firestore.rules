@@ -180,6 +180,14 @@ service cloud.firestore {
       }
     }
 
+    // ── Analytics (page views, creator clicks) ──
+    match /analytics/{docId} {
+      // Anyone can write (increment counters for page views / creator clicks)
+      allow write: if true;
+      // Only admins can read analytics data
+      allow read: if isAdmin();
+    }
+
     // ── Admin configuration ──
     match /admin/{docId} {
       // Any authenticated user can read (needed for client-side admin check in isAdmin helper above)

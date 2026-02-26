@@ -8,6 +8,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useCreators } from "@/hooks/useCreators";
 import { collection, getCountFromServer, getAggregateFromServer, sum } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { trackPageView, trackCreatorClick } from "@/lib/analytics";
 import type { ReactNode } from "react";
 import type { Creator } from "@/types";
 
@@ -21,15 +22,18 @@ function MetaIcon({ className = "w-4 h-4" }: { className?: string }) {
 
 const coreLinks: { href: string; label: string; icon: ReactNode }[] = [
   { href: "/leaderboard", label: "Leaderboard", icon: <TrophyIcon className="w-4 h-4" /> },
-  { href: "/matches", label: "Matches", icon: <SwordsIcon className="w-4 h-4" /> },
-  { href: "/events", label: "Events", icon: <CalendarIcon className="w-4 h-4" /> },
-  { href: "/opponents", label: "Opponents", icon: <OpponentsIcon className="w-4 h-4" /> },
   { href: "/meta", label: "Meta", icon: <MetaIcon className="w-4 h-4" /> },
   { href: "/search", label: "Discover", icon: <SearchIcon className="w-4 h-4" /> },
 ];
 
-const moreLinks: { href: string; label: string; icon: ReactNode; authOnly?: boolean }[] = [
+const historyLinks: { href: string; label: string; icon: ReactNode; authOnly?: boolean }[] = [
+  { href: "/matches", label: "Matches", icon: <SwordsIcon className="w-4 h-4" /> },
+  { href: "/events", label: "Events", icon: <CalendarIcon className="w-4 h-4" /> },
+  { href: "/opponents", label: "Opponents", icon: <OpponentsIcon className="w-4 h-4" /> },
   { href: "/trends", label: "Trends", icon: <TrendsIcon className="w-4 h-4" />, authOnly: true },
+];
+
+const moreLinks: { href: string; label: string; icon: ReactNode }[] = [
   { href: "/import", label: "Import", icon: <ImportIcon className="w-4 h-4" /> },
   { href: "/changelog", label: "Changelog", icon: <ChangelogIcon className="w-4 h-4" /> },
 ];
@@ -58,6 +62,12 @@ export function Navbar() {
   const [userCount, setUserCount] = useState(0);
   const [matchCount, setMatchCount] = useState(0);
   useEffect(() => setMounted(true), []);
+
+  // Track page views on route change
+  useEffect(() => {
+    if (mounted) trackPageView(pathname);
+  }, [pathname, mounted]);
+
   useEffect(() => {
     const CACHE_TTL = 30 * 60 * 1000; // 30 minutes
 
@@ -142,9 +152,12 @@ export function Navbar() {
                       {link.label}
                     </Link>
                   ))}
-                  <MoreDropdown
+                  <HistoryDropdown
                     pathname={pathname}
                     isAuthenticated={!!isAuthenticated}
+                  />
+                  <MoreDropdown
+                    pathname={pathname}
                     creators={creators}
                   />
                 </div>
@@ -271,13 +284,89 @@ export const platformIcons: Record<Creator["platform"], ReactNode> = {
   ),
 };
 
-function MoreDropdown({
+function HistoryDropdown({
   pathname,
   isAuthenticated,
-  creators,
 }: {
   pathname: string;
   isAuthenticated: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    if (open) document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [open]);
+
+  const visibleLinks = historyLinks.filter((l) => !l.authOnly || isAuthenticated);
+  const isHistoryActive = visibleLinks.some((l) => pathname === l.href);
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        onClick={() => setOpen(!open)}
+        className={`flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+          open || isHistoryActive
+            ? "text-fab-gold bg-fab-gold/10"
+            : "text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover"
+        }`}
+      >
+        <SwordsIcon className="w-4 h-4" />
+        History
+        <svg className={`w-3 h-3 transition-transform ${open ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+        </svg>
+      </button>
+
+      {open && (
+        <div className="absolute top-full right-0 mt-1 w-52 bg-fab-surface border border-fab-border rounded-lg shadow-xl overflow-hidden z-50">
+          <div className="p-2">
+            {visibleLinks.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                onClick={() => setOpen(false)}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors ${
+                  pathname === link.href
+                    ? "text-fab-gold bg-fab-gold/10"
+                    : "text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover"
+                }`}
+              >
+                {link.icon}
+                {link.label}
+              </Link>
+            ))}
+          </div>
+          <div className="border-t border-fab-border" />
+          <div className="p-2">
+            <Link
+              href="/events?import=1"
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+              </svg>
+              Log Event
+            </Link>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MoreDropdown({
+  pathname,
+  creators,
+}: {
+  pathname: string;
   creators: Creator[];
 }) {
   const [open, setOpen] = useState(false);
@@ -293,8 +382,7 @@ function MoreDropdown({
     return () => document.removeEventListener("mousedown", handleClick);
   }, [open]);
 
-  const visibleLinks = moreLinks.filter((l) => !l.authOnly || isAuthenticated);
-  const isMoreActive = visibleLinks.some((l) => pathname === l.href);
+  const isMoreActive = moreLinks.some((l) => pathname === l.href);
 
   return (
     <div className="relative" ref={ref}>
@@ -320,7 +408,7 @@ function MoreDropdown({
       {open && (
         <div className="absolute top-full right-0 mt-1 w-64 bg-fab-surface border border-fab-border rounded-lg shadow-xl overflow-hidden z-50">
           <div className="p-2">
-            {visibleLinks.map((link) => (
+            {moreLinks.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
@@ -350,7 +438,10 @@ function MoreDropdown({
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center gap-3 px-3 py-2.5 rounded-md hover:bg-fab-surface-hover transition-colors group"
-                    onClick={() => setOpen(false)}
+                    onClick={() => {
+                      trackCreatorClick(creator.name);
+                      setOpen(false);
+                    }}
                   >
                     {creator.imageUrl ? (
                       <img src={creator.imageUrl} alt="" className="w-6 h-6 rounded-full object-cover shrink-0" />
