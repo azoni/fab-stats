@@ -116,12 +116,12 @@ export default function AdminPage() {
               setFixingDates(true);
               setFixDatesProgress("Starting...");
               try {
-                const { usersChecked, matchesFixed, usersAffected } = await fixMatchDates((done, total, log) => {
+                const { usersChecked, matchesFixed, usersAffected, usersFailed } = await fixMatchDates((done, total, log) => {
                   setFixDatesProgress(`${done}/${total} — ${log}`);
                 });
-                setFixDatesProgress(`Done: ${matchesFixed} matches fixed across ${usersAffected} users (${usersChecked} checked)`);
-              } catch {
-                setFixDatesProgress("Fix dates failed");
+                setFixDatesProgress(`Done: ${matchesFixed} matches fixed across ${usersAffected} users (${usersChecked} checked${usersFailed > 0 ? `, ${usersFailed} failed` : ""})`);
+              } catch (err) {
+                setFixDatesProgress(`Fix dates failed: ${err instanceof Error ? err.message : String(err)}`);
               } finally {
                 setFixingDates(false);
               }

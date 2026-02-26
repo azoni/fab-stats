@@ -41,6 +41,8 @@ service cloud.firestore {
         && (!("venue" in request.resource.data) || maxLen(request.resource.data.venue, 200))
         && (!("eventType" in request.resource.data) || maxLen(request.resource.data.eventType, 50));
       allow delete: if request.auth != null && request.auth.uid == userId;
+      // Admin can update/delete any user's matches (for data fixes)
+      allow update, delete: if isAdmin();
       // Public read: if the user's profile is public
       allow read: if get(/databases/$(database)/documents/users/$(userId)/profile/main).data.isPublic == true;
       // Admin can read all matches (for aggregate stats)

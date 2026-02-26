@@ -310,7 +310,7 @@ export async function broadcastMessage(
  */
 export async function fixMatchDates(
   onProgress?: (done: number, total: number, log: string) => void
-): Promise<{ usersChecked: number; matchesFixed: number; usersAffected: number }> {
+): Promise<{ usersChecked: number; matchesFixed: number; usersAffected: number; usersFailed: number }> {
   const usernamesSnap = await getDocs(collection(db, "usernames"));
   const userEntries = usernamesSnap.docs.map((d) => ({
     username: d.id,
@@ -320,85 +320,96 @@ export async function fixMatchDates(
   let usersChecked = 0;
   let matchesFixed = 0;
   let usersAffected = 0;
+  let usersFailed = 0;
 
-  for (const { userId, username } of userEntries) {
-    usersChecked++;
-    onProgress?.(usersChecked, userEntries.length, `Checking @${username}...`);
-
-    const matchesSnap = await getDocs(
-      query(collection(db, "users", userId, "matches"), orderBy("createdAt", "desc"))
-    );
-    if (matchesSnap.empty) continue;
-
-    const matches = matchesSnap.docs.map((d) => ({
-      id: d.id,
-      ...d.data(),
-    })) as (MatchRecord & { id: string })[];
-
-    // Group matches by event name (first part of notes before " | ")
-    const eventGroups = new Map<string, typeof matches>();
-    for (const m of matches) {
-      const eventName = m.notes?.split(" | ")[0]?.trim() || "";
-      if (!eventName) continue;
-      const group = eventGroups.get(eventName) ?? [];
-      group.push(m);
-      eventGroups.set(eventName, group);
-    }
-
-    let userFixed = 0;
-
-    for (const [, group] of eventGroups) {
-      if (group.length < 2) continue;
-
-      // Count date occurrences
-      const dateCounts = new Map<string, number>();
-      for (const m of group) {
-        dateCounts.set(m.date, (dateCounts.get(m.date) || 0) + 1);
-      }
-
-      if (dateCounts.size <= 1) continue; // All same date, nothing to fix
-
-      // Find the majority date
-      let majorityDate = "";
-      let majorityCount = 0;
-      for (const [date, count] of dateCounts) {
-        if (count > majorityCount) {
-          majorityDate = date;
-          majorityCount = count;
-        }
-      }
-
-      // Only fix if majority date has > 50% of matches
-      if (majorityCount <= group.length / 2) continue;
-
-      // Fix outlier matches
-      for (const m of group) {
-        if (m.date !== majorityDate) {
-          await updateDoc(doc(db, "users", userId, "matches", m.id), { date: majorityDate });
-          userFixed++;
-          matchesFixed++;
-        }
-      }
-    }
-
-    if (userFixed > 0) {
-      usersAffected++;
-      onProgress?.(usersChecked, userEntries.length, `Fixed ${userFixed} matches for @${username}`);
-
-      // Re-run leaderboard update for this user
-      const profileSnap = await getDoc(doc(db, "users", userId, "profile", "main"));
-      if (profileSnap.exists()) {
-        const profile = profileSnap.data() as UserProfile;
-        const freshMatches = await getDocs(
+  const BATCH_SIZE = 25;
+  for (let i = 0; i < userEntries.length; i += BATCH_SIZE) {
+    const batch = userEntries.slice(i, i + BATCH_SIZE);
+    const results = await Promise.allSettled(
+      batch.map(async ({ userId, username }) => {
+        const matchesSnap = await getDocs(
           query(collection(db, "users", userId, "matches"), orderBy("createdAt", "desc"))
         );
-        const allMatches = freshMatches.docs.map((d) => ({ id: d.id, ...d.data() })) as MatchRecord[];
-        if (allMatches.length > 0) {
-          await updateLeaderboardEntry(profile, allMatches);
+        if (matchesSnap.empty) return { fixed: 0, username };
+
+        const matches = matchesSnap.docs.map((d) => ({
+          id: d.id,
+          ...d.data(),
+        })) as (MatchRecord & { id: string })[];
+
+        // Group matches by event name (first part of notes before " | ")
+        const eventGroups = new Map<string, typeof matches>();
+        for (const m of matches) {
+          const eventName = m.notes?.split(" | ")[0]?.trim() || "";
+          if (!eventName) continue;
+          const group = eventGroups.get(eventName) ?? [];
+          group.push(m);
+          eventGroups.set(eventName, group);
         }
+
+        let userFixed = 0;
+
+        for (const [, group] of eventGroups) {
+          if (group.length < 2) continue;
+
+          const dateCounts = new Map<string, number>();
+          for (const m of group) {
+            dateCounts.set(m.date, (dateCounts.get(m.date) || 0) + 1);
+          }
+
+          if (dateCounts.size <= 1) continue;
+
+          let majorityDate = "";
+          let majorityCount = 0;
+          for (const [date, count] of dateCounts) {
+            if (count > majorityCount) {
+              majorityDate = date;
+              majorityCount = count;
+            }
+          }
+
+          if (majorityCount <= group.length / 2) continue;
+
+          for (const m of group) {
+            if (m.date !== majorityDate) {
+              await updateDoc(doc(db, "users", userId, "matches", m.id), { date: majorityDate });
+              userFixed++;
+            }
+          }
+        }
+
+        if (userFixed > 0) {
+          // Re-run leaderboard update for this user
+          const profileSnap = await getDoc(doc(db, "users", userId, "profile", "main"));
+          if (profileSnap.exists()) {
+            const profile = profileSnap.data() as UserProfile;
+            const freshMatches = await getDocs(
+              query(collection(db, "users", userId, "matches"), orderBy("createdAt", "desc"))
+            );
+            const allMatches = freshMatches.docs.map((d) => ({ id: d.id, ...d.data() })) as MatchRecord[];
+            if (allMatches.length > 0) {
+              await updateLeaderboardEntry(profile, allMatches);
+            }
+          }
+        }
+
+        return { fixed: userFixed, username };
+      })
+    );
+
+    for (const r of results) {
+      usersChecked++;
+      if (r.status === "fulfilled") {
+        if (r.value.fixed > 0) {
+          matchesFixed += r.value.fixed;
+          usersAffected++;
+        }
+      } else {
+        usersFailed++;
       }
     }
+    onProgress?.(usersChecked, userEntries.length, `Batch ${Math.floor(i / BATCH_SIZE) + 1} done — ${matchesFixed} fixes so far`);
   }
 
-  return { usersChecked, matchesFixed, usersAffected };
+  return { usersChecked, matchesFixed, usersAffected, usersFailed };
 }
