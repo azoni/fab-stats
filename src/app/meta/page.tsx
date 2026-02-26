@@ -5,11 +5,11 @@ import { computeMetaStats, getAvailableFormats, getAvailableEventTypes, type Her
 import { getHeroByName } from "@/lib/heroes";
 import { HeroClassIcon } from "@/components/heroes/HeroClassIcon";
 
-type SortKey = "popularity" | "winrate" | "players" | "matches";
+type SortKey = "usage" | "winrate";
 
 export default function MetaPage() {
   const { entries, loading } = useLeaderboard();
-  const [sortBy, setSortBy] = useState<SortKey>("popularity");
+  const [sortBy, setSortBy] = useState<SortKey>("usage");
   const [search, setSearch] = useState("");
   const [filterFormat, setFilterFormat] = useState("all");
   const [filterEventType, setFilterEventType] = useState("all");
@@ -35,20 +35,15 @@ export default function MetaPage() {
     switch (sortBy) {
       case "winrate":
         return list.sort((a, b) => b.avgWinRate - a.avgWinRate || b.totalMatches - a.totalMatches);
-      case "players":
-        return list.sort((a, b) => b.playerCount - a.playerCount || b.totalMatches - a.totalMatches);
-      case "matches":
-        return list.sort((a, b) => b.totalMatches - a.totalMatches);
       default:
-        return list.sort((a, b) => a.popularityRank - b.popularityRank);
+        return list.sort((a, b) => b.totalMatches - a.totalMatches);
     }
   }, [heroStats, sortBy, search]);
 
-  // Always use the global max for consistent progress bars across sort modes
-  const maxMatches = useMemo(
-    () => Math.max(...heroStats.map((h) => h.totalMatches), 1),
-    [heroStats],
-  );
+  // Top hero for the overview card
+  const topHero = heroStats.length > 0
+    ? [...heroStats].sort((a, b) => b.totalMatches - a.totalMatches)[0]
+    : null;
 
   if (loading) {
     return (
@@ -72,7 +67,7 @@ export default function MetaPage() {
     <div>
       <h1 className="text-2xl font-bold text-fab-gold mb-2">Community Meta</h1>
       <p className="text-fab-muted text-sm mb-6">
-        Hero popularity and performance across all public players on FaB Stats.
+        Hero usage and performance across {overview.totalPlayers} public players on FaB Stats.
       </p>
 
       {/* Community Overview */}
@@ -86,12 +81,15 @@ export default function MetaPage() {
           <p className="text-2xl font-bold text-fab-text">{overview.totalMatches.toLocaleString()}</p>
         </div>
         <div className="bg-fab-surface border border-fab-border rounded-lg p-4">
-          <p className="text-xs text-fab-muted mb-1">Heroes Tracked</p>
+          <p className="text-xs text-fab-muted mb-1">Heroes Played</p>
           <p className="text-2xl font-bold text-fab-text">{overview.totalHeroes}</p>
         </div>
         <div className="bg-fab-surface border border-fab-border rounded-lg p-4">
-          <p className="text-xs text-fab-muted mb-1">Avg Win Rate</p>
-          <p className="text-2xl font-bold text-fab-text">{overview.avgWinRate.toFixed(1)}%</p>
+          <p className="text-xs text-fab-muted mb-1">Most Played</p>
+          <p className="text-lg font-bold text-fab-text truncate">{topHero?.hero || "—"}</p>
+          {topHero && (
+            <p className="text-[10px] text-fab-dim">{topHero.metaShare.toFixed(1)}% of matches</p>
+          )}
         </div>
       </div>
 
@@ -130,10 +128,8 @@ export default function MetaPage() {
         )}
         <div className="flex gap-1 ml-auto">
           {([
-            { id: "popularity", label: "Popular" },
-            { id: "winrate", label: "Win Rate" },
-            { id: "players", label: "Players" },
-            { id: "matches", label: "Matches" },
+            { id: "usage", label: "Most Played" },
+            { id: "winrate", label: "Best Win Rate" },
           ] as const).map((tab) => (
             <button
               key={tab.id}
@@ -163,7 +159,7 @@ export default function MetaPage() {
       ) : (
         <div className="space-y-2">
           {sortedHeroes.map((hero, i) => (
-            <HeroMetaRow key={hero.hero} hero={hero} index={i} sortBy={sortBy} maxMatches={maxMatches} />
+            <HeroMetaRow key={hero.hero} hero={hero} index={i} />
           ))}
         </div>
       )}
@@ -171,50 +167,57 @@ export default function MetaPage() {
   );
 }
 
-function HeroMetaRow({ hero, index, sortBy, maxMatches }: { hero: HeroMetaStats; index: number; sortBy: SortKey; maxMatches: number }) {
+function HeroMetaRow({ hero, index }: { hero: HeroMetaStats; index: number }) {
   const heroInfo = getHeroByName(hero.hero);
+  const heroClass = heroInfo?.classes[0];
 
   return (
-    <div className="bg-fab-surface border border-fab-border rounded-lg p-4 flex items-center gap-4">
+    <div className="bg-fab-surface border border-fab-border rounded-lg px-4 py-3 flex items-center gap-3">
       {/* Rank */}
-      <span className="text-lg font-black w-8 text-center shrink-0 text-fab-dim">
+      <span className="text-sm font-bold w-6 text-center shrink-0 text-fab-dim">
         {index + 1}
       </span>
 
       {/* Hero Icon */}
-      <HeroClassIcon heroClass={heroInfo?.classes[0]} size="lg" />
+      <HeroClassIcon heroClass={heroClass} size="lg" />
 
-      {/* Name + bar */}
+      {/* Name + class + meta share bar */}
       <div className="flex-1 min-w-0">
-        <p className="font-semibold text-fab-text truncate">{hero.hero}</p>
+        <div className="flex items-baseline gap-2">
+          <p className="font-semibold text-fab-text truncate">{hero.hero}</p>
+          {heroClass && (
+            <span className="text-[10px] text-fab-dim shrink-0">{heroClass}</span>
+          )}
+        </div>
         <div className="flex items-center gap-2 mt-1">
-          <div className="flex-1 h-2 bg-fab-bg rounded-full overflow-hidden">
+          <div className="flex-1 h-1.5 bg-fab-bg rounded-full overflow-hidden">
             <div
               className="h-full bg-fab-gold/40 rounded-full transition-all"
-              style={{ width: `${(hero.totalMatches / maxMatches) * 100}%` }}
+              style={{ width: `${Math.max(hero.metaShare, 0.5)}%` }}
             />
           </div>
-          <span className="text-[10px] text-fab-dim w-16 text-right">{hero.totalMatches} games</span>
+          <span className="text-[10px] text-fab-dim shrink-0 w-10 text-right">
+            {hero.metaShare.toFixed(1)}%
+          </span>
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="text-right shrink-0">
-        {sortBy === "winrate" ? (
-          <>
-            <p className={`text-lg font-bold ${hero.avgWinRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>
-              {hero.avgWinRate.toFixed(1)}%
-            </p>
-            <p className="text-xs text-fab-dim">{hero.playerCount} players</p>
-          </>
-        ) : (
-          <>
-            <p className="text-lg font-bold text-fab-text">{hero.playerCount}</p>
-            <p className="text-xs text-fab-dim">
-              {hero.avgWinRate.toFixed(0)}% WR
-            </p>
-          </>
-        )}
+      {/* Stats — all visible always */}
+      <div className="flex items-center gap-3 sm:gap-5 shrink-0 text-right">
+        <div className="hidden sm:block">
+          <p className="text-sm font-semibold text-fab-text">{hero.totalMatches.toLocaleString()}</p>
+          <p className="text-[10px] text-fab-dim">matches</p>
+        </div>
+        <div>
+          <p className="text-sm font-semibold text-fab-text">{hero.playerCount}</p>
+          <p className="text-[10px] text-fab-dim">players</p>
+        </div>
+        <div>
+          <p className={`text-sm font-semibold ${hero.avgWinRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>
+            {hero.avgWinRate.toFixed(1)}%
+          </p>
+          <p className="text-[10px] text-fab-dim">win rate</p>
+        </div>
       </div>
     </div>
   );

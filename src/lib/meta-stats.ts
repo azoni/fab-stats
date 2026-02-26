@@ -11,9 +11,11 @@ export interface HeroMetaStats {
   totalMatches: number;
   /** Total wins across all players */
   totalWins: number;
-  /** Average win rate across players (weighted by matches) */
+  /** Community win rate (totalWins / totalMatches) */
   avgWinRate: number;
-  /** Popularity rank (1 = most popular) */
+  /** % of all community matches that are this hero */
+  metaShare: number;
+  /** Rank by usage (1 = most played) */
   popularityRank: number;
 }
 
@@ -109,6 +111,7 @@ export function computeMetaStats(
       totalMatches: data.matches,
       totalWins: data.wins,
       avgWinRate: data.matches > 0 ? (data.wins / data.matches) * 100 : 0,
+      metaShare: totalMatches > 0 ? (data.matches / totalMatches) * 100 : 0,
       popularityRank: 0,
     }))
     .sort((a, b) => b.totalMatches - a.totalMatches);
