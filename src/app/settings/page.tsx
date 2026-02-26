@@ -85,7 +85,7 @@ function YearInReview() {
 }
 
 export default function SettingsPage() {
-  const { user, profile, signOut, isGuest } = useAuth();
+  const { user, profile, signOut, isGuest, refreshProfile } = useAuth();
   const creators = useCreators();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -135,6 +135,7 @@ export default function SettingsPage() {
         if (oldGemId) deleteGemId(oldGemId).catch(() => {});
         if (trimmedGemId) registerGemId(user.uid, trimmedGemId).catch(() => {});
       }
+      await refreshProfile();
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     } catch {
@@ -155,6 +156,7 @@ export default function SettingsPage() {
     try {
       const dataUrl = await resizeImage(file, 200);
       await uploadProfilePhoto(user.uid, dataUrl);
+      await refreshProfile();
     } catch {
       setError("Failed to upload photo. Please try again.");
     } finally {

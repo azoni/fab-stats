@@ -8,7 +8,7 @@ import { isUsernameTaken, createProfile } from "@/lib/firestore-storage";
 const USERNAME_REGEX = /^[a-z0-9_-]{3,20}$/;
 
 export default function SetupPage() {
-  const { user, profile } = useAuth();
+  const { user, profile, refreshProfile } = useAuth();
   const router = useRouter();
 
   // Navigate to dashboard once profile subscription confirms creation
@@ -81,6 +81,8 @@ export default function SetupPage() {
         photoUrl: user.photoURL || undefined,
         isPublic,
       });
+      // Refresh profile so AuthContext picks up the new profile
+      await refreshProfile();
       // Navigation handled by useEffect watching profile
     } catch (err) {
       if (err instanceof Error && err.message.includes("already taken")) {

@@ -1,8 +1,8 @@
 "use client";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import {
-  subscribeFavorites,
+  getFavorites,
   addFavorite,
   removeFavorite,
   type FavoriteEntry,
@@ -12,6 +12,7 @@ export function useFavorites() {
   const { user, isGuest } = useAuth();
   const [favorites, setFavorites] = useState<FavoriteEntry[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
+  const fetchedForUid = useRef<string | null>(null);
 
   useEffect(() => {
     if (isGuest || !user) {
@@ -20,13 +21,14 @@ export function useFavorites() {
       return;
     }
 
+    if (fetchedForUid.current === user.uid) return;
+    fetchedForUid.current = user.uid;
+
     setIsLoaded(false);
-    const unsubscribe = subscribeFavorites(user.uid, (favs) => {
+    getFavorites(user.uid).then((favs) => {
       setFavorites(favs);
       setIsLoaded(true);
     });
-
-    return unsubscribe;
   }, [user, isGuest]);
 
   const isFavorited = useCallback(
@@ -39,8 +41,19 @@ export function useFavorites() {
       if (!user || isGuest) return;
       if (isFavorited(target.uid)) {
         await removeFavorite(user.uid, target.uid);
+        setFavorites((prev) => prev.filter((f) => f.targetUserId !== target.uid));
       } else {
         await addFavorite(user.uid, target);
+        const newEntry: FavoriteEntry = {
+          targetUserId: target.uid,
+          targetUsername: target.username,
+          targetDisplayName: target.displayName,
+          targetPhotoUrl: target.photoUrl,
+          createdAt: new Date().toISOString(),
+        };
+        setFavorites((prev) =>
+          [...prev, newEntry].sort((a, b) => a.targetDisplayName.localeCompare(b.targetDisplayName))
+        );
       }
     },
     [user, isGuest, isFavorited]

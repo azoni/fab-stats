@@ -1,12 +1,11 @@
 import {
   collection,
   addDoc,
-  onSnapshot,
+  getDocs,
   query,
   orderBy,
   limit,
   where,
-  type Unsubscribe,
 } from "firebase/firestore";
 import { db } from "./firebase";
 import type { FeedEvent, UserProfile } from "@/types";
@@ -44,23 +43,8 @@ export async function createImportFeedEvent(
   await addDoc(feedCollection(), clean);
 }
 
-export function subscribeFeed(
-  callback: (events: FeedEvent[]) => void,
-  limitCount = 50
-): Unsubscribe {
+export async function getFeedEvents(limitCount = 50): Promise<FeedEvent[]> {
   const q = query(feedCollection(), where("isPublic", "==", true), orderBy("createdAt", "desc"), limit(limitCount));
-  return onSnapshot(
-    q,
-    (snapshot) => {
-      const events = snapshot.docs.map((d) => ({
-        id: d.id,
-        ...d.data(),
-      })) as FeedEvent[];
-      callback(events);
-    },
-    (error) => {
-      console.error("Feed subscription error:", error);
-      callback([]);
-    }
-  );
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() })) as FeedEvent[];
 }

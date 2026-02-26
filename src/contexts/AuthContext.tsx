@@ -5,6 +5,7 @@ import {
   useEffect,
   useState,
   useRef,
+  useCallback,
   type ReactNode,
 } from "react";
 import {
@@ -19,7 +20,7 @@ import {
   type User,
 } from "firebase/auth";
 import { auth } from "@/lib/firebase";
-import { subscribeToProfile, importMatchesFirestore } from "@/lib/firestore-storage";
+import { getProfile, importMatchesFirestore } from "@/lib/firestore-storage";
 import { checkIsAdmin } from "@/lib/admin";
 import { getAllMatches, clearAllData } from "@/lib/storage";
 import type { UserProfile } from "@/types";
@@ -35,6 +36,7 @@ interface AuthContextType {
   isGuest: boolean;
   isAdmin: boolean;
   enterGuestMode: () => void;
+  refreshProfile: () => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
@@ -103,7 +105,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     checkIsAdmin(user.email).then(setIsAdmin);
   }, [user]);
 
-  // Listen to profile when user is set
+  // Fetch profile once when user is set
   useEffect(() => {
     if (!user) {
       setProfile(null);
@@ -112,12 +114,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     setProfileLoading(true);
-    const unsubscribe = subscribeToProfile(user.uid, (p) => {
+    getProfile(user.uid).then((p) => {
       setProfile(p);
       setProfileLoading(false);
       setLoading(false);
     });
-    return unsubscribe;
+  }, [user]);
+
+  const refreshProfile = useCallback(async () => {
+    if (!user) return;
+    const p = await getProfile(user.uid);
+    setProfile(p);
   }, [user]);
 
   const needsSetup = !!user && !profileLoading && !profile;
@@ -154,6 +161,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isGuest,
         isAdmin,
         enterGuestMode,
+        refreshProfile,
         signIn,
         signUp,
         signInWithGoogle,

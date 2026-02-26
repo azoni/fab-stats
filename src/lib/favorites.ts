@@ -3,8 +3,7 @@ import {
   doc,
   setDoc,
   deleteDoc,
-  onSnapshot,
-  type Unsubscribe,
+  getDocs,
 } from "firebase/firestore";
 import { db } from "./firebase";
 
@@ -43,13 +42,9 @@ export async function removeFavorite(
   await deleteDoc(docRef);
 }
 
-export function subscribeFavorites(
-  userId: string,
-  callback: (favorites: FavoriteEntry[]) => void
-): Unsubscribe {
-  return onSnapshot(favoritesCollection(userId), (snapshot) => {
-    const favorites = snapshot.docs.map((d) => d.data() as FavoriteEntry);
-    favorites.sort((a, b) => a.targetDisplayName.localeCompare(b.targetDisplayName));
-    callback(favorites);
-  });
+export async function getFavorites(userId: string): Promise<FavoriteEntry[]> {
+  const snap = await getDocs(favoritesCollection(userId));
+  const favorites = snap.docs.map((d) => d.data() as FavoriteEntry);
+  favorites.sort((a, b) => a.targetDisplayName.localeCompare(b.targetDisplayName));
+  return favorites;
 }
