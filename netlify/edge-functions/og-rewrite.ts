@@ -95,9 +95,9 @@ export default async function handler(
 
   const desc = player
     ? escapeHtml(
-        `${player.totalMatches} matches · ${player.winRate.toFixed(1)}% win rate · ${player.totalWins}W-${player.totalLosses}L · Top hero: ${player.topHero}${player.totalTop8s > 0 ? ` · ${player.totalTop8s} Top 8${player.totalTop8s !== 1 ? "s" : ""}` : ""}`
+        `${player.winRate.toFixed(1)}% win rate across ${player.totalMatches} matches · ${player.totalWins}W-${player.totalLosses}L · Playing ${player.topHero}${player.totalTop8s > 0 ? ` · ${player.totalTop8s} Top 8 finish${player.totalTop8s !== 1 ? "es" : ""}` : ""} · Track your stats at fabstats.net`
       )
-    : `View ${escapeHtml(username)}'s Flesh and Blood match history, win rates, and tournament results on FaB Stats.`;
+    : `View ${escapeHtml(username)}'s Flesh and Blood tournament stats, win rate, and match history on FaB Stats.`;
 
   const ogImageUrl = `https://fabstats.net/.netlify/functions/og-image?username=${encodeURIComponent(username)}`;
 
