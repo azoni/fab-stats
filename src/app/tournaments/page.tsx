@@ -1,6 +1,5 @@
 "use client";
 import { useMemo, useState } from "react";
-import Link from "next/link";
 import { useFeaturedEvents } from "@/hooks/useFeaturedEvents";
 import { useLeaderboard } from "@/hooks/useLeaderboard";
 import { TournamentCard } from "@/components/home/TournamentCard";
@@ -10,6 +9,7 @@ export default function TournamentsPage() {
   const { entries: lbEntries, loading } = useLeaderboard();
   const [filterFormat, setFilterFormat] = useState("all");
   const [filterEventType, setFilterEventType] = useState("all");
+  const [search, setSearch] = useState("");
 
   const entryMap = useMemo(() => new Map(lbEntries.map((e) => [e.username, e])), [lbEntries]);
 
@@ -29,100 +29,93 @@ export default function TournamentsPage() {
     return Array.from(set).sort();
   }, [events]);
 
-  const filtered = useMemo(
-    () => events.filter((e) =>
+  const filtered = useMemo(() => {
+    let result = events.filter((e) =>
       (filterFormat === "all" || e.format === filterFormat) &&
       (filterEventType === "all" || e.eventType === filterEventType)
-    ),
-    [events, filterFormat, filterEventType],
-  );
+    );
+
+    const q = search.trim().toLowerCase();
+    if (q) {
+      result = result.filter((e) => {
+        const haystack = [e.name, e.format, e.eventType, e.description]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
+        return haystack.includes(q);
+      });
+    }
+
+    return result;
+  }, [events, filterFormat, filterEventType, search]);
 
   if (loading) {
     return (
       <div className="space-y-6">
-        <div className="bg-fab-surface border border-fab-border rounded-lg p-6 h-40 animate-pulse" />
-        <div className="bg-fab-surface border border-fab-border rounded-lg p-6 h-40 animate-pulse" />
+        <div className="h-8 w-40 bg-fab-surface rounded animate-pulse" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="bg-fab-surface border border-fab-border rounded-lg p-6 h-40 animate-pulse" />
+          ))}
+        </div>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-fab-text">Tournaments</h1>
-        <Link href="/" className="text-sm text-fab-gold hover:text-fab-gold-light transition-colors">
-          &larr; Home
-        </Link>
+      <div>
+        <h1 className="text-2xl font-bold text-fab-gold">Tournaments</h1>
+        <p className="text-fab-muted text-sm mt-1">Community tournaments and results</p>
       </div>
 
-      <div className="flex gap-2 flex-wrap items-center">
-        {formats.length > 0 && (
-          <>
-            <button
-              onClick={() => setFilterFormat("all")}
-              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                filterFormat === "all"
-                  ? "bg-fab-gold text-fab-bg"
-                  : "bg-fab-surface border border-fab-border text-fab-muted hover:text-fab-text"
-              }`}
+      {/* Search + Filters */}
+      <div className="flex flex-wrap items-center gap-2">
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search..."
+          className="bg-fab-surface border border-fab-border rounded-md px-3 py-1.5 text-fab-text text-sm placeholder:text-fab-dim focus:outline-none focus:border-fab-gold w-36 sm:w-44"
+        />
+        <div className="flex flex-wrap items-center gap-2 ml-auto">
+          {formats.length > 1 && (
+            <select
+              value={filterFormat}
+              onChange={(e) => setFilterFormat(e.target.value)}
+              className="bg-fab-surface border border-fab-border rounded-md px-3 py-1.5 text-fab-text text-sm outline-none"
             >
-              All Formats
-            </button>
-            {formats.map((f) => (
-              <button
-                key={f}
-                onClick={() => setFilterFormat(f)}
-                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                  filterFormat === f
-                    ? "bg-fab-gold text-fab-bg"
-                    : "bg-fab-surface border border-fab-border text-fab-muted hover:text-fab-text"
-                }`}
-              >
-                {f}
-              </button>
-            ))}
-          </>
-        )}
-        {eventTypes.length > 0 && (
-          <>
-            {formats.length > 0 && <div className="w-px h-6 bg-fab-border self-center" />}
-            <button
-              onClick={() => setFilterEventType("all")}
-              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                filterEventType === "all"
-                  ? "bg-fab-gold text-fab-bg"
-                  : "bg-fab-surface border border-fab-border text-fab-muted hover:text-fab-text"
-              }`}
+              <option value="all">All Formats</option>
+              {formats.map((f) => (
+                <option key={f} value={f}>{f}</option>
+              ))}
+            </select>
+          )}
+          {eventTypes.length > 1 && (
+            <select
+              value={filterEventType}
+              onChange={(e) => setFilterEventType(e.target.value)}
+              className="bg-fab-surface border border-fab-border rounded-md px-3 py-1.5 text-fab-text text-sm outline-none"
             >
-              All Events
-            </button>
-            {eventTypes.map((et) => (
-              <button
-                key={et}
-                onClick={() => setFilterEventType(et)}
-                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                  filterEventType === et
-                    ? "bg-fab-gold text-fab-bg"
-                    : "bg-fab-surface border border-fab-border text-fab-muted hover:text-fab-text"
-                }`}
-              >
-                {et}
-              </button>
-            ))}
-          </>
-        )}
+              <option value="all">All Event Types</option>
+              {eventTypes.map((t) => (
+                <option key={t} value={t}>{t}</option>
+              ))}
+            </select>
+          )}
+        </div>
       </div>
 
       {filtered.length === 0 ? (
         <div className="bg-fab-surface border border-fab-border rounded-lg p-8 text-center">
           <p className="text-fab-muted">
-            {events.length === 0 ? "No tournaments to display yet." : "No tournaments match this filter."}
+            {events.length === 0 ? "No tournaments to display yet." : "No tournaments match the current filters."}
           </p>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {filtered.map((event, i) => (
-            <TournamentCard key={`${event.name}-${i}`} event={event} entryMap={entryMap} fullImage />
+            <TournamentCard key={`${event.name}-${i}`} event={event} entryMap={entryMap} />
           ))}
         </div>
       )}
