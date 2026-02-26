@@ -605,7 +605,7 @@ function StatCard({
 }
 
 const PLAYOFF_TIER_GROUPS = [
-  { label: "PQ / RTN", types: ["ProQuest", "Road to Nationals", "Skirmish"] },
+  { label: "PQ / RTN / Skirmish", types: ["ProQuest", "Road to Nationals", "Skirmish"] },
   { label: "BH / Calling", types: ["Battle Hardened", "The Calling"] },
   { label: "PT / Nats / Worlds", types: ["Pro Tour", "Nationals", "Worlds", "Championship"] },
 ];
