@@ -1,4 +1,6 @@
 "use client";
+import { useRef, useState } from "react";
+import { toBlob } from "html-to-image";
 
 export interface FinishTheme {
   id: string;
@@ -193,4 +195,138 @@ export function buildBestFinishUrl(
   });
   if (topHero) params.set("h", topHero);
   return `${baseUrl}/achievements/best-finish?${params.toString()}`;
+}
+
+export function BestFinishShareModal({
+  playerName,
+  bestFinish,
+  totalMatches,
+  winRate,
+  topHero,
+  onClose,
+}: {
+  playerName: string;
+  bestFinish: { label: string; eventName: string; eventDate: string };
+  totalMatches: number;
+  winRate: number;
+  topHero?: string;
+  onClose: () => void;
+}) {
+  const cardRef = useRef<HTMLDivElement>(null);
+  const [selectedTheme, setSelectedTheme] = useState(FINISH_THEMES[0]);
+  const [shareStatus, setShareStatus] = useState<"idle" | "copied" | "sharing">("idle");
+
+  const finishData = {
+    playerName,
+    finishLabel: bestFinish.label,
+    eventName: bestFinish.eventName,
+    eventDate: bestFinish.eventDate,
+    totalMatches,
+    winRate,
+    topHero,
+  };
+
+  async function handleCopy() {
+    const url = buildBestFinishUrl(
+      window.location.origin,
+      playerName,
+      bestFinish.label,
+      bestFinish.eventName,
+      bestFinish.eventDate,
+      totalMatches,
+      winRate,
+      topHero,
+    );
+    const shareText = `${playerName} — ${bestFinish.label} at ${bestFinish.eventName}\n${url}`;
+
+    setShareStatus("sharing");
+    try {
+      const blob = cardRef.current
+        ? await toBlob(cardRef.current, { pixelRatio: 2, backgroundColor: selectedTheme.bg })
+        : null;
+
+      const isMobile = "ontouchstart" in window || navigator.maxTouchPoints > 0;
+      if (isMobile && blob && navigator.share && navigator.canShare?.({ files: [new File([blob], "best-finish.png", { type: "image/png" })] })) {
+        const file = new File([blob], "best-finish.png", { type: "image/png" });
+        await navigator.share({ title: "FaB Stats — Best Finish", text: shareText, files: [file] });
+      } else if (blob && navigator.clipboard?.write) {
+        await navigator.clipboard.write([
+          new ClipboardItem({ "image/png": blob }),
+        ]);
+        setShareStatus("copied");
+        setTimeout(() => { setShareStatus("idle"); onClose(); }, 1500);
+        return;
+      } else {
+        await navigator.clipboard.writeText(url);
+        setShareStatus("copied");
+        setTimeout(() => { setShareStatus("idle"); onClose(); }, 1500);
+        return;
+      }
+    } catch {
+      try {
+        const url2 = buildBestFinishUrl(window.location.origin, playerName, bestFinish.label, bestFinish.eventName, bestFinish.eventDate, totalMatches, winRate, topHero);
+        await navigator.clipboard.writeText(url2);
+      } catch { /* ignore */ }
+    }
+    setShareStatus("idle");
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
+      <div className="bg-fab-surface border border-fab-border rounded-xl max-w-lg w-full mx-4 overflow-hidden" onClick={(e) => e.stopPropagation()}>
+        {/* Modal header */}
+        <div className="flex items-center justify-between px-4 py-3 border-b border-fab-border">
+          <h3 className="text-sm font-semibold text-fab-text">Share Best Finish</h3>
+          <button onClick={onClose} className="text-fab-muted hover:text-fab-text transition-colors">
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Card preview */}
+        <div className="p-4 flex justify-center overflow-x-auto">
+          <div ref={cardRef}>
+            <BestFinishCard data={finishData} theme={selectedTheme} />
+          </div>
+        </div>
+
+        {/* Theme picker */}
+        <div className="px-4 pb-3">
+          <p className="text-[10px] text-fab-muted uppercase tracking-wider font-medium mb-2">Theme</p>
+          <div className="flex gap-2">
+            {FINISH_THEMES.map((theme) => (
+              <button
+                key={theme.id}
+                onClick={() => setSelectedTheme(theme)}
+                className={`flex-1 rounded-lg p-2 text-center transition-all border ${
+                  selectedTheme.id === theme.id
+                    ? "border-fab-gold ring-1 ring-fab-gold/30"
+                    : "border-fab-border hover:border-fab-muted"
+                }`}
+              >
+                <div className="flex gap-0.5 justify-center mb-1">
+                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: theme.bg }} />
+                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: theme.accent }} />
+                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: theme.trophy }} />
+                </div>
+                <p className="text-[10px] text-fab-muted">{theme.label}</p>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Copy button */}
+        <div className="px-4 pb-4">
+          <button
+            onClick={handleCopy}
+            disabled={shareStatus === "sharing"}
+            className="w-full py-2.5 rounded-lg text-sm font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors disabled:opacity-50"
+          >
+            {shareStatus === "sharing" ? "Capturing..." : shareStatus === "copied" ? "Copied!" : "Copy Image"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }

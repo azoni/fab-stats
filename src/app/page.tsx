@@ -16,6 +16,7 @@ import { useFeaturedEvents } from "@/hooks/useFeaturedEvents";
 import { useFeed } from "@/hooks/useFeed";
 import { computeMetaStats } from "@/lib/meta-stats";
 import { selectFeaturedProfiles } from "@/lib/featured-profiles";
+import { BestFinishShareModal } from "@/components/profile/BestFinishCard";
 import { localDate } from "@/lib/constants";
 
 export default function Dashboard() {
@@ -25,6 +26,7 @@ export default function Dashboard() {
   const featuredEvents = useFeaturedEvents();
   const { events: feedEvents } = useFeed();
   const [shareCopied, setShareCopied] = useState(false);
+  const [bestFinishShareOpen, setBestFinishShareOpen] = useState(false);
 
   const leaderboardUpdated = useRef(false);
 
@@ -249,9 +251,20 @@ export default function Dashboard() {
               <p className="text-lg font-bold text-fab-text truncate">{topHero?.heroName || "—"}</p>
             </div>
             {bestFinish ? (
-              <div>
+              <div className="relative">
                 <p className="text-[10px] text-fab-dim uppercase tracking-wider">Best Finish</p>
                 <p className="text-lg font-bold text-fab-gold truncate">{bestFinish.label}</p>
+                <p className="text-[10px] text-fab-dim truncate">{bestFinish.eventName}</p>
+                <button
+                  onClick={() => setBestFinishShareOpen(true)}
+                  className="absolute top-0 right-0 flex items-center gap-1 px-1.5 py-0.5 rounded-md text-fab-dim hover:text-fab-gold hover:bg-fab-gold/10 transition-colors"
+                  title="Share best finish"
+                >
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 8.25H7.5a2.25 2.25 0 00-2.25 2.25v9a2.25 2.25 0 002.25 2.25h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25H15m0-3l-3-3m0 0l-3 3m3-3v11.25" />
+                  </svg>
+                  <span className="text-[9px] font-semibold">Share</span>
+                </button>
               </div>
             ) : (
               <div>
@@ -282,6 +295,18 @@ export default function Dashboard() {
         feedEvents={feedEvents}
         profileUsername={hasMatches ? undefined : profile?.username}
       />
+
+      {/* Best Finish share modal */}
+      {bestFinishShareOpen && bestFinish && profile && (
+        <BestFinishShareModal
+          playerName={profile.displayName}
+          bestFinish={bestFinish}
+          totalMatches={overall.totalMatches}
+          winRate={overall.overallWinRate}
+          topHero={topHero?.heroName}
+          onClose={() => setBestFinishShareOpen(false)}
+        />
+      )}
     </div>
   );
 }
