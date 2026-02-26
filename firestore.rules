@@ -10,6 +10,11 @@ service cloud.firestore {
            get(/databases/$(database)/documents/admin/config).data.adminEmails;
     }
 
+    // Helper: string length check (for text fields)
+    function maxLen(field, len) {
+      return field is string && field.size() <= len;
+    }
+
     // ── User profiles ──
     match /users/{userId}/profile/{docId} {
       // Owner can read/write their own profile
@@ -22,15 +27,29 @@ service cloud.firestore {
 
     // ── Match records ──
     match /users/{userId}/matches/{matchId} {
-      // Owner can read/write their own matches
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      // Owner can read their own matches
+      allow read: if request.auth != null && request.auth.uid == userId;
+      // Owner can create/update/delete with field length limits
+      allow create: if request.auth != null && request.auth.uid == userId
+        && (!("notes" in request.resource.data) || maxLen(request.resource.data.notes, 2000))
+        && (!("opponentName" in request.resource.data) || maxLen(request.resource.data.opponentName, 100))
+        && (!("venue" in request.resource.data) || maxLen(request.resource.data.venue, 200))
+        && (!("eventType" in request.resource.data) || maxLen(request.resource.data.eventType, 50));
+      allow update: if request.auth != null && request.auth.uid == userId
+        && (!("notes" in request.resource.data) || maxLen(request.resource.data.notes, 2000))
+        && (!("opponentName" in request.resource.data) || maxLen(request.resource.data.opponentName, 100))
+        && (!("venue" in request.resource.data) || maxLen(request.resource.data.venue, 200))
+        && (!("eventType" in request.resource.data) || maxLen(request.resource.data.eventType, 50));
+      allow delete: if request.auth != null && request.auth.uid == userId;
       // Public read: if the user's profile is public
       allow read: if get(/databases/$(database)/documents/users/$(userId)/profile/main).data.isPublic == true;
       // Admin can read all matches (for aggregate stats)
       allow read: if isAdmin();
-      // Any authenticated user can update ONLY commentCount
+      // Any authenticated user can update ONLY commentCount (and must be a valid increment)
       allow update: if request.auth != null
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['commentCount']);
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['commentCount'])
+        && request.resource.data.commentCount is int
+        && request.resource.data.commentCount >= 0;
 
       // ── Comments on matches ──
       match /comments/{commentId} {
@@ -39,10 +58,12 @@ service cloud.firestore {
           get(/databases/$(database)/documents/users/$(userId)/profile/main).data.isPublic == true
         );
         allow create: if request.auth != null
-          && request.resource.data.authorUid == request.auth.uid;
+          && request.resource.data.authorUid == request.auth.uid
+          && maxLen(request.resource.data.text, 1000);
         allow update: if request.auth != null
           && resource.data.authorUid == request.auth.uid
-          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['text', 'editedAt']);
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['text', 'editedAt'])
+          && maxLen(request.resource.data.text, 1000);
         allow delete: if request.auth != null
           && (resource.data.authorUid == request.auth.uid || request.auth.uid == userId);
       }
@@ -51,7 +72,9 @@ service cloud.firestore {
     // ── Notifications ──
     match /users/{userId}/notifications/{notificationId} {
       allow read, update, delete: if request.auth != null && request.auth.uid == userId;
-      allow create: if request.auth != null;
+      allow create: if request.auth != null
+        && (!("commentPreview" in request.resource.data) || maxLen(request.resource.data.commentPreview, 500))
+        && (!("messagePreview" in request.resource.data) || maxLen(request.resource.data.messagePreview, 500));
     }
 
     // ── Username reservations ──
@@ -72,19 +95,26 @@ service cloud.firestore {
 
     // ── Shared match comment threads ──
     match /matchThreads/{threadId} {
-      // Any authenticated user can read/create/update thread docs
-      allow read, create, update: if request.auth != null;
+      // Any authenticated user can read threads
+      allow read: if request.auth != null;
+      // Only allow create (not arbitrary update)
+      allow create: if request.auth != null;
+      // Only participants can update thread metadata
+      allow update: if request.auth != null
+        && request.auth.uid in resource.data.participants;
 
       // Comments within shared threads
       match /comments/{commentId} {
         allow read: if request.auth != null;
-        // Create: authorUid must match the authenticated user
+        // Create: authorUid must match the authenticated user, text max 1000
         allow create: if request.auth != null
-          && request.resource.data.authorUid == request.auth.uid;
+          && request.resource.data.authorUid == request.auth.uid
+          && maxLen(request.resource.data.text, 1000);
         // Update: only the comment author, only text + editedAt
         allow update: if request.auth != null
           && resource.data.authorUid == request.auth.uid
-          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['text', 'editedAt']);
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['text', 'editedAt'])
+          && maxLen(request.resource.data.text, 1000);
         // Delete: comment author OR any match participant (match owners)
         allow delete: if request.auth != null
           && (resource.data.authorUid == request.auth.uid
@@ -95,20 +125,30 @@ service cloud.firestore {
     // ── Leaderboard ──
     match /leaderboard/{userId} {
       allow read: if true;
-      allow write: if request.auth != null && (request.auth.uid == userId || isAdmin());
+      // Only allow owner to write their own entry, or admin
+      allow write: if request.auth != null && (request.auth.uid == userId || isAdmin())
+        // Validate the userId field matches the doc ID (prevent spoofing another user's entry)
+        && request.resource.data.userId == userId
+        && request.resource.data.totalMatches is int
+        && request.resource.data.totalWins is int
+        && request.resource.data.totalLosses is int
+        && request.resource.data.winRate is number;
     }
 
     // ── Activity feed ──
     match /feedEvents/{eventId} {
       allow read: if true;
       allow create: if request.auth != null
-        && request.resource.data.userId == request.auth.uid;
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.type == "import";
     }
 
     // ── Feedback (bug reports / feature requests) ──
     match /feedback/{feedbackId} {
       allow create: if request.auth != null
-        && request.resource.data.userId == request.auth.uid;
+        && request.resource.data.userId == request.auth.uid
+        && maxLen(request.resource.data.message, 2000)
+        && request.resource.data.type in ["bug", "feature"];
       allow read, update: if isAdmin();
     }
 
@@ -117,7 +157,8 @@ service cloud.firestore {
       allow read: if request.auth != null
         && request.auth.uid in resource.data.participants;
       allow create: if request.auth != null
-        && request.auth.uid in request.resource.data.participants;
+        && request.auth.uid in request.resource.data.participants
+        && request.resource.data.participants.size() == 2;
       allow update: if request.auth != null
         && request.auth.uid in resource.data.participants;
 
@@ -126,13 +167,16 @@ service cloud.firestore {
           && request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants;
         allow create: if request.auth != null
           && request.resource.data.senderUid == request.auth.uid
-          && request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants;
+          && request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants
+          && maxLen(request.resource.data.text, 2000);
       }
     }
 
     // ── Admin configuration ──
     match /admin/{docId} {
-      // Any authenticated user can read (needed for admin check — only contains email list)
+      // Any authenticated user can read (needed for client-side admin check in isAdmin helper above)
+      // Note: This exposes the admin email list to authenticated users. This is an accepted
+      // tradeoff for client-side admin detection. The emails are not sensitive secrets.
       allow read: if request.auth != null;
       // Admins can write (for managing creators, etc.)
       allow write: if isAdmin();

@@ -14,6 +14,8 @@ import {
   signInWithPopup,
   GoogleAuthProvider,
   signOut as firebaseSignOut,
+  sendPasswordResetEmail,
+  sendEmailVerification,
   type User,
 } from "firebase/auth";
 import { auth } from "@/lib/firebase";
@@ -37,6 +39,7 @@ interface AuthContextType {
   signUp: (email: string, password: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
+  resetPassword: (email: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -124,11 +127,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function signUp(email: string, password: string) {
-    await createUserWithEmailAndPassword(auth, email, password);
+    const cred = await createUserWithEmailAndPassword(auth, email, password);
+    // Send verification email (non-blocking — don't prevent signup)
+    sendEmailVerification(cred.user).catch(() => {});
   }
 
   async function signInWithGoogle() {
     await signInWithPopup(auth, googleProvider);
+  }
+
+  async function resetPassword(email: string) {
+    await sendPasswordResetEmail(auth, email);
   }
 
   async function signOut() {
@@ -149,6 +158,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         signUp,
         signInWithGoogle,
         signOut,
+        resetPassword,
       }}
     >
       {children}

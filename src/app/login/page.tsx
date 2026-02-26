@@ -25,18 +25,38 @@ function friendlyError(err: unknown): string {
 }
 
 export default function LoginPage() {
-  const { signIn, signUp, signInWithGoogle, enterGuestMode } = useAuth();
+  const { signIn, signUp, signInWithGoogle, enterGuestMode, resetPassword } = useAuth();
   const router = useRouter();
   const [mode, setMode] = useState<"signin" | "register">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
+
+  async function handleResetPassword() {
+    if (!email.trim()) {
+      setError("Enter your email address first, then click Forgot Password.");
+      return;
+    }
+    setError("");
+    setSuccess("");
+    setLoading(true);
+    try {
+      await resetPassword(email);
+      setSuccess("Password reset email sent. Check your inbox.");
+    } catch (err) {
+      setError(friendlyError(err));
+    } finally {
+      setLoading(false);
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
+    setSuccess("");
     setLoading(true);
     try {
       if (mode === "signin") {
@@ -178,6 +198,15 @@ export default function LoginPage() {
               className="w-full bg-fab-surface border border-fab-border text-fab-text rounded-lg px-3 py-2 focus:outline-none focus:border-fab-gold"
               placeholder="At least 6 characters"
             />
+            {mode === "signin" && (
+              <button
+                type="button"
+                onClick={handleResetPassword}
+                className="text-xs text-fab-gold/70 hover:text-fab-gold mt-1 transition-colors"
+              >
+                Forgot password?
+              </button>
+            )}
           </div>
 
           {mode === "register" && (
@@ -199,6 +228,9 @@ export default function LoginPage() {
 
           {error && (
             <p className="text-fab-loss text-sm">{error}</p>
+          )}
+          {success && (
+            <p className="text-fab-win text-sm">{success}</p>
           )}
 
           <button
