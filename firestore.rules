@@ -208,6 +208,10 @@ service cloud.firestore {
     }
 
     // ── Admin configuration ──
+    // Featured events are public (shown on homepage to all visitors)
+    match /admin/featuredEvents {
+      allow read: if true;
+    }
     match /admin/{docId} {
       // Any authenticated user can read (needed for client-side admin check in isAdmin helper above)
       // Note: This exposes the admin email list to authenticated users. This is an accepted

@@ -26,7 +26,7 @@ export function CommunityHighlights({
     <div className="space-y-8">
       <FeaturedProfiles profiles={featuredProfiles} />
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
         <FeaturedTournaments
           events={featuredEvents}
           leaderboardEntries={leaderboardEntries}

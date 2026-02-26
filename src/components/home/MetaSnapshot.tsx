@@ -12,14 +12,14 @@ export function MetaSnapshot({ topHeroes }: MetaSnapshotProps) {
   if (topHeroes.length === 0) return null;
 
   return (
-    <div>
+    <div className="flex flex-col">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-semibold text-fab-text">Meta Snapshot</h2>
         <Link href="/meta" className="text-sm text-fab-gold hover:text-fab-gold-light transition-colors">
           View Full Meta
         </Link>
       </div>
-      <div className="bg-fab-surface border border-fab-border rounded-lg divide-y divide-fab-border">
+      <div className="bg-fab-surface border border-fab-border rounded-lg divide-y divide-fab-border flex-1">
         {topHeroes.slice(0, 5).map((hero, i) => {
           const heroInfo = getHeroByName(hero.hero);
           const heroClass = heroInfo?.classes[0];

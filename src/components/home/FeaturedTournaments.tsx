@@ -1,130 +1,33 @@
 "use client";
 import Link from "next/link";
-import { getHeroByName } from "@/lib/heroes";
-import { HeroClassIcon } from "@/components/heroes/HeroClassIcon";
+import { TournamentCard } from "./TournamentCard";
 import type { FeaturedEvent, LeaderboardEntry } from "@/types";
-import { localDate } from "@/lib/constants";
 
 interface FeaturedTournamentsProps {
   events: FeaturedEvent[];
   leaderboardEntries: LeaderboardEntry[];
 }
 
-// Tournament bracket placements: 1st, 2nd, 3-4th, 5-8th
-const BRACKET_PLACEMENT = [1, 2, 3, 3, 5, 5, 5, 5];
+const HOMEPAGE_LIMIT = 2;
 
 export function FeaturedTournaments({ events, leaderboardEntries }: FeaturedTournamentsProps) {
   if (events.length === 0) return null;
 
   const entryMap = new Map(leaderboardEntries.map((e) => [e.username, e]));
+  const displayEvents = events.slice(0, HOMEPAGE_LIMIT);
 
   return (
-    <div>
-      <h2 className="text-lg font-semibold text-fab-text mb-4">Recent Tournaments</h2>
-      <div className="space-y-3">
-        {events.map((event, i) => {
-          const dateStr = (() => {
-            try {
-              return localDate(event.date).toLocaleDateString("en-US", {
-                month: "short",
-                day: "numeric",
-                year: "numeric",
-              });
-            } catch {
-              return event.date;
-            }
-          })();
-
-          const players = event.players || [];
-
-          return (
-            <div
-              key={`${event.name}-${i}`}
-              className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden"
-            >
-              {event.imageUrl && (
-                <div className="w-full h-40 sm:h-48 overflow-hidden">
-                  <img
-                    src={event.imageUrl}
-                    alt={event.name}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-              )}
-              <div className="p-4">
-                <div className="min-w-0">
-                  <p className="font-semibold text-fab-text">{event.name}</p>
-                  <p className="text-xs text-fab-dim mt-0.5">
-                    {dateStr}
-                    {event.eventType && <> &middot; {event.eventType}</>}
-                    {event.format && <> &middot; {event.format}</>}
-                  </p>
-                  {event.description && (
-                    <p className="text-sm text-fab-muted mt-1">{event.description}</p>
-                  )}
-                </div>
-
-                {players.length > 0 && (
-                  <div className="mt-3 space-y-1">
-                    {players.map((player, pi) => {
-                      const lbEntry = player.username ? entryMap.get(player.username) : undefined;
-                      const heroInfo = player.hero ? getHeroByName(player.hero) : undefined;
-                      const heroClass = heroInfo?.classes[0];
-
-                      const nameEl = (
-                        <span className="font-medium text-fab-text text-sm truncate">
-                          {player.name}
-                        </span>
-                      );
-
-                      return (
-                        <div key={pi} className="flex items-center gap-2 py-1">
-                          <span className="text-xs text-fab-dim w-5 text-right shrink-0 font-bold">
-                            {(BRACKET_PLACEMENT[pi] ?? pi + 1)}.
-                          </span>
-
-                          {lbEntry ? (
-                            <Link
-                              href={`/player/${player.username}`}
-                              className="flex items-center gap-2 min-w-0 flex-1 hover:opacity-80 transition-opacity"
-                            >
-                              {lbEntry.photoUrl ? (
-                                <img
-                                  src={lbEntry.photoUrl}
-                                  alt=""
-                                  className="w-7 h-7 rounded-full shrink-0"
-                                />
-                              ) : (
-                                <div className="w-7 h-7 rounded-full bg-fab-gold/20 flex items-center justify-center text-fab-gold text-xs font-bold shrink-0">
-                                  {player.name.charAt(0).toUpperCase()}
-                                </div>
-                              )}
-                              {nameEl}
-                            </Link>
-                          ) : (
-                            <div className="flex items-center gap-2 min-w-0 flex-1">
-                              <div className="w-7 h-7 rounded-full bg-fab-border/50 flex items-center justify-center text-fab-dim text-xs font-bold shrink-0">
-                                {player.name.charAt(0).toUpperCase()}
-                              </div>
-                              {nameEl}
-                            </div>
-                          )}
-
-                          {player.hero && (
-                            <div className="flex items-center gap-1.5 shrink-0">
-                              <HeroClassIcon heroClass={heroClass} size="sm" />
-                              <span className="text-xs text-fab-muted hidden sm:inline">{player.hero}</span>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            </div>
-          );
-        })}
+    <div className="flex flex-col">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-lg font-semibold text-fab-text">Recent Tournaments</h2>
+        <Link href="/tournaments" className="text-sm text-fab-gold hover:text-fab-gold-light transition-colors">
+          View All
+        </Link>
+      </div>
+      <div className="space-y-3 flex-1">
+        {displayEvents.map((event, i) => (
+          <TournamentCard key={`${event.name}-${i}`} event={event} entryMap={entryMap} />
+        ))}
       </div>
     </div>
   );
