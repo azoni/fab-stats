@@ -92,73 +92,71 @@ export function MatchList({ matches, matchOwnerUid, enableComments }: MatchListP
 
   return (
     <div>
-      {/* Search */}
-      <div className="mb-3">
+      {/* Search + Filters */}
+      <div className="flex flex-wrap items-center gap-2 mb-4">
         <input
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search matches..."
-          className="w-full bg-fab-surface border border-fab-border rounded-lg px-3 py-2 text-fab-text text-sm placeholder:text-fab-dim focus:outline-none focus:border-fab-gold"
+          placeholder="Search..."
+          className="bg-fab-surface border border-fab-border rounded-md px-3 py-1.5 text-fab-text text-sm placeholder:text-fab-dim focus:outline-none focus:border-fab-gold w-36 sm:w-44"
         />
-      </div>
-
-      {/* Filters */}
-      <div className="flex flex-wrap gap-2 mb-4">
-        <select
-          value={filterResult}
-          onChange={(e) => setFilterResult(e.target.value)}
-          className="bg-fab-surface border border-fab-border rounded-md px-3 py-1.5 text-fab-text text-sm outline-none"
-        >
-          <option value="all">All Results</option>
-          <option value={MatchResult.Win}>Wins</option>
-          <option value={MatchResult.Loss}>Losses</option>
-          <option value={MatchResult.Draw}>Draws</option>
-        </select>
-
-        <select
-          value={filterFormat}
-          onChange={(e) => setFilterFormat(e.target.value)}
-          className="bg-fab-surface border border-fab-border rounded-md px-3 py-1.5 text-fab-text text-sm outline-none"
-        >
-          <option value="all">All Formats</option>
-          {Object.values(GameFormat).map((f) => (
-            <option key={f} value={f}>{f}</option>
-          ))}
-        </select>
-
-        {allHeroes.length > 1 && (
+        <div className="flex flex-wrap items-center gap-2 ml-auto">
           <select
-            value={filterHero}
-            onChange={(e) => setFilterHero(e.target.value)}
+            value={filterResult}
+            onChange={(e) => setFilterResult(e.target.value)}
             className="bg-fab-surface border border-fab-border rounded-md px-3 py-1.5 text-fab-text text-sm outline-none"
           >
-            <option value="all">All Heroes</option>
-            {allHeroes.map((h) => (
-              <option key={h} value={h}>{h}</option>
-            ))}
+            <option value="all">All Results</option>
+            <option value={MatchResult.Win}>Wins</option>
+            <option value={MatchResult.Loss}>Losses</option>
+            <option value={MatchResult.Draw}>Draws</option>
           </select>
-        )}
 
-        {allEventTypes.length > 1 && (
           <select
-            value={filterEventType}
-            onChange={(e) => setFilterEventType(e.target.value)}
+            value={filterFormat}
+            onChange={(e) => setFilterFormat(e.target.value)}
             className="bg-fab-surface border border-fab-border rounded-md px-3 py-1.5 text-fab-text text-sm outline-none"
           >
-            <option value="all">All Event Types</option>
-            {allEventTypes.map((t) => (
-              <option key={t} value={t}>{t}</option>
+            <option value="all">All Formats</option>
+            {Object.values(GameFormat).map((f) => (
+              <option key={f} value={f}>{f}</option>
             ))}
           </select>
-        )}
 
-        <button
-          onClick={() => setSortOrder(sortOrder === "newest" ? "oldest" : "newest")}
-          className="bg-fab-surface border border-fab-border rounded-md px-3 py-1.5 text-fab-muted text-sm hover:text-fab-text transition-colors"
-        >
-          {sortOrder === "newest" ? "Newest First" : "Oldest First"}
-        </button>
+          {allHeroes.length > 1 && (
+            <select
+              value={filterHero}
+              onChange={(e) => setFilterHero(e.target.value)}
+              className="bg-fab-surface border border-fab-border rounded-md px-3 py-1.5 text-fab-text text-sm outline-none"
+            >
+              <option value="all">All Heroes</option>
+              {allHeroes.map((h) => (
+                <option key={h} value={h}>{h}</option>
+              ))}
+            </select>
+          )}
+
+          {allEventTypes.length > 1 && (
+            <select
+              value={filterEventType}
+              onChange={(e) => setFilterEventType(e.target.value)}
+              className="bg-fab-surface border border-fab-border rounded-md px-3 py-1.5 text-fab-text text-sm outline-none"
+            >
+              <option value="all">All Event Types</option>
+              {allEventTypes.map((t) => (
+                <option key={t} value={t}>{t}</option>
+              ))}
+            </select>
+          )}
+
+          <button
+            onClick={() => setSortOrder(sortOrder === "newest" ? "oldest" : "newest")}
+            className="bg-fab-surface border border-fab-border rounded-md px-3 py-1.5 text-fab-muted text-sm hover:text-fab-text transition-colors"
+          >
+            {sortOrder === "newest" ? "Newest First" : "Oldest First"}
+          </button>
+        </div>
       </div>
 
       {filtered.length === 0 ? (

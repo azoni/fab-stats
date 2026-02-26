@@ -203,14 +203,12 @@ export function QuickEventImportModal({ open, onClose, onImportComplete }: Quick
                 >
                   Paste Text
                 </button>
-                <button
-                  onClick={() => { setInputMethod("screenshot"); setError(""); }}
-                  className={`flex-1 px-3 py-2 text-sm font-medium transition-colors ${
-                    inputMethod === "screenshot" ? "bg-fab-gold/15 text-fab-gold" : "text-fab-muted hover:text-fab-text"
-                  }`}
+                <span
+                  className="flex-1 px-3 py-2 text-sm font-medium text-fab-dim cursor-not-allowed text-center"
+                  title="Coming soon"
                 >
-                  Screenshot
-                </button>
+                  Screenshot <span className="text-xs opacity-60">(Soon)</span>
+                </span>
               </div>
 
               {inputMethod === "paste" ? (

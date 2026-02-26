@@ -145,66 +145,64 @@ export default function OpponentsPage() {
         Your head-to-head record against {totalOpponents} opponents across {totalMatchCount} matches
       </p>
 
-      {/* Search */}
-      <div className="mb-3">
+      {/* Search + Filters */}
+      <div className="flex flex-wrap items-center gap-2 mb-4">
         <input
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search opponents..."
-          className="w-full bg-fab-surface border border-fab-border rounded-lg px-3 py-2 text-fab-text text-sm placeholder:text-fab-dim focus:outline-none focus:border-fab-gold"
+          placeholder="Search..."
+          className="bg-fab-surface border border-fab-border rounded-md px-3 py-1.5 text-fab-text text-sm placeholder:text-fab-dim focus:outline-none focus:border-fab-gold w-36 sm:w-44"
         />
-      </div>
-
-      {/* Filters */}
-      <div className="flex flex-wrap gap-2 mb-4">
-        <select
-          value={sortBy}
-          onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
-          className="bg-fab-surface border border-fab-border rounded-md px-3 py-1.5 text-fab-text text-sm outline-none"
-        >
-          <option value="matches">Most Played</option>
-          <option value="winRate">Win Rate</option>
-          <option value="lossRate">Loss Rate</option>
-          <option value="recent">Most Recent</option>
-          <option value="name">Name</option>
-        </select>
-        {allFormats.length > 1 && (
+        <div className="flex flex-wrap items-center gap-2 ml-auto">
           <select
-            value={filterFormat}
-            onChange={(e) => setFilterFormat(e.target.value)}
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
             className="bg-fab-surface border border-fab-border rounded-md px-3 py-1.5 text-fab-text text-sm outline-none"
           >
-            <option value="all">All Formats</option>
-            {allFormats.map((f) => (
-              <option key={f} value={f}>{f}</option>
-            ))}
+            <option value="matches">Most Played</option>
+            <option value="winRate">Win Rate</option>
+            <option value="lossRate">Loss Rate</option>
+            <option value="recent">Most Recent</option>
+            <option value="name">Name</option>
           </select>
-        )}
-        {allEventTypes.length > 1 && (
-          <select
-            value={filterEventType}
-            onChange={(e) => setFilterEventType(e.target.value)}
-            className="bg-fab-surface border border-fab-border rounded-md px-3 py-1.5 text-fab-text text-sm outline-none"
-          >
-            <option value="all">All Event Types</option>
-            {allEventTypes.map((t) => (
-              <option key={t} value={t}>{t}</option>
-            ))}
-          </select>
-        )}
-        {allHeroes.length > 1 && (
-          <select
-            value={filterHero}
-            onChange={(e) => setFilterHero(e.target.value)}
-            className="bg-fab-surface border border-fab-border rounded-md px-3 py-1.5 text-fab-text text-sm outline-none"
-          >
-            <option value="all">All Heroes</option>
-            {allHeroes.map((h) => (
-              <option key={h} value={h}>{h}</option>
-            ))}
-          </select>
-        )}
+          {allFormats.length > 1 && (
+            <select
+              value={filterFormat}
+              onChange={(e) => setFilterFormat(e.target.value)}
+              className="bg-fab-surface border border-fab-border rounded-md px-3 py-1.5 text-fab-text text-sm outline-none"
+            >
+              <option value="all">All Formats</option>
+              {allFormats.map((f) => (
+                <option key={f} value={f}>{f}</option>
+              ))}
+            </select>
+          )}
+          {allEventTypes.length > 1 && (
+            <select
+              value={filterEventType}
+              onChange={(e) => setFilterEventType(e.target.value)}
+              className="bg-fab-surface border border-fab-border rounded-md px-3 py-1.5 text-fab-text text-sm outline-none"
+            >
+              <option value="all">All Event Types</option>
+              {allEventTypes.map((t) => (
+                <option key={t} value={t}>{t}</option>
+              ))}
+            </select>
+          )}
+          {allHeroes.length > 1 && (
+            <select
+              value={filterHero}
+              onChange={(e) => setFilterHero(e.target.value)}
+              className="bg-fab-surface border border-fab-border rounded-md px-3 py-1.5 text-fab-text text-sm outline-none"
+            >
+              <option value="all">All Heroes</option>
+              {allHeroes.map((h) => (
+                <option key={h} value={h}>{h}</option>
+              ))}
+            </select>
+          )}
+        </div>
       </div>
 
       {displayList.length === 0 ? (
