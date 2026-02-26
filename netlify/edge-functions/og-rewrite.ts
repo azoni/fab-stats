@@ -124,16 +124,31 @@ export default async function handler(
     `$1${title}$3`
   );
 
-  // Replace OG image
-  html = html.replace(
-    /(<meta\s+property="og:image"\s+content=")([^"]*?)(")/,
-    `$1${ogImageUrl}$3`
-  );
-  // Replace twitter image
-  html = html.replace(
-    /(<meta\s+name="twitter:image"\s+content=")([^"]*?)(")/,
-    `$1${ogImageUrl}$3`
-  );
+  // Replace or inject OG image
+  if (html.includes('og:image')) {
+    html = html.replace(
+      /(<meta\s+property="og:image"\s+content=")([^"]*?)(")/,
+      `$1${ogImageUrl}$3`
+    );
+  } else {
+    html = html.replace(
+      '</head>',
+      `<meta property="og:image" content="${ogImageUrl}"/>\n<meta property="og:image:width" content="1200"/>\n<meta property="og:image:height" content="630"/>\n</head>`
+    );
+  }
+
+  // Replace or inject twitter image
+  if (html.includes('twitter:image')) {
+    html = html.replace(
+      /(<meta\s+name="twitter:image"\s+content=")([^"]*?)(")/,
+      `$1${ogImageUrl}$3`
+    );
+  } else {
+    html = html.replace(
+      '</head>',
+      `<meta name="twitter:image" content="${ogImageUrl}"/>\n</head>`
+    );
+  }
 
   // Add OG image dimensions if not present
   if (!html.includes('og:image:width')) {
@@ -150,10 +165,18 @@ export default async function handler(
   );
 
   // Set canonical URL
-  html = html.replace(
-    /(<meta\s+property="og:url"\s+content=")([^"]*?)(")/,
-    `$1https://fabstats.net/player/${encodeURIComponent(username)}$3`
-  );
+  const canonicalUrl = `https://fabstats.net/player/${encodeURIComponent(username)}`;
+  if (html.includes('og:url')) {
+    html = html.replace(
+      /(<meta\s+property="og:url"\s+content=")([^"]*?)(")/,
+      `$1${canonicalUrl}$3`
+    );
+  } else {
+    html = html.replace(
+      '</head>',
+      `<meta property="og:url" content="${canonicalUrl}"/>\n</head>`
+    );
+  }
 
   return new Response(html, {
     status: response.status,
