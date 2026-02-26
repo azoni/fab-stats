@@ -143,15 +143,27 @@ export default async function handler(
   _request: Request,
   context: { next: () => Promise<Response> }
 ) {
-  const response = await context.next();
+  let response: Response;
+  try {
+    response = await context.next();
+  } catch {
+    return new Response("Internal Server Error", { status: 500 });
+  }
+
   const contentType = response.headers.get("content-type") || "";
 
   if (!contentType.includes("text/html")) {
     return response;
   }
 
-  let html = await response.text();
+  let html: string;
+  try {
+    html = await response.text();
+  } catch {
+    return response;
+  }
 
+  try {
   const meta = await fetchMetaData();
 
   const title = "Community Meta | FaB Stats";
@@ -222,10 +234,18 @@ export default async function handler(
     `$1https://www.fabstats.net/meta$3`
   );
 
+  const headers = new Headers(response.headers);
+  headers.delete("content-length");
+  headers.delete("content-encoding");
+
   return new Response(html, {
     status: response.status,
-    headers: response.headers,
+    headers,
   });
+  } catch (e) {
+    console.error("og-rewrite-meta edge function error:", e);
+    return context.next();
+  }
 }
 
 export const config = {

@@ -18,7 +18,7 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const SITE_URL = "https://fabstats.net";
+const SITE_URL = "https://www.fabstats.net";
 const SITE_NAME = "FaB Stats";
 const SITE_DESCRIPTION =
   "Track your Flesh and Blood TCG match history, win rates, hero matchups, opponent records, and event performance. Import from GEM in one click.";

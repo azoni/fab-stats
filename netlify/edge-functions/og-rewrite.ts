@@ -77,15 +77,27 @@ export default async function handler(
     return context.next();
   }
 
-  const response = await context.next();
+  let response: Response;
+  try {
+    response = await context.next();
+  } catch {
+    return new Response("Internal Server Error", { status: 500 });
+  }
+
   const contentType = response.headers.get("content-type") || "";
 
   if (!contentType.includes("text/html")) {
     return response;
   }
 
-  let html = await response.text();
+  let html: string;
+  try {
+    html = await response.text();
+  } catch {
+    return response;
+  }
 
+  try {
   // Try to fetch real player data
   const player = await fetchPlayer(username);
 
@@ -178,10 +190,18 @@ export default async function handler(
     );
   }
 
+  const headers = new Headers(response.headers);
+  headers.delete("content-length");
+  headers.delete("content-encoding");
+
   return new Response(html, {
     status: response.status,
-    headers: response.headers,
+    headers,
   });
+} catch (e) {
+    console.error("og-rewrite edge function error:", e);
+    return context.next();
+  }
 }
 
 export const config = {
