@@ -219,10 +219,10 @@
     );
     for (const el of candidates) {
       const text = (el.textContent || "").trim();
-      if (/View Results/i.test(text) && text.length < 30) {
+      if (/View Results/i.test(text) && text.length < 50) {
         el.click();
         expanded++;
-        await sleep(500);
+        await sleep(700);
       }
     }
 
@@ -231,7 +231,7 @@
       if (summary) {
         summary.click();
         expanded++;
-        await sleep(400);
+        await sleep(600);
       }
     }
 
@@ -240,16 +240,17 @@
         const text = (el.textContent || "").trim();
         if (
           (text.includes("View") || text.includes("Show")) &&
-          text.length < 30
+          text.length < 50
         ) {
           el.click();
           expanded++;
-          await sleep(500);
+          await sleep(700);
         }
       }
     }
 
-    if (expanded > 0) await sleep(600);
+    if (expanded > 0) await sleep(800);
+    console.log("[FaB Stats] Expanded " + expanded + " sections");
     return expanded;
   }
 
@@ -621,11 +622,24 @@
     return "Unknown";
   }
 
+  // ── Wait for Tables to Appear After Expansion ────────────────
+
+  async function waitForTables(prevCount) {
+    // Poll up to 3 seconds for new tables to appear (AJAX-loaded content)
+    for (let i = 0; i < 6; i++) {
+      await sleep(500);
+      const current = document.querySelectorAll("table").length;
+      if (current > prevCount) return current;
+    }
+    return document.querySelectorAll("table").length;
+  }
+
   // ── Scrape All Events on Current Page ─────────────────────────
 
   function scrapeAllEvents() {
     const results = [];
     const tables = document.querySelectorAll("table");
+    console.log("[FaB Stats] Found " + tables.length + " tables on page");
 
     for (const table of tables) {
       const ths = [...table.querySelectorAll("th")];
@@ -639,14 +653,28 @@
           h === "rnd" ||
           h === "#"
       );
-      const oppIdx = headers.findIndex((h) => h.includes("opponent"));
-      const resultIdx = headers.findIndex((h) => h.includes("result"));
+      const oppIdx = headers.findIndex(
+        (h) =>
+          h.includes("opponent") ||
+          h.includes("player") ||
+          h.includes("team") ||
+          h === "name"
+      );
+      const resultIdx = headers.findIndex(
+        (h) => h.includes("result") || h.includes("outcome")
+      );
 
       // Need at least opponent + result columns
-      if (oppIdx === -1 || resultIdx === -1) continue;
+      if (oppIdx === -1 || resultIdx === -1) {
+        if (headers.length > 0) {
+          console.log("[FaB Stats] Skipping table — headers: [" + headers.join(", ") + "]");
+        }
+        continue;
+      }
 
       const eventInfo = extractEventInfo(table);
       const hero = extractHero(table);
+      console.log("[FaB Stats] Match table: \"" + eventInfo.name + "\" (" + eventInfo.date + ") — headers: [" + headers.join(", ") + "]");
 
       // Detect if this is a playoff table from the headers
       const isPlayoffTable = headers.some(
@@ -719,6 +747,7 @@
       }
     }
 
+    console.log("[FaB Stats] Scraped " + results.length + " matches from " + tables.length + " tables");
     return results;
   }
 
@@ -772,10 +801,14 @@
         "Page " + page + " \u2014 Opening all collapsed sections",
         state.matches.length
       );
+      const tablesBefore = document.querySelectorAll("table").length;
       await expandAllSections();
       // Second pass — lazy-loaded content may reveal more expandable sections
-      await sleep(500);
+      await sleep(600);
       await expandAllSections();
+
+      // Wait for AJAX-loaded tables to appear after expansion
+      await waitForTables(tablesBefore);
 
       showOverlay(
         "Reading matches...",
@@ -783,6 +816,8 @@
         state.matches.length
       );
       const pageMatches = scrapeAllEvents();
+      console.log("[FaB Stats] Page " + page + ": " + pageMatches.length + " matches — events: " +
+        [...new Set(pageMatches.map((m) => m.event))].join(", "));
       state.matches = state.matches.concat(pageMatches);
       state.pagesScraped++;
 
