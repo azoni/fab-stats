@@ -2,6 +2,7 @@
 import { FeaturedProfiles } from "./FeaturedProfiles";
 import { FeaturedTournaments } from "./FeaturedTournaments";
 import { MetaSnapshot } from "./MetaSnapshot";
+import { LeaderboardPreview } from "./LeaderboardPreview";
 import { RecentActivity } from "./RecentActivity";
 import type { FeaturedProfile } from "@/lib/featured-profiles";
 import type { HeroMetaStats } from "@/lib/meta-stats";
@@ -32,7 +33,11 @@ export function CommunityHighlights({
           leaderboardEntries={leaderboardEntries}
         />
 
-        <MetaSnapshot topHeroes={topHeroes} />
+        {topHeroes.length > 0 ? (
+          <MetaSnapshot topHeroes={topHeroes} />
+        ) : (
+          <LeaderboardPreview entries={leaderboardEntries} />
+        )}
       </div>
 
       <RecentActivity events={feedEvents} />
