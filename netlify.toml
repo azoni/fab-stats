@@ -6,7 +6,7 @@
   SECRETS_SCAN_SMART_DETECTION_ENABLED = "false"
 
 [functions]
-  included_files = ["node_modules/@resvg/resvg-js-*/**"]
+  included_files = ["node_modules/@resvg/resvg-js-*/**", "netlify/functions/fonts/*"]
 
 # Edge function rewrites OG meta tags with actual username
 [[edge_functions]]

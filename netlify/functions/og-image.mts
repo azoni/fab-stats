@@ -1,5 +1,7 @@
 import satori from "satori";
 import { Resvg } from "@resvg/resvg-js";
+import { readFileSync, existsSync } from "node:fs";
+import { resolve } from "node:path";
 
 // ── Types ──
 
@@ -79,34 +81,40 @@ async function fetchPlayer(username: string): Promise<PlayerData | null> {
   }
 }
 
-// ── Font loading (cached across invocations) ──
+// ── Font loading (bundled WOFF files, cached across invocations) ──
 
-let fontCache: ArrayBuffer | null = null;
-let fontBoldCache: ArrayBuffer | null = null;
+let fontCache: { regular: ArrayBuffer; bold: ArrayBuffer } | null = null;
 
-async function loadFonts(): Promise<{ regular: ArrayBuffer; bold: ArrayBuffer }> {
-  if (fontCache && fontBoldCache) {
-    return { regular: fontCache, bold: fontBoldCache };
+function loadFonts(): { regular: ArrayBuffer; bold: ArrayBuffer } {
+  if (fontCache) return fontCache;
+
+  // Try multiple paths — Netlify Lambda places included_files at different locations
+  const candidates = [
+    "netlify/functions/fonts",
+    "fonts",
+    "/var/task/netlify/functions/fonts",
+    "/var/task/fonts",
+  ];
+
+  let fontsDir: string | null = null;
+  for (const dir of candidates) {
+    const abs = resolve(dir);
+    if (existsSync(resolve(abs, "inter-400.woff"))) {
+      fontsDir = abs;
+      break;
+    }
   }
 
-  async function fetchFont(url: string): Promise<ArrayBuffer> {
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`Font fetch failed: ${res.status} ${url}`);
-    const buf = await res.arrayBuffer();
-    // Sanity check: font files start with known signatures, not HTML
-    const head = new Uint8Array(buf.slice(0, 4));
-    if (head[0] === 0x3C) throw new Error(`Font URL returned HTML instead of font data: ${url}`);
-    return buf;
+  if (!fontsDir) {
+    const tried = candidates.map((d) => resolve(d)).join(", ");
+    throw new Error(`Font files not found. Tried: ${tried}. CWD: ${process.cwd()}`);
   }
 
-  const [regular, bold] = await Promise.all([
-    fetchFont("https://cdn.jsdelivr.net/fontsource/fonts/inter@latest/latin-400-normal.woff2"),
-    fetchFont("https://cdn.jsdelivr.net/fontsource/fonts/inter@latest/latin-700-normal.woff2"),
-  ]);
+  const regular = readFileSync(resolve(fontsDir, "inter-400.woff")).buffer;
+  const bold = readFileSync(resolve(fontsDir, "inter-700.woff")).buffer;
 
-  fontCache = regular;
-  fontBoldCache = bold;
-  return { regular, bold };
+  fontCache = { regular, bold };
+  return fontCache;
 }
 
 // ── Card renderer ──
@@ -622,7 +630,7 @@ export default async function handler(req: Request) {
       card = renderCard(player);
     }
 
-    const { regular, bold } = await loadFonts();
+    const { regular, bold } = loadFonts();
 
     const svg = await satori(card, {
       width: 1200,
