@@ -114,10 +114,10 @@ export default function AdminPage() {
               setBackfilling(true);
               setBackfillProgress("Starting...");
               try {
-                const { updated, failed } = await backfillLeaderboard((done, total) => {
+                const { updated, skipped, failed } = await backfillLeaderboard((done, total) => {
                   setBackfillProgress(`${done}/${total} users`);
                 });
-                setBackfillProgress(`Done: ${updated} updated, ${failed} failed`);
+                setBackfillProgress(`Done: ${updated} updated, ${skipped} skipped, ${failed} failed`);
               } catch {
                 setBackfillProgress("Backfill failed");
               } finally {

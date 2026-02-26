@@ -174,7 +174,7 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
 /** Backfill leaderboard entries for all users (re-computes nemesis, etc.) */
 export async function backfillLeaderboard(
   onProgress?: (done: number, total: number) => void
-): Promise<{ updated: number; failed: number }> {
+): Promise<{ updated: number; skipped: number; failed: number }> {
   const usernamesSnap = await getDocs(collection(db, "usernames"));
   const userEntries = usernamesSnap.docs.map((d) => ({
     username: d.id,
@@ -182,16 +182,17 @@ export async function backfillLeaderboard(
   }));
 
   let updated = 0;
+  let skipped = 0;
   let failed = 0;
   let done = 0;
 
-  const BATCH_SIZE = 5;
+  const BATCH_SIZE = 25;
   for (let i = 0; i < userEntries.length; i += BATCH_SIZE) {
     const batch = userEntries.slice(i, i + BATCH_SIZE);
     const results = await Promise.allSettled(
       batch.map(async ({ userId }) => {
         const profileSnap = await getDoc(doc(db, "users", userId, "profile", "main"));
-        if (!profileSnap.exists()) return false;
+        if (!profileSnap.exists()) return "skip";
         const profile = profileSnap.data() as UserProfile;
 
         const matchesSnap = await getDocs(
@@ -201,21 +202,25 @@ export async function backfillLeaderboard(
 
         if (matches.length > 0) {
           await updateLeaderboardEntry(profile, matches);
-          return true;
+          return "updated";
         }
-        return false;
+        return "skip";
       })
     );
 
     for (const r of results) {
       done++;
-      if (r.status === "fulfilled" && r.value) updated++;
-      else if (r.status === "rejected") failed++;
+      if (r.status === "fulfilled") {
+        if (r.value === "updated") updated++;
+        else skipped++;
+      } else {
+        failed++;
+      }
     }
     onProgress?.(done, userEntries.length);
   }
 
-  return { updated, failed };
+  return { updated, skipped, failed };
 }
 
 /** Get the admin user's UID by looking up the "azoni" username doc */
