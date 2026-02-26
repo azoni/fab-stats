@@ -299,21 +299,256 @@ function renderGenericCard(): VNode {
   };
 }
 
+// ── Meta page data ──
+
+interface MetaHeroAgg {
+  hero: string;
+  matches: number;
+  wins: number;
+  players: number;
+}
+
+interface MetaPageData {
+  totalPlayers: number;
+  totalMatches: number;
+  totalHeroes: number;
+  mostPlayed: MetaHeroAgg | null;
+  bestWinRate: MetaHeroAgg | null;
+}
+
+async function fetchMetaData(): Promise<MetaPageData | null> {
+  const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+  const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
+  if (!projectId || !apiKey) return null;
+
+  try {
+    const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents:runQuery?key=${apiKey}`;
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        structuredQuery: {
+          from: [{ collectionId: "leaderboard" }],
+          select: {
+            fields: [
+              { fieldPath: "totalMatches" },
+              { fieldPath: "totalWins" },
+              { fieldPath: "heroBreakdown" },
+              { fieldPath: "topHero" },
+              { fieldPath: "topHeroMatches" },
+              { fieldPath: "winRate" },
+            ],
+          },
+          limit: 500,
+        },
+      }),
+    });
+
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (!Array.isArray(data)) return null;
+
+    const heroMap = new Map<string, { matches: number; wins: number; players: Set<string> }>();
+    let totalMatches = 0;
+    let playerCount = 0;
+
+    for (const doc of data) {
+      const f = doc?.document?.fields;
+      if (!f) continue;
+      const docPath = doc.document.name || "";
+      playerCount++;
+      totalMatches += Number(f.totalMatches?.integerValue || 0);
+
+      const breakdown = f.heroBreakdown?.arrayValue?.values;
+      if (breakdown && Array.isArray(breakdown)) {
+        for (const item of breakdown) {
+          const fields = item?.mapValue?.fields;
+          if (!fields) continue;
+          const hero = fields.hero?.stringValue;
+          if (!hero) continue;
+          const matches = Number(fields.matches?.integerValue || 0);
+          const wins = Number(fields.wins?.integerValue || 0);
+          const cur = heroMap.get(hero) || { matches: 0, wins: 0, players: new Set<string>() };
+          cur.matches += matches;
+          cur.wins += wins;
+          cur.players.add(docPath);
+          heroMap.set(hero, cur);
+        }
+      } else if (f.topHero?.stringValue && f.topHero.stringValue !== "Unknown") {
+        const hero = f.topHero.stringValue;
+        const matches = Number(f.topHeroMatches?.integerValue || 0);
+        const wr = Number(f.winRate?.doubleValue ?? f.winRate?.integerValue ?? 0);
+        const wins = Math.round(matches * (wr / 100));
+        const cur = heroMap.get(hero) || { matches: 0, wins: 0, players: new Set<string>() };
+        cur.matches += matches;
+        cur.wins += wins;
+        cur.players.add(docPath);
+        heroMap.set(hero, cur);
+      }
+    }
+
+    const heroList: MetaHeroAgg[] = [...heroMap.entries()].map(([hero, d]) => ({
+      hero,
+      matches: d.matches,
+      wins: d.wins,
+      players: d.players.size,
+    }));
+
+    const mostPlayed = heroList.length > 0
+      ? heroList.reduce((best, h) => h.matches > best.matches ? h : best)
+      : null;
+
+    const eligible = heroList.filter((h) => h.matches >= 50);
+    const bestWinRate = eligible.length > 0
+      ? eligible.reduce((best, h) => {
+          const hWr = h.matches > 0 ? h.wins / h.matches : 0;
+          const bWr = best.matches > 0 ? best.wins / best.matches : 0;
+          return hWr > bWr ? h : best;
+        })
+      : null;
+
+    return { totalPlayers: playerCount, totalMatches, totalHeroes: heroMap.size, mostPlayed, bestWinRate };
+  } catch {
+    return null;
+  }
+}
+
+function renderMetaCard(meta: MetaPageData | null): VNode {
+  const gold = "#c9a84c";
+  const muted = "#6b6580";
+  const cardBg = "#1a1625";
+  const cardBorder = "#2a2435";
+  const textLight = "#e8e4f0";
+
+  if (!meta) return renderGenericCard();
+
+  const mpShare = meta.mostPlayed && meta.totalMatches > 0
+    ? ((meta.mostPlayed.matches / meta.totalMatches) * 100).toFixed(1)
+    : "0";
+  const bwrRate = meta.bestWinRate && meta.bestWinRate.matches > 0
+    ? ((meta.bestWinRate.wins / meta.bestWinRate.matches) * 100).toFixed(1)
+    : "0";
+
+  return {
+    type: "div",
+    props: {
+      style: {
+        width: 1200,
+        height: 630,
+        display: "flex",
+        flexDirection: "column" as const,
+        background: "linear-gradient(135deg, #0c0a0e 0%, #161222 100%)",
+        fontFamily: "Inter",
+      },
+      children: [
+        { type: "div", props: { style: { width: 1200, height: 4, background: "linear-gradient(90deg, #c9a84c, #e8c860)" } } },
+        {
+          type: "div",
+          props: {
+            style: { display: "flex", flexDirection: "column" as const, padding: "48px 64px", flex: 1 },
+            children: [
+              // Header
+              {
+                type: "div",
+                props: {
+                  style: { display: "flex", alignItems: "center", marginBottom: 40 },
+                  children: [
+                    {
+                      type: "div",
+                      props: {
+                        style: { width: 32, height: 32, marginRight: 12, display: "flex" },
+                        children: {
+                          type: "svg",
+                          props: {
+                            width: 32, height: 32, viewBox: "0 0 32 32",
+                            children: [
+                              { type: "path", props: { d: "M16 4L6 9v7c0 6.2 4.3 11.9 10 13.7 5.7-1.8 10-7.5 10-13.7V9L16 4z", fill: gold, opacity: 0.3 } },
+                              { type: "path", props: { d: "M16 4L6 9v7c0 6.2 4.3 11.9 10 13.7 5.7-1.8 10-7.5 10-13.7V9L16 4z", stroke: gold, strokeWidth: 1.5, fill: "none" } },
+                            ],
+                          },
+                        },
+                      },
+                    },
+                    { type: "span", props: { style: { fontSize: 22, fontWeight: 700, color: gold, letterSpacing: "-0.02em" }, children: "FaB Stats" } },
+                  ],
+                },
+              },
+              // Title
+              {
+                type: "div",
+                props: {
+                  style: { display: "flex", flexDirection: "column" as const, marginBottom: 40 },
+                  children: [
+                    { type: "div", props: { style: { fontSize: 56, fontWeight: 700, color: textLight, letterSpacing: "-0.02em", lineHeight: 1.1 }, children: "Community Meta" } },
+                    { type: "div", props: { style: { fontSize: 22, color: muted, marginTop: 12 }, children: `Hero usage & performance across ${meta.totalPlayers} players` } },
+                  ],
+                },
+              },
+              // Stats row
+              {
+                type: "div",
+                props: {
+                  style: { display: "flex", gap: 20, flex: 1 },
+                  children: [
+                    statBox("MOST PLAYED", meta.mostPlayed?.hero || "—", gold, cardBg, cardBorder),
+                    statBox("META SHARE", meta.mostPlayed ? `${mpShare}%` : "—", textLight, cardBg, cardBorder),
+                    statBox("TOP WIN RATE", meta.bestWinRate?.hero || "—", "#22c55e", cardBg, cardBorder),
+                    statBox("WIN RATE", meta.bestWinRate ? `${bwrRate}%` : "—", "#22c55e", cardBg, cardBorder),
+                  ],
+                },
+              },
+              // Bottom row
+              {
+                type: "div",
+                props: {
+                  style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 24 },
+                  children: [
+                    {
+                      type: "div",
+                      props: {
+                        style: { display: "flex", gap: 24, fontSize: 18, color: muted },
+                        children: [
+                          { type: "span", props: { children: `${meta.totalMatches.toLocaleString()} total matches` } },
+                          { type: "span", props: { children: `${meta.totalHeroes} heroes tracked` } },
+                        ],
+                      },
+                    },
+                    { type: "span", props: { style: { fontSize: 18, color: muted }, children: "fabstats.net/meta" } },
+                  ],
+                },
+              },
+            ],
+          },
+        },
+        { type: "div", props: { style: { width: 1200, height: 4, background: "linear-gradient(90deg, #c9a84c, #e8c860)" } } },
+      ],
+    },
+  };
+}
+
 // ── Handler ──
 
 export default async function handler(req: Request) {
   const url = new URL(req.url);
+  const type = url.searchParams.get("type") || "";
   const username = url.searchParams.get("username") || "";
 
-  if (!username) {
+  if (!username && type !== "meta") {
     return new Response("Missing username", { status: 400 });
   }
 
   try {
-    const player = await fetchPlayer(username);
-    const { regular, bold } = await loadFonts();
+    let card: VNode;
 
-    const card = renderCard(player);
+    if (type === "meta") {
+      const meta = await fetchMetaData();
+      card = renderMetaCard(meta);
+    } else {
+      const player = await fetchPlayer(username);
+      card = renderCard(player);
+    }
+
+    const { regular, bold } = await loadFonts();
 
     const svg = await satori(card, {
       width: 1200,

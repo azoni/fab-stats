@@ -321,7 +321,7 @@ export default function SettingsPage() {
             placeholder="0.00"
             className="w-full bg-fab-bg border border-fab-border text-fab-text rounded-lg px-3 py-2 focus:outline-none focus:border-fab-gold"
           />
-          <p className="text-xs text-fab-dim mt-1">Total prize money earned from FaB tournaments.</p>
+          <p className="text-xs text-fab-dim mt-1">Total prize money earned from FaB tournaments. Check <a href="https://fabboards.com" target="_blank" rel="noopener noreferrer" className="text-fab-gold hover:underline">fabboards.com</a> for your earnings history.</p>
         </div>
 
         <div className="mb-4">

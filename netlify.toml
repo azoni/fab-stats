@@ -10,6 +10,11 @@
   path = "/player/*"
   function = "og-rewrite"
 
+# Edge function rewrites OG meta tags for community meta page
+[[edge_functions]]
+  path = "/meta"
+  function = "og-rewrite-meta"
+
 # Force redirect from netlify subdomain to custom domain
 [[redirects]]
   from = "https://fabstats.netlify.app/*"
