@@ -7,6 +7,7 @@ interface PlayerData {
   winRate: number;
   topHero: string;
   currentWinStreak: number;
+  totalTop8s: number;
   isPublic: boolean;
 }
 
@@ -52,6 +53,7 @@ async function fetchPlayer(username: string): Promise<PlayerData | null> {
       winRate: Number(f.winRate?.doubleValue ?? f.winRate?.integerValue ?? 0),
       topHero: f.topHero?.stringValue || "Unknown",
       currentWinStreak: Number(f.currentWinStreak?.integerValue || 0),
+      totalTop8s: Number(f.totalTop8s?.integerValue || 0),
       isPublic: true,
     };
   } catch {
@@ -93,7 +95,7 @@ export default async function handler(
 
   const desc = player
     ? escapeHtml(
-        `${player.totalMatches} matches · ${player.winRate.toFixed(1)}% win rate · ${player.totalWins}W-${player.totalLosses}L · Top hero: ${player.topHero}`
+        `${player.totalMatches} matches · ${player.winRate.toFixed(1)}% win rate · ${player.totalWins}W-${player.totalLosses}L · Top hero: ${player.topHero}${player.totalTop8s > 0 ? ` · ${player.totalTop8s} Top 8${player.totalTop8s !== 1 ? "s" : ""}` : ""}`
       )
     : `View ${escapeHtml(username)}'s Flesh and Blood match history, win rates, and tournament results on FaB Stats.`;
 

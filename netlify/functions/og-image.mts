@@ -6,6 +6,7 @@ import { Resvg } from "@resvg/resvg-js";
 interface PlayerData {
   displayName: string;
   username: string;
+  photoUrl: string | null;
   totalMatches: number;
   totalWins: number;
   totalLosses: number;
@@ -14,6 +15,7 @@ interface PlayerData {
   topHero: string;
   currentWinStreak: number;
   eventsPlayed: number;
+  totalTop8s: number;
 }
 
 // satori accepts a VDOM tree (not React elements)
@@ -57,6 +59,7 @@ async function fetchPlayer(username: string): Promise<PlayerData | null> {
     return {
       displayName: f.displayName?.stringValue || username,
       username: f.username?.stringValue || username,
+      photoUrl: f.photoUrl?.stringValue || null,
       totalMatches: Number(f.totalMatches?.integerValue || 0),
       totalWins: Number(f.totalWins?.integerValue || 0),
       totalLosses: Number(f.totalLosses?.integerValue || 0),
@@ -65,6 +68,7 @@ async function fetchPlayer(username: string): Promise<PlayerData | null> {
       topHero: f.topHero?.stringValue || "Unknown",
       currentWinStreak: Number(f.currentWinStreak?.integerValue || 0),
       eventsPlayed: Number(f.eventsPlayed?.integerValue || 0),
+      totalTop8s: Number(f.totalTop8s?.integerValue || 0),
     };
   } catch {
     return null;
@@ -114,6 +118,12 @@ function renderCard(player: PlayerData | null): VNode {
     bottomItems.push({
       type: "span",
       props: { style: { color: "#22c55e" }, children: `${player.currentWinStreak} game win streak` },
+    });
+  }
+  if (player.totalTop8s > 0) {
+    bottomItems.push({
+      type: "span",
+      props: { style: { color: gold }, children: `${player.totalTop8s} Top 8${player.totalTop8s !== 1 ? "s" : ""}` },
     });
   }
   if (player.eventsPlayed > 0) {
@@ -169,14 +179,37 @@ function renderCard(player: PlayerData | null): VNode {
                   ],
                 },
               },
-              // Player name + username
+              // Player name + username + avatar
               {
                 type: "div",
                 props: {
-                  style: { display: "flex", flexDirection: "column" as const, marginBottom: 40 },
+                  style: { display: "flex", alignItems: "center", marginBottom: 40, gap: 24 },
                   children: [
-                    { type: "div", props: { style: { fontSize: 56, fontWeight: 700, color: textLight, letterSpacing: "-0.02em", lineHeight: 1.1 }, children: player.displayName } },
-                    { type: "div", props: { style: { fontSize: 24, color: muted, marginTop: 8 }, children: `@${player.username}` } },
+                    // Avatar
+                    player.photoUrl
+                      ? { type: "img", props: { src: player.photoUrl, width: 96, height: 96, style: { borderRadius: 48, border: `3px solid ${gold}` } } }
+                      : {
+                          type: "div",
+                          props: {
+                            style: {
+                              width: 96, height: 96, borderRadius: 48, background: "rgba(201,168,76,0.2)",
+                              border: `3px solid ${gold}`, display: "flex", alignItems: "center", justifyContent: "center",
+                              fontSize: 40, fontWeight: 700, color: gold,
+                            },
+                            children: player.displayName.charAt(0).toUpperCase(),
+                          },
+                        },
+                    // Name + username
+                    {
+                      type: "div",
+                      props: {
+                        style: { display: "flex", flexDirection: "column" as const },
+                        children: [
+                          { type: "div", props: { style: { fontSize: 56, fontWeight: 700, color: textLight, letterSpacing: "-0.02em", lineHeight: 1.1 }, children: player.displayName } },
+                          { type: "div", props: { style: { fontSize: 24, color: muted, marginTop: 8 }, children: `@${player.username}` } },
+                        ],
+                      },
+                    },
                   ],
                 },
               },
