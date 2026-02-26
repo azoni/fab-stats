@@ -25,6 +25,7 @@ export default function SetupPage() {
   const [checking, setChecking] = useState(false);
   const [available, setAvailable] = useState<boolean | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [isPublic, setIsPublic] = useState(true);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   async function checkUsername(value: string) {
@@ -78,7 +79,7 @@ export default function SetupPage() {
         lastName: lastName.trim() || undefined,
         searchName: searchName || undefined,
         photoUrl: user.photoURL || undefined,
-        isPublic: true,
+        isPublic,
       });
       // Navigation handled by useEffect watching profile
     } catch (err) {
@@ -186,6 +187,33 @@ export default function SetupPage() {
           <p className="text-xs text-fab-dim -mt-3">
             Your real name helps opponents find your profile from match results.
           </p>
+
+          {/* Privacy toggle */}
+          <div className="flex items-center justify-between bg-fab-surface border border-fab-border rounded-lg px-3 py-3">
+            <div>
+              <p className="text-sm font-medium text-fab-text">Public Profile</p>
+              <p className="text-xs text-fab-dim mt-0.5">
+                {isPublic
+                  ? "Visible on leaderboard, search, and activity feed."
+                  : "Only you can see your profile, stats, and matches."}
+              </p>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={isPublic}
+              onClick={() => setIsPublic(!isPublic)}
+              className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${
+                isPublic ? "bg-fab-gold" : "bg-fab-border"
+              }`}
+            >
+              <span
+                className={`inline-block h-4 w-4 rounded-full bg-white transition-transform ${
+                  isPublic ? "translate-x-6" : "translate-x-1"
+                }`}
+              />
+            </button>
+          </div>
 
           <label className="flex items-start gap-2 cursor-pointer">
             <input

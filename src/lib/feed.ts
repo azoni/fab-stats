@@ -5,6 +5,7 @@ import {
   query,
   orderBy,
   limit,
+  where,
   type Unsubscribe,
 } from "firebase/firestore";
 import { db } from "./firebase";
@@ -19,6 +20,9 @@ export async function createImportFeedEvent(
   matchCount: number,
   topHeroes: string[]
 ): Promise<void> {
+  // Don't publish feed events for private profiles
+  if (!profile.isPublic) return;
+
   const data: Omit<FeedEvent, "id"> = {
     type: "import",
     userId: profile.uid,
@@ -44,7 +48,7 @@ export function subscribeFeed(
   callback: (events: FeedEvent[]) => void,
   limitCount = 50
 ): Unsubscribe {
-  const q = query(feedCollection(), orderBy("createdAt", "desc"), limit(limitCount));
+  const q = query(feedCollection(), where("isPublic", "==", true), orderBy("createdAt", "desc"), limit(limitCount));
   return onSnapshot(
     q,
     (snapshot) => {

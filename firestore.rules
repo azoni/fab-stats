@@ -138,9 +138,11 @@ service cloud.firestore {
     // ── Activity feed ──
     match /feedEvents/{eventId} {
       allow read: if true;
+      // Only public profiles can create feed events
       allow create: if request.auth != null
         && request.resource.data.userId == request.auth.uid
-        && request.resource.data.type == "import";
+        && request.resource.data.type == "import"
+        && request.resource.data.isPublic == true;
     }
 
     // ── Feedback (bug reports / feature requests) ──
