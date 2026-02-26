@@ -82,12 +82,14 @@ export function MatchForm() {
         label="Your Hero"
         value={heroPlayed}
         onChange={setHeroPlayed}
+        format={format}
       />
 
       <HeroSelect
         label="Opponent's Hero"
         value={opponentHero}
         onChange={setOpponentHero}
+        format={format}
       />
 
       <div>

@@ -76,7 +76,15 @@ export default function AdminPage() {
       setData(result);
       setFeedback(fb);
       setCreatorsList(cr);
-      setEventsList(ev);
+      setEventsList(ev.map((e: any) => ({
+        name: e.name || "",
+        date: e.date || "",
+        format: e.format || "",
+        eventType: e.eventType || "",
+        description: e.description,
+        imageUrl: e.imageUrl,
+        players: e.players || (e.playerUsernames || []).map((u: string) => ({ name: u, username: u })),
+      })));
       setAnalyticsData(analytics);
     } catch {
       setError("Failed to load admin data.");
@@ -563,8 +571,9 @@ export default function AdminPage() {
                       await saveEvents(eventsList);
                       setEventsSaved(true);
                       setTimeout(() => setEventsSaved(false), 2000);
-                    } catch {
-                      setError("Failed to save events.");
+                    } catch (err) {
+                      console.error("Save events error:", err);
+                      setError(`Failed to save events: ${err instanceof Error ? err.message : String(err)}`);
                     } finally {
                       setSavingEvents(false);
                     }
@@ -648,6 +657,7 @@ export default function AdminPage() {
                           player={player}
                           index={pi}
                           users={data?.users || []}
+                          format={ev.format}
                           onChange={(updated) => setEventsList((prev) => prev.map((ev2, j) => j === i ? { ...ev2, players: ev2.players.map((p, pj) => pj === pi ? updated : p) } : ev2))}
                           onRemove={() => setEventsList((prev) => prev.map((ev2, j) => j === i ? { ...ev2, players: ev2.players.filter((_, pj) => pj !== pi) } : ev2))}
                         />
@@ -1000,12 +1010,14 @@ function EventPlayerRow({
   player,
   index,
   users,
+  format,
   onChange,
   onRemove,
 }: {
   player: FeaturedEventPlayer;
   index: number;
   users: AdminUserStats[];
+  format: string;
   onChange: (p: FeaturedEventPlayer) => void;
   onRemove: () => void;
 }) {
@@ -1013,6 +1025,8 @@ function EventPlayerRow({
   const [heroQuery, setHeroQuery] = useState("");
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const [showHeroDropdown, setShowHeroDropdown] = useState(false);
+  const [userHighlight, setUserHighlight] = useState(0);
+  const [heroHighlight, setHeroHighlight] = useState(0);
   const userRef = React.useRef<HTMLDivElement>(null);
   const heroRef = React.useRef<HTMLDivElement>(null);
 
@@ -1033,8 +1047,49 @@ function EventPlayerRow({
     : [];
 
   const heroResults = heroQuery.trim()
-    ? searchHeroes(heroQuery).slice(0, 8)
+    ? searchHeroes(heroQuery, format || undefined).slice(0, 8)
     : [];
+
+  React.useEffect(() => { setUserHighlight(0); }, [nameQuery]);
+  React.useEffect(() => { setHeroHighlight(0); }, [heroQuery]);
+
+  function handleUserKeyDown(e: React.KeyboardEvent) {
+    if (!showUserDropdown || userResults.length === 0) return;
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setUserHighlight((h) => Math.min(h + 1, userResults.length - 1));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setUserHighlight((h) => Math.max(h - 1, 0));
+    } else if (e.key === "Enter" && userResults[userHighlight]) {
+      e.preventDefault();
+      const u = userResults[userHighlight];
+      onChange({ ...player, name: u.displayName, username: u.username });
+      setNameQuery(u.displayName);
+      setShowUserDropdown(false);
+    } else if (e.key === "Escape") {
+      setShowUserDropdown(false);
+    }
+  }
+
+  function handleHeroKeyDown(e: React.KeyboardEvent) {
+    if (!showHeroDropdown || heroResults.length === 0) return;
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setHeroHighlight((h) => Math.min(h + 1, heroResults.length - 1));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setHeroHighlight((h) => Math.max(h - 1, 0));
+    } else if (e.key === "Enter" && heroResults[heroHighlight]) {
+      e.preventDefault();
+      const h = heroResults[heroHighlight];
+      onChange({ ...player, hero: h.name });
+      setHeroQuery(h.name);
+      setShowHeroDropdown(false);
+    } else if (e.key === "Escape") {
+      setShowHeroDropdown(false);
+    }
+  }
 
   return (
     <div className="flex items-center gap-2">
@@ -1056,13 +1111,13 @@ function EventPlayerRow({
             if (player.name) setShowUserDropdown(true);
           }}
           onBlur={() => {
-            // Delay to allow dropdown click
             setTimeout(() => {
               if (!player.username && nameQuery.trim()) {
                 onChange({ ...player, name: nameQuery.trim() });
               }
             }, 200);
           }}
+          onKeyDown={handleUserKeyDown}
           className="w-full bg-fab-surface border border-fab-border text-fab-text text-xs rounded px-2 py-1.5 focus:outline-none focus:border-fab-gold"
         />
         {player.username && (
@@ -1070,7 +1125,7 @@ function EventPlayerRow({
         )}
         {showUserDropdown && userResults.length > 0 && (
           <div className="absolute z-50 mt-1 w-full max-h-48 overflow-y-auto bg-fab-surface border border-fab-border rounded shadow-lg">
-            {userResults.map((u) => (
+            {userResults.map((u, ui) => (
               <button
                 key={u.uid}
                 type="button"
@@ -1080,7 +1135,9 @@ function EventPlayerRow({
                   setNameQuery(u.displayName);
                   setShowUserDropdown(false);
                 }}
-                className="w-full text-left px-2 py-1.5 text-xs flex items-center gap-2 hover:bg-fab-surface-hover transition-colors"
+                className={`w-full text-left px-2 py-1.5 text-xs flex items-center gap-2 transition-colors ${
+                  ui === userHighlight ? "bg-fab-gold/15 text-fab-gold" : "hover:bg-fab-surface-hover"
+                }`}
               >
                 {u.photoUrl ? (
                   <img src={u.photoUrl} alt="" className="w-5 h-5 rounded-full" />
@@ -1112,11 +1169,12 @@ function EventPlayerRow({
             setHeroQuery(player.hero || "");
             if (player.hero) setShowHeroDropdown(true);
           }}
+          onKeyDown={handleHeroKeyDown}
           className="w-full bg-fab-surface border border-fab-border text-fab-text text-xs rounded px-2 py-1.5 focus:outline-none focus:border-fab-gold"
         />
         {showHeroDropdown && heroResults.length > 0 && (
           <div className="absolute z-50 mt-1 w-56 max-h-48 overflow-y-auto bg-fab-surface border border-fab-border rounded shadow-lg">
-            {heroResults.map((h) => (
+            {heroResults.map((h, hi) => (
               <button
                 key={h.name}
                 type="button"
@@ -1126,7 +1184,9 @@ function EventPlayerRow({
                   setHeroQuery(h.name);
                   setShowHeroDropdown(false);
                 }}
-                className="w-full text-left px-2 py-1.5 text-xs flex items-center gap-2 hover:bg-fab-surface-hover transition-colors"
+                className={`w-full text-left px-2 py-1.5 text-xs flex items-center gap-2 transition-colors ${
+                  hi === heroHighlight ? "bg-fab-gold/15 text-fab-gold" : "hover:bg-fab-surface-hover"
+                }`}
               >
                 <span className="font-medium text-fab-text">{h.name}</span>
                 <span className="text-fab-dim">{h.classes.join(" / ")}{h.young ? " (Young)" : ""}</span>
