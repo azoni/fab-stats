@@ -31,6 +31,17 @@ const badgeLabels: Record<ChangeType, string> = {
 
 const changelog: Entry[] = [
   {
+    date: "February 26, 2026",
+    changes: [
+      { type: "new", text: "Monthly leaderboard categories — Monthly Matches, Monthly Wins, and Monthly Win Rate tabs" },
+      { type: "new", text: "Community Meta page (beta) — see the most popular and best-performing heroes across all players" },
+      { type: "new", text: "Hero Mastery expanded to 8 tiers — Grandmaster, Legend, and Mythic for dedicated hero mains" },
+      { type: "new", text: "Edit hero on your matches — expand any event and set the hero you played" },
+      { type: "improved", text: "Cleaner event match tables — hero column only shows when you played multiple heroes in an event" },
+      { type: "fixed", text: "Weekly and monthly leaderboard stats no longer inflated by bulk imports with incorrect dates" },
+    ],
+  },
+  {
     date: "February 25, 2026",
     changes: [
       { type: "new", text: "Weekly Matches and Weekly Wins leaderboard tabs — see who's grinding this week" },
