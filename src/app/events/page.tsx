@@ -19,6 +19,7 @@ export default function EventsPage() {
   const { user, profile } = useAuth();
   const [filterFormat, setFilterFormat] = useState("all");
   const [filterEventType, setFilterEventType] = useState("all");
+  const [filterHero, setFilterHero] = useState("all");
   const [view, setView] = useState<View>("timeline");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -56,7 +57,7 @@ export default function EventsPage() {
   // Reset to page 1 when filters/search change
   useEffect(() => {
     setPage(1);
-  }, [filterFormat, filterEventType, search]);
+  }, [filterFormat, filterEventType, filterHero, search]);
 
   const eventStats = useMemo(() => computeEventStats(matches), [matches]);
 
@@ -68,6 +69,21 @@ export default function EventsPage() {
     return [...new Set(eventStats.map((e) => e.eventType).filter(Boolean))] as string[];
   }, [eventStats]);
 
+  // Derive hero per event (shared hero if all matches have the same one)
+  const getEventHero = useCallback((event: typeof eventStats[0]): string | null => {
+    const heroes = new Set(event.matches.map((m) => m.heroPlayed).filter((h) => h && h !== "Unknown"));
+    return heroes.size === 1 ? [...heroes][0]! : null;
+  }, []);
+
+  const allHeroes = useMemo(() => {
+    const heroes = new Set(eventStats.map(getEventHero).filter(Boolean)) as Set<string>;
+    return [...heroes].sort();
+  }, [eventStats, getEventHero]);
+
+  const hasUnsetHeroes = useMemo(() => {
+    return eventStats.some((e) => !getEventHero(e));
+  }, [eventStats, getEventHero]);
+
   const filtered = useMemo(() => {
     let result = eventStats;
 
@@ -76,6 +92,11 @@ export default function EventsPage() {
     }
     if (filterEventType !== "all") {
       result = result.filter((e) => e.eventType === filterEventType);
+    }
+    if (filterHero === "none") {
+      result = result.filter((e) => !getEventHero(e));
+    } else if (filterHero !== "all") {
+      result = result.filter((e) => getEventHero(e) === filterHero);
     }
 
     const q = search.trim().toLowerCase();
@@ -97,7 +118,7 @@ export default function EventsPage() {
     }
 
     return result;
-  }, [eventStats, filterFormat, filterEventType, search]);
+  }, [eventStats, filterFormat, filterEventType, filterHero, getEventHero, search]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
@@ -185,6 +206,19 @@ export default function EventsPage() {
               <option value="all">All Event Types</option>
               {allEventTypes.map((t) => (
                 <option key={t} value={t}>{t}</option>
+              ))}
+            </select>
+          )}
+          {(allHeroes.length > 0 || hasUnsetHeroes) && (
+            <select
+              value={filterHero}
+              onChange={(e) => setFilterHero(e.target.value)}
+              className="bg-fab-surface border border-fab-border rounded-md px-3 py-1.5 text-fab-text text-sm outline-none"
+            >
+              <option value="all">All Heroes</option>
+              {hasUnsetHeroes && <option value="none">No Hero Set</option>}
+              {allHeroes.map((h) => (
+                <option key={h} value={h}>{h}</option>
               ))}
             </select>
           )}

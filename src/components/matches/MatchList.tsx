@@ -36,6 +36,10 @@ export function MatchList({ matches, matchOwnerUid, enableComments, editable, on
     return Array.from(heroes).sort();
   }, [matches]);
 
+  const hasUnsetHeroes = useMemo(() => {
+    return matches.some((m) => !m.heroPlayed || m.heroPlayed === "Unknown");
+  }, [matches]);
+
   const allEventTypes = useMemo(() => {
     const types = new Set(matches.map((m) => getEventType(m)).filter(Boolean));
     return Array.from(types).sort();
@@ -50,7 +54,9 @@ export function MatchList({ matches, matchOwnerUid, enableComments, editable, on
     if (filterFormat !== "all") {
       result = result.filter((m) => m.format === filterFormat);
     }
-    if (filterHero !== "all") {
+    if (filterHero === "none") {
+      result = result.filter((m) => !m.heroPlayed || m.heroPlayed === "Unknown");
+    } else if (filterHero !== "all") {
       result = result.filter((m) => m.heroPlayed === filterHero);
     }
     if (filterEventType !== "all") {
@@ -127,13 +133,14 @@ export function MatchList({ matches, matchOwnerUid, enableComments, editable, on
             ))}
           </select>
 
-          {allHeroes.length > 1 && (
+          {(allHeroes.length > 0 || hasUnsetHeroes) && (
             <select
               value={filterHero}
               onChange={(e) => setFilterHero(e.target.value)}
               className="bg-fab-surface border border-fab-border rounded-md px-3 py-1.5 text-fab-text text-sm outline-none"
             >
               <option value="all">All Heroes</option>
+              {hasUnsetHeroes && <option value="none">No Hero Set</option>}
               {allHeroes.map((h) => (
                 <option key={h} value={h}>{h}</option>
               ))}
