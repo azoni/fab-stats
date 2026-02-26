@@ -101,17 +101,11 @@ export function QuickEventImportModal({ open, onClose, onImportComplete }: Quick
         reader.readAsDataURL(file);
       });
 
-      const res = await fetch("/api/ocr-event", {
+      const res = await fetch("/.netlify/functions/ocr-event", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ image: base64 }),
       });
-
-      if (res.status === 501) {
-        setError("Screenshot import is not available yet. Please use the text paste method.");
-        setImageProcessing(false);
-        return;
-      }
 
       if (!res.ok) {
         setError("Failed to process screenshot. Please try pasting the text instead.");
@@ -131,7 +125,7 @@ export function QuickEventImportModal({ open, onClose, onImportComplete }: Quick
       setParsedEvent(result.event);
       setPhase("review");
     } catch {
-      setError("Screenshot import is not available yet. Please use the text paste method.");
+      setError("Failed to process screenshot. Please try again or use the text paste method.");
     }
 
     setImageProcessing(false);
@@ -206,12 +200,14 @@ export function QuickEventImportModal({ open, onClose, onImportComplete }: Quick
                 >
                   Paste Text
                 </button>
-                <span
-                  className="flex-1 px-3 py-2 text-sm font-medium text-fab-dim cursor-not-allowed text-center"
-                  title="Coming soon"
+                <button
+                  onClick={() => { setInputMethod("screenshot"); setError(""); }}
+                  className={`flex-1 px-3 py-2 text-sm font-medium transition-colors ${
+                    inputMethod === "screenshot" ? "bg-fab-gold/15 text-fab-gold" : "text-fab-muted hover:text-fab-text"
+                  }`}
                 >
-                  Screenshot <span className="text-xs opacity-60">(Soon)</span>
-                </span>
+                  Screenshot
+                </button>
               </div>
 
               {inputMethod === "paste" ? (
@@ -262,8 +258,8 @@ export function QuickEventImportModal({ open, onClose, onImportComplete }: Quick
                       <svg className="w-8 h-8 text-fab-dim mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
                       </svg>
-                      <p className="text-sm text-fab-muted">Drop a screenshot here or click to browse</p>
-                      <p className="text-xs text-fab-dim mt-1">Screenshot of your GEM event results</p>
+                      <p className="text-sm text-fab-muted">Tap to upload a screenshot</p>
+                      <p className="text-xs text-fab-dim mt-1">Screenshot of your GEM event page</p>
                     </>
                   )}
                 </div>
