@@ -106,6 +106,12 @@ export default function Dashboard() {
               </>
             )}
           </div>
+          <Link
+            href="/docs"
+            className="text-sm text-fab-dim hover:text-fab-gold transition-colors mt-2"
+          >
+            Learn how it works &rarr;
+          </Link>
         </div>
       )}
 

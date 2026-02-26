@@ -37,12 +37,49 @@ export default function DocsPage() {
           </div>
         </section>
 
+        {/* Win Rate & Record */}
+        <section>
+          <h2 className="text-lg font-semibold text-fab-text mb-3">Win Rate &amp; Record</h2>
+          <p className="text-sm text-fab-muted mb-3">
+            Win rate is calculated as <span className="font-medium text-fab-text">wins / total matches</span>.
+            All match results count toward the total — wins, losses, draws, and byes are all included
+            in the denominator. This means byes and draws will slightly lower your win rate percentage.
+          </p>
+          <p className="text-xs text-fab-dim">
+            Example: 80 wins, 15 losses, 5 byes = 80/100 = 80.0% win rate, not 80/95.
+          </p>
+        </section>
+
+        {/* Streaks */}
+        <section>
+          <h2 className="text-lg font-semibold text-fab-text mb-3">Streaks</h2>
+          <p className="text-sm text-fab-muted mb-3">
+            Streaks track consecutive wins or losses. Only wins extend a win streak and only losses
+            extend a loss streak.
+          </p>
+          <div className="space-y-2 text-sm text-fab-muted">
+            <p>
+              <span className="font-medium text-fab-text">Draws break streaks</span> — A draw resets both
+              your win streak and loss streak to zero.
+            </p>
+            <p>
+              <span className="font-medium text-fab-text">Byes break streaks</span> — Byes are treated
+              the same as draws for streak purposes. They do not extend a win streak.
+            </p>
+          </div>
+          <p className="text-xs text-fab-dim mt-2">
+            Matches are sorted chronologically to determine streak order. Your current streak shows
+            the most recent consecutive result.
+          </p>
+        </section>
+
         {/* Best Finish */}
         <section>
           <h2 className="text-lg font-semibold text-fab-text mb-3">Best Finish</h2>
           <p className="text-sm text-fab-muted mb-3">
             Your Best Finish is determined by your top playoff result across all competitive events.
-            Playoff rounds are detected automatically from GEM round data (Top 8, Semifinals, Finals, etc.).
+            Playoff rounds are detected automatically from GEM round data using pattern matching
+            on round names (Top 8, Semifinals, Finals, Round P#, Quarter, etc.).
           </p>
           <p className="text-sm text-fab-muted mb-3">
             Finishes are ranked in this order:
@@ -54,6 +91,15 @@ export default function DocsPage() {
                 <div className="text-sm font-semibold text-fab-text">{f}</div>
               </div>
             ))}
+          </div>
+          <p className="text-sm text-fab-muted mb-2">
+            How finish type is determined:
+          </p>
+          <div className="space-y-1 text-sm text-fab-muted mb-4">
+            <p><span className="font-medium text-fab-text">Champion</span> — No losses in playoff rounds</p>
+            <p><span className="font-medium text-fab-text">Finalist</span> — Played in the finals but lost</p>
+            <p><span className="font-medium text-fab-text">Top 4</span> — Played in semifinals but not finals</p>
+            <p><span className="font-medium text-fab-text">Top 8</span> — Entered playoffs but eliminated before semis</p>
           </div>
           <p className="text-sm text-fab-muted mb-3">
             When you have multiple finishes of the same type, the more prestigious event wins.
@@ -83,6 +129,66 @@ export default function DocsPage() {
           </div>
           <p className="text-xs text-fab-dim mt-2">
             Armory, Pre-Release, and unrecognized event types are excluded from Best Finish calculations.
+          </p>
+        </section>
+
+        {/* Event Detection */}
+        <section>
+          <h2 className="text-lg font-semibold text-fab-text mb-3">Event Detection</h2>
+          <p className="text-sm text-fab-muted mb-3">
+            Events are grouped from your match data by event name, date, and venue. Matches from the
+            same event are combined into a single event entry on your Events page.
+          </p>
+          <div className="space-y-2 text-sm text-fab-muted">
+            <p>
+              <span className="font-medium text-fab-text">Multi-format events</span> — Major tournaments
+              like Nationals, Pro Tour, and Worlds combine all formats (e.g. CC + Draft) into a single event,
+              rather than splitting them.
+            </p>
+            <p>
+              <span className="font-medium text-fab-text">Event type classification</span> — Event types
+              are refined from the event name using pattern matching. Common abbreviations are recognized
+              (BH for Battle Hardened, PQ for ProQuest, RTN for Road to Nationals). If the event name
+              contains a known type, it overrides the default GEM classification.
+            </p>
+            <p>
+              <span className="font-medium text-fab-text">Rated events</span> — Some events are flagged
+              as &quot;rated&quot; based on GEM data. Rated match stats are tracked separately and have
+              their own leaderboard tab with a minimum of 5 rated matches to appear.
+            </p>
+          </div>
+        </section>
+
+        {/* Nemesis & Best Friend */}
+        <section>
+          <h2 className="text-lg font-semibold text-fab-text mb-3">Nemesis &amp; Best Friend</h2>
+          <p className="text-sm text-fab-muted mb-3">
+            Your profile highlights two special opponents:
+          </p>
+          <div className="space-y-3 text-sm text-fab-muted">
+            <div className="p-3 rounded-lg bg-fab-surface border border-fab-border">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-fab-loss font-semibold">Nemesis</span>
+              </div>
+              <p>
+                The opponent you struggle against the most. Calculated as the opponent with the
+                <span className="font-medium text-fab-text"> lowest win rate</span> against you,
+                with a minimum of 3 matches. &quot;Unknown&quot; opponents are excluded.
+              </p>
+            </div>
+            <div className="p-3 rounded-lg bg-fab-surface border border-fab-border">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-fab-text font-semibold">Best Friend</span>
+              </div>
+              <p>
+                The opponent you&apos;ve played the most. Calculated as the opponent with the
+                <span className="font-medium text-fab-text"> highest total match count</span> against you,
+                regardless of win rate.
+              </p>
+            </div>
+          </div>
+          <p className="text-xs text-fab-dim mt-2">
+            The Nemesis leaderboard tab ranks all public players by who has the worst win rate against any single opponent (min 3 matches).
           </p>
         </section>
 
@@ -172,14 +278,18 @@ export default function DocsPage() {
             {[
               ["Win Rate", "Highest win percentage (min 10 matches)"],
               ["Most Matches", "Total matches played"],
+              ["Most Wins", "Total wins"],
               ["Win Streak", "Longest consecutive wins"],
-              ["Weekly", "Matches and wins this week"],
+              ["Weekly", "Matches and wins this week (resets Monday)"],
               ["Monthly", "Matches, wins, and win rate this month"],
-              ["Rated", "Rated match win rate and streaks"],
+              ["Rated", "Rated match win rate and streaks (min 5 rated)"],
               ["Events", "Tournament events played"],
               ["Draws", "Most drawn matches"],
               ["Byes", "Most byes received"],
               ["Nemesis", "Worst head-to-head record against any opponent"],
+              ["Armory", "Armory-specific stats and win rates"],
+              ["Earnings", "Lifetime prize money earned"],
+              ["Top 8s", "Playoff finishes by event type"],
             ].map(([name, desc]) => (
               <div key={name} className="flex items-start gap-2 py-1">
                 <span className="shrink-0 font-medium text-fab-text w-28">{name}</span>
@@ -187,9 +297,50 @@ export default function DocsPage() {
               </div>
             ))}
           </div>
-          <p className="text-sm text-fab-muted mt-3">
-            The top 5 players on each tab receive a ranked border on their card:
-            Grandmaster (prismatic), Diamond (cyan), Gold, Silver, and Bronze.
+          <p className="text-sm text-fab-muted mt-4 mb-2">
+            <span className="font-medium text-fab-text">Ranked borders</span> — The top 5 players on
+            each tab receive a ranked border on their card:
+          </p>
+          <div className="space-y-1 text-sm text-fab-muted">
+            {[
+              ["1st", "Grandmaster", "Prismatic animated gradient"],
+              ["2nd", "Diamond", "Cyan glow"],
+              ["3rd", "Gold", "Gold border"],
+              ["4th", "Silver", "Silver border"],
+              ["5th", "Bronze", "Bronze border"],
+            ].map(([rank, name, desc]) => (
+              <div key={rank} className="flex items-center gap-2 py-0.5">
+                <span className="shrink-0 font-mono text-fab-dim w-8 text-right">{rank}</span>
+                <span className="shrink-0 font-medium text-fab-text w-28">{name}</span>
+                <span className="text-fab-dim">{desc}</span>
+              </div>
+            ))}
+          </div>
+          <p className="text-xs text-fab-dim mt-2">
+            If you rank top 5 on multiple tabs, your profile shows the border from your highest rank.
+          </p>
+        </section>
+
+        {/* Weekly & Monthly Stats */}
+        <section>
+          <h2 className="text-lg font-semibold text-fab-text mb-3">Weekly &amp; Monthly Stats</h2>
+          <p className="text-sm text-fab-muted mb-3">
+            Weekly and monthly leaderboard tabs track recent activity:
+          </p>
+          <div className="space-y-2 text-sm text-fab-muted">
+            <p>
+              <span className="font-medium text-fab-text">Weekly</span> — Resets every Monday.
+              Shows matches played and wins for the current week.
+            </p>
+            <p>
+              <span className="font-medium text-fab-text">Monthly</span> — Resets on the 1st of
+              each month. Shows matches, wins, and win rate.
+            </p>
+          </div>
+          <p className="text-xs text-fab-dim mt-2">
+            Bulk imports with incorrect dates are automatically detected and excluded from weekly/monthly
+            stats to prevent inflated numbers. If the majority of a player&apos;s matches appear to land
+            in the current period, the stats are reset to zero.
           </p>
         </section>
 
@@ -218,7 +369,8 @@ export default function DocsPage() {
           <div className="space-y-2 text-sm text-fab-muted">
             <p>
               <span className="font-medium text-fab-text">Public profiles</span> — Your stats, hero breakdown, and events are visible to anyone.
-              Opponent names are automatically shortened (e.g. &quot;John S.&quot;) to protect their privacy.
+              Opponent names are hidden on public profiles to protect their privacy. If an opponent has
+              opted in via &quot;Show name on profiles&quot; in their settings, their name will be visible.
             </p>
             <p>
               <span className="font-medium text-fab-text">Private profiles</span> — Only you can see your data. You won&apos;t appear on the Leaderboard or in search results.
@@ -239,6 +391,10 @@ export default function DocsPage() {
             <p>3. Click the &quot;Export to FaB Stats&quot; button that appears</p>
             <p>4. Your matches are copied to clipboard — paste them on the Import page</p>
           </div>
+          <p className="text-xs text-fab-dim mt-2">
+            Each import tracks which extension version was used and whether data came from the extension,
+            copy-paste, or CSV upload.
+          </p>
         </section>
 
         {/* Community Meta */}
