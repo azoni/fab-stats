@@ -115,28 +115,30 @@ export function Navbar() {
               </span>
             )}
           </Link>
-          <div className="hidden md:flex items-center gap-1">
+          <div className="flex items-center gap-1">
             {mounted && (
               <>
-                {coreLinks.map((link) => (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    className={`flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                      pathname === link.href
-                        ? "text-fab-gold bg-fab-gold/10"
-                        : "text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover"
-                    }`}
-                  >
-                    {link.icon}
-                    {link.label}
-                  </Link>
-                ))}
-                <MoreDropdown
-                  pathname={pathname}
-                  isAuthenticated={!!isAuthenticated}
-                  creators={creators}
-                />
+                <div className="hidden md:contents">
+                  {coreLinks.map((link) => (
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      className={`flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                        pathname === link.href
+                          ? "text-fab-gold bg-fab-gold/10"
+                          : "text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover"
+                      }`}
+                    >
+                      {link.icon}
+                      {link.label}
+                    </Link>
+                  ))}
+                  <MoreDropdown
+                    pathname={pathname}
+                    isAuthenticated={!!isAuthenticated}
+                    creators={creators}
+                  />
+                </div>
                 <div className="ml-3 pl-3 border-l border-fab-border flex items-center gap-2">
                   {!user && !isGuest ? (
                     <Link
@@ -147,7 +149,7 @@ export function Navbar() {
                     </Link>
                   ) : isGuest ? (
                     <>
-                      <span className="text-xs text-fab-dim">Guest</span>
+                      <span className="text-xs text-fab-dim hidden sm:inline">Guest</span>
                       <Link
                         href="/login"
                         className="text-xs text-fab-gold hover:text-fab-gold-light transition-colors"
@@ -158,12 +160,12 @@ export function Navbar() {
                   ) : profile ? (
                     <Link
                       href={`/player/${profile.username}`}
-                      className="text-xs text-fab-dim hover:text-fab-gold transition-colors truncate max-w-32"
+                      className="text-xs text-fab-dim hover:text-fab-gold transition-colors truncate max-w-32 hidden sm:inline"
                     >
                       @{profile.username}
                     </Link>
                   ) : (
-                    <span className="text-xs text-fab-dim truncate max-w-32">{user?.email}</span>
+                    <span className="text-xs text-fab-dim truncate max-w-32 hidden sm:inline">{user?.email}</span>
                   )}
                   {isAuthenticated && <NotificationBell />}
                   {isAuthenticated && (
