@@ -213,12 +213,17 @@ export interface LeaderboardEntry {
   weeklyMatches: number;
   weeklyWins: number;
   weekStart: string;
+  monthlyMatches: number;
+  monthlyWins: number;
+  monthlyWinRate: number;
+  monthStart: string;
   earnings?: number;
   armoryMatches: number;
   armoryWins: number;
   armoryWinRate: number;
   armoryEvents: number;
   showNameOnProfiles?: boolean;
+  heroBreakdown?: { hero: string; matches: number; wins: number; winRate: number }[];
   updatedAt: string;
 }
 
@@ -266,7 +271,7 @@ export interface Achievement {
   rarity: "common" | "uncommon" | "rare" | "epic" | "legendary";
 }
 
-export type MasteryTier = "novice" | "apprentice" | "skilled" | "expert" | "master";
+export type MasteryTier = "novice" | "apprentice" | "skilled" | "expert" | "master" | "grandmaster" | "legend" | "mythic";
 
 export interface HeroMastery {
   heroName: string;

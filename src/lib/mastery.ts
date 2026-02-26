@@ -7,6 +7,9 @@ interface TierDef {
 }
 
 const TIERS: TierDef[] = [
+  { tier: "mythic", minMatches: 150, label: "Mythic" },
+  { tier: "legend", minMatches: 100, label: "Legend" },
+  { tier: "grandmaster", minMatches: 75, label: "Grandmaster" },
   { tier: "master", minMatches: 50, label: "Master" },
   { tier: "expert", minMatches: 30, label: "Expert" },
   { tier: "skilled", minMatches: 15, label: "Skilled" },
@@ -45,4 +48,7 @@ export const tierConfig: Record<MasteryTier, { label: string; color: string; bg:
   skilled: { label: "Skilled", color: "text-blue-400", bg: "bg-blue-400/10", border: "border-blue-400/30" },
   expert: { label: "Expert", color: "text-purple-400", bg: "bg-purple-400/10", border: "border-purple-400/30" },
   master: { label: "Master", color: "text-fab-gold", bg: "bg-fab-gold/10", border: "border-fab-gold/30" },
+  grandmaster: { label: "Grandmaster", color: "text-fuchsia-400", bg: "bg-fuchsia-400/10", border: "border-fuchsia-400/30" },
+  legend: { label: "Legend", color: "text-sky-400", bg: "bg-sky-400/10", border: "border-sky-400/30" },
+  mythic: { label: "Mythic", color: "text-red-400", bg: "bg-red-400/10", border: "border-red-400/30" },
 };

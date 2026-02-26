@@ -1,4 +1,4 @@
-import { getWeekStart } from "./leaderboard";
+import { getWeekStart, getMonthStart } from "./leaderboard";
 import type { LeaderboardEntry } from "@/types";
 
 export interface LeaderboardRank {
@@ -10,6 +10,7 @@ export interface LeaderboardRank {
 type RankTab = { id: string; label: string; filter: (e: LeaderboardEntry) => boolean; sort: (a: LeaderboardEntry, b: LeaderboardEntry) => number };
 
 const currentWeekStart = getWeekStart();
+const currentMonthStart = getMonthStart();
 
 const RANK_TABS: RankTab[] = [
   {
@@ -41,6 +42,24 @@ const RANK_TABS: RankTab[] = [
     label: "Weekly Wins",
     filter: (e) => e.weekStart === currentWeekStart && e.weeklyWins > 0,
     sort: (a, b) => b.weeklyWins - a.weeklyWins || b.weeklyMatches - a.weeklyMatches,
+  },
+  {
+    id: "monthlymatches",
+    label: "Monthly Matches",
+    filter: (e) => e.monthStart === currentMonthStart && (e.monthlyMatches ?? 0) > 0,
+    sort: (a, b) => (b.monthlyMatches ?? 0) - (a.monthlyMatches ?? 0) || (b.monthlyWins ?? 0) - (a.monthlyWins ?? 0),
+  },
+  {
+    id: "monthlywins",
+    label: "Monthly Wins",
+    filter: (e) => e.monthStart === currentMonthStart && (e.monthlyWins ?? 0) > 0,
+    sort: (a, b) => (b.monthlyWins ?? 0) - (a.monthlyWins ?? 0) || (b.monthlyMatches ?? 0) - (a.monthlyMatches ?? 0),
+  },
+  {
+    id: "monthlywinrate",
+    label: "Monthly Win Rate",
+    filter: (e) => e.monthStart === currentMonthStart && (e.monthlyMatches ?? 0) >= 5,
+    sort: (a, b) => (b.monthlyWinRate ?? 0) - (a.monthlyWinRate ?? 0) || (b.monthlyMatches ?? 0) - (a.monthlyMatches ?? 0),
   },
   {
     id: "streaks",

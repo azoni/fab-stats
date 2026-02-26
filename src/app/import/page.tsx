@@ -14,6 +14,9 @@ import { MatchCard } from "@/components/matches/MatchCard";
 import { CheckCircleIcon, FileIcon, ChevronDownIcon, ChevronUpIcon } from "@/components/icons/NavIcons";
 import { MatchResult, type MatchRecord } from "@/types";
 import { allHeroes } from "@/lib/heroes";
+import { computeSessionRecap, type SessionRecap } from "@/lib/session-recap";
+import { PostEventRecap } from "@/components/import/PostEventRecap";
+import { getAllMatches as getLocalMatches } from "@/lib/storage";
 
 const BOOKMARKLET_HREF = `javascript:void((async function(){var els=document.querySelectorAll('a,button,summary,span,div,[role=button]');var n=0;for(var i=0;i<els.length;i++){var t=(els[i].textContent||'').trim();if(t.match(/View Results/i)&&t.length<30){els[i].click();n++;await new Promise(function(r){setTimeout(r,600)})}}alert('Expanded '+n+' events. Press Ctrl+A, Ctrl+C to copy.')})())`;
 
@@ -44,6 +47,25 @@ export default function ImportPage() {
   const [confirmClear, setConfirmClear] = useState(false);
   const [cleared, setCleared] = useState(false);
   const [heroOverrides, setHeroOverrides] = useState<Record<number, string>>({});
+  const [sessionRecap, setSessionRecap] = useState<SessionRecap | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
+  const [showPasteSteps, setShowPasteSteps] = useState(false);
+
+  // Detect mobile viewport
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 767px)");
+    setIsMobile(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+
+  // Auto-expand paste method on mobile (Chrome Extension not available on phones)
+  useEffect(() => {
+    if (isMobile && method === null && !pasteResult && !csvMatches && !autoDetected) {
+      setMethod("paste");
+    }
+  }, [isMobile]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-detect extension data from URL hash (#ext=base64data)
   useEffect(() => {
@@ -170,6 +192,19 @@ export default function ImportPage() {
     const matches = pasteResult ? filteredMatches : csvMatches;
     if (!matches || (!user && !isGuest)) return;
     setImporting(true);
+
+    // Capture matches before import for recap
+    let beforeMatches: MatchRecord[] = [];
+    try {
+      if (user) {
+        beforeMatches = await getMatchesByUserId(user.uid);
+      } else {
+        beforeMatches = getLocalMatches();
+      }
+    } catch {
+      // If we can't get before matches, recap will still work with empty array
+    }
+
     let count: number;
     if (user) {
       count = await importMatchesFirestore(user.uid, matches);
@@ -180,6 +215,25 @@ export default function ImportPage() {
     setSkippedCount(matches.length - count);
     setImported(true);
     setImporting(false);
+
+    // Compute session recap
+    if (count > 0) {
+      try {
+        let afterMatches: MatchRecord[] = [];
+        if (user) {
+          afterMatches = await getMatchesByUserId(user.uid);
+        } else {
+          afterMatches = getLocalMatches();
+        }
+        // Build session matches from the difference (new matches have IDs assigned)
+        const beforeIds = new Set(beforeMatches.map((m) => m.id));
+        const newlyImported = afterMatches.filter((m) => !beforeIds.has(m.id));
+        const recap = computeSessionRecap(beforeMatches, afterMatches, newlyImported);
+        setSessionRecap(recap);
+      } catch {
+        // Recap computation failed — will fall back to basic completion screen
+      }
+    }
 
     // Post to activity feed + update leaderboard (non-blocking, only for signed-in users with a profile)
     if (user && profile && count > 0) {
@@ -195,7 +249,7 @@ export default function ImportPage() {
         .map(([hero]) => hero);
       createImportFeedEvent(profile, count, topHeroes).catch(() => {});
       getMatchesByUserId(user.uid)
-        .then((allMatches) => updateLeaderboardEntry(profile, allMatches))
+        .then((allUserMatches) => updateLeaderboardEntry(profile, allUserMatches))
         .catch(() => {});
     }
   }
@@ -213,6 +267,7 @@ export default function ImportPage() {
     setMethod(null);
     setAutoDetected(false);
     setHeroOverrides({});
+    setSessionRecap(null);
   }
 
   async function handleClearAll() {
@@ -235,6 +290,18 @@ export default function ImportPage() {
   // ── Import Complete Screen ─────────────────────────────────────
 
   if (imported) {
+    if (sessionRecap && sessionRecap.sessionMatches.length > 0) {
+      return (
+        <PostEventRecap
+          recap={sessionRecap}
+          onViewOpponents={() => router.push("/opponents")}
+          onDashboard={() => router.push("/")}
+          onImportMore={handleReset}
+          skippedCount={skippedCount}
+        />
+      );
+    }
+
     return (
       <div className="text-center py-16">
         <CheckCircleIcon className="w-14 h-14 text-fab-win mb-4 mx-auto" />
@@ -245,13 +312,13 @@ export default function ImportPage() {
         )}
         {skippedCount === 0 && <div className="mb-6" />}
         <div className="flex gap-3 justify-center flex-wrap">
-          <button onClick={() => router.push("/opponents")} className="px-6 py-3 rounded-md font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors">
+          <button onClick={() => router.push("/opponents")} className="px-6 min-h-[48px] py-3 rounded-md font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light active:bg-fab-gold-light transition-colors">
             View Opponent Stats
           </button>
-          <button onClick={() => router.push("/")} className="px-6 py-3 rounded-md font-semibold bg-fab-surface border border-fab-border text-fab-text hover:bg-fab-surface-hover transition-colors">
+          <button onClick={() => router.push("/")} className="px-6 min-h-[48px] py-3 rounded-md font-semibold bg-fab-surface border border-fab-border text-fab-text hover:bg-fab-surface-hover active:bg-fab-surface-hover transition-colors">
             Dashboard
           </button>
-          <button onClick={handleReset} className="px-6 py-3 rounded-md font-semibold bg-fab-surface border border-fab-border text-fab-muted hover:text-fab-text transition-colors">
+          <button onClick={handleReset} className="px-6 min-h-[48px] py-3 rounded-md font-semibold bg-fab-surface border border-fab-border text-fab-muted hover:text-fab-text active:bg-fab-surface-hover transition-colors">
             Import More
           </button>
         </div>
@@ -424,51 +491,101 @@ export default function ImportPage() {
             {method === "paste" && (
               <div className="border-t border-fab-border px-4 pb-4 pt-3" onClick={(e) => e.stopPropagation()}>
                 <div className="space-y-4">
-                  <div className="bg-fab-bg rounded-lg p-4">
-                    <h4 className="text-sm font-semibold text-fab-text mb-3">Steps:</h4>
-                    <ol className="text-sm text-fab-muted space-y-2 list-decimal list-inside">
-                      <li>
-                        Go to your{" "}
-                        <a href="https://gem.fabtcg.com/profile/history/" target="_blank" rel="noopener noreferrer" className="text-fab-gold hover:underline">
-                          GEM History page
-                        </a>{" "}
-                        and log in
-                      </li>
-                      <li>Click <strong className="text-fab-text">&quot;View Results&quot;</strong> on each event to expand it</li>
-                      <li>Press <kbd className="px-1.5 py-0.5 rounded bg-fab-surface text-fab-gold text-xs font-mono">Ctrl+A</kbd> to select all, then <kbd className="px-1.5 py-0.5 rounded bg-fab-surface text-fab-gold text-xs font-mono">Ctrl+C</kbd> to copy</li>
-                      <li>Paste below with <kbd className="px-1.5 py-0.5 rounded bg-fab-surface text-fab-gold text-xs font-mono">Ctrl+V</kbd></li>
-                    </ol>
-                  </div>
-
-                  <div className="flex items-center gap-3 text-xs text-fab-dim">
-                    <span className="text-fab-muted font-medium">Tip:</span>
-                    Drag this to your bookmarks bar to auto-expand all events on GEM:{" "}
-                    <a
-                      ref={bookmarkletRef}
-                      href="#"
-                      onClick={(e) => e.preventDefault()}
-                      className="inline-block px-2.5 py-1 rounded bg-fab-gold/15 text-fab-gold font-semibold hover:bg-fab-gold/25 transition-colors cursor-grab whitespace-nowrap"
-                      title="Drag this to your bookmarks bar"
+                  {/* Collapsible instructions */}
+                  <div className="bg-fab-bg rounded-lg overflow-hidden">
+                    <button
+                      onClick={() => setShowPasteSteps(!showPasteSteps)}
+                      className="w-full flex items-center justify-between p-4 min-h-[48px]"
                     >
-                      Expand GEM Events
-                    </a>
+                      <h4 className="text-sm font-semibold text-fab-text">
+                        {showPasteSteps ? "Steps" : "How to copy from GEM"}
+                      </h4>
+                      <svg
+                        className={`w-4 h-4 text-fab-dim transition-transform ${showPasteSteps ? "rotate-180" : ""}`}
+                        fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+                    {showPasteSteps && (
+                      <div className="px-4 pb-4">
+                        <ol className="text-sm text-fab-muted space-y-2 list-decimal list-inside">
+                          <li>
+                            Go to your{" "}
+                            <a href="https://gem.fabtcg.com/profile/history/" target="_blank" rel="noopener noreferrer" className="text-fab-gold hover:underline">
+                              GEM History page
+                            </a>{" "}
+                            and log in
+                          </li>
+                          <li>Click <strong className="text-fab-text">&quot;View Results&quot;</strong> on each event to expand it</li>
+                          {isMobile ? (
+                            <>
+                              <li>Long-press to start selecting text, then <strong className="text-fab-text">Select All</strong></li>
+                              <li>Tap <strong className="text-fab-text">Copy</strong>, then use the paste button below</li>
+                            </>
+                          ) : (
+                            <>
+                              <li>Press <kbd className="px-1.5 py-0.5 rounded bg-fab-surface text-fab-gold text-xs font-mono">Ctrl+A</kbd> to select all, then <kbd className="px-1.5 py-0.5 rounded bg-fab-surface text-fab-gold text-xs font-mono">Ctrl+C</kbd> to copy</li>
+                              <li>Paste below with <kbd className="px-1.5 py-0.5 rounded bg-fab-surface text-fab-gold text-xs font-mono">Ctrl+V</kbd></li>
+                            </>
+                          )}
+                        </ol>
+                        {!isMobile && (
+                          <div className="flex items-center gap-3 text-xs text-fab-dim mt-3">
+                            <span className="text-fab-muted font-medium">Tip:</span>
+                            Drag this to your bookmarks bar to auto-expand all events on GEM:{" "}
+                            <a
+                              ref={bookmarkletRef}
+                              href="#"
+                              onClick={(e) => e.preventDefault()}
+                              className="inline-block px-2.5 py-1 rounded bg-fab-gold/15 text-fab-gold font-semibold hover:bg-fab-gold/25 transition-colors cursor-grab whitespace-nowrap"
+                              title="Drag this to your bookmarks bar"
+                            >
+                              Expand GEM Events
+                            </a>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   <div className="bg-fab-draw/10 border border-fab-draw/20 rounded-lg px-3 py-2 text-xs text-fab-dim">
                     <strong className="text-fab-draw">Note:</strong> If GEM shows multiple pages of history, import each page separately — we&apos;ll skip any duplicates automatically. This method can&apos;t detect which hero you played (use the Chrome Extension for that).
                   </div>
 
+                  {/* Paste from Clipboard button (mobile-friendly) */}
+                  {isMobile && !pasteText && (
+                    <button
+                      onClick={async () => {
+                        try {
+                          const text = await navigator.clipboard.readText();
+                          if (text.trim()) {
+                            setPasteText(text);
+                          }
+                        } catch {
+                          // Clipboard permission denied — user can still paste manually
+                        }
+                      }}
+                      className="w-full min-h-[48px] py-3 rounded-lg font-semibold bg-fab-surface border-2 border-dashed border-fab-gold/40 text-fab-gold hover:bg-fab-gold/10 active:bg-fab-gold/15 transition-colors flex items-center justify-center gap-2"
+                    >
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                      </svg>
+                      Paste from Clipboard
+                    </button>
+                  )}
+
                   <textarea
                     value={pasteText}
                     onChange={(e) => setPasteText(e.target.value)}
-                    placeholder="Paste your GEM History page here..."
-                    rows={10}
+                    placeholder={isMobile ? "Tap \"Paste from Clipboard\" above or long-press here to paste..." : "Paste your GEM History page here..."}
+                    rows={isMobile ? 6 : 10}
                     className="w-full bg-fab-bg border border-fab-border rounded-lg px-4 py-3 text-fab-text text-sm outline-none focus:border-fab-gold/50 placeholder:text-fab-dim resize-y font-mono"
                   />
                   <button
                     onClick={handleParsePaste}
                     disabled={!pasteText.trim()}
-                    className="w-full py-3 rounded-md font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full min-h-[48px] py-3 rounded-md font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light active:bg-fab-gold-light transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Parse Matches
                   </button>
@@ -739,10 +856,10 @@ export default function ImportPage() {
 
           {/* Action buttons */}
           <div className="flex gap-3">
-            <button onClick={handleImport} disabled={importing} className="flex-1 py-3 rounded-md font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors disabled:opacity-50">
+            <button onClick={handleImport} disabled={importing} className="flex-1 min-h-[48px] py-3 rounded-md font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light active:bg-fab-gold-light transition-colors disabled:opacity-50">
               {importing ? "Importing..." : `Import ${totalToImport} Matches`}
             </button>
-            <button onClick={handleReset} className="px-6 py-3 rounded-md font-semibold bg-fab-surface border border-fab-border text-fab-muted hover:text-fab-text transition-colors">
+            <button onClick={handleReset} className="px-6 min-h-[48px] py-3 rounded-md font-semibold bg-fab-surface border border-fab-border text-fab-muted hover:text-fab-text active:bg-fab-surface-hover transition-colors">
               Cancel
             </button>
           </div>

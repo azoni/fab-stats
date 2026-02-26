@@ -24,6 +24,12 @@ export function getWeekStart(): string {
   return monday.toISOString().split("T")[0];
 }
 
+/** Get ISO date string (YYYY-MM-DD) for the 1st of the current month */
+export function getMonthStart(): string {
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split("T")[0];
+}
+
 export async function updateLeaderboardEntry(
   profile: UserProfile,
   matches: MatchRecord[]
@@ -54,16 +60,25 @@ export async function updateLeaderboardEntry(
   // Event wins (events where wins > losses)
   const eventWins = events.filter((e) => e.wins > e.losses).length;
 
-  // Hero diversity
-  const heroCount = new Map<string, number>();
+  // Hero diversity + breakdown
+  const heroData = new Map<string, { matches: number; wins: number }>();
   for (const m of matches) {
     if (m.heroPlayed && m.heroPlayed !== "Unknown") {
-      heroCount.set(m.heroPlayed, (heroCount.get(m.heroPlayed) || 0) + 1);
+      const cur = heroData.get(m.heroPlayed) || { matches: 0, wins: 0 };
+      cur.matches++;
+      if (m.result === MatchResult.Win) cur.wins++;
+      heroData.set(m.heroPlayed, cur);
     }
   }
-  const heroEntries = [...heroCount.entries()].sort((a, b) => b[1] - a[1]);
+  const heroEntries = [...heroData.entries()].sort((a, b) => b[1].matches - a[1].matches);
   const topHero = heroEntries[0]?.[0] || "Unknown";
-  const topHeroMatches = heroEntries[0]?.[1] || 0;
+  const topHeroMatches = heroEntries[0]?.[1]?.matches || 0;
+  const heroBreakdown = heroEntries.slice(0, 5).map(([hero, data]) => ({
+    hero,
+    matches: data.matches,
+    wins: data.wins,
+    winRate: data.matches > 0 ? (data.wins / data.matches) * 100 : 0,
+  }));
 
   // Nemesis — opponent with worst win rate (min 3 matches)
   const oppStats = computeOpponentStats(matches).filter(
@@ -77,6 +92,11 @@ export async function updateLeaderboardEntry(
   const weekStart = getWeekStart();
   const weeklyMatches = matches.filter((m) => m.date >= weekStart);
   const weeklyWins = weeklyMatches.filter((m) => m.result === MatchResult.Win).length;
+
+  // Monthly stats
+  const monthStart = getMonthStart();
+  const monthlyMatches = matches.filter((m) => m.date >= monthStart);
+  const monthlyWins = monthlyMatches.filter((m) => m.result === MatchResult.Win).length;
 
   // Armory stats
   const armoryMatchList = matches.filter((m) => m.eventType === "Armory");
@@ -103,7 +123,7 @@ export async function updateLeaderboardEntry(
     ratedWinStreak,
     eventsPlayed: events.length,
     eventWins,
-    uniqueHeroes: heroCount.size,
+    uniqueHeroes: heroData.size,
     topHero,
     topHeroMatches,
     nemesis: nemesisOpp?.opponentName,
@@ -112,12 +132,17 @@ export async function updateLeaderboardEntry(
     weeklyMatches: weeklyMatches.length,
     weeklyWins,
     weekStart,
+    monthlyMatches: monthlyMatches.length,
+    monthlyWins,
+    monthlyWinRate: monthlyMatches.length > 0 ? (monthlyWins / monthlyMatches.length) * 100 : 0,
+    monthStart,
     earnings: profile.earnings,
     armoryMatches: armoryMatchList.length,
     armoryWins,
     armoryWinRate: armoryMatchList.length > 0 ? (armoryWins / armoryMatchList.length) * 100 : 0,
     armoryEvents,
     showNameOnProfiles: profile.showNameOnProfiles ?? false,
+    heroBreakdown,
     updatedAt: new Date().toISOString(),
   };
 

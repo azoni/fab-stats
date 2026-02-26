@@ -64,7 +64,10 @@ function HeroMasteryCard({ mastery }: { mastery: HeroMastery }) {
                 mastery.tier === "apprentice" ? "bg-green-400" :
                 mastery.tier === "skilled" ? "bg-blue-400" :
                 mastery.tier === "expert" ? "bg-purple-400" :
-                "bg-fab-gold"
+                mastery.tier === "master" ? "bg-fab-gold" :
+                mastery.tier === "grandmaster" ? "bg-fuchsia-400" :
+                mastery.tier === "legend" ? "bg-sky-400" :
+                "bg-red-400"
               }`}
               style={{ width: `${mastery.progress}%` }}
             />

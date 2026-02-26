@@ -19,6 +19,7 @@ import { MatchCard } from "@/components/matches/MatchCard";
 import { EventCard } from "@/components/events/EventCard";
 import { ShieldIcon } from "@/components/icons/NavIcons";
 import { MatchResult, GameFormat } from "@/types";
+import { WeeklyDigest } from "@/components/dashboard/WeeklyDigest";
 import { allHeroes as knownHeroes } from "@/lib/heroes";
 
 const VALID_HERO_NAMES = new Set(knownHeroes.map((h) => h.name));
@@ -306,6 +307,9 @@ export default function Dashboard() {
           Showing {fm.length} of {matches.length} matches
         </p>
       )}
+
+      {/* Weekly/Monthly Digest */}
+      {!isFiltered && <WeeklyDigest matches={fm} />}
 
       {fm.length === 0 ? (
         <div className="text-center py-16">

@@ -6,13 +6,13 @@ import { useLeaderboard } from "@/hooks/useLeaderboard";
 import { useMatches } from "@/hooks/useMatches";
 import { useAuth } from "@/contexts/AuthContext";
 import { computeOpponentStats } from "@/lib/stats";
-import { getWeekStart } from "@/lib/leaderboard";
+import { getWeekStart, getMonthStart } from "@/lib/leaderboard";
 import { TrophyIcon } from "@/components/icons/NavIcons";
 import type { LeaderboardEntry, OpponentStats } from "@/types";
 
 const SITE_CREATOR = "azoni";
 
-type Tab = "winrate" | "volume" | "mostwins" | "streaks" | "draws" | "drawrate" | "events" | "eventgrinder" | "rated" | "heroes" | "dedication" | "hotstreak" | "weeklymatches" | "weeklywins" | "earnings" | "armorywinrate" | "armoryattendance" | "armorymatches";
+type Tab = "winrate" | "volume" | "mostwins" | "streaks" | "draws" | "drawrate" | "events" | "eventgrinder" | "rated" | "heroes" | "dedication" | "hotstreak" | "weeklymatches" | "weeklywins" | "monthlymatches" | "monthlywins" | "monthlywinrate" | "earnings" | "armorywinrate" | "armoryattendance" | "armorymatches";
 
 const tabs: { id: Tab; label: string }[] = [
   { id: "winrate", label: "Win Rate" },
@@ -20,6 +20,9 @@ const tabs: { id: Tab; label: string }[] = [
   { id: "mostwins", label: "Most Wins" },
   { id: "weeklymatches", label: "Weekly Matches" },
   { id: "weeklywins", label: "Weekly Wins" },
+  { id: "monthlymatches", label: "Monthly Matches" },
+  { id: "monthlywins", label: "Monthly Wins" },
+  { id: "monthlywinrate", label: "Monthly Win %" },
   { id: "streaks", label: "Streaks" },
   { id: "hotstreak", label: "Hot Streak" },
   { id: "events", label: "Event Wins" },
@@ -62,6 +65,7 @@ export default function LeaderboardPage() {
   }, [user, matches]);
 
   const currentWeekStart = useMemo(() => getWeekStart(), []);
+  const currentMonthStart = useMemo(() => getMonthStart(), []);
 
   const ranked = useMemo(() => {
     switch (activeTab) {
@@ -83,6 +87,18 @@ export default function LeaderboardPage() {
         return [...entries]
           .filter((e) => e.weekStart === currentWeekStart && e.weeklyWins > 0)
           .sort((a, b) => b.weeklyWins - a.weeklyWins || b.weeklyMatches - a.weeklyMatches);
+      case "monthlymatches":
+        return [...entries]
+          .filter((e) => e.monthStart === currentMonthStart && (e.monthlyMatches ?? 0) > 0)
+          .sort((a, b) => (b.monthlyMatches ?? 0) - (a.monthlyMatches ?? 0) || (b.monthlyWins ?? 0) - (a.monthlyWins ?? 0));
+      case "monthlywins":
+        return [...entries]
+          .filter((e) => e.monthStart === currentMonthStart && (e.monthlyWins ?? 0) > 0)
+          .sort((a, b) => (b.monthlyWins ?? 0) - (a.monthlyWins ?? 0) || (b.monthlyMatches ?? 0) - (a.monthlyMatches ?? 0));
+      case "monthlywinrate":
+        return [...entries]
+          .filter((e) => e.monthStart === currentMonthStart && (e.monthlyMatches ?? 0) >= 5)
+          .sort((a, b) => (b.monthlyWinRate ?? 0) - (a.monthlyWinRate ?? 0) || (b.monthlyMatches ?? 0) - (a.monthlyMatches ?? 0));
       case "streaks":
         return [...entries]
           .filter((e) => e.longestWinStreak > 0)
@@ -142,7 +158,7 @@ export default function LeaderboardPage() {
       default:
         return entries;
     }
-  }, [entries, activeTab, currentWeekStart]);
+  }, [entries, activeTab, currentWeekStart, currentMonthStart]);
 
   return (
     <div>
@@ -189,6 +205,10 @@ export default function LeaderboardPage() {
                   ? "No one is on a 2+ win streak right now."
                   : activeTab === "weeklymatches" || activeTab === "weeklywins"
                     ? "No one has logged matches this week yet."
+                    : activeTab === "monthlymatches" || activeTab === "monthlywins"
+                      ? "No one has logged matches this month yet."
+                      : activeTab === "monthlywinrate"
+                        ? "Players need at least 5 matches this month to appear here."
                     : activeTab === "earnings"
                       ? "No players have entered their earnings yet."
                       : activeTab === "armorywinrate"
@@ -370,6 +390,32 @@ function LeaderboardRow({
             <p className="text-lg font-bold text-fab-win">{entry.weeklyWins}</p>
             <p className="text-xs text-fab-dim">
               of {entry.weeklyMatches} matches
+            </p>
+          </>
+        )}
+        {tab === "monthlymatches" && (
+          <>
+            <p className="text-lg font-bold text-fab-text">{entry.monthlyMatches ?? 0}</p>
+            <p className="text-xs text-fab-dim">
+              {entry.monthlyWins ?? 0}W this month
+            </p>
+          </>
+        )}
+        {tab === "monthlywins" && (
+          <>
+            <p className="text-lg font-bold text-fab-win">{entry.monthlyWins ?? 0}</p>
+            <p className="text-xs text-fab-dim">
+              of {entry.monthlyMatches ?? 0} matches
+            </p>
+          </>
+        )}
+        {tab === "monthlywinrate" && (
+          <>
+            <p className={`text-lg font-bold ${(entry.monthlyWinRate ?? 0) >= 50 ? "text-fab-win" : "text-fab-loss"}`}>
+              {formatRate(entry.monthlyWinRate ?? 0)}
+            </p>
+            <p className="text-xs text-fab-dim">
+              {entry.monthlyWins ?? 0}W / {entry.monthlyMatches ?? 0} this month
             </p>
           </>
         )}
