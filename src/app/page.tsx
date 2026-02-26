@@ -168,7 +168,7 @@ export default function Dashboard() {
           </button>
           <p className="text-xs font-medium text-fab-gold uppercase tracking-wider mb-1">From the Developer</p>
           <p className="text-sm text-fab-text">
-            New: Edit the hero and format on any match or for an entire event from your Events page. Plus, favorite players, log single matches, and share head-to-head rivalry cards!
+            New: Edit the hero on any match from your Matches page, or for an entire event from your Events page. Plus, favorite players, log single matches, and share head-to-head rivalry cards!
           </p>
         </div>
       )}
