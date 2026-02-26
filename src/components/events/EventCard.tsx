@@ -36,12 +36,18 @@ const resultLabels: Record<string, string> = {
 
 const playoffRank: Record<string, number> = { "Finals": 4, "Top 4": 3, "Top 8": 2, "Playoff": 2, "Skirmish": 1 };
 
+interface HeroSegment {
+  hero: string;
+  format: string;
+  fromRound: string;
+  toRound: string;
+}
+
 export function EventCard({ event, obfuscateOpponents = false, visibleOpponents, editable = false, onBatchUpdateHero, onBatchUpdateFormat, onDeleteEvent, missingGemId }: EventCardProps) {
   const [expanded, setExpanded] = useState(false);
-  const [batchHero, setBatchHero] = useState("");
-  const [batchFormat, setBatchFormat] = useState("");
-  const [roundFrom, setRoundFrom] = useState("1");
-  const [roundTo, setRoundTo] = useState(String(event.matches.length));
+  const [segments, setSegments] = useState<HeroSegment[]>([
+    { hero: "", format: "", fromRound: "1", toRound: String(event.matches.length) },
+  ]);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [showGemNudge, setShowGemNudge] = useState(false);
@@ -68,9 +74,6 @@ export function EventCard({ event, obfuscateOpponents = false, visibleOpponents,
   // Only show hero column when matches have different heroes (otherwise it's in the header)
   const showHeroColumn = heroes.size > 1;
 
-  // The hero that would be saved: user's pick or fallback to the shared hero
-  const effectiveHero = batchHero || sharedHero || "";
-
   function clampRound(val: string): string {
     const n = parseInt(val, 10);
     if (isNaN(n) || n < 1) return "1";
@@ -78,32 +81,51 @@ export function EventCard({ event, obfuscateOpponents = false, visibleOpponents,
     return String(n);
   }
 
-  async function handleBatchSave() {
-    const heroToSave = batchHero || sharedHero || "";
-    if (!heroToSave && !batchFormat) return;
+  function updateSegment(index: number, updates: Partial<HeroSegment>) {
+    setSegments((prev) => prev.map((s, i) => (i === index ? { ...s, ...updates } : s)));
+  }
+
+  function removeSegment(index: number) {
+    setSegments((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  function addSegment() {
+    // Default the new segment's start to one after the last segment's end
+    const lastTo = parseInt(segments[segments.length - 1]?.toRound || "0", 10);
+    const nextFrom = lastTo < event.matches.length ? lastTo + 1 : 1;
+    setSegments((prev) => [
+      ...prev,
+      { hero: "", format: "", fromRound: String(nextFrom), toRound: String(event.matches.length) },
+    ]);
+  }
+
+  async function handleApplyAll() {
+    // Check that at least one segment has something to save
+    const hasWork = segments.some((s) => s.hero || s.format);
+    if (!hasWork) return;
     setError("");
     setSaving(true);
     try {
-      const from = parseInt(roundFrom, 10) || 1;
-      const to = parseInt(roundTo, 10) || event.matches.length;
-      const ids = event.matches.slice(from - 1, to).map((m) => m.id);
-      if (heroToSave && onBatchUpdateHero) {
-        await onBatchUpdateHero(ids, heroToSave);
+      for (const seg of segments) {
+        const heroToSave = seg.hero;
+        const formatToSave = seg.format;
+        if (!heroToSave && !formatToSave) continue;
+
+        const from = parseInt(seg.fromRound, 10) || 1;
+        const to = parseInt(seg.toRound, 10) || event.matches.length;
+        const ids = event.matches.slice(from - 1, to).map((m) => m.id);
+        if (ids.length === 0) continue;
+
+        if (heroToSave && onBatchUpdateHero) {
+          await onBatchUpdateHero(ids, heroToSave);
+        }
+        if (formatToSave && onBatchUpdateFormat) {
+          await onBatchUpdateFormat(ids, formatToSave as GameFormat);
+        }
       }
-      if (batchFormat && onBatchUpdateFormat) {
-        await onBatchUpdateFormat(ids, batchFormat as GameFormat);
-      }
-      // Advance range to remaining rounds so user can apply next segment
-      const nextFrom = to + 1;
-      if (nextFrom <= event.matches.length) {
-        setRoundFrom(String(nextFrom));
-        setRoundTo(String(event.matches.length));
-      }
-      setBatchHero("");
-      setBatchFormat("");
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
-      if (missingGemId && heroToSave) setShowGemNudge(true);
+      if (missingGemId && segments.some((s) => s.hero)) setShowGemNudge(true);
     } catch {
       setError("Failed to save. Please try again.");
     } finally {
@@ -178,60 +200,84 @@ export function EventCard({ event, obfuscateOpponents = false, visibleOpponents,
 
       {expanded && (
         <div className="border-t border-fab-border">
-          {/* Batch hero + format edit (combined) */}
+          {/* Batch hero + format edit */}
           {editable && (onBatchUpdateHero || onBatchUpdateFormat) && (
             <div className="px-4 py-3 bg-fab-bg/50 border-b border-fab-border/50">
-              <label className="block text-xs font-medium text-fab-muted mb-1.5">Set hero &amp; format for rounds</label>
-              <div className="flex items-end gap-2 flex-wrap">
-                {onBatchUpdateHero && (
-                  <div className="w-48">
-                    <HeroSelect
-                      value={batchHero || sharedHero || ""}
-                      onChange={setBatchHero}
-                      label="Hero played"
-                      format={batchFormat || event.format}
-                    />
+              <label className="block text-xs font-medium text-fab-muted mb-2">Set hero &amp; format for rounds</label>
+              <div className="space-y-2">
+                {segments.map((seg, idx) => (
+                  <div key={idx} className="flex items-end gap-2 flex-wrap">
+                    {onBatchUpdateHero && (
+                      <div className="w-48">
+                        <HeroSelect
+                          value={seg.hero}
+                          onChange={(v) => updateSegment(idx, { hero: v })}
+                          label="Hero played"
+                          format={seg.format || event.format}
+                        />
+                      </div>
+                    )}
+                    {onBatchUpdateFormat && (
+                      <select
+                        value={seg.format}
+                        onChange={(e) => updateSegment(idx, { format: e.target.value })}
+                        className="bg-fab-surface border border-fab-border rounded-md px-2 py-1.5 text-fab-text text-xs outline-none focus:border-fab-gold/50"
+                      >
+                        <option value="">Format</option>
+                        {Object.values(GameFormat).map((f) => (
+                          <option key={f} value={f}>{f}</option>
+                        ))}
+                      </select>
+                    )}
+                    <div className="flex items-center gap-1 text-xs text-fab-muted">
+                      <span>rounds</span>
+                      <input
+                        type="number"
+                        min={1}
+                        max={event.matches.length}
+                        value={seg.fromRound}
+                        onChange={(e) => updateSegment(idx, { fromRound: e.target.value })}
+                        onBlur={() => updateSegment(idx, { fromRound: clampRound(seg.fromRound) })}
+                        className="w-12 bg-fab-surface border border-fab-border rounded-md px-1.5 py-1.5 text-fab-text text-xs text-center outline-none focus:border-fab-gold/50"
+                      />
+                      <span>–</span>
+                      <input
+                        type="number"
+                        min={1}
+                        max={event.matches.length}
+                        value={seg.toRound}
+                        onChange={(e) => updateSegment(idx, { toRound: e.target.value })}
+                        onBlur={() => updateSegment(idx, { toRound: clampRound(seg.toRound) })}
+                        className="w-12 bg-fab-surface border border-fab-border rounded-md px-1.5 py-1.5 text-fab-text text-xs text-center outline-none focus:border-fab-gold/50"
+                      />
+                    </div>
+                    {segments.length > 1 && (
+                      <button
+                        onClick={() => removeSegment(idx)}
+                        className="px-1.5 py-1.5 rounded text-fab-dim hover:text-red-400 transition-colors"
+                        title="Remove"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    )}
                   </div>
-                )}
-                {onBatchUpdateFormat && (
-                  <select
-                    value={batchFormat}
-                    onChange={(e) => setBatchFormat(e.target.value)}
-                    className="bg-fab-surface border border-fab-border rounded-md px-2 py-1.5 text-fab-text text-xs outline-none focus:border-fab-gold/50"
-                  >
-                    <option value="">Format</option>
-                    {Object.values(GameFormat).map((f) => (
-                      <option key={f} value={f}>{f}</option>
-                    ))}
-                  </select>
-                )}
-                <div className="flex items-center gap-1 text-xs text-fab-muted">
-                  <span>from</span>
-                  <input
-                    type="number"
-                    min={1}
-                    max={event.matches.length}
-                    value={roundFrom}
-                    onChange={(e) => setRoundFrom(e.target.value)}
-                    onBlur={() => setRoundFrom(clampRound(roundFrom))}
-                    className="w-12 bg-fab-surface border border-fab-border rounded-md px-1.5 py-1.5 text-fab-text text-xs text-center outline-none focus:border-fab-gold/50"
-                  />
-                  <span>to</span>
-                  <input
-                    type="number"
-                    min={1}
-                    max={event.matches.length}
-                    value={roundTo}
-                    onChange={(e) => setRoundTo(e.target.value)}
-                    onBlur={() => setRoundTo(clampRound(roundTo))}
-                    className="w-12 bg-fab-surface border border-fab-border rounded-md px-1.5 py-1.5 text-fab-text text-xs text-center outline-none focus:border-fab-gold/50"
-                  />
-                </div>
+                ))}
+              </div>
+              <div className="flex items-center gap-2 mt-2">
+                <button
+                  onClick={addSegment}
+                  className="text-xs text-fab-gold hover:text-fab-gold-light transition-colors"
+                >
+                  + Add another hero/format
+                </button>
+                <div className="flex-1" />
                 {saved ? (
                   <span className="px-3 py-1.5 rounded text-xs font-medium bg-green-500/20 text-green-400 shrink-0">Saved!</span>
-                ) : (batchHero || sharedHero || batchFormat) ? (
+                ) : segments.some((s) => s.hero || s.format) ? (
                   <button
-                    onClick={handleBatchSave}
+                    onClick={handleApplyAll}
                     disabled={saving}
                     className="px-3 py-1.5 rounded text-xs font-medium bg-fab-gold text-fab-bg hover:bg-fab-gold-light disabled:opacity-50 transition-colors shrink-0"
                   >
