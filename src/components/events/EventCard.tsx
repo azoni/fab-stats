@@ -53,8 +53,8 @@ export function EventCard({ event, obfuscateOpponents = false, visibleOpponents,
   const sharedHero = heroes.size === 1 ? [...heroes][0]! : null;
   const sharedHeroInfo = sharedHero ? getHeroByName(sharedHero) : null;
 
-  // Check if any match has a known hero (for showing hero column in expanded table)
-  const anyHeroKnown = event.matches.some((m) => m.heroPlayed && m.heroPlayed !== "Unknown");
+  // Only show hero column when matches have different heroes (otherwise it's in the header)
+  const showHeroColumn = heroes.size > 1;
 
   async function handleBatchSave() {
     if (!onBatchUpdateHero || !batchHero) return;
@@ -155,7 +155,7 @@ export function EventCard({ event, obfuscateOpponents = false, visibleOpponents,
               <tr className="text-xs text-fab-muted">
                 <th className="text-left px-4 py-2 font-medium w-16">Round</th>
                 <th className="text-left px-4 py-2 font-medium">Opponent</th>
-                {anyHeroKnown && (
+                {showHeroColumn && (
                   <th className="text-left px-4 py-2 font-medium hidden sm:table-cell">Hero</th>
                 )}
                 <th className="text-right px-4 py-2 font-medium w-16">Result</th>
@@ -200,7 +200,7 @@ export function EventCard({ event, obfuscateOpponents = false, visibleOpponents,
                         <span className="text-fab-dim">Unknown</span>
                       )}
                     </td>
-                    {anyHeroKnown && (
+                    {showHeroColumn && (
                       <td className="px-4 py-2.5 hidden sm:table-cell">
                         {matchHeroInfo ? (
                           <div className="flex items-center gap-1">
