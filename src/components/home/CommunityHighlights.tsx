@@ -1,4 +1,5 @@
 "use client";
+import type { ReactNode } from "react";
 import { FeaturedProfiles } from "./FeaturedProfiles";
 import { FeaturedTournaments } from "./FeaturedTournaments";
 import { MetaSnapshot } from "./MetaSnapshot";
@@ -14,6 +15,8 @@ interface CommunityHighlightsProps {
   leaderboardEntries: LeaderboardEntry[];
   topHeroes: HeroMetaStats[];
   feedEvents: FeedEvent[];
+  /** Extra content rendered below MetaSnapshot in the right column */
+  rightColumnExtra?: ReactNode;
 }
 
 export function CommunityHighlights({
@@ -22,22 +25,22 @@ export function CommunityHighlights({
   leaderboardEntries,
   topHeroes,
   feedEvents,
+  rightColumnExtra,
 }: CommunityHighlightsProps) {
   return (
     <div className="space-y-8">
       <FeaturedProfiles profiles={featuredProfiles} />
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <FeaturedTournaments
           events={featuredEvents}
           leaderboardEntries={leaderboardEntries}
         />
 
-        {topHeroes.length > 0 ? (
+        <div className="flex flex-col gap-6">
           <MetaSnapshot topHeroes={topHeroes} />
-        ) : (
-          <LeaderboardPreview entries={leaderboardEntries} />
-        )}
+          {rightColumnExtra || <LeaderboardPreview entries={leaderboardEntries} />}
+        </div>
       </div>
 
       <RecentActivity events={feedEvents} />

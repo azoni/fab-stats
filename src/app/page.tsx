@@ -314,37 +314,37 @@ export default function Dashboard() {
         leaderboardEntries={lbEntries}
         topHeroes={communityTopHeroes}
         feedEvents={feedEvents}
+        rightColumnExtra={
+          hasMatches && eventStats.length > 0 ? (
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-fab-text">Your Events</h2>
+                {eventStats.length > EVENTS_PREVIEW && (
+                  <button
+                    onClick={() => setShowAllEvents(!showAllEvents)}
+                    className="text-sm text-fab-gold hover:text-fab-gold-light transition-colors"
+                  >
+                    {showAllEvents ? "Show less" : `View all ${eventStats.length}`}
+                  </button>
+                )}
+              </div>
+              <div className="space-y-2">
+                {(showAllEvents ? eventStats : eventStats.slice(0, EVENTS_PREVIEW)).map((event) => (
+                  <EventCard key={`${event.eventName}-${event.eventDate}`} event={event} />
+                ))}
+              </div>
+              {!showAllEvents && eventStats.length > EVENTS_PREVIEW && profile?.username && (
+                <Link
+                  href={`/player/${profile.username}`}
+                  className="block text-center text-sm text-fab-dim hover:text-fab-gold transition-colors mt-3"
+                >
+                  View full profile for all events &rarr;
+                </Link>
+              )}
+            </div>
+          ) : undefined
+        }
       />
-
-      {/* User's event history */}
-      {hasMatches && eventStats.length > 0 && (
-        <div>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-fab-text">Your Events</h2>
-            {eventStats.length > EVENTS_PREVIEW && (
-              <button
-                onClick={() => setShowAllEvents(!showAllEvents)}
-                className="text-sm text-fab-gold hover:text-fab-gold-light transition-colors"
-              >
-                {showAllEvents ? "Show less" : `View all ${eventStats.length}`}
-              </button>
-            )}
-          </div>
-          <div className="space-y-2">
-            {(showAllEvents ? eventStats : eventStats.slice(0, EVENTS_PREVIEW)).map((event) => (
-              <EventCard key={`${event.eventName}-${event.eventDate}`} event={event} />
-            ))}
-          </div>
-          {!showAllEvents && eventStats.length > EVENTS_PREVIEW && profile?.username && (
-            <Link
-              href={`/player/${profile.username}`}
-              className="block text-center text-sm text-fab-dim hover:text-fab-gold transition-colors mt-3"
-            >
-              View full profile for all events &rarr;
-            </Link>
-          )}
-        </div>
-      )}
 
       {/* Best Finish share modal */}
       {bestFinishShareOpen && bestFinish && profile && (
