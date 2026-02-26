@@ -111,6 +111,7 @@ export interface HeroInfo {
   cardIdentifier: string;
   classes: string[];
   talents: string[];
+  legalFormats: string[];
   life?: number;
   intellect?: number;
   young?: boolean;

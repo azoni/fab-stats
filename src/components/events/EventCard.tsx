@@ -130,6 +130,7 @@ export function EventCard({ event, obfuscateOpponents = false, visibleOpponents,
                     value={batchHero || sharedHero || ""}
                     onChange={setBatchHero}
                     label="Hero played this event"
+                    format={event.format}
                   />
                 </div>
                 {batchHero && batchHero !== sharedHero && (

@@ -1,6 +1,6 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
-import { allHeroes, searchHeroes } from "@/lib/heroes";
+import { allHeroes, searchHeroes, getHeroesForFormat } from "@/lib/heroes";
 import { CloseIcon } from "@/components/icons/NavIcons";
 import type { HeroInfo } from "@/types";
 
@@ -8,18 +8,20 @@ interface HeroSelectProps {
   value: string;
   onChange: (heroName: string) => void;
   label: string;
+  format?: string;
 }
 
-export function HeroSelect({ value, onChange, label }: HeroSelectProps) {
+export function HeroSelect({ value, onChange, label, format }: HeroSelectProps) {
   const [query, setQuery] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [highlighted, setHighlighted] = useState(0);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  const pool = format ? getHeroesForFormat(format) : allHeroes;
   const results: HeroInfo[] = query.trim()
-    ? searchHeroes(query)
-    : allHeroes;
+    ? searchHeroes(query, format)
+    : pool;
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {

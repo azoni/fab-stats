@@ -193,8 +193,8 @@ export function MatchCard({ match, matchOwnerUid, enableComments = false, obfusc
         {editing && (
           <div className="mt-3 pt-3 border-t border-fab-border/30 space-y-2">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              <HeroSelect value={editHero} onChange={setEditHero} label="Your Hero" />
-              <HeroSelect value={editOppHero} onChange={setEditOppHero} label="Opponent's Hero" />
+              <HeroSelect value={editHero} onChange={setEditHero} label="Your Hero" format={match.format} />
+              <HeroSelect value={editOppHero} onChange={setEditOppHero} label="Opponent's Hero" format={match.format} />
             </div>
             <div className="flex items-center gap-2">
               <button
