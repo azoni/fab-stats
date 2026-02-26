@@ -85,7 +85,7 @@ export default function MatchesPage() {
           </div>
         </div>
       ) : (
-        <MatchList matches={matches} matchOwnerUid={user?.uid} enableComments editable={!!user} onUpdateMatch={handleUpdateMatch} />
+        <MatchList matches={matches} matchOwnerUid={user?.uid} enableComments editable={!!user} onUpdateMatch={handleUpdateMatch} missingGemId={!!user && !profile?.gemId} />
       )}
     </div>
   );

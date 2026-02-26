@@ -14,9 +14,10 @@ interface MatchListProps {
   enableComments?: boolean;
   editable?: boolean;
   onUpdateMatch?: (id: string, updates: Partial<Omit<MatchRecord, "id" | "createdAt">>) => Promise<void>;
+  missingGemId?: boolean;
 }
 
-export function MatchList({ matches, matchOwnerUid, enableComments, editable, onUpdateMatch }: MatchListProps) {
+export function MatchList({ matches, matchOwnerUid, enableComments, editable, onUpdateMatch, missingGemId }: MatchListProps) {
   const [filterResult, setFilterResult] = useState<string>("all");
   const [filterFormat, setFilterFormat] = useState<string>("all");
   const [filterHero, setFilterHero] = useState<string>("all");
@@ -175,7 +176,7 @@ export function MatchList({ matches, matchOwnerUid, enableComments, editable, on
 
           <div className="space-y-2">
             {pageMatches.map((match) => (
-              <MatchCard key={match.id} match={match} matchOwnerUid={matchOwnerUid} enableComments={enableComments} editable={editable} onUpdateMatch={onUpdateMatch} />
+              <MatchCard key={match.id} match={match} matchOwnerUid={matchOwnerUid} enableComments={enableComments} editable={editable} onUpdateMatch={onUpdateMatch} missingGemId={missingGemId} />
             ))}
           </div>
 

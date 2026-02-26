@@ -15,6 +15,7 @@ interface MatchCardProps {
   visibleOpponents?: Set<string>;
   editable?: boolean;
   onUpdateMatch?: (id: string, updates: Partial<Omit<MatchRecord, "id" | "createdAt">>) => Promise<void>;
+  missingGemId?: boolean;
 }
 
 const resultStyles = {
@@ -39,12 +40,13 @@ function getPlayoffBadge(roundInfo: string | undefined): { label: string; bg: st
   return null;
 }
 
-export function MatchCard({ match, matchOwnerUid, enableComments = false, obfuscateOpponents = false, visibleOpponents, editable = false, onUpdateMatch }: MatchCardProps) {
+export function MatchCard({ match, matchOwnerUid, enableComments = false, obfuscateOpponents = false, visibleOpponents, editable = false, onUpdateMatch, missingGemId }: MatchCardProps) {
   const [showComments, setShowComments] = useState(false);
   const [editing, setEditing] = useState(false);
   const [editHero, setEditHero] = useState(match.heroPlayed || "");
   const [editOppHero, setEditOppHero] = useState(match.opponentHero || "");
   const [saving, setSaving] = useState(false);
+  const [showGemNudge, setShowGemNudge] = useState(false);
 
   const style = resultStyles[match.result];
   const eventName = match.notes?.split(" | ")[0];
@@ -74,6 +76,7 @@ export function MatchCard({ match, matchOwnerUid, enableComments = false, obfusc
       if (editOppHero !== (match.opponentHero || "")) updates.opponentHero = editOppHero || undefined;
       if (Object.keys(updates).length > 0) {
         await onUpdateMatch(match.id, updates);
+        if (missingGemId) setShowGemNudge(true);
       }
       setEditing(false);
     } finally {
@@ -160,6 +163,12 @@ export function MatchCard({ match, matchOwnerUid, enableComments = false, obfusc
                 </svg>
                 Set hero
               </button>
+            )}
+
+            {showGemNudge && !editing && (
+              <p className="text-xs text-fab-muted mt-1">
+                Hero saved! <Link href="/settings" className="text-fab-gold hover:underline">Add your GEM ID in Settings</Link> so opponents can see what hero you played.
+              </p>
             )}
 
             <div className="flex items-center gap-3 mt-1 text-xs text-fab-muted flex-wrap">

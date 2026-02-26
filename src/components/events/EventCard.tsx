@@ -14,6 +14,7 @@ interface EventCardProps {
   visibleOpponents?: Set<string>;
   editable?: boolean;
   onBatchUpdateHero?: (matchIds: string[], hero: string) => Promise<void>;
+  missingGemId?: boolean;
 }
 
 const resultColors = {
@@ -30,10 +31,11 @@ const resultLabels = {
 
 const playoffRank: Record<string, number> = { "Finals": 4, "Top 4": 3, "Top 8": 2, "Playoff": 2, "Skirmish": 1 };
 
-export function EventCard({ event, obfuscateOpponents = false, visibleOpponents, editable = false, onBatchUpdateHero }: EventCardProps) {
+export function EventCard({ event, obfuscateOpponents = false, visibleOpponents, editable = false, onBatchUpdateHero, missingGemId }: EventCardProps) {
   const [expanded, setExpanded] = useState(false);
   const [batchHero, setBatchHero] = useState("");
   const [saving, setSaving] = useState(false);
+  const [showGemNudge, setShowGemNudge] = useState(false);
 
   // Determine best playoff placement from match rounds
   let bestPlayoff: string | null = null;
@@ -61,6 +63,7 @@ export function EventCard({ event, obfuscateOpponents = false, visibleOpponents,
       const ids = event.matches.map((m) => m.id);
       await onBatchUpdateHero(ids, batchHero);
       setBatchHero("");
+      if (missingGemId) setShowGemNudge(true);
     } finally {
       setSaving(false);
     }
@@ -139,6 +142,11 @@ export function EventCard({ event, obfuscateOpponents = false, visibleOpponents,
                   </button>
                 )}
               </div>
+              {showGemNudge && (
+                <p className="text-xs text-fab-muted mt-2">
+                  Hero saved! <Link href="/settings" className="text-fab-gold hover:underline">Add your GEM ID in Settings</Link> so opponents can see what hero you played.
+                </p>
+              )}
             </div>
           )}
 
