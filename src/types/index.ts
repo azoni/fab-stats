@@ -288,8 +288,6 @@ export interface Poll {
   active: boolean;
   createdAt: string;
   showResults?: boolean;
-  resultCounts?: number[];
-  resultTotal?: number;
 }
 
 export interface PollVote {

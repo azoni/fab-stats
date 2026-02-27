@@ -10,7 +10,7 @@ import { getEvents, saveEvents } from "@/lib/featured-events";
 import { lookupEvents, type LookupEvent } from "@/lib/event-lookup";
 import { getOrCreateConversation, sendMessage, sendMessageNotification } from "@/lib/messages";
 import { getAnalytics } from "@/lib/analytics";
-import { getPoll, getPollResults, getPollVoters, savePoll, removePoll, clearVotes, syncPollResults } from "@/lib/polls";
+import { getPoll, getPollResults, getPollVoters, savePoll, removePoll, clearVotes } from "@/lib/polls";
 import { searchHeroes } from "@/lib/heroes";
 import { GameFormat } from "@/types";
 import type { FeedbackItem, Creator, FeaturedEvent, FeaturedEventPlayer, UserProfile, Poll, PollResults, PollVoter } from "@/types";
@@ -115,10 +115,6 @@ export default function AdminPage() {
       }
       setPollResults(pollRes);
       setPollVoters(voters);
-      // Sync result snapshot to poll doc so users can see results
-      if (pollRes.total > 0) {
-        syncPollResults().catch(() => {});
-      }
     } catch {
       setError("Failed to load admin data.");
     } finally {

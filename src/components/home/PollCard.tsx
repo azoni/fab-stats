@@ -2,8 +2,8 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
-import { getActivePoll, getUserVote, submitVote } from "@/lib/polls";
-import type { Poll, PollVote } from "@/types";
+import { getActivePoll, getUserVote, submitVote, getPollResults } from "@/lib/polls";
+import type { Poll, PollVote, PollResults } from "@/types";
 
 export function PollCard() {
   const { user } = useAuth();
@@ -13,6 +13,7 @@ export function PollCard() {
   const [submitting, setSubmitting] = useState(false);
   const [hasVoted, setHasVoted] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [results, setResults] = useState<PollResults | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -27,6 +28,11 @@ export function PollCard() {
           setVote(existing);
           setSelected(existing.optionIndex);
           setHasVoted(true);
+          // Fetch live results if user already voted and results are enabled
+          if (activePoll.showResults) {
+            const res = await getPollResults();
+            if (!cancelled) setResults(res);
+          }
         }
       }
       setLoading(false);
@@ -40,9 +46,9 @@ export function PollCard() {
 
   if (loading || !poll) return null;
 
-  const showResults = poll.showResults && hasVoted;
-  const resultCounts = poll.resultCounts || [];
-  const resultTotal = poll.resultTotal || 0;
+  const showResults = poll.showResults && hasVoted && results;
+  const resultCounts = results?.counts || [];
+  const resultTotal = results?.total || 0;
 
   async function handleVote() {
     if (selected === null || !user) return;
@@ -51,6 +57,11 @@ export function PollCard() {
       await submitVote(user.uid, selected);
       setVote({ optionIndex: selected, votedAt: new Date().toISOString() });
       setHasVoted(true);
+      // Fetch live results right after voting
+      if (poll!.showResults) {
+        const res = await getPollResults();
+        setResults(res);
+      }
     } catch (err) {
       console.error("Vote error:", err);
     } finally {
