@@ -19,8 +19,10 @@ export function LeaderboardPreview({ entries }: LeaderboardPreviewProps) {
   return (
     <div className="flex flex-col">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold text-fab-text">Top Players</h2>
-        <Link href="/leaderboard" className="text-sm text-fab-gold hover:text-fab-gold-light transition-colors">
+        <div className="section-header flex-1">
+          <h2 className="text-lg font-semibold text-fab-text">Top Players</h2>
+        </div>
+        <Link href="/leaderboard" className="text-sm text-fab-gold hover:text-fab-gold-light transition-colors ml-3">
           View Leaderboard
         </Link>
       </div>

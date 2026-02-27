@@ -70,21 +70,30 @@ export function expandEventName(name: string): string {
   return result;
 }
 
+/** Competitive event types ordered by prestige (lowest first).
+ *  When multiple keywords match, the lowest tier wins. */
+const COMPETITIVE_TYPES: [RegExp, string][] = [
+  [/skirmish/i, "Skirmish"],
+  [/road to national|\brtn\b/i, "Road to Nationals"],
+  [/proquest|pro quest|\bpq\b/i, "ProQuest"],
+  [/battle hardened|\bbh\b/i, "Battle Hardened"],
+  [/\bcalling\b/i, "The Calling"],
+  [/\bnational/i, "Nationals"],
+  [/pro tour/i, "Pro Tour"],
+  [/worlds|world championship/i, "Worlds"],
+];
+
 export function guessEventType(lines: string[]): string {
   const all = lines.join(" ").toLowerCase();
+  // Local/casual events — always win
   if (all.includes("world premiere")) return "Pre-Release";
-  if (all.includes("worlds") || all.includes("world championship")) return "Worlds";
-  if (all.includes("pro tour")) return "Pro Tour";
-  // Check specific tournament types before convention names like "calling"
-  if (all.includes("battle hardened") || /\bbh\b/.test(all)) return "Battle Hardened";
-  if (all.includes("proquest") || all.includes("pro quest") || /\bpq\b/.test(all)) return "ProQuest";
-  if (all.includes("skirmish")) return "Skirmish";
-  if (all.includes("road to national") || /\brtn\b/.test(all)) return "Road to Nationals";
-  if (all.includes("national")) return "Nationals";
-  if (all.includes("calling")) return "The Calling";
   if (all.includes("pre release") || all.includes("pre-release")) return "Pre-Release";
   if (all.includes("armory")) return "Armory";
   if (all.includes("on demand")) return "On Demand";
+  // Competitive events — pick lowest prestige when multiple match
+  for (const [pattern, type] of COMPETITIVE_TYPES) {
+    if (pattern.test(all)) return type;
+  }
   return "Other";
 }
 

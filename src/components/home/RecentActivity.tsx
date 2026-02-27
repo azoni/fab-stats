@@ -15,8 +15,10 @@ export function RecentActivity({ events }: RecentActivityProps) {
   return (
     <div>
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-lg font-semibold text-fab-text">Recent Activity</h2>
-        <Link href="/search" className="text-sm text-fab-gold hover:text-fab-gold-light transition-colors">
+        <div className="section-header flex-1">
+          <h2 className="text-lg font-semibold text-fab-text">Recent Activity</h2>
+        </div>
+        <Link href="/search" className="text-sm text-fab-gold hover:text-fab-gold-light transition-colors ml-3">
           View All
         </Link>
       </div>

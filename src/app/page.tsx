@@ -139,16 +139,18 @@ export default function Dashboard() {
 
       {/* Player snapshot for logged-in users with matches */}
       {hasMatches && (
-        <div className="bg-fab-surface border border-fab-border rounded-lg p-5">
+        <div className={`rounded-lg p-5 ${
+          bestRank === 1 ? "leaderboard-card-grandmaster" :
+          bestRank === 2 ? "leaderboard-card-diamond" :
+          bestRank === 3 ? "leaderboard-card-gold" :
+          bestRank === 4 ? "leaderboard-card-silver" :
+          bestRank === 5 ? "leaderboard-card-bronze" :
+          "bg-fab-surface border border-fab-border"
+        }`}>
           {/* Profile row */}
           <div className="flex items-center gap-4 mb-4">
             {profile ? (
               <Link href={`/player/${profile.username}`} className="relative shrink-0">
-                {profile.username === "azoni" && (
-                  <svg className="absolute -top-4 left-1/2 -translate-x-1/2 w-6 h-6 text-fab-gold drop-shadow-[0_0_6px_rgba(201,168,76,0.6)] z-10" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M2.5 19h19v3h-19zM22.5 7l-5 4-5.5-7-5.5 7-5-4 2 12h17z" />
-                  </svg>
-                )}
                 {profile.photoUrl ? (
                   <img src={profile.photoUrl} alt="" className={`w-14 h-14 rounded-full ${bestRank === 1 ? "rank-border-grandmaster" : bestRank === 2 ? "rank-border-diamond" : bestRank === 3 ? "rank-border-gold" : bestRank === 4 ? "rank-border-silver" : bestRank === 5 ? "rank-border-bronze" : ""}`} />
                 ) : (
@@ -194,7 +196,7 @@ export default function Dashboard() {
                       const text = `Check out my Flesh and Blood stats on FaB Stats (Beta)!\n\n${url}`;
                       window.open(`https://x.com/intent/tweet?text=${encodeURIComponent(text)}`, "_blank", "noopener,noreferrer");
                     }}
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-fab-bg border border-fab-border text-fab-dim hover:text-fab-text hover:border-fab-muted transition-colors shrink-0"
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-fab-bg/50 border border-fab-border text-fab-dim hover:text-fab-text hover:border-fab-muted transition-colors shrink-0"
                     title="Share on X"
                   >
                     <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
@@ -209,43 +211,39 @@ export default function Dashboard() {
               )}
               {achievements.length > 0 && <AchievementBadges earned={achievements} max={4} />}
             </div>
-            {/* Streak mini */}
-            <div className="shrink-0 text-right">
-              <div className="flex items-baseline gap-1 justify-end">
-                <span className={`text-2xl font-black ${
-                  streaks.currentStreak?.type === MatchResult.Win
-                    ? "text-fab-win"
-                    : streaks.currentStreak?.type === MatchResult.Loss
-                      ? "text-fab-loss"
-                      : "text-fab-dim"
-                }`}>
-                  {streaks.currentStreak ? streaks.currentStreak.count : 0}
-                </span>
-                <span className={`text-sm font-bold ${
-                  streaks.currentStreak?.type === MatchResult.Win
-                    ? "text-fab-win"
-                    : streaks.currentStreak?.type === MatchResult.Loss
-                      ? "text-fab-loss"
-                      : "text-fab-dim"
-                }`}>
-                  {streaks.currentStreak
-                    ? streaks.currentStreak.type === MatchResult.Win ? "W" : "L"
-                    : "—"}
-                </span>
+            {/* Streak pill */}
+            {streaks.currentStreak && streaks.currentStreak.count > 0 && (
+              <div className={`shrink-0 flex flex-col items-center px-3 py-1.5 rounded-lg ${
+                streaks.currentStreak.type === MatchResult.Win
+                  ? "bg-fab-win/10 ring-1 ring-fab-win/20"
+                  : "bg-fab-loss/10 ring-1 ring-fab-loss/20"
+              }`}>
+                <div className="flex items-baseline gap-0.5">
+                  <span className={`text-2xl font-black ${
+                    streaks.currentStreak.type === MatchResult.Win ? "text-fab-win" : "text-fab-loss"
+                  }`}>
+                    {streaks.currentStreak.count}
+                  </span>
+                  <span className={`text-sm font-bold ${
+                    streaks.currentStreak.type === MatchResult.Win ? "text-fab-win" : "text-fab-loss"
+                  }`}>
+                    {streaks.currentStreak.type === MatchResult.Win ? "W" : "L"}
+                  </span>
+                </div>
+                <p className="text-[9px] text-fab-dim uppercase tracking-wider">streak</p>
               </div>
-              <p className="text-[10px] text-fab-dim">streak</p>
-            </div>
+            )}
           </div>
 
           {/* Last 20 match dots */}
           {last20.length > 0 && (
-            <div className="flex gap-0.5 flex-wrap mb-4">
+            <div className="flex gap-1 flex-wrap mb-4">
               {last20.map((m, i) => (
                 <div
                   key={i}
-                  className={`w-2 h-2 rounded-full ${
+                  className={`w-2.5 h-2.5 rounded-full ${
                     m.result === MatchResult.Win ? "bg-fab-win" : m.result === MatchResult.Loss ? "bg-fab-loss" : m.result === MatchResult.Bye ? "bg-fab-muted" : "bg-fab-draw"
-                  }`}
+                  } ${i === last20.length - 1 ? "ring-2 ring-white/20 scale-110" : ""}`}
                   title={`${localDate(m.date).toLocaleDateString()} - ${m.result}`}
                 />
               ))}
@@ -266,8 +264,11 @@ export default function Dashboard() {
             </div>
             <div>
               <p className="text-[10px] text-fab-dim uppercase tracking-wider">Record</p>
-              <p className="text-lg font-bold text-fab-text">
-                {overall.totalWins}W-{overall.totalLosses}L{overall.totalDraws > 0 ? `-${overall.totalDraws}D` : ""}
+              <p className="text-lg font-bold">
+                <span className="text-fab-win">{overall.totalWins}W</span>
+                <span className="text-fab-dim">-</span>
+                <span className="text-fab-loss">{overall.totalLosses}L</span>
+                {overall.totalDraws > 0 && <><span className="text-fab-dim">-</span><span className="text-fab-draw">{overall.totalDraws}D</span></>}
               </p>
             </div>
             <div>
@@ -320,11 +321,13 @@ export default function Dashboard() {
           hasMatches && eventStats.length > 0 ? (
             <div>
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold text-fab-text">Your Events</h2>
+                <div className="section-header flex-1">
+                  <h2 className="text-lg font-semibold text-fab-text">Your Events</h2>
+                </div>
                 {eventStats.length > EVENTS_PREVIEW && (
                   <Link
                     href="/events"
-                    className="text-sm text-fab-gold hover:text-fab-gold-light transition-colors"
+                    className="text-sm text-fab-gold hover:text-fab-gold-light transition-colors ml-3"
                   >
                     View all {eventStats.length}
                   </Link>

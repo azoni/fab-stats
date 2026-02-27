@@ -14,7 +14,6 @@ const TIER_MAP: Record<string, FinishTier> = {
   Nationals: "trophy",
   "Pro Tour": "trophy",
   Worlds: "trophy",
-  Championship: "trophy",
 };
 
 const EVENT_ABBR: Record<string, string> = {

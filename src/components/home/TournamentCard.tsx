@@ -42,12 +42,13 @@ export function TournamentCard({ event, entryMap, fullImage }: TournamentCardPro
             />
           </div>
         ) : (
-          <div className="w-full h-40 sm:h-48 overflow-hidden">
+          <div className="relative w-full h-40 sm:h-48 overflow-hidden">
             <img
               src={event.imageUrl}
               alt={event.name}
               className="w-full h-full object-cover"
             />
+            <div className="absolute inset-0 bg-gradient-to-t from-fab-surface/80 via-transparent to-transparent" />
           </div>
         )
       )}
@@ -70,17 +71,19 @@ export function TournamentCard({ event, entryMap, fullImage }: TournamentCardPro
               const lbEntry = player.username ? entryMap.get(player.username) : undefined;
               const heroInfo = player.hero ? getHeroByName(player.hero) : undefined;
               const heroClass = heroInfo?.classes[0];
+              const placement = BRACKET_PLACEMENT[pi] ?? pi + 1;
+              const isChampion = placement === 1;
 
               const nameEl = (
-                <span className="font-medium text-fab-text text-sm truncate">
+                <span className={`font-medium text-sm truncate ${isChampion ? "text-fab-gold" : "text-fab-text"}`}>
                   {player.name}
                 </span>
               );
 
               return (
-                <div key={pi} className="flex items-center gap-2 py-1">
-                  <span className="text-xs text-fab-dim w-5 text-right shrink-0 font-bold">
-                    {(BRACKET_PLACEMENT[pi] ?? pi + 1)}.
+                <div key={pi} className={`flex items-center gap-2 py-1 ${isChampion ? "bg-fab-gold/5 -mx-2 px-2 rounded" : ""}`}>
+                  <span className={`text-xs w-5 text-right shrink-0 font-bold ${isChampion ? "text-fab-gold" : "text-fab-dim"}`}>
+                    {placement}.
                   </span>
 
                   {lbEntry ? (

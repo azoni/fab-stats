@@ -489,18 +489,28 @@
     if (/\bRated\b/.test(fullText) && !/Not Rated|Unrated/i.test(fullText))
       info.rated = true;
 
-    // Event type
-    if (/proquest|pro quest/i.test(fullText)) info.eventType = "ProQuest";
-    else if (/\bcalling\b/i.test(fullText)) info.eventType = "The Calling";
-    else if (/battle hardened/i.test(fullText))
-      info.eventType = "Battle Hardened";
-    else if (/road to nationals/i.test(fullText))
-      info.eventType = "Road to Nationals";
-    else if (/\bnationals?\b/i.test(fullText)) info.eventType = "Nationals";
-    else if (/skirmish/i.test(fullText)) info.eventType = "Skirmish";
-    else if (/armory/i.test(fullText)) info.eventType = "Armory";
-    else if (/pre.?release/i.test(fullText)) info.eventType = "Pre-Release";
-    else if (/on demand/i.test(fullText)) info.eventType = "On Demand";
+    // Event type — when multiple keywords match, pick the lowest prestige tier
+    // (side events at major tournaments carry the parent tournament's name)
+    const lowerFull = fullText.toLowerCase();
+    if (/armory/i.test(lowerFull)) info.eventType = "Armory";
+    else if (/pre.?release/i.test(lowerFull)) info.eventType = "Pre-Release";
+    else if (/on demand/i.test(lowerFull)) info.eventType = "On Demand";
+    else {
+      // Competitive types ordered by prestige (lowest first) — first match wins
+      const competitiveTypes = [
+        [/skirmish/i, "Skirmish"],
+        [/road to nationals?|\brtn\b/i, "Road to Nationals"],
+        [/proquest|pro quest|\bpq\b/i, "ProQuest"],
+        [/battle hardened|\bbh\b/i, "Battle Hardened"],
+        [/\bcalling\b/i, "The Calling"],
+        [/\bnationals?\b/i, "Nationals"],
+        [/pro tour/i, "Pro Tour"],
+        [/worlds|world championship/i, "Worlds"],
+      ];
+      for (const [pattern, type] of competitiveTypes) {
+        if (pattern.test(lowerFull)) { info.eventType = type; break; }
+      }
+    }
 
     // ── Step 4: Venue extraction (scoped to event elements) ──
 

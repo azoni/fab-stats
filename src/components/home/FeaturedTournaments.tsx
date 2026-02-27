@@ -19,8 +19,10 @@ export function FeaturedTournaments({ events, leaderboardEntries }: FeaturedTour
   return (
     <div className="flex flex-col">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold text-fab-text">Recent Tournaments</h2>
-        <Link href="/tournaments" className="text-sm text-fab-gold hover:text-fab-gold-light transition-colors">
+        <div className="section-header flex-1">
+          <h2 className="text-lg font-semibold text-fab-text">Recent Tournaments</h2>
+        </div>
+        <Link href="/tournaments" className="text-sm text-fab-gold hover:text-fab-gold-light transition-colors ml-3">
           View All
         </Link>
       </div>

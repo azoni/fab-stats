@@ -281,43 +281,57 @@ export function computeRollingWinRate(
   return results;
 }
 
+/** Competitive event types ordered by prestige (lowest first).
+ *  When an event name contains multiple keywords (e.g. side events at major
+ *  tournaments), we pick the LOWEST tier — "Battle Hardened at Worlds" is a
+ *  Battle Hardened, not a Worlds event. */
+const COMPETITIVE_EVENT_TYPES: [RegExp, string][] = [
+  [/skirmish/i, "Skirmish"],
+  [/road to national|\brtn\b/i, "Road to Nationals"],
+  [/proquest|pro quest|\bpq\b/i, "ProQuest"],
+  [/battle hardened|\bbh\b/i, "Battle Hardened"],
+  [/\bcalling\b/i, "The Calling"],
+  [/\bnational/i, "Nationals"],
+  [/pro tour/i, "Pro Tour"],
+  [/worlds|world championship/i, "Worlds"],
+];
+
+/** Find the lowest-prestige competitive event type that matches the text. */
+function classifyCompetitiveEvent(text: string): string | null {
+  for (const [pattern, type] of COMPETITIVE_EVENT_TYPES) {
+    if (pattern.test(text)) return type;
+  }
+  return null;
+}
+
 function guessEventTypeFromNotes(notes: string): string {
   const lower = notes.toLowerCase();
+  // Local/casual events — always win
   if (lower.includes("world premiere")) return "Pre-Release";
-  if (lower.includes("worlds") || lower.includes("world championship")) return "Worlds";
-  if (lower.includes("pro tour")) return "Pro Tour";
-  // Check specific tournament types before convention names like "calling"
-  // e.g. "Calling Seattle - Battle Hardened..." should be "Battle Hardened"
-  if (lower.includes("battle hardened") || /\bbh\b/.test(lower)) return "Battle Hardened";
-  if (lower.includes("proquest") || lower.includes("pro quest") || /\bpq\b/.test(lower)) return "ProQuest";
-  if (lower.includes("skirmish")) return "Skirmish";
-  if (lower.includes("road to national") || /\brtn\b/.test(lower)) return "Road to Nationals";
-  if (/\bnational/.test(lower)) return "Nationals";
-  if (lower.includes("calling")) return "The Calling";
   if (lower.includes("pre release") || lower.includes("pre-release")) return "Pre-Release";
   if (lower.includes("armory")) return "Armory";
+  if (lower.includes("on demand")) return "On Demand";
+  // Competitive events — pick lowest prestige when multiple match
+  const competitive = classifyCompetitiveEvent(lower);
+  if (competitive) return competitive;
   if (lower.includes("championship") || lower.includes("invitation") || lower.includes("invitational")) return "Championship";
   return "Other";
 }
 
 /** Derive the best event type from both the explicit eventType and the event name.
  *  Event names like "Calling Seattle - Battle Hardened..." should be "Battle Hardened"
- *  even if the eventType was set to something else by the import source. */
+ *  even if the eventType was set to something else by the import source.
+ *  When multiple competitive keywords appear, the lowest-prestige one wins
+ *  (side events at major tournaments carry the parent name). */
 export function refineEventType(eventType: string, eventName: string): string {
   const lower = eventName.toLowerCase();
-  // Check local event types first (GEM often misclassifies armory/pre-release with season names)
+  // Local/casual events — these always win
   if (lower.includes("armory")) return "Armory";
   if (lower.includes("world premiere")) return "Pre-Release";
   if (lower.includes("pre-release") || lower.includes("prerelease")) return "Pre-Release";
-  // Check specific tournament types in event name — order matters
-  if (lower.includes("battle hardened") || /\bbh\b/.test(lower)) return "Battle Hardened";
-  if (lower.includes("proquest") || lower.includes("pro quest") || /\bpq\b/.test(lower)) return "ProQuest";
-  if (lower.includes("pro tour")) return "Pro Tour";
-  if (lower.includes("worlds") || lower.includes("world championship")) return "Worlds";
-  if (lower.includes("skirmish")) return "Skirmish";
-  if (lower.includes("road to national") || /\brtn\b/.test(lower)) return "Road to Nationals";
-  if (/\bnational/.test(lower)) return "Nationals";
-  if (lower.includes("calling")) return "The Calling";
+  // Competitive events — pick lowest prestige when multiple match
+  const competitive = classifyCompetitiveEvent(lower);
+  if (competitive) return competitive;
   // Fall back to provided eventType (don't promote random "invitational" / "championship" store events)
   return eventType;
 }
