@@ -584,9 +584,10 @@ function CompareShareModal({
     p2TopHero: p2.topHero || "",
     p1Matches: p1.totalMatches,
     p2Matches: p2.totalMatches,
-    p1Score: scoreMode === "categories" ? p1CategoryWins : p1Points,
-    p2Score: scoreMode === "categories" ? p2CategoryWins : p2Points,
-    scoreMode,
+    p1CategoryWins,
+    p2CategoryWins,
+    p1Dominance: p1Points,
+    p2Dominance: p2Points,
     h2h: h2h ?? undefined,
   };
 

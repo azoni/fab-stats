@@ -9,17 +9,19 @@ interface CompareData {
   p2TopHero: string;
   p1Matches: number;
   p2Matches: number;
-  p1Score: number;
-  p2Score: number;
-  scoreMode: "categories" | "points";
+  p1CategoryWins: number;
+  p2CategoryWins: number;
+  p1Dominance: number;
+  p2Dominance: number;
   h2h?: { p1Wins: number; p2Wins: number; draws: number; total: number };
 }
 
 export function CompareCard({ data, theme }: { data: CompareData; theme: CardTheme }) {
   const t = theme;
-  const { p1Name, p2Name, stats, p1TopHero, p2TopHero, p1Matches, p2Matches, p1Score, p2Score, scoreMode, h2h } = data;
-  const p1Leading = p1Score > p2Score;
-  const tied = p1Score === p2Score;
+  const { p1Name, p2Name, stats, p1TopHero, p2TopHero, p1Matches, p2Matches, p1CategoryWins, p2CategoryWins, p1Dominance, p2Dominance, h2h } = data;
+  // Use dominance score for leading/color logic
+  const p1Leading = p1Dominance > p2Dominance;
+  const tied = p1Dominance === p2Dominance;
 
   return (
     <div style={{ backgroundColor: t.surface, borderColor: t.border, width: 420 }} className="border rounded-xl overflow-hidden">
@@ -46,13 +48,21 @@ export function CompareCard({ data, theme }: { data: CompareData; theme: CardThe
           </div>
         </div>
 
-        {/* Score */}
+        {/* Categories Won */}
         <div className="mt-4 flex items-baseline justify-center gap-3">
-          <span style={{ color: p1Leading ? t.win : tied ? t.draw : t.text }} className="text-4xl font-black">{p1Score}</span>
-          <span style={{ color: t.border }} className="text-2xl font-light">—</span>
-          <span style={{ color: !p1Leading && !tied ? t.win : tied ? t.draw : t.text }} className="text-4xl font-black">{p2Score}</span>
+          <span style={{ color: p1CategoryWins > p2CategoryWins ? t.win : p1CategoryWins === p2CategoryWins ? t.draw : t.text }} className="text-3xl font-black">{p1CategoryWins}</span>
+          <span style={{ color: t.border }} className="text-xl font-light">—</span>
+          <span style={{ color: p2CategoryWins > p1CategoryWins ? t.win : p1CategoryWins === p2CategoryWins ? t.draw : t.text }} className="text-3xl font-black">{p2CategoryWins}</span>
         </div>
-        <p style={{ color: t.muted }} className="text-xs text-center mt-1">{scoreMode === "categories" ? "categories won" : "dominance score"}</p>
+        <p style={{ color: t.muted }} className="text-[10px] text-center mt-0.5">categories won</p>
+
+        {/* Dominance Score */}
+        <div className="mt-2 flex items-baseline justify-center gap-3">
+          <span style={{ color: p1Leading ? t.win : tied ? t.draw : t.text }} className="text-2xl font-black">{p1Dominance}</span>
+          <span style={{ color: t.border }} className="text-lg font-light">—</span>
+          <span style={{ color: !p1Leading && !tied ? t.win : tied ? t.draw : t.text }} className="text-2xl font-black">{p2Dominance}</span>
+        </div>
+        <p style={{ color: t.muted }} className="text-[10px] text-center mt-0.5">dominance score</p>
 
         {/* Stats rows */}
         <div className="mt-4 space-y-0">
