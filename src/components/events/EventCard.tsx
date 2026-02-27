@@ -125,7 +125,7 @@ export function EventCard({ event, obfuscateOpponents = false, visibleOpponents,
       }
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
-      if (missingGemId && segments.some((s) => s.hero)) setShowGemNudge(true);
+      if (missingGemId && segments.some((s) => s.hero && s.hero !== "Unknown")) setShowGemNudge(true);
     } catch {
       setError("Failed to save. Please try again.");
     } finally {
@@ -214,6 +214,7 @@ export function EventCard({ event, obfuscateOpponents = false, visibleOpponents,
                           onChange={(v) => updateSegment(idx, { hero: v })}
                           label="Hero played"
                           format={seg.format || event.format}
+                          allowClear
                         />
                       </div>
                     )}

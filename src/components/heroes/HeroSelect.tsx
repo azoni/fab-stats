@@ -9,9 +9,11 @@ interface HeroSelectProps {
   onChange: (heroName: string) => void;
   label: string;
   format?: string;
+  /** Show a "Clear hero" option at the top of the dropdown */
+  allowClear?: boolean;
 }
 
-export function HeroSelect({ value, onChange, label, format }: HeroSelectProps) {
+export function HeroSelect({ value, onChange, label, format, allowClear }: HeroSelectProps) {
   const [query, setQuery] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [highlighted, setHighlighted] = useState(0);
@@ -101,8 +103,28 @@ export function HeroSelect({ value, onChange, label, format }: HeroSelectProps) 
           />
         )}
       </div>
-      {isOpen && results.length > 0 && (
+      {isOpen && (results.length > 0 || allowClear) && (
         <div className="absolute z-50 mt-1 w-full max-h-60 overflow-y-auto bg-fab-surface border border-fab-border rounded-md shadow-lg">
+          {allowClear && !query.trim() && (
+            <button
+              type="button"
+              onClick={() => {
+                onChange("Unknown");
+                setQuery("");
+                setIsOpen(false);
+              }}
+              className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 transition-colors ${
+                highlighted === -1
+                  ? "bg-fab-gold/15 text-fab-gold"
+                  : "text-fab-dim hover:bg-fab-surface-hover"
+              }`}
+            >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+              <span className="font-medium">No hero (clear)</span>
+            </button>
+          )}
           {results.map((hero, i) => (
             <button
               key={hero.cardIdentifier}

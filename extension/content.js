@@ -688,9 +688,21 @@
     }
 
     // Fallback: scan text near the match table for known hero names.
-    // Walk up from the table and check all link/text nodes for exact hero matches.
+    // Limited to 2 levels up and stops at event boundaries to avoid
+    // picking up heroes from neighboring events on the page.
     let scanContainer = matchTable.parentElement;
-    for (let i = 0; i < 5 && scanContainer; i++) {
+    for (let i = 0; i < 2 && scanContainer; i++) {
+      // Stop if this container spans multiple events (has other match tables)
+      const tables = scanContainer.querySelectorAll("table");
+      let otherMatchTables = 0;
+      for (const t of tables) {
+        if (t === matchTable) continue;
+        const h = [...t.querySelectorAll("th")].map((th) => th.textContent.trim().toLowerCase()).join(" ");
+        if (h.includes("opponent") || h.includes("player") || h.includes("result")) otherMatchTables++;
+        if (otherMatchTables > 0) break;
+      }
+      if (otherMatchTables > 0) break;
+
       const links = scanContainer.querySelectorAll("a");
       for (const link of links) {
         const t = link.textContent.trim();
