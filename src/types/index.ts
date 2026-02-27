@@ -281,6 +281,24 @@ export interface FeaturedEvent {
   players: FeaturedEventPlayer[];
 }
 
+// Polls
+export interface Poll {
+  question: string;
+  options: string[];
+  active: boolean;
+  createdAt: string;
+}
+
+export interface PollVote {
+  optionIndex: number;
+  votedAt: string;
+}
+
+export interface PollResults {
+  counts: number[];
+  total: number;
+}
+
 export interface FeedbackItem {
   id: string;
   userId: string;

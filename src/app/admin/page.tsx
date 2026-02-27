@@ -10,9 +10,10 @@ import { getEvents, saveEvents } from "@/lib/featured-events";
 import { lookupEvents, type LookupEvent } from "@/lib/event-lookup";
 import { getOrCreateConversation, sendMessage, sendMessageNotification } from "@/lib/messages";
 import { getAnalytics } from "@/lib/analytics";
+import { getPoll, getPollResults, savePoll, removePoll, clearVotes } from "@/lib/polls";
 import { searchHeroes } from "@/lib/heroes";
 import { GameFormat } from "@/types";
-import type { FeedbackItem, Creator, FeaturedEvent, FeaturedEventPlayer, UserProfile } from "@/types";
+import type { FeedbackItem, Creator, FeaturedEvent, FeaturedEventPlayer, UserProfile, Poll, PollResults } from "@/types";
 
 const FEATURED_EVENT_TYPES = [
   "Armory",
@@ -68,6 +69,13 @@ export default function AdminPage() {
   const [backfillingGemIds, setBackfillingGemIds] = useState(false);
   const [gemIdProgress, setGemIdProgress] = useState("");
   const [toolsOpen, setToolsOpen] = useState(false);
+  const [pollQuestion, setPollQuestion] = useState("");
+  const [pollOptions, setPollOptions] = useState<string[]>(["", ""]);
+  const [pollActive, setPollActive] = useState(false);
+  const [pollResults, setPollResults] = useState<PollResults | null>(null);
+  const [savingPoll, setSavingPoll] = useState(false);
+  const [pollSaved, setPollSaved] = useState(false);
+  const [pollCreatedAt, setPollCreatedAt] = useState("");
   const anyToolRunning = fixingDates || backfilling || backfillingGemIds || linkingMatches;
 
   // Redirect non-admins
@@ -81,7 +89,7 @@ export default function AdminPage() {
     setFetching(true);
     setError("");
     try {
-      const [result, fb, cr, ev, analytics] = await Promise.all([getAdminDashboardData(), getAllFeedback(), getCreators(), getEvents(), getAnalytics()]);
+      const [result, fb, cr, ev, analytics, pollData, pollRes] = await Promise.all([getAdminDashboardData(), getAllFeedback(), getCreators(), getEvents(), getAnalytics(), getPoll(), getPollResults()]);
       setData(result);
       setFeedback(fb);
       setCreatorsList(cr);
@@ -95,6 +103,13 @@ export default function AdminPage() {
         players: e.players || (e.playerUsernames || []).map((u: string) => ({ name: u, username: u })),
       })));
       setAnalyticsData(analytics);
+      if (pollData) {
+        setPollQuestion(pollData.question);
+        setPollOptions(pollData.options);
+        setPollActive(pollData.active);
+        setPollCreatedAt(pollData.createdAt);
+      }
+      setPollResults(pollRes);
     } catch {
       setError("Failed to load admin data.");
     } finally {
@@ -819,6 +834,126 @@ export default function AdminPage() {
               )}
               {lookupOpen && !lookupLoading && lookupResults.length === 0 && (
                 <p className="mt-2 text-sm text-fab-dim text-center py-3">No events found</p>
+              )}
+            </div>
+          </div>
+
+          {/* Community Poll */}
+          <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden mt-6">
+            <div className="px-4 py-3 border-b border-fab-border flex items-center justify-between">
+              <h2 className="text-sm font-semibold text-fab-text">
+                Community Poll {pollActive && <span className="text-fab-win ml-1">(Active)</span>}
+              </h2>
+              <div className="flex items-center gap-2">
+                {pollSaved && <span className="text-xs text-fab-win">Saved!</span>}
+                {pollActive && (
+                  <button
+                    onClick={async () => {
+                      await removePoll();
+                      setPollActive(false);
+                    }}
+                    className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-fab-loss/20 text-fab-loss hover:bg-fab-loss/30 transition-colors"
+                  >
+                    Deactivate
+                  </button>
+                )}
+                <button
+                  onClick={async () => {
+                    const opts = pollOptions.filter(Boolean);
+                    if (!pollQuestion.trim() || opts.length < 2) return;
+                    setSavingPoll(true);
+                    setPollSaved(false);
+                    try {
+                      await savePoll({
+                        question: pollQuestion.trim(),
+                        options: opts,
+                        active: true,
+                        createdAt: pollCreatedAt || new Date().toISOString(),
+                      });
+                      setPollActive(true);
+                      setPollSaved(true);
+                      setTimeout(() => setPollSaved(false), 2000);
+                      const res = await getPollResults();
+                      setPollResults(res);
+                    } catch {
+                      setError("Failed to save poll.");
+                    } finally {
+                      setSavingPoll(false);
+                    }
+                  }}
+                  disabled={savingPoll || !pollQuestion.trim() || pollOptions.filter(Boolean).length < 2}
+                  className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors disabled:opacity-50"
+                >
+                  {savingPoll ? "Saving..." : "Publish Poll"}
+                </button>
+              </div>
+            </div>
+            <div className="p-4 space-y-3">
+              <input
+                type="text"
+                placeholder="Poll question"
+                value={pollQuestion}
+                onChange={(e) => setPollQuestion(e.target.value)}
+                className="w-full bg-fab-bg border border-fab-border text-fab-text text-sm rounded px-3 py-2 focus:outline-none focus:border-fab-gold"
+              />
+              {pollOptions.map((opt, i) => (
+                <div key={i} className="flex gap-2 items-center">
+                  <input
+                    type="text"
+                    placeholder={`Option ${i + 1}`}
+                    value={opt}
+                    onChange={(e) => {
+                      const next = [...pollOptions];
+                      next[i] = e.target.value;
+                      setPollOptions(next);
+                    }}
+                    className="flex-1 bg-fab-bg border border-fab-border text-fab-text text-sm rounded px-3 py-1.5 focus:outline-none focus:border-fab-gold"
+                  />
+                  {pollOptions.length > 2 && (
+                    <button
+                      onClick={() => setPollOptions(pollOptions.filter((_, j) => j !== i))}
+                      className="text-xs text-fab-loss hover:text-fab-loss/80"
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
+              ))}
+              <button
+                onClick={() => setPollOptions([...pollOptions, ""])}
+                className="w-full py-1.5 rounded text-xs font-medium border border-dashed border-fab-border text-fab-muted hover:text-fab-text hover:border-fab-gold/30 transition-colors"
+              >
+                + Add Option
+              </button>
+
+              {pollResults && pollResults.total > 0 && (
+                <div className="border-t border-fab-border pt-3 mt-4">
+                  <p className="text-xs text-fab-dim font-medium mb-2">Results ({pollResults.total} vote{pollResults.total !== 1 ? "s" : ""})</p>
+                  {pollOptions.filter(Boolean).map((opt, i) => {
+                    const count = pollResults.counts[i] || 0;
+                    const pct = pollResults.total > 0 ? (count / pollResults.total * 100) : 0;
+                    return (
+                      <div key={i} className="flex items-center gap-2 mb-1.5">
+                        <span className="text-xs text-fab-text w-32 truncate">{opt}</span>
+                        <div className="flex-1 bg-fab-bg rounded-full h-2 overflow-hidden">
+                          <div className="bg-fab-gold h-2 rounded-full transition-all" style={{ width: `${pct}%` }} />
+                        </div>
+                        <span className="text-xs text-fab-dim w-20 text-right">{count} ({pct.toFixed(0)}%)</span>
+                      </div>
+                    );
+                  })}
+                  <button
+                    onClick={async () => {
+                      if (confirm("Clear all votes? This cannot be undone.")) {
+                        await clearVotes();
+                        setPollResults({ counts: [], total: 0 });
+                      }
+                    }}
+                    className="mt-2 text-xs text-fab-loss hover:text-fab-loss/80 transition-colors"
+                  >
+                    Clear Votes
+                  </button>
+                </div>
               )}
             </div>
           </div>
