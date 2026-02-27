@@ -14,6 +14,7 @@ export function PollCard() {
   const [hasVoted, setHasVoted] = useState(false);
   const [loading, setLoading] = useState(true);
   const [results, setResults] = useState<PollResults | null>(null);
+  const [changing, setChanging] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -50,7 +51,7 @@ export function PollCard() {
 
   if (loading || !poll) return null;
 
-  const showResults = poll.showResults && hasVoted && results;
+  const showResults = poll.showResults && hasVoted && results && !changing;
   const resultCounts = results?.counts || [];
   const resultTotal = results?.total || 0;
 
@@ -61,6 +62,7 @@ export function PollCard() {
       await submitVote(user.uid, selected);
       setVote({ optionIndex: selected, votedAt: new Date().toISOString() });
       setHasVoted(true);
+      setChanging(false);
       // Fetch live results right after voting
       if (poll!.showResults) {
         const res = await getPollResults();
@@ -127,7 +129,13 @@ export function PollCard() {
                 );
               })}
               <p className="text-xs text-fab-dim text-center mt-1">
-                {resultTotal} vote{resultTotal !== 1 ? "s" : ""}
+                {resultTotal} vote{resultTotal !== 1 ? "s" : ""} &middot;{" "}
+                <button
+                  onClick={() => setChanging(true)}
+                  className="text-fab-gold hover:text-fab-gold-light transition-colors"
+                >
+                  Change vote
+                </button>
               </p>
             </div>
           ) : (
