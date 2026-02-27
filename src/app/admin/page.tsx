@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
@@ -1385,27 +1385,30 @@ function ActivitySection({ analytics: initialAnalytics }: { analytics: { pageVie
   const [timeRange, setTimeRange] = useState<AnalyticsTimeRange>("all");
   const [analytics, setAnalytics] = useState(initialAnalytics);
   const [loadingRange, setLoadingRange] = useState(false);
+  const fetchIdRef = useRef(0);
 
+  // Fetch data whenever timeRange changes, with cancellation for rapid clicks
   useEffect(() => {
-    if (timeRange === "all") setAnalytics(initialAnalytics);
-  }, [initialAnalytics, timeRange]);
-
-  async function switchTimeRange(range: AnalyticsTimeRange) {
-    setTimeRange(range);
-    if (range === "all") {
+    if (timeRange === "all") {
       setAnalytics(initialAnalytics);
+      setLoadingRange(false);
       return;
     }
+    let cancelled = false;
+    const id = ++fetchIdRef.current;
     setLoadingRange(true);
-    try {
-      const data = await getAnalytics(range);
-      setAnalytics(data);
-    } catch {
-      // Keep current data on error
-    } finally {
-      setLoadingRange(false);
-    }
-  }
+    getAnalytics(timeRange).then((data) => {
+      if (!cancelled && id === fetchIdRef.current) {
+        setAnalytics(data);
+        setLoadingRange(false);
+      }
+    }).catch(() => {
+      if (!cancelled && id === fetchIdRef.current) {
+        setLoadingRange(false);
+      }
+    });
+    return () => { cancelled = true; };
+  }, [timeRange, initialAnalytics]);
 
   // Separate player profile views from regular page views
   const playerEntries: [string, number][] = [];
@@ -1462,7 +1465,7 @@ function ActivitySection({ analytics: initialAnalytics }: { analytics: { pageVie
             {(["1h", "12h", "24h", "7d", "all"] as const).map((range) => (
               <button
                 key={range}
-                onClick={() => switchTimeRange(range)}
+                onClick={() => setTimeRange(range)}
                 className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
                   timeRange === range
                     ? "bg-fab-gold/20 text-fab-gold"

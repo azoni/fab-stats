@@ -239,7 +239,7 @@ export default function Dashboard() {
               {profile?.username && (
                 <p className="text-sm text-fab-dim mb-1">@{profile.username}</p>
               )}
-              {achievements.length > 0 && <AchievementBadges earned={achievements} max={4} onShowMore={profile?.username ? () => router.push(`/player/${profile.username}#achievements`) : undefined} />}
+              {achievements.length > 0 && <AchievementBadges earned={achievements} max={4} mobileMax={2} onShowMore={profile?.username ? () => router.push(`/player/${profile.username}#achievements`) : undefined} />}
             </div>
             {/* Streak mini */}
             <div className="shrink-0 ml-auto text-right">
@@ -276,7 +276,7 @@ export default function Dashboard() {
                 </div>
               </div>
               <p className="text-[10px] text-fab-dim">streak</p>
-              <div className="mt-1 flex gap-0.5 flex-wrap justify-end max-w-[200px] ml-auto">
+              <div className="mt-1 flex gap-0.5 flex-wrap justify-end max-w-[120px] sm:max-w-[200px] ml-auto">
                 {last30.map((m, i) => (
                   <div
                     key={i}

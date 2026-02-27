@@ -363,7 +363,7 @@ export default function PlayerProfile() {
         </div>
 
         {/* Quick stats row */}
-        <div className={`grid grid-cols-3 ${bestFinish ? "sm:grid-cols-6" : "sm:grid-cols-5"} gap-3 overflow-hidden`}>
+        <div className={`grid grid-cols-3 ${bestFinish ? "sm:grid-cols-6" : "sm:grid-cols-5"} gap-3`}>
           <div>
             <p className="text-[10px] text-fab-dim uppercase tracking-wider">Win Rate</p>
             <p className={`text-lg font-bold ${overall.overallWinRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>
@@ -374,9 +374,9 @@ export default function PlayerProfile() {
             <p className="text-[10px] text-fab-dim uppercase tracking-wider">Matches</p>
             <p className="text-lg font-bold text-fab-text">{overall.totalMatches}</p>
           </div>
-          <div className="min-w-0">
+          <div>
             <p className="text-[10px] text-fab-dim uppercase tracking-wider">Record</p>
-            <p className="text-lg font-bold truncate">
+            <p className="text-lg font-bold">
               <span className="text-fab-win">{overall.totalWins}W</span>
               <span className="text-fab-dim">-</span>
               <span className="text-fab-loss">{overall.totalLosses}L</span>
@@ -649,7 +649,7 @@ function ProfileHeader({ profile, achievements, bestRank, isAdmin, isOwner, isFa
   const ringClass = bestRank === 1 ? "rank-border-grandmaster" : bestRank === 2 ? "rank-border-diamond" : bestRank === 3 ? "rank-border-gold" : bestRank === 4 ? "rank-border-silver" : bestRank === 5 ? "rank-border-bronze" : "";
   const isCreator = profile.username === "azoni";
   return (
-    <div className="flex items-center gap-4 flex-1 min-w-0 overflow-hidden">
+    <div className="flex items-center gap-4 flex-1 min-w-0">
       <div className="relative shrink-0">
         {isCreator && (
           <svg className="absolute -top-4 left-1/2 -translate-x-1/2 w-7 h-7 text-fab-gold drop-shadow-[0_0_6px_rgba(201,168,76,0.6)] z-10" viewBox="0 0 24 24" fill="currentColor">
@@ -665,7 +665,7 @@ function ProfileHeader({ profile, achievements, bestRank, isAdmin, isOwner, isFa
         )}
       </div>
       <div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <h1 className="text-2xl font-bold text-fab-gold">{profile.displayName}</h1>
           {onToggleFavorite && (
             <button
@@ -753,7 +753,7 @@ function ProfileHeader({ profile, achievements, bestRank, isAdmin, isOwner, isFa
           )}
         </div>
         <p className="text-sm text-fab-dim mb-1">@{profile.username}</p>
-        {achievements && achievements.length > 0 && <AchievementBadges earned={achievements} max={4} onShowMore={onShowMoreAchievements} />}
+        {achievements && achievements.length > 0 && <AchievementBadges earned={achievements} max={4} mobileMax={2} onShowMore={onShowMoreAchievements} />}
         {isAdmin && !isOwner && (
           <Link
             href={`/inbox/${profile.uid}`}

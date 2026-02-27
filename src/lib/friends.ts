@@ -26,16 +26,21 @@ export async function sendFriendRequest(
   const docRef = doc(db, "friendships", friendshipId);
 
   // Check if a friendship already exists
-  const existing = await getDoc(docRef);
-  if (existing.exists()) {
-    const data = existing.data();
-    // If there's a pending request from the other user, auto-accept
-    if (data.status === "pending" && data.requesterUid === toUser.uid) {
-      await acceptFriendRequest(friendshipId, fromUser.uid);
+  // getDoc may throw permission error if doc doesn't exist (rules require participant match)
+  try {
+    const existing = await getDoc(docRef);
+    if (existing.exists()) {
+      const data = existing.data();
+      // If there's a pending request from the other user, auto-accept
+      if (data.status === "pending" && data.requesterUid === toUser.uid) {
+        await acceptFriendRequest(friendshipId, fromUser.uid);
+        return;
+      }
+      // Already friends or already sent a request
       return;
     }
-    // Already friends or already sent a request
-    return;
+  } catch {
+    // Doc doesn't exist or not a participant — safe to proceed with create
   }
 
   const participants = [fromUser.uid, toUser.uid].sort() as [string, string];

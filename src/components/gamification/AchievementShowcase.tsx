@@ -254,7 +254,7 @@ export function AchievementShowcase({ earned, progress, forceExpanded }: { earne
 }
 
 /** Compact inline badges for profile headers */
-export function AchievementBadges({ earned, max = 5, onShowMore }: { earned: Achievement[]; max?: number; onShowMore?: () => void }) {
+export function AchievementBadges({ earned, max = 5, mobileMax, onShowMore }: { earned: Achievement[]; max?: number; mobileMax?: number; onShowMore?: () => void }) {
   if (earned.length === 0) return null;
 
   const rarityOrder = { legendary: 5, epic: 4, rare: 3, uncommon: 2, common: 1 };
@@ -263,23 +263,33 @@ export function AchievementBadges({ earned, max = 5, onShowMore }: { earned: Ach
     .slice(0, max);
 
   const remaining = earned.length - top.length;
+  const effectiveMobileMax = mobileMax !== undefined ? Math.min(mobileMax, max) : max;
+  const mobileRemaining = earned.length - effectiveMobileMax;
 
   return (
     <div className="flex items-center gap-1 flex-wrap">
-      {top.map((a) => (
+      {top.map((a, i) => (
         <span
           key={a.id}
-          className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium ${rarityColors[a.rarity].bg} ${rarityColors[a.rarity].text} ${rarityColors[a.rarity].border} border`}
+          className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium max-w-[130px] ${rarityColors[a.rarity].bg} ${rarityColors[a.rarity].text} ${rarityColors[a.rarity].border} border ${i >= effectiveMobileMax ? "hidden sm:inline-flex" : ""}`}
           title={`${a.name}: ${a.description}`}
         >
-          <AchievementIcon icon={a.icon} className="w-3 h-3" />
-          {a.name}
+          <AchievementIcon icon={a.icon} className="w-3 h-3 shrink-0" />
+          <span className="truncate">{a.name}</span>
         </span>
       ))}
+      {mobileMax !== undefined && mobileRemaining > remaining && mobileRemaining > 0 && (
+        <button
+          onClick={onShowMore}
+          className="text-[10px] text-fab-dim hover:text-fab-gold transition-colors cursor-pointer sm:hidden"
+        >
+          +{mobileRemaining} more
+        </button>
+      )}
       {remaining > 0 && (
         <button
           onClick={onShowMore}
-          className="text-[10px] text-fab-dim hover:text-fab-gold transition-colors cursor-pointer"
+          className={`text-[10px] text-fab-dim hover:text-fab-gold transition-colors cursor-pointer ${mobileMax !== undefined && mobileRemaining > remaining ? "hidden sm:inline" : ""}`}
         >
           +{remaining} more
         </button>
