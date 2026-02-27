@@ -299,7 +299,7 @@ export default function TrendsPage() {
             <h2 className="text-lg font-semibold text-fab-text mb-4">Win Rate by Format</h2>
             <div className="space-y-3">
               {formatWinRate.map((f) => (
-                <div key={f.format}>
+                <Link key={f.format} href={`/events?format=${encodeURIComponent(f.format)}`} className="block hover:opacity-80 transition-opacity">
                   <div className="flex items-center justify-between text-sm mb-1">
                     <span className="text-fab-text">{f.format}</span>
                     <span className="text-fab-dim">{f.wins}W-{f.losses}L{f.draws > 0 ? `-${f.draws}D` : ""} <span className={f.winRate >= 50 ? "text-fab-win font-medium" : "text-fab-loss font-medium"}>({f.winRate}%)</span></span>
@@ -310,7 +310,7 @@ export default function TrendsPage() {
                       style={{ width: `${f.winRate}%` }}
                     />
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
           </div>
@@ -378,7 +378,7 @@ export default function TrendsPage() {
           <h2 className="text-lg font-semibold text-fab-text mb-4">Win Rate by Event Type</h2>
           <div className="space-y-3">
             {eventTypeWinRate.map((e) => (
-              <div key={e.eventType}>
+              <Link key={e.eventType} href={`/events?type=${encodeURIComponent(e.eventType)}`} className="block hover:opacity-80 transition-opacity">
                 <div className="flex items-center justify-between text-sm mb-1">
                   <span className="text-fab-text">{e.eventType}</span>
                   <span className="text-fab-dim">{e.wins}W-{e.losses}L{e.draws > 0 ? `-${e.draws}D` : ""} ({e.total}) <span className={e.winRate >= 50 ? "text-fab-win font-medium" : "text-fab-loss font-medium"}>{e.winRate}%</span></span>
@@ -389,7 +389,7 @@ export default function TrendsPage() {
                     style={{ width: `${e.winRate}%` }}
                   />
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         </div>

@@ -133,7 +133,9 @@ export default function PlayerProfile() {
           return;
         }
 
-        if (!profile.isPublic) {
+        const isOwner = !!viewerUid && viewerUid === profile.uid;
+
+        if (!profile.isPublic && !isOwner) {
           setState({ status: "private" });
           return;
         }
@@ -143,11 +145,10 @@ export default function PlayerProfile() {
         try {
           matches = await getMatchesByUserId(profile.uid);
         } catch (matchErr) {
-          console.error("Failed to load matches for public profile:", matchErr);
+          console.error("Failed to load matches for profile:", matchErr);
         }
 
         if (!cancelled) {
-          const isOwner = !!viewerUid && viewerUid === profile.uid;
           setState({ status: "loaded", profile, matches, isOwner });
 
           // Sync leaderboard entry when the owner views their profile

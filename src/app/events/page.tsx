@@ -75,10 +75,17 @@ export default function EventsPage() {
   );
 
   // Auto-open import modal from ?import=1 (e.g. from navbar "Log Event")
+  // Also initialize filters from URL params (e.g. from trends page links)
   useEffect(() => {
     if (searchParams.get("import") === "1") {
       setImportModalOpen(true);
     }
+    const urlFormat = searchParams.get("format");
+    const urlType = searchParams.get("type");
+    const urlHero = searchParams.get("hero");
+    if (urlFormat) setFilterFormat(urlFormat);
+    if (urlType) setFilterEventType(urlType);
+    if (urlHero) setFilterHero(urlHero);
   }, [searchParams]);
 
   // Reset to page 1 when filters/search change
