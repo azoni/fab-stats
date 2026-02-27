@@ -1,5 +1,5 @@
 "use client";
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useLeaderboard } from "@/hooks/useLeaderboard";
@@ -9,6 +9,8 @@ import { HeroClassIcon } from "@/components/heroes/HeroClassIcon";
 import { CARD_THEMES, type CardTheme } from "@/components/opponents/RivalryCard";
 import { CompareCard } from "@/components/compare/CompareCard";
 import { toBlob } from "html-to-image";
+import { getMatchesByUserId } from "@/lib/firestore-storage";
+import { computeOpponentStats } from "@/lib/stats";
 import type { LeaderboardEntry } from "@/types";
 
 export default function ComparePage() {
@@ -208,66 +210,128 @@ function PlayerPicker({
 
 function ComparisonView({ p1, p2 }: { p1: LeaderboardEntry; p2: LeaderboardEntry }) {
   const [showShareModal, setShowShareModal] = useState(false);
-  const stats: { label: string; v1: string | number; v2: string | number; better: 1 | 2 | 0; format?: "pct" }[] = [
+  const [scoreMode, setScoreMode] = useState<"categories" | "points">("categories");
+
+  // Head-to-head record
+  const [h2h, setH2h] = useState<{ p1Wins: number; p2Wins: number; draws: number; total: number } | null>(null);
+  const [h2hLoading, setH2hLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    setH2hLoading(true);
+    setH2h(null);
+
+    (async () => {
+      try {
+        const matches = await getMatchesByUserId(p1.userId);
+        if (cancelled) return;
+        const oppStats = computeOpponentStats(matches);
+        // Find p2 by display name (case-insensitive)
+        const p2Lower = p2.displayName.toLowerCase();
+        const vs = oppStats.find((o) => o.opponentName.toLowerCase() === p2Lower);
+        if (vs) {
+          setH2h({ p1Wins: vs.wins, p2Wins: vs.losses, draws: vs.draws, total: vs.totalMatches });
+        }
+      } catch { /* profile might not be public */ }
+      if (!cancelled) setH2hLoading(false);
+    })();
+
+    return () => { cancelled = true; };
+  }, [p1.userId, p2.displayName]);
+
+  type StatRow = { label: string; v1: string | number; v2: string | number; better: 1 | 2 | 0; raw1?: number; raw2?: number; weight: number };
+  const stats: StatRow[] = [
     {
       label: "Win Rate",
       v1: `${p1.winRate.toFixed(1)}%`,
       v2: `${p2.winRate.toFixed(1)}%`,
       better: p1.winRate > p2.winRate ? 1 : p2.winRate > p1.winRate ? 2 : 0,
+      raw1: p1.winRate, raw2: p2.winRate,
+      weight: 3,
     },
     {
       label: "Total Matches",
       v1: p1.totalMatches,
       v2: p2.totalMatches,
       better: p1.totalMatches > p2.totalMatches ? 1 : p2.totalMatches > p1.totalMatches ? 2 : 0,
+      raw1: p1.totalMatches, raw2: p2.totalMatches,
+      weight: 1,
     },
     {
       label: "Record",
       v1: `${p1.totalWins}W-${p1.totalLosses}L${p1.totalDraws > 0 ? `-${p1.totalDraws}D` : ""}`,
       v2: `${p2.totalWins}W-${p2.totalLosses}L${p2.totalDraws > 0 ? `-${p2.totalDraws}D` : ""}`,
       better: 0,
+      weight: 0,
     },
     {
       label: "Events Played",
       v1: p1.eventsPlayed,
       v2: p2.eventsPlayed,
       better: p1.eventsPlayed > p2.eventsPlayed ? 1 : p2.eventsPlayed > p1.eventsPlayed ? 2 : 0,
+      raw1: p1.eventsPlayed, raw2: p2.eventsPlayed,
+      weight: 1,
     },
     {
       label: "Event Wins",
       v1: p1.eventWins,
       v2: p2.eventWins,
       better: p1.eventWins > p2.eventWins ? 1 : p2.eventWins > p1.eventWins ? 2 : 0,
+      raw1: p1.eventWins, raw2: p2.eventWins,
+      weight: 3,
     },
     {
       label: "Longest Win Streak",
       v1: p1.longestWinStreak,
       v2: p2.longestWinStreak,
       better: p1.longestWinStreak > p2.longestWinStreak ? 1 : p2.longestWinStreak > p1.longestWinStreak ? 2 : 0,
+      raw1: p1.longestWinStreak, raw2: p2.longestWinStreak,
+      weight: 2,
     },
     {
       label: "Unique Heroes",
       v1: p1.uniqueHeroes,
       v2: p2.uniqueHeroes,
       better: p1.uniqueHeroes > p2.uniqueHeroes ? 1 : p2.uniqueHeroes > p1.uniqueHeroes ? 2 : 0,
+      raw1: p1.uniqueHeroes, raw2: p2.uniqueHeroes,
+      weight: 1,
     },
     {
       label: "Rated Win Rate",
       v1: p1.ratedMatches > 0 ? `${p1.ratedWinRate.toFixed(1)}%` : "—",
       v2: p2.ratedMatches > 0 ? `${p2.ratedWinRate.toFixed(1)}%` : "—",
       better: p1.ratedWinRate > p2.ratedWinRate ? 1 : p2.ratedWinRate > p1.ratedWinRate ? 2 : 0,
+      raw1: p1.ratedMatches > 0 ? p1.ratedWinRate : undefined,
+      raw2: p2.ratedMatches > 0 ? p2.ratedWinRate : undefined,
+      weight: 2,
     },
     {
       label: "Armory Win Rate",
       v1: p1.armoryMatches > 0 ? `${p1.armoryWinRate.toFixed(1)}%` : "—",
       v2: p2.armoryMatches > 0 ? `${p2.armoryWinRate.toFixed(1)}%` : "—",
       better: p1.armoryWinRate > p2.armoryWinRate ? 1 : p2.armoryWinRate > p1.armoryWinRate ? 2 : 0,
+      raw1: p1.armoryMatches > 0 ? p1.armoryWinRate : undefined,
+      raw2: p2.armoryMatches > 0 ? p2.armoryWinRate : undefined,
+      weight: 1.5,
     },
   ];
 
   // Count who "wins" more categories
   const p1Wins = stats.filter((s) => s.better === 1).length;
   const p2Wins = stats.filter((s) => s.better === 2).length;
+
+  // Dominance points: each category contributes 0-10 weighted points based on margin
+  const { p1Points, p2Points } = useMemo(() => {
+    let s1 = 0, s2 = 0;
+    for (const stat of stats) {
+      if (stat.raw1 === undefined || stat.raw2 === undefined || stat.weight === 0) continue;
+      const total = stat.raw1 + stat.raw2;
+      if (total === 0) { s1 += 5 * stat.weight; s2 += 5 * stat.weight; continue; }
+      s1 += (stat.raw1 / total) * 10 * stat.weight;
+      s2 += (stat.raw2 / total) * 10 * stat.weight;
+    }
+    return { p1Points: Math.round(s1 * 10) / 10, p2Points: Math.round(s2 * 10) / 10 };
+  }, [p1, p2]);
 
   const hero1 = p1.topHero ? getHeroByName(p1.topHero) : undefined;
   const hero2 = p2.topHero ? getHeroByName(p2.topHero) : undefined;
@@ -293,9 +357,9 @@ function ComparisonView({ p1, p2 }: { p1: LeaderboardEntry; p2: LeaderboardEntry
         <div className="shrink-0 text-center">
           <div className="text-2xl font-black text-fab-gold">VS</div>
           <p className="text-[10px] text-fab-dim mt-1">
-            <span className="text-blue-400 font-semibold">{p1Wins}</span>
+            <span className="text-blue-400 font-semibold">{scoreMode === "categories" ? p1Wins : p1Points}</span>
             {" - "}
-            <span className="text-red-400 font-semibold">{p2Wins}</span>
+            <span className="text-red-400 font-semibold">{scoreMode === "categories" ? p2Wins : p2Points}</span>
           </p>
         </div>
 
@@ -334,6 +398,48 @@ function ComparisonView({ p1, p2 }: { p1: LeaderboardEntry; p2: LeaderboardEntry
         </div>
       </div>
 
+      {/* Head-to-Head */}
+      {h2hLoading ? (
+        <div className="bg-fab-surface border border-fab-border rounded-lg p-4 mb-4">
+          <div className="h-4 w-32 bg-fab-bg rounded animate-pulse mx-auto" />
+        </div>
+      ) : h2h && h2h.total > 0 ? (
+        <div className="bg-fab-surface border border-fab-border rounded-lg p-4 mb-4 text-center">
+          <p className="text-[10px] text-fab-dim uppercase tracking-wider mb-2">Head-to-Head Record</p>
+          <div className="flex items-baseline justify-center gap-3">
+            <span className={`text-2xl font-black ${h2h.p1Wins > h2h.p2Wins ? "text-blue-400" : "text-fab-text"}`}>{h2h.p1Wins}</span>
+            <span className="text-fab-dim text-sm">W</span>
+            {h2h.draws > 0 && (
+              <>
+                <span className="text-fab-border">-</span>
+                <span className="text-2xl font-black text-fab-text">{h2h.draws}</span>
+                <span className="text-fab-dim text-sm">D</span>
+              </>
+            )}
+            <span className="text-fab-border">-</span>
+            <span className={`text-2xl font-black ${h2h.p2Wins > h2h.p1Wins ? "text-red-400" : "text-fab-text"}`}>{h2h.p2Wins}</span>
+            <span className="text-fab-dim text-sm">L</span>
+          </div>
+          <p className="text-xs text-fab-dim mt-1">{h2h.total} match{h2h.total !== 1 ? "es" : ""} played against each other</p>
+        </div>
+      ) : null}
+
+      {/* Score mode toggle */}
+      <div className="flex items-center justify-center gap-1 mb-4">
+        <button
+          onClick={() => setScoreMode("categories")}
+          className={`px-3 py-1 rounded text-xs font-medium transition-colors ${scoreMode === "categories" ? "bg-fab-gold/20 text-fab-gold" : "text-fab-muted hover:text-fab-text"}`}
+        >
+          Categories Won
+        </button>
+        <button
+          onClick={() => setScoreMode("points")}
+          className={`px-3 py-1 rounded text-xs font-medium transition-colors ${scoreMode === "points" ? "bg-fab-gold/20 text-fab-gold" : "text-fab-muted hover:text-fab-text"}`}
+        >
+          Dominance Score
+        </button>
+      </div>
+
       {/* Stats table */}
       <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden">
         {stats.map((stat, i) => (
@@ -353,6 +459,9 @@ function ComparisonView({ p1, p2 }: { p1: LeaderboardEntry; p2: LeaderboardEntry
           </div>
         ))}
       </div>
+
+      {/* Verdict */}
+      <Verdict p1={p1} p2={p2} p1Wins={p1Wins} p2Wins={p2Wins} p1Points={p1Points} p2Points={p2Points} h2h={h2h} />
 
       {/* Share button */}
       <div className="mt-4 text-center">
@@ -374,9 +483,68 @@ function ComparisonView({ p1, p2 }: { p1: LeaderboardEntry; p2: LeaderboardEntry
           stats={stats}
           p1CategoryWins={p1Wins}
           p2CategoryWins={p2Wins}
+          p1Points={p1Points}
+          p2Points={p2Points}
+          scoreMode={scoreMode}
+          h2h={h2h}
           onClose={() => setShowShareModal(false)}
         />
       )}
+    </div>
+  );
+}
+
+function Verdict({ p1, p2, p1Wins, p2Wins, p1Points, p2Points, h2h }: { p1: LeaderboardEntry; p2: LeaderboardEntry; p1Wins: number; p2Wins: number; p1Points: number; p2Points: number; h2h: { p1Wins: number; p2Wins: number; draws: number; total: number } | null }) {
+  const verdicts: string[] = [];
+
+  // Use weighted dominance score as the primary winner detection
+  const pointDiff = Math.abs(p1Points - p2Points);
+  const totalPoints = p1Points + p2Points;
+  const margin = totalPoints > 0 ? (pointDiff / totalPoints) * 100 : 0;
+  const winner = p1Points > p2Points ? p1 : p2;
+  const loser = winner === p1 ? p2 : p1;
+
+  if (margin < 1) {
+    verdicts.push("Dead even across the board — these two are perfectly matched.");
+  } else if (margin > 15) {
+    verdicts.push(`${winner.displayName} dominates, taking ${Math.max(p1Wins, p2Wins)} categories and leading in weighted score.`);
+  } else if (margin > 7) {
+    verdicts.push(`${winner.displayName} holds a clear edge with a stronger weighted score across key categories.`);
+  } else {
+    verdicts.push(`${winner.displayName} narrowly edges out ${loser.displayName} when factoring in category importance.`);
+  }
+
+  // Win rate comparison
+  const wrDiff = Math.abs(p1.winRate - p2.winRate);
+  if (wrDiff < 2) {
+    verdicts.push("Their win rates are virtually identical.");
+  } else if (wrDiff > 15) {
+    const better = p1.winRate > p2.winRate ? p1 : p2;
+    verdicts.push(`${better.displayName} boasts a ${wrDiff.toFixed(0)}% higher win rate.`);
+  }
+
+  // Experience comparison
+  const matchDiff = Math.abs(p1.totalMatches - p2.totalMatches);
+  if (matchDiff > 50) {
+    const more = p1.totalMatches > p2.totalMatches ? p1 : p2;
+    verdicts.push(`${more.displayName} has ${matchDiff} more matches of experience.`);
+  }
+
+  // H2H verdict
+  if (h2h && h2h.total >= 2) {
+    if (h2h.p1Wins > h2h.p2Wins) {
+      verdicts.push(`${p1.displayName} owns the head-to-head ${h2h.p1Wins}-${h2h.p2Wins}.`);
+    } else if (h2h.p2Wins > h2h.p1Wins) {
+      verdicts.push(`${p2.displayName} owns the head-to-head ${h2h.p2Wins}-${h2h.p1Wins}.`);
+    } else {
+      verdicts.push("They're dead even head-to-head.");
+    }
+  }
+
+  return (
+    <div className="mt-4 bg-fab-surface border border-fab-border rounded-lg p-4">
+      <p className="text-[10px] text-fab-gold uppercase tracking-wider font-semibold mb-2">Verdict</p>
+      <p className="text-sm text-fab-text leading-relaxed">{verdicts.join(" ")}</p>
     </div>
   );
 }
@@ -387,6 +555,10 @@ function CompareShareModal({
   stats,
   p1CategoryWins,
   p2CategoryWins,
+  p1Points,
+  p2Points,
+  scoreMode,
+  h2h,
   onClose,
 }: {
   p1: LeaderboardEntry;
@@ -394,6 +566,10 @@ function CompareShareModal({
   stats: { label: string; v1: string | number; v2: string | number; better: 1 | 2 | 0 }[];
   p1CategoryWins: number;
   p2CategoryWins: number;
+  p1Points: number;
+  p2Points: number;
+  scoreMode: "categories" | "points";
+  h2h: { p1Wins: number; p2Wins: number; draws: number; total: number } | null;
   onClose: () => void;
 }) {
   const [selectedTheme, setSelectedTheme] = useState(CARD_THEMES[0]);
@@ -408,8 +584,10 @@ function CompareShareModal({
     p2TopHero: p2.topHero || "",
     p1Matches: p1.totalMatches,
     p2Matches: p2.totalMatches,
-    p1CategoryWins,
-    p2CategoryWins,
+    p1Score: scoreMode === "categories" ? p1CategoryWins : p1Points,
+    p2Score: scoreMode === "categories" ? p2CategoryWins : p2Points,
+    scoreMode,
+    h2h: h2h ?? undefined,
   };
 
   async function handleCopy() {

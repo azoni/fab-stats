@@ -9,15 +9,17 @@ interface CompareData {
   p2TopHero: string;
   p1Matches: number;
   p2Matches: number;
-  p1CategoryWins: number;
-  p2CategoryWins: number;
+  p1Score: number;
+  p2Score: number;
+  scoreMode: "categories" | "points";
+  h2h?: { p1Wins: number; p2Wins: number; draws: number; total: number };
 }
 
 export function CompareCard({ data, theme }: { data: CompareData; theme: CardTheme }) {
   const t = theme;
-  const { p1Name, p2Name, stats, p1TopHero, p2TopHero, p1Matches, p2Matches, p1CategoryWins, p2CategoryWins } = data;
-  const p1Leading = p1CategoryWins > p2CategoryWins;
-  const tied = p1CategoryWins === p2CategoryWins;
+  const { p1Name, p2Name, stats, p1TopHero, p2TopHero, p1Matches, p2Matches, p1Score, p2Score, scoreMode, h2h } = data;
+  const p1Leading = p1Score > p2Score;
+  const tied = p1Score === p2Score;
 
   return (
     <div style={{ backgroundColor: t.surface, borderColor: t.border, width: 420 }} className="border rounded-xl overflow-hidden">
@@ -44,13 +46,13 @@ export function CompareCard({ data, theme }: { data: CompareData; theme: CardThe
           </div>
         </div>
 
-        {/* Category score */}
+        {/* Score */}
         <div className="mt-4 flex items-baseline justify-center gap-3">
-          <span style={{ color: p1Leading ? t.win : tied ? t.draw : t.text }} className="text-4xl font-black">{p1CategoryWins}</span>
+          <span style={{ color: p1Leading ? t.win : tied ? t.draw : t.text }} className="text-4xl font-black">{p1Score}</span>
           <span style={{ color: t.border }} className="text-2xl font-light">—</span>
-          <span style={{ color: !p1Leading && !tied ? t.win : tied ? t.draw : t.text }} className="text-4xl font-black">{p2CategoryWins}</span>
+          <span style={{ color: !p1Leading && !tied ? t.win : tied ? t.draw : t.text }} className="text-4xl font-black">{p2Score}</span>
         </div>
-        <p style={{ color: t.muted }} className="text-xs text-center mt-1">categories won</p>
+        <p style={{ color: t.muted }} className="text-xs text-center mt-1">{scoreMode === "categories" ? "categories won" : "dominance score"}</p>
 
         {/* Stats rows */}
         <div className="mt-4 space-y-0">
@@ -74,6 +76,19 @@ export function CompareCard({ data, theme }: { data: CompareData; theme: CardThe
             </div>
           ))}
         </div>
+
+        {/* Head-to-Head */}
+        {h2h && h2h.total > 0 && (
+          <div className="mt-3 py-2 text-center" style={{ borderTop: `1px solid ${t.border}44`, borderBottom: `1px solid ${t.border}44` }}>
+            <p style={{ color: t.accent }} className="text-[9px] uppercase tracking-wider font-semibold mb-1">Head-to-Head</p>
+            <p style={{ color: t.text }} className="text-sm font-bold">
+              <span style={{ color: h2h.p1Wins > h2h.p2Wins ? t.win : t.text }}>{h2h.p1Wins}W</span>
+              {h2h.draws > 0 && <span style={{ color: t.muted }}> - {h2h.draws}D</span>}
+              <span style={{ color: t.muted }}> - </span>
+              <span style={{ color: h2h.p2Wins > h2h.p1Wins ? t.win : t.text }}>{h2h.p2Wins}L</span>
+            </p>
+          </div>
+        )}
 
         {/* Top Heroes */}
         {(p1TopHero || p2TopHero) && (
