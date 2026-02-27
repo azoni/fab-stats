@@ -144,6 +144,9 @@ function normalizeOpponentName(raw: string): string {
 }
 
 export function computeOpponentStats(matches: MatchRecord[]): OpponentStats[] {
+  // Exclude byes — they aren't real opponents
+  matches = matches.filter((m) => m.result !== MatchResult.Bye && !/^bye$/i.test(m.opponentName?.trim() || ""));
+
   // Build gemId → most recent display name
   const gemIdToName = new Map<string, { name: string; date: string }>();
   for (const match of matches) {
