@@ -612,8 +612,16 @@ function renderMetaCard(meta: MetaPageData | null): VNode {
 
 export default async function handler(req: Request) {
   const url = new URL(req.url);
-  const type = url.searchParams.get("type") || "";
-  const username = url.searchParams.get("username") || "";
+  let type = url.searchParams.get("type") || "";
+  let username = url.searchParams.get("username") || "";
+
+  // Netlify rewrites may pass the original URL path instead of query params.
+  // Parse username/type from the path as fallback: /og/player/:username.png, /og/meta.png
+  if (!username && !type) {
+    const playerMatch = url.pathname.match(/\/og\/player\/([^/]+)\.png$/i);
+    if (playerMatch) username = decodeURIComponent(playerMatch[1]);
+    else if (/\/og\/meta\.png$/i.test(url.pathname)) type = "meta";
+  }
 
   if (!username && type !== "meta") {
     return new Response("Missing username", { status: 400 });
