@@ -136,6 +136,7 @@ export interface UserProfile {
   showNameOnProfiles?: boolean;
   hideFromSpotlight?: boolean;
   gemId?: string;
+  unlockedCans?: string[];
 }
 
 export interface EventStats {

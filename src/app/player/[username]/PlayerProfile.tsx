@@ -483,7 +483,7 @@ export default function PlayerProfile() {
           : ""
         }>
           {playoffFinishes.length > 0 && <TrophyCase finishes={playoffFinishes} />}
-          <ArmoryGarden eventStats={eventStats} />
+          <ArmoryGarden eventStats={eventStats} ownerProfile={profile} isOwner={isOwner} />
         </div>
       )}
 

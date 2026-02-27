@@ -1,6 +1,7 @@
 "use client";
-import { useMemo, useCallback, useRef } from "react";
-import type { EventStats } from "@/types";
+import { useState, useMemo, useCallback, useRef } from "react";
+import type { EventStats, UserProfile } from "@/types";
+import { WATERING_CANS, DEFAULT_CAN_ID, getCanById, getUnlockedCanIds } from "@/lib/watering-cans";
 
 /* ── petal palette ─────────────────────────────────────── */
 const COLORS = [
@@ -228,12 +229,33 @@ function SunflowerSVG({ color, accent, idx, growth }: { color: string; accent: s
   );
 }
 
+const RARITY_BORDER: Record<string, string> = {
+  common: "border-fab-border",
+  uncommon: "border-emerald-500/40",
+  rare: "border-blue-400/40",
+  epic: "border-purple-400/40",
+};
+
 /* ── garden component ──────────────────────────────────── */
-export function ArmoryGarden({ eventStats }: { eventStats: EventStats[] }) {
+export function ArmoryGarden({ eventStats, ownerProfile, isOwner }: { eventStats: EventStats[]; ownerProfile: UserProfile; isOwner?: boolean }) {
   const { flowers, attended, undefeated } = useMemo(
     () => buildGarden(eventStats),
     [eventStats],
   );
+
+  const [selectedCanId, setSelectedCanId] = useState(DEFAULT_CAN_ID);
+  const selectedCan = useMemo(() => getCanById(selectedCanId), [selectedCanId]);
+
+  const unlockedIds = useMemo(
+    () => getUnlockedCanIds(ownerProfile),
+    [ownerProfile],
+  );
+
+  // Visitors see only unlocked cans; owners also see locked ones
+  const visibleCans = useMemo(() => {
+    if (isOwner) return WATERING_CANS;
+    return WATERING_CANS.filter((c) => unlockedIds.includes(c.id));
+  }, [isOwner, unlockedIds]);
 
   const lastDropTime = useRef(0);
   const handleWater = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
@@ -257,7 +279,10 @@ export function ArmoryGarden({ eventStats }: { eventStats: EventStats[] }) {
   if (attended === 0) return null;
 
   return (
-    <div className="bg-fab-surface/50 border border-fab-border rounded-lg px-4 py-3 flex flex-col garden-can">
+    <div
+      className="bg-fab-surface/50 border border-fab-border rounded-lg px-4 py-3 flex flex-col"
+      style={{ cursor: selectedCan.cursor, "--garden-drop-color": selectedCan.dropColor } as React.CSSProperties}
+    >
       <style>{`
         @keyframes garden-sway {
           0%, 100% { transform: rotate(-2.5deg) translateY(0); }
@@ -268,15 +293,12 @@ export function ArmoryGarden({ eventStats }: { eventStats: EventStats[] }) {
           animation: garden-sway 4s ease-in-out infinite;
           transform-origin: bottom center;
         }
-        .garden-can {
-          cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Crect x='4' y='12' width='14' height='10' rx='2' fill='%2360a5fa'/%3E%3Cpath d='M7 12C7 6 15 6 15 12' fill='none' stroke='%233b82f6' stroke-width='2'/%3E%3Cpath d='M18 16L26 26' stroke='%233b82f6' stroke-width='2.5' stroke-linecap='round'/%3E%3Ccircle cx='27' cy='27' r='3' fill='%2393c5fd'/%3E%3C/svg%3E") 27 27, auto;
-        }
         .garden-drop {
           position: absolute;
           width: 3px;
           height: 5px;
           border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
-          background: rgba(96, 165, 250, 0.7);
+          background: var(--garden-drop-color, rgba(96, 165, 250, 0.7));
           pointer-events: none;
           animation: garden-drop-fall 0.5s ease-in forwards;
           z-index: 15;
@@ -305,6 +327,41 @@ export function ArmoryGarden({ eventStats }: { eventStats: EventStats[] }) {
             )}
           </p>
         </div>
+
+        {/* Watering can picker */}
+        {visibleCans.length > 1 && (
+          <div className="flex items-center gap-1.5 mb-2">
+            <span className="text-[9px] text-fab-dim uppercase tracking-wider shrink-0">Can:</span>
+            <div className="flex gap-1 flex-wrap">
+              {visibleCans.map((can) => {
+                const unlocked = unlockedIds.includes(can.id);
+                const isSelected = selectedCanId === can.id;
+                return (
+                  <button
+                    key={can.id}
+                    onClick={() => unlocked && setSelectedCanId(can.id)}
+                    className={`relative w-7 h-7 rounded-md border flex items-center justify-center transition-all ${
+                      !unlocked
+                        ? "opacity-30 grayscale border-fab-border cursor-not-allowed"
+                        : isSelected
+                          ? `border-fab-gold ring-1 ring-fab-gold/40 bg-fab-gold/10 ${RARITY_BORDER[can.rarity]}`
+                          : `${RARITY_BORDER[can.rarity]} hover:border-fab-muted bg-fab-surface/50`
+                    }`}
+                    title={unlocked ? can.name : `${can.name} (locked)`}
+                  >
+                    <div className="w-5 h-5" dangerouslySetInnerHTML={{ __html: can.previewSvg }} />
+                    {!unlocked && (
+                      <svg className="absolute w-2.5 h-2.5 text-fab-dim bottom-0 right-0" viewBox="0 0 16 16" fill="currentColor">
+                        <path d="M8 1a4 4 0 00-4 4v2H3a1 1 0 00-1 1v6a1 1 0 001 1h10a1 1 0 001-1V8a1 1 0 00-1-1h-1V5a4 4 0 00-4-4zm-2 4a2 2 0 114 0v2H6V5z" />
+                      </svg>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+            <span className="text-[9px] text-fab-dim ml-0.5">{selectedCan.name}</span>
+          </div>
+        )}
 
         {/* The garden bed */}
         <div className="relative rounded-md overflow-hidden flex-1 flex flex-col justify-end" onMouseMove={handleWater}>
