@@ -910,9 +910,10 @@ function PlayoffFinishes({ finishes }: { finishes: PlayoffFinish[] }) {
                     <td className="px-4 pl-9 py-1.5 text-xs text-fab-dim truncate max-w-[200px]" title={f.eventName}>
                       {f.eventName}
                     </td>
-                    <td colSpan={4} className="text-center px-2 py-1.5">
-                      <span className={`text-xs font-medium ${finishColor(f.type)}`}>{finishLabel(f.type)}</span>
-                    </td>
+                    <td className="text-center px-2 py-1.5">{f.type === "top8" && <span className="text-xs font-medium text-blue-400">Top 8</span>}</td>
+                    <td className="text-center px-2 py-1.5">{f.type === "top4" && <span className="text-xs font-medium text-amber-600">Top 4</span>}</td>
+                    <td className="text-center px-2 py-1.5">{f.type === "finalist" && <span className="text-xs font-medium text-gray-300">Finals</span>}</td>
+                    <td className="text-center px-2 py-1.5">{f.type === "champion" && <span className="text-xs font-medium text-fab-gold">Winner</span>}</td>
                     <td />
                   </tr>
                 ))}

@@ -70,6 +70,14 @@ const finishColors: Record<string, string> = {
   Playoff: "bg-fab-gold/10 text-fab-gold",
 };
 
+/** Border + glow styles for playoff finishes on the card itself */
+const finishBorderStyle: Record<string, { border: string; shadow: string }> = {
+  "Top 8": { border: "#cd7f32", shadow: "0 0 8px rgba(205,127,50,0.3)" },
+  "Top 4": { border: "#c0c0c0", shadow: "0 0 8px rgba(192,192,192,0.35)" },
+  Finalist: { border: "#fbbf24", shadow: "0 0 10px rgba(251,191,36,0.4)" },
+  Champion: { border: "#a78bfa", shadow: "0 0 12px rgba(167,139,250,0.5), 0 0 24px rgba(167,139,250,0.2)" },
+};
+
 export function EventBadges({ badges }: { badges: EventBadge[] }) {
   if (badges.length === 0) return null;
 
@@ -80,10 +88,12 @@ export function EventBadges({ badges }: { badges: EventBadge[] }) {
         {badges.map((badge, i) => {
           const config = tierConfig[badge.tier];
           const dateStr = localDate(badge.date).toLocaleDateString("en-US", { month: "short", year: "numeric" });
+          const fbs = badge.bestFinish ? finishBorderStyle[badge.bestFinish] : null;
           return (
             <div
               key={`${badge.eventName}-${badge.date}-${i}`}
-              className={`shrink-0 w-[140px] rounded-lg border ${config.border} ${config.bg} p-3 relative overflow-hidden`}
+              className={`shrink-0 w-[140px] rounded-lg border ${fbs ? "" : config.border} ${config.bg} p-3 relative overflow-hidden`}
+              style={fbs ? { borderColor: fbs.border, boxShadow: fbs.shadow } : undefined}
             >
               {/* Faint watermark */}
               <div className={`absolute -bottom-2 -right-2 opacity-[0.06] ${config.color}`}>
