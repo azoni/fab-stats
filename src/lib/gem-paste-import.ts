@@ -236,7 +236,42 @@ export function parseGemPaste(text: string): PasteImportResult {
     }
   }
 
+  let inPlayoffSection = false;
+  let inDecklistSection = false;
+
   for (const line of lines) {
+    // ── Section headers (detect before noise filter) ──
+    if (/^Round\s+Opponent/i.test(line)) {
+      inPlayoffSection = false;
+      continue;
+    }
+    if (/^Playoff\s+Opponent/i.test(line)) {
+      inPlayoffSection = true;
+      continue;
+    }
+    if (/^Decklists$/i.test(line)) {
+      inDecklistSection = true;
+      continue;
+    }
+
+    // ── Decklist entries: "Format     Hero Name" ──
+    if (inDecklistSection && currentEvent) {
+      const deckMatch = line.match(/^(.+?)\s{2,}(.+)$/);
+      if (deckMatch) {
+        const fmt = guessFormat(deckMatch[1]);
+        if (fmt !== GameFormat.Other) {
+          const hero = deckMatch[2].trim();
+          for (const m of currentMatches) {
+            if (m.heroPlayed === "Unknown" && m.format === fmt) {
+              m.heroPlayed = hero;
+            }
+          }
+          continue;
+        }
+      }
+      inDecklistSection = false;
+    }
+
     if (isNoise(line)) continue;
 
     // Match row
@@ -249,6 +284,9 @@ export function parseGemPaste(text: string): PasteImportResult {
       const result = parseResult(matchMatch[3]);
       if (result) {
         const parsedOpp = parseOpponentName(matchMatch[2]);
+        const roundLabel = inPlayoffSection
+          ? `Round P${matchMatch[1]}`
+          : `Round ${matchMatch[1]}`;
         currentMatches.push({
           date: currentEvent.date,
           heroPlayed: "Unknown",
@@ -257,7 +295,7 @@ export function parseGemPaste(text: string): PasteImportResult {
           opponentGemId: parsedOpp.gemId || undefined,
           result,
           format: currentEvent.format,
-          notes: `${currentEvent.name} | Round ${matchMatch[1]}`,
+          notes: `${currentEvent.name} | ${roundLabel}`,
           venue: currentEvent.venue || undefined,
           eventType: currentEvent.eventType || undefined,
           rated: currentEvent.rated,
@@ -274,6 +312,9 @@ export function parseGemPaste(text: string): PasteImportResult {
         currentEvent = buildEventFromContext(contextLines);
         contextLines = [];
       }
+      const roundLabel = inPlayoffSection
+        ? `Round P${byeRowMatch[1]}`
+        : `Round ${byeRowMatch[1]}`;
       currentMatches.push({
         date: currentEvent.date,
         heroPlayed: "Unknown",
@@ -281,7 +322,7 @@ export function parseGemPaste(text: string): PasteImportResult {
         opponentName: "BYE",
         result: MatchResult.Bye,
         format: currentEvent.format,
-        notes: `${currentEvent.name} | Round ${byeRowMatch[1]}`,
+        notes: `${currentEvent.name} | ${roundLabel}`,
         venue: currentEvent.venue || undefined,
         eventType: currentEvent.eventType || undefined,
         rated: currentEvent.rated,
@@ -294,6 +335,8 @@ export function parseGemPaste(text: string): PasteImportResult {
     const dateMatch = line.match(datePattern) || line.match(shortDatePattern);
     if (dateMatch) {
       saveCurrentEvent();
+      inPlayoffSection = false;
+      inDecklistSection = false;
 
       // Extract event name AND venue from pre-date context
       const { eventName, venue: preVenue } = extractEventNameAndVenue(contextLines, datePattern, shortDatePattern);

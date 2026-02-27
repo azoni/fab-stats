@@ -437,10 +437,11 @@ const EVENT_PRESTIGE: Record<string, number> = {
 };
 
 export function computeBestFinish(
-  eventStats: EventStats[]
+  eventStats: EventStats[],
+  overrides?: Record<string, PlayoffFinish["type"]>,
 ): { label: string; eventName: string; eventDate: string; hero?: string } | null {
   // Use playoff finish data for best finish (reuses same logic)
-  const finishes = computePlayoffFinishes(eventStats);
+  const finishes = computePlayoffFinishes(eventStats, overrides);
   if (finishes.length === 0) return null;
 
   const rankMap: Record<string, number> = { top8: 1, top4: 2, finalist: 3, champion: 4 };
@@ -498,13 +499,29 @@ function isPlayoffRound(roundInfo: string): boolean {
     /Quarter/i.test(roundInfo);
 }
 
-export function computePlayoffFinishes(eventStats: EventStats[]): PlayoffFinish[] {
+export function computePlayoffFinishes(
+  eventStats: EventStats[],
+  overrides?: Record<string, PlayoffFinish["type"]>,
+): PlayoffFinish[] {
   const finishes: PlayoffFinish[] = [];
 
   for (const event of eventStats) {
     const raw = refineEventType(event.eventType || "Other", event.eventName);
     // Non-competitive event types with a Top 8 get shown as "Other" (marble icons)
     const refinedEventType = (raw === "Armory" || raw === "Pre-Release" || raw === "On Demand") ? "Other" : raw;
+
+    // Check for manual override first
+    const overrideKey = `${event.eventName}::${event.eventDate}`;
+    if (overrides?.[overrideKey]) {
+      finishes.push({
+        type: overrides[overrideKey],
+        eventName: event.eventName,
+        eventDate: event.eventDate,
+        format: event.format,
+        eventType: refinedEventType,
+      });
+      continue;
+    }
 
     const playoffMatches: MatchRecord[] = [];
 
