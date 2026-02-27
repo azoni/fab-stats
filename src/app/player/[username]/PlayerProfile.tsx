@@ -315,7 +315,7 @@ export default function PlayerProfile() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-5">
       {/* Hero Card */}
       <div
         className="bg-fab-surface border border-fab-border rounded-lg p-5"
@@ -387,8 +387,11 @@ export default function PlayerProfile() {
           </div>
           <div>
             <p className="text-[10px] text-fab-dim uppercase tracking-wider">Record</p>
-            <p className="text-lg font-bold text-fab-text">
-              {overall.totalWins}W-{overall.totalLosses}L{overall.totalDraws > 0 ? `-${overall.totalDraws}D` : ""}
+            <p className="text-lg font-bold">
+              <span className="text-fab-win">{overall.totalWins}W</span>
+              <span className="text-fab-dim">-</span>
+              <span className="text-fab-loss">{overall.totalLosses}L</span>
+              {overall.totalDraws > 0 && <><span className="text-fab-dim">-</span><span className="text-fab-text">{overall.totalDraws}D</span></>}
             </p>
           </div>
           <div>
@@ -473,11 +476,16 @@ export default function PlayerProfile() {
         )}
       </div>
 
-      {/* Trophy Case — full width */}
-      {playoffFinishes.length > 0 && <TrophyCase finishes={playoffFinishes} />}
-
-      {/* Armory Garden */}
-      <ArmoryGarden eventStats={eventStats} />
+      {/* Trophy Case + Armory Garden */}
+      {(playoffFinishes.length > 0 || eventStats.some(e => e.eventType === "Armory")) && (
+        <div className={playoffFinishes.length > 0 && eventStats.some(e => e.eventType === "Armory")
+          ? "grid grid-cols-1 md:grid-cols-2 gap-3 items-start"
+          : ""
+        }>
+          {playoffFinishes.length > 0 && <TrophyCase finishes={playoffFinishes} />}
+          <ArmoryGarden eventStats={eventStats} />
+        </div>
+      )}
 
       {/* Admin Raw Data Modal */}
       {showRawData && isAdmin && (

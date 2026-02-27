@@ -140,6 +140,13 @@ function TrophyIcon({ type, id }: { type: PlayoffFinish["type"]; id: string }) {
   );
 }
 
+const GROUP_LABEL: Record<PlayoffFinish["type"], string> = {
+  champion: "Wins", finalist: "Finals", top4: "Top 4", top8: "Top 8",
+};
+const GROUP_COLOR: Record<PlayoffFinish["type"], string> = {
+  champion: "text-amber-400", finalist: "text-gray-400", top4: "text-amber-600", top8: "text-blue-400",
+};
+
 export function TrophyCase({ finishes }: { finishes: PlayoffFinish[] }) {
   if (finishes.length === 0) return null;
 
@@ -150,23 +157,46 @@ export function TrophyCase({ finishes }: { finishes: PlayoffFinish[] }) {
     return TYPE_SORT[a.type] - TYPE_SORT[b.type];
   });
 
+  const placementOrder: PlayoffFinish["type"][] = ["champion", "finalist", "top4", "top8"];
+  const groups = placementOrder
+    .map(type => ({ type, items: sorted.filter(f => f.type === type) }))
+    .filter(g => g.items.length > 0);
+
+  let idx = 0;
+
   return (
     <div className="bg-fab-surface/50 border border-fab-border rounded-lg px-4 py-3">
-      <p className="text-[10px] text-fab-muted uppercase tracking-wider mb-2 font-medium">Trophy Case</p>
-      <div className="flex flex-wrap gap-2 items-end">
-        {sorted.map((f, i) => {
-          const tier = TIER_MAP[f.eventType] || "badge";
-          const abbr = EVENT_ABBR[f.eventType] || f.eventType.slice(0, 2).toUpperCase();
-          const id = `tc${i}`;
-          const date = (() => { try { return localDate(f.eventDate).toLocaleDateString("en-US", { month: "short", year: "numeric" }); } catch { return ""; } })();
-          const tip = `${PLACEMENT_TEXT[f.type]} — ${f.eventName}${date ? ` (${date})` : ""}`;
-          return (
-            <div key={`${f.eventName}-${f.eventDate}-${i}`} className="flex flex-col items-center" title={tip}>
-              {tier === "trophy" ? <TrophyIcon type={f.type} id={id} /> : tier === "medal" ? <MedalIcon type={f.type} id={id} /> : <ShieldBadge type={f.type} id={id} />}
-              <span className="text-[8px] text-fab-dim font-medium mt-0.5 leading-none">{abbr}</span>
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-[10px] text-fab-muted uppercase tracking-wider font-medium">Trophy Case</p>
+        <p className="text-[10px] text-fab-dim">{finishes.length} finish{finishes.length !== 1 ? "es" : ""}</p>
+      </div>
+      <div className="space-y-2">
+        {groups.map((g) => (
+          <div key={g.type}>
+            <div className="flex items-center gap-1.5 mb-1">
+              <span className={`text-[9px] font-semibold uppercase tracking-wider ${GROUP_COLOR[g.type]}`}>
+                {GROUP_LABEL[g.type]}
+              </span>
+              <span className="text-[9px] text-fab-dim">({g.items.length})</span>
             </div>
-          );
-        })}
+            <div className="flex flex-wrap gap-1.5 items-end">
+              {g.items.map((f) => {
+                const tier = TIER_MAP[f.eventType] || "badge";
+                const abbr = EVENT_ABBR[f.eventType] || f.eventType.slice(0, 2).toUpperCase();
+                const id = `tc${idx}`;
+                const i = idx++;
+                const date = (() => { try { return localDate(f.eventDate).toLocaleDateString("en-US", { month: "short", year: "numeric" }); } catch { return ""; } })();
+                const tip = `${PLACEMENT_TEXT[f.type]} — ${f.eventName}${date ? ` (${date})` : ""}`;
+                return (
+                  <div key={`${f.eventName}-${f.eventDate}-${i}`} className="flex flex-col items-center" title={tip}>
+                    {tier === "trophy" ? <TrophyIcon type={f.type} id={id} /> : tier === "medal" ? <MedalIcon type={f.type} id={id} /> : <ShieldBadge type={f.type} id={id} />}
+                    <span className="text-[8px] text-fab-dim font-medium mt-0.5 leading-none">{abbr}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );

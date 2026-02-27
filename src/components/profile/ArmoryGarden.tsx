@@ -238,7 +238,7 @@ export function ArmoryGarden({ eventStats }: { eventStats: EventStats[] }) {
   if (attended === 0) return null;
 
   return (
-    <>
+    <div className="bg-fab-surface/50 border border-fab-border rounded-lg px-4 py-3">
       <style>{`
         @keyframes garden-sway {
           0%, 100% { transform: rotate(-2.5deg) translateY(0); }
@@ -251,7 +251,6 @@ export function ArmoryGarden({ eventStats }: { eventStats: EventStats[] }) {
         }
       `}</style>
 
-      <div className="bg-fab-surface/50 border border-fab-border rounded-lg px-4 py-3">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-1.5">
             <svg className="w-3.5 h-3.5 text-emerald-400" viewBox="0 0 20 20" fill="currentColor">
@@ -286,12 +285,10 @@ export function ArmoryGarden({ eventStats }: { eventStats: EventStats[] }) {
             )}
           </div>
 
-          {/* Dirt + grass layers */}
-          <div className="h-1.5 bg-gradient-to-r from-emerald-800/30 via-emerald-600/25 to-emerald-800/30" />
-          <div className="h-2 bg-gradient-to-r from-amber-900/25 via-yellow-900/20 to-amber-900/25" />
-          <div className="h-1 bg-gradient-to-r from-amber-950/15 via-yellow-950/12 to-amber-950/15" />
+          {/* Ground */}
+          <div className="h-1 bg-emerald-900/15" />
+          <div className="h-1.5 bg-gradient-to-b from-amber-900/10 to-amber-950/6" />
         </div>
-      </div>
-    </>
+    </div>
   );
 }
