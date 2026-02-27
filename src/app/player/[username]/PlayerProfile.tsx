@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useMemo, useRef, Fragment } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { getProfileByUsername, getMatchesByUserId } from "@/lib/firestore-storage";
@@ -525,9 +525,6 @@ export default function PlayerProfile() {
       {/* Leaderboard Rankings */}
       <LeaderboardCrowns ranks={userRanks} />
 
-      {/* Playoff Finishes */}
-      {playoffFinishes.length > 0 && <PlayoffFinishes finishes={playoffFinishes} />}
-
       {/* Best finish share modal */}
       {bestFinishShareOpen && bestFinish && (
         <BestFinishShareModal
@@ -821,158 +818,6 @@ function ProfileHeader({ profile, achievements, bestRank, isAdmin, isOwner, isFa
             Message
           </Link>
         )}
-      </div>
-    </div>
-  );
-}
-
-import type { PlayoffFinish } from "@/lib/stats";
-
-const PLAYOFF_TIER_GROUPS = [
-  { label: "PQ / RTN / Skirmish", types: ["ProQuest", "Road to Nationals", "Skirmish"] },
-  { label: "BH / Calling", types: ["Battle Hardened", "The Calling"] },
-  { label: "PT / Nats / Worlds", types: ["Pro Tour", "Nationals", "Worlds"] },
-];
-
-function PlayoffFinishes({ finishes }: { finishes: PlayoffFinish[] }) {
-  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
-
-  const tierData = useMemo(() => {
-    const result: { label: string; finishes: PlayoffFinish[]; top8: number; top4: number; finals: number; wins: number; total: number }[] = [];
-    const categorized = new Set<string>();
-
-    for (const group of PLAYOFF_TIER_GROUPS) {
-      const tierFinishes = finishes.filter((f) => group.types.includes(f.eventType));
-      if (tierFinishes.length === 0) continue;
-      group.types.forEach((t) => categorized.add(t));
-      result.push({
-        label: group.label,
-        finishes: tierFinishes,
-        top8: tierFinishes.filter((f) => f.type === "top8").length,
-        top4: tierFinishes.filter((f) => f.type === "top4").length,
-        finals: tierFinishes.filter((f) => f.type === "finalist").length,
-        wins: tierFinishes.filter((f) => f.type === "champion").length,
-        total: tierFinishes.length,
-      });
-    }
-
-    const otherFinishes = finishes.filter((f) => !categorized.has(f.eventType));
-    if (otherFinishes.length > 0) {
-      result.push({
-        label: "Other",
-        finishes: otherFinishes,
-        top8: otherFinishes.filter((f) => f.type === "top8").length,
-        top4: otherFinishes.filter((f) => f.type === "top4").length,
-        finals: otherFinishes.filter((f) => f.type === "finalist").length,
-        wins: otherFinishes.filter((f) => f.type === "champion").length,
-        total: otherFinishes.length,
-      });
-    }
-
-    return result;
-  }, [finishes]);
-
-  if (tierData.length === 0) return null;
-
-  const totals = {
-    top8: finishes.filter((f) => f.type === "top8").length,
-    top4: finishes.filter((f) => f.type === "top4").length,
-    finals: finishes.filter((f) => f.type === "finalist").length,
-    wins: finishes.filter((f) => f.type === "champion").length,
-    total: finishes.length,
-  };
-
-  const toggle = (label: string) => setExpanded((prev) => ({ ...prev, [label]: !prev[label] }));
-
-  const finishLabel = (type: string) => {
-    switch (type) {
-      case "champion": return "Winner";
-      case "finalist": return "Finals";
-      case "top4": return "Top 4";
-      case "top8": return "Top 8";
-      default: return type;
-    }
-  };
-
-  const finishColor = (type: string) => {
-    switch (type) {
-      case "champion": return "text-fab-gold";
-      case "finalist": return "text-gray-300";
-      case "top4": return "text-amber-600";
-      case "top8": return "text-blue-400";
-      default: return "text-fab-dim";
-    }
-  };
-
-  return (
-    <div>
-      <div className="mb-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-fab-text flex items-center gap-2">
-            Playoff Finishes
-            <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400 border border-amber-500/30">Beta</span>
-          </h2>
-          <span className="text-sm text-fab-dim">{finishes.length} total</span>
-        </div>
-        <p className="text-xs text-fab-dim mt-1">Playoff detection is a work in progress and may not be fully accurate.</p>
-      </div>
-      <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-fab-border">
-              <th className="text-left px-4 py-2.5 text-xs text-fab-muted font-medium uppercase tracking-wider">Tier</th>
-              <th className="text-center px-2 py-2.5 text-xs text-blue-400 font-medium">Top 8</th>
-              <th className="text-center px-2 py-2.5 text-xs text-amber-600 font-medium">Top 4</th>
-              <th className="text-center px-2 py-2.5 text-xs text-gray-300 font-medium">Finals</th>
-              <th className="text-center px-2 py-2.5 text-xs text-fab-gold font-medium">Wins</th>
-              <th className="text-center px-2 py-2.5 text-xs text-fab-muted font-medium">Total</th>
-            </tr>
-          </thead>
-          <tbody>
-            {tierData.map((tier) => (
-              <Fragment key={tier.label}>
-                <tr
-                  className="border-b border-fab-border/50 hover:bg-fab-bg/50 cursor-pointer transition-colors"
-                  onClick={() => toggle(tier.label)}
-                >
-                  <td className="px-4 py-2.5 font-medium text-fab-text">
-                    <span className="flex items-center gap-2">
-                      <svg className={`w-3 h-3 text-fab-dim transition-transform ${expanded[tier.label] ? "rotate-90" : ""}`} fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M6 4l8 6-8 6V4z" />
-                      </svg>
-                      {tier.label}
-                    </span>
-                  </td>
-                  <td className="text-center px-2 py-2.5 text-blue-400">{tier.top8 || <span className="text-fab-dim">-</span>}</td>
-                  <td className="text-center px-2 py-2.5 text-amber-600">{tier.top4 || <span className="text-fab-dim">-</span>}</td>
-                  <td className="text-center px-2 py-2.5 text-gray-300">{tier.finals || <span className="text-fab-dim">-</span>}</td>
-                  <td className="text-center px-2 py-2.5 text-fab-gold">{tier.wins || <span className="text-fab-dim">-</span>}</td>
-                  <td className="text-center px-2 py-2.5 font-bold text-fab-text">{tier.total}</td>
-                </tr>
-                {expanded[tier.label] && tier.finishes.map((f) => (
-                  <tr key={`${f.eventName}-${f.eventDate}`} className="border-b border-fab-border/30 bg-fab-bg/30">
-                    <td className="px-4 pl-9 py-1.5 text-xs text-fab-dim truncate max-w-[200px]" title={f.eventName}>
-                      {f.eventName}
-                    </td>
-                    <td className="text-center px-2 py-1.5">{f.type === "top8" && <span className="text-xs font-medium text-blue-400">Top 8</span>}</td>
-                    <td className="text-center px-2 py-1.5">{f.type === "top4" && <span className="text-xs font-medium text-amber-600">Top 4</span>}</td>
-                    <td className="text-center px-2 py-1.5">{f.type === "finalist" && <span className="text-xs font-medium text-gray-300">Finals</span>}</td>
-                    <td className="text-center px-2 py-1.5">{f.type === "champion" && <span className="text-xs font-medium text-fab-gold">Winner</span>}</td>
-                    <td />
-                  </tr>
-                ))}
-              </Fragment>
-            ))}
-            <tr className="bg-fab-bg/50">
-              <td className="px-4 py-2.5 font-semibold text-fab-muted text-xs uppercase tracking-wider">Total</td>
-              <td className="text-center px-2 py-2.5 text-blue-400 font-bold">{totals.top8 || "-"}</td>
-              <td className="text-center px-2 py-2.5 text-amber-600 font-bold">{totals.top4 || "-"}</td>
-              <td className="text-center px-2 py-2.5 text-gray-300 font-bold">{totals.finals || "-"}</td>
-              <td className="text-center px-2 py-2.5 text-fab-gold font-bold">{totals.wins || "-"}</td>
-              <td className="text-center px-2 py-2.5 font-black text-fab-text">{totals.total}</td>
-            </tr>
-          </tbody>
-        </table>
       </div>
     </div>
   );

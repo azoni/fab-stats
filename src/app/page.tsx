@@ -3,7 +3,7 @@ import { useMemo, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useMatches } from "@/hooks/useMatches";
 import { useAuth } from "@/contexts/AuthContext";
-import { computeOverallStats, computeHeroStats, computeEventStats, computeOpponentStats, computeBestFinish } from "@/lib/stats";
+import { computeOverallStats, computeHeroStats, computeEventStats, computeOpponentStats, computeBestFinish, computePlayoffFinishes } from "@/lib/stats";
 import { evaluateAchievements } from "@/lib/achievements";
 import { AchievementBadges } from "@/components/gamification/AchievementShowcase";
 import { updateLeaderboardEntry } from "@/lib/leaderboard";
@@ -58,7 +58,34 @@ export default function Dashboard() {
     [...matches].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
     [matches]
   );
-  const last20 = useMemo(() => sortedByDateDesc.slice(0, 20).reverse(), [sortedByDateDesc]);
+  const last30 = useMemo(() => sortedByDateDesc.slice(0, 30).reverse(), [sortedByDateDesc]);
+  const playoffFinishes = useMemo(() => computePlayoffFinishes(eventStats), [eventStats]);
+  const cardBorder = useMemo(() => {
+    const tierRank: Record<string, number> = {
+      "Battle Hardened": 1,
+      "The Calling": 2,
+      Nationals: 3,
+      "Pro Tour": 4,
+      Worlds: 5,
+    };
+    const tierStyle: Record<string, { border: string; shadow: string }> = {
+      "Battle Hardened": { border: "#cd7f32", shadow: "0 0 8px rgba(205,127,50,0.25)" },
+      "The Calling": { border: "#60a5fa", shadow: "0 0 8px rgba(96,165,250,0.3)" },
+      Nationals: { border: "#f87171", shadow: "0 0 10px rgba(248,113,113,0.3)" },
+      "Pro Tour": { border: "#a78bfa", shadow: "0 0 12px rgba(167,139,250,0.35)" },
+      Worlds: { border: "#fbbf24", shadow: "0 0 12px rgba(251,191,36,0.4), 0 0 24px rgba(251,191,36,0.15)" },
+    };
+    let best: string | null = null;
+    let bestScore = 0;
+    for (const f of playoffFinishes) {
+      const score = tierRank[f.eventType] || 0;
+      if (score > bestScore) {
+        best = f.eventType;
+        bestScore = score;
+      }
+    }
+    return best ? tierStyle[best] : null;
+  }, [playoffFinishes]);
 
   // Community section data
   const communityMeta = useMemo(() => computeMetaStats(lbEntries), [lbEntries]);
@@ -139,22 +166,23 @@ export default function Dashboard() {
 
       {/* Player snapshot for logged-in users with matches */}
       {hasMatches && (
-        <div className={`rounded-lg p-5 ${
-          bestRank === 1 ? "leaderboard-card-grandmaster" :
-          bestRank === 2 ? "leaderboard-card-diamond" :
-          bestRank === 3 ? "leaderboard-card-gold" :
-          bestRank === 4 ? "leaderboard-card-silver" :
-          bestRank === 5 ? "leaderboard-card-bronze" :
-          "bg-fab-surface border border-fab-border"
-        }`}>
+        <div
+          className="bg-fab-surface border border-fab-border rounded-lg p-5"
+          style={cardBorder ? { borderColor: cardBorder.border, boxShadow: cardBorder.shadow } : undefined}
+        >
           {/* Profile row */}
           <div className="flex items-center gap-4 mb-4">
             {profile ? (
               <Link href={`/player/${profile.username}`} className="relative shrink-0">
+                {profile.username === "azoni" && (
+                  <svg className="absolute -top-4 left-1/2 -translate-x-1/2 w-7 h-7 text-fab-gold drop-shadow-[0_0_6px_rgba(201,168,76,0.6)] z-10" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M2.5 19h19v3h-19zM22.5 7l-5 4-5.5-7-5.5 7-5-4 2 12h17z" />
+                  </svg>
+                )}
                 {profile.photoUrl ? (
-                  <img src={profile.photoUrl} alt="" className={`w-14 h-14 rounded-full ${bestRank === 1 ? "rank-border-grandmaster" : bestRank === 2 ? "rank-border-diamond" : bestRank === 3 ? "rank-border-gold" : bestRank === 4 ? "rank-border-silver" : bestRank === 5 ? "rank-border-bronze" : ""}`} />
+                  <img src={profile.photoUrl} alt="" className={`w-20 h-20 rounded-full ${bestRank === 1 ? "rank-border-grandmaster" : bestRank === 2 ? "rank-border-diamond" : bestRank === 3 ? "rank-border-gold" : bestRank === 4 ? "rank-border-silver" : bestRank === 5 ? "rank-border-bronze" : ""}`} />
                 ) : (
-                  <div className={`w-14 h-14 rounded-full bg-fab-gold/20 flex items-center justify-center text-fab-gold text-xl font-bold ${bestRank === 1 ? "rank-border-grandmaster" : bestRank === 2 ? "rank-border-diamond" : bestRank === 3 ? "rank-border-gold" : bestRank === 4 ? "rank-border-silver" : bestRank === 5 ? "rank-border-bronze" : ""}`}>
+                  <div className={`w-20 h-20 rounded-full bg-fab-gold/20 flex items-center justify-center text-fab-gold text-3xl font-bold ${bestRank === 1 ? "rank-border-grandmaster" : bestRank === 2 ? "rank-border-diamond" : bestRank === 3 ? "rank-border-gold" : bestRank === 4 ? "rank-border-silver" : bestRank === 5 ? "rank-border-bronze" : ""}`}>
                     {profile.displayName.charAt(0).toUpperCase()}
                   </div>
                 )}
@@ -162,7 +190,7 @@ export default function Dashboard() {
             ) : null}
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
-                <h1 className="text-xl font-bold text-fab-gold truncate">
+                <h1 className="text-2xl font-bold text-fab-gold truncate">
                   {profile?.displayName || "My Profile"}
                 </h1>
                 {profile?.username && (
@@ -175,15 +203,15 @@ export default function Dashboard() {
                         setTimeout(() => setShareCopied(false), 2000);
                       } catch {}
                     }}
-                    className="text-fab-dim hover:text-fab-gold transition-colors shrink-0"
+                    className="p-1 rounded transition-colors hover:bg-fab-surface"
                     title="Copy profile link"
                   >
                     {shareCopied ? (
-                      <svg className="w-3.5 h-3.5 text-fab-win" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <svg className="w-4 h-4 text-fab-win" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                       </svg>
                     ) : (
-                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <svg className="w-4 h-4 text-fab-dim hover:text-fab-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M9 8.25H7.5a2.25 2.25 0 00-2.25 2.25v9a2.25 2.25 0 002.25 2.25h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25H15m0-3l-3-3m0 0l-3 3m3-3v11.25" />
                       </svg>
                     )}
@@ -196,7 +224,7 @@ export default function Dashboard() {
                       const text = `Check out my Flesh and Blood stats on FaB Stats (Beta)!\n\n${url}`;
                       window.open(`https://x.com/intent/tweet?text=${encodeURIComponent(text)}`, "_blank", "noopener,noreferrer");
                     }}
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-fab-bg/50 border border-fab-border text-fab-dim hover:text-fab-text hover:border-fab-muted transition-colors shrink-0"
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-fab-surface border border-fab-border text-fab-dim hover:text-fab-text hover:border-fab-muted transition-colors"
                     title="Share on X"
                   >
                     <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
@@ -207,12 +235,12 @@ export default function Dashboard() {
                 )}
               </div>
               {profile?.username && (
-                <p className="text-xs text-fab-dim">@{profile.username}</p>
+                <p className="text-sm text-fab-dim mb-1">@{profile.username}</p>
               )}
               {achievements.length > 0 && <AchievementBadges earned={achievements} max={4} />}
             </div>
             {/* Streak mini */}
-            <div className="shrink-0 text-right">
+            <div className="shrink-0 ml-auto text-right">
               <div className="flex items-baseline gap-1 justify-end">
                 <span className={`text-2xl font-black ${
                   streaks.currentStreak?.type === MatchResult.Win
@@ -234,25 +262,31 @@ export default function Dashboard() {
                     ? streaks.currentStreak.type === MatchResult.Win ? "W" : "L"
                     : "—"}
                 </span>
+                <div className="flex gap-2 text-center ml-2">
+                  <div>
+                    <p className="text-sm font-bold text-fab-win">{streaks.longestWinStreak}</p>
+                    <p className="text-[10px] text-fab-dim">Best</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-fab-loss">{streaks.longestLossStreak}</p>
+                    <p className="text-[10px] text-fab-dim">Worst</p>
+                  </div>
+                </div>
               </div>
               <p className="text-[10px] text-fab-dim">streak</p>
+              <div className="mt-1 flex gap-0.5 flex-wrap justify-end max-w-[200px] ml-auto">
+                {last30.map((m, i) => (
+                  <div
+                    key={i}
+                    className={`w-2 h-2 rounded-full ${
+                      m.result === MatchResult.Win ? "bg-fab-win" : m.result === MatchResult.Loss ? "bg-fab-loss" : m.result === MatchResult.Bye ? "bg-fab-muted" : "bg-fab-draw"
+                    }`}
+                    title={`${localDate(m.date).toLocaleDateString()} - ${m.result}`}
+                  />
+                ))}
+              </div>
             </div>
           </div>
-
-          {/* Last 20 match dots */}
-          {last20.length > 0 && (
-            <div className="flex gap-0.5 flex-wrap mb-4">
-              {last20.map((m, i) => (
-                <div
-                  key={i}
-                  className={`w-2 h-2 rounded-full ${
-                    m.result === MatchResult.Win ? "bg-fab-win" : m.result === MatchResult.Loss ? "bg-fab-loss" : m.result === MatchResult.Bye ? "bg-fab-muted" : "bg-fab-draw"
-                  }`}
-                  title={`${localDate(m.date).toLocaleDateString()} - ${m.result}`}
-                />
-              ))}
-            </div>
-          )}
 
           {/* Quick stats row */}
           <div className={`grid grid-cols-3 ${bestFinish ? "sm:grid-cols-6" : "sm:grid-cols-5"} gap-3 mb-4`}>
@@ -268,8 +302,11 @@ export default function Dashboard() {
             </div>
             <div>
               <p className="text-[10px] text-fab-dim uppercase tracking-wider">Record</p>
-              <p className="text-lg font-bold text-fab-text">
-                {overall.totalWins}W-{overall.totalLosses}L{overall.totalDraws > 0 ? `-${overall.totalDraws}D` : ""}
+              <p className="text-lg font-bold">
+                <span className="text-fab-win">{overall.totalWins}W</span>
+                <span className="text-fab-dim">-</span>
+                <span className="text-fab-loss">{overall.totalLosses}L</span>
+                {overall.totalDraws > 0 && <><span className="text-fab-dim">-</span><span className="text-fab-text">{overall.totalDraws}D</span></>}
               </p>
             </div>
             <div>

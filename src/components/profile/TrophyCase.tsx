@@ -206,7 +206,7 @@ export function TrophyCase({ finishes }: { finishes: PlayoffFinish[] }) {
     <div className="bg-fab-surface/50 border border-fab-border rounded-lg px-4 py-3">
       <div className="flex items-center justify-between mb-3">
         <p className="text-[10px] text-fab-muted uppercase tracking-wider font-medium">Trophy Case</p>
-        <p className="text-[10px] text-fab-dim">{finishes.length} finish{finishes.length !== 1 ? "es" : ""}</p>
+        <p className="text-[10px] text-fab-dim">{finishes.length} finish{finishes.length !== 1 ? "es" : ""} · <span className="text-fab-dim/60">hover for details</span></p>
       </div>
       <div className="space-y-2">
         {groups.map((g) => (
@@ -226,7 +226,11 @@ export function TrophyCase({ finishes }: { finishes: PlayoffFinish[] }) {
                 const date = (() => { try { return localDate(f.eventDate).toLocaleDateString("en-US", { month: "short", year: "numeric" }); } catch { return ""; } })();
                 const tip = `${PLACEMENT_TEXT[f.type]} — ${f.eventName}${date ? ` (${date})` : ""}`;
                 return (
-                  <div key={`${f.eventName}-${f.eventDate}-${i}`} className="flex flex-col items-center" title={tip}>
+                  <div key={`${f.eventName}-${f.eventDate}-${i}`} className="relative group flex flex-col items-center cursor-pointer">
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 rounded bg-fab-bg border border-fab-border shadow-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-150 whitespace-nowrap z-20">
+                      <p className="text-[10px] font-semibold text-fab-text">{f.eventName}</p>
+                      <p className="text-[9px] text-fab-dim">{PLACEMENT_TEXT[f.type]} place{date ? ` — ${date}` : ""}</p>
+                    </div>
                     {tier === "trophy" ? <TrophyIcon type={f.type} id={id} /> :
                      tier === "medal" ? <MedalIcon type={f.type} id={id} /> :
                      tier === "marble" ? <MarbleIcon type={f.type} id={id} idx={i} /> :
