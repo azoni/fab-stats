@@ -33,6 +33,7 @@ const historyLinks: { href: string; label: string; icon: ReactNode; authOnly?: b
 ];
 
 const moreLinks: { href: string; label: string; icon: ReactNode }[] = [
+  { href: "/compare", label: "Compare", icon: <CompareIcon className="w-4 h-4" /> },
   { href: "/import", label: "Import", icon: <ImportIcon className="w-4 h-4" /> },
   { href: "/docs", label: "Docs", icon: <DocsIcon className="w-4 h-4" /> },
   { href: "/changelog", label: "Changelog", icon: <ChangelogIcon className="w-4 h-4" /> },
@@ -50,6 +51,14 @@ function DocsIcon({ className = "w-4 h-4" }: { className?: string }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+    </svg>
+  );
+}
+
+function CompareIcon({ className = "w-4 h-4" }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M8 7h12M8 12h12M8 17h12M4 7h.01M4 12h.01M4 17h.01" />
     </svg>
   );
 }
