@@ -14,6 +14,7 @@ export interface MatchRecord {
   commentCount?: number;
   source?: "extension" | "csv" | "paste" | "manual";
   extensionVersion?: string;
+  gemEventId?: string;
   createdAt: string;
 }
 
@@ -172,7 +173,7 @@ export interface MatchComment {
 
 export interface UserNotification {
   id: string;
-  type: "comment" | "message";
+  type: "comment" | "message" | "friendRequest" | "friendAccepted";
   // Comment fields
   matchId?: string;
   matchOwnerUid?: string;
@@ -187,6 +188,11 @@ export interface UserNotification {
   senderName?: string;
   senderPhoto?: string;
   messagePreview?: string;
+  // Friend request fields
+  friendRequestFromUid?: string;
+  friendRequestFromName?: string;
+  friendRequestFromPhoto?: string;
+  friendRequestFromUsername?: string;
   // Common
   createdAt: string;
   read: boolean;
@@ -365,4 +371,18 @@ export interface Message {
   text: string;
   createdAt: string;
   isAdmin: boolean;
+}
+
+// ── Friends ──
+
+export interface Friendship {
+  id: string;
+  participants: [string, string];
+  requesterUid: string;
+  recipientUid: string;
+  status: "pending" | "accepted";
+  requesterInfo: { displayName: string; username: string; photoUrl?: string };
+  recipientInfo: { displayName: string; username: string; photoUrl?: string };
+  createdAt: string;
+  acceptedAt?: string;
 }

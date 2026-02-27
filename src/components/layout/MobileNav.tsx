@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { DashboardIcon, SwordsIcon, CalendarIcon, TrophyIcon, OpponentsIcon, TrendsIcon, ImportIcon } from "@/components/icons/NavIcons";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNotifications } from "@/hooks/useNotifications";
+import { useFriends } from "@/hooks/useFriends";
 import type { ReactNode } from "react";
 
 function SearchIcon(props: { className?: string }) {
@@ -98,12 +99,21 @@ function CompareIcon(props: { className?: string }) {
   );
 }
 
+function FriendsIcon(props: { className?: string }) {
+  return (
+    <svg className={props.className || "w-5 h-5"} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
+    </svg>
+  );
+}
+
 const moreLinks: { href: string; label: string; icon: ReactNode; authOnly?: boolean; adminOnly?: boolean }[] = [
   { href: "/meta", label: "Community Meta", icon: <MetaIcon /> },
   { href: "/compare", label: "Compare", icon: <CompareIcon /> },
   { href: "/events", label: "Events", icon: <CalendarIcon /> },
   { href: "/trends", label: "Trends", icon: <TrendsIcon />, authOnly: true },
   { href: "/import", label: "Import Matches", icon: <ImportIcon />, authOnly: true },
+  { href: "/friends", label: "Friends", icon: <FriendsIcon />, authOnly: true },
   { href: "/inbox", label: "Inbox", icon: <InboxIcon />, authOnly: true },
   { href: "/notifications", label: "Notifications", icon: <BellIcon />, authOnly: true },
   { href: "/admin", label: "Admin", icon: <AdminIcon />, adminOnly: true },
@@ -116,6 +126,7 @@ export function MobileNav() {
   const pathname = usePathname();
   const { user, isGuest, isAdmin } = useAuth();
   const { unreadCount } = useNotifications();
+  const { incomingCount: friendRequestCount } = useFriends();
   const [mounted, setMounted] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
   useEffect(() => setMounted(true), []);
@@ -169,6 +180,11 @@ export function MobileNav() {
                   {link.icon}
                 </span>
                 {link.label}
+                {link.href === "/friends" && friendRequestCount > 0 && (
+                  <span className="ml-auto px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-fab-loss text-white">
+                    {friendRequestCount}
+                  </span>
+                )}
                 {link.href === "/notifications" && unreadCount > 0 && (
                   <span className="ml-auto px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-fab-loss text-white">
                     {unreadCount}

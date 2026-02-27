@@ -199,6 +199,28 @@ service cloud.firestore {
       }
     }
 
+    // ── Friendships ──
+    match /friendships/{friendshipId} {
+      // Participants can read their own friendships
+      allow read: if request.auth != null
+        && request.auth.uid in resource.data.participants;
+      // Requester can create (status must be "pending", requesterUid must match auth)
+      allow create: if request.auth != null
+        && request.auth.uid == request.resource.data.requesterUid
+        && request.auth.uid in request.resource.data.participants
+        && request.resource.data.status == "pending"
+        && request.resource.data.participants.size() == 2;
+      // Recipient can update status to "accepted"
+      allow update: if request.auth != null
+        && request.auth.uid in resource.data.participants
+        && request.auth.uid != resource.data.requesterUid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'acceptedAt'])
+        && request.resource.data.status == "accepted";
+      // Either participant can delete (unfriend or decline)
+      allow delete: if request.auth != null
+        && request.auth.uid in resource.data.participants;
+    }
+
     // ── Analytics (page views, creator clicks) ──
     match /analytics/{docId} {
       // Anyone can write (increment counters for page views / creator clicks)
@@ -210,6 +232,10 @@ service cloud.firestore {
     // ── Admin configuration ──
     // Featured events are public (shown on homepage to all visitors)
     match /admin/featuredEvents {
+      allow read: if true;
+    }
+    // Site banner is public (shown to all visitors)
+    match /admin/banner {
       allow read: if true;
     }
     // Poll config is public (shown on homepage); votes are per-user

@@ -21,6 +21,7 @@ import { computeUserRanks, getBestRank } from "@/lib/leaderboard-ranks";
 import { QuestionCircleIcon, LockIcon } from "@/components/icons/NavIcons";
 import { useAuth } from "@/contexts/AuthContext";
 import { useFavorites } from "@/hooks/useFavorites";
+import { useFriends } from "@/hooks/useFriends";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { BestFinishShareModal } from "@/components/profile/BestFinishCard";
@@ -45,6 +46,7 @@ export default function PlayerProfile() {
   const { isAdmin, user: currentUser, isGuest } = useAuth();
   const { entries: lbEntries } = useLeaderboard();
   const { isFavorited, toggleFavorite } = useFavorites();
+  const { isFriend, hasSentRequest, hasReceivedRequest, getFriendshipForUser, sendRequest, acceptRequest } = useFriends();
   const [filterFormat, setFilterFormat] = useState<string>("all");
   const [filterRated, setFilterRated] = useState<string>("all");
   const [filterHero, setFilterHero] = useState<string>("all");
@@ -293,7 +295,7 @@ export default function PlayerProfile() {
   if (matches.length === 0) {
     return (
       <div className="space-y-8">
-        <ProfileHeader profile={profile} isAdmin={isAdmin} isOwner={isOwner} isFavorited={!isOwner && !!currentUser && !isGuest && isFavorited(profile.uid)} onToggleFavorite={!isOwner && !!currentUser && !isGuest ? () => toggleFavorite(profile) : undefined} />
+        <ProfileHeader profile={profile} isAdmin={isAdmin} isOwner={isOwner} isFavorited={!isOwner && !!currentUser && !isGuest && isFavorited(profile.uid)} onToggleFavorite={!isOwner && !!currentUser && !isGuest ? () => toggleFavorite(profile) : undefined} friendStatus={!isOwner && !!currentUser && !isGuest ? (isFriend(profile.uid) ? "friends" : hasSentRequest(profile.uid) ? "sent" : hasReceivedRequest(profile.uid) ? "received" : "none") : undefined} onFriendAction={!isOwner && !!currentUser && !isGuest ? () => { const fs = getFriendshipForUser(profile.uid); if (isFriend(profile.uid)) return; if (hasReceivedRequest(profile.uid) && fs) { acceptRequest(fs.id); } else if (!hasSentRequest(profile.uid)) { sendRequest(profile); } } : undefined} />
         <div className="text-center py-16">
           <p className="text-fab-muted">This player hasn&apos;t logged any matches yet.</p>
         </div>
@@ -310,7 +312,7 @@ export default function PlayerProfile() {
       >
         {/* Profile row */}
         <div className="flex items-center gap-4 mb-4">
-          <ProfileHeader profile={profile} achievements={achievements} bestRank={bestRank} isAdmin={isAdmin} isOwner={isOwner} isFavorited={!isOwner && !!currentUser && !isGuest && isFavorited(profile.uid)} onToggleFavorite={!isOwner && !!currentUser && !isGuest ? () => toggleFavorite(profile) : undefined} onShowMoreAchievements={() => { setAchievementsExpanded(true); setTimeout(() => document.getElementById("achievements")?.scrollIntoView({ behavior: "smooth", block: "start" }), 50); }} />
+          <ProfileHeader profile={profile} achievements={achievements} bestRank={bestRank} isAdmin={isAdmin} isOwner={isOwner} isFavorited={!isOwner && !!currentUser && !isGuest && isFavorited(profile.uid)} onToggleFavorite={!isOwner && !!currentUser && !isGuest ? () => toggleFavorite(profile) : undefined} friendStatus={!isOwner && !!currentUser && !isGuest ? (isFriend(profile.uid) ? "friends" : hasSentRequest(profile.uid) ? "sent" : hasReceivedRequest(profile.uid) ? "received" : "none") : undefined} onFriendAction={!isOwner && !!currentUser && !isGuest ? () => { const fs = getFriendshipForUser(profile.uid); if (isFriend(profile.uid)) return; if (hasReceivedRequest(profile.uid) && fs) { acceptRequest(fs.id); } else if (!hasSentRequest(profile.uid)) { sendRequest(profile); } } : undefined} onShowMoreAchievements={() => { setAchievementsExpanded(true); setTimeout(() => document.getElementById("achievements")?.scrollIntoView({ behavior: "smooth", block: "start" }), 50); }} />
           {/* Streak mini */}
           <div className="shrink-0 ml-auto text-right">
             <div className="flex items-baseline gap-1 justify-end">
@@ -346,7 +348,7 @@ export default function PlayerProfile() {
               </div>
             </div>
             <p className="text-[10px] text-fab-dim">streak</p>
-            <div className="mt-1 flex gap-0.5 flex-wrap justify-end max-w-[200px] ml-auto">
+            <div className="mt-1 flex gap-0.5 flex-wrap justify-end max-w-[120px] sm:max-w-[200px] ml-auto">
               {last30.map((m, i) => (
                 <div
                   key={i}
@@ -361,7 +363,7 @@ export default function PlayerProfile() {
         </div>
 
         {/* Quick stats row */}
-        <div className={`grid grid-cols-3 ${bestFinish ? "sm:grid-cols-6" : "sm:grid-cols-5"} gap-3`}>
+        <div className={`grid grid-cols-3 ${bestFinish ? "sm:grid-cols-6" : "sm:grid-cols-5"} gap-3 overflow-hidden`}>
           <div>
             <p className="text-[10px] text-fab-dim uppercase tracking-wider">Win Rate</p>
             <p className={`text-lg font-bold ${overall.overallWinRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>
@@ -372,9 +374,9 @@ export default function PlayerProfile() {
             <p className="text-[10px] text-fab-dim uppercase tracking-wider">Matches</p>
             <p className="text-lg font-bold text-fab-text">{overall.totalMatches}</p>
           </div>
-          <div>
+          <div className="min-w-0">
             <p className="text-[10px] text-fab-dim uppercase tracking-wider">Record</p>
-            <p className="text-lg font-bold">
+            <p className="text-lg font-bold truncate">
               <span className="text-fab-win">{overall.totalWins}W</span>
               <span className="text-fab-dim">-</span>
               <span className="text-fab-loss">{overall.totalLosses}L</span>
@@ -642,12 +644,12 @@ export default function PlayerProfile() {
   );
 }
 
-function ProfileHeader({ profile, achievements, bestRank, isAdmin, isOwner, isFavorited, onToggleFavorite, onShowMoreAchievements }: { profile: UserProfile; achievements?: Achievement[]; bestRank?: 1 | 2 | 3 | 4 | 5 | null; isAdmin?: boolean; isOwner?: boolean; isFavorited?: boolean; onToggleFavorite?: () => void; onShowMoreAchievements?: () => void }) {
+function ProfileHeader({ profile, achievements, bestRank, isAdmin, isOwner, isFavorited, onToggleFavorite, friendStatus, onFriendAction, onShowMoreAchievements }: { profile: UserProfile; achievements?: Achievement[]; bestRank?: 1 | 2 | 3 | 4 | 5 | null; isAdmin?: boolean; isOwner?: boolean; isFavorited?: boolean; onToggleFavorite?: () => void; friendStatus?: "none" | "sent" | "received" | "friends"; onFriendAction?: () => void; onShowMoreAchievements?: () => void }) {
   const [linkCopied, setLinkCopied] = useState(false);
   const ringClass = bestRank === 1 ? "rank-border-grandmaster" : bestRank === 2 ? "rank-border-diamond" : bestRank === 3 ? "rank-border-gold" : bestRank === 4 ? "rank-border-silver" : bestRank === 5 ? "rank-border-bronze" : "";
   const isCreator = profile.username === "azoni";
   return (
-    <div className="flex items-center gap-4 flex-1 min-w-0">
+    <div className="flex items-center gap-4 flex-1 min-w-0 overflow-hidden">
       <div className="relative shrink-0">
         {isCreator && (
           <svg className="absolute -top-4 left-1/2 -translate-x-1/2 w-7 h-7 text-fab-gold drop-shadow-[0_0_6px_rgba(201,168,76,0.6)] z-10" viewBox="0 0 24 24" fill="currentColor">
@@ -675,6 +677,41 @@ function ProfileHeader({ profile, achievements, bestRank, isAdmin, isOwner, isFa
                 <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
               </svg>
             </button>
+          )}
+          {friendStatus && onFriendAction && (
+            friendStatus === "friends" ? (
+              <span className="p-1 text-fab-gold" title="Friends">
+                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth={0}>
+                  <path d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
+                </svg>
+              </span>
+            ) : friendStatus === "sent" ? (
+              <span className="p-1 text-fab-dim cursor-default" title="Friend request sent">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </span>
+            ) : friendStatus === "received" ? (
+              <button
+                onClick={onFriendAction}
+                className="p-1 rounded transition-colors hover:bg-fab-surface"
+                title="Accept friend request"
+              >
+                <svg className="w-5 h-5 text-fab-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zM4 19.235v-.11a6.375 6.375 0 0112.75 0v.109A12.318 12.318 0 0110.374 21c-2.331 0-4.512-.645-6.374-1.766z" />
+                </svg>
+              </button>
+            ) : (
+              <button
+                onClick={onFriendAction}
+                className="p-1 rounded transition-colors hover:bg-fab-surface"
+                title="Add friend"
+              >
+                <svg className="w-5 h-5 text-fab-dim hover:text-fab-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zM4 19.235v-.11a6.375 6.375 0 0112.75 0v.109A12.318 12.318 0 0110.374 21c-2.331 0-4.512-.645-6.374-1.766z" />
+                </svg>
+              </button>
+            )
           )}
           <button
             onClick={async () => {

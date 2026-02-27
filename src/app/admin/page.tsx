@@ -9,7 +9,8 @@ import { getCreators, saveCreators } from "@/lib/creators";
 import { getEvents, saveEvents } from "@/lib/featured-events";
 import { lookupEvents, type LookupEvent } from "@/lib/event-lookup";
 import { getOrCreateConversation, sendMessage, sendMessageNotification } from "@/lib/messages";
-import { getAnalytics } from "@/lib/analytics";
+import { getAnalytics, type AnalyticsTimeRange } from "@/lib/analytics";
+import { getBanner, saveBanner, type BannerConfig } from "@/lib/banner";
 import { getPoll, getPollResults, getPollVoters, savePoll, removePoll, clearVotes } from "@/lib/polls";
 import { searchHeroes } from "@/lib/heroes";
 import { GameFormat } from "@/types";
@@ -77,6 +78,14 @@ export default function AdminPage() {
   const [savingPoll, setSavingPoll] = useState(false);
   const [pollSaved, setPollSaved] = useState(false);
   const [pollCreatedAt, setPollCreatedAt] = useState("");
+  const [bannerText, setBannerText] = useState("");
+  const [bannerActive, setBannerActive] = useState(false);
+  const [bannerType, setBannerType] = useState<BannerConfig["type"]>("info");
+  const [bannerScope, setBannerScope] = useState<BannerConfig["scope"]>("all");
+  const [bannerLink, setBannerLink] = useState("");
+  const [bannerLinkText, setBannerLinkText] = useState("");
+  const [savingBanner, setSavingBanner] = useState(false);
+  const [bannerSaved, setBannerSaved] = useState(false);
   const anyToolRunning = fixingDates || backfilling || backfillingGemIds || linkingMatches;
   const [activeTab, setActiveTab] = useState<"overview" | "users" | "feedback" | "content" | "poll" | "tools">(() => {
     if (typeof window !== "undefined") {
@@ -97,7 +106,7 @@ export default function AdminPage() {
     setFetching(true);
     setError("");
     try {
-      const [result, fb, cr, ev, analytics, pollData, pollRes, voters] = await Promise.all([getAdminDashboardData(), getAllFeedback(), getCreators(), getEvents(), getAnalytics(), getPoll(), getPollResults(), getPollVoters()]);
+      const [result, fb, cr, ev, analytics, pollData, pollRes, voters, bannerData] = await Promise.all([getAdminDashboardData(), getAllFeedback(), getCreators(), getEvents(), getAnalytics(), getPoll(), getPollResults(), getPollVoters(), getBanner()]);
       setData(result);
       setFeedback(fb);
       setCreatorsList(cr);
@@ -120,6 +129,14 @@ export default function AdminPage() {
       }
       setPollResults(pollRes);
       setPollVoters(voters);
+      if (bannerData) {
+        setBannerText(bannerData.text);
+        setBannerActive(bannerData.active);
+        setBannerType(bannerData.type);
+        setBannerScope(bannerData.scope || "all");
+        setBannerLink(bannerData.link || "");
+        setBannerLinkText(bannerData.linkText || "");
+      }
     } catch {
       setError("Failed to load admin data.");
     } finally {
@@ -599,6 +616,123 @@ export default function AdminPage() {
 
           {/* ── Content Tab ── */}
           {activeTab === "content" && <>
+          {/* Site Banner */}
+          <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden mb-6">
+            <div className="px-4 py-3 border-b border-fab-border flex items-center justify-between">
+              <h2 className="text-sm font-semibold text-fab-text">
+                Site Banner
+                {bannerActive && <span className="text-fab-win ml-1.5 text-xs font-normal">(Live)</span>}
+              </h2>
+              <div className="flex items-center gap-2">
+                {bannerSaved && <span className="text-xs text-fab-win">Saved!</span>}
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const next = !bannerActive;
+                    setBannerActive(next);
+                    setSavingBanner(true);
+                    setBannerSaved(false);
+                    try {
+                      await saveBanner({ text: bannerText, active: next, type: bannerType, scope: bannerScope, link: bannerLink || undefined, linkText: bannerLinkText || undefined });
+                      setBannerSaved(true);
+                      setTimeout(() => setBannerSaved(false), 2000);
+                    } catch {
+                      setError("Failed to toggle banner.");
+                      setBannerActive(!next);
+                    } finally {
+                      setSavingBanner(false);
+                    }
+                  }}
+                  disabled={savingBanner || !bannerText.trim()}
+                  className={`relative w-9 h-5 rounded-full transition-colors disabled:opacity-50 ${bannerActive ? "bg-fab-win" : "bg-fab-border"}`}
+                  title={bannerActive ? "Turn off banner" : "Turn on banner"}
+                >
+                  <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform ${bannerActive ? "translate-x-4" : ""}`} />
+                </button>
+                <button
+                  onClick={async () => {
+                    if (!bannerText.trim()) return;
+                    setSavingBanner(true);
+                    setBannerSaved(false);
+                    try {
+                      await saveBanner({ text: bannerText, active: bannerActive, type: bannerType, scope: bannerScope, link: bannerLink || undefined, linkText: bannerLinkText || undefined });
+                      setBannerSaved(true);
+                      setTimeout(() => setBannerSaved(false), 2000);
+                    } catch {
+                      setError("Failed to save banner.");
+                    } finally {
+                      setSavingBanner(false);
+                    }
+                  }}
+                  disabled={savingBanner || !bannerText.trim()}
+                  className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors disabled:opacity-50"
+                >
+                  {savingBanner ? "Saving..." : "Save"}
+                </button>
+              </div>
+            </div>
+            <div className="p-4 space-y-3">
+              <textarea
+                value={bannerText}
+                onChange={(e) => setBannerText(e.target.value)}
+                placeholder="Banner message shown to all users..."
+                rows={2}
+                className="w-full bg-fab-bg border border-fab-border text-fab-text text-sm rounded px-3 py-2 focus:outline-none focus:border-fab-gold resize-none"
+              />
+              <div className="flex gap-2 flex-wrap">
+                <select
+                  value={bannerType}
+                  onChange={(e) => setBannerType(e.target.value as BannerConfig["type"])}
+                  className="bg-fab-bg border border-fab-border text-fab-text text-xs rounded px-2 py-1.5 focus:outline-none focus:border-fab-gold cursor-pointer"
+                >
+                  <option value="info">Info (Blue)</option>
+                  <option value="warning">Warning (Gold)</option>
+                  <option value="success">Success (Green)</option>
+                </select>
+                <select
+                  value={bannerScope}
+                  onChange={(e) => setBannerScope(e.target.value as BannerConfig["scope"])}
+                  className="bg-fab-bg border border-fab-border text-fab-text text-xs rounded px-2 py-1.5 focus:outline-none focus:border-fab-gold cursor-pointer"
+                >
+                  <option value="all">All Pages</option>
+                  <option value="home">Homepage Only</option>
+                </select>
+                <input
+                  type="text"
+                  placeholder="Link URL (optional)"
+                  value={bannerLink}
+                  onChange={(e) => setBannerLink(e.target.value)}
+                  className="flex-1 min-w-0 bg-fab-bg border border-fab-border text-fab-text text-xs rounded px-2 py-1.5 focus:outline-none focus:border-fab-gold"
+                />
+                <input
+                  type="text"
+                  placeholder="Link text (optional)"
+                  value={bannerLinkText}
+                  onChange={(e) => setBannerLinkText(e.target.value)}
+                  className="w-32 bg-fab-bg border border-fab-border text-fab-text text-xs rounded px-2 py-1.5 focus:outline-none focus:border-fab-gold"
+                />
+              </div>
+              {bannerText.trim() && (
+                <div className="mt-2">
+                  <p className="text-[10px] text-fab-dim uppercase tracking-wider mb-1.5">Preview</p>
+                  <div className={`border rounded-lg px-4 py-3 flex items-center justify-between gap-3 ${
+                    bannerType === "info" ? "bg-blue-500/10 border-blue-500/25 text-blue-300"
+                    : bannerType === "warning" ? "bg-fab-gold/10 border-fab-gold/25 text-fab-gold"
+                    : "bg-fab-win/10 border-fab-win/25 text-fab-win"
+                  }`}>
+                    <p className="text-sm">
+                      {bannerText}
+                      {bannerLink && (
+                        <span className="underline font-medium ml-1">{bannerLinkText || "Learn more"}</span>
+                      )}
+                    </p>
+                    <span className="text-current opacity-50 shrink-0 text-lg leading-none">&times;</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
           {/* Creators Management */}
           <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden">
             <div className="px-4 py-3 border-b border-fab-border flex items-center justify-between">
@@ -1245,9 +1379,33 @@ const ROUTE_LABELS: Record<string, string> = {
   feedback: "Feedback",
 };
 
-function ActivitySection({ analytics }: { analytics: { pageViews: Record<string, number>; creatorClicks: Record<string, number> } }) {
+function ActivitySection({ analytics: initialAnalytics }: { analytics: { pageViews: Record<string, number>; creatorClicks: Record<string, number> } }) {
   const [expanded, setExpanded] = useState(true);
   const [profilesExpanded, setProfilesExpanded] = useState(false);
+  const [timeRange, setTimeRange] = useState<AnalyticsTimeRange>("all");
+  const [analytics, setAnalytics] = useState(initialAnalytics);
+  const [loadingRange, setLoadingRange] = useState(false);
+
+  useEffect(() => {
+    if (timeRange === "all") setAnalytics(initialAnalytics);
+  }, [initialAnalytics, timeRange]);
+
+  async function switchTimeRange(range: AnalyticsTimeRange) {
+    setTimeRange(range);
+    if (range === "all") {
+      setAnalytics(initialAnalytics);
+      return;
+    }
+    setLoadingRange(true);
+    try {
+      const data = await getAnalytics(range);
+      setAnalytics(data);
+    } catch {
+      // Keep current data on error
+    } finally {
+      setLoadingRange(false);
+    }
+  }
 
   // Separate player profile views from regular page views
   const playerEntries: [string, number][] = [];
@@ -1287,7 +1445,9 @@ function ActivitySection({ analytics }: { analytics: { pageViews: Record<string,
       >
         <h2 className="text-sm font-semibold text-fab-text">
           Page Activity
-          <span className="text-fab-dim font-normal ml-2">({totalPageViews.toLocaleString()} total views)</span>
+          <span className="text-fab-dim font-normal ml-2">
+            ({totalPageViews.toLocaleString()} views{timeRange !== "all" ? ` in last ${timeRange === "1h" ? "hour" : timeRange === "12h" ? "12 hours" : timeRange === "24h" ? "24 hours" : "7 days"}` : ""})
+          </span>
         </h2>
         <svg
           className={`w-4 h-4 text-fab-muted group-hover:text-fab-text transition-transform ${expanded ? "rotate-180" : ""}`}
@@ -1298,6 +1458,22 @@ function ActivitySection({ analytics }: { analytics: { pageViews: Record<string,
       </button>
       {expanded && (
         <div className="p-4">
+          <div className="flex items-center gap-1 mb-4">
+            {(["1h", "12h", "24h", "7d", "all"] as const).map((range) => (
+              <button
+                key={range}
+                onClick={() => switchTimeRange(range)}
+                className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
+                  timeRange === range
+                    ? "bg-fab-gold/20 text-fab-gold"
+                    : "text-fab-muted hover:text-fab-text"
+                }`}
+              >
+                {range === "all" ? "All Time" : range === "1h" ? "1 Hour" : range === "12h" ? "12 Hours" : range === "24h" ? "24 Hours" : "7 Days"}
+              </button>
+            ))}
+            {loadingRange && <span className="text-xs text-fab-dim animate-pulse ml-2">Loading...</span>}
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Route Views */}
             <div>

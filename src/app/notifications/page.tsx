@@ -25,7 +25,7 @@ export default function NotificationsPage() {
 
   // Look up usernames for UIDs so we can navigate to profiles
   useEffect(() => {
-    const uids = [...new Set(notifications.map((n) => n.matchOwnerUid || n.senderUid).filter(Boolean))] as string[];
+    const uids = [...new Set(notifications.map((n) => n.matchOwnerUid || n.senderUid || n.friendRequestFromUid).filter(Boolean))] as string[];
     const missing = uids.filter((uid) => !usernameCache[uid]);
     if (missing.length === 0) return;
 
@@ -71,6 +71,15 @@ export default function NotificationsPage() {
       router.push(`/inbox/${notification.senderUid}`);
     } else if (notification.type === "comment" && notification.matchOwnerUid) {
       const username = usernameCache[notification.matchOwnerUid];
+      if (username) {
+        router.push(`/player/${username}`);
+      }
+    } else if (notification.type === "friendRequest") {
+      router.push("/friends");
+    } else if (notification.type === "friendAccepted" && notification.friendRequestFromUsername) {
+      router.push(`/player/${notification.friendRequestFromUsername}`);
+    } else if (notification.type === "friendAccepted" && notification.friendRequestFromUid) {
+      const username = usernameCache[notification.friendRequestFromUid];
       if (username) {
         router.push(`/player/${username}`);
       }
@@ -129,8 +138,8 @@ export default function NotificationsPage() {
                 {/* Author avatar */}
                 <div className="shrink-0">
                   {(() => {
-                    const photo = n.type === "message" ? n.senderPhoto : n.commentAuthorPhoto;
-                    const name = n.type === "message" ? (n.senderName || "?") : (n.commentAuthorName || "?");
+                    const photo = n.type === "message" ? n.senderPhoto : n.type === "friendRequest" || n.type === "friendAccepted" ? n.friendRequestFromPhoto : n.commentAuthorPhoto;
+                    const name = n.type === "message" ? (n.senderName || "?") : n.type === "friendRequest" || n.type === "friendAccepted" ? (n.friendRequestFromName || "?") : (n.commentAuthorName || "?");
                     return photo ? (
                       <img src={photo} alt="" className="w-8 h-8 rounded-full" />
                     ) : (
@@ -155,6 +164,16 @@ export default function NotificationsPage() {
                         </p>
                       )}
                     </>
+                  ) : n.type === "friendRequest" ? (
+                    <p className="text-sm text-fab-text">
+                      <span className="font-semibold">{n.friendRequestFromName}</span>{" "}
+                      sent you a friend request
+                    </p>
+                  ) : n.type === "friendAccepted" ? (
+                    <p className="text-sm text-fab-text">
+                      <span className="font-semibold">{n.friendRequestFromName}</span>{" "}
+                      accepted your friend request
+                    </p>
                   ) : (
                     <>
                       <p className="text-sm text-fab-text">

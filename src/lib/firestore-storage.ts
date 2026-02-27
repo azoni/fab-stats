@@ -396,4 +396,16 @@ export async function deleteAccountData(userId: string): Promise<void> {
   try {
     await deleteDoc(doc(db, "leaderboard", userId));
   } catch { /* may not exist */ }
+
+  // Delete friendships
+  try {
+    const friendshipsSnap = await getDocs(
+      query(collection(db, "friendships"), where("participants", "array-contains", userId))
+    );
+    if (friendshipsSnap.docs.length > 0) {
+      const friendBatch = writeBatch(db);
+      friendshipsSnap.docs.forEach((d) => friendBatch.delete(d.ref));
+      await friendBatch.commit();
+    }
+  } catch { /* may not exist */ }
 }
