@@ -1,5 +1,5 @@
 "use client";
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { MatchResult, type MatchRecord } from "@/types";
 import { localDate } from "@/lib/constants";
 
@@ -19,11 +19,32 @@ interface YearMemory {
 }
 
 export function OnThisDay({ matches }: OnThisDayProps) {
+  // Read override params directly from URL to avoid SSR/hydration issues
+  const [overrideDate, setOverrideDate] = useState<string | undefined>();
+  const [overrideYear, setOverrideYear] = useState<number | undefined>();
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const otd = params.get("otd");
+    const otdYear = params.get("otdYear");
+    if (otd) setOverrideDate(otd);
+    if (otdYear) setOverrideYear(Number(otdYear));
+  }, []);
+
   const memories = useMemo(() => {
     const today = new Date();
-    const todayMonth = today.getMonth();
-    const todayDate = today.getDate();
-    const thisYear = today.getFullYear();
+    let todayMonth = today.getMonth();
+    let todayDate = today.getDate();
+    const thisYear = overrideYear || today.getFullYear();
+
+    // Allow override for testing: "MM-DD" format
+    if (overrideDate) {
+      const [mm, dd] = overrideDate.split("-").map(Number);
+      if (mm >= 1 && mm <= 12 && dd >= 1 && dd <= 31) {
+        todayMonth = mm - 1;
+        todayDate = dd;
+      }
+    }
 
     // Find matches that happened on this day in previous years
     const onThisDay = matches.filter((m) => {
@@ -54,12 +75,15 @@ export function OnThisDay({ matches }: OnThisDayProps) {
     }
 
     return result.sort((a, b) => b.year - a.year);
-  }, [matches]);
+  }, [matches, overrideDate, overrideYear]);
 
   if (memories.length === 0) return null;
 
   const today = new Date();
-  const dateLabel = today.toLocaleDateString("en-US", { month: "long", day: "numeric" });
+  const displayDate = overrideDate
+    ? new Date(today.getFullYear(), ...overrideDate.split("-").map(Number).map((n, i) => i === 0 ? n - 1 : n) as [number, number])
+    : today;
+  const dateLabel = displayDate.toLocaleDateString("en-US", { month: "long", day: "numeric" });
 
   return (
     <div className="bg-fab-surface border border-fab-border rounded-lg p-4">
@@ -74,7 +98,7 @@ export function OnThisDay({ matches }: OnThisDayProps) {
 
       <div className="space-y-3">
         {memories.map((mem) => {
-          const yearsAgo = today.getFullYear() - mem.year;
+          const yearsAgo = (overrideYear || today.getFullYear()) - mem.year;
           const record = `${mem.wins}W-${mem.losses}L${mem.draws > 0 ? `-${mem.draws}D` : ""}`;
           const wasGoodDay = mem.wins > mem.losses;
           const wasUndefeated = mem.losses === 0 && mem.wins > 0;
