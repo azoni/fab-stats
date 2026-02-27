@@ -204,6 +204,27 @@ export default function PlayerProfile() {
     return known.length > 0 ? known[0] : null;
   }, [heroStats]);
 
+  // Compute highest playoff finish across all major events for card border
+  const cardBorder = useMemo(() => {
+    const finishRank: Record<string, number> = { Champion: 5, Finalist: 4, "Top 4": 3, "Top 8": 2, Playoff: 1 };
+    const finishStyle: Record<string, { border: string; shadow: string }> = {
+      Playoff: { border: "#cd7f32", shadow: "0 0 6px rgba(205,127,50,0.2)" },
+      "Top 8": { border: "#cd7f32", shadow: "0 0 8px rgba(205,127,50,0.25)" },
+      "Top 4": { border: "#c0c0c0", shadow: "0 0 8px rgba(192,192,192,0.3)" },
+      Finalist: { border: "#fbbf24", shadow: "0 0 10px rgba(251,191,36,0.35)" },
+      Champion: { border: "#a78bfa", shadow: "0 0 12px rgba(167,139,250,0.4), 0 0 24px rgba(167,139,250,0.15)" },
+    };
+    let best: string | null = null;
+    let bestScore = 0;
+    for (const b of eventBadges) {
+      if (b.bestFinish && (finishRank[b.bestFinish] || 0) > bestScore) {
+        best = b.bestFinish;
+        bestScore = finishRank[b.bestFinish] || 0;
+      }
+    }
+    return best ? finishStyle[best] : null;
+  }, [eventBadges]);
+
   // Build a human-readable label for active filters (shown on share cards)
   const filterLabel = useMemo(() => {
     const parts: string[] = [];
@@ -287,7 +308,10 @@ export default function PlayerProfile() {
   return (
     <div className="space-y-8">
       {/* Hero Card */}
-      <div className="bg-fab-surface border border-fab-border rounded-lg p-5">
+      <div
+        className="bg-fab-surface border border-fab-border rounded-lg p-5"
+        style={cardBorder ? { borderColor: cardBorder.border, boxShadow: cardBorder.shadow } : undefined}
+      >
         {/* Profile row */}
         <div className="flex items-center gap-4 mb-4">
           <ProfileHeader profile={profile} achievements={achievements} bestRank={bestRank} isAdmin={isAdmin} isOwner={isOwner} isFavorited={!isOwner && !!currentUser && !isGuest && isFavorited(profile.uid)} onToggleFavorite={!isOwner && !!currentUser && !isGuest ? () => toggleFavorite(profile) : undefined} />
