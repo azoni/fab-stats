@@ -334,7 +334,8 @@ export async function uploadProfilePhoto(
   userId: string,
   dataUrl: string
 ): Promise<void> {
-  await updateProfile(userId, { photoUrl: dataUrl });
+  const profileRef = doc(db, "users", userId, "profile", "main");
+  await setDoc(profileRef, { photoUrl: dataUrl }, { merge: true });
 }
 
 // ── GEM ID functions ──

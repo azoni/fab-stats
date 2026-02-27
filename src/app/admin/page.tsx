@@ -1385,6 +1385,7 @@ function ActivitySection({ analytics: initialAnalytics }: { analytics: { pageVie
   const [timeRange, setTimeRange] = useState<AnalyticsTimeRange>("all");
   const [analytics, setAnalytics] = useState(initialAnalytics);
   const [loadingRange, setLoadingRange] = useState(false);
+  const [rangeError, setRangeError] = useState("");
   const fetchIdRef = useRef(0);
 
   // Fetch data whenever timeRange changes, with cancellation for rapid clicks
@@ -1392,19 +1393,24 @@ function ActivitySection({ analytics: initialAnalytics }: { analytics: { pageVie
     if (timeRange === "all") {
       setAnalytics(initialAnalytics);
       setLoadingRange(false);
+      setRangeError("");
       return;
     }
     let cancelled = false;
     const id = ++fetchIdRef.current;
     setLoadingRange(true);
+    setRangeError("");
     getAnalytics(timeRange).then((data) => {
       if (!cancelled && id === fetchIdRef.current) {
         setAnalytics(data);
         setLoadingRange(false);
       }
-    }).catch(() => {
+    }).catch((err) => {
+      console.error("Failed to fetch analytics for range:", timeRange, err);
       if (!cancelled && id === fetchIdRef.current) {
+        setAnalytics({ pageViews: {}, creatorClicks: {} });
         setLoadingRange(false);
+        setRangeError("Failed to load data for this range.");
       }
     });
     return () => { cancelled = true; };
@@ -1476,6 +1482,7 @@ function ActivitySection({ analytics: initialAnalytics }: { analytics: { pageVie
               </button>
             ))}
             {loadingRange && <span className="text-xs text-fab-dim animate-pulse ml-2">Loading...</span>}
+            {rangeError && <span className="text-xs text-red-400 ml-2">{rangeError}</span>}
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Route Views */}

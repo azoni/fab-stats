@@ -18,22 +18,27 @@ import { platformIcons } from "@/components/layout/Navbar";
 
 function resizeImage(file: File, maxSize: number): Promise<string> {
   return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => {
-      const canvas = document.createElement("canvas");
-      let w = img.width;
-      let h = img.height;
-      if (w > maxSize || h > maxSize) {
-        if (w > h) { h = Math.round(h * maxSize / w); w = maxSize; }
-        else { w = Math.round(w * maxSize / h); h = maxSize; }
-      }
-      canvas.width = w;
-      canvas.height = h;
-      canvas.getContext("2d")!.drawImage(img, 0, 0, w, h);
-      resolve(canvas.toDataURL("image/jpeg", 0.8));
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        let w = img.width;
+        let h = img.height;
+        if (w > maxSize || h > maxSize) {
+          if (w > h) { h = Math.round(h * maxSize / w); w = maxSize; }
+          else { w = Math.round(w * maxSize / h); h = maxSize; }
+        }
+        canvas.width = w;
+        canvas.height = h;
+        canvas.getContext("2d")!.drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL("image/jpeg", 0.8));
+      };
+      img.onerror = () => reject(new Error("Failed to load image"));
+      img.src = reader.result as string;
     };
-    img.onerror = () => reject(new Error("Failed to load image"));
-    img.src = URL.createObjectURL(file);
+    reader.onerror = () => reject(new Error("Failed to read file"));
+    reader.readAsDataURL(file);
   });
 }
 
@@ -179,12 +184,18 @@ export default function SettingsPage() {
     try {
       const dataUrl = await resizeImage(file, 200);
       await uploadProfilePhoto(user.uid, dataUrl);
+    } catch (err) {
+      console.error("Photo upload failed:", err);
+      setError("Failed to upload photo. Please try again.");
+      setUploading(false);
+      return;
+    }
+    try {
       await refreshProfile();
     } catch {
-      setError("Failed to upload photo. Please try again.");
-    } finally {
-      setUploading(false);
+      // Photo was saved, refresh just didn't pick it up yet
     }
+    setUploading(false);
   }
 
   if (isGuest) {
