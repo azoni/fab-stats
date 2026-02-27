@@ -936,7 +936,22 @@ export default function AdminPage() {
               <label className="flex items-center gap-2 cursor-pointer pt-1">
                 <button
                   type="button"
-                  onClick={() => setPollShowResults(!pollShowResults)}
+                  onClick={async () => {
+                    const next = !pollShowResults;
+                    setPollShowResults(next);
+                    // Save immediately to Firestore
+                    if (pollActive) {
+                      try {
+                        await savePoll({
+                          question: pollQuestion.trim(),
+                          options: pollOptions.filter(Boolean),
+                          active: true,
+                          createdAt: pollCreatedAt || new Date().toISOString(),
+                          showResults: next,
+                        });
+                      } catch {}
+                    }
+                  }}
                   className={`relative w-9 h-5 rounded-full transition-colors ${pollShowResults ? "bg-fab-win" : "bg-fab-border"}`}
                 >
                   <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform ${pollShowResults ? "translate-x-4" : ""}`} />
