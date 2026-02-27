@@ -38,16 +38,12 @@ interface FlowerData {
 function buildGarden(eventStats: EventStats[]) {
   const armory = eventStats.filter((e) => e.eventType === "Armory");
   const flowers: FlowerData[] = [];
-  let totalWins = 0;
   let perfectRuns = 0;
   let idx = 0;
 
   for (const event of armory) {
-    if (event.wins === 0) continue;
-    totalWins += event.wins;
-
-    if (event.losses === 0) {
-      // Undefeated armory = one crown flower
+    if (event.losses === 0 && event.wins > 0) {
+      // Undefeated armory → sunflower
       perfectRuns++;
       flowers.push({
         type: "crown",
@@ -56,19 +52,17 @@ function buildGarden(eventStats: EventStats[]) {
         idx: idx++,
       });
     } else {
-      // Individual win flowers
-      for (let w = 0; w < event.wins; w++) {
-        flowers.push({
-          type: "bloom",
-          color: COLORS[idx % COLORS.length],
-          accent: ACCENT[idx % ACCENT.length],
-          idx: idx++,
-        });
-      }
+      // Attended but had losses → small daisy
+      flowers.push({
+        type: "bloom",
+        color: COLORS[idx % COLORS.length],
+        accent: ACCENT[idx % ACCENT.length],
+        idx: idx++,
+      });
     }
   }
 
-  return { flowers, totalWins, perfectRuns };
+  return { flowers, total: flowers.length, perfectRuns };
 }
 
 /* ── small flower (individual match win) ───────────────── */
@@ -237,7 +231,7 @@ function Sunflower({ color, accent, idx }: { color: string; accent: string; idx:
 
 /* ── garden component ──────────────────────────────────── */
 export function ArmoryGarden({ eventStats }: { eventStats: EventStats[] }) {
-  const { flowers, totalWins, perfectRuns } = useMemo(
+  const { flowers, total, perfectRuns } = useMemo(
     () => buildGarden(eventStats),
     [eventStats],
   );
@@ -271,10 +265,10 @@ export function ArmoryGarden({ eventStats }: { eventStats: EventStats[] }) {
             </p>
           </div>
           <p className="text-[10px] text-fab-dim">
-            {totalWins} win{totalWins !== 1 ? "s" : ""}
+            {total} armor{total !== 1 ? "ies" : "y"}
             {perfectRuns > 0 && (
               <span className="text-amber-400/80">
-                {" "}&middot; {perfectRuns} perfect
+                {" "}&middot; {perfectRuns} undefeated
               </span>
             )}
           </p>
