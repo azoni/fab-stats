@@ -84,15 +84,21 @@ export function ProfileCard({ data, theme }: { data: ProfileCardData; theme?: Ca
         </div>
 
         {/* Stats grid */}
-        <div className="grid grid-cols-2 gap-2 mb-4">
+        <div className="grid grid-cols-3 gap-2 mb-4">
           <div style={{ backgroundColor: t.bg }} className="rounded-lg p-2.5 text-center">
             <p style={{ color: t.muted }} className="text-[10px] uppercase tracking-wider font-semibold mb-0.5">Events</p>
             <p style={{ color: t.text }} className="text-lg font-black">{events}</p>
           </div>
           <div style={{ backgroundColor: t.bg }} className="rounded-lg p-2.5 text-center">
+            <p style={{ color: t.muted }} className="text-[10px] uppercase tracking-wider font-semibold mb-0.5">Matches</p>
+            <p style={{ color: t.text }} className="text-lg font-black">{totalMatches}</p>
+          </div>
+          <div style={{ backgroundColor: t.bg }} className="rounded-lg p-2.5 text-center">
             <p style={{ color: t.muted }} className="text-[10px] uppercase tracking-wider font-semibold mb-0.5">Top Hero</p>
             <p style={{ color: t.text }} className="text-sm font-bold truncate">{topHero || "—"}</p>
           </div>
+        </div>
+        <div className="grid grid-cols-2 gap-2 mb-4">
           <div style={{ backgroundColor: t.bg }} className="rounded-lg p-2.5 text-center">
             <p style={{ color: t.muted }} className="text-[10px] uppercase tracking-wider font-semibold mb-0.5">Streak</p>
             <p style={{ color: currentStreak?.type === MatchResult.Win ? t.win : currentStreak?.type === MatchResult.Loss ? t.loss : t.dim }} className="text-lg font-black">
@@ -145,7 +151,7 @@ export function ProfileShareModal({
     const profileUrl = data.username
       ? `${window.location.origin}/player/${data.username}`
       : window.location.origin;
-    const shareText = `${data.playerName} — ${data.winRate.toFixed(1)}% win rate across ${data.wins + data.losses + data.draws} matches\n${profileUrl}`;
+    const shareText = `${data.playerName} — ${data.winRate.toFixed(1)}% win rate across ${data.totalMatches} matches\n${profileUrl}`;
 
     setShareStatus("sharing");
     try {

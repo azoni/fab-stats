@@ -544,6 +544,7 @@ export default function PlayerProfile() {
             byes: overall.totalByes,
             winRate: overall.overallWinRate,
             events: eventStats.length,
+            totalMatches: overall.totalMatches,
             topHero: topHero?.heroName || null,
             currentStreak: streaks.currentStreak,
             bestFinish: bestFinish?.label || null,
