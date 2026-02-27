@@ -53,6 +53,7 @@ export default function ImportPage() {
   const [sessionRecap, setSessionRecap] = useState<SessionRecap | null>(null);
   const [isMobile, setIsMobile] = useState(false);
   const [showPasteSteps, setShowPasteSteps] = useState(false);
+  const [clearBeforeImport, setClearBeforeImport] = useState(false);
 
   // Detect mobile viewport
   useEffect(() => {
@@ -211,6 +212,11 @@ export default function ImportPage() {
     const matches = pasteResult ? filteredMatches : csvMatches;
     if (!matches || (!user && !isGuest)) return;
     setImporting(true);
+
+    // Clear existing data first if requested
+    if (clearBeforeImport && user) {
+      await clearAllMatchesFirestore(user.uid);
+    }
 
     // Capture matches before import for recap
     let beforeMatches: MatchRecord[] = [];
@@ -898,10 +904,25 @@ export default function ImportPage() {
             </div>
           ) : null}
 
+          {/* Clear before import option */}
+          {user && (
+            <label className="flex items-start gap-2 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={clearBeforeImport}
+                onChange={(e) => setClearBeforeImport(e.target.checked)}
+                className="mt-0.5 accent-fab-loss"
+              />
+              <span className="text-sm text-fab-muted">
+                <span className="text-fab-loss font-medium">Clear all existing matches</span> before importing (use this if re-importing with the new extension)
+              </span>
+            </label>
+          )}
+
           {/* Action buttons */}
           <div className="flex gap-3">
             <button onClick={handleImport} disabled={importing} className="flex-1 min-h-[48px] py-3 rounded-md font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light active:bg-fab-gold-light transition-colors disabled:opacity-50">
-              {importing ? "Importing..." : `Import ${totalToImport} Matches`}
+              {importing ? "Importing..." : clearBeforeImport ? `Clear & Import ${totalToImport} Matches` : `Import ${totalToImport} Matches`}
             </button>
             <button onClick={handleReset} className="px-6 min-h-[48px] py-3 rounded-md font-semibold bg-fab-surface border border-fab-border text-fab-muted hover:text-fab-text active:bg-fab-surface-hover transition-colors">
               Cancel
