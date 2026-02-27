@@ -145,6 +145,30 @@ function PlayerPicker({
   placeholder?: string;
   color: string;
 }) {
+  const [hlIndex, setHlIndex] = useState(-1);
+  const prevResultsLen = useRef(0);
+
+  // Reset highlight when results change
+  if (results.length !== prevResultsLen.current) {
+    prevResultsLen.current = results.length;
+    if (hlIndex >= results.length) setHlIndex(-1);
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent) {
+    if (!results.length) return;
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setHlIndex((i) => (i < results.length - 1 ? i + 1 : 0));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setHlIndex((i) => (i > 0 ? i - 1 : results.length - 1));
+    } else if (e.key === "Enter" && hlIndex >= 0 && hlIndex < results.length) {
+      e.preventDefault();
+      onSelect(results[hlIndex]);
+      setHlIndex(-1);
+    }
+  }
+
   return (
     <div className="relative">
       <p className={`text-xs font-semibold uppercase tracking-wider mb-1.5 ${color}`}>{label}</p>
@@ -176,16 +200,17 @@ function PlayerPicker({
             onChange={(e) => onChange(e.target.value)}
             onFocus={onFocus}
             onBlur={onBlur}
+            onKeyDown={handleKeyDown}
             placeholder={placeholder || "Search..."}
             className="w-full bg-fab-surface border border-fab-border rounded-lg px-3 py-2.5 text-fab-text text-sm placeholder:text-fab-dim focus:outline-none focus:border-fab-gold"
           />
           {results.length > 0 && (
             <div className="absolute z-20 top-full mt-1 left-0 right-0 bg-fab-surface border border-fab-border rounded-lg overflow-hidden shadow-lg">
-              {results.map((e) => (
+              {results.map((e, i) => (
                 <button
                   key={e.userId}
                   onMouseDown={() => onSelect(e)}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-fab-surface-hover transition-colors"
+                  className={`w-full flex items-center gap-2 px-3 py-2 text-left transition-colors ${i === hlIndex ? "bg-fab-gold/10" : "hover:bg-fab-surface-hover"}`}
                 >
                   {e.photoUrl ? (
                     <img src={e.photoUrl} alt="" className="w-7 h-7 rounded-full shrink-0" />
