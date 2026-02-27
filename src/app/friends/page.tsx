@@ -32,6 +32,7 @@ export default function FriendsPage() {
   const {
     friends,
     incomingRequests,
+    outgoingRequests,
     loaded,
     acceptRequest,
     declineRequest,
@@ -100,9 +101,9 @@ export default function FriendsPage() {
           }`}
         >
           Requests
-          {incomingRequests.length > 0 && (
+          {(incomingRequests.length + outgoingRequests.length) > 0 && (
             <span className="px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-fab-loss text-white">
-              {incomingRequests.length}
+              {incomingRequests.length + outgoingRequests.length}
             </span>
           )}
         </button>
@@ -178,7 +179,7 @@ export default function FriendsPage() {
       {/* Requests Tab */}
       {tab === "requests" && (
         <>
-          {incomingRequests.length === 0 ? (
+          {incomingRequests.length === 0 && outgoingRequests.length === 0 ? (
             <div className="text-center py-16">
               <svg className="w-12 h-12 text-fab-dim mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
@@ -187,48 +188,104 @@ export default function FriendsPage() {
               <p className="text-fab-dim text-sm">Friend requests from other players will appear here.</p>
             </div>
           ) : (
-            <div className="space-y-2">
-              {incomingRequests.map((friendship) => {
-                const requester = friendship.requesterInfo;
-                return (
-                  <div
-                    key={friendship.id}
-                    className="flex items-center gap-3 bg-fab-surface border border-fab-gold/30 rounded-lg p-3"
-                  >
-                    <Link
-                      href={`/player/${requester.username}`}
-                      className="flex items-center gap-3 flex-1 min-w-0 hover:opacity-80 transition-opacity"
-                    >
-                      {requester.photoUrl ? (
-                        <img src={requester.photoUrl} alt="" className="w-10 h-10 rounded-full" />
-                      ) : (
-                        <div className="w-10 h-10 rounded-full bg-fab-gold/20 flex items-center justify-center text-fab-gold font-bold">
-                          {requester.displayName.charAt(0).toUpperCase()}
+            <div className="space-y-4">
+              {/* Incoming */}
+              {incomingRequests.length > 0 && (
+                <div className="space-y-2">
+                  <h3 className="text-xs text-fab-muted uppercase tracking-wider font-medium">Incoming</h3>
+                  {incomingRequests.map((friendship) => {
+                    const requester = friendship.requesterInfo;
+                    return (
+                      <div
+                        key={friendship.id}
+                        className="flex items-center gap-3 bg-fab-surface border border-fab-gold/30 rounded-lg p-3"
+                      >
+                        <Link
+                          href={`/player/${requester.username}`}
+                          className="flex items-center gap-3 flex-1 min-w-0 hover:opacity-80 transition-opacity"
+                        >
+                          {requester.photoUrl ? (
+                            <img src={requester.photoUrl} alt="" className="w-10 h-10 rounded-full" />
+                          ) : (
+                            <div className="w-10 h-10 rounded-full bg-fab-gold/20 flex items-center justify-center text-fab-gold font-bold">
+                              {requester.displayName.charAt(0).toUpperCase()}
+                            </div>
+                          )}
+                          <div className="min-w-0">
+                            <div className="font-medium text-fab-text truncate">{requester.displayName}</div>
+                            <div className="text-xs text-fab-dim">@{requester.username}</div>
+                            <div className="text-xs text-fab-dim">{timeAgo(friendship.createdAt)}</div>
+                          </div>
+                        </Link>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <button
+                            onClick={() => acceptRequest(friendship.id)}
+                            className="px-3 py-1.5 rounded-md text-xs font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors"
+                          >
+                            Accept
+                          </button>
+                          <button
+                            onClick={() => declineRequest(friendship.id)}
+                            className="px-3 py-1.5 rounded-md text-xs font-semibold bg-fab-surface border border-fab-border text-fab-muted hover:text-fab-text hover:border-fab-muted transition-colors"
+                          >
+                            Decline
+                          </button>
                         </div>
-                      )}
-                      <div className="min-w-0">
-                        <div className="font-medium text-fab-text truncate">{requester.displayName}</div>
-                        <div className="text-xs text-fab-dim">@{requester.username}</div>
-                        <div className="text-xs text-fab-dim">{timeAgo(friendship.createdAt)}</div>
                       </div>
-                    </Link>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <button
-                        onClick={() => acceptRequest(friendship.id)}
-                        className="px-3 py-1.5 rounded-md text-xs font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors"
+                    );
+                  })}
+                </div>
+              )}
+              {/* Outgoing */}
+              {outgoingRequests.length > 0 && (
+                <div className="space-y-2">
+                  <h3 className="text-xs text-fab-muted uppercase tracking-wider font-medium">Sent</h3>
+                  {outgoingRequests.map((friendship) => {
+                    const other = getOtherUser(friendship, user!.uid);
+                    return (
+                      <div
+                        key={friendship.id}
+                        className="flex items-center gap-3 bg-fab-surface border border-fab-border rounded-lg p-3"
                       >
-                        Accept
-                      </button>
-                      <button
-                        onClick={() => declineRequest(friendship.id)}
-                        className="px-3 py-1.5 rounded-md text-xs font-semibold bg-fab-surface border border-fab-border text-fab-muted hover:text-fab-text hover:border-fab-muted transition-colors"
-                      >
-                        Decline
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
+                        <Link
+                          href={`/player/${other.username}`}
+                          className="flex items-center gap-3 flex-1 min-w-0 hover:opacity-80 transition-opacity"
+                        >
+                          {other.photoUrl ? (
+                            <img src={other.photoUrl} alt="" className="w-10 h-10 rounded-full" />
+                          ) : (
+                            <div className="w-10 h-10 rounded-full bg-fab-gold/20 flex items-center justify-center text-fab-gold font-bold">
+                              {other.displayName.charAt(0).toUpperCase()}
+                            </div>
+                          )}
+                          <div className="min-w-0">
+                            <div className="font-medium text-fab-text truncate">{other.displayName}</div>
+                            <div className="text-xs text-fab-dim">@{other.username}</div>
+                            <div className="text-xs text-fab-dim">{timeAgo(friendship.createdAt)}</div>
+                          </div>
+                        </Link>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span className="text-xs text-fab-dim flex items-center gap-1">
+                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            Pending
+                          </span>
+                          <button
+                            onClick={() => declineRequest(friendship.id)}
+                            className="p-1.5 rounded text-fab-dim hover:text-fab-loss transition-colors"
+                            title="Cancel request"
+                          >
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
         </>
