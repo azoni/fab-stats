@@ -280,100 +280,42 @@ export default function PlayerProfile() {
     );
   }
 
+  const topHero = useMemo(() => {
+    const known = heroStats.filter((h) => h.heroName !== "Unknown");
+    return known.length > 0 ? known[0] : null;
+  }, [heroStats]);
+
   return (
     <div className="space-y-8">
-      {/* Profile Header + Streak */}
-      <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-        <div className="flex flex-col gap-3">
+      {/* Hero Card */}
+      <div className="bg-fab-surface border border-fab-border rounded-lg p-5">
+        {/* Profile row */}
+        <div className="flex items-center gap-4 mb-4">
           <ProfileHeader profile={profile} achievements={achievements} bestRank={bestRank} isAdmin={isAdmin} isOwner={isOwner} isFavorited={!isOwner && !!currentUser && !isGuest && isFavorited(profile.uid)} onToggleFavorite={!isOwner && !!currentUser && !isGuest ? () => toggleFavorite(profile) : undefined} />
-          {/* Filters */}
-          <div className="flex gap-2 flex-wrap items-center">
-            <select
-              value={filterFormat}
-              onChange={(e) => setFilterFormat(e.target.value)}
-              className="bg-fab-surface border border-fab-border text-fab-text text-xs rounded-lg px-2 py-1 focus:outline-none focus:border-fab-gold"
-            >
-              <option value="all">All Formats</option>
-              {allFormats.map((f) => (
-                <option key={f} value={f}>{f}</option>
-              ))}
-            </select>
-            <select
-              value={filterRated}
-              onChange={(e) => setFilterRated(e.target.value)}
-              className="bg-fab-surface border border-fab-border text-fab-text text-xs rounded-lg px-2 py-1 focus:outline-none focus:border-fab-gold"
-              title="Filter by rated status or event type"
-            >
-              <option value="all">All</option>
-              <option value="rated">Rated Only</option>
-              <option value="unrated">Unrated Only</option>
-              {allEventTypes.map((t) => (
-                <option key={t} value={t}>{t}</option>
-              ))}
-            </select>
-            {allHeroes.length > 1 && (
-              <select
-                value={filterHero}
-                onChange={(e) => setFilterHero(e.target.value)}
-                className="bg-fab-surface border border-fab-border text-fab-text text-xs rounded-lg px-2 py-1 focus:outline-none focus:border-fab-gold"
-              >
-                <option value="all">All Heroes</option>
-                {allHeroes.map((h) => (
-                  <option key={h} value={h}>{h}</option>
-                ))}
-              </select>
-            )}
-            {isAdmin && (
-              <button
-                onClick={() => setShowRawData(true)}
-                className="text-xs px-2 py-1 rounded bg-fab-surface border border-fab-border text-fab-dim hover:text-fab-text transition-colors"
-              >
-                Raw Data
-              </button>
-            )}
-            {isFiltered && (
-              <span className="text-xs text-fab-dim">
-                Showing {fm.length} of {matches.length} matches
+          {/* Streak mini */}
+          <div className="shrink-0 ml-auto text-right">
+            <div className="flex items-baseline gap-1 justify-end">
+              <span className={`text-2xl font-black ${
+                streaks.currentStreak?.type === MatchResult.Win
+                  ? "text-fab-win"
+                  : streaks.currentStreak?.type === MatchResult.Loss
+                    ? "text-fab-loss"
+                    : "text-fab-dim"
+              }`}>
+                {streaks.currentStreak ? streaks.currentStreak.count : 0}
               </span>
-            )}
-          </div>
-        </div>
-        <div className="shrink-0">
-          {/* Compact Streak */}
-          <div className={`rounded-lg px-4 py-3 border min-w-[200px] ${
-            streaks.currentStreak?.type === MatchResult.Win
-              ? "bg-fab-win/8 border-fab-win/30"
-              : streaks.currentStreak?.type === MatchResult.Loss
-                ? "bg-fab-loss/8 border-fab-loss/30"
-                : "bg-fab-surface border-fab-border"
-          }`}>
-            <div className="flex items-center gap-3">
-              <div>
-                <p className="text-[10px] text-fab-muted uppercase tracking-wider">Streak</p>
-                <div className="flex items-baseline gap-1">
-                  <span className={`text-2xl font-black ${
-                    streaks.currentStreak?.type === MatchResult.Win
-                      ? "text-fab-win"
-                      : streaks.currentStreak?.type === MatchResult.Loss
-                        ? "text-fab-loss"
-                        : "text-fab-dim"
-                  }`}>
-                    {streaks.currentStreak ? streaks.currentStreak.count : 0}
-                  </span>
-                  <span className={`text-sm font-bold ${
-                    streaks.currentStreak?.type === MatchResult.Win
-                      ? "text-fab-win"
-                      : streaks.currentStreak?.type === MatchResult.Loss
-                        ? "text-fab-loss"
-                        : "text-fab-dim"
-                  }`}>
-                    {streaks.currentStreak
-                      ? streaks.currentStreak.type === MatchResult.Win ? "W" : "L"
-                      : "\u2014"}
-                  </span>
-                </div>
-              </div>
-              <div className="flex gap-3 text-center">
+              <span className={`text-sm font-bold ${
+                streaks.currentStreak?.type === MatchResult.Win
+                  ? "text-fab-win"
+                  : streaks.currentStreak?.type === MatchResult.Loss
+                    ? "text-fab-loss"
+                    : "text-fab-dim"
+              }`}>
+                {streaks.currentStreak
+                  ? streaks.currentStreak.type === MatchResult.Win ? "W" : "L"
+                  : "\u2014"}
+              </span>
+              <div className="flex gap-2 text-center ml-2">
                 <div>
                   <p className="text-sm font-bold text-fab-win">{streaks.longestWinStreak}</p>
                   <p className="text-[10px] text-fab-dim">Best</p>
@@ -384,12 +326,13 @@ export default function PlayerProfile() {
                 </div>
               </div>
             </div>
-            <div className="mt-2 flex gap-0.5 flex-wrap max-w-[200px]">
+            <p className="text-[10px] text-fab-dim">streak</p>
+            <div className="mt-1 flex gap-0.5 flex-wrap justify-end max-w-[200px] ml-auto">
               {last30.map((m, i) => (
                 <div
                   key={i}
                   className={`w-2 h-2 rounded-full ${
-                    m.result === MatchResult.Win ? "bg-fab-win" : m.result === MatchResult.Loss ? "bg-fab-loss" : "bg-fab-draw"
+                    m.result === MatchResult.Win ? "bg-fab-win" : m.result === MatchResult.Loss ? "bg-fab-loss" : m.result === MatchResult.Bye ? "bg-fab-muted" : "bg-fab-draw"
                   }`}
                   title={`${localDate(m.date).toLocaleDateString()} - ${m.result}`}
                 />
@@ -397,6 +340,105 @@ export default function PlayerProfile() {
             </div>
           </div>
         </div>
+
+        {/* Quick stats row */}
+        <div className={`grid grid-cols-3 ${bestFinish ? "sm:grid-cols-6" : "sm:grid-cols-5"} gap-3`}>
+          <div>
+            <p className="text-[10px] text-fab-dim uppercase tracking-wider">Win Rate</p>
+            <p className={`text-lg font-bold ${overall.overallWinRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>
+              {overall.overallWinRate.toFixed(1)}%
+            </p>
+          </div>
+          <div>
+            <p className="text-[10px] text-fab-dim uppercase tracking-wider">Matches</p>
+            <p className="text-lg font-bold text-fab-text">{overall.totalMatches}</p>
+          </div>
+          <div>
+            <p className="text-[10px] text-fab-dim uppercase tracking-wider">Record</p>
+            <p className="text-lg font-bold text-fab-text">
+              {overall.totalWins}W-{overall.totalLosses}L{overall.totalDraws > 0 ? `-${overall.totalDraws}D` : ""}
+            </p>
+          </div>
+          <div>
+            <p className="text-[10px] text-fab-dim uppercase tracking-wider">Events</p>
+            <p className="text-lg font-bold text-fab-text">{eventStats.length}</p>
+          </div>
+          <div>
+            <p className="text-[10px] text-fab-dim uppercase tracking-wider">Top Hero</p>
+            <p className="text-lg font-bold text-fab-text truncate">{topHero?.heroName || "\u2014"}</p>
+          </div>
+          {bestFinish && (
+            <div className="relative">
+              <p className="text-[10px] text-fab-dim uppercase tracking-wider">Best Finish</p>
+              <p className="text-lg font-bold text-fab-gold truncate">{bestFinish.label}</p>
+              <p className="text-[10px] text-fab-dim truncate">{bestFinish.eventName}</p>
+              {isOwner && (
+                <button
+                  onClick={() => setBestFinishShareOpen(true)}
+                  className="absolute top-0 right-0 flex items-center gap-1 px-1.5 py-0.5 rounded-md text-fab-dim hover:text-fab-gold hover:bg-fab-gold/10 transition-colors"
+                  title="Share best finish"
+                >
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 8.25H7.5a2.25 2.25 0 00-2.25 2.25v9a2.25 2.25 0 002.25 2.25h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25H15m0-3l-3-3m0 0l-3 3m3-3v11.25" />
+                  </svg>
+                  <span className="text-[9px] font-semibold">Share</span>
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Filters */}
+      <div className="flex gap-2 flex-wrap items-center">
+        <select
+          value={filterFormat}
+          onChange={(e) => setFilterFormat(e.target.value)}
+          className="bg-fab-surface border border-fab-border text-fab-text text-xs rounded-lg px-2 py-1 focus:outline-none focus:border-fab-gold"
+        >
+          <option value="all">All Formats</option>
+          {allFormats.map((f) => (
+            <option key={f} value={f}>{f}</option>
+          ))}
+        </select>
+        <select
+          value={filterRated}
+          onChange={(e) => setFilterRated(e.target.value)}
+          className="bg-fab-surface border border-fab-border text-fab-text text-xs rounded-lg px-2 py-1 focus:outline-none focus:border-fab-gold"
+          title="Filter by rated status or event type"
+        >
+          <option value="all">All</option>
+          <option value="rated">Rated Only</option>
+          <option value="unrated">Unrated Only</option>
+          {allEventTypes.map((t) => (
+            <option key={t} value={t}>{t}</option>
+          ))}
+        </select>
+        {allHeroes.length > 1 && (
+          <select
+            value={filterHero}
+            onChange={(e) => setFilterHero(e.target.value)}
+            className="bg-fab-surface border border-fab-border text-fab-text text-xs rounded-lg px-2 py-1 focus:outline-none focus:border-fab-gold"
+          >
+            <option value="all">All Heroes</option>
+            {allHeroes.map((h) => (
+              <option key={h} value={h}>{h}</option>
+            ))}
+          </select>
+        )}
+        {isAdmin && (
+          <button
+            onClick={() => setShowRawData(true)}
+            className="text-xs px-2 py-1 rounded bg-fab-surface border border-fab-border text-fab-dim hover:text-fab-text transition-colors"
+          >
+            Raw Data
+          </button>
+        )}
+        {isFiltered && (
+          <span className="text-xs text-fab-dim">
+            Showing {fm.length} of {matches.length} matches
+          </span>
+        )}
       </div>
 
       {/* Trophy Case — full width */}
@@ -439,46 +481,6 @@ export default function PlayerProfile() {
       <>
       {/* Leaderboard Rankings */}
       <LeaderboardCrowns ranks={userRanks} />
-
-      {/* Quick Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <StatCard
-          label="Total Matches"
-          value={overall.totalMatches}
-          subtext={`${overall.overallWinRate.toFixed(1)}% Win Rate`}
-          subtextColor={overall.overallWinRate >= 50 ? "text-fab-win" : "text-fab-loss"}
-        />
-        <StatCard label="Record" value={`${overall.totalWins}W - ${overall.totalLosses}L${overall.totalDraws > 0 ? ` - ${overall.totalDraws}D` : ""}`} />
-        <StatCard label="Events" value={eventStats.length} />
-        {bestFinish ? (
-          <div className="relative">
-            <StatCard
-              label="Best Finish"
-              value={bestFinish.label}
-              subtext={bestFinish.eventName}
-              color="text-fab-gold"
-            />
-            {isOwner && (
-              <button
-                onClick={() => setBestFinishShareOpen(true)}
-                className="absolute top-2 right-2 flex items-center gap-1 px-2 py-1 rounded-md text-fab-dim hover:text-fab-gold hover:bg-fab-gold/10 transition-colors"
-                title="Share best finish"
-              >
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 8.25H7.5a2.25 2.25 0 00-2.25 2.25v9a2.25 2.25 0 002.25 2.25h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25H15m0-3l-3-3m0 0l-3 3m3-3v11.25" />
-                </svg>
-                <span className="text-[10px] font-semibold">Share</span>
-              </button>
-            )}
-          </div>
-        ) : profile.earnings ? (
-          <StatCard
-            label="Earnings"
-            value={`$${profile.earnings.toLocaleString()}`}
-            color="text-fab-gold"
-          />
-        ) : null}
-      </div>
 
       {/* Playoff Finishes */}
       {playoffFinishes.length > 0 && <PlayoffFinishes finishes={playoffFinishes} />}
@@ -695,7 +697,7 @@ function ProfileHeader({ profile, achievements, bestRank, isAdmin, isOwner, isFa
   const ringClass = bestRank === 1 ? "rank-border-grandmaster" : bestRank === 2 ? "rank-border-diamond" : bestRank === 3 ? "rank-border-gold" : bestRank === 4 ? "rank-border-silver" : bestRank === 5 ? "rank-border-bronze" : "";
   const isCreator = profile.username === "azoni";
   return (
-    <div className="flex items-center gap-4">
+    <div className="flex items-center gap-4 flex-1 min-w-0">
       <div className="relative shrink-0">
         {isCreator && (
           <svg className="absolute -top-4 left-1/2 -translate-x-1/2 w-7 h-7 text-fab-gold drop-shadow-[0_0_6px_rgba(201,168,76,0.6)] z-10" viewBox="0 0 24 24" fill="currentColor">
@@ -928,16 +930,6 @@ function PlayoffFinishes({ finishes }: { finishes: PlayoffFinish[] }) {
           </tbody>
         </table>
       </div>
-    </div>
-  );
-}
-
-function StatCard({ label, value, color = "text-fab-text", subtext, subtextColor }: { label: string; value: string | number; color?: string; subtext?: string; subtextColor?: string }) {
-  return (
-    <div className="bg-fab-surface border border-fab-border rounded-lg p-4">
-      <p className="text-xs text-fab-muted mb-1">{label}</p>
-      <p className={`text-2xl font-bold ${color}`}>{value}</p>
-      {subtext && <p className={`text-[10px] mt-0.5 truncate ${subtextColor || "text-fab-dim"}`}>{subtext}</p>}
     </div>
   );
 }

@@ -253,7 +253,7 @@ export default function Dashboard() {
           )}
 
           {/* Quick stats row */}
-          <div className={`grid grid-cols-2 ${bestFinish ? "sm:grid-cols-5" : "sm:grid-cols-4"} gap-3 mb-4`}>
+          <div className={`grid grid-cols-3 ${bestFinish ? "sm:grid-cols-6" : "sm:grid-cols-5"} gap-3 mb-4`}>
             <div>
               <p className="text-[10px] text-fab-dim uppercase tracking-wider">Win Rate</p>
               <p className={`text-lg font-bold ${overall.overallWinRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>
@@ -269,6 +269,10 @@ export default function Dashboard() {
               <p className="text-lg font-bold text-fab-text">
                 {overall.totalWins}W-{overall.totalLosses}L{overall.totalDraws > 0 ? `-${overall.totalDraws}D` : ""}
               </p>
+            </div>
+            <div>
+              <p className="text-[10px] text-fab-dim uppercase tracking-wider">Events</p>
+              <p className="text-lg font-bold text-fab-text">{eventStats.length}</p>
             </div>
             <div>
               <p className="text-[10px] text-fab-dim uppercase tracking-wider">Top Hero</p>
