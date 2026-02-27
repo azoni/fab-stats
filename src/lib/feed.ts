@@ -1,12 +1,11 @@
 import {
   collection,
   addDoc,
-  onSnapshot,
+  getDocs,
   query,
   orderBy,
   limit,
   where,
-  type Unsubscribe,
 } from "firebase/firestore";
 import { db } from "./firebase";
 import type { FeedEvent, UserProfile, ImportSource } from "@/types";
@@ -44,25 +43,37 @@ export async function createImportFeedEvent(
   if (topHeroes.length > 0) clean.topHeroes = topHeroes.slice(0, 3);
 
   await addDoc(feedCollection(), clean);
+  invalidateFeedCache();
 }
 
-export function subscribeFeed(
-  callback: (events: FeedEvent[]) => void,
-  limitCount = 50
-): Unsubscribe {
-  const q = query(feedCollection(), where("isPublic", "==", true), orderBy("createdAt", "desc"), limit(limitCount));
-  return onSnapshot(
-    q,
-    (snapshot) => {
-      const events = snapshot.docs.map((d) => ({
-        id: d.id,
-        ...d.data(),
-      })) as FeedEvent[];
-      callback(events);
-    },
-    (error) => {
-      console.error("Feed subscription error:", error);
-      callback([]);
-    }
-  );
+// ── Cached one-time fetch (replaces real-time onSnapshot subscription) ──
+
+let cachedFeed: FeedEvent[] | null = null;
+let feedCacheTimestamp = 0;
+const FEED_CACHE_TTL = 3 * 60_000; // 3 minutes
+
+export async function getFeedEvents(limitCount = 50): Promise<FeedEvent[]> {
+  const now = Date.now();
+  if (cachedFeed && now - feedCacheTimestamp < FEED_CACHE_TTL) {
+    return cachedFeed;
+  }
+
+  try {
+    const q = query(feedCollection(), where("isPublic", "==", true), orderBy("createdAt", "desc"), limit(limitCount));
+    const snapshot = await getDocs(q);
+    cachedFeed = snapshot.docs.map((d) => ({
+      id: d.id,
+      ...d.data(),
+    })) as FeedEvent[];
+    feedCacheTimestamp = now;
+    return cachedFeed;
+  } catch (error) {
+    console.error("Feed fetch error:", error);
+    return cachedFeed || [];
+  }
+}
+
+export function invalidateFeedCache() {
+  cachedFeed = null;
+  feedCacheTimestamp = 0;
 }

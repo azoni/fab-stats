@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { subscribeFeed } from "@/lib/feed";
+import { getFeedEvents } from "@/lib/feed";
 import type { FeedEvent } from "@/types";
 
 export function useFeed() {
@@ -8,12 +8,10 @@ export function useFeed() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = subscribeFeed((data) => {
+    getFeedEvents().then((data) => {
       setEvents(data);
       setLoading(false);
     });
-
-    return unsubscribe;
   }, []);
 
   return { events, loading };

@@ -109,7 +109,7 @@ export async function updateLeaderboardEntry(
   }
   const heroBreakdownDetailed = [...heroDetailedData.entries()]
     .sort((a, b) => b[1].matches - a[1].matches)
-    .slice(0, 30)
+    .slice(0, 15)
     .map(([key, data]) => {
       const [hero, format, eventType] = key.split("|");
       return {
