@@ -1,6 +1,7 @@
 "use client";
 import { useMemo, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useMatches } from "@/hooks/useMatches";
 import { useAuth } from "@/contexts/AuthContext";
 import { computeOverallStats, computeHeroStats, computeEventStats, computeOpponentStats, computeBestFinish, computePlayoffFinishes } from "@/lib/stats";
@@ -30,6 +31,7 @@ export default function Dashboard() {
   const { events: feedEvents } = useFeed();
   const [shareCopied, setShareCopied] = useState(false);
   const [bestFinishShareOpen, setBestFinishShareOpen] = useState(false);
+  const router = useRouter();
 
   const leaderboardUpdated = useRef(false);
 
@@ -237,7 +239,7 @@ export default function Dashboard() {
               {profile?.username && (
                 <p className="text-sm text-fab-dim mb-1">@{profile.username}</p>
               )}
-              {achievements.length > 0 && <AchievementBadges earned={achievements} max={4} />}
+              {achievements.length > 0 && <AchievementBadges earned={achievements} max={4} onShowMore={profile?.username ? () => router.push(`/player/${profile.username}#achievements`) : undefined} />}
             </div>
             {/* Streak mini */}
             <div className="shrink-0 ml-auto text-right">

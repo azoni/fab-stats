@@ -59,6 +59,14 @@ export default function PlayerProfile() {
   const [bestFinishShareOpen, setBestFinishShareOpen] = useState(false);
   const [achievementsExpanded, setAchievementsExpanded] = useState(false);
 
+  // Auto-expand achievements if navigated with #achievements hash
+  useEffect(() => {
+    if (window.location.hash === "#achievements") {
+      setAchievementsExpanded(true);
+      setTimeout(() => document.getElementById("achievements")?.scrollIntoView({ behavior: "smooth", block: "start" }), 300);
+    }
+  }, []);
+
   // Build set of opponent display names that have opted in to being visible
   const visibleOpponents = useMemo(() => {
     const names = new Set<string>();
