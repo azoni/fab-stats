@@ -189,6 +189,24 @@ const icons: Record<string, ReactNode> = {
       <path d="M12 6l1.85 3.76 4.15.6-3 2.93.71 4.14L12 15.4l-3.71 2.03.71-4.14-3-2.93 4.15-.6z" fill="currentColor" fillOpacity="0.2" />
     </svg>
   ),
+  infinity: (
+    <svg className={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 12c-2-2.67-4-4-6-4a4 4 0 100 8c2 0 4-1.33 6-4zm0 0c2 2.67 4 4 6 4a4 4 0 000-8c-2 0-4 1.33-6 4z" fill="currentColor" fillOpacity="0.15" />
+    </svg>
+  ),
+  horn: (
+    <svg className={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 17V7l10 3v4L3 17z" fill="currentColor" fillOpacity="0.15" />
+      <path d="M13 10l5-2a2 2 0 012 2v4a2 2 0 01-2 2l-5-2" />
+      <circle cx="3" cy="12" r="2" fill="currentColor" fillOpacity="0.2" />
+    </svg>
+  ),
+  flag: (
+    <svg className={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" fill="currentColor" fillOpacity="0.15" />
+      <line x1="4" y1="22" x2="4" y2="15" />
+    </svg>
+  ),
   // Section header icons
   "section-achievements": (
     <svg className={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">

@@ -1,26 +1,99 @@
 "use client";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import type { Achievement } from "@/types";
 import { rarityColors, getAllAchievements } from "@/lib/achievements";
 import { AchievementIcon } from "./AchievementIcons";
 
+interface GroupedAchievement {
+  /** The achievement to display (highest earned tier, or next target if none earned) */
+  display: Achievement;
+  /** All tiers in this group */
+  tiers: Achievement[];
+  /** Number of tiers earned */
+  earnedCount: number;
+  /** Total tiers in group */
+  totalCount: number;
+  /** Whether the displayed tier is earned */
+  isEarned: boolean;
+}
+
+function groupAchievements(all: Achievement[], earnedIds: Set<string>): GroupedAchievement[] {
+  const groups = new Map<string, Achievement[]>();
+  const ungrouped: Achievement[] = [];
+
+  for (const a of all) {
+    if (a.group) {
+      const list = groups.get(a.group) || [];
+      list.push(a);
+      groups.set(a.group, list);
+    } else {
+      ungrouped.push(a);
+    }
+  }
+
+  const result: GroupedAchievement[] = [];
+
+  for (const [, tiers] of groups) {
+    // Sort by tier
+    tiers.sort((a, b) => (a.tier ?? 0) - (b.tier ?? 0));
+    const earned = tiers.filter((t) => earnedIds.has(t.id));
+    const earnedCount = earned.length;
+
+    // Show highest earned tier, or the first unearneed tier as next target
+    let display: Achievement;
+    if (earnedCount > 0) {
+      display = earned[earned.length - 1]; // highest earned
+    } else {
+      display = tiers[0]; // first tier as target
+    }
+
+    result.push({
+      display,
+      tiers,
+      earnedCount,
+      totalCount: tiers.length,
+      isEarned: earnedCount > 0,
+    });
+  }
+
+  // Add ungrouped as single-item groups
+  for (const a of ungrouped) {
+    result.push({
+      display: a,
+      tiers: [a],
+      earnedCount: earnedIds.has(a.id) ? 1 : 0,
+      totalCount: 1,
+      isEarned: earnedIds.has(a.id),
+    });
+  }
+
+  return result;
+}
+
 export function AchievementShowcase({ earned, progress }: { earned: Achievement[]; progress?: Record<string, { current: number; target: number }> }) {
   const [expanded, setExpanded] = useState(false);
   const [showAll, setShowAll] = useState(true);
-
-  if (earned.length === 0) return null;
+  const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
 
   const all = getAllAchievements();
-  const earnedIds = new Set(earned.map((a) => a.id));
-  const displayed = showAll ? all : earned;
+  const earnedIds = useMemo(() => new Set(earned.map((a) => a.id)), [earned]);
+  const totalEarned = earned.length;
 
-  const sorted = [...displayed].sort((a, b) => {
-    const aEarned = earnedIds.has(a.id) ? 1 : 0;
-    const bEarned = earnedIds.has(b.id) ? 1 : 0;
-    if (aEarned !== bEarned) return bEarned - aEarned;
+  const grouped = useMemo(() => groupAchievements(all, earnedIds), [all, earnedIds]);
+
+  // Filter: show all or only groups with at least one earned
+  const displayed = showAll ? grouped : grouped.filter((g) => g.isEarned);
+
+  // Sort: earned first (by highest rarity), then unearned
+  const sorted = useMemo(() => {
     const rarityOrder = { legendary: 5, epic: 4, rare: 3, uncommon: 2, common: 1 };
-    return rarityOrder[b.rarity] - rarityOrder[a.rarity];
-  });
+    return [...displayed].sort((a, b) => {
+      if (a.isEarned !== b.isEarned) return a.isEarned ? -1 : 1;
+      return rarityOrder[b.display.rarity] - rarityOrder[a.display.rarity];
+    });
+  }, [displayed]);
+
+  if (totalEarned === 0) return null;
 
   return (
     <div>
@@ -32,7 +105,7 @@ export function AchievementShowcase({ earned, progress }: { earned: Achievement[
           <AchievementIcon icon="section-achievements" className="w-5 h-5 text-fab-gold" />
           Achievements
           <span className="text-sm font-normal text-fab-dim">
-            {earned.length}/{all.length}
+            {totalEarned}/{all.length}
           </span>
         </h2>
         <svg
@@ -53,53 +126,114 @@ export function AchievementShowcase({ earned, progress }: { earned: Achievement[
             </button>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-            {sorted.map((a) => {
-              const isEarned = earnedIds.has(a.id);
+            {sorted.map((g) => {
+              const a = g.display;
               const colors = rarityColors[a.rarity];
+              const isGrouped = g.totalCount > 1;
+              const isExpGroup = expandedGroup === (a.group ?? a.id);
+
               return (
-                <div
-                  key={a.id}
-                  className={`relative rounded-lg border p-3 transition-colors ${
-                    isEarned
-                      ? `${colors.bg} ${colors.border}`
-                      : "bg-fab-surface/30 border-fab-border/50"
-                  }`}
-                  title={`${a.name}: ${a.description}${!isEarned ? " (Locked)" : ""}`}
-                >
-                  <div className="flex items-center gap-1.5 mb-1">
-                    <AchievementIcon
-                      icon={a.icon}
-                      className={`w-6 h-6 ${isEarned ? colors.text : "text-fab-dim/50"}`}
-                    />
-                    {!isEarned && (
-                      <svg className="w-3.5 h-3.5 text-fab-dim/40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
-                      </svg>
+                <div key={a.group ?? a.id}>
+                  <div
+                    className={`relative rounded-lg border p-3 transition-colors ${
+                      g.isEarned
+                        ? `${colors.bg} ${colors.border}`
+                        : "bg-fab-surface/30 border-fab-border/50"
+                    } ${isGrouped ? "cursor-pointer" : ""}`}
+                    title={`${a.name}: ${a.description}${!g.isEarned ? " (Locked)" : ""}`}
+                    onClick={isGrouped ? () => setExpandedGroup(isExpGroup ? null : (a.group ?? a.id)) : undefined}
+                  >
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <AchievementIcon
+                        icon={a.icon}
+                        className={`w-6 h-6 ${g.isEarned ? colors.text : "text-fab-dim/50"}`}
+                      />
+                      {!g.isEarned && (
+                        <svg className="w-3.5 h-3.5 text-fab-dim/40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+                        </svg>
+                      )}
+                    </div>
+                    <p className={`text-xs font-semibold truncate ${g.isEarned ? colors.text : "text-fab-dim/60"}`}>
+                      {a.name}
+                    </p>
+                    <p className={`text-[10px] truncate ${g.isEarned ? "text-fab-dim" : "text-fab-dim/40"}`}>{a.description}</p>
+
+                    {/* Progress bar for unearned */}
+                    {!g.isEarned && progress?.[a.id] && (() => {
+                      const p = progress[a.id];
+                      const pct = Math.min(100, Math.round((p.current / p.target) * 100));
+                      return (
+                        <div className="mt-1.5">
+                          <div className="h-1 rounded-full bg-fab-border/50 overflow-hidden">
+                            <div
+                              className="h-full rounded-full bg-fab-dim/60 transition-all"
+                              style={{ width: `${pct}%` }}
+                            />
+                          </div>
+                          <p className="text-[9px] text-fab-dim/50 mt-0.5">{p.current}/{p.target}</p>
+                        </div>
+                      );
+                    })()}
+
+                    {/* Tier indicator for grouped */}
+                    {isGrouped && (
+                      <div className="flex items-center gap-0.5 mt-1.5">
+                        {g.tiers.map((t, i) => (
+                          <div
+                            key={t.id}
+                            className={`w-1.5 h-1.5 rounded-full ${
+                              earnedIds.has(t.id)
+                                ? `bg-current ${rarityColors[t.rarity].text}`
+                                : "bg-fab-border/50"
+                            }`}
+                            title={`Tier ${i + 1}: ${t.name}`}
+                          />
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Rarity badge */}
+                    {g.isEarned && (
+                      <span className={`absolute top-1.5 right-1.5 text-[8px] font-bold uppercase ${colors.text}`}>
+                        {a.rarity}
+                      </span>
                     )}
                   </div>
-                  <p className={`text-xs font-semibold truncate ${isEarned ? colors.text : "text-fab-dim/60"}`}>
-                    {a.name}
-                  </p>
-                  <p className={`text-[10px] truncate ${isEarned ? "text-fab-dim" : "text-fab-dim/40"}`}>{a.description}</p>
-                  {!isEarned && progress?.[a.id] && (() => {
-                    const p = progress[a.id];
-                    const pct = Math.min(100, Math.round((p.current / p.target) * 100));
-                    return (
-                      <div className="mt-1.5">
-                        <div className="h-1 rounded-full bg-fab-border/50 overflow-hidden">
+
+                  {/* Expanded tier list */}
+                  {isGrouped && isExpGroup && (
+                    <div className="mt-1 space-y-0.5">
+                      {g.tiers.map((t) => {
+                        const tEarned = earnedIds.has(t.id);
+                        const tc = rarityColors[t.rarity];
+                        const tp = progress?.[t.id];
+                        return (
                           <div
-                            className="h-full rounded-full bg-fab-dim/60 transition-all"
-                            style={{ width: `${pct}%` }}
-                          />
-                        </div>
-                        <p className="text-[9px] text-fab-dim/50 mt-0.5">{p.current}/{p.target}</p>
-                      </div>
-                    );
-                  })()}
-                  {isEarned && (
-                    <span className={`absolute top-1.5 right-1.5 text-[8px] font-bold uppercase ${colors.text}`}>
-                      {a.rarity}
-                    </span>
+                            key={t.id}
+                            className={`flex items-center gap-2 px-2 py-1 rounded text-[10px] ${
+                              tEarned
+                                ? `${tc.bg} ${tc.border} border`
+                                : "bg-fab-surface/20 border border-fab-border/30"
+                            }`}
+                          >
+                            <AchievementIcon
+                              icon={t.icon}
+                              className={`w-3.5 h-3.5 shrink-0 ${tEarned ? tc.text : "text-fab-dim/40"}`}
+                            />
+                            <span className={`truncate ${tEarned ? tc.text : "text-fab-dim/50"} font-medium`}>
+                              {t.name}
+                            </span>
+                            <span className={`ml-auto shrink-0 ${tEarned ? "text-fab-dim" : "text-fab-dim/40"}`}>
+                              {t.description}
+                            </span>
+                            {!tEarned && tp && (
+                              <span className="text-fab-dim/40 shrink-0">{tp.current}/{tp.target}</span>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
                   )}
                 </div>
               );

@@ -1086,15 +1086,6 @@ const ACHIEVEMENTS: AchievementDef[] = [
     check: (ctx) => ctx.matches.filter((m) => m.format === GameFormat.Sealed).length >= 5,
     progress: (ctx) => ({ current: ctx.matches.filter((m) => m.format === GameFormat.Sealed).length, target: 5 }),
   },
-  {
-    id: "perfect_event",
-    name: "Flawless",
-    description: "Win 5+ consecutive matches with no losses",
-    category: "streak",
-    icon: "gem",
-    rarity: "epic",
-    check: (ctx) => ctx.overall.streaks.longestWinStreak >= 5,
-  },
 ];
 
 /** Evaluate which achievements a player has earned */
