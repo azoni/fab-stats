@@ -9,9 +9,9 @@ import { HeroClassIcon } from "@/components/heroes/HeroClassIcon";
 import { CARD_THEMES, type CardTheme } from "@/components/opponents/RivalryCard";
 import { CompareCard } from "@/components/compare/CompareCard";
 import { toBlob } from "html-to-image";
-import { getMatchesByUserId } from "@/lib/firestore-storage";
-import { computeOpponentStats, normalizeOpponentName } from "@/lib/stats";
-import type { LeaderboardEntry } from "@/types";
+import { getMatchesByUserId, getProfile } from "@/lib/firestore-storage";
+import { normalizeOpponentName } from "@/lib/stats";
+import { MatchResult, type LeaderboardEntry, type MatchRecord } from "@/types";
 
 export default function ComparePage() {
   const searchParams = useSearchParams();
@@ -249,21 +249,76 @@ function ComparisonView({ p1, p2 }: { p1: LeaderboardEntry; p2: LeaderboardEntry
 
     (async () => {
       try {
-        const matches = await getMatchesByUserId(p1.userId);
+        // Fetch both players' matches + profiles in parallel
+        const [p1Matches, p2Matches, p1Profile, p2Profile] = await Promise.all([
+          getMatchesByUserId(p1.userId).catch(() => [] as MatchRecord[]),
+          getMatchesByUserId(p2.userId).catch(() => [] as MatchRecord[]),
+          getProfile(p1.userId).catch(() => null),
+          getProfile(p2.userId).catch(() => null),
+        ]);
         if (cancelled) return;
-        const oppStats = computeOpponentStats(matches);
-        // Match by normalized name (handles "Last, First" ↔ "First Last" etc.)
-        const p2Norm = normalizeOpponentName(p2.displayName);
-        const vs = oppStats.find((o) => normalizeOpponentName(o.opponentName) === p2Norm);
-        if (vs) {
-          setH2h({ p1Wins: vs.wins, p2Wins: vs.losses, draws: vs.draws, total: vs.totalMatches });
+
+        // Strategy 1: GEM ID matching (most reliable — matches by unique player ID)
+        const p1GemId = p1Profile?.gemId;
+        const p2GemId = p2Profile?.gemId;
+
+        let p1VsP2: MatchRecord[] = [];
+        let p2VsP1: MatchRecord[] = [];
+
+        if (p2GemId) {
+          p1VsP2 = p1Matches.filter((m) => m.opponentGemId === p2GemId);
         }
-      } catch { /* profile might not be public */ }
+        if (p1GemId) {
+          p2VsP1 = p2Matches.filter((m) => m.opponentGemId === p1GemId);
+        }
+
+        // Strategy 2: Name matching fallback (display name + username)
+        if (p1VsP2.length === 0 && p2VsP1.length === 0) {
+          const p2Names = new Set([
+            normalizeOpponentName(p2.displayName),
+            p2.username.toLowerCase(),
+          ]);
+          const p1Names = new Set([
+            normalizeOpponentName(p1.displayName),
+            p1.username.toLowerCase(),
+          ]);
+
+          p1VsP2 = p1Matches.filter((m) => {
+            if (!m.opponentName) return false;
+            return p2Names.has(normalizeOpponentName(m.opponentName));
+          });
+          p2VsP1 = p2Matches.filter((m) => {
+            if (!m.opponentName) return false;
+            return p1Names.has(normalizeOpponentName(m.opponentName));
+          });
+        }
+
+        // Use whichever direction found more matches (more complete data)
+        let p1Wins = 0, p2Wins = 0, draws = 0;
+        if (p1VsP2.length >= p2VsP1.length) {
+          for (const m of p1VsP2) {
+            if (m.result === MatchResult.Win) p1Wins++;
+            else if (m.result === MatchResult.Loss) p2Wins++;
+            else if (m.result === MatchResult.Draw) draws++;
+          }
+        } else {
+          for (const m of p2VsP1) {
+            if (m.result === MatchResult.Win) p2Wins++;
+            else if (m.result === MatchResult.Loss) p1Wins++;
+            else if (m.result === MatchResult.Draw) draws++;
+          }
+        }
+
+        const total = p1Wins + p2Wins + draws;
+        if (total > 0) {
+          setH2h({ p1Wins, p2Wins, draws, total });
+        }
+      } catch { /* profiles might not be public */ }
       if (!cancelled) setH2hLoading(false);
     })();
 
     return () => { cancelled = true; };
-  }, [p1.userId, p2.displayName]);
+  }, [p1.userId, p1.displayName, p1.username, p2.userId, p2.displayName, p2.username]);
 
   type StatRow = { label: string; v1: string | number; v2: string | number; better: 1 | 2 | 0; raw1?: number; raw2?: number; weight: number };
   const stats: StatRow[] = useMemo(() => {
@@ -352,7 +407,7 @@ function ComparisonView({ p1, p2 }: { p1: LeaderboardEntry; p2: LeaderboardEntry
         v2: `${h2h.p2Wins}W-${h2h.p1Wins}L${h2h.draws > 0 ? `-${h2h.draws}D` : ""}`,
         better: h2h.p1Wins > h2h.p2Wins ? 1 : h2h.p2Wins > h2h.p1Wins ? 2 : 0,
         raw1: h2h.p1Wins, raw2: h2h.p2Wins,
-        weight: 2,
+        weight: 4,
       });
     } else {
       rows.push({ label: "H2H Record", v1: "No matches", v2: "No matches", better: 0, weight: 0 });
