@@ -484,6 +484,27 @@ export default function PlayerProfile() {
       {/* Playoff Finishes */}
       {playoffFinishes.length > 0 && <PlayoffFinishes finishes={playoffFinishes} />}
 
+      {/* Best finish share modal */}
+      {bestFinishShareOpen && bestFinish && (
+        <BestFinishShareModal
+          playerName={profile.displayName}
+          bestFinish={bestFinish}
+          totalMatches={overall.totalMatches}
+          winRate={overall.overallWinRate}
+          topHero={bestFinish.hero}
+          onClose={() => setBestFinishShareOpen(false)}
+        />
+      )}
+
+      {/* Major Event Badges */}
+      <EventBadges badges={eventBadges} />
+
+      {/* Achievements */}
+      <AchievementShowcase earned={achievements} progress={achievementProgress} />
+
+      {/* Hero Mastery */}
+      <HeroMasteryList masteries={masteries} />
+
       {/* Nemesis + Best Friend */}
       {(nemesis || bestFriend) && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -549,27 +570,6 @@ export default function PlayerProfile() {
           onClose={() => setNemesisShareOpen(false)}
         />
       )}
-
-      {/* Best finish share modal */}
-      {bestFinishShareOpen && bestFinish && (
-        <BestFinishShareModal
-          playerName={profile.displayName}
-          bestFinish={bestFinish}
-          totalMatches={overall.totalMatches}
-          winRate={overall.overallWinRate}
-          topHero={bestFinish.hero}
-          onClose={() => setBestFinishShareOpen(false)}
-        />
-      )}
-
-      {/* Major Event Badges */}
-      <EventBadges badges={eventBadges} />
-
-      {/* Achievements */}
-      <AchievementShowcase earned={achievements} progress={achievementProgress} />
-
-      {/* Hero Mastery */}
-      <HeroMasteryList masteries={masteries} />
 
       {/* Recent Events */}
       {recentEvents.length > 0 && (
