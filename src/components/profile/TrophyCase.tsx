@@ -62,7 +62,7 @@ function ShieldBadge({ type, id }: { type: PlayoffFinish["type"]; id: string }) 
   const c = col(type);
   const ch = type === "champion";
   return (
-    <svg viewBox="0 0 40 48" className={ch ? "w-10 h-12" : "w-8 h-[38px]"} style={{ filter: glowFilter(type) }}>
+    <svg viewBox="0 0 40 48" className={ch ? "w-6 h-7" : "w-5 h-6"} style={{ filter: glowFilter(type) }}>
       <defs>
         <linearGradient id={`${id}g`} x1="0.5" y1="0" x2="0.5" y2="1">
           <stop offset="0%" stopColor={c.from} /><stop offset="100%" stopColor={c.to} />
@@ -81,7 +81,7 @@ function MedalIcon({ type, id }: { type: PlayoffFinish["type"]; id: string }) {
   const c = col(type);
   const ch = type === "champion";
   return (
-    <svg viewBox="0 0 48 58" className={ch ? "w-12 h-[58px]" : "w-10 h-[48px]"} style={{ filter: glowFilter(type) }}>
+    <svg viewBox="0 0 48 58" className={ch ? "w-8 h-10" : "w-7 h-[34px]"} style={{ filter: glowFilter(type) }}>
       <defs>
         <linearGradient id={`${id}g`} x1="0.5" y1="0" x2="0.5" y2="1">
           <stop offset="0%" stopColor={c.from} /><stop offset="100%" stopColor={c.to} />
@@ -112,7 +112,7 @@ function TrophyIcon({ type, id }: { type: PlayoffFinish["type"]; id: string }) {
   const c = col(type);
   const ch = type === "champion";
   return (
-    <svg viewBox="0 0 56 64" className={ch ? "w-14 h-16" : "w-11 h-[52px]"} style={{ filter: glowFilter(type) }}>
+    <svg viewBox="0 0 56 64" className={ch ? "w-10 h-12" : "w-[34px] h-10"} style={{ filter: glowFilter(type) }}>
       <defs>
         <linearGradient id={`${id}g`} x1="0.5" y1="0" x2="0.5" y2="1">
           <stop offset="0%" stopColor={c.from} /><stop offset="100%" stopColor={c.to} />

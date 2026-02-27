@@ -4,23 +4,10 @@ import type { EventStats } from "@/types";
 
 /* ── petal palette ─────────────────────────────────────── */
 const COLORS = [
-  "#f9a8d4", // pink-300
-  "#fdba74", // orange-300
-  "#fde047", // yellow-300
-  "#c4b5fd", // violet-300
-  "#93c5fd", // blue-300
-  "#6ee7b7", // emerald-300
-  "#fca5a5", // red-300
-  "#d8b4fe", // purple-300
-  "#fcd34d", // amber-300
-  "#fda4af", // rose-300
-  "#5eead4", // teal-300
-  "#a5b4fc", // indigo-300
-  "#f0abfc", // fuchsia-300
-  "#7dd3fc", // sky-300
+  "#f9a8d4", "#fdba74", "#fde047", "#c4b5fd", "#93c5fd",
+  "#6ee7b7", "#fca5a5", "#d8b4fe", "#fcd34d", "#fda4af",
+  "#5eead4", "#a5b4fc", "#f0abfc", "#7dd3fc",
 ];
-
-/* darker shade for petal outlines / depth */
 const ACCENT = [
   "#ec4899", "#f97316", "#eab308", "#8b5cf6", "#3b82f6",
   "#10b981", "#ef4444", "#a855f7", "#f59e0b", "#f43f5e",
@@ -32,215 +19,226 @@ interface FlowerData {
   color: string;
   accent: string;
   idx: number;
+  /** 0.1–1.0: how far along toward the next full flower */
+  growth: number;
 }
 
 /* ── compute garden data ───────────────────────────────── */
 function buildGarden(eventStats: EventStats[]) {
   const armory = eventStats.filter((e) => e.eventType === "Armory");
-  const flowers: FlowerData[] = [];
-  let perfectRuns = 0;
-  let idx = 0;
+  let attended = 0;
+  let undefeated = 0;
 
   for (const event of armory) {
-    if (event.losses === 0 && event.wins > 0) {
-      // Undefeated armory → sunflower
-      perfectRuns++;
-      flowers.push({
-        type: "crown",
-        color: COLORS[idx % COLORS.length],
-        accent: ACCENT[idx % ACCENT.length],
-        idx: idx++,
-      });
-    } else {
-      // Attended but had losses → small daisy
-      flowers.push({
-        type: "bloom",
-        color: COLORS[idx % COLORS.length],
-        accent: ACCENT[idx % ACCENT.length],
-        idx: idx++,
-      });
-    }
+    attended++;
+    if (event.losses === 0 && event.wins > 0) undefeated++;
   }
 
-  return { flowers, total: flowers.length, perfectRuns };
+  const withLosses = attended - undefeated;
+  const flowers: FlowerData[] = [];
+  let idx = 0;
+
+  // Daisies: one per 10 non-undefeated armories, plus a partial
+  const daisyFull = Math.floor(withLosses / 10);
+  const daisyRem = withLosses % 10;
+  for (let i = 0; i < daisyFull; i++) {
+    flowers.push({ type: "bloom", growth: 1, color: COLORS[idx % COLORS.length], accent: ACCENT[idx % ACCENT.length], idx: idx++ });
+  }
+  if (daisyRem > 0) {
+    flowers.push({ type: "bloom", growth: daisyRem / 10, color: COLORS[idx % COLORS.length], accent: ACCENT[idx % ACCENT.length], idx: idx++ });
+  }
+
+  // Sunflowers: one per 10 undefeated armories, plus a partial
+  const sunFull = Math.floor(undefeated / 10);
+  const sunRem = undefeated % 10;
+  for (let i = 0; i < sunFull; i++) {
+    flowers.push({ type: "crown", growth: 1, color: COLORS[idx % COLORS.length], accent: ACCENT[idx % ACCENT.length], idx: idx++ });
+  }
+  if (sunRem > 0) {
+    flowers.push({ type: "crown", growth: sunRem / 10, color: COLORS[idx % COLORS.length], accent: ACCENT[idx % ACCENT.length], idx: idx++ });
+  }
+
+  return { flowers, attended, undefeated };
 }
 
-/* ── small flower (individual match win) ───────────────── */
-function SmallFlower({ color, accent, idx }: { color: string; accent: string; idx: number }) {
-  const petals = 5 + (idx % 2); // 5 or 6
-  const cx = 10, cy = 10;
-  const orbit = 4.2;
-  const r = 3;
-  const stemH = 13 + (idx % 5) * 1.5;
-  const h = cy + 4 + stemH;
+/* ── daisy ─────────────────────────────────────────────── */
+function Daisy({ color, accent, idx, growth }: { color: string; accent: string; idx: number; growth: number }) {
+  const cx = 9, cy = 9;
+
+  /* Sprout: just a tiny shoot with a leaf curl */
+  if (growth <= 0.3) {
+    const stemH = 4 + growth * 20;
+    const h = 22;
+    const top = h - stemH;
+    return (
+      <svg width="16" height={h} viewBox={`0 0 16 ${h}`} className="garden-flower"
+        style={{ animationDelay: `${(idx % 8) * 0.35}s` }}>
+        <line x1="8" y1={top} x2="8" y2={h} stroke="#4ade80" strokeWidth="1" strokeLinecap="round" />
+        {growth > 0.15 && (
+          <ellipse cx={idx % 2 === 0 ? 10.5 : 5.5} cy={h - stemH * 0.35}
+            rx="2" ry="0.7" fill="#4ade80"
+            transform={`rotate(${idx % 2 === 0 ? -35 : 35} ${idx % 2 === 0 ? 10.5 : 5.5} ${h - stemH * 0.35})`} />
+        )}
+        <circle cx="8" cy={top} r="1.2" fill="#86efac" />
+      </svg>
+    );
+  }
+
+  /* Bud: stem + leaves + closed colored bud */
+  if (growth <= 0.6) {
+    const stemH = 10 + (idx % 3);
+    const h = cy + 3 + stemH;
+    const leafY = cy + 3 + stemH * 0.5;
+    const leafSide = idx % 2 === 0;
+    return (
+      <svg width="16" height={h} viewBox={`0 0 16 ${h}`} className="garden-flower"
+        style={{ animationDelay: `${(idx % 8) * 0.35}s` }}>
+        <line x1="8" y1={cy + 3} x2="8" y2={h} stroke="#4ade80" strokeWidth="1" strokeLinecap="round" />
+        <ellipse cx={leafSide ? 11 : 5} cy={leafY} rx="2.5" ry="0.9" fill="#4ade80"
+          transform={`rotate(${leafSide ? -30 : 30} ${leafSide ? 11 : 5} ${leafY})`} />
+        {/* closed bud */}
+        <ellipse cx="8" cy={cy} rx="2.2" ry="3.2" fill={color} opacity="0.75" />
+        <ellipse cx="8" cy={cy - 1} rx="1" ry="2" fill="#86efac" opacity="0.4" />
+      </svg>
+    );
+  }
+
+  /* Blooming / Full (0.7–1.0) */
+  const petals = 5 + (idx % 2);
+  const scale = growth < 1 ? 0.55 + (growth - 0.7) * 1.5 : 1; // 0.55→1.0
+  const orbit = 3.5 * scale;
+  const r = 2.5 * scale;
+  const stemH = 10 + (idx % 4) * 1.2;
+  const h = cy + 3 + stemH;
   const leafSide = idx % 2 === 0;
-  const leafY = cy + 4 + stemH * 0.5;
+  const leafY = cy + 3 + stemH * 0.5;
 
   return (
-    <svg
-      width="20"
-      height={h}
-      viewBox={`0 0 20 ${h}`}
-      className="garden-flower"
-      style={{ animationDelay: `${(idx % 10) * 0.3}s` }}
-    >
-      {/* stem */}
-      <line
-        x1="10" y1={cy + 4} x2="10" y2={h}
-        stroke="#4ade80" strokeWidth="1.2" strokeLinecap="round"
-      />
-      {/* leaf */}
-      <ellipse
-        cx={leafSide ? 13.5 : 6.5} cy={leafY}
-        rx="3" ry="1.2"
-        fill="#4ade80"
-        transform={`rotate(${leafSide ? -30 : 30} ${leafSide ? 13.5 : 6.5} ${leafY})`}
-      />
-      {/* petals */}
+    <svg width="16" height={h} viewBox={`0 0 16 ${h}`} className="garden-flower"
+      style={{ animationDelay: `${(idx % 8) * 0.35}s` }}>
+      <line x1="8" y1={cy + 3} x2="8" y2={h} stroke="#4ade80" strokeWidth="1" strokeLinecap="round" />
+      <ellipse cx={leafSide ? 11 : 5} cy={leafY} rx="2.5" ry="0.9" fill="#4ade80"
+        transform={`rotate(${leafSide ? -30 : 30} ${leafSide ? 11 : 5} ${leafY})`} />
       {Array.from({ length: petals }).map((_, i) => {
         const a = ((i * 360) / petals - 90) * (Math.PI / 180);
         return (
-          <circle
-            key={i}
-            cx={cx + Math.cos(a) * orbit}
-            cy={cy + Math.sin(a) * orbit}
-            r={r}
-            fill={color}
-            stroke={accent}
-            strokeWidth="0.4"
-            opacity={0.88}
-          />
+          <circle key={i}
+            cx={cx + Math.cos(a) * orbit} cy={cy + Math.sin(a) * orbit}
+            r={r} fill={color} stroke={accent} strokeWidth="0.3" opacity={0.88} />
         );
       })}
-      {/* center */}
-      <circle cx={cx} cy={cy} r="2.2" fill="#fde047" />
-      <circle cx={cx} cy={cy} r="1" fill="#fbbf24" />
+      <circle cx={cx} cy={cy} r={1.8 * scale} fill="#fde047" />
+      <circle cx={cx} cy={cy} r={0.8 * scale} fill="#fbbf24" />
     </svg>
   );
 }
 
-/* ── sunflower (undefeated armory run) ─────────────────── */
-function Sunflower({ color, accent, idx }: { color: string; accent: string; idx: number }) {
-  const cx = 18, cy = 18;
-  const outerPetals = 12;
-  const innerPetals = 12;
-  const stemH = 20 + (idx % 4) * 2;
-  const h = cy + 10 + stemH;
-  const leaf1Y = cy + 10 + stemH * 0.3;
-  const leaf2Y = cy + 10 + stemH * 0.6;
+/* ── sunflower ─────────────────────────────────────────── */
+function SunflowerSVG({ color, accent, idx, growth }: { color: string; accent: string; idx: number; growth: number }) {
+  const cx = 14, cy = 14;
+
+  /* Sprout */
+  if (growth <= 0.3) {
+    const stemH = 5 + growth * 24;
+    const h = 28;
+    const top = h - stemH;
+    return (
+      <svg width="24" height={h} viewBox={`0 0 24 ${h}`} className="garden-flower"
+        style={{ animationDelay: `${(idx % 8) * 0.35}s` }}>
+        <line x1="12" y1={top} x2="12" y2={h} stroke="#16a34a" strokeWidth="1.6" strokeLinecap="round" />
+        {growth > 0.15 && (
+          <ellipse cx={idx % 2 === 0 ? 15 : 9} cy={h - stemH * 0.35}
+            rx="3" ry="1" fill="#22c55e"
+            transform={`rotate(${idx % 2 === 0 ? -30 : 30} ${idx % 2 === 0 ? 15 : 9} ${h - stemH * 0.35})`} />
+        )}
+        <circle cx="12" cy={top} r="1.8" fill="#86efac" />
+      </svg>
+    );
+  }
+
+  /* Bud */
+  if (growth <= 0.6) {
+    const stemH = 14 + (idx % 3);
+    const h = cy + 6 + stemH;
+    const leafY = cy + 6 + stemH * 0.45;
+    return (
+      <svg width="24" height={h} viewBox={`0 0 24 ${h}`} className="garden-flower"
+        style={{ animationDelay: `${(idx % 8) * 0.35}s` }}>
+        <line x1="12" y1={cy + 6} x2="12" y2={h} stroke="#16a34a" strokeWidth="1.6" strokeLinecap="round" />
+        <ellipse cx="16" cy={leafY} rx="3.5" ry="1.2" fill="#22c55e" transform={`rotate(-28 16 ${leafY})`} />
+        <ellipse cx="8" cy={leafY + 3} rx="3.5" ry="1.2" fill="#22c55e" transform={`rotate(28 8 ${leafY + 3})`} />
+        {/* closed bud */}
+        <ellipse cx="12" cy={cy} rx="3" ry="4.5" fill={color} opacity="0.75" />
+        <ellipse cx="12" cy={cy - 1.5} rx="1.5" ry="3" fill="#22c55e" opacity="0.35" />
+      </svg>
+    );
+  }
+
+  /* Blooming / Full */
+  const outerN = 10;
+  const innerN = 10;
+  const scale = growth < 1 ? 0.5 + (growth - 0.7) * 1.67 : 1;
+  const stemH = 15 + (idx % 3) * 1.5;
+  const h = cy + 7 + stemH;
+  const leaf1Y = cy + 7 + stemH * 0.3;
+  const leaf2Y = cy + 7 + stemH * 0.6;
 
   return (
-    <svg
-      width="36"
-      height={h}
-      viewBox={`0 0 36 ${h}`}
-      className="garden-flower"
-      style={{ animationDelay: `${(idx % 10) * 0.3}s` }}
-    >
-      {/* warm glow */}
-      <circle cx={cx} cy={cy} r="20" fill="#fbbf24" opacity="0.06" />
-
-      {/* stem — thicker */}
-      <line
-        x1="18" y1={cy + 10} x2="18" y2={h}
-        stroke="#16a34a" strokeWidth="2.4" strokeLinecap="round"
-      />
-      {/* leaves */}
-      <ellipse
-        cx="24" cy={leaf1Y} rx="5.5" ry="2"
-        fill="#22c55e"
-        transform={`rotate(-25 24 ${leaf1Y})`}
-      />
-      <ellipse
-        cx="12" cy={leaf2Y} rx="5.5" ry="2"
-        fill="#22c55e"
-        transform={`rotate(25 12 ${leaf2Y})`}
-      />
-
-      {/* outer petals — elongated pointed ellipses */}
-      {Array.from({ length: outerPetals }).map((_, i) => {
-        const deg = (i * 360) / outerPetals;
+    <svg width="26" height={h} viewBox={`0 0 26 ${h}`} className="garden-flower"
+      style={{ animationDelay: `${(idx % 8) * 0.35}s` }}>
+      {growth === 1 && <circle cx={cx - 1} cy={cy} r="15" fill="#fbbf24" opacity="0.05" />}
+      <line x1="13" y1={cy + 7} x2="13" y2={h} stroke="#16a34a" strokeWidth="1.8" strokeLinecap="round" />
+      <ellipse cx="17" cy={leaf1Y} rx="4" ry="1.3" fill="#22c55e" transform={`rotate(-28 17 ${leaf1Y})`} />
+      <ellipse cx="9" cy={leaf2Y} rx="4" ry="1.3" fill="#22c55e" transform={`rotate(28 9 ${leaf2Y})`} />
+      {/* outer petals */}
+      {Array.from({ length: outerN }).map((_, i) => {
+        const deg = (i * 360) / outerN;
         const a = (deg - 90) * (Math.PI / 180);
-        const px = cx + Math.cos(a) * 9;
-        const py = cy + Math.sin(a) * 9;
+        const px = (cx - 1) + Math.cos(a) * 7 * scale;
+        const py = cy + Math.sin(a) * 7 * scale;
         return (
-          <ellipse
-            key={`o-${i}`}
-            cx={px} cy={py}
-            rx="2.2" ry="5.5"
-            fill={color}
-            stroke={accent}
-            strokeWidth="0.4"
-            opacity={0.92}
-            transform={`rotate(${deg} ${px} ${py})`}
-          />
+          <ellipse key={`o-${i}`} cx={px} cy={py}
+            rx={1.8 * scale} ry={4.2 * scale}
+            fill={color} stroke={accent} strokeWidth="0.3" opacity={0.92}
+            transform={`rotate(${deg} ${px} ${py})`} />
         );
       })}
-      {/* inner petals — shorter, offset between outer */}
-      {Array.from({ length: innerPetals }).map((_, i) => {
-        const deg = (i * 360) / innerPetals + 360 / innerPetals / 2;
+      {/* inner petals */}
+      {growth > 0.8 && Array.from({ length: innerN }).map((_, i) => {
+        const deg = (i * 360) / innerN + 18;
         const a = (deg - 90) * (Math.PI / 180);
-        const px = cx + Math.cos(a) * 6.5;
-        const py = cy + Math.sin(a) * 6.5;
+        const px = (cx - 1) + Math.cos(a) * 4.5 * scale;
+        const py = cy + Math.sin(a) * 4.5 * scale;
         return (
-          <ellipse
-            key={`i-${i}`}
-            cx={px} cy={py}
-            rx="1.8" ry="4"
-            fill={color}
-            opacity={0.7}
-            transform={`rotate(${deg} ${px} ${py})`}
-          />
+          <ellipse key={`i-${i}`} cx={px} cy={py}
+            rx={1.3 * scale} ry={3 * scale}
+            fill={color} opacity={0.55}
+            transform={`rotate(${deg} ${px} ${py})`} />
         );
       })}
-      {/* seed disk — dark ring */}
-      <circle cx={cx} cy={cy} r="5.5" fill="#92400e" />
-      {/* seed dots */}
-      {[0, 60, 120, 180, 240, 300].map((deg) => {
+      {/* seed disk */}
+      <circle cx={cx - 1} cy={cy} r={4 * scale} fill="#92400e" />
+      {growth === 1 && [0, 60, 120, 180, 240, 300].map((deg) => {
         const a = deg * (Math.PI / 180);
-        return (
-          <circle
-            key={`s-${deg}`}
-            cx={cx + Math.cos(a) * 3.2}
-            cy={cy + Math.sin(a) * 3.2}
-            r="0.8"
-            fill="#78350f"
-          />
-        );
+        return <circle key={`s-${deg}`} cx={(cx - 1) + Math.cos(a) * 2.3} cy={cy + Math.sin(a) * 2.3} r="0.6" fill="#78350f" />;
       })}
-      {/* inner seed ring */}
-      {[30, 90, 150, 210, 270, 330].map((deg) => {
-        const a = deg * (Math.PI / 180);
-        return (
-          <circle
-            key={`si-${deg}`}
-            cx={cx + Math.cos(a) * 1.6}
-            cy={cy + Math.sin(a) * 1.6}
-            r="0.6"
-            fill="#78350f"
-          />
-        );
-      })}
-      {/* golden center highlight */}
-      <circle cx={cx} cy={cy} r="1.5" fill="#b45309" />
-      {/* sparkle */}
-      <circle cx={cx - 1} cy={cy - 1.5} r="1" fill="#fde047" opacity="0.5" />
+      <circle cx={cx - 1} cy={cy} r={1.2 * scale} fill="#b45309" />
+      {growth === 1 && <circle cx={cx - 2} cy={cy - 1} r="0.7" fill="#fde047" opacity="0.5" />}
     </svg>
   );
 }
 
 /* ── garden component ──────────────────────────────────── */
 export function ArmoryGarden({ eventStats }: { eventStats: EventStats[] }) {
-  const { flowers, total, perfectRuns } = useMemo(
+  const { flowers, attended, undefeated } = useMemo(
     () => buildGarden(eventStats),
     [eventStats],
   );
 
-  if (flowers.length === 0) return null;
+  if (attended === 0) return null;
 
   return (
     <>
-      {/* Keyframes for gentle sway — injected once */}
       <style>{`
         @keyframes garden-sway {
           0%, 100% { transform: rotate(-2.5deg) translateY(0); }
@@ -254,7 +252,6 @@ export function ArmoryGarden({ eventStats }: { eventStats: EventStats[] }) {
       `}</style>
 
       <div className="bg-fab-surface/50 border border-fab-border rounded-lg px-4 py-3">
-        {/* Header */}
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-1.5">
             <svg className="w-3.5 h-3.5 text-emerald-400" viewBox="0 0 20 20" fill="currentColor">
@@ -265,10 +262,10 @@ export function ArmoryGarden({ eventStats }: { eventStats: EventStats[] }) {
             </p>
           </div>
           <p className="text-[10px] text-fab-dim">
-            {total} armor{total !== 1 ? "ies" : "y"}
-            {perfectRuns > 0 && (
+            {attended} armor{attended !== 1 ? "ies" : "y"}
+            {undefeated > 0 && (
               <span className="text-amber-400/80">
-                {" "}&middot; {perfectRuns} undefeated
+                {" "}&middot; {undefeated} undefeated
               </span>
             )}
           </p>
@@ -276,21 +273,23 @@ export function ArmoryGarden({ eventStats }: { eventStats: EventStats[] }) {
 
         {/* The garden bed */}
         <div className="relative rounded-md overflow-hidden">
-          {/* Soil gradient */}
-          <div className="absolute inset-0 bg-gradient-to-t from-emerald-950/40 via-emerald-950/15 to-transparent pointer-events-none" />
+          {/* Sky-to-soil gradient */}
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-amber-950/20 pointer-events-none" />
 
-          <div className="relative flex flex-wrap gap-px items-end justify-center px-2 py-3 min-h-[56px]">
+          <div className="relative flex flex-wrap gap-0.5 items-end justify-center px-2 pt-2 pb-0 min-h-[40px]">
             {flowers.map((f) =>
               f.type === "crown" ? (
-                <Sunflower key={f.idx} color={f.color} accent={f.accent} idx={f.idx} />
+                <SunflowerSVG key={f.idx} color={f.color} accent={f.accent} idx={f.idx} growth={f.growth} />
               ) : (
-                <SmallFlower key={f.idx} color={f.color} accent={f.accent} idx={f.idx} />
+                <Daisy key={f.idx} color={f.color} accent={f.accent} idx={f.idx} growth={f.growth} />
               ),
             )}
           </div>
 
-          {/* Grass line along the bottom */}
-          <div className="h-1 bg-gradient-to-r from-emerald-800/30 via-emerald-600/20 to-emerald-800/30" />
+          {/* Dirt + grass layers */}
+          <div className="h-1.5 bg-gradient-to-r from-emerald-800/30 via-emerald-600/25 to-emerald-800/30" />
+          <div className="h-2 bg-gradient-to-r from-amber-900/25 via-yellow-900/20 to-amber-900/25" />
+          <div className="h-1 bg-gradient-to-r from-amber-950/15 via-yellow-950/12 to-amber-950/15" />
         </div>
       </div>
     </>
