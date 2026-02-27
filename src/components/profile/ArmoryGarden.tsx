@@ -318,50 +318,47 @@ export function ArmoryGarden({ eventStats, ownerProfile, isOwner }: { eventStats
               Armory Garden
             </p>
           </div>
-          <p className="text-[10px] text-fab-dim">
-            {attended} armor{attended !== 1 ? "ies" : "y"}
-            {undefeated > 0 && (
-              <span className="text-amber-400/80">
-                {" "}&middot; {undefeated} undefeated
-              </span>
+          <div className="flex items-center gap-2">
+            {/* Watering can picker — inline in header */}
+            {visibleCans.length > 1 && (
+              <div className="flex items-center gap-1">
+                {visibleCans.map((can) => {
+                  const unlocked = unlockedIds.includes(can.id);
+                  const isSelected = selectedCanId === can.id;
+                  return (
+                    <button
+                      key={can.id}
+                      onClick={() => unlocked && setSelectedCanId(can.id)}
+                      className={`relative w-6 h-6 rounded border flex items-center justify-center transition-all ${
+                        !unlocked
+                          ? "opacity-25 grayscale border-fab-border cursor-not-allowed"
+                          : isSelected
+                            ? `border-fab-gold ring-1 ring-fab-gold/40 bg-fab-gold/10`
+                            : `border-transparent hover:border-fab-muted`
+                      }`}
+                      title={unlocked ? can.name : `${can.name} (locked)`}
+                    >
+                      <div className="w-4 h-4" dangerouslySetInnerHTML={{ __html: can.previewSvg }} />
+                      {!unlocked && (
+                        <svg className="absolute w-2 h-2 text-fab-dim bottom-0 right-0" viewBox="0 0 16 16" fill="currentColor">
+                          <path d="M8 1a4 4 0 00-4 4v2H3a1 1 0 00-1 1v6a1 1 0 001 1h10a1 1 0 001-1V8a1 1 0 00-1-1h-1V5a4 4 0 00-4-4zm-2 4a2 2 0 114 0v2H6V5z" />
+                        </svg>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
             )}
-          </p>
-        </div>
-
-        {/* Watering can picker */}
-        {visibleCans.length > 1 && (
-          <div className="flex items-center gap-1.5 mb-2">
-            <span className="text-[9px] text-fab-dim uppercase tracking-wider shrink-0">Can:</span>
-            <div className="flex gap-1 flex-wrap">
-              {visibleCans.map((can) => {
-                const unlocked = unlockedIds.includes(can.id);
-                const isSelected = selectedCanId === can.id;
-                return (
-                  <button
-                    key={can.id}
-                    onClick={() => unlocked && setSelectedCanId(can.id)}
-                    className={`relative w-7 h-7 rounded-md border flex items-center justify-center transition-all ${
-                      !unlocked
-                        ? "opacity-30 grayscale border-fab-border cursor-not-allowed"
-                        : isSelected
-                          ? `border-fab-gold ring-1 ring-fab-gold/40 bg-fab-gold/10 ${RARITY_BORDER[can.rarity]}`
-                          : `${RARITY_BORDER[can.rarity]} hover:border-fab-muted bg-fab-surface/50`
-                    }`}
-                    title={unlocked ? can.name : `${can.name} (locked)`}
-                  >
-                    <div className="w-5 h-5" dangerouslySetInnerHTML={{ __html: can.previewSvg }} />
-                    {!unlocked && (
-                      <svg className="absolute w-2.5 h-2.5 text-fab-dim bottom-0 right-0" viewBox="0 0 16 16" fill="currentColor">
-                        <path d="M8 1a4 4 0 00-4 4v2H3a1 1 0 00-1 1v6a1 1 0 001 1h10a1 1 0 001-1V8a1 1 0 00-1-1h-1V5a4 4 0 00-4-4zm-2 4a2 2 0 114 0v2H6V5z" />
-                      </svg>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-            <span className="text-[9px] text-fab-dim ml-0.5">{selectedCan.name}</span>
+            <p className="text-[10px] text-fab-dim">
+              {attended} armor{attended !== 1 ? "ies" : "y"}
+              {undefeated > 0 && (
+                <span className="text-amber-400/80">
+                  {" "}&middot; {undefeated} undefeated
+                </span>
+              )}
+            </p>
           </div>
-        )}
+        </div>
 
         {/* The garden bed */}
         <div className="relative rounded-md overflow-hidden flex-1 flex flex-col justify-end" onMouseMove={handleWater}>
