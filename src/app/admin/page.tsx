@@ -45,7 +45,6 @@ export default function AdminPage() {
   const [replyText, setReplyText] = useState("");
   const [replySending, setReplySending] = useState(false);
   const [replySent, setReplySent] = useState<string | null>(null);
-  const [usersExpanded, setUsersExpanded] = useState(false);
   const [backfilling, setBackfilling] = useState(false);
   const [backfillProgress, setBackfillProgress] = useState("");
   const [creatorsList, setCreatorsList] = useState<Creator[]>([]);
@@ -68,7 +67,6 @@ export default function AdminPage() {
   const [linkProgress, setLinkProgress] = useState("");
   const [backfillingGemIds, setBackfillingGemIds] = useState(false);
   const [gemIdProgress, setGemIdProgress] = useState("");
-  const [toolsOpen, setToolsOpen] = useState(false);
   const [pollQuestion, setPollQuestion] = useState("");
   const [pollOptions, setPollOptions] = useState<string[]>(["", ""]);
   const [pollActive, setPollActive] = useState(false);
@@ -80,6 +78,13 @@ export default function AdminPage() {
   const [pollSaved, setPollSaved] = useState(false);
   const [pollCreatedAt, setPollCreatedAt] = useState("");
   const anyToolRunning = fixingDates || backfilling || backfillingGemIds || linkingMatches;
+  const [activeTab, setActiveTab] = useState<"overview" | "users" | "feedback" | "content" | "poll" | "tools">(() => {
+    if (typeof window !== "undefined") {
+      const hash = window.location.hash.replace("#", "");
+      if (["overview", "users", "feedback", "content", "poll", "tools"].includes(hash)) return hash as any;
+    }
+    return "overview";
+  });
 
   // Redirect non-admins
   useEffect(() => {
@@ -169,24 +174,45 @@ export default function AdminPage() {
     <div className="max-w-5xl mx-auto">
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-2xl font-bold text-fab-gold">Admin Dashboard</h1>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setToolsOpen(!toolsOpen)}
-            className="px-4 py-2 rounded-lg text-sm font-semibold bg-fab-surface border border-fab-border text-fab-muted hover:text-fab-text hover:border-fab-gold transition-colors"
-          >
-            Tools {toolsOpen ? "▲" : "▼"}
-          </button>
-          <button
-            onClick={fetchData}
-            disabled={fetching}
-            className="px-4 py-2 rounded-lg text-sm font-semibold bg-fab-surface border border-fab-border text-fab-text hover:border-fab-gold transition-colors disabled:opacity-50"
-          >
-            {fetching ? "Loading..." : "Refresh"}
-          </button>
-        </div>
+        <button
+          onClick={fetchData}
+          disabled={fetching}
+          className="px-4 py-2 rounded-lg text-sm font-semibold bg-fab-surface border border-fab-border text-fab-text hover:border-fab-gold transition-colors disabled:opacity-50"
+        >
+          {fetching ? "Loading..." : "Refresh"}
+        </button>
       </div>
 
-      {toolsOpen && (
+      {/* Tab Navigation */}
+      <div className="flex gap-1 mb-6 overflow-x-auto pb-1">
+        {([
+          { id: "overview", label: "Overview" },
+          { id: "users", label: "Users" },
+          { id: "feedback", label: "Feedback", badge: feedback.filter((f) => f.status === "new").length },
+          { id: "content", label: "Content" },
+          { id: "poll", label: "Poll" },
+          { id: "tools", label: "Tools" },
+        ] as const).map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => { setActiveTab(tab.id); window.history.replaceState(null, "", `#${tab.id}`); }}
+            className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+              activeTab === tab.id
+                ? "bg-fab-gold/15 text-fab-gold"
+                : "text-fab-muted hover:text-fab-text hover:bg-fab-surface"
+            }`}
+          >
+            {tab.label}
+            {"badge" in tab && tab.badge > 0 && (
+              <span className="ml-1.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-fab-gold/20 text-fab-gold">
+                {tab.badge}
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === "tools" && (
         <div className="mb-6 p-4 rounded-lg bg-fab-surface border border-fab-border space-y-3">
           <div className="flex items-center gap-2 flex-wrap">
             <button
@@ -288,6 +314,8 @@ export default function AdminPage() {
         </div>
       ) : data ? (
         <>
+          {/* ── Overview Tab ── */}
+          {activeTab === "overview" && <>
           {/* Key metrics */}
           {(() => {
             const activePlayers = data.users.filter((u) => u.matchCount > 0).length;
@@ -314,22 +342,16 @@ export default function AdminPage() {
 
           {/* Page Activity */}
           {analyticsData && <ActivitySection analytics={analyticsData} />}
+          </>}
 
+          {/* ── Users Tab ── */}
+          {activeTab === "users" && <>
           {/* Users table */}
           <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden">
-            <button
-              onClick={() => setUsersExpanded(!usersExpanded)}
-              className="w-full px-4 py-3 border-b border-fab-border flex items-center justify-between group"
-            >
+            <div className="px-4 py-3 border-b border-fab-border">
               <h2 className="text-sm font-semibold text-fab-text">All Users ({data.users.length})</h2>
-              <svg
-                className={`w-4 h-4 text-fab-muted group-hover:text-fab-text transition-transform ${usersExpanded ? "rotate-180" : ""}`}
-                fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-              </svg>
-            </button>
-            {usersExpanded && <div className="overflow-x-auto">
+            </div>
+            <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-fab-border text-fab-muted text-left">
@@ -408,11 +430,15 @@ export default function AdminPage() {
                   })}
                 </tbody>
               </table>
-            </div>}
+            </div>
           </div>
 
+          </>}
+
+          {/* ── Feedback Tab ── */}
+          {activeTab === "feedback" && <>
           {/* Feedback */}
-          <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden mt-6">
+          <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden">
             <div className="px-4 py-3 border-b border-fab-border flex items-center justify-between">
               <h2 className="text-sm font-semibold text-fab-text">Feedback ({feedback.length})</h2>
               <div className="flex gap-1">
@@ -569,8 +595,12 @@ export default function AdminPage() {
             )}
           </div>
 
+          </>}
+
+          {/* ── Content Tab ── */}
+          {activeTab === "content" && <>
           {/* Creators Management */}
-          <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden mt-6">
+          <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden">
             <div className="px-4 py-3 border-b border-fab-border flex items-center justify-between">
               <h2 className="text-sm font-semibold text-fab-text">Featured Creators ({creatorsList.length})</h2>
               <div className="flex items-center gap-2">
@@ -843,8 +873,12 @@ export default function AdminPage() {
             </div>
           </div>
 
+          </>}
+
+          {/* ── Poll Tab ── */}
+          {activeTab === "poll" && <>
           {/* Community Poll */}
-          <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden mt-6">
+          <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden">
             <div className="px-4 py-3 border-b border-fab-border flex items-center justify-between">
               <h2 className="text-sm font-semibold text-fab-text">
                 Community Poll {pollActive && <span className="text-fab-win ml-1">(Active)</span>}
@@ -1038,8 +1072,12 @@ export default function AdminPage() {
             </div>
           </div>
 
+          </>}
+
+          {/* ── Tools Tab: Broadcast ── */}
+          {activeTab === "tools" && <>
           {/* Broadcast Message */}
-          <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden mt-6">
+          <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden">
             <div className="px-4 py-3 border-b border-fab-border">
               <h2 className="text-sm font-semibold text-fab-text">Broadcast Message</h2>
               <p className="text-xs text-fab-dim mt-0.5">Send a message to all users. Appears in their inbox and as a notification.</p>
@@ -1092,6 +1130,7 @@ export default function AdminPage() {
               </div>
             </div>
           </div>
+          </>}
         </>
       ) : null}
     </div>
