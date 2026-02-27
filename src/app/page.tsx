@@ -447,7 +447,13 @@ export default function Dashboard() {
             topHero: topHero?.heroName || null,
             currentStreak: streaks.currentStreak,
             bestFinish: bestFinish?.label || null,
+            bestFinishEvent: bestFinish?.eventName || null,
             recentResults: last30.map(m => m.result),
+            cardBorder,
+            bestRank,
+            playoffFinishes,
+            armoryCount: eventStats.filter(e => e.eventType === "Armory").length,
+            armoryUndefeated: eventStats.filter(e => e.eventType === "Armory" && e.losses === 0 && e.wins > 0).length,
           }}
           onClose={() => setProfileShareOpen(false)}
         />

@@ -87,23 +87,25 @@ export default function ComparePage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
         <PlayerPicker
           label="Player 1"
-          value={search1 || player1?.displayName || effectivePick1}
+          value={search1}
           onChange={(v) => { setSearch1(v); setPick1(""); setCleared1(true); }}
           onFocus={() => setFocused(1)}
-          onBlur={() => setTimeout(() => setFocused(null), 200)}
+          onBlur={() => setFocused(null)}
           results={focused === 1 ? filtered1 : []}
           onSelect={(e) => { selectPlayer(1, e); setCleared1(false); }}
+          onClear={() => { setPick1(""); setSearch1(""); setCleared1(true); }}
           selected={player1}
           color="text-blue-400"
         />
         <PlayerPicker
           label="Player 2"
-          value={search2 || player2?.displayName || ""}
+          value={search2}
           onChange={(v) => { setSearch2(v); setPick2(""); }}
           onFocus={() => setFocused(2)}
-          onBlur={() => setTimeout(() => setFocused(null), 200)}
+          onBlur={() => setFocused(null)}
           results={focused === 2 ? filtered2 : []}
           onSelect={(e) => selectPlayer(2, e)}
+          onClear={() => { setPick2(""); setSearch2(""); }}
           selected={player2}
           placeholder="Search for a player..."
           color="text-red-400"
@@ -131,6 +133,7 @@ function PlayerPicker({
   onBlur,
   results,
   onSelect,
+  onClear,
   selected,
   placeholder,
   color,
@@ -142,20 +145,27 @@ function PlayerPicker({
   onBlur: () => void;
   results: LeaderboardEntry[];
   onSelect: (e: LeaderboardEntry) => void;
+  onClear: () => void;
   selected?: LeaderboardEntry;
   placeholder?: string;
   color: string;
 }) {
   const [hlIndex, setHlIndex] = useState(-1);
+  const [isSearching, setIsSearching] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
   const prevResultsLen = useRef(0);
 
-  // Reset highlight when results change
   if (results.length !== prevResultsLen.current) {
     prevResultsLen.current = results.length;
     if (hlIndex >= results.length) setHlIndex(-1);
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {
+    if (e.key === "Escape") {
+      setIsSearching(false);
+      inputRef.current?.blur();
+      return;
+    }
     if (!results.length) return;
     if (e.key === "ArrowDown") {
       e.preventDefault();
@@ -167,68 +177,91 @@ function PlayerPicker({
       e.preventDefault();
       onSelect(results[hlIndex]);
       setHlIndex(-1);
+      setIsSearching(false);
+      inputRef.current?.blur();
     }
   }
+
+  function handleFocus() {
+    setIsSearching(true);
+    onFocus();
+    // If a player is selected, clear the input for fresh search
+    if (selected) {
+      onChange("");
+    }
+  }
+
+  function handleBlur() {
+    setTimeout(() => {
+      setIsSearching(false);
+      onBlur();
+    }, 200);
+  }
+
+  const showDropdown = isSearching && results.length > 0;
 
   return (
     <div className="relative">
       <p className={`text-xs font-semibold uppercase tracking-wider mb-1.5 ${color}`}>{label}</p>
-      {selected ? (
-        <div className="flex items-center gap-3 bg-fab-surface border border-fab-border rounded-lg p-3">
-          {selected.photoUrl ? (
-            <img src={selected.photoUrl} alt="" className="w-10 h-10 rounded-full shrink-0" />
+      <div className={`flex items-center gap-2 bg-fab-surface border rounded-lg px-3 py-2 transition-colors ${isSearching ? "border-fab-gold" : "border-fab-border"}`}>
+        {/* Avatar (selected player or placeholder) */}
+        {selected && !isSearching ? (
+          selected.photoUrl ? (
+            <img src={selected.photoUrl} alt="" className="w-7 h-7 rounded-full shrink-0" />
           ) : (
-            <div className="w-10 h-10 rounded-full bg-fab-gold/20 flex items-center justify-center text-fab-gold font-bold shrink-0">
+            <div className="w-7 h-7 rounded-full bg-fab-gold/20 flex items-center justify-center text-fab-gold text-xs font-bold shrink-0">
               {selected.displayName.charAt(0).toUpperCase()}
             </div>
-          )}
-          <div className="flex-1 min-w-0">
-            <p className="font-semibold text-fab-text truncate">{selected.displayName}</p>
-            <p className="text-xs text-fab-dim">@{selected.username}</p>
-          </div>
+          )
+        ) : (
+          <svg className="w-4 h-4 text-fab-dim shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+        )}
+        <input
+          ref={inputRef}
+          type="text"
+          value={isSearching ? value : (selected ? selected.displayName : value)}
+          onChange={(e) => onChange(e.target.value)}
+          onFocus={handleFocus}
+          onBlur={handleBlur}
+          onKeyDown={handleKeyDown}
+          placeholder={placeholder || "Search for a player..."}
+          className="flex-1 bg-transparent text-fab-text text-sm placeholder:text-fab-dim focus:outline-none min-w-0"
+        />
+        {selected && !isSearching && (
           <button
-            onClick={() => { onChange(""); }}
-            className="text-fab-dim hover:text-fab-text transition-colors text-xs px-2 py-1 rounded bg-fab-bg"
+            onClick={(e) => { e.stopPropagation(); onClear(); }}
+            className="text-fab-dim hover:text-fab-text transition-colors p-0.5"
           >
-            Change
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
           </button>
+        )}
+      </div>
+      {showDropdown && (
+        <div className="absolute z-20 top-full mt-1 left-0 right-0 bg-fab-surface border border-fab-border rounded-lg overflow-hidden shadow-lg max-h-64 overflow-y-auto">
+          {results.map((e, i) => (
+            <button
+              key={e.userId}
+              onMouseDown={() => { onSelect(e); setIsSearching(false); }}
+              className={`w-full flex items-center gap-2 px-3 py-2 text-left transition-colors ${i === hlIndex ? "bg-fab-gold/10" : "hover:bg-fab-surface-hover"}`}
+            >
+              {e.photoUrl ? (
+                <img src={e.photoUrl} alt="" className="w-7 h-7 rounded-full shrink-0" />
+              ) : (
+                <div className="w-7 h-7 rounded-full bg-fab-gold/20 flex items-center justify-center text-fab-gold text-xs font-bold shrink-0">
+                  {e.displayName.charAt(0).toUpperCase()}
+                </div>
+              )}
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-fab-text truncate">{e.displayName}</p>
+                <p className="text-[10px] text-fab-dim">@{e.username} &middot; {e.totalMatches} matches</p>
+              </div>
+            </button>
+          ))}
         </div>
-      ) : (
-        <>
-          <input
-            type="text"
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            onFocus={onFocus}
-            onBlur={onBlur}
-            onKeyDown={handleKeyDown}
-            placeholder={placeholder || "Search..."}
-            className="w-full bg-fab-surface border border-fab-border rounded-lg px-3 py-2.5 text-fab-text text-sm placeholder:text-fab-dim focus:outline-none focus:border-fab-gold"
-          />
-          {results.length > 0 && (
-            <div className="absolute z-20 top-full mt-1 left-0 right-0 bg-fab-surface border border-fab-border rounded-lg overflow-hidden shadow-lg">
-              {results.map((e, i) => (
-                <button
-                  key={e.userId}
-                  onMouseDown={() => onSelect(e)}
-                  className={`w-full flex items-center gap-2 px-3 py-2 text-left transition-colors ${i === hlIndex ? "bg-fab-gold/10" : "hover:bg-fab-surface-hover"}`}
-                >
-                  {e.photoUrl ? (
-                    <img src={e.photoUrl} alt="" className="w-7 h-7 rounded-full shrink-0" />
-                  ) : (
-                    <div className="w-7 h-7 rounded-full bg-fab-gold/20 flex items-center justify-center text-fab-gold text-xs font-bold shrink-0">
-                      {e.displayName.charAt(0).toUpperCase()}
-                    </div>
-                  )}
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-fab-text truncate">{e.displayName}</p>
-                    <p className="text-[10px] text-fab-dim">@{e.username} &middot; {e.totalMatches} matches</p>
-                  </div>
-                </button>
-              ))}
-            </div>
-          )}
-        </>
       )}
     </div>
   );

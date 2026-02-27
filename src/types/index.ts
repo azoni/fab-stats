@@ -290,6 +290,7 @@ export interface FeaturedEvent {
 
 // Polls
 export interface Poll {
+  id?: string;
   question: string;
   options: string[];
   active: boolean;

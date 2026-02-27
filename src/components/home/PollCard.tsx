@@ -23,8 +23,8 @@ export function PollCard() {
       if (cancelled) return;
       setPoll(activePoll);
 
-      if (activePoll && user) {
-        const existing = await getUserVote(user.uid);
+      if (activePoll?.id && user) {
+        const existing = await getUserVote(activePoll.id, user.uid);
         if (!cancelled && existing) {
           setVote(existing);
           setSelected(existing.optionIndex);
@@ -32,7 +32,7 @@ export function PollCard() {
           // Fetch fresh poll (bypass cache) + live results in parallel
           const [freshPoll, res] = await Promise.all([
             getActivePoll(true),
-            getPollResults(),
+            getPollResults(activePoll.id),
           ]);
           if (!cancelled) {
             if (freshPoll) setPoll(freshPoll);
@@ -59,13 +59,13 @@ export function PollCard() {
     if (selected === null || !user) return;
     setSubmitting(true);
     try {
-      await submitVote(user.uid, selected);
+      await submitVote(poll!.id!, user.uid, selected);
       setVote({ optionIndex: selected, votedAt: new Date().toISOString() });
       setHasVoted(true);
       setChanging(false);
       // Fetch live results right after voting
       if (poll!.showResults) {
-        const res = await getPollResults();
+        const res = await getPollResults(poll!.id!);
         setResults(res);
       }
     } catch (err) {
