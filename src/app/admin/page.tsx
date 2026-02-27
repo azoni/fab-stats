@@ -10,7 +10,7 @@ import { getEvents, saveEvents } from "@/lib/featured-events";
 import { lookupEvents, type LookupEvent } from "@/lib/event-lookup";
 import { getOrCreateConversation, sendMessage, sendMessageNotification } from "@/lib/messages";
 import { getAnalytics } from "@/lib/analytics";
-import { getPoll, getPollResults, savePoll, removePoll, clearVotes } from "@/lib/polls";
+import { getPoll, getPollResults, savePoll, removePoll, clearVotes, syncPollResults } from "@/lib/polls";
 import { searchHeroes } from "@/lib/heroes";
 import { GameFormat } from "@/types";
 import type { FeedbackItem, Creator, FeaturedEvent, FeaturedEventPlayer, UserProfile, Poll, PollResults } from "@/types";
@@ -73,6 +73,7 @@ export default function AdminPage() {
   const [pollOptions, setPollOptions] = useState<string[]>(["", ""]);
   const [pollActive, setPollActive] = useState(false);
   const [pollResults, setPollResults] = useState<PollResults | null>(null);
+  const [pollShowResults, setPollShowResults] = useState(false);
   const [savingPoll, setSavingPoll] = useState(false);
   const [pollSaved, setPollSaved] = useState(false);
   const [pollCreatedAt, setPollCreatedAt] = useState("");
@@ -108,8 +109,13 @@ export default function AdminPage() {
         setPollOptions(pollData.options);
         setPollActive(pollData.active);
         setPollCreatedAt(pollData.createdAt);
+        setPollShowResults(pollData.showResults ?? false);
       }
       setPollResults(pollRes);
+      // Sync result snapshot to poll doc so users can see results
+      if (pollRes.total > 0) {
+        syncPollResults().catch(() => {});
+      }
     } catch {
       setError("Failed to load admin data.");
     } finally {
@@ -869,6 +875,7 @@ export default function AdminPage() {
                         options: opts,
                         active: true,
                         createdAt: pollCreatedAt || new Date().toISOString(),
+                        showResults: pollShowResults,
                       });
                       setPollActive(true);
                       setPollSaved(true);
@@ -926,7 +933,19 @@ export default function AdminPage() {
                 + Add Option
               </button>
 
-              {pollResults && pollResults.total > 0 && (
+              {/* Show results to voters toggle */}
+              <label className="flex items-center gap-2 cursor-pointer pt-1">
+                <button
+                  type="button"
+                  onClick={() => setPollShowResults(!pollShowResults)}
+                  className={`relative w-9 h-5 rounded-full transition-colors ${pollShowResults ? "bg-fab-win" : "bg-fab-border"}`}
+                >
+                  <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform ${pollShowResults ? "translate-x-4" : ""}`} />
+                </button>
+                <span className="text-xs text-fab-muted">Show results to voters</span>
+              </label>
+
+              {pollResults && (
                 <div className="border-t border-fab-border pt-3 mt-4">
                   <p className="text-xs text-fab-dim font-medium mb-2">Results ({pollResults.total} vote{pollResults.total !== 1 ? "s" : ""})</p>
                   {pollOptions.filter(Boolean).map((opt, i) => {

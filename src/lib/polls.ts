@@ -101,4 +101,23 @@ export async function clearVotes(): Promise<void> {
   const snap = await getDocs(collection(db, "admin", "poll", "votes"));
   const deletes = snap.docs.map((d) => deleteDoc(d.ref));
   await Promise.all(deletes);
+  // Reset stored result snapshot
+  const pollSnap = await getDoc(doc(db, "admin", "poll"));
+  if (pollSnap.exists()) {
+    await setDoc(doc(db, "admin", "poll"), { ...pollSnap.data(), resultCounts: [], resultTotal: 0 });
+  }
+}
+
+/** Compute results from votes and store snapshot on poll doc (admin only) */
+export async function syncPollResults(): Promise<PollResults> {
+  const results = await getPollResults();
+  const pollSnap = await getDoc(doc(db, "admin", "poll"));
+  if (pollSnap.exists()) {
+    await setDoc(doc(db, "admin", "poll"), {
+      ...pollSnap.data(),
+      resultCounts: results.counts,
+      resultTotal: results.total,
+    });
+  }
+  return results;
 }

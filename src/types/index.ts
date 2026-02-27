@@ -287,6 +287,9 @@ export interface Poll {
   options: string[];
   active: boolean;
   createdAt: string;
+  showResults?: boolean;
+  resultCounts?: number[];
+  resultTotal?: number;
 }
 
 export interface PollVote {

@@ -5,6 +5,7 @@ import { FeaturedTournaments } from "./FeaturedTournaments";
 import { MetaSnapshot } from "./MetaSnapshot";
 import { LeaderboardPreview } from "./LeaderboardPreview";
 import { RecentActivity } from "./RecentActivity";
+import { PollCard } from "./PollCard";
 import type { FeaturedProfile } from "@/lib/featured-profiles";
 import type { HeroMetaStats } from "@/lib/meta-stats";
 import type { FeaturedEvent, FeedEvent, LeaderboardEntry } from "@/types";
@@ -30,6 +31,7 @@ export function CommunityHighlights({
   return (
     <div className="space-y-8">
       <FeaturedProfiles profiles={featuredProfiles} />
+      <PollCard />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <FeaturedTournaments

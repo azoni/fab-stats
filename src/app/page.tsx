@@ -18,7 +18,6 @@ import { computeMetaStats } from "@/lib/meta-stats";
 import { selectFeaturedProfiles } from "@/lib/featured-profiles";
 import { BestFinishShareModal } from "@/components/profile/BestFinishCard";
 import { EventCard } from "@/components/events/EventCard";
-import { PollCard } from "@/components/home/PollCard";
 import { localDate } from "@/lib/constants";
 
 const EVENTS_PREVIEW = 5;
@@ -306,9 +305,6 @@ export default function Dashboard() {
           )}
         </div>
       )}
-
-      {/* Community Poll */}
-      <PollCard />
 
       {/* Community content */}
       <CommunityHighlights
