@@ -135,7 +135,7 @@ export function computeStreaks(sortedMatches: MatchRecord[]): StreakInfo {
 }
 
 /** Normalize an opponent name: trim, handle "Last, First" → "First Last" */
-function normalizeOpponentName(raw: string): string {
+export function normalizeOpponentName(raw: string): string {
   const trimmed = raw.trim();
   if (!trimmed) return "unknown";
   const commaMatch = trimmed.match(/^(.+?),\s+(.+)$/);

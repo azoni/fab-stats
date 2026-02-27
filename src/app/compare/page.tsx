@@ -10,7 +10,7 @@ import { CARD_THEMES, type CardTheme } from "@/components/opponents/RivalryCard"
 import { CompareCard } from "@/components/compare/CompareCard";
 import { toBlob } from "html-to-image";
 import { getMatchesByUserId } from "@/lib/firestore-storage";
-import { computeOpponentStats } from "@/lib/stats";
+import { computeOpponentStats, normalizeOpponentName } from "@/lib/stats";
 import type { LeaderboardEntry } from "@/types";
 
 export default function ComparePage() {
@@ -227,9 +227,9 @@ function ComparisonView({ p1, p2 }: { p1: LeaderboardEntry; p2: LeaderboardEntry
         const matches = await getMatchesByUserId(p1.userId);
         if (cancelled) return;
         const oppStats = computeOpponentStats(matches);
-        // Find p2 by display name (case-insensitive)
-        const p2Lower = p2.displayName.toLowerCase();
-        const vs = oppStats.find((o) => o.opponentName.toLowerCase() === p2Lower);
+        // Match by normalized name (handles "Last, First" ↔ "First Last" etc.)
+        const p2Norm = normalizeOpponentName(p2.displayName);
+        const vs = oppStats.find((o) => normalizeOpponentName(o.opponentName) === p2Norm);
         if (vs) {
           setH2h({ p1Wins: vs.wins, p2Wins: vs.losses, draws: vs.draws, total: vs.totalMatches });
         }
