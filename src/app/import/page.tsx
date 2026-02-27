@@ -26,7 +26,7 @@ type ImportMethod = "extension" | "paste" | "csv" | null;
 
 export default function ImportPage() {
   const router = useRouter();
-  const { user, profile, isGuest } = useAuth();
+  const { user, profile, isGuest, isAdmin } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const bookmarkletRef = useCallback((node: HTMLAnchorElement | null) => {
     if (node) node.setAttribute("href", BOOKMARKLET_HREF);
@@ -432,19 +432,21 @@ export default function ImportPage() {
                     </a>
                     <span className="text-xs text-fab-dim">~5 KB zip file</span>
                   </div>
-                  <div className="flex items-center gap-3 flex-wrap">
-                    <a
-                      href="/fab-stats-extension-beta.zip"
-                      download
-                      className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-fab-surface border border-fab-gold/40 text-fab-gold font-semibold hover:bg-fab-gold/10 transition-colors text-sm"
-                    >
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                      </svg>
-                      Download Beta Extension
-                    </a>
-                    <span className="text-xs text-fab-dim">v2.0 — faster, more accurate parsing</span>
-                  </div>
+                  {isAdmin && (
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <a
+                        href="/fab-stats-extension-beta.zip"
+                        download
+                        className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-fab-surface border border-fab-gold/40 text-fab-gold font-semibold hover:bg-fab-gold/10 transition-colors text-sm"
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                        Download Beta Extension
+                      </a>
+                      <span className="text-xs text-fab-dim">v2.0 — faster, more accurate parsing</span>
+                    </div>
+                  )}
 
                   <div className="bg-fab-bg rounded-lg p-4">
                     <h4 className="text-sm font-semibold text-fab-text mb-3">Setup (one time only):</h4>
