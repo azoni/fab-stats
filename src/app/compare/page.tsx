@@ -317,8 +317,10 @@ function ComparisonView({ p1, p2 }: { p1: LeaderboardEntry; p2: LeaderboardEntry
         weight: 1.5,
       },
     ];
-    // Add H2H as a scored category when data is available
-    if (h2h && h2h.total > 0) {
+    // H2H Record — always show the row
+    if (h2hLoading) {
+      rows.push({ label: "H2H Record", v1: "...", v2: "...", better: 0, weight: 0 });
+    } else if (h2h && h2h.total > 0) {
       rows.push({
         label: "H2H Record",
         v1: `${h2h.p1Wins}W-${h2h.p2Wins}L${h2h.draws > 0 ? `-${h2h.draws}D` : ""}`,
@@ -327,9 +329,11 @@ function ComparisonView({ p1, p2 }: { p1: LeaderboardEntry; p2: LeaderboardEntry
         raw1: h2h.p1Wins, raw2: h2h.p2Wins,
         weight: 2,
       });
+    } else {
+      rows.push({ label: "H2H Record", v1: "No matches", v2: "No matches", better: 0, weight: 0 });
     }
     return rows;
-  }, [p1, p2, h2h]);
+  }, [p1, p2, h2h, h2hLoading]);
 
   // Count who "wins" more categories
   const p1Wins = stats.filter((s) => s.better === 1).length;
