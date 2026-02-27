@@ -584,9 +584,10 @@ export function computeEventStats(matches: MatchRecord[]): EventStats[] {
     // format on individual rounds doesn't split the event.
     // Unnamed events (manual entry): the fallback name already includes format,
     // so format is implicitly part of the key.
+    const normalizedVenue = (match.venue || "").trim().toLowerCase();
     const key = hasExplicitEventName(match)
-      ? `${name}|${match.date}|${match.venue || ""}`
-      : `${name}|${match.date}|${match.venue || ""}|${match.format}`;
+      ? `${name}|${match.date}|${normalizedVenue}`
+      : `${name}|${match.date}|${normalizedVenue}|${match.format}`;
     const existing = map.get(key) ?? [];
     existing.push(match);
     map.set(key, existing);

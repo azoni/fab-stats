@@ -12,6 +12,46 @@
 
   const FABSTATS_IMPORT_URL = "https://fabstats.netlify.app/import";
 
+  // ── Known FaB Hero Names (from @flesh-and-blood/cards) ──────
+  const KNOWN_HEROES = new Set([
+    "Arakni","Arakni, Huntsman","Arakni, Marionette","Arakni, Solitary Confinement","Arakni, Web of Deceit",
+    "Aurora","Aurora, Shooting Star","Azalea","Azalea, Ace in the Hole",
+    "Benji, the Piercing Wind","Betsy","Betsy, Skin in the Game","Blaze, Firemind",
+    "Boltyn","Bravo","Bravo, Showstopper","Bravo, Star of the Show",
+    "Brevant, Civic Protector","Briar","Briar, Warden of Thorns",
+    "Chane","Chane, Bound by Shadow","Cindra","Cindra, Dracai of Retribution",
+    "Dash","Dash I/O","Dash, Database","Dash, Inventor Extraordinaire","Data Doll MKII",
+    "Dorinthea","Dorinthea Ironsong","Dorinthea, Quicksilver Prodigy",
+    "Dromai","Dromai, Ash Artist","Emperor, Dracai of Aesir",
+    "Enigma","Enigma, Ledger of Ancestry","Enigma, New Moon",
+    "Fai","Fai, Rising Rebellion","Fang","Fang, Dracai of Blades",
+    "Florian","Florian, Rotwood Harbinger",
+    "Ira, Crimson Haze","Ira, Scarlet Revenger",
+    "Iyslander","Iyslander, Stormbind",
+    "Kano","Kano, Dracai of Aether",
+    "Kassai","Kassai of the Golden Sand","Kassai, Cintari Sellsword",
+    "Katsu","Katsu, the Wanderer",
+    "Kayo","Kayo, Armed and Dangerous","Kayo, Berserker Runt","Kayo, Strong-arm",
+    "Levia","Levia, Shadowborn Abomination","Lexi","Lexi, Livewire",
+    "Lyath Goldmane","Lyath Goldmane, Vile Savant",
+    "Maxx Nitro","Nuu","Nuu, Alluring Desire",
+    "Oldhim","Oldhim, Grandfather of Eternity",
+    "Olympia","Olympia, Prized Fighter","Oscilio","Oscilio, Constella Intelligence",
+    "Pleiades","Pleiades, Superstar",
+    "Prism","Prism, Advent of Thrones","Prism, Awakener of Sol","Prism, Sculptor of Arc Light",
+    "Rhinar","Rhinar, Reckless Rampage","Riptide","Riptide, Lurker of the Deep",
+    "Ser Boltyn, Breaker of Dawn",
+    "Taipanis, Dracai of Judgement","Taylor",
+    "Teklovossen","Teklovossen, Esteemed Magnate",
+    "Terra","Uzuri","Uzuri, Switchblade",
+    "Valda Brightaxe","Valda, Seismic Impact",
+    "Verdance","Verdance, Thorn of the Rose",
+    "Victor Goldmane","Victor Goldmane, High and Mighty",
+    "Viserai","Viserai, Rune Blood",
+    "Vynnset","Vynnset, Iron Maiden",
+    "Zen","Zen, Tamer of Purpose",
+  ]);
+
   // ── Styles ────────────────────────────────────────────────────
 
   const styleEl = document.createElement("style");
@@ -575,6 +615,10 @@
     return true;
   }
 
+  function isKnownHero(text) {
+    return KNOWN_HEROES.has(text);
+  }
+
   function extractHero(matchTable) {
     let container = matchTable.parentElement;
 
@@ -607,6 +651,7 @@
           if (isValidHeroName(t)) {
             const link = cell.querySelector("a");
             const heroText = link ? link.textContent.trim() : t;
+            if (isKnownHero(heroText)) return heroText;
             if (isValidHeroName(heroText)) return heroText;
           }
         }
@@ -640,6 +685,26 @@
       }
 
       break;
+    }
+
+    // Fallback: scan text near the match table for known hero names.
+    // Walk up from the table and check all link/text nodes for exact hero matches.
+    let scanContainer = matchTable.parentElement;
+    for (let i = 0; i < 5 && scanContainer; i++) {
+      const links = scanContainer.querySelectorAll("a");
+      for (const link of links) {
+        const t = link.textContent.trim();
+        if (isKnownHero(t)) return t;
+      }
+      // Also check text nodes in cells/spans that aren't inside the match table
+      const spans = scanContainer.querySelectorAll("td, span, div, p");
+      for (const el of spans) {
+        if (matchTable.contains(el)) continue;
+        if (el.children.length > 1) continue;
+        const t = el.textContent.trim();
+        if (isKnownHero(t)) return t;
+      }
+      scanContainer = scanContainer.parentElement;
     }
 
     return "Unknown";
@@ -684,7 +749,13 @@
           h === "name"
       );
       const resultIdx = headers.findIndex(
-        (h) => h.includes("result") || h.includes("outcome")
+        (h) =>
+          h.includes("result") ||
+          h.includes("outcome") ||
+          h === "w/l" ||
+          h === "win/loss" ||
+          h === "record" ||
+          h === "status"
       );
 
       // Need at least opponent + result columns

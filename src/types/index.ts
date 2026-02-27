@@ -327,6 +327,10 @@ export interface Achievement {
   category: AchievementCategory;
   icon: string;
   rarity: "common" | "uncommon" | "rare" | "epic" | "legendary";
+  /** Group key for tiered achievements (e.g., "matches", "wins") */
+  group?: string;
+  /** Tier within the group (1 = lowest, higher = harder) */
+  tier?: number;
 }
 
 export type MasteryTier = "novice" | "apprentice" | "skilled" | "expert" | "master" | "grandmaster" | "legend" | "mythic";

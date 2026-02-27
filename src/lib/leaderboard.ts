@@ -73,7 +73,7 @@ export async function updateLeaderboardEntry(
   }
 
   // Event wins (events where wins > losses)
-  const eventWins = events.filter((e) => e.wins > e.losses).length;
+  const eventWins = events.filter((e) => e.wins >= e.losses).length;
 
   // Hero diversity + breakdown
   const heroData = new Map<string, { matches: number; wins: number }>();
