@@ -502,9 +502,9 @@ export function computePlayoffFinishes(eventStats: EventStats[]): PlayoffFinish[
   const finishes: PlayoffFinish[] = [];
 
   for (const event of eventStats) {
-    // Skip event types that don't have formal Top 8 brackets
-    const refinedEventType = refineEventType(event.eventType || "Other", event.eventName);
-    if (refinedEventType === "Armory" || refinedEventType === "Pre-Release" || refinedEventType === "On Demand") continue;
+    const raw = refineEventType(event.eventType || "Other", event.eventName);
+    // Non-competitive event types with a Top 8 get shown as "Other" (marble icons)
+    const refinedEventType = (raw === "Armory" || raw === "Pre-Release" || raw === "On Demand") ? "Other" : raw;
 
     const playoffMatches: MatchRecord[] = [];
 
