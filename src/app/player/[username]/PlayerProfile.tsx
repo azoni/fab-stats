@@ -206,25 +206,32 @@ export default function PlayerProfile() {
     return known.length > 0 ? known[0] : null;
   }, [heroStats]);
 
-  // Compute highest playoff finish across all major events for card border
+  // Card border = highest event tier where the player made playoffs
   const cardBorder = useMemo(() => {
-    const typeRank: Record<string, number> = { champion: 5, finalist: 4, top4: 3, top8: 2 };
-    const typeStyle: Record<string, { border: string; shadow: string }> = {
-      top8: { border: "#cd7f32", shadow: "0 0 8px rgba(205,127,50,0.25)" },
-      top4: { border: "#c0c0c0", shadow: "0 0 8px rgba(192,192,192,0.3)" },
-      finalist: { border: "#fbbf24", shadow: "0 0 10px rgba(251,191,36,0.35)" },
-      champion: { border: "#a78bfa", shadow: "0 0 12px rgba(167,139,250,0.4), 0 0 24px rgba(167,139,250,0.15)" },
+    const tierRank: Record<string, number> = {
+      "Battle Hardened": 1,
+      "The Calling": 2,
+      Nationals: 3,
+      "Pro Tour": 4,
+      Worlds: 5,
+    };
+    const tierStyle: Record<string, { border: string; shadow: string }> = {
+      "Battle Hardened": { border: "#cd7f32", shadow: "0 0 8px rgba(205,127,50,0.25)" },
+      "The Calling": { border: "#60a5fa", shadow: "0 0 8px rgba(96,165,250,0.3)" },
+      Nationals: { border: "#f87171", shadow: "0 0 10px rgba(248,113,113,0.3)" },
+      "Pro Tour": { border: "#a78bfa", shadow: "0 0 12px rgba(167,139,250,0.35)" },
+      Worlds: { border: "#fbbf24", shadow: "0 0 12px rgba(251,191,36,0.4), 0 0 24px rgba(251,191,36,0.15)" },
     };
     let best: string | null = null;
     let bestScore = 0;
     for (const f of playoffFinishes) {
-      const score = typeRank[f.type] || 0;
+      const score = tierRank[f.eventType] || 0;
       if (score > bestScore) {
-        best = f.type;
+        best = f.eventType;
         bestScore = score;
       }
     }
-    return best ? typeStyle[best] : null;
+    return best ? tierStyle[best] : null;
   }, [playoffFinishes]);
 
   // Build a human-readable label for active filters (shown on share cards)
