@@ -211,100 +211,93 @@ export default function Dashboard() {
               )}
               {achievements.length > 0 && <AchievementBadges earned={achievements} max={4} />}
             </div>
-            {/* Streak pill */}
-            {streaks.currentStreak && streaks.currentStreak.count > 0 && (
-              <div className={`shrink-0 flex flex-col items-center px-3 py-1.5 rounded-lg ${
-                streaks.currentStreak.type === MatchResult.Win
-                  ? "bg-fab-win/10 ring-1 ring-fab-win/20"
-                  : "bg-fab-loss/10 ring-1 ring-fab-loss/20"
-              }`}>
-                <div className="flex items-baseline gap-0.5">
-                  <span className={`text-2xl font-black ${
-                    streaks.currentStreak.type === MatchResult.Win ? "text-fab-win" : "text-fab-loss"
-                  }`}>
-                    {streaks.currentStreak.count}
-                  </span>
-                  <span className={`text-sm font-bold ${
-                    streaks.currentStreak.type === MatchResult.Win ? "text-fab-win" : "text-fab-loss"
-                  }`}>
-                    {streaks.currentStreak.type === MatchResult.Win ? "W" : "L"}
-                  </span>
-                </div>
-                <p className="text-[9px] text-fab-dim uppercase tracking-wider">streak</p>
-              </div>
-            )}
           </div>
 
-          {/* Last 20 match dots */}
-          {last20.length > 0 && (
-            <div className="flex gap-1 flex-wrap mb-4">
-              {last20.map((m, i) => (
-                <div
-                  key={i}
-                  className={`w-2.5 h-2.5 rounded-full ${
-                    m.result === MatchResult.Win ? "bg-fab-win" : m.result === MatchResult.Loss ? "bg-fab-loss" : m.result === MatchResult.Bye ? "bg-fab-muted" : "bg-fab-draw"
-                  } ${i === last20.length - 1 ? "ring-2 ring-white/20 scale-110" : ""}`}
-                  title={`${localDate(m.date).toLocaleDateString()} - ${m.result}`}
-                />
-              ))}
-            </div>
-          )}
-
-          {/* Quick stats row */}
-          <div className={`grid grid-cols-3 ${bestFinish ? "sm:grid-cols-6" : "sm:grid-cols-5"} gap-3 mb-4`}>
-            <div>
-              <p className="text-[10px] text-fab-dim uppercase tracking-wider">Win Rate</p>
-              <p className={`text-lg font-bold ${overall.overallWinRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>
+          {/* Stats body — two-column layout */}
+          <div className="flex flex-col sm:flex-row gap-4 mb-4">
+            {/* Hero stat: Win Rate + Streak */}
+            <div className="flex flex-col items-center justify-center sm:border-r sm:border-fab-border/50 sm:pr-6 sm:min-w-[120px]">
+              <p className={`text-4xl font-black tracking-tight ${overall.overallWinRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>
                 {overall.overallWinRate.toFixed(1)}%
               </p>
+              <p className="text-[10px] text-fab-dim uppercase tracking-wider mt-0.5">Win Rate</p>
+              {streaks.currentStreak && streaks.currentStreak.count > 0 && (
+                <div className={`mt-2 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                  streaks.currentStreak.type === MatchResult.Win ? "bg-fab-win/10 text-fab-win" : "bg-fab-loss/10 text-fab-loss"
+                }`}>
+                  {streaks.currentStreak.count}{streaks.currentStreak.type === MatchResult.Win ? "W" : "L"} streak
+                </div>
+              )}
             </div>
-            <div>
-              <p className="text-[10px] text-fab-dim uppercase tracking-wider">Matches</p>
-              <p className="text-lg font-bold text-fab-text">{overall.totalMatches}</p>
-            </div>
-            <div>
-              <p className="text-[10px] text-fab-dim uppercase tracking-wider">Record</p>
-              <p className="text-lg font-bold">
-                <span className="text-fab-win">{overall.totalWins}W</span>
-                <span className="text-fab-dim">-</span>
-                <span className="text-fab-loss">{overall.totalLosses}L</span>
-                {overall.totalDraws > 0 && <><span className="text-fab-dim">-</span><span className="text-fab-draw">{overall.totalDraws}D</span></>}
-              </p>
-            </div>
-            <div>
-              <p className="text-[10px] text-fab-dim uppercase tracking-wider">Events</p>
-              <p className="text-lg font-bold text-fab-text">{eventStats.length}</p>
-            </div>
-            <div>
-              <p className="text-[10px] text-fab-dim uppercase tracking-wider">Top Hero</p>
-              <p className="text-lg font-bold text-fab-text truncate">{topHero?.heroName || "—"}</p>
-            </div>
-            {bestFinish && (
-              <div className="relative">
-                <p className="text-[10px] text-fab-dim uppercase tracking-wider">Best Finish</p>
-                <p className="text-lg font-bold text-fab-gold truncate">{bestFinish.label}</p>
-                <p className="text-[10px] text-fab-dim truncate">{bestFinish.eventName}</p>
-                <button
-                  onClick={() => setBestFinishShareOpen(true)}
-                  className="absolute top-0 right-0 flex items-center gap-1 px-1.5 py-0.5 rounded-md text-fab-dim hover:text-fab-gold hover:bg-fab-gold/10 transition-colors"
-                  title="Share best finish"
-                >
-                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 8.25H7.5a2.25 2.25 0 00-2.25 2.25v9a2.25 2.25 0 002.25 2.25h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25H15m0-3l-3-3m0 0l-3 3m3-3v11.25" />
-                  </svg>
-                  <span className="text-[9px] font-semibold">Share</span>
-                </button>
+
+            {/* Record + Form */}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-baseline gap-3 flex-wrap mb-2">
+                <p className="text-lg font-bold">
+                  <span className="text-fab-win">{overall.totalWins}W</span>
+                  <span className="text-fab-dim"> - </span>
+                  <span className="text-fab-loss">{overall.totalLosses}L</span>
+                  {overall.totalDraws > 0 && <><span className="text-fab-dim"> - </span><span className="text-fab-draw">{overall.totalDraws}D</span></>}
+                </p>
+                <span className="text-xs text-fab-dim">{overall.totalMatches} matches</span>
               </div>
+
+              {last20.length > 0 && (
+                <div>
+                  <p className="text-[9px] text-fab-dim uppercase tracking-wider mb-1.5">Last 20</p>
+                  <div className="flex gap-1 flex-wrap">
+                    {last20.map((m, i) => (
+                      <div
+                        key={i}
+                        className={`w-2.5 h-2.5 rounded-full ${
+                          m.result === MatchResult.Win ? "bg-fab-win" : m.result === MatchResult.Loss ? "bg-fab-loss" : m.result === MatchResult.Bye ? "bg-fab-muted" : "bg-fab-draw"
+                        } ${i === last20.length - 1 ? "ring-2 ring-white/20 scale-110" : ""}`}
+                        title={`${localDate(m.date).toLocaleDateString()} - ${m.result}`}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Info pills row */}
+          <div className="flex flex-wrap items-center gap-2 mb-4">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-fab-bg/50 text-xs">
+              <span className="text-fab-dim">Events</span>
+              <span className="font-semibold text-fab-text">{eventStats.length}</span>
+            </span>
+            {topHero && (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-fab-bg/50 text-xs min-w-0">
+                <span className="text-fab-dim shrink-0">Top Hero</span>
+                <span className="font-semibold text-fab-text truncate">{topHero.heroName}</span>
+              </span>
+            )}
+            {bestFinish && (
+              <button
+                onClick={() => setBestFinishShareOpen(true)}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-fab-gold/8 text-xs hover:bg-fab-gold/15 transition-colors min-w-0"
+                title={`${bestFinish.label} — ${bestFinish.eventName}`}
+              >
+                <svg className="w-3 h-3 text-fab-gold shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 1c-1.828 0-3.623.149-5.371.435a.75.75 0 00-.629.74v.387c0 3.787 1.818 7.152 4.63 9.275A.5.5 0 019 12.24V16H7a.75.75 0 000 1.5h6a.75.75 0 000-1.5h-2v-3.76a.5.5 0 01.37-.483C14.182 9.764 16 6.4 16 2.612v-.387a.75.75 0 00-.629-.74A49.803 49.803 0 0010 1z" clipRule="evenodd" />
+                </svg>
+                <span className="font-semibold text-fab-gold">{bestFinish.label}</span>
+                <span className="text-fab-dim truncate hidden sm:inline">{bestFinish.eventName}</span>
+              </button>
             )}
           </div>
 
-          {/* View full profile link */}
+          {/* View full profile */}
           {profile?.username && (
             <Link
               href={`/player/${profile.username}`}
-              className="text-sm text-fab-gold hover:text-fab-gold-light transition-colors"
+              className="inline-flex items-center gap-1.5 text-sm text-fab-gold hover:text-fab-gold-light transition-colors font-medium"
             >
-              View Full Profile &rarr;
+              View Full Profile
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+              </svg>
             </Link>
           )}
         </div>

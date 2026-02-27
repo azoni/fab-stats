@@ -182,7 +182,7 @@
       "</div>";
   }
 
-  function showCompletionOverlay(matchCount, pageCount, importUrl, clipboardOk) {
+  function showCompletionOverlay(matchCount, pageCount, importUrl, clipboardOk, downloadJson) {
     if (!overlay) {
       overlay = document.createElement("div");
       overlay.id = "fab-stats-overlay";
@@ -204,26 +204,54 @@
     }
 
     const pages = pageCount > 1 ? " across " + pageCount + " pages" : "";
-    const backup = clipboardOk
-      ? '<div style="color:#666;font-size:11px;margin-top:12px;">Also copied to clipboard as backup</div>'
-      : "";
+    const hasAutoImport = importUrl !== FABSTATS_IMPORT_URL;
+
+    let backup = "";
+    if (clipboardOk) {
+      backup = '<div style="color:#666;font-size:11px;margin-top:12px;">Also copied to clipboard as backup</div>';
+    }
+
+    // For large exports: show download button + instructions instead of auto-import link
+    let actionHtml;
+    if (hasAutoImport) {
+      actionHtml =
+        '<a href="' + importUrl + '" target="_blank" style="display:block;padding:14px 24px;background:linear-gradient(135deg,#d4af37,#c9a84c);color:#1a1a2e;border-radius:12px;font-weight:800;font-size:16px;text-decoration:none;margin-bottom:8px;">' +
+        "Open FaB Stats Import \u2192</a>" + backup;
+    } else {
+      actionHtml =
+        '<button id="fab-stats-download-json" style="display:block;width:100%;padding:14px 24px;background:linear-gradient(135deg,#d4af37,#c9a84c);color:#1a1a2e;border:none;border-radius:12px;font-weight:800;font-size:16px;cursor:pointer;margin-bottom:8px;">' +
+        "\u2B07 Download Match Data</button>" +
+        '<div style="color:#aaa;font-size:12px;margin-bottom:12px;line-height:1.5;">' +
+        "Large export \u2014 save the file, then upload it on the " +
+        '<a href="' + FABSTATS_IMPORT_URL + '" target="_blank" style="color:#d4af37;text-decoration:underline;">FaB Stats Import</a> page' +
+        "</div>" + backup;
+    }
 
     overlay.innerHTML =
       '<div style="background:#1a1a2e;border:2px solid #d4af37;border-radius:16px;padding:32px 40px;max-width:420px;width:90%;text-align:center;box-shadow:0 16px 48px rgba(0,0,0,0.6);">' +
       '<div style="font-size:48px;margin-bottom:12px;">\u2705</div>' +
       '<div style="font-size:22px;font-weight:800;color:#d4af37;margin-bottom:4px;">Export Complete!</div>' +
       '<div style="font-size:15px;color:#e8e0cc;margin-bottom:20px;"><strong>' +
-      matchCount +
-      " matches</strong>" +
-      pages +
-      " ready to import</div>" +
-      '<a href="' +
-      importUrl +
-      '" target="_blank" style="display:block;padding:14px 24px;background:linear-gradient(135deg,#d4af37,#c9a84c);color:#1a1a2e;border-radius:12px;font-weight:800;font-size:16px;text-decoration:none;margin-bottom:8px;">' +
-      "Open FaB Stats Import \u2192</a>" +
-      backup +
+      matchCount + " matches</strong>" + pages + " ready to import</div>" +
+      actionHtml +
       '<button id="fab-stats-close-overlay" style="margin-top:16px;background:none;border:1px solid #333;color:#888;padding:8px 20px;border-radius:8px;cursor:pointer;font-size:12px;">Close</button>' +
       "</div>";
+
+    // Download JSON button handler
+    const dlBtn = overlay.querySelector("#fab-stats-download-json");
+    if (dlBtn && downloadJson) {
+      dlBtn.addEventListener("click", () => {
+        const blob = new Blob([downloadJson], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "fab-stats-export.json";
+        a.click();
+        URL.revokeObjectURL(url);
+        dlBtn.textContent = "\u2705 Downloaded!";
+        dlBtn.style.opacity = "0.7";
+      });
+    }
 
     const closeBtn = overlay.querySelector("#fab-stats-close-overlay");
     if (closeBtn) {
@@ -1012,20 +1040,20 @@
       return;
     }
 
-    // Copy to clipboard as backup
+    const compact = JSON.stringify(state.matches);
+
+    // Copy to clipboard (compact JSON to handle large datasets)
     let clipboardOk = false;
     try {
-      const jsonPretty = JSON.stringify(state.matches, null, 2);
-      await navigator.clipboard.writeText(jsonPretty);
+      await navigator.clipboard.writeText(compact);
       clipboardOk = true;
     } catch {
-      // Clipboard might not be available
+      // Clipboard might not be available or data too large
     }
 
     // Build import URL — include data in hash for auto-import
     let importUrl = FABSTATS_IMPORT_URL;
     try {
-      const compact = JSON.stringify(state.matches);
       const encoded = btoa(
         encodeURIComponent(compact).replace(/%([0-9A-F]{2})/g, function (
           _,
@@ -1041,11 +1069,15 @@
       // If encoding fails, just use base URL
     }
 
+    // For large exports, prepare a downloadable JSON file
+    const needsFileDownload = importUrl === FABSTATS_IMPORT_URL;
+
     showCompletionOverlay(
       state.matches.length,
       state.pagesScraped,
       importUrl,
-      clipboardOk
+      clipboardOk,
+      needsFileDownload ? compact : null
     );
   }
 

@@ -166,13 +166,28 @@ export default function ImportPage() {
     setCsvMatches(null);
     setPasteResult(null);
 
-    if (!file.name.endsWith(".csv")) {
-      setError("Please upload a CSV file.");
+    const isJson = file.name.endsWith(".json");
+    const isCsv = file.name.endsWith(".csv");
+
+    if (!isCsv && !isJson) {
+      setError("Please upload a CSV or JSON file.");
       return;
     }
 
     try {
       const text = await file.text();
+
+      if (isJson) {
+        const result = parseExtensionJson(text);
+        if (result.totalMatches === 0) {
+          setError("No valid matches found in the JSON file.");
+          return;
+        }
+        setPasteResult(result);
+        setAutoDetected(true);
+        return;
+      }
+
       const parsed = parseGemCsv(text);
       if (parsed.matches.length === 0) {
         setError("No valid matches found in the CSV.");
@@ -181,7 +196,7 @@ export default function ImportPage() {
       setCsvMatches(parsed.matches);
       setCsvMetadata(parsed.metadata);
     } catch {
-      setError("Failed to parse the CSV file.");
+      setError("Failed to parse the file.");
     }
   }
 
@@ -621,13 +636,13 @@ export default function ImportPage() {
                   <FileIcon className="w-5 h-5 text-fab-muted" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-fab-text">Upload CSV</h3>
+                  <h3 className="font-semibold text-fab-text">Upload File</h3>
                   <p className="text-sm text-fab-muted mt-0.5">
                     For users of the{" "}
                     <a href="https://github.com/AltarisV/FaB-History-Scraper" target="_blank" rel="noopener noreferrer" className="text-fab-gold hover:underline" onClick={(e) => e.stopPropagation()}>
                       FaB History Scraper
                     </a>{" "}
-                    tool. Upload your <code className="text-fab-gold text-xs">match_history.csv</code> file.
+                    tool, or a <code className="text-fab-gold text-xs">.json</code> file from a large extension export.
                   </p>
                 </div>
                 <svg className={`w-5 h-5 text-fab-dim shrink-0 mt-1 transition-transform ${method === "csv" ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -647,9 +662,9 @@ export default function ImportPage() {
                     className={`border-2 border-dashed rounded-lg p-10 text-center cursor-pointer transition-colors ${dragActive ? "border-fab-gold bg-fab-gold/5" : "border-fab-border hover:border-fab-muted"}`}
                   >
                     <FileIcon className="w-10 h-10 text-fab-muted mb-3 mx-auto" />
-                    <p className="text-fab-text font-medium mb-1">Drop your CSV here</p>
-                    <p className="text-fab-dim text-sm">or click to browse</p>
-                    <input ref={fileInputRef} type="file" accept=".csv" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
+                    <p className="text-fab-text font-medium mb-1">Drop your file here</p>
+                    <p className="text-fab-dim text-sm">CSV or JSON &middot; click to browse</p>
+                    <input ref={fileInputRef} type="file" accept=".csv,.json" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
                   </div>
                 </div>
               </div>
