@@ -291,6 +291,24 @@ export function ProfileShareModal({
   const [selectedTheme, setSelectedTheme] = useState(CARD_THEMES[0]);
   const [shareStatus, setShareStatus] = useState<"idle" | "copied" | "sharing">("idle");
 
+  async function captureCard(): Promise<Blob | null> {
+    if (!cardRef.current) return null;
+    const opts = { pixelRatio: 2, backgroundColor: selectedTheme.bg, cacheBust: true };
+    try {
+      return await toBlob(cardRef.current, opts);
+    } catch {
+      // CORS failure on external images — retry without <img> elements
+      try {
+        return await toBlob(cardRef.current, {
+          ...opts,
+          filter: (node: HTMLElement) => node.tagName !== "IMG",
+        });
+      } catch {
+        return null;
+      }
+    }
+  }
+
   async function handleCopy() {
     const profileUrl = data.username
       ? `${window.location.origin}/player/${data.username}`
@@ -299,9 +317,7 @@ export function ProfileShareModal({
 
     setShareStatus("sharing");
     try {
-      const blob = cardRef.current
-        ? await toBlob(cardRef.current, { pixelRatio: 2, backgroundColor: selectedTheme.bg })
-        : null;
+      const blob = await captureCard();
 
       const isMobile = "ontouchstart" in window || navigator.maxTouchPoints > 0;
       if (isMobile && blob && navigator.share && navigator.canShare?.({ files: [new File([blob], "fab-stats.png", { type: "image/png" })] })) {
