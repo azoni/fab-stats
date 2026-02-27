@@ -238,7 +238,7 @@ export function ArmoryGarden({ eventStats }: { eventStats: EventStats[] }) {
   if (attended === 0) return null;
 
   return (
-    <div className="bg-fab-surface/50 border border-fab-border rounded-lg px-4 py-3">
+    <div className="bg-fab-surface/50 border border-fab-border rounded-lg px-4 py-3 flex flex-col">
       <style>{`
         @keyframes garden-sway {
           0%, 100% { transform: rotate(-2.5deg) translateY(0); }
@@ -271,7 +271,7 @@ export function ArmoryGarden({ eventStats }: { eventStats: EventStats[] }) {
         </div>
 
         {/* The garden bed */}
-        <div className="relative rounded-md overflow-hidden">
+        <div className="relative rounded-md overflow-hidden flex-1 flex flex-col justify-end">
           {/* Sky-to-soil gradient */}
           <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-amber-950/20 pointer-events-none" />
 

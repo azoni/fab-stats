@@ -195,3 +195,74 @@ body::before {
   animation: border-rotate 6s linear infinite;
   box-shadow: 0 0 16px 2px rgba(205, 127, 50, 0.1), inset 0 1px 0 rgba(205, 127, 50, 0.05);
 }
+
+/* ── Spotlight card accent borders ── */
+
+.spotlight-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.spotlight-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+}
+
+.spotlight-card::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.spotlight-card:hover::after {
+  opacity: 1;
+}
+
+.spotlight-streak::before { background: linear-gradient(90deg, #f97316, #fb923c, #f97316); }
+.spotlight-streak::after { background: linear-gradient(180deg, rgba(249,115,22,0.06) 0%, transparent 60%); }
+
+.spotlight-warrior::before { background: linear-gradient(90deg, #a855f7, #c084fc, #a855f7); }
+.spotlight-warrior::after { background: linear-gradient(180deg, rgba(168,85,247,0.06) 0%, transparent 60%); }
+
+.spotlight-winrate::before { background: linear-gradient(90deg, #22d3ee, #67e8f9, #22d3ee); }
+.spotlight-winrate::after { background: linear-gradient(180deg, rgba(34,211,238,0.06) 0%, transparent 60%); }
+
+.spotlight-rising::before { background: linear-gradient(90deg, #34d399, #6ee7b7, #34d399); }
+.spotlight-rising::after { background: linear-gradient(180deg, rgba(52,211,153,0.06) 0%, transparent 60%); }
+
+.spotlight-grinder::before { background: linear-gradient(90deg, #fbbf24, #fcd34d, #fbbf24); }
+.spotlight-grinder::after { background: linear-gradient(180deg, rgba(251,191,36,0.06) 0%, transparent 60%); }
+
+.spotlight-active::before { background: linear-gradient(90deg, #60a5fa, #93c5fd, #60a5fa); }
+.spotlight-active::after { background: linear-gradient(180deg, rgba(96,165,250,0.06) 0%, transparent 60%); }
+
+/* ── Meta rank badges ── */
+
+.meta-rank-1 { color: #fbbf24; text-shadow: 0 0 8px rgba(251,191,36,0.4); }
+.meta-rank-2 { color: #d1d5db; text-shadow: 0 0 6px rgba(209,213,219,0.3); }
+.meta-rank-3 { color: #d97706; text-shadow: 0 0 6px rgba(217,119,6,0.3); }
+
+/* ── Section header accent ── */
+
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.section-header::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, var(--color-fab-border), transparent);
+}

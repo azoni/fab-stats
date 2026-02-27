@@ -479,7 +479,7 @@ export default function PlayerProfile() {
       {/* Trophy Case + Armory Garden */}
       {(playoffFinishes.length > 0 || eventStats.some(e => e.eventType === "Armory")) && (
         <div className={playoffFinishes.length > 0 && eventStats.some(e => e.eventType === "Armory")
-          ? "grid grid-cols-1 md:grid-cols-2 gap-3 items-start"
+          ? "grid grid-cols-1 md:grid-cols-2 gap-3"
           : ""
         }>
           {playoffFinishes.length > 0 && <TrophyCase finishes={playoffFinishes} />}

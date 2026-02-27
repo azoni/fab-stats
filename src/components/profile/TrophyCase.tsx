@@ -3,7 +3,7 @@
 import type { PlayoffFinish } from "@/lib/stats";
 import { localDate } from "@/lib/constants";
 
-type FinishTier = "badge" | "medal" | "trophy";
+type FinishTier = "badge" | "medal" | "trophy" | "marble";
 
 const TIER_MAP: Record<string, FinishTier> = {
   Skirmish: "badge",
@@ -27,6 +27,7 @@ const EVENT_ABBR: Record<string, string> = {
   "Pro Tour": "PT",
   Worlds: "WLD",
   Championship: "CH",
+  Other: "OTH",
 };
 
 const PLACEMENT_TEXT: Record<PlayoffFinish["type"], string> = {
@@ -36,7 +37,7 @@ const PLACEMENT_TEXT: Record<PlayoffFinish["type"], string> = {
   top8: "T8",
 };
 
-const TIER_SORT: Record<FinishTier, number> = { trophy: 0, medal: 1, badge: 2 };
+const TIER_SORT: Record<FinishTier, number> = { trophy: 0, medal: 1, badge: 2, marble: 3 };
 const TYPE_SORT: Record<PlayoffFinish["type"], number> = { champion: 0, finalist: 1, top4: 2, top8: 3 };
 
 function col(type: PlayoffFinish["type"]) {
@@ -55,6 +56,44 @@ function glowFilter(type: PlayoffFinish["type"]) {
     case "top4":     return "drop-shadow(0 0 4px rgba(245,158,11,0.25))";
     case "top8":     return "drop-shadow(0 0 4px rgba(96,165,250,0.25))";
   }
+}
+
+/* ── Marble (Other / unrecognised events) ── */
+const MARBLE_PALETTES = [
+  { from: "#a78bfa", to: "#6d28d9", swirl: "#c4b5fd", shine: "#ede9fe" },
+  { from: "#f472b6", to: "#be185d", swirl: "#fbcfe8", shine: "#fce7f3" },
+  { from: "#34d399", to: "#047857", swirl: "#6ee7b7", shine: "#d1fae5" },
+  { from: "#38bdf8", to: "#0369a1", swirl: "#7dd3fc", shine: "#e0f2fe" },
+  { from: "#fb923c", to: "#c2410c", swirl: "#fdba74", shine: "#fff7ed" },
+  { from: "#f87171", to: "#b91c1c", swirl: "#fca5a5", shine: "#fef2f2" },
+];
+
+function MarbleIcon({ type, id, idx }: { type: PlayoffFinish["type"]; id: string; idx: number }) {
+  const pal = MARBLE_PALETTES[idx % MARBLE_PALETTES.length];
+  const ch = type === "champion";
+  const c = col(type);
+  const size = ch ? "w-6 h-6" : "w-5 h-5";
+  return (
+    <svg viewBox="0 0 32 32" className={size} style={{ filter: `drop-shadow(0 0 4px ${pal.from}55)` }}>
+      <defs>
+        <radialGradient id={`${id}mg`} cx="0.35" cy="0.3" r="0.65">
+          <stop offset="0%" stopColor={pal.shine} />
+          <stop offset="40%" stopColor={pal.from} />
+          <stop offset="100%" stopColor={pal.to} />
+        </radialGradient>
+      </defs>
+      {/* Glass sphere */}
+      <circle cx="16" cy="16" r="14" fill={`url(#${id}mg)`} stroke={pal.to} strokeWidth="0.8" />
+      {/* Inner swirl */}
+      <path d="M10 20Q14 10 22 14Q26 18 18 24Q14 26 10 20Z" fill={pal.swirl} opacity="0.25" />
+      <path d="M14 8Q18 12 24 10" fill="none" stroke={pal.swirl} strokeWidth="1.2" opacity="0.3" strokeLinecap="round" />
+      {/* Glass highlight */}
+      <ellipse cx="12" cy="11" rx="4" ry="2.5" fill="white" opacity="0.45" transform="rotate(-20 12 11)" />
+      <ellipse cx="11" cy="10.5" rx="1.8" ry="1" fill="white" opacity="0.6" transform="rotate(-20 11 10.5)" />
+      {/* Placement text */}
+      <text x="16" y="18" textAnchor="middle" dominantBaseline="middle" fill={c.text} fontSize="7.5" fontWeight="700" fontFamily="system-ui,sans-serif" opacity="0.85">{PLACEMENT_TEXT[type]}</text>
+    </svg>
+  );
 }
 
 /* ── Shield Badge (Skirmish / RTN / PQ) ── */
@@ -151,8 +190,8 @@ export function TrophyCase({ finishes }: { finishes: PlayoffFinish[] }) {
   if (finishes.length === 0) return null;
 
   const sorted = [...finishes].sort((a, b) => {
-    const tA = TIER_SORT[TIER_MAP[a.eventType] || "badge"];
-    const tB = TIER_SORT[TIER_MAP[b.eventType] || "badge"];
+    const tA = TIER_SORT[TIER_MAP[a.eventType] || "marble"];
+    const tB = TIER_SORT[TIER_MAP[b.eventType] || "marble"];
     if (tA !== tB) return tA - tB;
     return TYPE_SORT[a.type] - TYPE_SORT[b.type];
   });
@@ -181,15 +220,18 @@ export function TrophyCase({ finishes }: { finishes: PlayoffFinish[] }) {
             </div>
             <div className="flex flex-wrap gap-1.5 items-end">
               {g.items.map((f) => {
-                const tier = TIER_MAP[f.eventType] || "badge";
-                const abbr = EVENT_ABBR[f.eventType] || f.eventType.slice(0, 2).toUpperCase();
+                const tier = TIER_MAP[f.eventType] || "marble";
+                const abbr = EVENT_ABBR[f.eventType] || f.eventType.slice(0, 3).toUpperCase();
                 const id = `tc${idx}`;
                 const i = idx++;
                 const date = (() => { try { return localDate(f.eventDate).toLocaleDateString("en-US", { month: "short", year: "numeric" }); } catch { return ""; } })();
                 const tip = `${PLACEMENT_TEXT[f.type]} — ${f.eventName}${date ? ` (${date})` : ""}`;
                 return (
                   <div key={`${f.eventName}-${f.eventDate}-${i}`} className="flex flex-col items-center" title={tip}>
-                    {tier === "trophy" ? <TrophyIcon type={f.type} id={id} /> : tier === "medal" ? <MedalIcon type={f.type} id={id} /> : <ShieldBadge type={f.type} id={id} />}
+                    {tier === "trophy" ? <TrophyIcon type={f.type} id={id} /> :
+                     tier === "medal" ? <MedalIcon type={f.type} id={id} /> :
+                     tier === "marble" ? <MarbleIcon type={f.type} id={id} idx={i} /> :
+                     <ShieldBadge type={f.type} id={id} />}
                     <span className="text-[8px] text-fab-dim font-medium mt-0.5 leading-none">{abbr}</span>
                   </div>
                 );
