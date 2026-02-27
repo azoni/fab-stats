@@ -402,6 +402,8 @@ export function parseExtensionJson(json: string): PasteImportResult {
     opponentGemId?: string;
     result?: string;
     extensionVersion?: string;
+    gemEventId?: string;
+    xpModifier?: number;
   }>;
 
   const eventMap = new Map<
@@ -417,8 +419,10 @@ export function parseExtensionJson(json: string): PasteImportResult {
     const eventName = expandEventName(entry.event || "Unknown Event");
     const eventDate = entry.date || new Date().toISOString().split("T")[0];
 
-    // Group by name + date to prevent merging different events with the same name
-    const groupKey = `${eventName}|${eventDate}`;
+    // Use gemEventId as grouping key when available (more reliable), otherwise name+date
+    const groupKey = entry.gemEventId
+      ? `gem:${entry.gemEventId}`
+      : `${eventName}|${eventDate}`;
 
     // Detect format from explicit field, falling back to event name
     let format = guessFormat(entry.format || "");
@@ -463,6 +467,7 @@ export function parseExtensionJson(json: string): PasteImportResult {
       rated: entry.rated,
       source: "extension",
       extensionVersion: entry.extensionVersion || undefined,
+      gemEventId: entry.gemEventId || undefined,
     });
   }
 

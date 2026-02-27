@@ -1,0 +1,18 @@
+{
+  "manifest_version": 3,
+  "name": "FaB Stats - GEM Exporter (BETA)",
+  "version": "2.0.0",
+  "description": "BETA / TESTING — Export your Flesh and Blood match history from GEM to FaB Stats. Uses structured parsing for 100% accurate data extraction.",
+  "icons": {
+    "16": "icon16.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://gem.fabtcg.com/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}
