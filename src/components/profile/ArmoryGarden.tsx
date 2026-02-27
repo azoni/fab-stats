@@ -125,82 +125,112 @@ function SmallFlower({ color, accent, idx }: { color: string; accent: string; id
   );
 }
 
-/* ── crown flower (undefeated armory run) ──────────────── */
-function CrownFlower({ color, accent, idx }: { color: string; accent: string; idx: number }) {
-  const petals = 8;
-  const cx = 16, cy = 15;
-  const orbit = 7;
-  const r = 4;
-  const stemH = 18 + (idx % 4) * 2;
-  const h = cy + 8 + stemH;
-  const leaf1Y = cy + 8 + stemH * 0.35;
-  const leaf2Y = cy + 8 + stemH * 0.6;
+/* ── sunflower (undefeated armory run) ─────────────────── */
+function Sunflower({ color, accent, idx }: { color: string; accent: string; idx: number }) {
+  const cx = 18, cy = 18;
+  const outerPetals = 12;
+  const innerPetals = 12;
+  const stemH = 20 + (idx % 4) * 2;
+  const h = cy + 10 + stemH;
+  const leaf1Y = cy + 10 + stemH * 0.3;
+  const leaf2Y = cy + 10 + stemH * 0.6;
 
   return (
     <svg
-      width="32"
+      width="36"
       height={h}
-      viewBox={`0 0 32 ${h}`}
+      viewBox={`0 0 36 ${h}`}
       className="garden-flower"
       style={{ animationDelay: `${(idx % 10) * 0.3}s` }}
     >
-      {/* soft glow */}
-      <circle cx={cx} cy={cy} r="16" fill={color} opacity="0.08" />
+      {/* warm glow */}
+      <circle cx={cx} cy={cy} r="20" fill="#fbbf24" opacity="0.06" />
 
-      {/* stem */}
+      {/* stem — thicker */}
       <line
-        x1="16" y1={cy + 8} x2="16" y2={h}
-        stroke="#22c55e" strokeWidth="2" strokeLinecap="round"
+        x1="18" y1={cy + 10} x2="18" y2={h}
+        stroke="#16a34a" strokeWidth="2.4" strokeLinecap="round"
       />
       {/* leaves */}
       <ellipse
-        cx="21" cy={leaf1Y}
-        rx="4.5" ry="1.5"
+        cx="24" cy={leaf1Y} rx="5.5" ry="2"
         fill="#22c55e"
-        transform={`rotate(-28 21 ${leaf1Y})`}
+        transform={`rotate(-25 24 ${leaf1Y})`}
       />
       <ellipse
-        cx="11" cy={leaf2Y}
-        rx="4.5" ry="1.5"
+        cx="12" cy={leaf2Y} rx="5.5" ry="2"
         fill="#22c55e"
-        transform={`rotate(28 11 ${leaf2Y})`}
+        transform={`rotate(25 12 ${leaf2Y})`}
       />
 
-      {/* outer petals */}
-      {Array.from({ length: petals }).map((_, i) => {
-        const a = ((i * 360) / petals - 90) * (Math.PI / 180);
+      {/* outer petals — elongated pointed ellipses */}
+      {Array.from({ length: outerPetals }).map((_, i) => {
+        const deg = (i * 360) / outerPetals;
+        const a = (deg - 90) * (Math.PI / 180);
+        const px = cx + Math.cos(a) * 9;
+        const py = cy + Math.sin(a) * 9;
         return (
-          <circle
-            key={i}
-            cx={cx + Math.cos(a) * orbit}
-            cy={cy + Math.sin(a) * orbit}
-            r={r}
+          <ellipse
+            key={`o-${i}`}
+            cx={px} cy={py}
+            rx="2.2" ry="5.5"
             fill={color}
             stroke={accent}
-            strokeWidth="0.5"
-            opacity={0.9}
+            strokeWidth="0.4"
+            opacity={0.92}
+            transform={`rotate(${deg} ${px} ${py})`}
           />
         );
       })}
-      {/* inner ring */}
-      {Array.from({ length: petals }).map((_, i) => {
-        const a = ((i * 360 / petals) + (180 / petals) - 90) * (Math.PI / 180);
+      {/* inner petals — shorter, offset between outer */}
+      {Array.from({ length: innerPetals }).map((_, i) => {
+        const deg = (i * 360) / innerPetals + 360 / innerPetals / 2;
+        const a = (deg - 90) * (Math.PI / 180);
+        const px = cx + Math.cos(a) * 6.5;
+        const py = cy + Math.sin(a) * 6.5;
+        return (
+          <ellipse
+            key={`i-${i}`}
+            cx={px} cy={py}
+            rx="1.8" ry="4"
+            fill={color}
+            opacity={0.7}
+            transform={`rotate(${deg} ${px} ${py})`}
+          />
+        );
+      })}
+      {/* seed disk — dark ring */}
+      <circle cx={cx} cy={cy} r="5.5" fill="#92400e" />
+      {/* seed dots */}
+      {[0, 60, 120, 180, 240, 300].map((deg) => {
+        const a = deg * (Math.PI / 180);
         return (
           <circle
-            key={`in-${i}`}
-            cx={cx + Math.cos(a) * 3.5}
-            cy={cy + Math.sin(a) * 3.5}
-            r={2.2}
-            fill={color}
-            opacity={0.45}
+            key={`s-${deg}`}
+            cx={cx + Math.cos(a) * 3.2}
+            cy={cy + Math.sin(a) * 3.2}
+            r="0.8"
+            fill="#78350f"
           />
         );
       })}
-      {/* golden center */}
-      <circle cx={cx} cy={cy} r="4" fill="#f59e0b" />
-      <circle cx={cx} cy={cy} r="2.4" fill="#fde047" />
+      {/* inner seed ring */}
+      {[30, 90, 150, 210, 270, 330].map((deg) => {
+        const a = deg * (Math.PI / 180);
+        return (
+          <circle
+            key={`si-${deg}`}
+            cx={cx + Math.cos(a) * 1.6}
+            cy={cy + Math.sin(a) * 1.6}
+            r="0.6"
+            fill="#78350f"
+          />
+        );
+      })}
+      {/* golden center highlight */}
+      <circle cx={cx} cy={cy} r="1.5" fill="#b45309" />
       {/* sparkle */}
-      <circle cx={cx - 0.8} cy={cy - 1} r="0.9" fill="white" opacity="0.55" />
+      <circle cx={cx - 1} cy={cy - 1.5} r="1" fill="#fde047" opacity="0.5" />
     </svg>
   );
 }
@@ -258,7 +288,7 @@ export function ArmoryGarden({ eventStats }: { eventStats: EventStats[] }) {
           <div className="relative flex flex-wrap gap-px items-end justify-center px-2 py-3 min-h-[56px]">
             {flowers.map((f) =>
               f.type === "crown" ? (
-                <CrownFlower key={f.idx} color={f.color} accent={f.accent} idx={f.idx} />
+                <Sunflower key={f.idx} color={f.color} accent={f.accent} idx={f.idx} />
               ) : (
                 <SmallFlower key={f.idx} color={f.color} accent={f.accent} idx={f.idx} />
               ),
