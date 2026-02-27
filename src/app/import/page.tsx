@@ -54,6 +54,7 @@ export default function ImportPage() {
   const [isMobile, setIsMobile] = useState(false);
   const [showPasteSteps, setShowPasteSteps] = useState(false);
   const [clearBeforeImport, setClearBeforeImport] = useState(false);
+  const [quickMode, setQuickMode] = useState(false);
 
   // Detect mobile viewport
   useEffect(() => {
@@ -71,12 +72,14 @@ export default function ImportPage() {
     }
   }, [isMobile]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Auto-detect extension data from URL hash (#ext=base64data)
+  // Auto-detect extension data from URL hash (#ext= or #quickext=)
   useEffect(() => {
     const hash = window.location.hash;
-    if (hash.startsWith("#ext=")) {
+    const isQuick = hash.startsWith("#quickext=");
+    const isExt = hash.startsWith("#ext=");
+    if (isQuick || isExt) {
       try {
-        const encoded = hash.slice(5);
+        const encoded = hash.slice(isQuick ? 10 : 5);
         const json = decodeURIComponent(
           atob(encoded)
             .split("")
@@ -87,6 +90,7 @@ export default function ImportPage() {
         if (result.totalMatches > 0) {
           setPasteResult(result);
           setAutoDetected(true);
+          if (isQuick) setQuickMode(true);
         }
       } catch (e) {
         console.error("Failed to parse extension data from URL:", e);
@@ -94,6 +98,13 @@ export default function ImportPage() {
       window.history.replaceState(null, "", window.location.pathname);
     }
   }, []);
+
+  // Auto-import in quick mode (skip preview)
+  useEffect(() => {
+    if (quickMode && pasteResult && !imported && !importing && (user || isGuest)) {
+      handleImport();
+    }
+  }, [quickMode, pasteResult, user, isGuest]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Filtered events (with original index for hero overrides)
   const filteredEvents = useMemo(() => {
@@ -277,10 +288,13 @@ export default function ImportPage() {
         .then((allUserMatches) => updateLeaderboardEntry(profile, allUserMatches))
         .catch(() => {});
 
-      // Auto-save GEM ID from CSV metadata if the user doesn't have one yet
+      // Auto-save GEM ID from CSV metadata or extension metadata
       if (csvMetadata?.gemId && !profile.gemId) {
         updateProfile(user.uid, { gemId: csvMetadata.gemId }).catch(() => {});
         registerGemId(user.uid, csvMetadata.gemId).catch(() => {});
+      } else if (pasteResult?.extensionMeta?.userGemId && !profile.gemId) {
+        updateProfile(user.uid, { gemId: pasteResult.extensionMeta.userGemId }).catch(() => {});
+        registerGemId(user.uid, pasteResult.extensionMeta.userGemId).catch(() => {});
       }
 
       // Cross-player match linking (non-blocking)
@@ -324,9 +338,42 @@ export default function ImportPage() {
   const totalToImport = pasteResult ? filteredMatches.length : (csvMatches?.length ?? 0);
   const allMatches = pasteResult ? filteredMatches : (csvMatches ?? []);
 
+  // ── Quick Mode Loading Screen ──────────────────────────────────
+
+  if (quickMode && !imported) {
+    return (
+      <div className="text-center py-16">
+        <div className="w-12 h-12 border-4 border-fab-border border-t-fab-gold rounded-full animate-spin mx-auto mb-6" />
+        <h1 className="text-2xl font-bold text-fab-gold mb-2">Quick Syncing...</h1>
+        <p className="text-fab-muted">
+          {pasteResult ? `Importing ${filteredMatches.length} matches` : "Preparing data"}
+        </p>
+        <p className="text-fab-dim text-sm mt-1">Duplicates will be skipped automatically</p>
+      </div>
+    );
+  }
+
   // ── Import Complete Screen ─────────────────────────────────────
 
   if (imported) {
+    // Quick mode: "You're up to date!" when nothing new
+    if (quickMode && importedCount === 0) {
+      return (
+        <div className="text-center py-16">
+          <CheckCircleIcon className="w-14 h-14 text-fab-win mb-4 mx-auto" />
+          <h1 className="text-2xl font-bold text-fab-gold mb-2">You&apos;re up to date!</h1>
+          <p className="text-fab-muted mb-2">No new matches to import.</p>
+          {skippedCount > 0 && (
+            <p className="text-fab-dim text-sm mb-6">{skippedCount} match{skippedCount === 1 ? "" : "es"} already in your history.</p>
+          )}
+          {skippedCount === 0 && <div className="mb-6" />}
+          <button onClick={() => router.push("/")} className="px-6 min-h-[48px] py-3 rounded-md font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light active:bg-fab-gold-light transition-colors">
+            Dashboard
+          </button>
+        </div>
+      );
+    }
+
     if (sessionRecap && sessionRecap.sessionMatches.length > 0) {
       return (
         <PostEventRecap
@@ -342,7 +389,7 @@ export default function ImportPage() {
     return (
       <div className="text-center py-16">
         <CheckCircleIcon className="w-14 h-14 text-fab-win mb-4 mx-auto" />
-        <h1 className="text-2xl font-bold text-fab-gold mb-2">Import Complete!</h1>
+        <h1 className="text-2xl font-bold text-fab-gold mb-2">{quickMode ? "Sync Complete!" : "Import Complete!"}</h1>
         <p className="text-fab-muted mb-2">{importedCount} matches imported successfully.</p>
         {skippedCount > 0 && (
           <p className="text-fab-dim text-sm mb-6">{skippedCount} duplicate{skippedCount === 1 ? "" : "s"} skipped.</p>

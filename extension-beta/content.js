@@ -1,13 +1,14 @@
 (function () {
   "use strict";
 
-  // Only run on history pages
-  if (!location.pathname.startsWith("/profile/history")) return;
+  // Only run on history and profile pages
+  if (!location.pathname.startsWith("/profile/history") &&
+      !location.pathname.startsWith("/profile/player")) return;
 
   // Prevent double injection
   if (document.getElementById("fab-stats-exporter-beta")) return;
 
-  const VERSION = "2.0.0-beta";
+  const VERSION = "2.1.0-beta";
   const FABSTATS_IMPORT_URL = "https://fabstats.netlify.app/import";
 
   // ── Known FaB Hero Names ──────────────────────────────────────
@@ -376,7 +377,7 @@
   // ── Page Fetching ─────────────────────────────────────────────
 
   async function fetchPage(pageNum) {
-    const url = new URL(window.location.href);
+    const url = new URL("/profile/history/", window.location.origin);
     url.searchParams.set("page", String(pageNum));
     const resp = await fetch(url.href, { credentials: "same-origin" });
     if (!resp.ok) throw new Error("Page " + pageNum + ": HTTP " + resp.status);
@@ -398,14 +399,15 @@
   }
 
   async function fetchAllPages(onProgress) {
-    // Fetch page 1 (use current page if already page 1, otherwise fetch)
+    // Fetch page 1 (use current page if already on history page 1, otherwise fetch)
+    const onHistoryPage = location.pathname.startsWith("/profile/history");
     const currentPage = (() => {
       const m = location.search.match(/page=(\d+)/);
       return m ? parseInt(m[1]) : 1;
     })();
 
     let doc1;
-    if (currentPage === 1) {
+    if (onHistoryPage && currentPage === 1) {
       // Parse current page HTML directly — no need to fetch
       doc1 = document;
     } else {
@@ -443,9 +445,30 @@
     return allEvents;
   }
 
+  // ── Extract User's GEM ID ────────────────────────────────────
+
+  async function extractUserGemId() {
+    try {
+      // If already on the profile page, use current document
+      if (location.pathname.startsWith("/profile/player")) {
+        const match = document.body.innerText.match(/GEM\s*ID[:\s]*(\d+)/i);
+        return match ? match[1] : "";
+      }
+      // Otherwise fetch the profile page
+      const resp = await fetch("/profile/player/", { credentials: "same-origin" });
+      if (!resp.ok) return "";
+      const html = await resp.text();
+      const doc = new DOMParser().parseFromString(html, "text/html");
+      const match = doc.body.innerText.match(/GEM\s*ID[:\s]*(\d+)/i);
+      return match ? match[1] : "";
+    } catch {
+      return "";
+    }
+  }
+
   // ── Build Export Payload ───────────────────────────────────────
 
-  function buildExportPayload(events) {
+  function buildExportPayload(events, userGemId) {
     const matches = [];
     for (const event of events) {
       for (const match of event.matches) {
@@ -469,18 +492,19 @@
         });
       }
     }
-    return matches;
+    return { fabStatsVersion: 2, userGemId: userGemId || "", matches };
   }
 
   // ── Deliver to FaB Stats ──────────────────────────────────────
 
-  async function deliverToFabStats(payload) {
-    if (payload.length === 0) {
+  async function deliverToFabStats(payload, quickMode) {
+    if (payload.matches.length === 0) {
       showError("No matches found. Make sure you're on your GEM History page with events listed.");
       return;
     }
 
     const compact = JSON.stringify(payload);
+    const hashPrefix = quickMode ? "#quickext=" : "#ext=";
 
     // Copy to clipboard
     let clipboardOk = false;
@@ -498,13 +522,20 @@
         })
       );
       if (encoded.length < 1000000) {
-        importUrl = FABSTATS_IMPORT_URL + "#ext=" + encoded;
+        importUrl = FABSTATS_IMPORT_URL + hashPrefix + encoded;
       }
     } catch { /* encoding failed, use base URL */ }
 
+    if (quickMode) {
+      // Quick Sync — auto-redirect, no completion overlay
+      window.open(importUrl, "_blank");
+      hideOverlay();
+      return;
+    }
+
     const needsFileDownload = importUrl === FABSTATS_IMPORT_URL;
     showCompletionOverlay(
-      payload.length,
+      payload.matches.length,
       importUrl,
       clipboardOk,
       needsFileDownload ? compact : null
@@ -523,23 +554,32 @@
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
     }
-    #fab-stats-exporter-beta { animation: fab-stats-pulse-beta 2s ease-in-out infinite; }
-    #fab-stats-exporter-beta:hover { animation: none; }
-    #fab-stats-exporter-beta:disabled { animation: none; }
+    #fab-stats-exporter-beta button:first-child { animation: fab-stats-pulse-beta 2s ease-in-out infinite; }
+    #fab-stats-exporter-beta button:first-child:hover { animation: none; }
+    #fab-stats-exporter-beta button:first-child:disabled { animation: none; }
     #fab-stats-overlay-beta { transition: opacity 0.3s ease; }
   `;
   document.head.appendChild(styleEl);
 
-  // ── Floating Export Button (Beta — blue accent) ───────────────
+  // ── Floating Buttons Container ───────────────────────────────
 
-  const btn = document.createElement("button");
-  btn.id = "fab-stats-exporter-beta";
-  btn.textContent = "\uD83E\uDDEA Export to FaB Stats (BETA)";
-  Object.assign(btn.style, {
+  const btnContainer = document.createElement("div");
+  btnContainer.id = "fab-stats-exporter-beta";
+  Object.assign(btnContainer.style, {
     position: "fixed",
     bottom: "24px",
     right: "24px",
     zIndex: "99999",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "stretch",
+    gap: "8px",
+    fontFamily: "system-ui, -apple-system, sans-serif",
+  });
+
+  const btn = document.createElement("button");
+  btn.textContent = "\uD83E\uDDEA Export to FaB Stats";
+  Object.assign(btn.style, {
     padding: "14px 28px",
     background: "linear-gradient(135deg, #60a5fa, #3b82f6, #2563eb)",
     color: "#ffffff",
@@ -550,7 +590,7 @@
     cursor: "pointer",
     boxShadow: "0 4px 20px rgba(96,165,250,0.3), 0 2px 8px rgba(0,0,0,0.3)",
     transition: "transform 0.15s, box-shadow 0.15s",
-    fontFamily: "system-ui, -apple-system, sans-serif",
+    fontFamily: "inherit",
     letterSpacing: "0.02em",
   });
 
@@ -563,14 +603,41 @@
     btn.style.boxShadow = "";
   });
 
-  document.body.appendChild(btn);
+  const quickBtn = document.createElement("button");
+  quickBtn.textContent = "\u26A1 Quick Sync";
+  Object.assign(quickBtn.style, {
+    padding: "8px 20px",
+    background: "rgba(30, 30, 50, 0.95)",
+    color: "#60a5fa",
+    border: "1px solid #60a5fa50",
+    borderRadius: "8px",
+    fontWeight: "700",
+    fontSize: "12px",
+    cursor: "pointer",
+    transition: "all 0.15s",
+    fontFamily: "inherit",
+    letterSpacing: "0.02em",
+  });
+
+  quickBtn.addEventListener("mouseenter", () => {
+    quickBtn.style.background = "rgba(96,165,250,0.15)";
+    quickBtn.style.borderColor = "#60a5fa";
+  });
+  quickBtn.addEventListener("mouseleave", () => {
+    quickBtn.style.background = "rgba(30, 30, 50, 0.95)";
+    quickBtn.style.borderColor = "#60a5fa50";
+  });
+
+  btnContainer.appendChild(btn);
+  btnContainer.appendChild(quickBtn);
+  document.body.appendChild(btnContainer);
 
   // ── Progress Overlay ──────────────────────────────────────────
 
   let overlay = null;
 
   function showOverlay(status, detail, matchCount, progress) {
-    btn.style.display = "none";
+    btnContainer.style.display = "none";
 
     if (!overlay) {
       overlay = document.createElement("div");
@@ -700,7 +767,7 @@
       closeBtn.addEventListener("click", () => {
         overlay.remove();
         overlay = null;
-        btn.style.display = "";
+        btnContainer.style.display = "";
       });
     }
   }
@@ -710,7 +777,7 @@
       overlay.remove();
       overlay = null;
     }
-    btn.style.display = "";
+    btnContainer.style.display = "";
   }
 
   function showError(message) {
@@ -751,31 +818,38 @@
     }
   }
 
-  // ── Button Click Handler ──────────────────────────────────────
+  // ── Button Click Handlers ─────────────────────────────────────
 
-  btn.addEventListener("click", async () => {
+  async function handleExport(quickMode) {
     hideOverlay();
     btn.disabled = true;
+    quickBtn.disabled = true;
     btn.style.opacity = "0.7";
     btn.style.cursor = "wait";
+    quickBtn.style.opacity = "0.5";
+    quickBtn.style.cursor = "wait";
 
     try {
-      showOverlay("Fetching match history...", "Reading page 1", 0);
+      showOverlay(
+        quickMode ? "Quick Syncing..." : "Fetching match history...",
+        "Reading page 1", 0
+      );
 
-      const allEvents = await fetchAllPages((current, total, matchCount) => {
-        showOverlay(
-          "Fetching match history...",
-          "Page " + current + " of " + total,
-          matchCount,
-          { current, total }
-        );
-      });
+      // Fetch match history and GEM ID in parallel
+      const [allEvents, userGemId] = await Promise.all([
+        fetchAllPages((current, total, matchCount) => {
+          showOverlay(
+            quickMode ? "Quick Syncing..." : "Fetching match history...",
+            "Page " + current + " of " + total,
+            matchCount,
+            { current, total }
+          );
+        }),
+        extractUserGemId(),
+      ]);
 
       if (allEvents.length === 0) {
         showError("No events with match results found on your history page.");
-        btn.disabled = false;
-        btn.style.opacity = "1";
-        btn.style.cursor = "pointer";
         return;
       }
 
@@ -786,14 +860,20 @@
         totalMatches
       );
 
-      const payload = buildExportPayload(allEvents);
-      await deliverToFabStats(payload);
+      const payload = buildExportPayload(allEvents, userGemId);
+      await deliverToFabStats(payload, quickMode);
     } catch (err) {
       showError(err.message || String(err));
     } finally {
       btn.disabled = false;
+      quickBtn.disabled = false;
       btn.style.opacity = "1";
       btn.style.cursor = "pointer";
+      quickBtn.style.opacity = "1";
+      quickBtn.style.cursor = "pointer";
     }
-  });
+  }
+
+  btn.addEventListener("click", () => handleExport(false));
+  quickBtn.addEventListener("click", () => handleExport(true));
 })();

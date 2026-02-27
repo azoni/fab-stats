@@ -16,6 +16,7 @@ export interface PasteImportResult {
   events: PasteImportEvent[];
   totalMatches: number;
   skippedEventNames: string[];
+  extensionMeta?: { userGemId?: string };
 }
 
 const NOISE_PATTERNS = [
@@ -388,7 +389,10 @@ export function parseGemPaste(text: string): PasteImportResult {
 }
 
 export function parseExtensionJson(json: string): PasteImportResult {
-  const raw = JSON.parse(json) as Array<{
+  const parsed = JSON.parse(json);
+
+  // Detect wrapped format (v2) vs flat array (v1)
+  type MatchEntry = {
     event?: string;
     date?: string;
     venue?: string;
@@ -404,7 +408,23 @@ export function parseExtensionJson(json: string): PasteImportResult {
     extensionVersion?: string;
     gemEventId?: string;
     xpModifier?: number;
-  }>;
+  };
+
+  let raw: MatchEntry[];
+  let extensionMeta: { userGemId?: string } | undefined;
+
+  if (Array.isArray(parsed)) {
+    // v1 flat array (old extension)
+    raw = parsed;
+  } else if (parsed && Array.isArray(parsed.matches)) {
+    // v2 wrapped format (new extension)
+    raw = parsed.matches;
+    if (parsed.userGemId) {
+      extensionMeta = { userGemId: parsed.userGemId };
+    }
+  } else {
+    raw = [];
+  }
 
   const eventMap = new Map<
     string,
@@ -485,6 +505,7 @@ export function parseExtensionJson(json: string): PasteImportResult {
     events,
     totalMatches: events.reduce((sum, e) => sum + e.matches.length, 0),
     skippedEventNames: [],
+    extensionMeta,
   };
 }
 
