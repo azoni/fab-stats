@@ -11,6 +11,7 @@ import {
 import { db } from "./firebase";
 import { updateLeaderboardEntry } from "./leaderboard";
 import { linkMatchesWithOpponents } from "./match-linking";
+import { computeH2HForUser } from "./h2h";
 import { getOrCreateConversation, sendMessage, sendMessageNotification } from "./messages";
 import type { UserProfile, MatchRecord } from "@/types";
 
@@ -536,4 +537,50 @@ export async function backfillMatchLinking(
   }
 
   return { usersProcessed, totalLinked, heroesShared, heroesReceived, failed: failedCount };
+}
+
+/**
+ * Resync H2H records for all users.
+ * Iterates all users, fetches their matches, and recomputes H2H entries.
+ */
+export async function backfillH2H(
+  onProgress?: (done: number, total: number, message?: string) => void
+): Promise<{ usersProcessed: number; h2hWritten: number; failed: number }> {
+  const usernamesSnap = await getDocs(collection(db, "usernames"));
+  const userEntries = usernamesSnap.docs.map((d) => ({
+    username: d.id,
+    userId: (d.data() as { userId: string }).userId,
+  }));
+
+  let usersProcessed = 0;
+  let h2hWritten = 0;
+  let failedCount = 0;
+  let done = 0;
+
+  for (const { userId } of userEntries) {
+    try {
+      const matchesSnap = await getDocs(
+        query(collection(db, "users", userId, "matches"), orderBy("createdAt", "desc"))
+      );
+      const matches = matchesSnap.docs.map((d) => ({ id: d.id, ...d.data() })) as MatchRecord[];
+
+      const hasGemIds = matches.some((m) => m.opponentGemId);
+      if (hasGemIds) {
+        await computeH2HForUser(userId, matches);
+        usersProcessed++;
+        // Count opponent GEM IDs as approximate H2H pairs written
+        const uniqueOpponents = new Set(matches.filter((m) => m.opponentGemId).map((m) => m.opponentGemId));
+        h2hWritten += uniqueOpponents.size;
+      }
+    } catch {
+      failedCount++;
+    }
+
+    done++;
+    if (done % 5 === 0 || done === userEntries.length) {
+      onProgress?.(done, userEntries.length, `${usersProcessed} users synced, ~${h2hWritten} H2H pairs`);
+    }
+  }
+
+  return { usersProcessed, h2hWritten, failed: failedCount };
 }

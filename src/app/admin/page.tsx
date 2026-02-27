@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
-import { getAdminDashboardData, backfillLeaderboard, broadcastMessage, fixMatchDates, backfillGemIds, backfillMatchLinking, type AdminDashboardData, type AdminUserStats } from "@/lib/admin";
+import { getAdminDashboardData, backfillLeaderboard, broadcastMessage, fixMatchDates, backfillGemIds, backfillMatchLinking, backfillH2H, type AdminDashboardData, type AdminUserStats } from "@/lib/admin";
 import { getAllFeedback, updateFeedbackStatus } from "@/lib/feedback";
 import { getCreators, saveCreators } from "@/lib/creators";
 import { getEvents, saveEvents } from "@/lib/featured-events";
@@ -11,7 +11,7 @@ import { lookupEvents, type LookupEvent } from "@/lib/event-lookup";
 import { getOrCreateConversation, sendMessage, sendMessageNotification } from "@/lib/messages";
 import { getAnalytics, type AnalyticsTimeRange } from "@/lib/analytics";
 import { getBanner, saveBanner, type BannerConfig } from "@/lib/banner";
-import { getPoll, getPollResults, getPollVoters, savePoll, removePoll, clearVotes } from "@/lib/polls";
+import { getAllPolls, getPollResults, getPollVoters, savePoll, removePoll, clearVotes } from "@/lib/polls";
 import { searchHeroes } from "@/lib/heroes";
 import { GameFormat } from "@/types";
 import type { FeedbackItem, Creator, FeaturedEvent, FeaturedEventPlayer, UserProfile, Poll, PollResults, PollVoter } from "@/types";
@@ -68,16 +68,20 @@ export default function AdminPage() {
   const [linkProgress, setLinkProgress] = useState("");
   const [backfillingGemIds, setBackfillingGemIds] = useState(false);
   const [gemIdProgress, setGemIdProgress] = useState("");
-  const [pollQuestion, setPollQuestion] = useState("");
-  const [pollOptions, setPollOptions] = useState<string[]>(["", ""]);
-  const [pollActive, setPollActive] = useState(false);
-  const [pollResults, setPollResults] = useState<PollResults | null>(null);
-  const [pollShowResults, setPollShowResults] = useState(false);
-  const [pollVoters, setPollVoters] = useState<PollVoter[]>([]);
-  const [expandedOption, setExpandedOption] = useState<number | null>(null);
+  const [resyncingH2H, setResyncingH2H] = useState(false);
+  const [h2hProgress, setH2hProgress] = useState("");
+  // Poll: new poll form
+  const [newPollQuestion, setNewPollQuestion] = useState("");
+  const [newPollOptions, setNewPollOptions] = useState<string[]>(["", ""]);
+  const [newPollShowResults, setNewPollShowResults] = useState(false);
   const [savingPoll, setSavingPoll] = useState(false);
   const [pollSaved, setPollSaved] = useState(false);
-  const [pollCreatedAt, setPollCreatedAt] = useState("");
+  // Poll: history
+  const [allPolls, setAllPolls] = useState<Poll[]>([]);
+  const [expandedPollId, setExpandedPollId] = useState<string | null>(null);
+  const [expandedPollResults, setExpandedPollResults] = useState<PollResults | null>(null);
+  const [expandedPollVoters, setExpandedPollVoters] = useState<PollVoter[]>([]);
+  const [expandedOption, setExpandedOption] = useState<number | null>(null);
   const [bannerText, setBannerText] = useState("");
   const [bannerActive, setBannerActive] = useState(false);
   const [bannerType, setBannerType] = useState<BannerConfig["type"]>("info");
@@ -86,7 +90,7 @@ export default function AdminPage() {
   const [bannerLinkText, setBannerLinkText] = useState("");
   const [savingBanner, setSavingBanner] = useState(false);
   const [bannerSaved, setBannerSaved] = useState(false);
-  const anyToolRunning = fixingDates || backfilling || backfillingGemIds || linkingMatches;
+  const anyToolRunning = fixingDates || backfilling || backfillingGemIds || linkingMatches || resyncingH2H;
   const [activeTab, setActiveTab] = useState<"overview" | "users" | "feedback" | "content" | "poll" | "tools">(() => {
     if (typeof window !== "undefined") {
       const hash = window.location.hash.replace("#", "");
@@ -106,7 +110,7 @@ export default function AdminPage() {
     setFetching(true);
     setError("");
     try {
-      const [result, fb, cr, ev, analytics, pollData, pollRes, voters, bannerData] = await Promise.all([getAdminDashboardData(), getAllFeedback(), getCreators(), getEvents(), getAnalytics(), getPoll(), getPollResults(), getPollVoters(), getBanner()]);
+      const [result, fb, cr, ev, analytics, polls, bannerData] = await Promise.all([getAdminDashboardData(), getAllFeedback(), getCreators(), getEvents(), getAnalytics(), getAllPolls(), getBanner()]);
       setData(result);
       setFeedback(fb);
       setCreatorsList(cr);
@@ -120,15 +124,7 @@ export default function AdminPage() {
         players: e.players || (e.playerUsernames || []).map((u: string) => ({ name: u, username: u })),
       })));
       setAnalyticsData(analytics);
-      if (pollData) {
-        setPollQuestion(pollData.question);
-        setPollOptions(pollData.options);
-        setPollActive(pollData.active);
-        setPollCreatedAt(pollData.createdAt);
-        setPollShowResults(pollData.showResults ?? false);
-      }
-      setPollResults(pollRes);
-      setPollVoters(voters);
+      setAllPolls(polls);
       if (bannerData) {
         setBannerText(bannerData.text);
         setBannerActive(bannerData.active);
@@ -312,9 +308,29 @@ export default function AdminPage() {
             >
               {linkingMatches ? "Linking..." : "Link Matches"}
             </button>
+            <button
+              onClick={async () => {
+                setResyncingH2H(true);
+                setH2hProgress("Starting...");
+                try {
+                  const { usersProcessed, h2hWritten, failed } = await backfillH2H((done, total, msg) => {
+                    setH2hProgress(`${done}/${total} — ${msg}`);
+                  });
+                  setH2hProgress(`Done: ${usersProcessed} users, ~${h2hWritten} H2H pairs${failed > 0 ? `, ${failed} failed` : ""}`);
+                } catch {
+                  setH2hProgress("H2H resync failed");
+                } finally {
+                  setResyncingH2H(false);
+                }
+              }}
+              disabled={anyToolRunning}
+              className="px-3 py-1.5 rounded text-xs font-medium bg-fab-bg border border-fab-border text-fab-muted hover:text-fab-text hover:border-fab-gold transition-colors disabled:opacity-50"
+            >
+              {resyncingH2H ? "Syncing..." : "Resync H2H"}
+            </button>
           </div>
-          {(backfillProgress || fixDatesProgress || linkProgress || gemIdProgress) && (
-            <p className="text-xs text-fab-dim">{linkProgress || gemIdProgress || fixDatesProgress || backfillProgress}</p>
+          {(backfillProgress || fixDatesProgress || linkProgress || gemIdProgress || h2hProgress) && (
+            <p className="text-xs text-fab-dim">{h2hProgress || linkProgress || gemIdProgress || fixDatesProgress || backfillProgress}</p>
           )}
         </div>
       )}
@@ -1011,51 +1027,42 @@ export default function AdminPage() {
 
           {/* ── Poll Tab ── */}
           {activeTab === "poll" && <>
-          {/* Community Poll */}
+          {/* Create New Poll */}
           <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden">
             <div className="px-4 py-3 border-b border-fab-border flex items-center justify-between">
-              <h2 className="text-sm font-semibold text-fab-text">
-                Community Poll {pollActive && <span className="text-fab-win ml-1">(Active)</span>}
-              </h2>
+              <h2 className="text-sm font-semibold text-fab-text">Create New Poll</h2>
               <div className="flex items-center gap-2">
-                {pollSaved && <span className="text-xs text-fab-win">Saved!</span>}
-                {pollActive && (
-                  <button
-                    onClick={async () => {
-                      await removePoll();
-                      setPollActive(false);
-                    }}
-                    className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-fab-loss/20 text-fab-loss hover:bg-fab-loss/30 transition-colors"
-                  >
-                    Deactivate
-                  </button>
-                )}
+                {pollSaved && <span className="text-xs text-fab-win">Published!</span>}
                 <button
                   onClick={async () => {
-                    const opts = pollOptions.filter(Boolean);
-                    if (!pollQuestion.trim() || opts.length < 2) return;
+                    const opts = newPollOptions.filter(Boolean);
+                    if (!newPollQuestion.trim() || opts.length < 2) return;
                     setSavingPoll(true);
                     setPollSaved(false);
                     try {
                       await savePoll({
-                        question: pollQuestion.trim(),
+                        question: newPollQuestion.trim(),
                         options: opts,
                         active: true,
-                        createdAt: pollCreatedAt || new Date().toISOString(),
-                        showResults: pollShowResults,
+                        createdAt: new Date().toISOString(),
+                        showResults: newPollShowResults,
                       });
-                      setPollActive(true);
+                      // Refresh polls list
+                      const polls = await getAllPolls();
+                      setAllPolls(polls);
+                      // Reset form
+                      setNewPollQuestion("");
+                      setNewPollOptions(["", ""]);
+                      setNewPollShowResults(false);
                       setPollSaved(true);
                       setTimeout(() => setPollSaved(false), 2000);
-                      const res = await getPollResults();
-                      setPollResults(res);
                     } catch {
                       setError("Failed to save poll.");
                     } finally {
                       setSavingPoll(false);
                     }
                   }}
-                  disabled={savingPoll || !pollQuestion.trim() || pollOptions.filter(Boolean).length < 2}
+                  disabled={savingPoll || !newPollQuestion.trim() || newPollOptions.filter(Boolean).length < 2}
                   className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors disabled:opacity-50"
                 >
                   {savingPoll ? "Saving..." : "Publish Poll"}
@@ -1066,26 +1073,26 @@ export default function AdminPage() {
               <input
                 type="text"
                 placeholder="Poll question"
-                value={pollQuestion}
-                onChange={(e) => setPollQuestion(e.target.value)}
+                value={newPollQuestion}
+                onChange={(e) => setNewPollQuestion(e.target.value)}
                 className="w-full bg-fab-bg border border-fab-border text-fab-text text-sm rounded px-3 py-2 focus:outline-none focus:border-fab-gold"
               />
-              {pollOptions.map((opt, i) => (
+              {newPollOptions.map((opt, i) => (
                 <div key={i} className="flex gap-2 items-center">
                   <input
                     type="text"
                     placeholder={`Option ${i + 1}`}
                     value={opt}
                     onChange={(e) => {
-                      const next = [...pollOptions];
+                      const next = [...newPollOptions];
                       next[i] = e.target.value;
-                      setPollOptions(next);
+                      setNewPollOptions(next);
                     }}
                     className="flex-1 bg-fab-bg border border-fab-border text-fab-text text-sm rounded px-3 py-1.5 focus:outline-none focus:border-fab-gold"
                   />
-                  {pollOptions.length > 2 && (
+                  {newPollOptions.length > 2 && (
                     <button
-                      onClick={() => setPollOptions(pollOptions.filter((_, j) => j !== i))}
+                      onClick={() => setNewPollOptions(newPollOptions.filter((_, j) => j !== i))}
                       className="text-xs text-fab-loss hover:text-fab-loss/80"
                     >
                       Remove
@@ -1094,117 +1101,188 @@ export default function AdminPage() {
                 </div>
               ))}
               <button
-                onClick={() => setPollOptions([...pollOptions, ""])}
+                onClick={() => setNewPollOptions([...newPollOptions, ""])}
                 className="w-full py-1.5 rounded text-xs font-medium border border-dashed border-fab-border text-fab-muted hover:text-fab-text hover:border-fab-gold/30 transition-colors"
               >
                 + Add Option
               </button>
-
-              {/* Show results to voters toggle */}
               <label className="flex items-center gap-2 cursor-pointer pt-1">
                 <button
                   type="button"
-                  onClick={async () => {
-                    const next = !pollShowResults;
-                    setPollShowResults(next);
-                    // Save immediately to Firestore
-                    if (pollActive) {
-                      try {
-                        await savePoll({
-                          question: pollQuestion.trim(),
-                          options: pollOptions.filter(Boolean),
-                          active: true,
-                          createdAt: pollCreatedAt || new Date().toISOString(),
-                          showResults: next,
-                        });
-                      } catch {}
-                    }
-                  }}
-                  className={`relative w-9 h-5 rounded-full transition-colors ${pollShowResults ? "bg-fab-win" : "bg-fab-border"}`}
+                  onClick={() => setNewPollShowResults(!newPollShowResults)}
+                  className={`relative w-9 h-5 rounded-full transition-colors ${newPollShowResults ? "bg-fab-win" : "bg-fab-border"}`}
                 >
-                  <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform ${pollShowResults ? "translate-x-4" : ""}`} />
+                  <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform ${newPollShowResults ? "translate-x-4" : ""}`} />
                 </button>
                 <span className="text-xs text-fab-muted">Show results to voters</span>
               </label>
-
-              {pollResults && (
-                <div className="border-t border-fab-border pt-3 mt-4">
-                  <p className="text-xs text-fab-dim font-medium mb-2">Results ({pollResults.total} vote{pollResults.total !== 1 ? "s" : ""})</p>
-                  {pollOptions.filter(Boolean).map((opt, i) => {
-                    const count = pollResults.counts[i] || 0;
-                    const pct = pollResults.total > 0 ? (count / pollResults.total * 100) : 0;
-                    const optionVoters = pollVoters
-                      .filter((v) => v.optionIndex === i)
-                      .sort((a, b) => new Date(b.votedAt).getTime() - new Date(a.votedAt).getTime());
-                    const isExpanded = expandedOption === i;
-                    return (
-                      <div key={i} className="mb-1.5">
-                        <button
-                          onClick={() => setExpandedOption(isExpanded ? null : i)}
-                          className="w-full flex items-center gap-2 group"
-                        >
-                          <span className="text-xs text-fab-text w-32 truncate text-left">{opt}</span>
-                          <div className="flex-1 bg-fab-bg rounded-full h-2 overflow-hidden">
-                            <div className="bg-fab-gold h-2 rounded-full transition-all" style={{ width: `${pct}%` }} />
-                          </div>
-                          <span className="text-xs text-fab-dim w-20 text-right">{count} ({pct.toFixed(0)}%)</span>
-                          <svg
-                            className={`w-3 h-3 text-fab-dim group-hover:text-fab-muted transition-transform ${isExpanded ? "rotate-180" : ""}`}
-                            fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
-                          >
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                          </svg>
-                        </button>
-                        {isExpanded && optionVoters.length > 0 && (
-                          <div className="ml-2 mt-1 mb-2 border-l border-fab-border pl-3 max-h-40 overflow-y-auto">
-                            {optionVoters.map((v) => {
-                              const u = data?.users.find((u) => u.uid === v.userId);
-                              return (
-                                <div key={v.userId} className="flex items-center gap-2 py-1">
-                                  {u?.photoUrl ? (
-                                    <img src={u.photoUrl} alt="" className="w-4 h-4 rounded-full object-cover" />
-                                  ) : (
-                                    <div className="w-4 h-4 rounded-full bg-fab-bg border border-fab-border flex items-center justify-center text-fab-gold text-[8px] font-bold">
-                                      {u?.displayName?.charAt(0).toUpperCase() || "?"}
-                                    </div>
-                                  )}
-                                  <Link
-                                    href={`/player/${u?.username || v.userId}`}
-                                    className="text-[11px] text-fab-text hover:text-fab-gold transition-colors"
-                                    onClick={(e) => e.stopPropagation()}
-                                  >
-                                    {u ? `@${u.username}` : v.userId.slice(0, 8)}
-                                  </Link>
-                                  <span className="text-[10px] text-fab-dim ml-auto">
-                                    {new Date(v.votedAt).toLocaleDateString()}
-                                  </span>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        )}
-                        {isExpanded && optionVoters.length === 0 && (
-                          <p className="ml-2 mt-1 mb-2 pl-3 text-[11px] text-fab-dim">No votes</p>
-                        )}
-                      </div>
-                    );
-                  })}
-                  <button
-                    onClick={async () => {
-                      if (confirm("Clear all votes? This cannot be undone.")) {
-                        await clearVotes();
-                        setPollResults({ counts: [], total: 0 });
-                        setPollVoters([]);
-                      }
-                    }}
-                    className="mt-2 text-xs text-fab-loss hover:text-fab-loss/80 transition-colors"
-                  >
-                    Clear Votes
-                  </button>
-                </div>
-              )}
             </div>
           </div>
+
+          {/* Poll History */}
+          {allPolls.length > 0 && (
+            <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden">
+              <div className="px-4 py-3 border-b border-fab-border">
+                <h2 className="text-sm font-semibold text-fab-text">Poll History ({allPolls.length})</h2>
+              </div>
+              <div className="divide-y divide-fab-border">
+                {allPolls.map((p) => {
+                  const isExpanded = expandedPollId === p.id;
+                  return (
+                    <div key={p.id}>
+                      <button
+                        onClick={async () => {
+                          if (isExpanded) {
+                            setExpandedPollId(null);
+                            setExpandedPollResults(null);
+                            setExpandedPollVoters([]);
+                            setExpandedOption(null);
+                          } else {
+                            setExpandedPollId(p.id!);
+                            setExpandedOption(null);
+                            const [res, voters] = await Promise.all([
+                              getPollResults(p.id!),
+                              getPollVoters(p.id!),
+                            ]);
+                            setExpandedPollResults(res);
+                            setExpandedPollVoters(voters);
+                          }
+                        }}
+                        className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-fab-bg/50 transition-colors group"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm text-fab-text truncate">{p.question}</p>
+                          <p className="text-[10px] text-fab-dim">{new Date(p.createdAt).toLocaleDateString()}</p>
+                        </div>
+                        {p.active && (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-fab-win/20 text-fab-win shrink-0">Active</span>
+                        )}
+                        <svg
+                          className={`w-4 h-4 text-fab-dim group-hover:text-fab-muted transition-transform shrink-0 ${isExpanded ? "rotate-180" : ""}`}
+                          fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </button>
+
+                      {isExpanded && (
+                        <div className="px-4 pb-4 space-y-3">
+                          {/* Actions for active poll */}
+                          {p.active && (
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={async () => {
+                                  await removePoll(p.id!);
+                                  const polls = await getAllPolls();
+                                  setAllPolls(polls);
+                                }}
+                                className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-fab-loss/20 text-fab-loss hover:bg-fab-loss/30 transition-colors"
+                              >
+                                Deactivate
+                              </button>
+                              <label className="flex items-center gap-2 cursor-pointer ml-auto">
+                                <button
+                                  type="button"
+                                  onClick={async () => {
+                                    const next = !p.showResults;
+                                    await savePoll({ ...p, showResults: next });
+                                    const polls = await getAllPolls();
+                                    setAllPolls(polls);
+                                  }}
+                                  className={`relative w-9 h-5 rounded-full transition-colors ${p.showResults ? "bg-fab-win" : "bg-fab-border"}`}
+                                >
+                                  <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform ${p.showResults ? "translate-x-4" : ""}`} />
+                                </button>
+                                <span className="text-xs text-fab-muted">Show results</span>
+                              </label>
+                            </div>
+                          )}
+
+                          {/* Results */}
+                          {expandedPollResults && (
+                            <div>
+                              <p className="text-xs text-fab-dim font-medium mb-2">Results ({expandedPollResults.total} vote{expandedPollResults.total !== 1 ? "s" : ""})</p>
+                              {p.options.map((opt, i) => {
+                                const count = expandedPollResults.counts[i] || 0;
+                                const pct = expandedPollResults.total > 0 ? (count / expandedPollResults.total * 100) : 0;
+                                const optionVoters = expandedPollVoters
+                                  .filter((v) => v.optionIndex === i)
+                                  .sort((a, b) => new Date(b.votedAt).getTime() - new Date(a.votedAt).getTime());
+                                const isOptionExpanded = expandedOption === i;
+                                return (
+                                  <div key={i} className="mb-1.5">
+                                    <button
+                                      onClick={() => setExpandedOption(isOptionExpanded ? null : i)}
+                                      className="w-full flex items-center gap-2 group"
+                                    >
+                                      <span className="text-xs text-fab-text w-32 truncate text-left">{opt}</span>
+                                      <div className="flex-1 bg-fab-bg rounded-full h-2 overflow-hidden">
+                                        <div className="bg-fab-gold h-2 rounded-full transition-all" style={{ width: `${pct}%` }} />
+                                      </div>
+                                      <span className="text-xs text-fab-dim w-20 text-right">{count} ({pct.toFixed(0)}%)</span>
+                                      <svg
+                                        className={`w-3 h-3 text-fab-dim group-hover:text-fab-muted transition-transform ${isOptionExpanded ? "rotate-180" : ""}`}
+                                        fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+                                      >
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                                      </svg>
+                                    </button>
+                                    {isOptionExpanded && optionVoters.length > 0 && (
+                                      <div className="ml-2 mt-1 mb-2 border-l border-fab-border pl-3 max-h-40 overflow-y-auto">
+                                        {optionVoters.map((v) => {
+                                          const u = data?.users.find((u) => u.uid === v.userId);
+                                          return (
+                                            <div key={v.userId} className="flex items-center gap-2 py-1">
+                                              {u?.photoUrl ? (
+                                                <img src={u.photoUrl} alt="" className="w-4 h-4 rounded-full object-cover" />
+                                              ) : (
+                                                <div className="w-4 h-4 rounded-full bg-fab-bg border border-fab-border flex items-center justify-center text-fab-gold text-[8px] font-bold">
+                                                  {u?.displayName?.charAt(0).toUpperCase() || "?"}
+                                                </div>
+                                              )}
+                                              <Link
+                                                href={`/player/${u?.username || v.userId}`}
+                                                className="text-[11px] text-fab-text hover:text-fab-gold transition-colors"
+                                                onClick={(e) => e.stopPropagation()}
+                                              >
+                                                {u ? `@${u.username}` : v.userId.slice(0, 8)}
+                                              </Link>
+                                              <span className="text-[10px] text-fab-dim ml-auto">
+                                                {new Date(v.votedAt).toLocaleDateString()}
+                                              </span>
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+                                    )}
+                                    {isOptionExpanded && optionVoters.length === 0 && (
+                                      <p className="ml-2 mt-1 mb-2 pl-3 text-[11px] text-fab-dim">No votes</p>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                              <button
+                                onClick={async () => {
+                                  if (confirm("Clear all votes? This cannot be undone.")) {
+                                    await clearVotes(p.id!);
+                                    setExpandedPollResults({ counts: [], total: 0 });
+                                    setExpandedPollVoters([]);
+                                  }
+                                }}
+                                className="mt-2 text-xs text-fab-loss hover:text-fab-loss/80 transition-colors"
+                              >
+                                Clear Votes
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           </>}
 
