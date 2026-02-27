@@ -338,29 +338,30 @@ export default function Dashboard() {
             )}
           </div>
 
-          {/* Profile & Opponents links */}
+          {/* Profile, Opponents & Compare links */}
           <div className="flex items-center gap-4">
             {profile?.username && (
               <Link
                 href={`/player/${profile.username}`}
-                className="text-sm text-fab-gold hover:text-fab-gold-light transition-colors"
+                className="text-sm text-fab-muted hover:text-fab-text transition-colors"
               >
-                View Full Profile &rarr;
+                View Profile &rarr;
               </Link>
             )}
             {hasMatches && (
               <Link
                 href="/opponents"
-                className="inline-flex items-center gap-1.5 text-sm text-fab-dim hover:text-fab-text transition-colors"
+                className="text-sm text-fab-muted hover:text-fab-text transition-colors"
               >
-                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4-4v2" />
-                  <circle cx="9" cy="7" r="4" />
-                  <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" />
-                </svg>
                 Opponents &rarr;
               </Link>
             )}
+            <Link
+              href="/compare"
+              className="text-sm text-fab-muted hover:text-fab-text transition-colors"
+            >
+              Compare &rarr;
+            </Link>
           </div>
         </div>
       )}

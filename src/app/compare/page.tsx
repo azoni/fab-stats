@@ -25,8 +25,9 @@ export default function ComparePage() {
   const [pick2, setPick2] = useState<string>(p2Param);
   const [focused, setFocused] = useState<1 | 2 | null>(null);
 
-  // Default player 1 to current user if not set
-  const effectivePick1 = pick1 || profile?.username || "";
+  // Default player 1 to current user only if user hasn't explicitly cleared it
+  const [cleared1, setCleared1] = useState(false);
+  const effectivePick1 = cleared1 ? pick1 : (pick1 || profile?.username || "");
 
   const entryMap = useMemo(() => new Map(entries.map((e) => [e.username, e])), [entries]);
   const player1 = entryMap.get(effectivePick1);
@@ -84,11 +85,11 @@ export default function ComparePage() {
         <PlayerPicker
           label="Player 1"
           value={search1 || player1?.displayName || effectivePick1}
-          onChange={(v) => { setSearch1(v); setPick1(""); }}
+          onChange={(v) => { setSearch1(v); setPick1(""); setCleared1(true); }}
           onFocus={() => setFocused(1)}
           onBlur={() => setTimeout(() => setFocused(null), 200)}
           results={focused === 1 ? filtered1 : []}
-          onSelect={(e) => selectPlayer(1, e)}
+          onSelect={(e) => { selectPlayer(1, e); setCleared1(false); }}
           selected={player1}
           color="text-blue-400"
         />
