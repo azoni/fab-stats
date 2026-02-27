@@ -318,8 +318,7 @@ export function refineEventType(eventType: string, eventName: string): string {
   if (lower.includes("road to national") || /\brtn\b/.test(lower)) return "Road to Nationals";
   if (/\bnational/.test(lower)) return "Nationals";
   if (lower.includes("calling")) return "The Calling";
-  if (lower.includes("championship") || lower.includes("invitation") || lower.includes("invitational")) return "Championship";
-  // Fall back to provided eventType
+  // Fall back to provided eventType (don't promote random "invitational" / "championship" store events)
   return eventType;
 }
 
@@ -491,7 +490,7 @@ export function computePlayoffFinishes(eventStats: EventStats[]): PlayoffFinish[
   for (const event of eventStats) {
     // Skip event types that don't have formal Top 8 brackets
     const refinedEventType = refineEventType(event.eventType || "Other", event.eventName);
-    if (refinedEventType === "Armory" || refinedEventType === "Pre-Release" || refinedEventType === "Other") continue;
+    if (refinedEventType === "Armory" || refinedEventType === "Pre-Release" || refinedEventType === "On Demand" || refinedEventType === "Championship" || refinedEventType === "Other") continue;
 
     const playoffMatches: MatchRecord[] = [];
 
