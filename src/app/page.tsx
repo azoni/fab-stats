@@ -304,7 +304,7 @@ export default function Dashboard() {
             </div>
             <div>
               <p className="text-[10px] text-fab-dim uppercase tracking-wider">Record</p>
-              <p className="text-lg font-bold">
+              <p className="text-sm sm:text-lg font-bold">
                 <span className="text-fab-win">{overall.totalWins}W</span>
                 <span className="text-fab-dim">-</span>
                 <span className="text-fab-loss">{overall.totalLosses}L</span>
