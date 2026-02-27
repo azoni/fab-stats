@@ -199,6 +199,10 @@ export default function PlayerProfile() {
   const userRanks = useMemo(() => profileUid ? computeUserRanks(lbEntries, profileUid) : [], [lbEntries, profileUid]);
   const bestRank = useMemo(() => getBestRank(userRanks), [userRanks]);
   const last30 = useMemo(() => sortedByDateDesc.slice(0, 30).reverse(), [sortedByDateDesc]);
+  const topHero = useMemo(() => {
+    const known = heroStats.filter((h) => h.heroName !== "Unknown");
+    return known.length > 0 ? known[0] : null;
+  }, [heroStats]);
 
   // Build a human-readable label for active filters (shown on share cards)
   const filterLabel = useMemo(() => {
@@ -279,11 +283,6 @@ export default function PlayerProfile() {
       </div>
     );
   }
-
-  const topHero = useMemo(() => {
-    const known = heroStats.filter((h) => h.heroName !== "Unknown");
-    return known.length > 0 ? known[0] : null;
-  }, [heroStats]);
 
   return (
     <div className="space-y-8">
