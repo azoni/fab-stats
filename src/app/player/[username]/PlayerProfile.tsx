@@ -61,11 +61,11 @@ export default function PlayerProfile() {
 
   // Auto-expand achievements if navigated with #achievements hash
   useEffect(() => {
-    if (window.location.hash === "#achievements") {
+    if (state.status === "loaded" && window.location.hash === "#achievements") {
       setAchievementsExpanded(true);
-      setTimeout(() => document.getElementById("achievements")?.scrollIntoView({ behavior: "smooth", block: "start" }), 300);
+      setTimeout(() => document.getElementById("achievements")?.scrollIntoView({ behavior: "smooth", block: "start" }), 150);
     }
-  }, []);
+  }, [state.status]);
 
   // Build set of opponent display names that have opted in to being visible
   const visibleOpponents = useMemo(() => {

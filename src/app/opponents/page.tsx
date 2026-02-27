@@ -131,7 +131,7 @@ export default function OpponentsPage() {
 
     const nemesis = [...qualified]
       .filter(o => o.losses > o.wins)
-      .sort((a, b) => b.losses - a.losses || a.winRate - b.winRate)[0] || null;
+      .sort((a, b) => a.winRate - b.winRate || b.losses - a.losses)[0] || null;
 
     const bestMatchup = [...qualified]
       .filter(o => o.wins > o.losses)
