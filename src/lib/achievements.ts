@@ -39,6 +39,11 @@ function countEventTypeWins(ctx: CheckContext, type: string): number {
   return ctx.matches.filter((m) => m.eventType === type && m.result === MatchResult.Win).length;
 }
 
+// Helper: hero stats excluding "Unknown"
+function realHeroStats(ctx: CheckContext): HeroStats[] {
+  return ctx.heroStats.filter((h) => h.heroName !== "Unknown");
+}
+
 const ACHIEVEMENTS: AchievementDef[] = [
   // ══════════════════════════════════════════
   // MATCH MILESTONES (tiered)
@@ -328,8 +333,8 @@ const ACHIEVEMENTS: AchievementDef[] = [
     rarity: "uncommon",
     group: "hero_mastery",
     tier: 1,
-    check: (ctx) => ctx.heroStats.some((h) => h.totalMatches >= 20),
-    progress: (ctx) => ({ current: Math.max(0, ...ctx.heroStats.map((h) => h.totalMatches)), target: 20 }),
+    check: (ctx) => realHeroStats(ctx).some((h) => h.totalMatches >= 20),
+    progress: (ctx) => ({ current: Math.max(0, ...realHeroStats(ctx).map((h) => h.totalMatches)), target: 20 }),
   },
   {
     id: "hero_specialist",
@@ -340,8 +345,8 @@ const ACHIEVEMENTS: AchievementDef[] = [
     rarity: "rare",
     group: "hero_mastery",
     tier: 2,
-    check: (ctx) => ctx.heroStats.some((h) => h.totalMatches >= 50),
-    progress: (ctx) => ({ current: Math.max(0, ...ctx.heroStats.map((h) => h.totalMatches)), target: 50 }),
+    check: (ctx) => realHeroStats(ctx).some((h) => h.totalMatches >= 50),
+    progress: (ctx) => ({ current: Math.max(0, ...realHeroStats(ctx).map((h) => h.totalMatches)), target: 50 }),
   },
   {
     id: "hero_devoted",
@@ -352,8 +357,8 @@ const ACHIEVEMENTS: AchievementDef[] = [
     rarity: "epic",
     group: "hero_mastery",
     tier: 3,
-    check: (ctx) => ctx.heroStats.some((h) => h.totalMatches >= 100),
-    progress: (ctx) => ({ current: Math.max(0, ...ctx.heroStats.map((h) => h.totalMatches)), target: 100 }),
+    check: (ctx) => realHeroStats(ctx).some((h) => h.totalMatches >= 100),
+    progress: (ctx) => ({ current: Math.max(0, ...realHeroStats(ctx).map((h) => h.totalMatches)), target: 100 }),
   },
   {
     id: "hero_one_trick",
@@ -364,8 +369,8 @@ const ACHIEVEMENTS: AchievementDef[] = [
     rarity: "legendary",
     group: "hero_mastery",
     tier: 4,
-    check: (ctx) => ctx.heroStats.some((h) => h.totalMatches >= 250),
-    progress: (ctx) => ({ current: Math.max(0, ...ctx.heroStats.map((h) => h.totalMatches)), target: 250 }),
+    check: (ctx) => realHeroStats(ctx).some((h) => h.totalMatches >= 250),
+    progress: (ctx) => ({ current: Math.max(0, ...realHeroStats(ctx).map((h) => h.totalMatches)), target: 250 }),
   },
 
   // ══════════════════════════════════════════
@@ -380,8 +385,8 @@ const ACHIEVEMENTS: AchievementDef[] = [
     rarity: "common",
     group: "heroes_played",
     tier: 1,
-    check: (ctx) => ctx.heroStats.length >= 3,
-    progress: (ctx) => ({ current: ctx.heroStats.length, target: 3 }),
+    check: (ctx) => realHeroStats(ctx).length >= 3,
+    progress: (ctx) => ({ current: realHeroStats(ctx).length, target: 3 }),
   },
   {
     id: "heroes_5",
@@ -392,8 +397,8 @@ const ACHIEVEMENTS: AchievementDef[] = [
     rarity: "uncommon",
     group: "heroes_played",
     tier: 2,
-    check: (ctx) => ctx.heroStats.length >= 5,
-    progress: (ctx) => ({ current: ctx.heroStats.length, target: 5 }),
+    check: (ctx) => realHeroStats(ctx).length >= 5,
+    progress: (ctx) => ({ current: realHeroStats(ctx).length, target: 5 }),
   },
   {
     id: "heroes_10",
@@ -404,8 +409,8 @@ const ACHIEVEMENTS: AchievementDef[] = [
     rarity: "rare",
     group: "heroes_played",
     tier: 3,
-    check: (ctx) => ctx.heroStats.length >= 10,
-    progress: (ctx) => ({ current: ctx.heroStats.length, target: 10 }),
+    check: (ctx) => realHeroStats(ctx).length >= 10,
+    progress: (ctx) => ({ current: realHeroStats(ctx).length, target: 10 }),
   },
   {
     id: "heroes_20",
@@ -416,8 +421,8 @@ const ACHIEVEMENTS: AchievementDef[] = [
     rarity: "epic",
     group: "heroes_played",
     tier: 4,
-    check: (ctx) => ctx.heroStats.length >= 20,
-    progress: (ctx) => ({ current: ctx.heroStats.length, target: 20 }),
+    check: (ctx) => realHeroStats(ctx).length >= 20,
+    progress: (ctx) => ({ current: realHeroStats(ctx).length, target: 20 }),
   },
 
   // ══════════════════════════════════════════
@@ -818,9 +823,9 @@ const ACHIEVEMENTS: AchievementDef[] = [
     category: "mastery",
     icon: "trophy",
     rarity: "epic",
-    check: (ctx) => ctx.heroStats.some((h) => h.totalMatches >= 30 && h.winRate >= 60),
+    check: (ctx) => realHeroStats(ctx).some((h) => h.totalMatches >= 30 && h.winRate >= 60),
     progress: (ctx) => {
-      const best = ctx.heroStats.filter((h) => h.totalMatches >= 10).sort((a, b) => b.winRate - a.winRate)[0];
+      const best = realHeroStats(ctx).filter((h) => h.totalMatches >= 10).sort((a, b) => b.winRate - a.winRate)[0];
       return { current: best ? Math.min(best.totalMatches, 30) : 0, target: 30 };
     },
   },
