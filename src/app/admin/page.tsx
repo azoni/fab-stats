@@ -10,10 +10,10 @@ import { getEvents, saveEvents } from "@/lib/featured-events";
 import { lookupEvents, type LookupEvent } from "@/lib/event-lookup";
 import { getOrCreateConversation, sendMessage, sendMessageNotification } from "@/lib/messages";
 import { getAnalytics } from "@/lib/analytics";
-import { getPoll, getPollResults, savePoll, removePoll, clearVotes, syncPollResults } from "@/lib/polls";
+import { getPoll, getPollResults, getPollVoters, savePoll, removePoll, clearVotes, syncPollResults } from "@/lib/polls";
 import { searchHeroes } from "@/lib/heroes";
 import { GameFormat } from "@/types";
-import type { FeedbackItem, Creator, FeaturedEvent, FeaturedEventPlayer, UserProfile, Poll, PollResults } from "@/types";
+import type { FeedbackItem, Creator, FeaturedEvent, FeaturedEventPlayer, UserProfile, Poll, PollResults, PollVoter } from "@/types";
 
 const FEATURED_EVENT_TYPES = [
   "Armory",
@@ -74,6 +74,8 @@ export default function AdminPage() {
   const [pollActive, setPollActive] = useState(false);
   const [pollResults, setPollResults] = useState<PollResults | null>(null);
   const [pollShowResults, setPollShowResults] = useState(false);
+  const [pollVoters, setPollVoters] = useState<PollVoter[]>([]);
+  const [expandedOption, setExpandedOption] = useState<number | null>(null);
   const [savingPoll, setSavingPoll] = useState(false);
   const [pollSaved, setPollSaved] = useState(false);
   const [pollCreatedAt, setPollCreatedAt] = useState("");
@@ -90,7 +92,7 @@ export default function AdminPage() {
     setFetching(true);
     setError("");
     try {
-      const [result, fb, cr, ev, analytics, pollData, pollRes] = await Promise.all([getAdminDashboardData(), getAllFeedback(), getCreators(), getEvents(), getAnalytics(), getPoll(), getPollResults()]);
+      const [result, fb, cr, ev, analytics, pollData, pollRes, voters] = await Promise.all([getAdminDashboardData(), getAllFeedback(), getCreators(), getEvents(), getAnalytics(), getPoll(), getPollResults(), getPollVoters()]);
       setData(result);
       setFeedback(fb);
       setCreatorsList(cr);
@@ -112,6 +114,7 @@ export default function AdminPage() {
         setPollShowResults(pollData.showResults ?? false);
       }
       setPollResults(pollRes);
+      setPollVoters(voters);
       // Sync result snapshot to poll doc so users can see results
       if (pollRes.total > 0) {
         syncPollResults().catch(() => {});
@@ -951,13 +954,59 @@ export default function AdminPage() {
                   {pollOptions.filter(Boolean).map((opt, i) => {
                     const count = pollResults.counts[i] || 0;
                     const pct = pollResults.total > 0 ? (count / pollResults.total * 100) : 0;
+                    const optionVoters = pollVoters
+                      .filter((v) => v.optionIndex === i)
+                      .sort((a, b) => new Date(b.votedAt).getTime() - new Date(a.votedAt).getTime());
+                    const isExpanded = expandedOption === i;
                     return (
-                      <div key={i} className="flex items-center gap-2 mb-1.5">
-                        <span className="text-xs text-fab-text w-32 truncate">{opt}</span>
-                        <div className="flex-1 bg-fab-bg rounded-full h-2 overflow-hidden">
-                          <div className="bg-fab-gold h-2 rounded-full transition-all" style={{ width: `${pct}%` }} />
-                        </div>
-                        <span className="text-xs text-fab-dim w-20 text-right">{count} ({pct.toFixed(0)}%)</span>
+                      <div key={i} className="mb-1.5">
+                        <button
+                          onClick={() => setExpandedOption(isExpanded ? null : i)}
+                          className="w-full flex items-center gap-2 group"
+                        >
+                          <span className="text-xs text-fab-text w-32 truncate text-left">{opt}</span>
+                          <div className="flex-1 bg-fab-bg rounded-full h-2 overflow-hidden">
+                            <div className="bg-fab-gold h-2 rounded-full transition-all" style={{ width: `${pct}%` }} />
+                          </div>
+                          <span className="text-xs text-fab-dim w-20 text-right">{count} ({pct.toFixed(0)}%)</span>
+                          <svg
+                            className={`w-3 h-3 text-fab-dim group-hover:text-fab-muted transition-transform ${isExpanded ? "rotate-180" : ""}`}
+                            fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+                          >
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </button>
+                        {isExpanded && optionVoters.length > 0 && (
+                          <div className="ml-2 mt-1 mb-2 border-l border-fab-border pl-3 max-h-40 overflow-y-auto">
+                            {optionVoters.map((v) => {
+                              const u = data?.users.find((u) => u.uid === v.userId);
+                              return (
+                                <div key={v.userId} className="flex items-center gap-2 py-1">
+                                  {u?.photoUrl ? (
+                                    <img src={u.photoUrl} alt="" className="w-4 h-4 rounded-full object-cover" />
+                                  ) : (
+                                    <div className="w-4 h-4 rounded-full bg-fab-bg border border-fab-border flex items-center justify-center text-fab-gold text-[8px] font-bold">
+                                      {u?.displayName?.charAt(0).toUpperCase() || "?"}
+                                    </div>
+                                  )}
+                                  <Link
+                                    href={`/player/${u?.username || v.userId}`}
+                                    className="text-[11px] text-fab-text hover:text-fab-gold transition-colors"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    {u ? `@${u.username}` : v.userId.slice(0, 8)}
+                                  </Link>
+                                  <span className="text-[10px] text-fab-dim ml-auto">
+                                    {new Date(v.votedAt).toLocaleDateString()}
+                                  </span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                        {isExpanded && optionVoters.length === 0 && (
+                          <p className="ml-2 mt-1 mb-2 pl-3 text-[11px] text-fab-dim">No votes</p>
+                        )}
                       </div>
                     );
                   })}
@@ -966,6 +1015,7 @@ export default function AdminPage() {
                       if (confirm("Clear all votes? This cannot be undone.")) {
                         await clearVotes();
                         setPollResults({ counts: [], total: 0 });
+                        setPollVoters([]);
                       }
                     }}
                     className="mt-2 text-xs text-fab-loss hover:text-fab-loss/80 transition-colors"

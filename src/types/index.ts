@@ -302,6 +302,12 @@ export interface PollResults {
   total: number;
 }
 
+export interface PollVoter {
+  userId: string;
+  optionIndex: number;
+  votedAt: string;
+}
+
 export interface FeedbackItem {
   id: string;
   userId: string;

@@ -1,6 +1,6 @@
 import { doc, getDoc, setDoc, getDocs, deleteDoc, collection } from "firebase/firestore";
 import { db } from "./firebase";
-import type { Poll, PollVote, PollResults } from "@/types";
+import type { Poll, PollVote, PollResults, PollVoter } from "@/types";
 
 const CACHE_KEY = "fab_poll";
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
@@ -105,6 +105,19 @@ export async function clearVotes(): Promise<void> {
   const pollSnap = await getDoc(doc(db, "admin", "poll"));
   if (pollSnap.exists()) {
     await setDoc(doc(db, "admin", "poll"), { ...pollSnap.data(), resultCounts: [], resultTotal: 0 });
+  }
+}
+
+/** Admin: get all individual votes with voter IDs */
+export async function getPollVoters(): Promise<PollVoter[]> {
+  try {
+    const snap = await getDocs(collection(db, "admin", "poll", "votes"));
+    return snap.docs.map((d) => ({
+      userId: d.id,
+      ...(d.data() as PollVote),
+    }));
+  } catch {
+    return [];
   }
 }
 
