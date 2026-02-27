@@ -241,81 +241,95 @@ function ComparisonView({ p1, p2 }: { p1: LeaderboardEntry; p2: LeaderboardEntry
   }, [p1.userId, p2.displayName]);
 
   type StatRow = { label: string; v1: string | number; v2: string | number; better: 1 | 2 | 0; raw1?: number; raw2?: number; weight: number };
-  const stats: StatRow[] = [
-    {
-      label: "Win Rate",
-      v1: `${p1.winRate.toFixed(1)}%`,
-      v2: `${p2.winRate.toFixed(1)}%`,
-      better: p1.winRate > p2.winRate ? 1 : p2.winRate > p1.winRate ? 2 : 0,
-      raw1: p1.winRate, raw2: p2.winRate,
-      weight: 3,
-    },
-    {
-      label: "Total Matches",
-      v1: p1.totalMatches,
-      v2: p2.totalMatches,
-      better: p1.totalMatches > p2.totalMatches ? 1 : p2.totalMatches > p1.totalMatches ? 2 : 0,
-      raw1: p1.totalMatches, raw2: p2.totalMatches,
-      weight: 1,
-    },
-    {
-      label: "Record",
-      v1: `${p1.totalWins}W-${p1.totalLosses}L${p1.totalDraws > 0 ? `-${p1.totalDraws}D` : ""}`,
-      v2: `${p2.totalWins}W-${p2.totalLosses}L${p2.totalDraws > 0 ? `-${p2.totalDraws}D` : ""}`,
-      better: 0,
-      weight: 0,
-    },
-    {
-      label: "Events Played",
-      v1: p1.eventsPlayed,
-      v2: p2.eventsPlayed,
-      better: p1.eventsPlayed > p2.eventsPlayed ? 1 : p2.eventsPlayed > p1.eventsPlayed ? 2 : 0,
-      raw1: p1.eventsPlayed, raw2: p2.eventsPlayed,
-      weight: 1,
-    },
-    {
-      label: "Event Wins",
-      v1: p1.eventWins,
-      v2: p2.eventWins,
-      better: p1.eventWins > p2.eventWins ? 1 : p2.eventWins > p1.eventWins ? 2 : 0,
-      raw1: p1.eventWins, raw2: p2.eventWins,
-      weight: 3,
-    },
-    {
-      label: "Longest Win Streak",
-      v1: p1.longestWinStreak,
-      v2: p2.longestWinStreak,
-      better: p1.longestWinStreak > p2.longestWinStreak ? 1 : p2.longestWinStreak > p1.longestWinStreak ? 2 : 0,
-      raw1: p1.longestWinStreak, raw2: p2.longestWinStreak,
-      weight: 2,
-    },
-    {
-      label: "Unique Heroes",
-      v1: p1.uniqueHeroes,
-      v2: p2.uniqueHeroes,
-      better: p1.uniqueHeroes > p2.uniqueHeroes ? 1 : p2.uniqueHeroes > p1.uniqueHeroes ? 2 : 0,
-      raw1: p1.uniqueHeroes, raw2: p2.uniqueHeroes,
-      weight: 1,
-    },
-    {
-      label: "Rated Win Rate",
-      v1: p1.ratedMatches > 0 ? `${p1.ratedWinRate.toFixed(1)}%` : "—",
-      v2: p2.ratedMatches > 0 ? `${p2.ratedWinRate.toFixed(1)}%` : "—",
-      better: p1.ratedWinRate > p2.ratedWinRate ? 1 : p2.ratedWinRate > p1.ratedWinRate ? 2 : 0,
-      raw1: p1.ratedMatches > 0 ? p1.ratedWinRate : undefined,
-      raw2: p2.ratedMatches > 0 ? p2.ratedWinRate : undefined,
-      weight: 2,
-    },
-    {
-      label: "Armory Win Rate",
-      v1: p1.armoryMatches > 0 ? `${p1.armoryWinRate.toFixed(1)}%` : "—",
-      v2: p2.armoryMatches > 0 ? `${p2.armoryWinRate.toFixed(1)}%` : "—",
-      better: p1.armoryWinRate > p2.armoryWinRate ? 1 : p2.armoryWinRate > p1.armoryWinRate ? 2 : 0,
-      raw1: p1.armoryMatches > 0 ? p1.armoryWinRate : undefined,
-      raw2: p2.armoryMatches > 0 ? p2.armoryWinRate : undefined,
-      weight: 1.5,
-    },
-  ];
+  const stats: StatRow[] = useMemo(() => {
+    const rows: StatRow[] = [
+      {
+        label: "Win Rate",
+        v1: `${p1.winRate.toFixed(1)}%`,
+        v2: `${p2.winRate.toFixed(1)}%`,
+        better: p1.winRate > p2.winRate ? 1 : p2.winRate > p1.winRate ? 2 : 0,
+        raw1: p1.winRate, raw2: p2.winRate,
+        weight: 3,
+      },
+      {
+        label: "Total Matches",
+        v1: p1.totalMatches,
+        v2: p2.totalMatches,
+        better: p1.totalMatches > p2.totalMatches ? 1 : p2.totalMatches > p1.totalMatches ? 2 : 0,
+        raw1: p1.totalMatches, raw2: p2.totalMatches,
+        weight: 1,
+      },
+      {
+        label: "Record",
+        v1: `${p1.totalWins}W-${p1.totalLosses}L${p1.totalDraws > 0 ? `-${p1.totalDraws}D` : ""}`,
+        v2: `${p2.totalWins}W-${p2.totalLosses}L${p2.totalDraws > 0 ? `-${p2.totalDraws}D` : ""}`,
+        better: 0,
+        weight: 0,
+      },
+      {
+        label: "Events Played",
+        v1: p1.eventsPlayed,
+        v2: p2.eventsPlayed,
+        better: p1.eventsPlayed > p2.eventsPlayed ? 1 : p2.eventsPlayed > p1.eventsPlayed ? 2 : 0,
+        raw1: p1.eventsPlayed, raw2: p2.eventsPlayed,
+        weight: 1,
+      },
+      {
+        label: "Event Wins",
+        v1: p1.eventWins,
+        v2: p2.eventWins,
+        better: p1.eventWins > p2.eventWins ? 1 : p2.eventWins > p1.eventWins ? 2 : 0,
+        raw1: p1.eventWins, raw2: p2.eventWins,
+        weight: 3,
+      },
+      {
+        label: "Longest Win Streak",
+        v1: p1.longestWinStreak,
+        v2: p2.longestWinStreak,
+        better: p1.longestWinStreak > p2.longestWinStreak ? 1 : p2.longestWinStreak > p1.longestWinStreak ? 2 : 0,
+        raw1: p1.longestWinStreak, raw2: p2.longestWinStreak,
+        weight: 2,
+      },
+      {
+        label: "Unique Heroes",
+        v1: p1.uniqueHeroes,
+        v2: p2.uniqueHeroes,
+        better: p1.uniqueHeroes > p2.uniqueHeroes ? 1 : p2.uniqueHeroes > p1.uniqueHeroes ? 2 : 0,
+        raw1: p1.uniqueHeroes, raw2: p2.uniqueHeroes,
+        weight: 1,
+      },
+      {
+        label: "Rated Win Rate",
+        v1: p1.ratedMatches > 0 ? `${p1.ratedWinRate.toFixed(1)}%` : "—",
+        v2: p2.ratedMatches > 0 ? `${p2.ratedWinRate.toFixed(1)}%` : "—",
+        better: p1.ratedWinRate > p2.ratedWinRate ? 1 : p2.ratedWinRate > p1.ratedWinRate ? 2 : 0,
+        raw1: p1.ratedMatches > 0 ? p1.ratedWinRate : undefined,
+        raw2: p2.ratedMatches > 0 ? p2.ratedWinRate : undefined,
+        weight: 2,
+      },
+      {
+        label: "Armory Win Rate",
+        v1: p1.armoryMatches > 0 ? `${p1.armoryWinRate.toFixed(1)}%` : "—",
+        v2: p2.armoryMatches > 0 ? `${p2.armoryWinRate.toFixed(1)}%` : "—",
+        better: p1.armoryWinRate > p2.armoryWinRate ? 1 : p2.armoryWinRate > p1.armoryWinRate ? 2 : 0,
+        raw1: p1.armoryMatches > 0 ? p1.armoryWinRate : undefined,
+        raw2: p2.armoryMatches > 0 ? p2.armoryWinRate : undefined,
+        weight: 1.5,
+      },
+    ];
+    // Add H2H as a scored category when data is available
+    if (h2h && h2h.total > 0) {
+      rows.push({
+        label: "H2H Record",
+        v1: `${h2h.p1Wins}W-${h2h.p2Wins}L${h2h.draws > 0 ? `-${h2h.draws}D` : ""}`,
+        v2: `${h2h.p2Wins}W-${h2h.p1Wins}L${h2h.draws > 0 ? `-${h2h.draws}D` : ""}`,
+        better: h2h.p1Wins > h2h.p2Wins ? 1 : h2h.p2Wins > h2h.p1Wins ? 2 : 0,
+        raw1: h2h.p1Wins, raw2: h2h.p2Wins,
+        weight: 2,
+      });
+    }
+    return rows;
+  }, [p1, p2, h2h]);
 
   // Count who "wins" more categories
   const p1Wins = stats.filter((s) => s.better === 1).length;
@@ -336,7 +350,7 @@ function ComparisonView({ p1, p2 }: { p1: LeaderboardEntry; p2: LeaderboardEntry
       rows.push({ label: stat.label, p1Pts: Math.round(r1 * 10) / 10, p2Pts: Math.round(r2 * 10) / 10, weight: stat.weight, maxPts: 10 * stat.weight });
     }
     return { p1Points: Math.round(s1 * 10) / 10, p2Points: Math.round(s2 * 10) / 10, breakdown: rows };
-  }, [p1, p2]);
+  }, [stats]);
 
   const hero1 = p1.topHero ? getHeroByName(p1.topHero) : undefined;
   const hero2 = p2.topHero ? getHeroByName(p2.topHero) : undefined;
@@ -402,32 +416,6 @@ function ComparisonView({ p1, p2 }: { p1: LeaderboardEntry; p2: LeaderboardEntry
           <p className="text-xs text-fab-dim">{p2.topHeroMatches} matches</p>
         </div>
       </div>
-
-      {/* Head-to-Head */}
-      {h2hLoading ? (
-        <div className="bg-fab-surface border border-fab-border rounded-lg p-4 mb-4">
-          <div className="h-4 w-32 bg-fab-bg rounded animate-pulse mx-auto" />
-        </div>
-      ) : h2h && h2h.total > 0 ? (
-        <div className="bg-fab-surface border border-fab-border rounded-lg p-4 mb-4 text-center">
-          <p className="text-[10px] text-fab-dim uppercase tracking-wider mb-2">Head-to-Head Record</p>
-          <div className="flex items-baseline justify-center gap-3">
-            <span className={`text-2xl font-black ${h2h.p1Wins > h2h.p2Wins ? "text-blue-400" : "text-fab-text"}`}>{h2h.p1Wins}</span>
-            <span className="text-fab-dim text-sm">W</span>
-            {h2h.draws > 0 && (
-              <>
-                <span className="text-fab-border">-</span>
-                <span className="text-2xl font-black text-fab-text">{h2h.draws}</span>
-                <span className="text-fab-dim text-sm">D</span>
-              </>
-            )}
-            <span className="text-fab-border">-</span>
-            <span className={`text-2xl font-black ${h2h.p2Wins > h2h.p1Wins ? "text-red-400" : "text-fab-text"}`}>{h2h.p2Wins}</span>
-            <span className="text-fab-dim text-sm">L</span>
-          </div>
-          <p className="text-xs text-fab-dim mt-1">{h2h.total} match{h2h.total !== 1 ? "es" : ""} played against each other</p>
-        </div>
-      ) : null}
 
       {/* Score mode toggle */}
       <div className="flex items-center justify-center gap-1 mb-4">
