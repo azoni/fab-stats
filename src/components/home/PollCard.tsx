@@ -28,10 +28,14 @@ export function PollCard() {
           setVote(existing);
           setSelected(existing.optionIndex);
           setHasVoted(true);
-          // Fetch live results if user already voted and results are enabled
-          if (activePoll.showResults) {
-            const res = await getPollResults();
-            if (!cancelled) setResults(res);
+          // Fetch fresh poll (bypass cache) + live results in parallel
+          const [freshPoll, res] = await Promise.all([
+            getActivePoll(true),
+            getPollResults(),
+          ]);
+          if (!cancelled) {
+            if (freshPoll) setPoll(freshPoll);
+            setResults(res);
           }
         }
       }

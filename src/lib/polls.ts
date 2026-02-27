@@ -5,14 +5,16 @@ import type { Poll, PollVote, PollResults, PollVoter } from "@/types";
 const CACHE_KEY = "fab_poll";
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
-export async function getActivePoll(): Promise<Poll | null> {
-  try {
-    const cached = localStorage.getItem(CACHE_KEY);
-    if (cached) {
-      const { poll, ts } = JSON.parse(cached);
-      if (Date.now() - ts < CACHE_TTL) return poll;
-    }
-  } catch {}
+export async function getActivePoll(skipCache = false): Promise<Poll | null> {
+  if (!skipCache) {
+    try {
+      const cached = localStorage.getItem(CACHE_KEY);
+      if (cached) {
+        const { poll, ts } = JSON.parse(cached);
+        if (Date.now() - ts < CACHE_TTL) return poll;
+      }
+    } catch {}
+  }
 
   try {
     const snap = await getDoc(doc(db, "admin", "poll"));
