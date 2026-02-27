@@ -15,6 +15,7 @@ import { EventCard } from "@/components/events/EventCard";
 import { EventBadges } from "@/components/profile/EventBadges";
 import { LeaderboardCrowns } from "@/components/profile/LeaderboardCrowns";
 import { TrophyCase } from "@/components/profile/TrophyCase";
+import { ArmoryGarden } from "@/components/profile/ArmoryGarden";
 import { computeEventBadges } from "@/lib/events";
 import { useLeaderboard } from "@/hooks/useLeaderboard";
 import { computeUserRanks, getBestRank } from "@/lib/leaderboard-ranks";
@@ -467,6 +468,9 @@ export default function PlayerProfile() {
 
       {/* Trophy Case — full width */}
       {playoffFinishes.length > 0 && <TrophyCase finishes={playoffFinishes} />}
+
+      {/* Armory Garden */}
+      <ArmoryGarden eventStats={eventStats} />
 
       {/* Admin Raw Data Modal */}
       {showRawData && isAdmin && (
