@@ -365,7 +365,7 @@ export default function PlayerProfile() {
         </div>
 
         {/* Quick stats row */}
-        <div className={`grid grid-cols-2 ${bestFinish ? "sm:grid-cols-5" : "sm:grid-cols-4"} gap-3`}>
+        <div className={`grid grid-cols-2 ${bestFinish ? "sm:grid-cols-6" : "sm:grid-cols-5"} gap-3`}>
           <div>
             <p className="text-[10px] text-fab-dim uppercase tracking-wider">Win Rate</p>
             <p className={`text-lg font-bold ${overall.overallWinRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>
@@ -387,6 +387,10 @@ export default function PlayerProfile() {
                 ].filter(Boolean).join(" · ")}
               </p>
             )}
+          </div>
+          <div>
+            <p className="text-[10px] text-fab-dim uppercase tracking-wider">Matches</p>
+            <p className="text-lg font-bold text-fab-text">{overall.totalMatches + overall.totalByes}</p>
           </div>
           <div>
             <p className="text-[10px] text-fab-dim uppercase tracking-wider">Events</p>
@@ -544,7 +548,7 @@ export default function PlayerProfile() {
             byes: overall.totalByes,
             winRate: overall.overallWinRate,
             events: eventStats.length,
-            totalMatches: overall.totalMatches,
+            totalMatches: overall.totalMatches + overall.totalByes,
             topHero: topHero?.heroName || null,
             currentStreak: streaks.currentStreak,
             bestFinish: bestFinish?.label || null,

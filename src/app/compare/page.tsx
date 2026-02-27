@@ -257,7 +257,7 @@ function PlayerPicker({
               )}
               <div className="min-w-0">
                 <p className="text-sm font-medium text-fab-text truncate">{e.displayName}</p>
-                <p className="text-[10px] text-fab-dim">@{e.username} &middot; {e.totalMatches} matches</p>
+                <p className="text-[10px] text-fab-dim">@{e.username} &middot; {e.totalMatches + e.totalByes} matches</p>
               </div>
             </button>
           ))}
@@ -380,10 +380,10 @@ function ComparisonView({ p1, p2 }: { p1: LeaderboardEntry; p2: LeaderboardEntry
       },
       {
         label: "Total Matches",
-        v1: p1.totalMatches,
-        v2: p2.totalMatches,
-        better: p1.totalMatches > p2.totalMatches ? 1 : p2.totalMatches > p1.totalMatches ? 2 : 0,
-        raw1: p1.totalMatches, raw2: p2.totalMatches,
+        v1: p1.totalMatches + p1.totalByes,
+        v2: p2.totalMatches + p2.totalByes,
+        better: (p1.totalMatches + p1.totalByes) > (p2.totalMatches + p2.totalByes) ? 1 : (p2.totalMatches + p2.totalByes) > (p1.totalMatches + p1.totalByes) ? 2 : 0,
+        raw1: p1.totalMatches + p1.totalByes, raw2: p2.totalMatches + p2.totalByes,
         weight: 1,
       },
       {
@@ -501,7 +501,7 @@ function ComparisonView({ p1, p2 }: { p1: LeaderboardEntry; p2: LeaderboardEntry
             )}
             <p className="font-bold text-fab-text text-sm truncate">{p1.displayName}</p>
           </Link>
-          <p className="text-xs text-fab-dim mt-0.5">{p1.totalMatches} matches</p>
+          <p className="text-xs text-fab-dim mt-0.5">{p1.totalMatches + p1.totalByes} matches</p>
         </div>
 
         <div className="shrink-0 text-center">
@@ -524,7 +524,7 @@ function ComparisonView({ p1, p2 }: { p1: LeaderboardEntry; p2: LeaderboardEntry
             )}
             <p className="font-bold text-fab-text text-sm truncate">{p2.displayName}</p>
           </Link>
-          <p className="text-xs text-fab-dim mt-0.5">{p2.totalMatches} matches</p>
+          <p className="text-xs text-fab-dim mt-0.5">{p2.totalMatches + p2.totalByes} matches</p>
         </div>
       </div>
 
@@ -689,9 +689,11 @@ function getVerdictText(p1: LeaderboardEntry, p2: LeaderboardEntry, p1Wins: numb
     verdicts.push(`${better.displayName} boasts a ${wrDiff.toFixed(0)}% higher win rate.`);
   }
 
-  const matchDiff = Math.abs(p1.totalMatches - p2.totalMatches);
+  const p1Total = p1.totalMatches + p1.totalByes;
+  const p2Total = p2.totalMatches + p2.totalByes;
+  const matchDiff = Math.abs(p1Total - p2Total);
   if (matchDiff > 50) {
-    const more = p1.totalMatches > p2.totalMatches ? p1 : p2;
+    const more = p1Total > p2Total ? p1 : p2;
     verdicts.push(`${more.displayName} has ${matchDiff} more matches of experience.`);
   }
 
@@ -750,8 +752,8 @@ function CompareShareModal({
     stats,
     p1TopHero: p1.topHero || "",
     p2TopHero: p2.topHero || "",
-    p1Matches: p1.totalMatches,
-    p2Matches: p2.totalMatches,
+    p1Matches: p1.totalMatches + p1.totalByes,
+    p2Matches: p2.totalMatches + p2.totalByes,
     p1CategoryWins,
     p2CategoryWins,
     p1Dominance: p1Points,
