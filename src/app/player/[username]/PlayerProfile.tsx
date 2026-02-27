@@ -363,7 +363,7 @@ export default function PlayerProfile() {
         </div>
 
         {/* Quick stats row */}
-        <div className={`grid grid-cols-3 ${bestFinish ? "sm:grid-cols-6" : "sm:grid-cols-5"} gap-3`}>
+        <div className={`grid grid-cols-2 ${bestFinish ? "sm:grid-cols-5" : "sm:grid-cols-4"} gap-3`}>
           <div>
             <p className="text-[10px] text-fab-dim uppercase tracking-wider">Win Rate</p>
             <p className={`text-lg font-bold ${overall.overallWinRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>
@@ -371,17 +371,20 @@ export default function PlayerProfile() {
             </p>
           </div>
           <div>
-            <p className="text-[10px] text-fab-dim uppercase tracking-wider">Matches</p>
-            <p className="text-lg font-bold text-fab-text">{overall.totalMatches}</p>
-          </div>
-          <div>
             <p className="text-[10px] text-fab-dim uppercase tracking-wider">Record</p>
-            <p className="text-sm sm:text-lg font-bold">
+            <p className="text-lg font-bold">
               <span className="text-fab-win">{overall.totalWins}W</span>
-              <span className="text-fab-dim">-</span>
+              <span className="text-fab-dim"> - </span>
               <span className="text-fab-loss">{overall.totalLosses}L</span>
-              {overall.totalDraws > 0 && <><span className="text-fab-dim">-</span><span className="text-fab-text">{overall.totalDraws}D</span></>}
             </p>
+            {(overall.totalDraws > 0 || overall.totalByes > 0) && (
+              <p className="text-[10px] text-fab-dim">
+                {[
+                  overall.totalDraws > 0 ? `${overall.totalDraws} draw${overall.totalDraws !== 1 ? "s" : ""}` : "",
+                  overall.totalByes > 0 ? `${overall.totalByes} bye${overall.totalByes !== 1 ? "s" : ""}` : "",
+                ].filter(Boolean).join(" · ")}
+              </p>
+            )}
           </div>
           <div>
             <p className="text-[10px] text-fab-dim uppercase tracking-wider">Events</p>

@@ -800,30 +800,43 @@ export default function ImportPage() {
 
           {/* Summary stats */}
           <div className="bg-fab-surface border border-fab-border rounded-lg p-4">
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-center">
-              <div>
-                <p className="text-2xl font-bold text-fab-gold">{pasteResult ? filteredEvents.length : "-"}</p>
-                <p className="text-xs text-fab-muted">Events</p>
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-fab-text">{totalToImport}</p>
-                <p className="text-xs text-fab-muted">Matches</p>
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-fab-win">{allMatches.filter((m) => m.result === MatchResult.Win).length}</p>
-                <p className="text-xs text-fab-muted">Wins</p>
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-fab-loss">{allMatches.filter((m) => m.result === MatchResult.Loss).length}</p>
-                <p className="text-xs text-fab-muted">Losses</p>
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-fab-text">
-                  {totalToImport > 0 ? `${((allMatches.filter((m) => m.result === MatchResult.Win).length / totalToImport) * 100).toFixed(0)}%` : "-"}
-                </p>
-                <p className="text-xs text-fab-muted">Win Rate</p>
-              </div>
-            </div>
+            {(() => {
+              const wins = allMatches.filter((m) => m.result === MatchResult.Win).length;
+              const losses = allMatches.filter((m) => m.result === MatchResult.Loss).length;
+              const draws = allMatches.filter((m) => m.result === MatchResult.Draw).length;
+              const byes = allMatches.filter((m) => m.result === MatchResult.Bye).length;
+              const played = wins + losses + draws;
+              const winRate = played > 0 ? ((wins / played) * 100).toFixed(0) : "-";
+              return (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                  <div>
+                    <p className="text-2xl font-bold text-fab-gold">{pasteResult ? filteredEvents.length : "-"}</p>
+                    <p className="text-xs text-fab-muted">Events</p>
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-fab-text">{winRate}%</p>
+                    <p className="text-xs text-fab-muted">Win Rate</p>
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold">
+                      <span className="text-fab-win">{wins}W</span>
+                      <span className="text-fab-dim"> - </span>
+                      <span className="text-fab-loss">{losses}L</span>
+                    </p>
+                    <p className="text-xs text-fab-muted">
+                      {[
+                        draws > 0 ? `${draws} draw${draws !== 1 ? "s" : ""}` : "",
+                        byes > 0 ? `${byes} bye${byes !== 1 ? "s" : ""}` : "",
+                      ].filter(Boolean).join(" · ") || "Record"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-fab-text">{played}{byes > 0 ? <span className="text-fab-dim text-lg"> + {byes}</span> : ""}</p>
+                    <p className="text-xs text-fab-muted">{byes > 0 ? "Matches + Byes" : "Matches"}</p>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
 
           {/* Filters (paste mode only) */}
