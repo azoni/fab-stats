@@ -484,15 +484,6 @@ export default function PlayerProfile() {
       {/* Playoff Finishes */}
       {playoffFinishes.length > 0 && <PlayoffFinishes finishes={playoffFinishes} />}
 
-      {/* Achievements */}
-      <AchievementShowcase earned={achievements} progress={achievementProgress} />
-
-      {/* Hero Mastery */}
-      <HeroMasteryList masteries={masteries} />
-
-      {/* Major Event Badges */}
-      <EventBadges badges={eventBadges} />
-
       {/* Nemesis + Best Friend */}
       {(nemesis || bestFriend) && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -570,6 +561,15 @@ export default function PlayerProfile() {
           onClose={() => setBestFinishShareOpen(false)}
         />
       )}
+
+      {/* Achievements */}
+      <AchievementShowcase earned={achievements} progress={achievementProgress} />
+
+      {/* Hero Mastery */}
+      <HeroMasteryList masteries={masteries} />
+
+      {/* Major Event Badges */}
+      <EventBadges badges={eventBadges} />
 
       {/* Recent Events */}
       {recentEvents.length > 0 && (
