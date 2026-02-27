@@ -17,6 +17,21 @@ import { toBlob } from "html-to-image";
 const VALID_HERO_NAMES = new Set(knownHeroes.map((h) => h.name));
 const PAGE_SIZE = 25;
 
+const AVATAR_COLORS = [
+  "bg-blue-500/20 text-blue-400",
+  "bg-purple-500/20 text-purple-400",
+  "bg-emerald-500/20 text-emerald-400",
+  "bg-amber-500/20 text-amber-400",
+  "bg-red-500/20 text-red-400",
+  "bg-cyan-500/20 text-cyan-400",
+  "bg-pink-500/20 text-pink-400",
+];
+function getAvatarColor(name: string) {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+}
+
 export default function OpponentsPage() {
   const searchParams = useSearchParams();
   const { matches, isLoaded } = useMatches();
@@ -110,6 +125,25 @@ export default function OpponentsPage() {
     return list;
   }, [opponentStats, sortBy, search]);
 
+  const highlights = useMemo(() => {
+    const qualified = opponentStats.filter(o => o.totalMatches >= 3 && o.opponentName !== "Unknown");
+    if (qualified.length < 1) return null;
+
+    const nemesis = [...qualified]
+      .filter(o => o.losses > o.wins)
+      .sort((a, b) => b.losses - a.losses || a.winRate - b.winRate)[0] || null;
+
+    const bestMatchup = [...qualified]
+      .filter(o => o.wins > o.losses)
+      .sort((a, b) => b.winRate - a.winRate || b.totalMatches - a.totalMatches)[0] || null;
+
+    const mostPlayed = [...qualified]
+      .sort((a, b) => b.totalMatches - a.totalMatches)[0] || null;
+
+    if (!nemesis && !bestMatchup && !mostPlayed) return null;
+    return { nemesis, bestMatchup, mostPlayed };
+  }, [opponentStats]);
+
   const totalPages = Math.max(1, Math.ceil(displayList.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
   const startIdx = (safePage - 1) * PAGE_SIZE;
@@ -147,6 +181,74 @@ export default function OpponentsPage() {
       <p className="text-fab-muted text-sm mb-4">
         Your head-to-head record against {totalOpponents} opponents across {totalMatchCount} matches
       </p>
+
+      {/* Rivalry Highlights */}
+      {highlights && (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
+          {highlights.nemesis && (
+            <button
+              onClick={() => { setSearch(highlights.nemesis!.opponentName); setExpanded(highlights.nemesis!.opponentName); }}
+              className="spotlight-card spotlight-nemesis bg-fab-surface border border-fab-border rounded-lg p-4 text-left hover:border-red-400/30 transition-colors"
+            >
+              <p className="text-[10px] uppercase tracking-wider font-bold text-red-400 mb-2">Nemesis</p>
+              <p className="text-lg font-bold text-fab-text truncate">{highlights.nemesis.opponentName}</p>
+              <div className="flex items-center gap-2 mt-1">
+                <span className="text-sm text-fab-loss font-semibold">{highlights.nemesis.winRate.toFixed(0)}%</span>
+                <span className="text-xs text-fab-dim">
+                  {highlights.nemesis.wins}W - {highlights.nemesis.losses}L
+                  {highlights.nemesis.draws > 0 ? ` - ${highlights.nemesis.draws}D` : ""}
+                </span>
+              </div>
+              <div className="mt-2 h-1.5 rounded-full overflow-hidden flex">
+                <div className="h-full bg-fab-win" style={{ width: `${(highlights.nemesis.wins / highlights.nemesis.totalMatches) * 100}%` }} />
+                <div className="h-full bg-fab-loss/40" style={{ width: `${(highlights.nemesis.losses / highlights.nemesis.totalMatches) * 100}%` }} />
+              </div>
+            </button>
+          )}
+
+          {highlights.bestMatchup && (
+            <button
+              onClick={() => { setSearch(highlights.bestMatchup!.opponentName); setExpanded(highlights.bestMatchup!.opponentName); }}
+              className="spotlight-card spotlight-rising bg-fab-surface border border-fab-border rounded-lg p-4 text-left hover:border-emerald-400/30 transition-colors"
+            >
+              <p className="text-[10px] uppercase tracking-wider font-bold text-emerald-400 mb-2">Best Matchup</p>
+              <p className="text-lg font-bold text-fab-text truncate">{highlights.bestMatchup.opponentName}</p>
+              <div className="flex items-center gap-2 mt-1">
+                <span className="text-sm text-fab-win font-semibold">{highlights.bestMatchup.winRate.toFixed(0)}%</span>
+                <span className="text-xs text-fab-dim">
+                  {highlights.bestMatchup.wins}W - {highlights.bestMatchup.losses}L
+                  {highlights.bestMatchup.draws > 0 ? ` - ${highlights.bestMatchup.draws}D` : ""}
+                </span>
+              </div>
+              <div className="mt-2 h-1.5 rounded-full overflow-hidden flex">
+                <div className="h-full bg-fab-win" style={{ width: `${(highlights.bestMatchup.wins / highlights.bestMatchup.totalMatches) * 100}%` }} />
+                <div className="h-full bg-fab-loss/40" style={{ width: `${(highlights.bestMatchup.losses / highlights.bestMatchup.totalMatches) * 100}%` }} />
+              </div>
+            </button>
+          )}
+
+          {highlights.mostPlayed && (
+            <button
+              onClick={() => { setSearch(highlights.mostPlayed!.opponentName); setExpanded(highlights.mostPlayed!.opponentName); }}
+              className="spotlight-card spotlight-grinder bg-fab-surface border border-fab-border rounded-lg p-4 text-left hover:border-amber-400/30 transition-colors"
+            >
+              <p className="text-[10px] uppercase tracking-wider font-bold text-amber-400 mb-2">Most Played</p>
+              <p className="text-lg font-bold text-fab-text truncate">{highlights.mostPlayed.opponentName}</p>
+              <div className="flex items-center gap-2 mt-1">
+                <span className="text-sm text-fab-gold font-semibold">{highlights.mostPlayed.totalMatches} matches</span>
+                <span className="text-xs text-fab-dim">
+                  {highlights.mostPlayed.wins}W - {highlights.mostPlayed.losses}L
+                  {highlights.mostPlayed.draws > 0 ? ` - ${highlights.mostPlayed.draws}D` : ""}
+                </span>
+              </div>
+              <div className="mt-2 h-1.5 rounded-full overflow-hidden flex">
+                <div className="h-full bg-fab-win" style={{ width: `${(highlights.mostPlayed.wins / highlights.mostPlayed.totalMatches) * 100}%` }} />
+                <div className="h-full bg-fab-loss/40" style={{ width: `${(highlights.mostPlayed.losses / highlights.mostPlayed.totalMatches) * 100}%` }} />
+              </div>
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Search + Filters */}
       <div className="flex flex-wrap items-center gap-2 mb-4">
@@ -298,61 +400,74 @@ function OpponentRow({ opp, isExpanded, onToggle, matchOwnerUid, playerName }: {
   return (
     <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden relative">
       <button onClick={onToggle} className="w-full p-4 text-left hover:bg-fab-surface-hover transition-colors">
-        <div className="flex items-center justify-between gap-4">
-          <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <Link
-                href={`/search?q=${encodeURIComponent(opp.opponentName)}`}
-                onClick={(e) => e.stopPropagation()}
-                className="font-semibold text-fab-text text-lg hover:text-fab-gold transition-colors"
-              >
-                {opp.opponentName}
-              </Link>
-              {currentStreak > 1 && streakType && (
-                <span className={`text-xs px-2 py-0.5 rounded font-semibold ${
-                  streakType === MatchResult.Win ? "bg-fab-win/15 text-fab-win" : "bg-fab-loss/15 text-fab-loss"
-                }`}>
-                  {currentStreak} {streakType === MatchResult.Win ? "W" : "L"} streak
-                </span>
-              )}
+        <div className="flex items-center gap-3">
+          {/* Avatar */}
+          <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold shrink-0 ${getAvatarColor(opp.opponentName)}`}>
+            {opp.opponentName.charAt(0).toUpperCase()}
+          </div>
+
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center justify-between gap-4">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <Link
+                    href={`/search?q=${encodeURIComponent(opp.opponentName)}`}
+                    onClick={(e) => e.stopPropagation()}
+                    className="font-semibold text-fab-text hover:text-fab-gold transition-colors"
+                  >
+                    {opp.opponentName}
+                  </Link>
+                  {currentStreak > 1 && streakType && (
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${
+                      streakType === MatchResult.Win ? "bg-fab-win/15 text-fab-win" : "bg-fab-loss/15 text-fab-loss"
+                    }`}>
+                      {currentStreak}{streakType === MatchResult.Win ? "W" : "L"}
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 mt-0.5 text-xs text-fab-dim flex-wrap">
+                  <span>{opp.totalMatches} matches</span>
+                  {formats.map((f) => (
+                    <span key={f} className="px-1.5 py-0.5 rounded bg-fab-bg">{f}</span>
+                  ))}
+                </div>
+              </div>
+              <div className="flex items-center gap-4 shrink-0">
+                <div className="text-right hidden sm:block">
+                  <span className="text-sm">
+                    <span className="text-fab-win font-semibold">{opp.wins}W</span>
+                    <span className="text-fab-dim"> - </span>
+                    <span className="text-fab-loss font-semibold">{opp.losses}L</span>
+                    {opp.draws > 0 && <><span className="text-fab-dim"> - </span><span className="text-fab-muted font-semibold">{opp.draws}D</span></>}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 w-32">
+                  <div className="flex-1 h-2.5 rounded-full overflow-hidden flex">
+                    <div className="h-full bg-fab-win" style={{ width: `${(opp.wins / opp.totalMatches) * 100}%` }} />
+                    {opp.draws > 0 && <div className="h-full bg-fab-draw/60" style={{ width: `${(opp.draws / opp.totalMatches) * 100}%` }} />}
+                    <div className="h-full bg-fab-loss/40" style={{ width: `${(opp.losses / opp.totalMatches) * 100}%` }} />
+                  </div>
+                  <span className={`text-sm font-bold w-12 text-right ${opp.winRate > 50 ? "text-fab-win" : opp.winRate === 50 ? "text-fab-muted" : "text-fab-loss"}`}>
+                    {opp.winRate.toFixed(0)}%
+                  </span>
+                </div>
+                {isExpanded ? <ChevronUpIcon className="w-4 h-4 text-fab-dim" /> : <ChevronDownIcon className="w-4 h-4 text-fab-dim" />}
+              </div>
             </div>
-            <div className="flex items-center gap-3 mt-1 text-xs text-fab-dim flex-wrap">
-              <span>{opp.totalMatches} matches</span>
-              <span>{firstDate === lastDate ? firstDate : `${firstDate} - ${lastDate}`}</span>
-              {formats.map((f) => (
-                <span key={f} className="px-1.5 py-0.5 rounded bg-fab-bg">{f}</span>
+
+            {/* Recent results dots */}
+            <div className="mt-2 flex gap-1">
+              {sortedMatches.slice(0, 20).reverse().map((m, i) => (
+                <div
+                  key={i}
+                  className={`w-2.5 h-2.5 rounded-full ${
+                    m.result === MatchResult.Win ? "bg-fab-win" : m.result === MatchResult.Loss ? "bg-fab-loss" : "bg-fab-draw"
+                  }`}
+                  title={`${localDate(m.date).toLocaleDateString()} - ${m.result}`}
+                />
               ))}
             </div>
           </div>
-          <div className="flex items-center gap-4 shrink-0">
-            <div className="text-right">
-              <span className="text-sm text-fab-muted">
-                {opp.wins}W - {opp.losses}L{opp.draws > 0 ? ` - ${opp.draws}D` : ""}
-              </span>
-            </div>
-            <div className="flex items-center gap-2 w-28">
-              <div className="flex-1 h-2.5 bg-fab-bg rounded-full overflow-hidden">
-                <div className="h-full bg-fab-win rounded-full transition-all" style={{ width: `${opp.winRate}%` }} />
-              </div>
-              <span className={`text-sm font-bold w-12 text-right ${opp.winRate >= 50 ? "text-fab-win" : opp.winRate === 50 ? "text-fab-draw" : "text-fab-loss"}`}>
-                {opp.winRate.toFixed(0)}%
-              </span>
-            </div>
-            {isExpanded ? <ChevronUpIcon className="w-4 h-4 text-fab-dim" /> : <ChevronDownIcon className="w-4 h-4 text-fab-dim" />}
-          </div>
-        </div>
-
-        {/* Recent results dots */}
-        <div className="mt-2 flex gap-1">
-          {sortedMatches.slice(0, 20).reverse().map((m, i) => (
-            <div
-              key={i}
-              className={`w-2.5 h-2.5 rounded-full ${
-                m.result === MatchResult.Win ? "bg-fab-win" : m.result === MatchResult.Loss ? "bg-fab-loss" : "bg-fab-draw"
-              }`}
-              title={`${localDate(m.date).toLocaleDateString()} - ${m.result}`}
-            />
-          ))}
         </div>
       </button>
 
@@ -360,19 +475,19 @@ function OpponentRow({ opp, isExpanded, onToggle, matchOwnerUid, playerName }: {
         <div className="border-t border-fab-border">
           {/* Stats breakdown */}
           <div className="px-4 py-3 grid grid-cols-2 md:grid-cols-4 gap-3">
-            <div className="bg-fab-bg rounded-lg p-3 text-center">
+            <div className="bg-fab-bg rounded-lg p-3 text-center border-l-2 border-blue-400/50">
               <p className="text-lg font-bold text-fab-text">{opp.totalMatches}</p>
               <p className="text-xs text-fab-dim">Total Games</p>
             </div>
-            <div className="bg-fab-bg rounded-lg p-3 text-center">
-              <p className={`text-lg font-bold ${opp.winRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>{opp.winRate.toFixed(1)}%</p>
+            <div className={`bg-fab-bg rounded-lg p-3 text-center border-l-2 ${opp.winRate > 50 ? "border-fab-win/50" : opp.winRate === 50 ? "border-fab-border" : "border-fab-loss/50"}`}>
+              <p className={`text-lg font-bold ${opp.winRate > 50 ? "text-fab-win" : opp.winRate === 50 ? "text-fab-muted" : "text-fab-loss"}`}>{opp.winRate.toFixed(1)}%</p>
               <p className="text-xs text-fab-dim">Win Rate</p>
             </div>
-            <div className="bg-fab-bg rounded-lg p-3 text-center">
+            <div className="bg-fab-bg rounded-lg p-3 text-center border-l-2 border-purple-400/50">
               <p className="text-lg font-bold text-fab-text">{events.length}</p>
               <p className="text-xs text-fab-dim">Events Together</p>
             </div>
-            <div className="bg-fab-bg rounded-lg p-3 text-center">
+            <div className={`bg-fab-bg rounded-lg p-3 text-center border-l-2 ${streakType === MatchResult.Win ? "border-fab-win/50" : streakType === MatchResult.Loss ? "border-fab-loss/50" : "border-fab-border"}`}>
               <p className={`text-lg font-bold ${streakType === MatchResult.Win ? "text-fab-win" : streakType === MatchResult.Loss ? "text-fab-loss" : "text-fab-text"}`}>
                 {currentStreak > 0 ? `${currentStreak}${streakType === MatchResult.Win ? "W" : "L"}` : "-"}
               </p>
