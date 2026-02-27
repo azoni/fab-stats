@@ -562,14 +562,14 @@ export default function PlayerProfile() {
         />
       )}
 
+      {/* Major Event Badges */}
+      <EventBadges badges={eventBadges} />
+
       {/* Achievements */}
       <AchievementShowcase earned={achievements} progress={achievementProgress} />
 
       {/* Hero Mastery */}
       <HeroMasteryList masteries={masteries} />
-
-      {/* Major Event Badges */}
-      <EventBadges badges={eventBadges} />
 
       {/* Recent Events */}
       {recentEvents.length > 0 && (
