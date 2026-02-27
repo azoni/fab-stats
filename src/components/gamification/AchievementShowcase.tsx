@@ -104,18 +104,18 @@ export function AchievementShowcase({ earned, progress, forceExpanded }: { earne
   if (totalEarned === 0) return null;
 
   return (
-    <div id="achievements">
+    <div id="achievements" className="bg-fab-surface/50 border border-fab-border rounded-lg overflow-hidden">
       <button
         onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center justify-between mb-4 group"
+        className="w-full flex items-center justify-between px-4 py-3 group hover:bg-fab-surface/80 transition-colors"
       >
-        <h2 className="text-lg font-semibold text-fab-text flex items-center gap-2">
-          <AchievementIcon icon="section-achievements" className="w-5 h-5 text-fab-gold" />
-          Achievements
-          <span className="text-sm font-normal text-fab-dim">
+        <div className="flex items-center gap-2">
+          <AchievementIcon icon="section-achievements" className="w-4 h-4 text-fab-gold" />
+          <h2 className="text-sm font-semibold text-fab-text">Achievements</h2>
+          <span className="text-xs text-fab-dim">
             {totalEarned}/{all.length}
           </span>
-        </h2>
+        </div>
         <svg
           className={`w-4 h-4 text-fab-muted group-hover:text-fab-text transition-transform ${expanded ? "rotate-180" : ""}`}
           fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
@@ -124,7 +124,7 @@ export function AchievementShowcase({ earned, progress, forceExpanded }: { earne
         </svg>
       </button>
       {expanded && (
-        <>
+        <div className="px-4 pb-4">
           <div className="flex justify-end mb-2">
             <button
               onClick={() => setShowAll(!showAll)}
@@ -247,7 +247,7 @@ export function AchievementShowcase({ earned, progress, forceExpanded }: { earne
               );
             })}
           </div>
-        </>
+        </div>
       )}
     </div>
   );

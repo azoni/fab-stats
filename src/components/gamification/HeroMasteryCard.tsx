@@ -10,15 +10,16 @@ export function HeroMasteryList({ masteries }: { masteries: HeroMastery[] }) {
   if (masteries.length === 0) return null;
 
   return (
-    <div>
+    <div className="bg-fab-surface/50 border border-fab-border rounded-lg overflow-hidden">
       <button
         onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center justify-between mb-4 group"
+        className="w-full flex items-center justify-between px-4 py-3 group hover:bg-fab-surface/80 transition-colors"
       >
-        <h2 className="text-lg font-semibold text-fab-text flex items-center gap-2">
-          <AchievementIcon icon="section-mastery" className="w-5 h-5 text-fab-gold" />
-          Hero Mastery
-        </h2>
+        <div className="flex items-center gap-2">
+          <AchievementIcon icon="section-mastery" className="w-4 h-4 text-fab-gold" />
+          <h2 className="text-sm font-semibold text-fab-text">Hero Mastery</h2>
+          <span className="text-xs text-fab-dim">{masteries.length} hero{masteries.length !== 1 ? "es" : ""}</span>
+        </div>
         <svg
           className={`w-4 h-4 text-fab-muted group-hover:text-fab-text transition-transform ${expanded ? "rotate-180" : ""}`}
           fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
@@ -27,7 +28,7 @@ export function HeroMasteryList({ masteries }: { masteries: HeroMastery[] }) {
         </svg>
       </button>
       {expanded && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        <div className="px-4 pb-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
           {masteries.map((m) => (
             <HeroMasteryCard key={m.heroName} mastery={m} />
           ))}

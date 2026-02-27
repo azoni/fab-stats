@@ -10,7 +10,6 @@ import { computeHeroMastery } from "@/lib/mastery";
 import { AchievementShowcase } from "@/components/gamification/AchievementShowcase";
 import { AchievementBadges } from "@/components/gamification/AchievementShowcase";
 import { HeroMasteryList } from "@/components/gamification/HeroMasteryCard";
-import { MatchCard } from "@/components/matches/MatchCard";
 import { EventCard } from "@/components/events/EventCard";
 import { EventBadges } from "@/components/profile/EventBadges";
 import { LeaderboardCrowns } from "@/components/profile/LeaderboardCrowns";
@@ -24,9 +23,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useFavorites } from "@/hooks/useFavorites";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase";
-import { NemesisCard, NEMESIS_THEMES, buildNemesisUrl, type NemesisTheme } from "@/components/opponents/NemesisCard";
 import { BestFinishShareModal } from "@/components/profile/BestFinishCard";
-import { toBlob } from "html-to-image";
 import type { MatchRecord, UserProfile, Achievement } from "@/types";
 import { MatchResult } from "@/types";
 import { allHeroes as knownHeroes } from "@/lib/heroes";
@@ -54,8 +51,6 @@ export default function PlayerProfile() {
   const [showRawData, setShowRawData] = useState(false);
   const [showVenues, setShowVenues] = useState(false);
   const [showEventTypes, setShowEventTypes] = useState(false);
-  const [showRecentMatches, setShowRecentMatches] = useState(false);
-  const [nemesisShareOpen, setNemesisShareOpen] = useState(false);
   const [bestFinishShareOpen, setBestFinishShareOpen] = useState(false);
   const [achievementsExpanded, setAchievementsExpanded] = useState(false);
 
@@ -189,21 +184,14 @@ export default function PlayerProfile() {
   const eventTypeStats = useMemo(() => computeEventTypeStats(fm), [fm]);
   const venueStats = useMemo(() => computeVenueStats(fm).filter((v) => v.venue !== "Unknown"), [fm]);
   const eventStats = useMemo(() => computeEventStats(fm), [fm]);
-  const recentEvents = useMemo(() => eventStats.slice(0, 5), [eventStats]);
+  const recentEvents = useMemo(() => eventStats.slice(0, 10), [eventStats]);
   const sortedByDateDesc = useMemo(() =>
     [...fm].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
     [fm]
   );
-  const recentMatches = useMemo(() => sortedByDateDesc.slice(0, 5), [sortedByDateDesc]);
   const achievements = useMemo(() => evaluateAchievements(fm, overall, heroStats, opponentStats), [fm, overall, heroStats, opponentStats]);
   const achievementProgress = useMemo(() => getAchievementProgress(fm, overall, heroStats, opponentStats), [fm, overall, heroStats, opponentStats]);
   const masteries = useMemo(() => computeHeroMastery(heroStats), [heroStats]);
-  const nemesis = useMemo(() => opponentStats.length > 0
-    ? opponentStats.reduce((worst, o) => (o.winRate < worst.winRate ? o : worst))
-    : null, [opponentStats]);
-  const bestFriend = useMemo(() => allOpponentStats.length > 0
-    ? allOpponentStats.reduce((most, o) => (o.totalMatches > most.totalMatches ? o : most))
-    : null, [allOpponentStats]);
   const bestFinish = useMemo(() => computeBestFinish(eventStats), [eventStats]);
   const playoffFinishes = useMemo(() => computePlayoffFinishes(eventStats), [eventStats]);
   const eventBadges = useMemo(() => computeEventBadges(eventStats, playoffFinishes), [eventStats, playoffFinishes]);
@@ -243,16 +231,6 @@ export default function PlayerProfile() {
     return best ? tierStyle[best] : null;
   }, [playoffFinishes]);
 
-  // Build a human-readable label for active filters (shown on share cards)
-  const filterLabel = useMemo(() => {
-    const parts: string[] = [];
-    if (filterFormat !== "all") parts.push(filterFormat);
-    if (filterRated === "rated") parts.push("Rated");
-    else if (filterRated === "unrated") parts.push("Unrated");
-    else if (filterRated !== "all") parts.push(filterRated);
-    if (filterHero !== "all") parts.push(filterHero);
-    return parts.length > 0 ? parts.join(" / ") : undefined;
-  }, [filterFormat, filterRated, filterHero]);
 
   if (state.status === "loading") {
     return (
@@ -552,76 +530,102 @@ export default function PlayerProfile() {
       {/* Achievements */}
       <AchievementShowcase earned={achievements} progress={achievementProgress} forceExpanded={achievementsExpanded} />
 
-      {/* Hero Mastery */}
+      {/* Hero Mastery — collapsible (built into HeroMasteryList) */}
       <HeroMasteryList masteries={masteries} />
 
-      {/* Nemesis + Best Friend */}
-      {(nemesis || bestFriend) && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {nemesis && (
-            <div className="bg-fab-loss/8 border border-fab-loss/30 rounded-lg p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <svg className="w-4 h-4 text-fab-loss" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="12" r="10" />
-                  <path d="M8 9l2 2M14 9l2 2" />
-                  <path d="M8 16c1.5-1.5 4.5-1.5 6 0" fill="none" />
-                </svg>
-                <span className="text-xs text-fab-muted uppercase tracking-wider">Nemesis</span>
-                {isOwner && (
-                  <button
-                    onClick={() => setNemesisShareOpen(true)}
-                    className="ml-auto flex items-center gap-1 px-2 py-1 rounded-md text-fab-dim hover:text-fab-loss hover:bg-fab-loss/10 transition-colors"
-                    title="Share nemesis card"
-                  >
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 8.25H7.5a2.25 2.25 0 00-2.25 2.25v9a2.25 2.25 0 002.25 2.25h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25H15m0-3l-3-3m0 0l-3 3m3-3v11.25" />
-                    </svg>
-                    <span className="text-[10px] font-semibold uppercase tracking-wider">Share</span>
-                  </button>
-                )}
-              </div>
-              <p className="font-bold text-fab-loss truncate">{nemesis.opponentName}</p>
-              <p className="text-xs text-fab-dim mt-1">
-                {nemesis.wins}W-{nemesis.losses}L{nemesis.draws > 0 ? `-${nemesis.draws}D` : ""} ({nemesis.winRate.toFixed(0)}%)
-              </p>
-              {filterLabel && <p className="text-[10px] text-fab-dim mt-1">{filterLabel}</p>}
+      {/* Event Type Breakdown — collapsible */}
+      {eventTypeStats.length > 0 && (
+        <div className="bg-fab-surface/50 border border-fab-border rounded-lg overflow-hidden">
+          <button
+            onClick={() => setShowEventTypes(!showEventTypes)}
+            className="w-full flex items-center justify-between px-4 py-3 group hover:bg-fab-surface/80 transition-colors"
+          >
+            <div className="flex items-center gap-2">
+              <svg className="w-4 h-4 text-blue-400" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z" /></svg>
+              <h2 className="text-sm font-semibold text-fab-text">Win Rate by Event Type</h2>
+              <span className="text-xs text-fab-dim">{eventTypeStats.length} type{eventTypeStats.length !== 1 ? "s" : ""}</span>
             </div>
-          )}
-          {bestFriend && (
-            <div className="bg-fab-gold/5 border border-fab-gold/20 rounded-lg p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <svg className="w-4 h-4 text-fab-gold" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M16 21v-2a4 4 0 00-4-4H8a4 4 0 00-4-4v2" />
-                  <circle cx="10" cy="7" r="4" />
-                  <path d="M20 8v6M23 11h-6" />
-                </svg>
-                <span className="text-xs text-fab-muted uppercase tracking-wider">Best Friend</span>
+            <svg
+              className={`w-4 h-4 text-fab-muted group-hover:text-fab-text transition-transform ${showEventTypes ? "rotate-180" : ""}`}
+              fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+            </svg>
+          </button>
+          {showEventTypes && (
+            <div className="px-4 pb-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {eventTypeStats.map((et) => (
+                  <div key={et.eventType} className="bg-fab-surface border border-fab-border rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-semibold text-fab-text">{et.eventType}</span>
+                      <span className="text-xs text-fab-dim">{et.totalMatches} matches</span>
+                    </div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <div className="flex-1 h-3 bg-fab-bg rounded-full overflow-hidden">
+                        <div className="h-full bg-fab-win rounded-full" style={{ width: `${et.winRate}%` }} />
+                      </div>
+                      <span className={`text-sm font-bold w-12 text-right ${et.winRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>
+                        {et.winRate.toFixed(0)}%
+                      </span>
+                    </div>
+                    <p className="text-xs text-fab-dim">{et.wins}W - {et.losses}L{et.draws > 0 ? ` - ${et.draws}D` : ""}</p>
+                  </div>
+                ))}
               </div>
-              <p className="font-bold text-fab-text truncate">{bestFriend.opponentName}</p>
-              <p className="text-xs text-fab-dim mt-1">
-                {bestFriend.totalMatches} matches ({bestFriend.wins}W-{bestFriend.losses}L{bestFriend.draws > 0 ? `-${bestFriend.draws}D` : ""})
-              </p>
-              {filterLabel && <p className="text-[10px] text-fab-dim mt-1">{filterLabel}</p>}
             </div>
           )}
         </div>
       )}
 
-      {/* Nemesis share modal */}
-      {nemesisShareOpen && nemesis && (
-        <NemesisShareModal
-          playerName={profile.displayName}
-          nemesis={nemesis}
-          recentResults={nemesis.matches
-            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-            .slice(0, 20)
-            .map((m) => m.result)}
-          filterLabel={filterLabel}
-          onClose={() => setNemesisShareOpen(false)}
-        />
+      {/* Venue Breakdown — collapsible */}
+      {venueStats.length > 0 && (
+        <div className="bg-fab-surface/50 border border-fab-border rounded-lg overflow-hidden">
+          <button
+            onClick={() => setShowVenues(!showVenues)}
+            className="w-full flex items-center justify-between px-4 py-3 group hover:bg-fab-surface/80 transition-colors"
+          >
+            <div className="flex items-center gap-2">
+              <svg className="w-4 h-4 text-emerald-400" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" /></svg>
+              <h2 className="text-sm font-semibold text-fab-text">Win Rate by Venue</h2>
+              <span className="text-xs text-fab-dim">{venueStats.length} venue{venueStats.length !== 1 ? "s" : ""}</span>
+            </div>
+            <svg
+              className={`w-4 h-4 text-fab-muted group-hover:text-fab-text transition-transform ${showVenues ? "rotate-180" : ""}`}
+              fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+            </svg>
+          </button>
+          {showVenues && (
+            <div className="px-4 pb-4">
+              <div className="space-y-2">
+                {venueStats.map((v) => (
+                  <div key={v.venue} className="bg-fab-surface border border-fab-border rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-semibold text-fab-text">{v.venue}</span>
+                      <span className="text-xs text-fab-dim">{v.totalMatches} matches</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 h-3 bg-fab-bg rounded-full overflow-hidden">
+                        <div className="h-full bg-fab-win rounded-full" style={{ width: `${v.winRate}%` }} />
+                      </div>
+                      <span className={`text-sm font-bold w-12 text-right ${v.winRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>
+                        {v.winRate.toFixed(0)}%
+                      </span>
+                      <span className="text-xs text-fab-dim w-20 text-right">
+                        {v.wins}W-{v.losses}L{v.draws > 0 ? `-${v.draws}D` : ""}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
       )}
 
-      {/* Recent Events */}
+      {/* Recent Events — always open, at bottom */}
       {recentEvents.length > 0 && (
         <div>
           <h2 className="text-lg font-semibold text-fab-text mb-4">Recent Events</h2>
@@ -632,109 +636,6 @@ export default function PlayerProfile() {
           </div>
         </div>
       )}
-
-      {/* Event Type Breakdown */}
-      {eventTypeStats.length > 0 && (
-        <div>
-          <button
-            onClick={() => setShowEventTypes(!showEventTypes)}
-            className="w-full flex items-center justify-between mb-4 group"
-          >
-            <h2 className="text-lg font-semibold text-fab-text">Win Rate by Event Type</h2>
-            <svg
-              className={`w-4 h-4 text-fab-muted group-hover:text-fab-text transition-transform ${showEventTypes ? "rotate-180" : ""}`}
-              fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-            </svg>
-          </button>
-          {showEventTypes && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {eventTypeStats.map((et) => (
-              <div key={et.eventType} className="bg-fab-surface border border-fab-border rounded-lg p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="font-semibold text-fab-text">{et.eventType}</span>
-                  <span className="text-xs text-fab-dim">{et.totalMatches} matches</span>
-                </div>
-                <div className="flex items-center gap-2 mb-1">
-                  <div className="flex-1 h-3 bg-fab-bg rounded-full overflow-hidden">
-                    <div className="h-full bg-fab-win rounded-full" style={{ width: `${et.winRate}%` }} />
-                  </div>
-                  <span className={`text-sm font-bold w-12 text-right ${et.winRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>
-                    {et.winRate.toFixed(0)}%
-                  </span>
-                </div>
-                <p className="text-xs text-fab-dim">{et.wins}W - {et.losses}L{et.draws > 0 ? ` - ${et.draws}D` : ""}</p>
-              </div>
-            ))}
-          </div>
-          )}
-        </div>
-      )}
-
-      {/* Venue Breakdown */}
-      {venueStats.length > 0 && (
-        <div>
-          <button
-            onClick={() => setShowVenues(!showVenues)}
-            className="w-full flex items-center justify-between mb-4 group"
-          >
-            <h2 className="text-lg font-semibold text-fab-text">Win Rate by Venue</h2>
-            <svg
-              className={`w-4 h-4 text-fab-muted group-hover:text-fab-text transition-transform ${showVenues ? "rotate-180" : ""}`}
-              fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-            </svg>
-          </button>
-          {showVenues && (
-          <div className="space-y-2">
-            {venueStats.map((v) => (
-              <div key={v.venue} className="bg-fab-surface border border-fab-border rounded-lg p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="font-semibold text-fab-text">{v.venue}</span>
-                  <span className="text-xs text-fab-dim">{v.totalMatches} matches</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="flex-1 h-3 bg-fab-bg rounded-full overflow-hidden">
-                    <div className="h-full bg-fab-win rounded-full" style={{ width: `${v.winRate}%` }} />
-                  </div>
-                  <span className={`text-sm font-bold w-12 text-right ${v.winRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>
-                    {v.winRate.toFixed(0)}%
-                  </span>
-                  <span className="text-xs text-fab-dim w-20 text-right">
-                    {v.wins}W-{v.losses}L{v.draws > 0 ? `-${v.draws}D` : ""}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-          )}
-        </div>
-      )}
-
-      {/* Recent Matches */}
-      <div>
-        <button
-          onClick={() => setShowRecentMatches(!showRecentMatches)}
-          className="w-full flex items-center justify-between mb-4 group"
-        >
-          <h2 className="text-lg font-semibold text-fab-text">Recent Matches</h2>
-          <svg
-            className={`w-4 h-4 text-fab-muted group-hover:text-fab-text transition-transform ${showRecentMatches ? "rotate-180" : ""}`}
-            fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-          </svg>
-        </button>
-        {showRecentMatches && (
-        <div className="space-y-2">
-          {recentMatches.map((match) => (
-            <MatchCard key={match.id} match={match} matchOwnerUid={profile.uid} enableComments obfuscateOpponents={!isOwner && !isAdmin} visibleOpponents={visibleOpponents} />
-          ))}
-        </div>
-        )}
-      </div>
       </>
       )}
     </div>
@@ -832,137 +733,4 @@ function ProfileHeader({ profile, achievements, bestRank, isAdmin, isOwner, isFa
   );
 }
 
-function NemesisShareModal({
-  playerName,
-  nemesis,
-  recentResults,
-  filterLabel,
-  onClose,
-}: {
-  playerName: string;
-  nemesis: { opponentName: string; wins: number; losses: number; draws: number; winRate: number; totalMatches: number };
-  recentResults: MatchResult[];
-  filterLabel?: string;
-  onClose: () => void;
-}) {
-  const cardRef = useRef<HTMLDivElement>(null);
-  const [selectedTheme, setSelectedTheme] = useState(NEMESIS_THEMES[0]);
-  const [shareStatus, setShareStatus] = useState<"idle" | "copied" | "sharing">("idle");
-
-  const nemesisData = {
-    playerName,
-    nemesisName: nemesis.opponentName,
-    wins: nemesis.wins,
-    losses: nemesis.losses,
-    draws: nemesis.draws,
-    winRate: nemesis.winRate,
-    matches: nemesis.totalMatches,
-    recentResults,
-    filterLabel,
-  };
-
-  async function handleCopy() {
-    const url = buildNemesisUrl(
-      window.location.origin,
-      playerName,
-      nemesis.opponentName,
-      nemesis.wins,
-      nemesis.losses,
-      nemesis.draws,
-      recentResults,
-      filterLabel,
-    );
-    const shareText = `${playerName}'s nemesis: ${nemesis.opponentName} (${nemesis.wins}W-${nemesis.losses}L${nemesis.draws > 0 ? `-${nemesis.draws}D` : ""}, ${nemesis.winRate.toFixed(0)}%)\n${url}`;
-
-    setShareStatus("sharing");
-    try {
-      const blob = cardRef.current
-        ? await toBlob(cardRef.current, { pixelRatio: 2, backgroundColor: selectedTheme.bg })
-        : null;
-
-      const isMobile = "ontouchstart" in window || navigator.maxTouchPoints > 0;
-      if (isMobile && blob && navigator.share && navigator.canShare?.({ files: [new File([blob], "nemesis.png", { type: "image/png" })] })) {
-        const file = new File([blob], "nemesis.png", { type: "image/png" });
-        await navigator.share({ title: "FaB Stats — Nemesis", text: shareText, files: [file] });
-      } else if (blob && navigator.clipboard?.write) {
-        await navigator.clipboard.write([
-          new ClipboardItem({ "image/png": blob }),
-        ]);
-        setShareStatus("copied");
-        setTimeout(() => { setShareStatus("idle"); onClose(); }, 1500);
-        return;
-      } else {
-        await navigator.clipboard.writeText(url);
-        setShareStatus("copied");
-        setTimeout(() => { setShareStatus("idle"); onClose(); }, 1500);
-        return;
-      }
-    } catch {
-      try {
-        const url2 = buildNemesisUrl(window.location.origin, playerName, nemesis.opponentName, nemesis.wins, nemesis.losses, nemesis.draws, recentResults, filterLabel);
-        await navigator.clipboard.writeText(url2);
-      } catch { /* ignore */ }
-    }
-    setShareStatus("idle");
-  }
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
-      <div className="bg-fab-surface border border-fab-border rounded-xl max-w-lg w-full mx-4 overflow-hidden" onClick={(e) => e.stopPropagation()}>
-        {/* Modal header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-fab-border">
-          <h3 className="text-sm font-semibold text-fab-text">Share Nemesis Card</h3>
-          <button onClick={onClose} className="text-fab-muted hover:text-fab-text transition-colors">
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-
-        {/* Card preview */}
-        <div className="p-4 flex justify-center overflow-x-auto">
-          <div ref={cardRef}>
-            <NemesisCard data={nemesisData} theme={selectedTheme} />
-          </div>
-        </div>
-
-        {/* Theme picker */}
-        <div className="px-4 pb-3">
-          <p className="text-[10px] text-fab-muted uppercase tracking-wider font-medium mb-2">Theme</p>
-          <div className="flex gap-2">
-            {NEMESIS_THEMES.map((theme) => (
-              <button
-                key={theme.id}
-                onClick={() => setSelectedTheme(theme)}
-                className={`flex-1 rounded-lg p-2 text-center transition-all border ${
-                  selectedTheme.id === theme.id
-                    ? "border-fab-loss ring-1 ring-fab-loss/30"
-                    : "border-fab-border hover:border-fab-muted"
-                }`}
-              >
-                <div className="flex gap-0.5 justify-center mb-1">
-                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: theme.bg }} />
-                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: theme.accent }} />
-                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: theme.loss }} />
-                </div>
-                <p className="text-[10px] text-fab-muted">{theme.label}</p>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Copy button */}
-        <div className="px-4 pb-4">
-          <button
-            onClick={handleCopy}
-            disabled={shareStatus === "sharing"}
-            className="w-full py-2.5 rounded-lg text-sm font-semibold bg-fab-loss text-white hover:bg-fab-loss/80 transition-colors disabled:opacity-50"
-          >
-            {shareStatus === "sharing" ? "Capturing..." : shareStatus === "copied" ? "Copied!" : "Copy Image"}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
 
