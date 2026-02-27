@@ -60,9 +60,11 @@ export function EventCard({ event, obfuscateOpponents = false, visibleOpponents,
   let bestRank = 0;
   for (const match of event.matches) {
     const roundInfo = match.notes?.split(" | ")[1];
-    if (roundInfo && playoffRank[roundInfo] && playoffRank[roundInfo] > bestRank) {
-      bestRank = playoffRank[roundInfo];
-      bestPlayoff = roundInfo === "Playoff" ? "Top 8" : roundInfo;
+    if (!roundInfo) continue;
+    const rank = playoffRank[roundInfo] ?? (/^Round P/i.test(roundInfo) ? 2 : 0);
+    if (rank > bestRank) {
+      bestRank = rank;
+      bestPlayoff = roundInfo === "Playoff" || /^Round P/i.test(roundInfo) ? "Top 8" : roundInfo;
     }
   }
 
