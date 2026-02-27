@@ -211,6 +211,7 @@ function PlayerPicker({
 function ComparisonView({ p1, p2 }: { p1: LeaderboardEntry; p2: LeaderboardEntry }) {
   const [showShareModal, setShowShareModal] = useState(false);
   const [scoreMode, setScoreMode] = useState<"categories" | "points">("categories");
+  const [showBreakdown, setShowBreakdown] = useState(false);
 
   // Head-to-head record
   const [h2h, setH2h] = useState<{ p1Wins: number; p2Wins: number; draws: number; total: number } | null>(null);
@@ -321,16 +322,20 @@ function ComparisonView({ p1, p2 }: { p1: LeaderboardEntry; p2: LeaderboardEntry
   const p2Wins = stats.filter((s) => s.better === 2).length;
 
   // Dominance points: each category contributes 0-10 weighted points based on margin
-  const { p1Points, p2Points } = useMemo(() => {
+  type DomBreakdown = { label: string; p1Pts: number; p2Pts: number; weight: number; maxPts: number };
+  const { p1Points, p2Points, breakdown } = useMemo(() => {
     let s1 = 0, s2 = 0;
+    const rows: DomBreakdown[] = [];
     for (const stat of stats) {
       if (stat.raw1 === undefined || stat.raw2 === undefined || stat.weight === 0) continue;
       const total = stat.raw1 + stat.raw2;
-      if (total === 0) { s1 += 5 * stat.weight; s2 += 5 * stat.weight; continue; }
-      s1 += (stat.raw1 / total) * 10 * stat.weight;
-      s2 += (stat.raw2 / total) * 10 * stat.weight;
+      let r1: number, r2: number;
+      if (total === 0) { r1 = 5 * stat.weight; r2 = 5 * stat.weight; }
+      else { r1 = (stat.raw1 / total) * 10 * stat.weight; r2 = (stat.raw2 / total) * 10 * stat.weight; }
+      s1 += r1; s2 += r2;
+      rows.push({ label: stat.label, p1Pts: Math.round(r1 * 10) / 10, p2Pts: Math.round(r2 * 10) / 10, weight: stat.weight, maxPts: 10 * stat.weight });
     }
-    return { p1Points: Math.round(s1 * 10) / 10, p2Points: Math.round(s2 * 10) / 10 };
+    return { p1Points: Math.round(s1 * 10) / 10, p2Points: Math.round(s2 * 10) / 10, breakdown: rows };
   }, [p1, p2]);
 
   const hero1 = p1.topHero ? getHeroByName(p1.topHero) : undefined;
@@ -459,6 +464,50 @@ function ComparisonView({ p1, p2 }: { p1: LeaderboardEntry; p2: LeaderboardEntry
           </div>
         ))}
       </div>
+
+      {/* Dominance Breakdown */}
+      {scoreMode === "points" && (
+        <div className="mt-3">
+          <button
+            onClick={() => setShowBreakdown((v) => !v)}
+            className="flex items-center gap-1.5 text-xs text-fab-muted hover:text-fab-gold transition-colors mx-auto"
+          >
+            <svg className={`w-3.5 h-3.5 transition-transform ${showBreakdown ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+            </svg>
+            {showBreakdown ? "Hide" : "Show"} scoring breakdown
+          </button>
+          {showBreakdown && (
+            <div className="mt-2 bg-fab-surface border border-fab-border rounded-lg overflow-hidden">
+              {/* Header */}
+              <div className="grid grid-cols-[1fr_60px_40px_60px] items-center px-3 py-2 border-b border-fab-border bg-fab-bg">
+                <p className="text-[10px] text-fab-dim uppercase tracking-wider">Category</p>
+                <p className="text-[10px] text-blue-400 uppercase tracking-wider text-center">P1</p>
+                <p className="text-[10px] text-fab-dim uppercase tracking-wider text-center">Max</p>
+                <p className="text-[10px] text-red-400 uppercase tracking-wider text-center">P2</p>
+              </div>
+              {breakdown.map((row, i) => (
+                <div key={row.label} className={`grid grid-cols-[1fr_60px_40px_60px] items-center px-3 py-1.5 ${i > 0 ? "border-t border-fab-border/50" : ""}`}>
+                  <p className="text-xs text-fab-muted truncate">
+                    {row.label}
+                    <span className="text-fab-dim ml-1">x{row.weight}</span>
+                  </p>
+                  <p className={`text-xs font-semibold text-center ${row.p1Pts > row.p2Pts ? "text-blue-400" : "text-fab-text"}`}>{row.p1Pts}</p>
+                  <p className="text-[10px] text-fab-dim text-center">{row.maxPts}</p>
+                  <p className={`text-xs font-semibold text-center ${row.p2Pts > row.p1Pts ? "text-red-400" : "text-fab-text"}`}>{row.p2Pts}</p>
+                </div>
+              ))}
+              {/* Totals */}
+              <div className="grid grid-cols-[1fr_60px_40px_60px] items-center px-3 py-2 border-t border-fab-border bg-fab-bg">
+                <p className="text-xs font-semibold text-fab-text">Total</p>
+                <p className={`text-xs font-bold text-center ${p1Points > p2Points ? "text-blue-400" : "text-fab-text"}`}>{p1Points}</p>
+                <p className="text-[10px] text-fab-dim text-center">{breakdown.reduce((s, r) => s + r.maxPts, 0)}</p>
+                <p className={`text-xs font-bold text-center ${p2Points > p1Points ? "text-red-400" : "text-fab-text"}`}>{p2Points}</p>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Verdict */}
       <Verdict p1={p1} p2={p2} p1Wins={p1Wins} p2Wins={p2Wins} p1Points={p1Points} p2Points={p2Points} h2h={h2h} />
