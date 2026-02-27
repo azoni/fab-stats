@@ -38,24 +38,24 @@ function buildGarden(eventStats: EventStats[]) {
   const flowers: FlowerData[] = [];
   let idx = 0;
 
-  // Daisies: one per 5 non-undefeated armories, plus a partial
-  const daisyFull = Math.floor(withLosses / 5);
-  const daisyRem = withLosses % 5;
+  // Daisies: one per 2 non-undefeated armories, plus a partial
+  const daisyFull = Math.floor(withLosses / 2);
+  const daisyRem = withLosses % 2;
   for (let i = 0; i < daisyFull; i++) {
     flowers.push({ type: "bloom", growth: 1, color: COLORS[idx % COLORS.length], accent: ACCENT[idx % ACCENT.length], idx: idx++ });
   }
   if (daisyRem > 0) {
-    flowers.push({ type: "bloom", growth: daisyRem / 5, color: COLORS[idx % COLORS.length], accent: ACCENT[idx % ACCENT.length], idx: idx++ });
+    flowers.push({ type: "bloom", growth: daisyRem / 2, color: COLORS[idx % COLORS.length], accent: ACCENT[idx % ACCENT.length], idx: idx++ });
   }
 
-  // Sunflowers: one per 5 undefeated armories, plus a partial
-  const sunFull = Math.floor(undefeated / 5);
-  const sunRem = undefeated % 5;
+  // Sunflowers: one per 2 undefeated armories, plus a partial
+  const sunFull = Math.floor(undefeated / 2);
+  const sunRem = undefeated % 2;
   for (let i = 0; i < sunFull; i++) {
     flowers.push({ type: "crown", growth: 1, color: COLORS[idx % COLORS.length], accent: ACCENT[idx % ACCENT.length], idx: idx++ });
   }
   if (sunRem > 0) {
-    flowers.push({ type: "crown", growth: sunRem / 5, color: COLORS[idx % COLORS.length], accent: ACCENT[idx % ACCENT.length], idx: idx++ });
+    flowers.push({ type: "crown", growth: sunRem / 2, color: COLORS[idx % COLORS.length], accent: ACCENT[idx % ACCENT.length], idx: idx++ });
   }
 
   return { flowers, attended, undefeated };
