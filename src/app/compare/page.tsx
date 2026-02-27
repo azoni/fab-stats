@@ -1,11 +1,14 @@
 "use client";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useLeaderboard } from "@/hooks/useLeaderboard";
 import { useAuth } from "@/contexts/AuthContext";
 import { getHeroByName } from "@/lib/heroes";
 import { HeroClassIcon } from "@/components/heroes/HeroClassIcon";
+import { CARD_THEMES, type CardTheme } from "@/components/opponents/RivalryCard";
+import { CompareCard } from "@/components/compare/CompareCard";
+import { toBlob } from "html-to-image";
 import type { LeaderboardEntry } from "@/types";
 
 export default function ComparePage() {
@@ -203,7 +206,7 @@ function PlayerPicker({
 }
 
 function ComparisonView({ p1, p2 }: { p1: LeaderboardEntry; p2: LeaderboardEntry }) {
-  const [shareCopied, setShareCopied] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
   const stats: { label: string; v1: string | number; v2: string | number; better: 1 | 2 | 0; format?: "pct" }[] = [
     {
       label: "Win Rate",
@@ -353,40 +356,151 @@ function ComparisonView({ p1, p2 }: { p1: LeaderboardEntry; p2: LeaderboardEntry
       {/* Share button */}
       <div className="mt-4 text-center">
         <button
-          onClick={async () => {
-            const url = `${window.location.origin}/compare?p1=${p1.username}&p2=${p2.username}`;
-            try {
-              await navigator.clipboard.writeText(url);
-            } catch {
-              // Fallback for browsers that block clipboard API
-              const input = document.createElement("input");
-              input.value = url;
-              document.body.appendChild(input);
-              input.select();
-              document.execCommand("copy");
-              document.body.removeChild(input);
-            }
-            setShareCopied(true);
-            setTimeout(() => setShareCopied(false), 2000);
-          }}
+          onClick={() => setShowShareModal(true)}
           className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-fab-surface border border-fab-border text-fab-muted hover:text-fab-text hover:border-fab-gold/30 transition-colors"
         >
-          {shareCopied ? (
-            <>
-              <svg className="w-4 h-4 text-fab-win" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-              </svg>
-              <span className="text-fab-win">Link Copied!</span>
-            </>
-          ) : (
-            <>
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-              </svg>
-              Share Comparison
-            </>
-          )}
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+          </svg>
+          Share Comparison
         </button>
+      </div>
+
+      {showShareModal && (
+        <CompareShareModal
+          p1={p1}
+          p2={p2}
+          stats={stats}
+          p1CategoryWins={p1Wins}
+          p2CategoryWins={p2Wins}
+          onClose={() => setShowShareModal(false)}
+        />
+      )}
+    </div>
+  );
+}
+
+function CompareShareModal({
+  p1,
+  p2,
+  stats,
+  p1CategoryWins,
+  p2CategoryWins,
+  onClose,
+}: {
+  p1: LeaderboardEntry;
+  p2: LeaderboardEntry;
+  stats: { label: string; v1: string | number; v2: string | number; better: 1 | 2 | 0 }[];
+  p1CategoryWins: number;
+  p2CategoryWins: number;
+  onClose: () => void;
+}) {
+  const [selectedTheme, setSelectedTheme] = useState(CARD_THEMES[0]);
+  const [shareStatus, setShareStatus] = useState<"idle" | "sharing" | "copied">("idle");
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  const compareData = {
+    p1Name: p1.displayName,
+    p2Name: p2.displayName,
+    stats,
+    p1TopHero: p1.topHero || "",
+    p2TopHero: p2.topHero || "",
+    p1Matches: p1.totalMatches,
+    p2Matches: p2.totalMatches,
+    p1CategoryWins,
+    p2CategoryWins,
+  };
+
+  async function handleCopy() {
+    const url = `${window.location.origin}/compare?p1=${p1.username}&p2=${p2.username}`;
+    setShareStatus("sharing");
+    try {
+      const blob = cardRef.current
+        ? await toBlob(cardRef.current, { pixelRatio: 2, backgroundColor: selectedTheme.bg })
+        : null;
+
+      const isMobile = "ontouchstart" in window || navigator.maxTouchPoints > 0;
+      const shareText = `${p1.displayName} vs ${p2.displayName} — Compare stats on FaB Stats\n${url}`;
+
+      if (isMobile && blob && navigator.share && navigator.canShare?.({ files: [new File([blob], "compare.png", { type: "image/png" })] })) {
+        const file = new File([blob], "compare.png", { type: "image/png" });
+        await navigator.share({ title: "FaB Stats", text: shareText, files: [file] });
+      } else if (blob && navigator.clipboard?.write) {
+        await navigator.clipboard.write([
+          new ClipboardItem({ "image/png": blob }),
+        ]);
+        setShareStatus("copied");
+        setTimeout(() => { setShareStatus("idle"); onClose(); }, 1500);
+        return;
+      } else {
+        await navigator.clipboard.writeText(url);
+        setShareStatus("copied");
+        setTimeout(() => { setShareStatus("idle"); onClose(); }, 1500);
+        return;
+      }
+    } catch {
+      try {
+        await navigator.clipboard.writeText(`${window.location.origin}/compare?p1=${p1.username}&p2=${p2.username}`);
+      } catch { /* ignore */ }
+    }
+    setShareStatus("idle");
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
+      <div className="bg-fab-surface border border-fab-border rounded-xl max-w-lg w-full mx-4 overflow-hidden max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+        {/* Modal header */}
+        <div className="flex items-center justify-between px-4 py-3 border-b border-fab-border">
+          <h3 className="text-sm font-semibold text-fab-text">Share Comparison</h3>
+          <button onClick={onClose} className="text-fab-muted hover:text-fab-text transition-colors">
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Card preview */}
+        <div className="p-4 flex justify-center overflow-x-auto">
+          <div ref={cardRef}>
+            <CompareCard data={compareData} theme={selectedTheme} />
+          </div>
+        </div>
+
+        {/* Theme picker */}
+        <div className="px-4 pb-3">
+          <p className="text-[10px] text-fab-muted uppercase tracking-wider font-medium mb-2">Theme</p>
+          <div className="flex gap-2">
+            {CARD_THEMES.map((theme) => (
+              <button
+                key={theme.id}
+                onClick={() => setSelectedTheme(theme)}
+                className={`flex-1 rounded-lg p-2 text-center transition-all border ${
+                  selectedTheme.id === theme.id
+                    ? "border-fab-gold ring-1 ring-fab-gold/30"
+                    : "border-fab-border hover:border-fab-muted"
+                }`}
+              >
+                <div className="flex gap-0.5 justify-center mb-1">
+                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: theme.bg }} />
+                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: theme.accent }} />
+                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: theme.win }} />
+                </div>
+                <p className="text-[10px] text-fab-muted">{theme.label}</p>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Copy button */}
+        <div className="px-4 pb-4">
+          <button
+            onClick={handleCopy}
+            disabled={shareStatus === "sharing"}
+            className="w-full py-2.5 rounded-lg text-sm font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors disabled:opacity-50"
+          >
+            {shareStatus === "sharing" ? "Capturing..." : shareStatus === "copied" ? "Copied!" : "Copy Image"}
+          </button>
+        </div>
       </div>
     </div>
   );

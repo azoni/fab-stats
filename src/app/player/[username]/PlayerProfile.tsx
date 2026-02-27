@@ -184,7 +184,7 @@ export default function PlayerProfile() {
   const eventTypeStats = useMemo(() => computeEventTypeStats(fm), [fm]);
   const venueStats = useMemo(() => computeVenueStats(fm).filter((v) => v.venue !== "Unknown"), [fm]);
   const eventStats = useMemo(() => computeEventStats(fm), [fm]);
-  const recentEvents = useMemo(() => eventStats.slice(0, 10), [eventStats]);
+  const recentEvents = useMemo(() => eventStats.slice(0, 5), [eventStats]);
   const sortedByDateDesc = useMemo(() =>
     [...fm].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
     [fm]
