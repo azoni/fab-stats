@@ -81,6 +81,7 @@ export function QuickEventImportModal({ open, onClose, onImportComplete }: Quick
     }
 
     setParsedEvent(result.event);
+    if (result.event?.heroPlayed) setHeroPlayed(result.event.heroPlayed);
     setPhase("review");
   }
 
@@ -123,6 +124,7 @@ export function QuickEventImportModal({ open, onClose, onImportComplete }: Quick
       }
 
       setParsedEvent(result.event);
+      if (result.event?.heroPlayed) setHeroPlayed(result.event.heroPlayed);
       setPhase("review");
     } catch {
       setError("Failed to process screenshot. Please try again or use the text paste method.");
@@ -171,6 +173,7 @@ export function QuickEventImportModal({ open, onClose, onImportComplete }: Quick
   const wins = parsedEvent?.matches.filter((m) => m.result === MatchResult.Win).length ?? 0;
   const losses = parsedEvent?.matches.filter((m) => m.result === MatchResult.Loss).length ?? 0;
   const draws = parsedEvent?.matches.filter((m) => m.result === MatchResult.Draw).length ?? 0;
+  const hasPlayoff = parsedEvent?.matches.some((m) => /Round P/i.test(m.notes?.split(" | ")[1] ?? "")) ?? false;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -294,6 +297,9 @@ export function QuickEventImportModal({ open, onClose, onImportComplete }: Quick
                   {parsedEvent.rated && (
                     <span className="px-1.5 py-0.5 rounded bg-fab-gold/15 text-fab-gold text-xs">Rated</span>
                   )}
+                  {hasPlayoff && (
+                    <span className="px-1.5 py-0.5 rounded bg-orange-500/15 text-orange-400 text-xs font-bold">Top 8</span>
+                  )}
                 </div>
                 <div className="flex items-center gap-2 text-xs text-fab-dim flex-wrap">
                   <span>{localDate(parsedEvent.eventDate).toLocaleDateString()}</span>
@@ -340,10 +346,18 @@ export function QuickEventImportModal({ open, onClose, onImportComplete }: Quick
                   </thead>
                   <tbody>
                     {parsedEvent.matches.map((match, i) => {
-                      const roundNum = match.notes?.split(" | ")[1]?.replace("Round ", "") || `${i + 1}`;
+                      const roundInfo = match.notes?.split(" | ")[1] ?? "";
+                      const isPlayoffRound = /^Round P/i.test(roundInfo);
+                      const roundNum = roundInfo.replace(/^Round P?/i, "") || `${i + 1}`;
                       return (
                         <tr key={i} className="border-t border-fab-border/50">
-                          <td className="px-3 py-2 text-fab-dim">{roundNum}</td>
+                          <td className="px-3 py-2">
+                            {isPlayoffRound ? (
+                              <span className="text-xs font-bold px-1.5 py-0.5 rounded bg-orange-500/15 text-orange-400">P{roundNum}</span>
+                            ) : (
+                              <span className="text-fab-dim">{roundNum}</span>
+                            )}
+                          </td>
                           <td className="px-3 py-2 text-fab-text">{match.opponentName || "Unknown"}</td>
                           <td className={`px-3 py-2 text-right font-bold ${resultColors[match.result]}`}>
                             {resultLabels[match.result]}

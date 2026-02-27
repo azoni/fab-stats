@@ -9,6 +9,7 @@ export interface PasteImportEvent {
   venue: string;
   eventType: string;
   matches: Omit<MatchRecord, "id" | "createdAt">[];
+  heroPlayed?: string;
 }
 
 export interface PasteImportResult {

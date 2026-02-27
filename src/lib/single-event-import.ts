@@ -1,5 +1,5 @@
 import type { MatchRecord } from "@/types";
-import { GameFormat } from "@/types";
+import { GameFormat, MatchResult } from "@/types";
 import {
   isNoise,
   isMetadataLine,
@@ -87,34 +87,86 @@ export function parseSingleEventPaste(text: string): SingleEventImportResult {
 
   const eventType = guessEventType([eventName, ...preDateLines, ...metadataLines]);
 
-  // 5. Parse match rows
+  // 5. Parse match rows (with playoff and decklist section awareness)
   const matches: Omit<MatchRecord, "id" | "createdAt">[] = [];
+  let inPlayoffSection = false;
+  let inDecklistSection = false;
+
   for (let i = firstMatchIndex; i < lines.length; i++) {
-    const m = lines[i].match(MATCH_ROW_PATTERN);
-    if (!m) continue;
+    const line = lines[i];
 
-    const result = parseResult(m[3]);
-    if (!result) continue;
+    // Section headers (detect before noise/match checks)
+    if (/^Round\s+Opponent/i.test(line)) { inPlayoffSection = false; continue; }
+    if (/^Playoff\s+Opponent/i.test(line)) { inPlayoffSection = true; continue; }
+    if (/^Decklists$/i.test(line)) { inDecklistSection = true; continue; }
 
-    const parsed = parseOpponentName(m[2]);
-    matches.push({
-      date: dateStr,
-      heroPlayed: "Unknown",
-      opponentHero: "Unknown",
-      opponentName: parsed.name,
-      opponentGemId: parsed.gemId || undefined,
-      result,
-      format,
-      notes: `${eventName} | Round ${m[1]}`,
-      venue: venue || undefined,
-      eventType: eventType || undefined,
-      rated,
-    });
+    // Decklist entries: "Format     Hero Name"
+    if (inDecklistSection) {
+      const deckMatch = line.match(/^(.+?)\s{2,}(.+)$/);
+      if (deckMatch) {
+        const fmt = guessFormat(deckMatch[1]);
+        if (fmt !== GameFormat.Other) {
+          const hero = deckMatch[2].trim();
+          for (const m of matches) {
+            if (m.heroPlayed === "Unknown" && m.format === fmt) m.heroPlayed = hero;
+          }
+          continue;
+        }
+      }
+      inDecklistSection = false;
+    }
+
+    // Match row
+    const m = line.match(MATCH_ROW_PATTERN);
+    if (m) {
+      const result = parseResult(m[3]);
+      if (!result) continue;
+
+      const parsed = parseOpponentName(m[2]);
+      const roundLabel = inPlayoffSection ? `Round P${m[1]}` : `Round ${m[1]}`;
+      matches.push({
+        date: dateStr,
+        heroPlayed: "Unknown",
+        opponentHero: "Unknown",
+        opponentName: parsed.name,
+        opponentGemId: parsed.gemId || undefined,
+        result,
+        format,
+        notes: `${eventName} | ${roundLabel}`,
+        venue: venue || undefined,
+        eventType: eventType || undefined,
+        rated,
+      });
+      continue;
+    }
+
+    // Bye rows
+    const byeMatch = line.match(/^(\d+)\s+Bye/i);
+    if (byeMatch) {
+      const roundLabel = inPlayoffSection ? `Round P${byeMatch[1]}` : `Round ${byeMatch[1]}`;
+      matches.push({
+        date: dateStr,
+        heroPlayed: "Unknown",
+        opponentHero: "Unknown",
+        opponentName: "BYE",
+        result: MatchResult.Bye,
+        format,
+        notes: `${eventName} | ${roundLabel}`,
+        venue: venue || undefined,
+        eventType: eventType || undefined,
+        rated,
+      });
+      continue;
+    }
   }
 
   if (matches.length === 0) {
     return { event: null, error: "No match results found. Make sure the text includes the match table." };
   }
+
+  // Detect hero from matches (for the event-level hero field)
+  const detectedHeroes = new Set(matches.map((m) => m.heroPlayed).filter((h) => h !== "Unknown"));
+  const heroPlayed = detectedHeroes.size === 1 ? [...detectedHeroes][0]! : undefined;
 
   return {
     event: {
@@ -125,6 +177,7 @@ export function parseSingleEventPaste(text: string): SingleEventImportResult {
       venue,
       eventType,
       matches,
+      heroPlayed,
     },
     error: null,
   };

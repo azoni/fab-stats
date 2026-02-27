@@ -45,8 +45,12 @@ interface HeroSegment {
 
 export function EventCard({ event, obfuscateOpponents = false, visibleOpponents, editable = false, onBatchUpdateHero, onBatchUpdateFormat, onDeleteEvent, missingGemId }: EventCardProps) {
   const [expanded, setExpanded] = useState(false);
+  const initHero = (() => {
+    const h = new Set(event.matches.map((m) => m.heroPlayed).filter((h) => h && h !== "Unknown"));
+    return h.size === 1 ? [...h][0]! : "";
+  })();
   const [segments, setSegments] = useState<HeroSegment[]>([
-    { hero: "", format: "", fromRound: "1", toRound: String(event.matches.length) },
+    { hero: initHero, format: "", fromRound: "1", toRound: String(event.matches.length) },
   ]);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -317,9 +321,9 @@ export function EventCard({ event, obfuscateOpponents = false, visibleOpponents,
             <tbody>
               {event.matches.map((match, i) => {
                 const roundInfo = match.notes?.split(" | ")[1];
-                const roundMatch = roundInfo?.match(/Round\s+(\d+)/i);
+                const roundMatch = roundInfo?.match(/Round\s+P?(\d+)/i);
                 const round = roundMatch ? roundMatch[1] : `${i + 1}`;
-                const isPlayoff = roundInfo && /^(Top 8|Top 4|Finals|Playoff|Skirmish)$/.test(roundInfo);
+                const isPlayoff = roundInfo && (/^(Top 8|Top 4|Finals|Playoff|Skirmish)$/.test(roundInfo) || /^Round P/i.test(roundInfo));
                 const matchHero = match.heroPlayed && match.heroPlayed !== "Unknown" ? match.heroPlayed : null;
                 const matchHeroInfo = matchHero ? getHeroByName(matchHero) : null;
 
@@ -345,8 +349,8 @@ export function EventCard({ event, obfuscateOpponents = false, visibleOpponents,
                           roundInfo === "Top 4" ? "bg-amber-500/15 text-amber-400" :
                           roundInfo === "Top 8" ? "bg-orange-500/15 text-orange-400" :
                           roundInfo === "Skirmish" ? "bg-blue-500/15 text-blue-400" :
-                          "bg-fab-gold/10 text-fab-gold"
-                        }`}>{roundInfo}</span>
+                          "bg-orange-500/15 text-orange-400"
+                        }`}>{/^Round P/i.test(roundInfo!) ? `P${round}` : roundInfo}</span>
                       ) : (
                         <span className="text-fab-dim">{round}</span>
                       )}
