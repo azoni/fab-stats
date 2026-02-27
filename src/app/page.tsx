@@ -253,12 +253,16 @@ export default function Dashboard() {
           )}
 
           {/* Quick stats row */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+          <div className={`grid grid-cols-2 ${bestFinish ? "sm:grid-cols-5" : "sm:grid-cols-4"} gap-3 mb-4`}>
             <div>
               <p className="text-[10px] text-fab-dim uppercase tracking-wider">Win Rate</p>
               <p className={`text-lg font-bold ${overall.overallWinRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>
                 {overall.overallWinRate.toFixed(1)}%
               </p>
+            </div>
+            <div>
+              <p className="text-[10px] text-fab-dim uppercase tracking-wider">Matches</p>
+              <p className="text-lg font-bold text-fab-text">{overall.totalMatches}</p>
             </div>
             <div>
               <p className="text-[10px] text-fab-dim uppercase tracking-wider">Record</p>
@@ -270,7 +274,7 @@ export default function Dashboard() {
               <p className="text-[10px] text-fab-dim uppercase tracking-wider">Top Hero</p>
               <p className="text-lg font-bold text-fab-text truncate">{topHero?.heroName || "—"}</p>
             </div>
-            {bestFinish ? (
+            {bestFinish && (
               <div className="relative">
                 <p className="text-[10px] text-fab-dim uppercase tracking-wider">Best Finish</p>
                 <p className="text-lg font-bold text-fab-gold truncate">{bestFinish.label}</p>
@@ -285,11 +289,6 @@ export default function Dashboard() {
                   </svg>
                   <span className="text-[9px] font-semibold">Share</span>
                 </button>
-              </div>
-            ) : (
-              <div>
-                <p className="text-[10px] text-fab-dim uppercase tracking-wider">Matches</p>
-                <p className="text-lg font-bold text-fab-text">{overall.totalMatches}</p>
               </div>
             )}
           </div>
