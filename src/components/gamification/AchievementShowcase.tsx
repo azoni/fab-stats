@@ -1,5 +1,5 @@
 "use client";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import type { Achievement } from "@/types";
 import { rarityColors, getAllAchievements } from "@/lib/achievements";
 import { AchievementIcon } from "./AchievementIcons";
@@ -70,8 +70,16 @@ function groupAchievements(all: Achievement[], earnedIds: Set<string>): GroupedA
   return result;
 }
 
-export function AchievementShowcase({ earned, progress }: { earned: Achievement[]; progress?: Record<string, { current: number; target: number }> }) {
+export function AchievementShowcase({ earned, progress, forceExpanded }: { earned: Achievement[]; progress?: Record<string, { current: number; target: number }>; forceExpanded?: boolean }) {
   const [expanded, setExpanded] = useState(false);
+  const wasForced = useRef(false);
+
+  useEffect(() => {
+    if (forceExpanded && !wasForced.current) {
+      setExpanded(true);
+      wasForced.current = true;
+    }
+  }, [forceExpanded]);
   const [showAll, setShowAll] = useState(true);
   const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
 
@@ -96,7 +104,7 @@ export function AchievementShowcase({ earned, progress }: { earned: Achievement[
   if (totalEarned === 0) return null;
 
   return (
-    <div>
+    <div id="achievements">
       <button
         onClick={() => setExpanded(!expanded)}
         className="w-full flex items-center justify-between mb-4 group"
@@ -246,7 +254,7 @@ export function AchievementShowcase({ earned, progress }: { earned: Achievement[
 }
 
 /** Compact inline badges for profile headers */
-export function AchievementBadges({ earned, max = 5 }: { earned: Achievement[]; max?: number }) {
+export function AchievementBadges({ earned, max = 5, onShowMore }: { earned: Achievement[]; max?: number; onShowMore?: () => void }) {
   if (earned.length === 0) return null;
 
   const rarityOrder = { legendary: 5, epic: 4, rare: 3, uncommon: 2, common: 1 };
@@ -269,7 +277,12 @@ export function AchievementBadges({ earned, max = 5 }: { earned: Achievement[]; 
         </span>
       ))}
       {remaining > 0 && (
-        <span className="text-[10px] text-fab-dim">+{remaining} more</span>
+        <button
+          onClick={onShowMore}
+          className="text-[10px] text-fab-dim hover:text-fab-gold transition-colors cursor-pointer"
+        >
+          +{remaining} more
+        </button>
       )}
     </div>
   );

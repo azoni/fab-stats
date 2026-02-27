@@ -57,6 +57,7 @@ export default function PlayerProfile() {
   const [showRecentMatches, setShowRecentMatches] = useState(false);
   const [nemesisShareOpen, setNemesisShareOpen] = useState(false);
   const [bestFinishShareOpen, setBestFinishShareOpen] = useState(false);
+  const [achievementsExpanded, setAchievementsExpanded] = useState(false);
 
   // Build set of opponent display names that have opted in to being visible
   const visibleOpponents = useMemo(() => {
@@ -323,7 +324,7 @@ export default function PlayerProfile() {
       >
         {/* Profile row */}
         <div className="flex items-center gap-4 mb-4">
-          <ProfileHeader profile={profile} achievements={achievements} bestRank={bestRank} isAdmin={isAdmin} isOwner={isOwner} isFavorited={!isOwner && !!currentUser && !isGuest && isFavorited(profile.uid)} onToggleFavorite={!isOwner && !!currentUser && !isGuest ? () => toggleFavorite(profile) : undefined} />
+          <ProfileHeader profile={profile} achievements={achievements} bestRank={bestRank} isAdmin={isAdmin} isOwner={isOwner} isFavorited={!isOwner && !!currentUser && !isGuest && isFavorited(profile.uid)} onToggleFavorite={!isOwner && !!currentUser && !isGuest ? () => toggleFavorite(profile) : undefined} onShowMoreAchievements={() => { setAchievementsExpanded(true); setTimeout(() => document.getElementById("achievements")?.scrollIntoView({ behavior: "smooth", block: "start" }), 50); }} />
           {/* Streak mini */}
           <div className="shrink-0 ml-auto text-right">
             <div className="flex items-baseline gap-1 justify-end">
@@ -541,7 +542,7 @@ export default function PlayerProfile() {
       <EventBadges badges={eventBadges} />
 
       {/* Achievements */}
-      <AchievementShowcase earned={achievements} progress={achievementProgress} />
+      <AchievementShowcase earned={achievements} progress={achievementProgress} forceExpanded={achievementsExpanded} />
 
       {/* Hero Mastery */}
       <HeroMasteryList masteries={masteries} />
@@ -732,7 +733,7 @@ export default function PlayerProfile() {
   );
 }
 
-function ProfileHeader({ profile, achievements, bestRank, isAdmin, isOwner, isFavorited, onToggleFavorite }: { profile: UserProfile; achievements?: Achievement[]; bestRank?: 1 | 2 | 3 | 4 | 5 | null; isAdmin?: boolean; isOwner?: boolean; isFavorited?: boolean; onToggleFavorite?: () => void }) {
+function ProfileHeader({ profile, achievements, bestRank, isAdmin, isOwner, isFavorited, onToggleFavorite, onShowMoreAchievements }: { profile: UserProfile; achievements?: Achievement[]; bestRank?: 1 | 2 | 3 | 4 | 5 | null; isAdmin?: boolean; isOwner?: boolean; isFavorited?: boolean; onToggleFavorite?: () => void; onShowMoreAchievements?: () => void }) {
   const [linkCopied, setLinkCopied] = useState(false);
   const ringClass = bestRank === 1 ? "rank-border-grandmaster" : bestRank === 2 ? "rank-border-diamond" : bestRank === 3 ? "rank-border-gold" : bestRank === 4 ? "rank-border-silver" : bestRank === 5 ? "rank-border-bronze" : "";
   const isCreator = profile.username === "azoni";
@@ -806,7 +807,7 @@ function ProfileHeader({ profile, achievements, bestRank, isAdmin, isOwner, isFa
           )}
         </div>
         <p className="text-sm text-fab-dim mb-1">@{profile.username}</p>
-        {achievements && achievements.length > 0 && <AchievementBadges earned={achievements} max={4} />}
+        {achievements && achievements.length > 0 && <AchievementBadges earned={achievements} max={4} onShowMore={onShowMoreAchievements} />}
         {isAdmin && !isOwner && (
           <Link
             href={`/inbox/${profile.uid}`}
