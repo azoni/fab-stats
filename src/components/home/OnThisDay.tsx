@@ -24,6 +24,7 @@ export function OnThisDay({ matches }: OnThisDayProps) {
   const [overrideDate, setOverrideDate] = useState<string | undefined>();
   const [overrideYear, setOverrideYear] = useState<number | undefined>();
   const [showShareModal, setShowShareModal] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -84,6 +85,8 @@ export function OnThisDay({ matches }: OnThisDayProps) {
   const dateLabel = displayDate.toLocaleDateString("en-US", { month: "long", day: "numeric" });
   const thisYear = overrideYear || today.getFullYear();
 
+  const totalMatches = memories.reduce((s, m) => s + m.matches.length, 0);
+
   const cardData: OnThisDayData = {
     dateLabel,
     memories: memories.map((mem) => ({
@@ -106,98 +109,114 @@ export function OnThisDay({ matches }: OnThisDayProps) {
 
   return (
     <div className="bg-fab-surface border border-fab-border rounded-lg p-4">
-      <div className="flex items-center gap-2 mb-3">
-        <svg className="w-5 h-5 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      {/* Header — clickable to collapse */}
+      <button
+        onClick={() => setCollapsed(!collapsed)}
+        className="w-full flex items-center gap-2"
+      >
+        <svg className="w-5 h-5 text-amber-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
           <circle cx="12" cy="12" r="10" />
           <polyline points="12 6 12 12 16 14" />
         </svg>
         <h3 className="text-sm font-semibold text-fab-text">On This Day</h3>
         <span className="text-xs text-fab-dim">{dateLabel}</span>
-        <button
-          onClick={() => setShowShareModal(true)}
-          className="ml-auto text-fab-dim hover:text-fab-text transition-colors"
-          title="Share"
-        >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-          </svg>
-        </button>
-      </div>
+        {collapsed && (
+          <span className="text-[10px] text-fab-muted">{memories.length} {memories.length === 1 ? "year" : "years"}, {totalMatches} {totalMatches === 1 ? "match" : "matches"}</span>
+        )}
+        <svg className={`w-4 h-4 text-fab-dim ml-auto shrink-0 transition-transform ${collapsed ? "" : "rotate-180"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+        </svg>
+      </button>
 
-      <div className="space-y-4">
-        {memories.map((mem) => {
-          const yearsAgo = thisYear - mem.year;
-          const record = `${mem.wins}W-${mem.losses}L${mem.draws > 0 ? `-${mem.draws}D` : ""}`;
-          const wasGoodDay = mem.wins > mem.losses;
-          const wasUndefeated = mem.losses === 0 && mem.wins > 0;
+      {!collapsed && (
+        <>
+          <div className="space-y-4 mt-3">
+            {memories.map((mem) => {
+              const yearsAgo = thisYear - mem.year;
+              const record = `${mem.wins}W-${mem.losses}L${mem.draws > 0 ? `-${mem.draws}D` : ""}`;
+              const wasGoodDay = mem.wins > mem.losses;
+              const wasUndefeated = mem.losses === 0 && mem.wins > 0;
 
-          return (
-            <div key={mem.year} className="flex gap-3">
-              <div className="shrink-0 text-center w-12">
-                <p className="text-lg font-bold text-fab-gold">{yearsAgo}</p>
-                <p className="text-[10px] text-fab-dim">{yearsAgo === 1 ? "year ago" : "years ago"}</p>
-              </div>
-              <div className="flex-1 min-w-0 border-l border-fab-border pl-3">
-                {/* Summary */}
-                <div className="flex items-center gap-2 mb-1">
-                  <span className={`text-sm font-bold ${wasUndefeated ? "text-fab-gold" : wasGoodDay ? "text-fab-win" : "text-fab-loss"}`}>
-                    {record}
-                  </span>
-                  {wasUndefeated && mem.wins >= 3 && (
-                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-fab-gold/15 text-fab-gold font-semibold">
-                      Undefeated
-                    </span>
-                  )}
-                  {mem.heroes.length > 0 && (
-                    <span className="text-xs text-fab-dim">
-                      playing {mem.heroes.join(", ")}
-                    </span>
-                  )}
+              return (
+                <div key={mem.year} className="flex gap-3">
+                  <div className="shrink-0 text-center w-12">
+                    <p className="text-lg font-bold text-fab-gold">{yearsAgo}</p>
+                    <p className="text-[10px] text-fab-dim">{yearsAgo === 1 ? "year ago" : "years ago"}</p>
+                  </div>
+                  <div className="flex-1 min-w-0 border-l border-fab-border pl-3">
+                    {/* Summary */}
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className={`text-sm font-bold ${wasUndefeated ? "text-fab-gold" : wasGoodDay ? "text-fab-win" : "text-fab-loss"}`}>
+                        {record}
+                      </span>
+                      {wasUndefeated && mem.wins >= 3 && (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-fab-gold/15 text-fab-gold font-semibold">
+                          Undefeated
+                        </span>
+                      )}
+                      {mem.heroes.length > 0 && (
+                        <span className="text-xs text-fab-dim">
+                          playing {mem.heroes.join(", ")}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Event name */}
+                    {mem.events.length > 0 && (
+                      <p className="text-[11px] text-fab-muted mb-2 truncate">
+                        {mem.events.join(" / ")}
+                      </p>
+                    )}
+
+                    {/* Match details */}
+                    <div className="space-y-1">
+                      {mem.matches.map((m, i) => {
+                        const resultBg = m.result === MatchResult.Win
+                          ? "bg-fab-win"
+                          : m.result === MatchResult.Loss
+                            ? "bg-fab-loss"
+                            : "bg-fab-draw";
+                        const resultLabel = m.result === MatchResult.Win ? "W" : m.result === MatchResult.Loss ? "L" : "D";
+                        const round = m.notes?.match(/Round (\d+)/)?.[1];
+
+                        return (
+                          <div key={m.id || i} className="flex items-center gap-2 text-xs">
+                            <span className={`w-4 h-4 rounded-full ${resultBg} flex items-center justify-center text-[9px] font-bold text-white shrink-0`}>
+                              {resultLabel}
+                            </span>
+                            <span className="text-fab-text font-medium truncate">
+                              vs {m.opponentName || "Unknown"}
+                            </span>
+                            {m.opponentHero && m.opponentHero !== "Unknown" && (
+                              <span className="text-fab-dim truncate hidden sm:inline">
+                                ({m.opponentHero})
+                              </span>
+                            )}
+                            <span className="ml-auto shrink-0 text-fab-dim">
+                              {round ? `R${round}` : m.format}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
                 </div>
+              );
+            })}
+          </div>
 
-                {/* Event name */}
-                {mem.events.length > 0 && (
-                  <p className="text-[11px] text-fab-muted mb-2 truncate">
-                    {mem.events.join(" / ")}
-                  </p>
-                )}
-
-                {/* Match details */}
-                <div className="space-y-1">
-                  {mem.matches.map((m, i) => {
-                    const resultBg = m.result === MatchResult.Win
-                      ? "bg-fab-win"
-                      : m.result === MatchResult.Loss
-                        ? "bg-fab-loss"
-                        : "bg-fab-draw";
-                    const resultLabel = m.result === MatchResult.Win ? "W" : m.result === MatchResult.Loss ? "L" : "D";
-                    const round = m.notes?.match(/Round (\d+)/)?.[1];
-
-                    return (
-                      <div key={m.id || i} className="flex items-center gap-2 text-xs">
-                        <span className={`w-4 h-4 rounded-full ${resultBg} flex items-center justify-center text-[9px] font-bold text-white shrink-0`}>
-                          {resultLabel}
-                        </span>
-                        <span className="text-fab-text font-medium truncate">
-                          vs {m.opponentName || "Unknown"}
-                        </span>
-                        {m.opponentHero && m.opponentHero !== "Unknown" && (
-                          <span className="text-fab-dim truncate hidden sm:inline">
-                            ({m.opponentHero})
-                          </span>
-                        )}
-                        <span className="ml-auto shrink-0 text-fab-dim">
-                          {round ? `R${round}` : m.format}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
+          {/* Share button */}
+          <button
+            onClick={() => setShowShareModal(true)}
+            className="mt-4 w-full flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium bg-fab-bg border border-fab-border text-fab-muted hover:text-fab-text hover:border-fab-gold/30 transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+            </svg>
+            Share This Memory
+          </button>
+        </>
+      )}
 
       {showShareModal && (
         <OnThisDayShareModal
