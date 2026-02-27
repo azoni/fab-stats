@@ -6,6 +6,7 @@ import { importMatchesFirestore, getMatchesByUserId } from "@/lib/firestore-stor
 import { importMatchesLocal } from "@/lib/storage";
 import { createImportFeedEvent } from "@/lib/feed";
 import { updateLeaderboardEntry } from "@/lib/leaderboard";
+import { computeH2HForUser } from "@/lib/h2h";
 import { allHeroes } from "@/lib/heroes";
 import { MatchResult } from "@/types";
 import { localDate } from "@/lib/constants";
@@ -161,7 +162,10 @@ export function QuickEventImportModal({ open, onClose, onImportComplete }: Quick
       const topHeroes = hero ? [hero] : [];
       createImportFeedEvent(profile, count, topHeroes, "paste").catch(() => {});
       getMatchesByUserId(user.uid)
-        .then((allMatches) => updateLeaderboardEntry(profile, allMatches))
+        .then((allMatches) => {
+          updateLeaderboardEntry(profile, allMatches);
+          computeH2HForUser(user.uid, allMatches);
+        })
         .catch(() => {});
     }
 

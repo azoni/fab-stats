@@ -7,6 +7,7 @@ import { importMatchesFirestore, clearAllMatchesFirestore, updateProfile, regist
 import { importMatchesLocal } from "@/lib/storage";
 import { createImportFeedEvent } from "@/lib/feed";
 import { linkMatchesWithOpponents } from "@/lib/match-linking";
+import { computeH2HForUser } from "@/lib/h2h";
 import type { GemMetadata } from "@/lib/gem-import";
 import { updateLeaderboardEntry } from "@/lib/leaderboard";
 import { getMatchesByUserId } from "@/lib/firestore-storage";
@@ -297,9 +298,12 @@ export default function ImportPage() {
         registerGemId(user.uid, pasteResult.extensionMeta.userGemId).catch(() => {});
       }
 
-      // Cross-player match linking (non-blocking)
+      // Cross-player match linking + H2H precomputation (non-blocking)
       getMatchesByUserId(user.uid)
-        .then((allMatches) => linkMatchesWithOpponents(user.uid, allMatches))
+        .then((allMatches) => {
+          linkMatchesWithOpponents(user.uid, allMatches);
+          computeH2HForUser(user.uid, allMatches);
+        })
         .catch(() => {});
     }
   }

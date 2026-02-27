@@ -11,6 +11,7 @@ import { CompareCard } from "@/components/compare/CompareCard";
 import { toBlob } from "html-to-image";
 import { getMatchesByUserId, getProfile } from "@/lib/firestore-storage";
 import { normalizeOpponentName } from "@/lib/stats";
+import { getH2H } from "@/lib/h2h";
 import { MatchResult, type LeaderboardEntry, type MatchRecord } from "@/types";
 
 export default function ComparePage() {
@@ -249,7 +250,24 @@ function ComparisonView({ p1, p2 }: { p1: LeaderboardEntry; p2: LeaderboardEntry
 
     (async () => {
       try {
-        // Fetch both players' matches + profiles in parallel
+        // Fast path: check precomputed H2H table first (single doc read)
+        const precomputed = await getH2H(p1.userId, p2.userId);
+        if (cancelled) return;
+
+        if (precomputed && precomputed.total > 0) {
+          const sorted = [p1.userId, p2.userId].sort();
+          const p1IsFirst = p1.userId === sorted[0];
+          setH2h({
+            p1Wins: p1IsFirst ? precomputed.p1Wins : precomputed.p2Wins,
+            p2Wins: p1IsFirst ? precomputed.p2Wins : precomputed.p1Wins,
+            draws: precomputed.draws,
+            total: precomputed.total,
+          });
+          setH2hLoading(false);
+          return;
+        }
+
+        // Fallback: scan both players' match records
         const [p1Matches, p2Matches, p1Profile, p2Profile] = await Promise.all([
           getMatchesByUserId(p1.userId).catch(() => [] as MatchRecord[]),
           getMatchesByUserId(p2.userId).catch(() => [] as MatchRecord[]),
@@ -258,10 +276,9 @@ function ComparisonView({ p1, p2 }: { p1: LeaderboardEntry; p2: LeaderboardEntry
         ]);
         if (cancelled) return;
 
-        // Strategy 1: GEM ID matching (most reliable — matches by unique player ID)
+        // Strategy 1: GEM ID matching (most reliable)
         const p1GemId = p1Profile?.gemId;
         const p2GemId = p2Profile?.gemId;
-
         let p1VsP2: MatchRecord[] = [];
         let p2VsP1: MatchRecord[] = [];
 
@@ -272,28 +289,25 @@ function ComparisonView({ p1, p2 }: { p1: LeaderboardEntry; p2: LeaderboardEntry
           p2VsP1 = p2Matches.filter((m) => m.opponentGemId === p1GemId);
         }
 
-        // Strategy 2: Name matching fallback (display name + username)
+        // Strategy 2: Name matching fallback
         if (p1VsP2.length === 0 && p2VsP1.length === 0) {
-          const p2Names = new Set([
-            normalizeOpponentName(p2.displayName),
-            p2.username.toLowerCase(),
-          ]);
-          const p1Names = new Set([
-            normalizeOpponentName(p1.displayName),
-            p1.username.toLowerCase(),
-          ]);
+          const p2Names = new Set([normalizeOpponentName(p2.displayName), p2.username.toLowerCase()]);
+          const p1Names = new Set([normalizeOpponentName(p1.displayName), p1.username.toLowerCase()]);
+          // Also add first+last name combinations if available from profile
+          if (p1Profile?.firstName && p1Profile?.lastName) {
+            p1Names.add(`${p1Profile.firstName} ${p1Profile.lastName}`.toLowerCase());
+            p1Names.add(`${p1Profile.lastName}, ${p1Profile.firstName}`.toLowerCase());
+          }
+          if (p2Profile?.firstName && p2Profile?.lastName) {
+            p2Names.add(`${p2Profile.firstName} ${p2Profile.lastName}`.toLowerCase());
+            p2Names.add(`${p2Profile.lastName}, ${p2Profile.firstName}`.toLowerCase());
+          }
 
-          p1VsP2 = p1Matches.filter((m) => {
-            if (!m.opponentName) return false;
-            return p2Names.has(normalizeOpponentName(m.opponentName));
-          });
-          p2VsP1 = p2Matches.filter((m) => {
-            if (!m.opponentName) return false;
-            return p1Names.has(normalizeOpponentName(m.opponentName));
-          });
+          p1VsP2 = p1Matches.filter((m) => m.opponentName && p2Names.has(normalizeOpponentName(m.opponentName)));
+          p2VsP1 = p2Matches.filter((m) => m.opponentName && p1Names.has(normalizeOpponentName(m.opponentName)));
         }
 
-        // Use whichever direction found more matches (more complete data)
+        // Use whichever direction found more matches
         let p1Wins = 0, p2Wins = 0, draws = 0;
         if (p1VsP2.length >= p2VsP1.length) {
           for (const m of p1VsP2) {
@@ -458,11 +472,11 @@ function ComparisonView({ p1, p2 }: { p1: LeaderboardEntry; p2: LeaderboardEntry
         </div>
 
         <div className="shrink-0 text-center">
-          <div className="text-2xl font-black text-fab-gold">VS</div>
-          <p className="text-[10px] text-fab-dim mt-1">
-            <span className="text-blue-400 font-semibold">{scoreMode === "categories" ? p1Wins : p1Points}</span>
-            {" - "}
-            <span className="text-red-400 font-semibold">{scoreMode === "categories" ? p2Wins : p2Points}</span>
+          <div className="text-3xl font-black text-fab-gold">VS</div>
+          <p className="text-lg font-black mt-1">
+            <span className="text-blue-400">{scoreMode === "categories" ? p1Wins : p1Points}</span>
+            <span className="text-fab-dim mx-1">-</span>
+            <span className="text-red-400">{scoreMode === "categories" ? p2Wins : p2Points}</span>
           </p>
         </div>
 
