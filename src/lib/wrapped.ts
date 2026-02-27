@@ -154,10 +154,17 @@ export function computeWrappedStats(matches: MatchRecord[]): WrappedStats {
           const wins = favMatches.filter(
             (m) => m.result === MatchResult.Win
           ).length;
+          const losses = favMatches.filter(
+            (m) => m.result === MatchResult.Loss
+          ).length;
+          const draws = favMatches.filter(
+            (m) => m.result === MatchResult.Draw
+          ).length;
+          const played = wins + losses + draws;
           return {
             name: fav.name,
             count: fav.count,
-            winRate: favMatches.length > 0 ? (wins / favMatches.length) * 100 : 0,
+            winRate: played > 0 ? (wins / played) * 100 : 0,
           };
         })()
       : null;
@@ -191,12 +198,19 @@ export function computeWrappedStats(matches: MatchRecord[]): WrappedStats {
     const wins = monthMatches.filter(
       (m) => m.result === MatchResult.Win
     ).length;
+    const losses = monthMatches.filter(
+      (m) => m.result === MatchResult.Loss
+    ).length;
+    const draws = monthMatches.filter(
+      (m) => m.result === MatchResult.Draw
+    ).length;
+    const played = wins + losses + draws;
     return {
       month: monthName,
-      matches: monthMatches.length,
+      matches: played,
       wins,
       winRate:
-        monthMatches.length > 0 ? (wins / monthMatches.length) * 100 : 0,
+        played > 0 ? (wins / played) * 100 : 0,
     };
   });
 

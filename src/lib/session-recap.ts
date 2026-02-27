@@ -45,7 +45,7 @@ export function computeSessionRecap(
   const wins = sessionMatches.filter((m) => m.result === MatchResult.Win).length;
   const losses = sessionMatches.filter((m) => m.result === MatchResult.Loss).length;
   const draws = sessionMatches.filter((m) => m.result === MatchResult.Draw).length;
-  const total = sessionMatches.length;
+  const total = wins + losses + draws;
   const winRate = total > 0 ? (wins / total) * 100 : 0;
 
   // Best win streak within session

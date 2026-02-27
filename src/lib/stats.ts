@@ -18,11 +18,11 @@ export function computeOverallStats(matches: MatchRecord[]): OverallStats {
     (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
       || new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
   );
-  const totalMatches = sorted.length;
   const totalWins = sorted.filter((m) => m.result === MatchResult.Win).length;
   const totalLosses = sorted.filter((m) => m.result === MatchResult.Loss).length;
   const totalDraws = sorted.filter((m) => m.result === MatchResult.Draw).length;
   const totalByes = sorted.filter((m) => m.result === MatchResult.Bye).length;
+  const totalMatches = totalWins + totalLosses + totalDraws;
   const overallWinRate = totalMatches > 0 ? (totalWins / totalMatches) * 100 : 0;
 
   return {
@@ -50,14 +50,15 @@ export function computeHeroStats(matches: MatchRecord[]): HeroStats[] {
       const wins = heroMatches.filter((m) => m.result === MatchResult.Win).length;
       const losses = heroMatches.filter((m) => m.result === MatchResult.Loss).length;
       const draws = heroMatches.filter((m) => m.result === MatchResult.Draw).length;
+      const played = wins + losses + draws;
 
       return {
         heroName,
-        totalMatches: heroMatches.length,
+        totalMatches: played,
         wins,
         losses,
         draws,
-        winRate: heroMatches.length > 0 ? (wins / heroMatches.length) * 100 : 0,
+        winRate: played > 0 ? (wins / played) * 100 : 0,
         matchups: computeMatchups(heroMatches),
       };
     })
@@ -78,14 +79,15 @@ function computeMatchups(heroMatches: MatchRecord[]): MatchupRecord[] {
       const wins = matchupMatches.filter((m) => m.result === MatchResult.Win).length;
       const losses = matchupMatches.filter((m) => m.result === MatchResult.Loss).length;
       const draws = matchupMatches.filter((m) => m.result === MatchResult.Draw).length;
+      const played = wins + losses + draws;
 
       return {
         opponentHero,
-        totalMatches: matchupMatches.length,
+        totalMatches: played,
         wins,
         losses,
         draws,
-        winRate: matchupMatches.length > 0 ? (wins / matchupMatches.length) * 100 : 0,
+        winRate: played > 0 ? (wins / played) * 100 : 0,
       };
     })
     .sort((a, b) => b.totalMatches - a.totalMatches);
@@ -248,11 +250,14 @@ export function computeTrends(
 
   return Array.from(groups.entries()).map(([label, groupMatches]) => {
     const wins = groupMatches.filter((m) => m.result === MatchResult.Win).length;
+    const losses = groupMatches.filter((m) => m.result === MatchResult.Loss).length;
+    const draws = groupMatches.filter((m) => m.result === MatchResult.Draw).length;
+    const played = wins + losses + draws;
     return {
       label,
-      matches: groupMatches.length,
+      matches: played,
       wins,
-      winRate: groupMatches.length > 0 ? (wins / groupMatches.length) * 100 : 0,
+      winRate: played > 0 ? (wins / played) * 100 : 0,
     };
   });
 }
@@ -261,10 +266,12 @@ export function computeRollingWinRate(
   matches: MatchRecord[],
   windowSize: number = 10
 ): { index: number; winRate: number; date: string }[] {
-  const sorted = [...matches].sort(
-    (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
-      || new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-  );
+  const sorted = [...matches]
+    .filter((m) => m.result !== MatchResult.Bye)
+    .sort(
+      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+        || new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+    );
 
   const results: { index: number; winRate: number; date: string }[] = [];
 
@@ -384,13 +391,14 @@ export function computeEventTypeStats(matches: MatchRecord[]): EventTypeStats[] 
       const wins = group.filter((m) => m.result === MatchResult.Win).length;
       const losses = group.filter((m) => m.result === MatchResult.Loss).length;
       const draws = group.filter((m) => m.result === MatchResult.Draw).length;
+      const played = wins + losses + draws;
       return {
         eventType,
-        totalMatches: group.length,
+        totalMatches: played,
         wins,
         losses,
         draws,
-        winRate: group.length > 0 ? (wins / group.length) * 100 : 0,
+        winRate: played > 0 ? (wins / played) * 100 : 0,
       };
     })
     .sort((a, b) => b.totalMatches - a.totalMatches);
@@ -411,13 +419,14 @@ export function computeVenueStats(matches: MatchRecord[]): VenueStats[] {
       const wins = group.filter((m) => m.result === MatchResult.Win).length;
       const losses = group.filter((m) => m.result === MatchResult.Loss).length;
       const draws = group.filter((m) => m.result === MatchResult.Draw).length;
+      const played = wins + losses + draws;
       return {
         venue,
-        totalMatches: group.length,
+        totalMatches: played,
         wins,
         losses,
         draws,
-        winRate: group.length > 0 ? (wins / group.length) * 100 : 0,
+        winRate: played > 0 ? (wins / played) * 100 : 0,
       };
     })
     .sort((a, b) => b.totalMatches - a.totalMatches);
@@ -642,6 +651,7 @@ export function computeEventStats(matches: MatchRecord[]): EventStats[] {
         }
       }
 
+      const played = wins + losses + draws;
       return {
         eventName,
         eventDate: first.date,
@@ -650,11 +660,11 @@ export function computeEventStats(matches: MatchRecord[]): EventStats[] {
         venue: first.venue,
         eventType: getEventType(first),
         rated: first.rated,
-        totalMatches: group.length,
+        totalMatches: played,
         wins,
         losses,
         draws,
-        winRate: group.length > 0 ? (wins / group.length) * 100 : 0,
+        winRate: played > 0 ? (wins / played) * 100 : 0,
         matches: sorted,
       };
     })

@@ -53,8 +53,8 @@ export async function updateLeaderboardEntry(
   const events = computeEventStats(matches);
   const { streaks } = overall;
 
-  // Rated stats
-  const ratedMatches = matches.filter((m) => m.rated);
+  // Rated stats (exclude byes)
+  const ratedMatches = matches.filter((m) => m.rated && m.result !== MatchResult.Bye);
   const ratedWins = ratedMatches.filter((m) => m.result === MatchResult.Win).length;
   const ratedSorted = [...ratedMatches].sort(
     (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
@@ -78,7 +78,7 @@ export async function updateLeaderboardEntry(
   // Hero diversity + breakdown
   const heroData = new Map<string, { matches: number; wins: number }>();
   for (const m of matches) {
-    if (m.heroPlayed && isValidHeroName(m.heroPlayed)) {
+    if (m.heroPlayed && isValidHeroName(m.heroPlayed) && m.result !== MatchResult.Bye) {
       const cur = heroData.get(m.heroPlayed) || { matches: 0, wins: 0 };
       cur.matches++;
       if (m.result === MatchResult.Win) cur.wins++;
@@ -98,7 +98,7 @@ export async function updateLeaderboardEntry(
   // Hero breakdown by format + event type (for meta page filtering)
   const heroDetailedData = new Map<string, { matches: number; wins: number }>();
   for (const m of matches) {
-    if (m.heroPlayed && isValidHeroName(m.heroPlayed)) {
+    if (m.heroPlayed && isValidHeroName(m.heroPlayed) && m.result !== MatchResult.Bye) {
       const et = getEventType(m);
       const key = `${m.heroPlayed}|${m.format}|${et}`;
       const cur = heroDetailedData.get(key) || { matches: 0, wins: 0 };
@@ -132,7 +132,7 @@ export async function updateLeaderboardEntry(
 
   // Weekly stats
   const weekStart = getWeekStart();
-  let weeklyMatchList = matches.filter((m) => m.date >= weekStart);
+  let weeklyMatchList = matches.filter((m) => m.date >= weekStart && m.result !== MatchResult.Bye);
   // Guard against bulk-import pollution: if nearly all matches land in "this week"
   // the dates are almost certainly wrong (set to the import date, not the event date)
   if (weeklyMatchList.length > matches.length * 0.8 && matches.length > 30) {
@@ -142,14 +142,14 @@ export async function updateLeaderboardEntry(
 
   // Monthly stats
   const monthStart = getMonthStart();
-  let monthlyMatchList = matches.filter((m) => m.date >= monthStart);
+  let monthlyMatchList = matches.filter((m) => m.date >= monthStart && m.result !== MatchResult.Bye);
   if (monthlyMatchList.length > matches.length * 0.8 && matches.length > 50) {
     monthlyMatchList = [];
   }
   const monthlyWins = monthlyMatchList.filter((m) => m.result === MatchResult.Win).length;
 
   // Armory stats
-  const armoryMatchList = matches.filter((m) => m.eventType === "Armory");
+  const armoryMatchList = matches.filter((m) => m.eventType === "Armory" && m.result !== MatchResult.Bye);
   const armoryWins = armoryMatchList.filter((m) => m.result === MatchResult.Win).length;
   const armoryEvents = events.filter((e) => e.eventType === "Armory").length;
 

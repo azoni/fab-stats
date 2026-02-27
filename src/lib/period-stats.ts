@@ -66,7 +66,7 @@ function computeForPeriod(matches: MatchRecord[], start: string, end?: string): 
   const topHero = topEntry ? topEntry[0] : null;
   const topHeroRecord = topEntry ? `${topEntry[1].wins}W-${topEntry[1].losses}L` : null;
 
-  return { wins, losses, draws, total: filtered.length, topHero, topHeroRecord };
+  return { wins, losses, draws, total: wins + losses + draws, topHero, topHeroRecord };
 }
 
 export function computePeriodStats(matches: MatchRecord[], period: PeriodType): PeriodStats {
