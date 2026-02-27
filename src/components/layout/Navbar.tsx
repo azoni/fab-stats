@@ -19,10 +19,10 @@ function MetaIcon({ className = "w-4 h-4" }: { className?: string }) {
   );
 }
 
-const coreLinks: { href: string; label: string; icon: ReactNode }[] = [
-  { href: "/leaderboard", label: "Leaderboard", icon: <TrophyIcon className="w-4 h-4" /> },
-  { href: "/meta", label: "Meta", icon: <MetaIcon className="w-4 h-4" /> },
-  { href: "/search", label: "Discover", icon: <SearchIcon className="w-4 h-4" /> },
+const coreLinks: { href: string; label: string; icon: ReactNode; color: string; bg: string }[] = [
+  { href: "/leaderboard", label: "Leaderboard", icon: <TrophyIcon className="w-4 h-4" />, color: "text-amber-400", bg: "bg-amber-400/10" },
+  { href: "/meta", label: "Meta", icon: <MetaIcon className="w-4 h-4" />, color: "text-emerald-400", bg: "bg-emerald-400/10" },
+  { href: "/search", label: "Discover", icon: <SearchIcon className="w-4 h-4" />, color: "text-cyan-400", bg: "bg-cyan-400/10" },
 ];
 
 const historyLinks: { href: string; label: string; icon: ReactNode; authOnly?: boolean }[] = [
@@ -105,7 +105,7 @@ export function Navbar() {
                       href={link.href}
                       className={`flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                         pathname === link.href
-                          ? "text-fab-gold bg-fab-gold/10"
+                          ? `${link.color} ${link.bg}`
                           : "text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover"
                       }`}
                     >
@@ -274,7 +274,7 @@ function HistoryDropdown({
         onClick={() => setOpen(!open)}
         className={`flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
           open || isHistoryActive
-            ? "text-fab-gold bg-fab-gold/10"
+            ? "text-red-400 bg-red-400/10"
             : "text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover"
         }`}
       >
@@ -399,7 +399,7 @@ function MoreDropdown({
         onClick={() => setOpen(!open)}
         className={`flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
           open || isMoreActive
-            ? "text-fab-gold bg-fab-gold/10"
+            ? "text-purple-400 bg-purple-400/10"
             : "text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover"
         }`}
       >

@@ -74,12 +74,12 @@ function MoreDotsIcon(props: { className?: string }) {
   );
 }
 
-const tabs: { href: string; label: string; icon: ReactNode }[] = [
-  { href: "/", label: "Profile", icon: <DashboardIcon /> },
-  { href: "/matches", label: "Matches", icon: <SwordsIcon /> },
-  { href: "/leaderboard", label: "Rankings", icon: <TrophyIcon /> },
-  { href: "/opponents", label: "Opponents", icon: <OpponentsIcon /> },
-  { href: "/search", label: "Discover", icon: <SearchIcon /> },
+const tabs: { href: string; label: string; icon: ReactNode; color: string }[] = [
+  { href: "/", label: "Profile", icon: <DashboardIcon />, color: "text-blue-400" },
+  { href: "/matches", label: "Matches", icon: <SwordsIcon />, color: "text-red-400" },
+  { href: "/leaderboard", label: "Rankings", icon: <TrophyIcon />, color: "text-amber-400" },
+  { href: "/opponents", label: "Opponents", icon: <OpponentsIcon />, color: "text-purple-400" },
+  { href: "/search", label: "Discover", icon: <SearchIcon />, color: "text-cyan-400" },
 ];
 
 function MetaIcon(props: { className?: string }) {
@@ -225,20 +225,21 @@ export function MobileNav() {
       {/* Bottom tab bar */}
       <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-fab-surface/95 backdrop-blur-md border-t border-fab-border">
         <div className="flex items-center justify-around h-16">
-          {tabs.map((tab) => (
-            <Link
-              key={tab.href}
-              href={tab.href}
-              className={`flex flex-col items-center gap-0.5 px-2 py-1 text-xs transition-colors ${
-                pathname === tab.href
-                  ? "text-fab-gold"
-                  : "text-fab-muted"
-              }`}
-            >
-              {tab.icon}
-              <span className="mt-0.5">{tab.label}</span>
-            </Link>
-          ))}
+          {tabs.map((tab) => {
+            const isActive = pathname === tab.href;
+            return (
+              <Link
+                key={tab.href}
+                href={tab.href}
+                className={`flex flex-col items-center gap-0.5 px-2 py-1 text-xs transition-colors ${
+                  isActive ? tab.color : "text-fab-muted"
+                }`}
+              >
+                {tab.icon}
+                <span className="mt-0.5">{tab.label}</span>
+              </Link>
+            );
+          })}
           <button
             onClick={() => setMoreOpen(!moreOpen)}
             className={`relative flex flex-col items-center gap-0.5 px-2 py-1 text-xs transition-colors ${
