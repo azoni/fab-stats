@@ -18,6 +18,7 @@ import { useFeed } from "@/hooks/useFeed";
 import { computeMetaStats } from "@/lib/meta-stats";
 import { selectFeaturedProfiles } from "@/lib/featured-profiles";
 import { BestFinishShareModal } from "@/components/profile/BestFinishCard";
+import { ProfileShareModal } from "@/components/profile/ProfileCard";
 import { EventCard } from "@/components/events/EventCard";
 import { OnThisDay } from "@/components/home/OnThisDay";
 import { localDate } from "@/lib/constants";
@@ -32,6 +33,7 @@ export default function Dashboard() {
   const { events: feedEvents } = useFeed();
   const [shareCopied, setShareCopied] = useState(false);
   const [bestFinishShareOpen, setBestFinishShareOpen] = useState(false);
+  const [profileShareOpen, setProfileShareOpen] = useState(false);
   const router = useRouter();
   const leaderboardUpdated = useRef(false);
 
@@ -235,6 +237,18 @@ export default function Dashboard() {
                     <span className="text-xs font-semibold">Post</span>
                   </button>
                 )}
+                {profile?.username && (
+                  <button
+                    onClick={() => setProfileShareOpen(true)}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-fab-surface border border-fab-border text-fab-dim hover:text-fab-text hover:border-fab-muted transition-colors"
+                    title="Share profile card"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z" />
+                    </svg>
+                    <span className="text-xs font-semibold">Card</span>
+                  </button>
+                )}
               </div>
               {profile?.username && (
                 <p className="text-sm text-fab-dim mb-1">@{profile.username}</p>
@@ -414,6 +428,27 @@ export default function Dashboard() {
           winRate={overall.overallWinRate}
           topHero={topHero?.heroName}
           onClose={() => setBestFinishShareOpen(false)}
+        />
+      )}
+
+      {profileShareOpen && profile && (
+        <ProfileShareModal
+          data={{
+            playerName: profile.displayName,
+            username: profile.username,
+            photoUrl: profile.photoUrl,
+            wins: overall.totalWins,
+            losses: overall.totalLosses,
+            draws: overall.totalDraws,
+            byes: overall.totalByes,
+            winRate: overall.overallWinRate,
+            events: eventStats.length,
+            topHero: topHero?.heroName || null,
+            currentStreak: streaks.currentStreak,
+            bestFinish: bestFinish?.label || null,
+            recentResults: last30.map(m => m.result),
+          }}
+          onClose={() => setProfileShareOpen(false)}
         />
       )}
     </div>

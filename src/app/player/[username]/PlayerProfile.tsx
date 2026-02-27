@@ -25,6 +25,7 @@ import { useFriends } from "@/hooks/useFriends";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { BestFinishShareModal } from "@/components/profile/BestFinishCard";
+import { ProfileShareModal } from "@/components/profile/ProfileCard";
 import type { MatchRecord, UserProfile, Achievement } from "@/types";
 import { MatchResult } from "@/types";
 import { allHeroes as knownHeroes } from "@/lib/heroes";
@@ -54,6 +55,7 @@ export default function PlayerProfile() {
   const [showVenues, setShowVenues] = useState(false);
   const [showEventTypes, setShowEventTypes] = useState(false);
   const [bestFinishShareOpen, setBestFinishShareOpen] = useState(false);
+  const [profileShareOpen, setProfileShareOpen] = useState(false);
   const [achievementsExpanded, setAchievementsExpanded] = useState(false);
 
   // Auto-expand achievements if navigated with #achievements hash
@@ -312,7 +314,7 @@ export default function PlayerProfile() {
       >
         {/* Profile row */}
         <div className="flex items-center gap-4 mb-4">
-          <ProfileHeader profile={profile} achievements={achievements} bestRank={bestRank} isAdmin={isAdmin} isOwner={isOwner} isFavorited={!isOwner && !!currentUser && !isGuest && isFavorited(profile.uid)} onToggleFavorite={!isOwner && !!currentUser && !isGuest ? () => toggleFavorite(profile) : undefined} friendStatus={!isOwner && !!currentUser && !isGuest ? (isFriend(profile.uid) ? "friends" : hasSentRequest(profile.uid) ? "sent" : hasReceivedRequest(profile.uid) ? "received" : "none") : undefined} onFriendAction={!isOwner && !!currentUser && !isGuest ? () => { const fs = getFriendshipForUser(profile.uid); if (isFriend(profile.uid)) return; if (hasReceivedRequest(profile.uid) && fs) { acceptRequest(fs.id); } else if (!hasSentRequest(profile.uid)) { sendRequest(profile); } } : undefined} onShowMoreAchievements={() => { setAchievementsExpanded(true); setTimeout(() => document.getElementById("achievements")?.scrollIntoView({ behavior: "smooth", block: "start" }), 50); }} />
+          <ProfileHeader profile={profile} achievements={achievements} bestRank={bestRank} isAdmin={isAdmin} isOwner={isOwner} isFavorited={!isOwner && !!currentUser && !isGuest && isFavorited(profile.uid)} onToggleFavorite={!isOwner && !!currentUser && !isGuest ? () => toggleFavorite(profile) : undefined} friendStatus={!isOwner && !!currentUser && !isGuest ? (isFriend(profile.uid) ? "friends" : hasSentRequest(profile.uid) ? "sent" : hasReceivedRequest(profile.uid) ? "received" : "none") : undefined} onFriendAction={!isOwner && !!currentUser && !isGuest ? () => { const fs = getFriendshipForUser(profile.uid); if (isFriend(profile.uid)) return; if (hasReceivedRequest(profile.uid) && fs) { acceptRequest(fs.id); } else if (!hasSentRequest(profile.uid)) { sendRequest(profile); } } : undefined} onShowMoreAchievements={() => { setAchievementsExpanded(true); setTimeout(() => document.getElementById("achievements")?.scrollIntoView({ behavior: "smooth", block: "start" }), 50); }} onShareCard={isOwner ? () => setProfileShareOpen(true) : undefined} />
           {/* Streak mini */}
           <div className="shrink-0 ml-auto text-right">
             <div className="flex items-baseline gap-1 justify-end">
@@ -529,6 +531,28 @@ export default function PlayerProfile() {
         />
       )}
 
+      {/* Profile share card modal */}
+      {profileShareOpen && (
+        <ProfileShareModal
+          data={{
+            playerName: profile.displayName,
+            username: profile.username,
+            photoUrl: profile.photoUrl,
+            wins: overall.totalWins,
+            losses: overall.totalLosses,
+            draws: overall.totalDraws,
+            byes: overall.totalByes,
+            winRate: overall.overallWinRate,
+            events: eventStats.length,
+            topHero: topHero?.heroName || null,
+            currentStreak: streaks.currentStreak,
+            bestFinish: bestFinish?.label || null,
+            recentResults: last30.map(m => m.result),
+          }}
+          onClose={() => setProfileShareOpen(false)}
+        />
+      )}
+
       {/* Major Event Badges */}
       <EventBadges badges={eventBadges} />
 
@@ -647,7 +671,7 @@ export default function PlayerProfile() {
   );
 }
 
-function ProfileHeader({ profile, achievements, bestRank, isAdmin, isOwner, isFavorited, onToggleFavorite, friendStatus, onFriendAction, onShowMoreAchievements }: { profile: UserProfile; achievements?: Achievement[]; bestRank?: 1 | 2 | 3 | 4 | 5 | null; isAdmin?: boolean; isOwner?: boolean; isFavorited?: boolean; onToggleFavorite?: () => void; friendStatus?: "none" | "sent" | "received" | "friends"; onFriendAction?: () => void; onShowMoreAchievements?: () => void }) {
+function ProfileHeader({ profile, achievements, bestRank, isAdmin, isOwner, isFavorited, onToggleFavorite, friendStatus, onFriendAction, onShowMoreAchievements, onShareCard }: { profile: UserProfile; achievements?: Achievement[]; bestRank?: 1 | 2 | 3 | 4 | 5 | null; isAdmin?: boolean; isOwner?: boolean; isFavorited?: boolean; onToggleFavorite?: () => void; friendStatus?: "none" | "sent" | "received" | "friends"; onFriendAction?: () => void; onShowMoreAchievements?: () => void; onShareCard?: () => void }) {
   const [linkCopied, setLinkCopied] = useState(false);
   const ringClass = bestRank === 1 ? "rank-border-grandmaster" : bestRank === 2 ? "rank-border-diamond" : bestRank === 3 ? "rank-border-gold" : bestRank === 4 ? "rank-border-silver" : bestRank === 5 ? "rank-border-bronze" : "";
   const isCreator = profile.username === "azoni";
@@ -752,6 +776,18 @@ function ProfileHeader({ profile, achievements, bestRank, isAdmin, isOwner, isFa
                 <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
               </svg>
               <span className="text-xs font-semibold">Post</span>
+            </button>
+          )}
+          {onShareCard && (
+            <button
+              onClick={onShareCard}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-fab-surface border border-fab-border text-fab-dim hover:text-fab-text hover:border-fab-muted transition-colors"
+              title="Share profile card"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z" />
+              </svg>
+              <span className="text-xs font-semibold">Card</span>
             </button>
           )}
         </div>

@@ -14,11 +14,12 @@ interface CompareData {
   p1Dominance: number;
   p2Dominance: number;
   h2h?: { p1Wins: number; p2Wins: number; draws: number; total: number };
+  verdict?: string;
 }
 
 export function CompareCard({ data, theme }: { data: CompareData; theme: CardTheme }) {
   const t = theme;
-  const { p1Name, p2Name, stats, p1TopHero, p2TopHero, p1Matches, p2Matches, p1CategoryWins, p2CategoryWins, p1Dominance, p2Dominance, h2h } = data;
+  const { p1Name, p2Name, stats, p1TopHero, p2TopHero, p1Matches, p2Matches, p1CategoryWins, p2CategoryWins, p1Dominance, p2Dominance, h2h, verdict } = data;
   // Use dominance score for leading/color logic
   const p1Leading = p1Dominance > p2Dominance;
   const tied = p1Dominance === p2Dominance;
@@ -111,6 +112,14 @@ export function CompareCard({ data, theme }: { data: CompareData; theme: CardThe
               <p style={{ color: t.accent }} className="text-[10px] uppercase tracking-wider font-semibold mb-1">Top Hero</p>
               <p style={{ color: t.text }} className="text-sm font-bold truncate">{p2TopHero || "—"}</p>
             </div>
+          </div>
+        )}
+
+        {/* Verdict */}
+        {verdict && (
+          <div className="mt-4 rounded-lg p-3" style={{ backgroundColor: t.bg }}>
+            <p style={{ color: t.accent }} className="text-[9px] uppercase tracking-wider font-semibold mb-1">Verdict</p>
+            <p style={{ color: t.muted }} className="text-[11px] leading-relaxed">{verdict}</p>
           </div>
         )}
       </div>

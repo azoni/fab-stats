@@ -615,10 +615,9 @@ function ComparisonView({ p1, p2 }: { p1: LeaderboardEntry; p2: LeaderboardEntry
   );
 }
 
-function Verdict({ p1, p2, p1Wins, p2Wins, p1Points, p2Points, h2h }: { p1: LeaderboardEntry; p2: LeaderboardEntry; p1Wins: number; p2Wins: number; p1Points: number; p2Points: number; h2h: { p1Wins: number; p2Wins: number; draws: number; total: number } | null }) {
+function getVerdictText(p1: LeaderboardEntry, p2: LeaderboardEntry, p1Wins: number, p2Wins: number, p1Points: number, p2Points: number, h2h: { p1Wins: number; p2Wins: number; draws: number; total: number } | null): string {
   const verdicts: string[] = [];
 
-  // Use weighted dominance score as the primary winner detection
   const pointDiff = Math.abs(p1Points - p2Points);
   const totalPoints = p1Points + p2Points;
   const margin = totalPoints > 0 ? (pointDiff / totalPoints) * 100 : 0;
@@ -635,7 +634,6 @@ function Verdict({ p1, p2, p1Wins, p2Wins, p1Points, p2Points, h2h }: { p1: Lead
     verdicts.push(`${winner.displayName} narrowly edges out ${loser.displayName} when factoring in category importance.`);
   }
 
-  // Win rate comparison
   const wrDiff = Math.abs(p1.winRate - p2.winRate);
   if (wrDiff < 2) {
     verdicts.push("Their win rates are virtually identical.");
@@ -644,14 +642,12 @@ function Verdict({ p1, p2, p1Wins, p2Wins, p1Points, p2Points, h2h }: { p1: Lead
     verdicts.push(`${better.displayName} boasts a ${wrDiff.toFixed(0)}% higher win rate.`);
   }
 
-  // Experience comparison
   const matchDiff = Math.abs(p1.totalMatches - p2.totalMatches);
   if (matchDiff > 50) {
     const more = p1.totalMatches > p2.totalMatches ? p1 : p2;
     verdicts.push(`${more.displayName} has ${matchDiff} more matches of experience.`);
   }
 
-  // H2H verdict
   if (h2h && h2h.total >= 2) {
     if (h2h.p1Wins > h2h.p2Wins) {
       verdicts.push(`${p1.displayName} owns the head-to-head ${h2h.p1Wins}-${h2h.p2Wins}.`);
@@ -662,10 +658,14 @@ function Verdict({ p1, p2, p1Wins, p2Wins, p1Points, p2Points, h2h }: { p1: Lead
     }
   }
 
+  return verdicts.join(" ");
+}
+
+function Verdict({ p1, p2, p1Wins, p2Wins, p1Points, p2Points, h2h }: { p1: LeaderboardEntry; p2: LeaderboardEntry; p1Wins: number; p2Wins: number; p1Points: number; p2Points: number; h2h: { p1Wins: number; p2Wins: number; draws: number; total: number } | null }) {
   return (
     <div className="mt-4 bg-fab-surface border border-fab-border rounded-lg p-4">
       <p className="text-[10px] text-fab-gold uppercase tracking-wider font-semibold mb-2">Verdict</p>
-      <p className="text-sm text-fab-text leading-relaxed">{verdicts.join(" ")}</p>
+      <p className="text-sm text-fab-text leading-relaxed">{getVerdictText(p1, p2, p1Wins, p2Wins, p1Points, p2Points, h2h)}</p>
     </div>
   );
 }
@@ -710,6 +710,7 @@ function CompareShareModal({
     p1Dominance: p1Points,
     p2Dominance: p2Points,
     h2h: h2h ?? undefined,
+    verdict: getVerdictText(p1, p2, p1CategoryWins, p2CategoryWins, p1Points, p2Points, h2h),
   };
 
   async function handleCopy() {
