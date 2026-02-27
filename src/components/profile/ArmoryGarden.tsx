@@ -1,5 +1,5 @@
 "use client";
-import { useMemo } from "react";
+import { useMemo, useCallback, useRef } from "react";
 import type { EventStats } from "@/types";
 
 /* ── petal palette ─────────────────────────────────────── */
@@ -235,10 +235,29 @@ export function ArmoryGarden({ eventStats }: { eventStats: EventStats[] }) {
     [eventStats],
   );
 
+  const lastDropTime = useRef(0);
+  const handleWater = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    const now = Date.now();
+    if (now - lastDropTime.current < 80) return;
+    lastDropTime.current = now;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const count = 1 + Math.round(Math.random());
+    for (let d = 0; d < count; d++) {
+      const drop = document.createElement("div");
+      drop.className = "garden-drop";
+      drop.style.left = `${x + (Math.random() * 12 - 6)}px`;
+      drop.style.top = `${y}px`;
+      e.currentTarget.appendChild(drop);
+      drop.addEventListener("animationend", () => drop.remove());
+    }
+  }, []);
+
   if (attended === 0) return null;
 
   return (
-    <div className="bg-fab-surface/50 border border-fab-border rounded-lg px-4 py-3 flex flex-col">
+    <div className="bg-fab-surface/50 border border-fab-border rounded-lg px-4 py-3 flex flex-col garden-can">
       <style>{`
         @keyframes garden-sway {
           0%, 100% { transform: rotate(-2.5deg) translateY(0); }
@@ -248,6 +267,23 @@ export function ArmoryGarden({ eventStats }: { eventStats: EventStats[] }) {
         .garden-flower {
           animation: garden-sway 4s ease-in-out infinite;
           transform-origin: bottom center;
+        }
+        .garden-can {
+          cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Crect x='4' y='12' width='14' height='10' rx='2' fill='%2360a5fa'/%3E%3Cpath d='M7 12C7 6 15 6 15 12' fill='none' stroke='%233b82f6' stroke-width='2'/%3E%3Cpath d='M18 16L26 26' stroke='%233b82f6' stroke-width='2.5' stroke-linecap='round'/%3E%3Ccircle cx='27' cy='27' r='3' fill='%2393c5fd'/%3E%3C/svg%3E") 27 27, auto;
+        }
+        .garden-drop {
+          position: absolute;
+          width: 3px;
+          height: 5px;
+          border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+          background: rgba(96, 165, 250, 0.7);
+          pointer-events: none;
+          animation: garden-drop-fall 0.5s ease-in forwards;
+          z-index: 15;
+        }
+        @keyframes garden-drop-fall {
+          0% { opacity: 0.8; transform: translateY(0); }
+          100% { opacity: 0; transform: translateY(20px); }
         }
       `}</style>
 
@@ -271,7 +307,7 @@ export function ArmoryGarden({ eventStats }: { eventStats: EventStats[] }) {
         </div>
 
         {/* The garden bed */}
-        <div className="relative rounded-md overflow-hidden flex-1 flex flex-col justify-end">
+        <div className="relative rounded-md overflow-hidden flex-1 flex flex-col justify-end" onMouseMove={handleWater}>
           {/* Sky-to-soil gradient */}
           <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-amber-950/20 pointer-events-none" />
 
