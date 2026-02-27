@@ -1,9 +1,8 @@
 "use client";
 import { useState, useEffect } from "react";
-import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
 
-const STORAGE_KEY = "fab-dismissed-banner-quick-import";
+const STORAGE_KEY = "fab-dismissed-banner-delete-reimport";
 
 export function FeatureBanner() {
   const { user, isGuest } = useAuth();
@@ -23,11 +22,9 @@ export function FeatureBanner() {
   return (
     <div className="bg-fab-gold/10 border border-fab-gold/25 rounded-lg px-4 py-3 mb-4 flex items-center justify-between gap-3">
       <p className="text-sm text-fab-muted">
-        <span className="text-fab-gold font-medium">New</span> — Quick import from mobile: paste GEM results or snap a screenshot.
-        Plus, set different heroes &amp; formats per round for multi-format events.{" "}
-        <Link href="/events?import=1" className="text-fab-gold hover:text-fab-gold-light underline">
-          Try it
-        </Link>
+        <span className="text-fab-gold font-medium">New</span> — Delete existing events and reimport them individually from the Events page.
+        Quick import from mobile: paste GEM results or snap a screenshot.
+        Plus, set different heroes &amp; formats per round for multi-format events.
       </p>
       <button
         onClick={dismiss}
