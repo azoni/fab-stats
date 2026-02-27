@@ -3,7 +3,7 @@ import { useState, useRef, useMemo } from "react";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
 import { useMatches } from "@/hooks/useMatches";
-import { updateProfile, uploadProfilePhoto, deleteAccountData, getMatchesByUserId, registerGemId, deleteGemId } from "@/lib/firestore-storage";
+import { updateProfile, uploadProfilePhoto, deleteAccountData, getMatchesByUserId, clearAllMatchesFirestore, registerGemId, deleteGemId } from "@/lib/firestore-storage";
 import {
   deleteUser,
   reauthenticateWithPopup,
@@ -101,6 +101,7 @@ function YearInReview() {
 
 export default function SettingsPage() {
   const { user, profile, signOut, isGuest, refreshProfile } = useAuth();
+  const { refreshMatches } = useMatches();
   const creators = useCreators();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -128,6 +129,9 @@ export default function SettingsPage() {
   const [togglingSpotlight, setTogglingSpotlight] = useState(false);
   const [privacyOpen, setPrivacyOpen] = useState(false);
   const [creatorsOpen, setCreatorsOpen] = useState(false);
+  const [confirmClear, setConfirmClear] = useState(false);
+  const [clearing, setClearing] = useState(false);
+  const [clearConfirmText, setClearConfirmText] = useState("");
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
@@ -613,6 +617,70 @@ export default function SettingsPage() {
         >
           {exporting ? "Exporting..." : "Download My Data"}
         </button>
+      </div>
+
+      {/* Clear All Data */}
+      <div className="bg-fab-surface border border-fab-border rounded-lg p-6 mb-4">
+        <h2 className="text-sm font-semibold text-fab-text mb-2">Clear All Match Data</h2>
+        <p className="text-xs text-fab-dim mb-3">
+          Delete all your match history. Your profile and account will be kept. You can re-import afterwards.
+        </p>
+        {!confirmClear ? (
+          <button
+            onClick={() => setConfirmClear(true)}
+            className="px-4 py-2 rounded-lg text-sm font-semibold bg-fab-surface border border-fab-loss/30 text-fab-loss hover:bg-fab-loss/10 transition-colors"
+          >
+            Clear All Matches...
+          </button>
+        ) : (
+          <div className="bg-fab-loss/10 border border-fab-loss/30 rounded-lg p-4">
+            <p className="text-sm text-fab-loss font-semibold mb-2">
+              This will permanently delete all your match history.
+            </p>
+            <p className="text-xs text-fab-muted mb-2">
+              Type <strong className="text-fab-loss">clear</strong> to confirm:
+            </p>
+            <input
+              type="text"
+              value={clearConfirmText}
+              onChange={(e) => setClearConfirmText(e.target.value)}
+              placeholder="clear"
+              className="w-full bg-fab-bg border border-fab-border text-fab-text rounded-lg px-3 py-2 mb-3 focus:outline-none focus:border-fab-loss text-sm"
+            />
+            <div className="flex gap-2">
+              <button
+                onClick={async () => {
+                  if (!user) return;
+                  setClearing(true);
+                  setError("");
+                  try {
+                    await clearAllMatchesFirestore(user.uid);
+                    await refreshMatches();
+                    setConfirmClear(false);
+                    setClearConfirmText("");
+                  } catch {
+                    setError("Failed to clear data. Please try again.");
+                  } finally {
+                    setClearing(false);
+                  }
+                }}
+                disabled={clearing || clearConfirmText !== "clear"}
+                className="px-4 py-2 rounded-md text-sm font-semibold bg-fab-loss text-white hover:bg-fab-loss/80 transition-colors disabled:opacity-50"
+              >
+                {clearing ? "Clearing..." : "Clear All Matches"}
+              </button>
+              <button
+                onClick={() => {
+                  setConfirmClear(false);
+                  setClearConfirmText("");
+                }}
+                className="px-4 py-2 rounded-md text-sm font-semibold bg-fab-surface border border-fab-border text-fab-muted hover:text-fab-text transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Account */}
