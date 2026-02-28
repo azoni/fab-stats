@@ -82,7 +82,7 @@ const placementLabels: Record<string, { label: string; color: string; icon: stri
   top8: { label: "Top 8", color: "text-fab-gold", icon: "M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 21 12 17.77 5.82 21 7 14.14l-5-4.87 6.91-1.01L12 2z" },
 };
 
-/** Shared avatar + header row */
+/** Shared avatar + header row — clickable link to player profile */
 function FeedCardHeader({ event, compact, rankMap }: { event: FeedEvent; compact?: boolean; rankMap?: Map<string, 1 | 2 | 3 | 4 | 5> }) {
   const initials = event.displayName
     .split(" ")
@@ -93,21 +93,22 @@ function FeedCardHeader({ event, compact, rankMap }: { event: FeedEvent; compact
 
   const border = rankBorderClass(rankMap?.get(event.userId));
 
-  return (
-    <>
-      {event.photoUrl ? (
-        <img
-          src={event.photoUrl}
-          alt=""
-          className={`rounded-full shrink-0 ${compact ? "w-6 h-6" : "w-10 h-10"} ${border}`}
-        />
-      ) : (
-        <div className={`rounded-full bg-fab-gold/20 flex items-center justify-center text-fab-gold font-bold shrink-0 ${compact ? "w-6 h-6 text-[10px]" : "w-10 h-10 text-sm"} ${border}`}>
-          {initials}
-        </div>
-      )}
-    </>
+  const avatar = event.photoUrl ? (
+    <img
+      src={event.photoUrl}
+      alt=""
+      className={`rounded-full shrink-0 ${compact ? "w-6 h-6" : "w-10 h-10"} ${border}`}
+    />
+  ) : (
+    <div className={`rounded-full bg-fab-gold/20 flex items-center justify-center text-fab-gold font-bold shrink-0 ${compact ? "w-6 h-6 text-[10px]" : "w-10 h-10 text-sm"} ${border}`}>
+      {initials}
+    </div>
   );
+
+  if (event.isPublic) {
+    return <Link href={`/player/${event.username}`}>{avatar}</Link>;
+  }
+  return avatar;
 }
 
 function NameAndTime({ event, compact }: { event: FeedEvent; compact?: boolean }) {
