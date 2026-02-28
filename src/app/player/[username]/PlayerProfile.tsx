@@ -172,7 +172,13 @@ export default function PlayerProfile() {
       } catch (err) {
         console.error("Failed to load profile:", err);
         if (!cancelled) {
-          setState({ status: "error", message: err instanceof Error ? err.message : undefined });
+          // Firestore permission-denied means the profile exists but is private
+          const code = (err as { code?: string })?.code;
+          if (code === "permission-denied") {
+            setState({ status: "private" });
+          } else {
+            setState({ status: "error", message: err instanceof Error ? err.message : undefined });
+          }
         }
       }
     }
@@ -301,6 +307,12 @@ export default function PlayerProfile() {
   if (matches.length === 0) {
     return (
       <div className="space-y-8">
+        {isAdmin && !profile.isPublic && (
+          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-fab-dim/10 border border-fab-dim/20">
+            <LockIcon className="w-4 h-4 text-fab-dim shrink-0" />
+            <span className="text-xs font-semibold text-fab-dim">Private Profile — only visible to you (admin) and the owner</span>
+          </div>
+        )}
         <ProfileHeader profile={profile} isAdmin={isAdmin} isOwner={isOwner} isFavorited={!isOwner && !!currentUser && !isGuest && isFavorited(profile.uid)} onToggleFavorite={!isOwner && !!currentUser && !isGuest ? () => toggleFavorite(profile) : undefined} friendStatus={!isOwner && !!currentUser && !isGuest ? (isFriend(profile.uid) ? "friends" : hasSentRequest(profile.uid) ? "sent" : hasReceivedRequest(profile.uid) ? "received" : "none") : undefined} onFriendAction={!isOwner && !!currentUser && !isGuest ? () => { const fs = getFriendshipForUser(profile.uid); if (isFriend(profile.uid)) return; if (hasReceivedRequest(profile.uid) && fs) { acceptRequest(fs.id); } else if (!hasSentRequest(profile.uid)) { sendRequest(profile); } } : undefined} />
         <div className="text-center py-16">
           <p className="text-fab-muted">This player hasn&apos;t logged any matches yet.</p>
@@ -316,6 +328,13 @@ export default function PlayerProfile() {
         className="bg-fab-surface border border-fab-border rounded-lg p-5"
         style={cardBorder ? { borderColor: cardBorder.border, boxShadow: cardBorder.shadow } : undefined}
       >
+        {/* Admin: private profile banner */}
+        {isAdmin && !profile.isPublic && (
+          <div className="flex items-center gap-2 mb-4 px-3 py-2 rounded-lg bg-fab-dim/10 border border-fab-dim/20">
+            <LockIcon className="w-4 h-4 text-fab-dim shrink-0" />
+            <span className="text-xs font-semibold text-fab-dim">Private Profile — only visible to you (admin) and the owner</span>
+          </div>
+        )}
         {/* Profile row */}
         <div className="flex items-center gap-4 mb-4">
           <ProfileHeader profile={profile} achievements={achievements} bestRank={bestRank} isAdmin={isAdmin} isOwner={isOwner} isFavorited={!isOwner && !!currentUser && !isGuest && isFavorited(profile.uid)} onToggleFavorite={!isOwner && !!currentUser && !isGuest ? () => toggleFavorite(profile) : undefined} friendStatus={!isOwner && !!currentUser && !isGuest ? (isFriend(profile.uid) ? "friends" : hasSentRequest(profile.uid) ? "sent" : hasReceivedRequest(profile.uid) ? "received" : "none") : undefined} onFriendAction={!isOwner && !!currentUser && !isGuest ? () => { const fs = getFriendshipForUser(profile.uid); if (isFriend(profile.uid)) return; if (hasReceivedRequest(profile.uid) && fs) { acceptRequest(fs.id); } else if (!hasSentRequest(profile.uid)) { sendRequest(profile); } } : undefined} onShowMoreAchievements={() => { setAchievementsExpanded(true); setTimeout(() => document.getElementById("achievements")?.scrollIntoView({ behavior: "smooth", block: "start" }), 50); }} onShareCard={isOwner || isAdmin ? () => setProfileShareOpen(true) : undefined} />
