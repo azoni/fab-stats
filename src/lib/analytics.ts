@@ -40,6 +40,21 @@ export function trackCreatorClick(creatorName: string) {
   }
 }
 
+/** Update the user's "last seen" timestamp. Throttled to every 5 minutes (in-memory). */
+let lastPresenceUpdate = 0;
+export function trackPresence() {
+  const user = auth.currentUser;
+  if (!user) return;
+  const now = Date.now();
+  if (now - lastPresenceUpdate < 5 * 60_000) return;
+  lastPresenceUpdate = now;
+  try {
+    setDoc(doc(db, "analytics", "userLastVisit"), { [user.uid]: new Date().toISOString() }, { merge: true }).catch(() => {});
+  } catch {
+    // Fire and forget
+  }
+}
+
 /** Track a unique daily visit for the current user. Throttled to once per day via localStorage. */
 export function trackVisit() {
   const user = auth.currentUser;

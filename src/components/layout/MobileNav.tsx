@@ -237,16 +237,6 @@ export function MobileNav() {
         </div>
       </div>
 
-      {/* Floating Import Button */}
-      {isAuthed && pathname !== "/events" && !moreOpen && (
-        <Link
-          href="/events?import=1"
-          className="fixed bottom-20 right-4 z-40 md:hidden w-14 h-14 rounded-full bg-fab-gold text-fab-bg flex items-center justify-center shadow-lg active:bg-fab-gold-light transition-colors"
-        >
-          <ImportIcon className="w-6 h-6" />
-        </Link>
-      )}
-
       {/* Bottom tab bar */}
       <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-fab-surface/95 backdrop-blur-md border-t border-fab-border">
         <div className="flex items-center justify-around h-16">

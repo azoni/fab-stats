@@ -6,7 +6,7 @@ import { SwordsIcon, OpponentsIcon, TrendsIcon, ImportIcon, CalendarIcon, Trophy
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCreators } from "@/hooks/useCreators";
-import { trackPageView, trackCreatorClick, trackVisit } from "@/lib/analytics";
+import { trackPageView, trackCreatorClick, trackVisit, trackPresence } from "@/lib/analytics";
 import { useCommunityStats } from "@/hooks/useCommunityStats";
 import { useFriends } from "@/hooks/useFriends";
 import type { ReactNode } from "react";
@@ -20,23 +20,20 @@ function MetaIcon({ className = "w-4 h-4" }: { className?: string }) {
   );
 }
 
-const coreLinks: { href: string; label: string; icon: ReactNode; color: string; bg: string }[] = [
+const navLinks: { href: string; label: string; icon: ReactNode; color: string; bg: string }[] = [
   { href: "/leaderboard", label: "Leaderboard", icon: <TrophyIcon className="w-4 h-4" />, color: "text-amber-400", bg: "bg-amber-400/10" },
-  { href: "/meta", label: "Meta", icon: <MetaIcon className="w-4 h-4" />, color: "text-emerald-400", bg: "bg-emerald-400/10" },
+  { href: "/matches", label: "Matches", icon: <SwordsIcon className="w-4 h-4" />, color: "text-red-400", bg: "bg-red-400/10" },
+  { href: "/events", label: "Events", icon: <CalendarIcon className="w-4 h-4" />, color: "text-blue-400", bg: "bg-blue-400/10" },
+  { href: "/opponents", label: "Opponents", icon: <OpponentsIcon className="w-4 h-4" />, color: "text-purple-400", bg: "bg-purple-400/10" },
+  { href: "/compare", label: "Compare", icon: <CompareIcon className="w-4 h-4" />, color: "text-violet-400", bg: "bg-violet-400/10" },
   { href: "/search", label: "Discover", icon: <SearchIcon className="w-4 h-4" />, color: "text-cyan-400", bg: "bg-cyan-400/10" },
 ];
 
-const historyLinks: { href: string; label: string; icon: ReactNode; authOnly?: boolean }[] = [
-  { href: "/matches", label: "Matches", icon: <SwordsIcon className="w-4 h-4" /> },
-  { href: "/events", label: "Events", icon: <CalendarIcon className="w-4 h-4" /> },
-  { href: "/opponents", label: "Opponents", icon: <OpponentsIcon className="w-4 h-4" /> },
+const moreLinks: { href: string; label: string; icon: ReactNode; authOnly?: boolean }[] = [
+  { href: "/meta", label: "Community Meta", icon: <MetaIcon className="w-4 h-4" /> },
   { href: "/trends", label: "Trends", icon: <TrendsIcon className="w-4 h-4" />, authOnly: true },
-];
-
-const moreLinks: { href: string; label: string; icon: ReactNode }[] = [
   { href: "/tournaments", label: "Tournaments", icon: <TrophyIcon className="w-4 h-4" /> },
-  { href: "/compare", label: "Compare", icon: <CompareIcon className="w-4 h-4" /> },
-  { href: "/import", label: "Import", icon: <ImportIcon className="w-4 h-4" /> },
+  { href: "/import", label: "Import", icon: <ImportIcon className="w-4 h-4" />, authOnly: true },
   { href: "/docs", label: "Docs", icon: <DocsIcon className="w-4 h-4" /> },
   { href: "/changelog", label: "Changelog", icon: <ChangelogIcon className="w-4 h-4" /> },
 ];
@@ -92,6 +89,11 @@ export function Navbar() {
     if (mounted && user && !isGuest) trackVisit();
   }, [mounted, user, isGuest]);
 
+  // Update presence timestamp (every 5 minutes, on each route change)
+  useEffect(() => {
+    if (mounted && user && !isGuest) trackPresence();
+  }, [mounted, user, isGuest, pathname]);
+
   const isAuthenticated = user && !isGuest;
 
   return (
@@ -116,27 +118,24 @@ export function Navbar() {
             {mounted && (
               <>
                 <div className="hidden md:contents">
-                  {coreLinks.map((link) => (
+                  {navLinks.map((link) => (
                     <Link
                       key={link.href}
                       href={link.href}
-                      className={`flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                      className={`flex items-center gap-1.5 px-2.5 py-2 rounded-md text-sm font-medium transition-colors ${
                         pathname === link.href
                           ? `${link.color} ${link.bg}`
                           : "text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover"
                       }`}
                     >
                       {link.icon}
-                      {link.label}
+                      <span className="hidden lg:inline">{link.label}</span>
                     </Link>
                   ))}
-                  <HistoryDropdown
-                    pathname={pathname}
-                    isAuthenticated={!!isAuthenticated}
-                  />
                   <MoreDropdown
                     pathname={pathname}
                     creators={creators}
+                    isAuthenticated={!!isAuthenticated}
                   />
                 </div>
                 <div className="ml-3 pl-3 border-l border-fab-border flex items-center gap-2">
@@ -280,138 +279,14 @@ export const platformIcons: Record<Creator["platform"], ReactNode> = {
   ),
 };
 
-function HistoryDropdown({
-  pathname,
-  isAuthenticated,
-}: {
-  pathname: string;
-  isAuthenticated: boolean;
-}) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    function handleClick(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    }
-    if (open) document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, [open]);
-
-  const visibleLinks = historyLinks.filter((l) => !l.authOnly || isAuthenticated);
-  const isHistoryActive = visibleLinks.some((l) => pathname === l.href);
-
-  return (
-    <div className="relative" ref={ref}>
-      <button
-        onClick={() => setOpen(!open)}
-        className={`flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-          open || isHistoryActive
-            ? "text-red-400 bg-red-400/10"
-            : "text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover"
-        }`}
-      >
-        <SwordsIcon className="w-4 h-4" />
-        History
-        <svg className={`w-3 h-3 transition-transform ${open ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-        </svg>
-      </button>
-
-      {open && (
-        <div className="absolute top-full right-0 mt-1 w-52 bg-fab-surface border border-fab-border rounded-lg shadow-xl overflow-hidden z-50">
-          <div className="p-2">
-            {visibleLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                onClick={() => setOpen(false)}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors ${
-                  pathname === link.href
-                    ? "text-fab-gold bg-fab-gold/10"
-                    : "text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover"
-                }`}
-              >
-                {link.icon}
-                {link.label}
-              </Link>
-            ))}
-          </div>
-          <div className="border-t border-fab-border" />
-          <div className="p-2">
-            <Link
-              href="/events?import=1"
-              onClick={() => setOpen(false)}
-              className="flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover transition-colors"
-            >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-              </svg>
-              Log Event
-            </Link>
-          </div>
-          {!isAuthenticated && (
-            <>
-              <div className="border-t border-fab-border" />
-              <div className="p-2">
-                <p className="px-3 py-1.5 text-xs text-fab-dim font-medium uppercase tracking-wider">
-                  Support
-                </p>
-                <a
-                  href="https://github.com/sponsors/azoni"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-md hover:bg-fab-surface-hover transition-colors group"
-                  onClick={() => setOpen(false)}
-                >
-                  <svg className="w-4 h-4 text-pink-400 shrink-0" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
-                  </svg>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-fab-text group-hover:text-fab-gold transition-colors truncate">
-                      GitHub Sponsors
-                    </p>
-                  </div>
-                  <svg className="w-3.5 h-3.5 text-fab-dim shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
-                  </svg>
-                </a>
-                <a
-                  href="https://ko-fi.com/azoni"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-md hover:bg-fab-surface-hover transition-colors group"
-                  onClick={() => setOpen(false)}
-                >
-                  <svg className="w-4 h-4 text-yellow-400 shrink-0" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M23.881 8.948c-.773-4.085-4.859-4.593-4.859-4.593H.723c-.604 0-.679.798-.679.798s-.082 7.324-.022 11.822c.164 2.424 2.586 2.672 2.586 2.672s8.267-.023 11.966-.049c2.438-.426 2.683-2.566 2.658-3.734 4.352.24 7.422-2.831 6.649-6.916zm-11.062 3.511c-1.246 1.453-4.011 3.976-4.011 3.976s-.121.119-.31.023c-.076-.057-.108-.09-.108-.09-.443-.441-3.368-3.049-4.034-3.954-.709-.965-1.041-2.7-.091-3.71.951-1.01 3.005-1.086 4.363.407 0 0 1.565-1.782 3.468-.963 1.904.82 1.832 3.011.723 4.311zm6.173.478c-.928.116-1.682.028-1.682.028V7.284h1.493s1.535-.199 2.089 1.024c.603 1.332-.084 4.39-1.9 4.629z" />
-                  </svg>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-fab-text group-hover:text-fab-gold transition-colors truncate">
-                      Ko-fi
-                    </p>
-                  </div>
-                  <svg className="w-3.5 h-3.5 text-fab-dim shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
-                  </svg>
-                </a>
-              </div>
-            </>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
 function MoreDropdown({
   pathname,
   creators,
+  isAuthenticated,
 }: {
   pathname: string;
   creators: Creator[];
+  isAuthenticated?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -426,15 +301,16 @@ function MoreDropdown({
     return () => document.removeEventListener("mousedown", handleClick);
   }, [open]);
 
-  const isMoreActive = moreLinks.some((l) => pathname === l.href);
+  const visibleMoreLinks = moreLinks.filter((l) => !l.authOnly || isAuthenticated);
+  const isMoreActive = visibleMoreLinks.some((l) => pathname === l.href);
 
   return (
     <div className="relative" ref={ref}>
       <button
         onClick={() => setOpen(!open)}
-        className={`flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+        className={`flex items-center gap-1.5 px-2.5 py-2 rounded-md text-sm font-medium transition-colors ${
           open || isMoreActive
-            ? "text-purple-400 bg-purple-400/10"
+            ? "text-fab-gold bg-fab-gold/10"
             : "text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover"
         }`}
       >
@@ -443,7 +319,7 @@ function MoreDropdown({
           <circle cx="12" cy="12" r="1" fill="currentColor" />
           <circle cx="12" cy="19" r="1" fill="currentColor" />
         </svg>
-        More
+        <span className="hidden lg:inline">More</span>
         <svg className={`w-3 h-3 transition-transform ${open ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
         </svg>
@@ -452,7 +328,7 @@ function MoreDropdown({
       {open && (
         <div className="absolute top-full right-0 mt-1 w-64 bg-fab-surface border border-fab-border rounded-lg shadow-xl overflow-hidden z-50">
           <div className="p-2">
-            {moreLinks.map((link) => (
+            {visibleMoreLinks.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}

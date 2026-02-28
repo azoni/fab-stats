@@ -37,7 +37,7 @@ export default function AdminPage() {
   const [data, setData] = useState<AdminDashboardData | null>(null);
   const [fetching, setFetching] = useState(true);
   const [error, setError] = useState("");
-  const [sortKey, setSortKey] = useState<SortKey>("matchCount");
+  const [sortKey, setSortKey] = useState<SortKey>("lastActive");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [expandedUid, setExpandedUid] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<"all" | "public" | "private">("all");
@@ -375,15 +375,18 @@ export default function AdminPage() {
             const publicUsers = data.users.filter((u) => u.isPublic).length;
             const privateUsers = data.totalUsers - publicUsers;
             const avgMatches = activePlayers > 0 ? Math.round(data.totalMatches / activePlayers) : 0;
+            const now = Date.now();
+            const onlineNow = data.users.filter((u) => u.lastSiteVisit && (now - new Date(u.lastSiteVisit).getTime()) < 15 * 60_000).length;
+            const activeToday = data.users.filter((u) => u.lastSiteVisit && (now - new Date(u.lastSiteVisit).getTime()) < 24 * 60 * 60_000).length;
             return (
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+                <MetricCard label="Online Now" value={onlineNow} subtext={`${activeToday} active today`} highlight />
                 <MetricCard label="Total Users" value={data.totalUsers} />
                 <MetricCard label="Active Players" value={activePlayers} subtext={`${data.totalUsers - activePlayers} with 0 matches`} />
                 <MetricCard label="Public" value={publicUsers} subtext={`${privateUsers} private`} />
                 <MetricCard label="Total Matches" value={data.totalMatches} subtext={`${avgMatches} avg per player`} />
                 <MetricCard label="New (7d)" value={data.newUsersThisWeek} />
                 <MetricCard label="New (30d)" value={data.newUsersThisMonth} />
-                <MetricCard label="New Feedback" value={feedback.filter((f) => f.status === "new").length} />
                 <MetricCard label="Avg Win Rate" value={(() => {
                   const withWr = data.users.filter((u) => u.winRate !== undefined && u.matchCount >= 10);
                   if (withWr.length === 0) return 0;
@@ -1552,10 +1555,10 @@ function UserExpandedStats({ user: u }: { user: AdminUserStats }) {
   );
 }
 
-function MetricCard({ label, value, subtext, suffix }: { label: string; value: number; subtext?: string; suffix?: string }) {
+function MetricCard({ label, value, subtext, suffix, highlight }: { label: string; value: number; subtext?: string; suffix?: string; highlight?: boolean }) {
   return (
-    <div className="bg-fab-surface border border-fab-border rounded-lg p-4">
-      <div className="text-2xl font-bold text-fab-text">
+    <div className={`bg-fab-surface border rounded-lg p-4 ${highlight ? "border-fab-win/30" : "border-fab-border"}`}>
+      <div className={`text-2xl font-bold ${highlight ? "text-fab-win" : "text-fab-text"}`}>
         {value.toLocaleString()}{suffix && <span className="text-sm text-fab-muted ml-0.5">{suffix}</span>}
       </div>
       <div className="text-xs text-fab-muted mt-1">{label}</div>
