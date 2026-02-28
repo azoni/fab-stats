@@ -399,18 +399,26 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <ActivityFeed rankMap={rankMap} />
           <div className="space-y-6">
-            <a
-              href="https://www.youtube.com/live/DFWOlXB0YXc?si=-Kj27AY5o4L4ubE5"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="block overflow-hidden rounded-lg border border-fab-border hover:border-fab-gold/50 transition-colors group"
-            >
-              <img
-                src="/montreal.png"
-                alt="Calling Montreal Metagame — 282 Players"
-                className="w-full h-auto group-hover:brightness-110 transition-all"
-              />
-            </a>
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <h2 className="text-lg font-semibold text-fab-text">Calling Montreal</h2>
+                <a href="https://www.youtube.com/live/DFWOlXB0YXc?si=-Kj27AY5o4L4ubE5" target="_blank" rel="noopener noreferrer" className="text-xs text-fab-gold hover:text-fab-gold-light transition-colors">
+                  Watch Stream &rarr;
+                </a>
+              </div>
+              <a
+                href="https://www.youtube.com/live/DFWOlXB0YXc?si=-Kj27AY5o4L4ubE5"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block overflow-hidden rounded-lg border border-fab-border hover:border-fab-gold/50 transition-colors group"
+              >
+                <img
+                  src="/montreal.png"
+                  alt="Calling Montreal Metagame — 282 Players"
+                  className="w-full h-auto group-hover:brightness-110 transition-all"
+                />
+              </a>
+            </div>
             <FeaturedProfiles profiles={featuredProfiles} rankMap={rankMap} />
           </div>
         </div>
@@ -418,18 +426,26 @@ export default function Dashboard() {
 
       {/* Montreal metagame for logged-out users */}
       {!user && (
-        <a
-          href="https://www.youtube.com/live/DFWOlXB0YXc?si=-Kj27AY5o4L4ubE5"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="block overflow-hidden rounded-lg border border-fab-border hover:border-fab-gold/50 transition-colors group"
-        >
-          <img
-            src="/montreal.png"
-            alt="Calling Montreal Metagame — 282 Players"
-            className="w-full h-auto group-hover:brightness-110 transition-all"
-          />
-        </a>
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-lg font-semibold text-fab-text">Calling Montreal</h2>
+            <a href="https://www.youtube.com/live/DFWOlXB0YXc?si=-Kj27AY5o4L4ubE5" target="_blank" rel="noopener noreferrer" className="text-xs text-fab-gold hover:text-fab-gold-light transition-colors">
+              Watch Stream &rarr;
+            </a>
+          </div>
+          <a
+            href="https://www.youtube.com/live/DFWOlXB0YXc?si=-Kj27AY5o4L4ubE5"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block overflow-hidden rounded-lg border border-fab-border hover:border-fab-gold/50 transition-colors group"
+          >
+            <img
+              src="/montreal.png"
+              alt="Calling Montreal Metagame — 282 Players"
+              className="w-full h-auto group-hover:brightness-110 transition-all"
+            />
+          </a>
+        </div>
       )}
 
       {/* Community content */}
