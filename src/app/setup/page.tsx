@@ -80,7 +80,6 @@ export default function SetupPage() {
         searchName: searchName || undefined,
         photoUrl: user.photoURL || undefined,
         isPublic,
-        hideFromGuests: true,
       });
       // Refresh profile so AuthContext picks up the new profile
       await refreshProfile();

@@ -154,7 +154,7 @@ export default function PlayerProfile() {
         }
 
         // Hide from guests: if hideFromGuests is true and viewer is not logged in
-        if (profile.hideFromGuests !== false && !viewerUid && !viewerIsAdmin) {
+        if (profile.hideFromGuests && !viewerUid && !viewerIsAdmin) {
           setState({ status: "private" });
           return;
         }

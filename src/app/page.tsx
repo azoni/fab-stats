@@ -91,10 +91,7 @@ export default function Dashboard() {
   // Community section data
   const communityMeta = useMemo(() => computeMetaStats(lbEntries), [lbEntries]);
   const communityTopHeroes = useMemo(() => communityMeta.heroStats.slice(0, 5), [communityMeta]);
-  const featuredProfiles = useMemo(() => {
-    const visible = user ? lbEntries : lbEntries.filter((e) => e.hideFromGuests === false);
-    return selectFeaturedProfiles(visible);
-  }, [lbEntries, user]);
+  const featuredProfiles = useMemo(() => selectFeaturedProfiles(lbEntries), [lbEntries]);
   const rankMap = useMemo(() => computeRankMap(lbEntries), [lbEntries]);
 
 
@@ -397,11 +394,13 @@ export default function Dashboard() {
       {/* On This Day */}
       {hasMatches && <OnThisDay matches={matches} />}
 
-      {/* Spotlight + Activity Feed side by side */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <FeaturedProfiles profiles={featuredProfiles} rankMap={rankMap} />
-        <ActivityFeed rankMap={rankMap} />
-      </div>
+      {/* Spotlight + Activity Feed side by side (logged-in only) */}
+      {user && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <FeaturedProfiles profiles={featuredProfiles} rankMap={rankMap} />
+          <ActivityFeed rankMap={rankMap} />
+        </div>
+      )}
 
       {/* Community content */}
       <CommunityHighlights

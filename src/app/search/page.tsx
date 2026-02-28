@@ -109,7 +109,7 @@ function SearchContent() {
 
     const filtered = withProfiles.filter((r) => {
       if (!r.profile?.isPublic && !isAdmin) return false;
-      if (r.profile?.hideFromGuests !== false && !user && !isAdmin) return false;
+      if (r.profile?.hideFromGuests && !user && !isAdmin) return false;
       return true;
     });
 

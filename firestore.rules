@@ -21,7 +21,7 @@ service cloud.firestore {
       allow read, write: if request.auth != null && request.auth.uid == userId;
       // Authenticated users can read public profiles
       allow read: if resource.data.isPublic == true
-        && (request.auth != null || resource.data.get('hideFromGuests', true) == false);
+        && (request.auth != null || resource.data.get('hideFromGuests', false) == false);
       // Admin can read all profiles
       allow read: if isAdmin();
     }
@@ -46,7 +46,7 @@ service cloud.firestore {
       allow update, delete: if isAdmin();
       // Public read: if the user's profile is public (and not hidden from guests)
       allow read: if get(/databases/$(database)/documents/users/$(userId)/profile/main).data.isPublic == true
-        && (request.auth != null || get(/databases/$(database)/documents/users/$(userId)/profile/main).data.get('hideFromGuests', true) == false);
+        && (request.auth != null || get(/databases/$(database)/documents/users/$(userId)/profile/main).data.get('hideFromGuests', false) == false);
       // Admin can read all matches (for aggregate stats)
       allow read: if isAdmin();
       // Any authenticated user can update ONLY commentCount (and must be a valid increment)

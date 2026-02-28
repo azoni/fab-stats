@@ -202,7 +202,7 @@ export async function updateLeaderboardEntry(
     armoryEvents,
     showNameOnProfiles: profile.showNameOnProfiles ?? false,
     hideFromSpotlight: profile.hideFromSpotlight ?? false,
-    hideFromGuests: profile.hideFromGuests ?? true,
+    hideFromGuests: profile.hideFromGuests ?? false,
     heroBreakdown,
     heroBreakdownDetailed,
     totalTop8s,

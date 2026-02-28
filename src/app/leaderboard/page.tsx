@@ -228,7 +228,7 @@ export default function LeaderboardPage() {
   // Filter out hideFromGuests entries when viewer is not logged in
   const visibleEntries = useMemo(() => {
     if (user || isAdmin) return entries;
-    return entries.filter((e) => e.hideFromGuests === false);
+    return entries.filter((e) => !e.hideFromGuests);
   }, [entries, user, isAdmin]);
 
   const ranked = useMemo(() => {

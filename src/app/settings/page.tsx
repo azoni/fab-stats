@@ -132,7 +132,7 @@ export default function SettingsPage() {
   const [togglingName, setTogglingName] = useState(false);
   const [hideFromSpotlight, setHideFromSpotlight] = useState(profile?.hideFromSpotlight ?? false);
   const [togglingSpotlight, setTogglingSpotlight] = useState(false);
-  const [hideFromGuests, setHideFromGuests] = useState(profile?.hideFromGuests ?? true);
+  const [hideFromGuests, setHideFromGuests] = useState(profile?.hideFromGuests ?? false);
   const [togglingGuests, setTogglingGuests] = useState(false);
   const [privacyOpen, setPrivacyOpen] = useState(false);
   const [creatorsOpen, setCreatorsOpen] = useState(false);
