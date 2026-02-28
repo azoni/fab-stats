@@ -1,18 +1,27 @@
 "use client";
-import { Suspense, useState, useEffect } from "react";
+import { Suspense, useState, useEffect, useCallback } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { searchUsernames, getProfile } from "@/lib/firestore-storage";
 import { useAuth } from "@/contexts/AuthContext";
-import { useFeed } from "@/hooks/useFeed";
+import { getFeedEventsPaginated, type FeedEventType } from "@/lib/feed";
 import { GroupedFeedCard, groupConsecutiveEvents } from "@/components/feed/FeedCard";
 import { FeedIcon } from "@/components/icons/NavIcons";
-import type { UserProfile } from "@/types";
+import type { UserProfile, FeedEvent } from "@/types";
 
 interface SearchResult {
   username: string;
   profile: UserProfile | null;
 }
+
+const PAGE_SIZE = 20;
+
+const TYPE_FILTERS: { value: FeedEventType; label: string }[] = [
+  { value: "all", label: "All" },
+  { value: "import", label: "Imports" },
+  { value: "achievement", label: "Achievements" },
+  { value: "placement", label: "Placements" },
+];
 
 export default function SearchPage() {
   return (
@@ -43,7 +52,42 @@ function SearchContent() {
   const [searched, setSearched] = useState(false);
   const [loading, setLoading] = useState(false);
   const { isAdmin } = useAuth();
-  const { events: feedEvents, loading: feedLoading } = useFeed();
+
+  // Feed state
+  const [feedEvents, setFeedEvents] = useState<FeedEvent[]>([]);
+  const [feedLoading, setFeedLoading] = useState(true);
+  const [feedHasMore, setFeedHasMore] = useState(false);
+  const [feedCursor, setFeedCursor] = useState<string | undefined>();
+  const [feedLoadingMore, setFeedLoadingMore] = useState(false);
+  const [typeFilter, setTypeFilter] = useState<FeedEventType>("all");
+
+  const loadFeed = useCallback(async (filter: FeedEventType, cursor?: string) => {
+    const result = await getFeedEventsPaginated(PAGE_SIZE, filter, cursor);
+    return result;
+  }, []);
+
+  // Initial feed load
+  useEffect(() => {
+    setFeedLoading(true);
+    setFeedEvents([]);
+    setFeedCursor(undefined);
+    loadFeed(typeFilter).then((result) => {
+      setFeedEvents(result.events);
+      setFeedHasMore(result.hasMore);
+      setFeedCursor(result.lastTimestamp || undefined);
+      setFeedLoading(false);
+    });
+  }, [typeFilter, loadFeed]);
+
+  async function loadMore() {
+    if (!feedCursor || feedLoadingMore) return;
+    setFeedLoadingMore(true);
+    const result = await loadFeed(typeFilter, feedCursor);
+    setFeedEvents((prev) => [...prev, ...result.events]);
+    setFeedHasMore(result.hasMore);
+    setFeedCursor(result.lastTimestamp || undefined);
+    setFeedLoadingMore(false);
+  }
 
   async function doSearch(q: string, autoRedirect = false) {
     if (!q.trim()) {
@@ -102,6 +146,7 @@ function SearchContent() {
   }
 
   const showFeed = !query.trim() && !searched;
+  const feedGroups = groupConsecutiveEvents(feedEvents);
 
   return (
     <div>
@@ -179,15 +224,31 @@ function SearchContent() {
       {/* Activity feed (shown when not searching) */}
       {showFeed && (
         <div>
-          <h2 className="text-lg font-semibold text-fab-text mb-4">Recent Activity</h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-fab-text">Activity Feed</h2>
+          </div>
+
+          {/* Type filter tabs */}
+          <div className="flex gap-1 bg-fab-bg rounded-lg p-0.5 border border-fab-border w-fit mb-5">
+            {TYPE_FILTERS.map((f) => (
+              <button
+                key={f.value}
+                onClick={() => setTypeFilter(f.value)}
+                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                  typeFilter === f.value
+                    ? "bg-fab-surface text-fab-text shadow-sm"
+                    : "text-fab-dim hover:text-fab-muted"
+                }`}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
 
           {feedLoading && (
             <div className="space-y-3">
               {[...Array(5)].map((_, i) => (
-                <div
-                  key={i}
-                  className="bg-fab-surface border border-fab-border rounded-lg p-4 h-24 animate-pulse"
-                />
+                <div key={i} className="bg-fab-surface border border-fab-border rounded-lg p-4 h-24 animate-pulse" />
               ))}
             </div>
           )}
@@ -196,17 +257,38 @@ function SearchContent() {
             <div className="text-center py-12">
               <FeedIcon className="w-12 h-12 text-fab-muted mb-3 mx-auto" />
               <p className="text-fab-muted text-sm">
-                No activity yet. When players import their matches, it will show up here.
+                {typeFilter === "all"
+                  ? "No activity yet. When players import matches or earn achievements, it will show up here."
+                  : `No ${typeFilter} activity yet.`}
               </p>
             </div>
           )}
 
           {!feedLoading && feedEvents.length > 0 && (
-            <div className="space-y-3">
-              {groupConsecutiveEvents(feedEvents).map((group) => (
-                <GroupedFeedCard key={group.events[0].id} group={group} />
-              ))}
-            </div>
+            <>
+              <div className="space-y-3">
+                {feedGroups.map((group) => (
+                  <GroupedFeedCard key={group.events[0].id} group={group} />
+                ))}
+              </div>
+
+              {/* Load More */}
+              {feedHasMore && (
+                <div className="mt-6 text-center">
+                  <button
+                    onClick={loadMore}
+                    disabled={feedLoadingMore}
+                    className="px-6 py-2.5 rounded-lg font-semibold bg-fab-surface border border-fab-border text-fab-text hover:bg-fab-surface-hover transition-colors disabled:opacity-50"
+                  >
+                    {feedLoadingMore ? "Loading..." : "Load More"}
+                  </button>
+                </div>
+              )}
+
+              {!feedHasMore && feedEvents.length > PAGE_SIZE && (
+                <p className="text-center text-fab-dim text-xs mt-6">You&apos;ve reached the end</p>
+              )}
+            </>
           )}
         </div>
       )}

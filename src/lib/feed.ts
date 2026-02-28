@@ -6,6 +6,8 @@ import {
   orderBy,
   limit,
   where,
+  startAfter,
+  type QueryConstraint,
 } from "firebase/firestore";
 import { db } from "./firebase";
 import type { FeedEvent, ImportFeedEvent, AchievementFeedEvent, PlacementFeedEvent, UserProfile, ImportSource, Achievement } from "@/types";
@@ -139,4 +141,45 @@ export async function getFeedEvents(limitCount = 50): Promise<FeedEvent[]> {
 export function invalidateFeedCache() {
   cachedFeed = null;
   feedCacheTimestamp = 0;
+}
+
+export type FeedEventType = "all" | "import" | "achievement" | "placement";
+
+export interface PaginatedFeedResult {
+  events: FeedEvent[];
+  hasMore: boolean;
+  /** ISO timestamp of the last event — pass as `cursor` to load the next page */
+  lastTimestamp: string | null;
+}
+
+/** Paginated feed fetch for the Discover page. Not cached — always hits Firestore. */
+export async function getFeedEventsPaginated(
+  pageSize: number,
+  typeFilter: FeedEventType = "all",
+  cursor?: string,
+): Promise<PaginatedFeedResult> {
+  const constraints: QueryConstraint[] = [
+    where("isPublic", "==", true),
+    orderBy("createdAt", "desc"),
+  ];
+
+  if (typeFilter !== "all") {
+    constraints.push(where("type", "==", typeFilter));
+  }
+
+  if (cursor) {
+    constraints.push(startAfter(cursor));
+  }
+
+  constraints.push(limit(pageSize + 1)); // fetch one extra to check hasMore
+
+  const q = query(feedCollection(), ...constraints);
+  const snapshot = await getDocs(q);
+  const docs = snapshot.docs.map((d) => ({ id: d.id, ...d.data() })) as FeedEvent[];
+
+  const hasMore = docs.length > pageSize;
+  const events = hasMore ? docs.slice(0, pageSize) : docs;
+  const lastTimestamp = events.length > 0 ? events[events.length - 1].createdAt : null;
+
+  return { events, hasMore, lastTimestamp };
 }
