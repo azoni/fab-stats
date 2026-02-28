@@ -16,6 +16,7 @@ import { CommunityHighlights } from "@/components/home/CommunityHighlights";
 import { useFeaturedEvents } from "@/hooks/useFeaturedEvents";
 import { computeMetaStats } from "@/lib/meta-stats";
 import { ActivityFeed } from "@/components/home/ActivityFeed";
+import { FeaturedProfiles } from "@/components/home/FeaturedProfiles";
 import { selectFeaturedProfiles } from "@/lib/featured-profiles";
 import { BestFinishShareModal } from "@/components/profile/BestFinishCard";
 import { ProfileShareModal } from "@/components/profile/ProfileCard";
@@ -414,12 +415,14 @@ export default function Dashboard() {
       {/* On This Day */}
       {hasMatches && <OnThisDay matches={matches} />}
 
-      {/* Activity Feed */}
-      <ActivityFeed rankMap={rankMap} />
+      {/* Spotlight + Activity Feed side by side */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <FeaturedProfiles profiles={featuredProfiles} rankMap={rankMap} />
+        <ActivityFeed rankMap={rankMap} />
+      </div>
 
       {/* Community content */}
       <CommunityHighlights
-        featuredProfiles={featuredProfiles}
         featuredEvents={featuredEvents}
         leaderboardEntries={lbEntries}
         topHeroes={communityTopHeroes}

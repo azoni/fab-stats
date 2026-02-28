@@ -1,16 +1,13 @@
 "use client";
 import type { ReactNode } from "react";
-import { FeaturedProfiles } from "./FeaturedProfiles";
 import { FeaturedTournaments } from "./FeaturedTournaments";
 import { MetaSnapshot } from "./MetaSnapshot";
 import { LeaderboardPreview } from "./LeaderboardPreview";
 import { PollCard } from "./PollCard";
-import type { FeaturedProfile } from "@/lib/featured-profiles";
 import type { HeroMetaStats } from "@/lib/meta-stats";
 import type { FeaturedEvent, LeaderboardEntry } from "@/types";
 
 interface CommunityHighlightsProps {
-  featuredProfiles: FeaturedProfile[];
   featuredEvents: FeaturedEvent[];
   leaderboardEntries: LeaderboardEntry[];
   topHeroes: HeroMetaStats[];
@@ -20,7 +17,6 @@ interface CommunityHighlightsProps {
 }
 
 export function CommunityHighlights({
-  featuredProfiles,
   featuredEvents,
   leaderboardEntries,
   topHeroes,
@@ -29,7 +25,6 @@ export function CommunityHighlights({
 }: CommunityHighlightsProps) {
   return (
     <div className="space-y-8">
-      <FeaturedProfiles profiles={featuredProfiles} rankMap={rankMap} />
       <PollCard />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

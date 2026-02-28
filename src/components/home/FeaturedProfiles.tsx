@@ -164,43 +164,40 @@ export function FeaturedProfiles({ profiles, rankMap }: FeaturedProfilesProps) {
       <div className="section-header mb-4">
         <h2 className="text-lg font-semibold text-fab-text">Player Spotlight</h2>
       </div>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="space-y-2">
         {profiles.map((fp) => {
           const config = SPOTLIGHT_CONFIG[fp.reason] || DEFAULT_CONFIG;
           return (
             <Link
               key={fp.entry.userId}
               href={`/player/${fp.entry.username}`}
-              className={`spotlight-card ${config.css} bg-fab-surface border border-fab-border rounded-lg p-4 hover:bg-fab-surface-hover transition-all group`}
+              className={`spotlight-card ${config.css} flex items-center gap-3 bg-fab-surface border border-fab-border rounded-lg px-3 py-2.5 hover:bg-fab-surface-hover transition-all group`}
             >
-              <div className="flex items-center gap-2 mb-3">
-                <div className={`w-6 h-6 rounded-md flex items-center justify-center ${config.iconBg}`}>
-                  {config.icon}
+              {fp.entry.photoUrl ? (
+                <img
+                  src={fp.entry.photoUrl}
+                  alt=""
+                  className={`w-8 h-8 rounded-full shrink-0 ${rankBorderClass(rankMap?.get(fp.entry.userId))}`}
+                />
+              ) : (
+                <div className={`w-8 h-8 rounded-full bg-fab-gold/20 flex items-center justify-center text-fab-gold text-xs font-bold shrink-0 ${rankBorderClass(rankMap?.get(fp.entry.userId))}`}>
+                  {fp.entry.displayName.charAt(0).toUpperCase()}
                 </div>
-                <span className={`text-[10px] font-bold uppercase tracking-wider ${config.accent}`}>
-                  {fp.reason}
-                </span>
-              </div>
-              <div className="flex items-center gap-3 mb-2">
-                {fp.entry.photoUrl ? (
-                  <img
-                    src={fp.entry.photoUrl}
-                    alt=""
-                    className={`w-10 h-10 rounded-full shrink-0 ${rankBorderClass(rankMap?.get(fp.entry.userId))}`}
-                  />
-                ) : (
-                  <div className={`w-10 h-10 rounded-full bg-fab-gold/20 flex items-center justify-center text-fab-gold text-sm font-bold shrink-0 ${rankBorderClass(rankMap?.get(fp.entry.userId))}`}>
-                    {fp.entry.displayName.charAt(0).toUpperCase()}
-                  </div>
-                )}
-                <div className="min-w-0">
+              )}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1.5">
                   <p className="font-semibold text-fab-text truncate text-sm group-hover:text-fab-gold transition-colors">
                     {fp.entry.displayName}
                   </p>
-                  <p className="text-xs text-fab-dim truncate">@{fp.entry.username}</p>
+                  <span className={`text-[9px] font-bold uppercase tracking-wider shrink-0 ${config.accent}`}>
+                    {fp.reason}
+                  </span>
                 </div>
+                <p className={`text-xs font-medium ${config.accent}`}>{fp.stat}</p>
               </div>
-              <p className={`text-sm font-semibold ${config.accent}`}>{fp.stat}</p>
+              <div className={`w-5 h-5 rounded flex items-center justify-center shrink-0 ${config.iconBg}`}>
+                {config.icon}
+              </div>
             </Link>
           );
         })}

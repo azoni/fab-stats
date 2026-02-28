@@ -5,7 +5,6 @@ import { useFeed } from "@/hooks/useFeed";
 import { useFriends } from "@/hooks/useFriends";
 import { useFavorites } from "@/hooks/useFavorites";
 import { useAuth } from "@/contexts/AuthContext";
-import { FeedCard } from "@/components/feed/FeedCard";
 import { groupConsecutiveEvents, GroupedFeedCard } from "@/components/feed/FeedCard";
 import type { FeedEvent } from "@/types";
 
@@ -19,7 +18,7 @@ const TYPE_FILTERS: { value: TypeFilter; label: string }[] = [
   { value: "placement", label: "Placements" },
 ];
 
-const PREVIEW_LIMIT = 8;
+const PREVIEW_LIMIT = 10;
 
 export function ActivityFeed({ rankMap }: { rankMap?: Map<string, 1 | 2 | 3 | 4 | 5> }) {
   const { events, loading } = useFeed();
@@ -67,22 +66,22 @@ export function ActivityFeed({ rankMap }: { rankMap?: Map<string, 1 | 2 | 3 | 4 
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center justify-between mb-2">
         <h2 className="text-lg font-semibold text-fab-text">Activity Feed</h2>
-        <Link href="/search" className="text-sm text-fab-gold hover:text-fab-gold-light transition-colors">
-          View All
+        <Link href="/search" className="text-xs text-fab-gold hover:text-fab-gold-light transition-colors">
+          View All &rarr;
         </Link>
       </div>
 
       {/* Filter row */}
-      <div className="flex items-center gap-3 mb-4 flex-wrap">
+      <div className="flex items-center gap-2 mb-3 flex-wrap">
         {/* Type filters */}
-        <div className="flex gap-1 bg-fab-bg rounded-lg p-0.5 border border-fab-border">
+        <div className="flex gap-0.5 bg-fab-bg rounded-lg p-0.5 border border-fab-border">
           {TYPE_FILTERS.map((f) => (
             <button
               key={f.value}
               onClick={() => setTypeFilter(f.value)}
-              className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+              className={`px-2 py-0.5 rounded-md text-[11px] font-medium transition-colors ${
                 typeFilter === f.value
                   ? "bg-fab-surface text-fab-text shadow-sm"
                   : "text-fab-dim hover:text-fab-muted"
@@ -95,10 +94,10 @@ export function ActivityFeed({ rankMap }: { rankMap?: Map<string, 1 | 2 | 3 | 4 
 
         {/* Scope toggle */}
         {user && (
-          <div className="flex gap-1 bg-fab-bg rounded-lg p-0.5 border border-fab-border ml-auto">
+          <div className="flex gap-0.5 bg-fab-bg rounded-lg p-0.5 border border-fab-border ml-auto">
             <button
               onClick={() => setScope("community")}
-              className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+              className={`px-2 py-0.5 rounded-md text-[11px] font-medium transition-colors ${
                 scope === "community"
                   ? "bg-fab-surface text-fab-text shadow-sm"
                   : "text-fab-dim hover:text-fab-muted"
@@ -108,7 +107,7 @@ export function ActivityFeed({ rankMap }: { rankMap?: Map<string, 1 | 2 | 3 | 4 
             </button>
             <button
               onClick={() => setScope("friends")}
-              className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+              className={`px-2 py-0.5 rounded-md text-[11px] font-medium transition-colors ${
                 scope === "friends"
                   ? "bg-fab-surface text-fab-text shadow-sm"
                   : "text-fab-dim hover:text-fab-muted"
@@ -121,23 +120,23 @@ export function ActivityFeed({ rankMap }: { rankMap?: Map<string, 1 | 2 | 3 | 4 
       </div>
 
       {loading ? (
-        <div className="space-y-3">
-          {[...Array(3)].map((_, i) => (
-            <div key={i} className="bg-fab-surface border border-fab-border rounded-lg p-4 h-16 animate-pulse" />
+        <div className="space-y-2">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="bg-fab-surface border border-fab-border rounded-lg p-3 h-12 animate-pulse" />
           ))}
         </div>
       ) : groups.length === 0 ? (
-        <div className="bg-fab-surface border border-fab-border rounded-lg p-6 text-center">
-          <p className="text-sm text-fab-dim">
+        <div className="bg-fab-surface border border-fab-border rounded-lg p-4 text-center">
+          <p className="text-xs text-fab-dim">
             {scope === "friends"
               ? "No recent activity from friends yet."
               : "No recent activity yet. Import some matches to get started!"}
           </p>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-2">
           {groups.map((group) => (
-            <GroupedFeedCard key={group.events[0].id} group={group} rankMap={rankMap} />
+            <GroupedFeedCard key={group.events[0].id} group={group} compact rankMap={rankMap} />
           ))}
         </div>
       )}
