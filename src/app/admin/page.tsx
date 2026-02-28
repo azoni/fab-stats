@@ -11,7 +11,8 @@ import { lookupEvents, type LookupEvent } from "@/lib/event-lookup";
 import { getOrCreateConversation, sendMessage, sendMessageNotification } from "@/lib/messages";
 import { getAnalytics, type AnalyticsTimeRange } from "@/lib/analytics";
 import { getBanner, saveBanner, type BannerConfig } from "@/lib/banner";
-import { getAllPolls, getPollResults, getPollVoters, savePoll, removePoll, clearVotes } from "@/lib/polls";
+import { getAllPolls, getPollResults, getPollVoters, savePoll, removePoll, clearVotes, mergeOptions, closePredictionVoting, reopenPredictionVoting, resolvePrediction } from "@/lib/polls";
+import { grantPredictionAchievements } from "@/lib/prediction-service";
 import { searchHeroes } from "@/lib/heroes";
 import { getAllBadgeAssignments, assignBadge, revokeBadge } from "@/lib/badge-service";
 import { getMutedUserIds, muteUser, unmuteUser } from "@/lib/mute-service";
@@ -86,6 +87,18 @@ export default function AdminPage() {
   const [expandedPollResults, setExpandedPollResults] = useState<PollResults | null>(null);
   const [expandedPollVoters, setExpandedPollVoters] = useState<PollVoter[]>([]);
   const [expandedOption, setExpandedOption] = useState<number | null>(null);
+  // Prediction
+  const [predQuestion, setPredQuestion] = useState("");
+  const [predOptions, setPredOptions] = useState<string[]>(["", ""]);
+  const [savingPred, setSavingPred] = useState(false);
+  const [predSaved, setPredSaved] = useState(false);
+  const [mergeSource, setMergeSource] = useState<number | null>(null);
+  const [mergeTarget, setMergeTarget] = useState<number | null>(null);
+  const [merging, setMerging] = useState(false);
+  const [resolveIdx, setResolveIdx] = useState<number | null>(null);
+  const [resolving, setResolving] = useState(false);
+  const [granting, setGranting] = useState(false);
+  const [grantResult, setGrantResult] = useState<{ granted: number; alreadyHad: number } | null>(null);
   const [bannerText, setBannerText] = useState("");
   const [bannerActive, setBannerActive] = useState(false);
   const [bannerType, setBannerType] = useState<BannerConfig["type"]>("info");
@@ -1283,6 +1296,290 @@ export default function AdminPage() {
             </div>
           </div>
 
+          {/* Create Prediction */}
+          <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden">
+            <div className="px-4 py-3 border-b border-fab-border flex items-center justify-between">
+              <h2 className="text-sm font-semibold text-fab-text">Create Prediction</h2>
+              <div className="flex items-center gap-2">
+                {predSaved && <span className="text-xs text-fab-win">Published!</span>}
+                <button
+                  onClick={async () => {
+                    const opts = predOptions.filter(Boolean);
+                    if (!predQuestion.trim() || opts.length < 2) return;
+                    setSavingPred(true);
+                    setPredSaved(false);
+                    try {
+                      await savePoll({
+                        question: predQuestion.trim(),
+                        options: opts,
+                        active: true,
+                        createdAt: new Date().toISOString(),
+                        showResults: true,
+                        type: "prediction",
+                        allowUserOptions: true,
+                        votingOpen: true,
+                      });
+                      const polls = await getAllPolls();
+                      setAllPolls(polls);
+                      setPredQuestion("");
+                      setPredOptions(["", ""]);
+                      setPredSaved(true);
+                      setTimeout(() => setPredSaved(false), 2000);
+                    } catch {
+                      setError("Failed to save prediction.");
+                    } finally {
+                      setSavingPred(false);
+                    }
+                  }}
+                  disabled={savingPred || !predQuestion.trim() || predOptions.filter(Boolean).length < 2}
+                  className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors disabled:opacity-50"
+                >
+                  {savingPred ? "Saving..." : "Publish Prediction"}
+                </button>
+              </div>
+            </div>
+            <div className="p-4 space-y-3">
+              <input
+                type="text"
+                placeholder="Who will win this match?"
+                value={predQuestion}
+                onChange={(e) => setPredQuestion(e.target.value)}
+                className="w-full bg-fab-bg border border-fab-border text-fab-text text-sm rounded px-3 py-2 focus:outline-none focus:border-fab-gold"
+              />
+              {predOptions.map((opt, i) => (
+                <div key={i} className="flex gap-2 items-center">
+                  <input
+                    type="text"
+                    placeholder={`Player ${i + 1}`}
+                    value={opt}
+                    onChange={(e) => {
+                      const next = [...predOptions];
+                      next[i] = e.target.value;
+                      setPredOptions(next);
+                    }}
+                    className="flex-1 bg-fab-bg border border-fab-border text-fab-text text-sm rounded px-3 py-1.5 focus:outline-none focus:border-fab-gold"
+                  />
+                  {predOptions.length > 2 && (
+                    <button
+                      onClick={() => setPredOptions(predOptions.filter((_, j) => j !== i))}
+                      className="text-xs text-fab-loss hover:text-fab-loss/80"
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
+              ))}
+              <button
+                onClick={() => setPredOptions([...predOptions, ""])}
+                className="w-full py-1.5 rounded text-xs font-medium border border-dashed border-fab-border text-fab-muted hover:text-fab-text hover:border-fab-gold/30 transition-colors"
+              >
+                + Add Option
+              </button>
+              <p className="text-[10px] text-fab-dim">Users can add their own options. Predictions support real-time voting and achievement rewards.</p>
+            </div>
+          </div>
+
+          {/* Active Prediction Management */}
+          {allPolls.filter((p) => p.type === "prediction" && (p.active || p.votingOpen)).map((pred) => (
+            <div key={pred.id} className="bg-fab-surface border border-fab-gold/30 rounded-lg overflow-hidden">
+              <div className="px-4 py-3 border-b border-fab-border">
+                <div className="flex items-center gap-2">
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-fab-gold/20 text-fab-gold">Prediction</span>
+                  <h2 className="text-sm font-semibold text-fab-text flex-1">{pred.question}</h2>
+                  {pred.votingOpen && <span className="text-[10px] text-fab-win">Voting Open</span>}
+                  {!pred.votingOpen && !pred.resolvedAt && <span className="text-[10px] text-amber-400">Voting Closed</span>}
+                  {pred.resolvedAt && <span className="text-[10px] text-fab-dim">Resolved</span>}
+                </div>
+              </div>
+              <div className="p-4 space-y-4">
+                {/* Voting controls */}
+                <div className="flex items-center gap-2">
+                  {pred.votingOpen ? (
+                    <button
+                      onClick={async () => {
+                        await closePredictionVoting(pred.id!);
+                        const polls = await getAllPolls();
+                        setAllPolls(polls);
+                      }}
+                      className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-500/20 text-amber-400 hover:bg-amber-500/30 transition-colors"
+                    >
+                      Close Voting
+                    </button>
+                  ) : !pred.resolvedAt ? (
+                    <button
+                      onClick={async () => {
+                        await reopenPredictionVoting(pred.id!);
+                        const polls = await getAllPolls();
+                        setAllPolls(polls);
+                      }}
+                      className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-fab-win/20 text-fab-win hover:bg-fab-win/30 transition-colors"
+                    >
+                      Reopen Voting
+                    </button>
+                  ) : null}
+                  {!pred.resolvedAt && (
+                    <button
+                      onClick={async () => {
+                        await removePoll(pred.id!);
+                        const polls = await getAllPolls();
+                        setAllPolls(polls);
+                      }}
+                      className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-fab-loss/20 text-fab-loss hover:bg-fab-loss/30 transition-colors"
+                    >
+                      Deactivate
+                    </button>
+                  )}
+                </div>
+
+                {/* Options with vote counts */}
+                <div>
+                  <p className="text-xs text-fab-dim font-medium mb-2">Options ({pred.options.filter((o) => !o.startsWith("[MERGED]")).length} active)</p>
+                  <div className="space-y-1">
+                    {pred.options.map((opt, i) => {
+                      if (opt.startsWith("[MERGED]")) return (
+                        <div key={i} className="text-[11px] text-fab-dim line-through px-2 py-1">{opt}</div>
+                      );
+                      const isWinner = pred.correctOptionIndex === i;
+                      return (
+                        <div key={i} className={`flex items-center gap-2 px-2 py-1.5 rounded text-sm ${isWinner ? "bg-green-400/10 text-green-400" : "text-fab-text"}`}>
+                          {isWinner && <span>&#10003;</span>}
+                          <span className="flex-1 truncate">{opt}</span>
+                          <span className="text-xs text-fab-dim">#{i}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Merge options */}
+                {!pred.resolvedAt && (
+                  <div className="border-t border-fab-border pt-3">
+                    <p className="text-xs text-fab-dim font-medium mb-2">Merge Duplicate Options</p>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <select
+                        value={mergeSource ?? ""}
+                        onChange={(e) => setMergeSource(e.target.value ? Number(e.target.value) : null)}
+                        className="bg-fab-bg border border-fab-border text-fab-text text-xs rounded px-2 py-1.5 focus:outline-none focus:border-fab-gold"
+                      >
+                        <option value="">Source...</option>
+                        {pred.options.map((opt, i) => !opt.startsWith("[MERGED]") && (
+                          <option key={i} value={i}>{opt}</option>
+                        ))}
+                      </select>
+                      <span className="text-xs text-fab-dim">&rarr;</span>
+                      <select
+                        value={mergeTarget ?? ""}
+                        onChange={(e) => setMergeTarget(e.target.value ? Number(e.target.value) : null)}
+                        className="bg-fab-bg border border-fab-border text-fab-text text-xs rounded px-2 py-1.5 focus:outline-none focus:border-fab-gold"
+                      >
+                        <option value="">Target...</option>
+                        {pred.options.map((opt, i) => !opt.startsWith("[MERGED]") && mergeSource !== i && (
+                          <option key={i} value={i}>{opt}</option>
+                        ))}
+                      </select>
+                      <button
+                        onClick={async () => {
+                          if (mergeSource === null || mergeTarget === null) return;
+                          setMerging(true);
+                          try {
+                            const result = await mergeOptions(pred.id!, mergeSource, mergeTarget);
+                            alert(`Merged! ${result.votesReassigned} vote(s) reassigned.`);
+                            const polls = await getAllPolls();
+                            setAllPolls(polls);
+                            setMergeSource(null);
+                            setMergeTarget(null);
+                          } catch {
+                            alert("Merge failed.");
+                          } finally {
+                            setMerging(false);
+                          }
+                        }}
+                        disabled={merging || mergeSource === null || mergeTarget === null}
+                        className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-fab-gold/20 text-fab-gold hover:bg-fab-gold/30 transition-colors disabled:opacity-50"
+                      >
+                        {merging ? "Merging..." : "Merge"}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Resolve prediction */}
+                {!pred.resolvedAt && !pred.votingOpen && (
+                  <div className="border-t border-fab-border pt-3">
+                    <p className="text-xs text-fab-dim font-medium mb-2">Resolve Winner</p>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <select
+                        value={resolveIdx ?? ""}
+                        onChange={(e) => setResolveIdx(e.target.value ? Number(e.target.value) : null)}
+                        className="bg-fab-bg border border-fab-border text-fab-text text-xs rounded px-2 py-1.5 focus:outline-none focus:border-fab-gold"
+                      >
+                        <option value="">Select winner...</option>
+                        {pred.options.map((opt, i) => !opt.startsWith("[MERGED]") && (
+                          <option key={i} value={i}>{opt}</option>
+                        ))}
+                      </select>
+                      <button
+                        onClick={async () => {
+                          if (resolveIdx === null) return;
+                          if (!confirm(`Resolve "${pred.options[resolveIdx]}" as the winner?`)) return;
+                          setResolving(true);
+                          try {
+                            await resolvePrediction(pred.id!, resolveIdx);
+                            const polls = await getAllPolls();
+                            setAllPolls(polls);
+                            setResolveIdx(null);
+                          } catch {
+                            alert("Resolve failed.");
+                          } finally {
+                            setResolving(false);
+                          }
+                        }}
+                        disabled={resolving || resolveIdx === null}
+                        className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-fab-win/20 text-fab-win hover:bg-fab-win/30 transition-colors disabled:opacity-50"
+                      >
+                        {resolving ? "Resolving..." : "Resolve"}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Grant achievements */}
+                {pred.resolvedAt && pred.correctOptionIndex !== undefined && pred.correctOptionIndex !== null && (
+                  <div className="border-t border-fab-border pt-3">
+                    <p className="text-xs text-fab-dim font-medium mb-2">
+                      Winner: <span className="text-green-400">{pred.options[pred.correctOptionIndex]}</span>
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={async () => {
+                          setGranting(true);
+                          setGrantResult(null);
+                          try {
+                            const result = await grantPredictionAchievements(pred.id!, pred.correctOptionIndex!);
+                            setGrantResult(result);
+                          } catch {
+                            alert("Failed to grant achievements.");
+                          } finally {
+                            setGranting(false);
+                          }
+                        }}
+                        disabled={granting}
+                        className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 transition-colors disabled:opacity-50"
+                      >
+                        {granting ? "Granting..." : "Grant Achievements"}
+                      </button>
+                      {grantResult && (
+                        <span className="text-xs text-fab-dim">
+                          {grantResult.granted} granted, {grantResult.alreadyHad} already had
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+
           {/* Poll History */}
           {allPolls.length > 0 && (
             <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden">
@@ -1318,6 +1615,9 @@ export default function AdminPage() {
                           <p className="text-sm text-fab-text truncate">{p.question}</p>
                           <p className="text-[10px] text-fab-dim">{new Date(p.createdAt).toLocaleDateString()}</p>
                         </div>
+                        {p.type === "prediction" && (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-purple-500/20 text-purple-400 shrink-0">Prediction</span>
+                        )}
                         {p.active && (
                           <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-fab-win/20 text-fab-win shrink-0">Active</span>
                         )}

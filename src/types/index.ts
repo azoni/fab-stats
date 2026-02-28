@@ -322,6 +322,13 @@ export interface Poll {
   active: boolean;
   createdAt: string;
   showResults?: boolean;
+  // Prediction fields (optional for backward compat)
+  type?: "poll" | "prediction";
+  allowUserOptions?: boolean;
+  votingOpen?: boolean;
+  correctOptionIndex?: number | null;
+  resolvedAt?: string;
+  closedAt?: string;
 }
 
 export interface PollVote {
@@ -402,6 +409,8 @@ export interface Message {
 
 // ── Event Wall ──
 
+export type ReactionType = "fire" | "heart" | "laugh" | "thumbsUp" | "thinking";
+
 export interface WallComment {
   id: string;
   authorUid: string;
@@ -410,6 +419,7 @@ export interface WallComment {
   text: string;
   parentId?: string;
   replyToName?: string;
+  reactions?: Record<ReactionType, string[]>;
   createdAt: string;
   editedAt?: string;
 }

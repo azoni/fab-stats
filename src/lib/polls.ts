@@ -1,4 +1,4 @@
-import { doc, getDoc, setDoc, getDocs, deleteDoc, collection, query, where, limit, orderBy, addDoc, updateDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, getDocs, deleteDoc, collection, query, where, limit, orderBy, addDoc, updateDoc, onSnapshot, arrayUnion, type Unsubscribe } from "firebase/firestore";
 import { db } from "./firebase";
 import type { Poll, PollVote, PollResults, PollVoter } from "@/types";
 
@@ -150,4 +150,146 @@ export async function getPollVoters(pollId: string): Promise<PollVoter[]> {
   } catch {
     return [];
   }
+}
+
+// ── Prediction helpers ──
+
+/** Normalize a player name for dedup matching */
+export function normalizeOptionKey(label: string): string {
+  return label.trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+/** Subscribe to poll document changes (real-time option list + state) */
+export function subscribePoll(pollId: string, callback: (poll: Poll | null) => void): Unsubscribe {
+  return onSnapshot(doc(db, "polls", pollId), (snap) => {
+    if (!snap.exists()) return callback(null);
+    callback({ ...snap.data(), id: snap.id } as Poll);
+  });
+}
+
+/** Subscribe to poll vote counts (real-time results) */
+export function subscribePollResults(pollId: string, callback: (results: PollResults) => void): Unsubscribe {
+  return onSnapshot(collection(db, "polls", pollId, "votes"), (snap) => {
+    const counts: number[] = [];
+    let total = 0;
+    for (const d of snap.docs) {
+      const vote = d.data() as PollVote;
+      if (vote.optionIndex !== undefined && vote.optionIndex !== null) {
+        counts[vote.optionIndex] = (counts[vote.optionIndex] || 0) + 1;
+        total++;
+      }
+    }
+    callback({ counts, total });
+  });
+}
+
+/** Get active prediction (separate from regular polls) */
+export async function getActivePrediction(): Promise<Poll | null> {
+  try {
+    const q = query(
+      collection(db, "polls"),
+      where("active", "==", true),
+      where("type", "==", "prediction"),
+      limit(1),
+    );
+    const snap = await getDocs(q);
+    if (snap.empty) return null;
+    return { ...snap.docs[0].data(), id: snap.docs[0].id } as Poll;
+  } catch {
+    return null;
+  }
+}
+
+/** Add a new option to a prediction. Returns index (existing if duplicate found). */
+export async function addPredictionOption(
+  pollId: string,
+  label: string,
+  userId: string,
+): Promise<{ index: number; isDuplicate: boolean }> {
+  const normalizedKey = normalizeOptionKey(label);
+  const displayLabel = label.trim();
+
+  // Fetch current poll to check for duplicates
+  const pollSnap = await getDoc(doc(db, "polls", pollId));
+  if (!pollSnap.exists()) throw new Error("Poll not found");
+  const poll = pollSnap.data() as Poll;
+
+  // Check for existing match (case-insensitive, trimmed)
+  const existingIndex = poll.options.findIndex(
+    (opt) => normalizeOptionKey(opt) === normalizedKey,
+  );
+  if (existingIndex >= 0) {
+    return { index: existingIndex, isDuplicate: true };
+  }
+
+  // Append new option
+  const newIndex = poll.options.length;
+  await updateDoc(doc(db, "polls", pollId), {
+    options: arrayUnion(displayLabel),
+  });
+
+  return { index: newIndex, isDuplicate: false };
+}
+
+/** Admin: merge source option into target. Reassigns all votes. */
+export async function mergeOptions(
+  pollId: string,
+  sourceIndex: number,
+  targetIndex: number,
+): Promise<{ votesReassigned: number }> {
+  const votesSnap = await getDocs(collection(db, "polls", pollId, "votes"));
+  let votesReassigned = 0;
+
+  const updates = votesSnap.docs
+    .filter((d) => (d.data() as PollVote).optionIndex === sourceIndex)
+    .map(async (d) => {
+      await updateDoc(d.ref, { optionIndex: targetIndex });
+      votesReassigned++;
+    });
+  await Promise.all(updates);
+
+  // Mark source option as merged
+  const pollSnap = await getDoc(doc(db, "polls", pollId));
+  if (pollSnap.exists()) {
+    const poll = pollSnap.data() as Poll;
+    const newOptions = [...poll.options];
+    newOptions[sourceIndex] = `[MERGED] ${newOptions[sourceIndex]}`;
+    await updateDoc(doc(db, "polls", pollId), { options: newOptions });
+  }
+
+  return { votesReassigned };
+}
+
+/** Admin: close voting on a prediction */
+export async function closePredictionVoting(pollId: string): Promise<void> {
+  await updateDoc(doc(db, "polls", pollId), {
+    votingOpen: false,
+    closedAt: new Date().toISOString(),
+  });
+}
+
+/** Admin: reopen voting on a prediction */
+export async function reopenPredictionVoting(pollId: string): Promise<void> {
+  await updateDoc(doc(db, "polls", pollId), {
+    votingOpen: true,
+    closedAt: null,
+  });
+}
+
+/** Admin: resolve prediction with correct answer */
+export async function resolvePrediction(pollId: string, correctOptionIndex: number): Promise<void> {
+  await updateDoc(doc(db, "polls", pollId), {
+    correctOptionIndex,
+    resolvedAt: new Date().toISOString(),
+    votingOpen: false,
+    active: false,
+  });
+}
+
+/** Get all user IDs who voted for the correct option */
+export async function getCorrectPredictors(pollId: string, correctOptionIndex: number): Promise<string[]> {
+  const votesSnap = await getDocs(collection(db, "polls", pollId, "votes"));
+  return votesSnap.docs
+    .filter((d) => (d.data() as PollVote).optionIndex === correctOptionIndex)
+    .map((d) => d.id);
 }

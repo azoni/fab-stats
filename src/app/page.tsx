@@ -24,6 +24,9 @@ import { OnThisDay } from "@/components/home/OnThisDay";
 import { EventCommentWall } from "@/components/home/EventCommentWall";
 import { getUnlockedColors } from "@/lib/comment-format";
 import { localDate } from "@/lib/constants";
+import { PredictionCard } from "@/components/home/PredictionCard";
+import { getActivePrediction } from "@/lib/polls";
+import type { Poll } from "@/types";
 
 export default function Dashboard() {
   const { matches, isLoaded } = useMatches();
@@ -34,8 +37,14 @@ export default function Dashboard() {
   const [bestFinishShareOpen, setBestFinishShareOpen] = useState(false);
   const [profileShareOpen, setProfileShareOpen] = useState(false);
   const [videoExpanded, setVideoExpanded] = useState(false);
+  const [activePrediction, setActivePrediction] = useState<Poll | null>(null);
   const router = useRouter();
   const leaderboardUpdated = useRef(false);
+
+  // Fetch active prediction
+  useEffect(() => {
+    getActivePrediction().then(setActivePrediction);
+  }, []);
 
   // Sync leaderboard entry when matches are loaded
   useEffect(() => {
@@ -448,7 +457,7 @@ export default function Dashboard() {
                   className="w-full h-auto group-hover:brightness-110 transition-all"
                 />
               </a>
-              {!videoExpanded && (
+              {!videoExpanded ? (
                 <div className="overflow-hidden rounded-lg border border-fab-border aspect-video">
                   <iframe
                     src="https://www.youtube.com/embed/DFWOlXB0YXc"
@@ -458,8 +467,15 @@ export default function Dashboard() {
                     className="w-full h-full"
                   />
                 </div>
+              ) : (
+                activePrediction?.id && <PredictionCard pollId={activePrediction.id} />
               )}
             </div>
+            {!videoExpanded && activePrediction?.id && (
+              <div className="mt-4">
+                <PredictionCard pollId={activePrediction.id} />
+              </div>
+            )}
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <ActivityFeed rankMap={rankMap} />
@@ -512,7 +528,7 @@ export default function Dashboard() {
                 className="w-full h-auto group-hover:brightness-110 transition-all"
               />
             </a>
-            {!videoExpanded && (
+            {!videoExpanded ? (
               <div className="overflow-hidden rounded-lg border border-fab-border aspect-video">
                 <iframe
                   src="https://www.youtube.com/embed/DFWOlXB0YXc"
@@ -522,8 +538,15 @@ export default function Dashboard() {
                   className="w-full h-full"
                 />
               </div>
+            ) : (
+              activePrediction?.id && <PredictionCard pollId={activePrediction.id} />
             )}
           </div>
+          {!videoExpanded && activePrediction?.id && (
+            <div className="mt-4">
+              <PredictionCard pollId={activePrediction.id} />
+            </div>
+          )}
           <div className="mt-6">
             <EventCommentWall eventId="calling_montreal_2026" rankMap={rankMap} unlockedColors={unlockedColors} />
           </div>

@@ -340,6 +340,14 @@ const icons: Record<string, ReactNode> = {
       <path d="M12 15v6" />
     </svg>
   ),
+  oracle: (
+    <svg className={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="10" r="7" fill="currentColor" fillOpacity="0.15" />
+      <path d="M12 7v0M10 10a2.5 2.5 0 014 0" />
+      <path d="M8 20h8M9 17h6" />
+      <path d="M9 17c-1-2-3-4-3-7a6 6 0 1112 0c0 3-2 5-3 7" fill="currentColor" fillOpacity="0.08" />
+    </svg>
+  ),
   // Section header icons
   "section-achievements": (
     <svg className={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">

@@ -174,6 +174,9 @@ service cloud.firestore {
             && maxLen(request.resource.data.text, 500))
           || isAdmin()
         );
+      // Reactions: any authenticated user can toggle reactions
+      allow update: if request.auth != null
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reactions']);
       // Delete: author or admin
       allow delete: if request.auth != null
         && (resource.data.authorUid == request.auth.uid || isAdmin());
@@ -205,6 +208,11 @@ service cloud.firestore {
     // ── Earned achievements tracking (per user) ──
     match /users/{userId}/earnedAchievements/{docId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    match /users/{userId}/predictions/{docId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      // Admin writes (granting via prediction-service), user can also read
+      allow write: if isAdmin() || (request.auth != null && request.auth.uid == userId);
     }
 
     // ── Feedback (bug reports / feature requests) ──
@@ -292,6 +300,14 @@ service cloud.firestore {
     match /polls/{pollId} {
       allow read: if true;
       allow write: if isAdmin();
+      // Authenticated users can add options to prediction polls (append-only, max 50)
+      allow update: if request.auth != null
+        && resource.data.type == "prediction"
+        && resource.data.allowUserOptions == true
+        && resource.data.votingOpen == true
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['options'])
+        && request.resource.data.options.size() <= resource.data.options.size() + 1
+        && request.resource.data.options.size() <= 50;
 
       match /votes/{voterId} {
         allow write: if request.auth != null && request.auth.uid == voterId;
