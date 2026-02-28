@@ -28,7 +28,7 @@ const FEATURED_EVENT_TYPES = [
   "Worlds",
 ] as const;
 
-type SortKey = "matchCount" | "createdAt" | "username";
+type SortKey = "matchCount" | "createdAt" | "username" | "lastActive";
 type SortDir = "asc" | "desc";
 
 export default function AdminPage() {
@@ -158,6 +158,7 @@ export default function AdminPage() {
       let cmp = 0;
       if (sortKey === "matchCount") cmp = a.matchCount - b.matchCount;
       else if (sortKey === "createdAt") cmp = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      else if (sortKey === "lastActive") cmp = new Date(a.updatedAt || "").getTime() - new Date(b.updatedAt || "").getTime();
       else cmp = a.username.localeCompare(b.username);
       return sortDir === "desc" ? -cmp : cmp;
     });
@@ -182,6 +183,21 @@ export default function AdminPage() {
     if (d === 0) return "today";
     if (d === 1) return "1 day ago";
     return `${d} days ago`;
+  }
+
+  function timeAgo(dateStr?: string) {
+    if (!dateStr) return { label: "Never", color: "text-fab-dim" };
+    const ms = Date.now() - new Date(dateStr).getTime();
+    const hours = ms / 3600000;
+    const days = hours / 24;
+    let label: string;
+    if (hours < 1) label = `${Math.floor(ms / 60000)}m ago`;
+    else if (hours < 24) label = `${Math.floor(hours)}h ago`;
+    else if (days < 7) label = `${Math.floor(days)}d ago`;
+    else if (days < 30) label = `${Math.floor(days / 7)}w ago`;
+    else label = `${Math.floor(days / 30)}mo ago`;
+    const color = hours < 24 ? "text-fab-win" : days < 7 ? "text-yellow-400" : days < 30 ? "text-fab-muted" : "text-fab-dim";
+    return { label, color };
   }
 
   return (
@@ -420,6 +436,12 @@ export default function AdminPage() {
                     </th>
                     <th
                       className="px-4 py-2 font-medium cursor-pointer hover:text-fab-text select-none"
+                      onClick={() => toggleSort("lastActive")}
+                    >
+                      Last Active<SortArrow col="lastActive" />
+                    </th>
+                    <th
+                      className="px-4 py-2 font-medium cursor-pointer hover:text-fab-text select-none"
                       onClick={() => toggleSort("createdAt")}
                     >
                       Joined<SortArrow col="createdAt" />
@@ -455,6 +477,9 @@ export default function AdminPage() {
                           </td>
                           <td className="px-4 py-2 text-right font-mono text-fab-text">{u.matchCount}</td>
                           <td className="px-4 py-2">
+                            {(() => { const ta = timeAgo(u.updatedAt); return <span className={`text-xs font-medium ${ta.color}`}>{ta.label}</span>; })()}
+                          </td>
+                          <td className="px-4 py-2">
                             <div className="text-fab-text">{new Date(u.createdAt).toLocaleDateString()}</div>
                             <div className="text-xs text-fab-dim">{daysAgo(u.createdAt)}</div>
                           </td>
@@ -470,7 +495,7 @@ export default function AdminPage() {
                         </tr>
                         {isExpanded && (
                           <tr className="border-b border-fab-border/50 bg-fab-bg/50">
-                            <td colSpan={5} className="px-4 py-3">
+                            <td colSpan={6} className="px-4 py-3">
                               <UserExpandedStats user={u} />
                             </td>
                           </tr>
