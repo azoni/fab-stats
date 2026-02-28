@@ -10,11 +10,13 @@ import {
   limit,
   startAfter,
   onSnapshot,
+  arrayUnion,
+  arrayRemove,
   type Unsubscribe,
 } from "firebase/firestore";
 import { db } from "./firebase";
 import { containsProfanity } from "./profanity-filter";
-import type { WallComment } from "@/types";
+import type { WallComment, ReactionType } from "@/types";
 
 const WALL_COLLECTION = "eventWalls";
 const OLDER_PAGE_SIZE = 30;
@@ -133,4 +135,19 @@ export async function deleteWallComment(
 ): Promise<void> {
   const ref = doc(db, WALL_COLLECTION, eventId, "comments", commentId);
   await deleteDoc(ref);
+}
+
+/** Toggle a reaction on a comment (add if not present, remove if already reacted) */
+export async function toggleWallReaction(
+  eventId: string,
+  commentId: string,
+  reaction: ReactionType,
+  uid: string,
+  hasReacted: boolean
+): Promise<void> {
+  const ref = doc(db, WALL_COLLECTION, eventId, "comments", commentId);
+  const field = `reactions.${reaction}`;
+  await updateDoc(ref, {
+    [field]: hasReacted ? arrayRemove(uid) : arrayUnion(uid),
+  });
 }

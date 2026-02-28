@@ -11,11 +11,12 @@ import {
   COLOR_VALUES,
   COLOR_LABELS,
   VALID_COLORS,
+  ADMIN_COLORS,
   type TextColor,
   type Segment,
 } from "@/lib/comment-format";
 import Link from "next/link";
-import type { WallComment } from "@/types";
+import type { WallComment, ReactionType } from "@/types";
 
 // ── Progressive rate limiting ──
 // Cooldown escalates based on how many posts were made in the last 2 minutes.
@@ -35,6 +36,60 @@ function getCooldownSeconds(recentTimestamps: number[]): number {
   const remaining = Math.ceil((cooldownMs - elapsed) / 1000);
   return Math.max(0, remaining);
 }
+
+// ── Reaction icons (custom SVGs) ──
+const REACTION_TYPES: ReactionType[] = ["fire", "heart", "laugh", "thumbsUp", "thinking"];
+
+function ReactionIcon({ type, className = "w-3.5 h-3.5" }: { type: ReactionType; className?: string }) {
+  switch (type) {
+    case "fire":
+      return (
+        <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 23c-4.97 0-9-3.58-9-8 0-3.07 2.13-5.59 3.5-6.93.37-.36.95-.07.95.43 0 1.1.74 2.13 1.76 2.41.42.11.79-.24.68-.67-.33-1.34-.22-2.86.52-4.24.6-1.12 1.55-2.07 2.44-2.83a.5.5 0 01.8.2c.46 1.28 1.5 2.74 2.85 3.63 1.61 1.06 2.5 2.15 2.5 4 0 .53-.07 1.04-.2 1.52-.1.36.22.68.57.52a3.01 3.01 0 001.63-2.67c0-.07.08-.11.13-.06C22.22 12.55 21 16.47 21 17c0 3.31-4.03 6-9 6z" />
+        </svg>
+      );
+    case "heart":
+      return (
+        <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+        </svg>
+      );
+    case "laugh":
+      return (
+        <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
+          <circle cx="12" cy="12" r="10" />
+          <path d="M8 14s1.5 2 4 2 4-2 4-2" strokeLinecap="round" />
+          <path d="M9 9.5c0 .28-.22.5-.5.5S8 9.78 8 9.5 8.22 9 8.5 9s.5.22.5.5z" fill="currentColor" stroke="none" />
+          <path d="M16 9.5c0 .28-.22.5-.5.5s-.5-.22-.5-.5.22-.5.5-.5.5.22.5.5z" fill="currentColor" stroke="none" />
+          <path d="M7 9l2.5 1M17 9l-2.5 1" strokeLinecap="round" />
+        </svg>
+      );
+    case "thumbsUp":
+      return (
+        <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+          <path d="M2 20h2c.55 0 1-.45 1-1v-9c0-.55-.45-1-1-1H2v11zm19.83-7.12c.11-.25.17-.52.17-.8V11c0-1.1-.9-2-2-2h-5.5l.92-4.65c.05-.22.02-.46-.08-.66a4.8 4.8 0 00-.88-1.12L14 2 7.59 8.41C7.21 8.79 7 9.3 7 9.83v7.84C7 18.95 8.05 20 9.34 20h8.11c.7 0 1.36-.37 1.72-.97l2.66-6.15z" />
+        </svg>
+      );
+    case "thinking":
+      return (
+        <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
+          <circle cx="12" cy="12" r="10" />
+          <path d="M8 15c1 1.5 3.5 2 5.5.5" strokeLinecap="round" />
+          <circle cx="8.5" cy="9.5" r="1" fill="currentColor" stroke="none" />
+          <circle cx="15.5" cy="9.5" r="1" fill="currentColor" stroke="none" />
+          <path d="M15 8c.5-1 1.5-1.5 2.5-1" strokeLinecap="round" />
+        </svg>
+      );
+  }
+}
+
+const REACTION_COLORS: Record<ReactionType, string> = {
+  fire: "#f97316",
+  heart: "#ef4444",
+  laugh: "#facc15",
+  thumbsUp: "#38bdf8",
+  thinking: "#a78bfa",
+};
 
 function formatTimeAgo(isoString: string): string {
   const now = Date.now();
@@ -147,6 +202,17 @@ function FormatToolbar({ unlockedColors, onFormat, isAdmin }: FormatToolbarProps
           />
         );
       })}
+      {/* Admin-only colors */}
+      {isAdmin && ADMIN_COLORS.map((color) => (
+        <button
+          key={color}
+          type="button"
+          onClick={() => onFormat(color)}
+          className="w-4 h-4 rounded-full border border-fab-border hover:scale-110 hover:border-fab-text cursor-pointer transition-all"
+          style={{ backgroundColor: COLOR_VALUES[color] }}
+          title={`${color.charAt(0).toUpperCase() + color.slice(1)} text (Admin)`}
+        />
+      ))}
     </div>
   );
 }
@@ -161,7 +227,7 @@ interface EventCommentWallProps {
 
 export function EventCommentWall({ eventId, rankMap, unlockedColors = [] }: EventCommentWallProps) {
   const { user, profile, isGuest, isAdmin } = useAuth();
-  const { comments, loading, loadingMore, hasMore, loadOlder, addComment, editComment, removeComment } = useEventWall(eventId);
+  const { comments, loading, loadingMore, hasMore, loadOlder, addComment, editComment, removeComment, toggleReaction } = useEventWall(eventId);
   const { mutedUserIds } = useMutedUsers();
   const [replyingTo, setReplyingTo] = useState<WallComment | null>(null);
   const [text, setText] = useState("");
@@ -371,6 +437,7 @@ export function EventCommentWall({ eventId, rankMap, unlockedColors = [] }: Even
                 onEdit={editComment}
                 onDelete={removeComment}
                 onReply={() => setReplyingTo(comment)}
+                onToggleReaction={toggleReaction}
               />
               {replies.map((reply) => (
                 <div key={reply.id} className="ml-4 sm:ml-8 mt-2 pl-3 border-l-2 border-fab-border/50">
@@ -384,6 +451,7 @@ export function EventCommentWall({ eventId, rankMap, unlockedColors = [] }: Even
                     onEdit={editComment}
                     onDelete={removeComment}
                     onReply={() => setReplyingTo(comment)}
+                    onToggleReaction={toggleReaction}
                     isReply
                   />
                 </div>
@@ -478,6 +546,7 @@ interface WallCommentItemProps {
   onEdit: (id: string, text: string) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
   onReply: () => void;
+  onToggleReaction: (commentId: string, reaction: ReactionType, hasReacted: boolean) => Promise<void>;
   isReply?: boolean;
 }
 
@@ -491,12 +560,14 @@ function WallCommentItem({
   onEdit,
   onDelete,
   onReply,
+  onToggleReaction,
 }: WallCommentItemProps) {
   const [editing, setEditing] = useState(false);
   const [editText, setEditText] = useState(comment.text);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
+  const [showPicker, setShowPicker] = useState(false);
   const isAuthor = currentUid === comment.authorUid;
   const canEdit = isAuthor || isAdmin;
   const canDelete = isAuthor || isAdmin;
@@ -622,9 +693,75 @@ function WallCommentItem({
           <FormattedText text={comment.text} />
         )}
 
+        {/* Reactions display */}
+        {!editing && comment.reactions && (() => {
+          const activeReactions = REACTION_TYPES.filter(
+            (r) => comment.reactions?.[r]?.length
+          );
+          if (activeReactions.length === 0) return null;
+          return (
+            <div className="flex gap-1 mt-1 flex-wrap">
+              {activeReactions.map((r) => {
+                const users = comment.reactions![r]!;
+                const hasReacted = !!currentUid && users.includes(currentUid);
+                return (
+                  <button
+                    key={r}
+                    onClick={() => isLoggedIn && onToggleReaction(comment.id, r, hasReacted)}
+                    className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] transition-colors ${
+                      hasReacted
+                        ? "bg-fab-gold/15 border border-fab-gold/40"
+                        : "bg-fab-dim/10 border border-fab-border/50 hover:border-fab-border"
+                    } ${isLoggedIn ? "cursor-pointer" : "cursor-default"}`}
+                  >
+                    <span style={{ color: REACTION_COLORS[r] }}>
+                      <ReactionIcon type={r} className="w-3 h-3" />
+                    </span>
+                    <span className="text-fab-muted">{users.length}</span>
+                  </button>
+                );
+              })}
+            </div>
+          );
+        })()}
+
         {/* Actions */}
         {!editing && (
-          <div className="flex gap-2.5 mt-0.5 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+          <div className="flex items-center gap-2.5 mt-0.5 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+            {isLoggedIn && (
+              <div className="relative">
+                <button
+                  onClick={() => setShowPicker((p) => !p)}
+                  className="text-[10px] text-fab-dim hover:text-fab-gold transition-colors"
+                >
+                  React
+                </button>
+                {showPicker && (
+                  <div className="absolute bottom-5 left-0 z-10 flex gap-1 bg-fab-surface border border-fab-border rounded-lg px-2 py-1.5 shadow-lg">
+                    {REACTION_TYPES.map((r) => {
+                      const hasReacted = !!currentUid && !!comment.reactions?.[r]?.includes(currentUid);
+                      return (
+                        <button
+                          key={r}
+                          onClick={() => {
+                            onToggleReaction(comment.id, r, hasReacted);
+                            setShowPicker(false);
+                          }}
+                          className={`p-1 rounded hover:bg-fab-dim/20 transition-colors ${
+                            hasReacted ? "bg-fab-gold/15" : ""
+                          }`}
+                          title={r}
+                        >
+                          <span style={{ color: REACTION_COLORS[r] }}>
+                            <ReactionIcon type={r} className="w-4 h-4" />
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
             {isLoggedIn && (
               <button
                 onClick={onReply}

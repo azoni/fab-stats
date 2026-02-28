@@ -1,6 +1,6 @@
 import type { PlayoffFinish } from "./stats";
 
-export type TextColor = "green" | "blue" | "purple" | "gold";
+export type TextColor = "green" | "blue" | "purple" | "gold" | "red";
 
 export type Segment =
   | { type: "text"; content: string }
@@ -8,12 +8,14 @@ export type Segment =
   | { type: "color"; content: string; color: TextColor };
 
 const VALID_COLORS: TextColor[] = ["green", "blue", "purple", "gold"];
+const ADMIN_COLORS: TextColor[] = ["red"];
 
 const COLOR_VALUES: Record<TextColor, string> = {
   green: "#4ade80",
   blue: "#38bdf8",
   purple: "#a78bfa",
   gold: "#c9a84c",
+  red: "#ef4444",
 };
 
 const COLOR_LABELS: Record<TextColor, string> = {
@@ -21,12 +23,13 @@ const COLOR_LABELS: Record<TextColor, string> = {
   blue: "Top 8 Finish",
   purple: "Event Champion",
   gold: "Major Champion",
+  red: "Admin",
 };
 
 export { COLOR_VALUES, COLOR_LABELS };
 
 // Pattern: ||spoiler|| or [green]text[/green] etc.
-const FORMAT_REGEX = /(\|\|.+?\|\||\[(?:green|blue|purple|gold)\].+?\[\/(?:green|blue|purple|gold)\])/g;
+const FORMAT_REGEX = /(\|\|.+?\|\||\[(?:green|blue|purple|gold|red)\].+?\[\/(?:green|blue|purple|gold|red)\])/g;
 
 /** Parse raw comment text into formatted segments */
 export function parseCommentText(text: string): Segment[] {
@@ -43,7 +46,7 @@ export function parseCommentText(text: string): Segment[] {
     }
 
     // Check color: [color]content[/color]
-    const colorMatch = part.match(/^\[(green|blue|purple|gold)\]([\s\S]+?)\[\/\1\]$/);
+    const colorMatch = part.match(/^\[(green|blue|purple|gold|red)\]([\s\S]+?)\[\/\1\]$/);
     if (colorMatch) {
       segments.push({
         type: "color",
@@ -76,18 +79,20 @@ export function wrapSelection(
   const selected = text.slice(start, end);
   const after = text.slice(end);
 
-  let wrapped: string;
+  let openTag: string;
+  let closeTag: string;
   if (format === "spoiler") {
-    wrapped = `||${selected || "spoiler"}||`;
+    openTag = "||";
+    closeTag = "||";
   } else {
-    wrapped = `[${format}]${selected || "text"}[/${format}]`;
+    openTag = `[${format}]`;
+    closeTag = `[/${format}]`;
   }
 
-  const newText = before + wrapped + after;
-  return {
-    text: newText,
-    cursorPos: before.length + wrapped.length,
-  };
+  const newText = before + openTag + selected + closeTag + after;
+  // Place cursor after selected text (or between markers if nothing selected)
+  const cursorPos = before.length + openTag.length + selected.length;
+  return { text: newText, cursorPos };
 }
 
 /** Determine which text colors are unlocked for a user */
@@ -118,4 +123,4 @@ export function getUnlockedColors(
   return colors;
 }
 
-export { VALID_COLORS };
+export { VALID_COLORS, ADMIN_COLORS };

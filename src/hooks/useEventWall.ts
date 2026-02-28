@@ -7,8 +7,9 @@ import {
   addWallComment,
   updateWallComment,
   deleteWallComment,
+  toggleWallReaction,
 } from "@/lib/event-wall";
-import type { WallComment } from "@/types";
+import type { WallComment, ReactionType } from "@/types";
 
 const MAX_COMMENTS = 50;
 
@@ -95,5 +96,13 @@ export function useEventWall(eventId: string) {
     [eventId]
   );
 
-  return { comments, loading, loadingMore, hasMore, loadOlder, addComment, editComment, removeComment };
+  const toggleReaction = useCallback(
+    async (commentId: string, reaction: ReactionType, hasReacted: boolean) => {
+      if (!user || !eventId) return;
+      await toggleWallReaction(eventId, commentId, reaction, user.uid, hasReacted);
+    },
+    [user, eventId]
+  );
+
+  return { comments, loading, loadingMore, hasMore, loadOlder, addComment, editComment, removeComment, toggleReaction };
 }
