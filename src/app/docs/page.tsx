@@ -359,6 +359,88 @@ export default function DocsPage() {
           </div>
         </section>
 
+        {/* Versus */}
+        <section>
+          <h2 className="text-lg font-semibold text-fab-text mb-3">Versus</h2>
+          <p className="text-sm text-fab-muted mb-3">
+            Compare your stats head-to-head against any other player. The Versus page locks you in as
+            Player 1 and lets you pick an opponent — or choose from common opponents you&apos;ve both faced.
+          </p>
+          <div className="space-y-2 text-sm text-fab-muted">
+            <p>
+              <span className="font-medium text-fab-text">Dominance score</span> — A weighted percentage
+              comparing stats across categories like win rate, total wins, streaks, events, and head-to-head
+              record. Each category contributes to the overall verdict.
+            </p>
+            <p>
+              <span className="font-medium text-fab-text">H2H record</span> — If both players have faced each
+              other, their direct head-to-head record is shown and scored as a category.
+            </p>
+            <p>
+              <span className="font-medium text-fab-text">Share card</span> — Generate a shareable image of
+              the showdown result with both players&apos; stats and the verdict.
+            </p>
+          </div>
+        </section>
+
+        {/* Activity Feed */}
+        <section>
+          <h2 className="text-lg font-semibold text-fab-text mb-3">Activity Feed</h2>
+          <p className="text-sm text-fab-muted mb-3">
+            The Activity Feed on the homepage shows what the community is up to — match imports,
+            achievement unlocks, and tournament placements.
+          </p>
+          <div className="space-y-2 text-sm text-fab-muted">
+            <p>
+              <span className="font-medium text-fab-text">Type filters</span> — Filter by All, Imports,
+              Achievements, or Placements. Your filter preference is saved between visits.
+            </p>
+            <p>
+              <span className="font-medium text-fab-text">Community vs Friends</span> — Toggle between
+              seeing all public activity or just activity from your friends and favorited players.
+            </p>
+            <p>
+              <span className="font-medium text-fab-text">Discover page</span> — The full paginated
+              activity feed is available on the Discover page with infinite scroll.
+            </p>
+          </div>
+        </section>
+
+        {/* Friends */}
+        <section>
+          <h2 className="text-lg font-semibold text-fab-text mb-3">Friends</h2>
+          <p className="text-sm text-fab-muted mb-3">
+            Add other players as friends to see their activity in your feed and quickly access their profiles.
+          </p>
+          <div className="space-y-2 text-sm text-fab-muted">
+            <p>
+              <span className="font-medium text-fab-text">Friend requests</span> — Send a request from any
+              player&apos;s profile. They&apos;ll see it in their notifications and can accept or decline.
+            </p>
+            <p>
+              <span className="font-medium text-fab-text">Favorites</span> — Star any player from the
+              Opponents page to add them as a favorite. Favorites appear in the Friends activity filter
+              alongside accepted friends.
+            </p>
+          </div>
+        </section>
+
+        {/* On This Day */}
+        <section>
+          <h2 className="text-lg font-semibold text-fab-text mb-3">On This Day</h2>
+          <p className="text-sm text-fab-muted mb-3">
+            The On This Day widget shows matches you played on today&apos;s date in previous years.
+            See your record, opponents, heroes, and events from past years at a glance.
+          </p>
+          <div className="space-y-2 text-sm text-fab-muted">
+            <p>
+              <span className="font-medium text-fab-text">Shareable</span> — Capture your On This Day
+              memories as an image to share on social media. The share card includes your record and
+              match details for each year.
+            </p>
+          </div>
+        </section>
+
         {/* Privacy */}
         <section>
           <h2 className="text-lg font-semibold text-fab-text mb-3">Privacy</h2>
@@ -374,6 +456,11 @@ export default function DocsPage() {
             </p>
             <p>
               <span className="font-medium text-fab-text">Private profiles</span> — Only you can see your data. You won&apos;t appear on the Leaderboard or in search results.
+            </p>
+            <p>
+              <span className="font-medium text-fab-text">Hide from Guests</span> — An optional toggle in
+              Settings that hides your profile, search results, and leaderboard entry from visitors who
+              aren&apos;t logged in. Disabled by default.
             </p>
           </div>
         </section>

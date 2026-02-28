@@ -31,6 +31,38 @@ const badgeLabels: Record<ChangeType, string> = {
 
 const changelog: Entry[] = [
   {
+    date: "February 27, 2026",
+    changes: [
+      { type: "new", text: "Versus page — redesigned Compare into a head-to-head showdown with weighted dominance scoring, H2H record, and shareable verdict cards" },
+      { type: "new", text: "Activity Feed on homepage — achievements, placements, and imports with type filters, community/friends toggle, and pagination" },
+      { type: "new", text: "Player Spotlight — 6 featured profiles using 9 spotlight algorithms, shown alongside the Activity Feed" },
+      { type: "new", text: "Friends system — add friends, send requests, filter the Activity Feed to friends and favorites" },
+      { type: "new", text: "On This Day widget — collapsible, shareable match memories with horizontal card layout" },
+      { type: "new", text: "Quick Nav buttons on dashboard — fast access to Import, Compare, Events, and more" },
+      { type: "new", text: "Armory Garden on profile — flowers that grow as you attend armories, with watering can tiers and interactive effects" },
+      { type: "new", text: "Trophy Case on profile — marble icons for Champion, Finalist, Top 4, Top 8, and Other finishes by event type" },
+      { type: "new", text: "Shareable profile cards — capture your stats as an image with tier borders, rank rings, trophies, and armory garden" },
+      { type: "new", text: "Community Polls — vote on community questions with results history" },
+      { type: "new", text: "Bulk tournament import — admin tool to import tournament results with auto player-linking" },
+      { type: "new", text: "Hide from Guests privacy toggle — opt-in to hide your profile from visitors who aren't logged in" },
+      { type: "new", text: "Clear all match data — delete all your imported matches from Settings" },
+      { type: "new", text: "Beta GEM extension — structured CSS-selector parsing with Quick Sync button" },
+      { type: "new", text: "Paginated Discover page — browse the full community activity feed with type filtering and infinite scroll" },
+      { type: "improved", text: "Navbar redesigned — consolidated icon buttons into a user avatar dropdown with chevron indicator" },
+      { type: "improved", text: "Byes excluded from match counts and win rate calculations for more accurate stats" },
+      { type: "improved", text: "Performance — cached activity feed, trimmed leaderboard documents" },
+      { type: "improved", text: "Security hardened — auth on serverless functions, tighter Firestore rules, improved CSP headers" },
+      { type: "improved", text: "Profile page streamlined — collapsible sections, quick nav, event dates on placement cards" },
+      { type: "improved", text: "Opponents tab redesigned with rivalry highlights and improved layout" },
+      { type: "improved", text: "Spotlight and Activity Feed hidden from guests for a cleaner landing page" },
+      { type: "fixed", text: "H2H comparisons now use bidirectional matching with GEM ID and name fallback" },
+      { type: "fixed", text: "Hero no longer bleeds across events during import" },
+      { type: "fixed", text: "Private profile owner view now works correctly" },
+      { type: "fixed", text: "Photo upload CSP violation resolved" },
+      { type: "fixed", text: "Paste import now detects playoff sections and extracts hero from decklists" },
+    ],
+  },
+  {
     date: "February 26, 2026",
     changes: [
       { type: "new", text: "Favorite players — star any player to keep them at the top of your Opponents list" },
