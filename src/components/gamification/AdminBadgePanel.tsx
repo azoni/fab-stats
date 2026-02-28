@@ -16,7 +16,7 @@ const RARITY_ORDER: Achievement["rarity"][] = ["legendary", "epic", "rare", "unc
 
 export function AdminBadgePanel({ userId, assignedBadgeIds, onBadgeChange }: AdminBadgePanelProps) {
   const [expanded, setExpanded] = useState(false);
-  const [notify, setNotify] = useState(true);
+  const [notify, setNotify] = useState(false);
   const [loadingId, setLoadingId] = useState<string | null>(null);
 
   const allBadges = getAllBadges();
