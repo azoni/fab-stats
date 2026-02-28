@@ -56,10 +56,12 @@ export function ActivityFeed({ rankMap }: { rankMap?: Map<string, 1 | 2 | 3 | 4 
   }, [friends, favorites, user?.uid]);
 
   const filteredEvents: FeedEvent[] = useMemo(() => {
-    // "Yesterday at midnight" cutoff — exclude anything before yesterday
+    // Imports: yesterday-at-midnight cutoff
+    // Achievements & placements: show everything since app launch (Feb 24 2026)
     const now = new Date();
     const yesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
-    const cutoff = yesterday.getTime();
+    const importCutoff = yesterday.getTime();
+    const appLaunch = new Date("2026-02-24").getTime();
 
     let source = events;
 
@@ -73,10 +75,12 @@ export function ActivityFeed({ rankMap }: { rankMap?: Map<string, 1 | 2 | 3 | 4 
       source = source.filter((e) => e.type === typeFilter);
     }
 
-    // Recency filter: use eventDate for placements, createdAt for others
+    // Recency filter: tight for imports, loose for achievements/placements
     source = source.filter((e) => {
       const dateStr = e.type === "placement" ? e.eventDate : e.createdAt;
-      return new Date(dateStr).getTime() >= cutoff;
+      const ts = new Date(dateStr).getTime();
+      if (e.type === "import") return ts >= importCutoff;
+      return ts >= appLaunch;
     });
 
     // Sort by the date the event happened (most recent first)
