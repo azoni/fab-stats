@@ -373,7 +373,7 @@ export function EventCommentWall({ eventId, rankMap, unlockedColors = [] }: Even
                 onReply={() => setReplyingTo(comment)}
               />
               {replies.map((reply) => (
-                <div key={reply.id} className="ml-8 mt-2 pl-3 border-l-2 border-fab-border/50">
+                <div key={reply.id} className="ml-4 sm:ml-8 mt-2 pl-3 border-l-2 border-fab-border/50">
                   <WallCommentItem
                     comment={reply}
                     currentUid={user?.uid}
@@ -624,7 +624,7 @@ function WallCommentItem({
 
         {/* Actions */}
         {!editing && (
-          <div className="flex gap-2.5 mt-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="flex gap-2.5 mt-0.5 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
             {isLoggedIn && (
               <button
                 onClick={onReply}
