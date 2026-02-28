@@ -366,6 +366,24 @@ body::before {
 .meta-rank-2 { color: #d1d5db; text-shadow: 0 0 6px rgba(209,213,219,0.3); }
 .meta-rank-3 { color: #d97706; text-shadow: 0 0 6px rgba(217,119,6,0.3); }
 
+/* ── Compare page animations ── */
+
+@keyframes pop-in {
+  0% { scale: 0; opacity: 0; }
+  70% { scale: 1.2; }
+  100% { scale: 1; opacity: 1; }
+}
+
+@keyframes fade-in-up {
+  from { opacity: 0; translate: 0 8px; }
+  to { opacity: 1; translate: 0 0; }
+}
+
+@keyframes vs-pulse {
+  0%, 100% { scale: 1; }
+  50% { scale: 1.08; }
+}
+
 /* ── Section header accent ── */
 
 .section-header {
