@@ -9,27 +9,30 @@ interface CompareData {
   p2TopHero: string;
   p1Matches: number;
   p2Matches: number;
-  p1CategoryWins: number;
-  p2CategoryWins: number;
   p1Dominance: number;
   p2Dominance: number;
   p1PowerLevel?: number;
   p2PowerLevel?: number;
   h2h?: { p1Wins: number; p2Wins: number; draws: number; total: number };
   verdict?: string;
+  verdictSubtitle?: string;
+  verdictBullets?: string[];
 }
 
 export function CompareCard({ data, theme }: { data: CompareData; theme: CardTheme }) {
   const t = theme;
-  const { p1Name, p2Name, stats, p1TopHero, p2TopHero, p1Matches, p2Matches, p1CategoryWins, p2CategoryWins, p1Dominance, p2Dominance, p1PowerLevel, p2PowerLevel, h2h, verdict } = data;
+  const { p1Name, p2Name, stats, p1TopHero, p2TopHero, p1Matches, p2Matches, p1Dominance, p2Dominance, p1PowerLevel, p2PowerLevel, h2h, verdict, verdictSubtitle, verdictBullets } = data;
   const p1Leading = p1Dominance > p2Dominance;
   const tied = p1Dominance === p2Dominance;
 
   return (
     <div style={{ backgroundColor: t.surface, borderColor: t.border, width: 420 }} className="border rounded-xl overflow-hidden">
-      {/* Header */}
-      <div style={{ backgroundColor: t.bg, borderColor: t.border }} className="px-4 py-2 border-b">
-        <p style={{ color: t.accent }} className="text-[11px] uppercase tracking-[0.2em] text-center font-bold">Player Comparison</p>
+      {/* Header with gradient accent */}
+      <div style={{ backgroundColor: t.bg, borderColor: t.border }} className="border-b">
+        <div style={{ height: 2, background: `linear-gradient(90deg, ${t.win}, ${t.accent}, #ef4444)` }} />
+        <div className="px-4 py-2">
+          <p style={{ color: t.accent }} className="text-[11px] uppercase tracking-[0.2em] text-center font-bold">Versus</p>
+        </div>
       </div>
 
       <div className="px-4 pt-3 pb-3">
@@ -56,17 +59,9 @@ export function CompareCard({ data, theme }: { data: CompareData; theme: CardThe
           </div>
         </div>
 
-        {/* Scores */}
-        <div className="mt-3 grid grid-cols-2 gap-2">
-          <div style={{ backgroundColor: t.bg }} className="rounded-lg py-2 px-3 text-center">
-            <div className="flex items-baseline justify-center gap-2">
-              <span style={{ color: p1CategoryWins > p2CategoryWins ? t.win : p1CategoryWins === p2CategoryWins ? t.draw : t.text }} className="text-2xl font-black">{p1CategoryWins}</span>
-              <span style={{ color: t.border }} className="text-sm font-light">&mdash;</span>
-              <span style={{ color: p2CategoryWins > p1CategoryWins ? t.win : p1CategoryWins === p2CategoryWins ? t.draw : t.text }} className="text-2xl font-black">{p2CategoryWins}</span>
-            </div>
-            <p style={{ color: t.muted }} className="text-[9px] mt-0.5">categories won</p>
-          </div>
-          <div style={{ backgroundColor: t.bg }} className="rounded-lg py-2 px-3 text-center">
+        {/* Dominance Score */}
+        <div className="mt-3" style={{ backgroundColor: t.bg }} >
+          <div className="rounded-lg py-2 px-3 text-center">
             <div className="flex items-baseline justify-center gap-2">
               <span style={{ color: p1Leading ? t.win : tied ? t.draw : t.text }} className="text-2xl font-black">{p1Dominance}</span>
               <span style={{ color: t.border }} className="text-sm font-light">&mdash;</span>
@@ -126,6 +121,19 @@ export function CompareCard({ data, theme }: { data: CompareData; theme: CardThe
           <div className="mt-2 rounded-lg py-2 px-2.5" style={{ backgroundColor: t.bg }}>
             <p style={{ color: t.accent }} className="text-[9px] uppercase tracking-wider font-semibold mb-0.5">Verdict</p>
             <p style={{ color: t.text }} className="text-[11px] font-bold leading-snug">{verdict}</p>
+            {verdictSubtitle && (
+              <p style={{ color: t.muted }} className="text-[9px] mt-0.5">{verdictSubtitle}</p>
+            )}
+            {verdictBullets && verdictBullets.length > 0 && (
+              <div className="mt-1.5 space-y-0.5">
+                {verdictBullets.slice(0, 3).map((b, i) => (
+                  <div key={i} className="flex items-start gap-1">
+                    <span style={{ color: t.accent }} className="text-[8px] mt-0.5">&bull;</span>
+                    <p style={{ color: t.muted }} className="text-[9px] leading-snug">{b}</p>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>

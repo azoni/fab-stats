@@ -61,7 +61,7 @@ const navLinks: { href: string; label: string; icon: ReactNode; color: string; b
 ];
 
 const moreLinks: { href: string; label: string; icon: ReactNode; authOnly?: boolean }[] = [
-  { href: "/compare", label: "Compare", icon: <CompareIcon className="w-4 h-4" /> },
+  { href: "/compare", label: "Versus", icon: <CompareIcon className="w-4 h-4" /> },
   { href: "/meta", label: "Community Meta", icon: <MetaIcon className="w-4 h-4" /> },
   { href: "/trends", label: "Trends", icon: <TrendsIcon className="w-4 h-4" />, authOnly: true },
   { href: "/tournaments", label: "Tournaments", icon: <TrophyIcon className="w-4 h-4" /> },

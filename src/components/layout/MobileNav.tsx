@@ -109,7 +109,7 @@ function FriendsIcon(props: { className?: string }) {
 
 const moreLinks: { href: string; label: string; icon: ReactNode; authOnly?: boolean; adminOnly?: boolean }[] = [
   { href: "/meta", label: "Community Meta", icon: <MetaIcon /> },
-  { href: "/compare", label: "Compare", icon: <CompareIcon /> },
+  { href: "/compare", label: "Versus", icon: <CompareIcon /> },
   { href: "/events", label: "Events", icon: <CalendarIcon /> },
   { href: "/trends", label: "Trends", icon: <TrendsIcon />, authOnly: true },
   { href: "/import", label: "Import Matches", icon: <ImportIcon />, authOnly: true },
