@@ -207,6 +207,11 @@ function AchievementContent({ event, compact }: { event: FeedEvent & { type: "ac
   );
 }
 
+function formatEventDate(isoDate: string): string {
+  const d = new Date(isoDate);
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
 function PlacementContent({ event, compact }: { event: FeedEvent & { type: "placement" }; compact?: boolean }) {
   const info = placementLabels[event.placementType] || placementLabels.top8;
 
@@ -214,6 +219,7 @@ function PlacementContent({ event, compact }: { event: FeedEvent & { type: "plac
     return (
       <p className="text-[11px] text-fab-muted">
         <span className={`font-semibold ${info.color}`}>{info.label}</span> at {event.eventName}
+        {event.eventDate && <span className="text-fab-dim"> &middot; {formatEventDate(event.eventDate)}</span>}
       </p>
     );
   }
@@ -238,6 +244,11 @@ function PlacementContent({ event, compact }: { event: FeedEvent & { type: "plac
         <span className="px-2 py-0.5 rounded-full bg-fab-surface text-fab-dim text-xs">
           {event.eventType}
         </span>
+        {event.eventDate && (
+          <span className="px-2 py-0.5 rounded-full bg-fab-surface text-fab-dim text-xs">
+            {formatEventDate(event.eventDate)}
+          </span>
+        )}
       </div>
     </>
   );
