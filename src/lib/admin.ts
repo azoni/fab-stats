@@ -42,6 +42,8 @@ export interface AdminUserStats {
   ratedMatches?: number;
   ratedWinRate?: number;
   updatedAt?: string;
+  weeklyMatches?: number;
+  monthlyMatches?: number;
 }
 
 export interface AdminDashboardData {
@@ -132,6 +134,8 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
         ratedMatches: lb.ratedMatches as number,
         ratedWinRate: lb.ratedWinRate as number,
         updatedAt: lb.updatedAt as string,
+        weeklyMatches: lb.weeklyMatches as number,
+        monthlyMatches: lb.monthlyMatches as number,
       });
     } else {
       usersNeedingProfile.push({ username, userId });
