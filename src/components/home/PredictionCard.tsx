@@ -69,6 +69,16 @@ export function PredictionCard({ pollId }: { pollId: string }) {
   );
   const canAddNew = search.trim().length >= 2 && !hasExactMatch;
 
+  // Results view — sorted by votes desc (must be before early return to keep hooks stable)
+  const sortedResults = useMemo(() => {
+    return visibleOptions
+      .map((opt) => ({
+        ...opt,
+        count: results.counts[opt.index] || 0,
+      }))
+      .sort((a, b) => b.count - a.count);
+  }, [visibleOptions, results]);
+
   const hasVoted = vote !== null;
   const votingOpen = poll?.votingOpen ?? false;
   const isResolved = poll?.correctOptionIndex !== undefined && poll?.correctOptionIndex !== null;
@@ -114,16 +124,6 @@ export function PredictionCard({ pollId }: { pollId: string }) {
       setAdding(false);
     }
   }
-
-  // Results view — sorted by votes desc
-  const sortedResults = useMemo(() => {
-    return visibleOptions
-      .map((opt) => ({
-        ...opt,
-        count: results.counts[opt.index] || 0,
-      }))
-      .sort((a, b) => b.count - a.count);
-  }, [visibleOptions, results]);
 
   return (
     <div className="bg-fab-surface border border-fab-border rounded-lg p-4 h-full flex flex-col">
