@@ -43,6 +43,11 @@ export function ActivityFeed({ rankMap }: { rankMap?: Map<string, 1 | 2 | 3 | 4 
   }, [friends, favorites, user?.uid]);
 
   const filteredEvents: FeedEvent[] = useMemo(() => {
+    // "Yesterday at midnight" cutoff — exclude anything before yesterday
+    const now = new Date();
+    const yesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+    const cutoff = yesterday.getTime();
+
     let source = events;
 
     // Scope filter
@@ -54,6 +59,19 @@ export function ActivityFeed({ rankMap }: { rankMap?: Map<string, 1 | 2 | 3 | 4 
     if (typeFilter !== "all") {
       source = source.filter((e) => e.type === typeFilter);
     }
+
+    // Recency filter: use eventDate for placements, createdAt for others
+    source = source.filter((e) => {
+      const dateStr = e.type === "placement" ? e.eventDate : e.createdAt;
+      return new Date(dateStr).getTime() >= cutoff;
+    });
+
+    // Sort by the date the event happened (most recent first)
+    source = [...source].sort((a, b) => {
+      const dateA = a.type === "placement" ? a.eventDate : a.createdAt;
+      const dateB = b.type === "placement" ? b.eventDate : b.createdAt;
+      return new Date(dateB).getTime() - new Date(dateA).getTime();
+    });
 
     return source.slice(0, SCROLL_LIMIT);
   }, [events, scope, typeFilter, socialUserIds]);
