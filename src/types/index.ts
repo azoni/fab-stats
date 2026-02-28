@@ -174,7 +174,7 @@ export interface MatchComment {
 
 export interface UserNotification {
   id: string;
-  type: "comment" | "message" | "friendRequest" | "friendAccepted";
+  type: "comment" | "message" | "friendRequest" | "friendAccepted" | "badge";
   // Comment fields
   matchId?: string;
   matchOwnerUid?: string;
@@ -195,6 +195,10 @@ export interface UserNotification {
   friendRequestFromName?: string;
   friendRequestFromPhoto?: string;
   friendRequestFromUsername?: string;
+  // Badge fields
+  badgeId?: string;
+  badgeName?: string;
+  badgeRarity?: string;
   // Common
   createdAt: string;
   read: boolean;

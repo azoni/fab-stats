@@ -141,6 +141,12 @@ export default function NotificationsPage() {
       await markAsRead(n.id);
       const username = usernameCache[n.friendRequestFromUid];
       if (username) router.push(`/player/${username}`);
+    } else if (n.type === "badge") {
+      await markAsRead(n.id);
+      if (user) {
+        const p = await getProfile(user.uid);
+        if (p?.username) router.push(`/player/${p.username}#achievements`);
+      }
     }
   }
 
@@ -202,7 +208,13 @@ export default function NotificationsPage() {
 
                   {/* Author avatar */}
                   <div className="shrink-0">
-                    {(() => {
+                    {n.type === "badge" ? (
+                      <div className="w-8 h-8 rounded-full bg-violet-500/20 flex items-center justify-center">
+                        <svg className="w-4 h-4 text-violet-300" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M12 2l2.09 6.26L20.18 9.27l-4.64 4.14L16.82 20 12 16.77 7.18 20l1.27-6.59L3.82 9.27l6.09-1.01L12 2z" />
+                        </svg>
+                      </div>
+                    ) : (() => {
                       const photo = n.type === "message" ? n.senderPhoto : n.type === "friendRequest" || n.type === "friendAccepted" ? n.friendRequestFromPhoto : n.commentAuthorPhoto;
                       const name = n.type === "message" ? (n.senderName || "?") : n.type === "friendRequest" || n.type === "friendAccepted" ? (n.friendRequestFromName || "?") : (n.commentAuthorName || "?");
                       return photo ? (
@@ -240,6 +252,10 @@ export default function NotificationsPage() {
                       <p className="text-sm text-fab-text">
                         <span className="font-semibold">{n.friendRequestFromName}</span>{" "}
                         accepted your friend request
+                      </p>
+                    ) : n.type === "badge" ? (
+                      <p className="text-sm text-fab-text">
+                        You earned the <span className="font-semibold text-violet-300">{n.badgeName}</span> badge!
                       </p>
                     ) : (
                       <>

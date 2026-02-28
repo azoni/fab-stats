@@ -1,6 +1,6 @@
-import { doc, getDoc, setDoc, arrayUnion, arrayRemove } from "firebase/firestore";
+import { doc, getDoc, setDoc, addDoc, collection, arrayUnion, arrayRemove } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { getBadgesForIds } from "@/lib/badges";
+import { getBadgeById, getBadgesForIds } from "@/lib/badges";
 import type { Achievement } from "@/types";
 
 const BADGES_DOC = doc(db, "admin", "badges");
@@ -14,8 +14,21 @@ export async function getUserBadges(userId: string): Promise<Achievement[]> {
   return getBadgesForIds(ids);
 }
 
-export async function assignBadge(userId: string, badgeId: string): Promise<void> {
+export async function assignBadge(userId: string, badgeId: string, notify = false): Promise<void> {
   await setDoc(BADGES_DOC, { [userId]: arrayUnion(badgeId) }, { merge: true });
+  if (notify) {
+    const badge = getBadgeById(badgeId);
+    if (badge) {
+      await addDoc(collection(db, "users", userId, "notifications"), {
+        type: "badge",
+        badgeId: badge.id,
+        badgeName: badge.name,
+        badgeRarity: badge.rarity,
+        createdAt: new Date().toISOString(),
+        read: false,
+      });
+    }
+  }
 }
 
 export async function revokeBadge(userId: string, badgeId: string): Promise<void> {

@@ -536,8 +536,8 @@ export default function AdminPage() {
                               <UserExpandedStats
                                 user={u}
                                 assignedBadgeIds={badgeAssignments[u.uid] || []}
-                                onAssignBadge={async (badgeId) => {
-                                  await assignBadge(u.uid, badgeId);
+                                onAssignBadge={async (badgeId, notify) => {
+                                  await assignBadge(u.uid, badgeId, notify);
                                   setBadgeAssignments((prev) => ({
                                     ...prev,
                                     [u.uid]: [...(prev[u.uid] || []), badgeId],
@@ -1503,11 +1503,12 @@ export default function AdminPage() {
 function UserExpandedStats({ user: u, assignedBadgeIds, onAssignBadge, onRevokeBadge }: {
   user: AdminUserStats;
   assignedBadgeIds: string[];
-  onAssignBadge: (badgeId: string) => Promise<void>;
+  onAssignBadge: (badgeId: string, notify: boolean) => Promise<void>;
   onRevokeBadge: (badgeId: string) => Promise<void>;
 }) {
   const hasStats = u.winRate !== undefined;
   const unassigned = ADMIN_BADGES.filter((b) => !assignedBadgeIds.includes(b.id));
+  const [notifyUser, setNotifyUser] = useState(true);
   const rarityColor: Record<string, string> = {
     legendary: "text-amber-400 bg-amber-400/10 border-amber-400/30",
     epic: "text-purple-400 bg-purple-400/10 border-purple-400/30",
@@ -1601,17 +1602,28 @@ function UserExpandedStats({ user: u, assignedBadgeIds, onAssignBadge, onRevokeB
             );
           })}
           {unassigned.length > 0 && (
-            <select
-              className="text-[11px] bg-fab-bg border border-fab-border rounded px-2 py-1 text-fab-text"
-              value=""
-              onChange={(e) => { if (e.target.value) onAssignBadge(e.target.value); }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <option value="">+ Add badge</option>
-              {unassigned.map((b) => (
-                <option key={b.id} value={b.id}>{b.name} ({b.rarity})</option>
-              ))}
-            </select>
+            <>
+              <select
+                className="text-[11px] bg-fab-bg border border-fab-border rounded px-2 py-1 text-fab-text"
+                value=""
+                onChange={(e) => { if (e.target.value) onAssignBadge(e.target.value, notifyUser); }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <option value="">+ Add badge</option>
+                {unassigned.map((b) => (
+                  <option key={b.id} value={b.id}>{b.name} ({b.rarity})</option>
+                ))}
+              </select>
+              <label className="inline-flex items-center gap-1 text-[11px] text-fab-muted cursor-pointer" onClick={(e) => e.stopPropagation()}>
+                <input
+                  type="checkbox"
+                  checked={notifyUser}
+                  onChange={(e) => setNotifyUser(e.target.checked)}
+                  className="accent-fab-gold w-3 h-3"
+                />
+                Notify
+              </label>
+            </>
           )}
           {assignedBadgeIds.length === 0 && unassigned.length === 0 && (
             <span className="text-[11px] text-fab-dim">All badges assigned</span>
