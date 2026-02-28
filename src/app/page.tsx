@@ -9,7 +9,7 @@ import { evaluateAchievements } from "@/lib/achievements";
 import { AchievementBadges } from "@/components/gamification/AchievementShowcase";
 import { updateLeaderboardEntry } from "@/lib/leaderboard";
 import { useLeaderboard } from "@/hooks/useLeaderboard";
-import { computeUserRanks, getBestRank } from "@/lib/leaderboard-ranks";
+import { computeUserRanks, getBestRank, computeRankMap } from "@/lib/leaderboard-ranks";
 import { ShieldIcon, SwordsIcon, CalendarIcon, OpponentsIcon, TrendsIcon } from "@/components/icons/NavIcons";
 import { MatchResult } from "@/types";
 import { CommunityHighlights } from "@/components/home/CommunityHighlights";
@@ -94,6 +94,7 @@ export default function Dashboard() {
   const communityMeta = useMemo(() => computeMetaStats(lbEntries), [lbEntries]);
   const communityTopHeroes = useMemo(() => communityMeta.heroStats.slice(0, 5), [communityMeta]);
   const featuredProfiles = useMemo(() => selectFeaturedProfiles(lbEntries), [lbEntries]);
+  const rankMap = useMemo(() => computeRankMap(lbEntries), [lbEntries]);
 
 
   if (!isLoaded) {
@@ -414,7 +415,7 @@ export default function Dashboard() {
       {hasMatches && <OnThisDay matches={matches} />}
 
       {/* Activity Feed */}
-      <ActivityFeed />
+      <ActivityFeed rankMap={rankMap} />
 
       {/* Community content */}
       <CommunityHighlights
@@ -422,6 +423,7 @@ export default function Dashboard() {
         featuredEvents={featuredEvents}
         leaderboardEntries={lbEntries}
         topHeroes={communityTopHeroes}
+        rankMap={rankMap}
         rightColumnExtra={
           hasMatches && eventStats.length > 0 ? (
             <div>
