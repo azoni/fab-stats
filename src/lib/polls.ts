@@ -231,13 +231,19 @@ export async function addPredictionOption(
   }
 
   // Append new option and increment user's add count atomically
-  const newIndex = poll.options.length;
   await updateDoc(doc(db, "polls", pollId), {
     options: arrayUnion(displayLabel),
     [`optionAddCount.${userId}`]: increment(1),
   });
 
-  return { index: newIndex, isDuplicate: false };
+  // Re-read to get the actual index (handles concurrent adds)
+  const updatedSnap = await getDoc(doc(db, "polls", pollId));
+  const updatedOptions = (updatedSnap.data() as Poll).options;
+  const actualIndex = updatedOptions.findIndex(
+    (opt) => normalizeOptionKey(opt) === normalizedKey,
+  );
+
+  return { index: actualIndex >= 0 ? actualIndex : updatedOptions.length - 1, isDuplicate: false };
 }
 
 /** Get how many options a user has added to a prediction */
@@ -252,15 +258,13 @@ export async function mergeOptions(
   targetIndex: number,
 ): Promise<{ votesReassigned: number }> {
   const votesSnap = await getDocs(collection(db, "polls", pollId, "votes"));
-  let votesReassigned = 0;
-
-  const updates = votesSnap.docs
-    .filter((d) => (d.data() as PollVote).optionIndex === sourceIndex)
-    .map(async (d) => {
-      await updateDoc(d.ref, { optionIndex: targetIndex });
-      votesReassigned++;
-    });
-  await Promise.all(updates);
+  const toReassign = votesSnap.docs.filter(
+    (d) => (d.data() as PollVote).optionIndex === sourceIndex,
+  );
+  await Promise.all(
+    toReassign.map((d) => updateDoc(d.ref, { optionIndex: targetIndex })),
+  );
+  const votesReassigned = toReassign.length;
 
   // Mark source option as merged
   const pollSnap = await getDoc(doc(db, "polls", pollId));
