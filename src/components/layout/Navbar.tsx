@@ -52,22 +52,22 @@ function SearchIcon({ className = "w-4 h-4" }: { className?: string }) {
   );
 }
 
-const navLinks: { href: string; label: string; icon: ReactNode; color: string; bg: string }[] = [
+const navLinks: { href: string; label: string; icon: ReactNode; color: string; bg: string; badge?: string }[] = [
   { href: "/leaderboard", label: "Leaderboard", icon: <TrophyIcon className="w-4 h-4" />, color: "text-amber-400", bg: "bg-amber-400/10" },
   { href: "/matches", label: "Matches", icon: <SwordsIcon className="w-4 h-4" />, color: "text-red-400", bg: "bg-red-400/10" },
   { href: "/events", label: "Events", icon: <CalendarIcon className="w-4 h-4" />, color: "text-blue-400", bg: "bg-blue-400/10" },
   { href: "/opponents", label: "Opponents", icon: <OpponentsIcon className="w-4 h-4" />, color: "text-purple-400", bg: "bg-purple-400/10" },
   { href: "/search", label: "Discover", icon: <SearchIcon className="w-4 h-4" />, color: "text-cyan-400", bg: "bg-cyan-400/10" },
+  { href: "/compare", label: "Versus", icon: <CompareIcon className="w-4 h-4" />, color: "text-fuchsia-400", bg: "bg-fuchsia-400/10", badge: "NEW" },
+  { href: "/changelog", label: "History", icon: <ChangelogIcon className="w-4 h-4" />, color: "text-emerald-400", bg: "bg-emerald-400/10" },
 ];
 
 const moreLinks: { href: string; label: string; icon: ReactNode; authOnly?: boolean }[] = [
-  { href: "/compare", label: "Versus", icon: <CompareIcon className="w-4 h-4" /> },
   { href: "/meta", label: "Community Meta", icon: <MetaIcon className="w-4 h-4" /> },
   { href: "/trends", label: "Trends", icon: <TrendsIcon className="w-4 h-4" />, authOnly: true },
   { href: "/tournaments", label: "Tournaments", icon: <TrophyIcon className="w-4 h-4" /> },
   { href: "/import", label: "Import", icon: <ImportIcon className="w-4 h-4" />, authOnly: true },
   { href: "/docs", label: "Docs", icon: <DocsIcon className="w-4 h-4" /> },
-  { href: "/changelog", label: "Changelog", icon: <ChangelogIcon className="w-4 h-4" /> },
 ];
 
 const userMenuLinks: { href: string; label: string; icon: ReactNode; adminOnly?: boolean }[] = [
@@ -174,6 +174,11 @@ export function Navbar() {
                     >
                       {link.icon}
                       <span className="hidden lg:inline">{link.label}</span>
+                      {link.badge && (
+                        <span className="hidden lg:inline px-1 py-0.5 text-[9px] font-bold leading-none rounded bg-fuchsia-500/20 text-fuchsia-400 tracking-wide">
+                          {link.badge}
+                        </span>
+                      )}
                     </Link>
                   ))}
                   <MoreDropdown
