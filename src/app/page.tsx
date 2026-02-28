@@ -394,9 +394,9 @@ export default function Dashboard() {
       {/* On This Day */}
       {hasMatches && <OnThisDay matches={matches} />}
 
-      {/* Calling Montreal + Activity Feed side by side (logged-in only) */}
+      {/* Calling Montreal (logged-in only) */}
       {user && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <>
           <div>
             <div className="flex items-center justify-between mb-2">
               <h2 className="text-lg font-semibold text-fab-text">Calling Montreal Day 1</h2>
@@ -428,11 +428,11 @@ export default function Dashboard() {
               </div>
             </div>
           </div>
-          <div className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <ActivityFeed rankMap={rankMap} />
             <FeaturedProfiles profiles={featuredProfiles} rankMap={rankMap} />
           </div>
-        </div>
+        </>
       )}
 
       {/* Montreal metagame for logged-out users */}
