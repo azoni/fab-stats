@@ -64,6 +64,70 @@ export function selectFeaturedProfiles(entries: LeaderboardEntry[]): FeaturedPro
         .slice(0, 3),
       stat: (e) => `${e.totalMatches} matches`,
     },
+    {
+      reason: "Streak Legend",
+      candidates: publicEntries
+        .filter((e) => e.longestWinStreak >= 5)
+        .sort((a, b) => b.longestWinStreak - a.longestWinStreak)
+        .slice(0, 3),
+      stat: (e) => `${e.longestWinStreak}W best streak`,
+    },
+    {
+      reason: "Armory King",
+      candidates: publicEntries
+        .filter((e) => e.armoryEvents >= 5)
+        .sort((a, b) => b.armoryWinRate - a.armoryWinRate)
+        .slice(0, 3),
+      stat: (e) => `${e.armoryWinRate.toFixed(0)}% across ${e.armoryEvents} armories`,
+    },
+    {
+      reason: "Hero Specialist",
+      candidates: publicEntries
+        .filter((e) => e.topHeroMatches >= 30 && e.topHero)
+        .sort((a, b) => b.topHeroMatches - a.topHeroMatches)
+        .slice(0, 3),
+      stat: (e) => `${e.topHeroMatches} matches on ${e.topHero}`,
+    },
+    {
+      reason: "Versatile",
+      candidates: publicEntries
+        .filter((e) => e.uniqueHeroes >= 4 && e.totalMatches >= 50)
+        .sort((a, b) => b.uniqueHeroes - a.uniqueHeroes)
+        .slice(0, 3),
+      stat: (e) => `${e.uniqueHeroes} different heroes`,
+    },
+    {
+      reason: "Monthly MVP",
+      candidates: publicEntries
+        .filter((e) => e.monthlyMatches >= 10 && e.monthlyWinRate >= 55)
+        .sort((a, b) => (b.monthlyWinRate * b.monthlyMatches) - (a.monthlyWinRate * a.monthlyMatches))
+        .slice(0, 3),
+      stat: (e) => `${e.monthlyWinRate.toFixed(0)}% over ${e.monthlyMatches} this month`,
+    },
+    {
+      reason: "Rated Ace",
+      candidates: publicEntries
+        .filter((e) => e.ratedMatches >= 30 && e.ratedWinRate >= 55)
+        .sort((a, b) => b.ratedWinRate - a.ratedWinRate)
+        .slice(0, 3),
+      stat: (e) => `${e.ratedWinRate.toFixed(1)}% rated win rate`,
+    },
+    {
+      reason: "Trophy Hunter",
+      candidates: publicEntries
+        .filter((e) => (e.totalTop8s ?? 0) >= 2)
+        .sort((a, b) => (b.totalTop8s ?? 0) - (a.totalTop8s ?? 0))
+        .slice(0, 3),
+      stat: (e) => `${e.totalTop8s} top 8 finishes`,
+    },
+    {
+      reason: "Champion",
+      candidates: publicEntries
+        .filter((e) => e.eventWins >= 1)
+        .sort((a, b) => b.eventWins - a.eventWins)
+        .slice(0, 3),
+      stat: (e) => `${e.eventWins} event win${e.eventWins !== 1 ? "s" : ""}`,
+    },
   ];
 
   const selected: FeaturedProfile[] = [];

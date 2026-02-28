@@ -79,12 +79,12 @@ const finishBorderStyle: Record<string, { border: string; shadow: string }> = {
   Champion: { border: "#a78bfa", shadow: "0 0 12px rgba(167,139,250,0.5), 0 0 24px rgba(167,139,250,0.2)" },
 };
 
-export function EventBadges({ badges }: { badges: EventBadge[] }) {
+export function EventBadges({ badges, inline }: { badges: EventBadge[]; inline?: boolean }) {
   if (badges.length === 0) return null;
 
   return (
     <div>
-      <h2 className="text-lg font-semibold text-fab-text mb-3">Major Events</h2>
+      {!inline && <h2 className="text-lg font-semibold text-fab-text mb-3">Major Events</h2>}
       <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide sm:flex-wrap sm:overflow-visible">
         {badges.map((badge, i) => {
           const config = tierConfig[badge.tier];

@@ -18,7 +18,7 @@ import { ArmoryGarden } from "@/components/profile/ArmoryGarden";
 import { computeEventBadges } from "@/lib/events";
 import { useLeaderboard } from "@/hooks/useLeaderboard";
 import { computeUserRanks, getBestRank } from "@/lib/leaderboard-ranks";
-import { QuestionCircleIcon, LockIcon } from "@/components/icons/NavIcons";
+import { QuestionCircleIcon, LockIcon, SwordsIcon, CalendarIcon, OpponentsIcon, TrendsIcon } from "@/components/icons/NavIcons";
 import { useAuth } from "@/contexts/AuthContext";
 import { useFavorites } from "@/hooks/useFavorites";
 import { useFriends } from "@/hooks/useFriends";
@@ -57,6 +57,8 @@ export default function PlayerProfile() {
   const [bestFinishShareOpen, setBestFinishShareOpen] = useState(false);
   const [profileShareOpen, setProfileShareOpen] = useState(false);
   const [achievementsExpanded, setAchievementsExpanded] = useState(false);
+  const [showRecentEvents, setShowRecentEvents] = useState(false);
+  const [showMajorEvents, setShowMajorEvents] = useState(false);
 
   // Auto-expand achievements if navigated with #achievements hash
   useEffect(() => {
@@ -422,6 +424,37 @@ export default function PlayerProfile() {
         </div>
       </div>
 
+      {/* Quick Nav */}
+      <div className={`grid ${isOwner ? "grid-cols-5" : "grid-cols-4"} gap-2`}>
+        <Link href="/matches" className="group flex flex-col items-center gap-1.5 rounded-lg bg-fab-surface border border-fab-border px-2 py-3 hover:border-red-400/40 hover:bg-red-400/5 transition-all">
+          <SwordsIcon className="w-5 h-5 text-fab-muted group-hover:text-red-400 transition-colors" />
+          <span className="text-xs font-medium text-fab-muted group-hover:text-fab-text transition-colors">Matches</span>
+          <span className="text-[10px] text-fab-dim">{overall.totalMatches + overall.totalByes}</span>
+        </Link>
+        <Link href="/events" className="group flex flex-col items-center gap-1.5 rounded-lg bg-fab-surface border border-fab-border px-2 py-3 hover:border-blue-400/40 hover:bg-blue-400/5 transition-all">
+          <CalendarIcon className="w-5 h-5 text-fab-muted group-hover:text-blue-400 transition-colors" />
+          <span className="text-xs font-medium text-fab-muted group-hover:text-fab-text transition-colors">Events</span>
+          <span className="text-[10px] text-fab-dim">{eventStats.length}</span>
+        </Link>
+        <Link href="/opponents" className="group flex flex-col items-center gap-1.5 rounded-lg bg-fab-surface border border-fab-border px-2 py-3 hover:border-purple-400/40 hover:bg-purple-400/5 transition-all">
+          <OpponentsIcon className="w-5 h-5 text-fab-muted group-hover:text-purple-400 transition-colors" />
+          <span className="text-xs font-medium text-fab-muted group-hover:text-fab-text transition-colors">Opponents</span>
+          <span className="text-[10px] text-fab-dim">{opponentStats.length}</span>
+        </Link>
+        <Link href="/trends" className="group flex flex-col items-center gap-1.5 rounded-lg bg-fab-surface border border-fab-border px-2 py-3 hover:border-emerald-400/40 hover:bg-emerald-400/5 transition-all">
+          <TrendsIcon className="w-5 h-5 text-fab-muted group-hover:text-emerald-400 transition-colors" />
+          <span className="text-xs font-medium text-fab-muted group-hover:text-fab-text transition-colors">Trends</span>
+        </Link>
+        {isOwner && (
+          <Link href="/events?import=1" className="group flex flex-col items-center gap-1.5 rounded-lg bg-fab-surface border border-fab-border border-dashed px-2 py-3 hover:border-fab-gold/40 hover:bg-fab-gold/5 transition-all">
+            <svg className="w-5 h-5 text-fab-muted group-hover:text-fab-gold transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+            </svg>
+            <span className="text-xs font-medium text-fab-muted group-hover:text-fab-text transition-colors">Log Event</span>
+          </Link>
+        )}
+      </div>
+
       {/* Filters */}
       <div className="flex gap-2 flex-wrap items-center">
         <select
@@ -564,8 +597,32 @@ export default function PlayerProfile() {
         />
       )}
 
-      {/* Major Event Badges */}
-      <EventBadges badges={eventBadges} />
+      {/* Major Event Badges — collapsible */}
+      {eventBadges.length > 0 && (
+        <div className="bg-fab-surface/50 border border-fab-border rounded-lg overflow-hidden">
+          <button
+            onClick={() => setShowMajorEvents(!showMajorEvents)}
+            className="w-full flex items-center justify-between px-4 py-3 group hover:bg-fab-surface/80 transition-colors"
+          >
+            <div className="flex items-center gap-2">
+              <CalendarIcon className="w-4 h-4 text-blue-400" />
+              <h2 className="text-sm font-semibold text-fab-text">Major Events</h2>
+              <span className="text-xs text-fab-dim">{eventBadges.length} event{eventBadges.length !== 1 ? "s" : ""}</span>
+            </div>
+            <svg
+              className={`w-4 h-4 text-fab-muted group-hover:text-fab-text transition-transform ${showMajorEvents ? "rotate-180" : ""}`}
+              fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+            </svg>
+          </button>
+          {showMajorEvents && (
+            <div className="px-4 pb-4">
+              <EventBadges badges={eventBadges} inline />
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Achievements */}
       <AchievementShowcase earned={achievements} progress={achievementProgress} forceExpanded={achievementsExpanded} />
@@ -665,15 +722,32 @@ export default function PlayerProfile() {
         </div>
       )}
 
-      {/* Recent Events — always open, at bottom */}
+      {/* Recent Events — collapsible */}
       {recentEvents.length > 0 && (
-        <div>
-          <h2 className="text-lg font-semibold text-fab-text mb-4">Recent Events</h2>
-          <div className="space-y-2">
-            {recentEvents.map((event) => (
-              <EventCard key={`${event.eventName}-${event.eventDate}`} event={event} obfuscateOpponents={!isOwner && !isAdmin} visibleOpponents={visibleOpponents} />
-            ))}
-          </div>
+        <div className="bg-fab-surface/50 border border-fab-border rounded-lg overflow-hidden">
+          <button
+            onClick={() => setShowRecentEvents(!showRecentEvents)}
+            className="w-full flex items-center justify-between px-4 py-3 group hover:bg-fab-surface/80 transition-colors"
+          >
+            <div className="flex items-center gap-2">
+              <SwordsIcon className="w-4 h-4 text-red-400" />
+              <h2 className="text-sm font-semibold text-fab-text">Recent Events</h2>
+              <span className="text-xs text-fab-dim">{recentEvents.length} event{recentEvents.length !== 1 ? "s" : ""}</span>
+            </div>
+            <svg
+              className={`w-4 h-4 text-fab-muted group-hover:text-fab-text transition-transform ${showRecentEvents ? "rotate-180" : ""}`}
+              fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+            </svg>
+          </button>
+          {showRecentEvents && (
+            <div className="px-4 pb-4 space-y-2">
+              {recentEvents.map((event) => (
+                <EventCard key={`${event.eventName}-${event.eventDate}`} event={event} obfuscateOpponents={!isOwner && !isAdmin} visibleOpponents={visibleOpponents} />
+              ))}
+            </div>
+          )}
         </div>
       )}
       </>
