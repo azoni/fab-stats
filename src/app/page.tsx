@@ -31,6 +31,7 @@ export default function Dashboard() {
   const [shareCopied, setShareCopied] = useState(false);
   const [bestFinishShareOpen, setBestFinishShareOpen] = useState(false);
   const [profileShareOpen, setProfileShareOpen] = useState(false);
+  const [videoExpanded, setVideoExpanded] = useState(false);
   const router = useRouter();
   const leaderboardUpdated = useRef(false);
 
@@ -400,10 +401,117 @@ export default function Dashboard() {
           <div>
             <div className="flex items-center justify-between mb-2">
               <h2 className="text-lg font-semibold text-fab-text">Calling Montreal Day 1</h2>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setVideoExpanded((v) => !v)}
+                  className="text-xs text-fab-muted hover:text-fab-gold transition-colors cursor-pointer"
+                >
+                  {videoExpanded ? "Minimize" : "Expand"} Stream
+                </button>
+                <a href="https://www.youtube.com/live/DFWOlXB0YXc?si=-Kj27AY5o4L4ubE5" target="_blank" rel="noopener noreferrer" className="text-xs text-fab-gold hover:text-fab-gold-light transition-colors">
+                  Watch Stream &rarr;
+                </a>
+              </div>
+            </div>
+            {videoExpanded ? (
+              <div className="space-y-4">
+                <div className="overflow-hidden rounded-lg border border-fab-border aspect-video">
+                  <iframe
+                    src="https://www.youtube.com/embed/DFWOlXB0YXc"
+                    title="Calling Montreal Day 1 Stream"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    className="w-full h-full"
+                  />
+                </div>
+                <a
+                  href="https://www.youtube.com/live/DFWOlXB0YXc?si=-Kj27AY5o4L4ubE5"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block overflow-hidden rounded-lg border border-fab-border hover:border-fab-gold/50 transition-colors group"
+                >
+                  <img
+                    src="/montreal.png"
+                    alt="Calling Montreal Day 1 Metagame — 282 Players"
+                    className="w-full h-auto group-hover:brightness-110 transition-all"
+                  />
+                </a>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <a
+                  href="https://www.youtube.com/live/DFWOlXB0YXc?si=-Kj27AY5o4L4ubE5"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block overflow-hidden rounded-lg border border-fab-border hover:border-fab-gold/50 transition-colors group"
+                >
+                  <img
+                    src="/montreal.png"
+                    alt="Calling Montreal Day 1 Metagame — 282 Players"
+                    className="w-full h-auto group-hover:brightness-110 transition-all"
+                  />
+                </a>
+                <div className="overflow-hidden rounded-lg border border-fab-border aspect-video">
+                  <iframe
+                    src="https://www.youtube.com/embed/DFWOlXB0YXc"
+                    title="Calling Montreal Day 1 Stream"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    className="w-full h-full"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <ActivityFeed rankMap={rankMap} />
+            <FeaturedProfiles profiles={featuredProfiles} rankMap={rankMap} />
+          </div>
+        </>
+      )}
+
+      {/* Montreal metagame for logged-out users */}
+      {!user && (
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-lg font-semibold text-fab-text">Calling Montreal Day 1</h2>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setVideoExpanded((v) => !v)}
+                className="text-xs text-fab-muted hover:text-fab-gold transition-colors cursor-pointer"
+              >
+                {videoExpanded ? "Minimize" : "Expand"} Stream
+              </button>
               <a href="https://www.youtube.com/live/DFWOlXB0YXc?si=-Kj27AY5o4L4ubE5" target="_blank" rel="noopener noreferrer" className="text-xs text-fab-gold hover:text-fab-gold-light transition-colors">
                 Watch Stream &rarr;
               </a>
             </div>
+          </div>
+          {videoExpanded ? (
+            <div className="space-y-4">
+              <div className="overflow-hidden rounded-lg border border-fab-border aspect-video">
+                <iframe
+                  src="https://www.youtube.com/embed/DFWOlXB0YXc"
+                  title="Calling Montreal Day 1 Stream"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  className="w-full h-full"
+                />
+              </div>
+              <a
+                href="https://www.youtube.com/live/DFWOlXB0YXc?si=-Kj27AY5o4L4ubE5"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block overflow-hidden rounded-lg border border-fab-border hover:border-fab-gold/50 transition-colors group"
+              >
+                <img
+                  src="/montreal.png"
+                  alt="Calling Montreal Day 1 Metagame — 282 Players"
+                  className="w-full h-auto group-hover:brightness-110 transition-all"
+                />
+              </a>
+            </div>
+          ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <a
                 href="https://www.youtube.com/live/DFWOlXB0YXc?si=-Kj27AY5o4L4ubE5"
@@ -427,46 +535,7 @@ export default function Dashboard() {
                 />
               </div>
             </div>
-          </div>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <ActivityFeed rankMap={rankMap} />
-            <FeaturedProfiles profiles={featuredProfiles} rankMap={rankMap} />
-          </div>
-        </>
-      )}
-
-      {/* Montreal metagame for logged-out users */}
-      {!user && (
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="text-lg font-semibold text-fab-text">Calling Montreal Day 1</h2>
-            <a href="https://www.youtube.com/live/DFWOlXB0YXc?si=-Kj27AY5o4L4ubE5" target="_blank" rel="noopener noreferrer" className="text-xs text-fab-gold hover:text-fab-gold-light transition-colors">
-              Watch Stream &rarr;
-            </a>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <a
-              href="https://www.youtube.com/live/DFWOlXB0YXc?si=-Kj27AY5o4L4ubE5"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="block overflow-hidden rounded-lg border border-fab-border hover:border-fab-gold/50 transition-colors group"
-            >
-              <img
-                src="/montreal.png"
-                alt="Calling Montreal Day 1 Metagame — 282 Players"
-                className="w-full h-auto group-hover:brightness-110 transition-all"
-              />
-            </a>
-            <div className="overflow-hidden rounded-lg border border-fab-border aspect-video">
-              <iframe
-                src="https://www.youtube.com/embed/DFWOlXB0YXc"
-                title="Calling Montreal Day 1 Stream"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-                className="w-full h-full"
-              />
-            </div>
-          </div>
+          )}
         </div>
       )}
 
