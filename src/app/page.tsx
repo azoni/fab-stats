@@ -394,12 +394,42 @@ export default function Dashboard() {
       {/* On This Day */}
       {hasMatches && <OnThisDay matches={matches} />}
 
-      {/* Spotlight + Activity Feed side by side (logged-in only) */}
+      {/* Activity Feed + Spotlight side by side (logged-in only) */}
       {user && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <FeaturedProfiles profiles={featuredProfiles} rankMap={rankMap} />
           <ActivityFeed rankMap={rankMap} />
+          <div className="space-y-6">
+            <a
+              href="https://www.youtube.com/live/DFWOlXB0YXc?si=-Kj27AY5o4L4ubE5"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block overflow-hidden rounded-lg border border-fab-border hover:border-fab-gold/50 transition-colors group"
+            >
+              <img
+                src="/montreal.png"
+                alt="Calling Montreal Metagame — 282 Players"
+                className="w-full h-auto group-hover:brightness-110 transition-all"
+              />
+            </a>
+            <FeaturedProfiles profiles={featuredProfiles} rankMap={rankMap} />
+          </div>
         </div>
+      )}
+
+      {/* Montreal metagame for logged-out users */}
+      {!user && (
+        <a
+          href="https://www.youtube.com/live/DFWOlXB0YXc?si=-Kj27AY5o4L4ubE5"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="block overflow-hidden rounded-lg border border-fab-border hover:border-fab-gold/50 transition-colors group"
+        >
+          <img
+            src="/montreal.png"
+            alt="Calling Montreal Metagame — 282 Players"
+            className="w-full h-auto group-hover:brightness-110 transition-all"
+          />
+        </a>
       )}
 
       {/* Community content */}
