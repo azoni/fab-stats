@@ -1,5 +1,6 @@
 import type { MatchRecord, HeroStats, OverallStats, OpponentStats, Achievement } from "@/types";
 import { MatchResult, GameFormat } from "@/types";
+import { computeEventStats, computePlayoffFinishes } from "@/lib/stats";
 
 interface CheckContext {
   matches: MatchRecord[];
@@ -37,6 +38,20 @@ function countDistinctEvents(ctx: CheckContext, type: string): number {
 // Helper: count wins by event type
 function countEventTypeWins(ctx: CheckContext, type: string): number {
   return ctx.matches.filter((m) => m.eventType === type && m.result === MatchResult.Win).length;
+}
+
+// Helper: check if player won (champion finish) at a given event type
+function hasChampionFinish(ctx: CheckContext, eventType: string): boolean {
+  const eventStats = computeEventStats(ctx.matches);
+  const finishes = computePlayoffFinishes(eventStats);
+  return finishes.some((f) => f.type === "champion" && f.eventType === eventType);
+}
+
+// Helper: count champion finishes at a given event type
+function countChampionFinishes(ctx: CheckContext, eventType: string): number {
+  const eventStats = computeEventStats(ctx.matches);
+  const finishes = computePlayoffFinishes(eventStats);
+  return finishes.filter((f) => f.type === "champion" && f.eventType === eventType).length;
 }
 
 // Helper: hero stats excluding "Unknown"
@@ -813,6 +828,81 @@ const ACHIEVEMENTS: AchievementDef[] = [
     progress: (ctx) => ({ current: countDistinctEvents(ctx, "Worlds"), target: 1 }),
   },
 
+  // ══════════════════════════════════════════
+  // EVENT CHAMPION ACHIEVEMENTS
+  // ══════════════════════════════════════════
+  {
+    id: "champion_worlds",
+    name: "World Champion",
+    description: "Win a World Championship",
+    category: "milestone",
+    icon: "globe",
+    rarity: "legendary",
+    check: (ctx) => hasChampionFinish(ctx, "Worlds"),
+  },
+  {
+    id: "champion_protour",
+    name: "Pro Tour Champion",
+    description: "Win a Pro Tour",
+    category: "milestone",
+    icon: "star",
+    rarity: "legendary",
+    check: (ctx) => hasChampionFinish(ctx, "Pro Tour"),
+  },
+  {
+    id: "champion_nationals",
+    name: "National Champion",
+    description: "Win a Nationals",
+    category: "milestone",
+    icon: "flag",
+    rarity: "legendary",
+    check: (ctx) => hasChampionFinish(ctx, "Nationals"),
+  },
+  {
+    id: "champion_calling",
+    name: "Calling Champion",
+    description: "Win a Calling",
+    category: "milestone",
+    icon: "horn",
+    rarity: "epic",
+    check: (ctx) => hasChampionFinish(ctx, "The Calling"),
+  },
+  {
+    id: "champion_bh",
+    name: "Battle Hardened Champion",
+    description: "Win a Battle Hardened",
+    category: "milestone",
+    icon: "sword",
+    rarity: "epic",
+    check: (ctx) => hasChampionFinish(ctx, "Battle Hardened"),
+  },
+  {
+    id: "champion_pq",
+    name: "ProQuest Champion",
+    description: "Win a ProQuest",
+    category: "milestone",
+    icon: "compass",
+    rarity: "rare",
+    check: (ctx) => hasChampionFinish(ctx, "ProQuest"),
+  },
+  {
+    id: "champion_skirmish",
+    name: "Skirmish Champion",
+    description: "Win a Skirmish",
+    category: "milestone",
+    icon: "swords",
+    rarity: "uncommon",
+    check: (ctx) => hasChampionFinish(ctx, "Skirmish"),
+  },
+  {
+    id: "champion_rtn",
+    name: "Road to Nationals Champion",
+    description: "Win a Road to Nationals",
+    category: "milestone",
+    icon: "trending",
+    rarity: "rare",
+    check: (ctx) => hasChampionFinish(ctx, "Road to Nationals"),
+  },
   // ══════════════════════════════════════════
   // HERO MASTERY (single)
   // ══════════════════════════════════════════
