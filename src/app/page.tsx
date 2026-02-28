@@ -16,8 +16,6 @@ import { CommunityHighlights } from "@/components/home/CommunityHighlights";
 import { useFeaturedEvents } from "@/hooks/useFeaturedEvents";
 import { computeMetaStats } from "@/lib/meta-stats";
 import { ActivityFeed } from "@/components/home/ActivityFeed";
-import { FeaturedProfiles } from "@/components/home/FeaturedProfiles";
-import { selectFeaturedProfiles } from "@/lib/featured-profiles";
 import { BestFinishShareModal } from "@/components/profile/BestFinishCard";
 import { ProfileShareModal } from "@/components/profile/ProfileCard";
 import { OnThisDay } from "@/components/home/OnThisDay";
@@ -91,7 +89,6 @@ export default function Dashboard() {
   // Community section data
   const communityMeta = useMemo(() => computeMetaStats(lbEntries), [lbEntries]);
   const communityTopHeroes = useMemo(() => communityMeta.heroStats.slice(0, 5), [communityMeta]);
-  const featuredProfiles = useMemo(() => selectFeaturedProfiles(lbEntries), [lbEntries]);
   const rankMap = useMemo(() => computeRankMap(lbEntries), [lbEntries]);
 
 
@@ -394,33 +391,30 @@ export default function Dashboard() {
       {/* On This Day */}
       {hasMatches && <OnThisDay matches={matches} />}
 
-      {/* Activity Feed + Spotlight side by side (logged-in only) */}
+      {/* Calling Montreal + Activity Feed side by side (logged-in only) */}
       {user && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <ActivityFeed rankMap={rankMap} />
-          <div className="space-y-6">
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <h2 className="text-lg font-semibold text-fab-text">Calling Montreal</h2>
-                <a href="https://www.youtube.com/live/DFWOlXB0YXc?si=-Kj27AY5o4L4ubE5" target="_blank" rel="noopener noreferrer" className="text-xs text-fab-gold hover:text-fab-gold-light transition-colors">
-                  Watch Stream &rarr;
-                </a>
-              </div>
-              <a
-                href="https://www.youtube.com/live/DFWOlXB0YXc?si=-Kj27AY5o4L4ubE5"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block overflow-hidden rounded-lg border border-fab-border hover:border-fab-gold/50 transition-colors group"
-              >
-                <img
-                  src="/montreal.png"
-                  alt="Calling Montreal Metagame — 282 Players"
-                  className="w-full h-auto group-hover:brightness-110 transition-all"
-                />
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="text-lg font-semibold text-fab-text">Calling Montreal Day 1</h2>
+              <a href="https://www.youtube.com/live/DFWOlXB0YXc?si=-Kj27AY5o4L4ubE5" target="_blank" rel="noopener noreferrer" className="text-xs text-fab-gold hover:text-fab-gold-light transition-colors">
+                Watch Stream &rarr;
               </a>
             </div>
-            <FeaturedProfiles profiles={featuredProfiles} rankMap={rankMap} />
+            <a
+              href="https://www.youtube.com/live/DFWOlXB0YXc?si=-Kj27AY5o4L4ubE5"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block overflow-hidden rounded-lg border border-fab-border hover:border-fab-gold/50 transition-colors group"
+            >
+              <img
+                src="/montreal.png"
+                alt="Calling Montreal Day 1 Metagame — 282 Players"
+                className="w-full h-auto group-hover:brightness-110 transition-all"
+              />
+            </a>
           </div>
+          <ActivityFeed rankMap={rankMap} />
         </div>
       )}
 
@@ -428,7 +422,7 @@ export default function Dashboard() {
       {!user && (
         <div>
           <div className="flex items-center justify-between mb-2">
-            <h2 className="text-lg font-semibold text-fab-text">Calling Montreal</h2>
+            <h2 className="text-lg font-semibold text-fab-text">Calling Montreal Day 1</h2>
             <a href="https://www.youtube.com/live/DFWOlXB0YXc?si=-Kj27AY5o4L4ubE5" target="_blank" rel="noopener noreferrer" className="text-xs text-fab-gold hover:text-fab-gold-light transition-colors">
               Watch Stream &rarr;
             </a>
@@ -441,7 +435,7 @@ export default function Dashboard() {
           >
             <img
               src="/montreal.png"
-              alt="Calling Montreal Metagame — 282 Players"
+              alt="Calling Montreal Day 1 Metagame — 282 Players"
               className="w-full h-auto group-hover:brightness-110 transition-all"
             />
           </a>
