@@ -983,6 +983,52 @@ export default function AdminPage() {
                 >
                   {lookupLoading ? "Loading..." : lookupOpen ? "Close Lookup" : "Lookup Event"}
                 </button>
+                <button
+                  onClick={async () => {
+                    setLookupLoading(true);
+                    try {
+                      const results = await lookupEvents();
+                      // Build name→username map from leaderboard for auto-matching
+                      const nameToUsername = new Map<string, string>();
+                      if (data?.users) {
+                        for (const u of data.users) {
+                          if (u.displayName && u.username) {
+                            nameToUsername.set(u.displayName.toLowerCase(), u.username);
+                          }
+                        }
+                      }
+                      const existingKeys = new Set(eventsList.map((e) => `${e.name}|${e.date}`));
+                      let matched = 0;
+                      const newEvents = results
+                        .filter((ev) => !existingKeys.has(`${ev.name}|${ev.date}`))
+                        .map((ev) => ({
+                          name: ev.name,
+                          date: ev.date,
+                          format: ev.format,
+                          eventType: ev.eventType,
+                          players: ev.players.map((p) => {
+                            const username = nameToUsername.get(p.name.toLowerCase()) || "";
+                            if (username) matched++;
+                            return { name: p.name, hero: p.hero, username };
+                          }),
+                        }));
+                      if (newEvents.length > 0) {
+                        setEventsList((prev) => [...prev, ...newEvents]);
+                      }
+                      setError(newEvents.length > 0 ? "" : "");
+                      alert(`Imported ${newEvents.length} new event${newEvents.length !== 1 ? "s" : ""} (${results.length - newEvents.length} already existed)${matched > 0 ? ` — auto-linked ${matched} player${matched !== 1 ? "s" : ""}` : ""}`);
+                    } catch (err) {
+                      console.error("Import all error:", err);
+                      setError("Failed to import events");
+                    } finally {
+                      setLookupLoading(false);
+                    }
+                  }}
+                  disabled={lookupLoading}
+                  className="flex-1 py-2 rounded-lg text-sm font-medium border border-dashed border-fab-win/40 text-fab-win hover:bg-fab-win/5 transition-colors disabled:opacity-50"
+                >
+                  {lookupLoading ? "Loading..." : "Import All"}
+                </button>
               </div>
 
               {/* Event lookup results */}
@@ -995,6 +1041,14 @@ export default function AdminPage() {
                     <button
                       key={`${ev.name}-${i}`}
                       onClick={() => {
+                        const nameToUsername = new Map<string, string>();
+                        if (data?.users) {
+                          for (const u of data.users) {
+                            if (u.displayName && u.username) {
+                              nameToUsername.set(u.displayName.toLowerCase(), u.username);
+                            }
+                          }
+                        }
                         setEventsList((prev) => [...prev, {
                           name: ev.name,
                           date: ev.date,
@@ -1003,6 +1057,7 @@ export default function AdminPage() {
                           players: ev.players.map((p) => ({
                             name: p.name,
                             hero: p.hero,
+                            username: nameToUsername.get(p.name.toLowerCase()) || "",
                           })),
                         }]);
                         setLookupOpen(false);

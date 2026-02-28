@@ -34,6 +34,7 @@ const historyLinks: { href: string; label: string; icon: ReactNode; authOnly?: b
 ];
 
 const moreLinks: { href: string; label: string; icon: ReactNode }[] = [
+  { href: "/tournaments", label: "Tournaments", icon: <TrophyIcon className="w-4 h-4" /> },
   { href: "/compare", label: "Compare", icon: <CompareIcon className="w-4 h-4" /> },
   { href: "/import", label: "Import", icon: <ImportIcon className="w-4 h-4" /> },
   { href: "/docs", label: "Docs", icon: <DocsIcon className="w-4 h-4" /> },

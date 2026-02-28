@@ -226,7 +226,6 @@ service cloud.firestore {
 
     // ── Analytics (page views, creator clicks) ──
     match /analytics/{docId} {
-      // Only authenticated users can write (prevents bot abuse of write costs)
       allow write: if request.auth != null;
       // Only admins can read analytics data
       allow read: if isAdmin();

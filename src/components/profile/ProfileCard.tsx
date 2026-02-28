@@ -186,22 +186,16 @@ export function ProfileCard({ data, theme }: { data: ProfileCardData; theme?: Ca
           </div>
         </div>
 
-        {/* Streak + Best Finish — 2 col */}
-        <div className="grid grid-cols-2 gap-1.5 mb-3">
-          <div style={{ backgroundColor: t.bg }} className="rounded-lg p-2 text-center">
-            <p style={{ color: t.muted }} className="text-[9px] uppercase tracking-wider font-semibold">Streak</p>
-            <p style={{ color: currentStreak?.type === MatchResult.Win ? t.win : currentStreak?.type === MatchResult.Loss ? t.loss : t.dim }} className="text-base font-black">
-              {currentStreak ? `${currentStreak.count}${currentStreak.type === MatchResult.Win ? "W" : "L"}` : "—"}
-            </p>
-          </div>
-          <div style={{ backgroundColor: t.bg }} className="rounded-lg p-2 text-center">
+        {/* Best Finish */}
+        {bestFinish && (
+          <div style={{ backgroundColor: t.bg }} className="rounded-lg p-2 text-center mb-3">
             <p style={{ color: t.muted }} className="text-[9px] uppercase tracking-wider font-semibold">Best Finish</p>
-            <p style={{ color: bestFinish ? t.accent : t.dim }} className="text-xs font-bold truncate mt-0.5">{bestFinish || "—"}</p>
+            <p style={{ color: t.accent }} className="text-xs font-bold truncate mt-0.5">{bestFinish}</p>
             {bestFinishEvent && (
               <p style={{ color: t.dim }} className="text-[9px] truncate">{bestFinishEvent}</p>
             )}
           </div>
-        </div>
+        )}
 
         {/* Trophy Case — compact inline */}
         {hasTrophies && (
@@ -255,21 +249,6 @@ export function ProfileCard({ data, theme }: { data: ProfileCardData; theme?: Ca
           </div>
         )}
 
-        {/* Recent form */}
-        {recentResults.length > 0 && (
-          <div>
-            <p style={{ color: t.muted }} className="text-[9px] mb-1.5 text-center uppercase tracking-wider font-semibold">Recent Form</p>
-            <div className="flex gap-1 justify-center flex-wrap">
-              {recentResults.map((r, i) => (
-                <div
-                  key={i}
-                  style={{ backgroundColor: r === MatchResult.Win ? t.win : r === MatchResult.Loss ? t.loss : r === MatchResult.Bye ? t.dim : t.draw }}
-                  className="w-3 h-3 rounded-full"
-                />
-              ))}
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Footer */}
