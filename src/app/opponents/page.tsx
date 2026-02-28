@@ -12,7 +12,7 @@ import { localDate } from "@/lib/constants";
 import { allHeroes as knownHeroes } from "@/lib/heroes";
 import { getEventType } from "@/lib/stats";
 import { RivalryCard, buildRivalryUrl, CARD_THEMES, type CardTheme } from "@/components/opponents/RivalryCard";
-import { toBlob } from "html-to-image";
+
 
 const VALID_HERO_NAMES = new Set(knownHeroes.map((h) => h.name));
 const PAGE_SIZE = 25;
@@ -613,6 +613,7 @@ function ShareModal({
 
     setShareStatus("sharing");
     try {
+      const { toBlob } = await import("html-to-image");
       const blob = cardRef.current
         ? await toBlob(cardRef.current, { pixelRatio: 2, backgroundColor: selectedTheme.bg })
         : null;

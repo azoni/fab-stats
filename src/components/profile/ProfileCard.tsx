@@ -1,6 +1,6 @@
 "use client";
 import { useRef, useState } from "react";
-import { toBlob } from "html-to-image";
+
 import { MatchResult } from "@/types";
 import { CARD_THEMES, type CardTheme } from "@/components/opponents/RivalryCard";
 import type { PlayoffFinish } from "@/lib/stats";
@@ -293,6 +293,7 @@ export function ProfileShareModal({
 
   async function captureCard(): Promise<Blob | null> {
     if (!cardRef.current) return null;
+    const { toBlob } = await import("html-to-image");
     const opts = { pixelRatio: 2, backgroundColor: selectedTheme.bg, cacheBust: true };
     try {
       return await toBlob(cardRef.current, opts);

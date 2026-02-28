@@ -664,6 +664,6 @@ export default async function handler(req: Request) {
   } catch (err) {
     const msg = err instanceof Error ? `${err.message}\n${err.stack}` : String(err);
     console.error("OG image generation error:", msg);
-    return new Response(`OG error: ${err instanceof Error ? err.message : String(err)}`, { status: 500 });
+    return new Response("OG image generation failed", { status: 500 });
   }
 }

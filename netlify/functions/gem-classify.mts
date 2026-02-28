@@ -1,6 +1,8 @@
 // Netlify serverless function that uses Claude Haiku to classify
 // raw text blocks from GEM event pages into structured event metadata.
 
+import { verifyFirebaseToken } from "./verify-auth.ts";
+
 interface EventTextBlocks {
   textBlocks: string[];
 }
@@ -17,7 +19,7 @@ interface ClassifiedEvent {
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
 };
 
 export default async function handler(req: Request) {
@@ -31,6 +33,15 @@ export default async function handler(req: Request) {
       status: 405,
       headers: CORS_HEADERS,
     });
+  }
+
+  // Verify Firebase authentication
+  const uid = await verifyFirebaseToken(req);
+  if (!uid) {
+    return new Response(
+      JSON.stringify({ error: "Authentication required" }),
+      { status: 401, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }
+    );
   }
 
   const apiKey = process.env.ANTHROPIC_API_KEY;

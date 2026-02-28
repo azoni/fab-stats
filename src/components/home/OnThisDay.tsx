@@ -4,7 +4,7 @@ import { MatchResult, type MatchRecord } from "@/types";
 import { localDate } from "@/lib/constants";
 import { CARD_THEMES } from "@/components/opponents/RivalryCard";
 import { OnThisDayCard, type OnThisDayData } from "./OnThisDayCard";
-import { toBlob } from "html-to-image";
+
 
 interface OnThisDayProps {
   matches: MatchRecord[];
@@ -242,6 +242,7 @@ function OnThisDayShareModal({
   async function handleCopy() {
     setShareStatus("sharing");
     try {
+      const { toBlob } = await import("html-to-image");
       const blob = cardRef.current
         ? await toBlob(cardRef.current, { pixelRatio: 2, backgroundColor: selectedTheme.bg })
         : null;

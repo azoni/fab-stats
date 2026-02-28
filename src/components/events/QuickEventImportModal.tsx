@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { auth } from "@/lib/firebase";
 import { parseSingleEventPaste } from "@/lib/single-event-import";
 import { importMatchesFirestore, getMatchesByUserId } from "@/lib/firestore-storage";
 import { importMatchesLocal } from "@/lib/storage";
@@ -103,9 +104,13 @@ export function QuickEventImportModal({ open, onClose, onImportComplete }: Quick
         reader.readAsDataURL(file);
       });
 
+      const token = await auth.currentUser?.getIdToken();
       const res = await fetch("/.netlify/functions/ocr-event", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({ image: base64 }),
       });
 

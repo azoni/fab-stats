@@ -1,6 +1,6 @@
 "use client";
 import { useRef, useState } from "react";
-import { toBlob } from "html-to-image";
+
 
 export interface FinishTheme {
   id: string;
@@ -241,6 +241,7 @@ export function BestFinishShareModal({
 
     setShareStatus("sharing");
     try {
+      const { toBlob } = await import("html-to-image");
       const blob = cardRef.current
         ? await toBlob(cardRef.current, { pixelRatio: 2, backgroundColor: selectedTheme.bg })
         : null;

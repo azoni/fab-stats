@@ -2,10 +2,14 @@
 // GEM event text from a screenshot, returning it in a format that
 // parseSingleEventPaste can parse.
 
+import { verifyFirebaseToken } from "./verify-auth.ts";
+
+const MAX_IMAGE_SIZE = 4 * 1024 * 1024; // 4 MB base64 limit
+
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
 };
 
 export default async function handler(req: Request) {
@@ -18,6 +22,15 @@ export default async function handler(req: Request) {
       status: 405,
       headers: CORS_HEADERS,
     });
+  }
+
+  // Verify Firebase authentication
+  const uid = await verifyFirebaseToken(req);
+  if (!uid) {
+    return new Response(
+      JSON.stringify({ error: "Authentication required" }),
+      { status: 401, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }
+    );
   }
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
@@ -36,6 +49,14 @@ export default async function handler(req: Request) {
       return new Response(
         JSON.stringify({ error: "Missing image data" }),
         { status: 400, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Reject oversized images to prevent API cost abuse
+    if (image.length > MAX_IMAGE_SIZE) {
+      return new Response(
+        JSON.stringify({ error: "Image too large. Maximum size is 4 MB." }),
+        { status: 413, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }
       );
     }
 

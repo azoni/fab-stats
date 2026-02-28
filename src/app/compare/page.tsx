@@ -8,7 +8,7 @@ import { getHeroByName } from "@/lib/heroes";
 import { HeroClassIcon } from "@/components/heroes/HeroClassIcon";
 import { CARD_THEMES, type CardTheme } from "@/components/opponents/RivalryCard";
 import { CompareCard } from "@/components/compare/CompareCard";
-import { toBlob } from "html-to-image";
+
 import { getMatchesByUserId, getProfile } from "@/lib/firestore-storage";
 import { normalizeOpponentName } from "@/lib/stats";
 import { getH2H } from "@/lib/h2h";
@@ -766,6 +766,7 @@ function CompareShareModal({
     const url = `${window.location.origin}/compare?p1=${p1.username}&p2=${p2.username}`;
     setShareStatus("sharing");
     try {
+      const { toBlob } = await import("html-to-image");
       const blob = cardRef.current
         ? await toBlob(cardRef.current, { pixelRatio: 2, backgroundColor: selectedTheme.bg })
         : null;
