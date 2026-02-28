@@ -18,7 +18,7 @@ const TYPE_FILTERS: { value: TypeFilter; label: string }[] = [
   { value: "placement", label: "Placements" },
 ];
 
-const PREVIEW_LIMIT = 10;
+const PREVIEW_LIMIT = 5;
 
 export function ActivityFeed({ rankMap }: { rankMap?: Map<string, 1 | 2 | 3 | 4 | 5> }) {
   const { events, loading } = useFeed();
@@ -26,7 +26,7 @@ export function ActivityFeed({ rankMap }: { rankMap?: Map<string, 1 | 2 | 3 | 4 
   const { friends } = useFriends();
   const { favorites } = useFavorites();
   const [scope, setScope] = useState<ScopeTab>("community");
-  const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
+  const [typeFilter, setTypeFilter] = useState<TypeFilter>("placement");
 
   // Build set of friend/favorite user IDs
   const socialUserIds = useMemo(() => {
