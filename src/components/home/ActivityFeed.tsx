@@ -18,7 +18,7 @@ const TYPE_FILTERS: { value: TypeFilter; label: string }[] = [
   { value: "placement", label: "Placements" },
 ];
 
-const PREVIEW_LIMIT = 5;
+const SCROLL_LIMIT = 20;
 
 export function ActivityFeed({ rankMap }: { rankMap?: Map<string, 1 | 2 | 3 | 4 | 5> }) {
   const { events, loading } = useFeed();
@@ -55,7 +55,7 @@ export function ActivityFeed({ rankMap }: { rankMap?: Map<string, 1 | 2 | 3 | 4 
       source = source.filter((e) => e.type === typeFilter);
     }
 
-    return source.slice(0, PREVIEW_LIMIT);
+    return source.slice(0, SCROLL_LIMIT);
   }, [events, scope, typeFilter, socialUserIds]);
 
   // Group consecutive imports for cleaner display
@@ -65,7 +65,7 @@ export function ActivityFeed({ rankMap }: { rankMap?: Map<string, 1 | 2 | 3 | 4 
   if (!loading && events.length === 0) return null;
 
   return (
-    <div>
+    <div className="flex flex-col">
       <div className="flex items-center justify-between mb-2">
         <h2 className="text-lg font-semibold text-fab-text">Activity Feed</h2>
         <Link href="/search" className="text-xs text-fab-gold hover:text-fab-gold-light transition-colors">
@@ -119,6 +119,7 @@ export function ActivityFeed({ rankMap }: { rankMap?: Map<string, 1 | 2 | 3 | 4 
         )}
       </div>
 
+      {/* Scrollable feed area */}
       {loading ? (
         <div className="space-y-2">
           {[...Array(4)].map((_, i) => (
@@ -134,10 +135,18 @@ export function ActivityFeed({ rankMap }: { rankMap?: Map<string, 1 | 2 | 3 | 4 
           </p>
         </div>
       ) : (
-        <div className="space-y-2">
-          {groups.map((group) => (
-            <GroupedFeedCard key={group.events[0].id} group={group} compact rankMap={rankMap} />
-          ))}
+        <div className="relative">
+          <div className="max-h-[340px] overflow-y-auto overscroll-contain feed-scroll pr-1">
+            <div className="space-y-2">
+              {groups.map((group) => (
+                <GroupedFeedCard key={group.events[0].id} group={group} compact rankMap={rankMap} />
+              ))}
+            </div>
+          </div>
+          {/* Fade-out at bottom when scrollable */}
+          {groups.length > 5 && (
+            <div className="absolute bottom-0 left-0 right-1 h-8 bg-gradient-to-t from-fab-bg to-transparent pointer-events-none rounded-b-lg" />
+          )}
         </div>
       )}
     </div>
