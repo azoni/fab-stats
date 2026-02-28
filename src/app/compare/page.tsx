@@ -683,8 +683,26 @@ function ComparisonView({ p1, p2, allEntries }: { p1: LeaderboardEntry; p2: Lead
   const hero1 = p1.topHero ? getHeroByName(p1.topHero) : undefined;
   const hero2 = p2.topHero ? getHeroByName(p2.topHero) : undefined;
 
-  // For share card
-  const shareStats = scoringStats.map((s) => ({ label: s.label, v1: s.v1, v2: s.v2, better: s.better }));
+  // Common opponent edges for share card
+  const commonEdges = useMemo(() => {
+    if (commonOpponents.length === 0) return undefined;
+    const edges = commonOpponents.filter((o) => {
+      const p1Win = o.p1WinRate >= 50;
+      const p2Win = o.p2WinRate >= 50;
+      return (p1Win && !p2Win) || (!p1Win && p2Win);
+    });
+    return {
+      shared: commonOpponents.length,
+      p1Edges: edges.filter((o) => o.p1WinRate >= 50 && o.p2WinRate < 50).length,
+      p2Edges: edges.filter((o) => o.p2WinRate >= 50 && o.p1WinRate < 50).length,
+    };
+  }, [commonOpponents]);
+
+  // Curated stats for share card — only the most interesting categories
+  const keyStatLabels = new Set(["Win Rate", "Total Matches", "Event Wins", "Top 8 Finishes", "Earnings", "Longest Win Streak"]);
+  const shareStats = scoringStats
+    .filter((s) => keyStatLabels.has(s.label))
+    .map((s) => ({ label: s.label, v1: s.v1, v2: s.v2, better: s.better }));
 
   return (
     <div>
@@ -867,6 +885,7 @@ function ComparisonView({ p1, p2, allEntries }: { p1: LeaderboardEntry; p2: Lead
           p1PowerLevel={p1Power}
           p2PowerLevel={p2Power}
           h2h={h2h}
+          commonEdges={commonEdges}
           onClose={() => setShowShareModal(false)}
         />
       )}
@@ -1293,6 +1312,7 @@ function CompareShareModal({
   p1PowerLevel,
   p2PowerLevel,
   h2h,
+  commonEdges,
   onClose,
 }: {
   p1: LeaderboardEntry;
@@ -1303,6 +1323,7 @@ function CompareShareModal({
   p1PowerLevel: number;
   p2PowerLevel: number;
   h2h: { p1Wins: number; p2Wins: number; draws: number; total: number } | null;
+  commonEdges?: { shared: number; p1Edges: number; p2Edges: number };
   onClose: () => void;
 }) {
   const [selectedTheme, setSelectedTheme] = useState(CARD_THEMES[0]);
@@ -1315,7 +1336,7 @@ function CompareShareModal({
   const compareData = {
     p1Name: p1.displayName,
     p2Name: p2.displayName,
-    stats: stats.filter((s) => s.label !== "Record" && s.label !== "Weekly Activity").slice(0, 10),
+    stats,
     p1TopHero: p1.topHero || "",
     p2TopHero: p2.topHero || "",
     p1Matches: p1.totalMatches + p1.totalByes,
@@ -1325,6 +1346,7 @@ function CompareShareModal({
     p1PowerLevel,
     p2PowerLevel,
     h2h: h2h ?? undefined,
+    commonOpponents: commonEdges,
     verdict: verdictTitle,
     verdictSubtitle,
     verdictBullets,

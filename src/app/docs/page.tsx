@@ -366,19 +366,161 @@ export default function DocsPage() {
             Compare your stats head-to-head against any other player. The Versus page locks you in as
             Player 1 and lets you pick an opponent — or choose from common opponents you&apos;ve both faced.
           </p>
-          <div className="space-y-2 text-sm text-fab-muted">
+
+          {/* Power Level */}
+          <h3 className="text-sm font-semibold text-fab-text mt-5 mb-2">Power Level</h3>
+          <p className="text-sm text-fab-muted mb-3">
+            Each player gets a composite score from 0&ndash;99 based on their overall stats. The formula
+            combines seven weighted components, each measuring a different aspect of competitive strength:
+          </p>
+          <div className="overflow-hidden rounded-lg border border-fab-border mb-3">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-fab-surface">
+                  <th className="text-left px-3 py-2 text-fab-muted font-medium">Component</th>
+                  <th className="text-right px-3 py-2 text-fab-muted font-medium">Max Points</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-fab-border">
+                {[
+                  ["Win Rate", "30", "Scales with match count — full weight at 20+ matches"],
+                  ["Match Volume", "15", "Log scale, caps at 500 matches"],
+                  ["Event Success", "20", "Event wins (10), top 8 finishes (6), events played (4)"],
+                  ["Streaks", "10", "Longest win streak (7), current win streak (3)"],
+                  ["Hero Mastery", "10", "Unique heroes played (5), top hero depth (5)"],
+                  ["Rated Performance", "10", "Rated win rate — requires 5+ rated matches"],
+                  ["Earnings", "5", "Log scale — rewards any prize money earned"],
+                ].map(([name, pts, desc]) => (
+                  <tr key={name as string}>
+                    <td className="px-3 py-1.5">
+                      <span className="font-medium text-fab-text">{name}</span>
+                      <span className="block text-[11px] text-fab-dim mt-0.5">{desc}</span>
+                    </td>
+                    <td className="px-3 py-1.5 text-right text-fab-muted font-mono align-top">{pts}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p className="text-xs text-fab-dim mb-4">
+            Total possible: 100 points, displayed as 0&ndash;99. A new player with few matches will have a
+            low volume and streak score, while a veteran with many events and hero variety scores higher
+            across the board.
+          </p>
+
+          <div className="overflow-hidden rounded-lg border border-fab-border mb-4">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-fab-surface">
+                  <th className="text-left px-3 py-2 text-fab-muted font-medium">Tier</th>
+                  <th className="text-right px-3 py-2 text-fab-muted font-medium">Power Level</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-fab-border">
+                {[
+                  ["Grandmaster", "80–99", "text-fuchsia-400"],
+                  ["Diamond", "65–79", "text-sky-400"],
+                  ["Gold", "50–64", "text-yellow-400"],
+                  ["Silver", "35–49", "text-zinc-400"],
+                  ["Bronze", "0–34", "text-amber-600"],
+                ].map(([name, range, color]) => (
+                  <tr key={name as string}>
+                    <td className={`px-3 py-1.5 font-medium ${color}`}>{name}</td>
+                    <td className="px-3 py-1.5 text-right text-fab-muted">{range}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Dominance Score */}
+          <h3 className="text-sm font-semibold text-fab-text mt-5 mb-2">Dominance Score</h3>
+          <p className="text-sm text-fab-muted mb-2">
+            The dominance score determines the overall winner. Each stat category has a weight, and for
+            every weighted stat, both players&apos; raw values are compared proportionally:
+          </p>
+          <div className="p-3 rounded-lg bg-fab-surface border border-fab-border mb-3">
+            <p className="text-sm text-fab-text font-mono text-center">
+              points = (your value / combined total) &times; 10 &times; weight
+            </p>
+          </div>
+          <div className="space-y-1 text-sm text-fab-muted mb-3">
+            {[
+              ["Win Rate", "3"],
+              ["Event Wins", "3"],
+              ["Top 8 Finishes", "2.5"],
+              ["Longest Win Streak", "2"],
+              ["Earnings", "2"],
+              ["Rated Win Rate", "2"],
+              ["Current Streak", "1.5"],
+              ["Monthly Win Rate", "1.5"],
+              ["Armory Win Rate", "1.5"],
+              ["Total Matches", "1"],
+              ["Events Played", "1"],
+              ["Unique Heroes", "1"],
+              ["H2H Record", "4"],
+            ].map(([name, weight]) => (
+              <div key={name} className="flex items-center gap-2 py-0.5">
+                <span className="font-medium text-fab-text w-40">{name}</span>
+                <span className="text-fab-dim font-mono">&times;{weight}</span>
+              </div>
+            ))}
+          </div>
+          <p className="text-xs text-fab-dim mb-4">
+            The head-to-head record carries the most weight (&times;4) when available, reflecting the
+            importance of the direct matchup. Categories with missing data (e.g. no rated matches) are
+            excluded rather than penalized.
+          </p>
+
+          {/* Common Opponents */}
+          <h3 className="text-sm font-semibold text-fab-text mt-5 mb-2">Common Opponents</h3>
+          <div className="space-y-2 text-sm text-fab-muted mb-4">
             <p>
-              <span className="font-medium text-fab-text">Dominance score</span> — A weighted percentage
-              comparing stats across categories like win rate, total wins, streaks, events, and head-to-head
-              record. Each category contributes to the overall verdict.
+              Shows every opponent both players have faced, sorted by total combined games. For each shared
+              opponent, win/loss records are compared side-by-side.
             </p>
             <p>
+              <span className="font-medium text-fab-text">Edge detection</span> — An &quot;edge&quot; is when one
+              player has a winning record (&ge;50%) against an opponent while the other has a losing record
+              (&lt;50%). The Opponent Network summary counts how many edges each player has, giving a
+              transitive comparison even when no direct head-to-head exists.
+            </p>
+          </div>
+
+          {/* Verdict */}
+          <h3 className="text-sm font-semibold text-fab-text mt-5 mb-2">Verdict</h3>
+          <p className="text-sm text-fab-muted mb-2">
+            The verdict uses personality-driven language based on how wide the dominance gap is:
+          </p>
+          <div className="space-y-1 text-sm text-fab-muted mb-3">
+            {[
+              [">20% margin", "\"OBLITERATES\" — playing in a different league"],
+              [">12% margin", "\"FLEXES\" — convincing dominance"],
+              [">5% margin", "\"Edges it out\" — slim advantage"],
+              ["<5% margin", "\"TOO CLOSE TO CALL!\" — rivalry is heating up"],
+              ["<1% margin", "\"MIRROR MATCH!\" — carbon copies"],
+            ].map(([threshold, desc]) => (
+              <div key={threshold} className="flex items-start gap-2 py-0.5">
+                <span className="shrink-0 font-mono text-fab-dim w-24 text-right">{threshold}</span>
+                <span>{desc}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Other features */}
+          <div className="space-y-2 text-sm text-fab-muted mt-4">
+            <p>
               <span className="font-medium text-fab-text">H2H record</span> — If both players have faced each
-              other, their direct head-to-head record is shown and scored as a category.
+              other, their direct head-to-head record is shown in a dedicated arena section with a visual
+              win-rate bar.
+            </p>
+            <p>
+              <span className="font-medium text-fab-text">Hero roster</span> — Side-by-side comparison of each
+              player&apos;s top 5 heroes with match counts and win rates.
             </p>
             <p>
               <span className="font-medium text-fab-text">Share card</span> — Generate a shareable image of
-              the showdown result with both players&apos; stats and the verdict.
+              the showdown with power level tier icons, key stats, opponent network edges, and the verdict.
             </p>
           </div>
         </section>
