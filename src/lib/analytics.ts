@@ -97,6 +97,21 @@ export async function getUserVisitData(): Promise<{
   };
 }
 
+/** Lightweight online/active counts from the userLastVisit doc */
+export async function getOnlineStats(): Promise<{ onlineNow: number; activeToday: number }> {
+  const snap = await getDoc(doc(db, "analytics", "userLastVisit"));
+  const data = (snap.data() as Record<string, string>) || {};
+  const now = Date.now();
+  let onlineNow = 0;
+  let activeToday = 0;
+  for (const ts of Object.values(data)) {
+    const diff = now - new Date(ts).getTime();
+    if (diff < 15 * 60_000) onlineNow++;
+    if (diff < 24 * 60 * 60_000) activeToday++;
+  }
+  return { onlineNow, activeToday };
+}
+
 export type AnalyticsTimeRange = "1h" | "12h" | "24h" | "7d" | "all";
 
 /** Read analytics data, optionally filtered by time range (admin only) */

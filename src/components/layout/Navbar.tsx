@@ -6,7 +6,7 @@ import { SwordsIcon, OpponentsIcon, TrendsIcon, ImportIcon, CalendarIcon, Trophy
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCreators } from "@/hooks/useCreators";
-import { trackPageView, trackCreatorClick, trackVisit, trackPresence } from "@/lib/analytics";
+import { trackPageView, trackCreatorClick, trackVisit, trackPresence, getOnlineStats } from "@/lib/analytics";
 import { useCommunityStats } from "@/hooks/useCommunityStats";
 import { useFriends } from "@/hooks/useFriends";
 import type { ReactNode } from "react";
@@ -123,6 +123,19 @@ export function Navbar() {
     if (mounted && user && !isGuest) trackPresence();
   }, [mounted, user, isGuest, pathname]);
 
+  // Admin-only: online stats (fetch on mount + every 2 min)
+  const [onlineStats, setOnlineStats] = useState<{ onlineNow: number; activeToday: number } | null>(null);
+  useEffect(() => {
+    if (!mounted || !isAdmin) return;
+    let cancelled = false;
+    function fetch() {
+      getOnlineStats().then((s) => { if (!cancelled) setOnlineStats(s); }).catch(() => {});
+    }
+    fetch();
+    const interval = setInterval(fetch, 2 * 60_000);
+    return () => { cancelled = true; clearInterval(interval); };
+  }, [mounted, isAdmin]);
+
   const isAuthenticated = user && !isGuest;
 
   return (
@@ -188,6 +201,18 @@ export function Navbar() {
                     </Link>
                   ) : (
                     <>
+                      {isAdmin && onlineStats && (
+                        <Link
+                          href="/admin"
+                          className="flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] font-medium bg-fab-bg border border-fab-border hover:border-fab-gold/30 transition-colors"
+                          title={`${onlineStats.onlineNow} online now, ${onlineStats.activeToday} active today`}
+                        >
+                          <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse shrink-0" />
+                          <span className="text-green-400 font-bold">{onlineStats.onlineNow}</span>
+                          <span className="text-fab-dim">·</span>
+                          <span className="text-fab-muted">{onlineStats.activeToday} today</span>
+                        </Link>
+                      )}
                       <NotificationBell />
                       <UserMenu
                         pathname={pathname}
