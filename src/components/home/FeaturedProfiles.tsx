@@ -160,11 +160,11 @@ export function FeaturedProfiles({ profiles, rankMap }: FeaturedProfilesProps) {
   if (profiles.length === 0) return null;
 
   return (
-    <div>
+    <div className="flex flex-col">
       <div className="section-header mb-4">
         <h2 className="text-lg font-semibold text-fab-text">Player Spotlight</h2>
       </div>
-      <div className="space-y-2">
+      <div className="space-y-2 flex-1">
         {profiles.map((fp) => {
           const config = SPOTLIGHT_CONFIG[fp.reason] || DEFAULT_CONFIG;
           return (

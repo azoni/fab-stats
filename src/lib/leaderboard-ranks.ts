@@ -255,3 +255,13 @@ export function rankBorderClass(rank: 1 | 2 | 3 | 4 | 5 | null | undefined): str
     : rank === 4 ? "rank-border-silver"
     : "rank-border-bronze";
 }
+
+/** Returns a CSS border-color value matching the rank's avatar glow color. */
+export function rankBorderColor(rank: 1 | 2 | 3 | 4 | 5 | null | undefined): string | undefined {
+  if (!rank) return undefined;
+  return rank === 1 ? "rgba(255, 50, 150, 0.5)"
+    : rank === 2 ? "rgba(56, 189, 248, 0.45)"
+    : rank === 3 ? "rgba(250, 204, 21, 0.45)"
+    : rank === 4 ? "rgba(192, 192, 210, 0.35)"
+    : "rgba(205, 127, 50, 0.4)";
+}

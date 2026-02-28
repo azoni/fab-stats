@@ -2,7 +2,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import type { FeedEvent, ImportFeedEvent } from "@/types";
-import { rankBorderClass } from "@/lib/leaderboard-ranks";
+import { rankBorderClass, rankBorderColor } from "@/lib/leaderboard-ranks";
 
 export interface FeedGroup {
   events: FeedEvent[];
@@ -136,8 +136,9 @@ function NameAndTime({ event, compact }: { event: FeedEvent; compact?: boolean }
 }
 
 export function FeedCard({ event, compact, rankMap }: { event: FeedEvent; compact?: boolean; rankMap?: Map<string, 1 | 2 | 3 | 4 | 5> }) {
+  const cardBorder = rankBorderColor(rankMap?.get(event.userId));
   return (
-    <div className={`bg-fab-surface border border-fab-border rounded-lg ${compact ? "px-3 py-2" : "p-4"}`}>
+    <div className={`bg-fab-surface border border-fab-border rounded-lg ${compact ? "px-3 py-2" : "p-4"}`} style={cardBorder ? { borderColor: cardBorder } : undefined}>
       <div className={`flex items-center ${compact ? "gap-2" : "gap-3 items-start"}`}>
         <FeedCardHeader event={event} compact={compact} rankMap={rankMap} />
         <div className="flex-1 min-w-0">
@@ -286,8 +287,9 @@ export function GroupedFeedCard({ group, compact, rankMap }: { group: FeedGroup;
   if (isSingle) return <FeedCard event={first} compact={compact} rankMap={rankMap} />;
 
   // Multi-event groups are only for imports
+  const cardBorder = rankBorderColor(rankMap?.get(first.userId));
   return (
-    <div className={`bg-fab-surface border border-fab-border rounded-lg ${compact ? "px-3 py-2" : "p-4"}`}>
+    <div className={`bg-fab-surface border border-fab-border rounded-lg ${compact ? "px-3 py-2" : "p-4"}`} style={cardBorder ? { borderColor: cardBorder } : undefined}>
       <div className={`flex items-center ${compact ? "gap-2" : "gap-3 items-start"}`}>
         <FeedCardHeader event={first} compact={compact} rankMap={rankMap} />
         <div className="flex-1 min-w-0">

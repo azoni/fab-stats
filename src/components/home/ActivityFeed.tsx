@@ -1,5 +1,5 @@
 "use client";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import Link from "next/link";
 import { useFeed } from "@/hooks/useFeed";
 import { useFriends } from "@/hooks/useFriends";
@@ -19,14 +19,25 @@ const TYPE_FILTERS: { value: TypeFilter; label: string }[] = [
 ];
 
 const SCROLL_LIMIT = 20;
+const SCOPE_KEY = "fab-feed-scope";
+const TYPE_KEY = "fab-feed-type";
+
+function readStored<T extends string>(key: string, valid: T[], fallback: T): T {
+  if (typeof window === "undefined") return fallback;
+  const v = localStorage.getItem(key) as T | null;
+  return v && valid.includes(v) ? v : fallback;
+}
 
 export function ActivityFeed({ rankMap }: { rankMap?: Map<string, 1 | 2 | 3 | 4 | 5> }) {
   const { events, loading } = useFeed();
   const { user } = useAuth();
   const { friends } = useFriends();
   const { favorites } = useFavorites();
-  const [scope, setScope] = useState<ScopeTab>("community");
-  const [typeFilter, setTypeFilter] = useState<TypeFilter>("placement");
+  const [scope, _setScope] = useState<ScopeTab>(() => readStored(SCOPE_KEY, ["community", "friends"], "community"));
+  const [typeFilter, _setTypeFilter] = useState<TypeFilter>(() => readStored(TYPE_KEY, ["all", "import", "achievement", "placement"], "placement"));
+
+  const setScope = useCallback((v: ScopeTab) => { _setScope(v); localStorage.setItem(SCOPE_KEY, v); }, []);
+  const setTypeFilter = useCallback((v: TypeFilter) => { _setTypeFilter(v); localStorage.setItem(TYPE_KEY, v); }, []);
 
   // Build set of friend/favorite user IDs
   const socialUserIds = useMemo(() => {
@@ -83,7 +94,7 @@ export function ActivityFeed({ rankMap }: { rankMap?: Map<string, 1 | 2 | 3 | 4 
   if (!loading && events.length === 0) return null;
 
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col h-full">
       <div className="flex items-center justify-between mb-2">
         <h2 className="text-lg font-semibold text-fab-text">Activity Feed</h2>
         <Link href="/search" className="text-xs text-fab-gold hover:text-fab-gold-light transition-colors">
