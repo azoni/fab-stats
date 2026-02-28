@@ -251,6 +251,10 @@ service cloud.firestore {
     match /admin/banner {
       allow read: if true;
     }
+    // Badge assignments are public (shown on player profiles to all visitors)
+    match /admin/badges {
+      allow read: if true;
+    }
     // Poll config is public (shown on homepage); votes are per-user
     match /admin/poll {
       allow read: if true;

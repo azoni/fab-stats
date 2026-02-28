@@ -87,11 +87,18 @@ export function AchievementShowcase({ earned, progress, forceExpanded }: { earne
   const all = useMemo(() => [...getAllAchievements(), ...getAllBadges()], []);
   const earnedIds = useMemo(() => new Set(earned.map((a) => a.id)), [earned]);
   const totalEarned = earned.length;
+  // Don't count hidden admin badges in the denominator
+  const totalVisible = useMemo(() => {
+    const earnedSpecial = earned.filter((a) => a.category === "special").length;
+    return getAllAchievements().length + earnedSpecial;
+  }, [earned]);
 
   const grouped = useMemo(() => groupAchievements(all, earnedIds), [all, earnedIds]);
 
   // Filter: show all or only groups with at least one earned
-  const displayed = showAll ? grouped : grouped.filter((g) => g.isEarned);
+  // Always hide unearned admin-assigned (special) badges — they should only appear when assigned
+  const displayed = (showAll ? grouped : grouped.filter((g) => g.isEarned))
+    .filter((g) => g.isEarned || g.display.category !== "special");
 
   // Sort: earned first, special badges above regular, then by rarity
   const sorted = useMemo(() => {
@@ -117,7 +124,7 @@ export function AchievementShowcase({ earned, progress, forceExpanded }: { earne
           <AchievementIcon icon="section-achievements" className="w-4 h-4 text-fab-gold" />
           <h2 className="text-sm font-semibold text-fab-text">Achievements</h2>
           <span className="text-xs text-fab-dim">
-            {totalEarned}/{all.length}
+            {totalEarned}/{totalVisible}
           </span>
         </div>
         <svg
