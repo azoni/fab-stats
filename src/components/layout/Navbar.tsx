@@ -20,24 +20,6 @@ function MetaIcon({ className = "w-4 h-4" }: { className?: string }) {
   );
 }
 
-const navLinks: { href: string; label: string; icon: ReactNode; color: string; bg: string }[] = [
-  { href: "/leaderboard", label: "Leaderboard", icon: <TrophyIcon className="w-4 h-4" />, color: "text-amber-400", bg: "bg-amber-400/10" },
-  { href: "/matches", label: "Matches", icon: <SwordsIcon className="w-4 h-4" />, color: "text-red-400", bg: "bg-red-400/10" },
-  { href: "/events", label: "Events", icon: <CalendarIcon className="w-4 h-4" />, color: "text-blue-400", bg: "bg-blue-400/10" },
-  { href: "/opponents", label: "Opponents", icon: <OpponentsIcon className="w-4 h-4" />, color: "text-purple-400", bg: "bg-purple-400/10" },
-  { href: "/compare", label: "Compare", icon: <CompareIcon className="w-4 h-4" />, color: "text-violet-400", bg: "bg-violet-400/10" },
-  { href: "/search", label: "Discover", icon: <SearchIcon className="w-4 h-4" />, color: "text-cyan-400", bg: "bg-cyan-400/10" },
-];
-
-const moreLinks: { href: string; label: string; icon: ReactNode; authOnly?: boolean }[] = [
-  { href: "/meta", label: "Community Meta", icon: <MetaIcon className="w-4 h-4" /> },
-  { href: "/trends", label: "Trends", icon: <TrendsIcon className="w-4 h-4" />, authOnly: true },
-  { href: "/tournaments", label: "Tournaments", icon: <TrophyIcon className="w-4 h-4" /> },
-  { href: "/import", label: "Import", icon: <ImportIcon className="w-4 h-4" />, authOnly: true },
-  { href: "/docs", label: "Docs", icon: <DocsIcon className="w-4 h-4" /> },
-  { href: "/changelog", label: "Changelog", icon: <ChangelogIcon className="w-4 h-4" /> },
-];
-
 function ChangelogIcon({ className = "w-4 h-4" }: { className?: string }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -70,6 +52,53 @@ function SearchIcon({ className = "w-4 h-4" }: { className?: string }) {
   );
 }
 
+const navLinks: { href: string; label: string; icon: ReactNode; color: string; bg: string }[] = [
+  { href: "/leaderboard", label: "Leaderboard", icon: <TrophyIcon className="w-4 h-4" />, color: "text-amber-400", bg: "bg-amber-400/10" },
+  { href: "/matches", label: "Matches", icon: <SwordsIcon className="w-4 h-4" />, color: "text-red-400", bg: "bg-red-400/10" },
+  { href: "/events", label: "Events", icon: <CalendarIcon className="w-4 h-4" />, color: "text-blue-400", bg: "bg-blue-400/10" },
+  { href: "/opponents", label: "Opponents", icon: <OpponentsIcon className="w-4 h-4" />, color: "text-purple-400", bg: "bg-purple-400/10" },
+  { href: "/search", label: "Discover", icon: <SearchIcon className="w-4 h-4" />, color: "text-cyan-400", bg: "bg-cyan-400/10" },
+];
+
+const moreLinks: { href: string; label: string; icon: ReactNode; authOnly?: boolean }[] = [
+  { href: "/compare", label: "Compare", icon: <CompareIcon className="w-4 h-4" /> },
+  { href: "/meta", label: "Community Meta", icon: <MetaIcon className="w-4 h-4" /> },
+  { href: "/trends", label: "Trends", icon: <TrendsIcon className="w-4 h-4" />, authOnly: true },
+  { href: "/tournaments", label: "Tournaments", icon: <TrophyIcon className="w-4 h-4" /> },
+  { href: "/import", label: "Import", icon: <ImportIcon className="w-4 h-4" />, authOnly: true },
+  { href: "/docs", label: "Docs", icon: <DocsIcon className="w-4 h-4" /> },
+  { href: "/changelog", label: "Changelog", icon: <ChangelogIcon className="w-4 h-4" /> },
+];
+
+const userMenuLinks: { href: string; label: string; icon: ReactNode; adminOnly?: boolean }[] = [
+  { href: "/inbox", label: "Inbox", icon: (
+    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
+    </svg>
+  )},
+  { href: "/favorites", label: "Favorites", icon: (
+    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
+    </svg>
+  )},
+  { href: "/friends", label: "Friends", icon: (
+    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
+    </svg>
+  )},
+  { href: "/settings", label: "Settings", icon: (
+    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+    </svg>
+  )},
+  { href: "/admin", label: "Admin", adminOnly: true, icon: (
+    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+    </svg>
+  )},
+];
+
 export function Navbar() {
   const pathname = usePathname();
   const { user, profile, isGuest, isAdmin } = useAuth();
@@ -100,24 +129,26 @@ export function Navbar() {
     <nav className="fixed top-0 left-0 right-0 z-50 bg-fab-surface/95 backdrop-blur-md border-b border-fab-border">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-14 items-center justify-between">
-          <Link href="/" className="flex items-center gap-2.5">
+          <Link href="/" className="flex items-center gap-2.5 shrink-0">
             <svg className="w-7 h-7 text-fab-gold" viewBox="0 0 32 32" fill="none">
               <path d="M16 2L4 8v8c0 7.2 5.1 13.9 12 16 6.9-2.1 12-8.8 12-16V8L16 2z" stroke="currentColor" strokeWidth="1.5" fill="currentColor" fillOpacity="0.1" />
               <path d="M16 8l-2 6h-5l4 3-1.5 5L16 19l4.5 3L19 17l4-3h-5L16 8z" fill="currentColor" />
             </svg>
             <span className="text-xl font-bold text-fab-gold tracking-tight">FaB Stats</span>
             {(userCount > 0 || matchCount > 0) && (
-              <span className="hidden md:inline whitespace-nowrap text-xs text-fab-muted font-medium ml-1.5 self-end mb-0.5">
+              <span className="hidden lg:inline whitespace-nowrap text-xs text-fab-muted font-medium ml-1.5 self-end mb-0.5">
                 {userCount > 0 && <>{userCount.toLocaleString()} players</>}
-                {userCount > 0 && matchCount > 0 && <span className="hidden lg:inline text-fab-dim mx-1">·</span>}
-                {matchCount > 0 && <span className="hidden lg:inline">{matchCount.toLocaleString()} matches</span>}
+                {userCount > 0 && matchCount > 0 && <span className="text-fab-dim mx-1">·</span>}
+                {matchCount > 0 && <>{matchCount.toLocaleString()} matches</>}
               </span>
             )}
           </Link>
+
           <div className="flex items-center gap-1">
             {mounted && (
               <>
-                <div className="hidden md:contents">
+                {/* Main nav links — hidden on mobile */}
+                <div className="hidden md:flex items-center gap-0.5">
                   {navLinks.map((link) => (
                     <Link
                       key={link.href}
@@ -138,7 +169,9 @@ export function Navbar() {
                     isAuthenticated={!!isAuthenticated}
                   />
                 </div>
-                <div className="ml-3 pl-3 border-l border-fab-border flex items-center gap-2">
+
+                {/* Right side: bell + user menu */}
+                <div className="hidden md:flex items-center gap-1 ml-2 pl-2 border-l border-fab-border">
                   {!user && !isGuest ? (
                     <Link
                       href="/login"
@@ -147,104 +180,23 @@ export function Navbar() {
                       Sign In
                     </Link>
                   ) : isGuest ? (
-                    <>
-                      <span className="text-xs text-fab-dim hidden sm:inline">Guest</span>
-                      <Link
-                        href="/login"
-                        className="text-xs text-fab-gold hover:text-fab-gold-light transition-colors"
-                      >
-                        Sign Up
-                      </Link>
-                    </>
-                  ) : profile ? (
                     <Link
-                      href={`/player/${profile.username}`}
-                      className="text-xs text-fab-dim hover:text-fab-gold transition-colors truncate max-w-32 hidden sm:inline"
+                      href="/login"
+                      className="px-4 py-2 rounded-lg text-sm font-semibold bg-fab-gold/20 text-fab-gold hover:bg-fab-gold/30 transition-colors"
                     >
-                      @{profile.username}
+                      Sign Up
                     </Link>
                   ) : (
-                    <span className="text-xs text-fab-dim truncate max-w-32 hidden sm:inline">{user?.email}</span>
-                  )}
-                  {isAuthenticated && <NotificationBell />}
-                  {isAuthenticated && (
-                    <Link
-                      href="/inbox"
-                      className={`p-1 rounded transition-colors ${
-                        pathname === "/inbox" || pathname.startsWith("/inbox/")
-                          ? "text-fab-gold"
-                          : "text-fab-muted hover:text-fab-text"
-                      }`}
-                      title="Inbox"
-                    >
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
-                      </svg>
-                    </Link>
-                  )}
-                  {isAuthenticated && (
-                    <Link
-                      href="/favorites"
-                      className={`p-1 rounded transition-colors ${
-                        pathname === "/favorites"
-                          ? "text-fab-gold"
-                          : "text-fab-muted hover:text-fab-text"
-                      }`}
-                      title="Favorites"
-                    >
-                      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
-                      </svg>
-                    </Link>
-                  )}
-                  {isAuthenticated && (
-                    <Link
-                      href="/friends"
-                      className={`relative p-1 rounded transition-colors ${
-                        pathname === "/friends"
-                          ? "text-fab-gold"
-                          : "text-fab-muted hover:text-fab-text"
-                      }`}
-                      title="Friends"
-                    >
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
-                      </svg>
-                      {incomingCount > 0 && (
-                        <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-fab-loss" />
-                      )}
-                    </Link>
-                  )}
-                  {isAuthenticated && (
-                    <Link
-                      href="/settings"
-                      className={`p-1 rounded transition-colors ${
-                        pathname === "/settings"
-                          ? "text-fab-gold"
-                          : "text-fab-muted hover:text-fab-text"
-                      }`}
-                      title="Settings"
-                    >
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                      </svg>
-                    </Link>
-                  )}
-                  {isAdmin && (
-                    <Link
-                      href="/admin"
-                      className={`p-1 rounded transition-colors ${
-                        pathname === "/admin"
-                          ? "text-fab-gold"
-                          : "text-fab-muted hover:text-fab-text"
-                      }`}
-                      title="Admin"
-                    >
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                      </svg>
-                    </Link>
+                    <>
+                      <NotificationBell />
+                      <UserMenu
+                        pathname={pathname}
+                        profile={profile}
+                        user={user}
+                        isAdmin={isAdmin}
+                        incomingFriendRequests={incomingCount}
+                      />
+                    </>
                   )}
                 </div>
               </>
@@ -253,6 +205,117 @@ export function Navbar() {
         </div>
       </div>
     </nav>
+  );
+}
+
+function UserMenu({
+  pathname,
+  profile,
+  user,
+  isAdmin,
+  incomingFriendRequests,
+}: {
+  pathname: string;
+  profile: { username: string; displayName?: string; photoUrl?: string } | null;
+  user: { email?: string | null } | null;
+  isAdmin: boolean;
+  incomingFriendRequests: number;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    if (open) document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [open]);
+
+  // Close on route change
+  useEffect(() => {
+    setOpen(false);
+  }, [pathname]);
+
+  const initial = (profile?.displayName || profile?.username || user?.email || "U").charAt(0).toUpperCase();
+  const visibleLinks = userMenuLinks.filter((l) => !l.adminOnly || isAdmin);
+  const isMenuActive = visibleLinks.some((l) => pathname === l.href);
+  const hasBadge = incomingFriendRequests > 0;
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        onClick={() => setOpen(!open)}
+        className={`relative flex items-center justify-center w-8 h-8 rounded-full transition-all ${
+          open || isMenuActive
+            ? "ring-2 ring-fab-gold bg-fab-gold/20 text-fab-gold"
+            : "bg-fab-surface-hover text-fab-muted hover:text-fab-text hover:ring-1 hover:ring-fab-border"
+        }`}
+        title={profile?.username ? `@${profile.username}` : "Account"}
+      >
+        {profile?.photoUrl ? (
+          <img src={profile.photoUrl} alt="" className="w-8 h-8 rounded-full object-cover" />
+        ) : (
+          <span className="text-xs font-bold">{initial}</span>
+        )}
+        {hasBadge && !open && (
+          <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-fab-loss ring-2 ring-fab-surface" />
+        )}
+      </button>
+
+      {open && (
+        <div className="absolute top-full right-0 mt-1.5 w-56 bg-fab-surface border border-fab-border rounded-lg shadow-xl overflow-hidden z-50">
+          {/* Profile header */}
+          <Link
+            href={profile?.username ? `/player/${profile.username}` : "/settings"}
+            onClick={() => setOpen(false)}
+            className="flex items-center gap-3 px-4 py-3 hover:bg-fab-surface-hover transition-colors border-b border-fab-border"
+          >
+            {profile?.photoUrl ? (
+              <img src={profile.photoUrl} alt="" className="w-9 h-9 rounded-full object-cover shrink-0" />
+            ) : (
+              <div className="w-9 h-9 rounded-full bg-fab-gold/20 flex items-center justify-center text-fab-gold font-bold text-sm shrink-0">
+                {initial}
+              </div>
+            )}
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-fab-text truncate">
+                {profile?.displayName || profile?.username || "My Account"}
+              </p>
+              {profile?.username && (
+                <p className="text-xs text-fab-dim truncate">@{profile.username}</p>
+              )}
+            </div>
+          </Link>
+
+          {/* Menu links */}
+          <div className="p-1.5">
+            {visibleLinks.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                onClick={() => setOpen(false)}
+                className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                  pathname === link.href
+                    ? "text-fab-gold bg-fab-gold/10"
+                    : "text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover"
+                }`}
+              >
+                {link.icon}
+                {link.label}
+                {link.href === "/friends" && incomingFriendRequests > 0 && (
+                  <span className="ml-auto px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-fab-loss text-white">
+                    {incomingFriendRequests}
+                  </span>
+                )}
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
