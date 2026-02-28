@@ -401,18 +401,29 @@ export default function Dashboard() {
                 Watch Stream &rarr;
               </a>
             </div>
-            <a
-              href="https://www.youtube.com/live/DFWOlXB0YXc?si=-Kj27AY5o4L4ubE5"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="block overflow-hidden rounded-lg border border-fab-border hover:border-fab-gold/50 transition-colors group"
-            >
-              <img
-                src="/montreal.png"
-                alt="Calling Montreal Day 1 Metagame — 282 Players"
-                className="w-full h-auto group-hover:brightness-110 transition-all"
-              />
-            </a>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <a
+                href="https://www.youtube.com/live/DFWOlXB0YXc?si=-Kj27AY5o4L4ubE5"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block overflow-hidden rounded-lg border border-fab-border hover:border-fab-gold/50 transition-colors group"
+              >
+                <img
+                  src="/montreal.png"
+                  alt="Calling Montreal Day 1 Metagame — 282 Players"
+                  className="w-full h-auto group-hover:brightness-110 transition-all"
+                />
+              </a>
+              <div className="overflow-hidden rounded-lg border border-fab-border aspect-video">
+                <iframe
+                  src="https://www.youtube.com/embed/DFWOlXB0YXc"
+                  title="Calling Montreal Day 1 Stream"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  className="w-full h-full"
+                />
+              </div>
+            </div>
           </div>
           <ActivityFeed rankMap={rankMap} />
         </div>
@@ -427,18 +438,29 @@ export default function Dashboard() {
               Watch Stream &rarr;
             </a>
           </div>
-          <a
-            href="https://www.youtube.com/live/DFWOlXB0YXc?si=-Kj27AY5o4L4ubE5"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="block overflow-hidden rounded-lg border border-fab-border hover:border-fab-gold/50 transition-colors group"
-          >
-            <img
-              src="/montreal.png"
-              alt="Calling Montreal Day 1 Metagame — 282 Players"
-              className="w-full h-auto group-hover:brightness-110 transition-all"
-            />
-          </a>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <a
+              href="https://www.youtube.com/live/DFWOlXB0YXc?si=-Kj27AY5o4L4ubE5"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block overflow-hidden rounded-lg border border-fab-border hover:border-fab-gold/50 transition-colors group"
+            >
+              <img
+                src="/montreal.png"
+                alt="Calling Montreal Day 1 Metagame — 282 Players"
+                className="w-full h-auto group-hover:brightness-110 transition-all"
+              />
+            </a>
+            <div className="overflow-hidden rounded-lg border border-fab-border aspect-video">
+              <iframe
+                src="https://www.youtube.com/embed/DFWOlXB0YXc"
+                title="Calling Montreal Day 1 Stream"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                className="w-full h-full"
+              />
+            </div>
+          </div>
         </div>
       )}
 
