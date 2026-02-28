@@ -2,6 +2,7 @@ import {
   collection,
   doc,
   getDoc,
+  getDocs,
   setDoc,
   updateDoc,
   deleteDoc,
@@ -141,6 +142,17 @@ export function subscribeFriendships(
     })) as Friendship[];
     callback(friendships);
   });
+}
+
+/** Count accepted friends for a user (admin-only — requires Firestore rule access) */
+export async function getFriendCount(uid: string): Promise<number> {
+  const q = query(
+    collection(db, "friendships"),
+    where("participants", "array-contains", uid),
+    where("status", "==", "accepted")
+  );
+  const snap = await getDocs(q);
+  return snap.size;
 }
 
 export async function getFriendship(

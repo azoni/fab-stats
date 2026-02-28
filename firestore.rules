@@ -215,9 +215,9 @@ service cloud.firestore {
 
     // ── Friendships ──
     match /friendships/{friendshipId} {
-      // Participants can read their own friendships
+      // Participants can read their own friendships; admins can read any
       allow read: if request.auth != null
-        && request.auth.uid in resource.data.participants;
+        && (request.auth.uid in resource.data.participants || isAdmin());
       // Requester can create (status must be "pending", requesterUid must match auth)
       allow create: if request.auth != null
         && request.auth.uid == request.resource.data.requesterUid

@@ -24,6 +24,7 @@ import { QuestionCircleIcon, LockIcon, SwordsIcon, CalendarIcon } from "@/compon
 import { useAuth } from "@/contexts/AuthContext";
 import { useFavorites } from "@/hooks/useFavorites";
 import { useFriends } from "@/hooks/useFriends";
+import { getFriendCount } from "@/lib/friends";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { BestFinishShareModal } from "@/components/profile/BestFinishCard";
@@ -62,6 +63,7 @@ export default function PlayerProfile() {
   const [showRecentEvents, setShowRecentEvents] = useState(false);
   const [showMajorEvents, setShowMajorEvents] = useState(true);
   const [userBadges, setUserBadges] = useState<Achievement[]>([]);
+  const [friendCount, setFriendCount] = useState<number | null>(null);
 
   // Auto-expand achievements if navigated with #achievements hash
   useEffect(() => {
@@ -204,6 +206,12 @@ export default function PlayerProfile() {
     getUserBadges(profileUid).then(setUserBadges).catch(() => {});
   }, [profileUid]);
 
+  // Admin: fetch friend count for the viewed profile
+  useEffect(() => {
+    if (!isAdmin || !profileUid) return;
+    getFriendCount(profileUid).then(setFriendCount).catch(() => {});
+  }, [isAdmin, profileUid]);
+
   const overall = useMemo(() => computeOverallStats(fm), [fm]);
   const heroStats = useMemo(() => computeHeroStats(fm), [fm]);
   const allOpponentStats = useMemo(() => computeOpponentStats(fm), [fm]);
@@ -327,7 +335,7 @@ export default function PlayerProfile() {
             <span className="text-xs font-semibold text-fab-dim">Private Profile — only visible to you (admin) and the owner</span>
           </div>
         )}
-        <ProfileHeader profile={profile} isAdmin={isAdmin} isOwner={isOwner} isFavorited={!isOwner && !!currentUser && !isGuest && isFavorited(profile.uid)} onToggleFavorite={!isOwner && !!currentUser && !isGuest ? () => toggleFavorite(profile) : undefined} friendStatus={!isOwner && !!currentUser && !isGuest ? (isFriend(profile.uid) ? "friends" : hasSentRequest(profile.uid) ? "sent" : hasReceivedRequest(profile.uid) ? "received" : "none") : undefined} onFriendAction={!isOwner && !!currentUser && !isGuest ? () => { const fs = getFriendshipForUser(profile.uid); if (isFriend(profile.uid)) return; if (hasReceivedRequest(profile.uid) && fs) { acceptRequest(fs.id); } else if (!hasSentRequest(profile.uid)) { sendRequest(profile); } } : undefined} />
+        <ProfileHeader profile={profile} isAdmin={isAdmin} isOwner={isOwner} isFavorited={!isOwner && !!currentUser && !isGuest && isFavorited(profile.uid)} onToggleFavorite={!isOwner && !!currentUser && !isGuest ? () => toggleFavorite(profile) : undefined} friendStatus={!isOwner && !!currentUser && !isGuest ? (isFriend(profile.uid) ? "friends" : hasSentRequest(profile.uid) ? "sent" : hasReceivedRequest(profile.uid) ? "received" : "none") : undefined} onFriendAction={!isOwner && !!currentUser && !isGuest ? () => { const fs = getFriendshipForUser(profile.uid); if (isFriend(profile.uid)) return; if (hasReceivedRequest(profile.uid) && fs) { acceptRequest(fs.id); } else if (!hasSentRequest(profile.uid)) { sendRequest(profile); } } : undefined} friendCount={isAdmin ? friendCount : undefined} />
         <div className="text-center py-16">
           <p className="text-fab-muted">This player hasn&apos;t logged any matches yet.</p>
         </div>
@@ -351,7 +359,7 @@ export default function PlayerProfile() {
         )}
         {/* Profile row */}
         <div className="flex items-center gap-4 mb-4">
-          <ProfileHeader profile={profile} achievements={achievements} bestRank={bestRank} isAdmin={isAdmin} isOwner={isOwner} isFavorited={!isOwner && !!currentUser && !isGuest && isFavorited(profile.uid)} onToggleFavorite={!isOwner && !!currentUser && !isGuest ? () => toggleFavorite(profile) : undefined} friendStatus={!isOwner && !!currentUser && !isGuest ? (isFriend(profile.uid) ? "friends" : hasSentRequest(profile.uid) ? "sent" : hasReceivedRequest(profile.uid) ? "received" : "none") : undefined} onFriendAction={!isOwner && !!currentUser && !isGuest ? () => { const fs = getFriendshipForUser(profile.uid); if (isFriend(profile.uid)) return; if (hasReceivedRequest(profile.uid) && fs) { acceptRequest(fs.id); } else if (!hasSentRequest(profile.uid)) { sendRequest(profile); } } : undefined} onShowMoreAchievements={() => { setAchievementsExpanded(true); setTimeout(() => document.getElementById("achievements")?.scrollIntoView({ behavior: "smooth", block: "start" }), 50); }} onShareCard={isOwner || isAdmin ? () => setProfileShareOpen(true) : undefined} />
+          <ProfileHeader profile={profile} achievements={achievements} bestRank={bestRank} isAdmin={isAdmin} isOwner={isOwner} isFavorited={!isOwner && !!currentUser && !isGuest && isFavorited(profile.uid)} onToggleFavorite={!isOwner && !!currentUser && !isGuest ? () => toggleFavorite(profile) : undefined} friendStatus={!isOwner && !!currentUser && !isGuest ? (isFriend(profile.uid) ? "friends" : hasSentRequest(profile.uid) ? "sent" : hasReceivedRequest(profile.uid) ? "received" : "none") : undefined} onFriendAction={!isOwner && !!currentUser && !isGuest ? () => { const fs = getFriendshipForUser(profile.uid); if (isFriend(profile.uid)) return; if (hasReceivedRequest(profile.uid) && fs) { acceptRequest(fs.id); } else if (!hasSentRequest(profile.uid)) { sendRequest(profile); } } : undefined} onShowMoreAchievements={() => { setAchievementsExpanded(true); setTimeout(() => document.getElementById("achievements")?.scrollIntoView({ behavior: "smooth", block: "start" }), 50); }} onShareCard={isOwner || isAdmin ? () => setProfileShareOpen(true) : undefined} friendCount={isAdmin ? friendCount : undefined} />
           {/* Streak mini */}
           <div className="shrink-0 ml-auto text-right">
             <div className="flex items-baseline gap-1 justify-end">
@@ -760,7 +768,7 @@ export default function PlayerProfile() {
   );
 }
 
-function ProfileHeader({ profile, achievements, bestRank, isAdmin, isOwner, isFavorited, onToggleFavorite, friendStatus, onFriendAction, onShowMoreAchievements, onShareCard }: { profile: UserProfile; achievements?: Achievement[]; bestRank?: 1 | 2 | 3 | 4 | 5 | null; isAdmin?: boolean; isOwner?: boolean; isFavorited?: boolean; onToggleFavorite?: () => void; friendStatus?: "none" | "sent" | "received" | "friends"; onFriendAction?: () => void; onShowMoreAchievements?: () => void; onShareCard?: () => void }) {
+function ProfileHeader({ profile, achievements, bestRank, isAdmin, isOwner, isFavorited, onToggleFavorite, friendStatus, onFriendAction, onShowMoreAchievements, onShareCard, friendCount }: { profile: UserProfile; achievements?: Achievement[]; bestRank?: 1 | 2 | 3 | 4 | 5 | null; isAdmin?: boolean; isOwner?: boolean; isFavorited?: boolean; onToggleFavorite?: () => void; friendStatus?: "none" | "sent" | "received" | "friends"; onFriendAction?: () => void; onShowMoreAchievements?: () => void; onShareCard?: () => void; friendCount?: number | null }) {
   const [linkCopied, setLinkCopied] = useState(false);
   const ringClass = bestRank === 1 ? "rank-border-grandmaster" : bestRank === 2 ? "rank-border-diamond" : bestRank === 3 ? "rank-border-gold" : bestRank === 4 ? "rank-border-silver" : bestRank === 5 ? "rank-border-bronze" : "";
   const isCreator = profile.username === "azoni";
@@ -886,15 +894,25 @@ function ProfileHeader({ profile, achievements, bestRank, isAdmin, isOwner, isFa
         </p>
         {achievements && achievements.length > 0 && <AchievementBadges earned={achievements} max={4} mobileMax={2} onShowMore={onShowMoreAchievements} />}
         {isAdmin && !isOwner && (
-          <Link
-            href={`/inbox/${profile.uid}`}
-            className="inline-flex items-center gap-1.5 mt-1 text-xs text-fab-gold hover:text-fab-gold-light transition-colors"
-          >
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-            </svg>
-            Message
-          </Link>
+          <div className="flex items-center gap-3 mt-1">
+            <Link
+              href={`/inbox/${profile.uid}`}
+              className="inline-flex items-center gap-1.5 text-xs text-fab-gold hover:text-fab-gold-light transition-colors"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+              </svg>
+              Message
+            </Link>
+            {friendCount !== null && friendCount !== undefined && (
+              <span className="inline-flex items-center gap-1 text-xs text-fab-dim">
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
+                </svg>
+                {friendCount} friend{friendCount !== 1 ? "s" : ""}
+              </span>
+            )}
+          </div>
         )}
       </div>
     </div>
