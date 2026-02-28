@@ -1,4 +1,4 @@
-import { doc, getDoc, setDoc, getDocs, deleteDoc, collection, query, where, limit, orderBy, addDoc, updateDoc, onSnapshot, arrayUnion, type Unsubscribe } from "firebase/firestore";
+import { doc, getDoc, setDoc, getDocs, deleteDoc, collection, query, where, limit, orderBy, addDoc, updateDoc, onSnapshot, arrayUnion, increment, type Unsubscribe } from "firebase/firestore";
 import { db } from "./firebase";
 import type { Poll, PollVote, PollResults, PollVoter } from "@/types";
 
@@ -200,6 +200,8 @@ export async function getActivePrediction(): Promise<Poll | null> {
   }
 }
 
+const MAX_OPTIONS_PER_USER = 5;
+
 /** Add a new option to a prediction. Returns index (existing if duplicate found). */
 export async function addPredictionOption(
   pollId: string,
@@ -222,13 +224,25 @@ export async function addPredictionOption(
     return { index: existingIndex, isDuplicate: true };
   }
 
-  // Append new option
+  // Check per-user add limit
+  const userAddCount = poll.optionAddCount?.[userId] ?? 0;
+  if (userAddCount >= MAX_OPTIONS_PER_USER) {
+    throw new Error(`You can only add up to ${MAX_OPTIONS_PER_USER} options.`);
+  }
+
+  // Append new option and increment user's add count atomically
   const newIndex = poll.options.length;
   await updateDoc(doc(db, "polls", pollId), {
     options: arrayUnion(displayLabel),
+    [`optionAddCount.${userId}`]: increment(1),
   });
 
   return { index: newIndex, isDuplicate: false };
+}
+
+/** Get how many options a user has added to a prediction */
+export function getUserOptionCount(poll: Poll | null, userId: string): number {
+  return poll?.optionAddCount?.[userId] ?? 0;
 }
 
 /** Admin: merge source option into target. Reassigns all votes. */

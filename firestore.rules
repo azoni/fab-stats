@@ -300,12 +300,12 @@ service cloud.firestore {
     match /polls/{pollId} {
       allow read: if true;
       allow write: if isAdmin();
-      // Authenticated users can add options to prediction polls (append-only, max 50)
+      // Authenticated users can add options to prediction polls (append-only, max 50, tracks per-user count)
       allow update: if request.auth != null
         && resource.data.type == "prediction"
         && resource.data.allowUserOptions == true
         && resource.data.votingOpen == true
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['options'])
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['options', 'optionAddCount'])
         && request.resource.data.options.size() <= resource.data.options.size() + 1
         && request.resource.data.options.size() <= 50;
 

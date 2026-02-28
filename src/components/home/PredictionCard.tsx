@@ -9,6 +9,7 @@ import {
   submitVote,
   addPredictionOption,
   normalizeOptionKey,
+  getUserOptionCount,
 } from "@/lib/polls";
 import { containsProfanity } from "@/lib/profanity-filter";
 import type { Poll, PollVote, PollResults } from "@/types";
@@ -67,7 +68,9 @@ export function PredictionCard({ pollId }: { pollId: string }) {
   const hasExactMatch = visibleOptions.some(
     (opt) => normalizeOptionKey(opt.label) === searchNorm,
   );
-  const canAddNew = search.trim().length >= 2 && !hasExactMatch;
+  const userAdds = user ? getUserOptionCount(poll, user.uid) : 0;
+  const maxAdds = 5;
+  const canAddNew = search.trim().length >= 2 && !hasExactMatch && userAdds < maxAdds;
 
   // Results view — sorted by votes desc (must be before early return to keep hooks stable)
   const sortedResults = useMemo(() => {
@@ -119,7 +122,7 @@ export function PredictionCard({ pollId }: { pollId: string }) {
       }
     } catch (err) {
       console.error("Add option error:", err);
-      setAddError("Failed to add option.");
+      setAddError(err instanceof Error ? err.message : "Failed to add option.");
     } finally {
       setAdding(false);
     }
@@ -196,7 +199,11 @@ export function PredictionCard({ pollId }: { pollId: string }) {
               className="w-full text-left px-3 py-1.5 rounded-md text-sm border border-dashed border-fab-gold/30 text-fab-gold hover:bg-fab-gold/5 transition-colors mb-2 cursor-pointer"
             >
               {adding ? "Adding..." : `+ Add "${search.trim()}"`}
+              <span className="float-right text-fab-dim text-xs">{maxAdds - userAdds} left</span>
             </button>
+          )}
+          {search.trim().length >= 2 && !hasExactMatch && userAdds >= maxAdds && poll.allowUserOptions && (
+            <p className="text-xs text-fab-dim text-center mb-2">You&apos;ve reached the max of {maxAdds} added options</p>
           )}
 
           {/* Vote button */}

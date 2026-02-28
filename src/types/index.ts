@@ -329,6 +329,7 @@ export interface Poll {
   correctOptionIndex?: number | null;
   resolvedAt?: string;
   closedAt?: string;
+  optionAddCount?: Record<string, number>;
 }
 
 export interface PollVote {
