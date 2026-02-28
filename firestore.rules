@@ -156,6 +156,29 @@ service cloud.firestore {
       }
     }
 
+    // ── Event comment walls ──
+    match /eventWalls/{eventId}/comments/{commentId} {
+      // Public read (guest privacy handled client-side by masking names)
+      allow read: if true;
+      // Create: auth required, authorUid must match, text max 500, not muted
+      allow create: if request.auth != null
+        && request.resource.data.authorUid == request.auth.uid
+        && maxLen(request.resource.data.text, 500)
+        && (!exists(/databases/$(database)/documents/admin/mutedWallUsers)
+            || !(request.auth.uid in get(/databases/$(database)/documents/admin/mutedWallUsers).data.userIds));
+      // Update: author only (text + editedAt), OR admin can edit any comment
+      allow update: if request.auth != null
+        && (
+          (resource.data.authorUid == request.auth.uid
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['text', 'editedAt'])
+            && maxLen(request.resource.data.text, 500))
+          || isAdmin()
+        );
+      // Delete: author or admin
+      allow delete: if request.auth != null
+        && (resource.data.authorUid == request.auth.uid || isAdmin());
+    }
+
     // ── Leaderboard ──
     match /leaderboard/{userId} {
       allow read: if true;

@@ -400,6 +400,20 @@ export interface Message {
   isAdmin: boolean;
 }
 
+// ── Event Wall ──
+
+export interface WallComment {
+  id: string;
+  authorUid: string;
+  authorName: string;
+  authorPhoto?: string;
+  text: string;
+  parentId?: string;
+  replyToName?: string;
+  createdAt: string;
+  editedAt?: string;
+}
+
 // ── Friends ──
 
 export interface Friendship {

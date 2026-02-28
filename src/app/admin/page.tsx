@@ -14,6 +14,7 @@ import { getBanner, saveBanner, type BannerConfig } from "@/lib/banner";
 import { getAllPolls, getPollResults, getPollVoters, savePoll, removePoll, clearVotes } from "@/lib/polls";
 import { searchHeroes } from "@/lib/heroes";
 import { getAllBadgeAssignments, assignBadge, revokeBadge } from "@/lib/badge-service";
+import { getMutedUserIds, muteUser, unmuteUser } from "@/lib/mute-service";
 import { ADMIN_BADGES } from "@/lib/badges";
 import { GameFormat } from "@/types";
 import type { FeedbackItem, Creator, FeaturedEvent, FeaturedEventPlayer, UserProfile, Poll, PollResults, PollVoter } from "@/types";
@@ -94,6 +95,7 @@ export default function AdminPage() {
   const [savingBanner, setSavingBanner] = useState(false);
   const [bannerSaved, setBannerSaved] = useState(false);
   const [badgeAssignments, setBadgeAssignments] = useState<Record<string, string[]>>({});
+  const [mutedIds, setMutedIds] = useState<Set<string>>(new Set());
   const anyToolRunning = fixingDates || backfilling || backfillingGemIds || linkingMatches || resyncingH2H;
   const [activeTab, setActiveTab] = useState<"overview" | "users" | "feedback" | "content" | "poll" | "tools">(() => {
     if (typeof window !== "undefined") {
@@ -114,7 +116,7 @@ export default function AdminPage() {
     setFetching(true);
     setError("");
     try {
-      const [result, fb, cr, ev, analytics, polls, bannerData, badges] = await Promise.all([getAdminDashboardData(), getAllFeedback(), getCreators(), getEvents(), getAnalytics(), getAllPolls(), getBanner(), getAllBadgeAssignments()]);
+      const [result, fb, cr, ev, analytics, polls, bannerData, badges, muted] = await Promise.all([getAdminDashboardData(), getAllFeedback(), getCreators(), getEvents(), getAnalytics(), getAllPolls(), getBanner(), getAllBadgeAssignments(), getMutedUserIds()]);
       setData(result);
       setFeedback(fb);
       setCreatorsList(cr);
@@ -130,6 +132,7 @@ export default function AdminPage() {
       setAnalyticsData(analytics);
       setAllPolls(polls);
       setBadgeAssignments(badges);
+      setMutedIds(new Set(muted));
       if (bannerData) {
         setBannerText(bannerData.text);
         setBannerActive(bannerData.active);
@@ -536,6 +539,7 @@ export default function AdminPage() {
                               <UserExpandedStats
                                 user={u}
                                 assignedBadgeIds={badgeAssignments[u.uid] || []}
+                                isMuted={mutedIds.has(u.uid)}
                                 onAssignBadge={async (badgeId, notify) => {
                                   await assignBadge(u.uid, badgeId, notify);
                                   setBadgeAssignments((prev) => ({
@@ -549,6 +553,15 @@ export default function AdminPage() {
                                     ...prev,
                                     [u.uid]: (prev[u.uid] || []).filter((id) => id !== badgeId),
                                   }));
+                                }}
+                                onToggleMute={async () => {
+                                  if (mutedIds.has(u.uid)) {
+                                    await unmuteUser(u.uid);
+                                    setMutedIds((prev) => { const next = new Set(prev); next.delete(u.uid); return next; });
+                                  } else {
+                                    await muteUser(u.uid);
+                                    setMutedIds((prev) => new Set(prev).add(u.uid));
+                                  }
                                 }}
                               />
                             </td>
@@ -1500,11 +1513,13 @@ export default function AdminPage() {
   );
 }
 
-function UserExpandedStats({ user: u, assignedBadgeIds, onAssignBadge, onRevokeBadge }: {
+function UserExpandedStats({ user: u, assignedBadgeIds, isMuted, onAssignBadge, onRevokeBadge, onToggleMute }: {
   user: AdminUserStats;
   assignedBadgeIds: string[];
+  isMuted: boolean;
   onAssignBadge: (badgeId: string, notify: boolean) => Promise<void>;
   onRevokeBadge: (badgeId: string) => Promise<void>;
+  onToggleMute: () => Promise<void>;
 }) {
   const hasStats = u.winRate !== undefined;
   const unassigned = ADMIN_BADGES.filter((b) => !assignedBadgeIds.includes(b.id));
@@ -1627,6 +1642,26 @@ function UserExpandedStats({ user: u, assignedBadgeIds, onAssignBadge, onRevokeB
           )}
           {assignedBadgeIds.length === 0 && unassigned.length === 0 && (
             <span className="text-[11px] text-fab-dim">All badges assigned</span>
+          )}
+        </div>
+      </div>
+
+      {/* Mute from event wall */}
+      <div className="border-t border-fab-border/50 pt-3">
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-fab-muted">Event Wall</span>
+          <button
+            onClick={(e) => { e.stopPropagation(); onToggleMute(); }}
+            className={`text-[11px] px-2 py-1 rounded font-medium transition-colors ${
+              isMuted
+                ? "bg-fab-loss/15 text-fab-loss hover:bg-fab-loss/25"
+                : "bg-fab-dim/10 text-fab-muted hover:bg-fab-dim/20"
+            }`}
+          >
+            {isMuted ? "Unmute" : "Mute"}
+          </button>
+          {isMuted && (
+            <span className="text-[10px] text-fab-loss italic">User is muted from event wall</span>
           )}
         </div>
       </div>

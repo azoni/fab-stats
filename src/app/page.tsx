@@ -21,6 +21,8 @@ import { selectFeaturedProfiles } from "@/lib/featured-profiles";
 import { BestFinishShareModal } from "@/components/profile/BestFinishCard";
 import { ProfileShareModal } from "@/components/profile/ProfileCard";
 import { OnThisDay } from "@/components/home/OnThisDay";
+import { EventCommentWall } from "@/components/home/EventCommentWall";
+import { getUnlockedColors } from "@/lib/comment-format";
 import { localDate } from "@/lib/constants";
 
 export default function Dashboard() {
@@ -94,6 +96,15 @@ export default function Dashboard() {
   const communityTopHeroes = useMemo(() => communityMeta.heroStats.slice(0, 5), [communityMeta]);
   const featuredProfiles = useMemo(() => selectFeaturedProfiles(lbEntries), [lbEntries]);
   const rankMap = useMemo(() => computeRankMap(lbEntries), [lbEntries]);
+  const unlockedColors = useMemo(() => {
+    if (!user) return [];
+    const myLb = lbEntries.find((e) => e.userId === user.uid);
+    return getUnlockedColors(
+      myLb?.totalMatches ?? matches.length,
+      myLb?.totalTop8s ?? 0,
+      playoffFinishes
+    );
+  }, [user, lbEntries, matches.length, playoffFinishes]);
 
 
   if (!isLoaded) {
@@ -452,12 +463,15 @@ export default function Dashboard() {
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <ActivityFeed rankMap={rankMap} />
-            <FeaturedProfiles profiles={featuredProfiles} rankMap={rankMap} />
+            <div className="space-y-6">
+              <EventCommentWall eventId="calling_montreal_2026" rankMap={rankMap} unlockedColors={unlockedColors} />
+              <FeaturedProfiles profiles={featuredProfiles} rankMap={rankMap} />
+            </div>
           </div>
         </>
       )}
 
-      {/* Montreal metagame for logged-out users */}
+      {/* Montreal metagame + comment wall for logged-out users */}
       {!user && (
         <div>
           <div className="flex items-center justify-between mb-2">
@@ -509,6 +523,9 @@ export default function Dashboard() {
                 />
               </div>
             )}
+          </div>
+          <div className="mt-6">
+            <EventCommentWall eventId="calling_montreal_2026" rankMap={rankMap} unlockedColors={unlockedColors} />
           </div>
         </div>
       )}
