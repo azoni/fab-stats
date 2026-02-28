@@ -93,11 +93,14 @@ export function AchievementShowcase({ earned, progress, forceExpanded }: { earne
   // Filter: show all or only groups with at least one earned
   const displayed = showAll ? grouped : grouped.filter((g) => g.isEarned);
 
-  // Sort: earned first (by highest rarity), then unearned
+  // Sort: earned first, special badges above regular, then by rarity
   const sorted = useMemo(() => {
     const rarityOrder = { legendary: 5, epic: 4, rare: 3, uncommon: 2, common: 1 };
     return [...displayed].sort((a, b) => {
       if (a.isEarned !== b.isEarned) return a.isEarned ? -1 : 1;
+      const aSpecial = a.display.category === "special" ? 1 : 0;
+      const bSpecial = b.display.category === "special" ? 1 : 0;
+      if (aSpecial !== bSpecial) return bSpecial - aSpecial;
       return rarityOrder[b.display.rarity] - rarityOrder[a.display.rarity];
     });
   }, [displayed]);
@@ -140,13 +143,14 @@ export function AchievementShowcase({ earned, progress, forceExpanded }: { earne
               const colors = rarityColors[a.rarity];
               const isGrouped = g.totalCount > 1;
               const isExpGroup = expandedGroup === (a.group ?? a.id);
+              const isSpecial = a.category === "special";
 
               return (
                 <div key={a.group ?? a.id}>
                   <div
                     className={`relative rounded-lg border p-3 transition-colors ${
                       g.isEarned
-                        ? `${colors.bg} ${colors.border}`
+                        ? isSpecial ? "badge-special-card" : `${colors.bg} ${colors.border}`
                         : "bg-fab-surface/30 border-fab-border/50"
                     } ${isGrouped ? "cursor-pointer" : ""}`}
                     title={`${a.name}: ${a.description}${!g.isEarned ? " (Locked)" : ""}`}
@@ -155,7 +159,7 @@ export function AchievementShowcase({ earned, progress, forceExpanded }: { earne
                     <div className="flex items-center gap-1.5 mb-1">
                       <AchievementIcon
                         icon={a.icon}
-                        className={`w-6 h-6 ${g.isEarned ? colors.text : "text-fab-dim/50"}`}
+                        className={`w-6 h-6 ${g.isEarned ? (isSpecial ? "text-violet-300" : colors.text) : "text-fab-dim/50"}`}
                       />
                       {!g.isEarned && (
                         <svg className="w-3.5 h-3.5 text-fab-dim/40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -163,7 +167,7 @@ export function AchievementShowcase({ earned, progress, forceExpanded }: { earne
                         </svg>
                       )}
                     </div>
-                    <p className={`text-xs font-semibold truncate ${g.isEarned ? colors.text : "text-fab-dim/60"}`}>
+                    <p className={`text-xs font-semibold truncate ${g.isEarned ? (isSpecial ? "text-violet-300" : colors.text) : "text-fab-dim/60"}`}>
                       {a.name}
                     </p>
                     <p className={`text-[10px] truncate ${g.isEarned ? "text-fab-dim" : "text-fab-dim/40"}`}>{a.description}</p>
@@ -202,11 +206,17 @@ export function AchievementShowcase({ earned, progress, forceExpanded }: { earne
                       </div>
                     )}
 
-                    {/* Rarity badge */}
+                    {/* Rarity badge — sparkle for special, text for regular */}
                     {g.isEarned && (
-                      <span className={`absolute top-1.5 right-1.5 text-[8px] font-bold uppercase ${colors.text}`}>
-                        {a.rarity}
-                      </span>
+                      isSpecial ? (
+                        <svg className="absolute top-1.5 right-1.5 w-3.5 h-3.5 text-violet-300" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M12 2l2.09 6.26L20.18 9.27l-4.64 4.14L16.82 20 12 16.77 7.18 20l1.27-6.59L3.82 9.27l6.09-1.01L12 2z" />
+                        </svg>
+                      ) : (
+                        <span className={`absolute top-1.5 right-1.5 text-[8px] font-bold uppercase ${colors.text}`}>
+                          {a.rarity}
+                        </span>
+                      )
                     )}
                   </div>
 
@@ -260,7 +270,12 @@ export function AchievementBadges({ earned, max = 5, mobileMax, onShowMore }: { 
 
   const rarityOrder = { legendary: 5, epic: 4, rare: 3, uncommon: 2, common: 1 };
   const top = [...earned]
-    .sort((a, b) => rarityOrder[b.rarity] - rarityOrder[a.rarity])
+    .sort((a, b) => {
+      const aSpecial = a.category === "special" ? 1 : 0;
+      const bSpecial = b.category === "special" ? 1 : 0;
+      if (aSpecial !== bSpecial) return bSpecial - aSpecial;
+      return rarityOrder[b.rarity] - rarityOrder[a.rarity];
+    })
     .slice(0, max);
 
   const remaining = earned.length - top.length;
@@ -269,16 +284,23 @@ export function AchievementBadges({ earned, max = 5, mobileMax, onShowMore }: { 
 
   return (
     <div className="flex items-center gap-1 flex-wrap">
-      {top.map((a, i) => (
-        <span
-          key={a.id}
-          className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium max-w-[130px] ${rarityColors[a.rarity].bg} ${rarityColors[a.rarity].text} ${rarityColors[a.rarity].border} border ${i >= effectiveMobileMax ? "hidden sm:inline-flex" : ""}`}
-          title={`${a.name}: ${a.description}`}
-        >
-          <AchievementIcon icon={a.icon} className="w-3 h-3 shrink-0" />
-          <span className="truncate">{a.name}</span>
-        </span>
-      ))}
+      {top.map((a, i) => {
+        const isSpecial = a.category === "special";
+        return (
+          <span
+            key={a.id}
+            className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium max-w-[130px] border ${
+              isSpecial
+                ? "badge-special-inline text-violet-300"
+                : `${rarityColors[a.rarity].bg} ${rarityColors[a.rarity].text} ${rarityColors[a.rarity].border}`
+            } ${i >= effectiveMobileMax ? "hidden sm:inline-flex" : ""}`}
+            title={`${a.name}: ${a.description}`}
+          >
+            <AchievementIcon icon={a.icon} className="w-3 h-3 shrink-0" />
+            <span className="truncate">{a.name}</span>
+          </span>
+        );
+      })}
       {mobileMax !== undefined && mobileRemaining > remaining && mobileRemaining > 0 && (
         <button
           onClick={onShowMore}
