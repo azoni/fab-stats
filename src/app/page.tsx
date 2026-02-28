@@ -428,9 +428,6 @@ export default function Dashboard() {
                 >
                   {videoExpanded ? "Minimize" : "Expand"} Stream
                 </button>
-                <a href="https://www.youtube.com/live/DFWOlXB0YXc?si=-Kj27AY5o4L4ubE5" target="_blank" rel="noopener noreferrer" className="text-xs text-fab-gold hover:text-fab-gold-light transition-colors">
-                  Watch Stream &rarr;
-                </a>
               </div>
             </div>
             {videoExpanded && (
@@ -471,16 +468,21 @@ export default function Dashboard() {
                 activePrediction?.id && <PredictionCard pollId={activePrediction.id} />
               )}
             </div>
-            {!videoExpanded && activePrediction?.id && (
-              <div className="mt-4">
-                <PredictionCard pollId={activePrediction.id} />
-              </div>
-            )}
           </div>
+          {!videoExpanded && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {activePrediction?.id ? (
+                <PredictionCard pollId={activePrediction.id} />
+              ) : (
+                <div />
+              )}
+              <EventCommentWall eventId="calling_montreal_2026" rankMap={rankMap} unlockedColors={unlockedColors} />
+            </div>
+          )}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <ActivityFeed rankMap={rankMap} />
             <div className="space-y-6">
-              <EventCommentWall eventId="calling_montreal_2026" rankMap={rankMap} unlockedColors={unlockedColors} />
+              {videoExpanded && <EventCommentWall eventId="calling_montreal_2026" rankMap={rankMap} unlockedColors={unlockedColors} />}
               <FeaturedProfiles profiles={featuredProfiles} rankMap={rankMap} />
             </div>
           </div>
@@ -542,14 +544,21 @@ export default function Dashboard() {
               activePrediction?.id && <PredictionCard pollId={activePrediction.id} />
             )}
           </div>
-          {!videoExpanded && activePrediction?.id && (
-            <div className="mt-4">
-              <PredictionCard pollId={activePrediction.id} />
+          {!videoExpanded && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+              {activePrediction?.id ? (
+                <PredictionCard pollId={activePrediction.id} />
+              ) : (
+                <div />
+              )}
+              <EventCommentWall eventId="calling_montreal_2026" rankMap={rankMap} unlockedColors={unlockedColors} />
             </div>
           )}
-          <div className="mt-6">
-            <EventCommentWall eventId="calling_montreal_2026" rankMap={rankMap} unlockedColors={unlockedColors} />
-          </div>
+          {videoExpanded && (
+            <div className="mt-6">
+              <EventCommentWall eventId="calling_montreal_2026" rankMap={rankMap} unlockedColors={unlockedColors} />
+            </div>
+          )}
         </div>
       )}
 
