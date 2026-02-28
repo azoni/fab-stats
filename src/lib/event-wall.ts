@@ -79,10 +79,11 @@ export async function getOlderWallComments(
 export async function addWallComment(
   eventId: string,
   comment: Omit<WallComment, "id">,
-  parentComment?: WallComment
+  parentComment?: WallComment,
+  skipProfanityCheck = false
 ): Promise<void> {
-  // Defense-in-depth profanity check
-  if (containsProfanity(comment.text)) {
+  // Defense-in-depth profanity check (admin bypasses)
+  if (!skipProfanityCheck && containsProfanity(comment.text)) {
     throw new Error("Your comment contains inappropriate language.");
   }
 

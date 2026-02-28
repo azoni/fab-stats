@@ -501,9 +501,6 @@ export default function Dashboard() {
               >
                 {videoExpanded ? "Minimize" : "Expand"} Stream
               </button>
-              <a href="https://www.youtube.com/live/DFWOlXB0YXc?si=-Kj27AY5o4L4ubE5" target="_blank" rel="noopener noreferrer" className="text-xs text-fab-gold hover:text-fab-gold-light transition-colors">
-                Watch Stream &rarr;
-              </a>
             </div>
           </div>
           {videoExpanded && (

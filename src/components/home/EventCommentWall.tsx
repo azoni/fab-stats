@@ -227,7 +227,7 @@ interface EventCommentWallProps {
 
 export function EventCommentWall({ eventId, rankMap, unlockedColors = [] }: EventCommentWallProps) {
   const { user, profile, isGuest, isAdmin } = useAuth();
-  const { comments, loading, loadingMore, hasMore, loadOlder, addComment, editComment, removeComment, toggleReaction } = useEventWall(eventId);
+  const { comments, realtimeCount, loading, loadingMore, hasMore, loadOlder, addComment, editComment, removeComment, toggleReaction } = useEventWall(eventId);
   const { mutedUserIds } = useMutedUsers();
   const [replyingTo, setReplyingTo] = useState<WallComment | null>(null);
   const [text, setText] = useState("");
@@ -236,7 +236,7 @@ export function EventCommentWall({ eventId, rankMap, unlockedColors = [] }: Even
   const [cooldown, setCooldown] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const prevCountRef = useRef(0);
+  const prevRealtimeCountRef = useRef(0);
   const postTimestampsRef = useRef<number[]>([]);
   const cooldownTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const isLoggedIn = !!user && !isGuest;
@@ -272,13 +272,13 @@ export function EventCommentWall({ eventId, rankMap, unlockedColors = [] }: Even
     return comments.filter((c) => !mutedUserIds.has(c.authorUid));
   }, [comments, mutedUserIds, isAdmin]);
 
-  // Auto-scroll to bottom on new comments
+  // Auto-scroll to bottom only when new realtime comments arrive (not on load-older)
   useEffect(() => {
-    if (visibleComments.length > prevCountRef.current && scrollRef.current) {
+    if (realtimeCount > prevRealtimeCountRef.current && scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-    prevCountRef.current = visibleComments.length;
-  }, [visibleComments.length]);
+    prevRealtimeCountRef.current = realtimeCount;
+  }, [realtimeCount]);
 
   // Group comments: top-level + their replies
   const threads = useMemo(() => {
@@ -568,6 +568,20 @@ function WallCommentItem({
   const [deleting, setDeleting] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
   const [showPicker, setShowPicker] = useState(false);
+  const pickerRef = useRef<HTMLDivElement>(null);
+
+  // Close reaction picker on click outside
+  useEffect(() => {
+    if (!showPicker) return;
+    function handleClickOutside(e: MouseEvent) {
+      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) {
+        setShowPicker(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showPicker]);
+
   const isAuthor = currentUid === comment.authorUid;
   const canEdit = isAuthor || isAdmin;
   const canDelete = isAuthor || isAdmin;
@@ -729,7 +743,7 @@ function WallCommentItem({
         {!editing && (
           <div className="flex items-center gap-2.5 mt-0.5 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
             {isLoggedIn && (
-              <div className="relative">
+              <div className="relative" ref={pickerRef}>
                 <button
                   onClick={() => setShowPicker((p) => !p)}
                   className="text-[10px] text-fab-dim hover:text-fab-gold transition-colors"

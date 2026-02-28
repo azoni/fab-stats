@@ -65,7 +65,8 @@ export function parseCommentText(text: string): Segment[] {
 
 /** Check if text contains any formatting syntax */
 export function hasFormatting(text: string): boolean {
-  return FORMAT_REGEX.test(text);
+  // Use a fresh regex to avoid stateful lastIndex bug with the global FORMAT_REGEX
+  return /(\|\|.+?\|\||\[(?:green|blue|purple|gold|red)\].+?\[\/(?:green|blue|purple|gold|red)\])/.test(text);
 }
 
 /** Wrap a text selection with format markers */

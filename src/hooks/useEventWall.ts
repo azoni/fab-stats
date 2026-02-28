@@ -14,7 +14,7 @@ import type { WallComment, ReactionType } from "@/types";
 const MAX_COMMENTS = 50;
 
 export function useEventWall(eventId: string) {
-  const { user, profile } = useAuth();
+  const { user, profile, isAdmin } = useAuth();
   const [realtimeComments, setRealtimeComments] = useState<WallComment[]>([]);
   const [olderComments, setOlderComments] = useState<WallComment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -74,10 +74,11 @@ export function useEventWall(eventId: string) {
             ? { parentId: parentComment.id, replyToName: parentComment.authorName }
             : {}),
         },
-        parentComment
+        parentComment,
+        isAdmin
       );
     },
-    [user, profile, eventId]
+    [user, profile, eventId, isAdmin]
   );
 
   const editComment = useCallback(
@@ -104,5 +105,5 @@ export function useEventWall(eventId: string) {
     [user, eventId]
   );
 
-  return { comments, loading, loadingMore, hasMore, loadOlder, addComment, editComment, removeComment, toggleReaction };
+  return { comments, realtimeCount: realtimeComments.length, loading, loadingMore, hasMore, loadOlder, addComment, editComment, removeComment, toggleReaction };
 }
