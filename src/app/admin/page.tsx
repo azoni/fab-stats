@@ -1305,7 +1305,7 @@ export default function AdminPage() {
                 <button
                   onClick={async () => {
                     const opts = predOptions.filter(Boolean);
-                    if (!predQuestion.trim() || opts.length < 2) return;
+                    if (!predQuestion.trim()) return;
                     setSavingPred(true);
                     setPredSaved(false);
                     try {
@@ -1331,7 +1331,7 @@ export default function AdminPage() {
                       setSavingPred(false);
                     }
                   }}
-                  disabled={savingPred || !predQuestion.trim() || predOptions.filter(Boolean).length < 2}
+                  disabled={savingPred || !predQuestion.trim()}
                   className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors disabled:opacity-50"
                 >
                   {savingPred ? "Saving..." : "Publish Prediction"}
