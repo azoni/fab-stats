@@ -1,5 +1,6 @@
 import { doc, setDoc, getDoc, increment } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { auth } from "@/lib/firebase";
 
 // UTC hour key: "2026-02-27-14"
 function hourKey(date: Date = new Date()): string {
@@ -13,13 +14,14 @@ function dayKey(date: Date = new Date()): string {
 
 /** Increment a page view counter for the given route path */
 export function trackPageView(path: string) {
+  if (!auth.currentUser) return;
   // Sanitize path to be a valid Firestore field name (replace / with _)
   const field = path === "/" ? "_home" : path.replace(/\//g, "_").replace(/^_/, "");
   const now = new Date();
   try {
-    setDoc(doc(db, "analytics", "pageViews"), { [field]: increment(1) }, { merge: true });
-    setDoc(doc(db, "analytics", `pv_h_${hourKey(now)}`), { [field]: increment(1) }, { merge: true });
-    setDoc(doc(db, "analytics", `pv_d_${dayKey(now)}`), { [field]: increment(1) }, { merge: true });
+    setDoc(doc(db, "analytics", "pageViews"), { [field]: increment(1) }, { merge: true }).catch(() => {});
+    setDoc(doc(db, "analytics", `pv_h_${hourKey(now)}`), { [field]: increment(1) }, { merge: true }).catch(() => {});
+    setDoc(doc(db, "analytics", `pv_d_${dayKey(now)}`), { [field]: increment(1) }, { merge: true }).catch(() => {});
   } catch {
     // Fire and forget — don't block UI
   }
@@ -27,12 +29,12 @@ export function trackPageView(path: string) {
 
 /** Increment a creator click counter */
 export function trackCreatorClick(creatorName: string) {
-  if (!creatorName) return;
+  if (!creatorName || !auth.currentUser) return;
   const now = new Date();
   try {
-    setDoc(doc(db, "analytics", "creatorClicks"), { [creatorName]: increment(1) }, { merge: true });
-    setDoc(doc(db, "analytics", `cc_h_${hourKey(now)}`), { [creatorName]: increment(1) }, { merge: true });
-    setDoc(doc(db, "analytics", `cc_d_${dayKey(now)}`), { [creatorName]: increment(1) }, { merge: true });
+    setDoc(doc(db, "analytics", "creatorClicks"), { [creatorName]: increment(1) }, { merge: true }).catch(() => {});
+    setDoc(doc(db, "analytics", `cc_h_${hourKey(now)}`), { [creatorName]: increment(1) }, { merge: true }).catch(() => {});
+    setDoc(doc(db, "analytics", `cc_d_${dayKey(now)}`), { [creatorName]: increment(1) }, { merge: true }).catch(() => {});
   } catch {
     // Fire and forget
   }
