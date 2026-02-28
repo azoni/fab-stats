@@ -18,7 +18,7 @@ const TYPE_FILTERS: { value: TypeFilter; label: string }[] = [
   { value: "placement", label: "Placements" },
 ];
 
-const SCROLL_LIMIT = 20;
+const PAGE_SIZE = 5;
 const SCOPE_KEY = "fab-feed-scope";
 const TYPE_KEY = "fab-feed-type";
 
@@ -36,8 +36,10 @@ export function ActivityFeed({ rankMap }: { rankMap?: Map<string, 1 | 2 | 3 | 4 
   const [scope, _setScope] = useState<ScopeTab>(() => readStored(SCOPE_KEY, ["community", "friends"], "community"));
   const [typeFilter, _setTypeFilter] = useState<TypeFilter>(() => readStored(TYPE_KEY, ["all", "import", "achievement", "placement"], "placement"));
 
-  const setScope = useCallback((v: ScopeTab) => { _setScope(v); localStorage.setItem(SCOPE_KEY, v); }, []);
-  const setTypeFilter = useCallback((v: TypeFilter) => { _setTypeFilter(v); localStorage.setItem(TYPE_KEY, v); }, []);
+  const [page, setPage] = useState(0);
+
+  const setScope = useCallback((v: ScopeTab) => { _setScope(v); setPage(0); localStorage.setItem(SCOPE_KEY, v); }, []);
+  const setTypeFilter = useCallback((v: TypeFilter) => { _setTypeFilter(v); setPage(0); localStorage.setItem(TYPE_KEY, v); }, []);
 
   // Build set of friend/favorite user IDs
   const socialUserIds = useMemo(() => {
@@ -84,11 +86,13 @@ export function ActivityFeed({ rankMap }: { rankMap?: Map<string, 1 | 2 | 3 | 4 
       return new Date(dateB).getTime() - new Date(dateA).getTime();
     });
 
-    return source.slice(0, SCROLL_LIMIT);
+    return source;
   }, [events, scope, typeFilter, socialUserIds]);
 
   // Group consecutive imports for cleaner display
-  const groups = useMemo(() => groupConsecutiveEvents(filteredEvents), [filteredEvents]);
+  const allGroups = useMemo(() => groupConsecutiveEvents(filteredEvents), [filteredEvents]);
+  const totalPages = Math.max(1, Math.ceil(allGroups.length / PAGE_SIZE));
+  const groups = allGroups.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
 
   // Don't render section if no events at all
   if (!loading && events.length === 0) return null;
@@ -148,7 +152,7 @@ export function ActivityFeed({ rankMap }: { rankMap?: Map<string, 1 | 2 | 3 | 4 
         )}
       </div>
 
-      {/* Scrollable feed area */}
+      {/* Feed list */}
       {loading ? (
         <div className="space-y-2">
           {[...Array(4)].map((_, i) => (
@@ -164,19 +168,36 @@ export function ActivityFeed({ rankMap }: { rankMap?: Map<string, 1 | 2 | 3 | 4 
           </p>
         </div>
       ) : (
-        <div className="relative">
-          <div className="max-h-[340px] overflow-y-auto overscroll-contain feed-scroll pr-1">
-            <div className="space-y-2">
-              {groups.map((group) => (
-                <GroupedFeedCard key={group.events[0].id} group={group} compact rankMap={rankMap} />
-              ))}
-            </div>
+        <>
+          <div className="space-y-2">
+            {groups.map((group) => (
+              <GroupedFeedCard key={group.events[0].id} group={group} compact rankMap={rankMap} />
+            ))}
           </div>
-          {/* Fade-out at bottom when scrollable */}
-          {groups.length > 5 && (
-            <div className="absolute bottom-0 left-0 right-1 h-8 bg-gradient-to-t from-fab-bg to-transparent pointer-events-none rounded-b-lg" />
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between mt-3">
+              <button
+                onClick={() => setPage((p) => Math.max(0, p - 1))}
+                disabled={page === 0}
+                className="px-2.5 py-1 rounded-md text-[11px] font-medium bg-fab-surface border border-fab-border text-fab-muted hover:text-fab-text transition-colors disabled:opacity-30 disabled:pointer-events-none"
+              >
+                &larr; Prev
+              </button>
+              <span className="text-[10px] text-fab-dim">
+                {page + 1} / {totalPages}
+              </span>
+              <button
+                onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+                disabled={page >= totalPages - 1}
+                className="px-2.5 py-1 rounded-md text-[11px] font-medium bg-fab-surface border border-fab-border text-fab-muted hover:text-fab-text transition-colors disabled:opacity-30 disabled:pointer-events-none"
+              >
+                Next &rarr;
+              </button>
+            </div>
           )}
-        </div>
+        </>
       )}
     </div>
   );
