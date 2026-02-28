@@ -35,6 +35,13 @@ export async function revokeBadge(userId: string, badgeId: string): Promise<void
   await setDoc(BADGES_DOC, { [userId]: arrayRemove(badgeId) }, { merge: true });
 }
 
+export async function getUserBadgeIds(userId: string): Promise<string[]> {
+  const snap = await getDoc(BADGES_DOC);
+  if (!snap.exists()) return [];
+  const data = snap.data() as Record<string, string[]>;
+  return data[userId] || [];
+}
+
 export async function getAllBadgeAssignments(): Promise<Record<string, string[]>> {
   const snap = await getDoc(BADGES_DOC);
   if (!snap.exists()) return {};

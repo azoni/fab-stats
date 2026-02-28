@@ -236,6 +236,110 @@ const icons: Record<string, ReactNode> = {
       <path d="M12 2a7 7 0 00-4 12.73V17h8v-2.27A7 7 0 0012 2z" fill="currentColor" fillOpacity="0.15" />
     </svg>
   ),
+  book: (
+    <svg className={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z" fill="currentColor" fillOpacity="0.15" />
+      <path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z" fill="currentColor" fillOpacity="0.1" />
+    </svg>
+  ),
+  megaphone: (
+    <svg className={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M18 8a6 6 0 01-6 6H5l-3-3V5l3-3h7a6 6 0 016 6z" fill="currentColor" fillOpacity="0.15" />
+      <path d="M18 8a6 6 0 010 0M21 5c1.5 1.5 1.5 5.5 0 7" />
+      <path d="M5 14v4a2 2 0 002 2h1a2 2 0 002-2v-3" />
+    </svg>
+  ),
+  wave: (
+    <svg className={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M7 11l-1.5-1.5a1.5 1.5 0 012.12-2.12l6.38 6.38a3 3 0 004.24-4.24L14 5.5a1.5 1.5 0 012.12-2.12l3 3a7 7 0 01-9.9 9.9L7 14" fill="currentColor" fillOpacity="0.1" />
+      <path d="M4.5 13.5a1.5 1.5 0 010-2.12L7 9M9.5 8.5L7.38 6.38a1.5 1.5 0 012.12-2.12L12 6.76" />
+    </svg>
+  ),
+  butterfly: (
+    <svg className={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 12C9 8 4 7 3 11s3 7 9 5" fill="currentColor" fillOpacity="0.15" />
+      <path d="M12 12c3-4 8-5 9-1s-3 7-9 5" fill="currentColor" fillOpacity="0.1" />
+      <path d="M12 12v8M10 4c1 2 2 4 2 8M14 4c-1 2-2 4-2 8" />
+    </svg>
+  ),
+  horse: (
+    <svg className={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M18 3c-1 0-3 1-4 3l-1 2-3 1c-2 0-4 2-4 5v5h3v-3l5 3h3v-3c2 0 3-2 3-4V6c0-2-1-3-2-3z" fill="currentColor" fillOpacity="0.15" />
+      <circle cx="15" cy="8" r="0.5" fill="currentColor" />
+    </svg>
+  ),
+  scroll: (
+    <svg className={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M8 21h12a2 2 0 002-2v-2H10v2a2 2 0 01-2 2zm0 0a2 2 0 01-2-2V5a2 2 0 012-2h12a2 2 0 012 2v12" fill="currentColor" fillOpacity="0.1" />
+      <path d="M10 9h8M10 13h6" />
+    </svg>
+  ),
+  lotus: (
+    <svg className={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 20c-4-4-8-8-6-14 2 2 4 4 6 7 2-3 4-5 6-7 2 6-2 10-6 14z" fill="currentColor" fillOpacity="0.15" />
+      <path d="M8 18c-3-1-5-3-6-6 3 0 5 2 6 4M16 18c3-1 5-3 6-6-3 0-5 2-6 4" />
+    </svg>
+  ),
+  flask: (
+    <svg className={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M9 3h6M10 3v6l-5 8a2 2 0 001.7 3h10.6a2 2 0 001.7-3L14 9V3" />
+      <path d="M5.7 17L14 9V3H10v6L5.7 17h12.6" fill="currentColor" fillOpacity="0.1" />
+      <circle cx="10" cy="14" r="0.5" fill="currentColor" />
+      <circle cx="13" cy="16" r="0.5" fill="currentColor" />
+    </svg>
+  ),
+  chat: (
+    <svg className={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" fill="currentColor" fillOpacity="0.15" />
+      <path d="M8 10h8M8 14h5" />
+    </svg>
+  ),
+  snowflake: (
+    <svg className={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 2v20M4.93 4.93l14.14 14.14M2 12h20M4.93 19.07l14.14-14.14" />
+      <path d="M12 5l-2 2 2 2 2-2-2-2M12 17l-2 2 2 2 2-2-2-2M5 12l-2-2 2-2 2 2-2 2M17 12l2-2 2 2-2 2-2-2" />
+    </svg>
+  ),
+  cake: (
+    <svg className={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 14h18v6a2 2 0 01-2 2H5a2 2 0 01-2-2z" fill="currentColor" fillOpacity="0.15" />
+      <path d="M3 14c0-2 1-3 3-3h12c2 0 3 1 3 3" fill="currentColor" fillOpacity="0.1" />
+      <path d="M12 2v4M8 6v5M16 6v5" />
+      <circle cx="12" cy="2" r="1" fill="currentColor" fillOpacity="0.3" />
+    </svg>
+  ),
+  salt: (
+    <svg className={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M8 3h8l1 4H7z" fill="currentColor" fillOpacity="0.1" />
+      <rect x="7" y="7" width="10" height="14" rx="1" fill="currentColor" fillOpacity="0.15" />
+      <path d="M10 3v4M14 3v4M12 10v1M10 13v1M14 13v1" />
+    </svg>
+  ),
+  jester: (
+    <svg className={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 22c-5 0-8-3-8-7h16c0 4-3 7-8 7z" fill="currentColor" fillOpacity="0.15" />
+      <path d="M4 15c0-6 2-8 4-11l4 5 4-5c2 3 4 5 4 11" />
+      <circle cx="8" cy="4" r="1.5" fill="currentColor" fillOpacity="0.2" />
+      <circle cx="16" cy="4" r="1.5" fill="currentColor" fillOpacity="0.2" />
+      <circle cx="12" cy="9" r="1.5" fill="currentColor" fillOpacity="0.2" />
+    </svg>
+  ),
+  moon: (
+    <svg className={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" fill="currentColor" fillOpacity="0.15" />
+      <circle cx="18" cy="5" r="0.5" fill="currentColor" />
+      <circle cx="20" cy="8" r="0.5" fill="currentColor" />
+    </svg>
+  ),
+  clover: (
+    <svg className={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 8a3 3 0 10-3-3c0 1.5 1 3 3 3z" fill="currentColor" fillOpacity="0.15" />
+      <path d="M12 8a3 3 0 113 -3c0 1.5-1 3-3 3z" fill="currentColor" fillOpacity="0.1" />
+      <path d="M8 12a3 3 0 103 3c-1.5 0-3-1-3-3z" fill="currentColor" fillOpacity="0.15" />
+      <path d="M16 12a3 3 0 10-3 3c1.5 0 3-1 3-3z" fill="currentColor" fillOpacity="0.1" />
+      <path d="M12 15v6" />
+    </svg>
+  ),
   // Section header icons
   "section-achievements": (
     <svg className={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">

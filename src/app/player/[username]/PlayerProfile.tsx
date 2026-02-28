@@ -6,7 +6,9 @@ import { getProfileByUsername, getMatchesByUserId } from "@/lib/firestore-storag
 import { updateLeaderboardEntry } from "@/lib/leaderboard";
 import { computeOverallStats, computeHeroStats, computeEventTypeStats, computeVenueStats, computeEventStats, computeOpponentStats, computeBestFinish, computePlayoffFinishes, getEventType } from "@/lib/stats";
 import { evaluateAchievements, getAchievementProgress } from "@/lib/achievements";
-import { getUserBadges } from "@/lib/badge-service";
+import { getUserBadgeIds } from "@/lib/badge-service";
+import { AdminBadgePanel } from "@/components/gamification/AdminBadgePanel";
+import { getBadgesForIds } from "@/lib/badges";
 import { computeHeroMastery } from "@/lib/mastery";
 import { AchievementShowcase } from "@/components/gamification/AchievementShowcase";
 import { AchievementBadges } from "@/components/gamification/AchievementShowcase";
@@ -63,6 +65,7 @@ export default function PlayerProfile() {
   const [showRecentEvents, setShowRecentEvents] = useState(false);
   const [showMajorEvents, setShowMajorEvents] = useState(true);
   const [userBadges, setUserBadges] = useState<Achievement[]>([]);
+  const [assignedBadgeIds, setAssignedBadgeIds] = useState<string[]>([]);
   const [friendCount, setFriendCount] = useState<number | null>(null);
 
   // Auto-expand achievements if navigated with #achievements hash
@@ -203,7 +206,10 @@ export default function PlayerProfile() {
 
   useEffect(() => {
     if (!profileUid) return;
-    getUserBadges(profileUid).then(setUserBadges).catch(() => {});
+    getUserBadgeIds(profileUid).then((ids) => {
+      setAssignedBadgeIds(ids);
+      setUserBadges(getBadgesForIds(ids));
+    }).catch(() => {});
   }, [profileUid]);
 
   // Admin: fetch friend count for the viewed profile
@@ -634,6 +640,18 @@ export default function PlayerProfile() {
             </div>
           )}
         </div>
+      )}
+
+      {/* Admin badge management panel */}
+      {isAdmin && !isOwner && profileUid && (
+        <AdminBadgePanel
+          userId={profileUid}
+          assignedBadgeIds={assignedBadgeIds}
+          onBadgeChange={(newIds) => {
+            setAssignedBadgeIds(newIds);
+            setUserBadges(getBadgesForIds(newIds));
+          }}
+        />
       )}
 
       {/* Achievements */}
