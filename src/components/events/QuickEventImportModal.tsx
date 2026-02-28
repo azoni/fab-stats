@@ -5,11 +5,14 @@ import { auth } from "@/lib/firebase";
 import { parseSingleEventPaste } from "@/lib/single-event-import";
 import { importMatchesFirestore, getMatchesByUserId } from "@/lib/firestore-storage";
 import { importMatchesLocal } from "@/lib/storage";
-import { createImportFeedEvent } from "@/lib/feed";
+import { createImportFeedEvent, createAchievementFeedEvent, createPlacementFeedEvent } from "@/lib/feed";
+import { detectNewAchievements } from "@/lib/achievement-tracking";
+import { evaluateAchievements } from "@/lib/achievements";
+import { computeOverallStats, computeHeroStats, computeOpponentStats, computeEventStats, computePlayoffFinishes, getEventName } from "@/lib/stats";
 import { updateLeaderboardEntry } from "@/lib/leaderboard";
 import { computeH2HForUser } from "@/lib/h2h";
 import { allHeroes } from "@/lib/heroes";
-import { MatchResult } from "@/types";
+import { MatchResult, type MatchRecord } from "@/types";
 import { localDate } from "@/lib/constants";
 import type { PasteImportEvent } from "@/lib/gem-paste-import";
 
@@ -170,6 +173,31 @@ export function QuickEventImportModal({ open, onClose, onImportComplete }: Quick
         .then((allMatches) => {
           updateLeaderboardEntry(profile, allMatches);
           computeH2HForUser(user.uid, allMatches);
+
+          // Achievement + placement feed events (non-blocking)
+          const importedMatches = parsedEvent?.matches || [];
+          const newestDate = Math.max(...importedMatches.map((m) => new Date(m.date).getTime()));
+          if (Date.now() - newestDate > 14 * 86400000) return;
+
+          const overall = computeOverallStats(allMatches);
+          const heroStats = computeHeroStats(allMatches);
+          const oppStats = computeOpponentStats(allMatches);
+          const earned = evaluateAchievements(allMatches, overall, heroStats, oppStats);
+          detectNewAchievements(user.uid, earned)
+            .then((newOnes) => {
+              if (newOnes.length > 0) createAchievementFeedEvent(profile, newOnes).catch(() => {});
+            })
+            .catch(() => {});
+
+          const eventStats = computeEventStats(allMatches);
+          const allFinishes = computePlayoffFinishes(eventStats);
+          const eventKey = parsedEvent ? `${parsedEvent.eventName}::${parsedEvent.eventDate}` : "";
+          const newFinishes = allFinishes.filter((f) =>
+            `${f.eventName}::${f.eventDate}` === eventKey,
+          );
+          for (const finish of newFinishes) {
+            createPlacementFeedEvent(profile, finish, hero).catch(() => {});
+          }
         })
         .catch(() => {});
     }

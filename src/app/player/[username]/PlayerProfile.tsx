@@ -16,6 +16,7 @@ import { LeaderboardCrowns } from "@/components/profile/LeaderboardCrowns";
 import { TrophyCase } from "@/components/profile/TrophyCase";
 import { ArmoryGarden } from "@/components/profile/ArmoryGarden";
 import { computeEventBadges } from "@/lib/events";
+import { checkIsAdmin } from "@/lib/admin";
 import { useLeaderboard } from "@/hooks/useLeaderboard";
 import { computeUserRanks, getBestRank } from "@/lib/leaderboard-ranks";
 import { QuestionCircleIcon, LockIcon, SwordsIcon, CalendarIcon } from "@/components/icons/NavIcons";
@@ -130,10 +131,10 @@ export default function PlayerProfile() {
     // Wait for Firebase Auth to settle before reading Firestore
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       unsubscribe();
-      if (!cancelled) load(currentUser?.uid);
+      if (!cancelled) load(currentUser?.uid, currentUser?.email);
     });
 
-    async function load(viewerUid?: string) {
+    async function load(viewerUid?: string, viewerEmail?: string | null) {
       setState({ status: "loading" });
 
       try {
@@ -145,8 +146,9 @@ export default function PlayerProfile() {
         }
 
         const isOwner = !!viewerUid && viewerUid === profile.uid;
+        const viewerIsAdmin = viewerEmail ? await checkIsAdmin(viewerEmail) : false;
 
-        if (!profile.isPublic && !isOwner) {
+        if (!profile.isPublic && !isOwner && !viewerIsAdmin) {
           setState({ status: "private" });
           return;
         }
@@ -845,7 +847,10 @@ function ProfileHeader({ profile, achievements, bestRank, isAdmin, isOwner, isFa
             </button>
           )}
         </div>
-        <p className="text-sm text-fab-dim mb-1">@{profile.username}</p>
+        <p className="text-sm text-fab-dim mb-1">
+          @{profile.username}
+          {!profile.isPublic && <span className="ml-1.5 text-[9px] px-1.5 py-0.5 rounded bg-fab-dim/10 text-fab-dim">Private</span>}
+        </p>
         {achievements && achievements.length > 0 && <AchievementBadges earned={achievements} max={4} mobileMax={2} onShowMore={onShowMoreAchievements} />}
         {isAdmin && !isOwner && (
           <Link

@@ -198,9 +198,9 @@ const PAGE_SIZE = 50;
 // ── Main Page ──
 
 export default function LeaderboardPage() {
-  const { entries, loading } = useLeaderboard();
+  const { user, isAdmin } = useAuth();
+  const { entries, loading } = useLeaderboard(isAdmin);
   const { matches } = useMatches();
-  const { user } = useAuth();
   const searchParams = useSearchParams();
 
   const initialTab = (searchParams.get("tab") as Tab) || "winrate";
@@ -525,7 +525,10 @@ export default function LeaderboardPage() {
                     <p className={`font-semibold text-fab-text truncate w-full ${isCenter ? "text-sm" : "text-xs"}`}>
                       {entry.displayName}
                     </p>
-                    <p className="text-[10px] text-fab-dim truncate w-full">@{entry.username}</p>
+                    <p className="text-[10px] text-fab-dim truncate w-full">
+                      @{entry.username}
+                      {!entry.isPublic && <span className="ml-1 text-[9px] px-1.5 py-0.5 rounded bg-fab-dim/10 text-fab-dim">Private</span>}
+                    </p>
 
                     {/* Stat */}
                     <p className={`font-bold mt-2 ${isCenter ? "text-2xl" : "text-lg"} ${stat.color}`}>
@@ -683,6 +686,7 @@ function LeaderboardRow({
         </div>
         <div className="flex items-center gap-2">
           <p className="text-[11px] text-fab-dim">@{entry.username}</p>
+          {!entry.isPublic && <span className="text-[9px] px-1.5 py-0.5 rounded bg-fab-dim/10 text-fab-dim">Private</span>}
           {h2h && !isMe && (
             <Link
               href={`/opponents?q=${encodeURIComponent(entry.displayName)}`}

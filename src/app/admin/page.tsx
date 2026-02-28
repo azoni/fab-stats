@@ -40,6 +40,7 @@ export default function AdminPage() {
   const [sortKey, setSortKey] = useState<SortKey>("matchCount");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [expandedUid, setExpandedUid] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<"all" | "public" | "private">("all");
   const [feedback, setFeedback] = useState<FeedbackItem[]>([]);
   const [feedbackFilter, setFeedbackFilter] = useState<"all" | "new" | "reviewed" | "done">("new");
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
@@ -381,8 +382,24 @@ export default function AdminPage() {
           {activeTab === "users" && <>
           {/* Users table */}
           <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden">
-            <div className="px-4 py-3 border-b border-fab-border">
+            <div className="px-4 py-3 border-b border-fab-border flex items-center justify-between">
               <h2 className="text-sm font-semibold text-fab-text">All Users ({data.users.length})</h2>
+              <div className="flex gap-1">
+                {(["all", "public", "private"] as const).map((f) => (
+                  <button
+                    key={f}
+                    onClick={() => setStatusFilter(f)}
+                    className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+                      statusFilter === f
+                        ? "bg-fab-gold/20 text-fab-gold"
+                        : "text-fab-muted hover:text-fab-text"
+                    }`}
+                  >
+                    {f.charAt(0).toUpperCase() + f.slice(1)}
+                    {f !== "all" && ` (${data.users.filter((u) => f === "public" ? u.isPublic : !u.isPublic).length})`}
+                  </button>
+                ))}
+              </div>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
@@ -411,7 +428,7 @@ export default function AdminPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {sortedUsers(data.users).map((u, i) => {
+                  {sortedUsers(data.users).filter((u) => statusFilter === "all" || (statusFilter === "public" ? u.isPublic : !u.isPublic)).map((u, i) => {
                     const isExpanded = expandedUid === u.uid;
                     return (
                       <React.Fragment key={u.uid}>

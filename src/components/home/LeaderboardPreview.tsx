@@ -1,12 +1,14 @@
 "use client";
 import Link from "next/link";
 import type { LeaderboardEntry } from "@/types";
+import { rankBorderClass } from "@/lib/leaderboard-ranks";
 
 interface LeaderboardPreviewProps {
   entries: LeaderboardEntry[];
+  rankMap?: Map<string, 1 | 2 | 3 | 4 | 5>;
 }
 
-export function LeaderboardPreview({ entries }: LeaderboardPreviewProps) {
+export function LeaderboardPreview({ entries, rankMap }: LeaderboardPreviewProps) {
   if (entries.length === 0) return null;
 
   const top5 = [...entries]
@@ -35,9 +37,9 @@ export function LeaderboardPreview({ entries }: LeaderboardPreviewProps) {
           >
             <span className="text-sm font-bold w-5 text-center text-fab-dim">{i + 1}</span>
             {entry.photoUrl ? (
-              <img src={entry.photoUrl} alt="" className="w-7 h-7 rounded-full shrink-0" />
+              <img src={entry.photoUrl} alt="" className={`w-7 h-7 rounded-full shrink-0 ${rankBorderClass(rankMap?.get(entry.userId))}`} />
             ) : (
-              <div className="w-7 h-7 rounded-full bg-fab-gold/20 flex items-center justify-center text-fab-gold text-xs font-bold shrink-0">
+              <div className={`w-7 h-7 rounded-full bg-fab-gold/20 flex items-center justify-center text-fab-gold text-xs font-bold shrink-0 ${rankBorderClass(rankMap?.get(entry.userId))}`}>
                 {entry.displayName.charAt(0).toUpperCase()}
               </div>
             )}

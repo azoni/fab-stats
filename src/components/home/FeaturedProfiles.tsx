@@ -2,6 +2,7 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import type { FeaturedProfile } from "@/lib/featured-profiles";
+import { rankBorderClass } from "@/lib/leaderboard-ranks";
 
 const SPOTLIGHT_CONFIG: Record<string, { css: string; accent: string; iconBg: string; icon: ReactNode }> = {
   "Hot Streak": {
@@ -152,9 +153,10 @@ const DEFAULT_CONFIG = SPOTLIGHT_CONFIG["Most Active"];
 
 interface FeaturedProfilesProps {
   profiles: FeaturedProfile[];
+  rankMap?: Map<string, 1 | 2 | 3 | 4 | 5>;
 }
 
-export function FeaturedProfiles({ profiles }: FeaturedProfilesProps) {
+export function FeaturedProfiles({ profiles, rankMap }: FeaturedProfilesProps) {
   if (profiles.length === 0) return null;
 
   return (
@@ -184,10 +186,10 @@ export function FeaturedProfiles({ profiles }: FeaturedProfilesProps) {
                   <img
                     src={fp.entry.photoUrl}
                     alt=""
-                    className="w-10 h-10 rounded-full shrink-0"
+                    className={`w-10 h-10 rounded-full shrink-0 ${rankBorderClass(rankMap?.get(fp.entry.userId))}`}
                   />
                 ) : (
-                  <div className="w-10 h-10 rounded-full bg-fab-gold/20 flex items-center justify-center text-fab-gold text-sm font-bold shrink-0">
+                  <div className={`w-10 h-10 rounded-full bg-fab-gold/20 flex items-center justify-center text-fab-gold text-sm font-bold shrink-0 ${rankBorderClass(rankMap?.get(fp.entry.userId))}`}>
                     {fp.entry.displayName.charAt(0).toUpperCase()}
                   </div>
                 )}

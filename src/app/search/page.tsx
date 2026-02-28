@@ -3,6 +3,7 @@ import { Suspense, useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { searchUsernames, getProfile } from "@/lib/firestore-storage";
+import { useAuth } from "@/contexts/AuthContext";
 import { useFeed } from "@/hooks/useFeed";
 import { GroupedFeedCard, groupConsecutiveEvents } from "@/components/feed/FeedCard";
 import { FeedIcon } from "@/components/icons/NavIcons";
@@ -41,6 +42,7 @@ function SearchContent() {
   const [results, setResults] = useState<SearchResult[]>([]);
   const [searched, setSearched] = useState(false);
   const [loading, setLoading] = useState(false);
+  const { isAdmin } = useAuth();
   const { events: feedEvents, loading: feedLoading } = useFeed();
 
   async function doSearch(q: string, autoRedirect = false) {
@@ -61,7 +63,7 @@ function SearchContent() {
       }))
     );
 
-    const filtered = withProfiles.filter((r) => r.profile?.isPublic);
+    const filtered = withProfiles.filter((r) => r.profile?.isPublic || isAdmin);
 
     // Auto-redirect to profile if exactly one result and came from a link (not manual search)
     if (autoRedirect && filtered.length === 1) {
@@ -160,6 +162,7 @@ function SearchContent() {
                   <p className="font-semibold text-fab-text">{r.profile?.displayName || r.username}</p>
                   <div className="flex items-center gap-2">
                     <p className="text-sm text-fab-dim">@{r.username}</p>
+                    {!r.profile?.isPublic && <span className="text-[9px] px-1.5 py-0.5 rounded bg-fab-dim/10 text-fab-dim">Private</span>}
                     {r.profile?.firstName && (
                       <p className="text-sm text-fab-muted">
                         {r.profile.firstName}{r.profile.lastName ? ` ${r.profile.lastName}` : ""}

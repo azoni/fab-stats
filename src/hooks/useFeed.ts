@@ -8,7 +8,7 @@ export function useFeed() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getFeedEvents().then((data) => {
+    getFeedEvents(100).then((data) => {
       setEvents(data);
       setLoading(false);
     });

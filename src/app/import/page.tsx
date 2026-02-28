@@ -5,7 +5,10 @@ import { parseGemPaste, parseExtensionJson, type PasteImportResult } from "@/lib
 import { useAuth } from "@/contexts/AuthContext";
 import { importMatchesFirestore, clearAllMatchesFirestore, updateProfile, registerGemId } from "@/lib/firestore-storage";
 import { importMatchesLocal } from "@/lib/storage";
-import { createImportFeedEvent } from "@/lib/feed";
+import { createImportFeedEvent, createAchievementFeedEvent, createPlacementFeedEvent } from "@/lib/feed";
+import { detectNewAchievements } from "@/lib/achievement-tracking";
+import { evaluateAchievements } from "@/lib/achievements";
+import { computeOverallStats, computeHeroStats, computeOpponentStats, computeEventStats, computePlayoffFinishes, getEventName } from "@/lib/stats";
 import { linkMatchesWithOpponents } from "@/lib/match-linking";
 import { computeH2HForUser } from "@/lib/h2h";
 import type { GemMetadata } from "@/lib/gem-import";
@@ -303,6 +306,34 @@ export default function ImportPage() {
         .then((allMatches) => {
           linkMatchesWithOpponents(user.uid, allMatches);
           computeH2HForUser(user.uid, allMatches);
+
+          // Achievement + placement feed events (non-blocking)
+          // Only publish if newest imported match is within 14 days
+          const newestDate = Math.max(...matches.map((m) => new Date(m.date).getTime()));
+          if (Date.now() - newestDate > 14 * 86400000) return;
+
+          // Achievements
+          const overall = computeOverallStats(allMatches);
+          const heroStats = computeHeroStats(allMatches);
+          const oppStats = computeOpponentStats(allMatches);
+          const earned = evaluateAchievements(allMatches, overall, heroStats, oppStats);
+          detectNewAchievements(user.uid, earned)
+            .then((newOnes) => {
+              if (newOnes.length > 0) createAchievementFeedEvent(profile, newOnes).catch(() => {});
+            })
+            .catch(() => {});
+
+          // Placements — check for new playoff finishes
+          const eventStats = computeEventStats(allMatches);
+          const allFinishes = computePlayoffFinishes(eventStats);
+          // Only publish finishes from events that include freshly imported dates
+          const importedDates = new Set(matches.map((m) => m.date));
+          const newFinishes = allFinishes.filter((f) => importedDates.has(f.eventDate));
+          for (const finish of newFinishes) {
+            const eventMatches = allMatches.filter((m) => getEventName(m) === finish.eventName && m.date === finish.eventDate);
+            const hero = eventMatches[0]?.heroPlayed;
+            createPlacementFeedEvent(profile, finish, hero).catch(() => {});
+          }
         })
         .catch(() => {});
     }

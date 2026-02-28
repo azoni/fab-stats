@@ -250,19 +250,38 @@ export interface LeaderboardEntry {
 
 export type ImportSource = "extension" | "csv" | "paste" | "manual";
 
-export interface FeedEvent {
+interface FeedEventBase {
   id: string;
-  type: "import";
   userId: string;
   username: string;
   displayName: string;
   photoUrl?: string;
   isPublic: boolean;
+  createdAt: string;
+}
+
+export interface ImportFeedEvent extends FeedEventBase {
+  type: "import";
   matchCount: number;
   topHeroes?: string[];
   source?: ImportSource;
-  createdAt: string;
 }
+
+export interface AchievementFeedEvent extends FeedEventBase {
+  type: "achievement";
+  achievements: { id: string; name: string; icon: string; rarity: "common" | "uncommon" | "rare" | "epic" | "legendary" }[];
+}
+
+export interface PlacementFeedEvent extends FeedEventBase {
+  type: "placement";
+  placementType: "champion" | "finalist" | "top4" | "top8";
+  eventName: string;
+  eventDate: string;
+  eventType: string;
+  hero?: string;
+}
+
+export type FeedEvent = ImportFeedEvent | AchievementFeedEvent | PlacementFeedEvent;
 
 export interface Creator {
   name: string;

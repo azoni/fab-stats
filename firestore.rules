@@ -169,8 +169,13 @@ service cloud.firestore {
       // Only public profiles can create feed events
       allow create: if request.auth != null
         && request.resource.data.userId == request.auth.uid
-        && request.resource.data.type == "import"
+        && request.resource.data.type in ["import", "achievement", "placement"]
         && request.resource.data.isPublic == true;
+    }
+
+    // ── Earned achievements tracking (per user) ──
+    match /users/{userId}/earnedAchievements/{docId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
     // ── Feedback (bug reports / feature requests) ──

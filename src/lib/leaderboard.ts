@@ -224,23 +224,15 @@ export async function updateLeaderboardEntry(
 
 let cachedEntries: LeaderboardEntry[] | null = null;
 let cacheTimestamp = 0;
+let cachedEntriesAll: LeaderboardEntry[] | null = null;
+let cacheTimestampAll = 0;
 const CACHE_TTL = 5 * 60_000; // 5 minutes
 
-export async function getLeaderboardEntries(): Promise<LeaderboardEntry[]> {
-  const now = Date.now();
-  if (cachedEntries && now - cacheTimestamp < CACHE_TTL) {
-    return cachedEntries;
-  }
-  const q = query(leaderboardCollection(), where("isPublic", "==", true));
-  const snapshot = await getDocs(q);
-
-  // Fix stale weekly/monthly stats — zero out if the stored period doesn't match current
+function sanitizeEntries(docs: LeaderboardEntry[]): LeaderboardEntry[] {
   const currentWeekStart = getWeekStart();
   const currentMonthStart = getMonthStart();
 
-  cachedEntries = snapshot.docs.map((d) => {
-    const entry = d.data() as LeaderboardEntry;
-
+  return docs.map((entry) => {
     if (entry.weekStart !== currentWeekStart) {
       entry.weeklyMatches = 0;
       entry.weeklyWins = 0;
@@ -254,8 +246,7 @@ export async function getLeaderboardEntries(): Promise<LeaderboardEntry[]> {
       entry.monthStart = currentMonthStart;
     }
 
-    // Sanitize bulk-import pollution: if weekly/monthly matches are suspiciously
-    // close to total matches, the dates are almost certainly wrong
+    // Sanitize bulk-import pollution
     if (entry.weeklyMatches > entry.totalMatches * 0.8 && entry.totalMatches > 30) {
       entry.weeklyMatches = 0;
       entry.weeklyWins = 0;
@@ -268,7 +259,27 @@ export async function getLeaderboardEntries(): Promise<LeaderboardEntry[]> {
 
     return entry;
   });
+}
 
+export async function getLeaderboardEntries(includePrivate = false): Promise<LeaderboardEntry[]> {
+  const now = Date.now();
+
+  if (includePrivate) {
+    if (cachedEntriesAll && now - cacheTimestampAll < CACHE_TTL) {
+      return cachedEntriesAll;
+    }
+    const snapshot = await getDocs(leaderboardCollection());
+    cachedEntriesAll = sanitizeEntries(snapshot.docs.map((d) => d.data() as LeaderboardEntry));
+    cacheTimestampAll = now;
+    return cachedEntriesAll;
+  }
+
+  if (cachedEntries && now - cacheTimestamp < CACHE_TTL) {
+    return cachedEntries;
+  }
+  const q = query(leaderboardCollection(), where("isPublic", "==", true));
+  const snapshot = await getDocs(q);
+  cachedEntries = sanitizeEntries(snapshot.docs.map((d) => d.data() as LeaderboardEntry));
   cacheTimestamp = now;
   return cachedEntries;
 }
@@ -276,4 +287,6 @@ export async function getLeaderboardEntries(): Promise<LeaderboardEntry[]> {
 export function invalidateLeaderboardCache() {
   cachedEntries = null;
   cacheTimestamp = 0;
+  cachedEntriesAll = null;
+  cacheTimestampAll = 0;
 }

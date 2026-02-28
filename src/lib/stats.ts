@@ -585,7 +585,7 @@ export function computePlayoffFinishes(
   return finishes.sort((a, b) => new Date(b.eventDate).getTime() - new Date(a.eventDate).getTime());
 }
 
-function getEventName(match: MatchRecord): string {
+export function getEventName(match: MatchRecord): string {
   if (match.notes) {
     const parts = match.notes.split(" | ");
     if (parts[0]?.trim()) return parts[0].trim();

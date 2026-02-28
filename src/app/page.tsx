@@ -14,8 +14,8 @@ import { ShieldIcon, SwordsIcon, CalendarIcon, OpponentsIcon, TrendsIcon } from 
 import { MatchResult } from "@/types";
 import { CommunityHighlights } from "@/components/home/CommunityHighlights";
 import { useFeaturedEvents } from "@/hooks/useFeaturedEvents";
-import { useFeed } from "@/hooks/useFeed";
 import { computeMetaStats } from "@/lib/meta-stats";
+import { ActivityFeed } from "@/components/home/ActivityFeed";
 import { selectFeaturedProfiles } from "@/lib/featured-profiles";
 import { BestFinishShareModal } from "@/components/profile/BestFinishCard";
 import { ProfileShareModal } from "@/components/profile/ProfileCard";
@@ -30,7 +30,6 @@ export default function Dashboard() {
   const { user, profile } = useAuth();
   const { entries: lbEntries } = useLeaderboard();
   const featuredEvents = useFeaturedEvents();
-  const { events: feedEvents } = useFeed();
   const [shareCopied, setShareCopied] = useState(false);
   const [bestFinishShareOpen, setBestFinishShareOpen] = useState(false);
   const [profileShareOpen, setProfileShareOpen] = useState(false);
@@ -360,30 +359,52 @@ export default function Dashboard() {
           </div>
 
           {/* Quick Nav */}
-          <div className="grid grid-cols-5 gap-2">
-            <Link href="/matches" className="group flex flex-col items-center gap-1.5 rounded-lg bg-fab-bg border border-fab-border px-2 py-3 hover:border-red-400/40 hover:bg-red-400/5 transition-all">
-              <SwordsIcon className="w-5 h-5 text-fab-muted group-hover:text-red-400 transition-colors" />
-              <span className="text-xs font-medium text-fab-muted group-hover:text-fab-text transition-colors">Matches</span>
-              <span className="text-[10px] text-fab-dim">{overall.totalMatches + overall.totalByes}</span>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <Link href="/matches" className="nav-btn nav-btn-matches group flex flex-col items-center gap-2.5 bg-fab-surface border border-fab-border px-3 py-4">
+              <SwordsIcon className="nav-icon w-6 h-6 text-fab-muted group-hover:text-red-400" />
+              <div className="text-center">
+                <span className="text-sm font-semibold text-fab-muted group-hover:text-fab-text transition-colors">Matches</span>
+                <p className="text-[10px] text-fab-dim mt-0.5">{overall.totalMatches + overall.totalByes} recorded</p>
+              </div>
             </Link>
-            <Link href="/events" className="group flex flex-col items-center gap-1.5 rounded-lg bg-fab-bg border border-fab-border px-2 py-3 hover:border-blue-400/40 hover:bg-blue-400/5 transition-all">
-              <CalendarIcon className="w-5 h-5 text-fab-muted group-hover:text-blue-400 transition-colors" />
-              <span className="text-xs font-medium text-fab-muted group-hover:text-fab-text transition-colors">Events</span>
-              <span className="text-[10px] text-fab-dim">{eventStats.length}</span>
+            <Link href="/events" className="nav-btn nav-btn-events group flex flex-col items-center gap-2.5 bg-fab-surface border border-fab-border px-3 py-4">
+              <CalendarIcon className="nav-icon w-6 h-6 text-fab-muted group-hover:text-blue-400" />
+              <div className="text-center">
+                <span className="text-sm font-semibold text-fab-muted group-hover:text-fab-text transition-colors">Events</span>
+                <p className="text-[10px] text-fab-dim mt-0.5">{eventStats.length} tournaments</p>
+              </div>
             </Link>
-            <Link href="/opponents" className="group flex flex-col items-center gap-1.5 rounded-lg bg-fab-bg border border-fab-border px-2 py-3 hover:border-purple-400/40 hover:bg-purple-400/5 transition-all">
-              <OpponentsIcon className="w-5 h-5 text-fab-muted group-hover:text-purple-400 transition-colors" />
-              <span className="text-xs font-medium text-fab-muted group-hover:text-fab-text transition-colors">Opponents</span>
+            <Link href="/opponents" className="nav-btn nav-btn-opponents group flex flex-col items-center gap-2.5 bg-fab-surface border border-fab-border px-3 py-4">
+              <OpponentsIcon className="nav-icon w-6 h-6 text-fab-muted group-hover:text-purple-400" />
+              <div className="text-center">
+                <span className="text-sm font-semibold text-fab-muted group-hover:text-fab-text transition-colors">Opponents</span>
+                <p className="text-[10px] text-fab-dim mt-0.5">Your rivals</p>
+              </div>
             </Link>
-            <Link href="/trends" className="group flex flex-col items-center gap-1.5 rounded-lg bg-fab-bg border border-fab-border px-2 py-3 hover:border-emerald-400/40 hover:bg-emerald-400/5 transition-all">
-              <TrendsIcon className="w-5 h-5 text-fab-muted group-hover:text-emerald-400 transition-colors" />
-              <span className="text-xs font-medium text-fab-muted group-hover:text-fab-text transition-colors">Trends</span>
+            <Link href="/trends" className="nav-btn nav-btn-trends group flex flex-col items-center gap-2.5 bg-fab-surface border border-fab-border px-3 py-4">
+              <TrendsIcon className="nav-icon w-6 h-6 text-fab-muted group-hover:text-emerald-400" />
+              <div className="text-center">
+                <span className="text-sm font-semibold text-fab-muted group-hover:text-fab-text transition-colors">Trends</span>
+                <p className="text-[10px] text-fab-dim mt-0.5">Performance</p>
+              </div>
             </Link>
-            <Link href="/events?import=1" className="group flex flex-col items-center gap-1.5 rounded-lg bg-fab-bg border border-fab-border border-dashed px-2 py-3 hover:border-fab-gold/40 hover:bg-fab-gold/5 transition-all">
-              <svg className="w-5 h-5 text-fab-muted group-hover:text-fab-gold transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <Link href="/compare" className="nav-btn nav-btn-versus group flex flex-col items-center gap-2.5 bg-fab-surface border border-fab-border px-3 py-4">
+              <svg className="nav-icon w-6 h-6 text-fab-muted group-hover:text-violet-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+              </svg>
+              <div className="text-center">
+                <span className="text-sm font-semibold text-fab-muted group-hover:text-fab-text transition-colors">Versus</span>
+                <p className="text-[10px] text-fab-dim mt-0.5">Head to head</p>
+              </div>
+            </Link>
+            <Link href="/events?import=1" className="nav-btn nav-btn-log group flex flex-col items-center gap-2.5 bg-fab-surface border border-fab-border border-dashed px-3 py-4">
+              <svg className="nav-icon w-6 h-6 text-fab-muted group-hover:text-fab-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
               </svg>
-              <span className="text-xs font-medium text-fab-muted group-hover:text-fab-text transition-colors">Log Event</span>
+              <div className="text-center">
+                <span className="text-sm font-semibold text-fab-muted group-hover:text-fab-text transition-colors">Log Event</span>
+                <p className="text-[10px] text-fab-dim mt-0.5">Quick add</p>
+              </div>
             </Link>
           </div>
         </div>
@@ -392,13 +413,15 @@ export default function Dashboard() {
       {/* On This Day */}
       {hasMatches && <OnThisDay matches={matches} />}
 
+      {/* Activity Feed */}
+      <ActivityFeed />
+
       {/* Community content */}
       <CommunityHighlights
         featuredProfiles={featuredProfiles}
         featuredEvents={featuredEvents}
         leaderboardEntries={lbEntries}
         topHeroes={communityTopHeroes}
-        feedEvents={feedEvents}
         rightColumnExtra={
           hasMatches && eventStats.length > 0 ? (
             <div>

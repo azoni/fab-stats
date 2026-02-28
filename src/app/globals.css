@@ -249,6 +249,98 @@ body::before {
 .spotlight-nemesis::before { background: linear-gradient(90deg, #f87171, #fca5a5, #f87171); }
 .spotlight-nemesis::after { background: linear-gradient(180deg, rgba(248,113,113,0.06) 0%, transparent 60%); }
 
+/* ── Quick Nav premium buttons ── */
+
+.nav-btn {
+  position: relative;
+  overflow: hidden;
+  border-radius: 0.75rem;
+  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+              border-color 0.35s,
+              box-shadow 0.35s;
+}
+
+/* Top accent bar */
+.nav-btn::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  opacity: 0.5;
+  transition: opacity 0.35s, height 0.3s;
+}
+.nav-btn:hover::before {
+  opacity: 1;
+  height: 3px;
+}
+
+/* Radial glow overlay from top */
+.nav-btn::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 0.35s;
+  pointer-events: none;
+  border-radius: inherit;
+}
+.nav-btn:hover::after {
+  opacity: 1;
+}
+
+.nav-btn:hover {
+  transform: translateY(-3px);
+}
+.nav-btn:active {
+  transform: translateY(-1px);
+}
+
+/* Icon glow + scale on hover */
+.nav-icon {
+  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+              filter 0.35s,
+              color 0.35s;
+}
+.nav-btn:hover .nav-icon {
+  filter: drop-shadow(0 0 8px currentColor);
+  transform: scale(1.2);
+}
+
+/* ── Matches — Crimson ── */
+.nav-btn-matches::before { background: linear-gradient(90deg, transparent, #ef4444, #f87171, #ef4444, transparent); }
+.nav-btn-matches::after { background: radial-gradient(ellipse at 50% 0%, rgba(239,68,68,0.1) 0%, transparent 70%); }
+.nav-btn-matches:hover { border-color: rgba(239,68,68,0.35); box-shadow: 0 8px 30px -5px rgba(239,68,68,0.2), 0 0 0 1px rgba(239,68,68,0.06); }
+
+/* ── Events — Royal Blue ── */
+.nav-btn-events::before { background: linear-gradient(90deg, transparent, #3b82f6, #60a5fa, #3b82f6, transparent); }
+.nav-btn-events::after { background: radial-gradient(ellipse at 50% 0%, rgba(59,130,246,0.1) 0%, transparent 70%); }
+.nav-btn-events:hover { border-color: rgba(59,130,246,0.35); box-shadow: 0 8px 30px -5px rgba(59,130,246,0.2), 0 0 0 1px rgba(59,130,246,0.06); }
+
+/* ── Opponents — Purple ── */
+.nav-btn-opponents::before { background: linear-gradient(90deg, transparent, #a855f7, #c084fc, #a855f7, transparent); }
+.nav-btn-opponents::after { background: radial-gradient(ellipse at 50% 0%, rgba(168,85,247,0.1) 0%, transparent 70%); }
+.nav-btn-opponents:hover { border-color: rgba(168,85,247,0.35); box-shadow: 0 8px 30px -5px rgba(168,85,247,0.2), 0 0 0 1px rgba(168,85,247,0.06); }
+
+/* ── Trends — Emerald ── */
+.nav-btn-trends::before { background: linear-gradient(90deg, transparent, #10b981, #34d399, #10b981, transparent); }
+.nav-btn-trends::after { background: radial-gradient(ellipse at 50% 0%, rgba(16,185,129,0.1) 0%, transparent 70%); }
+.nav-btn-trends:hover { border-color: rgba(16,185,129,0.35); box-shadow: 0 8px 30px -5px rgba(16,185,129,0.2), 0 0 0 1px rgba(16,185,129,0.06); }
+
+/* ── Versus — Red→Purple→Blue prismatic split ── */
+.nav-btn-versus::before { background: linear-gradient(90deg, transparent, #ef4444, #c084fc, #3b82f6, transparent); }
+.nav-btn-versus::after {
+  background: radial-gradient(ellipse at 30% 0%, rgba(239,68,68,0.08) 0%, transparent 50%),
+              radial-gradient(ellipse at 70% 0%, rgba(59,130,246,0.08) 0%, transparent 50%);
+}
+.nav-btn-versus:hover { border-color: rgba(192,132,252,0.35); box-shadow: 0 8px 30px -5px rgba(168,85,247,0.25), 0 0 0 1px rgba(192,132,252,0.06); }
+
+/* ── Log Event — Gold CTA ── */
+.nav-btn-log::before { background: linear-gradient(90deg, transparent, #c9a84c, #dfc06a, #c9a84c, transparent); }
+.nav-btn-log::after { background: radial-gradient(ellipse at 50% 0%, rgba(201,168,76,0.1) 0%, transparent 70%); }
+.nav-btn-log:hover { border-color: rgba(201,168,76,0.35); box-shadow: 0 8px 30px -5px rgba(201,168,76,0.2), 0 0 0 1px rgba(201,168,76,0.06); }
+
 /* ── Meta rank badges ── */
 
 .meta-rank-1 { color: #fbbf24; text-shadow: 0 0 8px rgba(251,191,36,0.4); }

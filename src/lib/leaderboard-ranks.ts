@@ -227,3 +227,31 @@ export function getBestRank(ranks: LeaderboardRank[]): 1 | 2 | 3 | 4 | 5 | null 
   if (ranks.length === 0) return null;
   return Math.min(...ranks.map((r) => r.rank)) as 1 | 2 | 3 | 4 | 5;
 }
+
+/** Bulk-compute the best rank (1-5) for every user that appears in any top-5 across all tabs. */
+export function computeRankMap(entries: LeaderboardEntry[]): Map<string, 1 | 2 | 3 | 4 | 5> {
+  const map = new Map<string, 1 | 2 | 3 | 4 | 5>();
+
+  for (const tab of RANK_TABS) {
+    const sorted = entries.filter(tab.filter).sort(tab.sort);
+    for (let i = 0; i < Math.min(5, sorted.length); i++) {
+      const userId = sorted[i].userId;
+      const rank = (i + 1) as 1 | 2 | 3 | 4 | 5;
+      const existing = map.get(userId);
+      if (!existing || rank < existing) {
+        map.set(userId, rank);
+      }
+    }
+  }
+
+  return map;
+}
+
+export function rankBorderClass(rank: 1 | 2 | 3 | 4 | 5 | null | undefined): string {
+  if (!rank) return "";
+  return rank === 1 ? "rank-border-grandmaster"
+    : rank === 2 ? "rank-border-diamond"
+    : rank === 3 ? "rank-border-gold"
+    : rank === 4 ? "rank-border-silver"
+    : "rank-border-bronze";
+}
