@@ -18,7 +18,7 @@ import { ArmoryGarden } from "@/components/profile/ArmoryGarden";
 import { computeEventBadges } from "@/lib/events";
 import { useLeaderboard } from "@/hooks/useLeaderboard";
 import { computeUserRanks, getBestRank } from "@/lib/leaderboard-ranks";
-import { QuestionCircleIcon, LockIcon, SwordsIcon, CalendarIcon, OpponentsIcon, TrendsIcon } from "@/components/icons/NavIcons";
+import { QuestionCircleIcon, LockIcon, SwordsIcon, CalendarIcon } from "@/components/icons/NavIcons";
 import { useAuth } from "@/contexts/AuthContext";
 import { useFavorites } from "@/hooks/useFavorites";
 import { useFriends } from "@/hooks/useFriends";
@@ -58,7 +58,7 @@ export default function PlayerProfile() {
   const [profileShareOpen, setProfileShareOpen] = useState(false);
   const [achievementsExpanded, setAchievementsExpanded] = useState(false);
   const [showRecentEvents, setShowRecentEvents] = useState(false);
-  const [showMajorEvents, setShowMajorEvents] = useState(false);
+  const [showMajorEvents, setShowMajorEvents] = useState(true);
 
   // Auto-expand achievements if navigated with #achievements hash
   useEffect(() => {
@@ -422,37 +422,6 @@ export default function PlayerProfile() {
             </div>
           )}
         </div>
-      </div>
-
-      {/* Quick Nav */}
-      <div className={`grid ${isOwner ? "grid-cols-5" : "grid-cols-4"} gap-2`}>
-        <Link href="/matches" className="group flex flex-col items-center gap-1.5 rounded-lg bg-fab-surface border border-fab-border px-2 py-3 hover:border-red-400/40 hover:bg-red-400/5 transition-all">
-          <SwordsIcon className="w-5 h-5 text-fab-muted group-hover:text-red-400 transition-colors" />
-          <span className="text-xs font-medium text-fab-muted group-hover:text-fab-text transition-colors">Matches</span>
-          <span className="text-[10px] text-fab-dim">{overall.totalMatches + overall.totalByes}</span>
-        </Link>
-        <Link href="/events" className="group flex flex-col items-center gap-1.5 rounded-lg bg-fab-surface border border-fab-border px-2 py-3 hover:border-blue-400/40 hover:bg-blue-400/5 transition-all">
-          <CalendarIcon className="w-5 h-5 text-fab-muted group-hover:text-blue-400 transition-colors" />
-          <span className="text-xs font-medium text-fab-muted group-hover:text-fab-text transition-colors">Events</span>
-          <span className="text-[10px] text-fab-dim">{eventStats.length}</span>
-        </Link>
-        <Link href="/opponents" className="group flex flex-col items-center gap-1.5 rounded-lg bg-fab-surface border border-fab-border px-2 py-3 hover:border-purple-400/40 hover:bg-purple-400/5 transition-all">
-          <OpponentsIcon className="w-5 h-5 text-fab-muted group-hover:text-purple-400 transition-colors" />
-          <span className="text-xs font-medium text-fab-muted group-hover:text-fab-text transition-colors">Opponents</span>
-          <span className="text-[10px] text-fab-dim">{opponentStats.length}</span>
-        </Link>
-        <Link href="/trends" className="group flex flex-col items-center gap-1.5 rounded-lg bg-fab-surface border border-fab-border px-2 py-3 hover:border-emerald-400/40 hover:bg-emerald-400/5 transition-all">
-          <TrendsIcon className="w-5 h-5 text-fab-muted group-hover:text-emerald-400 transition-colors" />
-          <span className="text-xs font-medium text-fab-muted group-hover:text-fab-text transition-colors">Trends</span>
-        </Link>
-        {isOwner && (
-          <Link href="/events?import=1" className="group flex flex-col items-center gap-1.5 rounded-lg bg-fab-surface border border-fab-border border-dashed px-2 py-3 hover:border-fab-gold/40 hover:bg-fab-gold/5 transition-all">
-            <svg className="w-5 h-5 text-fab-muted group-hover:text-fab-gold transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-            </svg>
-            <span className="text-xs font-medium text-fab-muted group-hover:text-fab-text transition-colors">Log Event</span>
-          </Link>
-        )}
       </div>
 
       {/* Filters */}
