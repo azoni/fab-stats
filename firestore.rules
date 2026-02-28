@@ -84,6 +84,10 @@ service cloud.firestore {
       allow create: if request.auth != null
         && (!("commentPreview" in request.resource.data) || maxLen(request.resource.data.commentPreview, 500))
         && (!("messagePreview" in request.resource.data) || maxLen(request.resource.data.messagePreview, 500));
+      // Allow message senders to update their own notifications (for grouping multiple messages)
+      allow update: if request.auth != null
+        && resource.data.type == "message"
+        && resource.data.senderUid == request.auth.uid;
     }
 
     // ── Favorites ──

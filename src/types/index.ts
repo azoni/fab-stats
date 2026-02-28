@@ -189,6 +189,7 @@ export interface UserNotification {
   senderName?: string;
   senderPhoto?: string;
   messagePreview?: string;
+  messageCount?: number;
   // Friend request fields
   friendRequestFromUid?: string;
   friendRequestFromName?: string;

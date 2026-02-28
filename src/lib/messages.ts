@@ -10,6 +10,7 @@ import {
   orderBy,
   limit,
   updateDoc,
+  increment,
   type Unsubscribe,
 } from "firebase/firestore";
 import { db } from "./firebase";
@@ -104,7 +105,9 @@ export async function sendMessage(
   });
 }
 
-/** Create a notification for a message recipient */
+/** Create or update a notification for a message recipient.
+ *  Uses a deterministic doc ID per sender so multiple messages
+ *  from the same person are grouped into one notification. */
 export async function sendMessageNotification(
   recipientUid: string,
   conversationId: string,
@@ -113,18 +116,36 @@ export async function sendMessageNotification(
   senderPhoto: string | undefined,
   messagePreview: string
 ): Promise<void> {
-  const notifRef = collection(db, "users", recipientUid, "notifications");
-  const data: Record<string, unknown> = {
+  const notifRef = doc(db, "users", recipientUid, "notifications", `msg_${senderUid}`);
+
+  // Try to update an existing notification (increment count).
+  // This succeeds when the doc already exists (whether read or unread).
+  try {
+    await updateDoc(notifRef, {
+      messagePreview: messagePreview.slice(0, 100),
+      createdAt: new Date().toISOString(),
+      senderName,
+      senderPhoto: senderPhoto || "",
+      messageCount: increment(1),
+      read: false,
+    });
+    return; // updated successfully
+  } catch {
+    // Doc doesn't exist yet — fall through to create
+  }
+
+  // Create a fresh notification
+  await setDoc(notifRef, {
     type: "message",
     conversationId,
     senderUid,
     senderName,
     senderPhoto: senderPhoto || "",
     messagePreview: messagePreview.slice(0, 100),
+    messageCount: 1,
     createdAt: new Date().toISOString(),
     read: false,
-  };
-  await addDoc(notifRef, data);
+  });
 }
 
 /** Subscribe to a user's conversations (real-time) */

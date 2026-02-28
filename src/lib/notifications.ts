@@ -51,7 +51,14 @@ export async function markAllAsRead(userId: string): Promise<void> {
 
   const batch = writeBatch(db);
   for (const d of snapshot.docs) {
-    batch.update(d.ref, { read: true });
+    const data = d.data();
+    if (data.type === "message") {
+      // Delete message notifications — they're ephemeral "you have unread messages" indicators.
+      // The inbox provides the full conversation history.
+      batch.delete(d.ref);
+    } else {
+      batch.update(d.ref, { read: true });
+    }
   }
   await batch.commit();
 
@@ -76,4 +83,14 @@ export async function deleteNotification(
 ): Promise<void> {
   const ref = doc(db, "users", userId, "notifications", notificationId);
   await deleteDoc(ref);
+}
+
+/** Delete the grouped message notification from a specific sender.
+ *  Called when the user opens the chat — the notification is no longer needed. */
+export async function clearMessageNotificationsFrom(
+  userId: string,
+  senderUid: string
+): Promise<void> {
+  const ref = doc(db, "users", userId, "notifications", `msg_${senderUid}`);
+  await deleteDoc(ref).catch(() => {});
 }

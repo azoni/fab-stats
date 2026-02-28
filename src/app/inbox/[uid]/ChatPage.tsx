@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
 import { useMessages } from "@/hooks/useMessages";
 import { getConversationId, sendMessage, sendMessageNotification, getOrCreateConversation, conversationExists } from "@/lib/messages";
+import { clearMessageNotificationsFrom } from "@/lib/notifications";
 import { getProfile } from "@/lib/firestore-storage";
 import type { UserProfile } from "@/types";
 
@@ -54,6 +55,12 @@ export default function ChatPage() {
       if (exists) setConversationId(id);
       setExistenceChecked(true);
     });
+  }, [user, otherUid]);
+
+  // Clear message notifications from this sender when chat opens
+  useEffect(() => {
+    if (!user || !otherUid || otherUid === "_") return;
+    clearMessageNotificationsFrom(user.uid, otherUid);
   }, [user, otherUid]);
 
   // Auto-scroll to bottom
