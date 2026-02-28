@@ -153,6 +153,12 @@ export default function PlayerProfile() {
           return;
         }
 
+        // Hide from guests: if hideFromGuests is true and viewer is not logged in
+        if (profile.hideFromGuests !== false && !viewerUid && !viewerIsAdmin) {
+          setState({ status: "private" });
+          return;
+        }
+
         // Load matches separately — show profile even if matches fail
         let matches: MatchRecord[] = [];
         try {

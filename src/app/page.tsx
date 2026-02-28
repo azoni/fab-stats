@@ -91,7 +91,10 @@ export default function Dashboard() {
   // Community section data
   const communityMeta = useMemo(() => computeMetaStats(lbEntries), [lbEntries]);
   const communityTopHeroes = useMemo(() => communityMeta.heroStats.slice(0, 5), [communityMeta]);
-  const featuredProfiles = useMemo(() => selectFeaturedProfiles(lbEntries), [lbEntries]);
+  const featuredProfiles = useMemo(() => {
+    const visible = user ? lbEntries : lbEntries.filter((e) => e.hideFromGuests === false);
+    return selectFeaturedProfiles(visible);
+  }, [lbEntries, user]);
   const rankMap = useMemo(() => computeRankMap(lbEntries), [lbEntries]);
 
 

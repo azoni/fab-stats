@@ -51,7 +51,7 @@ function SearchContent() {
   const [results, setResults] = useState<SearchResult[]>([]);
   const [searched, setSearched] = useState(false);
   const [loading, setLoading] = useState(false);
-  const { isAdmin } = useAuth();
+  const { isAdmin, user } = useAuth();
 
   // Feed state
   const [feedEvents, setFeedEvents] = useState<FeedEvent[]>([]);
@@ -107,7 +107,11 @@ function SearchContent() {
       }))
     );
 
-    const filtered = withProfiles.filter((r) => r.profile?.isPublic || isAdmin);
+    const filtered = withProfiles.filter((r) => {
+      if (!r.profile?.isPublic && !isAdmin) return false;
+      if (r.profile?.hideFromGuests !== false && !user && !isAdmin) return false;
+      return true;
+    });
 
     // Auto-redirect to profile if exactly one result and came from a link (not manual search)
     if (autoRedirect && filtered.length === 1) {

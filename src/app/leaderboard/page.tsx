@@ -225,70 +225,76 @@ export default function LeaderboardPage() {
   const currentWeekStart = useMemo(() => getWeekStart(), []);
   const currentMonthStart = useMemo(() => getMonthStart(), []);
 
+  // Filter out hideFromGuests entries when viewer is not logged in
+  const visibleEntries = useMemo(() => {
+    if (user || isAdmin) return entries;
+    return entries.filter((e) => e.hideFromGuests === false);
+  }, [entries, user, isAdmin]);
+
   const ranked = useMemo(() => {
     switch (activeTab) {
       case "winrate":
-        return [...entries].filter((e) => e.totalMatches >= 100).sort((a, b) => b.winRate - a.winRate || b.totalMatches - a.totalMatches);
+        return [...visibleEntries].filter((e) => e.totalMatches >= 100).sort((a, b) => b.winRate - a.winRate || b.totalMatches - a.totalMatches);
       case "volume":
-        return [...entries].sort((a, b) => b.totalMatches - a.totalMatches);
+        return [...visibleEntries].sort((a, b) => b.totalMatches - a.totalMatches);
       case "mostwins":
-        return [...entries].filter((e) => e.totalWins > 0).sort((a, b) => b.totalWins - a.totalWins || b.winRate - a.winRate);
+        return [...visibleEntries].filter((e) => e.totalWins > 0).sort((a, b) => b.totalWins - a.totalWins || b.winRate - a.winRate);
       case "weeklymatches":
-        return [...entries].filter((e) => e.weekStart === currentWeekStart && e.weeklyMatches > 0).sort((a, b) => b.weeklyMatches - a.weeklyMatches || b.weeklyWins - a.weeklyWins);
+        return [...visibleEntries].filter((e) => e.weekStart === currentWeekStart && e.weeklyMatches > 0).sort((a, b) => b.weeklyMatches - a.weeklyMatches || b.weeklyWins - a.weeklyWins);
       case "weeklywins":
-        return [...entries].filter((e) => e.weekStart === currentWeekStart && e.weeklyWins > 0).sort((a, b) => b.weeklyWins - a.weeklyWins || b.weeklyMatches - a.weeklyMatches);
+        return [...visibleEntries].filter((e) => e.weekStart === currentWeekStart && e.weeklyWins > 0).sort((a, b) => b.weeklyWins - a.weeklyWins || b.weeklyMatches - a.weeklyMatches);
       case "monthlymatches":
-        return [...entries].filter((e) => e.monthStart === currentMonthStart && (e.monthlyMatches ?? 0) > 0).sort((a, b) => (b.monthlyMatches ?? 0) - (a.monthlyMatches ?? 0) || (b.monthlyWins ?? 0) - (a.monthlyWins ?? 0));
+        return [...visibleEntries].filter((e) => e.monthStart === currentMonthStart && (e.monthlyMatches ?? 0) > 0).sort((a, b) => (b.monthlyMatches ?? 0) - (a.monthlyMatches ?? 0) || (b.monthlyWins ?? 0) - (a.monthlyWins ?? 0));
       case "monthlywins":
-        return [...entries].filter((e) => e.monthStart === currentMonthStart && (e.monthlyWins ?? 0) > 0).sort((a, b) => (b.monthlyWins ?? 0) - (a.monthlyWins ?? 0) || (b.monthlyMatches ?? 0) - (a.monthlyMatches ?? 0));
+        return [...visibleEntries].filter((e) => e.monthStart === currentMonthStart && (e.monthlyWins ?? 0) > 0).sort((a, b) => (b.monthlyWins ?? 0) - (a.monthlyWins ?? 0) || (b.monthlyMatches ?? 0) - (a.monthlyMatches ?? 0));
       case "monthlywinrate":
-        return [...entries].filter((e) => e.monthStart === currentMonthStart && (e.monthlyMatches ?? 0) >= 5).sort((a, b) => (b.monthlyWinRate ?? 0) - (a.monthlyWinRate ?? 0) || (b.monthlyMatches ?? 0) - (a.monthlyMatches ?? 0));
+        return [...visibleEntries].filter((e) => e.monthStart === currentMonthStart && (e.monthlyMatches ?? 0) >= 5).sort((a, b) => (b.monthlyWinRate ?? 0) - (a.monthlyWinRate ?? 0) || (b.monthlyMatches ?? 0) - (a.monthlyMatches ?? 0));
       case "streaks":
-        return [...entries].filter((e) => e.longestWinStreak > 0).sort((a, b) => b.longestWinStreak - a.longestWinStreak || b.totalMatches - a.totalMatches);
+        return [...visibleEntries].filter((e) => e.longestWinStreak > 0).sort((a, b) => b.longestWinStreak - a.longestWinStreak || b.totalMatches - a.totalMatches);
       case "draws":
-        return [...entries].filter((e) => e.totalDraws > 0).sort((a, b) => b.totalDraws - a.totalDraws || b.totalMatches - a.totalMatches);
+        return [...visibleEntries].filter((e) => e.totalDraws > 0).sort((a, b) => b.totalDraws - a.totalDraws || b.totalMatches - a.totalMatches);
       case "drawrate":
-        return [...entries].filter((e) => e.totalDraws > 0 && e.totalMatches >= 10).sort((a, b) => {
+        return [...visibleEntries].filter((e) => e.totalDraws > 0 && e.totalMatches >= 10).sort((a, b) => {
           const aRate = (a.totalDraws / a.totalMatches) * 100;
           const bRate = (b.totalDraws / b.totalMatches) * 100;
           return bRate - aRate || b.totalDraws - a.totalDraws;
         });
       case "events":
-        return [...entries].filter((e) => e.eventsPlayed > 0).sort((a, b) => b.eventWins - a.eventWins || b.eventsPlayed - a.eventsPlayed);
+        return [...visibleEntries].filter((e) => e.eventsPlayed > 0).sort((a, b) => b.eventWins - a.eventWins || b.eventsPlayed - a.eventsPlayed);
       case "rated":
-        return [...entries].filter((e) => e.ratedMatches >= 5).sort((a, b) => b.ratedWinRate - a.ratedWinRate || b.ratedMatches - a.ratedMatches);
+        return [...visibleEntries].filter((e) => e.ratedMatches >= 5).sort((a, b) => b.ratedWinRate - a.ratedWinRate || b.ratedMatches - a.ratedMatches);
       case "heroes":
-        return [...entries].filter((e) => e.uniqueHeroes > 0).sort((a, b) => b.uniqueHeroes - a.uniqueHeroes || b.totalMatches - a.totalMatches);
+        return [...visibleEntries].filter((e) => e.uniqueHeroes > 0).sort((a, b) => b.uniqueHeroes - a.uniqueHeroes || b.totalMatches - a.totalMatches);
       case "dedication":
-        return [...entries].filter((e) => e.topHeroMatches > 0).sort((a, b) => b.topHeroMatches - a.topHeroMatches || b.totalMatches - a.totalMatches);
+        return [...visibleEntries].filter((e) => e.topHeroMatches > 0).sort((a, b) => b.topHeroMatches - a.topHeroMatches || b.totalMatches - a.totalMatches);
       case "loyaltyrate":
-        return [...entries].filter((e) => e.topHeroMatches > 0 && e.totalMatches >= 20).sort((a, b) => {
+        return [...visibleEntries].filter((e) => e.topHeroMatches > 0 && e.totalMatches >= 20).sort((a, b) => {
           const aRate = (a.topHeroMatches / a.totalMatches) * 100;
           const bRate = (b.topHeroMatches / b.totalMatches) * 100;
           return bRate - aRate || b.topHeroMatches - a.topHeroMatches;
         });
       case "hotstreak":
-        return [...entries].filter((e) => e.currentStreakType === "win" && e.currentStreakCount >= 2).sort((a, b) => b.currentStreakCount - a.currentStreakCount || b.winRate - a.winRate);
+        return [...visibleEntries].filter((e) => e.currentStreakType === "win" && e.currentStreakCount >= 2).sort((a, b) => b.currentStreakCount - a.currentStreakCount || b.winRate - a.winRate);
       case "eventgrinder":
-        return [...entries].filter((e) => e.eventsPlayed > 0).sort((a, b) => b.eventsPlayed - a.eventsPlayed || b.eventWins - a.eventWins);
+        return [...visibleEntries].filter((e) => e.eventsPlayed > 0).sort((a, b) => b.eventsPlayed - a.eventsPlayed || b.eventWins - a.eventWins);
       case "earnings":
-        return [...entries].filter((e) => (e.earnings ?? 0) > 0).sort((a, b) => (b.earnings ?? 0) - (a.earnings ?? 0));
+        return [...visibleEntries].filter((e) => (e.earnings ?? 0) > 0).sort((a, b) => (b.earnings ?? 0) - (a.earnings ?? 0));
       case "armorywinrate":
-        return [...entries].filter((e) => e.armoryMatches >= 5).sort((a, b) => b.armoryWinRate - a.armoryWinRate || b.armoryMatches - a.armoryMatches);
+        return [...visibleEntries].filter((e) => e.armoryMatches >= 5).sort((a, b) => b.armoryWinRate - a.armoryWinRate || b.armoryMatches - a.armoryMatches);
       case "armoryattendance":
-        return [...entries].filter((e) => (e.armoryEvents ?? 0) > 0).sort((a, b) => (b.armoryEvents ?? 0) - (a.armoryEvents ?? 0) || b.armoryMatches - a.armoryMatches);
+        return [...visibleEntries].filter((e) => (e.armoryEvents ?? 0) > 0).sort((a, b) => (b.armoryEvents ?? 0) - (a.armoryEvents ?? 0) || b.armoryMatches - a.armoryMatches);
       case "armorymatches":
-        return [...entries].filter((e) => e.armoryMatches > 0).sort((a, b) => b.armoryMatches - a.armoryMatches || b.armoryWins - a.armoryWins);
+        return [...visibleEntries].filter((e) => e.armoryMatches > 0).sort((a, b) => b.armoryMatches - a.armoryMatches || b.armoryWins - a.armoryWins);
       case "byes":
-        return [...entries].filter((e) => (e.totalByes ?? 0) > 0).sort((a, b) => (b.totalByes ?? 0) - (a.totalByes ?? 0) || b.totalMatches - a.totalMatches);
+        return [...visibleEntries].filter((e) => (e.totalByes ?? 0) > 0).sort((a, b) => (b.totalByes ?? 0) - (a.totalByes ?? 0) || b.totalMatches - a.totalMatches);
       case "byerate":
-        return [...entries].filter((e) => (e.totalByes ?? 0) > 0 && e.totalMatches >= 10).sort((a, b) => {
+        return [...visibleEntries].filter((e) => (e.totalByes ?? 0) > 0 && e.totalMatches >= 10).sort((a, b) => {
           const aRate = ((a.totalByes ?? 0) / a.totalMatches) * 100;
           const bRate = ((b.totalByes ?? 0) / b.totalMatches) * 100;
           return bRate - aRate || (b.totalByes ?? 0) - (a.totalByes ?? 0);
         });
       case "top8s":
-        return [...entries].filter((e) => (e.totalTop8s ?? 0) > 0).sort((a, b) => (b.totalTop8s ?? 0) - (a.totalTop8s ?? 0) || b.eventWins - a.eventWins);
+        return [...visibleEntries].filter((e) => (e.totalTop8s ?? 0) > 0).sort((a, b) => (b.totalTop8s ?? 0) - (a.totalTop8s ?? 0) || b.eventWins - a.eventWins);
       case "top8s_skirmish":
       case "top8s_pq":
       case "top8s_bh":
@@ -296,12 +302,12 @@ export default function LeaderboardPage() {
       case "top8s_calling":
       case "top8s_nationals": {
         const eventType = TOP8_EVENT_TYPE_MAP[activeTab];
-        return [...entries].filter((e) => getTop8Count(e, eventType) > 0).sort((a, b) => getTop8Count(b, eventType) - getTop8Count(a, eventType) || (b.totalTop8s ?? 0) - (a.totalTop8s ?? 0));
+        return [...visibleEntries].filter((e) => getTop8Count(e, eventType) > 0).sort((a, b) => getTop8Count(b, eventType) - getTop8Count(a, eventType) || (b.totalTop8s ?? 0) - (a.totalTop8s ?? 0));
       }
       default:
-        return entries;
+        return visibleEntries;
     }
-  }, [entries, activeTab, currentWeekStart, currentMonthStart]);
+  }, [visibleEntries, activeTab, currentWeekStart, currentMonthStart]);
 
   // Search filter
   const filtered = useMemo(() => {

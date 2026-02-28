@@ -307,7 +307,7 @@ export async function searchUsernames(
 
 export async function updateProfile(
   userId: string,
-  updates: Partial<Pick<UserProfile, "displayName" | "photoUrl" | "isPublic" | "firstName" | "lastName" | "searchName" | "earnings" | "showNameOnProfiles" | "hideFromSpotlight" | "gemId" | "unlockedCans">>
+  updates: Partial<Pick<UserProfile, "displayName" | "photoUrl" | "isPublic" | "firstName" | "lastName" | "searchName" | "earnings" | "showNameOnProfiles" | "hideFromSpotlight" | "hideFromGuests" | "gemId" | "unlockedCans">>
 ): Promise<void> {
   const profileRef = doc(db, "users", userId, "profile", "main");
   // Strip undefined values — Firestore rejects them

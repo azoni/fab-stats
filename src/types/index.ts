@@ -136,6 +136,7 @@ export interface UserProfile {
   earnings?: number;
   showNameOnProfiles?: boolean;
   hideFromSpotlight?: boolean;
+  hideFromGuests?: boolean;
   gemId?: string;
   unlockedCans?: string[];
 }
@@ -240,6 +241,7 @@ export interface LeaderboardEntry {
   armoryEvents: number;
   showNameOnProfiles?: boolean;
   hideFromSpotlight?: boolean;
+  hideFromGuests?: boolean;
   heroBreakdown?: { hero: string; matches: number; wins: number; winRate: number }[];
   heroBreakdownDetailed?: { hero: string; format: string; eventType: string; matches: number; wins: number; winRate: number }[];
   totalTop8s?: number;

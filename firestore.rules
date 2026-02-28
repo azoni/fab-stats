@@ -19,8 +19,9 @@ service cloud.firestore {
     match /users/{userId}/profile/{docId} {
       // Owner can read/write their own profile
       allow read, write: if request.auth != null && request.auth.uid == userId;
-      // Anyone can read public profiles (for /player/username pages)
-      allow read: if resource.data.isPublic == true;
+      // Authenticated users can read public profiles
+      allow read: if resource.data.isPublic == true
+        && (request.auth != null || resource.data.get('hideFromGuests', true) == false);
       // Admin can read all profiles
       allow read: if isAdmin();
     }
@@ -43,8 +44,9 @@ service cloud.firestore {
       allow delete: if request.auth != null && request.auth.uid == userId;
       // Admin can update/delete any user's matches (for data fixes)
       allow update, delete: if isAdmin();
-      // Public read: if the user's profile is public
-      allow read: if get(/databases/$(database)/documents/users/$(userId)/profile/main).data.isPublic == true;
+      // Public read: if the user's profile is public (and not hidden from guests)
+      allow read: if get(/databases/$(database)/documents/users/$(userId)/profile/main).data.isPublic == true
+        && (request.auth != null || get(/databases/$(database)/documents/users/$(userId)/profile/main).data.get('hideFromGuests', true) == false);
       // Admin can read all matches (for aggregate stats)
       allow read: if isAdmin();
       // Any authenticated user can update ONLY commentCount (and must be a valid increment)

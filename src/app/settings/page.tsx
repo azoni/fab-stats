@@ -132,6 +132,8 @@ export default function SettingsPage() {
   const [togglingName, setTogglingName] = useState(false);
   const [hideFromSpotlight, setHideFromSpotlight] = useState(profile?.hideFromSpotlight ?? false);
   const [togglingSpotlight, setTogglingSpotlight] = useState(false);
+  const [hideFromGuests, setHideFromGuests] = useState(profile?.hideFromGuests ?? true);
+  const [togglingGuests, setTogglingGuests] = useState(false);
   const [privacyOpen, setPrivacyOpen] = useState(false);
   const [creatorsOpen, setCreatorsOpen] = useState(false);
   const [confirmClear, setConfirmClear] = useState(false);
@@ -510,6 +512,42 @@ export default function SettingsPage() {
                 <span
                   className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${
                     hideFromSpotlight ? "translate-x-5" : ""
+                  }`}
+                />
+              </button>
+            </div>
+
+            <div className="flex items-center justify-between mt-4 pt-4 border-t border-fab-border">
+              <div>
+                <p className="text-sm text-fab-text">Hide from Guests</p>
+                <p className="text-xs text-fab-dim mt-0.5">
+                  {hideFromGuests
+                    ? "Users who are not logged in cannot see your profile, stats, or leaderboard entry."
+                    : "Anyone — even without an account — can view your profile and stats."}
+                </p>
+              </div>
+              <button
+                onClick={async () => {
+                  if (!user) return;
+                  setTogglingGuests(true);
+                  try {
+                    const next = !hideFromGuests;
+                    await updateProfile(user.uid, { hideFromGuests: next });
+                    setHideFromGuests(next);
+                  } catch {
+                    setError("Failed to update guest visibility setting.");
+                  } finally {
+                    setTogglingGuests(false);
+                  }
+                }}
+                disabled={togglingGuests}
+                className={`relative w-11 h-6 rounded-full transition-colors shrink-0 ${
+                  hideFromGuests ? "bg-fab-win" : "bg-fab-border"
+                } ${togglingGuests ? "opacity-50" : ""}`}
+              >
+                <span
+                  className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${
+                    hideFromGuests ? "translate-x-5" : ""
                   }`}
                 />
               </button>
