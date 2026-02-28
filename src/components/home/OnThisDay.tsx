@@ -24,7 +24,7 @@ export function OnThisDay({ matches }: OnThisDayProps) {
   const [overrideDate, setOverrideDate] = useState<string | undefined>();
   const [overrideYear, setOverrideYear] = useState<number | undefined>();
   const [showShareModal, setShowShareModal] = useState(false);
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
