@@ -6,6 +6,7 @@ import { getProfileByUsername, getMatchesByUserId } from "@/lib/firestore-storag
 import { updateLeaderboardEntry } from "@/lib/leaderboard";
 import { computeOverallStats, computeHeroStats, computeEventTypeStats, computeVenueStats, computeEventStats, computeOpponentStats, computeBestFinish, computePlayoffFinishes, getEventType } from "@/lib/stats";
 import { evaluateAchievements, getAchievementProgress } from "@/lib/achievements";
+import { getUserBadges } from "@/lib/badge-service";
 import { computeHeroMastery } from "@/lib/mastery";
 import { AchievementShowcase } from "@/components/gamification/AchievementShowcase";
 import { AchievementBadges } from "@/components/gamification/AchievementShowcase";
@@ -60,6 +61,7 @@ export default function PlayerProfile() {
   const [achievementsExpanded, setAchievementsExpanded] = useState(false);
   const [showRecentEvents, setShowRecentEvents] = useState(false);
   const [showMajorEvents, setShowMajorEvents] = useState(true);
+  const [userBadges, setUserBadges] = useState<Achievement[]>([]);
 
   // Auto-expand achievements if navigated with #achievements hash
   useEffect(() => {
@@ -197,6 +199,11 @@ export default function PlayerProfile() {
 
   const profileUid = state.status === "loaded" ? state.profile.uid : "";
 
+  useEffect(() => {
+    if (!profileUid) return;
+    getUserBadges(profileUid).then(setUserBadges).catch(() => {});
+  }, [profileUid]);
+
   const overall = useMemo(() => computeOverallStats(fm), [fm]);
   const heroStats = useMemo(() => computeHeroStats(fm), [fm]);
   const allOpponentStats = useMemo(() => computeOpponentStats(fm), [fm]);
@@ -209,7 +216,8 @@ export default function PlayerProfile() {
     [...fm].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
     [fm]
   );
-  const achievements = useMemo(() => evaluateAchievements(fm, overall, heroStats, opponentStats), [fm, overall, heroStats, opponentStats]);
+  const computedAchievements = useMemo(() => evaluateAchievements(fm, overall, heroStats, opponentStats), [fm, overall, heroStats, opponentStats]);
+  const achievements = useMemo(() => [...userBadges, ...computedAchievements], [userBadges, computedAchievements]);
   const achievementProgress = useMemo(() => getAchievementProgress(fm, overall, heroStats, opponentStats), [fm, overall, heroStats, opponentStats]);
   const masteries = useMemo(() => computeHeroMastery(heroStats), [heroStats]);
   const bestFinish = useMemo(() => computeBestFinish(eventStats), [eventStats]);

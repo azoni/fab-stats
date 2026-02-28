@@ -2,6 +2,7 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import type { Achievement } from "@/types";
 import { rarityColors, getAllAchievements } from "@/lib/achievements";
+import { getAllBadges } from "@/lib/badges";
 import { AchievementIcon } from "./AchievementIcons";
 
 interface GroupedAchievement {
@@ -83,7 +84,7 @@ export function AchievementShowcase({ earned, progress, forceExpanded }: { earne
   const [showAll, setShowAll] = useState(true);
   const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
 
-  const all = getAllAchievements();
+  const all = useMemo(() => [...getAllAchievements(), ...getAllBadges()], []);
   const earnedIds = useMemo(() => new Set(earned.map((a) => a.id)), [earned]);
   const totalEarned = earned.length;
 

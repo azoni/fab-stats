@@ -7,12 +7,13 @@ import { useMatches } from "@/hooks/useMatches";
 import { useAuth } from "@/contexts/AuthContext";
 import { computeOpponentStats } from "@/lib/stats";
 import { getWeekStart, getMonthStart } from "@/lib/leaderboard";
+import { computePowerLevel, getPowerTier } from "@/lib/power-level";
 import { TrophyIcon } from "@/components/icons/NavIcons";
 import type { LeaderboardEntry, OpponentStats } from "@/types";
 
 const SITE_CREATOR = "azoni";
 
-type Tab = "winrate" | "volume" | "mostwins" | "streaks" | "draws" | "drawrate" | "byes" | "byerate" | "events" | "eventgrinder" | "rated" | "heroes" | "dedication" | "loyaltyrate" | "hotstreak" | "weeklymatches" | "weeklywins" | "monthlymatches" | "monthlywins" | "monthlywinrate" | "earnings" | "armorywinrate" | "armoryattendance" | "armorymatches" | "top8s" | "top8s_skirmish" | "top8s_pq" | "top8s_bh" | "top8s_rtn" | "top8s_calling" | "top8s_nationals";
+type Tab = "winrate" | "volume" | "mostwins" | "streaks" | "draws" | "drawrate" | "byes" | "byerate" | "events" | "eventgrinder" | "rated" | "heroes" | "dedication" | "loyaltyrate" | "hotstreak" | "weeklymatches" | "weeklywins" | "monthlymatches" | "monthlywins" | "monthlywinrate" | "earnings" | "armorywinrate" | "armoryattendance" | "armorymatches" | "top8s" | "top8s_skirmish" | "top8s_pq" | "top8s_bh" | "top8s_rtn" | "top8s_calling" | "top8s_nationals" | "powerlevel";
 
 // ── Tab definitions ──
 
@@ -48,6 +49,7 @@ const tabs: { id: Tab; label: string; description: string }[] = [
   { id: "drawrate", label: "Draw %", description: "Highest draw rate. Requires 10+ matches." },
   { id: "byes", label: "Byes", description: "Most byes received." },
   { id: "byerate", label: "Bye %", description: "Highest bye rate. Requires 10+ matches." },
+  { id: "powerlevel", label: "Power Level", description: "Composite score (0–99) based on win rate, match volume, events, streaks, heroes, rated performance, and earnings." },
 ];
 
 const tabMap = Object.fromEntries(tabs.map((t) => [t.id, t]));
@@ -58,9 +60,10 @@ interface Category {
   id: string;
   label: string;
   tabs: Tab[];
+  adminOnly?: boolean;
 }
 
-const categories: Category[] = [
+const allCategories: Category[] = [
   { id: "overall", label: "Overall", tabs: ["winrate", "volume", "mostwins"] },
   { id: "time", label: "Weekly & Monthly", tabs: ["weeklymatches", "weeklywins", "monthlymatches", "monthlywins", "monthlywinrate"] },
   { id: "events", label: "Events & Top 8s", tabs: ["events", "eventgrinder", "top8s", "top8s_skirmish", "top8s_pq", "top8s_bh", "top8s_rtn", "top8s_calling", "top8s_nationals"] },
@@ -69,10 +72,11 @@ const categories: Category[] = [
   { id: "armory", label: "Armory", tabs: ["armorywinrate", "armoryattendance", "armorymatches"] },
   { id: "rated", label: "Rated", tabs: ["rated"] },
   { id: "niche", label: "Niche", tabs: ["earnings", "draws", "drawrate", "byes", "byerate"] },
+  { id: "power", label: "Power Level", tabs: ["powerlevel"], adminOnly: true },
 ];
 
 function categoryForTab(tab: Tab): string {
-  return categories.find((c) => c.tabs.includes(tab))?.id || "overall";
+  return allCategories.find((c) => c.tabs.includes(tab))?.id || "overall";
 }
 
 // ── Helpers ──
@@ -156,6 +160,11 @@ function getStat(entry: LeaderboardEntry, tab: Tab): { value: string; sub: strin
     }
     case "top8s":
       return { value: String(entry.totalTop8s ?? 0), sub: "playoff finishes", color: "text-fab-gold" };
+    case "powerlevel": {
+      const pl = computePowerLevel(entry);
+      const tier = getPowerTier(pl);
+      return { value: String(pl), sub: `${tier.label} · ${formatRate(entry.winRate)} WR`, color: tier.textColor };
+    }
     default:
       if (tab.startsWith("top8s_") && TOP8_EVENT_TYPE_MAP[tab]) {
         return { value: String(getTop8Count(entry, TOP8_EVENT_TYPE_MAP[tab])), sub: `${entry.totalTop8s ?? 0} total Top 8s`, color: "text-fab-gold" };
@@ -187,6 +196,7 @@ function getEmptyMessage(tab: Tab): string {
     case "byes": return "No players have received byes yet.";
     case "byerate": return "Players need at least 10 matches and 1 bye to appear here.";
     case "loyaltyrate": return "Players need at least 20 matches to appear here.";
+    case "powerlevel": return "Players need at least 10 matches to get a Power Level.";
     default:
       if (tab.startsWith("top8s")) return "No players have Top 8 finishes in this category yet.";
       return "Import matches to appear on the leaderboard.";
@@ -211,6 +221,9 @@ export default function LeaderboardPage() {
   const [page, setPage] = useState(0);
   const [search, setSearch] = useState("");
   const listRef = useRef<HTMLDivElement>(null);
+
+  // Filter categories by admin access
+  const categories = useMemo(() => isAdmin ? allCategories : allCategories.filter((c) => !c.adminOnly), [isAdmin]);
 
   const h2hMap = useMemo(() => {
     if (!user || matches.length === 0) return new Map<string, OpponentStats>();
@@ -304,6 +317,8 @@ export default function LeaderboardPage() {
         const eventType = TOP8_EVENT_TYPE_MAP[activeTab];
         return [...visibleEntries].filter((e) => getTop8Count(e, eventType) > 0).sort((a, b) => getTop8Count(b, eventType) - getTop8Count(a, eventType) || (b.totalTop8s ?? 0) - (a.totalTop8s ?? 0));
       }
+      case "powerlevel":
+        return [...visibleEntries].filter((e) => e.totalMatches >= 10).sort((a, b) => computePowerLevel(b) - computePowerLevel(a) || b.totalMatches - a.totalMatches);
       default:
         return visibleEntries;
     }

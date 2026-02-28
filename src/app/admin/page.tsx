@@ -13,6 +13,8 @@ import { getAnalytics, type AnalyticsTimeRange } from "@/lib/analytics";
 import { getBanner, saveBanner, type BannerConfig } from "@/lib/banner";
 import { getAllPolls, getPollResults, getPollVoters, savePoll, removePoll, clearVotes } from "@/lib/polls";
 import { searchHeroes } from "@/lib/heroes";
+import { getAllBadgeAssignments, assignBadge, revokeBadge } from "@/lib/badge-service";
+import { ADMIN_BADGES } from "@/lib/badges";
 import { GameFormat } from "@/types";
 import type { FeedbackItem, Creator, FeaturedEvent, FeaturedEventPlayer, UserProfile, Poll, PollResults, PollVoter } from "@/types";
 
@@ -91,6 +93,7 @@ export default function AdminPage() {
   const [bannerLinkText, setBannerLinkText] = useState("");
   const [savingBanner, setSavingBanner] = useState(false);
   const [bannerSaved, setBannerSaved] = useState(false);
+  const [badgeAssignments, setBadgeAssignments] = useState<Record<string, string[]>>({});
   const anyToolRunning = fixingDates || backfilling || backfillingGemIds || linkingMatches || resyncingH2H;
   const [activeTab, setActiveTab] = useState<"overview" | "users" | "feedback" | "content" | "poll" | "tools">(() => {
     if (typeof window !== "undefined") {
@@ -111,7 +114,7 @@ export default function AdminPage() {
     setFetching(true);
     setError("");
     try {
-      const [result, fb, cr, ev, analytics, polls, bannerData] = await Promise.all([getAdminDashboardData(), getAllFeedback(), getCreators(), getEvents(), getAnalytics(), getAllPolls(), getBanner()]);
+      const [result, fb, cr, ev, analytics, polls, bannerData, badges] = await Promise.all([getAdminDashboardData(), getAllFeedback(), getCreators(), getEvents(), getAnalytics(), getAllPolls(), getBanner(), getAllBadgeAssignments()]);
       setData(result);
       setFeedback(fb);
       setCreatorsList(cr);
@@ -126,6 +129,7 @@ export default function AdminPage() {
       })));
       setAnalyticsData(analytics);
       setAllPolls(polls);
+      setBadgeAssignments(badges);
       if (bannerData) {
         setBannerText(bannerData.text);
         setBannerActive(bannerData.active);
@@ -529,7 +533,24 @@ export default function AdminPage() {
                         {isExpanded && (
                           <tr className="border-b border-fab-border/50 bg-fab-bg/50">
                             <td colSpan={9} className="px-4 py-3">
-                              <UserExpandedStats user={u} />
+                              <UserExpandedStats
+                                user={u}
+                                assignedBadgeIds={badgeAssignments[u.uid] || []}
+                                onAssignBadge={async (badgeId) => {
+                                  await assignBadge(u.uid, badgeId);
+                                  setBadgeAssignments((prev) => ({
+                                    ...prev,
+                                    [u.uid]: [...(prev[u.uid] || []), badgeId],
+                                  }));
+                                }}
+                                onRevokeBadge={async (badgeId) => {
+                                  await revokeBadge(u.uid, badgeId);
+                                  setBadgeAssignments((prev) => ({
+                                    ...prev,
+                                    [u.uid]: (prev[u.uid] || []).filter((id) => id !== badgeId),
+                                  }));
+                                }}
+                              />
                             </td>
                           </tr>
                         )}
@@ -1479,8 +1500,21 @@ export default function AdminPage() {
   );
 }
 
-function UserExpandedStats({ user: u }: { user: AdminUserStats }) {
+function UserExpandedStats({ user: u, assignedBadgeIds, onAssignBadge, onRevokeBadge }: {
+  user: AdminUserStats;
+  assignedBadgeIds: string[];
+  onAssignBadge: (badgeId: string) => Promise<void>;
+  onRevokeBadge: (badgeId: string) => Promise<void>;
+}) {
   const hasStats = u.winRate !== undefined;
+  const unassigned = ADMIN_BADGES.filter((b) => !assignedBadgeIds.includes(b.id));
+  const rarityColor: Record<string, string> = {
+    legendary: "text-amber-400 bg-amber-400/10 border-amber-400/30",
+    epic: "text-purple-400 bg-purple-400/10 border-purple-400/30",
+    rare: "text-blue-400 bg-blue-400/10 border-blue-400/30",
+    uncommon: "text-green-400 bg-green-400/10 border-green-400/30",
+    common: "text-fab-dim bg-fab-surface border-fab-border",
+  };
 
   return (
     <div className="space-y-3">
@@ -1542,6 +1576,49 @@ function UserExpandedStats({ user: u }: { user: AdminUserStats }) {
       ) : (
         <div className="text-sm text-fab-dim">No leaderboard data yet. Stats sync when user visits their dashboard.</div>
       )}
+
+      {/* Badges */}
+      <div className="border-t border-fab-border/50 pt-3">
+        <div className="text-xs text-fab-muted mb-2">Badges</div>
+        <div className="flex flex-wrap items-center gap-1.5">
+          {assignedBadgeIds.map((id) => {
+            const badge = ADMIN_BADGES.find((b) => b.id === id);
+            if (!badge) return null;
+            return (
+              <span
+                key={id}
+                className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-medium border ${rarityColor[badge.rarity]}`}
+              >
+                {badge.name}
+                <button
+                  onClick={(e) => { e.stopPropagation(); onRevokeBadge(id); }}
+                  className="ml-0.5 hover:opacity-70"
+                  title="Remove badge"
+                >
+                  x
+                </button>
+              </span>
+            );
+          })}
+          {unassigned.length > 0 && (
+            <select
+              className="text-[11px] bg-fab-bg border border-fab-border rounded px-2 py-1 text-fab-text"
+              value=""
+              onChange={(e) => { if (e.target.value) onAssignBadge(e.target.value); }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <option value="">+ Add badge</option>
+              {unassigned.map((b) => (
+                <option key={b.id} value={b.id}>{b.name} ({b.rarity})</option>
+              ))}
+            </select>
+          )}
+          {assignedBadgeIds.length === 0 && unassigned.length === 0 && (
+            <span className="text-[11px] text-fab-dim">All badges assigned</span>
+          )}
+        </div>
+      </div>
+
       <div className="pt-1">
         <Link
           href={`/player/${u.username}`}

@@ -207,6 +207,35 @@ const icons: Record<string, ReactNode> = {
       <line x1="4" y1="22" x2="4" y2="15" />
     </svg>
   ),
+  rocket: (
+    <svg className={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 00-2.91-.09z" fill="currentColor" fillOpacity="0.15" />
+      <path d="M12 15l-3-3a22 22 0 012-3.95A12.88 12.88 0 0122 2c0 2.72-.78 7.5-6 11.5L12 15z" fill="currentColor" fillOpacity="0.15" />
+      <path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5" />
+    </svg>
+  ),
+  seedling: (
+    <svg className={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M7 20h10" />
+      <path d="M12 20v-8" />
+      <path d="M12 12C12 8 8 4.5 3 5c0 5 3.5 7 9 7z" fill="currentColor" fillOpacity="0.15" />
+      <path d="M12 12c0-4 4-7.5 9-7 0 5-3.5 7-9 7z" fill="currentColor" fillOpacity="0.1" />
+    </svg>
+  ),
+  bug: (
+    <svg className={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="8" y="6" width="8" height="14" rx="4" fill="currentColor" fillOpacity="0.15" />
+      <path d="M8 2l1.88 1.88M16 2l-1.88 1.88M9 6.06A8 8 0 0112 5a8 8 0 013 1.06" />
+      <path d="M5 10h2M17 10h2M5 14h2M17 14h2M5 18h2M17 18h2" />
+      <path d="M12 6v14" />
+    </svg>
+  ),
+  lightbulb: (
+    <svg className={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M9 18h6M10 22h4" />
+      <path d="M12 2a7 7 0 00-4 12.73V17h8v-2.27A7 7 0 0012 2z" fill="currentColor" fillOpacity="0.15" />
+    </svg>
+  ),
   // Section header icons
   "section-achievements": (
     <svg className={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
