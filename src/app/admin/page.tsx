@@ -28,7 +28,7 @@ const FEATURED_EVENT_TYPES = [
   "Worlds",
 ] as const;
 
-type SortKey = "matchCount" | "createdAt" | "username" | "lastActive" | "weekly" | "monthly";
+type SortKey = "matchCount" | "createdAt" | "username" | "lastActive" | "weekly" | "monthly" | "visits";
 type SortDir = "asc" | "desc";
 
 export default function AdminPage() {
@@ -161,6 +161,7 @@ export default function AdminPage() {
       else if (sortKey === "lastActive") cmp = new Date(a.updatedAt || "").getTime() - new Date(b.updatedAt || "").getTime();
       else if (sortKey === "weekly") cmp = (a.weeklyMatches || 0) - (b.weeklyMatches || 0);
       else if (sortKey === "monthly") cmp = (a.monthlyMatches || 0) - (b.monthlyMatches || 0);
+      else if (sortKey === "visits") cmp = (a.visitCount || 0) - (b.visitCount || 0);
       else cmp = a.username.localeCompare(b.username);
       return sortDir === "desc" ? -cmp : cmp;
     });
@@ -449,6 +450,12 @@ export default function AdminPage() {
                       30d<SortArrow col="monthly" />
                     </th>
                     <th
+                      className="px-4 py-2 font-medium cursor-pointer hover:text-fab-text select-none text-right"
+                      onClick={() => toggleSort("visits")}
+                    >
+                      Visits<SortArrow col="visits" />
+                    </th>
+                    <th
                       className="px-4 py-2 font-medium cursor-pointer hover:text-fab-text select-none"
                       onClick={() => toggleSort("lastActive")}
                     >
@@ -496,6 +503,9 @@ export default function AdminPage() {
                           <td className="px-4 py-2 text-right font-mono">
                             <span className={`${(u.monthlyMatches || 0) > 0 ? "text-fab-text" : "text-fab-dim"}`}>{u.monthlyMatches || 0}</span>
                           </td>
+                          <td className="px-4 py-2 text-right font-mono">
+                            <span className={`${(u.visitCount || 0) > 10 ? "text-fab-win" : (u.visitCount || 0) > 0 ? "text-fab-text" : "text-fab-dim"}`}>{u.visitCount || 0}</span>
+                          </td>
                           <td className="px-4 py-2">
                             {(() => { const ta = timeAgo(u.updatedAt); return <span className={`text-xs font-medium ${ta.color}`}>{ta.label}</span>; })()}
                           </td>
@@ -515,7 +525,7 @@ export default function AdminPage() {
                         </tr>
                         {isExpanded && (
                           <tr className="border-b border-fab-border/50 bg-fab-bg/50">
-                            <td colSpan={8} className="px-4 py-3">
+                            <td colSpan={9} className="px-4 py-3">
                               <UserExpandedStats user={u} />
                             </td>
                           </tr>

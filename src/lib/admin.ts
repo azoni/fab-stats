@@ -13,6 +13,7 @@ import { updateLeaderboardEntry } from "./leaderboard";
 import { linkMatchesWithOpponents } from "./match-linking";
 import { computeH2HForUser } from "./h2h";
 import { getOrCreateConversation, sendMessage, sendMessageNotification } from "./messages";
+import { getUserVisitData } from "./analytics";
 import type { UserProfile, MatchRecord } from "@/types";
 
 interface AdminConfig {
@@ -44,6 +45,8 @@ export interface AdminUserStats {
   updatedAt?: string;
   weeklyMatches?: number;
   monthlyMatches?: number;
+  visitCount?: number;
+  lastSiteVisit?: string;
 }
 
 export interface AdminDashboardData {
@@ -85,10 +88,11 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
   if (dashboardCache && Date.now() - dashboardCache.ts < DASHBOARD_CACHE_TTL) {
     return dashboardCache.data;
   }
-  // Step 1: Get all usernames + leaderboard entries in parallel (2 queries total)
-  const [usernamesSnap, leaderboardSnap] = await Promise.all([
+  // Step 1: Get all usernames + leaderboard entries + visit data in parallel
+  const [usernamesSnap, leaderboardSnap, visitData] = await Promise.all([
     getDocs(collection(db, "usernames")),
     getDocs(collection(db, "leaderboard")),
+    getUserVisitData(),
   ]);
 
   const userEntries = usernamesSnap.docs.map((d) => ({
@@ -167,7 +171,13 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     }
   }
 
-  // Step 3: Compute time-based stats
+  // Step 3: Merge visit data into user stats
+  for (const u of users) {
+    u.visitCount = visitData.visits[u.uid] || 0;
+    u.lastSiteVisit = visitData.lastVisit[u.uid];
+  }
+
+  // Step 4: Compute time-based stats
   const now = Date.now();
   const weekAgo = now - 7 * 24 * 60 * 60 * 1000;
   const monthAgo = now - 30 * 24 * 60 * 60 * 1000;

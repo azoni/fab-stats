@@ -6,7 +6,7 @@ import { SwordsIcon, OpponentsIcon, TrendsIcon, ImportIcon, CalendarIcon, Trophy
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCreators } from "@/hooks/useCreators";
-import { trackPageView, trackCreatorClick } from "@/lib/analytics";
+import { trackPageView, trackCreatorClick, trackVisit } from "@/lib/analytics";
 import { useCommunityStats } from "@/hooks/useCommunityStats";
 import { useFriends } from "@/hooks/useFriends";
 import type { ReactNode } from "react";
@@ -86,6 +86,11 @@ export function Navbar() {
   useEffect(() => {
     if (mounted) trackPageView(pathname);
   }, [pathname, mounted]);
+
+  // Track daily unique visit (once per day per user)
+  useEffect(() => {
+    if (mounted && user && !isGuest) trackVisit();
+  }, [mounted, user, isGuest]);
 
   const isAuthenticated = user && !isGuest;
 

@@ -40,6 +40,48 @@ export function trackCreatorClick(creatorName: string) {
   }
 }
 
+/** Track a unique daily visit for the current user. Throttled to once per day via localStorage. */
+export function trackVisit() {
+  const user = auth.currentUser;
+  if (!user) return;
+
+  const today = dayKey();
+  const storageKey = "fab_last_visit_date";
+  try {
+    if (typeof window !== "undefined" && localStorage.getItem(storageKey) === today) return;
+  } catch {
+    // localStorage unavailable
+  }
+
+  try {
+    setDoc(doc(db, "analytics", "userVisits"), { [user.uid]: increment(1) }, { merge: true }).catch(() => {});
+    setDoc(doc(db, "analytics", "userLastVisit"), { [user.uid]: new Date().toISOString() }, { merge: true }).catch(() => {});
+  } catch {
+    // Fire and forget
+  }
+
+  try {
+    if (typeof window !== "undefined") localStorage.setItem(storageKey, today);
+  } catch {
+    // localStorage unavailable
+  }
+}
+
+/** Get per-user visit data (admin only) */
+export async function getUserVisitData(): Promise<{
+  visits: Record<string, number>;
+  lastVisit: Record<string, string>;
+}> {
+  const [visitsSnap, lastVisitSnap] = await Promise.all([
+    getDoc(doc(db, "analytics", "userVisits")),
+    getDoc(doc(db, "analytics", "userLastVisit")),
+  ]);
+  return {
+    visits: (visitsSnap.data() as Record<string, number>) || {},
+    lastVisit: (lastVisitSnap.data() as Record<string, string>) || {},
+  };
+}
+
 export type AnalyticsTimeRange = "1h" | "12h" | "24h" | "7d" | "all";
 
 /** Read analytics data, optionally filtered by time range (admin only) */
