@@ -23,6 +23,7 @@ export default function MetaPage() {
   const [filterEventType, setFilterEventType] = useState("all");
   const [period, setPeriod] = useState<MetaPeriod>("all");
   const [heroPage, setHeroPage] = useState(1);
+  const [playoffPage, setPlayoffPage] = useState(1);
 
   const allFormats = useMemo(() => getAvailableFormats(entries), [entries]);
   const allEventTypes = useMemo(() => getAvailableEventTypes(entries), [entries]);
@@ -63,7 +64,7 @@ export default function MetaPage() {
   }, [heroStats, sortBy, search]);
 
   // Reset hero page when filters change
-  useEffect(() => { setHeroPage(1); }, [sortBy, search, filterFormat, filterEventType, period]);
+  useEffect(() => { setHeroPage(1); setPlayoffPage(1); }, [sortBy, search, filterFormat, filterEventType, period]);
 
   const heroTotalPages = Math.max(1, Math.ceil(sortedHeroes.length / HERO_PAGE_SIZE));
   const heroSafePage = Math.min(heroPage, heroTotalPages);
@@ -145,46 +146,75 @@ export default function MetaPage() {
       </div>
 
       {/* Playoff Heroes — which heroes are making top 8s */}
-      {top8Heroes.length > 0 && (
-        <div className="mb-6">
-          <h2 className="text-sm font-semibold text-fab-text mb-1">
-            Playoff Heroes
-          </h2>
-          <p className="text-[10px] text-fab-dim mb-3">
-            Heroes making top 8s{period === "weekly" ? " this week" : period === "monthly" ? " this month" : ""}
-          </p>
-          <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden">
-            {top8Heroes.slice(0, 20).map((t8, i) => {
-              const heroInfo = getHeroByName(t8.hero);
-              const heroClass = heroInfo?.classes[0];
-              return (
-                <div key={t8.hero} className={`flex items-center gap-3 px-4 py-2.5 ${i > 0 ? "border-t border-fab-border" : ""}`}>
-                  <span className={`text-xs font-bold w-5 text-center shrink-0 ${i === 0 ? "text-amber-400" : i < 3 ? "text-fab-text" : "text-fab-dim"}`}>
-                    {i + 1}
-                  </span>
-                  <HeroClassIcon heroClass={heroClass} size="sm" />
-                  <span className={`text-sm font-medium flex-1 truncate ${i === 0 ? "text-amber-400" : "text-fab-text"}`}>
-                    {t8.hero}
-                  </span>
-                  <span className="text-xs text-fab-dim shrink-0">
-                    {t8.count} top 8{t8.count !== 1 ? "s" : ""}
-                  </span>
-                  {t8.champions > 0 && (
-                    <span className="text-xs font-semibold text-fab-gold shrink-0">
-                      {t8.champions} win{t8.champions !== 1 ? "s" : ""}
+      {top8Heroes.length > 0 && (() => {
+        const pTotalPages = Math.max(1, Math.ceil(top8Heroes.length / 10));
+        const pSafePage = Math.min(playoffPage, pTotalPages);
+        const pStart = (pSafePage - 1) * 10;
+        const pSlice = top8Heroes.slice(pStart, pStart + 10);
+        return (
+          <div className="mb-6">
+            <h2 className="text-sm font-semibold text-fab-text mb-1">
+              Playoff Heroes
+            </h2>
+            <p className="text-[10px] text-fab-dim mb-3">
+              Heroes making top 8s{period === "weekly" ? " this week" : period === "monthly" ? " this month" : ""}
+              {top8Heroes.length > 10 && ` \u00b7 ${top8Heroes.length} heroes`}
+            </p>
+            <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden">
+              {pSlice.map((t8, i) => {
+                const globalIdx = pStart + i;
+                const heroInfo = getHeroByName(t8.hero);
+                const heroClass = heroInfo?.classes[0];
+                return (
+                  <div key={t8.hero} className={`flex items-center gap-3 px-4 py-2.5 ${i > 0 ? "border-t border-fab-border" : ""}`}>
+                    <span className={`text-xs font-bold w-5 text-center shrink-0 ${globalIdx === 0 ? "text-amber-400" : globalIdx < 3 ? "text-fab-text" : "text-fab-dim"}`}>
+                      {globalIdx + 1}
                     </span>
-                  )}
-                  {t8.finalists > 0 && (
-                    <span className="text-[10px] text-gray-400 shrink-0">
-                      {t8.finalists} final{t8.finalists !== 1 ? "s" : ""}
+                    <HeroClassIcon heroClass={heroClass} size="sm" />
+                    <span className={`text-sm font-medium flex-1 truncate ${globalIdx === 0 ? "text-amber-400" : "text-fab-text"}`}>
+                      {t8.hero}
                     </span>
-                  )}
-                </div>
-              );
-            })}
+                    <span className="text-xs text-fab-dim shrink-0">
+                      {t8.count} top 8{t8.count !== 1 ? "s" : ""}
+                    </span>
+                    {t8.champions > 0 && (
+                      <span className="text-xs font-semibold text-fab-gold shrink-0">
+                        {t8.champions} win{t8.champions !== 1 ? "s" : ""}
+                      </span>
+                    )}
+                    {t8.finalists > 0 && (
+                      <span className="text-[10px] text-gray-400 shrink-0">
+                        {t8.finalists} final{t8.finalists !== 1 ? "s" : ""}
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+            {pTotalPages > 1 && (
+              <div className="flex items-center justify-center gap-3 mt-3">
+                <button
+                  onClick={() => setPlayoffPage((p) => Math.max(1, p - 1))}
+                  disabled={pSafePage <= 1}
+                  className="px-3 py-1.5 rounded-md text-sm font-medium bg-fab-surface border border-fab-border text-fab-muted hover:text-fab-text disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                >
+                  Previous
+                </button>
+                <span className="text-sm text-fab-dim">
+                  Page {pSafePage} of {pTotalPages}
+                </span>
+                <button
+                  onClick={() => setPlayoffPage((p) => Math.min(pTotalPages, p + 1))}
+                  disabled={pSafePage >= pTotalPages}
+                  className="px-3 py-1.5 rounded-md text-sm font-medium bg-fab-surface border border-fab-border text-fab-muted hover:text-fab-text disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                >
+                  Next
+                </button>
+              </div>
+            )}
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Filters + Sort + Search */}
       <div className="flex flex-wrap items-center gap-2 mb-4">
