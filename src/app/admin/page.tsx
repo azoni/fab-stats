@@ -447,9 +447,7 @@ export default function AdminPage() {
                   if (withWr.length === 0) return 0;
                   return Math.round((withWr.reduce((s, u) => s + (u.winRate ?? 0), 0) / withWr.length) * 10) / 10;
                 })()} subtext="players with 10+ matches" suffix="%" />
-                {aiCost.totalMessages > 0 && (
-                  <MetricCard label="AI Chat Cost" value={aiCost.totalCost.toFixed(2)} prefix="$" subtext={`${aiCost.totalMessages} messages`} />
-                )}
+                <MetricCard label="AI Chat Cost" value={aiCost.totalCost.toFixed(2)} prefix="$" subtext={`${aiCost.totalMessages} messages`} />
               </div>
             );
           })()}
