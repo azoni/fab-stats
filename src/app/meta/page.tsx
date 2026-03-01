@@ -16,7 +16,7 @@ const PERIOD_TABS: { id: MetaPeriod; label: string }[] = [
 ];
 
 export default function MetaPage() {
-  const { entries, loading } = useLeaderboard();
+  const { entries, loading } = useLeaderboard(true);
   const [sortBy, setSortBy] = useState<SortKey>("usage");
   const [search, setSearch] = useState("");
   const [filterFormat, setFilterFormat] = useState("all");

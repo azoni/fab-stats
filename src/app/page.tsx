@@ -26,7 +26,7 @@ import type { Poll, EventShowcaseConfig } from "@/types";
 export default function Dashboard() {
   const { matches, isLoaded } = useMatches();
   const { user, profile } = useAuth();
-  const { entries: lbEntries } = useLeaderboard();
+  const { entries: lbEntries } = useLeaderboard(true);
   const featuredEvents = useFeaturedEvents();
   const [shareCopied, setShareCopied] = useState(false);
   const [bestFinishShareOpen, setBestFinishShareOpen] = useState(false);
@@ -339,9 +339,6 @@ export default function Dashboard() {
       <CommunityHighlights
         featuredEvents={featuredEvents}
         leaderboardEntries={lbEntries}
-        topHeroes={communityTopHeroes}
-        top8Heroes={top8Heroes}
-        activeEventType={activeEventType}
         rankMap={rankMap}
       />
 
