@@ -12,6 +12,7 @@ import { EventCard } from "@/components/events/EventCard";
 import { localDate } from "@/lib/constants";
 import { type GameFormat } from "@/types";
 import { QuickEventImportModal } from "@/components/events/QuickEventImportModal";
+import { CalendarIcon } from "@/components/icons/NavIcons";
 
 type View = "timeline" | "standings";
 type SortKey = "newest" | "oldest" | "best-record" | "highest-winrate";
@@ -196,9 +197,14 @@ export default function EventsPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-fab-gold">Events</h1>
-          <p className="text-fab-muted text-sm mt-1">Your tournaments and their results, grouped by event</p>
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center ring-1 ring-inset ring-blue-500/20">
+            <CalendarIcon className="w-4 h-4 text-blue-400" />
+          </div>
+          <div>
+            <h1 className="text-lg font-bold text-fab-text leading-tight">Events</h1>
+            <p className="text-xs text-fab-muted leading-tight">Your tournaments and their results, grouped by event</p>
+          </div>
         </div>
         <div className="flex gap-3 flex-wrap items-center">
           <div className="flex bg-fab-surface border border-fab-border rounded-lg overflow-hidden">
@@ -233,10 +239,10 @@ export default function EventsPage() {
 
       {/* Summary Stats */}
       {filtered.length > 0 && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="bg-fab-surface border border-fab-border rounded-lg p-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="bg-fab-surface border border-fab-border rounded-lg p-3">
             <p className="text-[10px] text-fab-dim uppercase tracking-wider">Win Rate</p>
-            <p className={`text-2xl font-bold ${summaryStats.overallWinRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>
+            <p className={`text-xl font-bold ${summaryStats.overallWinRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>
               {summaryStats.overallWinRate.toFixed(1)}%
             </p>
             <div className="mt-1.5 h-1.5 bg-fab-bg rounded-full overflow-hidden">
@@ -246,9 +252,9 @@ export default function EventsPage() {
               />
             </div>
           </div>
-          <div className="bg-fab-surface border border-fab-border rounded-lg p-4">
+          <div className="bg-fab-surface border border-fab-border rounded-lg p-3">
             <p className="text-[10px] text-fab-dim uppercase tracking-wider">Record</p>
-            <p className="text-2xl font-bold">
+            <p className="text-xl font-bold">
               <span className="text-fab-win">{summaryStats.totalWins}</span>
               <span className="text-fab-dim mx-0.5">-</span>
               <span className="text-fab-loss">{summaryStats.totalLosses}</span>
@@ -260,12 +266,12 @@ export default function EventsPage() {
               )}
             </p>
           </div>
-          <div className="bg-fab-surface border border-fab-border rounded-lg p-4">
+          <div className="bg-fab-surface border border-fab-border rounded-lg p-3">
             <p className="text-[10px] text-fab-dim uppercase tracking-wider">Events</p>
-            <p className="text-2xl font-bold text-fab-text">{filtered.length}</p>
+            <p className="text-xl font-bold text-fab-text">{filtered.length}</p>
             <p className="text-[10px] text-fab-dim">{summaryStats.totalMatches} matches</p>
           </div>
-          <div className="bg-fab-surface border border-fab-border rounded-lg p-4">
+          <div className="bg-fab-surface border border-fab-border rounded-lg p-3">
             <p className="text-[10px] text-fab-dim uppercase tracking-wider">
               {bestFinish ? "Best Finish" : "Playoffs"}
             </p>
@@ -276,7 +282,7 @@ export default function EventsPage() {
               </>
             ) : (
               <>
-                <p className="text-2xl font-bold text-fab-text">{playoffCount}</p>
+                <p className="text-xl font-bold text-fab-text">{playoffCount}</p>
                 <p className="text-[10px] text-fab-dim">top 8 finishes</p>
               </>
             )}

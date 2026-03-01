@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useMatches } from "@/hooks/useMatches";
 import { computeHeroStats } from "@/lib/stats";
 import { getHeroByName } from "@/lib/heroes";
-import { ChevronUpIcon, ChevronDownIcon } from "@/components/icons/NavIcons";
+import { ChevronUpIcon, ChevronDownIcon, ShieldIcon } from "@/components/icons/NavIcons";
 
 export default function HeroesPage() {
   const { matches, isLoaded } = useMatches();
@@ -32,7 +32,15 @@ export default function HeroesPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-fab-gold mb-6">Hero Win Rates</h1>
+      <div className="flex items-center gap-3 mb-6">
+        <div className="w-8 h-8 rounded-lg bg-teal-500/10 flex items-center justify-center ring-1 ring-inset ring-teal-500/20">
+          <ShieldIcon className="w-4 h-4 text-teal-400" />
+        </div>
+        <div>
+          <h1 className="text-lg font-bold text-fab-text leading-tight">Hero Win Rates</h1>
+          <p className="text-xs text-fab-muted leading-tight">{sorted.length} heroes played across your matches</p>
+        </div>
+      </div>
 
       <div className="flex gap-2 mb-4">
         {(["matches", "winRate", "name"] as const).map((s) => (

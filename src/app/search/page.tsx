@@ -199,10 +199,17 @@ function SearchContent() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-fab-gold mb-2">Discover</h1>
-      <p className="text-fab-muted text-sm mb-6">
-        Search for players or see what the community is up to.
-      </p>
+      <div className="flex items-center gap-3 mb-6">
+        <div className="w-8 h-8 rounded-lg bg-teal-500/10 flex items-center justify-center ring-1 ring-inset ring-teal-500/20">
+          <svg className="w-4 h-4 text-teal-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+          </svg>
+        </div>
+        <div>
+          <h1 className="text-lg font-bold text-fab-text leading-tight">Discover</h1>
+          <p className="text-xs text-fab-muted leading-tight">Search for players or see what the community is up to</p>
+        </div>
+      </div>
 
       <form onSubmit={handleSearch} className="flex gap-3 mb-8">
         <input

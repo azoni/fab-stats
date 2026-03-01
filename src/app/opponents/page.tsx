@@ -6,7 +6,7 @@ import { useMatches } from "@/hooks/useMatches";
 import { useAuth } from "@/contexts/AuthContext";
 import { computeOpponentStats } from "@/lib/stats";
 import { MatchCard } from "@/components/matches/MatchCard";
-import { ChevronUpIcon, ChevronDownIcon } from "@/components/icons/NavIcons";
+import { ChevronUpIcon, ChevronDownIcon, OpponentsIcon } from "@/components/icons/NavIcons";
 import { MatchResult, type OpponentStats } from "@/types";
 import { localDate } from "@/lib/constants";
 import { allHeroes as knownHeroes } from "@/lib/heroes";
@@ -209,37 +209,33 @@ export default function OpponentsPage() {
   return (
     <div>
       {/* Page Header */}
-      <div className="flex items-center gap-3 mb-4">
-        <div className="section-header flex items-center gap-2 flex-1">
-          <div className="w-7 h-7 rounded-lg bg-violet-500/10 flex items-center justify-center ring-1 ring-inset ring-violet-500/20">
-            <svg className="w-4 h-4 text-violet-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-            </svg>
-          </div>
-          <div>
-            <h1 className="text-lg font-semibold text-fab-text leading-tight">Opponents</h1>
-            <p className="text-xs text-fab-muted leading-tight">{totalOpponents} opponents across {totalMatchCount} matches</p>
-          </div>
+      <div className="flex items-center gap-3 mb-6">
+        <div className="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center ring-1 ring-inset ring-purple-500/20">
+          <OpponentsIcon className="w-4 h-4 text-purple-400" />
+        </div>
+        <div>
+          <h1 className="text-lg font-bold text-fab-text leading-tight">Opponents</h1>
+          <p className="text-xs text-fab-muted leading-tight">{totalOpponents} opponents across {totalMatchCount} matches</p>
         </div>
       </div>
 
       {/* Aggregate Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-6">
-        <div className="bg-fab-surface border border-fab-border rounded-lg px-3 py-2 text-center">
-          <p className="text-lg font-bold text-fab-text">{totalOpponents}</p>
-          <p className="text-[10px] text-fab-dim uppercase tracking-wide">Opponents</p>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+        <div className="bg-fab-surface border border-fab-border rounded-lg p-3">
+          <p className="text-[10px] text-fab-dim uppercase tracking-wider">Opponents</p>
+          <p className="text-xl font-bold text-fab-text">{totalOpponents}</p>
         </div>
-        <div className="bg-fab-surface border border-fab-border rounded-lg px-3 py-2 text-center">
-          <p className="text-lg font-bold text-fab-text">{totalMatchCount}</p>
-          <p className="text-[10px] text-fab-dim uppercase tracking-wide">Matches</p>
+        <div className="bg-fab-surface border border-fab-border rounded-lg p-3">
+          <p className="text-[10px] text-fab-dim uppercase tracking-wider">Matches</p>
+          <p className="text-xl font-bold text-fab-text">{totalMatchCount}</p>
         </div>
-        <div className="bg-fab-surface border border-fab-border rounded-lg px-3 py-2 text-center">
-          <p className="text-lg font-bold text-fab-text">{aggregateStats.uniqueEvents}</p>
-          <p className="text-[10px] text-fab-dim uppercase tracking-wide">Events</p>
+        <div className="bg-fab-surface border border-fab-border rounded-lg p-3">
+          <p className="text-[10px] text-fab-dim uppercase tracking-wider">Events</p>
+          <p className="text-xl font-bold text-fab-text">{aggregateStats.uniqueEvents}</p>
         </div>
-        <div className="bg-fab-surface border border-fab-border rounded-lg px-3 py-2 text-center">
-          <p className={`text-lg font-bold ${aggregateStats.winRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>{aggregateStats.winRate.toFixed(1)}%</p>
-          <p className="text-[10px] text-fab-dim uppercase tracking-wide">Win Rate</p>
+        <div className="bg-fab-surface border border-fab-border rounded-lg p-3">
+          <p className="text-[10px] text-fab-dim uppercase tracking-wider">Win Rate</p>
+          <p className={`text-xl font-bold ${aggregateStats.winRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>{aggregateStats.winRate.toFixed(1)}%</p>
         </div>
       </div>
 

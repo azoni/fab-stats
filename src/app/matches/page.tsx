@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { MatchList } from "@/components/matches/MatchList";
 import { updateLeaderboardEntry } from "@/lib/leaderboard";
 import { propagateHeroToOpponent } from "@/lib/match-linking";
+import { SwordsIcon } from "@/components/icons/NavIcons";
 import type { MatchRecord } from "@/types";
 
 export default function MatchesPage() {
@@ -44,11 +45,16 @@ export default function MatchesPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-fab-gold">Match History</h1>
-          {matches.length > 0 && (
-            <p className="text-fab-muted text-sm mt-1">All your individual game results — tap any match to edit it</p>
-          )}
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-red-500/10 flex items-center justify-center ring-1 ring-inset ring-red-500/20">
+            <SwordsIcon className="w-4 h-4 text-red-400" />
+          </div>
+          <div>
+            <h1 className="text-lg font-bold text-fab-text leading-tight">Match History</h1>
+            {matches.length > 0 && (
+              <p className="text-xs text-fab-muted leading-tight">All your individual game results — tap any match to edit it</p>
+            )}
+          </div>
         </div>
         {user && (
           <Link

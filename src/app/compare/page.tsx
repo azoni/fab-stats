@@ -144,8 +144,15 @@ export default function ComparePage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-fab-gold mb-1">Versus</h1>
-      <p className="text-fab-muted text-sm mb-6">See how you stack up against any opponent</p>
+      <div className="flex items-center gap-3 mb-6">
+        <div className="w-8 h-8 rounded-lg bg-fuchsia-500/10 flex items-center justify-center ring-1 ring-inset ring-fuchsia-500/20">
+          <SwordsIcon className="w-4 h-4 text-fuchsia-400" />
+        </div>
+        <div>
+          <h1 className="text-lg font-bold text-fab-text leading-tight">Versus</h1>
+          <p className="text-xs text-fab-muted leading-tight">See how you stack up against any opponent</p>
+        </div>
+      </div>
 
       {/* Opponent picker */}
       <div className="mb-6">

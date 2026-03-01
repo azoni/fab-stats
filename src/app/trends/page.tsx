@@ -21,6 +21,7 @@ import {
   Legend,
 } from "recharts";
 import { localDate } from "@/lib/constants";
+import { TrendsIcon } from "@/components/icons/NavIcons";
 
 const COLORS = {
   gold: "#c9a84c",
@@ -184,9 +185,14 @@ export default function TrendsPage() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold text-fab-gold">Performance Trends</h1>
-        <p className="text-fab-muted text-sm mt-1">See how your win rate and activity change over time</p>
+      <div className="flex items-center gap-3">
+        <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center ring-1 ring-inset ring-emerald-500/20">
+          <TrendsIcon className="w-4 h-4 text-emerald-400" />
+        </div>
+        <div>
+          <h1 className="text-lg font-bold text-fab-text leading-tight">Performance Trends</h1>
+          <p className="text-xs text-fab-muted leading-tight">See how your win rate and activity change over time</p>
+        </div>
       </div>
 
       {/* Stat Cards */}

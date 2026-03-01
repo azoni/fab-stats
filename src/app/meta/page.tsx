@@ -96,14 +96,24 @@ export default function MetaPage() {
 
   return (
     <div>
-      <div className="flex items-center gap-2 mb-2">
-        <h1 className="text-2xl font-bold text-fab-gold">Community Meta</h1>
-        <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-fab-gold/15 text-fab-gold">Beta</span>
+      <div className="flex items-center gap-3 mb-6">
+        <div className="w-8 h-8 rounded-lg bg-teal-500/10 flex items-center justify-center ring-1 ring-inset ring-teal-500/20">
+          <svg className="w-4 h-4 text-teal-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <div className="flex items-center gap-2">
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-lg font-bold text-fab-text leading-tight">Community Meta</h1>
+              <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-fab-gold/15 text-fab-gold">Beta</span>
+            </div>
+            <p className="text-xs text-fab-muted leading-tight">
+              {overview.totalPlayers} public players{period !== "all" && " · recent imports only"}
+            </p>
+          </div>
+        </div>
       </div>
-      <p className="text-fab-muted text-sm mb-6">
-        Hero usage and performance across {overview.totalPlayers} public players on FaB Stats.
-        {period !== "all" && " Showing data from players who have re-imported recently."}
-      </p>
 
       {/* Period tabs */}
       <div className="flex gap-1 mb-4">

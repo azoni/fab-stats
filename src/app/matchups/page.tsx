@@ -24,8 +24,17 @@ export default function MatchupsPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-fab-gold mb-2">Matchup Analysis</h1>
-      <p className="text-fab-muted text-sm mb-6">Win rates for your heroes against opponent heroes</p>
+      <div className="flex items-center gap-3 mb-6">
+        <div className="w-8 h-8 rounded-lg bg-cyan-500/10 flex items-center justify-center ring-1 ring-inset ring-cyan-500/20">
+          <svg className="w-4 h-4 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
+          </svg>
+        </div>
+        <div>
+          <h1 className="text-lg font-bold text-fab-text leading-tight">Matchup Analysis</h1>
+          <p className="text-xs text-fab-muted leading-tight">Win rates for your heroes against opponent heroes</p>
+        </div>
+      </div>
 
       <div className="overflow-x-auto">
         <table className="w-full text-sm border-collapse">

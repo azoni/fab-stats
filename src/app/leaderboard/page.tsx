@@ -468,11 +468,16 @@ export default function LeaderboardPage() {
     <div>
       {/* ── Header ── */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-fab-gold mb-1">Leaderboard</h1>
-          <p className="text-fab-muted text-sm">
-            {ranked.length} player{ranked.length !== 1 ? "s" : ""} ranked
-          </p>
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center ring-1 ring-inset ring-amber-500/20">
+            <TrophyIcon className="w-4 h-4 text-amber-400" />
+          </div>
+          <div>
+            <h1 className="text-lg font-bold text-fab-text leading-tight">Leaderboard</h1>
+            <p className="text-xs text-fab-muted leading-tight">
+              {ranked.length} player{ranked.length !== 1 ? "s" : ""} ranked
+            </p>
+          </div>
         </div>
         <div className="relative w-full sm:w-64">
           <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-fab-dim pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
