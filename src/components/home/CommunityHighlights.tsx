@@ -1,5 +1,5 @@
 "use client";
-import type { ReactNode } from "react";
+import { memo, type ReactNode } from "react";
 import { FeaturedTournaments } from "./FeaturedTournaments";
 import { MetaSnapshot } from "./MetaSnapshot";
 import { PollCard } from "./PollCard";
@@ -17,7 +17,7 @@ interface CommunityHighlightsProps {
   rightColumnExtra?: ReactNode;
 }
 
-export function CommunityHighlights({
+export const CommunityHighlights = memo(function CommunityHighlights({
   featuredEvents,
   leaderboardEntries,
   topHeroes,
@@ -43,4 +43,4 @@ export function CommunityHighlights({
       </div>
     </div>
   );
-}
+});

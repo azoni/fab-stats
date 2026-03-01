@@ -1,4 +1,5 @@
 "use client";
+import { memo } from "react";
 import Link from "next/link";
 import { getHeroByName } from "@/lib/heroes";
 import { HeroClassIcon } from "@/components/heroes/HeroClassIcon";
@@ -13,7 +14,7 @@ interface MetaSnapshotProps {
 
 const RANK_CLASS = ["meta-rank-1 font-black", "meta-rank-2 font-bold", "meta-rank-3 font-bold", "text-fab-dim font-bold", "text-fab-dim font-bold"];
 
-export function MetaSnapshot({ topHeroes, top8Heroes, activeEventType }: MetaSnapshotProps) {
+export const MetaSnapshot = memo(function MetaSnapshot({ topHeroes, top8Heroes, activeEventType }: MetaSnapshotProps) {
   // Event weekend mode: show top 8 heroes for the active event type
   const showEventMode = activeEventType && top8Heroes && top8Heroes.length > 0;
 
@@ -85,4 +86,4 @@ export function MetaSnapshot({ topHeroes, top8Heroes, activeEventType }: MetaSna
       </div>
     </div>
   );
-}
+});

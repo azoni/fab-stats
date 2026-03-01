@@ -4,6 +4,7 @@ import {
   useContext,
   useEffect,
   useState,
+  useMemo,
   useRef,
   useCallback,
   type ReactNode,
@@ -63,12 +64,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  function enterGuestMode() {
+  const enterGuestMode = useCallback(() => {
     localStorage.setItem(GUEST_KEY, "true");
     setIsGuest(true);
     isGuestRef.current = true;
     setLoading(false);
-  }
+  }, []);
 
   // Listen to auth state
   useEffect(() => {
@@ -129,46 +130,47 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const needsSetup = !!user && !profileLoading && !profile;
 
-  async function signIn(email: string, password: string) {
+  const signIn = useCallback(async (email: string, password: string) => {
     await signInWithEmailAndPassword(auth, email, password);
-  }
+  }, []);
 
-  async function signUp(email: string, password: string) {
+  const signUp = useCallback(async (email: string, password: string) => {
     const cred = await createUserWithEmailAndPassword(auth, email, password);
-    // Send verification email (non-blocking — don't prevent signup)
     sendEmailVerification(cred.user).catch(() => {});
-  }
+  }, []);
 
-  async function signInWithGoogle() {
+  const signInWithGoogle = useCallback(async () => {
     await signInWithPopup(auth, googleProvider);
-  }
+  }, []);
 
-  async function resetPassword(email: string) {
+  const resetPassword = useCallback(async (email: string) => {
     await sendPasswordResetEmail(auth, email);
-  }
+  }, []);
 
-  async function signOut() {
+  const signOut = useCallback(async () => {
     await firebaseSignOut(auth);
-  }
+  }, []);
+
+  const combinedLoading = loading || profileLoading;
+
+  const value = useMemo(() => ({
+    user,
+    profile,
+    loading: combinedLoading,
+    needsSetup,
+    isGuest,
+    isAdmin,
+    enterGuestMode,
+    refreshProfile,
+    signIn,
+    signUp,
+    signInWithGoogle,
+    signOut,
+    resetPassword,
+  }), [user, profile, combinedLoading, needsSetup, isGuest, isAdmin, enterGuestMode, refreshProfile, signIn, signUp, signInWithGoogle, signOut, resetPassword]);
 
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        profile,
-        loading: loading || profileLoading,
-        needsSetup,
-        isGuest,
-        isAdmin,
-        enterGuestMode,
-        refreshProfile,
-        signIn,
-        signUp,
-        signInWithGoogle,
-        signOut,
-        resetPassword,
-      }}
-    >
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );

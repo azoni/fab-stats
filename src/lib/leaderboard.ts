@@ -320,7 +320,7 @@ let cachedEntries: LeaderboardEntry[] | null = null;
 let cacheTimestamp = 0;
 let cachedEntriesAll: LeaderboardEntry[] | null = null;
 let cacheTimestampAll = 0;
-const CACHE_TTL = 5 * 60_000; // 5 minutes
+const CACHE_TTL = 15 * 60_000; // 15 minutes
 
 function sanitizeEntries(docs: LeaderboardEntry[]): LeaderboardEntry[] {
   const currentWeekStart = getWeekStart();
