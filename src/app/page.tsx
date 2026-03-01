@@ -339,6 +339,9 @@ export default function Dashboard() {
       <CommunityHighlights
         featuredEvents={featuredEvents}
         leaderboardEntries={lbEntries}
+        topHeroes={communityTopHeroes}
+        top8Heroes={top8Heroes}
+        activeEventType={activeEventType}
         rankMap={rankMap}
       />
 

@@ -28,7 +28,7 @@ const NOISE_PATTERNS = [
   /^©/,
   /^(<<|>>|\.\.\.|\d{1,2})$/,
   /^(Round\s+Opponent|Playoff\s+Opponent|Matches$|Results$|Total Wins|XP Gained|Net Rating|View Results|Event description)/i,
-  /^Record\s*\(W-L\)/i,
+  /^Record\s*\(W-L(-D)?\)/i,
   /^Rating Change$/i,
   /^(Support|Resources|Connect)$/i,
   /^\d+\s*-\s*\d+(\s*-\s*\d+)?$/, // Score lines like "3-1" or "3-1-0"
@@ -36,6 +36,10 @@ const NOISE_PATTERNS = [
   /^[+-]\d+$/, // Rating changes like "+15" or "-8"
   /^XP Modifier/i,
   /^\d+\s*(Players?|Participants?)$/i, // "24 Players"
+  /^Tournament Information$/i,
+  /^Round\s+\d+\s+In Progress/i,
+  /^Submitted\s/i,
+  /^Terms\s/i,
 ];
 
 export function isNoise(line: string): boolean {
@@ -222,6 +226,13 @@ export function parseGemPaste(text: string): PasteImportResult {
   function saveCurrentEvent() {
     if (currentEvent) {
       if (currentMatches.length > 0) {
+        // Apply pending hero to matches that still have "Unknown"
+        if (pendingHero) {
+          for (const m of currentMatches) {
+            if (m.heroPlayed === "Unknown") m.heroPlayed = pendingHero;
+          }
+        }
+        const heroPlayed = currentMatches[0]?.heroPlayed;
         events.push({
           eventName: currentEvent.name,
           eventDate: currentEvent.date,
@@ -230,18 +241,54 @@ export function parseGemPaste(text: string): PasteImportResult {
           venue: currentEvent.venue,
           eventType: currentEvent.eventType,
           matches: currentMatches,
+          heroPlayed: heroPlayed !== "Unknown" ? heroPlayed : undefined,
         });
       } else {
         skippedEventNames.push(currentEvent.name);
       }
       currentMatches = [];
+      pendingHero = null;
     }
   }
 
   let inPlayoffSection = false;
   let inDecklistSection = false;
+  let pendingHeroSelect = false;
+  let pendingHero: string | null = null;
+  let pendingDeckFormat: GameFormat | null = null;
 
-  for (const line of lines) {
+  for (const rawLine of lines) {
+    // ── Tab KV normalization (GEM single-event page format) ──
+    let line = rawLine;
+    const tabKV = rawLine.match(/^(.+?)\t(.+)$/);
+    if (tabKV) {
+      const key = tabKV[1].trim().toLowerCase();
+      const val = tabKV[2].trim();
+      if (key === "organiser" || key === "organizer") {
+        if (currentEvent) currentEvent.venue = val;
+        continue;
+      }
+      if (key === "rated?" || key === "rated") {
+        if (currentEvent) currentEvent.rated = val.toLowerCase() === "yes";
+        continue;
+      }
+      // For known metadata keys, strip the prefix and keep only the value
+      if (key === "event nickname" || key === "event name" || key === "event type" || key === "date") {
+        line = val;
+      }
+      // Other tab lines (table headers, match rows) pass through unchanged
+    }
+
+    // ── Hero selection (GEM single-event page) ──
+    if (/^Hero selection$/i.test(line)) {
+      pendingHeroSelect = true;
+      continue;
+    }
+    if (pendingHeroSelect) {
+      pendingHeroSelect = false;
+      pendingHero = line;
+      continue;
+    }
     // ── Section headers (detect before noise filter) ──
     if (/^Round\s+Opponent/i.test(line)) {
       inPlayoffSection = false;
@@ -256,22 +303,46 @@ export function parseGemPaste(text: string): PasteImportResult {
       continue;
     }
 
-    // ── Decklist entries: "Format     Hero Name" ──
+    // ── Decklist entries: "Format     Hero Name" or split across lines ──
     if (inDecklistSection && currentEvent) {
-      const deckMatch = line.match(/^(.+?)\s{2,}(.+)$/);
-      if (deckMatch) {
-        const fmt = guessFormat(deckMatch[1]);
-        if (fmt !== GameFormat.Other) {
-          const hero = deckMatch[2].trim();
+      // Handle hero name on line after a format-only line
+      if (pendingDeckFormat) {
+        const hero = line.trim();
+        if (hero && !/^(Round|Playoff|Matches)\s/i.test(hero)) {
           for (const m of currentMatches) {
-            if (m.heroPlayed === "Unknown" && m.format === fmt) {
+            if (m.heroPlayed === "Unknown" && m.format === pendingDeckFormat) {
               m.heroPlayed = hero;
             }
           }
+          pendingDeckFormat = null;
           continue;
         }
+        pendingDeckFormat = null;
+        inDecklistSection = false;
+        // Fall through to process this line normally
+      } else {
+        // "Format     Hero Name" on same line (spaces or tab separated)
+        const deckMatch = line.match(/^(.+?)(?:\s{2,}|\t)(.+)$/);
+        if (deckMatch) {
+          const fmt = guessFormat(deckMatch[1]);
+          if (fmt !== GameFormat.Other) {
+            const hero = deckMatch[2].trim();
+            for (const m of currentMatches) {
+              if (m.heroPlayed === "Unknown" && m.format === fmt) {
+                m.heroPlayed = hero;
+              }
+            }
+            continue;
+          }
+        }
+        // Format name alone (hero on next line)
+        const fmt = guessFormat(line);
+        if (fmt !== GameFormat.Other) {
+          pendingDeckFormat = fmt;
+          continue;
+        }
+        inDecklistSection = false;
       }
-      inDecklistSection = false;
     }
 
     if (isNoise(line)) continue;
