@@ -211,6 +211,7 @@ export async function updateLeaderboardEntry(
       placementType: f.type,
       eventDate: f.eventDate,
       format: f.format,
+      eventName: f.eventName,
     }));
 
   // Unique opponents (exclude byes and "Unknown")

@@ -222,6 +222,76 @@ export function computeTop8HeroMeta(
     .sort((a, b) => b.count - a.count);
 }
 
+// ── Top 8 by Event ──
+
+export interface EventTop8 {
+  eventName: string;
+  eventType: string;
+  eventDate: string;
+  format: string;
+  heroes: { hero: string; placementType: string }[];
+}
+
+/** Group top 8 data by individual event across all leaderboard entries */
+export function computeTop8ByEvent(
+  entries: LeaderboardEntry[],
+  filterEventType?: string,
+  filterFormat?: string,
+  sinceDateStr?: string,
+): EventTop8[] {
+  // Key = eventName|eventDate to group by unique event
+  const eventMap = new Map<string, {
+    eventName: string;
+    eventType: string;
+    eventDate: string;
+    format: string;
+    heroes: Map<string, string>; // hero → best placementType
+  }>();
+
+  const placementRank: Record<string, number> = { champion: 0, finalist: 1, top4: 2, top8: 3 };
+
+  for (const entry of entries) {
+    if (!entry.top8Heroes) continue;
+    for (const t8 of entry.top8Heroes) {
+      if (!validHeroNames.has(t8.hero)) continue;
+      if (filterEventType && t8.eventType !== filterEventType) continue;
+      if (filterFormat && t8.format !== filterFormat) continue;
+      if (sinceDateStr && t8.eventDate < sinceDateStr) continue;
+
+      const name = (t8 as { eventName?: string }).eventName || t8.eventType;
+      const key = `${name}|${t8.eventDate}`;
+      let ev = eventMap.get(key);
+      if (!ev) {
+        ev = {
+          eventName: name,
+          eventType: t8.eventType,
+          eventDate: t8.eventDate,
+          format: t8.format,
+          heroes: new Map(),
+        };
+        eventMap.set(key, ev);
+      }
+      // Keep the best placement for each hero at this event
+      const existing = ev.heroes.get(t8.hero);
+      if (!existing || (placementRank[t8.placementType] ?? 9) < (placementRank[existing] ?? 9)) {
+        ev.heroes.set(t8.hero, t8.placementType);
+      }
+    }
+  }
+
+  return [...eventMap.values()]
+    .map((ev) => ({
+      eventName: ev.eventName,
+      eventType: ev.eventType,
+      eventDate: ev.eventDate,
+      format: ev.format,
+      heroes: [...ev.heroes.entries()]
+        .map(([hero, placementType]) => ({ hero, placementType }))
+        .sort((a, b) => (placementRank[a.placementType] ?? 9) - (placementRank[b.placementType] ?? 9)),
+    }))
+    .sort((a, b) => b.eventDate.localeCompare(a.eventDate));
+}
+
 // ── Event Weekend Detection ──
 
 const COMPETITIVE_EVENT_TYPES = new Set([

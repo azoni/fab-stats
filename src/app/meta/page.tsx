@@ -1,9 +1,10 @@
 "use client";
 import { useMemo, useState } from "react";
 import { useLeaderboard } from "@/hooks/useLeaderboard";
-import { computeMetaStats, getAvailableFormats, getAvailableEventTypes, computeTop8HeroMeta, type HeroMetaStats, type MetaPeriod, type Top8HeroMeta } from "@/lib/meta-stats";
+import { computeMetaStats, getAvailableFormats, getAvailableEventTypes, computeTop8ByEvent, type HeroMetaStats, type MetaPeriod, type EventTop8 } from "@/lib/meta-stats";
 import { getHeroByName } from "@/lib/heroes";
 import { HeroClassIcon } from "@/components/heroes/HeroClassIcon";
+import { EventTop8ShareModal } from "@/components/meta/EventTop8ShareCard";
 
 type SortKey = "usage" | "winrate";
 
@@ -34,14 +35,16 @@ export default function MetaPage() {
     [entries, filterFormat, filterEventType, period],
   );
 
-  const top8Heroes = useMemo(
-    () => computeTop8HeroMeta(
+  const top8Events = useMemo(
+    () => computeTop8ByEvent(
       entries,
       filterEventType !== "all" ? filterEventType : undefined,
       filterFormat !== "all" ? filterFormat : undefined,
     ),
     [entries, filterEventType, filterFormat],
   );
+
+  const [shareEvent, setShareEvent] = useState<EventTop8 | null>(null);
 
   const sortedHeroes = useMemo(() => {
     let list = [...heroStats];
@@ -131,29 +134,21 @@ export default function MetaPage() {
         </div>
       </div>
 
-      {/* Top 8 Heroes Section */}
-      {top8Heroes.length > 0 && (
+      {/* Top 8 by Event Section */}
+      {top8Events.length > 0 && (
         <div className="mb-6">
-          <h2 className="text-sm font-semibold text-fab-text mb-3">Top 8 Heroes</h2>
-          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-            {top8Heroes.slice(0, 10).map((t8) => {
-              const heroInfo = getHeroByName(t8.hero);
-              const heroClass = heroInfo?.classes[0];
-              return (
-                <div key={t8.hero} className="bg-fab-surface border border-fab-border rounded-lg px-3 py-2.5 flex items-center gap-2 shrink-0">
-                  <HeroClassIcon heroClass={heroClass} size="sm" />
-                  <div>
-                    <p className="text-xs font-semibold text-fab-text whitespace-nowrap">{t8.hero}</p>
-                    <p className="text-[10px] text-fab-dim">
-                      {t8.count} top 8{t8.count !== 1 ? "s" : ""}
-                      {t8.champions > 0 && <span className="text-fab-gold"> · {t8.champions} win{t8.champions !== 1 ? "s" : ""}</span>}
-                    </p>
-                  </div>
-                </div>
-              );
-            })}
+          <h2 className="text-sm font-semibold text-fab-text mb-3">Event Top 8s</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {top8Events.slice(0, 8).map((ev) => (
+              <EventTop8Card key={`${ev.eventName}-${ev.eventDate}`} event={ev} onShare={() => setShareEvent(ev)} />
+            ))}
           </div>
         </div>
+      )}
+
+      {/* Event Top 8 Share Modal */}
+      {shareEvent && (
+        <EventTop8ShareModal event={shareEvent} onClose={() => setShareEvent(null)} />
       )}
 
       {/* Filters + Sort + Search */}
@@ -256,6 +251,70 @@ export default function MetaPage() {
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+const PLACEMENT_COLORS: Record<string, string> = {
+  champion: "text-amber-400",
+  finalist: "text-gray-400",
+  top4: "text-amber-600",
+  top8: "text-blue-400",
+};
+
+const PLACEMENT_LABELS: Record<string, string> = {
+  champion: "1st",
+  finalist: "2nd",
+  top4: "T4",
+  top8: "T8",
+};
+
+function EventTop8Card({ event, onShare }: { event: EventTop8; onShare: () => void }) {
+  const dateStr = (() => {
+    try {
+      return new Date(event.eventDate).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    } catch { return ""; }
+  })();
+
+  return (
+    <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden">
+      {/* Event header */}
+      <div className="flex items-center justify-between px-4 py-2.5 border-b border-fab-border">
+        <div className="min-w-0 flex-1">
+          <p className="text-xs font-semibold text-fab-text truncate">{event.eventName}</p>
+          <p className="text-[10px] text-fab-dim">
+            {event.eventType} &middot; {event.format === "Classic Constructed" ? "CC" : event.format}{dateStr ? ` \u00b7 ${dateStr}` : ""}
+          </p>
+        </div>
+        <button
+          onClick={onShare}
+          className="ml-2 p-1.5 rounded-md text-fab-dim hover:text-fab-gold hover:bg-fab-gold/10 transition-colors shrink-0"
+          title="Share"
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+          </svg>
+        </button>
+      </div>
+      {/* Hero list */}
+      {event.heroes.slice(0, 8).map((h, i) => {
+        const heroInfo = getHeroByName(h.hero);
+        const heroClass = heroInfo?.classes[0];
+        return (
+          <div key={h.hero} className={`flex items-center gap-2.5 px-4 py-1.5 ${i > 0 ? "border-t border-fab-border" : ""}`}>
+            <span className={`text-[10px] font-bold w-5 text-center shrink-0 ${PLACEMENT_COLORS[h.placementType] || "text-fab-dim"}`}>
+              {PLACEMENT_LABELS[h.placementType] || h.placementType}
+            </span>
+            <HeroClassIcon heroClass={heroClass} size="sm" />
+            <span className={`text-xs font-medium text-fab-text truncate flex-1 ${h.placementType === "champion" ? "text-amber-400" : ""}`}>
+              {h.hero}
+            </span>
+            {heroClass && (
+              <span className="text-[9px] text-fab-dim shrink-0">{heroClass}</span>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }
