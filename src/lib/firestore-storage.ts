@@ -286,10 +286,29 @@ export async function searchUsernames(
     queries.push(getDocs(revQ));
   }
 
-  const snaps = await Promise.all(queries);
+  // If the query looks like a GEM ID (all digits), also try a GEM ID lookup
+  const gemIdPromise = /^\d+$/.test(lower) ? lookupGemId(lower) : Promise.resolve(null);
+
+  const [snaps, gemUserId] = await Promise.all([
+    Promise.all(queries),
+    gemIdPromise,
+  ]);
 
   const seen = new Set<string>();
   const results: { username: string; userId: string }[] = [];
+
+  // If GEM ID matched, find the username for that user and add it first
+  if (gemUserId) {
+    const usernameSnap = await getDocs(
+      query(collection(db, "usernames"), where("userId", "==", gemUserId), limit(1))
+    );
+    for (const d of usernameSnap.docs) {
+      if (!seen.has(d.id)) {
+        seen.add(d.id);
+        results.push({ username: d.id, userId: gemUserId });
+      }
+    }
+  }
 
   for (const snap of snaps) {
     for (const d of snap.docs) {

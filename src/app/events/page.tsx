@@ -73,7 +73,7 @@ export default function EventsPage() {
       }
       // Clean up placement feed events for this event
       if (user) {
-        deleteFeedEventsForEvent(user.uid, eventName, eventDate).catch(() => {});
+        deleteFeedEventsForEvent(user.uid, eventName, eventDate).catch(console.error);
       }
     },
     [batchDeleteMatches, profile, matches, user]

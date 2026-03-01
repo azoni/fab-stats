@@ -326,9 +326,34 @@
     return "Unknown";
   }
 
+  // ── Hero Extraction from Event Card (player page) ────────────
+
+  function extractHeroFromEventCard(eventEl) {
+    const decklistsEl = eventEl.querySelector(".event__decklists");
+    if (!decklistsEl) return "Unknown";
+    for (const link of decklistsEl.querySelectorAll("a")) {
+      const text = link.textContent.trim();
+      if (KNOWN_HEROES.has(text)) return text;
+    }
+    return "Unknown";
+  }
+
+  // ── Fetch Report Page for In-Progress Events ────────────────
+
+  async function fetchReportPage(reportUrl) {
+    try {
+      const resp = await fetch(reportUrl, { credentials: "same-origin" });
+      if (!resp.ok) return null;
+      const html = await resp.text();
+      return new DOMParser().parseFromString(html, "text/html");
+    } catch {
+      return null;
+    }
+  }
+
   // ── Parse Single Event Container ──────────────────────────────
 
-  function parseOneEvent(eventEl) {
+  async function parseOneEvent(eventEl) {
     const gemEventId = eventEl.id || "";
     const titleEl = eventEl.querySelector("h4.event__title") || eventEl.querySelector(".event__title");
     const title = titleEl ? titleEl.textContent.trim() : "";
@@ -342,17 +367,57 @@
 
     // Parse match data from details section
     const details = eventEl.querySelector("details.event__extra-details");
-    if (!details) return null;
 
-    const matches = parseMatchTable(details);
+    if (details) {
+      // Normal completed event — parse from inline details
+      const matches = parseMatchTable(details);
+      if (matches.length === 0) return null;
+
+      const hero = extractHeroFromDetails(details);
+
+      return {
+        gemEventId,
+        name: title,
+        date: meta.date,
+        venue: meta.venue,
+        eventType: meta.eventType,
+        format: meta.format,
+        rated: meta.rated,
+        xpModifier: meta.xpModifier,
+        hero,
+        matches,
+      };
+    }
+
+    // No details section — check if this is an in-progress event
+    const whenEl = eventEl.querySelector(".event__when");
+    const isInProgress = whenEl &&
+      (whenEl.classList.contains("event__when--active") ||
+       /in\s*progress/i.test(whenEl.textContent));
+
+    if (!isInProgress) return null;
+
+    // Find report page link
+    const reportLink = eventEl.querySelector('a[href*="/profile/report/"]');
+    if (!reportLink) return null;
+
+    const reportUrl = new URL(reportLink.getAttribute("href"), window.location.origin).href;
+    const reportDoc = await fetchReportPage(reportUrl);
+    if (!reportDoc) return null;
+
+    const matches = parseMatchTable(reportDoc.body);
     if (matches.length === 0) return null;
 
-    const hero = extractHeroFromDetails(details);
+    // Extract hero: try event card decklists first, then report page
+    let hero = extractHeroFromEventCard(eventEl);
+    if (hero === "Unknown") {
+      hero = extractHeroFromDetails(reportDoc.body);
+    }
 
     return {
       gemEventId,
       name: title,
-      date: meta.date,
+      date: meta.date || new Date().toISOString().split("T")[0],
       venue: meta.venue,
       eventType: meta.eventType,
       format: meta.format,
@@ -365,10 +430,10 @@
 
   // ── Parse All Events from a Document ──────────────────────────
 
-  function parseEventsFromDoc(doc) {
+  async function parseEventsFromDoc(doc) {
     const events = [];
     for (const eventEl of doc.querySelectorAll("div.event")) {
-      const parsed = parseOneEvent(eventEl);
+      const parsed = await parseOneEvent(eventEl);
       if (parsed) events.push(parsed);
     }
     return events;
@@ -398,7 +463,7 @@
     return max;
   }
 
-  async function fetchAllPages(onProgress) {
+  async function fetchAllPages(onProgress, maxPages) {
     // Fetch page 1 (use current page if already on history page 1, otherwise fetch)
     const onHistoryPage = location.pathname.startsWith("/profile/history");
     const currentPage = (() => {
@@ -414,8 +479,8 @@
       doc1 = await fetchPage(1);
     }
 
-    const totalPages = detectTotalPages(doc1);
-    let allEvents = parseEventsFromDoc(doc1);
+    const totalPages = maxPages ? Math.min(detectTotalPages(doc1), maxPages) : detectTotalPages(doc1);
+    let allEvents = await parseEventsFromDoc(doc1);
     onProgress(1, totalPages, allEvents.length);
 
     // Fetch remaining pages in batches of 3
@@ -437,9 +502,33 @@
       }
 
       for (const doc of docs) {
-        allEvents = allEvents.concat(parseEventsFromDoc(doc));
+        allEvents = allEvents.concat(await parseEventsFromDoc(doc));
       }
       onProgress(Math.min(batch + 2, totalPages), totalPages, allEvents.length);
+    }
+
+    // Also check the player page for in-progress events
+    const existingIds = new Set(allEvents.map(e => e.gemEventId).filter(id => id));
+    let playerDoc;
+    if (location.pathname.startsWith("/profile/player")) {
+      playerDoc = document;
+    } else {
+      try {
+        const resp = await fetch("/profile/player/", { credentials: "same-origin" });
+        if (resp.ok) {
+          const html = await resp.text();
+          playerDoc = new DOMParser().parseFromString(html, "text/html");
+        }
+      } catch { /* ignore */ }
+    }
+
+    if (playerDoc) {
+      const playerEvents = await parseEventsFromDoc(playerDoc);
+      for (const evt of playerEvents) {
+        if (!existingIds.has(evt.gemEventId)) {
+          allEvents.push(evt);
+        }
+      }
     }
 
     return allEvents;
@@ -836,6 +925,7 @@
       );
 
       // Fetch match history and GEM ID in parallel
+      // Quick Sync: only page 1 + in-progress events; Full Export: all pages
       const [allEvents, userGemId] = await Promise.all([
         fetchAllPages((current, total, matchCount) => {
           showOverlay(
@@ -844,7 +934,7 @@
             matchCount,
             { current, total }
           );
-        }),
+        }, quickMode ? 1 : 0),
         extractUserGemId(),
       ]);
 

@@ -65,6 +65,14 @@ function AdminIcon(props: { className?: string }) {
   );
 }
 
+function HomeIcon(props: { className?: string }) {
+  return (
+    <svg className={props.className || "w-5 h-5"} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955a1.126 1.126 0 011.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
+    </svg>
+  );
+}
+
 function MoreDotsIcon(props: { className?: string }) {
   return (
     <svg className={props.className || "w-5 h-5"} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -76,7 +84,7 @@ function MoreDotsIcon(props: { className?: string }) {
 }
 
 const tabs: { href: string; label: string; icon: ReactNode; color: string }[] = [
-  { href: "/", label: "Profile", icon: <DashboardIcon />, color: "text-blue-400" },
+  { href: "/", label: "Home", icon: <HomeIcon />, color: "text-fab-gold" },
   { href: "/matches", label: "Matches", icon: <SwordsIcon />, color: "text-red-400" },
   { href: "/leaderboard", label: "Rankings", icon: <TrophyIcon />, color: "text-amber-400" },
   { href: "/opponents", label: "Opponents", icon: <OpponentsIcon />, color: "text-purple-400" },
@@ -107,19 +115,42 @@ function FriendsIcon(props: { className?: string }) {
   );
 }
 
-const moreLinks: { href: string; label: string; icon: ReactNode; authOnly?: boolean; adminOnly?: boolean }[] = [
-  { href: "/meta", label: "Community Meta", icon: <MetaIcon /> },
-  { href: "/compare", label: "Versus", icon: <CompareIcon /> },
-  { href: "/events", label: "Events", icon: <CalendarIcon /> },
-  { href: "/trends", label: "Trends", icon: <TrendsIcon />, authOnly: true },
-  { href: "/import", label: "Import Matches", icon: <ImportIcon />, authOnly: true },
-  { href: "/friends", label: "Friends", icon: <FriendsIcon />, authOnly: true },
-  { href: "/inbox", label: "Inbox", icon: <InboxIcon />, authOnly: true },
-  { href: "/notifications", label: "Notifications", icon: <BellIcon />, authOnly: true },
-  { href: "/admin", label: "Admin", icon: <AdminIcon />, adminOnly: true },
-  { href: "/settings", label: "Settings", icon: <SettingsIcon />, authOnly: true },
-  { href: "/docs", label: "Docs", icon: <DocsIcon /> },
-  { href: "/changelog", label: "Changelog", icon: <ChangelogIcon /> },
+type MoreLink = { href: string; label: string; icon: ReactNode; authOnly?: boolean; adminOnly?: boolean };
+
+const moreSections: { title: string; links: MoreLink[] }[] = [
+  {
+    title: "Explore",
+    links: [
+      { href: "/meta", label: "Community Meta", icon: <MetaIcon /> },
+      { href: "/tournaments", label: "Tournaments", icon: <TrophyIcon /> },
+      { href: "/compare", label: "Versus", icon: <CompareIcon /> },
+    ],
+  },
+  {
+    title: "Your Data",
+    links: [
+      { href: "/import", label: "Import Matches", icon: <ImportIcon />, authOnly: true },
+      { href: "/events", label: "Events", icon: <CalendarIcon /> },
+      { href: "/trends", label: "Trends", icon: <TrendsIcon />, authOnly: true },
+    ],
+  },
+  {
+    title: "Social",
+    links: [
+      { href: "/friends", label: "Friends", icon: <FriendsIcon />, authOnly: true },
+      { href: "/inbox", label: "Inbox", icon: <InboxIcon />, authOnly: true },
+      { href: "/notifications", label: "Notifications", icon: <BellIcon />, authOnly: true },
+    ],
+  },
+  {
+    title: "Settings & Info",
+    links: [
+      { href: "/settings", label: "Settings", icon: <SettingsIcon />, authOnly: true },
+      { href: "/admin", label: "Admin", icon: <AdminIcon />, adminOnly: true },
+      { href: "/docs", label: "Docs", icon: <DocsIcon /> },
+      { href: "/changelog", label: "Changelog", icon: <ChangelogIcon /> },
+    ],
+  },
 ];
 
 export function MobileNav() {
@@ -141,8 +172,8 @@ export function MobileNav() {
   if (!mounted) return null;
 
   const isAuthed = user || isGuest;
-  const visibleMoreLinks = moreLinks.filter((l) => (!l.authOnly || isAuthed) && (!l.adminOnly || isAdmin));
-  const isMoreActive = visibleMoreLinks.some((l) => pathname === l.href);
+  const allMoreLinks = moreSections.flatMap((s) => s.links);
+  const isMoreActive = allMoreLinks.some((l) => (!l.authOnly || isAuthed) && (!l.adminOnly || isAdmin) && pathname === l.href);
 
   return (
     <>
@@ -160,38 +191,46 @@ export function MobileNav() {
           moreOpen ? "translate-y-0" : "translate-y-full"
         }`}
       >
-        <div className="mx-3 mb-2 bg-fab-surface border border-fab-border rounded-xl shadow-2xl overflow-hidden">
+        <div className="mx-3 mb-2 bg-fab-surface border border-fab-border rounded-xl shadow-2xl overflow-hidden max-h-[70vh] overflow-y-auto">
           <div className="p-2">
-            <p className="px-3 py-1.5 text-xs text-fab-dim font-medium uppercase tracking-wider">
-              Navigation
-            </p>
-            {visibleMoreLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                onClick={closeMore}
-                className={`flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition-colors ${
-                  pathname === link.href
-                    ? "text-fab-gold bg-fab-gold/10"
-                    : "text-fab-text active:bg-fab-surface-hover"
-                }`}
-              >
-                <span className={pathname === link.href ? "text-fab-gold" : "text-fab-muted"}>
-                  {link.icon}
-                </span>
-                {link.label}
-                {link.href === "/friends" && friendRequestCount > 0 && (
-                  <span className="ml-auto px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-fab-loss text-white">
-                    {friendRequestCount}
-                  </span>
-                )}
-                {link.href === "/notifications" && unreadCount > 0 && (
-                  <span className="ml-auto px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-fab-loss text-white">
-                    {unreadCount}
-                  </span>
-                )}
-              </Link>
-            ))}
+            {moreSections.map((section, sIdx) => {
+              const visibleLinks = section.links.filter((l) => (!l.authOnly || isAuthed) && (!l.adminOnly || isAdmin));
+              if (visibleLinks.length === 0) return null;
+              return (
+                <div key={section.title} className={sIdx > 0 ? "border-t border-fab-border/50 mt-1 pt-1" : ""}>
+                  <p className="px-3 py-1.5 text-xs text-fab-dim font-medium uppercase tracking-wider">
+                    {section.title}
+                  </p>
+                  {visibleLinks.map((link) => (
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      onClick={closeMore}
+                      className={`flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition-colors ${
+                        pathname === link.href
+                          ? "text-fab-gold bg-fab-gold/10"
+                          : "text-fab-text active:bg-fab-surface-hover"
+                      }`}
+                    >
+                      <span className={pathname === link.href ? "text-fab-gold" : "text-fab-muted"}>
+                        {link.icon}
+                      </span>
+                      {link.label}
+                      {link.href === "/friends" && friendRequestCount > 0 && (
+                        <span className="ml-auto px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-fab-loss text-white">
+                          {friendRequestCount}
+                        </span>
+                      )}
+                      {link.href === "/notifications" && unreadCount > 0 && (
+                        <span className="ml-auto px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-fab-loss text-white">
+                          {unreadCount}
+                        </span>
+                      )}
+                    </Link>
+                  ))}
+                </div>
+              );
+            })}
             {!isAuthed && (
               <Link
                 href="/login"

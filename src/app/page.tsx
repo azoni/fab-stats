@@ -386,31 +386,40 @@ export default function Dashboard() {
             </div>
 
             {/* Quick Nav */}
-            <div className="grid grid-cols-3 gap-1.5">
-              <Link href="/matches" className="nav-btn nav-btn-matches group flex items-center gap-1.5 bg-fab-surface border border-fab-border rounded-lg px-2 py-1.5">
-                <SwordsIcon className="nav-icon w-3.5 h-3.5 text-fab-muted group-hover:text-red-400 shrink-0" />
-                <span className="text-[11px] font-semibold text-fab-muted group-hover:text-fab-text transition-colors">Matches</span>
+            <div className="grid grid-cols-3 gap-2.5 mt-1">
+              <Link href="/matches" className="nav-btn nav-btn-matches group flex flex-col items-center justify-center gap-1 bg-fab-surface border border-fab-border rounded-xl px-3 py-4 text-center">
+                <SwordsIcon className="nav-icon w-6 h-6 text-red-400/60 group-hover:text-red-400 shrink-0" />
+                <span className="text-xs font-semibold text-fab-muted group-hover:text-fab-text transition-colors">Matches</span>
+                {(overall.totalMatches + overall.totalByes) > 0 && (
+                  <span className="text-[10px] text-fab-dim font-medium">{overall.totalMatches + overall.totalByes}</span>
+                )}
               </Link>
-              <Link href="/events" className="nav-btn nav-btn-events group flex items-center gap-1.5 bg-fab-surface border border-fab-border rounded-lg px-2 py-1.5">
-                <CalendarIcon className="nav-icon w-3.5 h-3.5 text-fab-muted group-hover:text-blue-400 shrink-0" />
-                <span className="text-[11px] font-semibold text-fab-muted group-hover:text-fab-text transition-colors">Events</span>
+              <Link href="/events" className="nav-btn nav-btn-events group flex flex-col items-center justify-center gap-1 bg-fab-surface border border-fab-border rounded-xl px-3 py-4 text-center">
+                <CalendarIcon className="nav-icon w-6 h-6 text-blue-400/60 group-hover:text-blue-400 shrink-0" />
+                <span className="text-xs font-semibold text-fab-muted group-hover:text-fab-text transition-colors">Events</span>
+                {eventStats.length > 0 && (
+                  <span className="text-[10px] text-fab-dim font-medium">{eventStats.length}</span>
+                )}
               </Link>
-              <Link href="/opponents" className="nav-btn nav-btn-opponents group flex items-center gap-1.5 bg-fab-surface border border-fab-border rounded-lg px-2 py-1.5">
-                <OpponentsIcon className="nav-icon w-3.5 h-3.5 text-fab-muted group-hover:text-purple-400 shrink-0" />
-                <span className="text-[11px] font-semibold text-fab-muted group-hover:text-fab-text transition-colors">Opponents</span>
+              <Link href="/opponents" className="nav-btn nav-btn-opponents group flex flex-col items-center justify-center gap-1 bg-fab-surface border border-fab-border rounded-xl px-3 py-4 text-center">
+                <OpponentsIcon className="nav-icon w-6 h-6 text-purple-400/60 group-hover:text-purple-400 shrink-0" />
+                <span className="text-xs font-semibold text-fab-muted group-hover:text-fab-text transition-colors">Opponents</span>
+                {opponentStats.length > 0 && (
+                  <span className="text-[10px] text-fab-dim font-medium">{opponentStats.length}</span>
+                )}
               </Link>
-              <Link href="/trends" className="nav-btn nav-btn-trends group flex items-center gap-1.5 bg-fab-surface border border-fab-border rounded-lg px-2 py-1.5">
-                <TrendsIcon className="nav-icon w-3.5 h-3.5 text-fab-muted group-hover:text-emerald-400 shrink-0" />
-                <span className="text-[11px] font-semibold text-fab-muted group-hover:text-fab-text transition-colors">Trends</span>
+              <Link href="/trends" className="nav-btn nav-btn-trends group flex flex-col items-center justify-center gap-1 bg-fab-surface border border-fab-border rounded-xl px-3 py-4 text-center">
+                <TrendsIcon className="nav-icon w-6 h-6 text-emerald-400/60 group-hover:text-emerald-400 shrink-0" />
+                <span className="text-xs font-semibold text-fab-muted group-hover:text-fab-text transition-colors">Trends</span>
               </Link>
-              <Link href="/compare" className="nav-btn nav-btn-versus group flex items-center gap-1.5 bg-fab-surface border border-fab-border rounded-lg px-2 py-1.5">
-                <svg className="nav-icon w-3.5 h-3.5 text-fab-muted group-hover:text-violet-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+              <Link href="/compare" className="nav-btn nav-btn-versus group flex flex-col items-center justify-center gap-1 bg-fab-surface border border-fab-border rounded-xl px-3 py-4 text-center">
+                <svg className="nav-icon w-6 h-6 text-violet-400/60 group-hover:text-violet-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
                   <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
                 </svg>
-                <span className="text-[11px] font-semibold text-fab-muted group-hover:text-fab-text transition-colors">Versus</span>
+                <span className="text-xs font-semibold text-fab-muted group-hover:text-fab-text transition-colors">Versus</span>
               </Link>
-              <Link href="/events?import=1" className="nav-btn nav-btn-log group flex items-center gap-1.5 bg-fab-surface border border-fab-border border-dashed rounded-lg px-2 py-1.5">
-                <svg className="nav-icon w-4 h-4 text-fab-muted group-hover:text-fab-gold shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <Link href="/events?import=1" className="nav-btn nav-btn-log group flex flex-col items-center justify-center gap-1 bg-fab-surface border border-fab-border border-dashed rounded-xl px-3 py-4 text-center">
+                <svg className="nav-icon w-6 h-6 text-fab-gold/60 group-hover:text-fab-gold shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
                 </svg>
                 <span className="text-xs font-semibold text-fab-muted group-hover:text-fab-text transition-colors">Log</span>

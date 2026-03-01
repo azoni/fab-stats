@@ -1,5 +1,6 @@
 "use client";
 import { useState, useMemo, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useFeed } from "@/hooks/useFeed";
 import { useFriends } from "@/hooks/useFriends";
@@ -29,6 +30,7 @@ function readStored<T extends string>(key: string, valid: T[], fallback: T): T {
 }
 
 export function ActivityFeed({ rankMap }: { rankMap?: Map<string, 1 | 2 | 3 | 4 | 5> }) {
+  const router = useRouter();
   const { events, loading } = useFeed();
   const { user } = useAuth();
   const { friends } = useFriends();
@@ -170,9 +172,22 @@ export function ActivityFeed({ rankMap }: { rankMap?: Map<string, 1 | 2 | 3 | 4 
         </div>
       ) : (
         <>
-          <div className="space-y-2 min-h-[268px]">
+          <div className="space-y-2">
             {groups.map((group) => (
-              <GroupedFeedCard key={group.events[0].id} group={group} compact rankMap={rankMap} />
+              <div
+                key={group.events[0].id}
+                onClick={(e) => {
+                  if ((e.target as HTMLElement).closest("a")) return;
+                  router.push(`/search?type=${group.events[0].type}`);
+                }}
+                className="cursor-pointer"
+              >
+                <GroupedFeedCard group={group} compact rankMap={rankMap} />
+              </div>
+            ))}
+            {/* Invisible spacers to maintain consistent height on partial pages */}
+            {groups.length < PAGE_SIZE && Array.from({ length: PAGE_SIZE - groups.length }, (_, i) => (
+              <div key={`spacer-${i}`} className="h-[52px]" aria-hidden="true" />
             ))}
           </div>
 

@@ -67,7 +67,10 @@ function SearchContent() {
   const { friends } = useFriends();
   const { favorites } = useFavorites();
   const [scope, setScope] = useState<ScopeTab>("community");
-  const [typeFilter, setTypeFilter] = useState<TypeFilter>("placement");
+  const initialType = searchParams.get("type") as TypeFilter | null;
+  const [typeFilter, setTypeFilter] = useState<TypeFilter>(
+    initialType && (["all", "import", "achievement", "placement"] as TypeFilter[]).includes(initialType) ? initialType : "placement"
+  );
   const [page, setPage] = useState(0);
 
   // Spotlight state

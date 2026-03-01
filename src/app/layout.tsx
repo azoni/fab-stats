@@ -107,7 +107,7 @@ export default function RootLayout({
       >
         <AuthProvider>
           <Navbar />
-          <main className="min-h-screen pb-20 md:pb-8 pt-16">
+          <main className="min-h-screen pb-20 md:pb-8 md:pt-16">
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6">
               <SiteBanner />
               <GuestBanner />

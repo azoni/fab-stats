@@ -203,6 +203,9 @@ service cloud.firestore {
         && request.resource.data.userId == request.auth.uid
         && request.resource.data.type in ["import", "achievement", "placement"]
         && request.resource.data.isPublic == true;
+      // Owner can delete their own feed events (e.g. when deleting an event)
+      allow delete: if request.auth != null
+        && resource.data.userId == request.auth.uid;
     }
 
     // ── Earned achievements tracking (per user) ──

@@ -118,15 +118,18 @@ export async function deleteFeedEventsForEvent(
   eventName: string,
   eventDate: string,
 ): Promise<void> {
+  // Single-field query (auto-indexed) + client-side filter to avoid needing a composite index
   const q = query(
     feedCollection(),
     where("userId", "==", userId),
-    where("type", "==", "placement"),
-    where("eventName", "==", eventName),
-    where("eventDate", "==", eventDate),
   );
   const snapshot = await getDocs(q);
-  await Promise.all(snapshot.docs.map((d) => deleteDoc(d.ref)));
+  const matching = snapshot.docs.filter((d) => {
+    const data = d.data();
+    return data.type === "placement" && data.eventName === eventName && data.eventDate === eventDate;
+  });
+  if (matching.length === 0) return;
+  await Promise.all(matching.map((d) => deleteDoc(d.ref)));
   invalidateFeedCache();
 }
 
