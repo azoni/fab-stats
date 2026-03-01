@@ -31,6 +31,20 @@ const badgeLabels: Record<ChangeType, string> = {
 
 const changelog: Entry[] = [
   {
+    date: "March 1, 2026",
+    changes: [
+      { type: "new", text: "Player Spotlight back on homepage — 6 community standouts in a responsive grid, refreshed each page load" },
+      { type: "new", text: "On This Day placement detection — shows Champion, Finalist, Top 4, or Top 8 badges for playoff events" },
+      { type: "new", text: "Profile card stats — homepage profile card now shows match count, win rate, events, and top hero at a glance" },
+      { type: "improved", text: "Navbar profile button — clicking your avatar now goes directly to your profile; separate chevron opens the account menu" },
+      { type: "improved", text: "On This Day rounds sorted correctly by round number — swiss first, then playoffs in order (QF, SF, F)" },
+      { type: "improved", text: "Playoff rounds labeled as QF, SF, F instead of showing the format name, highlighted in purple" },
+      { type: "improved", text: "On This Day collapsed view shows placement badge alongside match count" },
+      { type: "improved", text: "Homepage visual warmth — subtle gradient glows on welcome card and profile card" },
+      { type: "fixed", text: "Activity feed items no longer disappear at midnight — replaced 24-hour import cutoff with per-type caps (10 imports, 15 achievements, 20 placements)" },
+    ],
+  },
+  {
     date: "February 27, 2026",
     changes: [
       { type: "new", text: "Versus page — redesigned Compare into a head-to-head showdown with weighted dominance scoring, H2H record, and shareable verdict cards" },

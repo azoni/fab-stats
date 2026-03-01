@@ -576,6 +576,17 @@ export default function DocsPage() {
           </p>
           <div className="space-y-2 text-sm text-fab-muted">
             <p>
+              <span className="font-medium text-fab-text">Placement detection</span> — If you made
+              a top-cut at an event, On This Day automatically detects your placement (Champion,
+              Finalist, Top 4, or Top 8) and shows a badge on the card. The badge appears in the
+              collapsed header too.
+            </p>
+            <p>
+              <span className="font-medium text-fab-text">Round ordering</span> — Rounds are sorted
+              in natural order: swiss rounds first (R1, R2, …), then playoffs (QF, SF, F).
+              Playoff rounds are highlighted in purple so they stand out.
+            </p>
+            <p>
               <span className="font-medium text-fab-text">Shareable</span> — Capture your On This Day
               memories as an image to share on social media. The share card includes your record and
               match details for each year.
