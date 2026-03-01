@@ -245,73 +245,41 @@ export default function OpponentsPage() {
 
       {/* Rivalry Highlights */}
       {highlights && (
-        <>
-        <p className="text-xs uppercase tracking-wider font-semibold text-fab-muted mb-2">Rivalry Highlights</p>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
+        <div className="flex flex-wrap gap-2 mb-5">
           {highlights.nemesis && (
             <button
               onClick={() => { setSearch(highlights.nemesis!.opponentName); setExpanded(highlights.nemesis!.opponentName); }}
-              className="spotlight-card spotlight-nemesis bg-fab-surface border border-fab-border rounded-lg p-4 text-left hover:border-red-400/30 transition-colors"
+              className="flex items-center gap-2.5 bg-fab-surface border border-fab-border rounded-lg px-3 py-2 text-left hover:border-red-400/30 transition-colors"
             >
-              <p className="text-[10px] uppercase tracking-wider font-bold text-red-400 mb-2">Nemesis</p>
-              <p className="text-lg font-bold text-fab-text truncate">{highlights.nemesis.opponentName}</p>
-              <div className="flex items-center gap-2 mt-1">
-                <span className="text-sm text-fab-loss font-semibold">{highlights.nemesis.winRate.toFixed(0)}%</span>
-                <span className="text-xs text-fab-dim">
-                  {highlights.nemesis.wins}W - {highlights.nemesis.losses}L
-                  {highlights.nemesis.draws > 0 ? ` - ${highlights.nemesis.draws}D` : ""}
-                </span>
-              </div>
-              <div className="mt-2 h-1.5 rounded-full overflow-hidden flex">
-                <div className="h-full bg-fab-win" style={{ width: `${(highlights.nemesis.wins / highlights.nemesis.totalMatches) * 100}%` }} />
-                <div className="h-full bg-fab-loss/40" style={{ width: `${(highlights.nemesis.losses / highlights.nemesis.totalMatches) * 100}%` }} />
-              </div>
+              <span className="text-[9px] uppercase tracking-wider font-bold text-red-400 shrink-0">Nemesis</span>
+              <span className="text-sm font-semibold text-fab-text truncate">{highlights.nemesis.opponentName}</span>
+              <span className="text-xs text-fab-dim shrink-0">{highlights.nemesis.wins}W-{highlights.nemesis.losses}L</span>
+              <span className="text-xs font-semibold text-fab-loss shrink-0">{highlights.nemesis.winRate.toFixed(0)}%</span>
             </button>
           )}
-
           {highlights.bestMatchup && (
             <button
               onClick={() => { setSearch(highlights.bestMatchup!.opponentName); setExpanded(highlights.bestMatchup!.opponentName); }}
-              className="spotlight-card spotlight-rising bg-fab-surface border border-fab-border rounded-lg p-4 text-left hover:border-emerald-400/30 transition-colors"
+              className="flex items-center gap-2.5 bg-fab-surface border border-fab-border rounded-lg px-3 py-2 text-left hover:border-emerald-400/30 transition-colors"
             >
-              <p className="text-[10px] uppercase tracking-wider font-bold text-emerald-400 mb-2">Best Matchup</p>
-              <p className="text-lg font-bold text-fab-text truncate">{highlights.bestMatchup.opponentName}</p>
-              <div className="flex items-center gap-2 mt-1">
-                <span className="text-sm text-fab-win font-semibold">{highlights.bestMatchup.winRate.toFixed(0)}%</span>
-                <span className="text-xs text-fab-dim">
-                  {highlights.bestMatchup.wins}W - {highlights.bestMatchup.losses}L
-                  {highlights.bestMatchup.draws > 0 ? ` - ${highlights.bestMatchup.draws}D` : ""}
-                </span>
-              </div>
-              <div className="mt-2 h-1.5 rounded-full overflow-hidden flex">
-                <div className="h-full bg-fab-win" style={{ width: `${(highlights.bestMatchup.wins / highlights.bestMatchup.totalMatches) * 100}%` }} />
-                <div className="h-full bg-fab-loss/40" style={{ width: `${(highlights.bestMatchup.losses / highlights.bestMatchup.totalMatches) * 100}%` }} />
-              </div>
+              <span className="text-[9px] uppercase tracking-wider font-bold text-emerald-400 shrink-0">Best</span>
+              <span className="text-sm font-semibold text-fab-text truncate">{highlights.bestMatchup.opponentName}</span>
+              <span className="text-xs text-fab-dim shrink-0">{highlights.bestMatchup.wins}W-{highlights.bestMatchup.losses}L</span>
+              <span className="text-xs font-semibold text-fab-win shrink-0">{highlights.bestMatchup.winRate.toFixed(0)}%</span>
             </button>
           )}
-
           {highlights.mostPlayed && (
             <button
               onClick={() => { setSearch(highlights.mostPlayed!.opponentName); setExpanded(highlights.mostPlayed!.opponentName); }}
-              className="spotlight-card spotlight-grinder bg-fab-surface border border-fab-border rounded-lg p-4 text-left hover:border-amber-400/30 transition-colors"
+              className="flex items-center gap-2.5 bg-fab-surface border border-fab-border rounded-lg px-3 py-2 text-left hover:border-amber-400/30 transition-colors"
             >
-              <p className="text-[10px] uppercase tracking-wider font-bold text-amber-400 mb-2">Most Played</p>
-              <p className="text-lg font-bold text-fab-text truncate">{highlights.mostPlayed.opponentName}</p>
-              <div className="flex items-center gap-2 mt-1">
-                <span className="text-sm text-fab-gold font-semibold">{highlights.mostPlayed.totalMatches} matches</span>
-                <span className="text-xs text-fab-dim">
-                  {highlights.mostPlayed.wins}W - {highlights.mostPlayed.losses}L
-                  {highlights.mostPlayed.draws > 0 ? ` - ${highlights.mostPlayed.draws}D` : ""}
-                </span>
-              </div>
-              <div className="mt-2 h-1.5 rounded-full overflow-hidden flex">
-                <div className="h-full bg-fab-win" style={{ width: `${(highlights.mostPlayed.wins / highlights.mostPlayed.totalMatches) * 100}%` }} />
-                <div className="h-full bg-fab-loss/40" style={{ width: `${(highlights.mostPlayed.losses / highlights.mostPlayed.totalMatches) * 100}%` }} />
-              </div>
+              <span className="text-[9px] uppercase tracking-wider font-bold text-amber-400 shrink-0">Rival</span>
+              <span className="text-sm font-semibold text-fab-text truncate">{highlights.mostPlayed.opponentName}</span>
+              <span className="text-xs text-fab-dim shrink-0">{highlights.mostPlayed.totalMatches} matches</span>
+              <span className="text-xs font-semibold text-fab-muted shrink-0">{highlights.mostPlayed.winRate.toFixed(0)}%</span>
             </button>
           )}
         </div>
-        </>
       )}
 
       {/* New Opponents */}
