@@ -717,8 +717,52 @@
     quickBtn.style.borderColor = "#60a5fa50";
   });
 
+  // ── Quick Sync Page Selector ──────────────────────────────────
+
+  const PAGE_OPTIONS = [1, 3, 5, 0]; // 0 = All
+  const PAGE_LABELS = { 1: "1 pg", 3: "3 pg", 5: "5 pg", 0: "All" };
+  const storedPages = localStorage.getItem("fab-stats-quick-pages");
+  let quickSyncPages = storedPages !== null ? parseInt(storedPages) : 1;
+  if (!PAGE_OPTIONS.includes(quickSyncPages)) quickSyncPages = 1;
+
+  const pageSelectorRow = document.createElement("div");
+  Object.assign(pageSelectorRow.style, {
+    display: "flex",
+    gap: "4px",
+    justifyContent: "center",
+  });
+
+  function renderPageSelector() {
+    pageSelectorRow.innerHTML = "";
+    for (const opt of PAGE_OPTIONS) {
+      const b = document.createElement("button");
+      b.textContent = PAGE_LABELS[opt];
+      const isActive = opt === quickSyncPages;
+      Object.assign(b.style, {
+        padding: "3px 8px",
+        background: isActive ? "rgba(96,165,250,0.2)" : "rgba(30,30,50,0.8)",
+        color: isActive ? "#60a5fa" : "#666",
+        border: isActive ? "1px solid #60a5fa" : "1px solid #333",
+        borderRadius: "6px",
+        fontSize: "10px",
+        fontWeight: "600",
+        cursor: "pointer",
+        fontFamily: "inherit",
+        transition: "all 0.15s",
+      });
+      b.addEventListener("click", () => {
+        quickSyncPages = opt;
+        localStorage.setItem("fab-stats-quick-pages", String(opt));
+        renderPageSelector();
+      });
+      pageSelectorRow.appendChild(b);
+    }
+  }
+  renderPageSelector();
+
   btnContainer.appendChild(btn);
   btnContainer.appendChild(quickBtn);
+  btnContainer.appendChild(pageSelectorRow);
   document.body.appendChild(btnContainer);
 
   // ── Progress Overlay ──────────────────────────────────────────
@@ -934,7 +978,7 @@
             matchCount,
             { current, total }
           );
-        }, quickMode ? 1 : 0),
+        }, quickMode ? quickSyncPages : 0),
         extractUserGemId(),
       ]);
 
