@@ -147,6 +147,87 @@ const SPOTLIGHT_CONFIG: Record<string, { css: string; accent: string; iconBg: st
       </svg>
     ),
   },
+  "Cold Streak": {
+    css: "spotlight-active",
+    accent: "text-blue-300",
+    iconBg: "bg-blue-400/15 text-blue-300",
+    icon: (
+      <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+        <path fillRule="evenodd" d="M10 1a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0v-1.5A.75.75 0 0110 1zm5.303 1.697a.75.75 0 010 1.06l-1.06 1.06a.75.75 0 01-1.06-1.06l1.06-1.06a.75.75 0 011.06 0zm-9.546 1.06a.75.75 0 011.06 0l1.06 1.06a.75.75 0 01-1.06 1.06l-1.06-1.06a.75.75 0 010-1.06zM10 7a3 3 0 100 6 3 3 0 000-6z" clipRule="evenodd" />
+      </svg>
+    ),
+  },
+  "Most Wins": {
+    css: "spotlight-winrate",
+    accent: "text-green-400",
+    iconBg: "bg-green-500/15 text-green-400",
+    icon: (
+      <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" />
+      </svg>
+    ),
+  },
+  "Balanced": {
+    css: "spotlight-rising",
+    accent: "text-purple-400",
+    iconBg: "bg-purple-500/15 text-purple-400",
+    icon: (
+      <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+        <path fillRule="evenodd" d="M10 3a.75.75 0 01.55.24l3.25 3.5a.75.75 0 11-1.1 1.02L10 4.852 7.3 7.76a.75.75 0 01-1.1-1.02l3.25-3.5A.75.75 0 0110 3zm-3.76 9.2a.75.75 0 011.06.04l2.7 2.908 2.7-2.908a.75.75 0 111.1 1.02l-3.25 3.5a.75.75 0 01-1.1 0l-3.25-3.5a.75.75 0 01.04-1.06z" clipRule="evenodd" />
+      </svg>
+    ),
+  },
+  "Draw Magnet": {
+    css: "spotlight-grinder",
+    accent: "text-fab-draw",
+    iconBg: "bg-fab-draw/15 text-fab-draw",
+    icon: (
+      <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-5a.75.75 0 01.75.75v4.5a.75.75 0 01-1.5 0v-4.5A.75.75 0 0110 5zm0 10a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+      </svg>
+    ),
+  },
+  "Iron Will": {
+    css: "spotlight-active",
+    accent: "text-red-400",
+    iconBg: "bg-red-500/15 text-red-400",
+    icon: (
+      <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+        <path fillRule="evenodd" d="M9.661 2.237a.531.531 0 01.678 0 11.947 11.947 0 007.078 2.749.5.5 0 01.479.425c.069.52.104 1.05.104 1.59 0 5.162-3.26 9.563-7.834 11.256a.48.48 0 01-.332 0C5.26 16.564 2 12.163 2 7c0-.538.035-1.069.104-1.589a.5.5 0 01.48-.425 11.947 11.947 0 007.077-2.75z" clipRule="evenodd" />
+      </svg>
+    ),
+  },
+  "Decisive": {
+    css: "spotlight-warrior",
+    accent: "text-emerald-400",
+    iconBg: "bg-emerald-500/15 text-emerald-400",
+    icon: (
+      <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+        <path d="M11.983 1.907a.75.75 0 00-1.292-.657l-8.5 9.5A.75.75 0 002.75 12h6.572l-1.305 6.093a.75.75 0 001.292.657l8.5-9.5A.75.75 0 0017.25 8h-6.572l1.305-6.093z" />
+      </svg>
+    ),
+  },
+  "Recently Placed": {
+    css: "spotlight-warrior",
+    accent: "text-amber-400",
+    iconBg: "bg-amber-500/15 text-amber-400",
+    icon: (
+      <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+        <path fillRule="evenodd" d="M10 1c-1.828 0-3.623.149-5.371.435a.75.75 0 00-.629.74v.387c0 3.787 1.818 7.152 4.63 9.275A.5.5 0 019 12.24V16H7a.75.75 0 000 1.5h6a.75.75 0 000-1.5h-2v-3.76a.5.5 0 01.37-.483C14.182 9.764 16 6.4 16 2.612v-.387a.75.75 0 00-.629-.74A49.803 49.803 0 0010 1z" clipRule="evenodd" />
+      </svg>
+    ),
+  },
+  "Big Earner": {
+    css: "spotlight-streak",
+    accent: "text-fab-gold",
+    iconBg: "bg-fab-gold/15 text-fab-gold",
+    icon: (
+      <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+        <path d="M10.75 10.818v2.614A3.13 3.13 0 0011.888 13c.482-.315.612-.648.612-.875 0-.227-.13-.56-.612-.875a3.13 3.13 0 00-1.138-.432zM8.33 8.62c.053.055.115.11.186.157.434.283.95.44 1.484.44.534 0 1.05-.158 1.484-.44.07-.047.133-.102.186-.157a.681.681 0 00-.186-.157A3.13 3.13 0 0010 8.023a3.13 3.13 0 00-1.484.44.681.681 0 00-.186.157z" />
+        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-13a.75.75 0 00-1.5 0v.816a3.128 3.128 0 00-1.862.66.75.75 0 10.907 1.197 1.62 1.62 0 01.955-.323c.535 0 1.05.158 1.484.44.212.139.382.303.502.467a.75.75 0 001.014.027 3.128 3.128 0 011.862-.66V5z" clipRule="evenodd" />
+      </svg>
+    ),
+  },
 };
 
 const DEFAULT_CONFIG = SPOTLIGHT_CONFIG["Most Active"];

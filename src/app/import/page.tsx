@@ -8,7 +8,7 @@ import { importMatchesLocal } from "@/lib/storage";
 import { createImportFeedEvent, createAchievementFeedEvent, createPlacementFeedEvent } from "@/lib/feed";
 import { detectNewAchievements } from "@/lib/achievement-tracking";
 import { evaluateAchievements } from "@/lib/achievements";
-import { computeOverallStats, computeHeroStats, computeOpponentStats, computeEventStats, computePlayoffFinishes, getEventName } from "@/lib/stats";
+import { computeOverallStats, computeHeroStats, computeOpponentStats, computeEventStats, computePlayoffFinishes, getEventName, type PlayoffFinish } from "@/lib/stats";
 import { linkMatchesWithOpponents } from "@/lib/match-linking";
 import { computeH2HForUser } from "@/lib/h2h";
 import type { GemMetadata } from "@/lib/gem-import";
@@ -18,7 +18,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { MatchCard } from "@/components/matches/MatchCard";
 import { CheckCircleIcon, FileIcon, ChevronDownIcon, ChevronUpIcon } from "@/components/icons/NavIcons";
-import { MatchResult, type MatchRecord } from "@/types";
+import { MatchResult, type MatchRecord, type Achievement } from "@/types";
 import { allHeroes } from "@/lib/heroes";
 import { computeSessionRecap, type SessionRecap } from "@/lib/session-recap";
 import { PostEventRecap } from "@/components/import/PostEventRecap";
@@ -55,6 +55,8 @@ export default function ImportPage() {
   const [cleared, setCleared] = useState(false);
   const [heroOverrides, setHeroOverrides] = useState<Record<number, string>>({});
   const [sessionRecap, setSessionRecap] = useState<SessionRecap | null>(null);
+  const [newAchievements, setNewAchievements] = useState<Achievement[]>([]);
+  const [newPlacements, setNewPlacements] = useState<PlayoffFinish[]>([]);
   const [isMobile, setIsMobile] = useState(false);
   const [showPasteSteps, setShowPasteSteps] = useState(false);
   const [clearBeforeImport, setClearBeforeImport] = useState(false);
@@ -253,19 +255,19 @@ export default function ImportPage() {
     }
     setImportedCount(count);
     setSkippedCount(matches.length - count);
-    setImported(true);
-    setImporting(false);
 
-    // Compute session recap
+    // Compute session recap + achievements + placements before showing results
+    let afterMatches: MatchRecord[] = [];
+    let detectedNew: Achievement[] = [];
+    let freshFinishes: PlayoffFinish[] = [];
+
     if (count > 0) {
       try {
-        let afterMatches: MatchRecord[] = [];
         if (user) {
           afterMatches = await getMatchesByUserId(user.uid);
         } else {
           afterMatches = getLocalMatches();
         }
-        // Build session matches from the difference (new matches have IDs assigned)
         const beforeIds = new Set(beforeMatches.map((m) => m.id));
         const newlyImported = afterMatches.filter((m) => !beforeIds.has(m.id));
         const recap = computeSessionRecap(beforeMatches, afterMatches, newlyImported);
@@ -273,7 +275,31 @@ export default function ImportPage() {
       } catch {
         // Recap computation failed — will fall back to basic completion screen
       }
+
+      // Compute achievements & placements (only for signed-in users with profile)
+      if (user && profile && afterMatches.length > 0) {
+        try {
+          const overall = computeOverallStats(afterMatches);
+          const heroStats = computeHeroStats(afterMatches);
+          const oppStats = computeOpponentStats(afterMatches);
+          const earned = evaluateAchievements(afterMatches, overall, heroStats, oppStats);
+          detectedNew = await detectNewAchievements(user.uid, earned);
+          setNewAchievements(detectedNew);
+
+          const eventStats = computeEventStats(afterMatches);
+          const allFinishes = computePlayoffFinishes(eventStats);
+          const importedDates = new Set(matches.map((m) => m.date));
+          freshFinishes = allFinishes.filter((f) => importedDates.has(f.eventDate));
+          setNewPlacements(freshFinishes);
+        } catch {
+          // Non-critical: celebration just won't show achievements/placements
+        }
+      }
     }
+
+    // Now show the results
+    setImported(true);
+    setImporting(false);
 
     // Post to activity feed + update leaderboard (non-blocking, only for signed-in users with a profile)
     if (user && profile && count > 0) {
@@ -301,39 +327,25 @@ export default function ImportPage() {
         registerGemId(user.uid, pasteResult.extensionMeta.userGemId).catch(() => {});
       }
 
+      // Achievement + placement feed events (non-blocking, gated by 14-day freshness)
+      const newestDate = Math.max(...matches.map((m) => new Date(m.date).getTime()));
+      const isFresh = Date.now() - newestDate <= 14 * 86400000;
+      if (isFresh) {
+        if (detectedNew.length > 0) {
+          createAchievementFeedEvent(profile, detectedNew).catch(() => {});
+        }
+        for (const finish of freshFinishes) {
+          const eventMatches = afterMatches.filter((m) => getEventName(m) === finish.eventName && m.date === finish.eventDate);
+          const hero = eventMatches[0]?.heroPlayed;
+          createPlacementFeedEvent(profile, finish, hero).catch(() => {});
+        }
+      }
+
       // Cross-player match linking + H2H precomputation (non-blocking)
       getMatchesByUserId(user.uid)
         .then((allMatches) => {
           linkMatchesWithOpponents(user.uid, allMatches);
           computeH2HForUser(user.uid, allMatches);
-
-          // Achievement + placement feed events (non-blocking)
-          // Only publish if newest imported match is within 14 days
-          const newestDate = Math.max(...matches.map((m) => new Date(m.date).getTime()));
-          if (Date.now() - newestDate > 14 * 86400000) return;
-
-          // Achievements
-          const overall = computeOverallStats(allMatches);
-          const heroStats = computeHeroStats(allMatches);
-          const oppStats = computeOpponentStats(allMatches);
-          const earned = evaluateAchievements(allMatches, overall, heroStats, oppStats);
-          detectNewAchievements(user.uid, earned)
-            .then((newOnes) => {
-              if (newOnes.length > 0) createAchievementFeedEvent(profile, newOnes).catch(() => {});
-            })
-            .catch(() => {});
-
-          // Placements — check for new playoff finishes
-          const eventStats = computeEventStats(allMatches);
-          const allFinishes = computePlayoffFinishes(eventStats);
-          // Only publish finishes from events that include freshly imported dates
-          const importedDates = new Set(matches.map((m) => m.date));
-          const newFinishes = allFinishes.filter((f) => importedDates.has(f.eventDate));
-          for (const finish of newFinishes) {
-            const eventMatches = allMatches.filter((m) => getEventName(m) === finish.eventName && m.date === finish.eventDate);
-            const hero = eventMatches[0]?.heroPlayed;
-            createPlacementFeedEvent(profile, finish, hero).catch(() => {});
-          }
         })
         .catch(() => {});
     }
@@ -354,6 +366,8 @@ export default function ImportPage() {
     setAutoDetected(false);
     setHeroOverrides({});
     setSessionRecap(null);
+    setNewAchievements([]);
+    setNewPlacements([]);
   }
 
   async function handleClearAll() {
@@ -417,6 +431,8 @@ export default function ImportPage() {
           onDashboard={() => router.push("/")}
           onImportMore={handleReset}
           skippedCount={skippedCount}
+          newAchievements={newAchievements}
+          newPlacements={newPlacements}
         />
       );
     }

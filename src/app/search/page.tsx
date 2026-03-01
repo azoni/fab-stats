@@ -1,11 +1,17 @@
 "use client";
-import { Suspense, useState, useEffect, useCallback } from "react";
+import { Suspense, useState, useEffect, useMemo, useCallback } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { searchUsernames, getProfile } from "@/lib/firestore-storage";
 import { useAuth } from "@/contexts/AuthContext";
-import { getFeedEventsPaginated, type FeedEventType } from "@/lib/feed";
-import { GroupedFeedCard, groupConsecutiveEvents } from "@/components/feed/FeedCard";
+import { useFeed } from "@/hooks/useFeed";
+import { useFriends } from "@/hooks/useFriends";
+import { useFavorites } from "@/hooks/useFavorites";
+import { useLeaderboard } from "@/hooks/useLeaderboard";
+import { selectFeaturedProfiles } from "@/lib/featured-profiles";
+import { computeRankMap } from "@/lib/leaderboard-ranks";
+import { groupConsecutiveEvents, GroupedFeedCard } from "@/components/feed/FeedCard";
+import { FeaturedProfiles } from "@/components/home/FeaturedProfiles";
 import { FeedIcon } from "@/components/icons/NavIcons";
 import type { UserProfile, FeedEvent } from "@/types";
 
@@ -14,14 +20,17 @@ interface SearchResult {
   profile: UserProfile | null;
 }
 
-const PAGE_SIZE = 20;
+type ScopeTab = "community" | "friends";
+type TypeFilter = "all" | "import" | "achievement" | "placement";
 
-const TYPE_FILTERS: { value: FeedEventType; label: string }[] = [
+const TYPE_FILTERS: { value: TypeFilter; label: string }[] = [
   { value: "all", label: "All" },
   { value: "import", label: "Imports" },
   { value: "achievement", label: "Achievements" },
   { value: "placement", label: "Placements" },
 ];
+
+const PAGE_SIZE = 15;
 
 export default function SearchPage() {
   return (
@@ -53,41 +62,73 @@ function SearchContent() {
   const [loading, setLoading] = useState(false);
   const { isAdmin, user } = useAuth();
 
-  // Feed state
-  const [feedEvents, setFeedEvents] = useState<FeedEvent[]>([]);
-  const [feedLoading, setFeedLoading] = useState(true);
-  const [feedHasMore, setFeedHasMore] = useState(false);
-  const [feedCursor, setFeedCursor] = useState<string | undefined>();
-  const [feedLoadingMore, setFeedLoadingMore] = useState(false);
-  const [typeFilter, setTypeFilter] = useState<FeedEventType>("all");
+  // Feed state — same model as home ActivityFeed
+  const { events: allFeedEvents, loading: feedLoading } = useFeed();
+  const { friends } = useFriends();
+  const { favorites } = useFavorites();
+  const [scope, setScope] = useState<ScopeTab>("community");
+  const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
+  const [page, setPage] = useState(0);
 
-  const loadFeed = useCallback(async (filter: FeedEventType, cursor?: string) => {
-    const result = await getFeedEventsPaginated(PAGE_SIZE, filter, cursor);
-    return result;
-  }, []);
+  // Spotlight state
+  const { entries: lbEntries } = useLeaderboard();
+  const featuredProfiles = useMemo(() => selectFeaturedProfiles(lbEntries), [lbEntries]);
+  const rankMap = useMemo(() => computeRankMap(lbEntries), [lbEntries]);
 
-  // Initial feed load
-  useEffect(() => {
-    setFeedLoading(true);
-    setFeedEvents([]);
-    setFeedCursor(undefined);
-    loadFeed(typeFilter).then((result) => {
-      setFeedEvents(result.events);
-      setFeedHasMore(result.hasMore);
-      setFeedCursor(result.lastTimestamp || undefined);
-      setFeedLoading(false);
+  // Build set of friend/favorite user IDs
+  const socialUserIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const f of friends) {
+      for (const p of f.participants) {
+        if (p !== user?.uid) ids.add(p);
+      }
+    }
+    for (const fav of favorites) {
+      ids.add(fav.targetUserId);
+    }
+    return ids;
+  }, [friends, favorites, user?.uid]);
+
+  // Filter + sort events — same logic as ActivityFeed
+  const filteredEvents: FeedEvent[] = useMemo(() => {
+    const now = new Date();
+    const yesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+    const importCutoff = yesterday.getTime();
+    const appLaunch = new Date("2026-02-24").getTime();
+
+    let source = allFeedEvents;
+
+    if (scope === "friends") {
+      source = source.filter((e) => socialUserIds.has(e.userId));
+    }
+
+    if (typeFilter !== "all") {
+      source = source.filter((e) => e.type === typeFilter);
+    }
+
+    source = source.filter((e) => {
+      const dateStr = e.type === "placement" ? e.eventDate : e.createdAt;
+      const ts = new Date(dateStr).getTime();
+      if (e.type === "import") return ts >= importCutoff;
+      return ts >= appLaunch;
     });
-  }, [typeFilter, loadFeed]);
 
-  async function loadMore() {
-    if (!feedCursor || feedLoadingMore) return;
-    setFeedLoadingMore(true);
-    const result = await loadFeed(typeFilter, feedCursor);
-    setFeedEvents((prev) => [...prev, ...result.events]);
-    setFeedHasMore(result.hasMore);
-    setFeedCursor(result.lastTimestamp || undefined);
-    setFeedLoadingMore(false);
-  }
+    source = [...source].sort((a, b) => {
+      const dateA = a.type === "placement" ? a.eventDate : a.createdAt;
+      const dateB = b.type === "placement" ? b.eventDate : b.createdAt;
+      return new Date(dateB).getTime() - new Date(dateA).getTime();
+    });
+
+    return source;
+  }, [allFeedEvents, scope, typeFilter, socialUserIds]);
+
+  const allGroups = useMemo(() => groupConsecutiveEvents(filteredEvents), [filteredEvents]);
+  const totalPages = Math.max(1, Math.ceil(allGroups.length / PAGE_SIZE));
+  const groups = allGroups.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+
+  // Reset page when filters change
+  const handleSetScope = useCallback((v: ScopeTab) => { setScope(v); setPage(0); }, []);
+  const handleSetTypeFilter = useCallback((v: TypeFilter) => { setTypeFilter(v); setPage(0); }, []);
 
   async function doSearch(q: string, autoRedirect = false) {
     if (!q.trim()) {
@@ -113,7 +154,6 @@ function SearchContent() {
       return true;
     });
 
-    // Auto-redirect to profile if exactly one result and came from a link (not manual search)
     if (autoRedirect && filtered.length === 1) {
       router.replace(`/player/${filtered[0].username}`);
       return;
@@ -123,7 +163,6 @@ function SearchContent() {
     setLoading(false);
   }
 
-  // Auto-search if ?q= is provided (with auto-redirect for linked searches)
   useEffect(() => {
     if (initialQuery) {
       doSearch(initialQuery, true);
@@ -131,9 +170,8 @@ function SearchContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialQuery]);
 
-  // Debounced auto-search as user types
   useEffect(() => {
-    if (query === initialQuery) return; // skip initial
+    if (query === initialQuery) return;
     if (!query.trim()) {
       setResults([]);
       setSearched(false);
@@ -150,7 +188,6 @@ function SearchContent() {
   }
 
   const showFeed = !query.trim() && !searched;
-  const feedGroups = groupConsecutiveEvents(feedEvents);
 
   return (
     <div>
@@ -225,75 +262,123 @@ function SearchContent() {
         </div>
       )}
 
-      {/* Activity feed (shown when not searching) */}
+      {/* Feed + Spotlight (shown when not searching) */}
       {showFeed && (
-        <div>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-fab-text">Activity Feed</h2>
-          </div>
-
-          {/* Type filter tabs */}
-          <div className="flex gap-1 bg-fab-bg rounded-lg p-0.5 border border-fab-border w-fit mb-5">
-            {TYPE_FILTERS.map((f) => (
-              <button
-                key={f.value}
-                onClick={() => setTypeFilter(f.value)}
-                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
-                  typeFilter === f.value
-                    ? "bg-fab-surface text-fab-text shadow-sm"
-                    : "text-fab-dim hover:text-fab-muted"
-                }`}
-              >
-                {f.label}
-              </button>
-            ))}
-          </div>
-
-          {feedLoading && (
-            <div className="space-y-3">
-              {[...Array(5)].map((_, i) => (
-                <div key={i} className="bg-fab-surface border border-fab-border rounded-lg p-4 h-24 animate-pulse" />
-              ))}
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-6">
+          {/* Activity Feed */}
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-fab-text">Activity Feed</h2>
             </div>
-          )}
 
-          {!feedLoading && feedEvents.length === 0 && (
-            <div className="text-center py-12">
-              <FeedIcon className="w-12 h-12 text-fab-muted mb-3 mx-auto" />
-              <p className="text-fab-muted text-sm">
-                {typeFilter === "all"
-                  ? "No activity yet. When players import matches or earn achievements, it will show up here."
-                  : `No ${typeFilter} activity yet.`}
-              </p>
-            </div>
-          )}
-
-          {!feedLoading && feedEvents.length > 0 && (
-            <>
-              <div className="space-y-3">
-                {feedGroups.map((group) => (
-                  <GroupedFeedCard key={group.events[0].id} group={group} />
+            {/* Filter row */}
+            <div className="flex items-center gap-2 mb-5 flex-wrap">
+              <div className="flex gap-0.5 bg-fab-bg rounded-lg p-0.5 border border-fab-border">
+                {TYPE_FILTERS.map((f) => (
+                  <button
+                    key={f.value}
+                    onClick={() => handleSetTypeFilter(f.value)}
+                    className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                      typeFilter === f.value
+                        ? "bg-fab-surface text-fab-text shadow-sm"
+                        : "text-fab-dim hover:text-fab-muted"
+                    }`}
+                  >
+                    {f.label}
+                  </button>
                 ))}
               </div>
 
-              {/* Load More */}
-              {feedHasMore && (
-                <div className="mt-6 text-center">
+              {user && (
+                <div className="flex gap-0.5 bg-fab-bg rounded-lg p-0.5 border border-fab-border ml-auto">
                   <button
-                    onClick={loadMore}
-                    disabled={feedLoadingMore}
-                    className="px-6 py-2.5 rounded-lg font-semibold bg-fab-surface border border-fab-border text-fab-text hover:bg-fab-surface-hover transition-colors disabled:opacity-50"
+                    onClick={() => handleSetScope("community")}
+                    className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                      scope === "community"
+                        ? "bg-fab-surface text-fab-text shadow-sm"
+                        : "text-fab-dim hover:text-fab-muted"
+                    }`}
                   >
-                    {feedLoadingMore ? "Loading..." : "Load More"}
+                    Community
+                  </button>
+                  <button
+                    onClick={() => handleSetScope("friends")}
+                    className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                      scope === "friends"
+                        ? "bg-fab-surface text-fab-text shadow-sm"
+                        : "text-fab-dim hover:text-fab-muted"
+                    }`}
+                  >
+                    Friends
                   </button>
                 </div>
               )}
+            </div>
 
-              {!feedHasMore && feedEvents.length > PAGE_SIZE && (
-                <p className="text-center text-fab-dim text-xs mt-6">You&apos;ve reached the end</p>
-              )}
-            </>
-          )}
+            {feedLoading && (
+              <div className="space-y-3">
+                {[...Array(5)].map((_, i) => (
+                  <div key={i} className="bg-fab-surface border border-fab-border rounded-lg p-4 h-24 animate-pulse" />
+                ))}
+              </div>
+            )}
+
+            {!feedLoading && filteredEvents.length === 0 && (
+              <div className="text-center py-12">
+                <FeedIcon className="w-12 h-12 text-fab-muted mb-3 mx-auto" />
+                <p className="text-fab-muted text-sm">
+                  {scope === "friends"
+                    ? "No recent activity from friends yet."
+                    : typeFilter === "all"
+                      ? "No activity yet. When players import matches or earn achievements, it will show up here."
+                      : `No ${typeFilter} activity yet.`}
+                </p>
+              </div>
+            )}
+
+            {!feedLoading && filteredEvents.length > 0 && (
+              <>
+                <div className="space-y-3">
+                  {groups.map((group) => (
+                    <GroupedFeedCard key={group.events[0].id} group={group} rankMap={rankMap} />
+                  ))}
+                </div>
+
+                {/* Pagination */}
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-between mt-6">
+                    <button
+                      onClick={() => setPage((p) => Math.max(0, p - 1))}
+                      disabled={page === 0}
+                      className="px-3 py-1.5 rounded-md text-xs font-medium bg-fab-surface border border-fab-border text-fab-muted hover:text-fab-text transition-colors disabled:opacity-30 disabled:pointer-events-none"
+                    >
+                      &larr; Prev
+                    </button>
+                    <span className="text-xs text-fab-dim">
+                      {page + 1} / {totalPages}
+                    </span>
+                    <button
+                      onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+                      disabled={page >= totalPages - 1}
+                      className="px-3 py-1.5 rounded-md text-xs font-medium bg-fab-surface border border-fab-border text-fab-muted hover:text-fab-text transition-colors disabled:opacity-30 disabled:pointer-events-none"
+                    >
+                      Next &rarr;
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+
+          {/* Spotlight sidebar */}
+          <div className="hidden lg:block">
+            <FeaturedProfiles profiles={featuredProfiles} rankMap={rankMap} />
+          </div>
+
+          {/* Spotlight on mobile (below feed) */}
+          <div className="lg:hidden">
+            <FeaturedProfiles profiles={featuredProfiles} rankMap={rankMap} />
+          </div>
         </div>
       )}
     </div>
