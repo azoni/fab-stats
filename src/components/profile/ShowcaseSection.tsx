@@ -9,6 +9,9 @@ import { EventRecapCard } from "./showcase/EventRecapCard";
 import { AchievementShowcaseCard } from "./showcase/AchievementShowcaseCard";
 import { StatHighlightCard } from "./showcase/StatHighlightCard";
 import { FormatMasteryCard } from "./showcase/FormatMasteryCard";
+import { EventTypeMasteryCard } from "./showcase/EventTypeMasteryCard";
+import { StreakShowcaseCard } from "./showcase/StreakShowcaseCard";
+import { RecentFormCard } from "./showcase/RecentFormCard";
 import { CardPicker } from "./showcase/CardPicker";
 import type { ShowcaseCard, UserProfile, MatchRecord, HeroStats, EventStats, OpponentStats, OverallStats, Achievement } from "@/types";
 import type { HeroMastery } from "@/types";
@@ -245,6 +248,12 @@ function ShowcaseCardRenderer({ card, matches, heroStats, masteries, eventStats,
       return <StatHighlightCard stat={(card.stat || "winRate") as "winRate" | "totalMatches" | "longestWinStreak" | "uniqueHeroes" | "uniqueOpponents" | "eventsPlayed"} filter={card.filter} overall={overall} heroStats={heroStats} eventStats={eventStats} opponentCount={opponentStats.length} />;
     case "formatMastery":
       return <FormatMasteryCard matches={matches} />;
+    case "eventTypeMastery":
+      return <EventTypeMasteryCard matches={matches} />;
+    case "streakShowcase":
+      return <StreakShowcaseCard overall={overall} matches={matches} />;
+    case "recentForm":
+      return <RecentFormCard matches={matches} />;
     default:
       return <MissingCard label="Unknown card type" />;
   }

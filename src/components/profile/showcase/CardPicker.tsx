@@ -41,6 +41,9 @@ const CARD_TYPES: { type: CardType; label: string; icon: string; desc: string }[
   { type: "achievements", label: "Achievements", icon: "star", desc: "Pin favorite achievements" },
   { type: "statHighlight", label: "Stat Highlight", icon: "chart", desc: "A bold stat with context" },
   { type: "formatMastery", label: "Format Mastery", icon: "trending", desc: "Format performance breakdown" },
+  { type: "eventTypeMastery", label: "Event Types", icon: "scroll", desc: "Win rate by event type" },
+  { type: "streakShowcase", label: "Streaks", icon: "flame", desc: "Current & best streaks" },
+  { type: "recentForm", label: "Recent Form", icon: "chart", desc: "Last 20 match performance" },
 ];
 
 const STAT_OPTIONS: { key: string; label: string }[] = [
@@ -58,11 +61,12 @@ export function CardPicker({ onAdd, onCancel, matches, heroStats, eventStats, op
   const [search, setSearch] = useState("");
   const [selectedAchievements, setSelectedAchievements] = useState<Set<string>>(new Set());
 
-  const hasFormatMastery = existingCards.some((c) => c.type === "formatMastery");
+  const AUTO_TYPES = new Set<CardType>(["formatMastery", "eventTypeMastery", "streakShowcase", "recentForm"]);
+  const hasSingleton = (t: CardType) => existingCards.some((c) => c.type === t);
 
   function selectType(type: CardType) {
-    if (type === "formatMastery") {
-      onAdd({ type: "formatMastery" });
+    if (AUTO_TYPES.has(type)) {
+      onAdd({ type });
       return;
     }
     setSelectedType(type);
@@ -91,7 +95,7 @@ export function CardPicker({ onAdd, onCancel, matches, heroStats, eventStats, op
           {CARD_TYPES.map((ct) => {
             const size = getCardSize(ct.type);
             const tooExpensive = size > pointsLeft;
-            const disabled = tooExpensive || (ct.type === "formatMastery" && hasFormatMastery);
+            const disabled = tooExpensive || (AUTO_TYPES.has(ct.type) && hasSingleton(ct.type));
             return (
               <button
                 key={ct.type}
