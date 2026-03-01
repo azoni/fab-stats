@@ -67,20 +67,25 @@ export const MetaSnapshot = memo(function MetaSnapshot({ topHeroes, top8Heroes, 
         {showEventMode ? (
           // Event weekend: show top 8 hero placements
           <>
-            <div className="flex items-center gap-1 px-4 py-2 border-b border-fab-border">
-              {SORT_OPTIONS.map((opt) => (
-                <button
-                  key={opt.key}
-                  onClick={() => setSortBy(opt.key)}
-                  className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${
-                    sortBy === opt.key
-                      ? "bg-teal-500/15 text-teal-400"
-                      : "text-fab-muted hover:text-fab-text"
-                  }`}
-                >
-                  {opt.label}
-                </button>
-              ))}
+            <div className="flex items-center justify-between px-4 py-2 border-b border-fab-border">
+              <div className="flex items-center gap-1">
+                {SORT_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.key}
+                    onClick={() => setSortBy(opt.key)}
+                    className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${
+                      sortBy === opt.key
+                        ? "bg-teal-500/15 text-teal-400"
+                        : "text-fab-muted hover:text-fab-text"
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+              <span className="text-[10px] text-fab-muted">
+                {top8Heroes!.length} heroes
+              </span>
             </div>
             {sortedTop8.slice(0, 10).map((t8, i) => {
               const heroInfo = getHeroByName(t8.hero);
