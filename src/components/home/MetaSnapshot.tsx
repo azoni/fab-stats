@@ -1,10 +1,12 @@
 "use client";
-import { memo } from "react";
+import { memo, useState, useMemo } from "react";
 import Link from "next/link";
 import { getHeroByName } from "@/lib/heroes";
 import { HeroClassIcon } from "@/components/heroes/HeroClassIcon";
 import type { HeroMetaStats } from "@/lib/meta-stats";
 import type { Top8HeroMeta } from "@/lib/meta-stats";
+
+type Top8Sort = "top8" | "played" | "wins";
 
 interface MetaSnapshotProps {
   topHeroes: HeroMetaStats[];
@@ -14,9 +16,26 @@ interface MetaSnapshotProps {
 
 const RANK_CLASS = ["meta-rank-1 font-black", "meta-rank-2 font-bold", "meta-rank-3 font-bold", "text-fab-muted font-bold", "text-fab-muted font-bold"];
 
+const SORT_OPTIONS: { key: Top8Sort; label: string }[] = [
+  { key: "top8", label: "Top 8s" },
+  { key: "played", label: "Played" },
+  { key: "wins", label: "Wins" },
+];
+
 export const MetaSnapshot = memo(function MetaSnapshot({ topHeroes, top8Heroes, activeEventType }: MetaSnapshotProps) {
+  const [sortBy, setSortBy] = useState<Top8Sort>("top8");
+
   // Event weekend mode: show top 8 heroes for the active event type
   const showEventMode = activeEventType && top8Heroes && top8Heroes.length > 0;
+
+  const sortedTop8 = useMemo(() => {
+    if (!top8Heroes) return [];
+    const sorted = [...top8Heroes];
+    if (sortBy === "played") sorted.sort((a, b) => b.totalPlayers - a.totalPlayers || b.count - a.count);
+    else if (sortBy === "wins") sorted.sort((a, b) => b.champions - a.champions || b.count - a.count);
+    else sorted.sort((a, b) => b.count - a.count);
+    return sorted;
+  }, [top8Heroes, sortBy]);
 
   if (!showEventMode && topHeroes.length === 0) return null;
 
@@ -48,7 +67,22 @@ export const MetaSnapshot = memo(function MetaSnapshot({ topHeroes, top8Heroes, 
         {showEventMode ? (
           // Event weekend: show top 8 hero placements
           <>
-            {top8Heroes!.slice(0, 10).map((t8, i) => {
+            <div className="flex items-center gap-1 px-4 py-2 border-b border-fab-border">
+              {SORT_OPTIONS.map((opt) => (
+                <button
+                  key={opt.key}
+                  onClick={() => setSortBy(opt.key)}
+                  className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${
+                    sortBy === opt.key
+                      ? "bg-teal-500/15 text-teal-400"
+                      : "text-fab-muted hover:text-fab-text"
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+            {sortedTop8.slice(0, 10).map((t8, i) => {
               const heroInfo = getHeroByName(t8.hero);
               const heroClass = heroInfo?.classes[0];
               return (
