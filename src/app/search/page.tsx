@@ -72,6 +72,10 @@ function SearchContent() {
     initialType && (["all", "import", "achievement", "placement"] as TypeFilter[]).includes(initialType) ? initialType : "placement"
   );
   const [page, setPage] = useState(0);
+  const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
+  const handleDeleteFeed = useCallback((eventId: string) => {
+    setDeletedIds((prev) => new Set(prev).add(eventId));
+  }, []);
 
   // Spotlight state
   const { entries: lbEntries } = useLeaderboard();
@@ -100,7 +104,7 @@ function SearchContent() {
     const importCutoff = yesterday.getTime();
     const appLaunch = new Date("2026-02-24").getTime();
 
-    let source = allFeedEvents;
+    let source = allFeedEvents.filter((e) => !deletedIds.has(e.id));
 
     if (scope === "friends") {
       source = source.filter((e) => socialUserIds.has(e.userId));
@@ -124,7 +128,7 @@ function SearchContent() {
     });
 
     return source;
-  }, [allFeedEvents, scope, typeFilter, socialUserIds]);
+  }, [allFeedEvents, scope, typeFilter, socialUserIds, deletedIds]);
 
   const allGroups = useMemo(() => groupConsecutiveEvents(filteredEvents), [filteredEvents]);
   const totalPages = Math.max(1, Math.ceil(allGroups.length / PAGE_SIZE));
@@ -344,7 +348,7 @@ function SearchContent() {
               <>
                 <div className="space-y-3">
                   {groups.map((group) => (
-                    <GroupedFeedCard key={group.events[0].id} group={group} rankMap={rankMap} eventTierMap={eventTierMap} userId={user?.uid} />
+                    <GroupedFeedCard key={group.events[0].id} group={group} rankMap={rankMap} eventTierMap={eventTierMap} userId={user?.uid} isAdmin={isAdmin} onDelete={handleDeleteFeed} />
                   ))}
                 </div>
 

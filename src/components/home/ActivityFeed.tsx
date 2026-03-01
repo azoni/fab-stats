@@ -32,13 +32,17 @@ function readStored<T extends string>(key: string, valid: T[], fallback: T): T {
 export function ActivityFeed({ rankMap, eventTierMap }: { rankMap?: Map<string, 1 | 2 | 3 | 4 | 5>; eventTierMap?: Map<string, { border: string; shadow: string }> }) {
   const router = useRouter();
   const { events, loading } = useFeed();
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const { friends } = useFriends();
   const { favorites } = useFavorites();
   const [scope, _setScope] = useState<ScopeTab>(() => readStored(SCOPE_KEY, ["community", "friends"], "community"));
   const [typeFilter, _setTypeFilter] = useState<TypeFilter>(() => readStored(TYPE_KEY, ["all", "import", "achievement", "placement"], "placement"));
 
   const [page, setPage] = useState(0);
+  const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
+  const handleDelete = useCallback((eventId: string) => {
+    setDeletedIds((prev) => new Set(prev).add(eventId));
+  }, []);
 
   const setScope = useCallback((v: ScopeTab) => { _setScope(v); setPage(0); localStorage.setItem(SCOPE_KEY, v); }, []);
   const setTypeFilter = useCallback((v: TypeFilter) => { _setTypeFilter(v); setPage(0); localStorage.setItem(TYPE_KEY, v); }, []);
@@ -65,7 +69,7 @@ export function ActivityFeed({ rankMap, eventTierMap }: { rankMap?: Map<string, 
     const importCutoff = yesterday.getTime();
     const appLaunch = new Date("2026-02-24").getTime();
 
-    let source = events;
+    let source = events.filter((e) => !deletedIds.has(e.id));
 
     // Scope filter
     if (scope === "friends") {
@@ -93,7 +97,7 @@ export function ActivityFeed({ rankMap, eventTierMap }: { rankMap?: Map<string, 
     });
 
     return source;
-  }, [events, scope, typeFilter, socialUserIds]);
+  }, [events, scope, typeFilter, socialUserIds, deletedIds]);
 
   // Group consecutive imports for cleaner display
   const allGroups = useMemo(() => groupConsecutiveEvents(filteredEvents), [filteredEvents]);
@@ -182,7 +186,7 @@ export function ActivityFeed({ rankMap, eventTierMap }: { rankMap?: Map<string, 
                 }}
                 className="cursor-pointer"
               >
-                <GroupedFeedCard group={group} compact rankMap={rankMap} eventTierMap={eventTierMap} userId={user?.uid} />
+                <GroupedFeedCard group={group} compact rankMap={rankMap} eventTierMap={eventTierMap} userId={user?.uid} isAdmin={isAdmin} onDelete={handleDelete} />
               </div>
             ))}
             {/* Invisible spacers to maintain consistent height on partial pages */}

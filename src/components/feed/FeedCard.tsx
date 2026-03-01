@@ -3,7 +3,7 @@ import { useState, useCallback } from "react";
 import Link from "next/link";
 import type { FeedEvent, ImportFeedEvent } from "@/types";
 import { rankBorderClass } from "@/lib/leaderboard-ranks";
-import { FEED_REACTIONS, addFeedReaction, removeFeedReaction } from "@/lib/feed";
+import { FEED_REACTIONS, addFeedReaction, removeFeedReaction, deleteFeedEvent } from "@/lib/feed";
 
 export interface FeedGroup {
   events: FeedEvent[];
@@ -272,6 +272,53 @@ function ReactionBar({ event, userId, compact }: { event: FeedEvent; userId?: st
   );
 }
 
+// ── Delete button ──
+
+function DeleteFeedButton({ eventId, onDelete }: { eventId: string; onDelete: (id: string) => void }) {
+  const [confirming, setConfirming] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  return (
+    <div className="absolute top-1 right-1 z-10" onClick={(e) => e.stopPropagation()}>
+      {confirming ? (
+        <div className="flex items-center gap-1 bg-fab-bg border border-fab-border rounded-md px-1.5 py-0.5">
+          <button
+            onClick={async () => {
+              setDeleting(true);
+              try {
+                await deleteFeedEvent(eventId);
+                onDelete(eventId);
+              } catch { /* silent */ }
+              setDeleting(false);
+              setConfirming(false);
+            }}
+            disabled={deleting}
+            className="text-[10px] text-red-400 hover:text-red-300 font-medium disabled:opacity-50"
+          >
+            {deleting ? "..." : "Delete"}
+          </button>
+          <button
+            onClick={() => setConfirming(false)}
+            className="text-[10px] text-fab-dim hover:text-fab-muted"
+          >
+            Cancel
+          </button>
+        </div>
+      ) : (
+        <button
+          onClick={() => setConfirming(true)}
+          className="opacity-0 group-hover/feed:opacity-100 transition-opacity p-0.5 rounded hover:bg-red-500/10 text-fab-dim hover:text-red-400"
+          title="Delete feed event"
+        >
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      )}
+    </div>
+  );
+}
+
 // ── Hero pill helper ──
 
 function HeroPill({ hero, compact }: { hero: string; compact?: boolean }) {
@@ -286,13 +333,18 @@ function HeroPill({ hero, compact }: { hero: string; compact?: boolean }) {
 
 // ── Content components ──
 
-export function FeedCard({ event, compact, rankMap, eventTierMap, userId }: { event: FeedEvent; compact?: boolean; rankMap?: Map<string, 1 | 2 | 3 | 4 | 5>; eventTierMap?: Map<string, { border: string; shadow: string }>; userId?: string }) {
+export function FeedCard({ event, compact, rankMap, eventTierMap, userId, isAdmin, onDelete }: { event: FeedEvent; compact?: boolean; rankMap?: Map<string, 1 | 2 | 3 | 4 | 5>; eventTierMap?: Map<string, { border: string; shadow: string }>; userId?: string; isAdmin?: boolean; onDelete?: (eventId: string) => void }) {
   const tierStyle = eventTierMap?.get(event.userId);
+  const canDelete = isAdmin || (userId && userId === event.userId);
+
   return (
     <div
-      className={`bg-fab-surface border border-fab-border rounded-lg ${compact ? "px-3 py-2" : "p-4"}`}
+      className={`bg-fab-surface border border-fab-border rounded-lg ${compact ? "px-3 py-2" : "p-4"} relative group/feed`}
       style={tierStyle ? { borderColor: tierStyle.border, boxShadow: tierStyle.shadow } : undefined}
     >
+      {canDelete && onDelete && (
+        <DeleteFeedButton eventId={event.id} onDelete={onDelete} />
+      )}
       <div className={`flex items-center ${compact ? "gap-2" : "gap-3 items-start"}`}>
         <FeedCardHeader event={event} compact={compact} rankMap={rankMap} />
         <div className="flex-1 min-w-0">
@@ -430,7 +482,7 @@ function GroupedImportRow({ event }: { event: ImportFeedEvent }) {
   );
 }
 
-export function GroupedFeedCard({ group, compact, rankMap, eventTierMap, userId }: { group: FeedGroup; compact?: boolean; rankMap?: Map<string, 1 | 2 | 3 | 4 | 5>; eventTierMap?: Map<string, { border: string; shadow: string }>; userId?: string }) {
+export function GroupedFeedCard({ group, compact, rankMap, eventTierMap, userId, isAdmin, onDelete }: { group: FeedGroup; compact?: boolean; rankMap?: Map<string, 1 | 2 | 3 | 4 | 5>; eventTierMap?: Map<string, { border: string; shadow: string }>; userId?: string; isAdmin?: boolean; onDelete?: (eventId: string) => void }) {
   const [expanded, setExpanded] = useState(false);
   const first = group.events[0];
   const isSingle = group.events.length === 1;
@@ -440,7 +492,7 @@ export function GroupedFeedCard({ group, compact, rankMap, eventTierMap, userId 
     group.events.flatMap((e) => e.type === "import" ? (e.topHeroes || []) : []),
   )];
 
-  if (isSingle) return <FeedCard event={first} compact={compact} rankMap={rankMap} eventTierMap={eventTierMap} userId={userId} />;
+  if (isSingle) return <FeedCard event={first} compact={compact} rankMap={rankMap} eventTierMap={eventTierMap} userId={userId} isAdmin={isAdmin} onDelete={onDelete} />;
 
   // Multi-event groups are only for imports
   const tierStyle = eventTierMap?.get(first.userId);

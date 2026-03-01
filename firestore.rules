@@ -206,9 +206,9 @@ service cloud.firestore {
       // Reactions: any authenticated user can toggle reactions
       allow update: if request.auth != null
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reactions']);
-      // Owner can delete their own feed events (e.g. when deleting an event)
+      // Owner or admin can delete feed events
       allow delete: if request.auth != null
-        && resource.data.userId == request.auth.uid;
+        && (resource.data.userId == request.auth.uid || isAdmin());
     }
 
     // ── Earned achievements tracking (per user) ──

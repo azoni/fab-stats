@@ -210,6 +210,12 @@ export async function getFeedEventsPaginated(
   return { events, hasMore, lastTimestamp };
 }
 
+/** Delete a single feed event by ID. */
+export async function deleteFeedEvent(eventId: string): Promise<void> {
+  await deleteDoc(doc(db, "feedEvents", eventId));
+  invalidateFeedCache();
+}
+
 // ── Reactions ──
 
 export const FEED_REACTIONS = [
