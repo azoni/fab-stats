@@ -17,21 +17,17 @@ export function AchievementShowcaseCard({ achievements }: AchievementShowcaseCar
   if (achievements.length === 0) return null;
 
   return (
-    <div className="spotlight-card spotlight-rising bg-fab-surface border border-fab-border rounded-lg px-4 py-3 relative overflow-hidden">
-      <div className="space-y-2">
+    <div className="spotlight-card spotlight-rising bg-fab-surface border border-fab-border rounded-lg px-3 py-2 relative overflow-hidden">
+      <div className="flex items-center gap-2">
         {achievements.slice(0, 3).map((ach) => {
           const style = RARITY_STYLE[ach.rarity] || RARITY_STYLE.common;
           return (
-            <div
-              key={ach.id}
-              className={`flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg border ${style.border} ${style.glow} bg-fab-bg/50`}
-            >
-              <span className="text-lg shrink-0">{ach.icon}</span>
-              <div className="min-w-0 flex-1">
-                <p className={`text-xs font-semibold truncate ${style.text}`}>{ach.name}</p>
-                <p className="text-[9px] text-fab-dim truncate">{ach.description}</p>
+            <div key={ach.id} className={`flex items-center gap-1.5 px-2 py-1 rounded border ${style.border} ${style.glow} bg-fab-bg/50 flex-1 min-w-0`}>
+              <span className="text-sm shrink-0">{ach.icon}</span>
+              <div className="min-w-0">
+                <p className={`text-[10px] font-semibold truncate ${style.text}`}>{ach.name}</p>
+                <p className="text-[8px] text-fab-dim truncate">{ach.rarity}</p>
               </div>
-              <span className={`text-[9px] font-medium capitalize shrink-0 ${style.text}`}>{ach.rarity}</span>
             </div>
           );
         })}

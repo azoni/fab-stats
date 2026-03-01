@@ -1,13 +1,7 @@
 "use client";
 import type { OverallStats, HeroStats, EventStats } from "@/types";
 
-type StatType =
-  | "winRate"
-  | "totalMatches"
-  | "longestWinStreak"
-  | "uniqueHeroes"
-  | "uniqueOpponents"
-  | "eventsPlayed";
+type StatType = "winRate" | "totalMatches" | "longestWinStreak" | "uniqueHeroes" | "uniqueOpponents" | "eventsPlayed";
 
 interface StatHighlightCardProps {
   stat: StatType;
@@ -20,7 +14,6 @@ interface StatHighlightCardProps {
 
 function getStatValue(props: StatHighlightCardProps): { value: string; label: string; sub?: string } {
   const { stat, filter, overall, heroStats, eventStats, opponentCount } = props;
-
   switch (stat) {
     case "winRate": {
       if (filter) {
@@ -51,16 +44,10 @@ export function StatHighlightCard(props: StatHighlightCardProps) {
   const { value, label, sub } = getStatValue(props);
 
   return (
-    <div className="spotlight-card spotlight-winrate bg-fab-surface border border-fab-border rounded-lg px-4 py-3 relative overflow-hidden">
-      <div className="flex items-center gap-4">
-        <div className="shrink-0">
-          <p className="text-2xl font-black text-fab-text leading-none">{value}</p>
-        </div>
-        <div className="min-w-0">
-          <p className="text-xs font-semibold text-fab-muted">{label}</p>
-          {sub && <p className="text-[10px] text-fab-dim mt-0.5">{sub}</p>}
-        </div>
-      </div>
+    <div className="spotlight-card spotlight-winrate bg-fab-surface border border-fab-border rounded-lg px-3 py-2 relative overflow-hidden h-full">
+      <p className="text-xl font-black text-fab-text leading-tight">{value}</p>
+      <p className="text-[10px] text-fab-muted font-medium mt-0.5">{label}</p>
+      {sub && <p className="text-[9px] text-fab-dim">{sub}</p>}
     </div>
   );
 }

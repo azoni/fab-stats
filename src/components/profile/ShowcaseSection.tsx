@@ -35,15 +35,12 @@ interface ShowcaseSectionProps {
   achievements: Achievement[];
 }
 
-// Big cards: multi-row, taller content
-// Small cards: single-row, compact
-const BIG_TYPES = new Set(["heroSpotlight", "rivalry", "achievements", "formatMastery", "eventRecap"]);
-const MAX_BIG = 2;
-const MAX_SMALL = 2;
-const MAX_CARDS = MAX_BIG + MAX_SMALL;
+// Point system: small=1 (half-width), medium=2 (full-width). Budget = 4.
+const MEDIUM_TYPES = new Set(["heroSpotlight", "rivalry", "achievements", "formatMastery", "eventRecap"]);
+const MAX_POINTS = 4;
 
-export function isCardBig(type: ShowcaseCard["type"]): boolean {
-  return BIG_TYPES.has(type);
+export function getCardSize(type: ShowcaseCard["type"]): 1 | 2 {
+  return MEDIUM_TYPES.has(type) ? 2 : 1;
 }
 
 export function ShowcaseSection({
@@ -63,23 +60,13 @@ export function ShowcaseSection({
   const [showPicker, setShowPicker] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  const slotCounts = useMemo(() => {
-    let big = 0;
-    let small = 0;
-    for (const c of cards) {
-      if (isCardBig(c.type)) big++;
-      else small++;
-    }
-    return { big, small };
-  }, [cards]);
-
-  const canAddMore = cards.length < MAX_CARDS && (slotCounts.big < MAX_BIG || slotCounts.small < MAX_SMALL);
+  const usedPoints = useMemo(() => cards.reduce((sum, c) => sum + getCardSize(c.type), 0), [cards]);
+  const pointsLeft = MAX_POINTS - usedPoints;
 
   const saveCards = useCallback(async (updated: ShowcaseCard[]) => {
     setCards(updated);
     setSaving(true);
     try {
-      // Strip undefined values from card objects — Firestore rejects them
       const cleaned = updated.map((card) => {
         const clean: Record<string, unknown> = {};
         for (const [k, v] of Object.entries(card)) {
@@ -114,13 +101,10 @@ export function ShowcaseSection({
     saveCards(updated);
   }, [cards, saveCards]);
 
-  // Empty state for visitors
-  if (cards.length === 0 && !isOwner) {
-    return null;
-  }
+  if (cards.length === 0 && !isOwner) return null;
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-2.5">
       {/* Edit toggle */}
       {isOwner && (
         <div className="flex items-center justify-between">
@@ -130,9 +114,7 @@ export function ShowcaseSection({
             <button
               onClick={() => { setIsEditing(!isEditing); setShowPicker(false); }}
               className={`text-[10px] font-medium px-2 py-1 rounded transition-colors ${
-                isEditing
-                  ? "bg-fab-gold/15 text-fab-gold"
-                  : "text-fab-muted hover:text-fab-text"
+                isEditing ? "bg-fab-gold/15 text-fab-gold" : "text-fab-muted hover:text-fab-text"
               }`}
             >
               {isEditing ? "Done" : "Edit"}
@@ -141,89 +123,55 @@ export function ShowcaseSection({
         </div>
       )}
 
-      {/* Cards */}
-      {cards.map((card, i) => (
-        <div key={`${card.type}-${i}`} className="relative group">
-          {/* Edit overlay */}
-          {isEditing && (
-            <div className="absolute -top-1 -right-1 z-10 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-              <button
-                onClick={() => moveCard(i, "up")}
-                disabled={i === 0}
-                className="w-5 h-5 rounded bg-fab-bg border border-fab-border text-fab-muted hover:text-fab-text disabled:opacity-30 flex items-center justify-center"
-                title="Move up"
-              >
-                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
-                </svg>
-              </button>
-              <button
-                onClick={() => moveCard(i, "down")}
-                disabled={i === cards.length - 1}
-                className="w-5 h-5 rounded bg-fab-bg border border-fab-border text-fab-muted hover:text-fab-text disabled:opacity-30 flex items-center justify-center"
-                title="Move down"
-              >
-                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-              <button
-                onClick={() => removeCard(i)}
-                className="w-5 h-5 rounded bg-red-500/20 border border-red-500/30 text-red-400 hover:bg-red-500/30 flex items-center justify-center"
-                title="Remove"
-              >
-                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-          )}
-
-          {/* Card render */}
-          <ShowcaseCardRenderer
-            card={card}
-            matches={matches}
-            heroStats={heroStats}
-            masteries={masteries}
-            eventStats={eventStats}
-            playoffFinishes={playoffFinishes}
-            opponentStats={opponentStats}
-            overall={overall}
-            achievements={achievements}
-          />
+      {/* 2-column grid */}
+      {cards.length > 0 && (
+        <div className="grid grid-cols-2 gap-2.5">
+          {cards.map((card, i) => {
+            const size = getCardSize(card.type);
+            return (
+              <div key={`${card.type}-${i}`} className={`relative group ${size === 2 ? "col-span-2" : "col-span-1"}`}>
+                {isEditing && (
+                  <div className="absolute -top-1 -right-1 z-10 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button onClick={() => moveCard(i, "up")} disabled={i === 0} className="w-4 h-4 rounded bg-fab-bg border border-fab-border text-fab-muted hover:text-fab-text disabled:opacity-30 flex items-center justify-center" title="Move up">
+                      <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" /></svg>
+                    </button>
+                    <button onClick={() => moveCard(i, "down")} disabled={i === cards.length - 1} className="w-4 h-4 rounded bg-fab-bg border border-fab-border text-fab-muted hover:text-fab-text disabled:opacity-30 flex items-center justify-center" title="Move down">
+                      <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
+                    </button>
+                    <button onClick={() => removeCard(i)} className="w-4 h-4 rounded bg-red-500/20 border border-red-500/30 text-red-400 hover:bg-red-500/30 flex items-center justify-center" title="Remove">
+                      <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                  </div>
+                )}
+                <ShowcaseCardRenderer card={card} matches={matches} heroStats={heroStats} masteries={masteries} eventStats={eventStats} playoffFinishes={playoffFinishes} opponentStats={opponentStats} overall={overall} achievements={achievements} />
+              </div>
+            );
+          })}
         </div>
-      ))}
+      )}
 
-      {/* Empty state for owner */}
+      {/* Empty state */}
       {cards.length === 0 && isOwner && !showPicker && (
-        <div className="bg-fab-surface/50 border border-dashed border-fab-border rounded-lg p-6 text-center">
+        <div className="bg-fab-surface/50 border border-dashed border-fab-border rounded-lg p-5 text-center">
           <p className="text-sm text-fab-muted mb-1">Customize your showcase</p>
           <p className="text-[10px] text-fab-dim mb-3">Pin your best stats, matches, and achievements</p>
-          <button
-            onClick={() => { setIsEditing(true); setShowPicker(true); }}
-            className="px-3 py-1.5 bg-fab-gold/15 text-fab-gold text-xs font-medium rounded-lg hover:bg-fab-gold/25 transition-colors"
-          >
+          <button onClick={() => { setIsEditing(true); setShowPicker(true); }} className="px-3 py-1.5 bg-fab-gold/15 text-fab-gold text-xs font-medium rounded-lg hover:bg-fab-gold/25 transition-colors">
             + Add Card
           </button>
         </div>
       )}
 
       {/* Add card button */}
-      {isEditing && cards.length > 0 && !showPicker && canAddMore && (
-        <button
-          onClick={() => setShowPicker(true)}
-          className="w-full py-2 border border-dashed border-fab-border rounded-lg text-xs text-fab-muted hover:text-fab-text hover:border-fab-muted transition-colors"
-        >
-          + Add Card ({slotCounts.big}/{MAX_BIG} large · {slotCounts.small}/{MAX_SMALL} compact)
+      {isEditing && cards.length > 0 && !showPicker && pointsLeft > 0 && (
+        <button onClick={() => setShowPicker(true)} className="w-full py-1.5 border border-dashed border-fab-border rounded-lg text-xs text-fab-muted hover:text-fab-text hover:border-fab-muted transition-colors">
+          + Add Card ({usedPoints}/{MAX_POINTS} pts)
         </button>
       )}
 
-      {/* Card limit reached */}
-      {isEditing && !canAddMore && cards.length > 0 && !showPicker && (
-        <p className="text-[10px] text-fab-dim text-center">Showcase full ({MAX_BIG} large + {MAX_SMALL} compact)</p>
+      {isEditing && pointsLeft <= 0 && cards.length > 0 && !showPicker && (
+        <p className="text-[10px] text-fab-dim text-center">Showcase full</p>
       )}
 
-      {/* Card picker */}
       {showPicker && (
         <CardPicker
           onAdd={addCard}
@@ -235,8 +183,7 @@ export function ShowcaseSection({
           playoffFinishes={playoffFinishes}
           achievements={achievements}
           existingCards={cards}
-          bigSlotsLeft={MAX_BIG - slotCounts.big}
-          smallSlotsLeft={MAX_SMALL - slotCounts.small}
+          pointsLeft={pointsLeft}
         />
       )}
     </div>
@@ -245,26 +192,8 @@ export function ShowcaseSection({
 
 // ── Card Renderer ──
 
-function ShowcaseCardRenderer({
-  card,
-  matches,
-  heroStats,
-  masteries,
-  eventStats,
-  playoffFinishes,
-  opponentStats,
-  overall,
-  achievements,
-}: {
-  card: ShowcaseCard;
-  matches: MatchRecord[];
-  heroStats: HeroStats[];
-  masteries: HeroMastery[];
-  eventStats: EventStats[];
-  playoffFinishes: PlayoffFinishData[];
-  opponentStats: OpponentStats[];
-  overall: OverallStats;
-  achievements: Achievement[];
+function ShowcaseCardRenderer({ card, matches, heroStats, masteries, eventStats, playoffFinishes, opponentStats, overall, achievements }: {
+  card: ShowcaseCard; matches: MatchRecord[]; heroStats: HeroStats[]; masteries: HeroMastery[]; eventStats: EventStats[]; playoffFinishes: PlayoffFinishData[]; opponentStats: OpponentStats[]; overall: OverallStats; achievements: Achievement[];
 }) {
   switch (card.type) {
     case "featuredMatch": {
@@ -299,18 +228,8 @@ function ShowcaseCardRenderer({
       if (achs.length === 0) return <MissingCard label="Achievements not found" />;
       return <AchievementShowcaseCard achievements={achs} />;
     }
-    case "statHighlight": {
-      return (
-        <StatHighlightCard
-          stat={(card.stat || "winRate") as "winRate" | "totalMatches" | "longestWinStreak" | "uniqueHeroes" | "uniqueOpponents" | "eventsPlayed"}
-          filter={card.filter}
-          overall={overall}
-          heroStats={heroStats}
-          eventStats={eventStats}
-          opponentCount={opponentStats.length}
-        />
-      );
-    }
+    case "statHighlight":
+      return <StatHighlightCard stat={(card.stat || "winRate") as "winRate" | "totalMatches" | "longestWinStreak" | "uniqueHeroes" | "uniqueOpponents" | "eventsPlayed"} filter={card.filter} overall={overall} heroStats={heroStats} eventStats={eventStats} opponentCount={opponentStats.length} />;
     case "formatMastery":
       return <FormatMasteryCard matches={matches} />;
     default:
@@ -320,8 +239,8 @@ function ShowcaseCardRenderer({
 
 function MissingCard({ label }: { label: string }) {
   return (
-    <div className="bg-fab-surface border border-fab-border rounded-lg px-4 py-3">
-      <p className="text-xs text-fab-dim italic">{label}</p>
+    <div className="bg-fab-surface border border-fab-border rounded-lg px-3 py-2">
+      <p className="text-[10px] text-fab-dim italic">{label}</p>
     </div>
   );
 }
