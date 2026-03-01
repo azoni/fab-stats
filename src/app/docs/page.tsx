@@ -319,6 +319,30 @@ export default function DocsPage() {
           <p className="text-xs text-fab-dim mt-2">
             If you rank top 5 on multiple tabs, your profile shows the border from your highest rank.
           </p>
+          <p className="text-sm text-fab-muted mt-4 mb-2">
+            <span className="font-medium text-fab-text">Where borders appear</span> — Your ranked border
+            shows up in several places across the site:
+          </p>
+          <div className="space-y-2 text-sm text-fab-muted">
+            <p>
+              <span className="font-medium text-fab-text">Leaderboard cards</span> — Each leaderboard
+              entry shows the ranked border for that tab&apos;s top 5.
+            </p>
+            <p>
+              <span className="font-medium text-fab-text">Homepage profile card</span> — Your profile
+              card on the homepage displays the border from your highest overall rank, along with your
+              match count, win rate, events, and top hero.
+            </p>
+            <p>
+              <span className="font-medium text-fab-text">Shareable profile card</span> — When you
+              capture your profile as an image, the card includes your ranked border, tier ring around
+              your avatar, trophy case, and armory garden.
+            </p>
+            <p>
+              <span className="font-medium text-fab-text">Player Spotlight</span> — Featured players
+              on the homepage show their ranked borders on spotlight cards.
+            </p>
+          </div>
         </section>
 
         {/* Weekly & Monthly Stats */}

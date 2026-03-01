@@ -136,43 +136,73 @@ export default function Dashboard() {
     <div className="space-y-8">
       {/* Full-width nav bar (logged-in users with matches) */}
       {hasMatches && (
-        <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide">
-          <Link href="/matches" className="nav-btn nav-btn-matches group inline-flex items-center gap-2 px-4 py-2.5 bg-fab-surface border border-fab-border rounded-xl shrink-0 hover:border-fab-muted transition-colors">
-            <SwordsIcon className="nav-icon w-5 h-5 text-red-400/60 group-hover:text-red-400 shrink-0" />
-            <span className="text-xs font-semibold text-fab-muted group-hover:text-fab-text transition-colors">Matches</span>
-            {(overall.totalMatches + overall.totalByes) > 0 && (
-              <span className="text-[10px] text-fab-dim font-medium">{overall.totalMatches + overall.totalByes}</span>
-            )}
+        <div className="flex items-center gap-3 overflow-x-auto scrollbar-hide pb-0.5">
+          {/* Matches — crimson combat */}
+          <Link href="/matches" className="group relative flex items-center gap-3 pl-3 pr-5 py-3 rounded-2xl shrink-0 overflow-hidden bg-gradient-to-br from-red-500/10 via-red-950/20 to-transparent border border-red-500/20 hover:border-red-400/40 hover:shadow-[0_0_24px_rgba(239,68,68,0.08)] hover:-translate-y-0.5 transition-all duration-300">
+            <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-red-400/40 to-transparent" />
+            <div className="w-10 h-10 rounded-xl bg-red-500/15 flex items-center justify-center shrink-0 ring-1 ring-inset ring-red-500/20 group-hover:bg-red-500/20 group-hover:ring-red-400/30 transition-all">
+              <SwordsIcon className="w-5 h-5 text-red-400" />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-fab-text leading-tight">Matches</p>
+              {(overall.totalMatches + overall.totalByes) > 0 && (
+                <p className="text-[11px] text-red-400/70 font-semibold leading-tight">{overall.totalMatches + overall.totalByes}</p>
+              )}
+            </div>
           </Link>
-          <Link href="/events" className="nav-btn nav-btn-events group inline-flex items-center gap-2 px-4 py-2.5 bg-fab-surface border border-fab-border rounded-xl shrink-0 hover:border-fab-muted transition-colors">
-            <CalendarIcon className="nav-icon w-5 h-5 text-blue-400/60 group-hover:text-blue-400 shrink-0" />
-            <span className="text-xs font-semibold text-fab-muted group-hover:text-fab-text transition-colors">Events</span>
-            {eventStats.length > 0 && (
-              <span className="text-[10px] text-fab-dim font-medium">{eventStats.length}</span>
-            )}
+
+          {/* Events — sapphire strategy */}
+          <Link href="/events" className="group relative flex items-center gap-3 pl-3 pr-5 py-3 rounded-2xl shrink-0 overflow-hidden bg-gradient-to-br from-blue-500/10 via-blue-950/20 to-transparent border border-blue-500/20 hover:border-blue-400/40 hover:shadow-[0_0_24px_rgba(59,130,246,0.08)] hover:-translate-y-0.5 transition-all duration-300">
+            <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-blue-400/40 to-transparent" />
+            <div className="w-10 h-10 rounded-xl bg-blue-500/15 flex items-center justify-center shrink-0 ring-1 ring-inset ring-blue-500/20 group-hover:bg-blue-500/20 group-hover:ring-blue-400/30 transition-all">
+              <CalendarIcon className="w-5 h-5 text-blue-400" />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-fab-text leading-tight">Events</p>
+              {eventStats.length > 0 && (
+                <p className="text-[11px] text-blue-400/70 font-semibold leading-tight">{eventStats.length}</p>
+              )}
+            </div>
           </Link>
-          <Link href="/opponents" className="nav-btn nav-btn-opponents group inline-flex items-center gap-2 px-4 py-2.5 bg-fab-surface border border-fab-border rounded-xl shrink-0 hover:border-fab-muted transition-colors">
-            <OpponentsIcon className="nav-icon w-5 h-5 text-purple-400/60 group-hover:text-purple-400 shrink-0" />
-            <span className="text-xs font-semibold text-fab-muted group-hover:text-fab-text transition-colors">Opponents</span>
-            {allOpponentStats.length > 0 && (
-              <span className="text-[10px] text-fab-dim font-medium">{allOpponentStats.length}</span>
-            )}
+
+          {/* Opponents — amethyst rivalry */}
+          <Link href="/opponents" className="group relative flex items-center gap-3 pl-3 pr-5 py-3 rounded-2xl shrink-0 overflow-hidden bg-gradient-to-br from-purple-500/10 via-purple-950/20 to-transparent border border-purple-500/20 hover:border-purple-400/40 hover:shadow-[0_0_24px_rgba(168,85,247,0.08)] hover:-translate-y-0.5 transition-all duration-300">
+            <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-purple-400/40 to-transparent" />
+            <div className="w-10 h-10 rounded-xl bg-purple-500/15 flex items-center justify-center shrink-0 ring-1 ring-inset ring-purple-500/20 group-hover:bg-purple-500/20 group-hover:ring-purple-400/30 transition-all">
+              <OpponentsIcon className="w-5 h-5 text-purple-400" />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-fab-text leading-tight">Opponents</p>
+              {allOpponentStats.length > 0 && (
+                <p className="text-[11px] text-purple-400/70 font-semibold leading-tight">{allOpponentStats.length}</p>
+              )}
+            </div>
           </Link>
-          <Link href="/trends" className="nav-btn nav-btn-trends group inline-flex items-center gap-2 px-4 py-2.5 bg-fab-surface border border-fab-border rounded-xl shrink-0 hover:border-fab-muted transition-colors">
-            <TrendsIcon className="nav-icon w-5 h-5 text-emerald-400/60 group-hover:text-emerald-400 shrink-0" />
-            <span className="text-xs font-semibold text-fab-muted group-hover:text-fab-text transition-colors">Trends</span>
+
+          {/* Trends — emerald growth */}
+          <Link href="/trends" className="group relative flex items-center gap-3 pl-3 pr-5 py-3 rounded-2xl shrink-0 overflow-hidden bg-gradient-to-br from-emerald-500/10 via-emerald-950/20 to-transparent border border-emerald-500/20 hover:border-emerald-400/40 hover:shadow-[0_0_24px_rgba(16,185,129,0.08)] hover:-translate-y-0.5 transition-all duration-300">
+            <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-emerald-400/40 to-transparent" />
+            <div className="w-10 h-10 rounded-xl bg-emerald-500/15 flex items-center justify-center shrink-0 ring-1 ring-inset ring-emerald-500/20 group-hover:bg-emerald-500/20 group-hover:ring-emerald-400/30 transition-all">
+              <TrendsIcon className="w-5 h-5 text-emerald-400" />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-fab-text leading-tight">Trends</p>
+              <p className="text-[11px] text-emerald-400/70 font-semibold leading-tight">Analytics</p>
+            </div>
           </Link>
-          <Link href="/compare" className="nav-btn nav-btn-versus group inline-flex items-center gap-2 px-4 py-2.5 bg-fab-surface border border-fab-border rounded-xl shrink-0 hover:border-fab-muted transition-colors">
-            <svg className="nav-icon w-5 h-5 text-violet-400/60 group-hover:text-violet-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-            </svg>
-            <span className="text-xs font-semibold text-fab-muted group-hover:text-fab-text transition-colors">Versus</span>
-          </Link>
-          <Link href="/events?import=1" className="nav-btn nav-btn-log group inline-flex items-center gap-2 px-4 py-2.5 bg-fab-surface border border-fab-border border-dashed rounded-xl shrink-0 hover:border-fab-muted transition-colors">
-            <svg className="nav-icon w-5 h-5 text-fab-gold/60 group-hover:text-fab-gold shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-            </svg>
-            <span className="text-xs font-semibold text-fab-muted group-hover:text-fab-text transition-colors">Log</span>
+
+          {/* Log — gold action */}
+          <Link href="/events?import=1" className="group relative flex items-center gap-3 pl-3 pr-5 py-3 rounded-2xl shrink-0 overflow-hidden bg-gradient-to-br from-fab-gold/10 via-amber-950/20 to-transparent border border-dashed border-fab-gold/25 hover:border-fab-gold/45 hover:shadow-[0_0_24px_rgba(201,168,76,0.08)] hover:-translate-y-0.5 transition-all duration-300">
+            <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-fab-gold/40 to-transparent" />
+            <div className="w-10 h-10 rounded-xl bg-fab-gold/15 flex items-center justify-center shrink-0 ring-1 ring-inset ring-fab-gold/20 group-hover:bg-fab-gold/20 group-hover:ring-fab-gold/30 transition-all">
+              <svg className="w-5 h-5 text-fab-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-sm font-bold text-fab-text leading-tight">Log</p>
+              <p className="text-[11px] text-fab-gold/70 font-semibold leading-tight">Quick add</p>
+            </div>
           </Link>
         </div>
       )}

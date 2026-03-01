@@ -33,14 +33,14 @@ export function getWeekStart(): string {
   const now = new Date();
   const day = now.getDay(); // 0=Sun, 1=Mon, ..., 6=Sat
   const diff = day === 0 ? 6 : day - 1; // days since Monday
-  const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - diff);
-  return monday.toISOString().split("T")[0];
+  const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - diff);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
 /** Get ISO date string (YYYY-MM-DD) for the 1st of the current month */
 export function getMonthStart(): string {
   const now = new Date();
-  return new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split("T")[0];
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
 }
 
 export async function updateLeaderboardEntry(

@@ -11,6 +11,11 @@ interface OnThisDayProps {
   matches: MatchRecord[];
 }
 
+interface RoundInfo {
+  label: string;
+  isPlayoff: boolean;
+}
+
 interface YearMemory {
   year: number;
   matches: MatchRecord[];
@@ -21,21 +26,62 @@ interface YearMemory {
   events: string[];
   /** Best playoff placement detected from match round numbers */
   placement: string | null;
+  /** Pre-computed round label and playoff flag for each match (parallel to matches array) */
+  roundInfo: RoundInfo[];
 }
 
-/** Detect the best playoff placement from a set of matches using getRoundNumber. */
-function detectPlacement(ms: MatchRecord[]): string | null {
+/**
+ * Compute effective round numbers for all matches in a year.
+ * Detects unnumbered playoff matches alongside numbered swiss rounds:
+ * if an event has 3+ swiss rounds and a few unnumbered matches (no explicit
+ * playoff labels), those unnumbered matches are inferred as playoff rounds.
+ */
+function computeEffectiveRounds(yearMatches: MatchRecord[]): Map<MatchRecord, number> {
+  const effective = new Map<MatchRecord, number>();
+  for (const m of yearMatches) effective.set(m, getRoundNumber(m));
+
+  // Group by event to find unnumbered matches alongside swiss rounds
+  const byEvent = new Map<string, MatchRecord[]>();
+  for (const m of yearMatches) {
+    const event = m.notes?.split(" | ")[0]?.trim() || "";
+    if (!byEvent.has(event)) byEvent.set(event, []);
+    byEvent.get(event)!.push(m);
+  }
+
+  for (const eventMatches of byEvent.values()) {
+    const swissCount = eventMatches.filter((m) => {
+      const rn = getRoundNumber(m);
+      return rn > 0 && rn < 1000;
+    }).length;
+    const unnumbered = eventMatches.filter((m) => getRoundNumber(m) === 0);
+    const hasExplicitPlayoffs = eventMatches.some((m) => getRoundNumber(m) >= 1000);
+
+    // Heuristic: 3+ swiss rounds, no explicit playoffs, 1-3 unnumbered → inferred playoffs
+    if (swissCount >= 3 && !hasExplicitPlayoffs && unnumbered.length > 0 && unnumbered.length <= 3) {
+      // Order wins first (rounds you advanced through), then non-wins (elimination round)
+      const ordered = [
+        ...unnumbered.filter((m) => m.result === MatchResult.Win),
+        ...unnumbered.filter((m) => m.result !== MatchResult.Win),
+      ];
+      ordered.forEach((m, i) => effective.set(m, 1001 + i));
+    }
+  }
+
+  return effective;
+}
+
+/** Derive placement from the highest effective playoff round and its result. */
+function detectPlacement(effective: Map<MatchRecord, number>, ms: MatchRecord[]): string | null {
   let best = 0;
   let wonBest = false;
   for (const m of ms) {
-    const rn = getRoundNumber(m);
+    const rn = effective.get(m) ?? 0;
     if (rn >= 1000 && rn > best) {
       best = rn;
       wonBest = m.result === MatchResult.Win;
     }
   }
   if (best === 0) return null;
-  // 1003 = Finals, 1002 = Semis/Top 4, 1001 = Quarters/Top 8
   if (best >= 1003) return wonBest ? "Champion" : "Finalist";
   if (best >= 1002) return wonBest ? "Finalist" : "Top 4";
   if (best >= 1001) return wonBest ? "Top 4" : "Top 8";
@@ -105,15 +151,35 @@ export function OnThisDay({ matches }: OnThisDayProps) {
 
     const result: YearMemory[] = [];
     for (const [year, yearMatches] of byYear) {
-      yearMatches.sort((a, b) => getRoundNumber(a) - getRoundNumber(b));
+      const effective = computeEffectiveRounds(yearMatches);
+
+      // Sort: numbered rounds first, inferred playoffs after swiss, unknown (0) last
+      yearMatches.sort((a, b) => {
+        const rnA = effective.get(a) ?? 0;
+        const rnB = effective.get(b) ?? 0;
+        if (rnA === 0 && rnB === 0) return 0;
+        if (rnA === 0) return 1;
+        if (rnB === 0) return -1;
+        return rnA - rnB;
+      });
+
       const wins = yearMatches.filter((m) => m.result === MatchResult.Win).length;
       const losses = yearMatches.filter((m) => m.result === MatchResult.Loss).length;
       const draws = yearMatches.filter((m) => m.result === MatchResult.Draw).length;
       const heroes = [...new Set(yearMatches.map((m) => m.heroPlayed).filter((h) => h && h !== "Unknown"))];
       const events = [...new Set(yearMatches.map((m) => m.notes?.split(" | ")[0]).filter(Boolean))] as string[];
 
-      const placement = detectPlacement(yearMatches);
-      result.push({ year, matches: yearMatches, wins, losses, draws, heroes, events, placement });
+      const placement = detectPlacement(effective, yearMatches);
+      const roundInfo: RoundInfo[] = yearMatches.map((m) => {
+        const eff = effective.get(m) ?? 0;
+        if (eff >= 1003) return { label: "F", isPlayoff: true };
+        if (eff >= 1002) return { label: "SF", isPlayoff: true };
+        if (eff >= 1001) return { label: "QF", isPlayoff: true };
+        if (eff > 0) return { label: `R${eff}`, isPlayoff: false };
+        return { label: getRoundLabel(m), isPlayoff: getRoundNumber(m) >= 1000 };
+      });
+
+      result.push({ year, matches: yearMatches, wins, losses, draws, heroes, events, placement, roundInfo });
     }
 
     return result.sort((a, b) => b.year - a.year);
@@ -141,12 +207,15 @@ export function OnThisDay({ matches }: OnThisDayProps) {
       draws: mem.draws,
       heroes: mem.heroes,
       events: mem.events,
-      matches: mem.matches.map((m) => ({
+      placement: mem.placement,
+      matches: mem.matches.map((m, i) => ({
         opponentName: m.opponentName,
         opponentHero: m.opponentHero,
         result: m.result,
         format: m.format,
         notes: m.notes,
+        roundLabel: mem.roundInfo[i].label,
+        isPlayoff: mem.roundInfo[i].isPlayoff,
       })),
     })),
   };
@@ -226,8 +295,7 @@ export function OnThisDay({ matches }: OnThisDayProps) {
                           ? "bg-fab-loss"
                           : "bg-fab-draw";
                       const resultLabel = m.result === MatchResult.Win ? "W" : m.result === MatchResult.Loss ? "L" : "D";
-                      const roundLabel = getRoundLabel(m);
-                      const isPlayoff = getRoundNumber(m) >= 1000;
+                      const { label: roundLabel, isPlayoff } = mem.roundInfo[i];
 
                       return (
                         <div key={m.id || i} className="flex items-center gap-1.5 text-[11px]">

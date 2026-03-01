@@ -8,6 +8,8 @@ interface MemoryMatch {
   result: MatchResult;
   format: string;
   notes?: string;
+  roundLabel?: string;
+  isPlayoff?: boolean;
 }
 
 interface MemoryYear {
@@ -19,6 +21,7 @@ interface MemoryYear {
   heroes: string[];
   events: string[];
   matches: MemoryMatch[];
+  placement?: string | null;
 }
 
 export interface OnThisDayData {
@@ -73,6 +76,14 @@ export function OnThisDayCard({ data, theme }: { data: OnThisDayData; theme: Car
                       Undefeated
                     </span>
                   )}
+                  {mem.placement && (
+                    <span
+                      style={{ backgroundColor: "#a855f733", color: "#c084fc" }}
+                      className="text-[9px] px-1.5 py-0.5 rounded-full font-semibold"
+                    >
+                      {mem.placement}
+                    </span>
+                  )}
                 </div>
 
                 {/* Heroes */}
@@ -94,7 +105,8 @@ export function OnThisDayCard({ data, theme }: { data: OnThisDayData; theme: Car
                   {mem.matches.slice(0, 6).map((m, i) => {
                     const resultColor = m.result === MatchResult.Win ? t.win : m.result === MatchResult.Loss ? t.loss : t.draw;
                     const resultLabel = m.result === MatchResult.Win ? "W" : m.result === MatchResult.Loss ? "L" : "D";
-                    const round = m.notes?.match(/Round (\d+)/)?.[1];
+                    const roundLabel = m.roundLabel ?? (m.notes?.match(/Round (\d+)/)?.[1] ? `R${m.notes.match(/Round (\d+)/)![1]}` : m.format);
+                    const playoff = m.isPlayoff ?? false;
 
                     return (
                       <div key={i} className="flex items-center gap-2 text-[11px]">
@@ -110,8 +122,8 @@ export function OnThisDayCard({ data, theme }: { data: OnThisDayData; theme: Car
                         {m.opponentHero && m.opponentHero !== "Unknown" && (
                           <span style={{ color: t.dim }} className="truncate">({m.opponentHero})</span>
                         )}
-                        <span style={{ color: t.dim }} className="ml-auto shrink-0">
-                          {round ? `R${round}` : m.format}
+                        <span style={{ color: playoff ? "#c084fc" : t.dim, fontWeight: playoff ? 600 : undefined }} className="ml-auto shrink-0">
+                          {roundLabel}
                         </span>
                       </div>
                     );
