@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
-import { getAdminDashboardData, fetchChatStatsForUsers, backfillLeaderboard, broadcastMessage, fixMatchDates, backfillGemIds, backfillMatchLinking, backfillH2H, type AdminDashboardData, type AdminUserStats } from "@/lib/admin";
+import { getAdminDashboardData, backfillLeaderboard, broadcastMessage, fixMatchDates, backfillGemIds, backfillMatchLinking, backfillH2H, type AdminDashboardData, type AdminUserStats } from "@/lib/admin";
 import { getAllFeedback, updateFeedbackStatus } from "@/lib/feedback";
 import { getCreators, saveCreators } from "@/lib/creators";
 import { getEvents, saveEvents } from "@/lib/featured-events";
@@ -152,17 +152,6 @@ export default function AdminPage() {
     try {
       const [result, fb, cr, ev, analytics, polls, bannerData, badges, muted, showcaseData, themeDefault] = await Promise.all([getAdminDashboardData(), getAllFeedback(), getCreators(), getEvents(), getAnalytics(), getAllPolls(), getBanner(), getAllBadgeAssignments(), getMutedUserIds(), getEventShowcase(), getDefaultTheme()]);
       setData(result);
-      // Lazy-load chat stats in background (doesn't block dashboard render)
-      fetchChatStatsForUsers(result.users.map((u) => u.uid)).then((chatMap) => {
-        setData((prev) => {
-          if (!prev) return prev;
-          const updated = { ...prev, users: prev.users.map((u) => {
-            const cs = chatMap.get(u.uid);
-            return cs ? { ...u, chatMessages: cs.messages, chatCost: cs.cost, lastChatAt: cs.lastAt } : u;
-          })};
-          return updated;
-        });
-      }).catch(() => {});
       setFeedback(fb);
       setCreatorsList(cr);
       setEventsList(ev.map((e: any) => ({

@@ -83,12 +83,30 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       content: m.content,
     }));
 
+    // Show user message immediately (don't wait for Firestore sync)
+    const tempId = `pending-${Date.now()}`;
+    setMessages(prev => [...prev, {
+      id: tempId,
+      role: "user" as const,
+      content: text,
+      createdAt: new Date().toISOString(),
+    }]);
+
     try {
       const idToken = await user.getIdToken();
       const result: ChatResponse = await sendChatMessage(idToken, text, history);
 
+      // Show assistant response immediately from function result
+      setMessages(prev => [...prev, {
+        id: result.messageId || `resp-${Date.now()}`,
+        role: "assistant" as const,
+        content: result.response,
+        createdAt: new Date().toISOString(),
+      }]);
       setRateLimits(result.rateLimits);
     } catch (err: any) {
+      // Remove optimistic user message on failure
+      setMessages(prev => prev.filter(m => m.id !== tempId));
       if (err.status === 429) {
         const minutes = err.retryAfter ? Math.ceil(err.retryAfter / 60) : 1;
         const limitType = err.type === "daily" ? "daily" : "hourly";
