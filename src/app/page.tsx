@@ -56,7 +56,8 @@ export default function Dashboard() {
   const overall = useMemo(() => computeOverallStats(matches), [matches]);
   const heroStats = useMemo(() => computeHeroStats(matches), [matches]);
   const eventStats = useMemo(() => computeEventStats(matches), [matches]);
-  const opponentStats = useMemo(() => computeOpponentStats(matches).filter((o) => o.totalMatches >= 3), [matches]);
+  const allOpponentStats = useMemo(() => computeOpponentStats(matches), [matches]);
+  const opponentStats = useMemo(() => allOpponentStats.filter((o) => o.totalMatches >= 3), [allOpponentStats]);
   const achievements = useMemo(() => evaluateAchievements(matches, overall, heroStats, opponentStats), [matches, overall, heroStats, opponentStats]);
   const bestFinish = useMemo(() => computeBestFinish(eventStats), [eventStats]);
   const userRanks = useMemo(() => user ? computeUserRanks(lbEntries, user.uid) : [], [user, lbEntries]);
@@ -404,8 +405,8 @@ export default function Dashboard() {
               <Link href="/opponents" className="nav-btn nav-btn-opponents group flex flex-col items-center justify-center gap-1 bg-fab-surface border border-fab-border rounded-xl px-3 py-4 text-center">
                 <OpponentsIcon className="nav-icon w-6 h-6 text-purple-400/60 group-hover:text-purple-400 shrink-0" />
                 <span className="text-xs font-semibold text-fab-muted group-hover:text-fab-text transition-colors">Opponents</span>
-                {opponentStats.length > 0 && (
-                  <span className="text-[10px] text-fab-dim font-medium">{opponentStats.length}</span>
+                {allOpponentStats.length > 0 && (
+                  <span className="text-[10px] text-fab-dim font-medium">{allOpponentStats.length}</span>
                 )}
               </Link>
               <Link href="/trends" className="nav-btn nav-btn-trends group flex flex-col items-center justify-center gap-1 bg-fab-surface border border-fab-border rounded-xl px-3 py-4 text-center">
