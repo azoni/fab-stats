@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
-import { getAdminDashboardData, getChatGlobalStats, backfillLeaderboard, broadcastMessage, fixMatchDates, backfillGemIds, backfillMatchLinking, backfillH2H, type AdminDashboardData, type AdminUserStats } from "@/lib/admin";
+import { getAdminDashboardData, getChatGlobalStats, getUserChatStats, backfillLeaderboard, broadcastMessage, fixMatchDates, backfillGemIds, backfillMatchLinking, backfillH2H, type AdminDashboardData, type AdminUserStats } from "@/lib/admin";
 import { getAllFeedback, updateFeedbackStatus } from "@/lib/feedback";
 import { getCreators, saveCreators } from "@/lib/creators";
 import { getEvents, saveEvents } from "@/lib/featured-events";
@@ -2034,6 +2034,8 @@ function UserExpandedStats({ user: u, assignedBadgeIds, isMuted, onAssignBadge, 
   const hasStats = u.winRate !== undefined;
   const unassigned = ADMIN_BADGES.filter((b) => !assignedBadgeIds.includes(b.id));
   const [notifyUser, setNotifyUser] = useState(true);
+  const [chatStats, setChatStats] = useState<{ messages: number; cost: number; lastAt?: string } | null | undefined>(undefined);
+  useEffect(() => { getUserChatStats(u.uid).then(setChatStats); }, [u.uid]);
   const rarityColor: Record<string, string> = {
     legendary: "text-amber-400 bg-amber-400/10 border-amber-400/30",
     epic: "text-purple-400 bg-purple-400/10 border-purple-400/30",
@@ -2101,6 +2103,13 @@ function UserExpandedStats({ user: u, assignedBadgeIds, isMuted, onAssignBadge, 
         </>
       ) : (
         <div className="text-sm text-fab-dim">No leaderboard data yet. Stats sync when user visits their dashboard.</div>
+      )}
+      {chatStats && chatStats.messages > 0 && (
+        <div className="flex items-center gap-4 text-sm text-fab-muted">
+          <span>Chat: {chatStats.messages} messages</span>
+          <span>${chatStats.cost.toFixed(3)}</span>
+          {chatStats.lastAt && <span>Last: {new Date(chatStats.lastAt).toLocaleDateString()}</span>}
+        </div>
       )}
 
       {/* Badges */}

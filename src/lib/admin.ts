@@ -216,6 +216,22 @@ export async function getChatGlobalStats(): Promise<{ totalMessages: number; tot
   }
 }
 
+/** Fetch chat stats for a single user (on-demand, called when expanding a user row) */
+export async function getUserChatStats(userId: string): Promise<{ messages: number; cost: number; lastAt?: string } | null> {
+  try {
+    const snap = await getDoc(doc(db, "users", userId, "chatStats", "main"));
+    if (!snap.exists()) return null;
+    const d = snap.data();
+    return {
+      messages: (d.totalMessages as number) || 0,
+      cost: (d.totalCost as number) || 0,
+      lastAt: d.lastMessageAt as string | undefined,
+    };
+  } catch {
+    return null;
+  }
+}
+
 /** Backfill leaderboard entries for all users (re-computes nemesis, etc.) */
 export async function backfillLeaderboard(
   onProgress?: (done: number, total: number) => void
