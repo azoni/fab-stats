@@ -242,8 +242,13 @@ export default function PlayerProfile() {
   const userRanks = useMemo(() => profileUid ? computeUserRanks(lbEntries, profileUid) : [], [lbEntries, profileUid]);
   const bestRank = useMemo(() => getBestRank(userRanks), [userRanks]);
   const lastUpdated = useMemo(() => {
-    return sortedByDateDesc.length > 0 ? sortedByDateDesc[0].date : null;
-  }, [sortedByDateDesc]);
+    if (loadedMatches.length === 0) return null;
+    let latest = loadedMatches[0].createdAt;
+    for (const m of loadedMatches) {
+      if (m.createdAt > latest) latest = m.createdAt;
+    }
+    return latest;
+  }, [loadedMatches]);
   const last30 = useMemo(() => sortedByDateDesc.slice(0, 30).reverse(), [sortedByDateDesc]);
   const topHero = useMemo(() => {
     const known = heroStats.filter((h) => h.heroName !== "Unknown");
@@ -483,7 +488,7 @@ export default function PlayerProfile() {
           {/* Last updated */}
           {lastUpdated && (
             <p className="text-[10px] text-fab-dim mt-3 pt-3 border-t border-fab-border/50">
-              Last match {new Date(lastUpdated + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+              Last updated {new Date(lastUpdated).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
             </p>
           )}
         </div>
