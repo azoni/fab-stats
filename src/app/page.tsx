@@ -130,7 +130,7 @@ export default function Dashboard() {
     <div className="space-y-8">
       {/* Welcome card — matches the logged-in profile card style */}
       {!hasMatches && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
           <div className="bg-fab-surface border border-fab-border rounded-lg p-5">
             <div className="flex items-center gap-4 mb-4">
               <div className="w-14 h-14 rounded-full bg-fab-gold/20 flex items-center justify-center shrink-0">
@@ -200,13 +200,13 @@ export default function Dashboard() {
 
       {/* Player snapshot for logged-in users with matches */}
       {hasMatches && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
           <div
-            className="bg-fab-surface border border-fab-border rounded-lg p-5"
+            className="bg-fab-surface border border-fab-border rounded-lg p-4"
             style={cardBorder ? { borderColor: cardBorder.border, boxShadow: cardBorder.shadow } : undefined}
           >
             {/* Profile row */}
-            <div className="flex items-center gap-3 mb-3">
+            <div className="flex items-center gap-3 mb-2">
               {profile ? (
                 <Link href={`/player/${profile.username}`} className="relative shrink-0">
                   {profile.username === "azoni" && (
@@ -289,9 +289,9 @@ export default function Dashboard() {
             </div>
 
             {/* Streak row */}
-            <div className="flex items-center gap-3 mb-3 pb-3 border-b border-fab-border/50">
-              <div className="flex items-baseline gap-1">
-                <span className={`text-xl font-black ${
+            <div className="flex items-center gap-2 mb-2 pb-2 border-b border-fab-border/50">
+              <div className="flex items-baseline gap-0.5">
+                <span className={`text-lg font-black ${
                   streaks.currentStreak?.type === MatchResult.Win
                     ? "text-fab-win"
                     : streaks.currentStreak?.type === MatchResult.Loss
@@ -312,18 +312,18 @@ export default function Dashboard() {
                     : "—"}
                 </span>
               </div>
-              <div className="flex gap-2 text-center">
+              <div className="flex gap-1.5 text-center">
                 <div>
-                  <p className="text-xs font-bold text-fab-win">{streaks.longestWinStreak}</p>
-                  <p className="text-[9px] text-fab-dim">Best</p>
+                  <p className="text-[10px] font-bold text-fab-win">{streaks.longestWinStreak}</p>
+                  <p className="text-[8px] text-fab-dim">Best</p>
                 </div>
                 <div>
-                  <p className="text-xs font-bold text-fab-loss">{streaks.longestLossStreak}</p>
-                  <p className="text-[9px] text-fab-dim">Worst</p>
+                  <p className="text-[10px] font-bold text-fab-loss">{streaks.longestLossStreak}</p>
+                  <p className="text-[8px] text-fab-dim">Worst</p>
                 </div>
               </div>
-              <p className="text-[9px] text-fab-dim">streak</p>
-              <div className="flex gap-0.5 flex-wrap flex-1 max-w-[200px]">
+              <p className="text-[8px] text-fab-dim">streak</p>
+              <div className="flex gap-0.5 flex-wrap flex-1">
                 {last30.map((m, i) => (
                   <div
                     key={i}
@@ -337,22 +337,22 @@ export default function Dashboard() {
             </div>
 
             {/* Quick stats */}
-            <div className="grid grid-cols-3 gap-3 mb-4">
+            <div className="grid grid-cols-3 gap-x-3 gap-y-1 mb-3">
               <div>
-                <p className="text-[10px] text-fab-dim uppercase tracking-wider">Win Rate</p>
-                <p className={`text-lg font-bold ${overall.overallWinRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>
+                <p className="text-[9px] text-fab-dim uppercase tracking-wider">Win Rate</p>
+                <p className={`text-sm font-bold ${overall.overallWinRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>
                   {overall.overallWinRate.toFixed(1)}%
                 </p>
               </div>
               <div>
-                <p className="text-[10px] text-fab-dim uppercase tracking-wider">Record</p>
-                <p className="text-lg font-bold">
+                <p className="text-[9px] text-fab-dim uppercase tracking-wider">Record</p>
+                <p className="text-sm font-bold">
                   <span className="text-fab-win">{overall.totalWins}W</span>
                   <span className="text-fab-dim"> - </span>
                   <span className="text-fab-loss">{overall.totalLosses}L</span>
                 </p>
                 {(overall.totalDraws > 0 || overall.totalByes > 0) && (
-                  <p className="text-[10px] text-fab-dim">
+                  <p className="text-[9px] text-fab-dim">
                     {[
                       overall.totalDraws > 0 ? `${overall.totalDraws} draw${overall.totalDraws !== 1 ? "s" : ""}` : "",
                       overall.totalByes > 0 ? `${overall.totalByes} bye${overall.totalByes !== 1 ? "s" : ""}` : "",
@@ -361,22 +361,22 @@ export default function Dashboard() {
                 )}
               </div>
               <div>
-                <p className="text-[10px] text-fab-dim uppercase tracking-wider">Matches</p>
-                <p className="text-lg font-bold text-fab-text">{overall.totalMatches + overall.totalByes}</p>
+                <p className="text-[9px] text-fab-dim uppercase tracking-wider">Matches</p>
+                <p className="text-sm font-bold text-fab-text">{overall.totalMatches + overall.totalByes}</p>
               </div>
               <div>
-                <p className="text-[10px] text-fab-dim uppercase tracking-wider">Events</p>
-                <p className="text-lg font-bold text-fab-text">{eventStats.length}</p>
+                <p className="text-[9px] text-fab-dim uppercase tracking-wider">Events</p>
+                <p className="text-sm font-bold text-fab-text">{eventStats.length}</p>
               </div>
               <div>
-                <p className="text-[10px] text-fab-dim uppercase tracking-wider">Top Hero</p>
-                <p className="text-lg font-bold text-fab-text truncate">{topHero?.heroName || "—"}</p>
+                <p className="text-[9px] text-fab-dim uppercase tracking-wider">Top Hero</p>
+                <p className="text-sm font-bold text-fab-text truncate">{topHero?.heroName || "—"}</p>
               </div>
               {bestFinish && (
                 <div className="relative">
-                  <p className="text-[10px] text-fab-dim uppercase tracking-wider">Best Finish</p>
-                  <p className="text-lg font-bold text-fab-gold truncate">{bestFinish.label}</p>
-                  <p className="text-[10px] text-fab-dim truncate">{bestFinish.eventName}</p>
+                  <p className="text-[9px] text-fab-dim uppercase tracking-wider">Best Finish</p>
+                  <p className="text-sm font-bold text-fab-gold truncate">{bestFinish.label}</p>
+                  <p className="text-[9px] text-fab-dim truncate">{bestFinish.eventName}</p>
                   <button
                     onClick={() => setBestFinishShareOpen(true)}
                     className="absolute top-0 right-0 flex items-center gap-1 px-1.5 py-0.5 rounded-md text-fab-dim hover:text-fab-gold hover:bg-fab-gold/10 transition-colors"
@@ -392,30 +392,30 @@ export default function Dashboard() {
             </div>
 
             {/* Quick Nav */}
-            <div className="grid grid-cols-3 gap-2">
-              <Link href="/matches" className="nav-btn nav-btn-matches group flex items-center gap-2 bg-fab-surface border border-fab-border rounded-lg px-2.5 py-2">
-                <SwordsIcon className="nav-icon w-4 h-4 text-fab-muted group-hover:text-red-400 shrink-0" />
-                <span className="text-xs font-semibold text-fab-muted group-hover:text-fab-text transition-colors">Matches</span>
+            <div className="grid grid-cols-3 gap-1.5">
+              <Link href="/matches" className="nav-btn nav-btn-matches group flex items-center gap-1.5 bg-fab-surface border border-fab-border rounded-lg px-2 py-1.5">
+                <SwordsIcon className="nav-icon w-3.5 h-3.5 text-fab-muted group-hover:text-red-400 shrink-0" />
+                <span className="text-[11px] font-semibold text-fab-muted group-hover:text-fab-text transition-colors">Matches</span>
               </Link>
-              <Link href="/events" className="nav-btn nav-btn-events group flex items-center gap-2 bg-fab-surface border border-fab-border rounded-lg px-2.5 py-2">
-                <CalendarIcon className="nav-icon w-4 h-4 text-fab-muted group-hover:text-blue-400 shrink-0" />
-                <span className="text-xs font-semibold text-fab-muted group-hover:text-fab-text transition-colors">Events</span>
+              <Link href="/events" className="nav-btn nav-btn-events group flex items-center gap-1.5 bg-fab-surface border border-fab-border rounded-lg px-2 py-1.5">
+                <CalendarIcon className="nav-icon w-3.5 h-3.5 text-fab-muted group-hover:text-blue-400 shrink-0" />
+                <span className="text-[11px] font-semibold text-fab-muted group-hover:text-fab-text transition-colors">Events</span>
               </Link>
-              <Link href="/opponents" className="nav-btn nav-btn-opponents group flex items-center gap-2 bg-fab-surface border border-fab-border rounded-lg px-2.5 py-2">
-                <OpponentsIcon className="nav-icon w-4 h-4 text-fab-muted group-hover:text-purple-400 shrink-0" />
-                <span className="text-xs font-semibold text-fab-muted group-hover:text-fab-text transition-colors">Opponents</span>
+              <Link href="/opponents" className="nav-btn nav-btn-opponents group flex items-center gap-1.5 bg-fab-surface border border-fab-border rounded-lg px-2 py-1.5">
+                <OpponentsIcon className="nav-icon w-3.5 h-3.5 text-fab-muted group-hover:text-purple-400 shrink-0" />
+                <span className="text-[11px] font-semibold text-fab-muted group-hover:text-fab-text transition-colors">Opponents</span>
               </Link>
-              <Link href="/trends" className="nav-btn nav-btn-trends group flex items-center gap-2 bg-fab-surface border border-fab-border rounded-lg px-2.5 py-2">
-                <TrendsIcon className="nav-icon w-4 h-4 text-fab-muted group-hover:text-emerald-400 shrink-0" />
-                <span className="text-xs font-semibold text-fab-muted group-hover:text-fab-text transition-colors">Trends</span>
+              <Link href="/trends" className="nav-btn nav-btn-trends group flex items-center gap-1.5 bg-fab-surface border border-fab-border rounded-lg px-2 py-1.5">
+                <TrendsIcon className="nav-icon w-3.5 h-3.5 text-fab-muted group-hover:text-emerald-400 shrink-0" />
+                <span className="text-[11px] font-semibold text-fab-muted group-hover:text-fab-text transition-colors">Trends</span>
               </Link>
-              <Link href="/compare" className="nav-btn nav-btn-versus group flex items-center gap-2 bg-fab-surface border border-fab-border rounded-lg px-2.5 py-2">
-                <svg className="nav-icon w-4 h-4 text-fab-muted group-hover:text-violet-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+              <Link href="/compare" className="nav-btn nav-btn-versus group flex items-center gap-1.5 bg-fab-surface border border-fab-border rounded-lg px-2 py-1.5">
+                <svg className="nav-icon w-3.5 h-3.5 text-fab-muted group-hover:text-violet-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
                   <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
                 </svg>
-                <span className="text-xs font-semibold text-fab-muted group-hover:text-fab-text transition-colors">Versus</span>
+                <span className="text-[11px] font-semibold text-fab-muted group-hover:text-fab-text transition-colors">Versus</span>
               </Link>
-              <Link href="/events?import=1" className="nav-btn nav-btn-log group flex items-center gap-2 bg-fab-surface border border-fab-border border-dashed rounded-lg px-2.5 py-2">
+              <Link href="/events?import=1" className="nav-btn nav-btn-log group flex items-center gap-1.5 bg-fab-surface border border-fab-border border-dashed rounded-lg px-2 py-1.5">
                 <svg className="nav-icon w-4 h-4 text-fab-muted group-hover:text-fab-gold shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
                 </svg>
@@ -426,7 +426,7 @@ export default function Dashboard() {
           {user ? (
             <div className="space-y-6">
               <ActivityFeed rankMap={rankMap} />
-              <FeaturedProfiles profiles={featuredProfiles} rankMap={rankMap} />
+              <FeaturedProfiles profiles={featuredProfiles.slice(0, 4)} rankMap={rankMap} />
             </div>
           ) : <div />}
         </div>
