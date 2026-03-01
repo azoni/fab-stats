@@ -63,8 +63,17 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    const unsub = subscribeToChatMessages(user.uid, (msgs) => {
-      setMessages(msgs);
+    const unsub = subscribeToChatMessages(user.uid, (firestoreMsgs) => {
+      setMessages(prev => {
+        // Merge: Firestore is source of truth, but keep any optimistic
+        // messages that haven't appeared in Firestore yet
+        const fsKeys = new Set(firestoreMsgs.map(m => `${m.role}:${m.content}`));
+        const pending = prev.filter(m =>
+          (m.id.startsWith("pending-") || m.id.startsWith("resp-")) &&
+          !fsKeys.has(`${m.role}:${m.content}`)
+        );
+        return [...firestoreMsgs, ...pending];
+      });
       setLoaded(true);
     });
 
@@ -97,12 +106,16 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       const result: ChatResponse = await sendChatMessage(idToken, text, history);
 
       // Show assistant response immediately from function result
-      setMessages(prev => [...prev, {
-        id: result.messageId || `resp-${Date.now()}`,
-        role: "assistant" as const,
-        content: result.response,
-        createdAt: new Date().toISOString(),
-      }]);
+      // (skip if onSnapshot already delivered it while we awaited)
+      setMessages(prev => {
+        if (prev.some(m => m.role === "assistant" && m.content === result.response)) return prev;
+        return [...prev, {
+          id: result.messageId || `resp-${Date.now()}`,
+          role: "assistant" as const,
+          content: result.response,
+          createdAt: new Date().toISOString(),
+        }];
+      });
       setRateLimits(result.rateLimits);
     } catch (err: any) {
       // Remove optimistic user message on failure

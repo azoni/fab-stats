@@ -25,6 +25,29 @@ const DAILY_LIMIT = 50;
 const INPUT_COST_PER_TOKEN = 0.80 / 1_000_000;
 const OUTPUT_COST_PER_TOKEN = 4.00 / 1_000_000;
 
+// Heroes whose only legal format is "Living Legend" (no longer in CC/Blitz).
+// Filtered from meta summary so current-meta questions aren't skewed by old data.
+// Source: @flesh-and-blood/cards — update when new heroes get LL'd.
+const LIVING_LEGEND_HEROES = new Set([
+  "Aurora, Shooting Star",
+  "Azalea, Ace in the Hole",
+  "Bravo, Star of the Show",
+  "Briar, Warden of Thorns",
+  "Chane, Bound by Shadow",
+  "Dash, Inventor Extraordinaire",
+  "Dromai, Ash Artist",
+  "Enigma, Ledger of Ancestry",
+  "Florian, Rotwood Harbinger",
+  "Iyslander, Stormbind",
+  "Kano, Dracai of Aether",
+  "Lexi, Livewire",
+  "Nuu, Alluring Desire",
+  "Oldhim, Grandfather of Eternity",
+  "Prism, Sculptor of Arc Light",
+  "Viserai, Rune Blood",
+  "Zen, Tamer of Purpose",
+]);
+
 // Leaderboard cache (shared across warm invocations)
 let leaderboardCache: { entries: any[]; fetchedAt: number } | null = null;
 const LB_CACHE_TTL = 10 * 60 * 1000; // 10 minutes
@@ -238,11 +261,12 @@ function buildMetaSummary(entries: any[]): string {
   const totalPlayers = publicEntries.length;
   const totalMatches = publicEntries.reduce((s: number, e: any) => s + (e.totalMatches || 0), 0);
 
-  // Hero meta — aggregate hero breakdown
+  // Hero meta — aggregate hero breakdown (exclude Living Legend heroes)
   const heroAgg = new Map<string, { players: number; matches: number; wins: number }>();
   for (const entry of publicEntries) {
     if (!entry.heroBreakdown) continue;
     for (const h of entry.heroBreakdown) {
+      if (LIVING_LEGEND_HEROES.has(h.hero)) continue;
       const cur = heroAgg.get(h.hero) || { players: 0, matches: 0, wins: 0 };
       cur.players++;
       cur.matches += h.matches || 0;
@@ -284,7 +308,7 @@ Your data includes:
 - Their win rate vs each opponent hero
 - Their event history with per-event records
 - Their 30 most recent individual matches
-- Community meta: top heroes by play rate + win rate, top players
+- Community meta: top heroes by play rate + win rate, top players (Living Legend heroes excluded from meta)
 
 Rules:
 - Be concise and conversational. Use specific numbers from the data when relevant.
