@@ -49,12 +49,7 @@ export function computeMetaStats(
   for (const entry of entries) {
     // When using weekly/monthly period, use the period-specific breakdown
     if (usePeriodBreakdown) {
-      let breakdown = period === "weekly" ? entry.weeklyHeroBreakdown : entry.monthlyHeroBreakdown;
-      // At the start of a new month, monthly data is empty until users re-import.
-      // Fall back to weekly breakdown as a reasonable proxy for recent activity.
-      if (period === "monthly" && (!breakdown || breakdown.length === 0)) {
-        breakdown = entry.weeklyHeroBreakdown;
-      }
+      const breakdown = period === "weekly" ? entry.weeklyHeroBreakdown : entry.monthlyHeroBreakdown;
       if (!breakdown || breakdown.length === 0) continue;
 
       let hasMatchingData = false;

@@ -15,7 +15,7 @@ export function WeeklyDigest({ matches }: { matches: MatchRecord[] }) {
     <div className="bg-fab-surface border border-fab-border rounded-lg p-4">
       <div className="flex items-center justify-between mb-3">
         <h2 className="text-xs font-semibold text-fab-dim uppercase tracking-wider">
-          {period === "week" ? "This Week" : "This Month"}
+          {period === "week" ? "Last 7 Days" : "Last 30 Days"}
         </h2>
         <div className="flex rounded-md overflow-hidden border border-fab-border">
           <button
@@ -39,8 +39,8 @@ export function WeeklyDigest({ matches }: { matches: MatchRecord[] }) {
 
       {stats.matches === 0 ? (
         <p className="text-sm text-fab-dim">
-          No matches {period === "week" ? "this week" : "this month"} yet.
-          {stats.previousMatches > 0 && ` Last ${period === "week" ? "week" : "month"}: ${stats.previousMatches} matches.`}
+          No matches in the last {period === "week" ? "7" : "30"} days yet.
+          {stats.previousMatches > 0 && ` Previously: ${stats.previousMatches} matches.`}
         </p>
       ) : (
         <div className="flex items-center gap-4">

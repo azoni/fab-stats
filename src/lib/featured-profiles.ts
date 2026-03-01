@@ -23,7 +23,7 @@ export function selectFeaturedProfiles(entries: LeaderboardEntry[]): FeaturedPro
         .filter((e) => e.weeklyMatches > 0)
         .sort((a, b) => b.weeklyMatches - a.weeklyMatches)
         .slice(0, 5),
-      stat: (e) => `${e.weeklyMatches} matches this week`,
+      stat: (e) => `${e.weeklyMatches} matches (7d)`,
     },
     {
       reason: "Hot Streak",
@@ -118,7 +118,7 @@ export function selectFeaturedProfiles(entries: LeaderboardEntry[]): FeaturedPro
         .filter((e) => e.monthlyMatches >= 10 && e.monthlyWinRate >= 55)
         .sort((a, b) => (b.monthlyWinRate * b.monthlyMatches) - (a.monthlyWinRate * a.monthlyMatches))
         .slice(0, 5),
-      stat: (e) => `${e.monthlyWinRate.toFixed(0)}% over ${e.monthlyMatches} this month`,
+      stat: (e) => `${e.monthlyWinRate.toFixed(0)}% over ${e.monthlyMatches} (30d)`,
     },
     {
       reason: "Rated Ace",

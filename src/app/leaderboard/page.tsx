@@ -23,11 +23,11 @@ const tabs: { id: Tab; label: string; description: string }[] = [
   { id: "volume", label: "Most Matches", description: "Players who have logged the most matches." },
   { id: "mostwins", label: "Most Wins", description: "Players with the most total wins." },
   { id: "mostlosses", label: "Most Losses", description: "Players with the most total losses. Dedication personified." },
-  { id: "weeklymatches", label: "Weekly Matches", description: "Most matches played this week." },
-  { id: "weeklywins", label: "Weekly Wins", description: "Most wins this week." },
-  { id: "monthlymatches", label: "Monthly Matches", description: "Most matches played this month." },
-  { id: "monthlywins", label: "Monthly Wins", description: "Most wins this month." },
-  { id: "monthlywinrate", label: "Monthly Win %", description: "Highest win rate this month. Requires 5+ matches." },
+  { id: "weeklymatches", label: "Weekly Matches", description: "Most matches played in the last 7 days." },
+  { id: "weeklywins", label: "Weekly Wins", description: "Most wins in the last 7 days." },
+  { id: "monthlymatches", label: "Monthly Matches", description: "Most matches played in the last 30 days." },
+  { id: "monthlywins", label: "Monthly Wins", description: "Most wins in the last 30 days." },
+  { id: "monthlywinrate", label: "Monthly Win %", description: "Highest win rate in the last 30 days. Requires 5+ matches." },
   { id: "events", label: "Event Wins", description: "Most event tournament victories." },
   { id: "eventgrinder", label: "Event Grinder", description: "Most events attended." },
   { id: "top8s", label: "Top 8s", description: "Most playoff finishes (Top 8 or better) across all events." },
@@ -123,16 +123,16 @@ function getStat(entry: LeaderboardEntry, tab: Tab): { value: string; sub: strin
     case "mostlosses":
       return { value: String(entry.totalLosses), sub: `${entry.totalMatches} matches (${formatRate(entry.winRate)})`, color: "text-fab-loss" };
     case "weeklymatches":
-      return { value: String(entry.weeklyMatches), sub: `${entry.weeklyWins}W this week`, color: "text-fab-text" };
+      return { value: String(entry.weeklyMatches), sub: `${entry.weeklyWins}W (7d)`, color: "text-fab-text" };
     case "weeklywins":
       return { value: String(entry.weeklyWins), sub: `of ${entry.weeklyMatches} matches`, color: "text-fab-win" };
     case "monthlymatches":
-      return { value: String(entry.monthlyMatches ?? 0), sub: `${entry.monthlyWins ?? 0}W this month`, color: "text-fab-text" };
+      return { value: String(entry.monthlyMatches ?? 0), sub: `${entry.monthlyWins ?? 0}W (30d)`, color: "text-fab-text" };
     case "monthlywins":
       return { value: String(entry.monthlyWins ?? 0), sub: `of ${entry.monthlyMatches ?? 0} matches`, color: "text-fab-win" };
     case "monthlywinrate": {
       const mr = entry.monthlyWinRate ?? 0;
-      return { value: formatRate(mr), sub: `${entry.monthlyWins ?? 0}W / ${entry.monthlyMatches ?? 0} this month`, color: mr >= 50 ? "text-fab-win" : "text-fab-loss", rate: mr };
+      return { value: formatRate(mr), sub: `${entry.monthlyWins ?? 0}W / ${entry.monthlyMatches ?? 0} (30d)`, color: mr >= 50 ? "text-fab-win" : "text-fab-loss", rate: mr };
     }
     case "streaks":
       return { value: String(entry.longestWinStreak), sub: `best streak${entry.currentStreakType === "win" && entry.currentStreakCount > 1 ? ` / ${entry.currentStreakCount} current` : ""}`, color: "text-fab-win" };
@@ -230,9 +230,9 @@ function getEmptyMessage(tab: Tab): string {
     case "mostlosses": return "No players have any losses yet.";
     case "lowdrawrate": case "fewestdraws": return "Players need at least 50 matches to appear here.";
     case "balanced": return "Players need at least 20 matches to appear here.";
-    case "weeklymatches": case "weeklywins": return "No one has logged matches this week yet.";
-    case "monthlymatches": case "monthlywins": return "No one has logged matches this month yet.";
-    case "monthlywinrate": return "Players need at least 5 matches this month to appear here.";
+    case "weeklymatches": case "weeklywins": return "No one has logged matches in the last 7 days yet.";
+    case "monthlymatches": case "monthlywins": return "No one has logged matches in the last 30 days yet.";
+    case "monthlywinrate": return "Players need at least 5 matches in the last 30 days to appear here.";
     case "earnings": return "No players have entered their earnings yet.";
     case "armorywinrate": return "Players need at least 5 Armory matches to appear here.";
     case "armoryattendance": return "No players have attended Armory events yet.";

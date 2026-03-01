@@ -28,19 +28,21 @@ function leaderboardCollection() {
   return collection(db, "leaderboard");
 }
 
-/** Get ISO date string (YYYY-MM-DD) for Monday of the current week */
-export function getWeekStart(): string {
-  const now = new Date();
-  const day = now.getDay(); // 0=Sun, 1=Mon, ..., 6=Sat
-  const diff = day === 0 ? 6 : day - 1; // days since Monday
-  const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - diff);
+/** Local YYYY-MM-DD string for N days ago */
+function localDateStr(daysAgo: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() - daysAgo);
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-/** Get ISO date string (YYYY-MM-DD) for the 1st of the current month */
+/** Get ISO date string (YYYY-MM-DD) for 7 days ago (rolling week) */
+export function getWeekStart(): string {
+  return localDateStr(7);
+}
+
+/** Get ISO date string (YYYY-MM-DD) for 30 days ago (rolling month) */
 export function getMonthStart(): string {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+  return localDateStr(30);
 }
 
 export async function updateLeaderboardEntry(
@@ -323,22 +325,26 @@ let cacheTimestampAll = 0;
 const CACHE_TTL = 15 * 60_000; // 15 minutes
 
 function sanitizeEntries(docs: LeaderboardEntry[]): LeaderboardEntry[] {
-  const currentWeekStart = getWeekStart();
-  const currentMonthStart = getMonthStart();
+  // Rolling windows: data is stale when the stored window has no overlap
+  // with the current window. Weekly covers 7 days, monthly covers 30 days.
+  // Stored window: [entry.start, entry.start + period]. No overlap when
+  // entry.start + period < currentStart, i.e. entry.start < currentStart - period.
+  const weeklyCutoff = localDateStr(14);  // 7-day window written >7 days before current start → no overlap
+  const monthlyCutoff = localDateStr(60); // 30-day window written >30 days before current start → no overlap
 
   return docs.map((entry) => {
-    if (entry.weekStart !== currentWeekStart) {
+    if (!entry.weekStart || entry.weekStart < weeklyCutoff) {
       entry.weeklyMatches = 0;
       entry.weeklyWins = 0;
-      entry.weekStart = currentWeekStart;
+      entry.weekStart = getWeekStart();
       entry.weeklyHeroBreakdown = [];
     }
 
-    if (entry.monthStart !== currentMonthStart) {
+    if (!entry.monthStart || entry.monthStart < monthlyCutoff) {
       entry.monthlyMatches = 0;
       entry.monthlyWins = 0;
       entry.monthlyWinRate = 0;
-      entry.monthStart = currentMonthStart;
+      entry.monthStart = getMonthStart();
       entry.monthlyHeroBreakdown = [];
     }
 

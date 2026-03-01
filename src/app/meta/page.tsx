@@ -11,8 +11,8 @@ const HERO_PAGE_SIZE = 20;
 
 const PERIOD_TABS: { id: MetaPeriod; label: string }[] = [
   { id: "all", label: "All Time" },
-  { id: "monthly", label: "This Month" },
-  { id: "weekly", label: "This Week" },
+  { id: "monthly", label: "Last 30 Days" },
+  { id: "weekly", label: "Last 7 Days" },
 ];
 
 export default function MetaPage() {
@@ -41,14 +41,12 @@ export default function MetaPage() {
   // Top 8 heroes — filtered by period, format, and event type
   const top8Heroes = useMemo(() => {
     const sinceDate = period === "weekly" ? getWeekStart() : period === "monthly" ? getMonthStart() : undefined;
-    const eventType = filterEventType !== "all" ? filterEventType : undefined;
-    const format = filterFormat !== "all" ? filterFormat : undefined;
-    const result = computeTop8HeroMeta(entries, eventType, format, sinceDate);
-    // At month start, monthly data may be empty — fall back to weekly range
-    if (period === "monthly" && result.length === 0) {
-      return computeTop8HeroMeta(entries, eventType, format, getWeekStart());
-    }
-    return result;
+    return computeTop8HeroMeta(
+      entries,
+      filterEventType !== "all" ? filterEventType : undefined,
+      filterFormat !== "all" ? filterFormat : undefined,
+      sinceDate,
+    );
   }, [entries, filterEventType, filterFormat, period]);
 
   const sortedHeroes = useMemo(() => {
@@ -159,7 +157,7 @@ export default function MetaPage() {
               Playoff Heroes
             </h2>
             <p className="text-[10px] text-fab-dim mb-3">
-              Heroes making top 8s{period === "weekly" ? " this week" : period === "monthly" ? " this month" : ""}
+              Heroes making top 8s{period === "weekly" ? " (last 7 days)" : period === "monthly" ? " (last 30 days)" : ""}
               {top8Heroes.length > 10 && ` \u00b7 ${top8Heroes.length} heroes`}
             </p>
             <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden">

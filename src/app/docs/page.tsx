@@ -280,8 +280,8 @@ export default function DocsPage() {
               ["Most Matches", "Total matches played"],
               ["Most Wins", "Total wins"],
               ["Win Streak", "Longest consecutive wins"],
-              ["Weekly", "Matches and wins this week (resets Monday)"],
-              ["Monthly", "Matches, wins, and win rate this month"],
+              ["Weekly", "Matches and wins in the last 7 days"],
+              ["Monthly", "Matches, wins, and win rate in the last 30 days"],
               ["Rated", "Rated match win rate and streaks (min 5 rated)"],
               ["Events", "Tournament events played"],
               ["Draws", "Most drawn matches"],
@@ -353,12 +353,12 @@ export default function DocsPage() {
           </p>
           <div className="space-y-2 text-sm text-fab-muted">
             <p>
-              <span className="font-medium text-fab-text">Weekly</span> — Resets every Monday.
-              Shows matches played and wins for the current week.
+              <span className="font-medium text-fab-text">Weekly</span> — Rolling 7-day window.
+              Shows matches played and wins from the last 7 days.
             </p>
             <p>
-              <span className="font-medium text-fab-text">Monthly</span> — Resets on the 1st of
-              each month. Shows matches, wins, and win rate.
+              <span className="font-medium text-fab-text">Monthly</span> — Rolling 30-day window.
+              Shows matches, wins, and win rate from the last 30 days.
             </p>
           </div>
           <p className="text-xs text-fab-dim mt-2">
