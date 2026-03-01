@@ -22,8 +22,11 @@ const SORT_OPTIONS: { key: Top8Sort; label: string }[] = [
   { key: "wins", label: "Wins" },
 ];
 
+const TOP8_PAGE_SIZE = 10;
+
 export const MetaSnapshot = memo(function MetaSnapshot({ topHeroes, top8Heroes, activeEventType }: MetaSnapshotProps) {
   const [sortBy, setSortBy] = useState<Top8Sort>("top8");
+  const [top8Page, setTop8Page] = useState(0);
 
   // Event weekend mode: show top 8 heroes for the active event type
   const showEventMode = activeEventType && top8Heroes && top8Heroes.length > 0;
@@ -36,15 +39,6 @@ export const MetaSnapshot = memo(function MetaSnapshot({ topHeroes, top8Heroes, 
     else sorted.sort((a, b) => b.count - a.count);
     return sorted;
   }, [top8Heroes, sortBy]);
-
-  const top8Totals = useMemo(() => {
-    if (!top8Heroes) return { placements: 0, wins: 0, heroes: 0 };
-    return {
-      placements: top8Heroes.reduce((sum, t) => sum + t.count, 0),
-      wins: top8Heroes.reduce((sum, t) => sum + t.champions, 0),
-      heroes: top8Heroes.length,
-    };
-  }, [top8Heroes]);
 
   if (!showEventMode && topHeroes.length === 0) return null;
 
@@ -82,7 +76,7 @@ export const MetaSnapshot = memo(function MetaSnapshot({ topHeroes, top8Heroes, 
                   {SORT_OPTIONS.map((opt) => (
                     <button
                       key={opt.key}
-                      onClick={() => setSortBy(opt.key)}
+                      onClick={() => { setSortBy(opt.key); setTop8Page(0); }}
                       className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${
                         sortBy === opt.key
                           ? "bg-teal-500/15 text-teal-400"
@@ -94,7 +88,7 @@ export const MetaSnapshot = memo(function MetaSnapshot({ topHeroes, top8Heroes, 
                   ))}
                 </div>
                 <span className="text-[10px] text-fab-dim">
-                  {top8Totals.placements} placements · {top8Totals.heroes} heroes
+                  {sortedTop8.length} heroes
                 </span>
               </div>
               <div className="flex items-center gap-3 text-[10px] text-fab-dim uppercase tracking-wide">
@@ -103,24 +97,50 @@ export const MetaSnapshot = memo(function MetaSnapshot({ topHeroes, top8Heroes, 
                 <span>Won</span>
               </div>
             </div>
-            {sortedTop8.slice(0, 10).map((t8, i) => {
-              const heroInfo = getHeroByName(t8.hero);
-              const heroClass = heroInfo?.classes[0];
-              return (
-                <div key={t8.hero} className={`relative flex items-center gap-3 px-4 py-2.5 ${i > 0 ? "border-t border-fab-border" : ""}`}>
-                  <span className={`text-sm w-5 text-center relative ${RANK_CLASS[i] || "text-fab-muted font-bold"}`}>{i + 1}</span>
-                  <HeroClassIcon heroClass={heroClass} size="sm" />
-                  <span className={`font-medium text-fab-text flex-1 truncate text-sm relative ${i === 0 ? "text-fab-gold" : ""}`}>{t8.hero}</span>
-                  <div className="flex items-center gap-3 shrink-0 relative text-xs tabular-nums">
-                    <span className="text-fab-muted w-8 text-right">{t8.totalPlayers > 0 ? t8.totalPlayers : "–"}</span>
-                    <span className="text-fab-muted font-medium w-7 text-right">{t8.count}</span>
-                    <span className={`w-6 text-right ${t8.champions > 0 ? "font-semibold text-fab-gold" : "text-fab-dim"}`}>{t8.champions > 0 ? t8.champions : "–"}</span>
+            {/* Fixed-height hero list for consistent layout across pages */}
+            <div style={{ minHeight: `${TOP8_PAGE_SIZE * 40}px` }}>
+              {sortedTop8.slice(top8Page * TOP8_PAGE_SIZE, (top8Page + 1) * TOP8_PAGE_SIZE).map((t8, i) => {
+                const globalIdx = top8Page * TOP8_PAGE_SIZE + i;
+                const heroInfo = getHeroByName(t8.hero);
+                const heroClass = heroInfo?.classes[0];
+                return (
+                  <div key={t8.hero} className={`relative flex items-center gap-3 px-4 py-2.5 ${i > 0 ? "border-t border-fab-border" : ""}`}>
+                    <span className={`text-sm w-5 text-center relative ${RANK_CLASS[globalIdx] || "text-fab-muted font-bold"}`}>{globalIdx + 1}</span>
+                    <HeroClassIcon heroClass={heroClass} size="sm" />
+                    <span className={`font-medium text-fab-text flex-1 truncate text-sm relative ${globalIdx === 0 ? "text-fab-gold" : ""}`}>{t8.hero}</span>
+                    <div className="flex items-center gap-3 shrink-0 relative text-xs tabular-nums">
+                      <span className="text-fab-muted w-8 text-right">{t8.totalPlayers > 0 ? t8.totalPlayers : "–"}</span>
+                      <span className="text-fab-muted font-medium w-7 text-right">{t8.count}</span>
+                      <span className={`w-6 text-right ${t8.champions > 0 ? "font-semibold text-fab-gold" : "text-fab-dim"}`}>{t8.champions > 0 ? t8.champions : "–"}</span>
+                    </div>
                   </div>
+                );
+              })}
+            </div>
+            {/* Pagination + disclaimer */}
+            <div className="px-4 py-2 border-t border-fab-border flex items-center justify-between">
+              <p className="text-[10px] text-fab-dim leading-tight italic">Top 8s / tracked players — conversion may be skewed</p>
+              {sortedTop8.length > TOP8_PAGE_SIZE && (
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setTop8Page((p) => Math.max(0, p - 1))}
+                    disabled={top8Page === 0}
+                    className="text-[10px] text-fab-muted hover:text-fab-text disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                  >
+                    Prev
+                  </button>
+                  <span className="text-[10px] text-fab-dim">
+                    {top8Page + 1}/{Math.ceil(sortedTop8.length / TOP8_PAGE_SIZE)}
+                  </span>
+                  <button
+                    onClick={() => setTop8Page((p) => Math.min(Math.ceil(sortedTop8.length / TOP8_PAGE_SIZE) - 1, p + 1))}
+                    disabled={top8Page >= Math.ceil(sortedTop8.length / TOP8_PAGE_SIZE) - 1}
+                    className="text-[10px] text-fab-muted hover:text-fab-text disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                  >
+                    Next
+                  </button>
                 </div>
-              );
-            })}
-            <div className="px-4 py-2 border-t border-fab-border">
-              <p className="text-[10px] text-fab-dim leading-tight italic">Top 8s / tracked players — conversion may be skewed as players are more likely to log winning events</p>
+              )}
             </div>
           </>
         ) : (
