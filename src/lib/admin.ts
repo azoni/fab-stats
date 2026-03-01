@@ -47,9 +47,6 @@ export interface AdminUserStats {
   monthlyMatches?: number;
   visitCount?: number;
   lastSiteVisit?: string;
-  chatMessages?: number;
-  chatCost?: number;
-  lastChatAt?: string;
 }
 
 export interface AdminDashboardData {
@@ -204,25 +201,19 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
   return result;
 }
 
-/** Fetch chat stats for a list of users (called lazily after dashboard loads) */
-export async function fetchChatStatsForUsers(
-  userIds: string[]
-): Promise<Map<string, { messages: number; cost: number; lastAt?: string }>> {
-  const result = new Map<string, { messages: number; cost: number; lastAt?: string }>();
-  await Promise.allSettled(
-    userIds.map(async (userId) => {
-      const snap = await getDoc(doc(db, "users", userId, "chatStats", "main"));
-      if (snap.exists()) {
-        const d = snap.data();
-        result.set(userId, {
-          messages: (d.totalMessages as number) || 0,
-          cost: (d.totalCost as number) || 0,
-          lastAt: d.lastMessageAt as string | undefined,
-        });
-      }
-    })
-  );
-  return result;
+/** Fetch global AI chat cost (single doc read) */
+export async function getChatGlobalStats(): Promise<{ totalMessages: number; totalCost: number }> {
+  try {
+    const snap = await getDoc(doc(db, "admin", "chatStats"));
+    if (!snap.exists()) return { totalMessages: 0, totalCost: 0 };
+    const d = snap.data();
+    return {
+      totalMessages: (d.totalMessages as number) || 0,
+      totalCost: (d.totalCost as number) || 0,
+    };
+  } catch {
+    return { totalMessages: 0, totalCost: 0 };
+  }
 }
 
 /** Backfill leaderboard entries for all users (re-computes nemesis, etc.) */

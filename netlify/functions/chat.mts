@@ -401,7 +401,7 @@ async function saveMessages(
     cost: usage.cost,
   });
 
-  // Update cumulative stats
+  // Update per-user stats
   const statsRef = db.doc(`users/${userId}/chatStats/main`);
   batch.set(statsRef, {
     totalMessages: FieldValue.increment(1),
@@ -409,6 +409,15 @@ async function saveMessages(
     totalInputTokens: FieldValue.increment(usage.inputTokens),
     totalOutputTokens: FieldValue.increment(usage.outputTokens),
     totalCost: FieldValue.increment(usage.cost),
+  }, { merge: true });
+
+  // Update global counter (single doc for admin overview)
+  const globalRef = db.doc("admin/chatStats");
+  batch.set(globalRef, {
+    totalMessages: FieldValue.increment(1),
+    totalCost: FieldValue.increment(usage.cost),
+    totalInputTokens: FieldValue.increment(usage.inputTokens),
+    totalOutputTokens: FieldValue.increment(usage.outputTokens),
   }, { merge: true });
 
   await batch.commit();

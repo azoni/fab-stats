@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
-import { getAdminDashboardData, backfillLeaderboard, broadcastMessage, fixMatchDates, backfillGemIds, backfillMatchLinking, backfillH2H, type AdminDashboardData, type AdminUserStats } from "@/lib/admin";
+import { getAdminDashboardData, getChatGlobalStats, backfillLeaderboard, broadcastMessage, fixMatchDates, backfillGemIds, backfillMatchLinking, backfillH2H, type AdminDashboardData, type AdminUserStats } from "@/lib/admin";
 import { getAllFeedback, updateFeedbackStatus } from "@/lib/feedback";
 import { getCreators, saveCreators } from "@/lib/creators";
 import { getEvents, saveEvents } from "@/lib/featured-events";
@@ -35,7 +35,7 @@ const FEATURED_EVENT_TYPES = [
   "Worlds",
 ] as const;
 
-type SortKey = "matchCount" | "createdAt" | "username" | "lastActive" | "weekly" | "monthly" | "visits" | "chat";
+type SortKey = "matchCount" | "createdAt" | "username" | "lastActive" | "weekly" | "monthly" | "visits";
 type SortDir = "asc" | "desc";
 
 export default function AdminPage() {
@@ -130,6 +130,7 @@ export default function AdminPage() {
   const [themesReset, setThemesReset] = useState(false);
   const [badgeAssignments, setBadgeAssignments] = useState<Record<string, string[]>>({});
   const [mutedIds, setMutedIds] = useState<Set<string>>(new Set());
+  const [aiCost, setAiCost] = useState<{ totalMessages: number; totalCost: number }>({ totalMessages: 0, totalCost: 0 });
   const anyToolRunning = fixingDates || backfilling || backfillingGemIds || linkingMatches || resyncingH2H;
   const [activeTab, setActiveTab] = useState<"overview" | "users" | "feedback" | "content" | "poll" | "tools">(() => {
     if (typeof window !== "undefined") {
@@ -150,8 +151,9 @@ export default function AdminPage() {
     setFetching(true);
     setError("");
     try {
-      const [result, fb, cr, ev, analytics, polls, bannerData, badges, muted, showcaseData, themeDefault] = await Promise.all([getAdminDashboardData(), getAllFeedback(), getCreators(), getEvents(), getAnalytics(), getAllPolls(), getBanner(), getAllBadgeAssignments(), getMutedUserIds(), getEventShowcase(), getDefaultTheme()]);
+      const [result, fb, cr, ev, analytics, polls, bannerData, badges, muted, showcaseData, themeDefault, chatStats] = await Promise.all([getAdminDashboardData(), getAllFeedback(), getCreators(), getEvents(), getAnalytics(), getAllPolls(), getBanner(), getAllBadgeAssignments(), getMutedUserIds(), getEventShowcase(), getDefaultTheme(), getChatGlobalStats()]);
       setData(result);
+      setAiCost(chatStats);
       setFeedback(fb);
       setCreatorsList(cr);
       setEventsList(ev.map((e: any) => ({
@@ -215,7 +217,6 @@ export default function AdminPage() {
       else if (sortKey === "weekly") cmp = (a.weeklyMatches || 0) - (b.weeklyMatches || 0);
       else if (sortKey === "monthly") cmp = (a.monthlyMatches || 0) - (b.monthlyMatches || 0);
       else if (sortKey === "visits") cmp = (a.visitCount || 0) - (b.visitCount || 0);
-      else if (sortKey === "chat") cmp = (a.chatMessages || 0) - (b.chatMessages || 0);
       else cmp = a.username.localeCompare(b.username);
       return sortDir === "desc" ? -cmp : cmp;
     });
@@ -446,6 +447,9 @@ export default function AdminPage() {
                   if (withWr.length === 0) return 0;
                   return Math.round((withWr.reduce((s, u) => s + (u.winRate ?? 0), 0) / withWr.length) * 10) / 10;
                 })()} subtext="players with 10+ matches" suffix="%" />
+                {aiCost.totalMessages > 0 && (
+                  <MetricCard label="AI Chat Cost" value={aiCost.totalCost.toFixed(2)} prefix="$" subtext={`${aiCost.totalMessages} messages`} />
+                )}
               </div>
             );
           })()}
@@ -513,12 +517,6 @@ export default function AdminPage() {
                       Visits<SortArrow col="visits" />
                     </th>
                     <th
-                      className="px-4 py-2 font-medium cursor-pointer hover:text-fab-text select-none text-right"
-                      onClick={() => toggleSort("chat")}
-                    >
-                      Chat<SortArrow col="chat" />
-                    </th>
-                    <th
                       className="px-4 py-2 font-medium cursor-pointer hover:text-fab-text select-none"
                       onClick={() => toggleSort("lastActive")}
                     >
@@ -569,12 +567,6 @@ export default function AdminPage() {
                           <td className="px-4 py-2 text-right font-mono">
                             <span className={`${(u.visitCount || 0) > 10 ? "text-fab-win" : (u.visitCount || 0) > 0 ? "text-fab-text" : "text-fab-dim"}`}>{u.visitCount || 0}</span>
                           </td>
-                          <td className="px-4 py-2 text-right font-mono">
-                            <span className={`${(u.chatMessages || 0) > 0 ? "text-fab-text" : "text-fab-dim"}`}>{u.chatMessages || 0}</span>
-                            {(u.chatCost || 0) > 0 && (
-                              <div className="text-[10px] text-fab-dim">${u.chatCost!.toFixed(3)}</div>
-                            )}
-                          </td>
                           <td className="px-4 py-2">
                             {(() => { const ta = timeAgo(u.updatedAt); return <span className={`text-xs font-medium ${ta.color}`}>{ta.label}</span>; })()}
                           </td>
@@ -594,7 +586,7 @@ export default function AdminPage() {
                         </tr>
                         {isExpanded && (
                           <tr className="border-b border-fab-border/50 bg-fab-bg/50">
-                            <td colSpan={10} className="px-4 py-3">
+                            <td colSpan={9} className="px-4 py-3">
                               <UserExpandedStats
                                 user={u}
                                 assignedBadgeIds={badgeAssignments[u.uid] || []}
@@ -2106,13 +2098,6 @@ function UserExpandedStats({ user: u, assignedBadgeIds, isMuted, onAssignBadge, 
               </div>
             </div>
           </div>
-          {(u.chatMessages || 0) > 0 && (
-            <div className="flex items-center gap-4 text-sm text-fab-muted">
-              <span>Chat: {u.chatMessages} messages</span>
-              <span>${(u.chatCost || 0).toFixed(3)} total</span>
-              {u.lastChatAt && <span>Last: {new Date(u.lastChatAt).toLocaleDateString()}</span>}
-            </div>
-          )}
         </>
       ) : (
         <div className="text-sm text-fab-dim">No leaderboard data yet. Stats sync when user visits their dashboard.</div>
@@ -2204,11 +2189,11 @@ function UserExpandedStats({ user: u, assignedBadgeIds, isMuted, onAssignBadge, 
   );
 }
 
-function MetricCard({ label, value, subtext, suffix, highlight }: { label: string; value: number; subtext?: string; suffix?: string; highlight?: boolean }) {
+function MetricCard({ label, value, subtext, prefix, suffix, highlight }: { label: string; value: number | string; subtext?: string; prefix?: string; suffix?: string; highlight?: boolean }) {
   return (
     <div className={`bg-fab-surface border rounded-lg p-4 ${highlight ? "border-fab-win/30" : "border-fab-border"}`}>
       <div className={`text-2xl font-bold ${highlight ? "text-fab-win" : "text-fab-text"}`}>
-        {value.toLocaleString()}{suffix && <span className="text-sm text-fab-muted ml-0.5">{suffix}</span>}
+        {prefix && <span className="text-sm text-fab-muted mr-0.5">{prefix}</span>}{typeof value === "number" ? value.toLocaleString() : value}{suffix && <span className="text-sm text-fab-muted ml-0.5">{suffix}</span>}
       </div>
       <div className="text-xs text-fab-muted mt-1">{label}</div>
       {subtext && <div className="text-[10px] text-fab-dim mt-0.5">{subtext}</div>}
