@@ -37,12 +37,12 @@ export function FormatMasteryCard({ matches }: FormatMasteryCardProps) {
   const maxMatches = formats[0].matches;
 
   return (
-    <div className="spotlight-card spotlight-active bg-fab-surface border border-fab-border rounded-lg px-3 py-2 relative overflow-hidden">
+    <div className="spotlight-card spotlight-active bg-fab-surface border border-fab-border rounded-lg px-3 py-2 relative overflow-hidden h-full">
       <p className="text-[8px] text-fab-dim uppercase tracking-wider font-medium mb-1.5">Format Breakdown</p>
       <div className="space-y-1">
         {formats.map((f) => (
           <div key={f.format} className="flex items-center gap-1.5">
-            <span className="text-[9px] text-fab-muted w-20 truncate shrink-0">{f.format}</span>
+            <span className="text-[9px] text-fab-muted w-14 truncate shrink-0">{f.format}</span>
             <div className="flex-1 h-2.5 bg-fab-bg rounded-full overflow-hidden relative">
               <div className={`h-full rounded-full ${f.winRate >= 50 ? "bg-fab-win/25" : "bg-fab-loss/25"}`} style={{ width: `${(f.matches / maxMatches) * 100}%` }} />
               <span className="absolute inset-0 flex items-center px-1 text-[7px] font-medium text-fab-text">{f.matches}</span>

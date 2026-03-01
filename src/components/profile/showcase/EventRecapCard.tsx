@@ -19,7 +19,7 @@ export function EventRecapCard({ event, placementType }: EventRecapCardProps) {
   const placement = placementType ? PLACEMENT_CFG[placementType] : null;
 
   return (
-    <div className="spotlight-card spotlight-active bg-fab-surface border border-fab-border rounded-lg px-3 py-2 relative overflow-hidden">
+    <div className="spotlight-card spotlight-active bg-fab-surface border border-fab-border rounded-lg px-3 py-2 relative overflow-hidden h-full">
       <div className="flex items-center gap-2.5">
         {/* Record */}
         <div className="shrink-0 text-center">

@@ -36,7 +36,8 @@ interface ShowcaseSectionProps {
 }
 
 // Point system: small=1 (half-width), medium=2 (full-width). Budget = 8.
-const MEDIUM_TYPES = new Set(["heroSpotlight", "rivalry", "achievements", "formatMastery", "eventRecap"]);
+// Only achievements stays full-width; everything else is half-width.
+const MEDIUM_TYPES = new Set(["achievements"]);
 const MAX_POINTS = 8;
 
 export function getCardSize(type: ShowcaseCard["type"]): 1 | 2 {
