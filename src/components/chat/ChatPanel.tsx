@@ -60,6 +60,7 @@ export function ChatPanel() {
         disabled={isLoading}
         rateLimits={rateLimits}
         error={error}
+        onClearError={clearError}
       />
     </div>
   );

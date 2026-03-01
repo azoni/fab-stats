@@ -109,7 +109,7 @@ async function checkAndIncrementRateLimit(userId: string): Promise<RateLimitResu
 
 // ── Context Building ──
 
-function buildUserContext(lbEntry: any, recentMatches: any[]): string {
+function buildUserContext(lbEntry: any, allMatches: any[], h2hRecords: any[], lbEntries: any[]): string {
   if (!lbEntry) return "No player data available — the user may not have imported any matches yet.";
 
   const player: any = {
@@ -139,13 +139,13 @@ function buildUserContext(lbEntry: any, recentMatches: any[]): string {
     earnings: lbEntry.earnings || 0,
   };
 
-  // Hero breakdown (top 5)
+  // Hero breakdown (all)
   if (lbEntry.heroBreakdown?.length) {
-    player.heroBreakdown = lbEntry.heroBreakdown.slice(0, 5).map((h: any) => ({
+    player.heroBreakdown = lbEntry.heroBreakdown.map((h: any) => ({
       hero: h.hero,
       matches: h.matches,
       wins: h.wins,
-      winRate: h.winRate ?? (h.wins / h.matches * 100),
+      winRate: h.matches > 0 ? Math.round(h.wins / h.matches * 1000) / 10 : 0,
     }));
   }
 
@@ -154,8 +154,73 @@ function buildUserContext(lbEntry: any, recentMatches: any[]): string {
     player.nemesis = { name: lbEntry.nemesis, winRate: lbEntry.nemesisWinRate };
   }
 
-  // Recent matches (simplified)
-  const matches = recentMatches.slice(0, 20).map((m: any) => ({
+  // Build opponent name lookup from leaderboard
+  const uidToName = new Map<string, string>();
+  for (const e of lbEntries) {
+    if (e.userId) uidToName.set(e.userId, e.displayName || e.username);
+  }
+
+  // H2H opponent records (with names resolved)
+  const opponents = h2hRecords
+    .filter((r) => r.total > 0)
+    .sort((a, b) => b.total - a.total)
+    .slice(0, 30)
+    .map((r) => ({
+      name: uidToName.get(r.opponentUid) || "Unknown",
+      wins: r.myWins,
+      losses: r.theirWins,
+      draws: r.draws,
+      total: r.total,
+      winRate: r.total > 0 ? Math.round(r.myWins / r.total * 1000) / 10 : 0,
+    }));
+
+  // Aggregate opponent stats by hero (from match data)
+  const heroMatchups = new Map<string, { wins: number; losses: number; draws: number }>();
+  for (const m of allMatches) {
+    const oppHero = m.opponentHero || "Unknown";
+    if (oppHero === "Unknown") continue;
+    const cur = heroMatchups.get(oppHero) || { wins: 0, losses: 0, draws: 0 };
+    if (m.result === "win") cur.wins++;
+    else if (m.result === "loss") cur.losses++;
+    else if (m.result === "draw") cur.draws++;
+    heroMatchups.set(oppHero, cur);
+  }
+  const vsHeroes = [...heroMatchups.entries()]
+    .map(([hero, d]) => ({
+      hero,
+      wins: d.wins,
+      losses: d.losses,
+      draws: d.draws,
+      total: d.wins + d.losses + d.draws,
+      winRate: (d.wins + d.losses + d.draws) > 0 ? Math.round(d.wins / (d.wins + d.losses + d.draws) * 1000) / 10 : 0,
+    }))
+    .sort((a, b) => b.total - a.total)
+    .slice(0, 20);
+
+  // Event history (aggregated per event)
+  const eventMap = new Map<string, { date: string; format: string; eventType: string; hero: string; wins: number; losses: number; draws: number }>();
+  for (const m of allMatches) {
+    const eventName = m.notes?.split(" | ")[0]?.trim() || "";
+    if (!eventName) continue;
+    const cur = eventMap.get(eventName) || { date: m.date, format: m.format || "", eventType: m.eventType || "", hero: m.heroPlayed || "", wins: 0, losses: 0, draws: 0 };
+    if (m.result === "win") cur.wins++;
+    else if (m.result === "loss") cur.losses++;
+    else if (m.result === "draw") cur.draws++;
+    eventMap.set(eventName, cur);
+  }
+  const events = [...eventMap.entries()]
+    .slice(0, 30)
+    .map(([name, d]) => ({
+      name,
+      date: d.date,
+      format: d.format,
+      eventType: d.eventType,
+      hero: d.hero,
+      record: `${d.wins}W-${d.losses}L${d.draws > 0 ? `-${d.draws}D` : ""}`,
+    }));
+
+  // Recent matches (last 30 with full detail)
+  const recentMatches = allMatches.slice(0, 30).map((m: any) => ({
     date: m.date,
     hero: m.heroPlayed,
     opponent: m.opponentName || "Unknown",
@@ -165,7 +230,7 @@ function buildUserContext(lbEntry: any, recentMatches: any[]): string {
     eventType: m.eventType || "Unknown",
   }));
 
-  return JSON.stringify({ player, recentMatches: matches });
+  return JSON.stringify({ player, opponents, vsHeroes, events, recentMatches });
 }
 
 function buildMetaSummary(entries: any[]): string {
@@ -213,9 +278,17 @@ function buildMetaSummary(entries: any[]): string {
 
 const SYSTEM_PROMPT_PREFIX = `You are the FaB Stats Assistant, an AI helper for Flesh and Blood TCG players on fabstats.net. You help users understand their match statistics, analyze performance, discuss the game meta, compare matchups, and answer questions about Flesh and Blood heroes, cards, and strategy.
 
+Your data includes:
+- The player's full stats (win rate, streaks, hero breakdown, event history, etc.)
+- Their head-to-head record vs every opponent they've played on the platform
+- Their win rate vs each opponent hero
+- Their event history with per-event records
+- Their 30 most recent individual matches
+- Community meta: top heroes by play rate + win rate, top players
+
 Rules:
 - Be concise and conversational. Use specific numbers from the data when relevant.
-- Never fabricate statistics. If data is not available, say so.
+- Never fabricate statistics. If data is not available, say so clearly.
 - Never reveal other users' private data. You may reference public leaderboard aggregates.
 - Format numbers nicely (e.g., "62.3%" not "62.33333%").
 - You can reference FaB card data, hero abilities, and game mechanics from your training knowledge.
@@ -256,14 +329,44 @@ async function fetchUserLeaderboardEntry(userId: string): Promise<any | null> {
   return snap.exists ? snap.data() : null;
 }
 
-async function fetchRecentMatches(userId: string, count: number = 20): Promise<any[]> {
+async function fetchAllMatches(userId: string): Promise<any[]> {
   const db = getAdminDb();
   const snap = await db
     .collection(`users/${userId}/matches`)
     .orderBy("date", "desc")
-    .limit(count)
     .get();
   return snap.docs.map((d) => d.data());
+}
+
+async function fetchH2HRecords(userId: string): Promise<any[]> {
+  const db = getAdminDb();
+  // H2H docs use sorted pair IDs — query both sides
+  const [asP1, asP2] = await Promise.all([
+    db.collection("h2h").where("p1", "==", userId).get(),
+    db.collection("h2h").where("p2", "==", userId).get(),
+  ]);
+  const records: any[] = [];
+  for (const d of asP1.docs) {
+    const data = d.data();
+    records.push({
+      opponentUid: data.p2,
+      myWins: data.p1Wins,
+      theirWins: data.p2Wins,
+      draws: data.draws,
+      total: data.total,
+    });
+  }
+  for (const d of asP2.docs) {
+    const data = d.data();
+    records.push({
+      opponentUid: data.p1,
+      myWins: data.p2Wins,
+      theirWins: data.p1Wins,
+      draws: data.draws,
+      total: data.total,
+    });
+  }
+  return records;
 }
 
 // ── Save Messages ──
@@ -362,14 +465,15 @@ export default async function handler(req: Request) {
     }
 
     // Fetch context in parallel
-    const [lbEntry, recentMatches, lbEntries] = await Promise.all([
+    const [lbEntry, allMatches, h2hRecords, lbEntries] = await Promise.all([
       fetchUserLeaderboardEntry(userId),
-      fetchRecentMatches(userId),
+      fetchAllMatches(userId),
+      fetchH2HRecords(userId),
       fetchLeaderboardEntries(),
     ]);
 
     // Build prompts
-    const userContext = buildUserContext(lbEntry, recentMatches);
+    const userContext = buildUserContext(lbEntry, allMatches, h2hRecords, lbEntries);
     const metaSummary = buildMetaSummary(lbEntries);
     const systemPrompt = buildSystemPrompt(userContext, metaSummary);
 
@@ -429,8 +533,15 @@ export default async function handler(req: Request) {
       },
     }, 200, { "Cache-Control": "no-store" });
 
-  } catch (err) {
+  } catch (err: any) {
     console.error("chat function error:", err);
-    return jsonResponse({ error: "Internal error" }, 500);
+    // Graceful error messages based on failure type
+    if (err?.message?.includes("FIREBASE_SERVICE_ACCOUNT")) {
+      return jsonResponse({ error: "Chat service is not configured yet. Please try again later." }, 503);
+    }
+    if (err?.code === "ECONNREFUSED" || err?.code === "ENOTFOUND") {
+      return jsonResponse({ error: "Unable to reach the AI service. Please try again in a moment." }, 502);
+    }
+    return jsonResponse({ error: "Something went wrong. Please try again." }, 500);
   }
 }

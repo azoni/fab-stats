@@ -98,6 +98,7 @@ export default function ChatPage() {
           disabled={isLoading}
           rateLimits={rateLimits}
           error={error}
+          onClearError={clearError}
           multiline
         />
       </div>

@@ -95,9 +95,15 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         setError(`Rate limit reached (${limitType}). Try again in ${minutes} minute${minutes > 1 ? "s" : ""}.`);
         if (err.rateLimits) setRateLimits(err.rateLimits);
       } else if (err.status === 502) {
-        setError("AI is temporarily unavailable. Try again in a moment.");
+        setError("AI is temporarily unavailable. Please try again in a moment.");
+      } else if (err.status === 503) {
+        setError("Chat service is being set up. Check back soon!");
+      } else if (err.status === 401) {
+        setError("Your session expired. Please refresh the page and try again.");
+      } else if (!navigator.onLine) {
+        setError("You appear to be offline. Check your connection and try again.");
       } else {
-        setError(err.message || "Failed to send message.");
+        setError(err.message || "Something went wrong. Please try again.");
       }
     } finally {
       setIsLoading(false);
