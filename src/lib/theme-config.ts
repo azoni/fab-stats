@@ -1,12 +1,12 @@
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "./firebase";
 
-export type ThemeName = "arcana" | "ironheart" | "chromatic";
+export type ThemeName = "grimoire" | "leyline" | "rosetta";
 
 export const THEME_OPTIONS: { value: ThemeName; label: string; description: string }[] = [
-  { value: "arcana", label: "Arcana", description: "Purple & gold, refined and distinctive" },
-  { value: "ironheart", label: "Ironheart", description: "Warm TCG table, antiqued gold" },
-  { value: "chromatic", label: "Chromatic", description: "Data-first, cool and competitive" },
+  { value: "grimoire", label: "Grimoire", description: "Ancient spellbook, warm leather & candlelight" },
+  { value: "leyline", label: "Leyline", description: "Arcane glass observatory, luminous & floating" },
+  { value: "rosetta", label: "Rosetta", description: "Pure data terminal, sharp & monochrome" },
 ];
 
 const CACHE_KEY = "fab_theme_config";
@@ -30,14 +30,14 @@ export async function getThemeConfig(): Promise<{ theme: ThemeName; generation: 
   try {
     const snap = await getDoc(doc(db, "admin", "themeConfig"));
     const data = snap.exists() ? snap.data() : {};
-    const theme = (data.defaultTheme as ThemeName) || "arcana";
+    const theme = (data.defaultTheme as ThemeName) || "grimoire";
     const generation = (data.themeGeneration as number) ?? 0;
     try {
       localStorage.setItem(CACHE_KEY, JSON.stringify({ theme, generation, ts: Date.now() }));
     } catch {}
     return { theme, generation };
   } catch {
-    return { theme: "arcana", generation: 0 };
+    return { theme: "grimoire", generation: 0 };
   }
 }
 
@@ -59,7 +59,7 @@ export async function resetAllUserThemes(): Promise<void> {
   await setDoc(doc(db, "admin", "themeConfig"), { themeGeneration: next }, { merge: true });
   try {
     const cached = localStorage.getItem(CACHE_KEY);
-    const theme = cached ? (JSON.parse(cached).theme as ThemeName) || "arcana" : "arcana";
+    const theme = cached ? (JSON.parse(cached).theme as ThemeName) || "grimoire" : "grimoire";
     localStorage.setItem(CACHE_KEY, JSON.stringify({ theme, generation: next, ts: Date.now() }));
   } catch {}
 }

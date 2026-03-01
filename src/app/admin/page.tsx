@@ -123,7 +123,7 @@ export default function AdminPage() {
   const [savingShowcase, setSavingShowcase] = useState(false);
   const [showcaseSaved, setShowcaseSaved] = useState(false);
   // Default theme
-  const [defaultTheme, setDefaultTheme] = useState<ThemeName>("arcana");
+  const [defaultTheme, setDefaultTheme] = useState<ThemeName>("grimoire");
   const [savingTheme, setSavingTheme] = useState(false);
   const [themeSaved, setThemeSaved] = useState(false);
   const [resettingThemes, setResettingThemes] = useState(false);

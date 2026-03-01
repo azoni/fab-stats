@@ -105,7 +105,7 @@ export default function RootLayout({
       <head>
         <script
           dangerouslySetInnerHTML={{
-            __html: `try{var t=localStorage.getItem('fab-theme');if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}`,
+            __html: `try{var t=localStorage.getItem('fab-theme');if(t){var m={arcana:'grimoire',ironheart:'grimoire',chromatic:'rosetta'};if(m[t]){t=m[t];localStorage.setItem('fab-theme',t)}document.documentElement.setAttribute('data-theme',t)}}catch(e){}`,
           }}
         />
       </head>

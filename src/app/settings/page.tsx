@@ -53,10 +53,10 @@ function ChevronIcon({ open }: { open: boolean }) {
   );
 }
 
-const THEME_PREVIEWS: Record<ThemeName, { bg: string; surface: string; border: string; accent: string; text: string; muted: string }> = {
-  arcana: { bg: "#0c0a0e", surface: "#1a1720", border: "#3d3548", accent: "#c9a84c", text: "#ede8f0", muted: "#9590a0" },
-  ironheart: { bg: "#0d0b08", surface: "#1a1611", border: "#3a3329", accent: "#b8963a", text: "#e8e0d4", muted: "#9a9080" },
-  chromatic: { bg: "#111113", surface: "#1b1b1f", border: "#2a2a30", accent: "#3b82f6", text: "#e4e4e7", muted: "#71717a" },
+const THEME_PREVIEWS: Record<ThemeName, { bg: string; surface: string; border: string; accent: string; text: string; muted: string; radius: string }> = {
+  grimoire: { bg: "#0e0c08", surface: "#1c1812", border: "#3e3528", accent: "#d4a54a", text: "#e6ddd0", muted: "#9a8e7a", radius: "4px" },
+  leyline: { bg: "#08080f", surface: "#14142a", border: "#1e2050", accent: "#7b8fff", text: "#e0e4f0", muted: "#6b7094", radius: "10px" },
+  rosetta: { bg: "#0a0a0a", surface: "#141414", border: "#262626", accent: "#f0f0f0", text: "#fafafa", muted: "#737373", radius: "2px" },
 };
 
 function ThemePicker() {
@@ -91,8 +91,8 @@ function ThemePicker() {
             >
               {/* Mini preview */}
               <div
-                className="rounded-md overflow-hidden mb-2.5 border"
-                style={{ background: p.bg, borderColor: p.border }}
+                className="overflow-hidden mb-2.5 border"
+                style={{ background: p.bg, borderColor: p.border, borderRadius: p.radius }}
               >
                 {/* Simulated header bar */}
                 <div className="flex items-center gap-1.5 px-2 py-1.5" style={{ borderBottom: `1px solid ${p.border}` }}>
@@ -102,13 +102,13 @@ function ThemePicker() {
                 {/* Simulated content */}
                 <div className="p-2 space-y-1.5">
                   <div className="flex gap-1.5">
-                    <div className="w-1/2 h-6 rounded" style={{ background: p.surface, border: `1px solid ${p.border}` }} />
-                    <div className="w-1/2 h-6 rounded" style={{ background: p.surface, border: `1px solid ${p.border}` }} />
+                    <div className="w-1/2 h-6" style={{ background: p.surface, border: `1px solid ${p.border}`, borderRadius: p.radius }} />
+                    <div className="w-1/2 h-6" style={{ background: p.surface, border: `1px solid ${p.border}`, borderRadius: p.radius }} />
                   </div>
-                  <div className="h-4 rounded" style={{ background: p.surface, border: `1px solid ${p.border}` }} />
+                  <div className="h-4" style={{ background: p.surface, border: `1px solid ${p.border}`, borderRadius: p.radius }} />
                   <div className="flex gap-1.5">
-                    <div className="h-2 w-8 rounded-full" style={{ background: p.accent }} />
-                    <div className="h-2 flex-1 rounded-full" style={{ background: p.muted, opacity: 0.2 }} />
+                    <div className="h-2 w-8" style={{ background: p.accent, borderRadius: p.radius }} />
+                    <div className="h-2 flex-1" style={{ background: p.muted, opacity: 0.2, borderRadius: p.radius }} />
                   </div>
                 </div>
               </div>

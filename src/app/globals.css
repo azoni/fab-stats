@@ -1,26 +1,26 @@
 @import "tailwindcss";
 
 @theme inline {
-  --color-fab-bg: #0c0a0e;
-  --color-fab-surface: #1a1720;
-  --color-fab-surface-hover: #221e28;
-  --color-fab-border: #3d3548;
-  --color-fab-gold: #c9a84c;
-  --color-fab-gold-light: #dfc06a;
-  --color-fab-gold-dark: #9a7b2e;
-  --color-fab-red: #8b1a1a;
-  --color-fab-red-light: #b22222;
-  --color-fab-crimson: #6b0f1a;
+  --color-fab-bg: #0e0c08;
+  --color-fab-surface: #1c1812;
+  --color-fab-surface-hover: #26211a;
+  --color-fab-border: #3e3528;
+  --color-fab-gold: #d4a54a;
+  --color-fab-gold-light: #e8c06e;
+  --color-fab-gold-dark: #9e7a2f;
+  --color-fab-red: #7a2020;
+  --color-fab-red-light: #a33030;
+  --color-fab-crimson: #5c1515;
   --color-fab-win: #4ade80;
   --color-fab-loss: #f87171;
   --color-fab-draw: #facc15;
-  --color-fab-text: #ede8f0;
-  --color-fab-muted: #9590a0;
-  --color-fab-dim: #5c5768;
-  --radius-sm: 0.5rem;
-  --radius-md: 0.625rem;
-  --radius-lg: 0.875rem;
-  --radius-xl: 1.125rem;
+  --color-fab-text: #e6ddd0;
+  --color-fab-muted: #9a8e7a;
+  --color-fab-dim: #6b6050;
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.625rem;
+  --radius-xl: 0.75rem;
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
   --font-display: var(--font-nunito), var(--font-geist-sans), sans-serif;
@@ -39,13 +39,24 @@ body::before {
   inset: 0;
   pointer-events: none;
   z-index: 9999;
-  opacity: 0.015;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  opacity: 0.04;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+}
+
+/* Ambient atmosphere overlay */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9998;
+  background: radial-gradient(ellipse 80% 40% at 50% -5%, rgba(212, 165, 74, 0.04), transparent 70%);
 }
 
 /* Gold accent glow for headings */
 .text-fab-gold {
-  text-shadow: 0 0 20px rgba(201, 168, 76, 0.15);
+  text-shadow: 0 0 8px rgba(212, 165, 74, 0.25),
+               0 0 30px rgba(212, 165, 74, 0.08);
 }
 
 /* Scrollbar */
@@ -88,8 +99,8 @@ body::before {
 
 /* Selection */
 ::selection {
-  background: rgba(201, 168, 76, 0.3);
-  color: var(--color-fab-text);
+  background: rgba(212, 165, 74, 0.25);
+  color: #fff8e8;
 }
 
 /* ── Rank border glow animations (avatar rings) ── */
@@ -469,7 +480,7 @@ textarea[class*="border-fab-border"] {
 .bg-fab-gold:hover {
   transform: translateY(-1px);
   box-shadow: 0 3px 0 var(--color-fab-gold-dark),
-              0 6px 16px rgba(201, 168, 76, 0.2);
+              0 6px 16px rgba(212, 165, 74, 0.25);
 }
 
 .bg-fab-gold:active {
@@ -499,180 +510,395 @@ h1, h2, h3 {
 }
 
 /* ════════════════════════════════════════════════════════════
-   Theme: Ironheart — Warm TCG Table Realism
-   Brown-black backgrounds, antiqued gold, serif display font,
-   heavier texture, warm card edges.
+   Theme: Grimoire — Ancient Spellbook by Candlelight
+   Warm leather-like surfaces, serif headings, gold ink glow,
+   heavy page-shadow depth, centered ornamental dividers.
    ════════════════════════════════════════════════════════════ */
 
-[data-theme="ironheart"] {
-  --color-fab-bg: #0d0b08;
-  --color-fab-surface: #1a1611;
-  --color-fab-surface-hover: #231d16;
-  --color-fab-border: #3a3329;
-  --color-fab-gold: #b8963a;
-  --color-fab-gold-light: #d4b050;
-  --color-fab-gold-dark: #8a6e28;
-  --color-fab-red: #8b2a1a;
-  --color-fab-red-light: #b23222;
-  --color-fab-crimson: #6b1a1a;
-  --color-fab-text: #e8e0d4;
-  --color-fab-muted: #9a9080;
-  --color-fab-dim: #6b6358;
-}
-
-/* Warmer noise texture */
-[data-theme="ironheart"] body::before {
-  opacity: 0.03;
-}
-
-/* Warm gold glow on headings */
-[data-theme="ironheart"] .text-fab-gold {
-  text-shadow: 0 0 24px rgba(184, 150, 58, 0.2);
-}
-
-/* Serif display font for headings */
-[data-theme="ironheart"] h1,
-[data-theme="ironheart"] h2,
-[data-theme="ironheart"] h3 {
+/* Serif headings — illuminated manuscript feel */
+[data-theme="grimoire"] h1,
+[data-theme="grimoire"] h2,
+[data-theme="grimoire"] h3 {
   font-family: Georgia, 'Palatino Linotype', 'Book Antiqua', Palatino, serif;
-  letter-spacing: 0.01em;
+  letter-spacing: 0.03em;
+  font-weight: 700;
 }
 
-/* Warm selection highlight */
-[data-theme="ironheart"] ::selection {
-  background: rgba(184, 150, 58, 0.35);
+[data-theme="grimoire"] h1 {
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
 
-/* Warmer card inner edge */
-[data-theme="ironheart"] [class*="bg-fab-surface"][class*="border-fab-border"]:not(nav) {
-  box-shadow: inset 0 1px 0 rgba(255, 220, 150, 0.04);
+/* Warm card inner edge + heavy page-shadow depth */
+[data-theme="grimoire"] [class*="bg-fab-surface"][class*="border-fab-border"]:not(nav) {
+  box-shadow: inset 0 1px 0 rgba(255, 220, 150, 0.06),
+              0 2px 8px rgba(0, 0, 0, 0.4);
+  transition: box-shadow 0.35s, border-color 0.35s;
 }
 
-/* Warmer button hover glow */
-[data-theme="ironheart"] .bg-fab-gold:hover {
-  box-shadow: 0 3px 0 var(--color-fab-gold-dark),
-              0 6px 16px rgba(184, 150, 58, 0.25);
+/* Card hover — warm inner glow, no lift */
+[data-theme="grimoire"] [class*="bg-fab-surface"][class*="border-fab-border"]:not(nav):hover {
+  box-shadow: inset 0 0 20px rgba(212, 165, 74, 0.06),
+              0 2px 12px rgba(0, 0, 0, 0.5);
+  border-color: rgba(212, 165, 74, 0.3);
 }
 
-/* Section header line uses warmer gold */
-[data-theme="ironheart"] .section-header::after {
-  background: linear-gradient(90deg, rgba(184, 150, 58, 0.3), transparent);
+/* Centered symmetrical divider — like a book rule */
+[data-theme="grimoire"] .section-header::after {
+  background: linear-gradient(90deg, transparent 5%, rgba(212, 165, 74, 0.3) 20%, rgba(212, 165, 74, 0.4) 50%, rgba(212, 165, 74, 0.3) 80%, transparent 95%);
+}
+
+/* Buttons — wax seal press feel, wider tracking */
+[data-theme="grimoire"] .bg-fab-gold {
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-size: 0.9em;
+  box-shadow: 0 3px 0 var(--color-fab-gold-dark);
+}
+
+[data-theme="grimoire"] .bg-fab-gold:active {
+  transform: translateY(3px);
+  box-shadow: 0 0 0 var(--color-fab-gold-dark);
+}
+
+/* Squared scrollbar — leather spine feel */
+[data-theme="grimoire"] ::-webkit-scrollbar-thumb {
+  border-radius: 2px;
+}
+
+/* Nav buttons — warm ember, no lift */
+[data-theme="grimoire"] .nav-btn:hover {
+  transform: none;
 }
 
 /* ════════════════════════════════════════════════════════════
-   Theme: Chromatic — Data-First Competitive
-   Neutral grey, blue accent, no textures, flat buttons,
-   thin borders, tight radius, clinical and dense.
+   Theme: Leyline — Arcane Glass Observatory
+   Translucent glass panels, blue-violet accent, backdrop blur,
+   faint coordinate grid, pill buttons, luminous hover.
    ════════════════════════════════════════════════════════════ */
 
-[data-theme="chromatic"] {
-  --color-fab-bg: #111113;
-  --color-fab-surface: #1b1b1f;
-  --color-fab-surface-hover: #232328;
-  --color-fab-border: #2a2a30;
-  --color-fab-gold: #3b82f6;
-  --color-fab-gold-light: #60a5fa;
-  --color-fab-gold-dark: #2563eb;
-  --color-fab-red: #7f1d1d;
-  --color-fab-red-light: #b91c1c;
-  --color-fab-crimson: #6b0f0f;
-  --color-fab-text: #e4e4e7;
-  --color-fab-muted: #71717a;
-  --color-fab-dim: #3f3f46;
-  --radius-sm: 0.25rem;
-  --radius-md: 0.375rem;
-  --radius-lg: 0.5rem;
-  --radius-xl: 0.625rem;
+[data-theme="leyline"] {
+  --color-fab-bg: #08080f;
+  --color-fab-surface: #14142a;
+  --color-fab-surface-hover: #1c1c38;
+  --color-fab-border: #1e2050;
+  --color-fab-gold: #7b8fff;
+  --color-fab-gold-light: #a0b0ff;
+  --color-fab-gold-dark: #4e5eb8;
+  --color-fab-red: #6b1a30;
+  --color-fab-red-light: #9b2040;
+  --color-fab-crimson: #4a0f20;
+  --color-fab-win: #4ade80;
+  --color-fab-loss: #f87171;
+  --color-fab-draw: #a0b0ff;
+  --color-fab-text: #e0e4f0;
+  --color-fab-muted: #6b7094;
+  --color-fab-dim: #3a3d54;
+  --radius-sm: 0.625rem;
+  --radius-md: 0.875rem;
+  --radius-lg: 1.125rem;
+  --radius-xl: 1.5rem;
 }
 
-/* No noise texture — clean surfaces */
-[data-theme="chromatic"] body::before {
+/* No noise texture — glass is clean */
+[data-theme="leyline"] body::before {
   display: none;
 }
 
-/* Blue accent glow */
-[data-theme="chromatic"] .text-fab-gold {
-  text-shadow: 0 0 16px rgba(59, 130, 246, 0.12);
+/* Faint arcane coordinate grid */
+[data-theme="leyline"] body::after {
+  opacity: 0.02;
+  background:
+    linear-gradient(rgba(123, 143, 255, 0.3) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(123, 143, 255, 0.3) 1px, transparent 1px);
+  background-size: 60px 60px;
 }
 
-/* Sans-serif headings, tight tracking, heavy weight */
-[data-theme="chromatic"] h1,
-[data-theme="chromatic"] h2,
-[data-theme="chromatic"] h3 {
+/* Blue-violet accent glow */
+[data-theme="leyline"] .text-fab-gold {
+  text-shadow: 0 0 12px rgba(123, 143, 255, 0.2),
+               0 0 30px rgba(123, 143, 255, 0.06);
+}
+
+/* Sans-serif, tight tracking, lighter weight */
+[data-theme="leyline"] h1,
+[data-theme="leyline"] h2,
+[data-theme="leyline"] h3 {
   font-family: var(--font-sans), system-ui, sans-serif;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.015em;
+  font-weight: 600;
 }
 
-/* Blue selection */
-[data-theme="chromatic"] ::selection {
-  background: rgba(59, 130, 246, 0.3);
+/* Arcane blue selection */
+[data-theme="leyline"] ::selection {
+  background: rgba(123, 143, 255, 0.3);
+  color: #fff;
 }
 
-/* Thin 1px borders */
-[data-theme="chromatic"] [class*="bg-fab-surface"][class*="border-fab-border"]:not(nav):not(td):not(tr) {
+/* Glass card surfaces — translucent + backdrop blur */
+[data-theme="leyline"] [class*="bg-fab-surface"][class*="border-fab-border"]:not(nav):not(td):not(tr) {
+  border-width: 1px;
+  backdrop-filter: blur(8px) saturate(1.2);
+  -webkit-backdrop-filter: blur(8px) saturate(1.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3),
+              inset 0 0.5px 0 rgba(100, 140, 255, 0.08);
+  transition: border-color 0.4s, box-shadow 0.4s;
+}
+
+[data-theme="leyline"] [class*="bg-fab-surface"][class*="shadow-xl"] {
   border-width: 1px;
 }
 
-[data-theme="chromatic"] [class*="bg-fab-surface"][class*="shadow-xl"] {
-  border-width: 1px;
-}
-
-[data-theme="chromatic"] nav[class*="border-b"] {
+[data-theme="leyline"] nav[class*="border-b"] {
   border-bottom-width: 1px;
 }
 
-[data-theme="chromatic"] nav[class*="border-t"] {
+[data-theme="leyline"] nav[class*="border-t"] {
   border-top-width: 1px;
 }
 
-[data-theme="chromatic"] input[class*="border-fab-border"],
-[data-theme="chromatic"] select[class*="border-fab-border"],
-[data-theme="chromatic"] textarea[class*="border-fab-border"] {
+[data-theme="leyline"] input[class*="border-fab-border"],
+[data-theme="leyline"] select[class*="border-fab-border"],
+[data-theme="leyline"] textarea[class*="border-fab-border"] {
   border-width: 1px;
 }
 
-/* Minimal card inner shadow */
-[data-theme="chromatic"] [class*="bg-fab-surface"][class*="border-fab-border"]:not(nav) {
-  box-shadow: none;
+/* Card hover — border glow pulse, no lift */
+[data-theme="leyline"] [class*="bg-fab-surface"][class*="border-fab-border"]:not(nav):hover {
+  border-color: rgba(123, 143, 255, 0.25);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3),
+              0 0 20px rgba(123, 143, 255, 0.06),
+              inset 0 0.5px 0 rgba(100, 140, 255, 0.12);
 }
 
-/* Flat buttons — no 3D effect */
-[data-theme="chromatic"] .bg-fab-gold {
-  font-weight: 700;
-  letter-spacing: 0;
-  border: 1px solid var(--color-fab-gold-dark);
-  box-shadow: none;
+/* Pill-shaped flat buttons — luminous inner glow */
+[data-theme="leyline"] .bg-fab-gold {
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  border: 1px solid rgba(123, 143, 255, 0.3);
+  box-shadow: 0 0 12px rgba(123, 143, 255, 0.1),
+              inset 0 0 12px rgba(123, 143, 255, 0.05);
+  border-radius: 9999px;
 }
 
-[data-theme="chromatic"] .bg-fab-gold:hover {
+[data-theme="leyline"] .bg-fab-gold:hover {
   transform: none;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+  box-shadow: 0 0 20px rgba(123, 143, 255, 0.2),
+              0 0 40px rgba(123, 143, 255, 0.08),
+              inset 0 0 16px rgba(123, 143, 255, 0.08);
+  border-color: rgba(123, 143, 255, 0.5);
 }
 
-[data-theme="chromatic"] .bg-fab-gold:active {
+[data-theme="leyline"] .bg-fab-gold:active {
   transform: none;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+  box-shadow: 0 0 8px rgba(123, 143, 255, 0.15),
+              inset 0 0 20px rgba(123, 143, 255, 0.1);
 }
 
-/* Thin section header line */
-[data-theme="chromatic"] .section-header::after {
+/* Section header — blue gradient line */
+[data-theme="leyline"] .section-header::after {
   height: 1px;
-  background: linear-gradient(90deg, var(--color-fab-border), transparent);
+  background: linear-gradient(90deg, rgba(123, 143, 255, 0.2), rgba(123, 143, 255, 0.05));
 }
 
-/* Nav buttons — subtler hover effect */
-[data-theme="chromatic"] .nav-btn:hover {
-  transform: translateY(-1px);
+/* Luminous focus rings */
+[data-theme="leyline"] input:focus,
+[data-theme="leyline"] select:focus,
+[data-theme="leyline"] textarea:focus {
+  border-color: rgba(123, 143, 255, 0.4);
+  box-shadow: 0 0 12px rgba(123, 143, 255, 0.08);
 }
 
-/* Log button — match blue accent */
-[data-theme="chromatic"] .nav-btn-log::before {
-  background: linear-gradient(90deg, transparent, #3b82f6, #60a5fa, #3b82f6, transparent);
+/* Thin luminous scrollbar */
+[data-theme="leyline"] ::-webkit-scrollbar {
+  width: 6px;
 }
-[data-theme="chromatic"] .nav-btn-log::after {
-  background: radial-gradient(ellipse at 50% 0%, rgba(59, 130, 246, 0.1) 0%, transparent 70%);
+[data-theme="leyline"] ::-webkit-scrollbar-thumb {
+  background: rgba(123, 143, 255, 0.2);
+  border-radius: 9999px;
+  border: none;
 }
-[data-theme="chromatic"] .nav-btn-log:hover {
-  border-color: rgba(59, 130, 246, 0.35);
-  box-shadow: 0 8px 30px -5px rgba(59, 130, 246, 0.2), 0 0 0 1px rgba(59, 130, 246, 0.06);
+[data-theme="leyline"] ::-webkit-scrollbar-thumb:hover {
+  background: rgba(123, 143, 255, 0.35);
+}
+[data-theme="leyline"] ::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Nav buttons — glow, no lift */
+[data-theme="leyline"] .nav-btn:hover {
+  transform: none;
+}
+
+/* Log button — leyline accent */
+[data-theme="leyline"] .nav-btn-log::before {
+  background: linear-gradient(90deg, transparent, #7b8fff, #a0b0ff, #7b8fff, transparent);
+}
+[data-theme="leyline"] .nav-btn-log::after {
+  background: radial-gradient(ellipse at 50% 0%, rgba(123, 143, 255, 0.1) 0%, transparent 70%);
+}
+[data-theme="leyline"] .nav-btn-log:hover {
+  border-color: rgba(123, 143, 255, 0.35);
+  box-shadow: 0 8px 30px -5px rgba(123, 143, 255, 0.2), 0 0 0 1px rgba(123, 143, 255, 0.06);
+}
+
+/* ════════════════════════════════════════════════════════════
+   Theme: Rosetta — Tournament Analyst Workstation
+   Monochromatic, monospace headings, near-zero radius,
+   no shadows or textures, all decorations suppressed.
+   ════════════════════════════════════════════════════════════ */
+
+[data-theme="rosetta"] {
+  --color-fab-bg: #0a0a0a;
+  --color-fab-surface: #141414;
+  --color-fab-surface-hover: #1a1a1a;
+  --color-fab-border: #262626;
+  --color-fab-gold: #f0f0f0;
+  --color-fab-gold-light: #ffffff;
+  --color-fab-gold-dark: #a0a0a0;
+  --color-fab-red: #7f1d1d;
+  --color-fab-red-light: #dc2626;
+  --color-fab-crimson: #5c1515;
+  --color-fab-win: #22c55e;
+  --color-fab-loss: #ef4444;
+  --color-fab-draw: #eab308;
+  --color-fab-text: #fafafa;
+  --color-fab-muted: #737373;
+  --color-fab-dim: #404040;
+  --radius-sm: 0.125rem;
+  --radius-md: 0.25rem;
+  --radius-lg: 0.375rem;
+  --radius-xl: 0.5rem;
+}
+
+/* No noise texture */
+[data-theme="rosetta"] body::before {
+  display: none;
+}
+
+/* No ambient atmosphere */
+[data-theme="rosetta"] body::after {
+  display: none;
+}
+
+/* No accent glow — pure text */
+[data-theme="rosetta"] .text-fab-gold {
+  text-shadow: none;
+}
+
+/* Monospace headings — uppercase, wide tracking */
+[data-theme="rosetta"] h1,
+[data-theme="rosetta"] h2,
+[data-theme="rosetta"] h3 {
+  font-family: var(--font-mono);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+/* Neutral grey selection */
+[data-theme="rosetta"] ::selection {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+
+/* Flat cards — no shadows, no inner highlights, 1px borders */
+[data-theme="rosetta"] [class*="bg-fab-surface"][class*="border-fab-border"]:not(nav):not(td):not(tr) {
+  border-width: 1px;
+  box-shadow: none;
+  transition: border-color 0.15s, background-color 0.15s;
+}
+
+[data-theme="rosetta"] [class*="bg-fab-surface"][class*="shadow-xl"] {
+  border-width: 1px;
+  box-shadow: none;
+}
+
+[data-theme="rosetta"] nav[class*="border-b"] {
+  border-bottom-width: 1px;
+}
+
+[data-theme="rosetta"] nav[class*="border-t"] {
+  border-top-width: 1px;
+}
+
+[data-theme="rosetta"] input[class*="border-fab-border"],
+[data-theme="rosetta"] select[class*="border-fab-border"],
+[data-theme="rosetta"] textarea[class*="border-fab-border"] {
+  border-width: 1px;
+}
+
+/* Card hover — fast border brighten, no glow, no lift */
+[data-theme="rosetta"] [class*="bg-fab-surface"][class*="border-fab-border"]:not(nav):hover {
+  border-color: #404040;
+}
+
+/* Flat monospace buttons — no 3D, no glow */
+[data-theme="rosetta"] .bg-fab-gold {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-size: 0.8em;
+  border: 1px solid #404040;
+  box-shadow: none;
+  border-radius: 0.25rem;
+}
+
+[data-theme="rosetta"] .bg-fab-gold:hover {
+  transform: none;
+  box-shadow: none;
+  background-color: #ffffff !important;
+  border-color: #ffffff;
+}
+
+[data-theme="rosetta"] .bg-fab-gold:active {
+  transform: none;
+  box-shadow: none;
+  opacity: 0.85;
+}
+
+/* Hard grey line divider — no gradient */
+[data-theme="rosetta"] .section-header::after {
+  height: 1px;
+  background: #262626;
+}
+
+/* Ultra-thin squared scrollbar */
+[data-theme="rosetta"] ::-webkit-scrollbar {
+  width: 4px;
+}
+[data-theme="rosetta"] ::-webkit-scrollbar-thumb {
+  background: #404040;
+  border-radius: 0;
+  border: none;
+}
+[data-theme="rosetta"] ::-webkit-scrollbar-track {
+  background: #0a0a0a;
+}
+
+/* Suppress ALL nav button decorations */
+[data-theme="rosetta"] .nav-btn::before,
+[data-theme="rosetta"] .nav-btn::after {
+  display: none;
+}
+
+[data-theme="rosetta"] .nav-btn:hover {
+  transform: none;
+  border-color: #404040;
+}
+
+[data-theme="rosetta"] .nav-btn:active {
+  transform: none;
+}
+
+[data-theme="rosetta"] .nav-btn:hover .nav-icon {
+  filter: none;
+  transform: none;
+}
+
+/* Suppress spotlight card decorations */
+[data-theme="rosetta"] .spotlight-card::before,
+[data-theme="rosetta"] .spotlight-card::after {
+  display: none;
 }

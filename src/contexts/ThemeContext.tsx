@@ -1,7 +1,7 @@
 "use client";
 import { createContext, useContext, useState, useEffect, useCallback, useMemo } from "react";
 import type { ThemeName } from "@/lib/theme-config";
-import { getThemeConfig } from "@/lib/theme-config";
+import { THEME_OPTIONS, getThemeConfig } from "@/lib/theme-config";
 
 interface ThemeContextType {
   theme: ThemeName;
@@ -11,7 +11,7 @@ interface ThemeContextType {
 }
 
 const ThemeContext = createContext<ThemeContextType>({
-  theme: "arcana",
+  theme: "grimoire",
   setTheme: () => {},
   resetTheme: () => {},
   isCustom: false,
@@ -20,10 +20,33 @@ const ThemeContext = createContext<ThemeContextType>({
 const USER_THEME_KEY = "fab-theme";
 const USER_THEME_GEN_KEY = "fab-theme-gen";
 
+// Migrate old theme slugs to new ones
+const SLUG_MIGRATION: Record<string, ThemeName> = {
+  arcana: "grimoire",
+  ironheart: "grimoire",
+  chromatic: "rosetta",
+};
+
+const VALID_THEMES = new Set(THEME_OPTIONS.map((o) => o.value));
+
+function migrateSlug(raw: string | null): ThemeName | null {
+  if (!raw) return null;
+  if (VALID_THEMES.has(raw as ThemeName)) return raw as ThemeName;
+  const migrated = SLUG_MIGRATION[raw];
+  if (migrated) {
+    localStorage.setItem(USER_THEME_KEY, migrated);
+    return migrated;
+  }
+  // Unknown slug — clear it
+  localStorage.removeItem(USER_THEME_KEY);
+  return null;
+}
+
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = useState<ThemeName>(() => {
-    if (typeof window === "undefined") return "arcana";
-    return (localStorage.getItem(USER_THEME_KEY) as ThemeName) || "arcana";
+    if (typeof window === "undefined") return "grimoire";
+    const stored = migrateSlug(localStorage.getItem(USER_THEME_KEY));
+    return stored || "grimoire";
   });
   const [isCustom, setIsCustom] = useState(() => {
     if (typeof window === "undefined") return false;
