@@ -97,6 +97,11 @@ export const MetaSnapshot = memo(function MetaSnapshot({ topHeroes, top8Heroes, 
                   {top8Totals.placements} placements · {top8Totals.heroes} heroes
                 </span>
               </div>
+              <div className="flex items-center gap-3 text-[10px] text-fab-dim uppercase tracking-wide">
+                <span>Played</span>
+                <span>Top 8</span>
+                <span>Won</span>
+              </div>
             </div>
             {sortedTop8.slice(0, 10).map((t8, i) => {
               const heroInfo = getHeroByName(t8.hero);
@@ -106,14 +111,10 @@ export const MetaSnapshot = memo(function MetaSnapshot({ topHeroes, top8Heroes, 
                   <span className={`text-sm w-5 text-center relative ${RANK_CLASS[i] || "text-fab-muted font-bold"}`}>{i + 1}</span>
                   <HeroClassIcon heroClass={heroClass} size="sm" />
                   <span className={`font-medium text-fab-text flex-1 truncate text-sm relative ${i === 0 ? "text-fab-gold" : ""}`}>{t8.hero}</span>
-                  <div className="flex items-baseline gap-3 shrink-0 relative text-xs tabular-nums">
-                    {t8.totalPlayers > 0 && (
-                      <span className="text-fab-dim"><span className="text-fab-muted">{t8.totalPlayers}</span> played</span>
-                    )}
-                    <span className="text-fab-dim"><span className="text-fab-muted font-medium">{t8.count}</span> top 8{t8.count !== 1 ? "s" : ""}</span>
-                    {t8.champions > 0 && (
-                      <span className="text-fab-dim"><span className="font-semibold text-fab-gold">{t8.champions}</span> won</span>
-                    )}
+                  <div className="flex items-center gap-3 shrink-0 relative text-xs tabular-nums">
+                    <span className="text-fab-muted w-8 text-right">{t8.totalPlayers > 0 ? t8.totalPlayers : "–"}</span>
+                    <span className="text-fab-muted font-medium w-7 text-right">{t8.count}</span>
+                    <span className={`w-6 text-right ${t8.champions > 0 ? "font-semibold text-fab-gold" : "text-fab-dim"}`}>{t8.champions > 0 ? t8.champions : "–"}</span>
                   </div>
                 </div>
               );
