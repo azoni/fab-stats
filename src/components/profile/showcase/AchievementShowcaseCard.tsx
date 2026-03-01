@@ -18,19 +18,20 @@ export function AchievementShowcaseCard({ achievements }: AchievementShowcaseCar
 
   return (
     <div className="spotlight-card spotlight-rising bg-fab-surface border border-fab-border rounded-lg px-4 py-3 relative overflow-hidden">
-      <div className="flex items-center gap-3">
+      <div className="space-y-2">
         {achievements.slice(0, 3).map((ach) => {
           const style = RARITY_STYLE[ach.rarity] || RARITY_STYLE.common;
           return (
             <div
               key={ach.id}
-              className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg border ${style.border} ${style.glow} bg-fab-bg/50 flex-1 min-w-0`}
+              className={`flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg border ${style.border} ${style.glow} bg-fab-bg/50`}
             >
               <span className="text-lg shrink-0">{ach.icon}</span>
-              <div className="min-w-0">
+              <div className="min-w-0 flex-1">
                 <p className={`text-xs font-semibold truncate ${style.text}`}>{ach.name}</p>
                 <p className="text-[9px] text-fab-dim truncate">{ach.description}</p>
               </div>
+              <span className={`text-[9px] font-medium capitalize shrink-0 ${style.text}`}>{ach.rarity}</span>
             </div>
           );
         })}

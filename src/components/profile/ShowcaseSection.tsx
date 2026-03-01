@@ -58,7 +58,15 @@ export function ShowcaseSection({
     setCards(updated);
     setSaving(true);
     try {
-      await updateProfile(profile.uid, { showcase: updated });
+      // Strip undefined values from card objects — Firestore rejects them
+      const cleaned = updated.map((card) => {
+        const clean: Record<string, unknown> = {};
+        for (const [k, v] of Object.entries(card)) {
+          if (v !== undefined) clean[k] = v;
+        }
+        return clean as unknown as ShowcaseCard;
+      });
+      await updateProfile(profile.uid, { showcase: cleaned });
     } catch (err) {
       console.error("Failed to save showcase:", err);
     } finally {
