@@ -359,6 +359,7 @@ export default function PlayerProfile() {
     <div className="space-y-5">
       {/* Hero Card */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="flex flex-col gap-4">
         <div
           className="bg-fab-surface border border-fab-border rounded-lg p-5"
           style={cardBorder ? { borderColor: cardBorder.border, boxShadow: cardBorder.shadow } : undefined}
@@ -487,6 +488,59 @@ export default function PlayerProfile() {
             </p>
           )}
         </div>
+
+        {/* Filters */}
+        <div className="flex gap-2 flex-wrap items-center">
+          <select
+            value={filterFormat}
+            onChange={(e) => setFilterFormat(e.target.value)}
+            className="bg-fab-surface border border-fab-border text-fab-text text-xs rounded-lg px-2 py-1 focus:outline-none focus:border-fab-gold"
+          >
+            <option value="all">All Formats</option>
+            {allFormats.map((f) => (
+              <option key={f} value={f}>{f}</option>
+            ))}
+          </select>
+          <select
+            value={filterRated}
+            onChange={(e) => setFilterRated(e.target.value)}
+            className="bg-fab-surface border border-fab-border text-fab-text text-xs rounded-lg px-2 py-1 focus:outline-none focus:border-fab-gold"
+            title="Filter by rated status or event type"
+          >
+            <option value="all">All</option>
+            <option value="rated">Rated Only</option>
+            <option value="unrated">Unrated Only</option>
+            {allEventTypes.map((t) => (
+              <option key={t} value={t}>{t}</option>
+            ))}
+          </select>
+          {allHeroes.length > 1 && (
+            <select
+              value={filterHero}
+              onChange={(e) => setFilterHero(e.target.value)}
+              className="bg-fab-surface border border-fab-border text-fab-text text-xs rounded-lg px-2 py-1 focus:outline-none focus:border-fab-gold"
+            >
+              <option value="all">All Heroes</option>
+              {allHeroes.map((h) => (
+                <option key={h} value={h}>{h}</option>
+              ))}
+            </select>
+          )}
+          {isAdmin && (
+            <button
+              onClick={() => setShowRawData(true)}
+              className="text-xs px-2 py-1 rounded bg-fab-surface border border-fab-border text-fab-dim hover:text-fab-text transition-colors"
+            >
+              Raw Data
+            </button>
+          )}
+          {isFiltered && (
+            <span className="text-xs text-fab-dim">
+              Showing {fm.length} of {matches.length} matches
+            </span>
+          )}
+        </div>
+        </div>
         <ShowcaseSection
           profile={profile}
           isOwner={isOwner}
@@ -499,58 +553,6 @@ export default function PlayerProfile() {
           overall={overall}
           achievements={achievements}
         />
-      </div>
-
-      {/* Filters */}
-      <div className="flex gap-2 flex-wrap items-center">
-        <select
-          value={filterFormat}
-          onChange={(e) => setFilterFormat(e.target.value)}
-          className="bg-fab-surface border border-fab-border text-fab-text text-xs rounded-lg px-2 py-1 focus:outline-none focus:border-fab-gold"
-        >
-          <option value="all">All Formats</option>
-          {allFormats.map((f) => (
-            <option key={f} value={f}>{f}</option>
-          ))}
-        </select>
-        <select
-          value={filterRated}
-          onChange={(e) => setFilterRated(e.target.value)}
-          className="bg-fab-surface border border-fab-border text-fab-text text-xs rounded-lg px-2 py-1 focus:outline-none focus:border-fab-gold"
-          title="Filter by rated status or event type"
-        >
-          <option value="all">All</option>
-          <option value="rated">Rated Only</option>
-          <option value="unrated">Unrated Only</option>
-          {allEventTypes.map((t) => (
-            <option key={t} value={t}>{t}</option>
-          ))}
-        </select>
-        {allHeroes.length > 1 && (
-          <select
-            value={filterHero}
-            onChange={(e) => setFilterHero(e.target.value)}
-            className="bg-fab-surface border border-fab-border text-fab-text text-xs rounded-lg px-2 py-1 focus:outline-none focus:border-fab-gold"
-          >
-            <option value="all">All Heroes</option>
-            {allHeroes.map((h) => (
-              <option key={h} value={h}>{h}</option>
-            ))}
-          </select>
-        )}
-        {isAdmin && (
-          <button
-            onClick={() => setShowRawData(true)}
-            className="text-xs px-2 py-1 rounded bg-fab-surface border border-fab-border text-fab-dim hover:text-fab-text transition-colors"
-          >
-            Raw Data
-          </button>
-        )}
-        {isFiltered && (
-          <span className="text-xs text-fab-dim">
-            Showing {fm.length} of {matches.length} matches
-          </span>
-        )}
       </div>
 
       {/* Trophy Case + Armory Garden */}
