@@ -717,27 +717,38 @@
     quickBtn.style.borderColor = "#60a5fa50";
   });
 
-  // ── Quick Sync Page Selector ──────────────────────────────────
+  // ── Quick Sync Event Count Selector ──────────────────────────
 
-  const PAGE_OPTIONS = [1, 3, 5, 0]; // 0 = All
-  const PAGE_LABELS = { 1: "1 pg", 3: "3 pg", 5: "5 pg", 0: "All" };
-  const storedPages = localStorage.getItem("fab-stats-quick-pages");
-  let quickSyncPages = storedPages !== null ? parseInt(storedPages) : 1;
-  if (!PAGE_OPTIONS.includes(quickSyncPages)) quickSyncPages = 1;
+  // Each GEM history page has ~25 events; map user-facing event counts to page counts
+  const SYNC_OPTIONS = [
+    { label: "25", pages: 1 },
+    { label: "50", pages: 2 },
+    { label: "100", pages: 4 },
+    { label: "All", pages: 0 },
+  ];
+  const storedIdx = localStorage.getItem("fab-stats-quick-idx");
+  let quickSyncIdx = storedIdx !== null ? parseInt(storedIdx) : 0;
+  if (quickSyncIdx < 0 || quickSyncIdx >= SYNC_OPTIONS.length) quickSyncIdx = 0;
 
   const pageSelectorRow = document.createElement("div");
   Object.assign(pageSelectorRow.style, {
     display: "flex",
     gap: "4px",
     justifyContent: "center",
+    alignItems: "center",
   });
 
   function renderPageSelector() {
     pageSelectorRow.innerHTML = "";
-    for (const opt of PAGE_OPTIONS) {
+    const lbl = document.createElement("span");
+    lbl.textContent = "Events:";
+    Object.assign(lbl.style, { fontSize: "10px", color: "#555", marginRight: "2px" });
+    pageSelectorRow.appendChild(lbl);
+
+    SYNC_OPTIONS.forEach((opt, idx) => {
       const b = document.createElement("button");
-      b.textContent = PAGE_LABELS[opt];
-      const isActive = opt === quickSyncPages;
+      b.textContent = opt.label;
+      const isActive = idx === quickSyncIdx;
       Object.assign(b.style, {
         padding: "3px 8px",
         background: isActive ? "rgba(96,165,250,0.2)" : "rgba(30,30,50,0.8)",
@@ -751,12 +762,12 @@
         transition: "all 0.15s",
       });
       b.addEventListener("click", () => {
-        quickSyncPages = opt;
-        localStorage.setItem("fab-stats-quick-pages", String(opt));
+        quickSyncIdx = idx;
+        localStorage.setItem("fab-stats-quick-idx", String(idx));
         renderPageSelector();
       });
       pageSelectorRow.appendChild(b);
-    }
+    });
   }
   renderPageSelector();
 
@@ -978,7 +989,7 @@
             matchCount,
             { current, total }
           );
-        }, quickMode ? quickSyncPages : 0),
+        }, quickMode ? SYNC_OPTIONS[quickSyncIdx].pages : 0),
         extractUserGemId(),
       ]);
 
