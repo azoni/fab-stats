@@ -133,6 +133,11 @@ export default function ImportPage() {
     );
   }, [filteredEvents, heroOverrides]);
 
+  // Auto-expand when only 1 event
+  useEffect(() => {
+    if (filteredEvents.length === 1) setExpandedEvent(0);
+  }, [filteredEvents.length]);
+
   const availableFormats = useMemo(() => {
     if (!pasteResult) return [];
     return [...new Set(pasteResult.events.map((e) => e.format))];
