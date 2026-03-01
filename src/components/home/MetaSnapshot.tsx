@@ -37,6 +37,15 @@ export const MetaSnapshot = memo(function MetaSnapshot({ topHeroes, top8Heroes, 
     return sorted;
   }, [top8Heroes, sortBy]);
 
+  const top8Totals = useMemo(() => {
+    if (!top8Heroes) return { placements: 0, wins: 0, heroes: 0 };
+    return {
+      placements: top8Heroes.reduce((sum, t) => sum + t.count, 0),
+      wins: top8Heroes.reduce((sum, t) => sum + t.champions, 0),
+      heroes: top8Heroes.length,
+    };
+  }, [top8Heroes]);
+
   if (!showEventMode && topHeroes.length === 0) return null;
 
   return (
@@ -68,24 +77,26 @@ export const MetaSnapshot = memo(function MetaSnapshot({ topHeroes, top8Heroes, 
           // Event weekend: show top 8 hero placements
           <>
             <div className="flex items-center justify-between px-4 py-2 border-b border-fab-border">
-              <div className="flex items-center gap-1">
-                {SORT_OPTIONS.map((opt) => (
-                  <button
-                    key={opt.key}
-                    onClick={() => setSortBy(opt.key)}
-                    className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${
-                      sortBy === opt.key
-                        ? "bg-teal-500/15 text-teal-400"
-                        : "text-fab-muted hover:text-fab-text"
-                    }`}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1">
+                  {SORT_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.key}
+                      onClick={() => setSortBy(opt.key)}
+                      className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${
+                        sortBy === opt.key
+                          ? "bg-teal-500/15 text-teal-400"
+                          : "text-fab-muted hover:text-fab-text"
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+                <span className="text-[10px] text-fab-dim">
+                  {top8Totals.placements} placements · {top8Totals.heroes} heroes
+                </span>
               </div>
-              <span className="text-[10px] text-fab-muted">
-                {top8Heroes!.length} heroes
-              </span>
             </div>
             {sortedTop8.slice(0, 10).map((t8, i) => {
               const heroInfo = getHeroByName(t8.hero);
@@ -95,19 +106,17 @@ export const MetaSnapshot = memo(function MetaSnapshot({ topHeroes, top8Heroes, 
                   <span className={`text-sm w-5 text-center relative ${RANK_CLASS[i] || "text-fab-muted font-bold"}`}>{i + 1}</span>
                   <HeroClassIcon heroClass={heroClass} size="sm" />
                   <span className={`font-medium text-fab-text flex-1 truncate text-sm relative ${i === 0 ? "text-fab-gold" : ""}`}>{t8.hero}</span>
-                  {t8.totalPlayers > 0 && (
-                    <span className="text-xs text-fab-muted shrink-0 relative">
-                      {t8.totalPlayers} played
-                    </span>
-                  )}
-                  <span className="text-xs text-fab-muted shrink-0 relative">
-                    {t8.count} top 8{t8.count !== 1 ? "s" : ""}
-                  </span>
-                  {t8.champions > 0 && (
-                    <span className="text-xs font-semibold text-fab-gold shrink-0 relative">
-                      {t8.champions} won
-                    </span>
-                  )}
+                  <div className="flex items-center gap-2 shrink-0 relative text-xs tabular-nums">
+                    {t8.totalPlayers > 0 && (
+                      <span className="text-fab-dim w-7 text-right">{t8.totalPlayers}</span>
+                    )}
+                    <span className="text-fab-muted font-medium w-4 text-right">{t8.count}</span>
+                    {t8.champions > 0 ? (
+                      <span className="font-semibold text-fab-gold w-4 text-right">{t8.champions}</span>
+                    ) : (
+                      <span className="w-4" />
+                    )}
+                  </div>
                 </div>
               );
             })}
