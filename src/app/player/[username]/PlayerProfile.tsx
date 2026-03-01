@@ -4,7 +4,7 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { getProfileByUsername, getMatchesByUserId } from "@/lib/firestore-storage";
 import { updateLeaderboardEntry } from "@/lib/leaderboard";
-import { computeOverallStats, computeHeroStats, computeEventTypeStats, computeVenueStats, computeEventStats, computeOpponentStats, computeBestFinish, computePlayoffFinishes, getEventType } from "@/lib/stats";
+import { computeOverallStats, computeHeroStats, computeEventTypeStats, computeVenueStats, computeEventStats, computeOpponentStats, computeBestFinish, computePlayoffFinishes, getEventType, getRoundNumber } from "@/lib/stats";
 import { evaluateAchievements, getAchievementProgress } from "@/lib/achievements";
 import { getUserBadgeIds } from "@/lib/badge-service";
 import { AdminBadgePanel } from "@/components/gamification/AdminBadgePanel";
@@ -227,7 +227,9 @@ export default function PlayerProfile() {
   const eventStats = useMemo(() => computeEventStats(fm), [fm]);
   const recentEvents = useMemo(() => eventStats.slice(0, 5), [eventStats]);
   const sortedByDateDesc = useMemo(() =>
-    [...fm].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
+    [...fm].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+      || getRoundNumber(b) - getRoundNumber(a)
+      || new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
     [fm]
   );
   const computedAchievements = useMemo(() => evaluateAchievements(fm, overall, heroStats, opponentStats), [fm, overall, heroStats, opponentStats]);

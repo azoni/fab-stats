@@ -3,7 +3,7 @@ import { useState, useMemo, useEffect } from "react";
 import { MatchCard } from "./MatchCard";
 import { MatchResult, GameFormat, type MatchRecord } from "@/types";
 import { allHeroes as knownHeroes } from "@/lib/heroes";
-import { getEventType } from "@/lib/stats";
+import { getEventType, getRoundNumber } from "@/lib/stats";
 
 const VALID_HERO_NAMES = new Set(knownHeroes.map((h) => h.name));
 const PAGE_SIZE = 25;
@@ -87,7 +87,10 @@ export function MatchList({ matches, matchOwnerUid, enableComments, editable, on
     }
 
     result.sort((a, b) => {
-      const diff = new Date(b.date).getTime() - new Date(a.date).getTime();
+      const dateDiff = new Date(b.date).getTime() - new Date(a.date).getTime();
+      const diff = dateDiff
+        || getRoundNumber(b) - getRoundNumber(a)
+        || new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
       return sortOrder === "newest" ? diff : -diff;
     });
 

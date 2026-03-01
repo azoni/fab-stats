@@ -16,6 +16,7 @@ import { localDate } from "@/lib/constants";
 export function computeOverallStats(matches: MatchRecord[]): OverallStats {
   const sorted = [...matches].sort(
     (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+      || getRoundNumber(a) - getRoundNumber(b)
       || new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
   );
   const totalWins = sorted.filter((m) => m.result === MatchResult.Win).length;
@@ -226,6 +227,7 @@ export function computeTrends(
 ): TrendDataPoint[] {
   const sorted = [...matches].sort(
     (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+      || getRoundNumber(a) - getRoundNumber(b)
       || new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
   );
 
@@ -270,6 +272,7 @@ export function computeRollingWinRate(
     .filter((m) => m.result !== MatchResult.Bye)
     .sort(
       (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+        || getRoundNumber(a) - getRoundNumber(b)
         || new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
     );
 
@@ -593,7 +596,7 @@ export function getEventName(match: MatchRecord): string {
   return `${match.date} - ${match.format}`;
 }
 
-function getRoundNumber(match: MatchRecord): number {
+export function getRoundNumber(match: MatchRecord): number {
   if (match.notes) {
     // Handle "Round P{N}" for playoff rounds — sort after swiss rounds
     const playoffMatch = match.notes.match(/Round\s+P(\d+)/i);
