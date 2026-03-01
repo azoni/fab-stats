@@ -17,6 +17,8 @@ import { BestFinishShareModal } from "@/components/profile/BestFinishCard";
 import { ProfileShareModal } from "@/components/profile/ProfileCard";
 import { MetaSnapshot } from "@/components/home/MetaSnapshot";
 import { OnThisDay } from "@/components/home/OnThisDay";
+import { FeaturedProfiles } from "@/components/home/FeaturedProfiles";
+import { selectFeaturedProfiles } from "@/lib/featured-profiles";
 import { getUnlockedColors } from "@/lib/comment-format";
 import { getActivePrediction } from "@/lib/polls";
 import { getEventShowcase } from "@/lib/event-showcase";
@@ -110,6 +112,7 @@ export default function Dashboard() {
     return computeTop8HeroMeta(lbEntries, activeEventType, undefined, getWeekStart());
   }, [lbEntries, activeEventType]);
   const rankMap = useMemo(() => computeRankMap(lbEntries), [lbEntries]);
+  const featuredProfiles = useMemo(() => selectFeaturedProfiles(lbEntries), [lbEntries]);
   const eventTierMap = useMemo(() => computeEventTierMap(lbEntries), [lbEntries]);
   const unlockedColors = useMemo(() => {
     if (!user) return [];
@@ -178,9 +181,13 @@ export default function Dashboard() {
       {!hasMatches && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
           <div className="flex flex-col gap-6">
-            <div className="bg-fab-surface border border-fab-border rounded-lg p-5">
-              <div className="flex items-center gap-4 mb-4">
-                <div className="w-14 h-14 rounded-full bg-fab-gold/20 flex items-center justify-center shrink-0">
+            <div className="relative bg-fab-surface border border-fab-border rounded-lg p-5 overflow-hidden">
+              {/* Decorative glow */}
+              <div className="absolute -top-16 -right-16 w-48 h-48 bg-fab-gold/5 rounded-full blur-3xl pointer-events-none" />
+              <div className="absolute -bottom-12 -left-12 w-36 h-36 bg-amber-500/5 rounded-full blur-2xl pointer-events-none" />
+
+              <div className="relative flex items-center gap-4 mb-4">
+                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-fab-gold/30 to-amber-600/20 flex items-center justify-center shrink-0 ring-1 ring-fab-gold/20">
                   <ShieldIcon className="w-7 h-7 text-fab-gold" />
                 </div>
                 <div className="flex-1 min-w-0">
@@ -189,11 +196,11 @@ export default function Dashboard() {
                 </div>
               </div>
 
-              <p className="text-sm text-fab-muted mb-4">
+              <p className="relative text-sm text-fab-muted mb-4">
                 Import your matches to see your win rate, streaks, opponent stats, and more — all in one place.
               </p>
 
-              <div className="flex gap-3 flex-wrap">
+              <div className="relative flex gap-3 flex-wrap">
                 {user ? (
                   <Link
                     href="/import"
@@ -227,11 +234,13 @@ export default function Dashboard() {
       {hasMatches && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
           <div className="flex flex-col gap-6">
-            {/* Minimal profile card */}
+            {/* Profile card */}
             <div
-              className="bg-fab-surface border border-fab-border rounded-lg px-4 py-3"
+              className="relative bg-fab-surface border border-fab-border rounded-lg px-4 py-3 overflow-hidden"
               style={cardBorder ? { borderColor: cardBorder.border, boxShadow: cardBorder.shadow } : undefined}
             >
+              {/* Subtle decorative accent */}
+              <div className="absolute -top-10 -right-10 w-32 h-32 bg-fab-gold/5 rounded-full blur-2xl pointer-events-none" />
               <div className="flex items-center gap-3">
                 {profile ? (
                   <Link href={`/player/${profile.username}`} className="relative shrink-0">
@@ -255,9 +264,23 @@ export default function Dashboard() {
                       {profile?.displayName || "My Profile"}
                     </h1>
                   </Link>
-                  {profile?.username && (
-                    <p className="text-xs text-fab-dim">@{profile.username}</p>
-                  )}
+                  <div className="flex items-center gap-2 mt-0.5 text-[11px] text-fab-muted">
+                    <span>{overall.totalMatches + overall.totalByes} matches</span>
+                    <span className="text-fab-dim">·</span>
+                    <span className={overall.overallWinRate >= 50 ? "text-fab-win" : "text-fab-loss"}>{overall.overallWinRate.toFixed(1)}%</span>
+                    {eventStats.length > 0 && (
+                      <>
+                        <span className="text-fab-dim">·</span>
+                        <span>{eventStats.length} events</span>
+                      </>
+                    )}
+                    {topHero && (
+                      <>
+                        <span className="text-fab-dim hidden sm:inline">·</span>
+                        <span className="hidden sm:inline truncate">{topHero.heroName}</span>
+                      </>
+                    )}
+                  </div>
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0">
                   {profile?.username && (
@@ -320,6 +343,11 @@ export default function Dashboard() {
           </div>
           <MetaSnapshot topHeroes={communityTopHeroes} top8Heroes={top8Heroes} activeEventType={activeEventType} />
         </div>
+      )}
+
+      {/* Player Spotlight */}
+      {featuredProfiles.length > 0 && (
+        <FeaturedProfiles profiles={featuredProfiles} rankMap={rankMap} grid />
       )}
 
       {/* On This Day */}

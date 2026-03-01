@@ -235,17 +235,23 @@ const DEFAULT_CONFIG = SPOTLIGHT_CONFIG["Most Active"];
 interface FeaturedProfilesProps {
   profiles: FeaturedProfile[];
   rankMap?: Map<string, 1 | 2 | 3 | 4 | 5>;
+  /** Use grid layout (for homepage) instead of vertical list (for sidebar) */
+  grid?: boolean;
 }
 
-export function FeaturedProfiles({ profiles, rankMap }: FeaturedProfilesProps) {
+export function FeaturedProfiles({ profiles, rankMap, grid }: FeaturedProfilesProps) {
   if (profiles.length === 0) return null;
 
   return (
     <div className="flex flex-col">
-      <div className="section-header mb-4">
+      <div className="section-header mb-4 flex items-center gap-2">
+        <svg className="w-5 h-5 text-amber-400 shrink-0" viewBox="0 0 20 20" fill="currentColor">
+          <path d="M10 1c.716 0 1.353.45 1.592 1.126l1.675 4.728 5.004.408c.731.06 1.028.97.47 1.443L15.19 11.66l1.06 4.878c.155.717-.596 1.283-1.224.923L10 14.408l-5.025 3.053c-.629.36-1.38-.206-1.224-.923l1.06-4.878L1.258 8.705c-.558-.473-.26-1.383.471-1.443l5.004-.408 1.675-4.728A1.68 1.68 0 0110 1z" />
+        </svg>
         <h2 className="text-lg font-semibold text-fab-text">Player Spotlight</h2>
+        <span className="text-xs text-fab-dim font-medium">Community standouts</span>
       </div>
-      <div className="space-y-2 flex-1">
+      <div className={grid ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2" : "space-y-2 flex-1"}>
         {profiles.map((fp) => {
           const config = SPOTLIGHT_CONFIG[fp.reason] || DEFAULT_CONFIG;
           return (
