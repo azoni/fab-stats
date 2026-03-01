@@ -9,7 +9,7 @@ import { useFriends } from "@/hooks/useFriends";
 import { useFavorites } from "@/hooks/useFavorites";
 import { useLeaderboard } from "@/hooks/useLeaderboard";
 import { selectFeaturedProfiles } from "@/lib/featured-profiles";
-import { computeRankMap } from "@/lib/leaderboard-ranks";
+import { computeRankMap, computeEventTierMap } from "@/lib/leaderboard-ranks";
 import { groupConsecutiveEvents, GroupedFeedCard } from "@/components/feed/FeedCard";
 import { FeaturedProfiles } from "@/components/home/FeaturedProfiles";
 import { FeedIcon } from "@/components/icons/NavIcons";
@@ -77,6 +77,7 @@ function SearchContent() {
   const { entries: lbEntries } = useLeaderboard();
   const featuredProfiles = useMemo(() => selectFeaturedProfiles(lbEntries), [lbEntries]);
   const rankMap = useMemo(() => computeRankMap(lbEntries), [lbEntries]);
+  const eventTierMap = useMemo(() => computeEventTierMap(lbEntries), [lbEntries]);
 
   // Build set of friend/favorite user IDs
   const socialUserIds = useMemo(() => {
@@ -343,7 +344,7 @@ function SearchContent() {
               <>
                 <div className="space-y-3">
                   {groups.map((group) => (
-                    <GroupedFeedCard key={group.events[0].id} group={group} rankMap={rankMap} userId={user?.uid} />
+                    <GroupedFeedCard key={group.events[0].id} group={group} rankMap={rankMap} eventTierMap={eventTierMap} userId={user?.uid} />
                   ))}
                 </div>
 

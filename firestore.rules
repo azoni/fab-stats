@@ -203,6 +203,9 @@ service cloud.firestore {
         && request.resource.data.userId == request.auth.uid
         && request.resource.data.type in ["import", "achievement", "placement"]
         && request.resource.data.isPublic == true;
+      // Reactions: any authenticated user can toggle reactions
+      allow update: if request.auth != null
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reactions']);
       // Owner can delete their own feed events (e.g. when deleting an event)
       allow delete: if request.auth != null
         && resource.data.userId == request.auth.uid;

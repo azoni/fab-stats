@@ -29,7 +29,7 @@ function readStored<T extends string>(key: string, valid: T[], fallback: T): T {
   return v && valid.includes(v) ? v : fallback;
 }
 
-export function ActivityFeed({ rankMap }: { rankMap?: Map<string, 1 | 2 | 3 | 4 | 5> }) {
+export function ActivityFeed({ rankMap, eventTierMap }: { rankMap?: Map<string, 1 | 2 | 3 | 4 | 5>; eventTierMap?: Map<string, { border: string; shadow: string }> }) {
   const router = useRouter();
   const { events, loading } = useFeed();
   const { user } = useAuth();
@@ -182,7 +182,7 @@ export function ActivityFeed({ rankMap }: { rankMap?: Map<string, 1 | 2 | 3 | 4 
                 }}
                 className="cursor-pointer"
               >
-                <GroupedFeedCard group={group} compact rankMap={rankMap} userId={user?.uid} />
+                <GroupedFeedCard group={group} compact rankMap={rankMap} eventTierMap={eventTierMap} userId={user?.uid} />
               </div>
             ))}
             {/* Invisible spacers to maintain consistent height on partial pages */}

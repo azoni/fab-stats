@@ -9,7 +9,7 @@ import { evaluateAchievements } from "@/lib/achievements";
 import { AchievementBadges } from "@/components/gamification/AchievementShowcase";
 import { updateLeaderboardEntry } from "@/lib/leaderboard";
 import { useLeaderboard } from "@/hooks/useLeaderboard";
-import { computeUserRanks, getBestRank, computeRankMap } from "@/lib/leaderboard-ranks";
+import { computeUserRanks, getBestRank, computeRankMap, computeEventTierMap } from "@/lib/leaderboard-ranks";
 import { ShieldIcon, SwordsIcon, CalendarIcon, OpponentsIcon, TrendsIcon } from "@/components/icons/NavIcons";
 import { MatchResult } from "@/types";
 import { CommunityHighlights } from "@/components/home/CommunityHighlights";
@@ -106,6 +106,7 @@ export default function Dashboard() {
   const communityMeta = useMemo(() => computeMetaStats(lbEntries), [lbEntries]);
   const communityTopHeroes = useMemo(() => communityMeta.heroStats.slice(0, 5), [communityMeta]);
   const rankMap = useMemo(() => computeRankMap(lbEntries), [lbEntries]);
+  const eventTierMap = useMemo(() => computeEventTierMap(lbEntries), [lbEntries]);
   const unlockedColors = useMemo(() => {
     if (!user) return [];
     const myLb = lbEntries.find((e) => e.userId === user.uid);
@@ -188,7 +189,7 @@ export default function Dashboard() {
             </div>
           </div>
           {user ? (
-            <ActivityFeed rankMap={rankMap} />
+            <ActivityFeed rankMap={rankMap} eventTierMap={eventTierMap} />
           ) : <div />}
         </div>
       )}
@@ -428,7 +429,7 @@ export default function Dashboard() {
             </div>
           </div>
           {user ? (
-            <ActivityFeed rankMap={rankMap} />
+            <ActivityFeed rankMap={rankMap} eventTierMap={eventTierMap} />
           ) : <div />}
         </div>
       )}

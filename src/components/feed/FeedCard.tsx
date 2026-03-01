@@ -2,7 +2,7 @@
 import { useState, useCallback } from "react";
 import Link from "next/link";
 import type { FeedEvent, ImportFeedEvent } from "@/types";
-import { rankBorderClass, rankBorderColor } from "@/lib/leaderboard-ranks";
+import { rankBorderClass } from "@/lib/leaderboard-ranks";
 import { FEED_REACTIONS, addFeedReaction, removeFeedReaction } from "@/lib/feed";
 
 export interface FeedGroup {
@@ -138,6 +138,49 @@ function NameAndTime({ event, compact }: { event: FeedEvent; compact?: boolean }
 
 // ── Reactions ──
 
+/** FaB-themed SVG reaction icons */
+function ReactionIcon({ reactionKey, className }: { reactionKey: string; className?: string }) {
+  switch (reactionKey) {
+    case "gg": // Crossed swords
+      return (
+        <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+          <path d="M14.5 17.5L3 6V3h3l11.5 11.5" />
+          <path d="M13 19l6-6" />
+          <path d="M16 16l4 4" />
+          <path d="M9.5 17.5L21 6V3h-3L6.5 14.5" />
+          <path d="M11 19l-6-6" />
+          <path d="M8 16l-4 4" />
+        </svg>
+      );
+    case "goagain": // Circular arrow (go again!)
+      return (
+        <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+          <path d="M21 2v6h-6" />
+          <path d="M3 12a9 9 0 0115.36-6.36L21 8" />
+          <path d="M3 22v-6h6" />
+          <path d="M21 12a9 9 0 01-15.36 6.36L3 16" />
+        </svg>
+      );
+    case "majestic": // Diamond gem
+      return (
+        <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+          <path d="M6 3h12l4 6-10 12L2 9z" />
+          <path d="M2 9h20" />
+          <path d="M10 3l-2 6 4 12 4-12-2-6" />
+        </svg>
+      );
+    case "dominate": // Shield with bolt
+      return (
+        <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+          <path d="M13 7l-4 5h5l-4 5" />
+        </svg>
+      );
+    default:
+      return null;
+  }
+}
+
 function ReactionBar({ event, userId, compact }: { event: FeedEvent; userId?: string; compact?: boolean }) {
   const [localReactions, setLocalReactions] = useState<Record<string, string[]>>(event.reactions || {});
   const [busy, setBusy] = useState(false);
@@ -176,6 +219,8 @@ function ReactionBar({ event, userId, compact }: { event: FeedEvent; userId?: st
 
   const totalReactions = Object.values(localReactions).reduce((sum, arr) => sum + arr.length, 0);
 
+  const iconSize = compact ? "w-3 h-3" : "w-3.5 h-3.5";
+
   // Show existing reactions + add button
   return (
     <div className={`flex items-center gap-1 flex-wrap ${compact ? "mt-1" : "mt-2"}`} onClick={(e) => e.stopPropagation()}>
@@ -203,7 +248,7 @@ function ReactionBar({ event, userId, compact }: { event: FeedEvent; userId?: st
                   : "border border-transparent text-fab-dim hover:bg-fab-surface hover:border-fab-border hover:text-fab-muted"
             } ${!userId ? "cursor-default opacity-60" : "cursor-pointer"}`}
           >
-            <span>{r.emoji}</span>
+            <ReactionIcon reactionKey={r.key} className={iconSize} />
             {count > 0 && <span className="font-medium">{count}</span>}
           </button>
         );
@@ -216,9 +261,9 @@ function ReactionBar({ event, userId, compact }: { event: FeedEvent; userId?: st
               key={r.key}
               onClick={() => toggle(r.key)}
               title={r.label}
-              className="px-1 py-0.5 text-[10px] text-fab-dim/50 hover:text-fab-dim transition-colors rounded"
+              className="px-1 py-0.5 text-fab-dim/50 hover:text-fab-dim transition-colors rounded"
             >
-              {r.emoji}
+              <ReactionIcon reactionKey={r.key} className="w-3 h-3" />
             </button>
           ))}
         </div>
@@ -241,12 +286,12 @@ function HeroPill({ hero, compact }: { hero: string; compact?: boolean }) {
 
 // ── Content components ──
 
-export function FeedCard({ event, compact, rankMap, userId }: { event: FeedEvent; compact?: boolean; rankMap?: Map<string, 1 | 2 | 3 | 4 | 5>; userId?: string }) {
-  const cardBorder = rankBorderColor(rankMap?.get(event.userId));
+export function FeedCard({ event, compact, rankMap, eventTierMap, userId }: { event: FeedEvent; compact?: boolean; rankMap?: Map<string, 1 | 2 | 3 | 4 | 5>; eventTierMap?: Map<string, { border: string; shadow: string }>; userId?: string }) {
+  const tierStyle = eventTierMap?.get(event.userId);
   return (
     <div
       className={`bg-fab-surface border border-fab-border rounded-lg ${compact ? "px-3 py-2" : "p-4"}`}
-      style={cardBorder ? { borderColor: cardBorder, boxShadow: `0 0 6px ${cardBorder}` } : undefined}
+      style={tierStyle ? { borderColor: tierStyle.border, boxShadow: tierStyle.shadow } : undefined}
     >
       <div className={`flex items-center ${compact ? "gap-2" : "gap-3 items-start"}`}>
         <FeedCardHeader event={event} compact={compact} rankMap={rankMap} />
@@ -385,7 +430,7 @@ function GroupedImportRow({ event }: { event: ImportFeedEvent }) {
   );
 }
 
-export function GroupedFeedCard({ group, compact, rankMap, userId }: { group: FeedGroup; compact?: boolean; rankMap?: Map<string, 1 | 2 | 3 | 4 | 5>; userId?: string }) {
+export function GroupedFeedCard({ group, compact, rankMap, eventTierMap, userId }: { group: FeedGroup; compact?: boolean; rankMap?: Map<string, 1 | 2 | 3 | 4 | 5>; eventTierMap?: Map<string, { border: string; shadow: string }>; userId?: string }) {
   const [expanded, setExpanded] = useState(false);
   const first = group.events[0];
   const isSingle = group.events.length === 1;
@@ -395,14 +440,14 @@ export function GroupedFeedCard({ group, compact, rankMap, userId }: { group: Fe
     group.events.flatMap((e) => e.type === "import" ? (e.topHeroes || []) : []),
   )];
 
-  if (isSingle) return <FeedCard event={first} compact={compact} rankMap={rankMap} userId={userId} />;
+  if (isSingle) return <FeedCard event={first} compact={compact} rankMap={rankMap} eventTierMap={eventTierMap} userId={userId} />;
 
   // Multi-event groups are only for imports
-  const cardBorder = rankBorderColor(rankMap?.get(first.userId));
+  const tierStyle = eventTierMap?.get(first.userId);
   return (
     <div
       className={`bg-fab-surface border border-fab-border rounded-lg ${compact ? "px-3 py-2" : "p-4"}`}
-      style={cardBorder ? { borderColor: cardBorder, boxShadow: `0 0 6px ${cardBorder}` } : undefined}
+      style={tierStyle ? { borderColor: tierStyle.border, boxShadow: tierStyle.shadow } : undefined}
     >
       <div className={`flex items-center ${compact ? "gap-2" : "gap-3 items-start"}`}>
         <FeedCardHeader event={first} compact={compact} rankMap={rankMap} />

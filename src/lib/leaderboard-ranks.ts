@@ -334,3 +334,44 @@ export function rankBorderColor(rank: 1 | 2 | 3 | 4 | 5 | null | undefined): str
     : rank === 4 ? "rgba(192, 192, 210, 0.35)"
     : "rgba(205, 127, 50, 0.4)";
 }
+
+// ── Event-tier card borders (matching PlayerProfile cardBorder logic) ──
+
+const EVENT_TIER_RANK: Record<string, number> = {
+  "Battle Hardened": 1,
+  "The Calling": 2,
+  Nationals: 3,
+  "Pro Tour": 4,
+  Worlds: 5,
+};
+
+const EVENT_TIER_STYLE: Record<string, { border: string; shadow: string }> = {
+  "Battle Hardened": { border: "#cd7f32", shadow: "0 0 8px rgba(205,127,50,0.25)" },
+  "The Calling": { border: "#60a5fa", shadow: "0 0 8px rgba(96,165,250,0.3)" },
+  Nationals: { border: "#f87171", shadow: "0 0 10px rgba(248,113,113,0.3)" },
+  "Pro Tour": { border: "#a78bfa", shadow: "0 0 12px rgba(167,139,250,0.35)" },
+  Worlds: { border: "#fbbf24", shadow: "0 0 12px rgba(251,191,36,0.4), 0 0 24px rgba(251,191,36,0.15)" },
+};
+
+/** Bulk-compute the best event tier border style for every user that has playoff finishes. */
+export function computeEventTierMap(entries: LeaderboardEntry[]): Map<string, { border: string; shadow: string }> {
+  const map = new Map<string, { border: string; shadow: string }>();
+
+  for (const entry of entries) {
+    if (!entry.top8sByEventType) continue;
+    let bestTier: string | null = null;
+    let bestScore = 0;
+    for (const eventType of Object.keys(entry.top8sByEventType)) {
+      const score = EVENT_TIER_RANK[eventType] || 0;
+      if (score > bestScore) {
+        bestTier = eventType;
+        bestScore = score;
+      }
+    }
+    if (bestTier) {
+      map.set(entry.userId, EVENT_TIER_STYLE[bestTier]);
+    }
+  }
+
+  return map;
+}

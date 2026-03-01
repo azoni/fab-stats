@@ -213,10 +213,10 @@ export async function getFeedEventsPaginated(
 // ── Reactions ──
 
 export const FEED_REACTIONS = [
-  { key: "gg", label: "GG", emoji: "⚔️" },
-  { key: "goagain", label: "Go Again", emoji: "🔥" },
-  { key: "majestic", label: "Majestic", emoji: "💎" },
-  { key: "dominate", label: "Dominate", emoji: "💪" },
+  { key: "gg", label: "GG" },
+  { key: "goagain", label: "Go Again" },
+  { key: "majestic", label: "Majestic" },
+  { key: "dominate", label: "Dominate" },
 ] as const;
 
 export type FeedReactionKey = (typeof FEED_REACTIONS)[number]["key"];
