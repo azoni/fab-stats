@@ -1,5 +1,5 @@
 "use client";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLeaderboard } from "@/hooks/useLeaderboard";
 import { computeMetaStats, getAvailableFormats, getAvailableEventTypes, computeTop8HeroMeta, type HeroMetaStats, type MetaPeriod, type Top8HeroMeta } from "@/lib/meta-stats";
 import { getWeekStart, getMonthStart } from "@/lib/leaderboard";
@@ -7,6 +7,7 @@ import { getHeroByName } from "@/lib/heroes";
 import { HeroClassIcon } from "@/components/heroes/HeroClassIcon";
 
 type SortKey = "usage" | "winrate";
+const HERO_PAGE_SIZE = 20;
 
 const PERIOD_TABS: { id: MetaPeriod; label: string }[] = [
   { id: "all", label: "All Time" },
@@ -21,6 +22,7 @@ export default function MetaPage() {
   const [filterFormat, setFilterFormat] = useState("all");
   const [filterEventType, setFilterEventType] = useState("all");
   const [period, setPeriod] = useState<MetaPeriod>("all");
+  const [heroPage, setHeroPage] = useState(1);
 
   const allFormats = useMemo(() => getAvailableFormats(entries), [entries]);
   const allEventTypes = useMemo(() => getAvailableEventTypes(entries), [entries]);
@@ -59,6 +61,14 @@ export default function MetaPage() {
         return list.sort((a, b) => b.totalMatches - a.totalMatches);
     }
   }, [heroStats, sortBy, search]);
+
+  // Reset hero page when filters change
+  useEffect(() => { setHeroPage(1); }, [sortBy, search, filterFormat, filterEventType, period]);
+
+  const heroTotalPages = Math.max(1, Math.ceil(sortedHeroes.length / HERO_PAGE_SIZE));
+  const heroSafePage = Math.min(heroPage, heroTotalPages);
+  const heroStartIdx = (heroSafePage - 1) * HERO_PAGE_SIZE;
+  const pageHeroes = sortedHeroes.slice(heroStartIdx, heroStartIdx + HERO_PAGE_SIZE);
 
   // Top hero for the overview card
   const topHero = heroStats.length > 0
@@ -144,7 +154,7 @@ export default function MetaPage() {
             Heroes making top 8s{period === "weekly" ? " this week" : period === "monthly" ? " this month" : ""}
           </p>
           <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden">
-            {top8Heroes.slice(0, 10).map((t8, i) => {
+            {top8Heroes.slice(0, 20).map((t8, i) => {
               const heroInfo = getHeroByName(t8.hero);
               const heroClass = heroInfo?.classes[0];
               return (
@@ -270,11 +280,37 @@ export default function MetaPage() {
           </p>
         </div>
       ) : (
-        <div className="space-y-2">
-          {sortedHeroes.map((hero, i) => (
-            <HeroMetaRow key={hero.hero} hero={hero} index={i} />
-          ))}
-        </div>
+        <>
+          <p className="text-xs text-fab-dim mb-2">
+            Showing {heroStartIdx + 1}-{Math.min(heroStartIdx + HERO_PAGE_SIZE, sortedHeroes.length)} of {sortedHeroes.length} heroes
+          </p>
+          <div className="space-y-2">
+            {pageHeroes.map((hero, i) => (
+              <HeroMetaRow key={hero.hero} hero={hero} index={heroStartIdx + i} />
+            ))}
+          </div>
+          {heroTotalPages > 1 && (
+            <div className="flex items-center justify-center gap-3 mt-4">
+              <button
+                onClick={() => setHeroPage((p) => Math.max(1, p - 1))}
+                disabled={heroSafePage <= 1}
+                className="px-3 py-1.5 rounded-md text-sm font-medium bg-fab-surface border border-fab-border text-fab-muted hover:text-fab-text disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              >
+                Previous
+              </button>
+              <span className="text-sm text-fab-dim">
+                Page {heroSafePage} of {heroTotalPages}
+              </span>
+              <button
+                onClick={() => setHeroPage((p) => Math.min(heroTotalPages, p + 1))}
+                disabled={heroSafePage >= heroTotalPages}
+                className="px-3 py-1.5 rounded-md text-sm font-medium bg-fab-surface border border-fab-border text-fab-muted hover:text-fab-text disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              >
+                Next
+              </button>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

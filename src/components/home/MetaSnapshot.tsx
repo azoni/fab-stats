@@ -38,7 +38,7 @@ export const MetaSnapshot = memo(function MetaSnapshot({ topHeroes, top8Heroes, 
       <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden flex-1">
         {showEventMode ? (
           // Event weekend: show top 8 hero placements
-          top8Heroes!.slice(0, 5).map((t8, i) => {
+          top8Heroes!.slice(0, 10).map((t8, i) => {
             const heroInfo = getHeroByName(t8.hero);
             const heroClass = heroInfo?.classes[0];
             return (
