@@ -201,34 +201,31 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
   return result;
 }
 
-/** Fetch global AI chat cost (single doc read) */
-export async function getChatGlobalStats(): Promise<{ totalMessages: number; totalCost: number }> {
+export interface ChatGlobalStats {
+  totalMessages: number;
+  totalCost: number;
+  users: Record<string, { messages: number; cost: number }>;
+}
+
+/** Fetch global AI chat stats (single doc read — includes per-user breakdown) */
+export async function getChatGlobalStats(): Promise<ChatGlobalStats> {
   try {
     const snap = await getDoc(doc(db, "admin", "chatStats"));
-    if (!snap.exists()) return { totalMessages: 0, totalCost: 0 };
+    if (!snap.exists()) return { totalMessages: 0, totalCost: 0, users: {} };
     const d = snap.data();
+    const users: Record<string, { messages: number; cost: number }> = {};
+    if (d.users && typeof d.users === "object") {
+      for (const [uid, stats] of Object.entries(d.users as Record<string, any>)) {
+        users[uid] = { messages: stats.messages || 0, cost: stats.cost || 0 };
+      }
+    }
     return {
       totalMessages: (d.totalMessages as number) || 0,
       totalCost: (d.totalCost as number) || 0,
+      users,
     };
   } catch {
-    return { totalMessages: 0, totalCost: 0 };
-  }
-}
-
-/** Fetch chat stats for a single user (on-demand, called when expanding a user row) */
-export async function getUserChatStats(userId: string): Promise<{ messages: number; cost: number; lastAt?: string } | null> {
-  try {
-    const snap = await getDoc(doc(db, "users", userId, "chatStats", "main"));
-    if (!snap.exists()) return null;
-    const d = snap.data();
-    return {
-      messages: (d.totalMessages as number) || 0,
-      cost: (d.totalCost as number) || 0,
-      lastAt: d.lastMessageAt as string | undefined,
-    };
-  } catch {
-    return null;
+    return { totalMessages: 0, totalCost: 0, users: {} };
   }
 }
 

@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
-import { getAdminDashboardData, getChatGlobalStats, getUserChatStats, backfillLeaderboard, broadcastMessage, fixMatchDates, backfillGemIds, backfillMatchLinking, backfillH2H, type AdminDashboardData, type AdminUserStats } from "@/lib/admin";
+import { getAdminDashboardData, getChatGlobalStats, backfillLeaderboard, broadcastMessage, fixMatchDates, backfillGemIds, backfillMatchLinking, backfillH2H, type AdminDashboardData, type AdminUserStats, type ChatGlobalStats } from "@/lib/admin";
 import { getAllFeedback, updateFeedbackStatus } from "@/lib/feedback";
 import { getCreators, saveCreators } from "@/lib/creators";
 import { getEvents, saveEvents } from "@/lib/featured-events";
@@ -47,7 +47,7 @@ export default function AdminPage() {
   const [sortKey, setSortKey] = useState<SortKey>("lastActive");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [expandedUid, setExpandedUid] = useState<string | null>(null);
-  const [statusFilter, setStatusFilter] = useState<"all" | "public" | "private">("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | "public" | "private" | "chat">("all");
   const [feedback, setFeedback] = useState<FeedbackItem[]>([]);
   const [feedbackFilter, setFeedbackFilter] = useState<"all" | "new" | "reviewed" | "done">("new");
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
@@ -130,7 +130,7 @@ export default function AdminPage() {
   const [themesReset, setThemesReset] = useState(false);
   const [badgeAssignments, setBadgeAssignments] = useState<Record<string, string[]>>({});
   const [mutedIds, setMutedIds] = useState<Set<string>>(new Set());
-  const [aiCost, setAiCost] = useState<{ totalMessages: number; totalCost: number }>({ totalMessages: 0, totalCost: 0 });
+  const [aiCost, setAiCost] = useState<ChatGlobalStats>({ totalMessages: 0, totalCost: 0, users: {} });
   const anyToolRunning = fixingDates || backfilling || backfillingGemIds || linkingMatches || resyncingH2H;
   const [activeTab, setActiveTab] = useState<"overview" | "users" | "feedback" | "content" | "poll" | "tools">(() => {
     if (typeof window !== "undefined") {
@@ -479,6 +479,18 @@ export default function AdminPage() {
                     {f !== "all" && ` (${data.users.filter((u) => f === "public" ? u.isPublic : !u.isPublic).length})`}
                   </button>
                 ))}
+                {Object.keys(aiCost.users).length > 0 && (
+                  <button
+                    onClick={() => setStatusFilter("chat")}
+                    className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+                      statusFilter === "chat"
+                        ? "bg-fab-gold/20 text-fab-gold"
+                        : "text-fab-muted hover:text-fab-text"
+                    }`}
+                  >
+                    Chat ({Object.keys(aiCost.users).length})
+                  </button>
+                )}
               </div>
             </div>
             <div className="overflow-x-auto">
@@ -516,6 +528,9 @@ export default function AdminPage() {
                     >
                       Visits<SortArrow col="visits" />
                     </th>
+                    {statusFilter === "chat" && (
+                      <th className="px-4 py-2 font-medium text-right">Chat</th>
+                    )}
                     <th
                       className="px-4 py-2 font-medium cursor-pointer hover:text-fab-text select-none"
                       onClick={() => toggleSort("lastActive")}
@@ -532,7 +547,7 @@ export default function AdminPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {sortedUsers(data.users).filter((u) => statusFilter === "all" || (statusFilter === "public" ? u.isPublic : !u.isPublic)).map((u, i) => {
+                  {sortedUsers(data.users).filter((u) => statusFilter === "all" ? true : statusFilter === "chat" ? !!aiCost.users[u.uid] : statusFilter === "public" ? u.isPublic : !u.isPublic).map((u, i) => {
                     const isExpanded = expandedUid === u.uid;
                     return (
                       <React.Fragment key={u.uid}>
@@ -567,6 +582,15 @@ export default function AdminPage() {
                           <td className="px-4 py-2 text-right font-mono">
                             <span className={`${(u.visitCount || 0) > 10 ? "text-fab-win" : (u.visitCount || 0) > 0 ? "text-fab-text" : "text-fab-dim"}`}>{u.visitCount || 0}</span>
                           </td>
+                          {statusFilter === "chat" && (() => {
+                            const cs = aiCost.users[u.uid];
+                            return (
+                              <td className="px-4 py-2 text-right font-mono">
+                                <span className="text-fab-text">{cs?.messages || 0}</span>
+                                {(cs?.cost || 0) > 0 && <div className="text-[10px] text-fab-dim">${cs.cost.toFixed(3)}</div>}
+                              </td>
+                            );
+                          })()}
                           <td className="px-4 py-2">
                             {(() => { const ta = timeAgo(u.updatedAt); return <span className={`text-xs font-medium ${ta.color}`}>{ta.label}</span>; })()}
                           </td>
@@ -586,7 +610,7 @@ export default function AdminPage() {
                         </tr>
                         {isExpanded && (
                           <tr className="border-b border-fab-border/50 bg-fab-bg/50">
-                            <td colSpan={9} className="px-4 py-3">
+                            <td colSpan={statusFilter === "chat" ? 10 : 9} className="px-4 py-3">
                               <UserExpandedStats
                                 user={u}
                                 assignedBadgeIds={badgeAssignments[u.uid] || []}
@@ -2034,8 +2058,6 @@ function UserExpandedStats({ user: u, assignedBadgeIds, isMuted, onAssignBadge, 
   const hasStats = u.winRate !== undefined;
   const unassigned = ADMIN_BADGES.filter((b) => !assignedBadgeIds.includes(b.id));
   const [notifyUser, setNotifyUser] = useState(true);
-  const [chatStats, setChatStats] = useState<{ messages: number; cost: number; lastAt?: string } | null | undefined>(undefined);
-  useEffect(() => { getUserChatStats(u.uid).then(setChatStats); }, [u.uid]);
   const rarityColor: Record<string, string> = {
     legendary: "text-amber-400 bg-amber-400/10 border-amber-400/30",
     epic: "text-purple-400 bg-purple-400/10 border-purple-400/30",
@@ -2104,14 +2126,6 @@ function UserExpandedStats({ user: u, assignedBadgeIds, isMuted, onAssignBadge, 
       ) : (
         <div className="text-sm text-fab-dim">No leaderboard data yet. Stats sync when user visits their dashboard.</div>
       )}
-      {chatStats && chatStats.messages > 0 && (
-        <div className="flex items-center gap-4 text-sm text-fab-muted">
-          <span>Chat: {chatStats.messages} messages</span>
-          <span>${chatStats.cost.toFixed(3)}</span>
-          {chatStats.lastAt && <span>Last: {new Date(chatStats.lastAt).toLocaleDateString()}</span>}
-        </div>
-      )}
-
       {/* Badges */}
       <div className="border-t border-fab-border/50 pt-3">
         <div className="text-xs text-fab-muted mb-2">Badges</div>

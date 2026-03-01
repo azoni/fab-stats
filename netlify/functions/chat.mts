@@ -411,13 +411,15 @@ async function saveMessages(
     totalCost: FieldValue.increment(usage.cost),
   }, { merge: true });
 
-  // Update global counter (single doc for admin overview)
+  // Update global counter (single doc for admin overview + per-user breakdown)
   const globalRef = db.doc("admin/chatStats");
   batch.set(globalRef, {
     totalMessages: FieldValue.increment(1),
     totalCost: FieldValue.increment(usage.cost),
     totalInputTokens: FieldValue.increment(usage.inputTokens),
     totalOutputTokens: FieldValue.increment(usage.outputTokens),
+    [`users.${userId}.messages`]: FieldValue.increment(1),
+    [`users.${userId}.cost`]: FieldValue.increment(usage.cost),
   }, { merge: true });
 
   await batch.commit();
