@@ -44,7 +44,8 @@ export function StatHighlightCard(props: StatHighlightCardProps) {
   const { value, label, sub } = getStatValue(props);
 
   return (
-    <div className="spotlight-card spotlight-winrate bg-fab-surface border border-fab-border rounded-lg px-3 py-2 relative overflow-hidden h-full">
+    <div className="spotlight-card spotlight-winrate bg-fab-surface border border-fab-border rounded-lg px-3 py-2 relative overflow-hidden h-full min-h-[88px]">
+      <p className="text-[8px] text-cyan-400/70 uppercase tracking-wider font-medium mb-1">Stat</p>
       <p className="text-xl font-black text-fab-text leading-tight">{value}</p>
       <p className="text-[10px] text-fab-muted font-medium mt-0.5">{label}</p>
       {sub && <p className="text-[9px] text-fab-dim">{sub}</p>}
