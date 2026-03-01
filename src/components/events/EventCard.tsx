@@ -8,9 +8,11 @@ import { HeroClassIcon } from "@/components/heroes/HeroClassIcon";
 import { MatchResult, GameFormat } from "@/types";
 import { localDate } from "@/lib/constants";
 import type { EventStats } from "@/types";
+import { EventShareModal } from "@/components/events/EventShareCard";
 
 interface EventCardProps {
   event: EventStats;
+  playerName?: string;
   obfuscateOpponents?: boolean;
   visibleOpponents?: Set<string>;
   editable?: boolean;
@@ -43,8 +45,9 @@ interface HeroSegment {
   toRound: string;
 }
 
-export function EventCard({ event, obfuscateOpponents = false, visibleOpponents, editable = false, onBatchUpdateHero, onBatchUpdateFormat, onDeleteEvent, missingGemId }: EventCardProps) {
+export function EventCard({ event, playerName, obfuscateOpponents = false, visibleOpponents, editable = false, onBatchUpdateHero, onBatchUpdateFormat, onDeleteEvent, missingGemId }: EventCardProps) {
   const [expanded, setExpanded] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
   const initHero = (() => {
     const h = new Set(event.matches.map((m) => m.heroPlayed).filter((h) => h && h !== "Unknown"));
     return h.size === 1 ? [...h][0]! : "";
@@ -191,6 +194,17 @@ export function EventCard({ event, obfuscateOpponents = false, visibleOpponents,
             ))}
             {event.eventType && event.eventType !== "Other" && (
               <span className="hidden sm:inline px-2 py-0.5 rounded bg-fab-bg text-fab-dim text-xs">{event.eventType}</span>
+            )}
+            {playerName && (
+              <button
+                onClick={(e) => { e.stopPropagation(); setShowShareModal(true); }}
+                className="p-1 rounded text-fab-dim hover:text-fab-gold transition-colors"
+                title="Share event result"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                </svg>
+              </button>
             )}
             <span className={`text-sm font-bold ${event.wins > event.losses ? "text-fab-win" : event.wins < event.losses ? "text-fab-loss" : "text-fab-draw"}`}>
               {event.wins}-{event.losses}{event.draws > 0 ? `-${event.draws}` : ""}
@@ -435,6 +449,14 @@ export function EventCard({ event, obfuscateOpponents = false, visibleOpponents,
             </div>
           )}
         </div>
+      )}
+
+      {showShareModal && playerName && (
+        <EventShareModal
+          event={event}
+          playerName={playerName}
+          onClose={() => setShowShareModal(false)}
+        />
       )}
     </div>
   );

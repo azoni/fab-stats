@@ -289,7 +289,7 @@ export default function EventsPage() {
           </p>
           <div className="space-y-2">
             {pageEvents.map((event) => (
-              <EventCard key={`${event.eventName}-${event.eventDate}`} event={event} editable={!!user} onBatchUpdateHero={handleBatchUpdateHero} onBatchUpdateFormat={handleBatchUpdateFormat} onDeleteEvent={handleDeleteEvent} missingGemId={!!user && !profile?.gemId} />
+              <EventCard key={`${event.eventName}-${event.eventDate}`} event={event} playerName={profile?.displayName || profile?.username} editable={!!user} onBatchUpdateHero={handleBatchUpdateHero} onBatchUpdateFormat={handleBatchUpdateFormat} onDeleteEvent={handleDeleteEvent} missingGemId={!!user && !profile?.gemId} />
             ))}
           </div>
         </>

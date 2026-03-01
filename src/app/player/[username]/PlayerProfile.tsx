@@ -780,7 +780,7 @@ export default function PlayerProfile() {
           {showRecentEvents && (
             <div className="px-4 pb-4 space-y-2">
               {recentEvents.map((event) => (
-                <EventCard key={`${event.eventName}-${event.eventDate}`} event={event} obfuscateOpponents={!isOwner && !isAdmin} visibleOpponents={visibleOpponents} />
+                <EventCard key={`${event.eventName}-${event.eventDate}`} event={event} playerName={username} obfuscateOpponents={!isOwner && !isAdmin} visibleOpponents={visibleOpponents} />
               ))}
             </div>
           )}
