@@ -175,15 +175,78 @@ export default function OpponentsPage() {
   const totalOpponents = opponentStats.filter((o) => o.opponentName !== "Unknown").length;
   const totalMatchCount = opponentStats.reduce((s, o) => s + o.totalMatches, 0);
 
+  const aggregateStats = useMemo(() => {
+    const totalWins = opponentStats.reduce((s, o) => s + o.wins, 0);
+    const events = new Set<string>();
+    for (const o of opponentStats) {
+      for (const m of o.matches) {
+        const eventName = m.notes?.split(" | ")[0];
+        if (eventName) events.add(eventName);
+      }
+    }
+    return {
+      winRate: totalMatchCount > 0 ? (totalWins / totalMatchCount) * 100 : 0,
+      uniqueEvents: events.size,
+    };
+  }, [opponentStats, totalMatchCount]);
+
+  const newOpponents = useMemo(() => {
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const cutoff = thirtyDaysAgo.getTime();
+
+    return opponentStats
+      .filter((o) => o.opponentName !== "Unknown")
+      .map((o) => {
+        const dates = o.matches.map((m) => localDate(m.date).getTime());
+        const firstPlayed = Math.min(...dates);
+        return { ...o, firstPlayed };
+      })
+      .filter((o) => o.firstPlayed >= cutoff)
+      .sort((a, b) => b.firstPlayed - a.firstPlayed);
+  }, [opponentStats]);
+
   return (
     <div>
-      <h1 className="text-2xl font-bold text-fab-gold mb-2">Opponents</h1>
-      <p className="text-fab-muted text-sm mb-4">
-        Your head-to-head record against {totalOpponents} opponents across {totalMatchCount} matches
-      </p>
+      {/* Page Header */}
+      <div className="flex items-center gap-3 mb-4">
+        <div className="section-header flex items-center gap-2 flex-1">
+          <div className="w-7 h-7 rounded-lg bg-violet-500/10 flex items-center justify-center ring-1 ring-inset ring-violet-500/20">
+            <svg className="w-4 h-4 text-violet-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+            </svg>
+          </div>
+          <div>
+            <h1 className="text-lg font-semibold text-fab-text leading-tight">Opponents</h1>
+            <p className="text-xs text-fab-muted leading-tight">{totalOpponents} opponents across {totalMatchCount} matches</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Aggregate Stats */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-6">
+        <div className="bg-fab-surface border border-fab-border rounded-lg px-3 py-2 text-center">
+          <p className="text-lg font-bold text-fab-text">{totalOpponents}</p>
+          <p className="text-[10px] text-fab-dim uppercase tracking-wide">Opponents</p>
+        </div>
+        <div className="bg-fab-surface border border-fab-border rounded-lg px-3 py-2 text-center">
+          <p className="text-lg font-bold text-fab-text">{totalMatchCount}</p>
+          <p className="text-[10px] text-fab-dim uppercase tracking-wide">Matches</p>
+        </div>
+        <div className="bg-fab-surface border border-fab-border rounded-lg px-3 py-2 text-center">
+          <p className="text-lg font-bold text-fab-text">{aggregateStats.uniqueEvents}</p>
+          <p className="text-[10px] text-fab-dim uppercase tracking-wide">Events</p>
+        </div>
+        <div className="bg-fab-surface border border-fab-border rounded-lg px-3 py-2 text-center">
+          <p className={`text-lg font-bold ${aggregateStats.winRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>{aggregateStats.winRate.toFixed(1)}%</p>
+          <p className="text-[10px] text-fab-dim uppercase tracking-wide">Win Rate</p>
+        </div>
+      </div>
 
       {/* Rivalry Highlights */}
       {highlights && (
+        <>
+        <p className="text-xs uppercase tracking-wider font-semibold text-fab-muted mb-2">Rivalry Highlights</p>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
           {highlights.nemesis && (
             <button
@@ -248,17 +311,77 @@ export default function OpponentsPage() {
             </button>
           )}
         </div>
+        </>
       )}
+
+      {/* New Opponents */}
+      {newOpponents.length > 0 && (
+        <div className="mb-6">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-6 h-6 rounded-md bg-cyan-500/10 flex items-center justify-center ring-1 ring-inset ring-cyan-500/20">
+              <svg className="w-3.5 h-3.5 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+              </svg>
+            </div>
+            <p className="text-xs uppercase tracking-wider font-semibold text-fab-muted">New Opponents</p>
+            <span className="text-[10px] text-fab-dim">Last 30 days</span>
+          </div>
+          <div className="flex gap-2 overflow-x-auto feed-scroll pb-2">
+            {newOpponents.map((opp) => {
+              const daysAgo = Math.floor((Date.now() - opp.firstPlayed) / (1000 * 60 * 60 * 24));
+              return (
+                <button
+                  key={opp.opponentName}
+                  onClick={() => { setSearch(opp.opponentName); setExpanded(opp.opponentName); }}
+                  className="spotlight-card spotlight-winrate bg-fab-surface border border-fab-border rounded-lg p-3 min-w-[180px] text-left hover:border-cyan-400/30 transition-colors shrink-0"
+                >
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${getAvatarColor(opp.opponentName)}`}>
+                      {opp.opponentName.charAt(0).toUpperCase()}
+                    </div>
+                    <p className="text-sm font-semibold text-fab-text truncate">{opp.opponentName}</p>
+                  </div>
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <span className="text-xs">
+                      <span className="text-fab-win font-semibold">{opp.wins}W</span>
+                      <span className="text-fab-dim"> - </span>
+                      <span className="text-fab-loss font-semibold">{opp.losses}L</span>
+                      {opp.draws > 0 && <><span className="text-fab-dim"> - </span><span className="text-fab-muted font-semibold">{opp.draws}D</span></>}
+                    </span>
+                    <span className={`text-xs font-bold ml-auto ${opp.winRate > 50 ? "text-fab-win" : opp.winRate === 50 ? "text-fab-muted" : "text-fab-loss"}`}>
+                      {opp.winRate.toFixed(0)}%
+                    </span>
+                  </div>
+                  <div className="h-1.5 rounded-full overflow-hidden flex mb-1.5">
+                    <div className="h-full bg-fab-win" style={{ width: `${(opp.wins / opp.totalMatches) * 100}%` }} />
+                    {opp.draws > 0 && <div className="h-full bg-fab-draw/60" style={{ width: `${(opp.draws / opp.totalMatches) * 100}%` }} />}
+                    <div className="h-full bg-fab-loss/40" style={{ width: `${(opp.losses / opp.totalMatches) * 100}%` }} />
+                  </div>
+                  <p className="text-[10px] text-fab-dim">{daysAgo === 0 ? "First played today" : `First played ${daysAgo}d ago`}</p>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* All Opponents */}
+      <p className="text-xs uppercase tracking-wider font-semibold text-fab-muted mb-2">All Opponents</p>
 
       {/* Search + Filters */}
       <div className="flex flex-wrap items-center gap-2 mb-4">
-        <input
-          type="text"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search..."
-          className="bg-fab-surface border border-fab-border rounded-md px-3 py-1.5 text-fab-text text-sm placeholder:text-fab-dim focus:outline-none focus:border-fab-gold w-36 sm:w-44"
-        />
+        <div className="relative">
+          <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-fab-dim pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search..."
+            className="bg-fab-surface border border-fab-border rounded-md pl-8 pr-3 py-1.5 text-fab-text text-sm placeholder:text-fab-dim focus:outline-none focus:border-fab-gold w-36 sm:w-44"
+          />
+        </div>
         <div className="flex flex-wrap items-center gap-2 ml-auto">
           <select
             value={sortBy}
