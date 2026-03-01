@@ -19,6 +19,46 @@ interface YearMemory {
   draws: number;
   heroes: string[];
   events: string[];
+  /** Best playoff placement detected from match round numbers */
+  placement: string | null;
+}
+
+/** Detect the best playoff placement from a set of matches using getRoundNumber. */
+function detectPlacement(ms: MatchRecord[]): string | null {
+  let best = 0;
+  let wonBest = false;
+  for (const m of ms) {
+    const rn = getRoundNumber(m);
+    if (rn >= 1000 && rn > best) {
+      best = rn;
+      wonBest = m.result === MatchResult.Win;
+    }
+  }
+  if (best === 0) return null;
+  // 1003 = Finals, 1002 = Semis/Top 4, 1001 = Quarters/Top 8
+  if (best >= 1003) return wonBest ? "Champion" : "Finalist";
+  if (best >= 1002) return wonBest ? "Finalist" : "Top 4";
+  if (best >= 1001) return wonBest ? "Top 4" : "Top 8";
+  return "Top 8";
+}
+
+/** Get a short label for the round (handles playoff descriptive names). */
+function getRoundLabel(m: MatchRecord): string {
+  const numMatch = m.notes?.match(/Round (\d+)/)?.[1];
+  if (numMatch) return `R${numMatch}`;
+  const roundInfo = m.notes?.split(" | ")[1]?.trim() || "";
+  if (/Quarter|Top\s*8/i.test(roundInfo)) return "QF";
+  if (/Semi|Top\s*4/i.test(roundInfo)) return "SF";
+  if (/Finals?$/i.test(roundInfo)) return "F";
+  // Playoff P-numbered rounds
+  const pMatch = m.notes?.match(/Round\s+P(\d+)/i);
+  if (pMatch) return `P${pMatch[1]}`;
+  // Fallback: if getRoundNumber says it's a playoff match, label it
+  const rn = getRoundNumber(m);
+  if (rn >= 1003) return "F";
+  if (rn >= 1002) return "SF";
+  if (rn >= 1001) return "QF";
+  return m.format || "";
 }
 
 export function OnThisDay({ matches }: OnThisDayProps) {
@@ -72,7 +112,8 @@ export function OnThisDay({ matches }: OnThisDayProps) {
       const heroes = [...new Set(yearMatches.map((m) => m.heroPlayed).filter((h) => h && h !== "Unknown"))];
       const events = [...new Set(yearMatches.map((m) => m.notes?.split(" | ")[0]).filter(Boolean))] as string[];
 
-      result.push({ year, matches: yearMatches, wins, losses, draws, heroes, events });
+      const placement = detectPlacement(yearMatches);
+      result.push({ year, matches: yearMatches, wins, losses, draws, heroes, events, placement });
     }
 
     return result.sort((a, b) => b.year - a.year);
@@ -88,6 +129,7 @@ export function OnThisDay({ matches }: OnThisDayProps) {
   const thisYear = overrideYear || today.getFullYear();
 
   const totalMatches = memories.reduce((s, m) => s + m.matches.length, 0);
+  const bestPlacement = memories.map((m) => m.placement).find(Boolean);
 
   const cardData: OnThisDayData = {
     dateLabel,
@@ -123,7 +165,14 @@ export function OnThisDay({ matches }: OnThisDayProps) {
         <h3 className="text-sm font-semibold text-fab-text">On This Day</h3>
         <span className="text-xs text-fab-dim">{dateLabel}</span>
         {collapsed && (
-          <span className="text-[10px] text-fab-muted">{memories.length} {memories.length === 1 ? "year" : "years"}, {totalMatches} {totalMatches === 1 ? "match" : "matches"}</span>
+          <>
+            <span className="text-[10px] text-fab-muted">{memories.length} {memories.length === 1 ? "year" : "years"}, {totalMatches} {totalMatches === 1 ? "match" : "matches"}</span>
+            {bestPlacement && (
+              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-fab-gold/15 text-fab-gold shrink-0">
+                {bestPlacement}
+              </span>
+            )}
+          </>
         )}
         <svg className={`w-4 h-4 text-fab-dim ml-auto shrink-0 transition-transform ${collapsed ? "" : "rotate-180"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
@@ -154,6 +203,11 @@ export function OnThisDay({ matches }: OnThisDayProps) {
                         Undefeated
                       </span>
                     )}
+                    {mem.placement && (
+                      <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-purple-500/15 text-purple-400 font-semibold">
+                        {mem.placement}
+                      </span>
+                    )}
                   </div>
 
                   {/* Event name */}
@@ -172,7 +226,8 @@ export function OnThisDay({ matches }: OnThisDayProps) {
                           ? "bg-fab-loss"
                           : "bg-fab-draw";
                       const resultLabel = m.result === MatchResult.Win ? "W" : m.result === MatchResult.Loss ? "L" : "D";
-                      const round = m.notes?.match(/Round (\d+)/)?.[1];
+                      const roundLabel = getRoundLabel(m);
+                      const isPlayoff = getRoundNumber(m) >= 1000;
 
                       return (
                         <div key={m.id || i} className="flex items-center gap-1.5 text-[11px]">
@@ -187,8 +242,8 @@ export function OnThisDay({ matches }: OnThisDayProps) {
                               ({m.opponentHero})
                             </span>
                           )}
-                          <span className="ml-auto shrink-0 text-fab-dim">
-                            {round ? `R${round}` : m.format}
+                          <span className={`ml-auto shrink-0 ${isPlayoff ? "text-purple-400 font-semibold" : "text-fab-dim"}`}>
+                            {roundLabel}
                           </span>
                         </div>
                       );
