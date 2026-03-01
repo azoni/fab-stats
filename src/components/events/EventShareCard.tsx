@@ -1,9 +1,19 @@
 "use client";
 import { useRef, useState } from "react";
-import type { EventStats } from "@/types";
+import { MatchResult, type EventStats } from "@/types";
 import { getHeroByName } from "@/lib/heroes";
 import { HeroClassIcon } from "@/components/heroes/HeroClassIcon";
 import { FINISH_THEMES, type FinishTheme } from "@/components/profile/BestFinishCard";
+import type { PlayoffFinish } from "@/lib/stats";
+import {
+  TIER_MAP,
+  col,
+  glowFilter,
+  ShieldBadge,
+  MedalIcon,
+  TrophyIcon,
+  MarbleIcon,
+} from "@/components/profile/TrophyCase";
 
 // ── Card ──
 
@@ -15,6 +25,52 @@ interface EventShareData {
 function formatDate(dateStr: string): string {
   const d = new Date(dateStr);
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
+const playoffRank: Record<string, number> = { "Finals": 4, "Top 4": 3, "Top 8": 2, "Playoff": 2, "Skirmish": 1 };
+
+function getPlacement(event: EventStats): { label: string; type: PlayoffFinish["type"] } | null {
+  let bestLabel: string | null = null;
+  let bestRank = 0;
+  for (const match of event.matches) {
+    const roundInfo = match.notes?.split(" | ")[1];
+    if (!roundInfo) continue;
+    const rank = playoffRank[roundInfo] ?? (/^Round P/i.test(roundInfo) ? 2 : 0);
+    if (rank > bestRank) {
+      bestRank = rank;
+      bestLabel = roundInfo === "Playoff" || /^Round P/i.test(roundInfo) ? "Top 8" : roundInfo;
+    }
+  }
+  if (!bestLabel) return null;
+  const typeMap: Record<string, PlayoffFinish["type"]> = { "Finals": "finalist", "Top 4": "top4", "Top 8": "top8" };
+  // Check if they won the finals
+  const finalsMatch = event.matches.find((m) => m.notes?.split(" | ")[1] === "Finals");
+  if (finalsMatch && finalsMatch.result === MatchResult.Win) return { label: "Champion", type: "champion" };
+  return { label: bestLabel, type: typeMap[bestLabel] || "top8" };
+}
+
+function PlacementBadge({ event, theme }: { event: EventStats; theme: FinishTheme }) {
+  const placement = getPlacement(event);
+  if (!placement) return null;
+  const tier = TIER_MAP[event.eventType || ""] || "marble";
+  const c = col(placement.type);
+  const id = "event-share-badge";
+  const wrapperStyle = { transform: "scale(2.5)", transformOrigin: "center" as const, filter: glowFilter(placement.type) };
+
+  let badge;
+  if (tier === "trophy") badge = <TrophyIcon type={placement.type} id={id} />;
+  else if (tier === "medal") badge = <MedalIcon type={placement.type} id={id} />;
+  else if (tier === "marble") badge = <MarbleIcon type={placement.type} id={id} idx={0} />;
+  else badge = <ShieldBadge type={placement.type} id={id} />;
+
+  return (
+    <div className="text-center mb-3">
+      <div className="flex items-center justify-center h-20 mb-2">
+        <div style={wrapperStyle}>{badge}</div>
+      </div>
+      <p style={{ color: c.from }} className="text-lg font-black">{placement.label}</p>
+    </div>
+  );
 }
 
 export function EventShareCardInner({ data, theme }: { data: EventShareData; theme?: FinishTheme }) {
@@ -39,6 +95,9 @@ export function EventShareCardInner({ data, theme }: { data: EventShareData; the
       </div>
 
       <div className="px-5 pt-5 pb-4">
+        {/* Placement badge */}
+        <PlacementBadge event={event} theme={t} />
+
         {/* Record */}
         <div className="text-center mb-3">
           <div className="inline-flex items-center gap-3">
@@ -85,7 +144,14 @@ export function EventShareCardInner({ data, theme }: { data: EventShareData; the
 
         {/* Tagline */}
         <p style={{ color: t.dim }} className="text-[10px] text-center mt-3 italic">
-          {event.wins > event.losses ? "A tournament to remember." : event.wins === event.losses ? "A hard-fought day." : "Learning from every match."}
+          {(() => {
+            const p = getPlacement(event);
+            if (p?.type === "champion") return "Standing at the top.";
+            if (p?.type === "finalist") return "So close to glory.";
+            if (p?.type === "top4") return "Among the best.";
+            if (p?.type === "top8") return "Making their mark.";
+            return event.wins > event.losses ? "A tournament to remember." : event.wins === event.losses ? "A hard-fought day." : "Learning from every match.";
+          })()}
         </p>
       </div>
 

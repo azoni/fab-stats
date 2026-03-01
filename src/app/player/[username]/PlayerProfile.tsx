@@ -241,6 +241,10 @@ export default function PlayerProfile() {
   const eventBadges = useMemo(() => computeEventBadges(eventStats, playoffFinishes), [eventStats, playoffFinishes]);
   const userRanks = useMemo(() => profileUid ? computeUserRanks(lbEntries, profileUid) : [], [lbEntries, profileUid]);
   const bestRank = useMemo(() => getBestRank(userRanks), [userRanks]);
+  const lastUpdated = useMemo(() => {
+    const entry = lbEntries.find((e) => e.userId === profileUid);
+    return entry?.updatedAt || null;
+  }, [lbEntries, profileUid]);
   const last30 = useMemo(() => sortedByDateDesc.slice(0, 30).reverse(), [sortedByDateDesc]);
   const topHero = useMemo(() => {
     const known = heroStats.filter((h) => h.heroName !== "Unknown");
@@ -475,6 +479,13 @@ export default function PlayerProfile() {
               </div>
             )}
           </div>
+
+          {/* Last updated */}
+          {lastUpdated && (
+            <p className="text-[10px] text-fab-dim mt-3 pt-3 border-t border-fab-border/50">
+              Last updated {new Date(lastUpdated).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+            </p>
+          )}
         </div>
         <div />
       </div>
