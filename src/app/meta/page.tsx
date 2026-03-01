@@ -41,12 +41,14 @@ export default function MetaPage() {
   // Top 8 heroes — filtered by period, format, and event type
   const top8Heroes = useMemo(() => {
     const sinceDate = period === "weekly" ? getWeekStart() : period === "monthly" ? getMonthStart() : undefined;
-    return computeTop8HeroMeta(
-      entries,
-      filterEventType !== "all" ? filterEventType : undefined,
-      filterFormat !== "all" ? filterFormat : undefined,
-      sinceDate,
-    );
+    const eventType = filterEventType !== "all" ? filterEventType : undefined;
+    const format = filterFormat !== "all" ? filterFormat : undefined;
+    const result = computeTop8HeroMeta(entries, eventType, format, sinceDate);
+    // At month start, monthly data may be empty — fall back to weekly range
+    if (period === "monthly" && result.length === 0) {
+      return computeTop8HeroMeta(entries, eventType, format, getWeekStart());
+    }
+    return result;
   }, [entries, filterEventType, filterFormat, period]);
 
   const sortedHeroes = useMemo(() => {
