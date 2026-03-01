@@ -47,6 +47,9 @@ export interface AdminUserStats {
   monthlyMatches?: number;
   visitCount?: number;
   lastSiteVisit?: string;
+  chatMessages?: number;
+  chatCost?: number;
+  lastChatAt?: string;
 }
 
 export interface AdminDashboardData {
@@ -171,13 +174,41 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     }
   }
 
-  // Step 3: Merge visit data into user stats
+  // Step 3: Fetch chat stats for all users
+  const chatStatsMap = new Map<string, { messages: number; cost: number; lastAt?: string }>();
+  try {
+    const chatStatsFetches = await Promise.allSettled(
+      userEntries.map(async ({ userId }) => {
+        const snap = await getDoc(doc(db, "users", userId, "chatStats", "main"));
+        if (snap.exists()) {
+          const d = snap.data();
+          chatStatsMap.set(userId, {
+            messages: (d.totalMessages as number) || 0,
+            cost: (d.totalCost as number) || 0,
+            lastAt: d.lastMessageAt as string | undefined,
+          });
+        }
+      })
+    );
+    // Silently ignore individual failures
+    void chatStatsFetches;
+  } catch {
+    // If entire batch fails, continue without chat stats
+  }
+
+  // Step 4: Merge visit data + chat stats into user stats
   for (const u of users) {
     u.visitCount = visitData.visits[u.uid] || 0;
     u.lastSiteVisit = visitData.lastVisit[u.uid];
+    const cs = chatStatsMap.get(u.uid);
+    if (cs) {
+      u.chatMessages = cs.messages;
+      u.chatCost = cs.cost;
+      u.lastChatAt = cs.lastAt;
+    }
   }
 
-  // Step 4: Compute time-based stats
+  // Step 5: Compute time-based stats
   const now = Date.now();
   const weekAgo = now - 7 * 24 * 60 * 60 * 1000;
   const monthAgo = now - 30 * 24 * 60 * 60 * 1000;

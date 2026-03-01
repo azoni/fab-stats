@@ -14,6 +14,7 @@
     "@flesh-and-blood/types": "^3.6.217",
     "@resvg/resvg-js": "^2.6.2",
     "firebase": "^12.9.0",
+    "firebase-admin": "^13.7.0",
     "html-to-image": "^1.11.13",
     "next": "16.1.6",
     "react": "19.2.3",

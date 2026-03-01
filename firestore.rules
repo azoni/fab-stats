@@ -211,6 +211,14 @@ service cloud.firestore {
         && (resource.data.userId == request.auth.uid || isAdmin());
     }
 
+    // ── AI Chat Messages (server-written via Admin SDK, client read-only) ──
+    match /users/{userId}/chatMessages/{messageId} {
+      allow read: if request.auth != null && (request.auth.uid == userId || isAdmin());
+    }
+    match /users/{userId}/chatStats/{docId} {
+      allow read: if request.auth != null && (request.auth.uid == userId || isAdmin());
+    }
+
     // ── Earned achievements tracking (per user) ──
     match /users/{userId}/earnedAchievements/{docId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;

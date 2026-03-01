@@ -88,7 +88,7 @@ export const MetaSnapshot = memo(function MetaSnapshot({ topHeroes, top8Heroes, 
                   ))}
                 </div>
                 <span className="text-[10px] text-fab-dim">
-                  {sortedTop8.length} heroes
+                  {sortedTop8.reduce((sum, t) => sum + t.totalPlayers, 0)} heroes logged
                 </span>
               </div>
               <div className="flex items-center gap-3 text-[10px] text-fab-dim uppercase tracking-wide">

@@ -35,7 +35,7 @@ const FEATURED_EVENT_TYPES = [
   "Worlds",
 ] as const;
 
-type SortKey = "matchCount" | "createdAt" | "username" | "lastActive" | "weekly" | "monthly" | "visits";
+type SortKey = "matchCount" | "createdAt" | "username" | "lastActive" | "weekly" | "monthly" | "visits" | "chat";
 type SortDir = "asc" | "desc";
 
 export default function AdminPage() {
@@ -215,6 +215,7 @@ export default function AdminPage() {
       else if (sortKey === "weekly") cmp = (a.weeklyMatches || 0) - (b.weeklyMatches || 0);
       else if (sortKey === "monthly") cmp = (a.monthlyMatches || 0) - (b.monthlyMatches || 0);
       else if (sortKey === "visits") cmp = (a.visitCount || 0) - (b.visitCount || 0);
+      else if (sortKey === "chat") cmp = (a.chatMessages || 0) - (b.chatMessages || 0);
       else cmp = a.username.localeCompare(b.username);
       return sortDir === "desc" ? -cmp : cmp;
     });
@@ -512,6 +513,12 @@ export default function AdminPage() {
                       Visits<SortArrow col="visits" />
                     </th>
                     <th
+                      className="px-4 py-2 font-medium cursor-pointer hover:text-fab-text select-none text-right"
+                      onClick={() => toggleSort("chat")}
+                    >
+                      Chat<SortArrow col="chat" />
+                    </th>
+                    <th
                       className="px-4 py-2 font-medium cursor-pointer hover:text-fab-text select-none"
                       onClick={() => toggleSort("lastActive")}
                     >
@@ -562,6 +569,12 @@ export default function AdminPage() {
                           <td className="px-4 py-2 text-right font-mono">
                             <span className={`${(u.visitCount || 0) > 10 ? "text-fab-win" : (u.visitCount || 0) > 0 ? "text-fab-text" : "text-fab-dim"}`}>{u.visitCount || 0}</span>
                           </td>
+                          <td className="px-4 py-2 text-right font-mono">
+                            <span className={`${(u.chatMessages || 0) > 0 ? "text-fab-text" : "text-fab-dim"}`}>{u.chatMessages || 0}</span>
+                            {(u.chatCost || 0) > 0 && (
+                              <div className="text-[10px] text-fab-dim">${u.chatCost!.toFixed(3)}</div>
+                            )}
+                          </td>
                           <td className="px-4 py-2">
                             {(() => { const ta = timeAgo(u.updatedAt); return <span className={`text-xs font-medium ${ta.color}`}>{ta.label}</span>; })()}
                           </td>
@@ -581,7 +594,7 @@ export default function AdminPage() {
                         </tr>
                         {isExpanded && (
                           <tr className="border-b border-fab-border/50 bg-fab-bg/50">
-                            <td colSpan={9} className="px-4 py-3">
+                            <td colSpan={10} className="px-4 py-3">
                               <UserExpandedStats
                                 user={u}
                                 assignedBadgeIds={badgeAssignments[u.uid] || []}
@@ -2093,6 +2106,13 @@ function UserExpandedStats({ user: u, assignedBadgeIds, isMuted, onAssignBadge, 
               </div>
             </div>
           </div>
+          {(u.chatMessages || 0) > 0 && (
+            <div className="flex items-center gap-4 text-sm text-fab-muted">
+              <span>Chat: {u.chatMessages} messages</span>
+              <span>${(u.chatCost || 0).toFixed(3)} total</span>
+              {u.lastChatAt && <span>Last: {new Date(u.lastChatAt).toLocaleDateString()}</span>}
+            </div>
+          )}
         </>
       ) : (
         <div className="text-sm text-fab-dim">No leaderboard data yet. Stats sync when user visits their dashboard.</div>

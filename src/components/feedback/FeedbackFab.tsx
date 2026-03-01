@@ -13,7 +13,7 @@ export function FeedbackFab() {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="fixed right-4 bottom-6 z-40 hidden md:flex items-center gap-2 px-4 py-2.5 rounded-full bg-fab-gold text-fab-bg font-semibold text-sm shadow-lg hover:bg-fab-gold-light transition-all hover:scale-105 active:scale-95"
+        className="fixed right-20 bottom-6 z-40 hidden md:flex items-center gap-2 px-4 py-2.5 rounded-full bg-fab-gold text-fab-bg font-semibold text-sm shadow-lg hover:bg-fab-gold-light transition-all hover:scale-105 active:scale-95"
         title="Send Feedback"
       >
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
