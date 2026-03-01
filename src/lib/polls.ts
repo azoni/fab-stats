@@ -17,10 +17,12 @@ export async function getActivePoll(skipCache = false): Promise<Poll | null> {
   }
 
   try {
-    const q = query(collection(db, "polls"), where("active", "==", true), limit(1));
+    const q = query(collection(db, "polls"), where("active", "==", true), limit(5));
     const snap = await getDocs(q);
     if (snap.empty) return null;
-    const docSnap = snap.docs[0];
+    // Skip prediction polls — they're shown by PredictionCard, not PollCard
+    const docSnap = snap.docs.find((d) => d.data().type !== "prediction");
+    if (!docSnap) return null;
     const poll = { ...docSnap.data(), id: docSnap.id } as Poll;
     try {
       localStorage.setItem(CACHE_KEY, JSON.stringify({ poll, ts: Date.now() }));
