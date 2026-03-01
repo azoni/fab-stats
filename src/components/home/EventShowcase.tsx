@@ -55,7 +55,14 @@ export function EventShowcase({ config, activePrediction, rankMap, unlockedColor
     <div>
       {/* Title + expand toggle */}
       <div className="flex items-center justify-between mb-2">
-        <h2 className="text-lg font-semibold text-fab-text">{config.title}</h2>
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 rounded-lg bg-red-500/10 flex items-center justify-center ring-1 ring-inset ring-red-500/20">
+            <svg className="w-4 h-4 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15.362 5.214A8.252 8.252 0 0112 21 8.25 8.25 0 016.038 7.048 6.51 6.51 0 009 4.5a6.5 6.5 0 016.362.714z" />
+            </svg>
+          </div>
+          <h2 className="text-lg font-semibold text-fab-text">{config.title}</h2>
+        </div>
         {youtubeEmbedUrl && (
           <button
             onClick={() => setVideoExpanded((v) => !v)}

@@ -57,13 +57,13 @@ const navLinks: { href: string; label: string; icon: ReactNode; color: string; b
   { href: "/meta", label: "Meta", icon: <MetaIcon className="w-4 h-4" />, color: "text-teal-400", bg: "bg-teal-400/10" },
   { href: "/tournaments", label: "Tournaments", icon: <CalendarIcon className="w-4 h-4" />, color: "text-orange-400", bg: "bg-orange-400/10" },
   { href: "/search", label: "Discover", icon: <SearchIcon className="w-4 h-4" />, color: "text-cyan-400", bg: "bg-cyan-400/10" },
-  { href: "/compare", label: "Versus", icon: <CompareIcon className="w-4 h-4" />, color: "text-fuchsia-400", bg: "bg-fuchsia-400/10" },
 ];
 
 const moreLinks: { href: string; label: string; icon: ReactNode; authOnly?: boolean }[] = [
   { href: "/matches", label: "Matches", icon: <SwordsIcon className="w-4 h-4" /> },
   { href: "/events", label: "Events", icon: <CalendarIcon className="w-4 h-4" /> },
   { href: "/opponents", label: "Opponents", icon: <OpponentsIcon className="w-4 h-4" /> },
+  { href: "/compare", label: "Versus", icon: <CompareIcon className="w-4 h-4" /> },
   { href: "/trends", label: "Trends", icon: <TrendsIcon className="w-4 h-4" />, authOnly: true },
   { href: "/changelog", label: "Changelog", icon: <ChangelogIcon className="w-4 h-4" /> },
   { href: "/docs", label: "Docs", icon: <DocsIcon className="w-4 h-4" /> },

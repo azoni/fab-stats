@@ -31,7 +31,9 @@ export function TournamentCard({ event, entryMap, fullImage }: TournamentCardPro
   const players = event.players || [];
 
   return (
-    <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden">
+    <div className="relative bg-fab-surface border border-fab-border rounded-lg overflow-hidden">
+      {/* Pitch strip */}
+      <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-orange-400/25 to-transparent z-10" />
       {event.imageUrl && (
         fullImage ? (
           <div className="w-full max-h-56 overflow-hidden bg-black/20">

@@ -221,16 +221,20 @@ export function OnThisDay({ matches }: OnThisDayProps) {
   };
 
   return (
-    <div className="bg-fab-surface border border-fab-border rounded-lg p-4">
+    <div className="relative bg-fab-surface border border-fab-border rounded-lg p-4 overflow-hidden">
+      {/* Pitch strip accent */}
+      <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-amber-400/30 to-transparent" />
       {/* Header — clickable to collapse */}
       <button
         onClick={() => setCollapsed(!collapsed)}
         className="w-full flex items-center gap-2"
       >
-        <svg className="w-5 h-5 text-amber-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="12" cy="12" r="10" />
-          <polyline points="12 6 12 12 16 14" />
-        </svg>
+        <div className="w-6 h-6 rounded-md bg-amber-500/10 flex items-center justify-center ring-1 ring-inset ring-amber-500/20 shrink-0">
+          <svg className="w-3.5 h-3.5 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="10" />
+            <polyline points="12 6 12 12 16 14" />
+          </svg>
+        </div>
         <h3 className="text-sm font-semibold text-fab-text">On This Day</h3>
         <span className="text-xs text-fab-dim">{dateLabel}</span>
         {collapsed && (

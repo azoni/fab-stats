@@ -133,7 +133,10 @@ export default function Dashboard() {
   const { streaks } = overall;
 
   return (
-    <div className="space-y-8">
+    <div className="relative space-y-8">
+      {/* Ambient page glow — subtle gold atmosphere at the top */}
+      <div className="pointer-events-none absolute inset-x-0 -top-24 h-72 bg-[radial-gradient(ellipse_60%_50%_at_50%_-10%,rgba(201,168,76,0.06),transparent)]" />
+
       {/* Full-width nav bar (logged-in users with matches) */}
       {hasMatches && (
         <div className="flex items-center gap-3 overflow-x-auto scrollbar-hide pb-0.5">
@@ -191,6 +194,20 @@ export default function Dashboard() {
             </div>
           </Link>
 
+          {/* Versus — violet showdown */}
+          <Link href="/compare" className="group relative flex items-center gap-3 pl-3 pr-5 py-3 rounded-2xl shrink-0 overflow-hidden bg-gradient-to-br from-fuchsia-500/10 via-fuchsia-950/20 to-transparent border border-fuchsia-500/20 hover:border-fuchsia-400/40 hover:shadow-[0_0_24px_rgba(217,70,239,0.08)] hover:-translate-y-0.5 transition-all duration-300">
+            <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-fuchsia-400/40 to-transparent" />
+            <div className="w-10 h-10 rounded-xl bg-fuchsia-500/15 flex items-center justify-center shrink-0 ring-1 ring-inset ring-fuchsia-500/20 group-hover:bg-fuchsia-500/20 group-hover:ring-fuchsia-400/30 transition-all">
+              <svg className="w-5 h-5 text-fuchsia-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                <path d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-sm font-bold text-fab-text leading-tight">Versus</p>
+              <p className="text-[11px] text-fuchsia-400/70 font-semibold leading-tight">Head-to-head</p>
+            </div>
+          </Link>
+
           {/* Log — gold action */}
           <Link href="/events?import=1" className="group relative flex items-center gap-3 pl-3 pr-5 py-3 rounded-2xl shrink-0 overflow-hidden bg-gradient-to-br from-fab-gold/10 via-amber-950/20 to-transparent border border-dashed border-fab-gold/25 hover:border-fab-gold/45 hover:shadow-[0_0_24px_rgba(201,168,76,0.08)] hover:-translate-y-0.5 transition-all duration-300">
             <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-fab-gold/40 to-transparent" />
@@ -212,6 +229,8 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
           <div className="flex flex-col gap-6">
             <div className="relative bg-fab-surface border border-fab-border rounded-lg p-5 overflow-hidden">
+              {/* FaB-inspired pitch strip */}
+              <div className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-fab-gold/40 to-transparent" />
               {/* Decorative glow */}
               <div className="absolute -top-16 -right-16 w-48 h-48 bg-fab-gold/5 rounded-full blur-3xl pointer-events-none" />
               <div className="absolute -bottom-12 -left-12 w-36 h-36 bg-amber-500/5 rounded-full blur-2xl pointer-events-none" />
@@ -269,6 +288,8 @@ export default function Dashboard() {
               className="relative bg-fab-surface border border-fab-border rounded-lg px-4 py-3 overflow-hidden"
               style={cardBorder ? { borderColor: cardBorder.border, boxShadow: cardBorder.shadow } : undefined}
             >
+              {/* FaB-inspired pitch strip — thin gold accent across the top */}
+              <div className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-fab-gold/30 to-transparent" />
               {/* Subtle decorative accent */}
               <div className="absolute -top-10 -right-10 w-32 h-32 bg-fab-gold/5 rounded-full blur-2xl pointer-events-none" />
               <div className="flex items-center gap-3">
@@ -375,23 +396,39 @@ export default function Dashboard() {
         </div>
       )}
 
+      {/* Section divider */}
+      {(featuredProfiles.length > 0 || hasMatches) && (
+        <div className="h-px bg-gradient-to-r from-transparent via-fab-gold/15 to-transparent" />
+      )}
+
       {/* Player Spotlight */}
       {featuredProfiles.length > 0 && (
         <FeaturedProfiles profiles={featuredProfiles} rankMap={rankMap} grid />
       )}
 
       {/* On This Day */}
-      {hasMatches && <OnThisDay matches={matches} />}
+      {hasMatches && (
+        <>
+          <div className="h-px bg-gradient-to-r from-transparent via-fab-gold/10 to-transparent" />
+          <OnThisDay matches={matches} />
+        </>
+      )}
 
       {/* Event Showcase (admin-configurable) */}
       {showcaseConfig?.active && (
-        <EventShowcase
-          config={showcaseConfig}
-          activePrediction={activePrediction}
-          rankMap={rankMap}
-          unlockedColors={unlockedColors}
-        />
+        <>
+          <div className="h-px bg-gradient-to-r from-transparent via-fab-gold/10 to-transparent" />
+          <EventShowcase
+            config={showcaseConfig}
+            activePrediction={activePrediction}
+            rankMap={rankMap}
+            unlockedColors={unlockedColors}
+          />
+        </>
       )}
+
+      {/* Section divider */}
+      <div className="h-px bg-gradient-to-r from-transparent via-fab-gold/10 to-transparent" />
 
       {/* Community content */}
       <CommunityHighlights
@@ -445,11 +482,16 @@ export default function Dashboard() {
 
 function DashboardSkeleton() {
   return (
-    <div className="space-y-8">
-      <div className="bg-fab-surface border border-fab-border rounded-lg p-5 h-48 animate-pulse" />
+    <div className="relative space-y-8">
+      <div className="pointer-events-none absolute inset-x-0 -top-24 h-72 bg-[radial-gradient(ellipse_60%_50%_at_50%_-10%,rgba(201,168,76,0.06),transparent)]" />
+      <div className="relative bg-fab-surface border border-fab-border rounded-lg p-5 h-48 animate-pulse overflow-hidden">
+        <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-fab-gold/20 to-transparent" />
+      </div>
       <div className="grid grid-cols-3 gap-4">
         {[...Array(3)].map((_, i) => (
-          <div key={i} className="bg-fab-surface border border-fab-border rounded-lg p-4 h-20 animate-pulse" />
+          <div key={i} className="relative bg-fab-surface border border-fab-border rounded-lg p-4 h-20 animate-pulse overflow-hidden">
+            <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-fab-gold/10 to-transparent" />
+          </div>
         ))}
       </div>
     </div>

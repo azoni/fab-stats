@@ -23,19 +23,28 @@ export const MetaSnapshot = memo(function MetaSnapshot({ topHeroes, top8Heroes, 
   return (
     <div className="flex flex-col">
       <div className="flex items-center justify-between mb-4">
-        <div className="section-header flex-1">
-          <h2 className="text-lg font-semibold text-fab-text">
-            {showEventMode ? `${activeEventType} Top 8s` : "Meta Snapshot"}
-          </h2>
-          {showEventMode && (
-            <p className="text-[10px] text-fab-dim mt-0.5">Heroes making playoffs this week</p>
-          )}
+        <div className="section-header flex items-center gap-2 flex-1">
+          <div className="w-7 h-7 rounded-lg bg-teal-500/10 flex items-center justify-center ring-1 ring-inset ring-teal-500/20">
+            <svg className="w-4 h-4 text-teal-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <div>
+            <h2 className="text-lg font-semibold text-fab-text leading-tight">
+              {showEventMode ? `${activeEventType} Top 8s` : "Meta Snapshot"}
+            </h2>
+            {showEventMode && (
+              <p className="text-[10px] text-fab-dim leading-tight">Heroes making playoffs this week</p>
+            )}
+          </div>
         </div>
-        <Link href="/meta" className="text-sm text-fab-gold hover:text-fab-gold-light transition-colors ml-3">
+        <Link href="/meta" className="text-xs text-fab-gold hover:text-fab-gold-light transition-colors ml-3 font-semibold">
           View Full Meta
         </Link>
       </div>
-      <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden flex-1">
+      <div className="relative bg-fab-surface border border-fab-border rounded-lg overflow-hidden flex-1">
+        {/* Pitch strip */}
+        <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-teal-400/30 to-transparent" />
         {showEventMode ? (
           // Event weekend: show top 8 hero placements
           top8Heroes!.slice(0, 10).map((t8, i) => {

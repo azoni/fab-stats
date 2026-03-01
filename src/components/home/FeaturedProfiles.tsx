@@ -245,11 +245,15 @@ export function FeaturedProfiles({ profiles, rankMap, grid }: FeaturedProfilesPr
   return (
     <div className="flex flex-col">
       <div className="section-header mb-4 flex items-center gap-2">
-        <svg className="w-5 h-5 text-amber-400 shrink-0" viewBox="0 0 20 20" fill="currentColor">
-          <path d="M10 1c.716 0 1.353.45 1.592 1.126l1.675 4.728 5.004.408c.731.06 1.028.97.47 1.443L15.19 11.66l1.06 4.878c.155.717-.596 1.283-1.224.923L10 14.408l-5.025 3.053c-.629.36-1.38-.206-1.224-.923l1.06-4.878L1.258 8.705c-.558-.473-.26-1.383.471-1.443l5.004-.408 1.675-4.728A1.68 1.68 0 0110 1z" />
-        </svg>
-        <h2 className="text-lg font-semibold text-fab-text">Player Spotlight</h2>
-        <span className="text-xs text-fab-dim font-medium">Community standouts</span>
+        <div className="w-7 h-7 rounded-lg bg-amber-500/10 flex items-center justify-center ring-1 ring-inset ring-amber-500/20">
+          <svg className="w-4 h-4 text-amber-400" viewBox="0 0 20 20" fill="currentColor">
+            <path d="M10 1c.716 0 1.353.45 1.592 1.126l1.675 4.728 5.004.408c.731.06 1.028.97.47 1.443L15.19 11.66l1.06 4.878c.155.717-.596 1.283-1.224.923L10 14.408l-5.025 3.053c-.629.36-1.38-.206-1.224-.923l1.06-4.878L1.258 8.705c-.558-.473-.26-1.383.471-1.443l5.004-.408 1.675-4.728A1.68 1.68 0 0110 1z" />
+          </svg>
+        </div>
+        <div>
+          <h2 className="text-lg font-semibold text-fab-text leading-tight">Player Spotlight</h2>
+          <p className="text-[10px] text-fab-dim font-medium leading-tight">Community standouts</p>
+        </div>
       </div>
       <div className={grid ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2" : "space-y-2 flex-1"}>
         {profiles.map((fp) => {
@@ -258,8 +262,10 @@ export function FeaturedProfiles({ profiles, rankMap, grid }: FeaturedProfilesPr
             <Link
               key={fp.entry.userId}
               href={`/player/${fp.entry.username}`}
-              className={`spotlight-card ${config.css} flex items-center gap-3 bg-fab-surface border border-fab-border rounded-lg px-3 py-2.5 hover:bg-fab-surface-hover transition-all group`}
+              className={`spotlight-card ${config.css} relative flex items-center gap-3 bg-fab-surface border border-fab-border rounded-lg px-3 py-2.5 hover:bg-fab-surface-hover transition-all group overflow-hidden`}
             >
+              {/* Subtle pitch strip accent */}
+              <div className={`absolute top-0 inset-x-0 h-px opacity-40 bg-gradient-to-r from-transparent via-current to-transparent ${config.accent}`} />
               {fp.entry.photoUrl ? (
                 <img
                   src={fp.entry.photoUrl}

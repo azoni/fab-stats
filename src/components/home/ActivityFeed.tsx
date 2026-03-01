@@ -107,8 +107,13 @@ export function ActivityFeed({ rankMap, eventTierMap }: { rankMap?: Map<string, 
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex items-center justify-between mb-2">
-        <h2 className="text-lg font-semibold text-fab-text">Activity Feed</h2>
+      <div className="flex items-center gap-2 mb-2">
+        <div className="w-7 h-7 rounded-lg bg-fab-gold/10 flex items-center justify-center ring-1 ring-inset ring-fab-gold/20">
+          <svg className="w-4 h-4 text-fab-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
+          </svg>
+        </div>
+        <h2 className="text-lg font-semibold text-fab-text leading-tight">Activity Feed</h2>
       </div>
 
       {/* Filter row */}
@@ -219,8 +224,9 @@ export function ActivityFeed({ rankMap, eventTierMap }: { rankMap?: Map<string, 
           {/* Discover CTA */}
           <Link
             href="/search"
-            className="flex items-center justify-center gap-2 mt-4 py-2.5 rounded-lg border border-fab-border bg-fab-surface hover:bg-fab-surface-hover hover:border-fab-gold/30 transition-all group"
+            className="relative flex items-center justify-center gap-2 mt-4 py-2.5 rounded-lg border border-fab-border bg-fab-surface hover:bg-fab-surface-hover hover:border-fab-gold/30 transition-all group overflow-hidden"
           >
+            <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-fab-gold/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
             <span className="text-xs font-semibold text-fab-muted group-hover:text-fab-gold transition-colors">
               See more on Discover
             </span>
