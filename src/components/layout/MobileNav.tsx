@@ -155,7 +155,7 @@ const moreSections: { title: string; links: MoreLink[] }[] = [
 
 export function MobileNav() {
   const pathname = usePathname();
-  const { user, isGuest, isAdmin } = useAuth();
+  const { user, profile, isGuest, isAdmin } = useAuth();
   const { unreadCount } = useNotifications();
   const { incomingCount: friendRequestCount } = useFriends();
   const [mounted, setMounted] = useState(false);
@@ -193,6 +193,22 @@ export function MobileNav() {
       >
         <div className="mx-3 mb-2 bg-fab-surface border border-fab-border rounded-xl shadow-2xl overflow-hidden max-h-[70vh] overflow-y-auto">
           <div className="p-2">
+            {isAuthed && profile?.username && (
+              <div className="border-b border-fab-border/50 pb-1 mb-1">
+                <Link
+                  href={`/player/${profile.username}`}
+                  onClick={closeMore}
+                  className={`flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-semibold transition-colors ${
+                    pathname === `/player/${profile.username}`
+                      ? "text-fab-gold bg-fab-gold/10"
+                      : "text-fab-text active:bg-fab-surface-hover"
+                  }`}
+                >
+                  <DashboardIcon className="w-5 h-5 text-blue-400" />
+                  My Profile
+                </Link>
+              </div>
+            )}
             {moreSections.map((section, sIdx) => {
               const visibleLinks = section.links.filter((l) => (!l.authOnly || isAuthed) && (!l.adminOnly || isAdmin));
               if (visibleLinks.length === 0) return null;
