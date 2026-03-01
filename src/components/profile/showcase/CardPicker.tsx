@@ -260,10 +260,13 @@ function EventPicker({ events, search, onSelect }: { events: EventStats[]; searc
   );
 }
 
+const RARITY_ORDER: Record<string, number> = { legendary: 0, epic: 1, rare: 2, uncommon: 3, common: 4 };
+
 function AchievementList({ achievements, selected, onToggle }: { achievements: Achievement[]; selected: Set<string>; onToggle: (id: string) => void }) {
+  const sorted = [...achievements].sort((a, b) => (RARITY_ORDER[a.rarity] ?? 5) - (RARITY_ORDER[b.rarity] ?? 5));
   return (
     <>
-      {achievements.map((a) => {
+      {sorted.map((a) => {
         const isSelected = selected.has(a.id);
         return (
           <button
