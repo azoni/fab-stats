@@ -20,6 +20,11 @@ const TYPE_FILTERS: { value: TypeFilter; label: string }[] = [
 ];
 
 const PAGE_SIZE = 5;
+const TYPE_CAPS: Record<string, number> = {
+  import: 10,
+  achievement: 15,
+  placement: 20,
+};
 const SCOPE_KEY = "fab-feed-scope";
 const TYPE_KEY = "fab-feed-type";
 
@@ -62,13 +67,6 @@ export function ActivityFeed({ rankMap, eventTierMap }: { rankMap?: Map<string, 
   }, [friends, favorites, user?.uid]);
 
   const filteredEvents: FeedEvent[] = useMemo(() => {
-    // Imports: yesterday-at-midnight cutoff
-    // Achievements & placements: show everything since app launch (Feb 24 2026)
-    const now = new Date();
-    const yesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
-    const importCutoff = yesterday.getTime();
-    const appLaunch = new Date("2026-02-24").getTime();
-
     let source = events.filter((e) => !deletedIds.has(e.id));
 
     // Scope filter
@@ -81,19 +79,19 @@ export function ActivityFeed({ rankMap, eventTierMap }: { rankMap?: Map<string, 
       source = source.filter((e) => e.type === typeFilter);
     }
 
-    // Recency filter: tight for imports, loose for achievements/placements
-    source = source.filter((e) => {
-      const dateStr = e.type === "placement" ? e.eventDate : e.createdAt;
-      const ts = new Date(dateStr).getTime();
-      if (e.type === "import") return ts >= importCutoff;
-      return ts >= appLaunch;
-    });
-
     // Sort by the date the event happened (most recent first)
     source = [...source].sort((a, b) => {
       const dateA = a.type === "placement" ? a.eventDate : a.createdAt;
       const dateB = b.type === "placement" ? b.eventDate : b.createdAt;
       return new Date(dateB).getTime() - new Date(dateA).getTime();
+    });
+
+    // Per-type caps: keep only N most recent of each type
+    const typeCounts: Record<string, number> = {};
+    source = source.filter((e) => {
+      const count = (typeCounts[e.type] ?? 0) + 1;
+      typeCounts[e.type] = count;
+      return count <= (TYPE_CAPS[e.type] ?? 15);
     });
 
     return source;

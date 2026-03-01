@@ -2,6 +2,7 @@
 import { useMemo, useState, useEffect, useRef } from "react";
 import { MatchResult, type MatchRecord } from "@/types";
 import { localDate } from "@/lib/constants";
+import { getRoundNumber } from "@/lib/stats";
 import { CARD_THEMES } from "@/components/opponents/RivalryCard";
 import { OnThisDayCard, type OnThisDayData } from "./OnThisDayCard";
 
@@ -64,6 +65,7 @@ export function OnThisDay({ matches }: OnThisDayProps) {
 
     const result: YearMemory[] = [];
     for (const [year, yearMatches] of byYear) {
+      yearMatches.sort((a, b) => getRoundNumber(a) - getRoundNumber(b));
       const wins = yearMatches.filter((m) => m.result === MatchResult.Win).length;
       const losses = yearMatches.filter((m) => m.result === MatchResult.Loss).length;
       const draws = yearMatches.filter((m) => m.result === MatchResult.Draw).length;
