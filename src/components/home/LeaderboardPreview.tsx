@@ -12,7 +12,7 @@ export function LeaderboardPreview({ entries, rankMap }: LeaderboardPreviewProps
   if (entries.length === 0) return null;
 
   const top5 = [...entries]
-    .filter((e) => e.totalMatches >= 10)
+    .filter((e) => e.totalMatches >= 100)
     .sort((a, b) => b.winRate - a.winRate)
     .slice(0, 5);
 

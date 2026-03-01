@@ -178,6 +178,16 @@ const RANK_TABS: RankTab[] = [
     },
   },
   {
+    id: "lowdrawrate",
+    label: "Low Draw %",
+    filter: (e) => e.totalMatches >= 50,
+    sort: (a, b) => {
+      const aRate = a.totalDraws / a.totalMatches;
+      const bRate = b.totalDraws / b.totalMatches;
+      return aRate - bRate || b.totalMatches - a.totalMatches;
+    },
+  },
+  {
     id: "fewestdraws",
     label: "Fewest Draws",
     filter: (e) => e.totalMatches >= 50,
