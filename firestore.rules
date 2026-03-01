@@ -211,9 +211,10 @@ service cloud.firestore {
         && (resource.data.userId == request.auth.uid || isAdmin());
     }
 
-    // ── AI Chat Messages (server-written via Admin SDK, client read-only) ──
+    // ── AI Chat Messages (server writes via Admin SDK, owner can read + delete) ──
     match /users/{userId}/chatMessages/{messageId} {
       allow read: if request.auth != null && (request.auth.uid == userId || isAdmin());
+      allow delete: if request.auth != null && request.auth.uid == userId;
     }
     match /users/{userId}/chatStats/{docId} {
       allow read: if request.auth != null && (request.auth.uid == userId || isAdmin());

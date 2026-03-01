@@ -70,6 +70,9 @@ export function subscribeToChatMessages(
       ...d.data(),
     })) as ChatMessage[];
     callback(messages);
+  }, (err) => {
+    // Silently handle permission errors (e.g. during auth transitions)
+    console.warn("Chat listener error:", err.code);
   });
 }
 

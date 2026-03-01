@@ -174,26 +174,28 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     }
   }
 
-  // Step 3: Fetch chat stats for all users
+  // Step 3: Fetch chat stats in batches of 25 (most will be empty, non-blocking)
   const chatStatsMap = new Map<string, { messages: number; cost: number; lastAt?: string }>();
   try {
-    const chatStatsFetches = await Promise.allSettled(
-      userEntries.map(async ({ userId }) => {
-        const snap = await getDoc(doc(db, "users", userId, "chatStats", "main"));
-        if (snap.exists()) {
-          const d = snap.data();
-          chatStatsMap.set(userId, {
-            messages: (d.totalMessages as number) || 0,
-            cost: (d.totalCost as number) || 0,
-            lastAt: d.lastMessageAt as string | undefined,
-          });
-        }
-      })
-    );
-    // Silently ignore individual failures
-    void chatStatsFetches;
+    const CHAT_BATCH = 25;
+    for (let i = 0; i < userEntries.length; i += CHAT_BATCH) {
+      const batch = userEntries.slice(i, i + CHAT_BATCH);
+      await Promise.allSettled(
+        batch.map(async ({ userId }) => {
+          const snap = await getDoc(doc(db, "users", userId, "chatStats", "main"));
+          if (snap.exists()) {
+            const d = snap.data();
+            chatStatsMap.set(userId, {
+              messages: (d.totalMessages as number) || 0,
+              cost: (d.totalCost as number) || 0,
+              lastAt: d.lastMessageAt as string | undefined,
+            });
+          }
+        })
+      );
+    }
   } catch {
-    // If entire batch fails, continue without chat stats
+    // If batch fails, continue without chat stats
   }
 
   // Step 4: Merge visit data + chat stats into user stats
