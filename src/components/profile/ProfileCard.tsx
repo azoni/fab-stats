@@ -19,7 +19,7 @@ export interface ProfileCardData {
   topHero: string | null;
   currentStreak: { type: MatchResult.Win | MatchResult.Loss; count: number } | null;
   bestFinish: string | null;
-  bestFinishEvent: string | null;
+  bestFinishEvent?: string | null;
   recentResults: MatchResult[];
   cardBorder?: { border: string; shadow: string } | null;
   bestRank?: 1 | 2 | 3 | 4 | 5 | null;
@@ -65,15 +65,30 @@ const EVENT_ABBR: Record<string, string> = {
 export function ProfileCard({ data, theme }: { data: ProfileCardData; theme?: CardTheme }) {
   const t = theme || CARD_THEMES[0];
   const {
-    playerName, username, photoUrl, wins, losses, draws, byes,
+    playerName, username, photoUrl, wins, losses, draws,
     winRate, events, totalMatches, topHero, currentStreak, bestFinish,
-    bestFinishEvent, recentResults, cardBorder, bestRank, playoffFinishes,
+    recentResults, cardBorder, bestRank, playoffFinishes,
     armoryCount, armoryUndefeated,
   } = data;
   const isWinning = winRate >= 50;
   const rankRing = bestRank ? RANK_RING_COLORS[bestRank] : null;
   const hasTrophies = playoffFinishes && playoffFinishes.length > 0;
   const hasArmory = armoryCount && armoryCount > 0;
+  const recent20 = recentResults.slice(-20);
+
+  // Dynamic slot 3: streak (if 3+) → best finish → matches
+  const slot3 = currentStreak && currentStreak.count >= 3
+    ? { label: "Streak", value: `${currentStreak.count}${currentStreak.type === MatchResult.Win ? "W" : "L"}`, color: currentStreak.type === MatchResult.Win ? t.win : t.loss }
+    : bestFinish
+    ? { label: "Best Finish", value: bestFinish, color: t.accent }
+    : { label: "Matches", value: `${totalMatches}`, color: t.text };
+
+  // Trophy summary counts
+  const trophyCounts = hasTrophies ? (["champion", "finalist", "top4", "top8"] as const)
+    .map((type) => ({ type, count: playoffFinishes!.filter((f) => f.type === type).length }))
+    .filter((t) => t.count > 0) : [];
+
+  const TROPHY_LABELS: Record<string, string> = { champion: "Champ", finalist: "Finalist", top4: "Top 4", top8: "Top 8" };
 
   return (
     <div
@@ -81,70 +96,77 @@ export function ProfileCard({ data, theme }: { data: ProfileCardData; theme?: Ca
         backgroundColor: t.surface,
         borderColor: cardBorder?.border || t.border,
         boxShadow: cardBorder?.shadow || undefined,
-        width: 420,
+        width: 440,
       }}
       className="border-2 rounded-xl overflow-hidden"
     >
-      {/* Header */}
-      <div style={{ backgroundColor: t.bg, borderColor: t.border }} className="px-5 py-2.5 border-b">
-        <p style={{ color: t.accent }} className="text-[10px] uppercase tracking-[0.2em] text-center font-bold">Player Stats</p>
-      </div>
+      {/* Accent bar */}
+      <div style={{ height: 3, backgroundColor: cardBorder?.border || t.accent }} />
 
+      {/* Identity + Hero Metric */}
       <div className="px-5 pt-4 pb-3">
-        {/* Player identity row — photo + name + win rate */}
-        <div className="flex items-center gap-3 mb-4">
-          {/* Photo with rank ring */}
-          <div className="shrink-0">
-            {photoUrl ? (
-              <div
-                className="rounded-full"
-                style={rankRing ? {
-                  padding: 3,
-                  background: `linear-gradient(135deg, ${rankRing.color}, transparent, ${rankRing.color})`,
-                  boxShadow: rankRing.shadow,
-                } : undefined}
-              >
-                <img
-                  src={photoUrl}
-                  alt=""
-                  style={{ borderColor: rankRing ? t.surface : t.accent }}
-                  className="w-14 h-14 rounded-full border-2"
-                  crossOrigin="anonymous"
-                />
-              </div>
-            ) : (
-              <div
-                className="rounded-full"
-                style={rankRing ? {
-                  padding: 3,
-                  background: `linear-gradient(135deg, ${rankRing.color}, transparent, ${rankRing.color})`,
-                  boxShadow: rankRing.shadow,
-                } : undefined}
-              >
+        <div className="flex items-center justify-between">
+          {/* Left: photo + name */}
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="shrink-0">
+              {photoUrl ? (
                 <div
-                  style={{
-                    backgroundColor: `${t.accent}20`,
-                    borderColor: rankRing ? t.surface : `${t.accent}60`,
-                    color: t.accent,
-                  }}
-                  className="w-14 h-14 rounded-full border-2 flex items-center justify-center text-2xl font-black"
+                  className="rounded-full"
+                  style={rankRing ? {
+                    padding: 3,
+                    background: `linear-gradient(135deg, ${rankRing.color}, transparent, ${rankRing.color})`,
+                    boxShadow: rankRing.shadow,
+                  } : undefined}
                 >
-                  {playerName.charAt(0).toUpperCase()}
+                  <img
+                    src={photoUrl}
+                    alt=""
+                    style={{ borderColor: rankRing ? t.surface : t.accent }}
+                    className="w-14 h-14 rounded-full border-2"
+                    crossOrigin="anonymous"
+                  />
                 </div>
-              </div>
-            )}
+              ) : (
+                <div
+                  className="rounded-full"
+                  style={rankRing ? {
+                    padding: 3,
+                    background: `linear-gradient(135deg, ${rankRing.color}, transparent, ${rankRing.color})`,
+                    boxShadow: rankRing.shadow,
+                  } : undefined}
+                >
+                  <div
+                    style={{
+                      backgroundColor: `${t.accent}20`,
+                      borderColor: rankRing ? t.surface : `${t.accent}60`,
+                      color: t.accent,
+                    }}
+                    className="w-14 h-14 rounded-full border-2 flex items-center justify-center text-2xl font-black"
+                  >
+                    {playerName.charAt(0).toUpperCase()}
+                  </div>
+                </div>
+              )}
+            </div>
+            <div className="min-w-0">
+              <p style={{ color: t.text }} className="text-xl font-black truncate leading-tight">{playerName}</p>
+              {username && <p style={{ color: t.dim }} className="text-[11px]">@{username}</p>}
+            </div>
           </div>
 
-          {/* Name + username */}
-          <div className="min-w-0 flex-1">
-            <p style={{ color: t.text }} className="text-lg font-black truncate leading-tight">{playerName}</p>
-            {username && <p style={{ color: t.dim }} className="text-xs">@{username}</p>}
-          </div>
-
-          {/* Win rate — compact, top-right */}
-          <div className="shrink-0 text-right">
-            <p style={{ color: isWinning ? t.win : t.loss }} className="text-2xl font-black leading-tight">{winRate.toFixed(1)}%</p>
-            <div style={{ backgroundColor: t.barBg }} className="h-1.5 rounded-full overflow-hidden w-16 ml-auto mt-1">
+          {/* Right: Win rate hero metric */}
+          <div className="shrink-0 text-right pl-4">
+            <p style={{ color: isWinning ? t.win : t.loss }}>
+              <span className="text-4xl font-black leading-none">{winRate.toFixed(1)}</span>
+              <span className="text-xl font-bold">%</span>
+            </p>
+            <p className="text-sm font-bold mt-0.5">
+              <span style={{ color: t.win }}>{wins}W</span>
+              <span style={{ color: t.border }}> - </span>
+              <span style={{ color: t.loss }}>{losses}L</span>
+              {draws > 0 && <span style={{ color: t.dim }} className="text-[10px] ml-1">({draws}D)</span>}
+            </p>
+            <div style={{ backgroundColor: t.barBg }} className="h-[3px] rounded-full overflow-hidden w-24 ml-auto mt-1.5">
               <div
                 style={{ backgroundColor: isWinning ? t.win : t.loss, width: `${Math.min(winRate, 100)}%` }}
                 className="h-full rounded-full"
@@ -152,108 +174,83 @@ export function ProfileCard({ data, theme }: { data: ProfileCardData; theme?: Ca
             </div>
           </div>
         </div>
-
-        {/* Record */}
-        <div className="text-center mb-3">
-          <p className="text-xl font-black">
-            <span style={{ color: t.win }}>{wins}W</span>
-            <span style={{ color: t.border }} className="mx-1.5">—</span>
-            <span style={{ color: t.loss }}>{losses}L</span>
-          </p>
-          {(draws > 0 || byes > 0) && (
-            <p style={{ color: t.dim }} className="text-[10px] mt-0.5">
-              {[
-                draws > 0 ? `${draws} draw${draws !== 1 ? "s" : ""}` : "",
-                byes > 0 ? `${byes} bye${byes !== 1 ? "s" : ""}` : "",
-              ].filter(Boolean).join(" · ")}
-            </p>
-          )}
-        </div>
-
-        {/* Stats grid — 3 col */}
-        <div className="grid grid-cols-3 gap-1.5 mb-3">
-          <div style={{ backgroundColor: t.bg }} className="rounded-lg p-2 text-center">
-            <p style={{ color: t.muted }} className="text-[9px] uppercase tracking-wider font-semibold">Events</p>
-            <p style={{ color: t.text }} className="text-base font-black">{events}</p>
-          </div>
-          <div style={{ backgroundColor: t.bg }} className="rounded-lg p-2 text-center">
-            <p style={{ color: t.muted }} className="text-[9px] uppercase tracking-wider font-semibold">Matches</p>
-            <p style={{ color: t.text }} className="text-base font-black">{totalMatches}</p>
-          </div>
-          <div style={{ backgroundColor: t.bg }} className="rounded-lg p-2 text-center">
-            <p style={{ color: t.muted }} className="text-[9px] uppercase tracking-wider font-semibold">Top Hero</p>
-            <p style={{ color: t.text }} className="text-xs font-bold truncate mt-0.5">{topHero || "—"}</p>
-          </div>
-        </div>
-
-        {/* Best Finish */}
-        {bestFinish && (
-          <div style={{ backgroundColor: t.bg }} className="rounded-lg p-2 text-center mb-3">
-            <p style={{ color: t.muted }} className="text-[9px] uppercase tracking-wider font-semibold">Best Finish</p>
-            <p style={{ color: t.accent }} className="text-xs font-bold truncate mt-0.5">{bestFinish}</p>
-            {bestFinishEvent && (
-              <p style={{ color: t.dim }} className="text-[9px] truncate">{bestFinishEvent}</p>
-            )}
-          </div>
-        )}
-
-        {/* Trophy Case — compact inline */}
-        {hasTrophies && (
-          <div style={{ backgroundColor: t.bg }} className="rounded-lg px-3 py-2 mb-3">
-            <p style={{ color: t.muted }} className="text-[9px] uppercase tracking-wider font-semibold mb-1.5">Trophy Case</p>
-            <div className="flex gap-1 flex-wrap">
-              {playoffFinishes!.map((f, i) => {
-                const abbr = EVENT_ABBR[f.eventType] || f.eventType.slice(0, 3).toUpperCase();
-                return (
-                  <div
-                    key={i}
-                    className="flex items-center gap-0.5 rounded-full px-1.5 py-0.5"
-                    style={{ backgroundColor: `${FINISH_COLORS[f.type]}15`, border: `1px solid ${FINISH_COLORS[f.type]}40` }}
-                  >
-                    <span style={{ color: FINISH_COLORS[f.type] }} className="text-[9px] font-bold">{FINISH_LABELS[f.type]}</span>
-                    <span style={{ color: t.dim }} className="text-[8px] font-medium">{abbr}</span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* Armory — compact */}
-        {hasArmory && (
-          <div style={{ backgroundColor: t.bg }} className="rounded-lg px-3 py-2 mb-3">
-            <div className="flex items-center gap-2">
-              <p style={{ color: t.muted }} className="text-[9px] uppercase tracking-wider font-semibold">Armory</p>
-              <div className="flex items-center gap-1.5">
-                {/* Small flower icons */}
-                <div className="flex gap-0.5">
-                  {Array.from({ length: Math.min(armoryCount!, 8) }).map((_, i) => (
-                    <div
-                      key={i}
-                      className="w-2.5 h-2.5 rounded-full"
-                      style={{
-                        backgroundColor: i < (armoryUndefeated || 0) ? t.win : `${t.accent}60`,
-                      }}
-                    />
-                  ))}
-                  {armoryCount! > 8 && (
-                    <span style={{ color: t.dim }} className="text-[9px] font-medium ml-0.5">+{armoryCount! - 8}</span>
-                  )}
-                </div>
-                <span style={{ color: t.dim }} className="text-[9px]">
-                  {armoryCount} event{armoryCount !== 1 ? "s" : ""}
-                  {armoryUndefeated ? ` · ${armoryUndefeated} undefeated` : ""}
-                </span>
-              </div>
-            </div>
-          </div>
-        )}
-
       </div>
 
+      {/* Divider */}
+      <div className="mx-5" style={{ borderTop: `1px solid ${t.border}4D` }} />
+
+      {/* Context bar — 3 col */}
+      <div className="grid grid-cols-3 gap-2 px-5 py-2.5">
+        <div style={{ backgroundColor: t.bg }} className="rounded-lg p-2 text-center">
+          <p style={{ color: t.muted }} className="text-[9px] uppercase tracking-wider font-semibold">Events</p>
+          <p style={{ color: t.text }} className="text-sm font-black">{events}</p>
+        </div>
+        <div style={{ backgroundColor: t.bg }} className="rounded-lg p-2 text-center">
+          <p style={{ color: t.muted }} className="text-[9px] uppercase tracking-wider font-semibold">Top Hero</p>
+          <p style={{ color: t.text }} className="text-xs font-bold truncate mt-0.5">{topHero || "—"}</p>
+        </div>
+        <div style={{ backgroundColor: t.bg }} className="rounded-lg p-2 text-center">
+          <p style={{ color: t.muted }} className="text-[9px] uppercase tracking-wider font-semibold">{slot3.label}</p>
+          <p style={{ color: slot3.color }} className="text-sm font-black truncate">{slot3.value}</p>
+        </div>
+      </div>
+
+      {/* Trophy Case — summary counts */}
+      {trophyCounts.length > 0 && (
+        <div className="flex items-center gap-1.5 px-5 py-1.5">
+          <p style={{ color: t.dim }} className="text-[8px] uppercase tracking-wider font-semibold shrink-0">Trophies</p>
+          <div className="flex items-center gap-1 flex-wrap">
+            {trophyCounts.map((tc, i) => (
+              <span key={tc.type}>
+                <span style={{ color: FINISH_COLORS[tc.type] }} className="text-[10px] font-bold">{tc.count}x {TROPHY_LABELS[tc.type]}</span>
+                {i < trophyCounts.length - 1 && <span style={{ color: t.border }} className="text-[10px] mx-0.5">·</span>}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Armory — single line */}
+      {hasArmory && (
+        <div className="flex items-center gap-1.5 px-5 py-1.5">
+          <p style={{ color: t.dim }} className="text-[8px] uppercase tracking-wider font-semibold shrink-0">Armory</p>
+          <p className="text-[10px]">
+            <span style={{ color: t.text }}>{armoryCount} event{armoryCount !== 1 ? "s" : ""}</span>
+            {armoryUndefeated ? (
+              <>
+                <span style={{ color: t.border }} className="mx-0.5">·</span>
+                <span style={{ color: t.win }}>{armoryUndefeated} undefeated</span>
+              </>
+            ) : null}
+          </p>
+        </div>
+      )}
+
+      {/* Recent form */}
+      {recent20.length > 0 && (
+        <div className="flex items-center gap-2 px-5 py-2">
+          <p style={{ color: t.dim }} className="text-[8px] uppercase tracking-wider font-semibold shrink-0">Form</p>
+          <div className="flex gap-[3px]">
+            {recent20.map((r, i) => (
+              <div
+                key={i}
+                className="w-1.5 h-1.5 rounded-full"
+                style={{
+                  backgroundColor:
+                    r === MatchResult.Win ? t.win
+                    : r === MatchResult.Loss ? t.loss
+                    : r === MatchResult.Draw ? t.draw
+                    : t.muted,
+                }}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Footer */}
-      <div style={{ backgroundColor: t.bg, borderColor: t.border }} className="px-5 py-2 border-t">
-        <p style={{ color: t.accent }} className="text-[10px] text-center tracking-wider font-semibold opacity-70">fabstats.net</p>
+      <div style={{ backgroundColor: t.bg, borderTop: `1px solid ${t.border}` }} className="px-5 py-1.5">
+        <p style={{ color: t.accent, opacity: 0.5 }} className="text-[10px] tracking-wider font-semibold">fabstats.net</p>
       </div>
     </div>
   );
