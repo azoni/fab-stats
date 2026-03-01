@@ -1,7 +1,7 @@
 "use client";
 import { createContext, useContext, useState, useEffect, useCallback, useMemo } from "react";
 import type { ThemeName } from "@/lib/theme-config";
-import { getDefaultTheme } from "@/lib/theme-config";
+import { getThemeConfig } from "@/lib/theme-config";
 
 interface ThemeContextType {
   theme: ThemeName;
@@ -18,6 +18,7 @@ const ThemeContext = createContext<ThemeContextType>({
 });
 
 const USER_THEME_KEY = "fab-theme";
+const USER_THEME_GEN_KEY = "fab-theme-gen";
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = useState<ThemeName>(() => {
@@ -29,13 +30,27 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     return localStorage.getItem(USER_THEME_KEY) !== null;
   });
 
-  // Fetch admin default if user hasn't explicitly chosen
+  // Fetch admin config — check generation to force-reset stale user choices
   useEffect(() => {
-    if (localStorage.getItem(USER_THEME_KEY)) return;
-    getDefaultTheme().then((t) => {
-      if (!localStorage.getItem(USER_THEME_KEY)) {
-        setThemeState(t);
-        document.documentElement.setAttribute("data-theme", t);
+    getThemeConfig().then(({ theme: adminTheme, generation }) => {
+      const userTheme = localStorage.getItem(USER_THEME_KEY);
+      const userGen = parseInt(localStorage.getItem(USER_THEME_GEN_KEY) || "0", 10);
+
+      if (userTheme && userGen < generation) {
+        // Admin bumped generation — clear user's choice
+        localStorage.removeItem(USER_THEME_KEY);
+        localStorage.setItem(USER_THEME_GEN_KEY, String(generation));
+        setThemeState(adminTheme);
+        setIsCustom(false);
+        document.documentElement.setAttribute("data-theme", adminTheme);
+      } else if (!userTheme) {
+        // No user choice — use admin default
+        localStorage.setItem(USER_THEME_GEN_KEY, String(generation));
+        setThemeState(adminTheme);
+        document.documentElement.setAttribute("data-theme", adminTheme);
+      } else {
+        // User has a valid choice, just sync generation
+        localStorage.setItem(USER_THEME_GEN_KEY, String(generation));
       }
     });
   }, []);
@@ -55,7 +70,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const resetTheme = useCallback(() => {
     localStorage.removeItem(USER_THEME_KEY);
     setIsCustom(false);
-    getDefaultTheme().then((t) => {
+    getThemeConfig().then(({ theme: t }) => {
       setThemeState(t);
       document.documentElement.setAttribute("data-theme", t);
     });

@@ -17,7 +17,7 @@ import { searchHeroes } from "@/lib/heroes";
 import { getAllBadgeAssignments, assignBadge, revokeBadge } from "@/lib/badge-service";
 import { getMutedUserIds, muteUser, unmuteUser } from "@/lib/mute-service";
 import { getEventShowcase, saveEventShowcase } from "@/lib/event-showcase";
-import { getDefaultTheme, saveDefaultTheme, THEME_OPTIONS, type ThemeName } from "@/lib/theme-config";
+import { getDefaultTheme, saveDefaultTheme, resetAllUserThemes, THEME_OPTIONS, type ThemeName } from "@/lib/theme-config";
 import { ADMIN_BADGES } from "@/lib/badges";
 import { GameFormat } from "@/types";
 import type { EventShowcaseConfig, EventShowcaseImage } from "@/types";
@@ -126,6 +126,8 @@ export default function AdminPage() {
   const [defaultTheme, setDefaultTheme] = useState<ThemeName>("arcana");
   const [savingTheme, setSavingTheme] = useState(false);
   const [themeSaved, setThemeSaved] = useState(false);
+  const [resettingThemes, setResettingThemes] = useState(false);
+  const [themesReset, setThemesReset] = useState(false);
   const [badgeAssignments, setBadgeAssignments] = useState<Record<string, string[]>>({});
   const [mutedIds, setMutedIds] = useState<Set<string>>(new Set());
   const anyToolRunning = fixingDates || backfilling || backfillingGemIds || linkingMatches || resyncingH2H;
@@ -1046,6 +1048,30 @@ export default function AdminPage() {
                     <span className="block text-[10px] opacity-70 mt-0.5">{opt.description}</span>
                   </button>
                 ))}
+              </div>
+              <div className="mt-3 pt-3 border-t border-fab-border flex items-center gap-3">
+                <button
+                  onClick={async () => {
+                    if (!confirm("Reset ALL users back to the default theme? Their custom theme choices will be cleared on next visit.")) return;
+                    setResettingThemes(true);
+                    setThemesReset(false);
+                    try {
+                      await resetAllUserThemes();
+                      setThemesReset(true);
+                      setTimeout(() => setThemesReset(false), 3000);
+                    } catch {
+                      setError("Failed to reset user themes.");
+                    } finally {
+                      setResettingThemes(false);
+                    }
+                  }}
+                  disabled={resettingThemes}
+                  className="px-3 py-1.5 rounded-lg text-xs font-medium bg-fab-loss/10 text-fab-loss border border-fab-loss/20 hover:bg-fab-loss/20 transition-colors disabled:opacity-50"
+                >
+                  {resettingThemes ? "Resetting..." : "Reset All Users"}
+                </button>
+                {themesReset && <span className="text-xs text-fab-win">All users will revert to default on next visit.</span>}
+                <span className="text-[10px] text-fab-dim">Forces everyone back to the default theme.</span>
               </div>
             </div>
           </div>
