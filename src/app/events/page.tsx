@@ -7,6 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { computeEventStats } from "@/lib/stats";
 import { updateLeaderboardEntry } from "@/lib/leaderboard";
 import { propagateHeroToOpponent } from "@/lib/match-linking";
+import { deleteFeedEventsForEvent } from "@/lib/feed";
 import { EventCard } from "@/components/events/EventCard";
 import { localDate } from "@/lib/constants";
 import { type GameFormat } from "@/types";
@@ -63,15 +64,19 @@ export default function EventsPage() {
   );
 
   const handleDeleteEvent = useCallback(
-    async (matchIds: string[]) => {
+    async (matchIds: string[], eventName: string, eventDate: string) => {
       await batchDeleteMatches(matchIds);
       if (profile && matches.length > 0) {
         const idSet = new Set(matchIds);
         const remaining = matches.filter((m) => !idSet.has(m.id));
         updateLeaderboardEntry(profile, remaining).catch(() => {});
       }
+      // Clean up placement feed events for this event
+      if (user) {
+        deleteFeedEventsForEvent(user.uid, eventName, eventDate).catch(() => {});
+      }
     },
-    [batchDeleteMatches, profile, matches]
+    [batchDeleteMatches, profile, matches, user]
   );
 
   // Auto-open import modal from ?import=1 (e.g. from navbar "Log Event")

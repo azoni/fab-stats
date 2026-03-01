@@ -16,7 +16,7 @@ interface EventCardProps {
   editable?: boolean;
   onBatchUpdateHero?: (matchIds: string[], hero: string) => Promise<void>;
   onBatchUpdateFormat?: (matchIds: string[], format: GameFormat) => Promise<void>;
-  onDeleteEvent?: (matchIds: string[]) => Promise<void>;
+  onDeleteEvent?: (matchIds: string[], eventName: string, eventDate: string) => Promise<void>;
   missingGemId?: boolean;
 }
 
@@ -408,7 +408,7 @@ export function EventCard({ event, obfuscateOpponents = false, visibleOpponents,
                     onClick={async () => {
                       setDeleting(true);
                       try {
-                        await onDeleteEvent(event.matches.map((m) => m.id));
+                        await onDeleteEvent(event.matches.map((m) => m.id), event.eventName, event.eventDate);
                       } catch {
                         setError("Failed to delete event. Please try again.");
                       }

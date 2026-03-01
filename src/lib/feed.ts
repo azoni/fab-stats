@@ -2,6 +2,7 @@ import {
   collection,
   addDoc,
   getDocs,
+  deleteDoc,
   query,
   orderBy,
   limit,
@@ -108,6 +109,24 @@ export async function createPlacementFeedEvent(
   if (hero && hero !== "Unknown") clean.hero = hero;
 
   await addDoc(feedCollection(), clean);
+  invalidateFeedCache();
+}
+
+/** Delete all placement feed events for a specific event (used when an event is deleted). */
+export async function deleteFeedEventsForEvent(
+  userId: string,
+  eventName: string,
+  eventDate: string,
+): Promise<void> {
+  const q = query(
+    feedCollection(),
+    where("userId", "==", userId),
+    where("type", "==", "placement"),
+    where("eventName", "==", eventName),
+    where("eventDate", "==", eventDate),
+  );
+  const snapshot = await getDocs(q);
+  await Promise.all(snapshot.docs.map((d) => deleteDoc(d.ref)));
   invalidateFeedCache();
 }
 
