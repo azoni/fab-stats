@@ -30,17 +30,13 @@ export const CommunityHighlights = memo(function CommunityHighlights({
     <div className="space-y-8">
       <PollCard />
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <FeaturedTournaments
-          events={featuredEvents}
-          leaderboardEntries={leaderboardEntries}
-        />
+      <FeaturedTournaments
+        events={featuredEvents}
+        leaderboardEntries={leaderboardEntries}
+      />
 
-        <div className="flex flex-col gap-6">
-          <MetaSnapshot topHeroes={topHeroes} top8Heroes={top8Heroes} activeEventType={activeEventType} />
-          {rightColumnExtra}
-        </div>
-      </div>
+      <MetaSnapshot topHeroes={topHeroes} top8Heroes={top8Heroes} activeEventType={activeEventType} />
+      {rightColumnExtra}
     </div>
   );
 });

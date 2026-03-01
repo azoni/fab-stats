@@ -7,7 +7,7 @@ import { useMatches } from "@/hooks/useMatches";
 import { useAuth } from "@/contexts/AuthContext";
 import { computeOpponentStats } from "@/lib/stats";
 import { getWeekStart, getMonthStart } from "@/lib/leaderboard";
-import { countQualifyingTabs, computeUserRanks, type LeaderboardRank } from "@/lib/leaderboard-ranks";
+import { countQualifyingTabs, computeUserRanks, computeUserRanksByTab, type LeaderboardRank } from "@/lib/leaderboard-ranks";
 import { computePowerLevel, getPowerTier } from "@/lib/power-level";
 import { TrophyIcon } from "@/components/icons/NavIcons";
 import type { LeaderboardEntry, OpponentStats } from "@/types";
@@ -431,6 +431,12 @@ export default function LeaderboardPage() {
   const activeCategoryObj = categories.find((c) => c.id === activeCategory) || categories[0];
   const tabLabel = tabMap[activeTab]?.label || "";
 
+  // User's rank for each sub-tab in the current category
+  const mySubTabRanks = useMemo(() => {
+    if (!user) return new Map<string, number>();
+    return computeUserRanksByTab(visibleEntries, user.uid, activeCategoryObj.tabs);
+  }, [visibleEntries, user, activeCategoryObj.tabs]);
+
   function selectCategory(catId: string) {
     const cat = categories.find((c) => c.id === catId);
     if (!cat) return;
@@ -514,13 +520,18 @@ export default function LeaderboardPage() {
               }`}
             >
               {tabMap[tabId]?.label || tabId}
+              {mySubTabRanks.has(tabId) && (
+                <span className={`ml-1.5 text-[10px] font-bold ${activeTab === tabId ? "text-fab-gold" : "text-fab-dim"}`}>
+                  #{mySubTabRanks.get(tabId)}
+                </span>
+              )}
             </button>
           ))}
         </div>
       )}
 
       {/* ── Description ── */}
-      <p className="text-fab-dim text-xs mb-5">
+      <p className="text-fab-muted text-sm mb-5">
         {tabMap[activeTab]?.description}
       </p>
 

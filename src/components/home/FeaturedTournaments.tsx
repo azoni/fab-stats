@@ -8,7 +8,7 @@ interface FeaturedTournamentsProps {
   leaderboardEntries: LeaderboardEntry[];
 }
 
-const HOMEPAGE_LIMIT = 2;
+const HOMEPAGE_LIMIT = 3;
 
 export function FeaturedTournaments({ events, leaderboardEntries }: FeaturedTournamentsProps) {
   if (events.length === 0) return null;
@@ -26,7 +26,7 @@ export function FeaturedTournaments({ events, leaderboardEntries }: FeaturedTour
           View All
         </Link>
       </div>
-      <div className="space-y-3 flex-1">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 flex-1">
         {displayEvents.map((event, i) => (
           <TournamentCard key={`${event.name}-${i}`} event={event} entryMap={entryMap} />
         ))}

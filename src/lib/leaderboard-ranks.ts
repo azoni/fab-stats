@@ -273,6 +273,27 @@ const RANK_TABS: RankTab[] = [
   },
 ];
 
+/** Compute the user's rank (1-indexed) for each specified tab. Returns a map of tabId → rank. */
+export function computeUserRanksByTab(
+  entries: LeaderboardEntry[],
+  userId: string,
+  tabIds: string[]
+): Map<string, number> {
+  const map = new Map<string, number>();
+  const tabSet = new Set(tabIds);
+
+  for (const tab of RANK_TABS) {
+    if (!tabSet.has(tab.id)) continue;
+    const sorted = entries.filter(tab.filter).sort(tab.sort);
+    const idx = sorted.findIndex((e) => e.userId === userId);
+    if (idx >= 0) {
+      map.set(tab.id, idx + 1);
+    }
+  }
+
+  return map;
+}
+
 export function computeUserRanks(entries: LeaderboardEntry[], userId: string): LeaderboardRank[] {
   const ranks: LeaderboardRank[] = [];
 
