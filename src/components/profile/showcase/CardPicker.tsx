@@ -75,7 +75,7 @@ export function CardPicker({ onAdd, onCancel, matches, heroStats, eventStats, op
     setSelectedAchievements((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
-      else if (next.size < 3) next.add(id);
+      else if (next.size < 5) next.add(id);
       return next;
     });
   }

@@ -20,7 +20,7 @@ export function AchievementShowcaseCard({ achievements }: AchievementShowcaseCar
   return (
     <div className="spotlight-card spotlight-rising bg-fab-surface border border-fab-border rounded-lg px-3 py-2 relative overflow-hidden">
       <div className="flex items-center gap-2">
-        {achievements.slice(0, 3).map((ach) => {
+        {achievements.slice(0, 5).map((ach) => {
           const style = RARITY_STYLE[ach.rarity] || RARITY_STYLE.common;
           return (
             <div key={ach.id} className={`flex items-center gap-1.5 px-2 py-1 rounded border ${style.border} ${style.glow} bg-fab-bg/50 flex-1 min-w-0`}>

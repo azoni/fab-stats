@@ -11,7 +11,6 @@ import { AdminBadgePanel } from "@/components/gamification/AdminBadgePanel";
 import { getBadgesForIds } from "@/lib/badges";
 import { computeHeroMastery } from "@/lib/mastery";
 import { AchievementShowcase } from "@/components/gamification/AchievementShowcase";
-import { AchievementBadges } from "@/components/gamification/AchievementShowcase";
 import { HeroMasteryList } from "@/components/gamification/HeroMasteryCard";
 import { EventCard } from "@/components/events/EventCard";
 import { EventBadges } from "@/components/profile/EventBadges";
@@ -373,7 +372,7 @@ export default function PlayerProfile() {
           )}
           {/* Profile row */}
           <div className="flex items-center gap-3 mb-3">
-            <ProfileHeader profile={profile} achievements={achievements} bestRank={bestRank} isAdmin={isAdmin} isOwner={isOwner} isFavorited={!isOwner && !!currentUser && !isGuest && isFavorited(profile.uid)} onToggleFavorite={!isOwner && !!currentUser && !isGuest ? () => toggleFavorite(profile) : undefined} friendStatus={!isOwner && !!currentUser && !isGuest ? (isFriend(profile.uid) ? "friends" : hasSentRequest(profile.uid) ? "sent" : hasReceivedRequest(profile.uid) ? "received" : "none") : undefined} onFriendAction={!isOwner && !!currentUser && !isGuest ? () => { const fs = getFriendshipForUser(profile.uid); if (isFriend(profile.uid)) return; if (hasReceivedRequest(profile.uid) && fs) { acceptRequest(fs.id); } else if (!hasSentRequest(profile.uid)) { sendRequest(profile); } } : undefined} onShowMoreAchievements={() => { setAchievementsExpanded(true); setTimeout(() => document.getElementById("achievements")?.scrollIntoView({ behavior: "smooth", block: "start" }), 50); }} onShareCard={isOwner || isAdmin ? () => setProfileShareOpen(true) : undefined} friendCount={isAdmin ? friendCount : undefined} />
+            <ProfileHeader profile={profile} bestRank={bestRank} isAdmin={isAdmin} isOwner={isOwner} isFavorited={!isOwner && !!currentUser && !isGuest && isFavorited(profile.uid)} onToggleFavorite={!isOwner && !!currentUser && !isGuest ? () => toggleFavorite(profile) : undefined} friendStatus={!isOwner && !!currentUser && !isGuest ? (isFriend(profile.uid) ? "friends" : hasSentRequest(profile.uid) ? "sent" : hasReceivedRequest(profile.uid) ? "received" : "none") : undefined} onFriendAction={!isOwner && !!currentUser && !isGuest ? () => { const fs = getFriendshipForUser(profile.uid); if (isFriend(profile.uid)) return; if (hasReceivedRequest(profile.uid) && fs) { acceptRequest(fs.id); } else if (!hasSentRequest(profile.uid)) { sendRequest(profile); } } : undefined} onShareCard={isOwner || isAdmin ? () => setProfileShareOpen(true) : undefined} friendCount={isAdmin ? friendCount : undefined} />
           </div>
 
           {/* Streak row */}
@@ -815,7 +814,7 @@ export default function PlayerProfile() {
   );
 }
 
-function ProfileHeader({ profile, achievements, bestRank, isAdmin, isOwner, isFavorited, onToggleFavorite, friendStatus, onFriendAction, onShowMoreAchievements, onShareCard, friendCount }: { profile: UserProfile; achievements?: Achievement[]; bestRank?: 1 | 2 | 3 | 4 | 5 | null; isAdmin?: boolean; isOwner?: boolean; isFavorited?: boolean; onToggleFavorite?: () => void; friendStatus?: "none" | "sent" | "received" | "friends"; onFriendAction?: () => void; onShowMoreAchievements?: () => void; onShareCard?: () => void; friendCount?: number | null }) {
+function ProfileHeader({ profile, bestRank, isAdmin, isOwner, isFavorited, onToggleFavorite, friendStatus, onFriendAction, onShareCard, friendCount }: { profile: UserProfile; bestRank?: 1 | 2 | 3 | 4 | 5 | null; isAdmin?: boolean; isOwner?: boolean; isFavorited?: boolean; onToggleFavorite?: () => void; friendStatus?: "none" | "sent" | "received" | "friends"; onFriendAction?: () => void; onShareCard?: () => void; friendCount?: number | null }) {
   const [linkCopied, setLinkCopied] = useState(false);
   const ringClass = bestRank === 1 ? "rank-border-grandmaster" : bestRank === 2 ? "rank-border-diamond" : bestRank === 3 ? "rank-border-gold" : bestRank === 4 ? "rank-border-silver" : bestRank === 5 ? "rank-border-bronze" : "";
   const isCreator = profile.username === "azoni";
@@ -939,7 +938,6 @@ function ProfileHeader({ profile, achievements, bestRank, isAdmin, isOwner, isFa
           @{profile.username}
           {!profile.isPublic && <span className="ml-1.5 text-[9px] px-1.5 py-0.5 rounded bg-fab-dim/10 text-fab-dim">Private</span>}
         </p>
-        {achievements && achievements.length > 0 && <AchievementBadges earned={achievements} max={4} mobileMax={2} onShowMore={onShowMoreAchievements} />}
         {isAdmin && !isOwner && (
           <div className="flex items-center gap-3 mt-1">
             <Link
