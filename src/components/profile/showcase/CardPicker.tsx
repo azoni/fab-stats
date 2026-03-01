@@ -5,6 +5,7 @@ import { HeroClassIcon } from "@/components/heroes/HeroClassIcon";
 import { localDate } from "@/lib/constants";
 import type { ShowcaseCard, MatchRecord, HeroStats, EventStats, OpponentStats, Achievement } from "@/types";
 import { MatchResult } from "@/types";
+import { isCardBig } from "../ShowcaseSection";
 
 interface PlayoffFinishData {
   type: "champion" | "finalist" | "top4" | "top8";
@@ -25,6 +26,8 @@ interface CardPickerProps {
   playoffFinishes: PlayoffFinishData[];
   achievements: Achievement[];
   existingCards: ShowcaseCard[];
+  bigSlotsLeft: number;
+  smallSlotsLeft: number;
 }
 
 type CardType = ShowcaseCard["type"];
@@ -49,7 +52,7 @@ const STAT_OPTIONS: { key: string; label: string }[] = [
   { key: "eventsPlayed", label: "Events Played" },
 ];
 
-export function CardPicker({ onAdd, onCancel, matches, heroStats, eventStats, opponentStats, playoffFinishes, achievements, existingCards }: CardPickerProps) {
+export function CardPicker({ onAdd, onCancel, matches, heroStats, eventStats, opponentStats, playoffFinishes, achievements, existingCards, bigSlotsLeft, smallSlotsLeft }: CardPickerProps) {
   const [step, setStep] = useState<"type" | "config">("type");
   const [selectedType, setSelectedType] = useState<CardType | null>(null);
   const [search, setSearch] = useState("");
@@ -77,7 +80,9 @@ export function CardPicker({ onAdd, onCancel, matches, heroStats, eventStats, op
         </div>
         <div className="grid grid-cols-2 gap-2">
           {CARD_TYPES.map((ct) => {
-            const disabled = ct.type === "formatMastery" && hasFormatMastery;
+            const isBig = isCardBig(ct.type);
+            const slotFull = isBig ? bigSlotsLeft <= 0 : smallSlotsLeft <= 0;
+            const disabled = slotFull || (ct.type === "formatMastery" && hasFormatMastery);
             return (
               <button
                 key={ct.type}
@@ -92,6 +97,9 @@ export function CardPicker({ onAdd, onCancel, matches, heroStats, eventStats, op
                 <div className="flex items-center gap-2">
                   <span className="text-base">{ct.icon}</span>
                   <span className="text-xs font-medium text-fab-text">{ct.label}</span>
+                  <span className={`text-[9px] px-1 py-0.5 rounded ${isBig ? "text-fab-muted bg-fab-bg" : "text-fab-dim"}`}>
+                    {isBig ? "large" : "compact"}
+                  </span>
                 </div>
                 <p className="text-[10px] text-fab-dim mt-1">{ct.desc}</p>
               </button>

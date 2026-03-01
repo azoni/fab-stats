@@ -488,22 +488,18 @@ export default function PlayerProfile() {
             </p>
           )}
         </div>
-        <div className="relative">
-          <div className="lg:absolute lg:inset-0 lg:overflow-y-auto lg:pr-1 scrollbar-thin">
-            <ShowcaseSection
-              profile={profile}
-              isOwner={isOwner}
-              matches={fm}
-              heroStats={heroStats}
-              masteries={masteries}
-              eventStats={eventStats}
-              playoffFinishes={playoffFinishes}
-              opponentStats={allOpponentStats}
-              overall={overall}
-              achievements={achievements}
-            />
-          </div>
-        </div>
+        <ShowcaseSection
+          profile={profile}
+          isOwner={isOwner}
+          matches={fm}
+          heroStats={heroStats}
+          masteries={masteries}
+          eventStats={eventStats}
+          playoffFinishes={playoffFinishes}
+          opponentStats={allOpponentStats}
+          overall={overall}
+          achievements={achievements}
+        />
       </div>
 
       {/* Filters */}

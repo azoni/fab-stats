@@ -1,5 +1,5 @@
 "use client";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { updateProfile } from "@/lib/firestore-storage";
 import { FeaturedMatchCard } from "./showcase/FeaturedMatchCard";
 import { HeroSpotlightCard } from "./showcase/HeroSpotlightCard";
@@ -35,7 +35,16 @@ interface ShowcaseSectionProps {
   achievements: Achievement[];
 }
 
-const MAX_CARDS = 4;
+// Big cards: multi-row, taller content
+// Small cards: single-row, compact
+const BIG_TYPES = new Set(["heroSpotlight", "rivalry", "achievements", "formatMastery", "eventRecap"]);
+const MAX_BIG = 2;
+const MAX_SMALL = 2;
+const MAX_CARDS = MAX_BIG + MAX_SMALL;
+
+export function isCardBig(type: ShowcaseCard["type"]): boolean {
+  return BIG_TYPES.has(type);
+}
 
 export function ShowcaseSection({
   profile,
@@ -53,6 +62,18 @@ export function ShowcaseSection({
   const [isEditing, setIsEditing] = useState(false);
   const [showPicker, setShowPicker] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  const slotCounts = useMemo(() => {
+    let big = 0;
+    let small = 0;
+    for (const c of cards) {
+      if (isCardBig(c.type)) big++;
+      else small++;
+    }
+    return { big, small };
+  }, [cards]);
+
+  const canAddMore = cards.length < MAX_CARDS && (slotCounts.big < MAX_BIG || slotCounts.small < MAX_SMALL);
 
   const saveCards = useCallback(async (updated: ShowcaseCard[]) => {
     setCards(updated);
@@ -188,18 +209,18 @@ export function ShowcaseSection({
       )}
 
       {/* Add card button */}
-      {isEditing && cards.length > 0 && !showPicker && cards.length < MAX_CARDS && (
+      {isEditing && cards.length > 0 && !showPicker && canAddMore && (
         <button
           onClick={() => setShowPicker(true)}
           className="w-full py-2 border border-dashed border-fab-border rounded-lg text-xs text-fab-muted hover:text-fab-text hover:border-fab-muted transition-colors"
         >
-          + Add Card ({cards.length}/{MAX_CARDS})
+          + Add Card ({slotCounts.big}/{MAX_BIG} large · {slotCounts.small}/{MAX_SMALL} compact)
         </button>
       )}
 
       {/* Card limit reached */}
-      {isEditing && cards.length >= MAX_CARDS && !showPicker && (
-        <p className="text-[10px] text-fab-dim text-center">Maximum {MAX_CARDS} cards</p>
+      {isEditing && !canAddMore && cards.length > 0 && !showPicker && (
+        <p className="text-[10px] text-fab-dim text-center">Showcase full ({MAX_BIG} large + {MAX_SMALL} compact)</p>
       )}
 
       {/* Card picker */}
@@ -214,6 +235,8 @@ export function ShowcaseSection({
           playoffFinishes={playoffFinishes}
           achievements={achievements}
           existingCards={cards}
+          bigSlotsLeft={MAX_BIG - slotCounts.big}
+          smallSlotsLeft={MAX_SMALL - slotCounts.small}
         />
       )}
     </div>
