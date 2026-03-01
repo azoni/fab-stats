@@ -251,6 +251,10 @@ export interface LeaderboardEntry {
   heroBreakdownDetailed?: { hero: string; format: string; eventType: string; matches: number; wins: number; winRate: number }[];
   totalTop8s?: number;
   top8sByEventType?: Record<string, number>;
+  totalFinalists?: number;
+  uniqueOpponents?: number;
+  longestLossStreak?: number;
+  uniqueVenues?: number;
   createdAt?: string;
   updatedAt: string;
 }
@@ -265,6 +269,7 @@ interface FeedEventBase {
   photoUrl?: string;
   isPublic: boolean;
   createdAt: string;
+  reactions?: Record<string, string[]>;
 }
 
 export interface ImportFeedEvent extends FeedEventBase {

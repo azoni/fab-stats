@@ -343,7 +343,7 @@ function SearchContent() {
               <>
                 <div className="space-y-3">
                   {groups.map((group) => (
-                    <GroupedFeedCard key={group.events[0].id} group={group} rankMap={rankMap} />
+                    <GroupedFeedCard key={group.events[0].id} group={group} rankMap={rankMap} userId={user?.uid} />
                   ))}
                 </div>
 

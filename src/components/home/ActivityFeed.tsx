@@ -182,12 +182,12 @@ export function ActivityFeed({ rankMap }: { rankMap?: Map<string, 1 | 2 | 3 | 4 
                 }}
                 className="cursor-pointer"
               >
-                <GroupedFeedCard group={group} compact rankMap={rankMap} />
+                <GroupedFeedCard group={group} compact rankMap={rankMap} userId={user?.uid} />
               </div>
             ))}
             {/* Invisible spacers to maintain consistent height on partial pages */}
             {groups.length < PAGE_SIZE && Array.from({ length: PAGE_SIZE - groups.length }, (_, i) => (
-              <div key={`spacer-${i}`} className="h-[52px]" aria-hidden="true" />
+              <div key={`spacer-${i}`} className="h-[68px]" aria-hidden="true" />
             ))}
           </div>
 

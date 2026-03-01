@@ -1,8 +1,9 @@
 "use client";
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import Link from "next/link";
 import type { FeedEvent, ImportFeedEvent } from "@/types";
 import { rankBorderClass, rankBorderColor } from "@/lib/leaderboard-ranks";
+import { FEED_REACTIONS, addFeedReaction, removeFeedReaction } from "@/lib/feed";
 
 export interface FeedGroup {
   events: FeedEvent[];
@@ -135,10 +136,118 @@ function NameAndTime({ event, compact }: { event: FeedEvent; compact?: boolean }
   );
 }
 
-export function FeedCard({ event, compact, rankMap }: { event: FeedEvent; compact?: boolean; rankMap?: Map<string, 1 | 2 | 3 | 4 | 5> }) {
+// ── Reactions ──
+
+function ReactionBar({ event, userId, compact }: { event: FeedEvent; userId?: string; compact?: boolean }) {
+  const [localReactions, setLocalReactions] = useState<Record<string, string[]>>(event.reactions || {});
+  const [busy, setBusy] = useState(false);
+
+  const toggle = useCallback(async (key: string) => {
+    if (!userId || busy) return;
+    setBusy(true);
+    const users = localReactions[key] || [];
+    const hasReacted = users.includes(userId);
+
+    // Optimistic update
+    setLocalReactions((prev) => {
+      const current = prev[key] || [];
+      return {
+        ...prev,
+        [key]: hasReacted ? current.filter((id) => id !== userId) : [...current, userId],
+      };
+    });
+
+    try {
+      if (hasReacted) {
+        await removeFeedReaction(event.id, key, userId);
+      } else {
+        await addFeedReaction(event.id, key, userId);
+      }
+    } catch {
+      // Revert on error
+      setLocalReactions((prev) => ({
+        ...prev,
+        [key]: hasReacted ? [...(prev[key] || []), userId] : (prev[key] || []).filter((id) => id !== userId),
+      }));
+    } finally {
+      setBusy(false);
+    }
+  }, [userId, busy, localReactions, event.id]);
+
+  const totalReactions = Object.values(localReactions).reduce((sum, arr) => sum + arr.length, 0);
+
+  // Show existing reactions + add button
+  return (
+    <div className={`flex items-center gap-1 flex-wrap ${compact ? "mt-1" : "mt-2"}`} onClick={(e) => e.stopPropagation()}>
+      {FEED_REACTIONS.map((r) => {
+        const users = localReactions[r.key] || [];
+        const count = users.length;
+        const active = userId ? users.includes(userId) : false;
+
+        // In compact mode, only show reactions that have counts
+        if (compact && count === 0) return null;
+
+        return (
+          <button
+            key={r.key}
+            onClick={() => toggle(r.key)}
+            disabled={!userId}
+            title={r.label}
+            className={`inline-flex items-center gap-0.5 rounded-full transition-colors ${
+              compact ? "px-1.5 py-0.5 text-[10px]" : "px-2 py-0.5 text-xs"
+            } ${
+              active
+                ? "bg-fab-gold/15 border border-fab-gold/40 text-fab-gold"
+                : count > 0
+                  ? "bg-fab-surface border border-fab-border text-fab-muted hover:border-fab-gold/30 hover:text-fab-text"
+                  : "border border-transparent text-fab-dim hover:bg-fab-surface hover:border-fab-border hover:text-fab-muted"
+            } ${!userId ? "cursor-default opacity-60" : "cursor-pointer"}`}
+          >
+            <span>{r.emoji}</span>
+            {count > 0 && <span className="font-medium">{count}</span>}
+          </button>
+        );
+      })}
+      {/* If no reactions yet in compact mode, show a subtle add hint */}
+      {compact && totalReactions === 0 && userId && (
+        <div className="flex items-center gap-0.5">
+          {FEED_REACTIONS.map((r) => (
+            <button
+              key={r.key}
+              onClick={() => toggle(r.key)}
+              title={r.label}
+              className="px-1 py-0.5 text-[10px] text-fab-dim/50 hover:text-fab-dim transition-colors rounded"
+            >
+              {r.emoji}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Hero pill helper ──
+
+function HeroPill({ hero, compact }: { hero: string; compact?: boolean }) {
+  return (
+    <span className={`inline-flex items-center rounded-full bg-fab-gold/10 text-fab-gold font-medium ${
+      compact ? "px-1.5 py-0 text-[10px]" : "px-2 py-0.5 text-xs"
+    }`}>
+      {hero}
+    </span>
+  );
+}
+
+// ── Content components ──
+
+export function FeedCard({ event, compact, rankMap, userId }: { event: FeedEvent; compact?: boolean; rankMap?: Map<string, 1 | 2 | 3 | 4 | 5>; userId?: string }) {
   const cardBorder = rankBorderColor(rankMap?.get(event.userId));
   return (
-    <div className={`bg-fab-surface border border-fab-border rounded-lg ${compact ? "px-3 py-2" : "p-4"}`} style={cardBorder ? { borderColor: cardBorder } : undefined}>
+    <div
+      className={`bg-fab-surface border border-fab-border rounded-lg ${compact ? "px-3 py-2" : "p-4"}`}
+      style={cardBorder ? { borderColor: cardBorder, boxShadow: `0 0 6px ${cardBorder}` } : undefined}
+    >
       <div className={`flex items-center ${compact ? "gap-2" : "gap-3 items-start"}`}>
         <FeedCardHeader event={event} compact={compact} rankMap={rankMap} />
         <div className="flex-1 min-w-0">
@@ -146,6 +255,7 @@ export function FeedCard({ event, compact, rankMap }: { event: FeedEvent; compac
           {event.type === "import" && <ImportContent event={event} compact={compact} />}
           {event.type === "achievement" && <AchievementContent event={event} compact={compact} />}
           {event.type === "placement" && <PlacementContent event={event} compact={compact} />}
+          <ReactionBar event={event} userId={userId} compact={compact} />
         </div>
       </div>
     </div>
@@ -158,6 +268,13 @@ function ImportContent({ event, compact }: { event: ImportFeedEvent; compact?: b
       <p className="text-[11px] text-fab-muted">
         <span className="font-semibold text-fab-text">{event.matchCount}</span> match{event.matchCount !== 1 ? "es" : ""}
         {event.source && <span className="text-fab-dim"> via {event.source === "csv" ? "CSV" : event.source}</span>}
+        {event.topHeroes && event.topHeroes.length > 0 && (
+          <span className="ml-1.5">
+            {event.topHeroes.map((hero) => (
+              <HeroPill key={hero} hero={hero} compact />
+            ))}
+          </span>
+        )}
       </p>
     );
   }
@@ -173,9 +290,7 @@ function ImportContent({ event, compact }: { event: ImportFeedEvent; compact?: b
       {event.topHeroes && event.topHeroes.length > 0 && (
         <div className="flex flex-wrap gap-1.5 mt-2">
           {event.topHeroes.map((hero) => (
-            <span key={hero} className="px-2 py-0.5 rounded-full bg-fab-gold/10 text-fab-gold text-xs font-medium">
-              {hero}
-            </span>
+            <HeroPill key={hero} hero={hero} />
           ))}
         </div>
       )}
@@ -220,7 +335,7 @@ function PlacementContent({ event, compact }: { event: FeedEvent & { type: "plac
     return (
       <p className="text-[11px] text-fab-muted">
         <span className={`font-semibold ${info.color}`}>{info.label}</span> at {event.eventName}
-        {event.eventDate && <span className="text-fab-dim"> &middot; {formatEventDate(event.eventDate)}</span>}
+        {event.hero && <span className="ml-1"><HeroPill hero={event.hero} compact /></span>}
       </p>
     );
   }
@@ -237,11 +352,7 @@ function PlacementContent({ event, compact }: { event: FeedEvent & { type: "plac
         </p>
       </div>
       <div className="flex flex-wrap gap-1.5 mt-2">
-        {event.hero && (
-          <span className="px-2 py-0.5 rounded-full bg-fab-gold/10 text-fab-gold text-xs font-medium">
-            {event.hero}
-          </span>
-        )}
+        {event.hero && <HeroPill hero={event.hero} />}
         <span className="px-2 py-0.5 rounded-full bg-fab-surface text-fab-dim text-xs">
           {event.eventType}
         </span>
@@ -274,7 +385,7 @@ function GroupedImportRow({ event }: { event: ImportFeedEvent }) {
   );
 }
 
-export function GroupedFeedCard({ group, compact, rankMap }: { group: FeedGroup; compact?: boolean; rankMap?: Map<string, 1 | 2 | 3 | 4 | 5> }) {
+export function GroupedFeedCard({ group, compact, rankMap, userId }: { group: FeedGroup; compact?: boolean; rankMap?: Map<string, 1 | 2 | 3 | 4 | 5>; userId?: string }) {
   const [expanded, setExpanded] = useState(false);
   const first = group.events[0];
   const isSingle = group.events.length === 1;
@@ -284,22 +395,35 @@ export function GroupedFeedCard({ group, compact, rankMap }: { group: FeedGroup;
     group.events.flatMap((e) => e.type === "import" ? (e.topHeroes || []) : []),
   )];
 
-  if (isSingle) return <FeedCard event={first} compact={compact} rankMap={rankMap} />;
+  if (isSingle) return <FeedCard event={first} compact={compact} rankMap={rankMap} userId={userId} />;
 
   // Multi-event groups are only for imports
   const cardBorder = rankBorderColor(rankMap?.get(first.userId));
   return (
-    <div className={`bg-fab-surface border border-fab-border rounded-lg ${compact ? "px-3 py-2" : "p-4"}`} style={cardBorder ? { borderColor: cardBorder } : undefined}>
+    <div
+      className={`bg-fab-surface border border-fab-border rounded-lg ${compact ? "px-3 py-2" : "p-4"}`}
+      style={cardBorder ? { borderColor: cardBorder, boxShadow: `0 0 6px ${cardBorder}` } : undefined}
+    >
       <div className={`flex items-center ${compact ? "gap-2" : "gap-3 items-start"}`}>
         <FeedCardHeader event={first} compact={compact} rankMap={rankMap} />
         <div className="flex-1 min-w-0">
           <NameAndTime event={first} compact={compact} />
 
           {compact ? (
-            <p className="text-[11px] text-fab-muted">
-              <span className="font-semibold text-fab-text">{group.totalMatchCount}</span> match{group.totalMatchCount !== 1 ? "es" : ""}{" "}
-              <span className="text-fab-dim">&middot; {group.events.length} imports</span>
-            </p>
+            <>
+              <p className="text-[11px] text-fab-muted">
+                <span className="font-semibold text-fab-text">{group.totalMatchCount}</span> match{group.totalMatchCount !== 1 ? "es" : ""}{" "}
+                <span className="text-fab-dim">&middot; {group.events.length} imports</span>
+                {allHeroes.length > 0 && (
+                  <span className="ml-1.5">
+                    {allHeroes.map((hero) => (
+                      <HeroPill key={hero} hero={hero} compact />
+                    ))}
+                  </span>
+                )}
+              </p>
+              <ReactionBar event={first} userId={userId} compact />
+            </>
           ) : (
             <>
               <p className="text-sm text-fab-muted mt-1">
@@ -312,9 +436,7 @@ export function GroupedFeedCard({ group, compact, rankMap }: { group: FeedGroup;
               {allHeroes.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 mt-2">
                   {allHeroes.map((hero) => (
-                    <span key={hero} className="px-2 py-0.5 rounded-full bg-fab-gold/10 text-fab-gold text-xs font-medium">
-                      {hero}
-                    </span>
+                    <HeroPill key={hero} hero={hero} />
                   ))}
                 </div>
               )}
@@ -340,6 +462,8 @@ export function GroupedFeedCard({ group, compact, rankMap }: { group: FeedGroup;
                   ))}
                 </div>
               )}
+
+              <ReactionBar event={first} userId={userId} />
             </>
           )}
         </div>

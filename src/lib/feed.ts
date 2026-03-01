@@ -3,6 +3,10 @@ import {
   addDoc,
   getDocs,
   deleteDoc,
+  doc,
+  updateDoc,
+  arrayUnion,
+  arrayRemove,
   query,
   orderBy,
   limit,
@@ -204,4 +208,31 @@ export async function getFeedEventsPaginated(
   const lastTimestamp = events.length > 0 ? events[events.length - 1].createdAt : null;
 
   return { events, hasMore, lastTimestamp };
+}
+
+// ── Reactions ──
+
+export const FEED_REACTIONS = [
+  { key: "gg", label: "GG", emoji: "⚔️" },
+  { key: "goagain", label: "Go Again", emoji: "🔥" },
+  { key: "majestic", label: "Majestic", emoji: "💎" },
+  { key: "dominate", label: "Dominate", emoji: "💪" },
+] as const;
+
+export type FeedReactionKey = (typeof FEED_REACTIONS)[number]["key"];
+
+export async function addFeedReaction(eventId: string, reactionKey: string, userId: string): Promise<void> {
+  const docRef = doc(db, "feedEvents", eventId);
+  await updateDoc(docRef, {
+    [`reactions.${reactionKey}`]: arrayUnion(userId),
+  });
+  invalidateFeedCache();
+}
+
+export async function removeFeedReaction(eventId: string, reactionKey: string, userId: string): Promise<void> {
+  const docRef = doc(db, "feedEvents", eventId);
+  await updateDoc(docRef, {
+    [`reactions.${reactionKey}`]: arrayRemove(userId),
+  });
+  invalidateFeedCache();
 }
