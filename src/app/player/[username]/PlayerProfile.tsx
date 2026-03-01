@@ -352,24 +352,27 @@ export default function PlayerProfile() {
   return (
     <div className="space-y-5">
       {/* Hero Card */}
-      <div
-        className="bg-fab-surface border border-fab-border rounded-lg p-5"
-        style={cardBorder ? { borderColor: cardBorder.border, boxShadow: cardBorder.shadow } : undefined}
-      >
-        {/* Admin: private profile banner */}
-        {isAdmin && !profile.isPublic && (
-          <div className="flex items-center gap-2 mb-4 px-3 py-2 rounded-lg bg-fab-dim/10 border border-fab-dim/20">
-            <LockIcon className="w-4 h-4 text-fab-dim shrink-0" />
-            <span className="text-xs font-semibold text-fab-dim">Private Profile — only visible to you (admin) and the owner</span>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div
+          className="bg-fab-surface border border-fab-border rounded-lg p-5"
+          style={cardBorder ? { borderColor: cardBorder.border, boxShadow: cardBorder.shadow } : undefined}
+        >
+          {/* Admin: private profile banner */}
+          {isAdmin && !profile.isPublic && (
+            <div className="flex items-center gap-2 mb-4 px-3 py-2 rounded-lg bg-fab-dim/10 border border-fab-dim/20">
+              <LockIcon className="w-4 h-4 text-fab-dim shrink-0" />
+              <span className="text-xs font-semibold text-fab-dim">Private Profile — only visible to you (admin) and the owner</span>
+            </div>
+          )}
+          {/* Profile row */}
+          <div className="flex items-center gap-3 mb-3">
+            <ProfileHeader profile={profile} achievements={achievements} bestRank={bestRank} isAdmin={isAdmin} isOwner={isOwner} isFavorited={!isOwner && !!currentUser && !isGuest && isFavorited(profile.uid)} onToggleFavorite={!isOwner && !!currentUser && !isGuest ? () => toggleFavorite(profile) : undefined} friendStatus={!isOwner && !!currentUser && !isGuest ? (isFriend(profile.uid) ? "friends" : hasSentRequest(profile.uid) ? "sent" : hasReceivedRequest(profile.uid) ? "received" : "none") : undefined} onFriendAction={!isOwner && !!currentUser && !isGuest ? () => { const fs = getFriendshipForUser(profile.uid); if (isFriend(profile.uid)) return; if (hasReceivedRequest(profile.uid) && fs) { acceptRequest(fs.id); } else if (!hasSentRequest(profile.uid)) { sendRequest(profile); } } : undefined} onShowMoreAchievements={() => { setAchievementsExpanded(true); setTimeout(() => document.getElementById("achievements")?.scrollIntoView({ behavior: "smooth", block: "start" }), 50); }} onShareCard={isOwner || isAdmin ? () => setProfileShareOpen(true) : undefined} friendCount={isAdmin ? friendCount : undefined} />
           </div>
-        )}
-        {/* Profile row */}
-        <div className="flex items-center gap-4 mb-4">
-          <ProfileHeader profile={profile} achievements={achievements} bestRank={bestRank} isAdmin={isAdmin} isOwner={isOwner} isFavorited={!isOwner && !!currentUser && !isGuest && isFavorited(profile.uid)} onToggleFavorite={!isOwner && !!currentUser && !isGuest ? () => toggleFavorite(profile) : undefined} friendStatus={!isOwner && !!currentUser && !isGuest ? (isFriend(profile.uid) ? "friends" : hasSentRequest(profile.uid) ? "sent" : hasReceivedRequest(profile.uid) ? "received" : "none") : undefined} onFriendAction={!isOwner && !!currentUser && !isGuest ? () => { const fs = getFriendshipForUser(profile.uid); if (isFriend(profile.uid)) return; if (hasReceivedRequest(profile.uid) && fs) { acceptRequest(fs.id); } else if (!hasSentRequest(profile.uid)) { sendRequest(profile); } } : undefined} onShowMoreAchievements={() => { setAchievementsExpanded(true); setTimeout(() => document.getElementById("achievements")?.scrollIntoView({ behavior: "smooth", block: "start" }), 50); }} onShareCard={isOwner || isAdmin ? () => setProfileShareOpen(true) : undefined} friendCount={isAdmin ? friendCount : undefined} />
-          {/* Streak mini */}
-          <div className="shrink-0 ml-auto text-right">
-            <div className="flex items-baseline gap-1 justify-end">
-              <span className={`text-2xl font-black ${
+
+          {/* Streak row */}
+          <div className="flex items-center gap-3 mb-3 pb-3 border-b border-fab-border/50">
+            <div className="flex items-baseline gap-1">
+              <span className={`text-xl font-black ${
                 streaks.currentStreak?.type === MatchResult.Win
                   ? "text-fab-win"
                   : streaks.currentStreak?.type === MatchResult.Loss
@@ -378,7 +381,7 @@ export default function PlayerProfile() {
               }`}>
                 {streaks.currentStreak ? streaks.currentStreak.count : 0}
               </span>
-              <span className={`text-sm font-bold ${
+              <span className={`text-xs font-bold ${
                 streaks.currentStreak?.type === MatchResult.Win
                   ? "text-fab-win"
                   : streaks.currentStreak?.type === MatchResult.Loss
@@ -389,19 +392,19 @@ export default function PlayerProfile() {
                   ? streaks.currentStreak.type === MatchResult.Win ? "W" : "L"
                   : "\u2014"}
               </span>
-              <div className="flex gap-2 text-center ml-2">
-                <div>
-                  <p className="text-sm font-bold text-fab-win">{streaks.longestWinStreak}</p>
-                  <p className="text-[10px] text-fab-dim">Best</p>
-                </div>
-                <div>
-                  <p className="text-sm font-bold text-fab-loss">{streaks.longestLossStreak}</p>
-                  <p className="text-[10px] text-fab-dim">Worst</p>
-                </div>
+            </div>
+            <div className="flex gap-2 text-center">
+              <div>
+                <p className="text-xs font-bold text-fab-win">{streaks.longestWinStreak}</p>
+                <p className="text-[9px] text-fab-dim">Best</p>
+              </div>
+              <div>
+                <p className="text-xs font-bold text-fab-loss">{streaks.longestLossStreak}</p>
+                <p className="text-[9px] text-fab-dim">Worst</p>
               </div>
             </div>
-            <p className="text-[10px] text-fab-dim">streak</p>
-            <div className="mt-1 flex gap-0.5 flex-wrap justify-end max-w-[120px] sm:max-w-[200px] ml-auto">
+            <p className="text-[9px] text-fab-dim">streak</p>
+            <div className="flex gap-0.5 flex-wrap flex-1 max-w-[200px]">
               {last30.map((m, i) => (
                 <div
                   key={i}
@@ -413,64 +416,65 @@ export default function PlayerProfile() {
               ))}
             </div>
           </div>
-        </div>
 
-        {/* Quick stats row */}
-        <div className={`grid grid-cols-2 ${bestFinish ? "sm:grid-cols-6" : "sm:grid-cols-5"} gap-3`}>
-          <div>
-            <p className="text-[10px] text-fab-dim uppercase tracking-wider">Win Rate</p>
-            <p className={`text-lg font-bold ${overall.overallWinRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>
-              {overall.overallWinRate.toFixed(1)}%
-            </p>
-          </div>
-          <div>
-            <p className="text-[10px] text-fab-dim uppercase tracking-wider">Record</p>
-            <p className="text-lg font-bold">
-              <span className="text-fab-win">{overall.totalWins}W</span>
-              <span className="text-fab-dim"> - </span>
-              <span className="text-fab-loss">{overall.totalLosses}L</span>
-            </p>
-            {(overall.totalDraws > 0 || overall.totalByes > 0) && (
-              <p className="text-[10px] text-fab-dim">
-                {[
-                  overall.totalDraws > 0 ? `${overall.totalDraws} draw${overall.totalDraws !== 1 ? "s" : ""}` : "",
-                  overall.totalByes > 0 ? `${overall.totalByes} bye${overall.totalByes !== 1 ? "s" : ""}` : "",
-                ].filter(Boolean).join(" · ")}
+          {/* Quick stats row */}
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <p className="text-[10px] text-fab-dim uppercase tracking-wider">Win Rate</p>
+              <p className={`text-lg font-bold ${overall.overallWinRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>
+                {overall.overallWinRate.toFixed(1)}%
               </p>
-            )}
-          </div>
-          <div>
-            <p className="text-[10px] text-fab-dim uppercase tracking-wider">Matches</p>
-            <p className="text-lg font-bold text-fab-text">{overall.totalMatches + overall.totalByes}</p>
-          </div>
-          <div>
-            <p className="text-[10px] text-fab-dim uppercase tracking-wider">Events</p>
-            <p className="text-lg font-bold text-fab-text">{eventStats.length}</p>
-          </div>
-          <div>
-            <p className="text-[10px] text-fab-dim uppercase tracking-wider">Top Hero</p>
-            <p className="text-lg font-bold text-fab-text truncate">{topHero?.heroName || "\u2014"}</p>
-          </div>
-          {bestFinish && (
-            <div className="relative">
-              <p className="text-[10px] text-fab-dim uppercase tracking-wider">Best Finish</p>
-              <p className="text-lg font-bold text-fab-gold truncate">{bestFinish.label}</p>
-              <p className="text-[10px] text-fab-dim truncate">{bestFinish.eventName}</p>
-              {isOwner && (
-                <button
-                  onClick={() => setBestFinishShareOpen(true)}
-                  className="absolute top-0 right-0 flex items-center gap-1 px-1.5 py-0.5 rounded-md text-fab-dim hover:text-fab-gold hover:bg-fab-gold/10 transition-colors"
-                  title="Share best finish"
-                >
-                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 8.25H7.5a2.25 2.25 0 00-2.25 2.25v9a2.25 2.25 0 002.25 2.25h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25H15m0-3l-3-3m0 0l-3 3m3-3v11.25" />
-                  </svg>
-                  <span className="text-[9px] font-semibold">Share</span>
-                </button>
+            </div>
+            <div>
+              <p className="text-[10px] text-fab-dim uppercase tracking-wider">Record</p>
+              <p className="text-lg font-bold">
+                <span className="text-fab-win">{overall.totalWins}W</span>
+                <span className="text-fab-dim"> - </span>
+                <span className="text-fab-loss">{overall.totalLosses}L</span>
+              </p>
+              {(overall.totalDraws > 0 || overall.totalByes > 0) && (
+                <p className="text-[10px] text-fab-dim">
+                  {[
+                    overall.totalDraws > 0 ? `${overall.totalDraws} draw${overall.totalDraws !== 1 ? "s" : ""}` : "",
+                    overall.totalByes > 0 ? `${overall.totalByes} bye${overall.totalByes !== 1 ? "s" : ""}` : "",
+                  ].filter(Boolean).join(" · ")}
+                </p>
               )}
             </div>
-          )}
+            <div>
+              <p className="text-[10px] text-fab-dim uppercase tracking-wider">Matches</p>
+              <p className="text-lg font-bold text-fab-text">{overall.totalMatches + overall.totalByes}</p>
+            </div>
+            <div>
+              <p className="text-[10px] text-fab-dim uppercase tracking-wider">Events</p>
+              <p className="text-lg font-bold text-fab-text">{eventStats.length}</p>
+            </div>
+            <div>
+              <p className="text-[10px] text-fab-dim uppercase tracking-wider">Top Hero</p>
+              <p className="text-lg font-bold text-fab-text truncate">{topHero?.heroName || "\u2014"}</p>
+            </div>
+            {bestFinish && (
+              <div className="relative">
+                <p className="text-[10px] text-fab-dim uppercase tracking-wider">Best Finish</p>
+                <p className="text-lg font-bold text-fab-gold truncate">{bestFinish.label}</p>
+                <p className="text-[10px] text-fab-dim truncate">{bestFinish.eventName}</p>
+                {isOwner && (
+                  <button
+                    onClick={() => setBestFinishShareOpen(true)}
+                    className="absolute top-0 right-0 flex items-center gap-1 px-1.5 py-0.5 rounded-md text-fab-dim hover:text-fab-gold hover:bg-fab-gold/10 transition-colors"
+                    title="Share best finish"
+                  >
+                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 8.25H7.5a2.25 2.25 0 00-2.25 2.25v9a2.25 2.25 0 002.25 2.25h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25H15m0-3l-3-3m0 0l-3 3m3-3v11.25" />
+                    </svg>
+                    <span className="text-[9px] font-semibold">Share</span>
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
         </div>
+        <div />
       </div>
 
       {/* Filters */}
