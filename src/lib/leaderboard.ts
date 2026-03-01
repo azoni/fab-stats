@@ -160,6 +160,40 @@ export async function updateLeaderboardEntry(
   for (const f of playoffFinishes) {
     top8sByEventType[f.eventType] = (top8sByEventType[f.eventType] || 0) + 1;
   }
+  const totalFinalists = playoffFinishes.filter((f) => f.type === "finalist").length;
+
+  // Unique opponents (exclude byes and "Unknown")
+  const opponentNames = new Set<string>();
+  for (const m of matches) {
+    if (m.result === MatchResult.Bye) continue;
+    const name = m.opponentName?.trim();
+    if (name && name.toLowerCase() !== "unknown" && !/^bye$/i.test(name)) {
+      opponentNames.add(name.toLowerCase());
+    }
+  }
+
+  // Longest loss streak
+  const sortedForStreaks = [...matches].sort(
+    (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+  );
+  let longestLossStreak = 0;
+  let currentLossStreak = 0;
+  for (const m of sortedForStreaks) {
+    if (m.result === MatchResult.Bye) continue;
+    if (m.result === MatchResult.Loss) {
+      currentLossStreak++;
+      longestLossStreak = Math.max(longestLossStreak, currentLossStreak);
+    } else {
+      currentLossStreak = 0;
+    }
+  }
+
+  // Unique venues
+  const venueNames = new Set<string>();
+  for (const m of matches) {
+    const v = m.venue?.trim();
+    if (v && v.toLowerCase() !== "unknown") venueNames.add(v.toLowerCase());
+  }
 
   const entry: Omit<LeaderboardEntry, never> = {
     userId: profile.uid,
@@ -207,6 +241,10 @@ export async function updateLeaderboardEntry(
     heroBreakdownDetailed,
     totalTop8s,
     top8sByEventType,
+    totalFinalists,
+    uniqueOpponents: opponentNames.size,
+    longestLossStreak,
+    uniqueVenues: venueNames.size,
     createdAt: profile.createdAt,
     updatedAt: new Date().toISOString(),
   };

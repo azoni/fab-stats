@@ -200,6 +200,30 @@ const RANK_TABS: RankTab[] = [
     sort: (a, b) => Math.abs(a.winRate - 50) - Math.abs(b.winRate - 50) || b.totalMatches - a.totalMatches,
   },
   {
+    id: "uniqueopponents",
+    label: "Unique Opponents",
+    filter: (e) => (e.uniqueOpponents ?? 0) >= 5,
+    sort: (a, b) => (b.uniqueOpponents ?? 0) - (a.uniqueOpponents ?? 0) || b.totalMatches - a.totalMatches,
+  },
+  {
+    id: "silvermedals",
+    label: "Silver Collector",
+    filter: (e) => (e.totalFinalists ?? 0) > 0,
+    sort: (a, b) => (b.totalFinalists ?? 0) - (a.totalFinalists ?? 0) || (b.totalTop8s ?? 0) - (a.totalTop8s ?? 0),
+  },
+  {
+    id: "lossstreak",
+    label: "Loss Streak",
+    filter: (e) => (e.longestLossStreak ?? 0) >= 2,
+    sort: (a, b) => (b.longestLossStreak ?? 0) - (a.longestLossStreak ?? 0) || b.totalMatches - a.totalMatches,
+  },
+  {
+    id: "globetrotter",
+    label: "Globe Trotter",
+    filter: (e) => (e.uniqueVenues ?? 0) >= 2,
+    sort: (a, b) => (b.uniqueVenues ?? 0) - (a.uniqueVenues ?? 0) || b.eventsPlayed - a.eventsPlayed,
+  },
+  {
     id: "top8s",
     label: "Top 8s",
     filter: (e) => (e.totalTop8s ?? 0) > 0,
@@ -294,6 +318,11 @@ export function rankBorderClass(rank: 1 | 2 | 3 | 4 | 5 | null | undefined): str
     : rank === 3 ? "rank-border-gold"
     : rank === 4 ? "rank-border-silver"
     : "rank-border-bronze";
+}
+
+/** Count how many RANK_TABS a single entry qualifies for. */
+export function countQualifyingTabs(entry: LeaderboardEntry): number {
+  return RANK_TABS.filter((tab) => tab.filter(entry)).length;
 }
 
 /** Returns a CSS border-color value matching the rank's avatar glow color. */

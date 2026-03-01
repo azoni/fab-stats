@@ -7,13 +7,14 @@ import { useMatches } from "@/hooks/useMatches";
 import { useAuth } from "@/contexts/AuthContext";
 import { computeOpponentStats } from "@/lib/stats";
 import { getWeekStart, getMonthStart } from "@/lib/leaderboard";
+import { countQualifyingTabs } from "@/lib/leaderboard-ranks";
 import { computePowerLevel, getPowerTier } from "@/lib/power-level";
 import { TrophyIcon } from "@/components/icons/NavIcons";
 import type { LeaderboardEntry, OpponentStats } from "@/types";
 
 const SITE_CREATOR = "azoni";
 
-type Tab = "winrate" | "volume" | "mostwins" | "mostlosses" | "streaks" | "draws" | "drawrate" | "lowdrawrate" | "fewestdraws" | "byes" | "byerate" | "balanced" | "events" | "eventgrinder" | "rated" | "ratedstreak" | "heroes" | "dedication" | "loyaltyrate" | "hotstreak" | "coldstreak" | "weeklymatches" | "weeklywins" | "monthlymatches" | "monthlywins" | "monthlywinrate" | "earnings" | "armorywinrate" | "armoryattendance" | "armorymatches" | "top8s" | "top8s_skirmish" | "top8s_pq" | "top8s_bh" | "top8s_rtn" | "top8s_calling" | "top8s_nationals" | "powerlevel";
+type Tab = "winrate" | "volume" | "mostwins" | "mostlosses" | "streaks" | "draws" | "drawrate" | "lowdrawrate" | "fewestdraws" | "byes" | "byerate" | "balanced" | "events" | "eventgrinder" | "rated" | "ratedstreak" | "heroes" | "dedication" | "loyaltyrate" | "hotstreak" | "coldstreak" | "weeklymatches" | "weeklywins" | "monthlymatches" | "monthlywins" | "monthlywinrate" | "earnings" | "armorywinrate" | "armoryattendance" | "armorymatches" | "top8s" | "top8s_skirmish" | "top8s_pq" | "top8s_bh" | "top8s_rtn" | "top8s_calling" | "top8s_nationals" | "powerlevel" | "uniqueopponents" | "silvermedals" | "lossstreak" | "globetrotter" | "leaderboardcount";
 
 // ── Tab definitions ──
 
@@ -55,6 +56,11 @@ const tabs: { id: Tab; label: string; description: string }[] = [
   { id: "byes", label: "Byes", description: "Most byes received." },
   { id: "byerate", label: "Bye %", description: "Highest bye rate. Requires 10+ matches." },
   { id: "balanced", label: "Balanced", description: "Closest win rate to 50%. Perfectly balanced. Requires 20+ matches." },
+  { id: "uniqueopponents", label: "Opponents", description: "Most unique opponents faced. Requires 5+ unique opponents." },
+  { id: "silvermedals", label: "Silver Collector", description: "Most 2nd place (Finalist) finishes. Always the bridesmaid..." },
+  { id: "lossstreak", label: "Loss Streak", description: "Longest losing streak of all time. We've all been there." },
+  { id: "globetrotter", label: "Globe Trotter", description: "Most unique venues played at. Requires 2+ venues." },
+  { id: "leaderboardcount", label: "Collector", description: "Qualified for the most leaderboard categories. The ultimate completionist." },
   { id: "powerlevel", label: "Power Level", description: "Composite score (0–99) based on win rate, match volume, events, streaks, heroes, rated performance, and earnings." },
 ];
 
@@ -77,7 +83,7 @@ const allCategories: Category[] = [
   { id: "heroes", label: "Heroes", tabs: ["heroes", "dedication", "loyaltyrate"] },
   { id: "armory", label: "Armory", tabs: ["armorywinrate", "armoryattendance", "armorymatches"] },
   { id: "rated", label: "Rated", tabs: ["rated", "ratedstreak"] },
-  { id: "fun", label: "Fun", tabs: ["draws", "drawrate", "lowdrawrate", "fewestdraws", "byes", "byerate", "balanced"] },
+  { id: "fun", label: "Fun", tabs: ["uniqueopponents", "silvermedals", "lossstreak", "globetrotter", "leaderboardcount", "draws", "drawrate", "lowdrawrate", "fewestdraws", "byes", "byerate", "balanced"] },
   { id: "power", label: "Power Level", tabs: ["powerlevel"], adminOnly: true },
 ];
 
@@ -182,6 +188,18 @@ function getStat(entry: LeaderboardEntry, tab: Tab): { value: string; sub: strin
     }
     case "top8s":
       return { value: String(entry.totalTop8s ?? 0), sub: "playoff finishes", color: "text-fab-gold" };
+    case "uniqueopponents":
+      return { value: String(entry.uniqueOpponents ?? 0), sub: `across ${entry.totalMatches} matches`, color: "text-purple-400" };
+    case "silvermedals":
+      return { value: String(entry.totalFinalists ?? 0), sub: `2nd places (${entry.totalTop8s ?? 0} total Top 8s)`, color: "text-sky-400" };
+    case "lossstreak":
+      return { value: String(entry.longestLossStreak ?? 0), sub: `losses in a row (${formatRate(entry.winRate)} WR)`, color: "text-fab-loss" };
+    case "globetrotter":
+      return { value: String(entry.uniqueVenues ?? 0), sub: `venues (${entry.eventsPlayed} events)`, color: "text-green-400" };
+    case "leaderboardcount": {
+      const lbCount = countQualifyingTabs(entry);
+      return { value: String(lbCount), sub: "leaderboards qualified", color: "text-fab-gold" };
+    }
     case "powerlevel": {
       const pl = computePowerLevel(entry);
       const tier = getPowerTier(pl);
@@ -223,6 +241,11 @@ function getEmptyMessage(tab: Tab): string {
     case "byes": return "No players have received byes yet.";
     case "byerate": return "Players need at least 10 matches and 1 bye to appear here.";
     case "loyaltyrate": return "Players need at least 20 matches to appear here.";
+    case "uniqueopponents": return "Players need at least 5 unique opponents to appear here.";
+    case "silvermedals": return "No players have 2nd place finishes yet.";
+    case "lossstreak": return "No players have a 2+ game loss streak yet. Lucky everyone.";
+    case "globetrotter": return "Players need at least 2 unique venues to appear here.";
+    case "leaderboardcount": return "Players need at least 5 matches to appear here.";
     case "powerlevel": return "Players need at least 10 matches to get a Power Level.";
     default:
       if (tab.startsWith("top8s")) return "No players have Top 8 finishes in this category yet.";
@@ -360,6 +383,16 @@ export default function LeaderboardPage() {
         const eventType = TOP8_EVENT_TYPE_MAP[activeTab];
         return [...visibleEntries].filter((e) => getTop8Count(e, eventType) > 0).sort((a, b) => getTop8Count(b, eventType) - getTop8Count(a, eventType) || (b.totalTop8s ?? 0) - (a.totalTop8s ?? 0));
       }
+      case "uniqueopponents":
+        return [...visibleEntries].filter((e) => (e.uniqueOpponents ?? 0) >= 5).sort((a, b) => (b.uniqueOpponents ?? 0) - (a.uniqueOpponents ?? 0) || b.totalMatches - a.totalMatches);
+      case "silvermedals":
+        return [...visibleEntries].filter((e) => (e.totalFinalists ?? 0) > 0).sort((a, b) => (b.totalFinalists ?? 0) - (a.totalFinalists ?? 0) || (b.totalTop8s ?? 0) - (a.totalTop8s ?? 0));
+      case "lossstreak":
+        return [...visibleEntries].filter((e) => (e.longestLossStreak ?? 0) >= 2).sort((a, b) => (b.longestLossStreak ?? 0) - (a.longestLossStreak ?? 0) || b.totalMatches - a.totalMatches);
+      case "globetrotter":
+        return [...visibleEntries].filter((e) => (e.uniqueVenues ?? 0) >= 2).sort((a, b) => (b.uniqueVenues ?? 0) - (a.uniqueVenues ?? 0) || b.eventsPlayed - a.eventsPlayed);
+      case "leaderboardcount":
+        return [...visibleEntries].filter((e) => e.totalMatches >= 5).sort((a, b) => countQualifyingTabs(b) - countQualifyingTabs(a) || b.totalMatches - a.totalMatches);
       case "powerlevel":
         return [...visibleEntries].filter((e) => e.totalMatches >= 10).sort((a, b) => computePowerLevel(b) - computePowerLevel(a) || b.totalMatches - a.totalMatches);
       default:
