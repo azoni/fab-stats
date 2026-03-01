@@ -35,7 +35,7 @@ interface ShowcaseSectionProps {
   achievements: Achievement[];
 }
 
-const MAX_CARDS = 5;
+const MAX_CARDS = 4;
 
 export function ShowcaseSection({
   profile,
