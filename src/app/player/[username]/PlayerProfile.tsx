@@ -31,6 +31,7 @@ import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { BestFinishShareModal } from "@/components/profile/BestFinishCard";
 import { ProfileShareModal } from "@/components/profile/ProfileCard";
+import { ShowcaseSection } from "@/components/profile/ShowcaseSection";
 import type { MatchRecord, UserProfile, Achievement } from "@/types";
 import { MatchResult } from "@/types";
 import { allHeroes as knownHeroes } from "@/lib/heroes";
@@ -487,7 +488,18 @@ export default function PlayerProfile() {
             </p>
           )}
         </div>
-        <div />
+        <ShowcaseSection
+          profile={profile}
+          isOwner={isOwner}
+          matches={fm}
+          heroStats={heroStats}
+          masteries={masteries}
+          eventStats={eventStats}
+          playoffFinishes={playoffFinishes}
+          opponentStats={allOpponentStats}
+          overall={overall}
+          achievements={achievements}
+        />
       </div>
 
       {/* Filters */}

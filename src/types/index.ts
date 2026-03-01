@@ -139,6 +139,19 @@ export interface UserProfile {
   hideFromGuests?: boolean;
   gemId?: string;
   unlockedCans?: string[];
+  showcase?: ShowcaseCard[];
+}
+
+export interface ShowcaseCard {
+  type: "featuredMatch" | "heroSpotlight" | "bestFinish" | "rivalry" | "eventRecap" | "achievements" | "statHighlight" | "formatMastery";
+  matchId?: string;
+  heroName?: string;
+  eventDate?: string;
+  eventName?: string;
+  opponentName?: string;
+  achievementIds?: string[];
+  stat?: string;
+  filter?: string;
 }
 
 export interface EventStats {
