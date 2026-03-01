@@ -105,9 +105,6 @@ export function ActivityFeed({ rankMap }: { rankMap?: Map<string, 1 | 2 | 3 | 4 
     <div className="flex flex-col h-full">
       <div className="flex items-center justify-between mb-2">
         <h2 className="text-lg font-semibold text-fab-text">Activity Feed</h2>
-        <Link href="/search" className="text-xs text-fab-gold hover:text-fab-gold-light transition-colors">
-          View All &rarr;
-        </Link>
       </div>
 
       {/* Filter row */}
@@ -173,7 +170,7 @@ export function ActivityFeed({ rankMap }: { rankMap?: Map<string, 1 | 2 | 3 | 4 
         </div>
       ) : (
         <>
-          <div className="space-y-2">
+          <div className="space-y-2 min-h-[268px]">
             {groups.map((group) => (
               <GroupedFeedCard key={group.events[0].id} group={group} compact rankMap={rankMap} />
             ))}
@@ -201,6 +198,19 @@ export function ActivityFeed({ rankMap }: { rankMap?: Map<string, 1 | 2 | 3 | 4 
               </button>
             </div>
           )}
+
+          {/* Discover CTA */}
+          <Link
+            href="/search"
+            className="flex items-center justify-center gap-2 mt-4 py-2.5 rounded-lg border border-fab-border bg-fab-surface hover:bg-fab-surface-hover hover:border-fab-gold/30 transition-all group"
+          >
+            <span className="text-xs font-semibold text-fab-muted group-hover:text-fab-gold transition-colors">
+              See more on Discover
+            </span>
+            <svg className="w-3.5 h-3.5 text-fab-dim group-hover:text-fab-gold transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+            </svg>
+          </Link>
         </>
       )}
     </div>

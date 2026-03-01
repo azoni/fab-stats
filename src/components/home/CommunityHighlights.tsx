@@ -2,7 +2,6 @@
 import type { ReactNode } from "react";
 import { FeaturedTournaments } from "./FeaturedTournaments";
 import { MetaSnapshot } from "./MetaSnapshot";
-import { LeaderboardPreview } from "./LeaderboardPreview";
 import { PollCard } from "./PollCard";
 import type { HeroMetaStats } from "@/lib/meta-stats";
 import type { FeaturedEvent, LeaderboardEntry } from "@/types";
@@ -35,7 +34,7 @@ export function CommunityHighlights({
 
         <div className="flex flex-col gap-6">
           <MetaSnapshot topHeroes={topHeroes} />
-          {rightColumnExtra || <LeaderboardPreview entries={leaderboardEntries} rankMap={rankMap} />}
+          {rightColumnExtra}
         </div>
       </div>
     </div>

@@ -16,8 +16,6 @@ import { CommunityHighlights } from "@/components/home/CommunityHighlights";
 import { useFeaturedEvents } from "@/hooks/useFeaturedEvents";
 import { computeMetaStats } from "@/lib/meta-stats";
 import { ActivityFeed } from "@/components/home/ActivityFeed";
-import { FeaturedProfiles } from "@/components/home/FeaturedProfiles";
-import { selectFeaturedProfiles } from "@/lib/featured-profiles";
 import { BestFinishShareModal } from "@/components/profile/BestFinishCard";
 import { ProfileShareModal } from "@/components/profile/ProfileCard";
 import { OnThisDay } from "@/components/home/OnThisDay";
@@ -106,7 +104,6 @@ export default function Dashboard() {
   // Community section data
   const communityMeta = useMemo(() => computeMetaStats(lbEntries), [lbEntries]);
   const communityTopHeroes = useMemo(() => communityMeta.heroStats.slice(0, 5), [communityMeta]);
-  const featuredProfiles = useMemo(() => selectFeaturedProfiles(lbEntries), [lbEntries]);
   const rankMap = useMemo(() => computeRankMap(lbEntries), [lbEntries]);
   const unlockedColors = useMemo(() => {
     if (!user) return [];
@@ -190,10 +187,7 @@ export default function Dashboard() {
             </div>
           </div>
           {user ? (
-            <div className="space-y-6">
-              <ActivityFeed rankMap={rankMap} />
-              <FeaturedProfiles profiles={featuredProfiles} rankMap={rankMap} />
-            </div>
+            <ActivityFeed rankMap={rankMap} />
           ) : <div />}
         </div>
       )}
@@ -424,10 +418,7 @@ export default function Dashboard() {
             </div>
           </div>
           {user ? (
-            <div className="space-y-6">
-              <ActivityFeed rankMap={rankMap} />
-              <FeaturedProfiles profiles={featuredProfiles.slice(0, 4)} rankMap={rankMap} />
-            </div>
+            <ActivityFeed rankMap={rankMap} />
           ) : <div />}
         </div>
       )}
