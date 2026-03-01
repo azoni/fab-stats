@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { getHeroByName } from "@/lib/heroes";
 import { HeroClassIcon } from "@/components/heroes/HeroClassIcon";
+import { AchievementIcon } from "@/components/gamification/AchievementIcons";
 import { localDate } from "@/lib/constants";
 import type { ShowcaseCard, MatchRecord, HeroStats, EventStats, OpponentStats, Achievement } from "@/types";
 import { MatchResult } from "@/types";
@@ -32,14 +33,14 @@ interface CardPickerProps {
 type CardType = ShowcaseCard["type"];
 
 const CARD_TYPES: { type: CardType; label: string; icon: string; desc: string }[] = [
-  { type: "featuredMatch", label: "Featured Match", icon: "⚔️", desc: "Pin a memorable match" },
-  { type: "heroSpotlight", label: "Hero Spotlight", icon: "🛡️", desc: "Showcase your main hero" },
-  { type: "bestFinish", label: "Best Finish", icon: "🏆", desc: "Highlight a tournament placement" },
-  { type: "rivalry", label: "Rivalry", icon: "🤺", desc: "Head-to-head vs an opponent" },
-  { type: "eventRecap", label: "Event Recap", icon: "📋", desc: "Recap a tournament result" },
-  { type: "achievements", label: "Achievements", icon: "⭐", desc: "Pin favorite achievements" },
-  { type: "statHighlight", label: "Stat Highlight", icon: "📊", desc: "A bold stat with context" },
-  { type: "formatMastery", label: "Format Mastery", icon: "📈", desc: "Format performance breakdown" },
+  { type: "featuredMatch", label: "Featured Match", icon: "swords", desc: "Pin a memorable match" },
+  { type: "heroSpotlight", label: "Hero Spotlight", icon: "shield", desc: "Showcase your main hero" },
+  { type: "bestFinish", label: "Best Finish", icon: "trophy", desc: "Highlight a tournament placement" },
+  { type: "rivalry", label: "Rivalry", icon: "versus", desc: "Head-to-head vs an opponent" },
+  { type: "eventRecap", label: "Event Recap", icon: "scroll", desc: "Recap a tournament result" },
+  { type: "achievements", label: "Achievements", icon: "star", desc: "Pin favorite achievements" },
+  { type: "statHighlight", label: "Stat Highlight", icon: "chart", desc: "A bold stat with context" },
+  { type: "formatMastery", label: "Format Mastery", icon: "trending", desc: "Format performance breakdown" },
 ];
 
 const STAT_OPTIONS: { key: string; label: string }[] = [
@@ -101,7 +102,7 @@ export function CardPicker({ onAdd, onCancel, matches, heroStats, eventStats, op
                 }`}
               >
                 <div className="flex items-center gap-1.5">
-                  <span className="text-sm">{ct.icon}</span>
+                  <AchievementIcon icon={ct.icon} className="w-4 h-4 shrink-0" />
                   <span className="text-[10px] font-medium text-fab-text flex-1">{ct.label}</span>
                   <span className="text-[8px] text-fab-dim">{size}pt</span>
                 </div>
@@ -206,12 +207,12 @@ function HeroPicker({ heroStats, onSelect }: { heroStats: HeroStats[]; onSelect:
 }
 
 function FinishPicker({ finishes, onSelect }: { finishes: PlayoffFinishData[]; onSelect: (date: string, name: string) => void }) {
-  const BADGE: Record<string, string> = { champion: "🏆", finalist: "🥈", top4: "🥉", top8: "🎖️" };
+  const BADGE: Record<string, string> = { champion: "trophy", finalist: "medal", top4: "badge", top8: "star-badge" };
   return (
     <>
       {finishes.map((f) => (
         <button key={`${f.eventName}|${f.eventDate}`} onClick={() => onSelect(f.eventDate, f.eventName)} className="w-full flex items-center gap-2 p-1.5 rounded hover:bg-fab-surface-hover text-left transition-colors">
-          <span className="text-sm">{BADGE[f.type] || "🎖️"}</span>
+          <AchievementIcon icon={BADGE[f.type] || "star-badge"} className="w-4 h-4 shrink-0" />
           <span className="text-[10px] text-fab-text truncate flex-1">{f.eventName}</span>
           <span className="text-[9px] text-fab-dim capitalize">{f.type}</span>
           <span className="text-[9px] text-fab-dim shrink-0">{localDate(f.eventDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span>
@@ -279,7 +280,7 @@ function AchievementList({ achievements, selected, onToggle }: { achievements: A
             ) : (
               <div className="w-3.5 h-3.5 rounded border border-fab-border shrink-0" />
             )}
-            <span className="text-sm shrink-0">{a.icon}</span>
+            <AchievementIcon icon={a.icon} className="w-4 h-4 shrink-0" />
             <span className="text-[10px] text-fab-text truncate flex-1">{a.name}</span>
             <span className="text-[8px] text-fab-dim capitalize">{a.rarity}</span>
           </button>

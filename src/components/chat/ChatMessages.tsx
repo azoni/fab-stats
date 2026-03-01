@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef } from "react";
 import type { ChatMessage } from "@/lib/chat";
+import { AchievementIcon } from "@/components/gamification/AchievementIcons";
 
 function formatTime(iso: string): string {
   try {
@@ -60,7 +61,7 @@ export function ChatMessages({ messages, isLoading, emptyState }: Props) {
       <div className="flex-1 flex items-center justify-center p-6 text-center">
         {emptyState || (
           <div>
-            <div className="text-2xl mb-3">⚔️</div>
+            <AchievementIcon icon="swords" className="w-8 h-8 mx-auto mb-3 text-fab-muted" />
             <p className="text-sm text-fab-muted mb-1">Ask me anything about your stats</p>
             <p className="text-xs text-fab-dim">Win rates, matchups, hero meta, and more</p>
           </div>

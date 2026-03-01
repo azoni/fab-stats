@@ -1,5 +1,6 @@
 "use client";
 import type { Achievement } from "@/types";
+import { AchievementIcon } from "@/components/gamification/AchievementIcons";
 
 interface AchievementShowcaseCardProps {
   achievements: Achievement[];
@@ -23,7 +24,7 @@ export function AchievementShowcaseCard({ achievements }: AchievementShowcaseCar
           const style = RARITY_STYLE[ach.rarity] || RARITY_STYLE.common;
           return (
             <div key={ach.id} className={`flex items-center gap-1.5 px-2 py-1 rounded border ${style.border} ${style.glow} bg-fab-bg/50 flex-1 min-w-0`}>
-              <span className="text-sm shrink-0">{ach.icon}</span>
+              <AchievementIcon icon={ach.icon} className="w-4 h-4 shrink-0" />
               <div className="min-w-0">
                 <p className={`text-[10px] font-semibold truncate ${style.text}`}>{ach.name}</p>
                 <p className="text-[8px] text-fab-dim truncate">{ach.rarity}</p>
