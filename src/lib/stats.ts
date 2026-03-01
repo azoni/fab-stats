@@ -498,6 +498,7 @@ export interface PlayoffFinish {
   eventDate: string;
   format: string;
   eventType: string;
+  hero?: string;
 }
 
 function isPlayoffRound(roundInfo: string): boolean {
@@ -531,6 +532,7 @@ export function computePlayoffFinishes(
         eventDate: event.eventDate,
         format: event.format,
         eventType: refinedEventType,
+        hero: event.matches[0]?.heroPlayed,
       });
       continue;
     }
@@ -582,6 +584,7 @@ export function computePlayoffFinishes(
       eventDate: event.eventDate,
       format: event.format,
       eventType: refinedEventType,
+      hero: event.matches[0]?.heroPlayed,
     });
   }
 

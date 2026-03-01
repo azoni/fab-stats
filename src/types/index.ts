@@ -249,8 +249,11 @@ export interface LeaderboardEntry {
   hideFromGuests?: boolean;
   heroBreakdown?: { hero: string; matches: number; wins: number; winRate: number }[];
   heroBreakdownDetailed?: { hero: string; format: string; eventType: string; matches: number; wins: number; winRate: number }[];
+  weeklyHeroBreakdown?: { hero: string; format: string; eventType: string; matches: number; wins: number }[];
+  monthlyHeroBreakdown?: { hero: string; format: string; eventType: string; matches: number; wins: number }[];
   totalTop8s?: number;
   top8sByEventType?: Record<string, number>;
+  top8Heroes?: { hero: string; eventType: string; placementType: string; eventDate: string; format: string }[];
   totalFinalists?: number;
   uniqueOpponents?: number;
   longestLossStreak?: number;

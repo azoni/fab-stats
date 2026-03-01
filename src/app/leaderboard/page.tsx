@@ -7,7 +7,7 @@ import { useMatches } from "@/hooks/useMatches";
 import { useAuth } from "@/contexts/AuthContext";
 import { computeOpponentStats } from "@/lib/stats";
 import { getWeekStart, getMonthStart } from "@/lib/leaderboard";
-import { countQualifyingTabs } from "@/lib/leaderboard-ranks";
+import { countQualifyingTabs, computeUserRanks, type LeaderboardRank } from "@/lib/leaderboard-ranks";
 import { computePowerLevel, getPowerTier } from "@/lib/power-level";
 import { TrophyIcon } from "@/components/icons/NavIcons";
 import type { LeaderboardEntry, OpponentStats } from "@/types";
@@ -416,6 +416,17 @@ export default function LeaderboardPage() {
     return idx >= 0 ? idx + 1 : null;
   }, [ranked, user]);
 
+  // All top-5 rankings across every board
+  const myRanks = useMemo(() => {
+    if (!user) return [];
+    return computeUserRanks(visibleEntries, user.uid);
+  }, [visibleEntries, user]);
+
+  const [myRanksOpen, setMyRanksOpen] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem("fab-my-ranks-open") === "true";
+  });
+
   const isSearching = search.trim().length > 0;
   const activeCategoryObj = categories.find((c) => c.id === activeCategory) || categories[0];
   const tabLabel = tabMap[activeTab]?.label || "";
@@ -512,6 +523,66 @@ export default function LeaderboardPage() {
       <p className="text-fab-dim text-xs mb-5">
         {tabMap[activeTab]?.description}
       </p>
+
+      {/* ── My Rankings ── */}
+      {user && myRanks.length > 0 && !loading && (
+        <div className="bg-fab-surface border border-fab-border rounded-lg mb-5 overflow-hidden">
+          <button
+            onClick={() => {
+              setMyRanksOpen((v) => {
+                localStorage.setItem("fab-my-ranks-open", String(!v));
+                return !v;
+              });
+            }}
+            className="w-full flex items-center justify-between px-4 py-3 hover:bg-fab-surface-hover transition-colors"
+          >
+            <div className="flex items-center gap-2">
+              <svg className="w-4 h-4 text-fab-gold" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 16.8l-6.2 4.5 2.4-7.4L2 9.4h7.6z" />
+              </svg>
+              <span className="text-sm font-semibold text-fab-text">My Rankings</span>
+              <span className="text-[11px] text-fab-dim">({myRanks.length})</span>
+            </div>
+            <svg className={`w-4 h-4 text-fab-dim transition-transform ${myRanksOpen ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          {myRanksOpen && (
+            <div className="px-4 pb-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+              {myRanks.map((r) => {
+                const entry = visibleEntries.find((e) => e.userId === user.uid);
+                const stat = entry ? getStat(entry, r.tab as Tab) : null;
+                const style = { 1: { bg: "bg-fuchsia-400/15", text: "text-fuchsia-400", medal: "1st" }, 2: { bg: "bg-sky-400/15", text: "text-sky-400", medal: "2nd" }, 3: { bg: "bg-yellow-400/15", text: "text-yellow-400", medal: "3rd" }, 4: { bg: "bg-gray-300/15", text: "text-gray-300", medal: "4th" }, 5: { bg: "bg-amber-600/15", text: "text-amber-600", medal: "5th" } }[r.rank];
+                return (
+                  <button
+                    key={r.tab}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const cat = categoryForTab(r.tab as Tab);
+                      setActiveCategory(cat);
+                      setActiveTab(r.tab as Tab);
+                      setPage(0);
+                      setSearch("");
+                    }}
+                    className={`flex flex-col items-start gap-0.5 p-2.5 rounded-lg border border-fab-border ${style.bg} hover:border-fab-gold/30 transition-colors text-left`}
+                  >
+                    <div className="flex items-center gap-1.5 w-full">
+                      <svg className={`w-3 h-3 ${style.text} shrink-0`} viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 16.8l-6.2 4.5 2.4-7.4L2 9.4h7.6z" />
+                      </svg>
+                      <span className="text-[11px] text-fab-text font-medium truncate">{r.tabLabel}</span>
+                      <span className={`text-[11px] font-bold ${style.text} ml-auto shrink-0`}>{style.medal}</span>
+                    </div>
+                    {stat && (
+                      <span className="text-[10px] text-fab-dim truncate w-full">{stat.value} {stat.sub ? `· ${stat.sub}` : ""}</span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ── Loading ── */}
       {loading && (

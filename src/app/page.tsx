@@ -14,7 +14,8 @@ import { ShieldIcon, SwordsIcon, CalendarIcon, OpponentsIcon, TrendsIcon } from 
 import { MatchResult } from "@/types";
 import { CommunityHighlights } from "@/components/home/CommunityHighlights";
 import { useFeaturedEvents } from "@/hooks/useFeaturedEvents";
-import { computeMetaStats } from "@/lib/meta-stats";
+import { computeMetaStats, computeTop8HeroMeta, detectActiveEventType } from "@/lib/meta-stats";
+import { getWeekStart } from "@/lib/leaderboard";
 import { ActivityFeed } from "@/components/home/ActivityFeed";
 import { BestFinishShareModal } from "@/components/profile/BestFinishCard";
 import { ProfileShareModal } from "@/components/profile/ProfileCard";
@@ -103,8 +104,18 @@ export default function Dashboard() {
   }, [playoffFinishes]);
 
   // Community section data
-  const communityMeta = useMemo(() => computeMetaStats(lbEntries), [lbEntries]);
+  const activeEventType = useMemo(() => detectActiveEventType(lbEntries), [lbEntries]);
+  const communityMeta = useMemo(() => {
+    // During event weekends, show all-time stats; otherwise show weekly armory CC if data exists
+    if (activeEventType) return computeMetaStats(lbEntries);
+    const weekly = computeMetaStats(lbEntries, "Classic Constructed", "Armory", "weekly");
+    return weekly.heroStats.length > 0 ? weekly : computeMetaStats(lbEntries);
+  }, [lbEntries, activeEventType]);
   const communityTopHeroes = useMemo(() => communityMeta.heroStats.slice(0, 5), [communityMeta]);
+  const top8Heroes = useMemo(() => {
+    if (!activeEventType) return [];
+    return computeTop8HeroMeta(lbEntries, activeEventType, undefined, getWeekStart());
+  }, [lbEntries, activeEventType]);
   const rankMap = useMemo(() => computeRankMap(lbEntries), [lbEntries]);
   const eventTierMap = useMemo(() => computeEventTierMap(lbEntries), [lbEntries]);
   const unlockedColors = useMemo(() => {
@@ -452,6 +463,8 @@ export default function Dashboard() {
         featuredEvents={featuredEvents}
         leaderboardEntries={lbEntries}
         topHeroes={communityTopHeroes}
+        top8Heroes={top8Heroes}
+        activeEventType={activeEventType}
         rankMap={rankMap}
       />
 

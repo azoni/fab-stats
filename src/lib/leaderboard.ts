@@ -140,6 +140,26 @@ export async function updateLeaderboardEntry(
   }
   const weeklyWins = weeklyMatchList.filter((m) => m.result === MatchResult.Win).length;
 
+  // Weekly hero breakdown (for meta filtering by week)
+  const weeklyHeroData = new Map<string, { matches: number; wins: number }>();
+  for (const m of weeklyMatchList) {
+    if (m.heroPlayed && isValidHeroName(m.heroPlayed)) {
+      const et = getEventType(m);
+      const key = `${m.heroPlayed}|${m.format}|${et}`;
+      const cur = weeklyHeroData.get(key) || { matches: 0, wins: 0 };
+      cur.matches++;
+      if (m.result === MatchResult.Win) cur.wins++;
+      weeklyHeroData.set(key, cur);
+    }
+  }
+  const weeklyHeroBreakdown = [...weeklyHeroData.entries()]
+    .sort((a, b) => b[1].matches - a[1].matches)
+    .slice(0, 15)
+    .map(([key, data]) => {
+      const [hero, format, eventType] = key.split("|");
+      return { hero, format, eventType, matches: data.matches, wins: data.wins };
+    });
+
   // Monthly stats
   const monthStart = getMonthStart();
   let monthlyMatchList = matches.filter((m) => m.date >= monthStart && m.result !== MatchResult.Bye);
@@ -147,6 +167,26 @@ export async function updateLeaderboardEntry(
     monthlyMatchList = [];
   }
   const monthlyWins = monthlyMatchList.filter((m) => m.result === MatchResult.Win).length;
+
+  // Monthly hero breakdown (for meta filtering by month)
+  const monthlyHeroData = new Map<string, { matches: number; wins: number }>();
+  for (const m of monthlyMatchList) {
+    if (m.heroPlayed && isValidHeroName(m.heroPlayed)) {
+      const et = getEventType(m);
+      const key = `${m.heroPlayed}|${m.format}|${et}`;
+      const cur = monthlyHeroData.get(key) || { matches: 0, wins: 0 };
+      cur.matches++;
+      if (m.result === MatchResult.Win) cur.wins++;
+      monthlyHeroData.set(key, cur);
+    }
+  }
+  const monthlyHeroBreakdown = [...monthlyHeroData.entries()]
+    .sort((a, b) => b[1].matches - a[1].matches)
+    .slice(0, 15)
+    .map(([key, data]) => {
+      const [hero, format, eventType] = key.split("|");
+      return { hero, format, eventType, matches: data.matches, wins: data.wins };
+    });
 
   // Armory stats
   const armoryMatchList = matches.filter((m) => m.eventType === "Armory" && m.result !== MatchResult.Bye);
@@ -161,6 +201,17 @@ export async function updateLeaderboardEntry(
     top8sByEventType[f.eventType] = (top8sByEventType[f.eventType] || 0) + 1;
   }
   const totalFinalists = playoffFinishes.filter((f) => f.type === "finalist").length;
+
+  // Top 8 heroes — which hero was played at each playoff finish
+  const top8Heroes = playoffFinishes
+    .filter((f) => f.hero && isValidHeroName(f.hero))
+    .map((f) => ({
+      hero: f.hero!,
+      eventType: f.eventType,
+      placementType: f.type,
+      eventDate: f.eventDate,
+      format: f.format,
+    }));
 
   // Unique opponents (exclude byes and "Unknown")
   const opponentNames = new Set<string>();
@@ -239,8 +290,11 @@ export async function updateLeaderboardEntry(
     hideFromGuests: profile.hideFromGuests ?? false,
     heroBreakdown,
     heroBreakdownDetailed,
+    weeklyHeroBreakdown,
+    monthlyHeroBreakdown,
     totalTop8s,
     top8sByEventType,
+    top8Heroes,
     totalFinalists,
     uniqueOpponents: opponentNames.size,
     longestLossStreak,
@@ -276,6 +330,7 @@ function sanitizeEntries(docs: LeaderboardEntry[]): LeaderboardEntry[] {
       entry.weeklyMatches = 0;
       entry.weeklyWins = 0;
       entry.weekStart = currentWeekStart;
+      entry.weeklyHeroBreakdown = [];
     }
 
     if (entry.monthStart !== currentMonthStart) {
@@ -283,6 +338,7 @@ function sanitizeEntries(docs: LeaderboardEntry[]): LeaderboardEntry[] {
       entry.monthlyWins = 0;
       entry.monthlyWinRate = 0;
       entry.monthStart = currentMonthStart;
+      entry.monthlyHeroBreakdown = [];
     }
 
     // Sanitize bulk-import pollution

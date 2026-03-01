@@ -11,6 +11,7 @@ import {
   EmailAuthProvider,
   reauthenticateWithCredential,
 } from "firebase/auth";
+import { deleteAllFeedEventsForUser } from "@/lib/feed";
 import { SparklesIcon } from "@/components/icons/NavIcons";
 import { FeedbackModal } from "@/components/feedback/FeedbackModal";
 import { useCreators } from "@/hooks/useCreators";
@@ -704,6 +705,7 @@ export default function SettingsPage() {
                   setError("");
                   try {
                     await clearAllMatchesFirestore(user.uid);
+                    await deleteAllFeedEventsForUser(user.uid);
                     await refreshMatches();
                     setConfirmClear(false);
                     setClearConfirmText("");

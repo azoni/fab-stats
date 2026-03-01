@@ -5,7 +5,7 @@ import { parseGemPaste, parseExtensionJson, type PasteImportResult } from "@/lib
 import { useAuth } from "@/contexts/AuthContext";
 import { importMatchesFirestore, clearAllMatchesFirestore, updateProfile, registerGemId } from "@/lib/firestore-storage";
 import { importMatchesLocal } from "@/lib/storage";
-import { createImportFeedEvent, createAchievementFeedEvent, createPlacementFeedEvent } from "@/lib/feed";
+import { createImportFeedEvent, createAchievementFeedEvent, createPlacementFeedEvent, deleteAllFeedEventsForUser } from "@/lib/feed";
 import { detectNewAchievements } from "@/lib/achievement-tracking";
 import { evaluateAchievements } from "@/lib/achievements";
 import { computeOverallStats, computeHeroStats, computeOpponentStats, computeEventStats, computePlayoffFinishes, getEventName, type PlayoffFinish } from "@/lib/stats";
@@ -233,6 +233,7 @@ export default function ImportPage() {
     // Clear existing data first if requested
     if (clearBeforeImport && user) {
       await clearAllMatchesFirestore(user.uid);
+      await deleteAllFeedEventsForUser(user.uid);
     }
 
     // Capture matches before import for recap
@@ -375,6 +376,7 @@ export default function ImportPage() {
     setClearing(true);
     try {
       await clearAllMatchesFirestore(user.uid);
+      await deleteAllFeedEventsForUser(user.uid);
       setCleared(true);
       setConfirmClear(false);
     } catch {

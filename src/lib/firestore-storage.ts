@@ -389,6 +389,10 @@ export async function deleteAccountData(userId: string): Promise<void> {
   // Delete all matches
   await clearAllMatchesFirestore(userId);
 
+  // Delete all feed events for this user
+  const { deleteAllFeedEventsForUser } = await import("./feed");
+  await deleteAllFeedEventsForUser(userId);
+
   // Delete notifications
   const notifSnap = await getDocs(collection(db, "users", userId, "notifications"));
   if (notifSnap.docs.length > 0) {

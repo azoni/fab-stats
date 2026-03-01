@@ -12,6 +12,7 @@ import {
   limit,
   where,
   startAfter,
+  writeBatch,
   type QueryConstraint,
 } from "firebase/firestore";
 import { db } from "./firebase";
@@ -213,6 +214,21 @@ export async function getFeedEventsPaginated(
 /** Delete a single feed event by ID. */
 export async function deleteFeedEvent(eventId: string): Promise<void> {
   await deleteDoc(doc(db, "feedEvents", eventId));
+  invalidateFeedCache();
+}
+
+/** Delete ALL feed events for a user (used when clearing all matches or deleting account). */
+export async function deleteAllFeedEventsForUser(userId: string): Promise<void> {
+  const q = query(feedCollection(), where("userId", "==", userId));
+  const snapshot = await getDocs(q);
+  if (snapshot.docs.length === 0) return;
+
+  const batchSize = 500;
+  for (let i = 0; i < snapshot.docs.length; i += batchSize) {
+    const batch = writeBatch(db);
+    snapshot.docs.slice(i, i + batchSize).forEach((d) => batch.delete(d.ref));
+    await batch.commit();
+  }
   invalidateFeedCache();
 }
 
