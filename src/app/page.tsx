@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMatches } from "@/hooks/useMatches";
 import { useAuth } from "@/contexts/AuthContext";
-import { computeOverallStats, computeHeroStats, computeEventStats, computeOpponentStats, computeBestFinish, computePlayoffFinishes } from "@/lib/stats";
+import { computeOverallStats, computeHeroStats, computeEventStats, computeOpponentStats, computeBestFinish, computePlayoffFinishes, getRoundNumber } from "@/lib/stats";
 import { evaluateAchievements } from "@/lib/achievements";
 import { AchievementBadges } from "@/components/gamification/AchievementShowcase";
 import { updateLeaderboardEntry } from "@/lib/leaderboard";
@@ -69,7 +69,9 @@ export default function Dashboard() {
   }, [heroStats]);
 
   const sortedByDateDesc = useMemo(() =>
-    [...matches].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
+    [...matches].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+      || getRoundNumber(b) - getRoundNumber(a)
+      || new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
     [matches]
   );
   const last30 = useMemo(() => sortedByDateDesc.slice(0, 30).reverse(), [sortedByDateDesc]);
@@ -187,7 +189,12 @@ export default function Dashboard() {
               </Link>
             </div>
           </div>
-          <div />
+          {user ? (
+            <div className="space-y-6">
+              <ActivityFeed rankMap={rankMap} />
+              <FeaturedProfiles profiles={featuredProfiles} rankMap={rankMap} />
+            </div>
+          ) : <div />}
         </div>
       )}
 
@@ -416,7 +423,12 @@ export default function Dashboard() {
               </Link>
             </div>
           </div>
-          <div />
+          {user ? (
+            <div className="space-y-6">
+              <ActivityFeed rankMap={rankMap} />
+              <FeaturedProfiles profiles={featuredProfiles} rankMap={rankMap} />
+            </div>
+          ) : <div />}
         </div>
       )}
 
@@ -431,16 +443,6 @@ export default function Dashboard() {
           rankMap={rankMap}
           unlockedColors={unlockedColors}
         />
-      )}
-
-      {/* Activity Feed + Player Spotlight (logged-in only) */}
-      {user && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <ActivityFeed rankMap={rankMap} />
-          <div className="space-y-6">
-            <FeaturedProfiles profiles={featuredProfiles} rankMap={rankMap} />
-          </div>
-        </div>
       )}
 
       {/* Community content */}
