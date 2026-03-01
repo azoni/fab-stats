@@ -56,7 +56,19 @@ export function ShowcaseSection({
   overall,
   achievements,
 }: ShowcaseSectionProps) {
-  const [cards, setCards] = useState<ShowcaseCard[]>(profile.showcase || []);
+  // Default showcase: achievements card with 5 rarest if user has no saved showcase
+  const defaultShowcase = useMemo<ShowcaseCard[]>(() => {
+    if (profile.showcase && profile.showcase.length > 0) return profile.showcase;
+    if (achievements.length === 0) return [];
+    const RARITY_ORDER: Record<string, number> = { legendary: 0, epic: 1, rare: 2, uncommon: 3, common: 4 };
+    const top5 = [...achievements]
+      .sort((a, b) => (RARITY_ORDER[a.rarity] ?? 5) - (RARITY_ORDER[b.rarity] ?? 5))
+      .slice(0, 5)
+      .map((a) => a.id);
+    return [{ type: "achievements", achievementIds: top5 }];
+  }, [profile.showcase, achievements]);
+
+  const [cards, setCards] = useState<ShowcaseCard[]>(defaultShowcase);
   const [isEditing, setIsEditing] = useState(false);
   const [showPicker, setShowPicker] = useState(false);
   const [saving, setSaving] = useState(false);
