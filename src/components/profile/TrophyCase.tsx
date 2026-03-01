@@ -57,6 +57,10 @@ function glowFilter(type: PlayoffFinish["type"]) {
   }
 }
 
+// Exports for reuse (e.g. share cards)
+export { TIER_MAP, EVENT_ABBR, PLACEMENT_TEXT, col, glowFilter };
+export type { FinishTier };
+
 /* ── Marble (Other / unrecognised events) ── */
 const MARBLE_PALETTES = [
   { from: "#a78bfa", to: "#6d28d9", swirl: "#c4b5fd", shine: "#ede9fe" },
@@ -67,7 +71,7 @@ const MARBLE_PALETTES = [
   { from: "#f87171", to: "#b91c1c", swirl: "#fca5a5", shine: "#fef2f2" },
 ];
 
-function MarbleIcon({ type, id, idx }: { type: PlayoffFinish["type"]; id: string; idx: number }) {
+export function MarbleIcon({ type, id, idx }: { type: PlayoffFinish["type"]; id: string; idx: number }) {
   const pal = MARBLE_PALETTES[idx % MARBLE_PALETTES.length];
   const ch = type === "champion";
   const c = col(type);
@@ -96,7 +100,7 @@ function MarbleIcon({ type, id, idx }: { type: PlayoffFinish["type"]; id: string
 }
 
 /* ── Shield Badge (Skirmish / RTN / PQ) ── */
-function ShieldBadge({ type, id }: { type: PlayoffFinish["type"]; id: string }) {
+export function ShieldBadge({ type, id }: { type: PlayoffFinish["type"]; id: string }) {
   const c = col(type);
   const ch = type === "champion";
   return (
@@ -115,7 +119,7 @@ function ShieldBadge({ type, id }: { type: PlayoffFinish["type"]; id: string }) 
 }
 
 /* ── Medal (Battle Hardened / The Calling) ── */
-function MedalIcon({ type, id }: { type: PlayoffFinish["type"]; id: string }) {
+export function MedalIcon({ type, id }: { type: PlayoffFinish["type"]; id: string }) {
   const c = col(type);
   const ch = type === "champion";
   return (
@@ -146,7 +150,7 @@ function MedalIcon({ type, id }: { type: PlayoffFinish["type"]; id: string }) {
 }
 
 /* ── Trophy (Nationals / Pro Tour / Worlds) ── */
-function TrophyIcon({ type, id }: { type: PlayoffFinish["type"]; id: string }) {
+export function TrophyIcon({ type, id }: { type: PlayoffFinish["type"]; id: string }) {
   const c = col(type);
   const ch = type === "champion";
   return (

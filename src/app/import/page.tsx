@@ -435,6 +435,7 @@ export default function ImportPage() {
           skippedCount={skippedCount}
           newAchievements={newAchievements}
           newPlacements={newPlacements}
+          playerName={profile?.displayName || profile?.username}
         />
       );
     }

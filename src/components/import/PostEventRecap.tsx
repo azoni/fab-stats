@@ -1,10 +1,12 @@
 "use client";
+import { useState, useEffect } from "react";
 import type { SessionRecap } from "@/lib/session-recap";
 import type { Achievement } from "@/types";
 import type { PlayoffFinish } from "@/lib/stats";
 import { tierConfig } from "@/lib/mastery";
 import { rarityColors } from "@/lib/achievements";
 import { AchievementIcon } from "@/components/gamification/AchievementIcons";
+import { PlacementShareModal } from "./PlacementShareCard";
 
 const placementConfig: Record<PlayoffFinish["type"], { label: string; icon: string; color: string; bg: string; border: string }> = {
   champion: { label: "Event Champion!", icon: "crown", color: "text-amber-400", bg: "bg-amber-400/10", border: "border-amber-400/40" },
@@ -25,14 +27,33 @@ interface Props {
   skippedCount: number;
   newAchievements?: Achievement[];
   newPlacements?: PlayoffFinish[];
+  playerName?: string;
 }
 
-export function PostEventRecap({ recap, onViewOpponents, onDashboard, onImportMore, skippedCount, newAchievements, newPlacements }: Props) {
+export function PostEventRecap({ recap, onViewOpponents, onDashboard, onImportMore, skippedCount, newAchievements, newPlacements, playerName }: Props) {
   const { wins, losses, draws, winRate, bestStreak, heroInsights, newOverallWinRate, newTotalMatches, currentStreak } = recap;
   const total = wins + losses + draws;
 
   const hasPlacement = newPlacements && newPlacements.length > 0;
   const hasNewAchievements = newAchievements && newAchievements.length > 0;
+
+  // Share modal state — auto-open for the best placement
+  const [shareFinish, setShareFinish] = useState<PlayoffFinish | null>(null);
+  const [autoOpened, setAutoOpened] = useState(false);
+
+  useEffect(() => {
+    if (hasPlacement && !autoOpened && playerName) {
+      // Auto-open share for the best placement (champion > finalist > top4 > top8)
+      const priority: Record<PlayoffFinish["type"], number> = { champion: 0, finalist: 1, top4: 2, top8: 3 };
+      const best = [...newPlacements].sort((a, b) => priority[a.type] - priority[b.type])[0];
+      // Small delay so the user sees the celebration first
+      const timer = setTimeout(() => {
+        setShareFinish(best);
+        setAutoOpened(true);
+      }, 800);
+      return () => clearTimeout(timer);
+    }
+  }, [hasPlacement, autoOpened, newPlacements, playerName]);
 
   return (
     <div className="space-y-6 py-6">
@@ -76,6 +97,17 @@ export function PostEventRecap({ recap, onViewOpponents, onDashboard, onImportMo
                   <p className="text-xs text-fab-muted mt-0.5">
                     {finish.format}{finish.eventType && ` \u00b7 ${finish.eventType}`}
                   </p>
+                  {playerName && (
+                    <button
+                      onClick={() => setShareFinish(finish)}
+                      className={`mt-3 inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-semibold transition-colors ${config.bg} ${config.border} border ${config.color} hover:opacity-80`}
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                      </svg>
+                      Share
+                    </button>
+                  )}
                 </div>
               </div>
             );
@@ -259,6 +291,15 @@ export function PostEventRecap({ recap, onViewOpponents, onDashboard, onImportMo
           Import More
         </button>
       </div>
+
+      {/* Placement Share Modal */}
+      {shareFinish && playerName && (
+        <PlacementShareModal
+          playerName={playerName}
+          finish={shareFinish}
+          onClose={() => setShareFinish(null)}
+        />
+      )}
     </div>
   );
 }
