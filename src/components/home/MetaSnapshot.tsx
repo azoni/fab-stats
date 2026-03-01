@@ -12,7 +12,7 @@ interface MetaSnapshotProps {
   activeEventType?: string | null;
 }
 
-const RANK_CLASS = ["meta-rank-1 font-black", "meta-rank-2 font-bold", "meta-rank-3 font-bold", "text-fab-dim font-bold", "text-fab-dim font-bold"];
+const RANK_CLASS = ["meta-rank-1 font-black", "meta-rank-2 font-bold", "meta-rank-3 font-bold", "text-fab-muted font-bold", "text-fab-muted font-bold"];
 
 export const MetaSnapshot = memo(function MetaSnapshot({ topHeroes, top8Heroes, activeEventType }: MetaSnapshotProps) {
   // Event weekend mode: show top 8 heroes for the active event type
@@ -34,7 +34,7 @@ export const MetaSnapshot = memo(function MetaSnapshot({ topHeroes, top8Heroes, 
               {showEventMode ? `${activeEventType} Top 8s` : "Meta Snapshot"}
             </h2>
             {showEventMode && (
-              <p className="text-[10px] text-fab-dim leading-tight">Heroes making playoffs this week</p>
+              <p className="text-xs text-fab-muted leading-tight">Heroes making playoffs this week</p>
             )}
           </div>
         </div>
@@ -47,25 +47,35 @@ export const MetaSnapshot = memo(function MetaSnapshot({ topHeroes, top8Heroes, 
         <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-teal-400/30 to-transparent" />
         {showEventMode ? (
           // Event weekend: show top 8 hero placements
-          top8Heroes!.slice(0, 10).map((t8, i) => {
-            const heroInfo = getHeroByName(t8.hero);
-            const heroClass = heroInfo?.classes[0];
-            return (
-              <div key={t8.hero} className={`relative flex items-center gap-3 px-4 py-2.5 ${i > 0 ? "border-t border-fab-border" : ""}`}>
-                <span className={`text-sm w-5 text-center relative ${RANK_CLASS[i] || "text-fab-dim font-bold"}`}>{i + 1}</span>
-                <HeroClassIcon heroClass={heroClass} size="sm" />
-                <span className={`font-medium text-fab-text flex-1 truncate text-sm relative ${i === 0 ? "text-fab-gold" : ""}`}>{t8.hero}</span>
-                <span className="text-xs text-fab-dim shrink-0 relative">
-                  {t8.count} top 8{t8.count !== 1 ? "s" : ""}
-                </span>
-                {t8.champions > 0 && (
-                  <span className="text-xs font-semibold text-fab-gold shrink-0 relative">
-                    {t8.champions} win{t8.champions !== 1 ? "s" : ""}
+          <>
+            {top8Heroes!.slice(0, 10).map((t8, i) => {
+              const heroInfo = getHeroByName(t8.hero);
+              const heroClass = heroInfo?.classes[0];
+              return (
+                <div key={t8.hero} className={`relative flex items-center gap-3 px-4 py-2.5 ${i > 0 ? "border-t border-fab-border" : ""}`}>
+                  <span className={`text-sm w-5 text-center relative ${RANK_CLASS[i] || "text-fab-muted font-bold"}`}>{i + 1}</span>
+                  <HeroClassIcon heroClass={heroClass} size="sm" />
+                  <span className={`font-medium text-fab-text flex-1 truncate text-sm relative ${i === 0 ? "text-fab-gold" : ""}`}>{t8.hero}</span>
+                  {t8.totalPlayers > 0 && (
+                    <span className="text-xs text-fab-muted shrink-0 relative">
+                      {t8.totalPlayers} played
+                    </span>
+                  )}
+                  <span className="text-xs text-fab-muted shrink-0 relative">
+                    {t8.count} top 8{t8.count !== 1 ? "s" : ""}
                   </span>
-                )}
-              </div>
-            );
-          })
+                  {t8.champions > 0 && (
+                    <span className="text-xs font-semibold text-fab-gold shrink-0 relative">
+                      {t8.champions} won
+                    </span>
+                  )}
+                </div>
+              );
+            })}
+            <div className="px-4 py-2 border-t border-fab-border">
+              <p className="text-[10px] text-fab-dim leading-tight italic">Top 8s / tracked players — conversion may be skewed as players are more likely to log winning events</p>
+            </div>
+          </>
         ) : (
           // Default: show hero meta stats (weekly armory CC or all-time fallback)
           topHeroes.slice(0, 5).map((hero, i) => {
@@ -81,10 +91,10 @@ export const MetaSnapshot = memo(function MetaSnapshot({ topHeroes, top8Heroes, 
                     width: `${Math.min(hero.avgWinRate, 100)}%`,
                   }}
                 />
-                <span className={`text-sm w-5 text-center relative ${RANK_CLASS[i] || "text-fab-dim font-bold"}`}>{i + 1}</span>
+                <span className={`text-sm w-5 text-center relative ${RANK_CLASS[i] || "text-fab-muted font-bold"}`}>{i + 1}</span>
                 <HeroClassIcon heroClass={heroClass} size="sm" />
                 <span className={`font-medium text-fab-text flex-1 truncate text-sm relative ${i === 0 ? "text-fab-gold" : ""}`}>{hero.hero}</span>
-                <span className="text-xs text-fab-dim shrink-0 relative">{hero.metaShare.toFixed(1)}%</span>
+                <span className="text-xs text-fab-muted shrink-0 relative">{hero.metaShare.toFixed(1)}%</span>
                 <span className={`text-xs font-semibold shrink-0 w-14 text-right relative ${hero.avgWinRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>
                   {hero.avgWinRate.toFixed(1)}%
                 </span>

@@ -16,6 +16,8 @@ import { SparklesIcon } from "@/components/icons/NavIcons";
 import { FeedbackModal } from "@/components/feedback/FeedbackModal";
 import { useCreators } from "@/hooks/useCreators";
 import { platformIcons } from "@/components/layout/Navbar";
+import { useTheme } from "@/contexts/ThemeContext";
+import { THEME_OPTIONS, type ThemeName } from "@/lib/theme-config";
 
 function resizeImage(file: File, maxSize: number): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -48,6 +50,72 @@ function ChevronIcon({ open }: { open: boolean }) {
     <svg className={`w-4 h-4 text-fab-dim transition-transform ${open ? "rotate-180" : ""}`} viewBox="0 0 20 20" fill="currentColor">
       <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clipRule="evenodd" />
     </svg>
+  );
+}
+
+const THEME_PREVIEWS: Record<ThemeName, { bg: string; surface: string; border: string; accent: string; text: string; muted: string }> = {
+  arcana: { bg: "#0c0a0e", surface: "#1a1720", border: "#3d3548", accent: "#c9a84c", text: "#ede8f0", muted: "#9590a0" },
+  ironheart: { bg: "#0d0b08", surface: "#1a1611", border: "#3a3329", accent: "#b8963a", text: "#e8e0d4", muted: "#9a9080" },
+  chromatic: { bg: "#111113", surface: "#1b1b1f", border: "#2a2a30", accent: "#3b82f6", text: "#e4e4e7", muted: "#71717a" },
+};
+
+function ThemePicker() {
+  const { theme, setTheme } = useTheme();
+
+  return (
+    <div className="bg-fab-surface border border-fab-border rounded-lg p-6 mb-4">
+      <h2 className="text-sm font-semibold text-fab-text mb-4">Appearance</h2>
+      <div className="grid grid-cols-3 gap-3">
+        {THEME_OPTIONS.map((opt) => {
+          const p = THEME_PREVIEWS[opt.value];
+          const selected = theme === opt.value;
+          return (
+            <button
+              key={opt.value}
+              onClick={() => setTheme(opt.value)}
+              className={`relative rounded-lg p-3 text-left transition-all ${
+                selected
+                  ? "ring-2 ring-fab-gold"
+                  : "ring-1 ring-fab-border hover:ring-fab-muted"
+              }`}
+            >
+              {/* Mini preview */}
+              <div
+                className="rounded-md overflow-hidden mb-2.5 border"
+                style={{ background: p.bg, borderColor: p.border }}
+              >
+                {/* Simulated header bar */}
+                <div className="flex items-center gap-1.5 px-2 py-1.5" style={{ borderBottom: `1px solid ${p.border}` }}>
+                  <div className="w-1.5 h-1.5 rounded-full" style={{ background: p.accent }} />
+                  <div className="h-1 flex-1 rounded-full" style={{ background: p.muted, opacity: 0.3 }} />
+                </div>
+                {/* Simulated content */}
+                <div className="p-2 space-y-1.5">
+                  <div className="flex gap-1.5">
+                    <div className="w-1/2 h-6 rounded" style={{ background: p.surface, border: `1px solid ${p.border}` }} />
+                    <div className="w-1/2 h-6 rounded" style={{ background: p.surface, border: `1px solid ${p.border}` }} />
+                  </div>
+                  <div className="h-4 rounded" style={{ background: p.surface, border: `1px solid ${p.border}` }} />
+                  <div className="flex gap-1.5">
+                    <div className="h-2 w-8 rounded-full" style={{ background: p.accent }} />
+                    <div className="h-2 flex-1 rounded-full" style={{ background: p.muted, opacity: 0.2 }} />
+                  </div>
+                </div>
+              </div>
+              <p className="text-xs font-semibold text-fab-text">{opt.label}</p>
+              <p className="text-[10px] text-fab-dim leading-tight mt-0.5">{opt.description}</p>
+              {selected && (
+                <div className="absolute top-2 right-2">
+                  <svg className="w-4 h-4 text-fab-gold" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" />
+                  </svg>
+                </div>
+              )}
+            </button>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 
@@ -205,6 +273,7 @@ export default function SettingsPage() {
     return (
       <div className="max-w-lg mx-auto">
         <h1 className="text-2xl font-bold text-fab-gold mb-4">Settings</h1>
+        <ThemePicker />
         <div className="bg-fab-surface border border-fab-border rounded-lg p-6 text-center mb-4">
           <p className="text-fab-muted mb-4">Sign up to customize your profile, set a display name, and upload a profile photo.</p>
           <a href="/login" className="inline-block px-6 py-2.5 rounded-lg font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors">
@@ -286,6 +355,9 @@ export default function SettingsPage() {
           />
         </div>
       </div>
+
+      {/* Appearance */}
+      <ThemePicker />
 
       {/* Profile info */}
       <form onSubmit={handleSave} className="bg-fab-surface border border-fab-border rounded-lg p-6 mb-4">

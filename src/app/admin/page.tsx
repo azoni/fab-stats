@@ -17,6 +17,7 @@ import { searchHeroes } from "@/lib/heroes";
 import { getAllBadgeAssignments, assignBadge, revokeBadge } from "@/lib/badge-service";
 import { getMutedUserIds, muteUser, unmuteUser } from "@/lib/mute-service";
 import { getEventShowcase, saveEventShowcase } from "@/lib/event-showcase";
+import { getDefaultTheme, saveDefaultTheme, THEME_OPTIONS, type ThemeName } from "@/lib/theme-config";
 import { ADMIN_BADGES } from "@/lib/badges";
 import { GameFormat } from "@/types";
 import type { EventShowcaseConfig, EventShowcaseImage } from "@/types";
@@ -121,6 +122,10 @@ export default function AdminPage() {
   const [showcaseDiscussionEnabled, setShowcaseDiscussionEnabled] = useState(false);
   const [savingShowcase, setSavingShowcase] = useState(false);
   const [showcaseSaved, setShowcaseSaved] = useState(false);
+  // Default theme
+  const [defaultTheme, setDefaultTheme] = useState<ThemeName>("arcana");
+  const [savingTheme, setSavingTheme] = useState(false);
+  const [themeSaved, setThemeSaved] = useState(false);
   const [badgeAssignments, setBadgeAssignments] = useState<Record<string, string[]>>({});
   const [mutedIds, setMutedIds] = useState<Set<string>>(new Set());
   const anyToolRunning = fixingDates || backfilling || backfillingGemIds || linkingMatches || resyncingH2H;
@@ -143,7 +148,7 @@ export default function AdminPage() {
     setFetching(true);
     setError("");
     try {
-      const [result, fb, cr, ev, analytics, polls, bannerData, badges, muted, showcaseData] = await Promise.all([getAdminDashboardData(), getAllFeedback(), getCreators(), getEvents(), getAnalytics(), getAllPolls(), getBanner(), getAllBadgeAssignments(), getMutedUserIds(), getEventShowcase()]);
+      const [result, fb, cr, ev, analytics, polls, bannerData, badges, muted, showcaseData, themeDefault] = await Promise.all([getAdminDashboardData(), getAllFeedback(), getCreators(), getEvents(), getAnalytics(), getAllPolls(), getBanner(), getAllBadgeAssignments(), getMutedUserIds(), getEventShowcase(), getDefaultTheme()]);
       setData(result);
       setFeedback(fb);
       setCreatorsList(cr);
@@ -160,6 +165,7 @@ export default function AdminPage() {
       setAllPolls(polls);
       setBadgeAssignments(badges);
       setMutedIds(new Set(muted));
+      setDefaultTheme(themeDefault);
       if (bannerData) {
         setBannerText(bannerData.text);
         setBannerActive(bannerData.active);
@@ -998,6 +1004,49 @@ export default function AdminPage() {
                   </div>
                 </div>
               )}
+            </div>
+          </div>
+
+          {/* Default Theme */}
+          <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden mb-6">
+            <div className="px-4 py-3 border-b border-fab-border flex items-center justify-between">
+              <h2 className="text-sm font-semibold text-fab-text">Default Theme</h2>
+              <div className="flex items-center gap-2">
+                {themeSaved && <span className="text-xs text-fab-win">Saved!</span>}
+              </div>
+            </div>
+            <div className="p-4">
+              <p className="text-xs text-fab-dim mb-3">Sets the default theme for new users. Users can override in Settings.</p>
+              <div className="flex gap-2">
+                {THEME_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.value}
+                    onClick={async () => {
+                      setDefaultTheme(opt.value);
+                      setSavingTheme(true);
+                      setThemeSaved(false);
+                      try {
+                        await saveDefaultTheme(opt.value);
+                        setThemeSaved(true);
+                        setTimeout(() => setThemeSaved(false), 2000);
+                      } catch {
+                        setError("Failed to save theme.");
+                      } finally {
+                        setSavingTheme(false);
+                      }
+                    }}
+                    disabled={savingTheme}
+                    className={`px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
+                      defaultTheme === opt.value
+                        ? "bg-fab-gold/15 text-fab-gold border border-fab-gold/30"
+                        : "bg-fab-bg border border-fab-border text-fab-muted hover:text-fab-text"
+                    }`}
+                  >
+                    <span className="font-semibold">{opt.label}</span>
+                    <span className="block text-[10px] opacity-70 mt-0.5">{opt.description}</span>
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 

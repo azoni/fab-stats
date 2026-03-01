@@ -188,6 +188,8 @@ export interface Top8HeroMeta {
   finalists: number;
   top4: number;
   top8: number;
+  /** Number of tracked players who played this hero at the event type this week */
+  totalPlayers: number;
 }
 
 /** Aggregate top 8 hero data across all leaderboard entries */
@@ -198,6 +200,20 @@ export function computeTop8HeroMeta(
   sinceDateStr?: string,
 ): Top8HeroMeta[] {
   const heroAgg = new Map<string, { count: number; champions: number; finalists: number; top4: number; top8: number }>();
+
+  // Count unique players per hero from weekly breakdowns (for conversion rate)
+  const heroPlayers = new Map<string, Set<string>>();
+  for (const entry of entries) {
+    if (!entry.weeklyHeroBreakdown) continue;
+    for (const hb of entry.weeklyHeroBreakdown) {
+      if (!validHeroNames.has(hb.hero)) continue;
+      if (filterEventType && hb.eventType !== filterEventType) continue;
+      if (filterFormat && hb.format !== filterFormat) continue;
+      const players = heroPlayers.get(hb.hero) || new Set<string>();
+      players.add(entry.userId);
+      heroPlayers.set(hb.hero, players);
+    }
+  }
 
   for (const entry of entries) {
     if (!entry.top8Heroes) continue;
@@ -218,7 +234,7 @@ export function computeTop8HeroMeta(
   }
 
   return [...heroAgg.entries()]
-    .map(([hero, data]) => ({ hero, ...data }))
+    .map(([hero, data]) => ({ hero, ...data, totalPlayers: heroPlayers.get(hero)?.size ?? 0 }))
     .sort((a, b) => b.count - a.count);
 }
 

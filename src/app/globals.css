@@ -497,3 +497,182 @@ h1, h2, h3 {
   background: linear-gradient(90deg, var(--color-fab-border), transparent);
   border-radius: 1px;
 }
+
+/* ════════════════════════════════════════════════════════════
+   Theme: Ironheart — Warm TCG Table Realism
+   Brown-black backgrounds, antiqued gold, serif display font,
+   heavier texture, warm card edges.
+   ════════════════════════════════════════════════════════════ */
+
+[data-theme="ironheart"] {
+  --color-fab-bg: #0d0b08;
+  --color-fab-surface: #1a1611;
+  --color-fab-surface-hover: #231d16;
+  --color-fab-border: #3a3329;
+  --color-fab-gold: #b8963a;
+  --color-fab-gold-light: #d4b050;
+  --color-fab-gold-dark: #8a6e28;
+  --color-fab-red: #8b2a1a;
+  --color-fab-red-light: #b23222;
+  --color-fab-crimson: #6b1a1a;
+  --color-fab-text: #e8e0d4;
+  --color-fab-muted: #9a9080;
+  --color-fab-dim: #6b6358;
+}
+
+/* Warmer noise texture */
+[data-theme="ironheart"] body::before {
+  opacity: 0.03;
+}
+
+/* Warm gold glow on headings */
+[data-theme="ironheart"] .text-fab-gold {
+  text-shadow: 0 0 24px rgba(184, 150, 58, 0.2);
+}
+
+/* Serif display font for headings */
+[data-theme="ironheart"] h1,
+[data-theme="ironheart"] h2,
+[data-theme="ironheart"] h3 {
+  font-family: Georgia, 'Palatino Linotype', 'Book Antiqua', Palatino, serif;
+  letter-spacing: 0.01em;
+}
+
+/* Warm selection highlight */
+[data-theme="ironheart"] ::selection {
+  background: rgba(184, 150, 58, 0.35);
+}
+
+/* Warmer card inner edge */
+[data-theme="ironheart"] [class*="bg-fab-surface"][class*="border-fab-border"]:not(nav) {
+  box-shadow: inset 0 1px 0 rgba(255, 220, 150, 0.04);
+}
+
+/* Warmer button hover glow */
+[data-theme="ironheart"] .bg-fab-gold:hover {
+  box-shadow: 0 3px 0 var(--color-fab-gold-dark),
+              0 6px 16px rgba(184, 150, 58, 0.25);
+}
+
+/* Section header line uses warmer gold */
+[data-theme="ironheart"] .section-header::after {
+  background: linear-gradient(90deg, rgba(184, 150, 58, 0.3), transparent);
+}
+
+/* ════════════════════════════════════════════════════════════
+   Theme: Chromatic — Data-First Competitive
+   Neutral grey, blue accent, no textures, flat buttons,
+   thin borders, tight radius, clinical and dense.
+   ════════════════════════════════════════════════════════════ */
+
+[data-theme="chromatic"] {
+  --color-fab-bg: #111113;
+  --color-fab-surface: #1b1b1f;
+  --color-fab-surface-hover: #232328;
+  --color-fab-border: #2a2a30;
+  --color-fab-gold: #3b82f6;
+  --color-fab-gold-light: #60a5fa;
+  --color-fab-gold-dark: #2563eb;
+  --color-fab-red: #7f1d1d;
+  --color-fab-red-light: #b91c1c;
+  --color-fab-crimson: #6b0f0f;
+  --color-fab-text: #e4e4e7;
+  --color-fab-muted: #71717a;
+  --color-fab-dim: #3f3f46;
+  --radius-sm: 0.25rem;
+  --radius-md: 0.375rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.625rem;
+}
+
+/* No noise texture — clean surfaces */
+[data-theme="chromatic"] body::before {
+  display: none;
+}
+
+/* Blue accent glow */
+[data-theme="chromatic"] .text-fab-gold {
+  text-shadow: 0 0 16px rgba(59, 130, 246, 0.12);
+}
+
+/* Sans-serif headings, tight tracking, heavy weight */
+[data-theme="chromatic"] h1,
+[data-theme="chromatic"] h2,
+[data-theme="chromatic"] h3 {
+  font-family: var(--font-sans), system-ui, sans-serif;
+  letter-spacing: -0.02em;
+}
+
+/* Blue selection */
+[data-theme="chromatic"] ::selection {
+  background: rgba(59, 130, 246, 0.3);
+}
+
+/* Thin 1px borders */
+[data-theme="chromatic"] [class*="bg-fab-surface"][class*="border-fab-border"]:not(nav):not(td):not(tr) {
+  border-width: 1px;
+}
+
+[data-theme="chromatic"] [class*="bg-fab-surface"][class*="shadow-xl"] {
+  border-width: 1px;
+}
+
+[data-theme="chromatic"] nav[class*="border-b"] {
+  border-bottom-width: 1px;
+}
+
+[data-theme="chromatic"] nav[class*="border-t"] {
+  border-top-width: 1px;
+}
+
+[data-theme="chromatic"] input[class*="border-fab-border"],
+[data-theme="chromatic"] select[class*="border-fab-border"],
+[data-theme="chromatic"] textarea[class*="border-fab-border"] {
+  border-width: 1px;
+}
+
+/* Minimal card inner shadow */
+[data-theme="chromatic"] [class*="bg-fab-surface"][class*="border-fab-border"]:not(nav) {
+  box-shadow: none;
+}
+
+/* Flat buttons — no 3D effect */
+[data-theme="chromatic"] .bg-fab-gold {
+  font-weight: 700;
+  letter-spacing: 0;
+  border: 1px solid var(--color-fab-gold-dark);
+  box-shadow: none;
+}
+
+[data-theme="chromatic"] .bg-fab-gold:hover {
+  transform: none;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+[data-theme="chromatic"] .bg-fab-gold:active {
+  transform: none;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+}
+
+/* Thin section header line */
+[data-theme="chromatic"] .section-header::after {
+  height: 1px;
+  background: linear-gradient(90deg, var(--color-fab-border), transparent);
+}
+
+/* Nav buttons — subtler hover effect */
+[data-theme="chromatic"] .nav-btn:hover {
+  transform: translateY(-1px);
+}
+
+/* Log button — match blue accent */
+[data-theme="chromatic"] .nav-btn-log::before {
+  background: linear-gradient(90deg, transparent, #3b82f6, #60a5fa, #3b82f6, transparent);
+}
+[data-theme="chromatic"] .nav-btn-log::after {
+  background: radial-gradient(ellipse at 50% 0%, rgba(59, 130, 246, 0.1) 0%, transparent 70%);
+}
+[data-theme="chromatic"] .nav-btn-log:hover {
+  border-color: rgba(59, 130, 246, 0.35);
+  box-shadow: 0 8px 30px -5px rgba(59, 130, 246, 0.2), 0 0 0 1px rgba(59, 130, 246, 0.06);
+}

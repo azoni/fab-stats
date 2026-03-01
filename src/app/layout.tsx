@@ -4,6 +4,7 @@ import "./globals.css";
 import { Navbar } from "@/components/layout/Navbar";
 import { MobileNav } from "@/components/layout/MobileNav";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { ThemeProvider } from "@/contexts/ThemeContext";
 import { LayoutShell } from "@/components/auth/LayoutShell";
 import { GuestBanner } from "@/components/auth/GuestBanner";
 import { FeatureBanner } from "@/components/auth/FeatureBanner";
@@ -101,10 +102,18 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `try{var t=localStorage.getItem('fab-theme');if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}`,
+          }}
+        />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${nunito.variable} antialiased`}
         suppressHydrationWarning
       >
+        <ThemeProvider>
         <AuthProvider>
           <Navbar />
           <main className="min-h-screen pb-20 md:pb-8 md:pt-16">
@@ -136,6 +145,7 @@ export default function RootLayout({
           <FeedbackFab />
           <MobileNav />
         </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
