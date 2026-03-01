@@ -2,7 +2,7 @@
 import { useRef, useState } from "react";
 
 import { MatchResult } from "@/types";
-import { CARD_THEMES, type CardTheme } from "@/components/opponents/RivalryCard";
+import type { CardTheme } from "@/components/opponents/RivalryCard";
 import type { PlayoffFinish } from "@/lib/stats";
 
 export interface ProfileCardData {
@@ -27,6 +27,86 @@ export interface ProfileCardData {
   armoryCount?: number;
   armoryUndefeated?: number;
 }
+
+// ── Fantasy-themed profile card themes ──
+
+export const PROFILE_THEMES: CardTheme[] = [
+  {
+    id: "arcane",
+    label: "Arcane",
+    bg: "#0a0812",
+    surface: "#120e1c",
+    border: "#2a1f4a",
+    accent: "#8b5cf6",
+    text: "#ede9fe",
+    muted: "#7c6b9b",
+    dim: "#4c3d6e",
+    win: "#34d399",
+    loss: "#fb7185",
+    draw: "#a1a1aa",
+    barBg: "rgba(139,92,246,0.2)",
+  },
+  {
+    id: "shadow",
+    label: "Shadow",
+    bg: "#0a0608",
+    surface: "#140c10",
+    border: "#3a1525",
+    accent: "#e11d48",
+    text: "#fce7f3",
+    muted: "#9b6b7a",
+    dim: "#5c3545",
+    win: "#4ade80",
+    loss: "#fda4af",
+    draw: "#a1a1aa",
+    barBg: "rgba(225,29,72,0.2)",
+  },
+  {
+    id: "iron",
+    label: "Iron",
+    bg: "#0b0c0e",
+    surface: "#151719",
+    border: "#2e3338",
+    accent: "#94a3b8",
+    text: "#f1f5f9",
+    muted: "#64748b",
+    dim: "#475569",
+    win: "#4ade80",
+    loss: "#f87171",
+    draw: "#94a3b8",
+    barBg: "rgba(148,163,184,0.2)",
+  },
+  {
+    id: "ember",
+    label: "Ember",
+    bg: "#0e0804",
+    surface: "#1a0f08",
+    border: "#3d2510",
+    accent: "#f59e0b",
+    text: "#fef3c7",
+    muted: "#a8845a",
+    dim: "#6b5330",
+    win: "#86efac",
+    loss: "#fca5a5",
+    draw: "#a1a1aa",
+    barBg: "rgba(245,158,11,0.2)",
+  },
+  {
+    id: "verdant",
+    label: "Verdant",
+    bg: "#060c08",
+    surface: "#0c1610",
+    border: "#1a3520",
+    accent: "#10b981",
+    text: "#ecfdf5",
+    muted: "#5f8a6e",
+    dim: "#3b5c44",
+    win: "#6ee7b7",
+    loss: "#fca5a5",
+    draw: "#a1a1aa",
+    barBg: "rgba(16,185,129,0.2)",
+  },
+];
 
 const RANK_RING_COLORS: Record<number, { color: string; shadow: string }> = {
   1: { color: "rgba(255, 50, 150, 0.9)", shadow: "0 0 8px rgba(255,50,150,0.5)" },
@@ -60,21 +140,27 @@ const EVENT_ABBR: Record<string, string> = {
   "Pro Tour": "PT",
   Worlds: "WLD",
   Championship: "CH",
+  Other: "OTH",
 };
 
+// Event tier order (highest first) for trophy grouping
+const EVENT_TIER_ORDER: string[] = [
+  "Worlds", "Pro Tour", "Nationals", "The Calling", "Battle Hardened",
+  "Road to Nationals", "ProQuest", "Championship", "Skirmish", "Other",
+];
+
 export function ProfileCard({ data, theme }: { data: ProfileCardData; theme?: CardTheme }) {
-  const t = theme || CARD_THEMES[0];
+  const t = theme || PROFILE_THEMES[0];
   const {
     playerName, username, photoUrl, wins, losses, draws,
     winRate, events, totalMatches, topHero, currentStreak, bestFinish,
-    recentResults, cardBorder, bestRank, playoffFinishes,
+    cardBorder, bestRank, playoffFinishes,
     armoryCount, armoryUndefeated,
   } = data;
   const isWinning = winRate >= 50;
   const rankRing = bestRank ? RANK_RING_COLORS[bestRank] : null;
   const hasTrophies = playoffFinishes && playoffFinishes.length > 0;
   const hasArmory = armoryCount && armoryCount > 0;
-  const recent20 = recentResults.slice(-20);
 
   // Dynamic slot 3: streak (if 3+) → best finish → matches
   const slot3 = currentStreak && currentStreak.count >= 3
@@ -83,12 +169,22 @@ export function ProfileCard({ data, theme }: { data: ProfileCardData; theme?: Ca
     ? { label: "Best Finish", value: bestFinish, color: t.accent }
     : { label: "Matches", value: `${totalMatches}`, color: t.text };
 
-  // Trophy summary counts
-  const trophyCounts = hasTrophies ? (["champion", "finalist", "top4", "top8"] as const)
-    .map((type) => ({ type, count: playoffFinishes!.filter((f) => f.type === type).length }))
-    .filter((t) => t.count > 0) : [];
-
-  const TROPHY_LABELS: Record<string, string> = { champion: "Champ", finalist: "Finalist", top4: "Top 4", top8: "Top 8" };
+  // Group trophies by event tier
+  const trophyByTier: { tier: string; abbr: string; finishes: PlayoffFinish[] }[] = [];
+  if (hasTrophies) {
+    const tierMap = new Map<string, PlayoffFinish[]>();
+    for (const f of playoffFinishes!) {
+      const existing = tierMap.get(f.eventType) || [];
+      existing.push(f);
+      tierMap.set(f.eventType, existing);
+    }
+    for (const tier of EVENT_TIER_ORDER) {
+      const finishes = tierMap.get(tier);
+      if (finishes && finishes.length > 0) {
+        trophyByTier.push({ tier, abbr: EVENT_ABBR[tier] || tier.slice(0, 3).toUpperCase(), finishes });
+      }
+    }
+  }
 
   return (
     <div
@@ -195,16 +291,21 @@ export function ProfileCard({ data, theme }: { data: ProfileCardData; theme?: Ca
         </div>
       </div>
 
-      {/* Trophy Case — summary counts */}
-      {trophyCounts.length > 0 && (
-        <div className="flex items-center gap-1.5 px-5 py-1.5">
-          <p style={{ color: t.dim }} className="text-[8px] uppercase tracking-wider font-semibold shrink-0">Trophies</p>
-          <div className="flex items-center gap-1 flex-wrap">
-            {trophyCounts.map((tc, i) => (
-              <span key={tc.type}>
-                <span style={{ color: FINISH_COLORS[tc.type] }} className="text-[10px] font-bold">{tc.count}x {TROPHY_LABELS[tc.type]}</span>
-                {i < trophyCounts.length - 1 && <span style={{ color: t.border }} className="text-[10px] mx-0.5">·</span>}
-              </span>
+      {/* Trophy Case — grouped by event tier */}
+      {trophyByTier.length > 0 && (
+        <div className="px-5 py-1.5">
+          <p style={{ color: t.dim }} className="text-[8px] uppercase tracking-wider font-semibold mb-1">Trophies</p>
+          <div className="flex flex-wrap gap-x-3 gap-y-0.5">
+            {trophyByTier.map((group) => (
+              <div key={group.tier} className="flex items-center gap-1">
+                <span style={{ color: t.muted }} className="text-[9px] font-bold">{group.abbr}:</span>
+                {group.finishes.map((f, i) => (
+                  <span key={i}>
+                    <span style={{ color: FINISH_COLORS[f.type] }} className="text-[9px] font-bold">{FINISH_LABELS[f.type]}</span>
+                    {i < group.finishes.length - 1 && <span style={{ color: t.border }} className="text-[9px]">,</span>}
+                  </span>
+                ))}
+              </div>
             ))}
           </div>
         </div>
@@ -226,28 +327,6 @@ export function ProfileCard({ data, theme }: { data: ProfileCardData; theme?: Ca
         </div>
       )}
 
-      {/* Recent form */}
-      {recent20.length > 0 && (
-        <div className="flex items-center gap-2 px-5 py-2">
-          <p style={{ color: t.dim }} className="text-[8px] uppercase tracking-wider font-semibold shrink-0">Form</p>
-          <div className="flex gap-[3px]">
-            {recent20.map((r, i) => (
-              <div
-                key={i}
-                className="w-1.5 h-1.5 rounded-full"
-                style={{
-                  backgroundColor:
-                    r === MatchResult.Win ? t.win
-                    : r === MatchResult.Loss ? t.loss
-                    : r === MatchResult.Draw ? t.draw
-                    : t.muted,
-                }}
-              />
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* Footer */}
       <div style={{ backgroundColor: t.bg, borderTop: `1px solid ${t.border}` }} className="px-5 py-1.5">
         <p style={{ color: t.accent, opacity: 0.5 }} className="text-[10px] tracking-wider font-semibold">fabstats.net</p>
@@ -264,7 +343,7 @@ export function ProfileShareModal({
   onClose: () => void;
 }) {
   const cardRef = useRef<HTMLDivElement>(null);
-  const [selectedTheme, setSelectedTheme] = useState(CARD_THEMES[0]);
+  const [selectedTheme, setSelectedTheme] = useState(PROFILE_THEMES[0]);
   const [shareStatus, setShareStatus] = useState<"idle" | "copied" | "sharing">("idle");
 
   async function captureCard(): Promise<Blob | null> {
@@ -345,7 +424,7 @@ export function ProfileShareModal({
         <div className="px-4 pb-3">
           <p className="text-[10px] text-fab-muted uppercase tracking-wider font-medium mb-2">Theme</p>
           <div className="flex gap-2">
-            {CARD_THEMES.map((theme) => (
+            {PROFILE_THEMES.map((theme) => (
               <button
                 key={theme.id}
                 onClick={() => setSelectedTheme(theme)}
