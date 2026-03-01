@@ -14,13 +14,14 @@ interface Change {
 
 interface Entry {
   date: string;
+  id: string;
   changes: Change[];
 }
 
-const badgeStyles: Record<ChangeType, string> = {
-  new: "bg-fab-win/15 text-fab-win",
-  improved: "bg-fab-gold/15 text-fab-gold",
-  fixed: "bg-fab-loss/15 text-fab-loss",
+const badgeStyles: Record<ChangeType, { bg: string; dot: string }> = {
+  new: { bg: "bg-fab-win/15 text-fab-win", dot: "bg-fab-win" },
+  improved: { bg: "bg-fab-gold/15 text-fab-gold", dot: "bg-fab-gold" },
+  fixed: { bg: "bg-fab-loss/15 text-fab-loss", dot: "bg-fab-loss" },
 };
 
 const badgeLabels: Record<ChangeType, string> = {
@@ -32,6 +33,7 @@ const badgeLabels: Record<ChangeType, string> = {
 const changelog: Entry[] = [
   {
     date: "March 1, 2026",
+    id: "mar-1",
     changes: [
       { type: "new", text: "Player Spotlight back on homepage — 6 community standouts in a responsive grid, refreshed each page load" },
       { type: "new", text: "On This Day placement detection — infers QF/SF/F from unnumbered playoff matches, shows Champion, Finalist, Top 4, or Top 8 badges" },
@@ -49,6 +51,7 @@ const changelog: Entry[] = [
   },
   {
     date: "February 27, 2026",
+    id: "feb-27",
     changes: [
       { type: "new", text: "Versus page — redesigned Compare into a head-to-head showdown with weighted dominance scoring, H2H record, and shareable verdict cards" },
       { type: "new", text: "Activity Feed on homepage — achievements, placements, and imports with type filters, community/friends toggle, and pagination" },
@@ -81,6 +84,7 @@ const changelog: Entry[] = [
   },
   {
     date: "February 26, 2026",
+    id: "feb-26",
     changes: [
       { type: "new", text: "Favorite players — star any player to keep them at the top of your Opponents list" },
       { type: "new", text: "Quick Match Log — log a single match result after it happens without a full import" },
@@ -104,6 +108,7 @@ const changelog: Entry[] = [
   },
   {
     date: "February 25, 2026",
+    id: "feb-25",
     changes: [
       { type: "new", text: "Weekly Matches and Weekly Wins leaderboard tabs — see who's grinding this week" },
       { type: "new", text: "5-tier ranked border system — Grandmaster (prismatic), Diamond (cyan), Gold, Silver, Bronze for top 5 on every leaderboard" },
@@ -117,6 +122,7 @@ const changelog: Entry[] = [
   },
   {
     date: "February 23, 2026",
+    id: "feb-23",
     changes: [
       { type: "new", text: "Public/private profile toggle in Settings — control who can see your profile" },
       { type: "new", text: "Hero selection per event during import — set your hero before importing" },
@@ -128,6 +134,7 @@ const changelog: Entry[] = [
   },
   {
     date: "February 22, 2026",
+    id: "feb-22",
     changes: [
       { type: "new", text: "Achievement system — 30 unlockable badges across 5 categories with custom icons" },
       { type: "new", text: "Hero Mastery tiers — track your progression from Novice to Master for each hero" },
@@ -139,6 +146,7 @@ const changelog: Entry[] = [
   },
   {
     date: "February 21, 2026",
+    id: "feb-21",
     changes: [
       { type: "new", text: "Feedback system — submit bug reports and feature requests from Settings or the navbar" },
       { type: "new", text: "Featured Creators section — discover FaB content creators" },
@@ -148,6 +156,7 @@ const changelog: Entry[] = [
   },
   {
     date: "Earlier updates",
+    id: "earlier",
     changes: [
       { type: "new", text: "Year in Review / Wrapped pages — see your annual stats summary" },
       { type: "new", text: "Opponent stats with head-to-head breakdowns, streaks, and match history" },
@@ -162,28 +171,119 @@ const changelog: Entry[] = [
   },
 ];
 
+function countByType(changes: Change[], type: ChangeType): number {
+  return changes.filter((c) => c.type === type).length;
+}
+
 export default function ChangelogPage() {
   return (
-    <div className="max-w-2xl mx-auto py-12 px-4">
-      <h1 className="text-2xl font-bold text-fab-gold mb-2">Changelog</h1>
-      <p className="text-sm text-fab-muted mb-8">See what&apos;s new, improved, and fixed in FaB Stats.</p>
+    <div className="max-w-5xl mx-auto py-12 px-4 flex gap-10">
+      {/* Sidebar TOC */}
+      <nav className="hidden lg:block shrink-0 w-48 sticky top-20 self-start max-h-[calc(100vh-6rem)] overflow-y-auto">
+        <p className="text-xs font-semibold text-fab-muted uppercase tracking-wider mb-3">Releases</p>
+        <ul className="space-y-1">
+          {changelog.map((entry) => (
+            <li key={entry.id}>
+              <a
+                href={`#${entry.id}`}
+                className="block text-sm text-fab-muted hover:text-fab-text transition-colors py-0.5"
+              >
+                {entry.date}
+              </a>
+            </li>
+          ))}
+        </ul>
 
-      <div className="space-y-8">
-        {changelog.map((entry) => (
-          <div key={entry.date}>
-            <h2 className="text-lg font-semibold text-fab-text mb-3">{entry.date}</h2>
-            <div className="space-y-2">
-              {entry.changes.map((change, i) => (
-                <div key={i} className="flex items-start gap-2">
-                  <span className={`shrink-0 mt-0.5 text-[10px] font-bold uppercase px-1.5 py-0.5 rounded ${badgeStyles[change.type]}`}>
-                    {badgeLabels[change.type]}
-                  </span>
-                  <span className="text-sm text-fab-muted">{change.text}</span>
-                </div>
-              ))}
-            </div>
+        {/* Legend */}
+        <div className="mt-6 pt-4 border-t border-fab-border">
+          <p className="text-xs font-semibold text-fab-muted uppercase tracking-wider mb-2">Legend</p>
+          <div className="space-y-1.5">
+            {(["new", "improved", "fixed"] as ChangeType[]).map((type) => (
+              <div key={type} className="flex items-center gap-2">
+                <span className={`w-2 h-2 rounded-full ${badgeStyles[type].dot}`} />
+                <span className="text-xs text-fab-dim">{badgeLabels[type]}</span>
+              </div>
+            ))}
           </div>
-        ))}
+        </div>
+      </nav>
+
+      {/* Main content */}
+      <div className="flex-1 min-w-0">
+        <h1 className="text-3xl font-bold text-fab-gold mb-2">Changelog</h1>
+        <p className="text-sm text-fab-muted mb-12">
+          See what&apos;s new, improved, and fixed in FaB Stats.
+        </p>
+
+        <div className="space-y-0">
+          {changelog.map((entry, entryIdx) => {
+            const newCount = countByType(entry.changes, "new");
+            const improvedCount = countByType(entry.changes, "improved");
+            const fixedCount = countByType(entry.changes, "fixed");
+
+            return (
+              <section key={entry.id} id={entry.id} className="relative pb-10">
+                {/* Timeline connector */}
+                {entryIdx < changelog.length - 1 && (
+                  <div className="absolute left-[7px] top-[28px] bottom-0 w-px bg-fab-border hidden sm:block" />
+                )}
+
+                {/* Date header row */}
+                <div className="flex items-start gap-4 mb-4">
+                  {/* Timeline dot */}
+                  <div className="hidden sm:flex shrink-0 w-[15px] h-[15px] mt-1 rounded-full border-2 border-fab-gold bg-fab-bg z-10" />
+
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-baseline gap-3 flex-wrap">
+                      <h2 className="text-xl font-semibold text-fab-text">{entry.date}</h2>
+                      {/* Summary pills */}
+                      <div className="flex gap-1.5">
+                        {newCount > 0 && (
+                          <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-fab-win/10 text-fab-win">
+                            {newCount} new
+                          </span>
+                        )}
+                        {improvedCount > 0 && (
+                          <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-fab-gold/10 text-fab-gold">
+                            {improvedCount} improved
+                          </span>
+                        )}
+                        {fixedCount > 0 && (
+                          <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-fab-loss/10 text-fab-loss">
+                            {fixedCount} fixed
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Changes card */}
+                <div className="sm:ml-[31px]">
+                  <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden">
+                    <div className="divide-y divide-fab-border">
+                      {entry.changes.map((change, i) => (
+                        <div key={i} className="flex items-start gap-3 px-4 py-2.5">
+                          <span className={`shrink-0 mt-0.5 text-[10px] font-bold uppercase px-1.5 py-0.5 rounded ${badgeStyles[change.type].bg}`}>
+                            {badgeLabels[change.type]}
+                          </span>
+                          <span className="text-sm text-fab-muted leading-relaxed">{change.text}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </section>
+            );
+          })}
+        </div>
+
+        {/* Back to top */}
+        <div className="mt-4 pt-6 border-t border-fab-border text-center">
+          <a href="#" className="text-xs text-fab-muted hover:text-fab-text transition-colors">
+            Back to top
+          </a>
+        </div>
       </div>
     </div>
   );
