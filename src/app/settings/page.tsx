@@ -60,11 +60,21 @@ const THEME_PREVIEWS: Record<ThemeName, { bg: string; surface: string; border: s
 };
 
 function ThemePicker() {
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme, resetTheme, isCustom } = useTheme();
 
   return (
     <div className="bg-fab-surface border border-fab-border rounded-lg p-6 mb-4">
-      <h2 className="text-sm font-semibold text-fab-text mb-4">Appearance</h2>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-sm font-semibold text-fab-text">Appearance</h2>
+        {isCustom && (
+          <button
+            onClick={resetTheme}
+            className="text-[11px] text-fab-dim hover:text-fab-muted transition-colors"
+          >
+            Reset to default
+          </button>
+        )}
+      </div>
       <div className="grid grid-cols-3 gap-3">
         {THEME_OPTIONS.map((opt) => {
           const p = THEME_PREVIEWS[opt.value];
