@@ -106,15 +106,13 @@ export const MetaSnapshot = memo(function MetaSnapshot({ topHeroes, top8Heroes, 
                   <span className={`text-sm w-5 text-center relative ${RANK_CLASS[i] || "text-fab-muted font-bold"}`}>{i + 1}</span>
                   <HeroClassIcon heroClass={heroClass} size="sm" />
                   <span className={`font-medium text-fab-text flex-1 truncate text-sm relative ${i === 0 ? "text-fab-gold" : ""}`}>{t8.hero}</span>
-                  <div className="flex items-center gap-2 shrink-0 relative text-xs tabular-nums">
+                  <div className="flex items-baseline gap-3 shrink-0 relative text-xs tabular-nums">
                     {t8.totalPlayers > 0 && (
-                      <span className="text-fab-dim w-7 text-right">{t8.totalPlayers}</span>
+                      <span className="text-fab-dim"><span className="text-fab-muted">{t8.totalPlayers}</span> played</span>
                     )}
-                    <span className="text-fab-muted font-medium w-4 text-right">{t8.count}</span>
-                    {t8.champions > 0 ? (
-                      <span className="font-semibold text-fab-gold w-4 text-right">{t8.champions}</span>
-                    ) : (
-                      <span className="w-4" />
+                    <span className="text-fab-dim"><span className="text-fab-muted font-medium">{t8.count}</span> top 8{t8.count !== 1 ? "s" : ""}</span>
+                    {t8.champions > 0 && (
+                      <span className="text-fab-dim"><span className="font-semibold text-fab-gold">{t8.champions}</span> won</span>
                     )}
                   </div>
                 </div>
