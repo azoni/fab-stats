@@ -16,8 +16,10 @@ import { grantPredictionAchievements } from "@/lib/prediction-service";
 import { searchHeroes } from "@/lib/heroes";
 import { getAllBadgeAssignments, assignBadge, revokeBadge } from "@/lib/badge-service";
 import { getMutedUserIds, muteUser, unmuteUser } from "@/lib/mute-service";
+import { getEventShowcase, saveEventShowcase } from "@/lib/event-showcase";
 import { ADMIN_BADGES } from "@/lib/badges";
 import { GameFormat } from "@/types";
+import type { EventShowcaseConfig, EventShowcaseImage } from "@/types";
 import type { FeedbackItem, Creator, FeaturedEvent, FeaturedEventPlayer, UserProfile, Poll, PollResults, PollVoter } from "@/types";
 
 const FEATURED_EVENT_TYPES = [
@@ -107,6 +109,18 @@ export default function AdminPage() {
   const [bannerLinkText, setBannerLinkText] = useState("");
   const [savingBanner, setSavingBanner] = useState(false);
   const [bannerSaved, setBannerSaved] = useState(false);
+  // Event Showcase
+  const [showcaseActive, setShowcaseActive] = useState(false);
+  const [showcaseTitle, setShowcaseTitle] = useState("");
+  const [showcaseImages, setShowcaseImages] = useState<EventShowcaseImage[]>([]);
+  const [showcaseImageLink, setShowcaseImageLink] = useState("");
+  const [showcaseAutoAdvance, setShowcaseAutoAdvance] = useState(0);
+  const [showcaseYoutubeUrl, setShowcaseYoutubeUrl] = useState("");
+  const [showcaseYoutubeEnabled, setShowcaseYoutubeEnabled] = useState(false);
+  const [showcaseDiscussionId, setShowcaseDiscussionId] = useState("");
+  const [showcaseDiscussionEnabled, setShowcaseDiscussionEnabled] = useState(false);
+  const [savingShowcase, setSavingShowcase] = useState(false);
+  const [showcaseSaved, setShowcaseSaved] = useState(false);
   const [badgeAssignments, setBadgeAssignments] = useState<Record<string, string[]>>({});
   const [mutedIds, setMutedIds] = useState<Set<string>>(new Set());
   const anyToolRunning = fixingDates || backfilling || backfillingGemIds || linkingMatches || resyncingH2H;
@@ -129,7 +143,7 @@ export default function AdminPage() {
     setFetching(true);
     setError("");
     try {
-      const [result, fb, cr, ev, analytics, polls, bannerData, badges, muted] = await Promise.all([getAdminDashboardData(), getAllFeedback(), getCreators(), getEvents(), getAnalytics(), getAllPolls(), getBanner(), getAllBadgeAssignments(), getMutedUserIds()]);
+      const [result, fb, cr, ev, analytics, polls, bannerData, badges, muted, showcaseData] = await Promise.all([getAdminDashboardData(), getAllFeedback(), getCreators(), getEvents(), getAnalytics(), getAllPolls(), getBanner(), getAllBadgeAssignments(), getMutedUserIds(), getEventShowcase()]);
       setData(result);
       setFeedback(fb);
       setCreatorsList(cr);
@@ -153,6 +167,17 @@ export default function AdminPage() {
         setBannerScope(bannerData.scope || "all");
         setBannerLink(bannerData.link || "");
         setBannerLinkText(bannerData.linkText || "");
+      }
+      if (showcaseData) {
+        setShowcaseActive(showcaseData.active);
+        setShowcaseTitle(showcaseData.title || "");
+        setShowcaseImages(showcaseData.images || []);
+        setShowcaseImageLink(showcaseData.imageLink || "");
+        setShowcaseAutoAdvance(showcaseData.autoAdvanceSeconds || 0);
+        setShowcaseYoutubeUrl(showcaseData.youtube?.url || "");
+        setShowcaseYoutubeEnabled(showcaseData.youtube?.enabled ?? false);
+        setShowcaseDiscussionId(showcaseData.discussion?.eventId || "");
+        setShowcaseDiscussionEnabled(showcaseData.discussion?.enabled ?? false);
       }
     } catch {
       setError("Failed to load admin data.");
@@ -754,6 +779,111 @@ export default function AdminPage() {
 
           {/* ── Content Tab ── */}
           {activeTab === "content" && <>
+          {/* Event Showcase */}
+          <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden mb-6">
+            <div className="px-4 py-3 border-b border-fab-border flex items-center justify-between">
+              <h2 className="text-sm font-semibold text-fab-text">
+                Event Showcase
+                {showcaseActive && <span className="text-fab-win ml-1.5 text-xs font-normal">(Live)</span>}
+              </h2>
+              <div className="flex items-center gap-2">
+                {showcaseSaved && <span className="text-xs text-fab-win">Saved!</span>}
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const next = !showcaseActive;
+                    setShowcaseActive(next);
+                    setSavingShowcase(true);
+                    try {
+                      await saveEventShowcase({
+                        active: next, title: showcaseTitle, images: showcaseImages,
+                        imageLink: showcaseImageLink || undefined, autoAdvanceSeconds: showcaseAutoAdvance,
+                        youtube: { url: showcaseYoutubeUrl, enabled: showcaseYoutubeEnabled },
+                        discussion: { eventId: showcaseDiscussionId, enabled: showcaseDiscussionEnabled },
+                      });
+                      setShowcaseSaved(true);
+                      setTimeout(() => setShowcaseSaved(false), 2000);
+                    } catch { setShowcaseActive(!next); }
+                    finally { setSavingShowcase(false); }
+                  }}
+                  disabled={savingShowcase}
+                  className={`relative w-9 h-5 rounded-full transition-colors disabled:opacity-50 ${showcaseActive ? "bg-fab-win" : "bg-fab-border"}`}
+                  title={showcaseActive ? "Turn off showcase" : "Turn on showcase"}
+                >
+                  <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform ${showcaseActive ? "translate-x-4" : ""}`} />
+                </button>
+                <button
+                  onClick={async () => {
+                    setSavingShowcase(true);
+                    setShowcaseSaved(false);
+                    try {
+                      await saveEventShowcase({
+                        active: showcaseActive, title: showcaseTitle, images: showcaseImages,
+                        imageLink: showcaseImageLink || undefined, autoAdvanceSeconds: showcaseAutoAdvance,
+                        youtube: { url: showcaseYoutubeUrl, enabled: showcaseYoutubeEnabled },
+                        discussion: { eventId: showcaseDiscussionId, enabled: showcaseDiscussionEnabled },
+                      });
+                      setShowcaseSaved(true);
+                      setTimeout(() => setShowcaseSaved(false), 2000);
+                    } catch { setError("Failed to save showcase."); }
+                    finally { setSavingShowcase(false); }
+                  }}
+                  disabled={savingShowcase}
+                  className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors disabled:opacity-50"
+                >
+                  {savingShowcase ? "Saving..." : "Save"}
+                </button>
+              </div>
+            </div>
+            <div className="p-4 space-y-4">
+              <div>
+                <label className="text-xs text-fab-dim uppercase tracking-wider mb-1 block">Section Title</label>
+                <input type="text" placeholder="e.g. Calling Montreal Day 1" value={showcaseTitle} onChange={(e) => setShowcaseTitle(e.target.value)} className="w-full bg-fab-bg border border-fab-border text-fab-text text-sm rounded px-3 py-2 focus:outline-none focus:border-fab-gold" />
+              </div>
+              <div>
+                <label className="text-xs text-fab-dim uppercase tracking-wider mb-1 block">Carousel Images ({showcaseImages.length})</label>
+                <div className="space-y-2">
+                  {showcaseImages.map((img, i) => (
+                    <div key={i} className="flex gap-2">
+                      <input type="text" placeholder="Image URL (e.g. /montreal.png)" value={img.url} onChange={(e) => setShowcaseImages((prev) => prev.map((im, j) => j === i ? { ...im, url: e.target.value } : im))} className="flex-1 bg-fab-bg border border-fab-border text-fab-text text-sm rounded px-2 py-1.5 focus:outline-none focus:border-fab-gold" />
+                      <input type="text" placeholder="Alt text" value={img.alt || ""} onChange={(e) => setShowcaseImages((prev) => prev.map((im, j) => j === i ? { ...im, alt: e.target.value || undefined } : im))} className="w-40 bg-fab-bg border border-fab-border text-fab-text text-sm rounded px-2 py-1.5 focus:outline-none focus:border-fab-gold" />
+                      <button onClick={() => setShowcaseImages((prev) => prev.filter((_, j) => j !== i))} className="text-xs text-fab-loss hover:text-fab-loss/80 transition-colors px-2">Remove</button>
+                    </div>
+                  ))}
+                  <button onClick={() => setShowcaseImages((prev) => [...prev, { url: "" }])} className="w-full py-1.5 rounded text-xs font-medium border border-dashed border-fab-border text-fab-muted hover:text-fab-text hover:border-fab-gold/30 transition-colors">+ Add Image</button>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  <label className="text-xs text-fab-dim uppercase tracking-wider mb-1 block">Image Click URL (optional)</label>
+                  <input type="text" placeholder="https://..." value={showcaseImageLink} onChange={(e) => setShowcaseImageLink(e.target.value)} className="w-full bg-fab-bg border border-fab-border text-fab-text text-sm rounded px-2 py-1.5 focus:outline-none focus:border-fab-gold" />
+                </div>
+                <div className="w-32">
+                  <label className="text-xs text-fab-dim uppercase tracking-wider mb-1 block">Auto-advance (s)</label>
+                  <input type="number" min={0} value={showcaseAutoAdvance} onChange={(e) => setShowcaseAutoAdvance(Number(e.target.value) || 0)} className="w-full bg-fab-bg border border-fab-border text-fab-text text-sm rounded px-2 py-1.5 focus:outline-none focus:border-fab-gold" />
+                </div>
+              </div>
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-xs text-fab-dim uppercase tracking-wider">YouTube Embed</label>
+                  <button type="button" onClick={() => setShowcaseYoutubeEnabled((v) => !v)} className={`relative w-9 h-5 rounded-full transition-colors ${showcaseYoutubeEnabled ? "bg-fab-win" : "bg-fab-border"}`}>
+                    <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform ${showcaseYoutubeEnabled ? "translate-x-4" : ""}`} />
+                  </button>
+                </div>
+                <input type="text" placeholder="YouTube URL (watch, live, or embed)" value={showcaseYoutubeUrl} onChange={(e) => setShowcaseYoutubeUrl(e.target.value)} className="w-full bg-fab-bg border border-fab-border text-fab-text text-sm rounded px-2 py-1.5 focus:outline-none focus:border-fab-gold" />
+              </div>
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-xs text-fab-dim uppercase tracking-wider">Event Discussion</label>
+                  <button type="button" onClick={() => setShowcaseDiscussionEnabled((v) => !v)} className={`relative w-9 h-5 rounded-full transition-colors ${showcaseDiscussionEnabled ? "bg-fab-win" : "bg-fab-border"}`}>
+                    <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform ${showcaseDiscussionEnabled ? "translate-x-4" : ""}`} />
+                  </button>
+                </div>
+                <input type="text" placeholder="Event ID (e.g. calling_montreal_2026)" value={showcaseDiscussionId} onChange={(e) => setShowcaseDiscussionId(e.target.value)} className="w-full bg-fab-bg border border-fab-border text-fab-text text-sm rounded px-2 py-1.5 focus:outline-none focus:border-fab-gold" />
+              </div>
+            </div>
+          </div>
+
           {/* Site Banner */}
           <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden mb-6">
             <div className="px-4 py-3 border-b border-fab-border flex items-center justify-between">

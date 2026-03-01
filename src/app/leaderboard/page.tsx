@@ -13,7 +13,7 @@ import type { LeaderboardEntry, OpponentStats } from "@/types";
 
 const SITE_CREATOR = "azoni";
 
-type Tab = "winrate" | "volume" | "mostwins" | "streaks" | "draws" | "drawrate" | "byes" | "byerate" | "events" | "eventgrinder" | "rated" | "heroes" | "dedication" | "loyaltyrate" | "hotstreak" | "weeklymatches" | "weeklywins" | "monthlymatches" | "monthlywins" | "monthlywinrate" | "earnings" | "armorywinrate" | "armoryattendance" | "armorymatches" | "top8s" | "top8s_skirmish" | "top8s_pq" | "top8s_bh" | "top8s_rtn" | "top8s_calling" | "top8s_nationals" | "powerlevel";
+type Tab = "winrate" | "volume" | "mostwins" | "mostlosses" | "streaks" | "draws" | "drawrate" | "fewestdraws" | "byes" | "byerate" | "balanced" | "events" | "eventgrinder" | "rated" | "ratedstreak" | "heroes" | "dedication" | "loyaltyrate" | "hotstreak" | "coldstreak" | "weeklymatches" | "weeklywins" | "monthlymatches" | "monthlywins" | "monthlywinrate" | "earnings" | "armorywinrate" | "armoryattendance" | "armorymatches" | "top8s" | "top8s_skirmish" | "top8s_pq" | "top8s_bh" | "top8s_rtn" | "top8s_calling" | "top8s_nationals" | "powerlevel";
 
 // ── Tab definitions ──
 
@@ -21,6 +21,7 @@ const tabs: { id: Tab; label: string; description: string }[] = [
   { id: "winrate", label: "Win Rate", description: "Highest overall win percentage. Requires 100+ matches." },
   { id: "volume", label: "Most Matches", description: "Players who have logged the most matches." },
   { id: "mostwins", label: "Most Wins", description: "Players with the most total wins." },
+  { id: "mostlosses", label: "Most Losses", description: "Players with the most total losses. Dedication personified." },
   { id: "weeklymatches", label: "Weekly Matches", description: "Most matches played this week." },
   { id: "weeklywins", label: "Weekly Wins", description: "Most wins this week." },
   { id: "monthlymatches", label: "Monthly Matches", description: "Most matches played this month." },
@@ -35,20 +36,24 @@ const tabs: { id: Tab; label: string; description: string }[] = [
   { id: "top8s_rtn", label: "RTN", description: "Most Top 8+ finishes at Road to Nationals events." },
   { id: "top8s_calling", label: "Calling", description: "Most Top 8+ finishes at The Calling events." },
   { id: "top8s_nationals", label: "Nationals", description: "Most Top 8+ finishes at Nationals events." },
+  { id: "earnings", label: "Earnings", description: "Highest lifetime prize earnings." },
   { id: "streaks", label: "Best Streak", description: "Longest win streak of all time." },
   { id: "hotstreak", label: "Hot Streak", description: "Longest active win streak right now." },
+  { id: "coldstreak", label: "Cold Streak", description: "Longest active losing streak. Nowhere to go but up." },
   { id: "heroes", label: "Variety", description: "Most unique heroes played." },
   { id: "dedication", label: "Loyalty", description: "Most matches played with a single hero." },
   { id: "loyaltyrate", label: "Loyalty %", description: "Highest percentage of matches with a single hero. Requires 20+ matches." },
-  { id: "rated", label: "Rated", description: "Highest win rate in rated matches. Requires 5+ rated matches." },
-  { id: "earnings", label: "Earnings", description: "Highest lifetime prize earnings." },
+  { id: "rated", label: "Win %", description: "Highest win rate in rated matches. Requires 5+ rated matches." },
+  { id: "ratedstreak", label: "Streak", description: "Best rated match win streak." },
   { id: "armorywinrate", label: "Win %", description: "Highest win rate at Armory events. Requires 5+ matches." },
   { id: "armoryattendance", label: "Attendance", description: "Most Armory events attended." },
   { id: "armorymatches", label: "Matches", description: "Most matches played at Armory events." },
   { id: "draws", label: "Draws", description: "Most draws of all time." },
   { id: "drawrate", label: "Draw %", description: "Highest draw rate. Requires 10+ matches." },
+  { id: "fewestdraws", label: "Fewest Draws", description: "Most matches played without drawing. Decisive players. Requires 50+ matches." },
   { id: "byes", label: "Byes", description: "Most byes received." },
   { id: "byerate", label: "Bye %", description: "Highest bye rate. Requires 10+ matches." },
+  { id: "balanced", label: "Balanced", description: "Closest win rate to 50%. Perfectly balanced. Requires 20+ matches." },
   { id: "powerlevel", label: "Power Level", description: "Composite score (0–99) based on win rate, match volume, events, streaks, heroes, rated performance, and earnings." },
 ];
 
@@ -64,14 +69,14 @@ interface Category {
 }
 
 const allCategories: Category[] = [
-  { id: "overall", label: "Overall", tabs: ["winrate", "volume", "mostwins"] },
+  { id: "overall", label: "Overall", tabs: ["winrate", "volume", "mostwins", "mostlosses"] },
   { id: "time", label: "Weekly & Monthly", tabs: ["weeklymatches", "weeklywins", "monthlymatches", "monthlywins", "monthlywinrate"] },
-  { id: "events", label: "Events & Top 8s", tabs: ["events", "eventgrinder", "top8s", "top8s_skirmish", "top8s_pq", "top8s_bh", "top8s_rtn", "top8s_calling", "top8s_nationals"] },
-  { id: "streaks", label: "Streaks", tabs: ["streaks", "hotstreak"] },
+  { id: "events", label: "Events & Top 8s", tabs: ["events", "eventgrinder", "top8s", "top8s_skirmish", "top8s_pq", "top8s_bh", "top8s_rtn", "top8s_calling", "top8s_nationals", "earnings"] },
+  { id: "streaks", label: "Streaks", tabs: ["streaks", "hotstreak", "coldstreak"] },
   { id: "heroes", label: "Heroes", tabs: ["heroes", "dedication", "loyaltyrate"] },
   { id: "armory", label: "Armory", tabs: ["armorywinrate", "armoryattendance", "armorymatches"] },
-  { id: "rated", label: "Rated", tabs: ["rated"] },
-  { id: "niche", label: "Niche", tabs: ["earnings", "draws", "drawrate", "byes", "byerate"] },
+  { id: "rated", label: "Rated", tabs: ["rated", "ratedstreak"] },
+  { id: "fun", label: "Fun", tabs: ["draws", "drawrate", "fewestdraws", "byes", "byerate", "balanced"] },
   { id: "power", label: "Power Level", tabs: ["powerlevel"], adminOnly: true },
 ];
 
@@ -108,6 +113,8 @@ function getStat(entry: LeaderboardEntry, tab: Tab): { value: string; sub: strin
       return { value: String(entry.totalMatches), sub: `${entry.totalWins}W-${entry.totalLosses}L (${formatRate(entry.winRate)})`, color: "text-fab-text" };
     case "mostwins":
       return { value: String(entry.totalWins), sub: `wins (${formatRate(entry.winRate)})`, color: "text-fab-win" };
+    case "mostlosses":
+      return { value: String(entry.totalLosses), sub: `${entry.totalMatches} matches (${formatRate(entry.winRate)})`, color: "text-fab-loss" };
     case "weeklymatches":
       return { value: String(entry.weeklyMatches), sub: `${entry.weeklyWins}W this week`, color: "text-fab-text" };
     case "weeklywins":
@@ -124,6 +131,8 @@ function getStat(entry: LeaderboardEntry, tab: Tab): { value: string; sub: strin
       return { value: String(entry.longestWinStreak), sub: `best streak${entry.currentStreakType === "win" && entry.currentStreakCount > 1 ? ` / ${entry.currentStreakCount} current` : ""}`, color: "text-fab-win" };
     case "hotstreak":
       return { value: String(entry.currentStreakCount), sub: "wins running", color: "text-fab-win" };
+    case "coldstreak":
+      return { value: String(entry.currentStreakCount), sub: "losses running", color: "text-fab-loss" };
     case "draws":
       return { value: String(entry.totalDraws), sub: `${entry.totalMatches} matches (${formatRate(entry.winRate)})`, color: "text-fab-text" };
     case "drawrate": {
@@ -136,6 +145,8 @@ function getStat(entry: LeaderboardEntry, tab: Tab): { value: string; sub: strin
       return { value: String(entry.eventsPlayed), sub: `events (${entry.eventWins} wins)`, color: "text-fab-gold" };
     case "rated":
       return { value: formatRate(entry.ratedWinRate), sub: `${entry.ratedWins}W / ${entry.ratedMatches} rated${entry.ratedWinStreak > 0 ? ` / ${entry.ratedWinStreak} streak` : ""}`, color: entry.ratedWinRate >= 50 ? "text-fab-win" : "text-fab-loss", rate: entry.ratedWinRate };
+    case "ratedstreak":
+      return { value: String(entry.ratedWinStreak), sub: `rated wins in a row (${formatRate(entry.ratedWinRate)})`, color: "text-fab-win" };
     case "heroes":
       return { value: String(entry.uniqueHeroes), sub: "heroes played", color: "text-purple-400" };
     case "dedication":
@@ -152,6 +163,12 @@ function getStat(entry: LeaderboardEntry, tab: Tab): { value: string; sub: strin
       return { value: String(entry.armoryEvents ?? 0), sub: `${entry.armoryMatches} matches across events`, color: "text-fab-text" };
     case "armorymatches":
       return { value: String(entry.armoryMatches), sub: `${entry.armoryWins} wins (${entry.armoryMatches > 0 ? formatRate(entry.armoryWinRate) : "0%"})`, color: "text-fab-text" };
+    case "fewestdraws":
+      return { value: String(entry.totalDraws), sub: `in ${entry.totalMatches} matches (${formatRate(entry.winRate)})`, color: entry.totalDraws === 0 ? "text-fab-win" : "text-fab-text" };
+    case "balanced": {
+      const dist = Math.abs(entry.winRate - 50);
+      return { value: formatRate(entry.winRate), sub: `${entry.totalWins}W-${entry.totalLosses}L (${dist.toFixed(1)}% from 50%)`, color: "text-purple-400", rate: entry.winRate };
+    }
     case "byes":
       return { value: String(entry.totalByes ?? 0), sub: `${entry.totalMatches} matches`, color: "text-fab-text" };
     case "byerate": {
@@ -175,7 +192,7 @@ function getStat(entry: LeaderboardEntry, tab: Tab): { value: string; sub: strin
 
 // Check if tab shows a rate (for progress bars)
 function isRateTab(tab: Tab): boolean {
-  return ["winrate", "monthlywinrate", "rated", "armorywinrate", "loyaltyrate", "drawrate", "byerate"].includes(tab);
+  return ["winrate", "monthlywinrate", "rated", "armorywinrate", "loyaltyrate", "drawrate", "byerate", "balanced"].includes(tab);
 }
 
 // ── Empty state messages ──
@@ -185,6 +202,11 @@ function getEmptyMessage(tab: Tab): string {
     case "winrate": return "Players need at least 100 matches to appear here.";
     case "rated": return "Players need at least 5 rated matches to appear here.";
     case "hotstreak": return "No one is on a 2+ win streak right now.";
+    case "coldstreak": return "No one is on a 2+ loss streak right now. Lucky them.";
+    case "ratedstreak": return "No players have a rated win streak yet.";
+    case "mostlosses": return "No players have any losses yet.";
+    case "fewestdraws": return "Players need at least 50 matches to appear here.";
+    case "balanced": return "Players need at least 20 matches to appear here.";
     case "weeklymatches": case "weeklywins": return "No one has logged matches this week yet.";
     case "monthlymatches": case "monthlywins": return "No one has logged matches this month yet.";
     case "monthlywinrate": return "Players need at least 5 matches this month to appear here.";
@@ -252,6 +274,8 @@ export default function LeaderboardPage() {
         return [...visibleEntries].sort((a, b) => b.totalMatches - a.totalMatches);
       case "mostwins":
         return [...visibleEntries].filter((e) => e.totalWins > 0).sort((a, b) => b.totalWins - a.totalWins || b.winRate - a.winRate);
+      case "mostlosses":
+        return [...visibleEntries].filter((e) => e.totalLosses > 0).sort((a, b) => b.totalLosses - a.totalLosses || b.totalMatches - a.totalMatches);
       case "weeklymatches":
         return [...visibleEntries].filter((e) => e.weekStart === currentWeekStart && e.weeklyMatches > 0).sort((a, b) => b.weeklyMatches - a.weeklyMatches || b.weeklyWins - a.weeklyWins);
       case "weeklywins":
@@ -276,6 +300,8 @@ export default function LeaderboardPage() {
         return [...visibleEntries].filter((e) => e.eventsPlayed > 0).sort((a, b) => b.eventWins - a.eventWins || b.eventsPlayed - a.eventsPlayed);
       case "rated":
         return [...visibleEntries].filter((e) => e.ratedMatches >= 5).sort((a, b) => b.ratedWinRate - a.ratedWinRate || b.ratedMatches - a.ratedMatches);
+      case "ratedstreak":
+        return [...visibleEntries].filter((e) => e.ratedWinStreak > 0).sort((a, b) => b.ratedWinStreak - a.ratedWinStreak || b.ratedWinRate - a.ratedWinRate);
       case "heroes":
         return [...visibleEntries].filter((e) => e.uniqueHeroes > 0).sort((a, b) => b.uniqueHeroes - a.uniqueHeroes || b.totalMatches - a.totalMatches);
       case "dedication":
@@ -288,6 +314,8 @@ export default function LeaderboardPage() {
         });
       case "hotstreak":
         return [...visibleEntries].filter((e) => e.currentStreakType === "win" && e.currentStreakCount >= 2).sort((a, b) => b.currentStreakCount - a.currentStreakCount || b.winRate - a.winRate);
+      case "coldstreak":
+        return [...visibleEntries].filter((e) => e.currentStreakType === "loss" && e.currentStreakCount >= 2).sort((a, b) => b.currentStreakCount - a.currentStreakCount || a.winRate - b.winRate);
       case "eventgrinder":
         return [...visibleEntries].filter((e) => e.eventsPlayed > 0).sort((a, b) => b.eventsPlayed - a.eventsPlayed || b.eventWins - a.eventWins);
       case "earnings":
@@ -298,6 +326,10 @@ export default function LeaderboardPage() {
         return [...visibleEntries].filter((e) => (e.armoryEvents ?? 0) > 0).sort((a, b) => (b.armoryEvents ?? 0) - (a.armoryEvents ?? 0) || b.armoryMatches - a.armoryMatches);
       case "armorymatches":
         return [...visibleEntries].filter((e) => e.armoryMatches > 0).sort((a, b) => b.armoryMatches - a.armoryMatches || b.armoryWins - a.armoryWins);
+      case "fewestdraws":
+        return [...visibleEntries].filter((e) => e.totalMatches >= 50).sort((a, b) => a.totalDraws - b.totalDraws || b.totalMatches - a.totalMatches);
+      case "balanced":
+        return [...visibleEntries].filter((e) => e.totalMatches >= 20).sort((a, b) => Math.abs(a.winRate - 50) - Math.abs(b.winRate - 50) || b.totalMatches - a.totalMatches);
       case "byes":
         return [...visibleEntries].filter((e) => (e.totalByes ?? 0) > 0).sort((a, b) => (b.totalByes ?? 0) - (a.totalByes ?? 0) || b.totalMatches - a.totalMatches);
       case "byerate":

@@ -21,12 +21,12 @@ import { selectFeaturedProfiles } from "@/lib/featured-profiles";
 import { BestFinishShareModal } from "@/components/profile/BestFinishCard";
 import { ProfileShareModal } from "@/components/profile/ProfileCard";
 import { OnThisDay } from "@/components/home/OnThisDay";
-import { EventCommentWall } from "@/components/home/EventCommentWall";
 import { getUnlockedColors } from "@/lib/comment-format";
 import { localDate } from "@/lib/constants";
-import { PredictionCard } from "@/components/home/PredictionCard";
 import { getActivePrediction } from "@/lib/polls";
-import type { Poll } from "@/types";
+import { getEventShowcase } from "@/lib/event-showcase";
+import { EventShowcase } from "@/components/home/EventShowcase";
+import type { Poll, EventShowcaseConfig } from "@/types";
 
 export default function Dashboard() {
   const { matches, isLoaded } = useMatches();
@@ -36,14 +36,15 @@ export default function Dashboard() {
   const [shareCopied, setShareCopied] = useState(false);
   const [bestFinishShareOpen, setBestFinishShareOpen] = useState(false);
   const [profileShareOpen, setProfileShareOpen] = useState(false);
-  const [videoExpanded, setVideoExpanded] = useState(false);
   const [activePrediction, setActivePrediction] = useState<Poll | null>(null);
+  const [showcaseConfig, setShowcaseConfig] = useState<EventShowcaseConfig | null>(null);
   const router = useRouter();
   const leaderboardUpdated = useRef(false);
 
-  // Fetch active prediction
+  // Fetch active prediction + event showcase config
   useEffect(() => {
     getActivePrediction().then(setActivePrediction);
+    getEventShowcase().then(setShowcaseConfig);
   }, []);
 
   // Sync leaderboard entry when matches are loaded
@@ -415,147 +416,23 @@ export default function Dashboard() {
       {/* On This Day */}
       {hasMatches && <OnThisDay matches={matches} />}
 
-      {/* Calling Montreal + Activity Feed + Player Spotlight (logged-in only) */}
-      {user && (
-        <>
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <h2 className="text-lg font-semibold text-fab-text">Calling Montreal Day 1</h2>
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={() => setVideoExpanded((v) => !v)}
-                  className="text-xs text-fab-muted hover:text-fab-gold transition-colors cursor-pointer"
-                >
-                  {videoExpanded ? "Minimize" : "Expand"} Stream
-                </button>
-              </div>
-            </div>
-            {videoExpanded && (
-              <div className="overflow-hidden rounded-lg border border-fab-border aspect-video mb-4">
-                <iframe
-                  src="https://www.youtube.com/embed/DFWOlXB0YXc"
-                  title="Calling Montreal Day 1 Stream"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                  className="w-full h-full"
-                />
-              </div>
-            )}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <a
-                href="https://www.youtube.com/live/DFWOlXB0YXc?si=-Kj27AY5o4L4ubE5"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block overflow-hidden rounded-lg border border-fab-border hover:border-fab-gold/50 transition-colors group"
-              >
-                <img
-                  src="/montreal.png"
-                  alt="Calling Montreal Day 1 Metagame — 282 Players"
-                  className="w-full h-auto group-hover:brightness-110 transition-all"
-                />
-              </a>
-              {!videoExpanded ? (
-                <div className="overflow-hidden rounded-lg border border-fab-border aspect-video">
-                  <iframe
-                    src="https://www.youtube.com/embed/DFWOlXB0YXc"
-                    title="Calling Montreal Day 1 Stream"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                    className="w-full h-full"
-                  />
-                </div>
-              ) : (
-                activePrediction?.id && <PredictionCard pollId={activePrediction.id} />
-              )}
-            </div>
-          </div>
-          {!videoExpanded && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {activePrediction?.id ? (
-                <PredictionCard pollId={activePrediction.id} />
-              ) : (
-                <div />
-              )}
-              <EventCommentWall eventId="calling_montreal_2026" rankMap={rankMap} unlockedColors={unlockedColors} />
-            </div>
-          )}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <ActivityFeed rankMap={rankMap} />
-            <div className="space-y-6">
-              {videoExpanded && <EventCommentWall eventId="calling_montreal_2026" rankMap={rankMap} unlockedColors={unlockedColors} />}
-              <FeaturedProfiles profiles={featuredProfiles} rankMap={rankMap} />
-            </div>
-          </div>
-        </>
+      {/* Event Showcase (admin-configurable) */}
+      {showcaseConfig?.active && (
+        <EventShowcase
+          config={showcaseConfig}
+          activePrediction={activePrediction}
+          rankMap={rankMap}
+          unlockedColors={unlockedColors}
+        />
       )}
 
-      {/* Montreal metagame + comment wall for logged-out users */}
-      {!user && (
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="text-lg font-semibold text-fab-text">Calling Montreal Day 1</h2>
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => setVideoExpanded((v) => !v)}
-                className="text-xs text-fab-muted hover:text-fab-gold transition-colors cursor-pointer"
-              >
-                {videoExpanded ? "Minimize" : "Expand"} Stream
-              </button>
-            </div>
+      {/* Activity Feed + Player Spotlight (logged-in only) */}
+      {user && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <ActivityFeed rankMap={rankMap} />
+          <div className="space-y-6">
+            <FeaturedProfiles profiles={featuredProfiles} rankMap={rankMap} />
           </div>
-          {videoExpanded && (
-            <div className="overflow-hidden rounded-lg border border-fab-border aspect-video mb-4">
-              <iframe
-                src="https://www.youtube.com/embed/DFWOlXB0YXc"
-                title="Calling Montreal Day 1 Stream"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-                className="w-full h-full"
-              />
-            </div>
-          )}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <a
-              href="https://www.youtube.com/live/DFWOlXB0YXc?si=-Kj27AY5o4L4ubE5"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="block overflow-hidden rounded-lg border border-fab-border hover:border-fab-gold/50 transition-colors group"
-            >
-              <img
-                src="/montreal.png"
-                alt="Calling Montreal Day 1 Metagame — 282 Players"
-                className="w-full h-auto group-hover:brightness-110 transition-all"
-              />
-            </a>
-            {!videoExpanded ? (
-              <div className="overflow-hidden rounded-lg border border-fab-border aspect-video">
-                <iframe
-                  src="https://www.youtube.com/embed/DFWOlXB0YXc"
-                  title="Calling Montreal Day 1 Stream"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                  className="w-full h-full"
-                />
-              </div>
-            ) : (
-              activePrediction?.id && <PredictionCard pollId={activePrediction.id} />
-            )}
-          </div>
-          {!videoExpanded && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
-              {activePrediction?.id ? (
-                <PredictionCard pollId={activePrediction.id} />
-              ) : (
-                <div />
-              )}
-              <EventCommentWall eventId="calling_montreal_2026" rankMap={rankMap} unlockedColors={unlockedColors} />
-            </div>
-          )}
-          {videoExpanded && (
-            <div className="mt-6">
-              <EventCommentWall eventId="calling_montreal_2026" rankMap={rankMap} unlockedColors={unlockedColors} />
-            </div>
-          )}
         </div>
       )}
 

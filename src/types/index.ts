@@ -438,3 +438,26 @@ export interface Friendship {
   createdAt: string;
   acceptedAt?: string;
 }
+
+// ── Event Showcase ──
+
+export interface EventShowcaseConfig {
+  active: boolean;
+  title: string;
+  images: EventShowcaseImage[];
+  imageLink?: string;
+  autoAdvanceSeconds: number;
+  youtube: {
+    url: string;
+    enabled: boolean;
+  };
+  discussion: {
+    eventId: string;
+    enabled: boolean;
+  };
+}
+
+export interface EventShowcaseImage {
+  url: string;
+  alt?: string;
+}

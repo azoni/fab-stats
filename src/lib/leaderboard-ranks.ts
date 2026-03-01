@@ -62,6 +62,12 @@ const RANK_TABS: RankTab[] = [
     sort: (a, b) => (b.monthlyWinRate ?? 0) - (a.monthlyWinRate ?? 0) || (b.monthlyMatches ?? 0) - (a.monthlyMatches ?? 0),
   },
   {
+    id: "mostlosses",
+    label: "Most Losses",
+    filter: (e) => e.totalLosses > 0,
+    sort: (a, b) => b.totalLosses - a.totalLosses || b.totalMatches - a.totalMatches,
+  },
+  {
     id: "streaks",
     label: "Streaks",
     filter: (e) => e.longestWinStreak > 0,
@@ -96,6 +102,12 @@ const RANK_TABS: RankTab[] = [
     sort: (a, b) => b.ratedWinRate - a.ratedWinRate || b.ratedMatches - a.ratedMatches,
   },
   {
+    id: "ratedstreak",
+    label: "Rated Streak",
+    filter: (e) => e.ratedWinStreak > 0,
+    sort: (a, b) => b.ratedWinStreak - a.ratedWinStreak || b.ratedWinRate - a.ratedWinRate,
+  },
+  {
     id: "heroes",
     label: "Hero Variety",
     filter: (e) => e.uniqueHeroes > 0,
@@ -112,6 +124,12 @@ const RANK_TABS: RankTab[] = [
     label: "Hot Streak",
     filter: (e) => e.currentStreakType === "win" && e.currentStreakCount >= 2,
     sort: (a, b) => b.currentStreakCount - a.currentStreakCount || b.winRate - a.winRate,
+  },
+  {
+    id: "coldstreak",
+    label: "Cold Streak",
+    filter: (e) => e.currentStreakType === "loss" && e.currentStreakCount >= 2,
+    sort: (a, b) => b.currentStreakCount - a.currentStreakCount || a.winRate - b.winRate,
   },
   {
     id: "eventgrinder",
@@ -158,6 +176,18 @@ const RANK_TABS: RankTab[] = [
       const bRate = ((b.totalByes ?? 0) / b.totalMatches) * 100;
       return bRate - aRate || (b.totalByes ?? 0) - (a.totalByes ?? 0);
     },
+  },
+  {
+    id: "fewestdraws",
+    label: "Fewest Draws",
+    filter: (e) => e.totalMatches >= 50,
+    sort: (a, b) => a.totalDraws - b.totalDraws || b.totalMatches - a.totalMatches,
+  },
+  {
+    id: "balanced",
+    label: "Perfectly Balanced",
+    filter: (e) => e.totalMatches >= 20,
+    sort: (a, b) => Math.abs(a.winRate - 50) - Math.abs(b.winRate - 50) || b.totalMatches - a.totalMatches,
   },
   {
     id: "top8s",
