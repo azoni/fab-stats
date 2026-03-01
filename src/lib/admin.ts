@@ -174,43 +174,14 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     }
   }
 
-  // Step 3: Fetch chat stats in batches of 25 (most will be empty, non-blocking)
-  const chatStatsMap = new Map<string, { messages: number; cost: number; lastAt?: string }>();
-  try {
-    const CHAT_BATCH = 25;
-    for (let i = 0; i < userEntries.length; i += CHAT_BATCH) {
-      const batch = userEntries.slice(i, i + CHAT_BATCH);
-      await Promise.allSettled(
-        batch.map(async ({ userId }) => {
-          const snap = await getDoc(doc(db, "users", userId, "chatStats", "main"));
-          if (snap.exists()) {
-            const d = snap.data();
-            chatStatsMap.set(userId, {
-              messages: (d.totalMessages as number) || 0,
-              cost: (d.totalCost as number) || 0,
-              lastAt: d.lastMessageAt as string | undefined,
-            });
-          }
-        })
-      );
-    }
-  } catch {
-    // If batch fails, continue without chat stats
-  }
-
-  // Step 4: Merge visit data + chat stats into user stats
+  // Step 3: Merge visit data into user stats
+  // Note: Chat stats are populated lazily via fetchChatStatsForUsers() after initial load
   for (const u of users) {
     u.visitCount = visitData.visits[u.uid] || 0;
     u.lastSiteVisit = visitData.lastVisit[u.uid];
-    const cs = chatStatsMap.get(u.uid);
-    if (cs) {
-      u.chatMessages = cs.messages;
-      u.chatCost = cs.cost;
-      u.lastChatAt = cs.lastAt;
-    }
   }
 
-  // Step 5: Compute time-based stats
+  // Step 4: Compute time-based stats
   const now = Date.now();
   const weekAgo = now - 7 * 24 * 60 * 60 * 1000;
   const monthAgo = now - 30 * 24 * 60 * 60 * 1000;
@@ -230,6 +201,27 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     users,
   };
   dashboardCache = { data: result, ts: Date.now() };
+  return result;
+}
+
+/** Fetch chat stats for a list of users (called lazily after dashboard loads) */
+export async function fetchChatStatsForUsers(
+  userIds: string[]
+): Promise<Map<string, { messages: number; cost: number; lastAt?: string }>> {
+  const result = new Map<string, { messages: number; cost: number; lastAt?: string }>();
+  await Promise.allSettled(
+    userIds.map(async (userId) => {
+      const snap = await getDoc(doc(db, "users", userId, "chatStats", "main"));
+      if (snap.exists()) {
+        const d = snap.data();
+        result.set(userId, {
+          messages: (d.totalMessages as number) || 0,
+          cost: (d.totalCost as number) || 0,
+          lastAt: d.lastMessageAt as string | undefined,
+        });
+      }
+    })
+  );
   return result;
 }
 
