@@ -29,8 +29,8 @@ export async function createImportFeedEvent(
   topHeroes: string[],
   source?: ImportSource
 ): Promise<void> {
-  // Don't publish feed events for private profiles
-  if (!profile.isPublic) return;
+  // Don't publish feed events for private or feed-hidden profiles
+  if (!profile.isPublic || profile.hideFromFeed) return;
 
   const data: Omit<ImportFeedEvent, "id"> = {
     type: "import",
@@ -59,7 +59,7 @@ export async function createAchievementFeedEvent(
   profile: UserProfile,
   achievements: Achievement[],
 ): Promise<void> {
-  if (!profile.isPublic || achievements.length === 0) return;
+  if (!profile.isPublic || profile.hideFromFeed || achievements.length === 0) return;
 
   const data: Omit<AchievementFeedEvent, "id"> = {
     type: "achievement",
@@ -91,7 +91,7 @@ export async function createPlacementFeedEvent(
   finish: PlayoffFinish,
   hero?: string,
 ): Promise<void> {
-  if (!profile.isPublic) return;
+  if (!profile.isPublic || profile.hideFromFeed) return;
 
   const data: Omit<PlacementFeedEvent, "id"> = {
     type: "placement",

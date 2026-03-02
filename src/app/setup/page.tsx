@@ -228,6 +228,11 @@ export default function SetupPage() {
               />
             </button>
           </div>
+          {!isPublic && (
+            <p className="text-xs text-fab-dim -mt-2">
+              You can adjust your privacy settings at any time in Settings — including who can see your profile, activity feed visibility, and more.
+            </p>
+          )}
 
           <label className="flex items-start gap-2 cursor-pointer">
             <input

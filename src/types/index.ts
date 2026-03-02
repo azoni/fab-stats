@@ -137,6 +137,7 @@ export interface UserProfile {
   showNameOnProfiles?: boolean;
   hideFromSpotlight?: boolean;
   hideFromGuests?: boolean;
+  hideFromFeed?: boolean;
   gemId?: string;
   unlockedCans?: string[];
   showcase?: ShowcaseCard[];

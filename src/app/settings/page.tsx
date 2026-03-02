@@ -211,6 +211,8 @@ export default function SettingsPage() {
   const [togglingName, setTogglingName] = useState(false);
   const [hideFromSpotlight, setHideFromSpotlight] = useState(profile?.hideFromSpotlight ?? false);
   const [togglingSpotlight, setTogglingSpotlight] = useState(false);
+  const [hideFromFeed, setHideFromFeed] = useState(profile?.hideFromFeed ?? false);
+  const [togglingFeed, setTogglingFeed] = useState(false);
   const [hideFromGuests, setHideFromGuests] = useState(profile?.hideFromGuests ?? false);
   const [togglingGuests, setTogglingGuests] = useState(false);
   const [privacyOpen, setPrivacyOpen] = useState(false);
@@ -611,6 +613,42 @@ export default function SettingsPage() {
                 <span
                   className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${
                     hideFromSpotlight ? "translate-x-5" : ""
+                  }`}
+                />
+              </button>
+            </div>
+
+            <div className="flex items-center justify-between mt-4 pt-4 border-t border-fab-border">
+              <div>
+                <p className="text-sm text-fab-text">Hide from Activity Feed</p>
+                <p className="text-xs text-fab-dim mt-0.5">
+                  {hideFromFeed
+                    ? "Your imports, achievements, and placements won't appear in the community feed."
+                    : "Your activity (imports, achievements, placements) is shown in the community feed."}
+                </p>
+              </div>
+              <button
+                onClick={async () => {
+                  if (!user) return;
+                  setTogglingFeed(true);
+                  try {
+                    const next = !hideFromFeed;
+                    await updateProfile(user.uid, { hideFromFeed: next });
+                    setHideFromFeed(next);
+                  } catch {
+                    setError("Failed to update activity feed setting.");
+                  } finally {
+                    setTogglingFeed(false);
+                  }
+                }}
+                disabled={togglingFeed}
+                className={`relative w-11 h-6 rounded-full transition-colors shrink-0 ${
+                  hideFromFeed ? "bg-fab-win" : "bg-fab-border"
+                } ${togglingFeed ? "opacity-50" : ""}`}
+              >
+                <span
+                  className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${
+                    hideFromFeed ? "translate-x-5" : ""
                   }`}
                 />
               </button>
