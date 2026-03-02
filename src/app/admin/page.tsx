@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
-import { getAdminDashboardData, getChatGlobalStats, getAdminChatMessages, backfillLeaderboard, broadcastMessage, fixMatchDates, backfillGemIds, backfillMatchLinking, backfillH2H, type AdminDashboardData, type AdminUserStats, type ChatGlobalStats } from "@/lib/admin";
+import { getAdminDashboardData, getChatGlobalStats, getAdminChatMessages, backfillLeaderboard, broadcastMessage, fixMatchDates, backfillGemIds, backfillMatchLinking, backfillH2H, backfillHeroMatchups, type AdminDashboardData, type AdminUserStats, type ChatGlobalStats } from "@/lib/admin";
 import { getAllFeedback, updateFeedbackStatus } from "@/lib/feedback";
 import { getCreators, saveCreators } from "@/lib/creators";
 import { getEvents, saveEvents } from "@/lib/featured-events";
@@ -81,6 +81,8 @@ export default function AdminPage() {
   const [gemIdProgress, setGemIdProgress] = useState("");
   const [resyncingH2H, setResyncingH2H] = useState(false);
   const [h2hProgress, setH2hProgress] = useState("");
+  const [backfillingMatchups, setBackfillingMatchups] = useState(false);
+  const [matchupProgress, setMatchupProgress] = useState("");
   // Poll: new poll form
   const [newPollQuestion, setNewPollQuestion] = useState("");
   const [newPollOptions, setNewPollOptions] = useState<string[]>(["", ""]);
@@ -141,7 +143,7 @@ export default function AdminPage() {
   const [chatLogUid, setChatLogUid] = useState<string | null>(null);
   const [chatLogMessages, setChatLogMessages] = useState<any[]>([]);
   const [chatLogLoading, setChatLogLoading] = useState(false);
-  const anyToolRunning = fixingDates || backfilling || backfillingGemIds || linkingMatches || resyncingH2H;
+  const anyToolRunning = fixingDates || backfilling || backfillingGemIds || linkingMatches || resyncingH2H || backfillingMatchups;
   const [activeTab, setActiveTab] = useState<"overview" | "users" | "feedback" | "content" | "poll" | "tools">(() => {
     if (typeof window !== "undefined") {
       const hash = window.location.hash.replace("#", "");
@@ -414,9 +416,29 @@ export default function AdminPage() {
             >
               {resyncingH2H ? "Syncing..." : "Resync H2H"}
             </button>
+            <button
+              onClick={async () => {
+                setBackfillingMatchups(true);
+                setMatchupProgress("Starting...");
+                try {
+                  const { usersProcessed, matchesCounted, failed } = await backfillHeroMatchups((done, total, msg) => {
+                    setMatchupProgress(`${done}/${total} — ${msg}`);
+                  });
+                  setMatchupProgress(`Done: ${usersProcessed} users, ${matchesCounted} matches${failed > 0 ? `, ${failed} failed` : ""}`);
+                } catch {
+                  setMatchupProgress("Hero matchup backfill failed");
+                } finally {
+                  setBackfillingMatchups(false);
+                }
+              }}
+              disabled={anyToolRunning}
+              className="px-3 py-1.5 rounded text-xs font-medium bg-fab-bg border border-fab-border text-fab-muted hover:text-fab-text hover:border-fab-gold transition-colors disabled:opacity-50"
+            >
+              {backfillingMatchups ? "Backfilling..." : "Backfill Matchups"}
+            </button>
           </div>
-          {(backfillProgress || fixDatesProgress || linkProgress || gemIdProgress || h2hProgress) && (
-            <p className="text-xs text-fab-dim">{h2hProgress || linkProgress || gemIdProgress || fixDatesProgress || backfillProgress}</p>
+          {(backfillProgress || fixDatesProgress || linkProgress || gemIdProgress || h2hProgress || matchupProgress) && (
+            <p className="text-xs text-fab-dim">{matchupProgress || h2hProgress || linkProgress || gemIdProgress || fixDatesProgress || backfillProgress}</p>
           )}
         </div>
       )}

@@ -12,6 +12,7 @@ import { db } from "./firebase";
 import { updateLeaderboardEntry } from "./leaderboard";
 import { linkMatchesWithOpponents } from "./match-linking";
 import { computeH2HForUser } from "./h2h";
+import { updateCommunityHeroMatchups } from "./hero-matchups";
 import { getOrCreateConversation, sendMessage, sendMessageNotification } from "./messages";
 import { getUserVisitData } from "./analytics";
 import type { UserProfile, MatchRecord } from "@/types";
@@ -640,4 +641,44 @@ export async function backfillH2H(
   }
 
   return { usersProcessed, h2hWritten, failed: failedCount };
+}
+
+export async function backfillHeroMatchups(
+  onProgress?: (done: number, total: number, message?: string) => void
+): Promise<{ usersProcessed: number; matchesCounted: number; failed: number }> {
+  const usernamesSnap = await getDocs(collection(db, "usernames"));
+  const userEntries = usernamesSnap.docs.map((d) => ({
+    username: d.id,
+    userId: (d.data() as { userId: string }).userId,
+  }));
+
+  let usersProcessed = 0;
+  let matchesCounted = 0;
+  let failedCount = 0;
+  let done = 0;
+
+  for (const { userId } of userEntries) {
+    try {
+      const matchesSnap = await getDocs(
+        query(collection(db, "users", userId, "matches"), orderBy("createdAt", "desc"))
+      );
+      const matches = matchesSnap.docs.map((d) => ({ id: d.id, ...d.data() })) as MatchRecord[];
+
+      const linked = matches.filter((m) => m.opponentHero && m.opponentHero !== "Unknown");
+      if (linked.length > 0) {
+        await updateCommunityHeroMatchups(userId, matches);
+        usersProcessed++;
+        matchesCounted += linked.length;
+      }
+    } catch {
+      failedCount++;
+    }
+
+    done++;
+    if (done % 5 === 0 || done === userEntries.length) {
+      onProgress?.(done, userEntries.length, `${usersProcessed} users, ${matchesCounted} linked matches`);
+    }
+  }
+
+  return { usersProcessed, matchesCounted, failed: failedCount };
 }
