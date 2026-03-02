@@ -17,7 +17,7 @@ export function EmblemDisplay({ emblemId, isOwner, onClick }: EmblemDisplayProps
     return (
       <button
         onClick={onClick}
-        className="w-11 h-11 rounded-full border-2 border-dashed border-fab-border/50 flex items-center justify-center text-fab-dim hover:border-fab-gold/40 hover:text-fab-gold/60 transition-all shrink-0"
+        className="w-12 h-12 rounded-full border-2 border-dashed border-fab-border flex items-center justify-center text-fab-dim hover:border-fab-gold/50 hover:text-fab-gold/70 transition-all shrink-0"
         title="Choose an emblem"
       >
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
