@@ -338,12 +338,14 @@ export default function ImportPage() {
         .catch(() => {});
 
       // Auto-save GEM ID from CSV metadata or extension metadata
-      if (csvMetadata?.gemId && !profile.gemId) {
-        updateProfile(user.uid, { gemId: csvMetadata.gemId }).catch(() => {});
-        registerGemId(user.uid, csvMetadata.gemId).catch(() => {});
-      } else if (pasteResult?.extensionMeta?.userGemId && !profile.gemId) {
-        updateProfile(user.uid, { gemId: pasteResult.extensionMeta.userGemId }).catch(() => {});
-        registerGemId(user.uid, pasteResult.extensionMeta.userGemId).catch(() => {});
+      const newGemId = csvMetadata?.gemId || pasteResult?.extensionMeta?.userGemId;
+      if (newGemId && !profile.gemId) {
+        updateProfile(user.uid, { gemId: newGemId }).catch(() => {});
+      }
+      // Always register GEM ID in lookup table (covers paste imports where profile.gemId was set via settings)
+      const gemIdToRegister = newGemId || profile.gemId;
+      if (gemIdToRegister) {
+        registerGemId(user.uid, gemIdToRegister).catch(() => {});
       }
 
       // Placement feed events (non-blocking, dedup handled in createPlacementFeedEvent)
