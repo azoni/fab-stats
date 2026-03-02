@@ -2,6 +2,22 @@ import { cards } from "@flesh-and-blood/cards";
 import { Type } from "@flesh-and-blood/types";
 import type { HeroInfo } from "@/types";
 
+const CARD_IMAGE_CDN = "https://d2wlb52bya4y8z.cloudfront.net/media/cards/large";
+
+function getHeroImageUrl(card: (typeof cards)[number]): string {
+  const printings = card.printings || [];
+  const candidates = printings
+    .map((p: { image?: string }) => p.image)
+    .filter((i): i is string =>
+      !!i && !i.includes("BACK") && !i.includes("_V2") && !i.includes("-MV") && !i.includes("-RF") && !i.includes("MARVEL")
+    );
+  // Prefer defaultImage if it's among the clean candidates
+  const best = card.defaultImage && candidates.includes(card.defaultImage)
+    ? card.defaultImage
+    : candidates[0] || card.defaultImage || "";
+  return best ? `${CARD_IMAGE_CDN}/${best}.webp` : "";
+}
+
 const heroCards = cards.filter((card) =>
   card.types.includes(Type.Hero)
 );
@@ -24,7 +40,7 @@ for (const card of heroCards) {
       life: card.life,
       intellect: card.intellect,
       young: card.young,
-      imageUrl: "",
+      imageUrl: getHeroImageUrl(card),
     });
   }
 }

@@ -29,6 +29,7 @@ import { getActivePrediction } from "@/lib/polls";
 import { getEventShowcase } from "@/lib/event-showcase";
 import { EventShowcase } from "@/components/home/EventShowcase";
 import { BadgeStrip } from "@/components/profile/BadgeStrip";
+import { getHeroByName } from "@/lib/heroes";
 import type { Poll, EventShowcaseConfig } from "@/types";
 
 export default function Dashboard() {
@@ -332,13 +333,23 @@ export default function Dashboard() {
           <div className="flex flex-col gap-6">
             {/* Profile card */}
             <div
-              className="relative bg-fab-surface border border-fab-border rounded-lg px-4 py-3 overflow-hidden"
+              className="relative bg-fab-surface border border-fab-border rounded-lg px-4 py-3 overflow-visible"
               style={cardBorder ? { borderColor: cardBorder.border, boxShadow: cardBorder.shadow } : undefined}
             >
               {/* FaB-inspired pitch strip — thin gold accent across the top */}
               <div className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-fab-gold/30 to-transparent" />
-              {/* Subtle decorative accent */}
-              <div className="absolute -top-10 -right-10 w-32 h-32 bg-fab-gold/5 rounded-full blur-2xl pointer-events-none" />
+              {/* Subtle decorative accent + hero card art — clipped to card bounds */}
+              <div className="absolute inset-0 overflow-hidden rounded-lg pointer-events-none">
+                <div className="absolute -top-10 -right-10 w-32 h-32 bg-fab-gold/5 rounded-full blur-2xl" />
+                {topHero && getHeroByName(topHero.heroName)?.imageUrl && (
+                  <img
+                    src={getHeroByName(topHero.heroName)!.imageUrl}
+                    alt=""
+                    className="absolute -right-6 -top-2 -bottom-2 w-28 object-cover object-top opacity-[0.08] select-none"
+                    loading="lazy"
+                  />
+                )}
+              </div>
               <div className="flex items-center gap-3">
                 {profile ? (
                   <Link href={`/player/${profile.username}`} className="relative shrink-0">
