@@ -141,6 +141,7 @@ export interface UserProfile {
   gemId?: string;
   unlockedCans?: string[];
   showcase?: ShowcaseCard[];
+  showcaseSecondary?: ShowcaseCard[];
 }
 
 export interface ShowcaseCard {
@@ -337,6 +338,17 @@ export interface FeaturedEvent {
   description?: string;
   imageUrl?: string;
   players: FeaturedEventPlayer[];
+}
+
+// Seasons
+export interface Season {
+  id: string;           // URL-safe slug, e.g. "pq-cc-s1-2026"
+  name: string;         // Display name: "ProQuest Season 1 (CC)"
+  startDate: string;    // YYYY-MM-DD inclusive
+  endDate: string;      // YYYY-MM-DD inclusive
+  format: string;       // "Classic Constructed", "Blitz", etc.
+  eventType: string;    // "ProQuest", "Battle Hardened", etc.
+  active: boolean;
 }
 
 // Polls

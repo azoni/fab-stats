@@ -47,6 +47,9 @@ interface ShowcaseSectionProps {
   opponentStats: OpponentStats[];
   overall: OverallStats;
   achievements: Achievement[];
+  maxPoints?: number;
+  storageField?: "showcase" | "showcaseSecondary";
+  label?: string;
 }
 
 // Point system: small=1 (half-width), medium=2 (full-width). Budget = 12.
@@ -89,10 +92,15 @@ export function ShowcaseSection({
   opponentStats,
   overall,
   achievements,
+  maxPoints = 12,
+  storageField = "showcase",
+  label = "Showcase",
 }: ShowcaseSectionProps) {
   // Default showcase: achievements card with 5 rarest if user has no saved showcase
+  const savedCards = profile[storageField];
   const defaultShowcase = useMemo<ShowcaseCard[]>(() => {
-    if (profile.showcase && profile.showcase.length > 0) return profile.showcase;
+    if (savedCards && savedCards.length > 0) return savedCards;
+    if (storageField !== "showcase") return []; // No default for secondary
     if (achievements.length === 0) return [];
     const RARITY_ORDER: Record<string, number> = { legendary: 0, epic: 1, rare: 2, uncommon: 3, common: 4 };
     const top5 = [...achievements]
@@ -100,7 +108,7 @@ export function ShowcaseSection({
       .slice(0, 5)
       .map((a) => a.id);
     return [{ type: "achievements", achievementIds: top5 }];
-  }, [profile.showcase, achievements]);
+  }, [savedCards, achievements, storageField]);
 
   const [cards, setCards] = useState<ShowcaseCard[]>(defaultShowcase);
   const [isEditing, setIsEditing] = useState(false);
@@ -109,7 +117,7 @@ export function ShowcaseSection({
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
 
   const usedPoints = useMemo(() => cards.reduce((sum, c) => sum + getCardSize(c.type), 0), [cards]);
-  const pointsLeft = MAX_POINTS - usedPoints;
+  const pointsLeft = maxPoints - usedPoints;
 
   const saveCards = useCallback(async (updated: ShowcaseCard[]) => {
     setCards(updated);
@@ -122,14 +130,14 @@ export function ShowcaseSection({
         }
         return clean as unknown as ShowcaseCard;
       });
-      await updateProfile(profile.uid, { showcase: cleaned });
+      await updateProfile(profile.uid, { [storageField]: cleaned });
       logActivity("showcase_edit", String(cleaned.length));
     } catch (err) {
       console.error("Failed to save showcase:", err);
     } finally {
       setSaving(false);
     }
-  }, [profile.uid]);
+  }, [profile.uid, storageField]);
 
   const addCard = useCallback((card: ShowcaseCard) => {
     const updated = [...cards, card];
@@ -168,7 +176,7 @@ export function ShowcaseSection({
       {/* Edit toggle */}
       {isOwner && (
         <div className="flex items-center justify-between">
-          <p className="text-[10px] text-fab-muted uppercase tracking-wider font-medium">Showcase</p>
+          <p className="text-[10px] text-fab-muted uppercase tracking-wider font-medium">{label}</p>
           <div className="flex items-center gap-2">
             {saving && <span className="text-[10px] text-fab-dim">Saving...</span>}
             <button
@@ -251,8 +259,8 @@ export function ShowcaseSection({
         </div>
       )}
 
-      {/* Empty state — onboarding for owners */}
-      {cards.length === 0 && isOwner && !showPicker && (
+      {/* Empty state — onboarding for owners (main showcase only) */}
+      {cards.length === 0 && isOwner && !showPicker && storageField === "showcase" && (
         <div className="relative bg-fab-surface/50 border border-dashed border-fab-gold/25 rounded-lg p-6 text-center overflow-hidden">
           <div className="absolute -top-10 -right-10 w-32 h-32 bg-fab-gold/5 rounded-full blur-2xl pointer-events-none" />
           <div className="absolute -bottom-8 -left-8 w-24 h-24 bg-fab-gold/5 rounded-full blur-xl pointer-events-none" />
@@ -282,7 +290,7 @@ export function ShowcaseSection({
       {/* Add card button */}
       {isEditing && cards.length > 0 && !showPicker && pointsLeft > 0 && (
         <button onClick={() => setShowPicker(true)} className="w-full py-1.5 border border-dashed border-fab-border rounded-lg text-xs text-fab-muted hover:text-fab-text hover:border-fab-muted transition-colors">
-          + Add Card ({usedPoints}/{MAX_POINTS} pts)
+          + Add Card ({usedPoints}/{maxPoints} pts)
         </button>
       )}
 

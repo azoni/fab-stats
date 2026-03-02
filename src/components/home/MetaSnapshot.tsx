@@ -12,6 +12,10 @@ interface MetaSnapshotProps {
   topHeroes: HeroMetaStats[];
   top8Heroes?: Top8HeroMeta[];
   activeEventType?: string | null;
+  seasonName?: string;
+  seasonWeeks?: { label: string; start: string; end: string }[];
+  selectedWeek?: number | null;
+  onWeekChange?: (week: number | null) => void;
 }
 
 const RANK_CLASS = ["meta-rank-1 font-black", "meta-rank-2 font-bold", "meta-rank-3 font-bold", "text-fab-muted font-bold", "text-fab-muted font-bold"];
@@ -24,12 +28,13 @@ const SORT_OPTIONS: { key: Top8Sort; label: string }[] = [
 
 const TOP8_PAGE_SIZE = 10;
 
-export const MetaSnapshot = memo(function MetaSnapshot({ topHeroes, top8Heroes, activeEventType }: MetaSnapshotProps) {
+export const MetaSnapshot = memo(function MetaSnapshot({ topHeroes, top8Heroes, activeEventType, seasonName, seasonWeeks, selectedWeek, onWeekChange }: MetaSnapshotProps) {
   const [sortBy, setSortBy] = useState<Top8Sort>("top8");
   const [top8Page, setTop8Page] = useState(0);
 
   // Event weekend mode: show top 8 heroes for the active event type
   const showEventMode = activeEventType && top8Heroes && top8Heroes.length > 0;
+  const isSeason = !!seasonName;
 
   const sortedTop8 = useMemo(() => {
     if (!top8Heroes) return [];
@@ -53,10 +58,16 @@ export const MetaSnapshot = memo(function MetaSnapshot({ topHeroes, top8Heroes, 
           </div>
           <div>
             <h2 className="text-lg font-semibold text-fab-text leading-tight">
-              {showEventMode ? `${activeEventType} Top 8s` : "Meta Snapshot"}
+              {isSeason ? `${seasonName} Top 8s` : showEventMode ? `${activeEventType} Top 8s` : "Meta Snapshot"}
             </h2>
             {showEventMode && (
-              <p className="text-xs text-fab-muted leading-tight">Heroes making playoffs this week</p>
+              <p className="text-xs text-fab-muted leading-tight">
+                {isSeason
+                  ? selectedWeek != null && seasonWeeks?.[selectedWeek]
+                    ? seasonWeeks[selectedWeek].label
+                    : "Season standings"
+                  : "Heroes making playoffs this week"}
+              </p>
             )}
           </div>
         </div>
@@ -70,6 +81,34 @@ export const MetaSnapshot = memo(function MetaSnapshot({ topHeroes, top8Heroes, 
         {showEventMode ? (
           // Event weekend: show top 8 hero placements
           <>
+            {/* Week pills for season mode */}
+            {isSeason && seasonWeeks && seasonWeeks.length > 1 && onWeekChange && (
+              <div className="flex items-center gap-1 px-4 py-2 border-b border-fab-border overflow-x-auto scrollbar-hide">
+                <button
+                  onClick={() => { onWeekChange(null); setTop8Page(0); }}
+                  className={`px-2.5 py-1 rounded-full text-[11px] font-semibold whitespace-nowrap transition-all ${
+                    selectedWeek === null
+                      ? "bg-teal-500/15 text-teal-400"
+                      : "text-fab-muted hover:text-fab-text"
+                  }`}
+                >
+                  All
+                </button>
+                {seasonWeeks.map((w, wi) => (
+                  <button
+                    key={wi}
+                    onClick={() => { onWeekChange(wi); setTop8Page(0); }}
+                    className={`px-2.5 py-1 rounded-full text-[11px] font-semibold whitespace-nowrap transition-all ${
+                      selectedWeek === wi
+                        ? "bg-teal-500/15 text-teal-400"
+                        : "text-fab-muted hover:text-fab-text"
+                    }`}
+                  >
+                    {w.label}
+                  </button>
+                ))}
+              </div>
+            )}
             <div className="flex items-center justify-between px-4 py-2 border-b border-fab-border">
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-1">

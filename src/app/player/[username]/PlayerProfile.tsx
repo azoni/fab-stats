@@ -357,96 +357,126 @@ export default function PlayerProfile() {
 
   return (
     <div className="space-y-5">
-      {/* Profile Header */}
-      <div
-        className="bg-fab-surface border border-fab-border rounded-lg p-5"
-        style={cardBorder ? { borderColor: cardBorder.border, boxShadow: cardBorder.shadow } : undefined}
-      >
-        {/* Admin: private profile banner */}
-        {isAdmin && !profile.isPublic && (
-          <div className="flex items-center gap-2 mb-4 px-3 py-2 rounded-lg bg-fab-dim/10 border border-fab-dim/20">
-            <LockIcon className="w-4 h-4 text-fab-dim shrink-0" />
-            <span className="text-xs font-semibold text-fab-dim">Private Profile — only visible to you (admin) and the owner</span>
+      {/* Two-column grid: Profile + Secondary Showcase (left) | Main Showcase (right) */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        {/* Left column */}
+        <div className="flex flex-col gap-5 order-2 lg:order-1">
+          {/* Profile Header */}
+          <div
+            className="bg-fab-surface border border-fab-border rounded-lg p-5"
+            style={cardBorder ? { borderColor: cardBorder.border, boxShadow: cardBorder.shadow } : undefined}
+          >
+            {/* Admin: private profile banner */}
+            {isAdmin && !profile.isPublic && (
+              <div className="flex items-center gap-2 mb-4 px-3 py-2 rounded-lg bg-fab-dim/10 border border-fab-dim/20">
+                <LockIcon className="w-4 h-4 text-fab-dim shrink-0" />
+                <span className="text-xs font-semibold text-fab-dim">Private Profile — only visible to you (admin) and the owner</span>
+              </div>
+            )}
+            {/* Profile row */}
+            <div className="flex items-center gap-3">
+              <ProfileHeader profile={profile} bestRank={bestRank} isAdmin={isAdmin} isOwner={isOwner} isFavorited={!isOwner && !!currentUser && !isGuest && isFavorited(profile.uid)} onToggleFavorite={!isOwner && !!currentUser && !isGuest ? () => toggleFavorite(profile) : undefined} friendStatus={!isOwner && !!currentUser && !isGuest ? (isFriend(profile.uid) ? "friends" : hasSentRequest(profile.uid) ? "sent" : hasReceivedRequest(profile.uid) ? "received" : "none") : undefined} onFriendAction={!isOwner && !!currentUser && !isGuest ? () => { const fs = getFriendshipForUser(profile.uid); if (isFriend(profile.uid)) return; if (hasReceivedRequest(profile.uid) && fs) { acceptRequest(fs.id); } else if (!hasSentRequest(profile.uid)) { sendRequest(profile); } } : undefined} onShareCard={isOwner || isAdmin ? () => setProfileShareOpen(true) : undefined} friendCount={isAdmin ? friendCount : undefined} />
+            </div>
+
+            {/* Last updated */}
+            {lastUpdated && (
+              <p className="text-[10px] text-fab-dim mt-3 pt-3 border-t border-fab-border/50">
+                Last updated {new Date(lastUpdated).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+              </p>
+            )}
           </div>
-        )}
-        {/* Profile row */}
-        <div className="flex items-center gap-3">
-          <ProfileHeader profile={profile} bestRank={bestRank} isAdmin={isAdmin} isOwner={isOwner} isFavorited={!isOwner && !!currentUser && !isGuest && isFavorited(profile.uid)} onToggleFavorite={!isOwner && !!currentUser && !isGuest ? () => toggleFavorite(profile) : undefined} friendStatus={!isOwner && !!currentUser && !isGuest ? (isFriend(profile.uid) ? "friends" : hasSentRequest(profile.uid) ? "sent" : hasReceivedRequest(profile.uid) ? "received" : "none") : undefined} onFriendAction={!isOwner && !!currentUser && !isGuest ? () => { const fs = getFriendshipForUser(profile.uid); if (isFriend(profile.uid)) return; if (hasReceivedRequest(profile.uid) && fs) { acceptRequest(fs.id); } else if (!hasSentRequest(profile.uid)) { sendRequest(profile); } } : undefined} onShareCard={isOwner || isAdmin ? () => setProfileShareOpen(true) : undefined} friendCount={isAdmin ? friendCount : undefined} />
+
+          {/* Filters */}
+          <div className="flex gap-2 flex-wrap items-center">
+            <select
+              value={filterFormat}
+              onChange={(e) => setFilterFormat(e.target.value)}
+              className="bg-fab-surface border border-fab-border text-fab-text text-xs rounded-lg px-2 py-1 focus:outline-none focus:border-fab-gold"
+            >
+              <option value="all">All Formats</option>
+              {allFormats.map((f) => (
+                <option key={f} value={f}>{f}</option>
+              ))}
+            </select>
+            <select
+              value={filterRated}
+              onChange={(e) => setFilterRated(e.target.value)}
+              className="bg-fab-surface border border-fab-border text-fab-text text-xs rounded-lg px-2 py-1 focus:outline-none focus:border-fab-gold"
+              title="Filter by rated status or event type"
+            >
+              <option value="all">All</option>
+              <option value="rated">Rated Only</option>
+              <option value="unrated">Unrated Only</option>
+              {allEventTypes.map((t) => (
+                <option key={t} value={t}>{t}</option>
+              ))}
+            </select>
+            {allHeroes.length > 1 && (
+              <select
+                value={filterHero}
+                onChange={(e) => setFilterHero(e.target.value)}
+                className="bg-fab-surface border border-fab-border text-fab-text text-xs rounded-lg px-2 py-1 focus:outline-none focus:border-fab-gold"
+              >
+                <option value="all">All Heroes</option>
+                {allHeroes.map((h) => (
+                  <option key={h} value={h}>{h}</option>
+                ))}
+              </select>
+            )}
+            {isAdmin && (
+              <button
+                onClick={() => setShowRawData(true)}
+                className="text-xs px-2 py-1 rounded bg-fab-surface border border-fab-border text-fab-dim hover:text-fab-text transition-colors"
+              >
+                Raw Data
+              </button>
+            )}
+            {isFiltered && (
+              <span className="text-xs text-fab-dim">
+                Showing {fm.length} of {matches.length} matches
+              </span>
+            )}
+          </div>
+
+          {/* Secondary Showcase (below profile card) */}
+          <div className="flex-1">
+            <ShowcaseSection
+              profile={profile}
+              isOwner={isOwner}
+              matches={fm}
+              heroStats={heroStats}
+              masteries={masteries}
+              eventStats={eventStats}
+              playoffFinishes={playoffFinishes}
+              opponentStats={allOpponentStats}
+              overall={overall}
+              achievements={achievements}
+              storageField="showcaseSecondary"
+              maxPoints={8}
+              label="Pinned"
+            />
+          </div>
         </div>
 
-        {/* Last updated */}
-        {lastUpdated && (
-          <p className="text-[10px] text-fab-dim mt-3 pt-3 border-t border-fab-border/50">
-            Last updated {new Date(lastUpdated).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-          </p>
-        )}
+        {/* Right column — Main Showcase */}
+        <div className="order-1 lg:order-2">
+          <ShowcaseSection
+            profile={profile}
+            isOwner={isOwner}
+            matches={fm}
+            heroStats={heroStats}
+            masteries={masteries}
+            eventStats={eventStats}
+            playoffFinishes={playoffFinishes}
+            opponentStats={allOpponentStats}
+            overall={overall}
+            achievements={achievements}
+            storageField="showcase"
+            maxPoints={12}
+            label="Showcase"
+          />
+        </div>
       </div>
-
-      {/* Filters */}
-      <div className="flex gap-2 flex-wrap items-center">
-        <select
-          value={filterFormat}
-          onChange={(e) => setFilterFormat(e.target.value)}
-          className="bg-fab-surface border border-fab-border text-fab-text text-xs rounded-lg px-2 py-1 focus:outline-none focus:border-fab-gold"
-        >
-          <option value="all">All Formats</option>
-          {allFormats.map((f) => (
-            <option key={f} value={f}>{f}</option>
-          ))}
-        </select>
-        <select
-          value={filterRated}
-          onChange={(e) => setFilterRated(e.target.value)}
-          className="bg-fab-surface border border-fab-border text-fab-text text-xs rounded-lg px-2 py-1 focus:outline-none focus:border-fab-gold"
-          title="Filter by rated status or event type"
-        >
-          <option value="all">All</option>
-          <option value="rated">Rated Only</option>
-          <option value="unrated">Unrated Only</option>
-          {allEventTypes.map((t) => (
-            <option key={t} value={t}>{t}</option>
-          ))}
-        </select>
-        {allHeroes.length > 1 && (
-          <select
-            value={filterHero}
-            onChange={(e) => setFilterHero(e.target.value)}
-            className="bg-fab-surface border border-fab-border text-fab-text text-xs rounded-lg px-2 py-1 focus:outline-none focus:border-fab-gold"
-          >
-            <option value="all">All Heroes</option>
-            {allHeroes.map((h) => (
-              <option key={h} value={h}>{h}</option>
-            ))}
-          </select>
-        )}
-        {isAdmin && (
-          <button
-            onClick={() => setShowRawData(true)}
-            className="text-xs px-2 py-1 rounded bg-fab-surface border border-fab-border text-fab-dim hover:text-fab-text transition-colors"
-          >
-            Raw Data
-          </button>
-        )}
-        {isFiltered && (
-          <span className="text-xs text-fab-dim">
-            Showing {fm.length} of {matches.length} matches
-          </span>
-        )}
-      </div>
-
-      {/* Showcase */}
-      <ShowcaseSection
-        profile={profile}
-        isOwner={isOwner}
-        matches={fm}
-        heroStats={heroStats}
-        masteries={masteries}
-        eventStats={eventStats}
-        playoffFinishes={playoffFinishes}
-        opponentStats={allOpponentStats}
-        overall={overall}
-        achievements={achievements}
-      />
 
       {/* Trophy Case + Armory Garden */}
       {(playoffFinishes.length > 0 || eventStats.some(e => e.eventType === "Armory")) && (
