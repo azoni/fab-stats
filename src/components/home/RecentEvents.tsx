@@ -2,6 +2,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { MatchResult, type EventStats } from "@/types";
+import { computePlayoffFinishes } from "@/lib/stats";
 import { EventShareModal } from "@/components/events/EventShareCard";
 
 const EVENT_TYPE_COLORS: Record<string, string> = {
@@ -28,6 +29,13 @@ const RESULT_LABELS: Record<string, string> = {
   [MatchResult.Bye]: "B",
 };
 
+const PLACEMENT_BADGE: Record<string, { text: string; color: string }> = {
+  champion: { text: "Champion", color: "text-yellow-400 bg-yellow-400/10 border-yellow-400/20" },
+  finalist: { text: "Finalist", color: "text-gray-300 bg-gray-300/10 border-gray-400/20" },
+  top4: { text: "Top 4", color: "text-amber-500 bg-amber-500/10 border-amber-500/20" },
+  top8: { text: "Top 8", color: "text-blue-400 bg-blue-400/10 border-blue-400/20" },
+};
+
 function formatDate(dateStr: string): string {
   const d = new Date(dateStr + "T00:00:00");
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
@@ -36,6 +44,13 @@ function formatDate(dateStr: string): string {
 export function RecentEvents({ eventStats, playerName }: { eventStats: EventStats[]; playerName?: string }) {
   const [expandedKey, setExpandedKey] = useState<string | null>(null);
   const [shareEvent, setShareEvent] = useState<EventStats | null>(null);
+
+  // Build placement lookup: "eventName::eventDate" → finish type
+  const finishes = computePlayoffFinishes(eventStats);
+  const placementMap = new Map<string, string>();
+  for (const f of finishes) {
+    placementMap.set(`${f.eventName}::${f.eventDate}`, f.type);
+  }
 
   const recent = [...eventStats]
     .sort((a, b) => new Date(b.eventDate).getTime() - new Date(a.eventDate).getTime())
@@ -71,7 +86,17 @@ export function RecentEvents({ eventStats, playerName }: { eventStats: EventStat
                 className="w-full flex items-center gap-2 py-1.5 px-2 rounded-md hover:bg-fab-bg/50 transition-colors text-left"
               >
                 <div className="flex-1 min-w-0">
-                  <p className="text-[11px] font-semibold text-fab-text truncate">{ev.eventName}</p>
+                  <div className="flex items-center gap-1.5">
+                    <p className="text-[11px] font-semibold text-fab-text truncate">{ev.eventName}</p>
+                    {(() => {
+                      const badge = PLACEMENT_BADGE[placementMap.get(`${ev.eventName}::${ev.eventDate}`) || ""];
+                      return badge ? (
+                        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border shrink-0 ${badge.color}`}>
+                          {badge.text}
+                        </span>
+                      ) : null;
+                    })()}
+                  </div>
                   <div className="flex items-center gap-1.5 mt-0.5">
                     {ev.eventType && (
                       <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded border ${typeColor}`}>
