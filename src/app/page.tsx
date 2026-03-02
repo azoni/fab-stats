@@ -34,39 +34,40 @@ import type { Poll, EventShowcaseConfig } from "@/types";
 
 function ResourcesPopout() {
   const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      if (
+        btnRef.current && !btnRef.current.contains(e.target as Node) &&
+        menuRef.current && !menuRef.current.contains(e.target as Node)
+      ) setOpen(false);
     }
     if (open) document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
   }, [open]);
 
+  useEffect(() => {
+    if (open && btnRef.current) {
+      const r = btnRef.current.getBoundingClientRect();
+      setPos({ top: r.top - 4, left: r.left });
+    }
+  }, [open]);
+
   const links = [
-    { href: "/docs", label: "Docs", icon: (
-      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-      </svg>
-    )},
-    { href: "/changelog", label: "Changelog", icon: (
-      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-      </svg>
-    )},
-    { href: "/roadmap", label: "Roadmap", badge: "New", icon: (
-      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-      </svg>
-    )},
+    { href: "/docs", label: "Docs", icon: "M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" },
+    { href: "/changelog", label: "Changelog", icon: "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" },
+    { href: "/roadmap", label: "Roadmap", badge: "New" as const, icon: "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" },
   ];
 
   return (
-    <div className="relative shrink-0" ref={ref}>
+    <>
       <button
+        ref={btnRef}
         onClick={() => setOpen(!open)}
-        className="group relative flex items-center gap-3 pl-3 pr-5 py-3 rounded-2xl overflow-hidden bg-gradient-to-br from-zinc-500/10 via-zinc-900/20 to-transparent border border-zinc-500/20 hover:border-zinc-400/40 hover:shadow-[0_0_24px_rgba(161,161,170,0.08)] hover:-translate-y-0.5 transition-all duration-300"
+        className="group relative flex items-center gap-3 pl-3 pr-5 py-3 rounded-2xl shrink-0 overflow-hidden bg-gradient-to-br from-zinc-500/10 via-zinc-900/20 to-transparent border border-zinc-500/20 hover:border-zinc-400/40 hover:shadow-[0_0_24px_rgba(161,161,170,0.08)] hover:-translate-y-0.5 transition-all duration-300"
       >
         <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-zinc-400/40 to-transparent" />
         <div className="w-10 h-10 rounded-xl bg-zinc-500/15 flex items-center justify-center shrink-0 ring-1 ring-inset ring-zinc-500/20 group-hover:bg-zinc-500/20 group-hover:ring-zinc-400/30 transition-all">
@@ -80,8 +81,12 @@ function ResourcesPopout() {
         </div>
       </button>
 
-      {open && (
-        <div className="absolute bottom-full mb-2 right-0 w-48 bg-fab-surface border border-fab-border rounded-lg shadow-xl overflow-hidden z-50">
+      {open && pos && (
+        <div
+          ref={menuRef}
+          className="fixed w-48 bg-fab-surface border border-fab-border rounded-lg shadow-xl overflow-hidden z-50"
+          style={{ top: pos.top, left: pos.left, transform: "translateY(-100%)" }}
+        >
           <div className="p-1.5">
             {links.map((link) => (
               <Link
@@ -90,7 +95,9 @@ function ResourcesPopout() {
                 onClick={() => setOpen(false)}
                 className="flex items-center gap-2.5 px-3 py-2 rounded-md text-sm font-medium text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover transition-colors"
               >
-                {link.icon}
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d={link.icon} />
+                </svg>
                 {link.label}
                 {"badge" in link && link.badge && (
                   <span className="ml-auto text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-teal-400/15 text-teal-400 border border-teal-400/25">{link.badge}</span>
@@ -100,7 +107,7 @@ function ResourcesPopout() {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }
 
@@ -328,6 +335,9 @@ export default function Dashboard() {
             </div>
           </Link>
 
+          {/* Resources — popout with docs/changelog/roadmap */}
+          <ResourcesPopout />
+
           {/* Log — gold action */}
           <Link href="/events?import=1" className="group relative flex items-center gap-3 pl-3 pr-5 py-3 rounded-2xl shrink-0 overflow-hidden bg-gradient-to-br from-fab-gold/10 via-amber-950/20 to-transparent border border-dashed border-fab-gold/25 hover:border-fab-gold/45 hover:shadow-[0_0_24px_rgba(201,168,76,0.08)] hover:-translate-y-0.5 transition-all duration-300">
             <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-fab-gold/40 to-transparent" />
@@ -341,9 +351,6 @@ export default function Dashboard() {
               <p className="text-[11px] text-fab-gold/70 font-semibold leading-tight">Quick add</p>
             </div>
           </Link>
-
-          {/* Resources — popout with docs/changelog/roadmap */}
-          <ResourcesPopout />
         </div>
       )}
 
