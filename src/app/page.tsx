@@ -6,7 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { computeOverallStats, computeHeroStats, computeEventStats, computeOpponentStats, computeBestFinish, computePlayoffFinishes, getRoundNumber } from "@/lib/stats";
 import { updateLeaderboardEntry } from "@/lib/leaderboard";
 import { useLeaderboard } from "@/hooks/useLeaderboard";
-import { computeUserRanks, getBestRank, computeRankMap, computeEventTierMap } from "@/lib/leaderboard-ranks";
+import { computeUserRanks, getBestRank, computeRankMap, computeEventTierMap, rankBorderClass } from "@/lib/leaderboard-ranks";
 import { ShieldIcon, SwordsIcon, CalendarIcon, OpponentsIcon, TrendsIcon } from "@/components/icons/NavIcons";
 import { CommunityHighlights } from "@/components/home/CommunityHighlights";
 import { useFeaturedEvents } from "@/hooks/useFeaturedEvents";
@@ -341,9 +341,9 @@ export default function Dashboard() {
                       </svg>
                     )}
                     {profile.photoUrl ? (
-                      <img src={profile.photoUrl} alt="" className={`w-12 h-12 rounded-full ${bestRank === 1 ? "rank-border-grandmaster" : bestRank === 2 ? "rank-border-diamond" : bestRank === 3 ? "rank-border-gold" : bestRank === 4 ? "rank-border-silver" : bestRank === 5 ? "rank-border-bronze" : ""}`} />
+                      <img src={profile.photoUrl} alt="" className={`w-12 h-12 rounded-full ${rankBorderClass(bestRank ?? null)}`} />
                     ) : (
-                      <div className={`w-12 h-12 rounded-full bg-fab-gold/20 flex items-center justify-center text-fab-gold text-lg font-bold ${bestRank === 1 ? "rank-border-grandmaster" : bestRank === 2 ? "rank-border-diamond" : bestRank === 3 ? "rank-border-gold" : bestRank === 4 ? "rank-border-silver" : bestRank === 5 ? "rank-border-bronze" : ""}`}>
+                      <div className={`w-12 h-12 rounded-full bg-fab-gold/20 flex items-center justify-center text-fab-gold text-lg font-bold ${rankBorderClass(bestRank ?? null)}`}>
                         {profile.displayName.charAt(0).toUpperCase()}
                       </div>
                     )}

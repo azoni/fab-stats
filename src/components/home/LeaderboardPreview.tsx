@@ -6,7 +6,7 @@ import { playerHref } from "@/lib/constants";
 
 interface LeaderboardPreviewProps {
   entries: LeaderboardEntry[];
-  rankMap?: Map<string, 1 | 2 | 3 | 4 | 5>;
+  rankMap?: Map<string, 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8>;
 }
 
 export function LeaderboardPreview({ entries, rankMap }: LeaderboardPreviewProps) {

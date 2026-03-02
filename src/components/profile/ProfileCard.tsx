@@ -27,7 +27,7 @@ export interface ProfileCardData {
   bestFinishEvent?: string | null;
   recentResults: MatchResult[];
   cardBorder?: { border: string; shadow: string } | null;
-  bestRank?: 1 | 2 | 3 | 4 | 5 | null;
+  bestRank?: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | null;
   playoffFinishes?: PlayoffFinish[];
   armoryCount?: number;
   armoryUndefeated?: number;

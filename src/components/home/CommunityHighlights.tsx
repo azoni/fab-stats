@@ -7,7 +7,7 @@ import type { FeaturedEvent, LeaderboardEntry } from "@/types";
 interface CommunityHighlightsProps {
   featuredEvents: FeaturedEvent[];
   leaderboardEntries: LeaderboardEntry[];
-  rankMap?: Map<string, 1 | 2 | 3 | 4 | 5>;
+  rankMap?: Map<string, 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8>;
   /** Extra content rendered after tournaments */
   rightColumnExtra?: ReactNode;
 }

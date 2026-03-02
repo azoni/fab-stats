@@ -570,7 +570,7 @@ export default function LeaderboardPage() {
               {myRanks.map((r) => {
                 const entry = visibleEntries.find((e) => e.userId === user.uid);
                 const stat = entry ? getStat(entry, r.tab as Tab) : null;
-                const style = { 1: { bg: "bg-fuchsia-400/15", text: "text-fuchsia-400", medal: "1st" }, 2: { bg: "bg-sky-400/15", text: "text-sky-400", medal: "2nd" }, 3: { bg: "bg-yellow-400/15", text: "text-yellow-400", medal: "3rd" }, 4: { bg: "bg-gray-300/15", text: "text-gray-300", medal: "4th" }, 5: { bg: "bg-amber-600/15", text: "text-amber-600", medal: "5th" } }[r.rank];
+                const style = ({ 1: { bg: "bg-fuchsia-400/15", text: "text-fuchsia-400", medal: "1st" }, 2: { bg: "bg-sky-400/15", text: "text-sky-400", medal: "2nd" }, 3: { bg: "bg-yellow-400/15", text: "text-yellow-400", medal: "3rd" }, 4: { bg: "bg-gray-300/15", text: "text-gray-300", medal: "4th" }, 5: { bg: "bg-amber-600/15", text: "text-amber-600", medal: "5th" }, 6: { bg: "bg-gray-400/10", text: "text-gray-400", medal: "6th" }, 7: { bg: "bg-gray-400/10", text: "text-gray-400", medal: "7th" }, 8: { bg: "bg-gray-400/10", text: "text-gray-400", medal: "8th" } } as Record<number, { bg: string; text: string; medal: string }>)[r.rank];
                 return (
                   <button
                     key={r.tab}

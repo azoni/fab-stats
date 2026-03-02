@@ -4,7 +4,7 @@ import type { LeaderboardEntry } from "@/types";
 export interface LeaderboardRank {
   tab: string;
   tabLabel: string;
-  rank: 1 | 2 | 3 | 4 | 5;
+  rank: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
 }
 
 type RankTab = { id: string; label: string; filter: (e: LeaderboardEntry) => boolean; sort: (a: LeaderboardEntry, b: LeaderboardEntry) => number };
@@ -300,28 +300,28 @@ export function computeUserRanks(entries: LeaderboardEntry[], userId: string): L
   for (const tab of RANK_TABS) {
     const sorted = entries.filter(tab.filter).sort(tab.sort);
     const idx = sorted.findIndex((e) => e.userId === userId);
-    if (idx >= 0 && idx < 5) {
-      ranks.push({ tab: tab.id, tabLabel: tab.label, rank: (idx + 1) as 1 | 2 | 3 | 4 | 5 });
+    if (idx >= 0 && idx < 8) {
+      ranks.push({ tab: tab.id, tabLabel: tab.label, rank: (idx + 1) as 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 });
     }
   }
 
   return ranks;
 }
 
-export function getBestRank(ranks: LeaderboardRank[]): 1 | 2 | 3 | 4 | 5 | null {
+export function getBestRank(ranks: LeaderboardRank[]): 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | null {
   if (ranks.length === 0) return null;
-  return Math.min(...ranks.map((r) => r.rank)) as 1 | 2 | 3 | 4 | 5;
+  return Math.min(...ranks.map((r) => r.rank)) as 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
 }
 
-/** Bulk-compute the best rank (1-5) for every user that appears in any top-5 across all tabs. */
-export function computeRankMap(entries: LeaderboardEntry[]): Map<string, 1 | 2 | 3 | 4 | 5> {
-  const map = new Map<string, 1 | 2 | 3 | 4 | 5>();
+/** Bulk-compute the best rank (1-8) for every user that appears in any top-8 across all tabs. */
+export function computeRankMap(entries: LeaderboardEntry[]): Map<string, 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8> {
+  const map = new Map<string, 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8>();
 
   for (const tab of RANK_TABS) {
     const sorted = entries.filter(tab.filter).sort(tab.sort);
-    for (let i = 0; i < Math.min(5, sorted.length); i++) {
+    for (let i = 0; i < Math.min(8, sorted.length); i++) {
       const userId = sorted[i].userId;
-      const rank = (i + 1) as 1 | 2 | 3 | 4 | 5;
+      const rank = (i + 1) as 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
       const existing = map.get(userId);
       if (!existing || rank < existing) {
         map.set(userId, rank);
@@ -332,13 +332,14 @@ export function computeRankMap(entries: LeaderboardEntry[]): Map<string, 1 | 2 |
   return map;
 }
 
-export function rankBorderClass(rank: 1 | 2 | 3 | 4 | 5 | null | undefined): string {
+export function rankBorderClass(rank: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | null | undefined): string {
   if (!rank) return "";
   return rank === 1 ? "rank-border-grandmaster"
     : rank === 2 ? "rank-border-diamond"
     : rank === 3 ? "rank-border-gold"
     : rank === 4 ? "rank-border-silver"
-    : "rank-border-bronze";
+    : rank === 5 ? "rank-border-bronze"
+    : "rank-border-top8";
 }
 
 /** Count how many RANK_TABS a single entry qualifies for. */
@@ -347,13 +348,14 @@ export function countQualifyingTabs(entry: LeaderboardEntry): number {
 }
 
 /** Returns a CSS border-color value matching the rank's avatar glow color. */
-export function rankBorderColor(rank: 1 | 2 | 3 | 4 | 5 | null | undefined): string | undefined {
+export function rankBorderColor(rank: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | null | undefined): string | undefined {
   if (!rank) return undefined;
   return rank === 1 ? "rgba(255, 50, 150, 0.5)"
     : rank === 2 ? "rgba(56, 189, 248, 0.45)"
     : rank === 3 ? "rgba(250, 204, 21, 0.45)"
     : rank === 4 ? "rgba(192, 192, 210, 0.35)"
-    : "rgba(205, 127, 50, 0.4)";
+    : rank === 5 ? "rgba(205, 127, 50, 0.4)"
+    : "rgba(160, 160, 180, 0.25)";
 }
 
 // ── Event-tier card borders (matching PlayerProfile cardBorder logic) ──

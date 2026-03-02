@@ -162,6 +162,11 @@ body::after {
   animation: glow-bronze 3s ease-in-out infinite;
 }
 
+.rank-border-top8 {
+  outline: 1px solid rgba(160, 160, 180, 0.35);
+  outline-offset: 2px;
+}
+
 /* ── Leaderboard card styles (top 5) ── */
 
 @keyframes border-rotate {

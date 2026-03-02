@@ -8,7 +8,7 @@ import type { EventShowcaseConfig, EventShowcaseImage, Poll } from "@/types";
 interface EventShowcaseProps {
   config: EventShowcaseConfig;
   activePrediction: Poll | null;
-  rankMap: Map<string, 1 | 2 | 3 | 4 | 5>;
+  rankMap: Map<string, 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8>;
   unlockedColors: TextColor[];
 }
 

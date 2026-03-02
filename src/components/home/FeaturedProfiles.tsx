@@ -235,7 +235,7 @@ const DEFAULT_CONFIG = SPOTLIGHT_CONFIG["Most Active"];
 
 interface FeaturedProfilesProps {
   profiles: FeaturedProfile[];
-  rankMap?: Map<string, 1 | 2 | 3 | 4 | 5>;
+  rankMap?: Map<string, 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8>;
   /** Use grid layout (for homepage) instead of vertical list (for sidebar) */
   grid?: boolean;
 }

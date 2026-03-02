@@ -221,7 +221,7 @@ function FormatToolbar({ unlockedColors, onFormat, isAdmin }: FormatToolbarProps
 
 interface EventCommentWallProps {
   eventId: string;
-  rankMap: Map<string, 1 | 2 | 3 | 4 | 5>;
+  rankMap: Map<string, 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8>;
   unlockedColors?: TextColor[];
 }
 
@@ -542,7 +542,7 @@ interface WallCommentItemProps {
   isLoggedIn: boolean;
   isAdmin: boolean;
   isMuted: boolean;
-  rankMap: Map<string, 1 | 2 | 3 | 4 | 5>;
+  rankMap: Map<string, 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8>;
   onEdit: (id: string, text: string) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
   onReply: () => void;

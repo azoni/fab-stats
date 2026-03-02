@@ -23,7 +23,7 @@ import { ArmoryGarden } from "@/components/profile/ArmoryGarden";
 import { computeEventBadges } from "@/lib/events";
 import { checkIsAdmin } from "@/lib/admin";
 import { useLeaderboard } from "@/hooks/useLeaderboard";
-import { computeUserRanks, getBestRank } from "@/lib/leaderboard-ranks";
+import { computeUserRanks, getBestRank, rankBorderClass } from "@/lib/leaderboard-ranks";
 import { QuestionCircleIcon, LockIcon, SwordsIcon, CalendarIcon } from "@/components/icons/NavIcons";
 import { useAuth } from "@/contexts/AuthContext";
 import { useFavorites } from "@/hooks/useFavorites";
@@ -695,9 +695,9 @@ export default function PlayerProfile() {
   );
 }
 
-function ProfileHeader({ profile, bestRank, isAdmin, isOwner, isFavorited, onToggleFavorite, friendStatus, onFriendAction, onShareCard, friendCount }: { profile: UserProfile; bestRank?: 1 | 2 | 3 | 4 | 5 | null; isAdmin?: boolean; isOwner?: boolean; isFavorited?: boolean; onToggleFavorite?: () => void; friendStatus?: "none" | "sent" | "received" | "friends"; onFriendAction?: () => void; onShareCard?: () => void; friendCount?: number | null }) {
+function ProfileHeader({ profile, bestRank, isAdmin, isOwner, isFavorited, onToggleFavorite, friendStatus, onFriendAction, onShareCard, friendCount }: { profile: UserProfile; bestRank?: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | null; isAdmin?: boolean; isOwner?: boolean; isFavorited?: boolean; onToggleFavorite?: () => void; friendStatus?: "none" | "sent" | "received" | "friends"; onFriendAction?: () => void; onShareCard?: () => void; friendCount?: number | null }) {
   const [linkCopied, setLinkCopied] = useState(false);
-  const ringClass = bestRank === 1 ? "rank-border-grandmaster" : bestRank === 2 ? "rank-border-diamond" : bestRank === 3 ? "rank-border-gold" : bestRank === 4 ? "rank-border-silver" : bestRank === 5 ? "rank-border-bronze" : "";
+  const ringClass = rankBorderClass(bestRank ?? null);
   const isCreator = profile.username === "azoni";
   return (
     <div className="flex items-center gap-4 flex-1 min-w-0">

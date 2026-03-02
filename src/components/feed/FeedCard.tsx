@@ -85,7 +85,7 @@ const placementLabels: Record<string, { label: string; color: string; icon: stri
 };
 
 /** Shared avatar + header row — clickable link to player profile */
-function FeedCardHeader({ event, compact, rankMap }: { event: FeedEvent; compact?: boolean; rankMap?: Map<string, 1 | 2 | 3 | 4 | 5> }) {
+function FeedCardHeader({ event, compact, rankMap }: { event: FeedEvent; compact?: boolean; rankMap?: Map<string, 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8> }) {
   const initials = event.displayName
     .split(" ")
     .map((w) => w[0])
@@ -334,7 +334,7 @@ function HeroPill({ hero, compact }: { hero: string; compact?: boolean }) {
 
 // ── Content components ──
 
-export function FeedCard({ event, compact, rankMap, eventTierMap, userId, isAdmin, onDelete }: { event: FeedEvent; compact?: boolean; rankMap?: Map<string, 1 | 2 | 3 | 4 | 5>; eventTierMap?: Map<string, { border: string; shadow: string }>; userId?: string; isAdmin?: boolean; onDelete?: (eventId: string) => void }) {
+export function FeedCard({ event, compact, rankMap, eventTierMap, userId, isAdmin, onDelete }: { event: FeedEvent; compact?: boolean; rankMap?: Map<string, 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8>; eventTierMap?: Map<string, { border: string; shadow: string }>; userId?: string; isAdmin?: boolean; onDelete?: (eventId: string) => void }) {
   const tierStyle = eventTierMap?.get(event.userId);
   const canDelete = isAdmin || (userId && userId === event.userId);
 
@@ -484,7 +484,7 @@ function GroupedImportRow({ event }: { event: ImportFeedEvent }) {
   );
 }
 
-export function GroupedFeedCard({ group, compact, rankMap, eventTierMap, userId, isAdmin, onDelete }: { group: FeedGroup; compact?: boolean; rankMap?: Map<string, 1 | 2 | 3 | 4 | 5>; eventTierMap?: Map<string, { border: string; shadow: string }>; userId?: string; isAdmin?: boolean; onDelete?: (eventId: string) => void }) {
+export function GroupedFeedCard({ group, compact, rankMap, eventTierMap, userId, isAdmin, onDelete }: { group: FeedGroup; compact?: boolean; rankMap?: Map<string, 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8>; eventTierMap?: Map<string, { border: string; shadow: string }>; userId?: string; isAdmin?: boolean; onDelete?: (eventId: string) => void }) {
   const [expanded, setExpanded] = useState(false);
   const first = group.events[0];
   const isSingle = group.events.length === 1;

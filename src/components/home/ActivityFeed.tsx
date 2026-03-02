@@ -54,7 +54,7 @@ function readStored<T extends string>(key: string, valid: T[], fallback: T): T {
   return v && valid.includes(v) ? v : fallback;
 }
 
-export function ActivityFeed({ rankMap, eventTierMap }: { rankMap?: Map<string, 1 | 2 | 3 | 4 | 5>; eventTierMap?: Map<string, { border: string; shadow: string }> }) {
+export function ActivityFeed({ rankMap, eventTierMap }: { rankMap?: Map<string, 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8>; eventTierMap?: Map<string, { border: string; shadow: string }> }) {
   const router = useRouter();
   const { user, isAdmin } = useAuth();
   const { friends } = useFriends();
