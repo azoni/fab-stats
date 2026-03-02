@@ -1,6 +1,7 @@
 "use client";
 import { useRef, useState } from "react";
 import { logActivity } from "@/lib/activity-log";
+import { copyCardImage, downloadCardImage } from "@/lib/share-image";
 
 
 export interface FinishTheme {
@@ -215,63 +216,39 @@ export function BestFinishShareModal({
 }) {
   const cardRef = useRef<HTMLDivElement>(null);
   const [selectedTheme, setSelectedTheme] = useState(FINISH_THEMES[0]);
-  const [shareStatus, setShareStatus] = useState<"idle" | "copied" | "sharing">("idle");
+  const [shareStatus, setShareStatus] = useState<"idle" | "copied" | "text-copied" | "sharing">("idle");
 
   const finishData = {
-    playerName,
-    finishLabel: bestFinish.label,
-    eventName: bestFinish.eventName,
-    eventDate: bestFinish.eventDate,
-    totalMatches,
-    winRate,
-    topHero,
+    playerName, finishLabel: bestFinish.label, eventName: bestFinish.eventName,
+    eventDate: bestFinish.eventDate, totalMatches, winRate, topHero,
   };
 
   async function handleCopy() {
-    const url = buildBestFinishUrl(
-      window.location.origin,
-      playerName,
-      bestFinish.label,
-      bestFinish.eventName,
-      bestFinish.eventDate,
-      totalMatches,
-      winRate,
-      topHero,
-    );
+    const url = buildBestFinishUrl(window.location.origin, playerName, bestFinish.label, bestFinish.eventName, bestFinish.eventDate, totalMatches, winRate, topHero);
     const shareText = `${playerName} — ${bestFinish.label} at ${bestFinish.eventName}\n${url}`;
 
     setShareStatus("sharing");
-    try {
-      const { toBlob } = await import("html-to-image");
-      const blob = cardRef.current
-        ? await toBlob(cardRef.current, { pixelRatio: 2, backgroundColor: selectedTheme.bg })
-        : null;
-
-      const isMobile = "ontouchstart" in window || navigator.maxTouchPoints > 0;
-      if (isMobile && blob && navigator.share && navigator.canShare?.({ files: [new File([blob], "best-finish.png", { type: "image/png" })] })) {
-        const file = new File([blob], "best-finish.png", { type: "image/png" });
-        await navigator.share({ title: "FaB Stats — Best Finish", text: shareText, files: [file] });
-      } else if (blob && navigator.clipboard?.write) {
-        await navigator.clipboard.write([
-          new ClipboardItem({ "image/png": blob }),
-        ]);
-        logActivity("bestfinish_share");
-        setShareStatus("copied");
-        setTimeout(() => { setShareStatus("idle"); onClose(); }, 1500);
-        return;
-      } else {
-        await navigator.clipboard.writeText(url);
-        logActivity("bestfinish_share");
-        setShareStatus("copied");
-        setTimeout(() => { setShareStatus("idle"); onClose(); }, 1500);
-        return;
-      }
-    } catch {
-      try {
-        const url2 = buildBestFinishUrl(window.location.origin, playerName, bestFinish.label, bestFinish.eventName, bestFinish.eventDate, totalMatches, winRate, topHero);
-        await navigator.clipboard.writeText(url2);
-      } catch { /* ignore */ }
+    const result = await copyCardImage(cardRef.current, {
+      backgroundColor: selectedTheme.bg, fileName: "best-finish.png",
+      shareTitle: "FaB Stats — Best Finish", shareText, fallbackText: url,
+    });
+    if (result === "image" || result === "shared") {
+      logActivity("bestfinish_share");
+      setShareStatus("copied");
+      setTimeout(() => { setShareStatus("idle"); onClose(); }, 1500);
+    } else if (result === "text") {
+      logActivity("bestfinish_share");
+      setShareStatus("text-copied");
+      setTimeout(() => { setShareStatus("idle"); onClose(); }, 2000);
+    } else {
+      setShareStatus("idle");
     }
+  }
+
+  async function handleDownload() {
+    setShareStatus("sharing");
+    await downloadCardImage(cardRef.current, { backgroundColor: selectedTheme.bg, fileName: "best-finish.png" });
+    logActivity("bestfinish_share");
     setShareStatus("idle");
   }
 
@@ -320,14 +297,13 @@ export function BestFinishShareModal({
           </div>
         </div>
 
-        {/* Copy button */}
-        <div className="px-4 pb-4">
-          <button
-            onClick={handleCopy}
-            disabled={shareStatus === "sharing"}
-            className="w-full py-2.5 rounded-lg text-sm font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors disabled:opacity-50"
-          >
-            {shareStatus === "sharing" ? "Capturing..." : shareStatus === "copied" ? "Copied!" : "Copy Image"}
+        {/* Copy + Download buttons */}
+        <div className="px-4 pb-4 flex gap-2">
+          <button onClick={handleCopy} disabled={shareStatus === "sharing"} className="flex-1 py-2.5 rounded-lg text-sm font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors disabled:opacity-50">
+            {shareStatus === "sharing" ? "Capturing..." : shareStatus === "copied" ? "Image Copied!" : shareStatus === "text-copied" ? "Link Copied" : "Copy Image"}
+          </button>
+          <button onClick={handleDownload} disabled={shareStatus === "sharing"} className="px-4 py-2.5 rounded-lg text-sm font-medium border border-fab-border text-fab-muted hover:text-fab-text hover:border-fab-muted transition-colors disabled:opacity-50" title="Save Image">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
           </button>
         </div>
       </div>

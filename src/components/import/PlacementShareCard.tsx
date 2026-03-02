@@ -2,6 +2,7 @@
 import { useRef, useState, useEffect } from "react";
 import type { PlayoffFinish } from "@/lib/stats";
 import { logActivity } from "@/lib/activity-log";
+import { copyCardImage, downloadCardImage } from "@/lib/share-image";
 import {
   TIER_MAP,
   PLACEMENT_TEXT,
@@ -156,47 +157,35 @@ interface PlacementShareModalProps {
 export function PlacementShareModal({ playerName, finish, onClose }: PlacementShareModalProps) {
   const cardRef = useRef<HTMLDivElement>(null);
   const [selectedTheme, setSelectedTheme] = useState(FINISH_THEMES[0]);
-  const [shareStatus, setShareStatus] = useState<"idle" | "copied" | "sharing">("idle");
+  const [shareStatus, setShareStatus] = useState<"idle" | "copied" | "text-copied" | "sharing">("idle");
 
   const cardData: PlacementCardData = { playerName, finish };
 
   async function handleCopy() {
+    const shareText = `${playerName} — ${getPlacementLabel(finish.type)} at ${finish.eventName}`;
+
     setShareStatus("sharing");
-    try {
-      const { toBlob } = await import("html-to-image");
-      const blob = cardRef.current
-        ? await toBlob(cardRef.current, { pixelRatio: 2, backgroundColor: selectedTheme.bg })
-        : null;
-
-      const shareText = `${playerName} — ${getPlacementLabel(finish.type)} at ${finish.eventName}`;
-
-      const isMobile = "ontouchstart" in window || navigator.maxTouchPoints > 0;
-      if (isMobile && blob && navigator.share && navigator.canShare?.({ files: [new File([blob], "placement.png", { type: "image/png" })] })) {
-        const file = new File([blob], "placement.png", { type: "image/png" });
-        await navigator.share({ title: "FaB Stats — Event Placement", text: shareText, files: [file] });
-      } else if (blob && navigator.clipboard?.write) {
-        await navigator.clipboard.write([
-          new ClipboardItem({ "image/png": blob }),
-        ]);
-        logActivity("placement_share", finish.eventName);
-        setShareStatus("copied");
-        setTimeout(() => { setShareStatus("idle"); onClose(); }, 1500);
-        return;
-      } else {
-        await navigator.clipboard.writeText(shareText);
-        logActivity("placement_share", finish.eventName);
-        setShareStatus("copied");
-        setTimeout(() => { setShareStatus("idle"); onClose(); }, 1500);
-        return;
-      }
-    } catch {
-      try {
-        await navigator.clipboard.writeText(`${playerName} — ${getPlacementLabel(finish.type)} at ${finish.eventName}`);
-        setShareStatus("copied");
-        setTimeout(() => { setShareStatus("idle"); onClose(); }, 1500);
-        return;
-      } catch { /* ignore */ }
+    const result = await copyCardImage(cardRef.current, {
+      backgroundColor: selectedTheme.bg, fileName: "placement.png",
+      shareTitle: "FaB Stats — Event Placement", shareText, fallbackText: shareText,
+    });
+    if (result === "image" || result === "shared") {
+      logActivity("placement_share", finish.eventName);
+      setShareStatus("copied");
+      setTimeout(() => { setShareStatus("idle"); onClose(); }, 1500);
+    } else if (result === "text") {
+      logActivity("placement_share", finish.eventName);
+      setShareStatus("text-copied");
+      setTimeout(() => { setShareStatus("idle"); onClose(); }, 2000);
+    } else {
+      setShareStatus("idle");
     }
+  }
+
+  async function handleDownload() {
+    setShareStatus("sharing");
+    await downloadCardImage(cardRef.current, { backgroundColor: selectedTheme.bg, fileName: "placement.png" });
+    logActivity("placement_share", finish.eventName);
     setShareStatus("idle");
   }
 
@@ -245,14 +234,13 @@ export function PlacementShareModal({ playerName, finish, onClose }: PlacementSh
           </div>
         </div>
 
-        {/* Copy button */}
-        <div className="px-4 pb-4">
-          <button
-            onClick={handleCopy}
-            disabled={shareStatus === "sharing"}
-            className="w-full py-2.5 rounded-lg text-sm font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors disabled:opacity-50"
-          >
-            {shareStatus === "sharing" ? "Capturing..." : shareStatus === "copied" ? "Copied!" : "Copy Image"}
+        {/* Copy + Download buttons */}
+        <div className="px-4 pb-4 flex gap-2">
+          <button onClick={handleCopy} disabled={shareStatus === "sharing"} className="flex-1 py-2.5 rounded-lg text-sm font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors disabled:opacity-50">
+            {shareStatus === "sharing" ? "Capturing..." : shareStatus === "copied" ? "Image Copied!" : shareStatus === "text-copied" ? "Link Copied" : "Copy Image"}
+          </button>
+          <button onClick={handleDownload} disabled={shareStatus === "sharing"} className="px-4 py-2.5 rounded-lg text-sm font-medium border border-fab-border text-fab-muted hover:text-fab-text hover:border-fab-muted transition-colors disabled:opacity-50" title="Save Image">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
           </button>
         </div>
       </div>

@@ -3,6 +3,7 @@ import { useRef, useState } from "react";
 
 import { MatchResult } from "@/types";
 import { logActivity } from "@/lib/activity-log";
+import { copyCardImage, downloadCardImage } from "@/lib/share-image";
 import type { CardTheme } from "@/components/opponents/RivalryCard";
 import type { PlayoffFinish } from "@/lib/stats";
 
@@ -345,26 +346,7 @@ export function ProfileShareModal({
 }) {
   const cardRef = useRef<HTMLDivElement>(null);
   const [selectedTheme, setSelectedTheme] = useState(PROFILE_THEMES[0]);
-  const [shareStatus, setShareStatus] = useState<"idle" | "copied" | "sharing">("idle");
-
-  async function captureCard(): Promise<Blob | null> {
-    if (!cardRef.current) return null;
-    const { toBlob } = await import("html-to-image");
-    const opts = { pixelRatio: 2, backgroundColor: selectedTheme.bg, cacheBust: true };
-    try {
-      return await toBlob(cardRef.current, opts);
-    } catch {
-      // CORS failure on external images — retry without <img> elements
-      try {
-        return await toBlob(cardRef.current, {
-          ...opts,
-          filter: (node: HTMLElement) => node.tagName !== "IMG",
-        });
-      } catch {
-        return null;
-      }
-    }
-  }
+  const [shareStatus, setShareStatus] = useState<"idle" | "copied" | "text-copied" | "sharing">("idle");
 
   async function handleCopy() {
     const profileUrl = data.username
@@ -373,33 +355,31 @@ export function ProfileShareModal({
     const shareText = `${data.playerName} — ${data.winRate.toFixed(1)}% win rate across ${data.totalMatches} matches\n${profileUrl}`;
 
     setShareStatus("sharing");
-    try {
-      const blob = await captureCard();
-
-      const isMobile = "ontouchstart" in window || navigator.maxTouchPoints > 0;
-      if (isMobile && blob && navigator.share && navigator.canShare?.({ files: [new File([blob], "fab-stats.png", { type: "image/png" })] })) {
-        const file = new File([blob], "fab-stats.png", { type: "image/png" });
-        await navigator.share({ title: "FaB Stats — Profile", text: shareText, files: [file] });
-      } else if (blob && navigator.clipboard?.write) {
-        await navigator.clipboard.write([
-          new ClipboardItem({ "image/png": blob }),
-        ]);
-        logActivity("profile_share");
-        setShareStatus("copied");
-        setTimeout(() => { setShareStatus("idle"); onClose(); }, 1500);
-        return;
-      } else {
-        await navigator.clipboard.writeText(profileUrl);
-        logActivity("profile_share");
-        setShareStatus("copied");
-        setTimeout(() => { setShareStatus("idle"); onClose(); }, 1500);
-        return;
-      }
-    } catch {
-      try {
-        await navigator.clipboard.writeText(profileUrl);
-      } catch { /* ignore */ }
+    const result = await copyCardImage(cardRef.current, {
+      backgroundColor: selectedTheme.bg, fileName: "fab-stats.png",
+      shareTitle: "FaB Stats — Profile", shareText, fallbackText: profileUrl,
+      retryWithoutImages: true,
+    });
+    if (result === "image" || result === "shared") {
+      logActivity("profile_share");
+      setShareStatus("copied");
+      setTimeout(() => { setShareStatus("idle"); onClose(); }, 1500);
+    } else if (result === "text") {
+      logActivity("profile_share");
+      setShareStatus("text-copied");
+      setTimeout(() => { setShareStatus("idle"); onClose(); }, 2000);
+    } else {
+      setShareStatus("idle");
     }
+  }
+
+  async function handleDownload() {
+    setShareStatus("sharing");
+    await downloadCardImage(cardRef.current, {
+      backgroundColor: selectedTheme.bg, fileName: "fab-stats.png",
+      retryWithoutImages: true,
+    });
+    logActivity("profile_share");
     setShareStatus("idle");
   }
 
@@ -448,14 +428,24 @@ export function ProfileShareModal({
           </div>
         </div>
 
-        {/* Copy button */}
-        <div className="px-4 pb-4">
+        {/* Copy + Download buttons */}
+        <div className="px-4 pb-4 flex gap-2">
           <button
             onClick={handleCopy}
             disabled={shareStatus === "sharing"}
-            className="w-full py-2.5 rounded-lg text-sm font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors disabled:opacity-50"
+            className="flex-1 py-2.5 rounded-lg text-sm font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors disabled:opacity-50"
           >
-            {shareStatus === "sharing" ? "Capturing..." : shareStatus === "copied" ? "Copied!" : "Copy Image"}
+            {shareStatus === "sharing" ? "Capturing..." : shareStatus === "copied" ? "Image Copied!" : shareStatus === "text-copied" ? "Link Copied" : "Copy Image"}
+          </button>
+          <button
+            onClick={handleDownload}
+            disabled={shareStatus === "sharing"}
+            className="px-4 py-2.5 rounded-lg text-sm font-medium border border-fab-border text-fab-muted hover:text-fab-text hover:border-fab-muted transition-colors disabled:opacity-50"
+            title="Save Image"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
           </button>
         </div>
       </div>

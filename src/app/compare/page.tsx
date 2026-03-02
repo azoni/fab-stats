@@ -4,6 +4,7 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useLeaderboard } from "@/hooks/useLeaderboard";
 import { logActivity } from "@/lib/activity-log";
+import { copyCardImage, downloadCardImage } from "@/lib/share-image";
 import { useAuth } from "@/contexts/AuthContext";
 import { getHeroByName } from "@/lib/heroes";
 import { HeroClassIcon } from "@/components/heroes/HeroClassIcon";
@@ -1297,66 +1298,47 @@ function CompareShareModal({
   onClose: () => void;
 }) {
   const [selectedTheme, setSelectedTheme] = useState(CARD_THEMES[0]);
-  const [shareStatus, setShareStatus] = useState<"idle" | "sharing" | "copied">("idle");
+  const [shareStatus, setShareStatus] = useState<"idle" | "sharing" | "copied" | "text-copied">("idle");
   const cardRef = useRef<HTMLDivElement>(null);
 
   const { title: verdictTitle, subtitle: verdictSubtitle } = getVerdictTitle(p1, p2, p1Points, p2Points);
   const verdictBullets = getVerdictBullets(p1, p2, p1Points, p2Points, h2h);
 
   const compareData = {
-    p1Name: p1.displayName,
-    p2Name: p2.displayName,
-    stats,
-    p1TopHero: p1.topHero || "",
-    p2TopHero: p2.topHero || "",
-    p1Matches: p1.totalMatches + p1.totalByes,
-    p2Matches: p2.totalMatches + p2.totalByes,
-    p1Dominance: p1Points,
-    p2Dominance: p2Points,
-    p1PowerLevel,
-    p2PowerLevel,
-    h2h: h2h ?? undefined,
-    commonOpponents: commonEdges,
-    verdict: verdictTitle,
-    verdictSubtitle,
-    verdictBullets,
+    p1Name: p1.displayName, p2Name: p2.displayName, stats,
+    p1TopHero: p1.topHero || "", p2TopHero: p2.topHero || "",
+    p1Matches: p1.totalMatches + p1.totalByes, p2Matches: p2.totalMatches + p2.totalByes,
+    p1Dominance: p1Points, p2Dominance: p2Points, p1PowerLevel, p2PowerLevel,
+    h2h: h2h ?? undefined, commonOpponents: commonEdges,
+    verdict: verdictTitle, verdictSubtitle, verdictBullets,
   };
 
   async function handleCopy() {
     const url = `${window.location.origin}/compare?p2=${p2.username}`;
+    const shareText = `${p1.displayName} vs ${p2.displayName} \u2014 Versus on FaB Stats\n${url}`;
+
     setShareStatus("sharing");
-    try {
-      const { toBlob } = await import("html-to-image");
-      const blob = cardRef.current
-        ? await toBlob(cardRef.current, { pixelRatio: 2, backgroundColor: selectedTheme.bg })
-        : null;
-
-      const isMobile = "ontouchstart" in window || navigator.maxTouchPoints > 0;
-      const shareText = `${p1.displayName} vs ${p2.displayName} \u2014 Versus on FaB Stats\n${url}`;
-
-      if (isMobile && blob && navigator.share && navigator.canShare?.({ files: [new File([blob], "versus.png", { type: "image/png" })] })) {
-        const file = new File([blob], "versus.png", { type: "image/png" });
-        await navigator.share({ title: "FaB Stats", text: shareText, files: [file] });
-      } else if (blob && navigator.clipboard?.write) {
-        await navigator.clipboard.write([
-          new ClipboardItem({ "image/png": blob }),
-        ]);
-        logActivity("compare_share");
-        setShareStatus("copied");
-        setTimeout(() => { setShareStatus("idle"); onClose(); }, 1500);
-        return;
-      } else {
-        await navigator.clipboard.writeText(url);
-        logActivity("compare_share");
-        setShareStatus("copied");
-        setTimeout(() => { setShareStatus("idle"); onClose(); }, 1500);
-        return;
-      }
-    } catch {
-      try {
-        await navigator.clipboard.writeText(`${window.location.origin}/compare?p2=${p2.username}`);
-      } catch { /* ignore */ }
+    const result = await copyCardImage(cardRef.current, {
+      backgroundColor: selectedTheme.bg, fileName: "versus.png",
+      shareTitle: "FaB Stats", shareText, fallbackText: url,
+    });
+    if (result === "image" || result === "shared") {
+      logActivity("compare_share");
+      setShareStatus("copied");
+      setTimeout(() => { setShareStatus("idle"); onClose(); }, 1500);
+    } else if (result === "text") {
+      logActivity("compare_share");
+      setShareStatus("text-copied");
+      setTimeout(() => { setShareStatus("idle"); onClose(); }, 2000);
+    } else {
+      setShareStatus("idle");
     }
+  }
+
+  async function handleDownload() {
+    setShareStatus("sharing");
+    await downloadCardImage(cardRef.current, { backgroundColor: selectedTheme.bg, fileName: "versus.png" });
+    logActivity("compare_share");
     setShareStatus("idle");
   }
 
@@ -1402,13 +1384,12 @@ function CompareShareModal({
           </div>
         </div>
 
-        <div className="px-4 pb-4">
-          <button
-            onClick={handleCopy}
-            disabled={shareStatus === "sharing"}
-            className="w-full py-2.5 rounded-lg text-sm font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors disabled:opacity-50"
-          >
-            {shareStatus === "sharing" ? "Capturing..." : shareStatus === "copied" ? "Copied!" : "Copy Image"}
+        <div className="px-4 pb-4 flex gap-2">
+          <button onClick={handleCopy} disabled={shareStatus === "sharing"} className="flex-1 py-2.5 rounded-lg text-sm font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors disabled:opacity-50">
+            {shareStatus === "sharing" ? "Capturing..." : shareStatus === "copied" ? "Image Copied!" : shareStatus === "text-copied" ? "Link Copied" : "Copy Image"}
+          </button>
+          <button onClick={handleDownload} disabled={shareStatus === "sharing"} className="px-4 py-2.5 rounded-lg text-sm font-medium border border-fab-border text-fab-muted hover:text-fab-text hover:border-fab-muted transition-colors disabled:opacity-50" title="Save Image">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
           </button>
         </div>
       </div>

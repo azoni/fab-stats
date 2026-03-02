@@ -4,6 +4,7 @@ import { MatchResult, type MatchRecord } from "@/types";
 import { localDate } from "@/lib/constants";
 import { getRoundNumber } from "@/lib/stats";
 import { CARD_THEMES } from "@/components/opponents/RivalryCard";
+import { copyCardImage, downloadCardImage } from "@/lib/share-image";
 import { OnThisDayCard, type OnThisDayData } from "./OnThisDayCard";
 
 
@@ -357,40 +358,29 @@ function OnThisDayShareModal({
   onClose: () => void;
 }) {
   const [selectedTheme, setSelectedTheme] = useState(CARD_THEMES[0]);
-  const [shareStatus, setShareStatus] = useState<"idle" | "sharing" | "copied">("idle");
+  const [shareStatus, setShareStatus] = useState<"idle" | "sharing" | "copied" | "text-copied">("idle");
   const cardRef = useRef<HTMLDivElement>(null);
 
   async function handleCopy() {
     setShareStatus("sharing");
-    try {
-      const { toBlob } = await import("html-to-image");
-      const blob = cardRef.current
-        ? await toBlob(cardRef.current, { pixelRatio: 2, backgroundColor: selectedTheme.bg })
-        : null;
-
-      const isMobile = "ontouchstart" in window || navigator.maxTouchPoints > 0;
-
-      if (isMobile && blob && navigator.share && navigator.canShare?.({ files: [new File([blob], "onthisday.png", { type: "image/png" })] })) {
-        const file = new File([blob], "onthisday.png", { type: "image/png" });
-        await navigator.share({ title: "FaB Stats — On This Day", files: [file] });
-      } else if (blob && navigator.clipboard?.write) {
-        await navigator.clipboard.write([
-          new ClipboardItem({ "image/png": blob }),
-        ]);
-        setShareStatus("copied");
-        setTimeout(() => { setShareStatus("idle"); onClose(); }, 1500);
-        return;
-      } else {
-        await navigator.clipboard.writeText(window.location.href);
-        setShareStatus("copied");
-        setTimeout(() => { setShareStatus("idle"); onClose(); }, 1500);
-        return;
-      }
-    } catch {
-      try {
-        await navigator.clipboard.writeText(window.location.href);
-      } catch { /* ignore */ }
+    const result = await copyCardImage(cardRef.current, {
+      backgroundColor: selectedTheme.bg, fileName: "onthisday.png",
+      shareTitle: "FaB Stats — On This Day", shareText: "", fallbackText: window.location.href,
+    });
+    if (result === "image" || result === "shared") {
+      setShareStatus("copied");
+      setTimeout(() => { setShareStatus("idle"); onClose(); }, 1500);
+    } else if (result === "text") {
+      setShareStatus("text-copied");
+      setTimeout(() => { setShareStatus("idle"); onClose(); }, 2000);
+    } else {
+      setShareStatus("idle");
     }
+  }
+
+  async function handleDownload() {
+    setShareStatus("sharing");
+    await downloadCardImage(cardRef.current, { backgroundColor: selectedTheme.bg, fileName: "onthisday.png" });
     setShareStatus("idle");
   }
 
@@ -439,14 +429,13 @@ function OnThisDayShareModal({
           </div>
         </div>
 
-        {/* Copy button */}
-        <div className="px-4 pb-4">
-          <button
-            onClick={handleCopy}
-            disabled={shareStatus === "sharing"}
-            className="w-full py-2.5 rounded-lg text-sm font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors disabled:opacity-50"
-          >
-            {shareStatus === "sharing" ? "Capturing..." : shareStatus === "copied" ? "Copied!" : "Copy Image"}
+        {/* Copy + Download buttons */}
+        <div className="px-4 pb-4 flex gap-2">
+          <button onClick={handleCopy} disabled={shareStatus === "sharing"} className="flex-1 py-2.5 rounded-lg text-sm font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors disabled:opacity-50">
+            {shareStatus === "sharing" ? "Capturing..." : shareStatus === "copied" ? "Image Copied!" : shareStatus === "text-copied" ? "Link Copied" : "Copy Image"}
+          </button>
+          <button onClick={handleDownload} disabled={shareStatus === "sharing"} className="px-4 py-2.5 rounded-lg text-sm font-medium border border-fab-border text-fab-muted hover:text-fab-text hover:border-fab-muted transition-colors disabled:opacity-50" title="Save Image">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
           </button>
         </div>
       </div>

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useMatches } from "@/hooks/useMatches";
 import { logActivity } from "@/lib/activity-log";
+import { copyCardImage, downloadCardImage } from "@/lib/share-image";
 import { useAuth } from "@/contexts/AuthContext";
 import { computeOpponentStats } from "@/lib/stats";
 import { MatchCard } from "@/components/matches/MatchCard";
@@ -451,7 +452,7 @@ export default function OpponentsPage() {
 }
 
 function OpponentRow({ opp, isExpanded, onToggle, matchOwnerUid, playerName }: { opp: OpponentStats; isExpanded: boolean; onToggle: () => void; matchOwnerUid?: string; playerName?: string }) {
-  const [shareStatus, setShareStatus] = useState<"idle" | "copied" | "sharing">("idle");
+  const [shareStatus, setShareStatus] = useState<"idle" | "copied" | "text-copied" | "sharing">("idle");
   const [showShareModal, setShowShareModal] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
   // Compute streak vs this opponent (most recent results)
@@ -660,8 +661,8 @@ function ShareModal({
   ratedLosses: number;
   ratedDraws: number;
   recentResults: MatchResult[];
-  shareStatus: "idle" | "copied" | "sharing";
-  setShareStatus: (s: "idle" | "copied" | "sharing") => void;
+  shareStatus: "idle" | "copied" | "text-copied" | "sharing";
+  setShareStatus: (s: "idle" | "copied" | "text-copied" | "sharing") => void;
   onClose: () => void;
 }) {
   const [selectedTheme, setSelectedTheme] = useState(CARD_THEMES[0]);
@@ -684,53 +685,36 @@ function ShareModal({
 
   async function handleCopy() {
     const url = buildRivalryUrl(
-      window.location.origin,
-      playerName,
-      opp.opponentName,
-      opp.wins,
-      opp.losses,
-      opp.draws,
-      recentResults,
-      opp.heroesPlayed.filter((h) => h !== "Unknown"),
-      opp.opponentHeroes.filter((h) => h !== "Unknown"),
-      ratedWins,
-      ratedLosses,
-      ratedDraws,
+      window.location.origin, playerName, opp.opponentName, opp.wins, opp.losses, opp.draws,
+      recentResults, opp.heroesPlayed.filter((h) => h !== "Unknown"),
+      opp.opponentHeroes.filter((h) => h !== "Unknown"), ratedWins, ratedLosses, ratedDraws,
     );
     const shareText = `${playerName} vs ${opp.opponentName}: ${opp.wins}W-${opp.losses}L${opp.draws > 0 ? `-${opp.draws}D` : ""} (${opp.winRate.toFixed(0)}%)\n${url}`;
 
     setShareStatus("sharing");
-    try {
-      const { toBlob } = await import("html-to-image");
-      const blob = cardRef.current
-        ? await toBlob(cardRef.current, { pixelRatio: 2, backgroundColor: selectedTheme.bg })
-        : null;
-
-      const isMobile = "ontouchstart" in window || navigator.maxTouchPoints > 0;
-      if (isMobile && blob && navigator.share && navigator.canShare?.({ files: [new File([blob], "h2h.png", { type: "image/png" })] })) {
-        const file = new File([blob], "h2h.png", { type: "image/png" });
-        await navigator.share({ title: "FaB Stats", text: shareText, files: [file] });
-      } else if (blob && navigator.clipboard?.write) {
-        await navigator.clipboard.write([
-          new ClipboardItem({ "image/png": blob }),
-        ]);
-        logActivity("rivalry_share", opp.opponentName);
-        setShareStatus("copied");
-        setTimeout(() => { setShareStatus("idle"); onClose(); }, 1500);
-        return;
-      } else {
-        await navigator.clipboard.writeText(url);
-        logActivity("rivalry_share", opp.opponentName);
-        setShareStatus("copied");
-        setTimeout(() => { setShareStatus("idle"); onClose(); }, 1500);
-        return;
-      }
-    } catch {
-      try {
-        const url2 = buildRivalryUrl(window.location.origin, playerName, opp.opponentName, opp.wins, opp.losses, opp.draws, recentResults, [], [], ratedWins, ratedLosses, ratedDraws);
-        await navigator.clipboard.writeText(url2);
-      } catch { /* ignore */ }
+    const result = await copyCardImage(cardRef.current, {
+      backgroundColor: selectedTheme.bg, fileName: "h2h.png",
+      shareTitle: "FaB Stats", shareText, fallbackText: url,
+    });
+    if (result === "image" || result === "shared") {
+      logActivity("rivalry_share", opp.opponentName);
+      setShareStatus("copied");
+      setTimeout(() => { setShareStatus("idle"); onClose(); }, 1500);
+    } else if (result === "text") {
+      logActivity("rivalry_share", opp.opponentName);
+      setShareStatus("text-copied");
+      setTimeout(() => { setShareStatus("idle"); onClose(); }, 2000);
+    } else {
+      setShareStatus("idle");
     }
+  }
+
+  async function handleDownload() {
+    setShareStatus("sharing");
+    await downloadCardImage(cardRef.current, {
+      backgroundColor: selectedTheme.bg, fileName: "h2h.png",
+    });
+    logActivity("rivalry_share", opp.opponentName);
     setShareStatus("idle");
   }
 
@@ -779,14 +763,24 @@ function ShareModal({
           </div>
         </div>
 
-        {/* Copy button */}
-        <div className="px-4 pb-4">
+        {/* Copy + Download buttons */}
+        <div className="px-4 pb-4 flex gap-2">
           <button
             onClick={handleCopy}
             disabled={shareStatus === "sharing"}
-            className="w-full py-2.5 rounded-lg text-sm font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors disabled:opacity-50"
+            className="flex-1 py-2.5 rounded-lg text-sm font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors disabled:opacity-50"
           >
-            {shareStatus === "sharing" ? "Capturing..." : shareStatus === "copied" ? "Copied!" : "Copy Image"}
+            {shareStatus === "sharing" ? "Capturing..." : shareStatus === "copied" ? "Image Copied!" : shareStatus === "text-copied" ? "Link Copied" : "Copy Image"}
+          </button>
+          <button
+            onClick={handleDownload}
+            disabled={shareStatus === "sharing"}
+            className="px-4 py-2.5 rounded-lg text-sm font-medium border border-fab-border text-fab-muted hover:text-fab-text hover:border-fab-muted transition-colors disabled:opacity-50"
+            title="Save Image"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
           </button>
         </div>
       </div>
