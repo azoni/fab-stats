@@ -84,7 +84,7 @@ export const MetaSnapshot = memo(function MetaSnapshot({ topHeroes, top8Heroes, 
           <div
             className="absolute inset-0 pointer-events-none z-0"
             style={{
-              backgroundImage: `url(${backgroundImage})`,
+              backgroundImage: `url(${backgroundImage.startsWith("http") || backgroundImage.startsWith("/") ? backgroundImage : `/seasons/${backgroundImage}`})`,
               backgroundSize: "cover",
               backgroundPosition: "center top",
               opacity: 0.08,

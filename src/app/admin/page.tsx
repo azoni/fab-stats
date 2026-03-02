@@ -1544,14 +1544,14 @@ export default function AdminPage() {
                     <div className="flex items-center gap-2">
                       <input
                         type="text"
-                        placeholder="/seasons/proquest-lasvegas.jpg or https://..."
+                        placeholder="proquest-lasvegas.jpg"
                         value={s.backgroundImage || ""}
                         onChange={(e) => setSeasonsList((prev) => prev.map((s2, j) => j === i ? { ...s2, backgroundImage: e.target.value } : s2))}
                         className="flex-1 bg-fab-surface border border-fab-border text-fab-text text-sm rounded px-2 py-1.5 focus:outline-none focus:border-fab-gold"
                       />
                       {s.backgroundImage && (
                         <div className="w-10 h-10 rounded border border-fab-border overflow-hidden shrink-0 bg-fab-surface">
-                          <img src={s.backgroundImage} alt="" className="w-full h-full object-cover" />
+                          <img src={s.backgroundImage.startsWith("http") || s.backgroundImage.startsWith("/") ? s.backgroundImage : `/seasons/${s.backgroundImage}`} alt="" className="w-full h-full object-cover" />
                         </div>
                       )}
                     </div>
