@@ -77,8 +77,10 @@ const CARD_TYPE_LABELS: Record<string, string> = {
   recentForm: "Form",
 };
 
-export function getCardSize(type: ShowcaseCard["type"]): 1 | 2 {
-  return MEDIUM_TYPES.has(type) ? 2 : 1;
+export function getCardSize(type: ShowcaseCard["type"], card?: ShowcaseCard): 1 | 2 {
+  if (MEDIUM_TYPES.has(type)) return 2;
+  if (type === "statHighlight" && card?.stats && card.stats.length > 2) return 2;
+  return 1;
 }
 
 export function ShowcaseSection({
@@ -99,8 +101,9 @@ export function ShowcaseSection({
   const savedCards = profile[storageField];
   const defaultShowcase = useMemo<ShowcaseCard[]>(() => {
     if (savedCards && savedCards.length > 0) return savedCards;
-    return [];
-  }, [savedCards]);
+    if (storageField !== "showcase") return [];
+    return [{ type: "statHighlight", stats: ["eventsPlayed", "uniqueOpponents", "winRate", "totalMatches", "longestWinStreak"], stat: "winRate" }];
+  }, [savedCards, storageField]);
 
   const [cards, setCards] = useState<ShowcaseCard[]>(defaultShowcase);
   const [isEditing, setIsEditing] = useState(false);
@@ -108,7 +111,7 @@ export function ShowcaseSection({
   const [saving, setSaving] = useState(false);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
 
-  const usedPoints = useMemo(() => cards.reduce((sum, c) => sum + getCardSize(c.type), 0), [cards]);
+  const usedPoints = useMemo(() => cards.reduce((sum, c) => sum + getCardSize(c.type, c), 0), [cards]);
   const pointsLeft = maxPoints - usedPoints;
 
   const saveCards = useCallback(async (updated: ShowcaseCard[]) => {
@@ -187,7 +190,7 @@ export function ShowcaseSection({
       {cards.length > 0 && (
         <div className="grid grid-cols-2 gap-2.5">
           {cards.map((card, i) => {
-            const size = getCardSize(card.type);
+            const size = getCardSize(card.type, card);
             const isEditableCard = EDITABLE_TYPES.has(card.type);
             const isBeingEdited = editingIndex === i;
 

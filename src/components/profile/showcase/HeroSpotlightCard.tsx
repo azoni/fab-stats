@@ -15,7 +15,7 @@ export function HeroSpotlightCard({ heroStats, mastery }: HeroSpotlightCardProps
   const tc = mastery ? tierConfig[mastery.tier] : null;
 
   return (
-    <div className="spotlight-card spotlight-warrior bg-fab-surface border border-fab-border rounded-lg px-3 py-2 relative overflow-hidden h-full min-h-[88px]">
+    <div className="spotlight-card spotlight-warrior bg-fab-surface border border-fab-border rounded-lg px-3 py-2 relative overflow-hidden h-full min-h-[88px] flex flex-col justify-center">
       <p className="text-[10px] text-purple-400/70 uppercase tracking-wider font-medium mb-1">Hero</p>
       <div className="flex items-center gap-2">
         <HeroClassIcon heroClass={heroClass} size="sm" />
@@ -26,30 +26,15 @@ export function HeroSpotlightCard({ heroStats, mastery }: HeroSpotlightCardProps
           </span>
         )}
       </div>
-      <div className="flex items-center gap-2 mt-1">
-        <span className={`text-sm font-semibold ${heroStats.winRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>
+      <div className="flex items-center gap-2 mt-1.5">
+        <span className={`text-lg font-bold ${heroStats.winRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>
           {heroStats.winRate.toFixed(1)}%
         </span>
         <span className="text-xs text-fab-muted">
-          {heroStats.wins}W-{heroStats.losses}L{heroStats.draws > 0 && `-${heroStats.draws}D`}
+          {heroStats.wins}W - {heroStats.losses}L{heroStats.draws > 0 ? ` - ${heroStats.draws}D` : ""}
         </span>
-        <span className="text-xs text-fab-dim">{heroStats.totalMatches}m</span>
       </div>
-      {heroStats.matchups.length > 0 && (
-        <div className="flex items-center gap-1.5 mt-1">
-          {heroStats.matchups.slice(0, 3).map((mu) => {
-            const muInfo = getHeroByName(mu.opponentHero);
-            return (
-              <div key={mu.opponentHero} className="flex items-center gap-0.5">
-                <HeroClassIcon heroClass={muInfo?.classes[0]} size="sm" />
-                <span className={`text-[11px] font-medium ${mu.winRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>
-                  {mu.winRate.toFixed(0)}%
-                </span>
-              </div>
-            );
-          })}
-        </div>
-      )}
+      <p className="text-[11px] text-fab-dim mt-0.5">{heroStats.totalMatches} matches</p>
     </div>
   );
 }
