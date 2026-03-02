@@ -22,6 +22,7 @@ interface MatchupNotesProps {
 
 export function MatchupNotes({ matches, isAuthenticated }: MatchupNotesProps) {
   const [selectedHero, setSelectedHero] = useState<string>("");
+  const [search, setSearch] = useState("");
 
   // Heroes the user has played (sorted by match count)
   const playedHeroes = useMemo(() => {
@@ -34,23 +35,29 @@ export function MatchupNotes({ matches, isAuthenticated }: MatchupNotesProps) {
     return [...counts.entries()].sort((a, b) => b[1] - a[1]).map(([h]) => h);
   }, [matches]);
 
-  // All opponent heroes the user has faced with this hero
-  const opponents = useMemo(() => {
-    if (!selectedHero) return [];
+  // Split opponents into faced vs other heroes
+  const { faced, other } = useMemo(() => {
+    if (!selectedHero) return { faced: [], other: [] };
     const set = new Set<string>();
     for (const m of matches) {
       if (m.heroPlayed === selectedHero && m.opponentHero && m.opponentHero !== "Unknown") {
         set.add(m.opponentHero);
       }
     }
-    // Opponents faced first, then remaining heroes
-    const faced = [...set].sort();
-    const remaining = allHeroes
-      .map((h) => h.name)
-      .filter((h) => !set.has(h) && h !== selectedHero)
-      .sort();
-    return [...faced, ...remaining];
+    return {
+      faced: [...set].sort(),
+      other: allHeroes
+        .map((h) => h.name)
+        .filter((h) => !set.has(h) && h !== selectedHero)
+        .sort(),
+    };
   }, [matches, selectedHero]);
+
+  // Filter by search
+  const lowerSearch = search.toLowerCase();
+  const filteredFaced = lowerSearch ? faced.filter((h) => h.toLowerCase().includes(lowerSearch)) : faced;
+  const filteredOther = lowerSearch ? other.filter((h) => h.toLowerCase().includes(lowerSearch)) : other;
+  const totalFiltered = filteredFaced.length + filteredOther.length;
 
   const { general, matchups, loading, saving, updateGeneral, updateMatchup, flushGeneral, flushMatchup } =
     useMatchupNotes(selectedHero || null);
@@ -137,23 +144,74 @@ export function MatchupNotes({ matches, isAuthenticated }: MatchupNotesProps) {
 
               {/* Per-matchup notes */}
               <div>
-                <p className="text-xs text-fab-muted font-medium mb-2">
-                  Matchup Notes
-                  {opponents.length > 0 && (
-                    <span className="text-fab-dim ml-1">({opponents.length} heroes)</span>
-                  )}
-                </p>
-                <div className="space-y-2">
-                  {opponents.map((opp) => (
-                    <MatchupNoteRow
-                      key={opp}
-                      opponent={opp}
-                      note={matchups[opp] || ""}
-                      onChange={(val) => updateMatchup(opp, val)}
-                      onBlur={() => flushMatchup(opp, matchups[opp] || "")}
+                <div className="flex items-center gap-3 mb-3">
+                  <p className="text-xs text-fab-muted font-medium shrink-0">
+                    Matchup Notes
+                  </p>
+                  <div className="flex-1 max-w-xs relative">
+                    <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-fab-dim pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    <input
+                      type="text"
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
+                      placeholder="Search heroes..."
+                      className="w-full bg-fab-surface border border-fab-border rounded-md pl-8 pr-3 py-1.5 text-sm text-fab-text placeholder:text-fab-dim focus:outline-none focus:border-fab-gold/50 transition-colors"
                     />
-                  ))}
+                    {search && (
+                      <button
+                        onClick={() => setSearch("")}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-fab-dim hover:text-fab-muted"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
+                  <span className="text-xs text-fab-dim shrink-0">{totalFiltered} heroes</span>
                 </div>
+
+                {/* Faced opponents */}
+                {filteredFaced.length > 0 && (
+                  <div className="mb-3">
+                    {!lowerSearch && <p className="text-[11px] text-fab-dim uppercase tracking-wider mb-1.5">Faced ({filteredFaced.length})</p>}
+                    <div className="space-y-1.5">
+                      {filteredFaced.map((opp) => (
+                        <MatchupNoteRow
+                          key={opp}
+                          opponent={opp}
+                          note={matchups[opp] || ""}
+                          onChange={(val) => updateMatchup(opp, val)}
+                          onBlur={() => flushMatchup(opp, matchups[opp] || "")}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Other heroes */}
+                {filteredOther.length > 0 && (
+                  <div>
+                    {!lowerSearch && <p className="text-[11px] text-fab-dim uppercase tracking-wider mb-1.5">Other Heroes ({filteredOther.length})</p>}
+                    <div className="space-y-1.5">
+                      {filteredOther.map((opp) => (
+                        <MatchupNoteRow
+                          key={opp}
+                          opponent={opp}
+                          note={matchups[opp] || ""}
+                          onChange={(val) => updateMatchup(opp, val)}
+                          onBlur={() => flushMatchup(opp, matchups[opp] || "")}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {totalFiltered === 0 && search && (
+                  <p className="text-center py-4 text-sm text-fab-dim">No heroes matching &ldquo;{search}&rdquo;</p>
+                )}
               </div>
             </>
           )}

@@ -96,6 +96,11 @@ service cloud.firestore {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
+    // ── Matchup Notes (private per-hero notes) ──
+    match /users/{userId}/matchupNotes/{heroName} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
     // ── Username reservations ──
     match /usernames/{username} {
       // Anyone can read (for availability checks, search, profile lookups)
