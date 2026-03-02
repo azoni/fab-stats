@@ -3,7 +3,17 @@ import { useState, useMemo } from "react";
 import Link from "next/link";
 import { useMatches } from "@/hooks/useMatches";
 import { useAuth } from "@/contexts/AuthContext";
-import { computeTrends, computeRollingWinRate, getEventType } from "@/lib/stats";
+import {
+  computeTrends,
+  computeRollingWinRate,
+  computeHeroStats,
+  computeEventStats,
+  computeEventTypeStats,
+  computeVenueStats,
+  computeStreaks,
+  computePlayoffFinishes,
+  getEventType,
+} from "@/lib/stats";
 import { MatchResult } from "@/types";
 import {
   LineChart,
@@ -19,6 +29,8 @@ import {
   Tooltip,
   ResponsiveContainer,
   Legend,
+  AreaChart,
+  Area,
 } from "recharts";
 import { localDate } from "@/lib/constants";
 import { TrendsIcon } from "@/components/icons/NavIcons";
@@ -43,6 +55,35 @@ const FORMAT_COLORS = [
   "#ec4899",
   "#14b8a6",
 ];
+
+const EVENT_TYPE_COLORS: Record<string, string> = {
+  Armory: "#22c55e",
+  Skirmish: "#6366f1",
+  ProQuest: "#c9a84c",
+  "Road to Nationals": "#f59e0b",
+  "Battle Hardened": "#ef4444",
+  "The Calling": "#ec4899",
+  Nationals: "#8b5cf6",
+  "Pro Tour": "#14b8a6",
+  Worlds: "#f97316",
+  "Pre-Release": "#64748b",
+  "On Demand": "#64748b",
+  Other: "#888899",
+};
+
+const FINISH_COLORS: Record<string, string> = {
+  champion: "#c9a84c",
+  finalist: "#94a3b8",
+  top4: "#d97706",
+  top8: "#3b82f6",
+};
+
+const FINISH_LABELS: Record<string, string> = {
+  champion: "Champion",
+  finalist: "Finalist",
+  top4: "Top 4",
+  top8: "Top 8",
+};
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -147,6 +188,142 @@ export default function TrendsPage() {
     return { ratedCount: rated.length, unratedCount: unrated.length, ratedWR: wr(rated), unratedWR: wr(unrated) };
   }, [matches]);
 
+  // ── New data computations ──
+
+  // Streaks
+  const streakInfo = useMemo(() => {
+    const sorted = [...matches].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    return computeStreaks(sorted);
+  }, [matches]);
+
+  // Events played
+  const eventStats = useMemo(() => computeEventStats(matches), [matches]);
+
+  // Event type stats for "Best Event Type" card
+  const eventTypeStats = useMemo(() => computeEventTypeStats(matches), [matches]);
+  const bestEventType = useMemo(() => {
+    const qualified = eventTypeStats.filter((e) => e.totalMatches >= 5);
+    if (qualified.length === 0) return null;
+    return qualified.reduce((best, e) => e.winRate > best.winRate ? e : best);
+  }, [eventTypeStats]);
+
+  // Unique heroes
+  const uniqueHeroes = useMemo(() => new Set(matches.map((m) => m.heroPlayed)).size, [matches]);
+
+  // Hero performance
+  const heroStats = useMemo(() => computeHeroStats(matches).filter((h) => h.totalMatches >= 3), [matches]);
+
+  // Cumulative record over time
+  const cumulativeData = useMemo(() => {
+    const sorted = [...matches]
+      .filter((m) => m.result !== MatchResult.Bye)
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    if (sorted.length === 0) return [];
+    let wins = 0;
+    let losses = 0;
+    // Sample at most ~100 points for performance
+    const step = Math.max(1, Math.floor(sorted.length / 100));
+    const data: { index: number; date: string; wins: number; losses: number }[] = [];
+    for (let i = 0; i < sorted.length; i++) {
+      if (sorted[i].result === MatchResult.Win) wins++;
+      else if (sorted[i].result === MatchResult.Loss) losses++;
+      if (i % step === 0 || i === sorted.length - 1) {
+        data.push({ index: i + 1, date: sorted[i].date, wins, losses });
+      }
+    }
+    return data;
+  }, [matches]);
+
+  // Event type win rate over time (monthly)
+  const eventTypeOverTime = useMemo(() => {
+    const sorted = [...matches]
+      .filter((m) => m.result !== MatchResult.Bye)
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    if (sorted.length === 0) return { data: [] as Record<string, unknown>[], eventTypes: [] as string[] };
+
+    // Group by month + event type
+    const monthMap = new Map<string, Map<string, { w: number; t: number }>>();
+    const allEventTypes = new Set<string>();
+    for (const m of sorted) {
+      const d = localDate(m.date);
+      const month = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      const et = getEventType(m);
+      allEventTypes.add(et);
+      if (!monthMap.has(month)) monthMap.set(month, new Map());
+      const etMap = monthMap.get(month)!;
+      const cur = etMap.get(et) ?? { w: 0, t: 0 };
+      cur.t++;
+      if (m.result === MatchResult.Win) cur.w++;
+      etMap.set(et, cur);
+    }
+
+    // Only include event types with meaningful data (>= 5 total matches)
+    const etTotals = new Map<string, number>();
+    for (const etMap of monthMap.values()) {
+      for (const [et, { t }] of etMap) {
+        etTotals.set(et, (etTotals.get(et) ?? 0) + t);
+      }
+    }
+    const qualifiedTypes = [...etTotals.entries()]
+      .filter(([, total]) => total >= 5)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([et]) => et);
+
+    if (qualifiedTypes.length === 0) return { data: [], eventTypes: [] };
+
+    const data = [...monthMap.entries()]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([month, etMap]) => {
+        const point: Record<string, unknown> = { month };
+        for (const et of qualifiedTypes) {
+          const stats = etMap.get(et);
+          if (stats && stats.t >= 2) {
+            point[et] = Math.round((stats.w / stats.t) * 100);
+          }
+        }
+        return point;
+      });
+
+    return { data, eventTypes: qualifiedTypes };
+  }, [matches]);
+
+  // Best & worst opponent matchups (aggregate across all heroes)
+  const opponentMatchups = useMemo(() => {
+    const aggMap = new Map<string, { w: number; l: number; d: number }>();
+    for (const hero of computeHeroStats(matches)) {
+      for (const mu of hero.matchups) {
+        if (!mu.opponentHero || mu.opponentHero === "Unknown") continue;
+        const cur = aggMap.get(mu.opponentHero) ?? { w: 0, l: 0, d: 0 };
+        cur.w += mu.wins;
+        cur.l += mu.losses;
+        cur.d += mu.draws;
+        aggMap.set(mu.opponentHero, cur);
+      }
+    }
+    const all = [...aggMap.entries()]
+      .map(([hero, { w, l, d }]) => {
+        const total = w + l + d;
+        return { hero, wins: w, losses: l, draws: d, total, winRate: total > 0 ? Math.round((w / total) * 100) : 0 };
+      })
+      .filter((m) => m.total >= 3);
+    const sorted = [...all].sort((a, b) => b.winRate - a.winRate || b.total - a.total);
+    return {
+      best: sorted.slice(0, 5),
+      worst: [...all].sort((a, b) => a.winRate - b.winRate || b.total - a.total).slice(0, 5),
+    };
+  }, [matches]);
+
+  // Venue performance
+  const venueData = useMemo(() => {
+    const stats = computeVenueStats(matches)
+      .filter((v) => v.venue !== "Unknown" && v.totalMatches >= 3);
+    return stats;
+  }, [matches]);
+
+  // Tournament finishes
+  const playoffFinishes = useMemo(() => computePlayoffFinishes(eventStats), [eventStats]);
+
   if (!isLoaded) {
     return <div className="h-8 w-48 bg-fab-surface rounded animate-pulse" />;
   }
@@ -195,7 +372,7 @@ export default function TrendsPage() {
         </div>
       </div>
 
-      {/* Stat Cards */}
+      {/* Stat Cards — Row 1 */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <StatCard label="Total Matches" value={matches.length.toString()} />
         <StatCard
@@ -214,6 +391,26 @@ export default function TrendsPage() {
             value={`${halfComparison.diff >= 0 ? "+" : ""}${halfComparison.diff}%`}
             sub={`${halfComparison.firstWR}% → ${halfComparison.secondWR}%`}
             color={halfComparison.diff >= 0 ? "win" : "loss"}
+          />
+        )}
+      </div>
+
+      {/* Stat Cards — Row 2 */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <StatCard label="Events Played" value={eventStats.length.toString()} />
+        <StatCard
+          label="Win Streak"
+          value={streakInfo.longestWinStreak.toString()}
+          sub={streakInfo.currentStreak?.type === MatchResult.Win ? `${streakInfo.currentStreak.count} current` : undefined}
+          color="win"
+        />
+        <StatCard label="Unique Heroes" value={uniqueHeroes.toString()} />
+        {bestEventType && (
+          <StatCard
+            label="Best Event Type"
+            value={bestEventType.eventType}
+            sub={`${Math.round(bestEventType.winRate)}% WR (${bestEventType.totalMatches})`}
+            color={bestEventType.winRate >= 50 ? "win" : "loss"}
           />
         )}
       </div>
@@ -297,6 +494,30 @@ export default function TrendsPage() {
         </ResponsiveContainer>
       </div>
 
+      {/* Cumulative Record */}
+      {cumulativeData.length > 2 && (
+        <div className="bg-fab-surface border border-fab-border rounded-lg p-4">
+          <h2 className="text-lg font-semibold text-fab-text mb-4">Cumulative Record</h2>
+          <ResponsiveContainer width="100%" height={250}>
+            <AreaChart data={cumulativeData}>
+              <CartesianGrid strokeDasharray="3 3" stroke={COLORS.border} />
+              <XAxis dataKey="date" tick={{ fill: COLORS.muted, fontSize: 11 }} />
+              <YAxis tick={{ fill: COLORS.muted, fontSize: 11 }} />
+              <Tooltip
+                contentStyle={tooltipStyle}
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                formatter={((value: number, name: string) => {
+                  return [value, name === "wins" ? "Wins" : "Losses"];
+                }) as any}
+              />
+              <Area type="monotone" dataKey="wins" stroke={COLORS.win} fill={COLORS.win} fillOpacity={0.15} strokeWidth={2} name="wins" />
+              <Area type="monotone" dataKey="losses" stroke={COLORS.loss} fill={COLORS.loss} fillOpacity={0.15} strokeWidth={2} name="losses" />
+              <Legend formatter={(value: string) => value === "wins" ? "Wins" : "Losses"} />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      )}
+
       {/* Win Rate by Format + Format Breakdown side by side */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Win Rate by Format */}
@@ -346,6 +567,144 @@ export default function TrendsPage() {
         </div>
       </div>
 
+      {/* Win Rate by Event Type */}
+      {eventTypeWinRate.length > 1 && (
+        <div className="bg-fab-surface border border-fab-border rounded-lg p-4">
+          <h2 className="text-lg font-semibold text-fab-text mb-4">Win Rate by Event Type</h2>
+          <div className="space-y-3">
+            {eventTypeWinRate.map((e) => (
+              <Link key={e.eventType} href={`/events?type=${encodeURIComponent(e.eventType)}`} className="block hover:opacity-80 transition-opacity">
+                <div className="flex items-center justify-between text-sm mb-1">
+                  <span className="text-fab-text">{e.eventType}</span>
+                  <span className="text-fab-dim">{e.wins}W-{e.losses}L{e.draws > 0 ? `-${e.draws}D` : ""} ({e.total}) <span className={e.winRate >= 50 ? "text-fab-win font-medium" : "text-fab-loss font-medium"}>{e.winRate}%</span></span>
+                </div>
+                <div className="h-2 bg-fab-bg rounded-full overflow-hidden">
+                  <div
+                    className={`h-full rounded-full ${e.winRate >= 50 ? "bg-fab-win" : "bg-fab-loss"}`}
+                    style={{ width: `${e.winRate}%` }}
+                  />
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Event Type Win Rate Over Time */}
+      {eventTypeOverTime.data.length > 1 && eventTypeOverTime.eventTypes.length > 0 && (
+        <div className="bg-fab-surface border border-fab-border rounded-lg p-4">
+          <h2 className="text-lg font-semibold text-fab-text mb-1">Event Type Performance Over Time</h2>
+          <p className="text-xs text-fab-dim mb-4">Monthly win rate by event type (min 2 matches/month)</p>
+          <ResponsiveContainer width="100%" height={280}>
+            <LineChart data={eventTypeOverTime.data}>
+              <CartesianGrid strokeDasharray="3 3" stroke={COLORS.border} />
+              <XAxis dataKey="month" tick={{ fill: COLORS.muted, fontSize: 11 }} />
+              <YAxis domain={[0, 100]} tick={{ fill: COLORS.muted, fontSize: 11 }} />
+              <Tooltip
+                contentStyle={tooltipStyle}
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                formatter={((value: number) => [`${value}%`, undefined]) as any}
+              />
+              {eventTypeOverTime.eventTypes.map((et) => (
+                <Line
+                  key={et}
+                  type="monotone"
+                  dataKey={et}
+                  stroke={EVENT_TYPE_COLORS[et] || COLORS.muted}
+                  strokeWidth={2}
+                  dot={{ r: 3 }}
+                  connectNulls
+                  name={et}
+                />
+              ))}
+              <Legend />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      )}
+
+      {/* Hero Performance */}
+      {heroStats.length > 0 && (
+        <div className="bg-fab-surface border border-fab-border rounded-lg p-4">
+          <h2 className="text-lg font-semibold text-fab-text mb-1">Hero Performance</h2>
+          <p className="text-xs text-fab-dim mb-4">Win rate by hero played (min 3 matches)</p>
+          <div className="space-y-2.5">
+            {heroStats.slice(0, 10).map((h) => (
+              <div key={h.heroName}>
+                <div className="flex items-center justify-between text-sm mb-1">
+                  <span className="text-fab-text font-medium">{h.heroName}</span>
+                  <span className="text-fab-dim">
+                    {h.wins}W-{h.losses}L{h.draws > 0 ? `-${h.draws}D` : ""}{" "}
+                    <span className={`font-medium ${h.winRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>
+                      {Math.round(h.winRate)}%
+                    </span>
+                  </span>
+                </div>
+                <div className="h-2 bg-fab-bg rounded-full overflow-hidden">
+                  <div
+                    className={`h-full rounded-full ${h.winRate >= 50 ? "bg-fab-win" : "bg-fab-loss"}`}
+                    style={{ width: `${Math.min(h.winRate, 100)}%` }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Best & Worst Opponent Matchups */}
+      {(opponentMatchups.best.length > 0 || opponentMatchups.worst.length > 0) && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Best Matchups */}
+          {opponentMatchups.best.length > 0 && (
+            <div className="bg-fab-surface border border-fab-border rounded-lg p-4">
+              <h2 className="text-lg font-semibold text-fab-text mb-1">Best Matchups</h2>
+              <p className="text-xs text-fab-dim mb-4">Opponent heroes you dominate (min 3 matches)</p>
+              <div className="space-y-2.5">
+                {opponentMatchups.best.map((m) => (
+                  <div key={m.hero}>
+                    <div className="flex items-center justify-between text-sm mb-1">
+                      <span className="text-fab-text">{m.hero}</span>
+                      <span className="text-fab-dim">
+                        {m.wins}W-{m.losses}L{" "}
+                        <span className="text-fab-win font-medium">{m.winRate}%</span>
+                      </span>
+                    </div>
+                    <div className="h-1.5 bg-fab-bg rounded-full overflow-hidden">
+                      <div className="h-full rounded-full bg-fab-win" style={{ width: `${Math.min(m.winRate, 100)}%` }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Worst Matchups */}
+          {opponentMatchups.worst.length > 0 && (
+            <div className="bg-fab-surface border border-fab-border rounded-lg p-4">
+              <h2 className="text-lg font-semibold text-fab-text mb-1">Toughest Matchups</h2>
+              <p className="text-xs text-fab-dim mb-4">Opponent heroes you struggle against (min 3 matches)</p>
+              <div className="space-y-2.5">
+                {opponentMatchups.worst.map((m) => (
+                  <div key={m.hero}>
+                    <div className="flex items-center justify-between text-sm mb-1">
+                      <span className="text-fab-text">{m.hero}</span>
+                      <span className="text-fab-dim">
+                        {m.wins}W-{m.losses}L{" "}
+                        <span className="text-fab-loss font-medium">{m.winRate}%</span>
+                      </span>
+                    </div>
+                    <div className="h-1.5 bg-fab-bg rounded-full overflow-hidden">
+                      <div className="h-full rounded-full bg-fab-loss" style={{ width: `${Math.min(m.winRate, 100)}%` }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Win Rate by Day of Week */}
       {dayOfWeekData.length > 1 && (
         <div className="bg-fab-surface border border-fab-border rounded-lg p-4">
@@ -378,24 +737,57 @@ export default function TrendsPage() {
         </div>
       )}
 
-      {/* Win Rate by Event Type */}
-      {eventTypeWinRate.length > 1 && (
+      {/* Venue Performance */}
+      {venueData.length >= 2 && (
         <div className="bg-fab-surface border border-fab-border rounded-lg p-4">
-          <h2 className="text-lg font-semibold text-fab-text mb-4">Win Rate by Event Type</h2>
+          <h2 className="text-lg font-semibold text-fab-text mb-1">Venue Performance</h2>
+          <p className="text-xs text-fab-dim mb-4">Win rate by location (min 3 matches)</p>
           <div className="space-y-3">
-            {eventTypeWinRate.map((e) => (
-              <Link key={e.eventType} href={`/events?type=${encodeURIComponent(e.eventType)}`} className="block hover:opacity-80 transition-opacity">
+            {venueData.slice(0, 8).map((v) => (
+              <div key={v.venue}>
                 <div className="flex items-center justify-between text-sm mb-1">
-                  <span className="text-fab-text">{e.eventType}</span>
-                  <span className="text-fab-dim">{e.wins}W-{e.losses}L{e.draws > 0 ? `-${e.draws}D` : ""} ({e.total}) <span className={e.winRate >= 50 ? "text-fab-win font-medium" : "text-fab-loss font-medium"}>{e.winRate}%</span></span>
+                  <span className="text-fab-text truncate mr-3">{v.venue}</span>
+                  <span className="text-fab-dim shrink-0">
+                    {v.wins}W-{v.losses}L ({v.totalMatches}){" "}
+                    <span className={`font-medium ${v.winRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>
+                      {Math.round(v.winRate)}%
+                    </span>
+                  </span>
                 </div>
                 <div className="h-2 bg-fab-bg rounded-full overflow-hidden">
                   <div
-                    className={`h-full rounded-full ${e.winRate >= 50 ? "bg-fab-win" : "bg-fab-loss"}`}
-                    style={{ width: `${e.winRate}%` }}
+                    className={`h-full rounded-full ${v.winRate >= 50 ? "bg-fab-win" : "bg-fab-loss"}`}
+                    style={{ width: `${v.winRate}%` }}
                   />
                 </div>
-              </Link>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Tournament Finishes Timeline */}
+      {playoffFinishes.length > 0 && (
+        <div className="bg-fab-surface border border-fab-border rounded-lg p-4">
+          <h2 className="text-lg font-semibold text-fab-text mb-1">Tournament Finishes</h2>
+          <p className="text-xs text-fab-dim mb-4">Your competitive playoff placements over time</p>
+          <div className="space-y-2">
+            {playoffFinishes.map((f, i) => (
+              <div key={`${f.eventName}-${f.eventDate}-${i}`} className="flex items-center gap-3 py-1.5 border-b border-fab-border last:border-0">
+                <div
+                  className="w-3 h-3 rounded-full shrink-0"
+                  style={{ backgroundColor: FINISH_COLORS[f.type] }}
+                />
+                <span className="text-xs text-fab-dim w-20 shrink-0">{f.eventDate}</span>
+                <span
+                  className="text-xs font-semibold w-16 shrink-0"
+                  style={{ color: FINISH_COLORS[f.type] }}
+                >
+                  {FINISH_LABELS[f.type]}
+                </span>
+                <span className="text-sm text-fab-text truncate">{f.eventName}</span>
+                {f.hero && <span className="text-xs text-fab-muted shrink-0 ml-auto">{f.hero}</span>}
+              </div>
             ))}
           </div>
         </div>
