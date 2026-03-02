@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { MatchResult } from "@/types";
 import { logActivity } from "@/lib/activity-log";
 import { copyCardImage, downloadCardImage } from "@/lib/share-image";
+import { EMBLEM_COMPONENTS, EMBLEM_COLORS } from "@/components/profile/EmblemIcons";
 import type { CardTheme } from "@/components/opponents/RivalryCard";
 import type { PlayoffFinish } from "@/lib/stats";
 
@@ -11,6 +12,8 @@ export interface ProfileCardData {
   playerName: string;
   username?: string;
   photoUrl?: string;
+  talentEmblemId?: string | null;
+  classEmblemId?: string | null;
   wins: number;
   losses: number;
   draws: number;
@@ -247,7 +250,19 @@ export function ProfileCard({ data, theme }: { data: ProfileCardData; theme?: Ca
               )}
             </div>
             <div className="min-w-0">
-              <p style={{ color: t.text }} className="text-xl font-black truncate leading-tight">{playerName}</p>
+              <div className="flex items-center gap-1.5">
+                <p style={{ color: t.text }} className="text-xl font-black truncate leading-tight">{playerName}</p>
+                {data.talentEmblemId && EMBLEM_COMPONENTS[data.talentEmblemId] && (() => {
+                  const Icon = EMBLEM_COMPONENTS[data.talentEmblemId!];
+                  const colors = EMBLEM_COLORS[data.talentEmblemId!];
+                  return <span style={{ color: colors?.text ? undefined : t.accent }} className={colors?.text || ""}><Icon className="w-6 h-6" /></span>;
+                })()}
+                {data.classEmblemId && EMBLEM_COMPONENTS[data.classEmblemId] && (() => {
+                  const Icon = EMBLEM_COMPONENTS[data.classEmblemId!];
+                  const colors = EMBLEM_COLORS[data.classEmblemId!];
+                  return <span style={{ color: colors?.text ? undefined : t.accent }} className={colors?.text || ""}><Icon className="w-6 h-6" /></span>;
+                })()}
+              </div>
               {username && <p style={{ color: t.dim }} className="text-[11px]">@{username}</p>}
             </div>
           </div>

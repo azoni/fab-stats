@@ -5,7 +5,8 @@ interface EmblemDisplayProps {
   talentEmblemId?: string | null;
   classEmblemId?: string | null;
   isOwner?: boolean;
-  onClick?: () => void;
+  onClickTalent?: () => void;
+  onClickClass?: () => void;
 }
 
 function SingleEmblem({ emblemId, isOwner, onClick }: { emblemId?: string | null; isOwner?: boolean; onClick?: () => void }) {
@@ -47,7 +48,7 @@ function SingleEmblem({ emblemId, isOwner, onClick }: { emblemId?: string | null
   return content;
 }
 
-export function EmblemDisplay({ talentEmblemId, classEmblemId, isOwner, onClick }: EmblemDisplayProps) {
+export function EmblemDisplay({ talentEmblemId, classEmblemId, isOwner, onClickTalent, onClickClass }: EmblemDisplayProps) {
   const hasTalent = !!talentEmblemId && !!EMBLEM_COMPONENTS[talentEmblemId];
   const hasClass = !!classEmblemId && !!EMBLEM_COMPONENTS[classEmblemId];
 
@@ -56,8 +57,8 @@ export function EmblemDisplay({ talentEmblemId, classEmblemId, isOwner, onClick 
 
   return (
     <div className="flex items-center gap-1 shrink-0">
-      <SingleEmblem emblemId={talentEmblemId} isOwner={isOwner} onClick={onClick} />
-      <SingleEmblem emblemId={classEmblemId} isOwner={isOwner} onClick={onClick} />
+      <SingleEmblem emblemId={talentEmblemId} isOwner={isOwner} onClick={onClickTalent} />
+      <SingleEmblem emblemId={classEmblemId} isOwner={isOwner} onClick={onClickClass} />
     </div>
   );
 }

@@ -63,7 +63,7 @@ export default function PlayerProfile() {
   const [showRawData, setShowRawData] = useState(false);
   const [bestFinishShareOpen, setBestFinishShareOpen] = useState(false);
   const [profileShareOpen, setProfileShareOpen] = useState(false);
-  const [emblemPickerOpen, setEmblemPickerOpen] = useState(false);
+  const [emblemPickerMode, setEmblemPickerMode] = useState<"talent" | "class" | null>(null);
   const [achievementsExpanded, setAchievementsExpanded] = useState(false);
   const [showRecentEvents, setShowRecentEvents] = useState(false);
   const [showMajorEvents, setShowMajorEvents] = useState(true);
@@ -405,7 +405,7 @@ export default function PlayerProfile() {
               </div>
               <BadgeStrip matchCount={matches.length} />
             </div>
-            <EmblemDisplay talentEmblemId={profile.selectedEmblem} classEmblemId={profile.selectedClassEmblem} isOwner={isOwner} onClick={() => setEmblemPickerOpen(true)} />
+            <EmblemDisplay talentEmblemId={profile.selectedEmblem} classEmblemId={profile.selectedClassEmblem} isOwner={isOwner} onClickTalent={() => setEmblemPickerMode("talent")} onClickClass={() => setEmblemPickerMode("class")} />
           </div>
 
           {/* Last updated */}
@@ -572,17 +572,17 @@ export default function PlayerProfile() {
       )}
 
       {/* Profile share card modal */}
-      {emblemPickerOpen && isOwner && (
+      {emblemPickerMode && isOwner && (
         <EmblemPicker
-          currentTalentEmblemId={profile.selectedEmblem}
-          currentClassEmblemId={profile.selectedClassEmblem}
-          onSelect={async (talentId, classId) => {
-            const talentVal = talentId || "";
-            const classVal = classId || "";
-            await updateProfile(profile.uid, { selectedEmblem: talentVal, selectedClassEmblem: classVal });
-            setState((prev) => prev.status === "loaded" ? { ...prev, profile: { ...prev.profile, selectedEmblem: talentVal || undefined, selectedClassEmblem: classVal || undefined } } : prev);
+          mode={emblemPickerMode}
+          currentEmblemId={emblemPickerMode === "talent" ? profile.selectedEmblem : profile.selectedClassEmblem}
+          onSelect={async (emblemId) => {
+            const val = emblemId || "";
+            const field = emblemPickerMode === "talent" ? "selectedEmblem" : "selectedClassEmblem";
+            await updateProfile(profile.uid, { [field]: val });
+            setState((prev) => prev.status === "loaded" ? { ...prev, profile: { ...prev.profile, [field]: val || undefined } } : prev);
           }}
-          onClose={() => setEmblemPickerOpen(false)}
+          onClose={() => setEmblemPickerMode(null)}
         />
       )}
 
@@ -592,6 +592,8 @@ export default function PlayerProfile() {
             playerName: profile.displayName,
             username: profile.username,
             photoUrl: profile.photoUrl,
+            talentEmblemId: profile.selectedEmblem,
+            classEmblemId: profile.selectedClassEmblem,
             wins: overall.totalWins,
             losses: overall.totalLosses,
             draws: overall.totalDraws,

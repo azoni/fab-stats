@@ -3,52 +3,30 @@ import { useState } from "react";
 import { TALENT_EMBLEMS, CLASS_EMBLEMS } from "@/lib/emblems";
 import { EMBLEM_COMPONENTS, EMBLEM_COLORS } from "./EmblemIcons";
 
-type Tab = "talent" | "class";
-
 interface EmblemPickerProps {
-  currentTalentEmblemId?: string | null;
-  currentClassEmblemId?: string | null;
-  onSelect: (talentEmblemId: string | null, classEmblemId: string | null) => Promise<void>;
+  mode: "talent" | "class";
+  currentEmblemId?: string | null;
+  onSelect: (emblemId: string | null) => Promise<void>;
   onClose: () => void;
 }
 
-export function EmblemPicker({ currentTalentEmblemId, currentClassEmblemId, onSelect, onClose }: EmblemPickerProps) {
-  const [tab, setTab] = useState<Tab>("talent");
-  const [selectedTalent, setSelectedTalent] = useState<string | null>(currentTalentEmblemId || null);
-  const [selectedClass, setSelectedClass] = useState<string | null>(currentClassEmblemId || null);
+export function EmblemPicker({ mode, currentEmblemId, onSelect, onClose }: EmblemPickerProps) {
+  const [selected, setSelected] = useState<string | null>(currentEmblemId || null);
   const [saving, setSaving] = useState(false);
 
-  const emblems = tab === "talent" ? TALENT_EMBLEMS : CLASS_EMBLEMS;
-  const selected = tab === "talent" ? selectedTalent : selectedClass;
-  const setSelected = tab === "talent" ? setSelectedTalent : setSelectedClass;
+  const emblems = mode === "talent" ? TALENT_EMBLEMS : CLASS_EMBLEMS;
+  const title = mode === "talent" ? "Choose Talent Emblem" : "Choose Class Emblem";
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
       <div className="bg-fab-surface border border-fab-border rounded-lg p-5 w-full max-w-md mx-4" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-base font-bold text-fab-gold">Choose Your Emblems</h2>
+          <h2 className="text-base font-bold text-fab-gold">{title}</h2>
           <button onClick={onClose} className="text-fab-dim hover:text-fab-text transition-colors">
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
-        </div>
-
-        {/* Tabs */}
-        <div className="flex gap-1 mb-4 bg-fab-bg/50 rounded-lg p-1">
-          {(["talent", "class"] as Tab[]).map((t) => (
-            <button
-              key={t}
-              onClick={() => setTab(t)}
-              className={`flex-1 text-xs font-semibold py-1.5 rounded-md transition-colors ${
-                tab === t
-                  ? "bg-fab-gold text-fab-bg"
-                  : "text-fab-dim hover:text-fab-text"
-              }`}
-            >
-              {t === "talent" ? "Talent" : "Class"}
-            </button>
-          ))}
         </div>
 
         {/* Grid */}
@@ -97,7 +75,7 @@ export function EmblemPicker({ currentTalentEmblemId, currentClassEmblemId, onSe
           <button
             onClick={async () => {
               setSaving(true);
-              await onSelect(selectedTalent, selectedClass);
+              await onSelect(selected);
               onClose();
             }}
             disabled={saving}
