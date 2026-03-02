@@ -142,6 +142,7 @@ export interface UserProfile {
   unlockedCans?: string[];
   showcase?: ShowcaseCard[];
   showcaseSecondary?: ShowcaseCard[];
+  selectedEmblem?: string;
 }
 
 export interface ShowcaseCard {

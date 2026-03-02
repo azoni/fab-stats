@@ -2,7 +2,10 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { getProfileByUsername, getMatchesByUserId } from "@/lib/firestore-storage";
+import { getProfileByUsername, getMatchesByUserId, updateProfile } from "@/lib/firestore-storage";
+import { BadgeStrip } from "@/components/profile/BadgeStrip";
+import { EmblemDisplay } from "@/components/profile/EmblemDisplay";
+import { EmblemPicker } from "@/components/profile/EmblemPicker";
 import { updateLeaderboardEntry } from "@/lib/leaderboard";
 import { computeOverallStats, computeHeroStats, computeEventStats, computeOpponentStats, computeBestFinish, computePlayoffFinishes, getEventType, getRoundNumber } from "@/lib/stats";
 import { evaluateAchievements, getAchievementProgress } from "@/lib/achievements";
@@ -59,6 +62,7 @@ export default function PlayerProfile() {
   const [showRawData, setShowRawData] = useState(false);
   const [bestFinishShareOpen, setBestFinishShareOpen] = useState(false);
   const [profileShareOpen, setProfileShareOpen] = useState(false);
+  const [emblemPickerOpen, setEmblemPickerOpen] = useState(false);
   const [achievementsExpanded, setAchievementsExpanded] = useState(false);
   const [showRecentEvents, setShowRecentEvents] = useState(false);
   const [showMajorEvents, setShowMajorEvents] = useState(true);
@@ -373,9 +377,15 @@ export default function PlayerProfile() {
                 <span className="text-xs font-semibold text-fab-dim">Private Profile — only visible to you (admin) and the owner</span>
               </div>
             )}
-            {/* Profile row */}
+            {/* Profile row + emblem */}
             <div className="flex items-center gap-3">
-              <ProfileHeader profile={profile} bestRank={bestRank} isAdmin={isAdmin} isOwner={isOwner} isFavorited={!isOwner && !!currentUser && !isGuest && isFavorited(profile.uid)} onToggleFavorite={!isOwner && !!currentUser && !isGuest ? () => toggleFavorite(profile) : undefined} friendStatus={!isOwner && !!currentUser && !isGuest ? (isFriend(profile.uid) ? "friends" : hasSentRequest(profile.uid) ? "sent" : hasReceivedRequest(profile.uid) ? "received" : "none") : undefined} onFriendAction={!isOwner && !!currentUser && !isGuest ? () => { const fs = getFriendshipForUser(profile.uid); if (isFriend(profile.uid)) return; if (hasReceivedRequest(profile.uid) && fs) { acceptRequest(fs.id); } else if (!hasSentRequest(profile.uid)) { sendRequest(profile); } } : undefined} onShareCard={isOwner || isAdmin ? () => setProfileShareOpen(true) : undefined} friendCount={isAdmin ? friendCount : undefined} />
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-3">
+                  <ProfileHeader profile={profile} bestRank={bestRank} isAdmin={isAdmin} isOwner={isOwner} isFavorited={!isOwner && !!currentUser && !isGuest && isFavorited(profile.uid)} onToggleFavorite={!isOwner && !!currentUser && !isGuest ? () => toggleFavorite(profile) : undefined} friendStatus={!isOwner && !!currentUser && !isGuest ? (isFriend(profile.uid) ? "friends" : hasSentRequest(profile.uid) ? "sent" : hasReceivedRequest(profile.uid) ? "received" : "none") : undefined} onFriendAction={!isOwner && !!currentUser && !isGuest ? () => { const fs = getFriendshipForUser(profile.uid); if (isFriend(profile.uid)) return; if (hasReceivedRequest(profile.uid) && fs) { acceptRequest(fs.id); } else if (!hasSentRequest(profile.uid)) { sendRequest(profile); } } : undefined} onShareCard={isOwner || isAdmin ? () => setProfileShareOpen(true) : undefined} friendCount={isAdmin ? friendCount : undefined} />
+                </div>
+                <BadgeStrip matchCount={matches.length} />
+              </div>
+              <EmblemDisplay emblemId={profile.selectedEmblem} isOwner={isOwner} onClick={() => setEmblemPickerOpen(true)} />
             </div>
 
             {/* Last updated */}
@@ -540,6 +550,18 @@ export default function PlayerProfile() {
       )}
 
       {/* Profile share card modal */}
+      {emblemPickerOpen && isOwner && (
+        <EmblemPicker
+          currentEmblemId={profile.selectedEmblem}
+          onSelect={async (emblemId) => {
+            const val = emblemId || "";
+            await updateProfile(profile.uid, { selectedEmblem: val });
+            setState((prev) => prev.status === "loaded" ? { ...prev, profile: { ...prev.profile, selectedEmblem: val || undefined } } : prev);
+          }}
+          onClose={() => setEmblemPickerOpen(false)}
+        />
+      )}
+
       {profileShareOpen && (
         <ProfileShareModal
           data={{
