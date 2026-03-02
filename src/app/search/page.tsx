@@ -13,6 +13,7 @@ import { selectFeaturedProfiles } from "@/lib/featured-profiles";
 import { computeRankMap, computeEventTierMap } from "@/lib/leaderboard-ranks";
 import { groupConsecutiveEvents, GroupedFeedCard } from "@/components/feed/FeedCard";
 import { FeaturedProfiles } from "@/components/home/FeaturedProfiles";
+import { useCreators } from "@/hooks/useCreators";
 import { FeedIcon } from "@/components/icons/NavIcons";
 import type { UserProfile, FeedEvent } from "@/types";
 
@@ -79,6 +80,7 @@ function SearchContent() {
 
   // Spotlight state
   const { entries: lbEntries } = useLeaderboard();
+  const creators = useCreators();
   const featuredProfiles = useMemo(() => selectFeaturedProfiles(lbEntries), [lbEntries]);
   const rankMap = useMemo(() => computeRankMap(lbEntries), [lbEntries]);
   const eventTierMap = useMemo(() => computeEventTierMap(lbEntries), [lbEntries]);
@@ -387,12 +389,12 @@ function SearchContent() {
 
           {/* Spotlight sidebar */}
           <div className="hidden lg:block">
-            <FeaturedProfiles profiles={featuredProfiles} rankMap={rankMap} />
+            <FeaturedProfiles profiles={featuredProfiles} creators={creators} rankMap={rankMap} />
           </div>
 
           {/* Spotlight on mobile (below feed) */}
           <div className="lg:hidden">
-            <FeaturedProfiles profiles={featuredProfiles} rankMap={rankMap} />
+            <FeaturedProfiles profiles={featuredProfiles} creators={creators} rankMap={rankMap} />
           </div>
         </div>
       )}
