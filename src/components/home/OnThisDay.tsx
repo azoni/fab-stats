@@ -241,11 +241,16 @@ export function OnThisDay({ matches }: OnThisDayProps) {
         {collapsed && (
           <>
             <span className="text-[10px] text-fab-muted">{memories.length} {memories.length === 1 ? "year" : "years"}, {totalMatches} {totalMatches === 1 ? "match" : "matches"}</span>
-            {bestPlacement && (
-              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-fab-gold/15 text-fab-gold shrink-0">
-                {bestPlacement}
-              </span>
-            )}
+            {bestPlacement && (() => {
+              const pColors: Record<string, string> = { Champion: "text-yellow-400 bg-yellow-500/15", Finalist: "text-gray-300 bg-gray-400/15", "Top 4": "text-amber-400 bg-amber-500/15", "Top 8": "text-blue-400 bg-blue-500/15" };
+              const pIcons: Record<string, string> = { Champion: "M2.5 19h19v3h-19zM22.5 7l-5 4-5.5-7-5.5 7-5-4 2 12h17z", Finalist: "M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 21 12 17.77 5.82 21 7 14.14l-5-4.87 6.91-1.01L12 2z", "Top 4": "M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 21 12 17.77 5.82 21 7 14.14l-5-4.87 6.91-1.01L12 2z", "Top 8": "M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 21 12 17.77 5.82 21 7 14.14l-5-4.87 6.91-1.01L12 2z" };
+              return (
+                <span className={`inline-flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full ${pColors[bestPlacement] || "text-fab-gold bg-fab-gold/15"} shrink-0`}>
+                  <svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="currentColor"><path d={pIcons[bestPlacement] || pIcons["Top 8"]} /></svg>
+                  {bestPlacement}
+                </span>
+              );
+            })()}
           </>
         )}
         <svg className={`w-4 h-4 text-fab-dim ml-auto shrink-0 transition-transform ${collapsed ? "" : "rotate-180"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -277,11 +282,21 @@ export function OnThisDay({ matches }: OnThisDayProps) {
                         Undefeated
                       </span>
                     )}
-                    {mem.placement && (
-                      <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-purple-500/15 text-purple-400 font-semibold">
-                        {mem.placement}
-                      </span>
-                    )}
+                    {mem.placement && (() => {
+                      const pStyles: Record<string, { bg: string; text: string; icon: string }> = {
+                        Champion:  { bg: "bg-yellow-500/15", text: "text-yellow-400", icon: "M2.5 19h19v3h-19zM22.5 7l-5 4-5.5-7-5.5 7-5-4 2 12h17z" },
+                        Finalist:  { bg: "bg-gray-400/15",   text: "text-gray-300",   icon: "M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 21 12 17.77 5.82 21 7 14.14l-5-4.87 6.91-1.01L12 2z" },
+                        "Top 4":   { bg: "bg-amber-500/15",  text: "text-amber-400",  icon: "M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 21 12 17.77 5.82 21 7 14.14l-5-4.87 6.91-1.01L12 2z" },
+                        "Top 8":   { bg: "bg-blue-500/15",   text: "text-blue-400",   icon: "M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 21 12 17.77 5.82 21 7 14.14l-5-4.87 6.91-1.01L12 2z" },
+                      };
+                      const ps = pStyles[mem.placement] || pStyles["Top 8"];
+                      return (
+                        <span className={`inline-flex items-center gap-0.5 text-[9px] px-1.5 py-0.5 rounded-full ${ps.bg} ${ps.text} font-bold`}>
+                          <svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="currentColor"><path d={ps.icon} /></svg>
+                          {mem.placement}
+                        </span>
+                      );
+                    })()}
                   </div>
 
                   {/* Event name */}

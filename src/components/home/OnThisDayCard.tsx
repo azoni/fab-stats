@@ -2,6 +2,13 @@
 import { MatchResult } from "@/types";
 import type { CardTheme } from "@/components/opponents/RivalryCard";
 
+const PLACEMENT_STYLE: Record<string, { bg: string; color: string; icon: string }> = {
+  Champion:  { bg: "#fbbf2433", color: "#fbbf24", icon: "M2.5 19h19v3h-19zM22.5 7l-5 4-5.5-7-5.5 7-5-4 2 12h17z" },
+  Finalist:  { bg: "#c0c0d233", color: "#c0c0d2", icon: "M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 21 12 17.77 5.82 21 7 14.14l-5-4.87 6.91-1.01L12 2z" },
+  "Top 4":   { bg: "#f59e0b33", color: "#fbbf24", icon: "M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 21 12 17.77 5.82 21 7 14.14l-5-4.87 6.91-1.01L12 2z" },
+  "Top 8":   { bg: "#60a5fa33", color: "#60a5fa", icon: "M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 21 12 17.77 5.82 21 7 14.14l-5-4.87 6.91-1.01L12 2z" },
+};
+
 interface MemoryMatch {
   opponentName?: string;
   opponentHero?: string;
@@ -76,14 +83,18 @@ export function OnThisDayCard({ data, theme }: { data: OnThisDayData; theme: Car
                       Undefeated
                     </span>
                   )}
-                  {mem.placement && (
-                    <span
-                      style={{ backgroundColor: "#a855f733", color: "#c084fc" }}
-                      className="text-[9px] px-1.5 py-0.5 rounded-full font-semibold"
-                    >
-                      {mem.placement}
-                    </span>
-                  )}
+                  {mem.placement && (() => {
+                    const ps = PLACEMENT_STYLE[mem.placement] || PLACEMENT_STYLE["Top 8"];
+                    return (
+                      <span
+                        style={{ backgroundColor: ps.bg, color: ps.color }}
+                        className="inline-flex items-center gap-0.5 text-[9px] px-1.5 py-0.5 rounded-full font-bold"
+                      >
+                        <svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor"><path d={ps.icon} /></svg>
+                        {mem.placement}
+                      </span>
+                    );
+                  })()}
                 </div>
 
                 {/* Heroes */}
@@ -102,7 +113,7 @@ export function OnThisDayCard({ data, theme }: { data: OnThisDayData; theme: Car
 
                 {/* Match details */}
                 <div className="space-y-1">
-                  {mem.matches.slice(0, 6).map((m, i) => {
+                  {mem.matches.map((m, i) => {
                     const resultColor = m.result === MatchResult.Win ? t.win : m.result === MatchResult.Loss ? t.loss : t.draw;
                     const resultLabel = m.result === MatchResult.Win ? "W" : m.result === MatchResult.Loss ? "L" : "D";
                     const roundLabel = m.roundLabel ?? (m.notes?.match(/Round (\d+)/)?.[1] ? `R${m.notes.match(/Round (\d+)/)![1]}` : m.format);
@@ -128,9 +139,6 @@ export function OnThisDayCard({ data, theme }: { data: OnThisDayData; theme: Car
                       </div>
                     );
                   })}
-                  {mem.matches.length > 6 && (
-                    <p style={{ color: t.dim }} className="text-[10px]">+{mem.matches.length - 6} more</p>
-                  )}
                 </div>
               </div>
             </div>
