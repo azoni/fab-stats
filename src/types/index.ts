@@ -266,7 +266,7 @@ export interface LeaderboardEntry {
   hideFromSpotlight?: boolean;
   hideFromGuests?: boolean;
   heroBreakdown?: { hero: string; matches: number; wins: number; winRate: number }[];
-  heroBreakdownDetailed?: { hero: string; format: string; eventType: string; matches: number; wins: number; winRate: number }[];
+  heroBreakdownDetailed?: { hero: string; format: string; eventType: string; matches: number; wins: number; winRate: number; dates?: string[] }[];
   weeklyHeroBreakdown?: { hero: string; format: string; eventType: string; matches: number; wins: number }[];
   monthlyHeroBreakdown?: { hero: string; format: string; eventType: string; matches: number; wins: number }[];
   totalTop8s?: number;

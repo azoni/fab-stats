@@ -98,14 +98,15 @@ export async function updateLeaderboardEntry(
   }));
 
   // Hero breakdown by format + event type (for meta page filtering)
-  const heroDetailedData = new Map<string, { matches: number; wins: number }>();
+  const heroDetailedData = new Map<string, { matches: number; wins: number; dates: Set<string> }>();
   for (const m of matches) {
     if (m.heroPlayed && isValidHeroName(m.heroPlayed) && m.result !== MatchResult.Bye) {
       const et = getEventType(m);
       const key = `${m.heroPlayed}|${m.format}|${et}`;
-      const cur = heroDetailedData.get(key) || { matches: 0, wins: 0 };
+      const cur = heroDetailedData.get(key) || { matches: 0, wins: 0, dates: new Set<string>() };
       cur.matches++;
       if (m.result === MatchResult.Win) cur.wins++;
+      if (m.date) cur.dates.add(m.date);
       heroDetailedData.set(key, cur);
     }
   }
@@ -121,6 +122,7 @@ export async function updateLeaderboardEntry(
         matches: data.matches,
         wins: data.wins,
         winRate: data.matches > 0 ? Math.round((data.wins / data.matches) * 1000) / 10 : 0,
+        dates: [...data.dates].sort(),
       };
     });
 

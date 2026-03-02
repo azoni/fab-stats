@@ -96,19 +96,11 @@ export function ShowcaseSection({
   storageField = "showcase",
   label = "Showcase",
 }: ShowcaseSectionProps) {
-  // Default showcase: achievements card with 5 rarest if user has no saved showcase
   const savedCards = profile[storageField];
   const defaultShowcase = useMemo<ShowcaseCard[]>(() => {
     if (savedCards && savedCards.length > 0) return savedCards;
-    if (storageField !== "showcase") return []; // No default for secondary
-    if (achievements.length === 0) return [];
-    const RARITY_ORDER: Record<string, number> = { legendary: 0, epic: 1, rare: 2, uncommon: 3, common: 4 };
-    const top5 = [...achievements]
-      .sort((a, b) => (RARITY_ORDER[a.rarity] ?? 5) - (RARITY_ORDER[b.rarity] ?? 5))
-      .slice(0, 5)
-      .map((a) => a.id);
-    return [{ type: "achievements", achievementIds: top5 }];
-  }, [savedCards, achievements, storageField]);
+    return [];
+  }, [savedCards]);
 
   const [cards, setCards] = useState<ShowcaseCard[]>(defaultShowcase);
   const [isEditing, setIsEditing] = useState(false);

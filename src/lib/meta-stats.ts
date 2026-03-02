@@ -219,27 +219,17 @@ export function computeTop8HeroMeta(
       }
     }
   } else {
-    // Date-range mode: find players active in the date range (have any top8 entry),
-    // then count ALL their heroes from heroBreakdownDetailed (not just top8 heroes)
-    const activePlayers = new Set<string>();
+    // Date-range mode: count players whose heroBreakdownDetailed dates overlap the range
     for (const entry of entries) {
-      if (!entry.top8Heroes) continue;
-      for (const t8 of entry.top8Heroes) {
-        if (filterEventType && t8.eventType !== filterEventType) continue;
-        if (filterFormat && t8.format !== filterFormat) continue;
-        if (t8.eventDate < sinceDateStr!) continue;
-        if (t8.eventDate > untilDateStr!) continue;
-        activePlayers.add(entry.userId);
-        break; // only need one match to know this player was active
-      }
-    }
-    for (const entry of entries) {
-      if (!activePlayers.has(entry.userId)) continue;
       if (!entry.heroBreakdownDetailed) continue;
       for (const hb of entry.heroBreakdownDetailed) {
         if (!validHeroNames.has(hb.hero)) continue;
         if (filterEventType && hb.eventType !== filterEventType) continue;
         if (filterFormat && hb.format !== filterFormat) continue;
+        // If dates[] exists, check if any fall within the range; if not backfilled yet, include player
+        const hasDateInRange = !hb.dates || hb.dates.length === 0
+          || hb.dates.some(d => d >= sinceDateStr! && d <= untilDateStr!);
+        if (!hasDateInRange) continue;
         const players = heroPlayers.get(hb.hero) || new Set<string>();
         players.add(entry.userId);
         heroPlayers.set(hb.hero, players);
