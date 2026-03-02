@@ -46,7 +46,7 @@ export default function TournamentsPage() {
       });
     }
 
-    return result;
+    return result.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [events, filterFormat, filterEventType, search]);
 
   if (loading) {

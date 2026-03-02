@@ -14,7 +14,9 @@ export function FeaturedTournaments({ events, leaderboardEntries }: FeaturedTour
   if (events.length === 0) return null;
 
   const entryMap = new Map(leaderboardEntries.map((e) => [e.username, e]));
-  const displayEvents = events.slice(0, HOMEPAGE_LIMIT);
+  const displayEvents = [...events]
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    .slice(0, HOMEPAGE_LIMIT);
 
   return (
     <div className="flex flex-col">
