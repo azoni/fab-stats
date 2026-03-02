@@ -24,6 +24,8 @@ const DAILY_LIMIT = 50;
 // Haiku pricing (per token)
 const INPUT_COST_PER_TOKEN = 0.80 / 1_000_000;
 const OUTPUT_COST_PER_TOKEN = 4.00 / 1_000_000;
+const CACHE_WRITE_PER_TOKEN = 1.00 / 1_000_000;  // 25% surcharge on input
+const CACHE_READ_PER_TOKEN = 0.08 / 1_000_000;   // 90% discount on input
 
 // Heroes whose only legal format is "Living Legend" (no longer in CC/Blitz).
 // Filtered from meta summary so current-meta questions aren't skewed by old data.
@@ -61,8 +63,13 @@ function jsonResponse(body: any, status: number, extraHeaders: Record<string, st
   });
 }
 
-function estimateCost(inputTokens: number, outputTokens: number): number {
-  return inputTokens * INPUT_COST_PER_TOKEN + outputTokens * OUTPUT_COST_PER_TOKEN;
+function estimateCost(inputTokens: number, outputTokens: number, cacheCreationTokens = 0, cacheReadTokens = 0): number {
+  // Non-cached input tokens = total input minus cached portions
+  const regularInput = inputTokens - cacheCreationTokens - cacheReadTokens;
+  return (regularInput * INPUT_COST_PER_TOKEN) +
+    (cacheCreationTokens * CACHE_WRITE_PER_TOKEN) +
+    (cacheReadTokens * CACHE_READ_PER_TOKEN) +
+    (outputTokens * OUTPUT_COST_PER_TOKEN);
 }
 
 // ── Rate Limiting ──
@@ -522,7 +529,7 @@ export default async function handler(req: Request) {
     }
     conversationMessages.push({ role: "user", content: message });
 
-    // Call Claude
+    // Call Claude (with prompt caching on system prompt)
     const anthropicRes = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
@@ -533,7 +540,9 @@ export default async function handler(req: Request) {
       body: JSON.stringify({
         model: MODEL,
         max_tokens: MAX_TOKENS,
-        system: systemPrompt,
+        system: [
+          { type: "text", text: systemPrompt, cache_control: { type: "ephemeral" } },
+        ],
         messages: conversationMessages,
       }),
     });
@@ -548,7 +557,9 @@ export default async function handler(req: Request) {
     const responseText = data?.content?.[0]?.text || "I'm sorry, I couldn't generate a response.";
     const inputTokens = data?.usage?.input_tokens || 0;
     const outputTokens = data?.usage?.output_tokens || 0;
-    const cost = estimateCost(inputTokens, outputTokens);
+    const cacheCreationTokens = data?.usage?.cache_creation_input_tokens || 0;
+    const cacheReadTokens = data?.usage?.cache_read_input_tokens || 0;
+    const cost = estimateCost(inputTokens, outputTokens, cacheCreationTokens, cacheReadTokens);
 
     // Save messages + stats (don't block response on failure)
     let messageId = "";

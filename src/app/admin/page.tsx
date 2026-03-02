@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
-import { getAdminDashboardData, getChatGlobalStats, backfillLeaderboard, broadcastMessage, fixMatchDates, backfillGemIds, backfillMatchLinking, backfillH2H, type AdminDashboardData, type AdminUserStats, type ChatGlobalStats } from "@/lib/admin";
+import { getAdminDashboardData, getChatGlobalStats, getAdminChatMessages, backfillLeaderboard, broadcastMessage, fixMatchDates, backfillGemIds, backfillMatchLinking, backfillH2H, type AdminDashboardData, type AdminUserStats, type ChatGlobalStats } from "@/lib/admin";
 import { getAllFeedback, updateFeedbackStatus } from "@/lib/feedback";
 import { getCreators, saveCreators } from "@/lib/creators";
 import { getEvents, saveEvents } from "@/lib/featured-events";
@@ -138,6 +138,9 @@ export default function AdminPage() {
   const [badgeAssignments, setBadgeAssignments] = useState<Record<string, string[]>>({});
   const [mutedIds, setMutedIds] = useState<Set<string>>(new Set());
   const [aiCost, setAiCost] = useState<ChatGlobalStats>({ totalMessages: 0, totalCost: 0, users: {} });
+  const [chatLogUid, setChatLogUid] = useState<string | null>(null);
+  const [chatLogMessages, setChatLogMessages] = useState<any[]>([]);
+  const [chatLogLoading, setChatLogLoading] = useState(false);
   const anyToolRunning = fixingDates || backfilling || backfillingGemIds || linkingMatches || resyncingH2H;
   const [activeTab, setActiveTab] = useState<"overview" | "users" | "feedback" | "content" | "poll" | "tools">(() => {
     if (typeof window !== "undefined") {
@@ -596,6 +599,18 @@ export default function AdminPage() {
                               <td className="px-4 py-2 text-right font-mono">
                                 <span className="text-fab-text">{cs?.messages || 0}</span>
                                 {(cs?.cost || 0) > 0 && <div className="text-[10px] text-fab-dim">${cs.cost.toFixed(3)}</div>}
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (chatLogUid === u.uid) { setChatLogUid(null); return; }
+                                    setChatLogUid(u.uid);
+                                    setChatLogLoading(true);
+                                    getAdminChatMessages(u.uid).then((msgs) => { setChatLogMessages(msgs); setChatLogLoading(false); });
+                                  }}
+                                  className={`text-[10px] mt-0.5 font-medium transition-colors ${chatLogUid === u.uid ? "text-fab-gold" : "text-fab-dim hover:text-fab-gold"}`}
+                                >
+                                  {chatLogUid === u.uid ? "Hide" : "View"}
+                                </button>
                               </td>
                             );
                           })()}
@@ -657,6 +672,43 @@ export default function AdminPage() {
               </table>
             </div>
           </div>
+
+          {/* Chat Log Viewer */}
+          {chatLogUid && statusFilter === "chat" && (
+            <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden mt-4">
+              <div className="px-4 py-3 border-b border-fab-border flex items-center justify-between">
+                <h2 className="text-sm font-semibold text-fab-text">
+                  Chat Log — {data.users.find((u) => u.uid === chatLogUid)?.username || chatLogUid}
+                </h2>
+                <button onClick={() => setChatLogUid(null)} className="text-xs text-fab-dim hover:text-fab-text transition-colors">Close</button>
+              </div>
+              <div className="p-4 max-h-[500px] overflow-y-auto space-y-3">
+                {chatLogLoading ? (
+                  <p className="text-sm text-fab-dim">Loading messages...</p>
+                ) : chatLogMessages.length === 0 ? (
+                  <p className="text-sm text-fab-dim">No messages found.</p>
+                ) : (
+                  chatLogMessages.map((msg) => (
+                    <div key={msg.id} className={`flex flex-col ${msg.role === "user" ? "items-end" : "items-start"}`}>
+                      <div className={`max-w-[80%] rounded-lg px-3 py-2 text-sm ${
+                        msg.role === "user"
+                          ? "bg-fab-gold/10 border border-fab-gold/20 text-fab-text"
+                          : "bg-fab-bg border border-fab-border text-fab-text"
+                      }`}>
+                        <p className="whitespace-pre-wrap break-words">{msg.content}</p>
+                      </div>
+                      <div className="flex items-center gap-2 mt-0.5 text-[10px] text-fab-dim">
+                        <span>{msg.role === "user" ? "User" : "AI"}</span>
+                        <span>{new Date(msg.createdAt).toLocaleString()}</span>
+                        {msg.cost != null && msg.cost > 0 && <span>${msg.cost.toFixed(4)}</span>}
+                        {msg.inputTokens != null && <span>{msg.inputTokens + (msg.outputTokens || 0)} tok</span>}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
 
           </>}
 

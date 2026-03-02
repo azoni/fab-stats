@@ -229,6 +229,20 @@ export async function getChatGlobalStats(): Promise<ChatGlobalStats> {
   }
 }
 
+/** Fetch chat messages for a specific user (admin only) */
+export async function getAdminChatMessages(userId: string): Promise<{ id: string; role: string; content: string; createdAt: string; model?: string; inputTokens?: number; outputTokens?: number; cost?: number }[]> {
+  try {
+    const q = query(
+      collection(db, "users", userId, "chatMessages"),
+      orderBy("createdAt", "asc"),
+    );
+    const snap = await getDocs(q);
+    return snap.docs.map((d) => ({ id: d.id, ...d.data() })) as any;
+  } catch {
+    return [];
+  }
+}
+
 /** Backfill leaderboard entries for all users (re-computes nemesis, etc.) */
 export async function backfillLeaderboard(
   onProgress?: (done: number, total: number) => void
