@@ -490,18 +490,16 @@ export default function AdminPage() {
                     {f !== "all" && ` (${data.users.filter((u) => f === "public" ? u.isPublic : !u.isPublic).length})`}
                   </button>
                 ))}
-                {Object.keys(aiCost.users).length > 0 && (
-                  <button
-                    onClick={() => setStatusFilter("chat")}
-                    className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
-                      statusFilter === "chat"
-                        ? "bg-fab-gold/20 text-fab-gold"
-                        : "text-fab-muted hover:text-fab-text"
-                    }`}
-                  >
-                    Chat ({Object.keys(aiCost.users).length})
-                  </button>
-                )}
+                <button
+                  onClick={() => setStatusFilter("chat")}
+                  className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+                    statusFilter === "chat"
+                      ? "bg-fab-gold/20 text-fab-gold"
+                      : "text-fab-muted hover:text-fab-text"
+                  }`}
+                >
+                  Chat {Object.keys(aiCost.users).length > 0 ? `(${Object.keys(aiCost.users).length})` : `(${aiCost.totalMessages})`}
+                </button>
               </div>
             </div>
             <div className="overflow-x-auto">
@@ -674,19 +672,51 @@ export default function AdminPage() {
           </div>
 
           {/* Chat Log Viewer */}
-          {chatLogUid && statusFilter === "chat" && (
+          {/* Chat Log Viewer */}
+          {statusFilter === "chat" && (
             <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden mt-4">
-              <div className="px-4 py-3 border-b border-fab-border flex items-center justify-between">
-                <h2 className="text-sm font-semibold text-fab-text">
-                  Chat Log — {data.users.find((u) => u.uid === chatLogUid)?.username || chatLogUid}
-                </h2>
-                <button onClick={() => setChatLogUid(null)} className="text-xs text-fab-dim hover:text-fab-text transition-colors">Close</button>
+              <div className="px-4 py-3 border-b border-fab-border flex items-center gap-3">
+                <h2 className="text-sm font-semibold text-fab-text shrink-0">Chat Log</h2>
+                <select
+                  value={chatLogUid || ""}
+                  onChange={(e) => {
+                    const uid = e.target.value;
+                    if (!uid) { setChatLogUid(null); return; }
+                    setChatLogUid(uid);
+                    setChatLogLoading(true);
+                    getAdminChatMessages(uid).then((msgs) => { setChatLogMessages(msgs); setChatLogLoading(false); });
+                  }}
+                  className="text-xs bg-fab-bg border border-fab-border rounded px-2 py-1 text-fab-text flex-1 max-w-xs"
+                >
+                  <option value="">Select a user...</option>
+                  {data.users
+                    .filter((u) => !!aiCost.users[u.uid])
+                    .sort((a, b) => (aiCost.users[b.uid]?.messages || 0) - (aiCost.users[a.uid]?.messages || 0))
+                    .map((u) => (
+                      <option key={u.uid} value={u.uid}>@{u.username} ({aiCost.users[u.uid]?.messages || 0} msgs)</option>
+                    ))
+                  }
+                  {/* If no tracked users, show all users as fallback */}
+                  {Object.keys(aiCost.users).length === 0 && data.users.slice(0, 50).map((u) => (
+                    <option key={u.uid} value={u.uid}>@{u.username}</option>
+                  ))}
+                </select>
+                {chatLogUid && (
+                  <span className="text-[10px] text-fab-dim">
+                    {chatLogMessages.length} messages
+                    {chatLogMessages.filter((m) => m.cost).reduce((s: number, m: any) => s + (m.cost || 0), 0) > 0 &&
+                      ` · $${chatLogMessages.filter((m) => m.cost).reduce((s: number, m: any) => s + (m.cost || 0), 0).toFixed(4)}`
+                    }
+                  </span>
+                )}
               </div>
               <div className="p-4 max-h-[500px] overflow-y-auto space-y-3">
-                {chatLogLoading ? (
+                {!chatLogUid ? (
+                  <p className="text-sm text-fab-dim">Select a user to view their chat messages.</p>
+                ) : chatLogLoading ? (
                   <p className="text-sm text-fab-dim">Loading messages...</p>
                 ) : chatLogMessages.length === 0 ? (
-                  <p className="text-sm text-fab-dim">No messages found.</p>
+                  <p className="text-sm text-fab-dim">No messages found for this user.</p>
                 ) : (
                   chatLogMessages.map((msg) => (
                     <div key={msg.id} className={`flex flex-col ${msg.role === "user" ? "items-end" : "items-start"}`}>

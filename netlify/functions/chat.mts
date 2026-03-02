@@ -14,18 +14,18 @@ const CORS_HEADERS = {
   "Access-Control-Allow-Headers": "Content-Type, Authorization",
 };
 
-const MODEL = "claude-haiku-4-5-20251001";
+const MODEL = "claude-3-haiku-20240307";
 const MAX_MESSAGE_LENGTH = 2000;
 const MAX_HISTORY_PAIRS = 10;
 const MAX_TOKENS = 1024;
 const HOURLY_LIMIT = 10;
 const DAILY_LIMIT = 50;
 
-// Haiku pricing (per token)
-const INPUT_COST_PER_TOKEN = 0.80 / 1_000_000;
-const OUTPUT_COST_PER_TOKEN = 4.00 / 1_000_000;
-const CACHE_WRITE_PER_TOKEN = 1.00 / 1_000_000;  // 25% surcharge on input
-const CACHE_READ_PER_TOKEN = 0.08 / 1_000_000;   // 90% discount on input
+// Claude 3 Haiku pricing (per token)
+const INPUT_COST_PER_TOKEN = 0.25 / 1_000_000;
+const OUTPUT_COST_PER_TOKEN = 1.25 / 1_000_000;
+const CACHE_WRITE_PER_TOKEN = 0.30 / 1_000_000;  // 25% surcharge on input
+const CACHE_READ_PER_TOKEN = 0.03 / 1_000_000;   // 90% discount on input
 
 // Heroes whose only legal format is "Living Legend" (no longer in CC/Blitz).
 // Filtered from meta summary so current-meta questions aren't skewed by old data.
