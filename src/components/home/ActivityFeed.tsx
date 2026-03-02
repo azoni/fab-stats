@@ -9,6 +9,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { groupConsecutiveEvents, GroupedFeedCard } from "@/components/feed/FeedCard";
 import { getActivityFeed, ACTIVITY_LABELS, type ActivityEvent } from "@/lib/activity-log";
 import { playerHref } from "@/lib/constants";
+import type { FeedEventType } from "@/lib/feed";
 import type { FeedEvent } from "@/types";
 
 type ScopeTab = "community" | "friends";
@@ -22,6 +23,24 @@ const TYPE_FILTERS: { value: TypeFilter; label: string; adminOnly?: boolean }[] 
 ];
 
 const PAGE_SIZE = 5;
+
+interface ActivityGroup {
+  event: ActivityEvent;
+  count: number;
+}
+
+function groupConsecutiveActivity(events: ActivityEvent[]): ActivityGroup[] {
+  const groups: ActivityGroup[] = [];
+  for (const ev of events) {
+    const last = groups[groups.length - 1];
+    if (last && last.event.uid === ev.uid && last.event.action === ev.action) {
+      last.count += 1;
+    } else {
+      groups.push({ event: ev, count: 1 });
+    }
+  }
+  return groups;
+}
 const TYPE_CAPS: Record<string, number> = {
   import: 10,
   placement: 20,
@@ -37,12 +56,13 @@ function readStored<T extends string>(key: string, valid: T[], fallback: T): T {
 
 export function ActivityFeed({ rankMap, eventTierMap }: { rankMap?: Map<string, 1 | 2 | 3 | 4 | 5>; eventTierMap?: Map<string, { border: string; shadow: string }> }) {
   const router = useRouter();
-  const { events, loading } = useFeed();
   const { user, isAdmin } = useAuth();
   const { friends } = useFriends();
   const { favorites } = useFavorites();
   const [scope, _setScope] = useState<ScopeTab>(() => readStored(SCOPE_KEY, ["community", "friends"], "community"));
   const [typeFilter, _setTypeFilter] = useState<TypeFilter>(() => readStored(TYPE_KEY, ["all", "import", "placement", "engagement"], "placement"));
+  const feedTypeFilter: FeedEventType = typeFilter === "engagement" ? "all" : typeFilter;
+  const { events, loading } = useFeed(feedTypeFilter);
 
   const [page, setPage] = useState(0);
   const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
@@ -199,12 +219,13 @@ export function ActivityFeed({ rankMap, eventTierMap }: { rankMap?: Map<string, 
             <p className="text-xs text-fab-dim">No engagement activity yet.</p>
           </div>
         ) : (() => {
-          const engagementPages = Math.max(1, Math.ceil(adminActivity.length / PAGE_SIZE));
-          const pageItems = adminActivity.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+          const activityGroups = groupConsecutiveActivity(adminActivity);
+          const engagementPages = Math.max(1, Math.ceil(activityGroups.length / PAGE_SIZE));
+          const pageItems = activityGroups.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
           return (
             <>
               <div className="space-y-1.5">
-                {pageItems.map((ev) => {
+                {pageItems.map(({ event: ev, count }) => {
                   const ago = (() => {
                     const diff = Date.now() - new Date(ev.ts).getTime();
                     const mins = Math.floor(diff / 60000);
@@ -229,6 +250,7 @@ export function ActivityFeed({ rankMap, eventTierMap }: { rankMap?: Map<string, 
                             {ev.username}
                           </Link>
                           {" "}{ACTIVITY_LABELS[ev.action] || ev.action}
+                          {count > 1 && <span className="ml-1 text-fab-dim font-medium">&times;{count}</span>}
                           {ev.meta && <span className="text-fab-dim"> &middot; {ev.meta}</span>}
                         </p>
                       </div>

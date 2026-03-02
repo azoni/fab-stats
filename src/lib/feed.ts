@@ -140,34 +140,41 @@ export async function deleteFeedEventsForEvent(
 
 // ── Cached one-time fetch (replaces real-time onSnapshot subscription) ──
 
-let cachedFeed: FeedEvent[] | null = null;
-let feedCacheTimestamp = 0;
+const feedCache = new Map<string, { events: FeedEvent[]; timestamp: number }>();
 const FEED_CACHE_TTL = 3 * 60_000; // 3 minutes
 
-export async function getFeedEvents(limitCount = 50): Promise<FeedEvent[]> {
+export async function getFeedEvents(limitCount = 50, typeFilter: FeedEventType = "all"): Promise<FeedEvent[]> {
   const now = Date.now();
-  if (cachedFeed && now - feedCacheTimestamp < FEED_CACHE_TTL) {
-    return cachedFeed;
+  const cached = feedCache.get(typeFilter);
+  if (cached && now - cached.timestamp < FEED_CACHE_TTL) {
+    return cached.events;
   }
 
   try {
-    const q = query(feedCollection(), where("isPublic", "==", true), orderBy("createdAt", "desc"), limit(limitCount));
+    const constraints: QueryConstraint[] = [
+      where("isPublic", "==", true),
+      orderBy("createdAt", "desc"),
+      limit(limitCount),
+    ];
+    if (typeFilter !== "all") {
+      constraints.push(where("type", "==", typeFilter));
+    }
+    const q = query(feedCollection(), ...constraints);
     const snapshot = await getDocs(q);
-    cachedFeed = snapshot.docs.map((d) => ({
+    const events = snapshot.docs.map((d) => ({
       id: d.id,
       ...d.data(),
     })) as FeedEvent[];
-    feedCacheTimestamp = now;
-    return cachedFeed;
+    feedCache.set(typeFilter, { events, timestamp: now });
+    return events;
   } catch (error) {
     console.error("Feed fetch error:", error);
-    return cachedFeed || [];
+    return cached?.events || [];
   }
 }
 
 export function invalidateFeedCache() {
-  cachedFeed = null;
-  feedCacheTimestamp = 0;
+  feedCache.clear();
 }
 
 export type FeedEventType = "all" | "import" | "achievement" | "placement";

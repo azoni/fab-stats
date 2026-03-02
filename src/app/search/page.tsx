@@ -63,7 +63,6 @@ function SearchContent() {
   const { isAdmin, user } = useAuth();
 
   // Feed state — same model as home ActivityFeed
-  const { events: allFeedEvents, loading: feedLoading } = useFeed();
   const { friends } = useFriends();
   const { favorites } = useFavorites();
   const [scope, setScope] = useState<ScopeTab>("community");
@@ -71,6 +70,7 @@ function SearchContent() {
   const [typeFilter, setTypeFilter] = useState<TypeFilter>(
     initialType && (["all", "import", "placement"] as TypeFilter[]).includes(initialType) ? initialType : "placement"
   );
+  const { events: allFeedEvents, loading: feedLoading } = useFeed(typeFilter);
   const [page, setPage] = useState(0);
   const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
   const handleDeleteFeed = useCallback((eventId: string) => {
