@@ -668,6 +668,8 @@ export default function PlayerProfile() {
             playoffFinishes,
             armoryCount: eventStats.filter(e => e.eventType === "Armory").length,
             armoryUndefeated: eventStats.filter(e => e.eventType === "Armory" && e.losses === 0 && e.wins > 0).length,
+            isSiteCreator: profile.username === "azoni",
+            isCreator: !!creatorInfo,
           }}
           onClose={() => setProfileShareOpen(false)}
         />

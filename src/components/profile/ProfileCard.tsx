@@ -5,6 +5,8 @@ import { MatchResult } from "@/types";
 import { logActivity } from "@/lib/activity-log";
 import { copyCardImage, downloadCardImage } from "@/lib/share-image";
 import { EMBLEM_COMPONENTS, EMBLEM_COLORS } from "@/components/profile/EmblemIcons";
+import { BADGE_ICON_MAP } from "@/components/profile/BadgeIcons";
+import { getProfileBadges } from "@/lib/profile-badges";
 import type { CardTheme } from "@/components/opponents/RivalryCard";
 import type { PlayoffFinish } from "@/lib/stats";
 
@@ -31,6 +33,8 @@ export interface ProfileCardData {
   playoffFinishes?: PlayoffFinish[];
   armoryCount?: number;
   armoryUndefeated?: number;
+  isSiteCreator?: boolean;
+  isCreator?: boolean;
 }
 
 // ── Fantasy-themed profile card themes ──
@@ -209,7 +213,12 @@ export function ProfileCard({ data, theme }: { data: ProfileCardData; theme?: Ca
         <div className="flex items-center justify-between">
           {/* Left: photo + name */}
           <div className="flex items-center gap-3 min-w-0">
-            <div className="shrink-0">
+            <div className="shrink-0 relative">
+              {data.isSiteCreator && (
+                <svg className="absolute -top-3.5 left-1/2 -translate-x-1/2 w-6 h-6 z-10" style={{ color: "#FFD700", filter: "drop-shadow(0 0 4px rgba(255,215,0,0.5))" }} viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M2.5 19h19v3h-19zM22.5 7l-5 4-5.5-7-5.5 7-5-4 2 12h17z" />
+                </svg>
+              )}
               {photoUrl ? (
                 <div
                   className="rounded-full"
@@ -264,6 +273,19 @@ export function ProfileCard({ data, theme }: { data: ProfileCardData; theme?: Ca
                 })()}
               </div>
               {username && <p style={{ color: t.dim }} className="text-[11px]">@{username}</p>}
+              {(() => {
+                const badges = getProfileBadges(totalMatches, { isCreator: data.isCreator });
+                if (badges.length === 0) return null;
+                return (
+                  <div className="flex items-center gap-1 mt-0.5">
+                    {badges.map((badge) => {
+                      const Icon = BADGE_ICON_MAP[badge.id];
+                      if (!Icon) return null;
+                      return <span key={badge.id} style={{ color: t.accent, opacity: 0.8 }}><Icon className="w-4 h-4" /></span>;
+                    })}
+                  </div>
+                );
+              })()}
             </div>
           </div>
 

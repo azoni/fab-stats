@@ -511,6 +511,8 @@ export default function Dashboard() {
             playerName: profile.displayName,
             username: profile.username,
             photoUrl: profile.photoUrl,
+            talentEmblemId: profile.selectedEmblem,
+            classEmblemId: profile.selectedClassEmblem,
             wins: overall.totalWins,
             losses: overall.totalLosses,
             draws: overall.totalDraws,
@@ -528,6 +530,8 @@ export default function Dashboard() {
             playoffFinishes,
             armoryCount: eventStats.filter(e => e.eventType === "Armory").length,
             armoryUndefeated: eventStats.filter(e => e.eventType === "Armory" && e.losses === 0 && e.wins > 0).length,
+            isSiteCreator: profile.username === "azoni",
+            isCreator,
           }}
           onClose={() => setProfileShareOpen(false)}
         />

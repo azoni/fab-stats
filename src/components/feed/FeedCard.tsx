@@ -346,6 +346,9 @@ export function FeedCard({ event, compact, rankMap, eventTierMap, userId, isAdmi
       {canDelete && onDelete && (
         <DeleteFeedButton eventId={event.id} onDelete={onDelete} />
       )}
+      {event.type === "placement" && event.eventDate && (
+        <p className={`text-[10px] text-fab-dim font-medium ${compact ? "mb-1" : "mb-1.5"}`}>{formatEventDate(event.eventDate)}</p>
+      )}
       <div className={`flex items-center ${compact ? "gap-2" : "gap-3 items-start"}`}>
         <FeedCardHeader event={event} compact={compact} rankMap={rankMap} />
         <div className="flex-1 min-w-0">
@@ -435,7 +438,6 @@ function PlacementContent({ event, compact }: { event: FeedEvent & { type: "plac
     return (
       <p className="text-[11px] text-fab-muted">
         <span className={`font-semibold ${info.color}`}>{info.label}</span> at {event.eventName}
-        {event.eventDate && <span className="text-fab-dim"> &middot; {formatEventDate(event.eventDate)}</span>}
         {event.hero && <span className="ml-1"><HeroPill hero={event.hero} compact /></span>}
       </p>
     );
@@ -457,11 +459,6 @@ function PlacementContent({ event, compact }: { event: FeedEvent & { type: "plac
         <span className="px-2 py-0.5 rounded-full bg-fab-surface text-fab-dim text-xs">
           {event.eventType}
         </span>
-        {event.eventDate && (
-          <span className="px-2 py-0.5 rounded-full bg-fab-surface text-fab-dim text-xs">
-            {formatEventDate(event.eventDate)}
-          </span>
-        )}
       </div>
     </>
   );
