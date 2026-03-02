@@ -52,7 +52,7 @@ function ResourcesPopout() {
   useEffect(() => {
     if (open && btnRef.current) {
       const r = btnRef.current.getBoundingClientRect();
-      setPos({ top: r.top - 4, left: r.left });
+      setPos({ top: r.bottom + 4, left: r.left });
     }
   }, [open]);
 
@@ -85,7 +85,7 @@ function ResourcesPopout() {
         <div
           ref={menuRef}
           className="fixed w-48 bg-fab-surface border border-fab-border rounded-lg shadow-xl overflow-hidden z-50"
-          style={{ top: pos.top, left: pos.left, transform: "translateY(-100%)" }}
+          style={{ top: pos.top, left: pos.left }}
         >
           <div className="p-1.5">
             {links.map((link) => (
