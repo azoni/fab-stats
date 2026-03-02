@@ -1,5 +1,5 @@
 "use client";
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useFeed } from "@/hooks/useFeed";
@@ -7,16 +7,18 @@ import { useFriends } from "@/hooks/useFriends";
 import { useFavorites } from "@/hooks/useFavorites";
 import { useAuth } from "@/contexts/AuthContext";
 import { groupConsecutiveEvents, GroupedFeedCard } from "@/components/feed/FeedCard";
+import { getActivityFeed, ACTIVITY_LABELS, type ActivityEvent } from "@/lib/activity-log";
 import type { FeedEvent } from "@/types";
 
 type ScopeTab = "community" | "friends";
-type TypeFilter = "all" | "import" | "achievement" | "placement";
+type TypeFilter = "all" | "import" | "achievement" | "placement" | "engagement";
 
-const TYPE_FILTERS: { value: TypeFilter; label: string }[] = [
+const TYPE_FILTERS: { value: TypeFilter; label: string; adminOnly?: boolean }[] = [
   { value: "all", label: "All" },
   { value: "import", label: "Imports" },
   { value: "achievement", label: "Achievements" },
   { value: "placement", label: "Placements" },
+  { value: "engagement", label: "Engagement", adminOnly: true },
 ];
 
 const PAGE_SIZE = 5;
@@ -41,13 +43,25 @@ export function ActivityFeed({ rankMap, eventTierMap }: { rankMap?: Map<string, 
   const { friends } = useFriends();
   const { favorites } = useFavorites();
   const [scope, _setScope] = useState<ScopeTab>(() => readStored(SCOPE_KEY, ["community", "friends"], "community"));
-  const [typeFilter, _setTypeFilter] = useState<TypeFilter>(() => readStored(TYPE_KEY, ["all", "import", "achievement", "placement"], "placement"));
+  const [typeFilter, _setTypeFilter] = useState<TypeFilter>(() => readStored(TYPE_KEY, ["all", "import", "achievement", "placement", "engagement"], "placement"));
 
   const [page, setPage] = useState(0);
   const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
   const handleDelete = useCallback((eventId: string) => {
     setDeletedIds((prev) => new Set(prev).add(eventId));
   }, []);
+
+  // Admin engagement activity
+  const [adminActivity, setAdminActivity] = useState<ActivityEvent[]>([]);
+  const [adminActivityLoading, setAdminActivityLoading] = useState(false);
+  useEffect(() => {
+    if (!isAdmin) return;
+    setAdminActivityLoading(true);
+    getActivityFeed(100).then(({ events }) => {
+      setAdminActivity(events);
+      setAdminActivityLoading(false);
+    }).catch(() => setAdminActivityLoading(false));
+  }, [isAdmin]);
 
   const setScope = useCallback((v: ScopeTab) => { _setScope(v); setPage(0); localStorage.setItem(SCOPE_KEY, v); }, []);
   const setTypeFilter = useCallback((v: TypeFilter) => { _setTypeFilter(v); setPage(0); localStorage.setItem(TYPE_KEY, v); }, []);
@@ -120,7 +134,7 @@ export function ActivityFeed({ rankMap, eventTierMap }: { rankMap?: Map<string, 
       <div className="flex items-center gap-2 mb-3 flex-wrap">
         {/* Type filters */}
         <div className="flex gap-0.5 bg-fab-bg rounded-lg p-0.5 border border-fab-border">
-          {TYPE_FILTERS.map((f) => (
+          {TYPE_FILTERS.filter((f) => !f.adminOnly || isAdmin).map((f) => (
             <button
               key={f.value}
               onClick={() => setTypeFilter(f.value)}
@@ -163,7 +177,83 @@ export function ActivityFeed({ rankMap, eventTierMap }: { rankMap?: Map<string, 
       </div>
 
       {/* Feed list */}
-      {loading ? (
+      {typeFilter === "engagement" && isAdmin ? (
+        // Admin-only engagement activity feed
+        adminActivityLoading ? (
+          <div className="space-y-2">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="bg-fab-surface border border-fab-border rounded-lg p-3 h-12 animate-pulse" />
+            ))}
+          </div>
+        ) : adminActivity.length === 0 ? (
+          <div className="bg-fab-surface border border-fab-border rounded-lg p-4 text-center">
+            <p className="text-xs text-fab-dim">No engagement activity yet.</p>
+          </div>
+        ) : (() => {
+          const engagementPages = Math.max(1, Math.ceil(adminActivity.length / PAGE_SIZE));
+          const pageItems = adminActivity.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+          return (
+            <>
+              <div className="space-y-1.5">
+                {pageItems.map((ev) => {
+                  const ago = (() => {
+                    const diff = Date.now() - new Date(ev.ts).getTime();
+                    const mins = Math.floor(diff / 60000);
+                    if (mins < 1) return "just now";
+                    if (mins < 60) return `${mins}m ago`;
+                    const hrs = Math.floor(mins / 60);
+                    if (hrs < 24) return `${hrs}h ago`;
+                    const days = Math.floor(hrs / 24);
+                    if (days < 7) return `${days}d ago`;
+                    return new Date(ev.ts).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+                  })();
+                  return (
+                    <div key={ev.id} className="bg-fab-surface border border-fab-border rounded-lg px-3 py-2 flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-full bg-fab-gold/20 flex items-center justify-center shrink-0">
+                        <svg className="w-3 h-3 text-fab-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
+                        </svg>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[11px] text-fab-muted">
+                          <Link href={`/player/${ev.username}`} className="font-semibold text-fab-text hover:text-fab-gold transition-colors">
+                            {ev.username}
+                          </Link>
+                          {" "}{ACTIVITY_LABELS[ev.action] || ev.action}
+                          {ev.meta && <span className="text-fab-dim"> &middot; {ev.meta}</span>}
+                        </p>
+                      </div>
+                      <span className="text-[10px] text-fab-dim shrink-0">{ago}</span>
+                    </div>
+                  );
+                })}
+                {pageItems.length < PAGE_SIZE && Array.from({ length: PAGE_SIZE - pageItems.length }, (_, i) => (
+                  <div key={`spacer-${i}`} className="h-[68px]" aria-hidden="true" />
+                ))}
+              </div>
+              {engagementPages > 1 && (
+                <div className="flex items-center justify-between mt-3">
+                  <button
+                    onClick={() => setPage((p) => Math.max(0, p - 1))}
+                    disabled={page === 0}
+                    className="px-2.5 py-1 rounded-md text-[11px] font-medium bg-fab-surface border border-fab-border text-fab-muted hover:text-fab-text transition-colors disabled:opacity-30 disabled:pointer-events-none"
+                  >
+                    &larr; Prev
+                  </button>
+                  <span className="text-[10px] text-fab-dim">{page + 1} / {engagementPages}</span>
+                  <button
+                    onClick={() => setPage((p) => Math.min(engagementPages - 1, p + 1))}
+                    disabled={page >= engagementPages - 1}
+                    className="px-2.5 py-1 rounded-md text-[11px] font-medium bg-fab-surface border border-fab-border text-fab-muted hover:text-fab-text transition-colors disabled:opacity-30 disabled:pointer-events-none"
+                  >
+                    Next &rarr;
+                  </button>
+                </div>
+              )}
+            </>
+          );
+        })()
+      ) : loading ? (
         <div className="space-y-2">
           {[...Array(4)].map((_, i) => (
             <div key={i} className="bg-fab-surface border border-fab-border rounded-lg p-3 h-12 animate-pulse" />

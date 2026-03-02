@@ -53,6 +53,16 @@ export function logActivity(action: ActivityAction, meta?: string) {
   }
 }
 
+export const ACTIVITY_LABELS: Record<ActivityAction, string> = {
+  showcase_edit: "edited their showcase",
+  profile_share: "shared their profile card",
+  placement_share: "shared a placement card",
+  bestfinish_share: "shared a best finish card",
+  event_share: "shared an event result",
+  rivalry_share: "shared a rivalry card",
+  compare_share: "shared a comparison card",
+};
+
 /** Admin: read feature usage counters (single doc read). */
 export async function getFeatureUsageCounts(): Promise<Record<string, number>> {
   const snap = await getDoc(doc(db, "analytics", "featureUsage"));
