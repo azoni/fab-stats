@@ -405,7 +405,7 @@ export default function PlayerProfile() {
               </div>
               <BadgeStrip matchCount={matches.length} />
             </div>
-            <EmblemDisplay emblemId={profile.selectedEmblem} isOwner={isOwner} onClick={() => setEmblemPickerOpen(true)} />
+            <EmblemDisplay talentEmblemId={profile.selectedEmblem} classEmblemId={profile.selectedClassEmblem} isOwner={isOwner} onClick={() => setEmblemPickerOpen(true)} />
           </div>
 
           {/* Last updated */}
@@ -574,11 +574,13 @@ export default function PlayerProfile() {
       {/* Profile share card modal */}
       {emblemPickerOpen && isOwner && (
         <EmblemPicker
-          currentEmblemId={profile.selectedEmblem}
-          onSelect={async (emblemId) => {
-            const val = emblemId || "";
-            await updateProfile(profile.uid, { selectedEmblem: val });
-            setState((prev) => prev.status === "loaded" ? { ...prev, profile: { ...prev.profile, selectedEmblem: val || undefined } } : prev);
+          currentTalentEmblemId={profile.selectedEmblem}
+          currentClassEmblemId={profile.selectedClassEmblem}
+          onSelect={async (talentId, classId) => {
+            const talentVal = talentId || "";
+            const classVal = classId || "";
+            await updateProfile(profile.uid, { selectedEmblem: talentVal, selectedClassEmblem: classVal });
+            setState((prev) => prev.status === "loaded" ? { ...prev, profile: { ...prev.profile, selectedEmblem: talentVal || undefined, selectedClassEmblem: classVal || undefined } } : prev);
           }}
           onClose={() => setEmblemPickerOpen(false)}
         />

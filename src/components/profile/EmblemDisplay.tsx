@@ -2,12 +2,13 @@
 import { EMBLEM_COMPONENTS, EMBLEM_COLORS } from "./EmblemIcons";
 
 interface EmblemDisplayProps {
-  emblemId?: string | null;
+  talentEmblemId?: string | null;
+  classEmblemId?: string | null;
   isOwner?: boolean;
   onClick?: () => void;
 }
 
-export function EmblemDisplay({ emblemId, isOwner, onClick }: EmblemDisplayProps) {
+function SingleEmblem({ emblemId, isOwner, onClick }: { emblemId?: string | null; isOwner?: boolean; onClick?: () => void }) {
   const EmblemIcon = emblemId ? EMBLEM_COMPONENTS[emblemId] : null;
   const colors = emblemId ? EMBLEM_COLORS[emblemId] : null;
 
@@ -44,4 +45,19 @@ export function EmblemDisplay({ emblemId, isOwner, onClick }: EmblemDisplayProps
   }
 
   return content;
+}
+
+export function EmblemDisplay({ talentEmblemId, classEmblemId, isOwner, onClick }: EmblemDisplayProps) {
+  const hasTalent = !!talentEmblemId && !!EMBLEM_COMPONENTS[talentEmblemId];
+  const hasClass = !!classEmblemId && !!EMBLEM_COMPONENTS[classEmblemId];
+
+  // Non-owner with no emblems: show nothing
+  if (!isOwner && !hasTalent && !hasClass) return null;
+
+  return (
+    <div className="flex items-center gap-1 shrink-0">
+      <SingleEmblem emblemId={talentEmblemId} isOwner={isOwner} onClick={onClick} />
+      <SingleEmblem emblemId={classEmblemId} isOwner={isOwner} onClick={onClick} />
+    </div>
+  );
 }

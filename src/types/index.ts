@@ -143,6 +143,7 @@ export interface UserProfile {
   showcase?: ShowcaseCard[];
   showcaseSecondary?: ShowcaseCard[];
   selectedEmblem?: string;
+  selectedClassEmblem?: string;
 }
 
 export interface ShowcaseCard {

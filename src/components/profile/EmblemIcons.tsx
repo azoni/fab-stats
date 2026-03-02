@@ -118,14 +118,25 @@ export function MagicEmblem({ className = "w-11 h-11" }: { className?: string })
   );
 }
 
+import { TALENT_EMBLEM_COMPONENTS, TALENT_EMBLEM_COLORS } from "./TalentEmblemIcons";
+import { CLASS_EMBLEM_COMPONENTS, CLASS_EMBLEM_COLORS } from "./ClassEmblemIcons";
+
 export const EMBLEM_COMPONENTS: Record<string, React.FC<{ className?: string }>> = {
+  // Legacy
   melee: MeleeEmblem,
   ranged: RangedEmblem,
   magic: MagicEmblem,
+  // Talents + Classes
+  ...TALENT_EMBLEM_COMPONENTS,
+  ...CLASS_EMBLEM_COMPONENTS,
 };
 
 export const EMBLEM_COLORS: Record<string, { text: string; glow: string }> = {
+  // Legacy
   melee: { text: "text-red-400", glow: "hover:drop-shadow-[0_0_10px_rgba(239,68,68,0.4)]" },
   ranged: { text: "text-teal-400", glow: "hover:drop-shadow-[0_0_10px_rgba(45,212,191,0.4)]" },
   magic: { text: "text-violet-400", glow: "hover:drop-shadow-[0_0_10px_rgba(167,139,250,0.4)]" },
+  // Talents + Classes
+  ...TALENT_EMBLEM_COLORS,
+  ...CLASS_EMBLEM_COLORS,
 };
