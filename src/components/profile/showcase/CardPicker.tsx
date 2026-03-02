@@ -168,7 +168,7 @@ export function CardPicker({ onAdd, onCancel, matches, heroStats, eventStats, op
 
 // ── Sub-pickers ──
 
-function MatchPicker({ matches, search, onSelect }: { matches: MatchRecord[]; search: string; onSelect: (id: string) => void }) {
+export function MatchPicker({ matches, search, onSelect }: { matches: MatchRecord[]; search: string; onSelect: (id: string) => void }) {
   const q = search.toLowerCase();
   const sorted = [...matches].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   const filtered = q ? sorted.filter((m) =>
@@ -191,7 +191,7 @@ function MatchPicker({ matches, search, onSelect }: { matches: MatchRecord[]; se
   );
 }
 
-function HeroPicker({ heroStats, onSelect }: { heroStats: HeroStats[]; onSelect: (name: string) => void }) {
+export function HeroPicker({ heroStats, onSelect }: { heroStats: HeroStats[]; onSelect: (name: string) => void }) {
   return (
     <>
       {heroStats.map((h) => {
@@ -210,7 +210,7 @@ function HeroPicker({ heroStats, onSelect }: { heroStats: HeroStats[]; onSelect:
   );
 }
 
-function FinishPicker({ finishes, onSelect }: { finishes: PlayoffFinishData[]; onSelect: (date: string, name: string) => void }) {
+export function FinishPicker({ finishes, onSelect }: { finishes: PlayoffFinishData[]; onSelect: (date: string, name: string) => void }) {
   const BADGE: Record<string, string> = { champion: "trophy", finalist: "medal", top4: "badge", top8: "star-badge" };
   return (
     <>
@@ -227,7 +227,7 @@ function FinishPicker({ finishes, onSelect }: { finishes: PlayoffFinishData[]; o
   );
 }
 
-function OpponentPicker({ opponents, search, onSelect }: { opponents: OpponentStats[]; search: string; onSelect: (name: string) => void }) {
+export function OpponentPicker({ opponents, search, onSelect }: { opponents: OpponentStats[]; search: string; onSelect: (name: string) => void }) {
   const q = search.toLowerCase();
   const sorted = [...opponents].sort((a, b) => b.totalMatches - a.totalMatches);
   const filtered = q ? sorted.filter((o) => o.opponentName.toLowerCase().includes(q)) : sorted;
@@ -246,7 +246,7 @@ function OpponentPicker({ opponents, search, onSelect }: { opponents: OpponentSt
   );
 }
 
-function EventPicker({ events, search, onSelect }: { events: EventStats[]; search: string; onSelect: (date: string, name: string) => void }) {
+export function EventPicker({ events, search, onSelect }: { events: EventStats[]; search: string; onSelect: (date: string, name: string) => void }) {
   const q = search.toLowerCase();
   const filtered = q ? events.filter((e) => e.eventName.toLowerCase().includes(q)) : events;
 
@@ -266,7 +266,7 @@ function EventPicker({ events, search, onSelect }: { events: EventStats[]; searc
 
 const RARITY_ORDER: Record<string, number> = { legendary: 0, epic: 1, rare: 2, uncommon: 3, common: 4 };
 
-function AchievementList({ achievements, selected, onToggle }: { achievements: Achievement[]; selected: Set<string>; onToggle: (id: string) => void }) {
+export function AchievementList({ achievements, selected, onToggle }: { achievements: Achievement[]; selected: Set<string>; onToggle: (id: string) => void }) {
   const sorted = [...achievements].sort((a, b) => (RARITY_ORDER[a.rarity] ?? 5) - (RARITY_ORDER[b.rarity] ?? 5));
   return (
     <>
@@ -298,7 +298,7 @@ function AchievementList({ achievements, selected, onToggle }: { achievements: A
   );
 }
 
-function StatPicker({ onSelect }: { onSelect: (stat: string, filter?: string) => void }) {
+export function StatPicker({ onSelect }: { onSelect: (stat: string, filter?: string) => void }) {
   return (
     <>
       {STAT_OPTIONS.map((opt) => (

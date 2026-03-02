@@ -13,7 +13,16 @@ import { FormatMasteryCard } from "./showcase/FormatMasteryCard";
 import { EventTypeMasteryCard } from "./showcase/EventTypeMasteryCard";
 import { StreakShowcaseCard } from "./showcase/StreakShowcaseCard";
 import { RecentFormCard } from "./showcase/RecentFormCard";
-import { CardPicker } from "./showcase/CardPicker";
+import {
+  CardPicker,
+  MatchPicker,
+  HeroPicker,
+  FinishPicker,
+  OpponentPicker,
+  EventPicker,
+  AchievementList,
+  StatPicker,
+} from "./showcase/CardPicker";
 import type { ShowcaseCard, UserProfile, MatchRecord, HeroStats, EventStats, OpponentStats, OverallStats, Achievement } from "@/types";
 import type { HeroMastery } from "@/types";
 
@@ -43,6 +52,25 @@ interface ShowcaseSectionProps {
 // Only achievements stays full-width; everything else is half-width.
 const MEDIUM_TYPES = new Set(["achievements"]);
 const MAX_POINTS = 8;
+
+// Card types that have editable selections
+const EDITABLE_TYPES = new Set<ShowcaseCard["type"]>([
+  "featuredMatch", "heroSpotlight", "bestFinish", "rivalry", "eventRecap", "achievements", "statHighlight",
+]);
+
+const CARD_TYPE_LABELS: Record<string, string> = {
+  featuredMatch: "Match",
+  heroSpotlight: "Hero",
+  bestFinish: "Finish",
+  rivalry: "Rivalry",
+  eventRecap: "Event",
+  achievements: "Achievements",
+  statHighlight: "Stat",
+  formatMastery: "Formats",
+  eventTypeMastery: "Event Types",
+  streakShowcase: "Streaks",
+  recentForm: "Form",
+};
 
 export function getCardSize(type: ShowcaseCard["type"]): 1 | 2 {
   return MEDIUM_TYPES.has(type) ? 2 : 1;
@@ -76,6 +104,7 @@ export function ShowcaseSection({
   const [isEditing, setIsEditing] = useState(false);
   const [showPicker, setShowPicker] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
 
   const usedPoints = useMemo(() => cards.reduce((sum, c) => sum + getCardSize(c.type), 0), [cards]);
   const pointsLeft = MAX_POINTS - usedPoints;
@@ -109,6 +138,7 @@ export function ShowcaseSection({
   const removeCard = useCallback((index: number) => {
     const updated = cards.filter((_, i) => i !== index);
     saveCards(updated);
+    setEditingIndex(null);
   }, [cards, saveCards]);
 
   const moveCard = useCallback((index: number, direction: "up" | "down") => {
@@ -117,6 +147,16 @@ export function ShowcaseSection({
     const updated = [...cards];
     [updated[index], updated[newIdx]] = [updated[newIdx], updated[index]];
     saveCards(updated);
+    // Follow the card being edited if it moved
+    if (editingIndex === index) setEditingIndex(newIdx);
+    else if (editingIndex === newIdx) setEditingIndex(index);
+  }, [cards, saveCards, editingIndex]);
+
+  const replaceCard = useCallback((index: number, card: ShowcaseCard) => {
+    const updated = [...cards];
+    updated[index] = card;
+    saveCards(updated);
+    setEditingIndex(null);
   }, [cards, saveCards]);
 
   if (cards.length === 0 && !isOwner) return null;
@@ -130,7 +170,7 @@ export function ShowcaseSection({
           <div className="flex items-center gap-2">
             {saving && <span className="text-[10px] text-fab-dim">Saving...</span>}
             <button
-              onClick={() => { setIsEditing(!isEditing); setShowPicker(false); }}
+              onClick={() => { setIsEditing(!isEditing); setShowPicker(false); setEditingIndex(null); }}
               className={`text-[10px] font-medium px-2 py-1 rounded transition-colors ${
                 isEditing ? "bg-fab-gold/15 text-fab-gold" : "text-fab-muted hover:text-fab-text"
               }`}
@@ -146,10 +186,25 @@ export function ShowcaseSection({
         <div className="grid grid-cols-2 gap-2.5">
           {cards.map((card, i) => {
             const size = getCardSize(card.type);
+            const isEditableCard = EDITABLE_TYPES.has(card.type);
+            const isBeingEdited = editingIndex === i;
+
             return (
               <div key={`${card.type}-${i}`} className={`relative group ${size === 2 ? "col-span-2" : "col-span-1"}`}>
-                {isEditing && (
-                  <div className="absolute -top-1 -right-1 z-10 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                {/* Edit controls — always visible in edit mode */}
+                {isEditing && !isBeingEdited && (
+                  <div className="absolute -top-1 -right-1 z-10 flex items-center gap-0.5">
+                    {isEditableCard && (
+                      <button
+                        onClick={() => setEditingIndex(i)}
+                        className="w-4 h-4 rounded bg-fab-gold/20 border border-fab-gold/30 text-fab-gold hover:bg-fab-gold/30 flex items-center justify-center"
+                        title="Edit"
+                      >
+                        <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                        </svg>
+                      </button>
+                    )}
                     <button onClick={() => moveCard(i, "up")} disabled={i === 0} className="w-4 h-4 rounded bg-fab-bg border border-fab-border text-fab-muted hover:text-fab-text disabled:opacity-30 flex items-center justify-center" title="Move up">
                       <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" /></svg>
                     </button>
@@ -161,7 +216,33 @@ export function ShowcaseSection({
                     </button>
                   </div>
                 )}
-                <ShowcaseCardRenderer card={card} matches={matches} heroStats={heroStats} masteries={masteries} eventStats={eventStats} playoffFinishes={playoffFinishes} opponentStats={opponentStats} overall={overall} achievements={achievements} />
+
+                {/* Card type label in edit mode */}
+                {isEditing && !isBeingEdited && (
+                  <div className="absolute -top-1 -left-1 z-10">
+                    <span className="text-[7px] font-medium uppercase tracking-wider bg-fab-bg/90 border border-fab-border text-fab-dim px-1 py-0.5 rounded">
+                      {CARD_TYPE_LABELS[card.type] || card.type}
+                    </span>
+                  </div>
+                )}
+
+                {/* Inline editor or card content */}
+                {isBeingEdited ? (
+                  <InlineCardEditor
+                    card={card}
+                    index={i}
+                    onReplace={replaceCard}
+                    onCancel={() => setEditingIndex(null)}
+                    matches={matches}
+                    heroStats={heroStats}
+                    eventStats={eventStats}
+                    opponentStats={opponentStats}
+                    playoffFinishes={playoffFinishes}
+                    achievements={achievements}
+                  />
+                ) : (
+                  <ShowcaseCardRenderer card={card} matches={matches} heroStats={heroStats} masteries={masteries} eventStats={eventStats} playoffFinishes={playoffFinishes} opponentStats={opponentStats} overall={overall} achievements={achievements} />
+                )}
               </div>
             );
           })}
@@ -203,6 +284,91 @@ export function ShowcaseSection({
           existingCards={cards}
           pointsLeft={pointsLeft}
         />
+      )}
+    </div>
+  );
+}
+
+// ── Inline Card Editor ──
+
+function InlineCardEditor({ card, index, onReplace, onCancel, matches, heroStats, eventStats, opponentStats, playoffFinishes, achievements }: {
+  card: ShowcaseCard;
+  index: number;
+  onReplace: (index: number, card: ShowcaseCard) => void;
+  onCancel: () => void;
+  matches: MatchRecord[];
+  heroStats: HeroStats[];
+  eventStats: EventStats[];
+  opponentStats: OpponentStats[];
+  playoffFinishes: PlayoffFinishData[];
+  achievements: Achievement[];
+}) {
+  const [search, setSearch] = useState("");
+  const [selectedAchievements, setSelectedAchievements] = useState<Set<string>>(
+    () => new Set(card.type === "achievements" ? card.achievementIds || [] : [])
+  );
+
+  const hasSearch = card.type === "featuredMatch" || card.type === "rivalry" || card.type === "eventRecap";
+
+  function toggleAchievement(id: string) {
+    setSelectedAchievements((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else if (next.size < 5) next.add(id);
+      return next;
+    });
+  }
+
+  return (
+    <div className="bg-fab-surface border border-fab-gold/30 rounded-lg p-3">
+      <div className="flex items-center justify-between mb-2">
+        <p className="text-xs font-semibold text-fab-gold">
+          Edit {CARD_TYPE_LABELS[card.type] || card.type}
+        </p>
+        <button onClick={onCancel} className="text-fab-dim hover:text-fab-text text-xs transition-colors">Cancel</button>
+      </div>
+
+      {hasSearch && (
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder={card.type === "featuredMatch" ? "Search matches..." : card.type === "rivalry" ? "Search opponents..." : "Search events..."}
+          className="w-full bg-fab-bg border border-fab-border text-fab-text text-xs rounded-lg px-3 py-1.5 mb-2 focus:outline-none focus:border-fab-gold"
+        />
+      )}
+
+      <div className="max-h-48 overflow-y-auto space-y-0.5">
+        {card.type === "featuredMatch" && (
+          <MatchPicker matches={matches} search={search} onSelect={(matchId) => onReplace(index, { type: "featuredMatch", matchId })} />
+        )}
+        {card.type === "heroSpotlight" && (
+          <HeroPicker heroStats={heroStats} onSelect={(heroName) => onReplace(index, { type: "heroSpotlight", heroName })} />
+        )}
+        {card.type === "bestFinish" && (
+          <FinishPicker finishes={playoffFinishes} onSelect={(eventDate, eventName) => onReplace(index, { type: "bestFinish", eventDate, eventName })} />
+        )}
+        {card.type === "rivalry" && (
+          <OpponentPicker opponents={opponentStats} search={search} onSelect={(opponentName) => onReplace(index, { type: "rivalry", opponentName })} />
+        )}
+        {card.type === "eventRecap" && (
+          <EventPicker events={eventStats} search={search} onSelect={(eventDate, eventName) => onReplace(index, { type: "eventRecap", eventDate, eventName })} />
+        )}
+        {card.type === "achievements" && (
+          <AchievementList achievements={achievements} selected={selectedAchievements} onToggle={toggleAchievement} />
+        )}
+        {card.type === "statHighlight" && (
+          <StatPicker onSelect={(stat, filter) => onReplace(index, { type: "statHighlight", stat, filter })} />
+        )}
+      </div>
+
+      {card.type === "achievements" && selectedAchievements.size > 0 && (
+        <button
+          onClick={() => onReplace(index, { type: "achievements", achievementIds: [...selectedAchievements] })}
+          className="w-full mt-2 px-3 py-1.5 bg-emerald-500/15 text-emerald-400 text-xs font-medium rounded-lg hover:bg-emerald-500/25 transition-colors"
+        >
+          Save {selectedAchievements.size} Achievement{selectedAchievements.size > 1 ? "s" : ""}
+        </button>
       )}
     </div>
   );
