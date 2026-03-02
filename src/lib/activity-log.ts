@@ -23,6 +23,14 @@ export interface ActivityEvent {
 const _lastLogged = new Map<string, number>();
 const THROTTLE_MS = 60_000;
 
+// Cached profile username — set by AuthContext when profile loads
+let _cachedUsername: string | null = null;
+
+/** Called from AuthContext to cache the profile username for activity logging. */
+export function setActivityUsername(username: string | null) {
+  _cachedUsername = username;
+}
+
 /** Fire-and-forget: log a user activity event. */
 export function logActivity(action: ActivityAction, meta?: string) {
   const user = auth.currentUser;
@@ -33,7 +41,7 @@ export function logActivity(action: ActivityAction, meta?: string) {
   if ((_lastLogged.get(key) ?? 0) + THROTTLE_MS > now) return;
   _lastLogged.set(key, now);
 
-  const username = user.displayName || user.email?.split("@")[0] || "unknown";
+  const username = _cachedUsername || user.displayName || user.email?.split("@")[0] || "unknown";
 
   try {
     // Aggregate counter

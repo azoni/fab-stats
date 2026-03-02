@@ -23,6 +23,7 @@ import {
 import { auth } from "@/lib/firebase";
 import { getProfile, importMatchesFirestore } from "@/lib/firestore-storage";
 import { checkIsAdmin } from "@/lib/admin";
+import { setActivityUsername } from "@/lib/activity-log";
 import { getAllMatches, clearAllData } from "@/lib/storage";
 import type { UserProfile } from "@/types";
 
@@ -111,12 +112,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!user) {
       setProfile(null);
       setProfileLoading(false);
+      setActivityUsername(null);
       return;
     }
 
     setProfileLoading(true);
     getProfile(user.uid).then((p) => {
       setProfile(p);
+      setActivityUsername(p?.username ?? null);
       setProfileLoading(false);
       setLoading(false);
     });
@@ -126,6 +129,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!user) return;
     const p = await getProfile(user.uid);
     setProfile(p);
+    setActivityUsername(p?.username ?? null);
   }, [user]);
 
   const needsSetup = !!user && !profileLoading && !profile;
