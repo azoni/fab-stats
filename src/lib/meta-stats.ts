@@ -203,13 +203,27 @@ export function computeTop8HeroMeta(
   const heroAgg = new Map<string, { count: number; champions: number; finalists: number; top4: number; top8: number }>();
   const isDateRange = !!sinceDateStr && !!untilDateStr;
 
-  // Count unique players per hero
+  // Count unique players per hero (for the "Played" column)
   const heroPlayers = new Map<string, Set<string>>();
   if (!isDateRange) {
     // Use weekly breakdown for conversion rate (rolling-window mode)
     for (const entry of entries) {
       if (!entry.weeklyHeroBreakdown) continue;
       for (const hb of entry.weeklyHeroBreakdown) {
+        if (!validHeroNames.has(hb.hero)) continue;
+        if (filterEventType && hb.eventType !== filterEventType) continue;
+        if (filterFormat && hb.format !== filterFormat) continue;
+        const players = heroPlayers.get(hb.hero) || new Set<string>();
+        players.add(entry.userId);
+        heroPlayers.set(hb.hero, players);
+      }
+    }
+  } else {
+    // Date-range mode: use heroBreakdownDetailed filtered by format/eventType
+    // (match data has no dates, so this is all-time for the format — acceptable approximation)
+    for (const entry of entries) {
+      if (!entry.heroBreakdownDetailed) continue;
+      for (const hb of entry.heroBreakdownDetailed) {
         if (!validHeroNames.has(hb.hero)) continue;
         if (filterEventType && hb.eventType !== filterEventType) continue;
         if (filterFormat && hb.format !== filterFormat) continue;
@@ -236,13 +250,6 @@ export function computeTop8HeroMeta(
       else if (t8.placementType === "top4") cur.top4++;
       else cur.top8++;
       heroAgg.set(t8.hero, cur);
-
-      // In date-range mode, count players from top8 entries directly
-      if (isDateRange) {
-        const players = heroPlayers.get(t8.hero) || new Set<string>();
-        players.add(entry.userId);
-        heroPlayers.set(t8.hero, players);
-      }
     }
   }
 
