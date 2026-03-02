@@ -335,6 +335,9 @@ export function FeaturedProfiles({ profiles, creators, rankMap, grid }: Featured
             </Link>
           );
         })}
+        {profiles.length > 0 && spotlightCreators.length > 0 && (
+          <div className="h-px bg-gradient-to-r from-transparent via-fab-border to-transparent" />
+        )}
         {spotlightCreators.map((c) => {
           const accent = PLATFORM_ACCENT[c.platform] || PLATFORM_ACCENT.website;
           return (
