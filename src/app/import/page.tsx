@@ -61,6 +61,7 @@ export default function ImportPage() {
   const [showPasteSteps, setShowPasteSteps] = useState(false);
   const [clearBeforeImport, setClearBeforeImport] = useState(false);
   const [quickMode, setQuickMode] = useState(false);
+  const [showHeroWarning, setShowHeroWarning] = useState(false);
 
   // Detect mobile viewport
   useEffect(() => {
@@ -228,6 +229,17 @@ export default function ImportPage() {
     setDragActive(false);
     const file = e.dataTransfer.files[0];
     if (file) handleFile(file);
+  }
+
+  function handleImportClick() {
+    const matches = pasteResult ? filteredMatches : csvMatches;
+    if (!matches) return;
+    const hasMissingHeroes = matches.some((m) => m.heroPlayed === "Unknown");
+    if (hasMissingHeroes) {
+      setShowHeroWarning(true);
+    } else {
+      handleImport();
+    }
   }
 
   async function handleImport() {
@@ -1040,12 +1052,57 @@ export default function ImportPage() {
 
           {/* Action buttons */}
           <div className="flex gap-3">
-            <button onClick={handleImport} disabled={importing} className="flex-1 min-h-[48px] py-3 rounded-md font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light active:bg-fab-gold-light transition-colors disabled:opacity-50">
+            <button onClick={handleImportClick} disabled={importing} className="flex-1 min-h-[48px] py-3 rounded-md font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light active:bg-fab-gold-light transition-colors disabled:opacity-50">
               {importing ? "Importing..." : clearBeforeImport ? `Clear & Import ${totalToImport} Matches` : `Import ${totalToImport} Matches`}
             </button>
             <button onClick={handleReset} className="px-6 min-h-[48px] py-3 rounded-md font-semibold bg-fab-surface border border-fab-border text-fab-muted hover:text-fab-text active:bg-fab-surface-hover transition-colors">
               Cancel
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Hero Warning Dialog */}
+      {showHeroWarning && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowHeroWarning(false)} />
+          <div className="relative bg-fab-bg border border-fab-border rounded-xl shadow-2xl w-full max-w-md p-6">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-full bg-fab-draw/15 flex items-center justify-center shrink-0">
+                <svg className="w-5 h-5 text-fab-draw" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-bold text-fab-text">Missing Hero Info</h3>
+            </div>
+            <p className="text-sm text-fab-muted mb-2">
+              {(() => {
+                if (pasteResult) {
+                  const missingCount = filteredEvents.filter(({ event, origIdx }) =>
+                    !heroOverrides[origIdx] && event.matches.every((m) => m.heroPlayed === "Unknown")
+                  ).length;
+                  return `${missingCount} of your ${filteredEvents.length} event${filteredEvents.length !== 1 ? "s" : ""} ${missingCount === 1 ? "is" : "are"} missing hero information.`;
+                }
+                return "Your matches are missing hero information.";
+              })()}
+            </p>
+            <p className="text-sm text-fab-muted mb-5">
+              Hero data powers your per-hero stats, matchup breakdowns, and showcase cards. You can set heroes per event in the preview above, or use the Chrome Extension for automatic detection.
+            </p>
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={() => setShowHeroWarning(false)}
+                className="w-full min-h-[44px] py-2.5 rounded-lg font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors text-sm"
+              >
+                Go Back &amp; Add Heroes
+              </button>
+              <button
+                onClick={() => { setShowHeroWarning(false); handleImport(); }}
+                className="w-full min-h-[44px] py-2.5 rounded-lg font-semibold bg-fab-surface border border-fab-border text-fab-muted hover:text-fab-text transition-colors text-sm"
+              >
+                Import Anyway
+              </button>
+            </div>
           </div>
         </div>
       )}

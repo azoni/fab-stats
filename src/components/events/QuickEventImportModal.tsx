@@ -54,6 +54,7 @@ export function QuickEventImportModal({ open, onClose, onImportComplete }: Quick
   const [skippedCount, setSkippedCount] = useState(0);
   const [imageProcessing, setImageProcessing] = useState(false);
   const [dragActive, setDragActive] = useState(false);
+  const [showHeroWarning, setShowHeroWarning] = useState(false);
 
   function handleReset() {
     setPhase("input");
@@ -65,6 +66,7 @@ export function QuickEventImportModal({ open, onClose, onImportComplete }: Quick
     setSkippedCount(0);
     setImageProcessing(false);
     setDragActive(false);
+    setShowHeroWarning(false);
   }
 
   function handleClose() {
@@ -140,6 +142,14 @@ export function QuickEventImportModal({ open, onClose, onImportComplete }: Quick
     }
 
     setImageProcessing(false);
+  }
+
+  function handleImportClick() {
+    if (heroPlayed === "Unknown") {
+      setShowHeroWarning(true);
+    } else {
+      handleImport();
+    }
   }
 
   async function handleImport() {
@@ -414,13 +424,42 @@ export function QuickEventImportModal({ open, onClose, onImportComplete }: Quick
                   Back
                 </button>
                 <button
-                  onClick={handleImport}
+                  onClick={handleImportClick}
                   className="px-4 py-2 rounded-lg text-sm font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors"
                 >
                   Import {parsedEvent.matches.length} Match{parsedEvent.matches.length !== 1 ? "es" : ""}
                 </button>
               </div>
             </>
+          )}
+
+          {/* Hero Warning */}
+          {showHeroWarning && phase === "review" && (
+            <div className="bg-fab-draw/10 border border-fab-draw/30 rounded-lg p-4 mb-4">
+              <div className="flex items-center gap-2 mb-2">
+                <svg className="w-5 h-5 text-fab-draw shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                </svg>
+                <p className="text-sm font-semibold text-fab-draw">No hero selected</p>
+              </div>
+              <p className="text-sm text-fab-muted mb-3">
+                Hero data powers your per-hero stats, matchup breakdowns, and showcase cards. Select a hero above for better tracking.
+              </p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setShowHeroWarning(false)}
+                  className="flex-1 py-2 rounded-lg text-sm font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors"
+                >
+                  Add Hero
+                </button>
+                <button
+                  onClick={() => { setShowHeroWarning(false); handleImport(); }}
+                  className="flex-1 py-2 rounded-lg text-sm font-semibold bg-fab-surface border border-fab-border text-fab-muted hover:text-fab-text transition-colors"
+                >
+                  Skip
+                </button>
+              </div>
+            </div>
           )}
 
           {/* Importing Phase */}
