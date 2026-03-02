@@ -38,7 +38,7 @@ function CategoryHeader({ cat, orientation }: { cat: CategoryDef; orientation: "
 
   return (
     <div
-      className={`flex items-center justify-center gap-1.5 px-1.5 py-2 ${
+      className={`flex items-center justify-center gap-1 sm:gap-1.5 px-1 sm:px-1.5 py-1.5 sm:py-2 min-w-0 ${
         orientation === "col" ? "flex-col" : "flex-row"
       }`}
     >
@@ -46,14 +46,14 @@ function CategoryHeader({ cat, orientation }: { cat: CategoryDef; orientation: "
         <HeroClassIcon heroClass={cat.icon} size="sm" />
       ) : (
         <div
-          className={`w-6 h-6 rounded-full ${colors.bg} border border-white/10 flex items-center justify-center shrink-0`}
+          className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full ${colors.bg} border border-white/10 flex items-center justify-center shrink-0`}
         >
-          <span className={`text-[9px] font-bold ${colors.text}`}>
+          <span className={`text-[8px] sm:text-[9px] font-bold ${colors.text}`}>
             {cat.label.charAt(0)}
           </span>
         </div>
       )}
-      <span className={`text-[10px] font-semibold leading-tight text-center ${isClass ? "" : colors.text}`}>
+      <span className={`text-[9px] sm:text-[10px] font-semibold leading-tight text-center ${isClass ? "" : colors.text}`}>
         {cat.label}
       </span>
     </div>

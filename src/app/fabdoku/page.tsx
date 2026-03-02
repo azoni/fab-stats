@@ -43,7 +43,7 @@ import {
 import type { GameState, FaBdokuStats, UniquenessData } from "@/lib/fabdoku/types";
 
 export default function FaBdokuPage() {
-  const { user, isAdmin } = useAuth();
+  const { user } = useAuth();
   const dateStr = useMemo(() => getTodayDateStr(), []);
   const puzzle = useMemo(() => generateDailyPuzzle(dateStr), [dateStr]);
 
@@ -168,14 +168,6 @@ export default function FaBdokuPage() {
     [gameState, selectedCell, puzzle, user?.uid, refreshUniqueness]
   );
 
-  if (!isAdmin) {
-    return (
-      <div className="max-w-lg mx-auto py-16 text-center">
-        <p className="text-fab-muted text-sm">Coming soon!</p>
-      </div>
-    );
-  }
-
   if (!gameState) {
     return (
       <div className="max-w-lg mx-auto py-8">
@@ -187,7 +179,7 @@ export default function FaBdokuPage() {
   const guessesRemaining = gameState.maxGuesses - gameState.guessesUsed;
 
   return (
-    <div className="max-w-lg mx-auto py-4 sm:py-6">
+    <div className="max-w-lg mx-auto px-3 sm:px-4 py-4 sm:py-6">
       {/* Header */}
       <div className="flex items-center justify-between mb-5">
         <div className="flex items-center gap-3">

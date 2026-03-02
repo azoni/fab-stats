@@ -78,7 +78,7 @@ export function HeroSearchModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center bg-black/60 backdrop-blur-sm pt-[15vh] px-4"
+      className="fixed inset-0 z-50 flex items-start justify-center bg-black/60 backdrop-blur-sm pt-[10vh] sm:pt-[15vh] px-3 sm:px-4"
       onClick={onClose}
     >
       <div
@@ -106,7 +106,7 @@ export function HeroSearchModal({
         </div>
 
         {/* Results list */}
-        <div ref={listRef} className="max-h-72 overflow-y-auto">
+        <div ref={listRef} className="max-h-[50vh] sm:max-h-72 overflow-y-auto">
           {available.length === 0 && used.length === 0 && (
             <div className="px-4 py-6 text-center text-fab-dim text-sm">
               No heroes found

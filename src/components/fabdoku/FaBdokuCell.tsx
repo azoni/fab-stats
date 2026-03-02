@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { getHeroByName } from "@/lib/heroes";
 
 function PlusIcon({ className }: { className?: string }) {
@@ -53,6 +54,8 @@ export function FaBdokuCell({
   pct,
 }: FaBdokuCellProps) {
   const hero = heroName ? getHeroByName(heroName) : null;
+  const [imgError, setImgError] = useState(false);
+  const showImg = hero?.imageUrl && !imgError;
 
   // Empty cell
   if (!heroName) {
@@ -62,7 +65,7 @@ export function FaBdokuCell({
         disabled={disabled}
         className="relative aspect-square bg-fab-surface border border-fab-border rounded-lg flex items-center justify-center transition-all hover:border-fab-gold/50 hover:bg-fab-surface-hover disabled:opacity-40 disabled:cursor-not-allowed group"
       >
-        <PlusIcon className="w-6 h-6 text-fab-dim group-hover:text-fab-gold transition-colors" />
+        <PlusIcon className="w-5 h-5 sm:w-6 sm:h-6 text-fab-dim group-hover:text-fab-gold transition-colors" />
       </button>
     );
   }
@@ -72,44 +75,47 @@ export function FaBdokuCell({
     ? "border-fab-win ring-1 ring-fab-win/30"
     : "border-fab-loss ring-1 ring-fab-loss/30";
 
+  const shortName = heroName.split(",")[0];
+
   return (
     <div
       className={`relative aspect-square rounded-lg overflow-hidden border-2 ${borderColor} transition-all`}
     >
-      {hero?.imageUrl ? (
+      {showImg ? (
         <img
           src={hero.imageUrl}
           alt={heroName}
           className="w-full h-full object-cover object-top"
+          onError={() => setImgError(true)}
         />
       ) : (
-        <div className="w-full h-full bg-fab-surface flex items-center justify-center">
-          <span className="text-[10px] text-fab-muted text-center px-1 leading-tight">
-            {heroName.split(",")[0]}
+        <div className="w-full h-full bg-fab-surface flex items-center justify-center p-1">
+          <span className="text-[10px] sm:text-xs text-fab-muted text-center leading-tight font-medium">
+            {shortName}
           </span>
         </div>
       )}
       {/* Status badge */}
       <div
-        className={`absolute top-1 right-1 w-5 h-5 rounded-full flex items-center justify-center ${
+        className={`absolute top-0.5 right-0.5 sm:top-1 sm:right-1 w-4 h-4 sm:w-5 sm:h-5 rounded-full flex items-center justify-center ${
           correct ? "bg-fab-win/90" : "bg-fab-loss/90"
         }`}
       >
         {correct ? (
-          <CheckIcon className="w-3 h-3 text-white" />
+          <CheckIcon className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-white" />
         ) : (
-          <XIcon className="w-3 h-3 text-white" />
+          <XIcon className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-white" />
         )}
       </div>
       {/* Hero name + uniqueness % overlay */}
-      <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 to-transparent px-1.5 pb-1 pt-3">
+      <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 to-transparent px-1 pb-0.5 pt-2 sm:px-1.5 sm:pb-1 sm:pt-3">
         {pct !== undefined ? (
-          <p className={`text-xs font-bold leading-tight ${getPctColor(pct)}`}>
+          <p className={`text-[10px] sm:text-xs font-bold leading-tight ${getPctColor(pct)}`}>
             {pct}%
           </p>
         ) : (
-          <p className="text-[9px] font-bold text-white leading-tight truncate">
-            {heroName.split(",")[0]}
+          <p className="text-[8px] sm:text-[9px] font-bold text-white leading-tight truncate">
+            {shortName}
           </p>
         )}
       </div>

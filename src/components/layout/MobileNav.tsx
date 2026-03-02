@@ -132,7 +132,7 @@ const moreSections: { title: string; links: MoreLink[] }[] = [
       { href: "/meta", label: "Community Meta", icon: <MetaIcon /> },
       { href: "/tournaments", label: "Tournaments", icon: <TrophyIcon /> },
       { href: "/compare", label: "Versus", icon: <CompareIcon /> },
-      { href: "/fabdoku", label: "FaBdoku", icon: <FaBdokuIcon />, adminOnly: true },
+      { href: "/fabdoku", label: "FaBdoku", icon: <FaBdokuIcon /> },
     ],
   },
   {

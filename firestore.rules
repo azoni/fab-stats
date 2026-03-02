@@ -363,6 +363,28 @@ service cloud.firestore {
       allow write: if request.auth != null;
     }
 
+    // ── FaBdoku (daily hero puzzle game) ──
+    // Results: one per user per day
+    match /fabdoku-results/{resultId} {
+      // Anyone can read (for community stats / leaderboards)
+      allow read: if true;
+      // Authenticated users can create their own result (uid must match)
+      allow create: if request.auth != null
+        && request.resource.data.uid == request.auth.uid;
+    }
+    // Pick aggregation: atomic increments for uniqueness scoring
+    match /fabdoku-picks/{dateStr} {
+      // Anyone can read (needed to display uniqueness % after game)
+      allow read: if true;
+      // Authenticated users can create or update (increment counters)
+      allow create, update: if request.auth != null;
+    }
+    // Per-user FaBdoku stats (streaks, games played)
+    match /users/{userId}/fabdoku-stats/{docId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+
     match /admin/{docId} {
       // Any authenticated user can read (needed for client-side admin check in isAdmin helper above)
       // Note: This exposes the admin email list to authenticated users. This is an accepted
