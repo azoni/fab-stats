@@ -19,7 +19,7 @@ export function AchievementShowcaseCard({ achievements }: AchievementShowcaseCar
 
   return (
     <div className="spotlight-card spotlight-rising bg-fab-surface border border-fab-border rounded-lg px-3 py-2 relative overflow-hidden">
-      <img src="/assets/cards/bg-achievement.png" alt="" className="absolute inset-0 w-full h-full object-cover opacity-[0.08] pointer-events-none" />
+      <img src="/assets/cards/bg-achievement.png" alt="" className="absolute inset-0 w-full h-full object-cover opacity-[0.15] pointer-events-none" />
       <div className="relative flex items-center gap-2">
         {achievements.slice(0, 5).map((ach) => {
           const style = RARITY_STYLE[ach.rarity] || RARITY_STYLE.common;

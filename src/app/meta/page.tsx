@@ -138,7 +138,7 @@ export default function MetaPage() {
   return (
     <div>
       <div className="flex items-center gap-3 mb-6 relative overflow-hidden">
-        <img src="/assets/icons/globe.png" alt="" className="absolute right-0 top-1/2 -translate-y-1/2 w-20 h-20 object-contain opacity-[0.07] pointer-events-none" />
+        <img src="/assets/icons/globe.png" alt="" className="absolute right-0 top-1/2 -translate-y-1/2 w-20 h-20 object-contain opacity-[0.12] pointer-events-none" />
         <div className="w-8 h-8 rounded-lg bg-teal-500/10 flex items-center justify-center ring-1 ring-inset ring-teal-500/20">
           <svg className="w-4 h-4 text-teal-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />

@@ -27,7 +27,7 @@ export function BestFinishShowcase({ finish }: BestFinishShowcaseProps) {
 
   return (
     <div className="spotlight-card spotlight-grinder bg-fab-surface border border-fab-border rounded-lg px-3 py-2 relative overflow-hidden h-full min-h-[88px]">
-      <img src="/assets/cards/bg-achievement.png" alt="" className="absolute inset-0 w-full h-full object-cover opacity-[0.08] pointer-events-none" />
+      <img src="/assets/cards/bg-achievement.png" alt="" className="absolute inset-0 w-full h-full object-cover opacity-[0.15] pointer-events-none" />
       <div className="relative">
       <div className={`inline-flex items-center gap-1.5 px-1.5 py-0.5 rounded border ${cfg.accent} mb-1`}>
         <AchievementIcon icon={cfg.icon} className={`w-3.5 h-3.5 ${cfg.color}`} />

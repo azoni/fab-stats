@@ -31,7 +31,7 @@ export function RecentFormCard({ matches }: RecentFormCardProps) {
 
   return (
     <div className="spotlight-card spotlight-winrate bg-fab-surface border border-fab-border rounded-lg px-3 py-2 relative overflow-hidden h-full min-h-[88px]">
-      <img src="/assets/cards/bg-stats.png" alt="" className="absolute inset-0 w-full h-full object-cover opacity-[0.08] pointer-events-none" />
+      <img src="/assets/cards/bg-stats.png" alt="" className="absolute inset-0 w-full h-full object-cover opacity-[0.15] pointer-events-none" />
       <div className="relative">
       <div className="flex items-center gap-1.5 mb-1">
         <p className="text-[10px] text-cyan-400/70 uppercase tracking-wider font-medium">Recent Form</p>

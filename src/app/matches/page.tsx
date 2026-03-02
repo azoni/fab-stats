@@ -45,7 +45,7 @@ export default function MatchesPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6 relative overflow-hidden">
-        <img src="/assets/icons/swords.png" alt="" className="absolute right-0 top-1/2 -translate-y-1/2 w-20 h-20 object-contain opacity-[0.07] pointer-events-none" />
+        <img src="/assets/icons/swords.png" alt="" className="absolute right-0 top-1/2 -translate-y-1/2 w-20 h-20 object-contain opacity-[0.12] pointer-events-none" />
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-red-500/10 flex items-center justify-center ring-1 ring-inset ring-red-500/20">
             <SwordsIcon className="w-4 h-4 text-red-400" />

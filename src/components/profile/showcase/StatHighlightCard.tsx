@@ -53,7 +53,7 @@ export function StatHighlightCard(props: StatHighlightCardProps) {
     const { value, label, sub } = getStatValue(statList[0], data, filter);
     return (
       <div className="spotlight-card spotlight-winrate bg-fab-surface border border-fab-border rounded-lg px-3 py-2 relative overflow-hidden h-full min-h-[88px]">
-        <img src="/assets/cards/bg-stats.png" alt="" className="absolute inset-0 w-full h-full object-cover opacity-[0.08] pointer-events-none" />
+        <img src="/assets/cards/bg-stats.png" alt="" className="absolute inset-0 w-full h-full object-cover opacity-[0.15] pointer-events-none" />
         <div className="relative">
           <p className="text-[10px] text-cyan-400/70 uppercase tracking-wider font-medium mb-1">Stat</p>
           <p className="text-2xl font-black text-fab-text leading-tight">{value}</p>
@@ -66,7 +66,7 @@ export function StatHighlightCard(props: StatHighlightCardProps) {
 
   return (
     <div className="spotlight-card spotlight-winrate bg-fab-surface border border-fab-border rounded-lg px-3 py-2 relative overflow-hidden h-full min-h-[88px]">
-      <img src="/assets/cards/bg-stats.png" alt="" className="absolute inset-0 w-full h-full object-cover opacity-[0.08] pointer-events-none" />
+      <img src="/assets/cards/bg-stats.png" alt="" className="absolute inset-0 w-full h-full object-cover opacity-[0.15] pointer-events-none" />
       <div className="relative">
       <p className="text-[10px] text-cyan-400/70 uppercase tracking-wider font-medium mb-1.5">Stats</p>
       <div className="space-y-1.5">
