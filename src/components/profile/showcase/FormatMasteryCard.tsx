@@ -31,7 +31,7 @@ export function FormatMasteryCard({ matches }: FormatMasteryCardProps) {
       winRate: data.matches > 0 ? (data.wins / data.matches) * 100 : 0,
     }))
     .sort((a, b) => b.matches - a.matches)
-    .slice(0, 4);
+    .slice(0, 8);
 
   if (formats.length === 0) return null;
   const maxMatches = formats[0].matches;
