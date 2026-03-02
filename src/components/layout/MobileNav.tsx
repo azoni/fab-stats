@@ -132,6 +132,7 @@ const moreSections: { title: string; links: MoreLink[] }[] = [
       { href: "/import", label: "Import Matches", icon: <ImportIcon />, authOnly: true },
       { href: "/events", label: "Events", icon: <CalendarIcon /> },
       { href: "/trends", label: "My Stats", icon: <TrendsIcon />, authOnly: true },
+      { href: "/tools", label: "Player Tools", icon: <SwordsIcon />, authOnly: true },
     ],
   },
   {
