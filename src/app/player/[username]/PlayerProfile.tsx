@@ -755,11 +755,11 @@ export default function PlayerProfile() {
 function ProfileHeader({ profile, bestRank, isAdmin, isOwner, isFavorited, onToggleFavorite, friendStatus, onFriendAction, onShareCard, friendCount, creator }: { profile: UserProfile; bestRank?: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | null; isAdmin?: boolean; isOwner?: boolean; isFavorited?: boolean; onToggleFavorite?: () => void; friendStatus?: "none" | "sent" | "received" | "friends"; onFriendAction?: () => void; onShareCard?: () => void; friendCount?: number | null; creator?: Creator | null }) {
   const [linkCopied, setLinkCopied] = useState(false);
   const ringClass = rankBorderClass(bestRank ?? null);
-  const isCreator = !!creator;
+  const isSiteCreator = profile.username === "azoni";
   return (
     <div className="flex items-center gap-4 flex-1 min-w-0">
       <div className="relative shrink-0">
-        {isCreator && (
+        {isSiteCreator && (
           <svg className="absolute -top-4 left-1/2 -translate-x-1/2 w-7 h-7 text-fab-gold drop-shadow-[0_0_6px_rgba(201,168,76,0.6)] z-10" viewBox="0 0 24 24" fill="currentColor">
             <path d="M2.5 19h19v3h-19zM22.5 7l-5 4-5.5-7-5.5 7-5-4 2 12h17z" />
           </svg>

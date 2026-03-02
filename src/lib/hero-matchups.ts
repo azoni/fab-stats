@@ -1,5 +1,7 @@
 import {
   doc,
+  setDoc,
+  updateDoc,
   writeBatch,
   collection,
   query,
@@ -147,15 +149,16 @@ export async function updateCommunityHeroMatchups(
 
   if (groups.size === 0) return;
 
-  // Batch write with increment() for atomic updates
-  const batch = writeBatch(db);
+  // Phase 1: Batch set main fields (set + merge creates docs if needed)
+  const setBatch = writeBatch(db);
+  const formatUpdates: { ref: ReturnType<typeof doc>; data: Record<string, unknown> }[] = [];
   let count = 0;
 
   for (const [, g] of groups) {
     const docId = getHeroMatchupDocId(g.hero1, g.hero2, g.month);
     const ref = doc(db, "heroMatchups", docId);
 
-    const data: Record<string, unknown> = {
+    setBatch.set(ref, {
       hero1: g.hero1,
       hero2: g.hero2,
       month: g.month,
@@ -164,25 +167,120 @@ export async function updateCommunityHeroMatchups(
       draws: increment(g.draws),
       total: increment(g.total),
       updatedAt: new Date().toISOString(),
-    };
+    }, { merge: true });
 
-    // Format breakdown increments
-    for (const [fmt, fData] of g.byFormat) {
-      const prefix = `byFormat.${fmt}`;
-      data[`${prefix}.hero1Wins`] = increment(fData.hero1Wins);
-      data[`${prefix}.hero2Wins`] = increment(fData.hero2Wins);
-      data[`${prefix}.draws`] = increment(fData.draws);
-      data[`${prefix}.total`] = increment(fData.total);
+    // Collect byFormat data for phase 2 (updateDoc handles dot-notation as field paths)
+    if (g.byFormat.size > 0) {
+      const fmtData: Record<string, unknown> = {};
+      for (const [fmt, fData] of g.byFormat) {
+        const prefix = `byFormat.${fmt}`;
+        fmtData[`${prefix}.hero1Wins`] = increment(fData.hero1Wins);
+        fmtData[`${prefix}.hero2Wins`] = increment(fData.hero2Wins);
+        fmtData[`${prefix}.draws`] = increment(fData.draws);
+        fmtData[`${prefix}.total`] = increment(fData.total);
+      }
+      formatUpdates.push({ ref, data: fmtData });
     }
 
-    batch.set(ref, data, { merge: true });
     count++;
     if (count >= 400) break; // Firestore batch limit safety
   }
 
   if (count > 0) {
-    await batch.commit();
+    await setBatch.commit();
   }
+
+  // Phase 2: Update byFormat fields (update interprets dot-notation as nested field paths)
+  if (formatUpdates.length > 0) {
+    const updateBatch = writeBatch(db);
+    for (const { ref, data } of formatUpdates) {
+      updateBatch.update(ref, data);
+    }
+    await updateBatch.commit();
+  }
+}
+
+// ── Adjust: Hero edit on a single match ──
+
+/**
+ * When a user edits their heroPlayed, adjust the community hero matchup
+ * counters: decrement the old pairing and increment the new one.
+ * Applies the same dedup rules as updateCommunityHeroMatchups.
+ */
+export async function adjustHeroMatchupOnEdit(
+  userId: string,
+  match: MatchRecord,
+  oldHero: string,
+  newHero: string,
+): Promise<void> {
+  if (!match.opponentHero || match.opponentHero === "Unknown") return;
+  if (match.result === MatchResult.Bye) return;
+  if (oldHero === newHero) return;
+
+  const opponentHero = match.opponentHero!;
+  const month = getMonth(match.date);
+  const fmt = match.format || "Unknown";
+
+  // Check if old pairing was counted from this user's side
+  const oldCountedFromThisSide = shouldCountFromThisSide(userId, oldHero, opponentHero, match.opponentGemId);
+  // Check if new pairing should be counted from this user's side
+  const newCountedFromThisSide = shouldCountFromThisSide(userId, newHero, opponentHero, match.opponentGemId);
+
+  if (!oldCountedFromThisSide && !newCountedFromThisSide) return;
+
+  // Decrement old pairing (doc should exist since it was previously counted)
+  if (oldCountedFromThisSide) {
+    const ref = doc(db, "heroMatchups", getHeroMatchupDocId(oldHero, opponentHero, month));
+    const [h1Win, h2Win, draw] = resultDeltas(match.result, -1);
+    // updateDoc handles dot-notation as nested field paths
+    await updateDoc(ref, {
+      hero1Wins: increment(h1Win), hero2Wins: increment(h2Win),
+      draws: increment(draw), total: increment(-1),
+      updatedAt: new Date().toISOString(),
+      [`byFormat.${fmt}.hero1Wins`]: increment(h1Win),
+      [`byFormat.${fmt}.hero2Wins`]: increment(h2Win),
+      [`byFormat.${fmt}.draws`]: increment(draw),
+      [`byFormat.${fmt}.total`]: increment(-1),
+    }).catch(() => {}); // doc might not exist if data was never aggregated
+  }
+
+  // Increment new pairing (doc might not exist yet — create via set, then update byFormat)
+  if (newCountedFromThisSide) {
+    const sorted = [newHero, opponentHero].sort();
+    const ref = doc(db, "heroMatchups", getHeroMatchupDocId(newHero, opponentHero, month));
+    const [h1Win, h2Win, draw] = resultDeltas(match.result, 1);
+    await setDoc(ref, {
+      hero1: sorted[0], hero2: sorted[1], month,
+      hero1Wins: increment(h1Win), hero2Wins: increment(h2Win),
+      draws: increment(draw), total: increment(1),
+      updatedAt: new Date().toISOString(),
+    }, { merge: true });
+    await updateDoc(ref, {
+      [`byFormat.${fmt}.hero1Wins`]: increment(h1Win),
+      [`byFormat.${fmt}.hero2Wins`]: increment(h2Win),
+      [`byFormat.${fmt}.draws`]: increment(draw),
+      [`byFormat.${fmt}.total`]: increment(1),
+    }).catch(() => {});
+  }
+
+  // Invalidate cache so next read picks up the change
+  cachedData = null;
+}
+
+/** Should this match be counted from the current user's side? */
+function shouldCountFromThisSide(userId: string, heroPlayed: string, opponentHero: string, opponentGemId?: string): boolean {
+  if (heroPlayed === opponentHero) {
+    return !!opponentGemId && userId < opponentGemId;
+  }
+  return heroPlayed < opponentHero;
+}
+
+/** Map a match result to [hero1WinsDelta, hero2WinsDelta, drawsDelta] scaled by sign (+1 or -1). */
+function resultDeltas(result: string, sign: 1 | -1): [number, number, number] {
+  if (result === MatchResult.Win) return [sign, 0, 0];
+  if (result === MatchResult.Loss) return [0, sign, 0];
+  if (result === MatchResult.Draw) return [0, 0, sign];
+  return [0, 0, 0];
 }
 
 // ── Read: Fetch community matchup data ──

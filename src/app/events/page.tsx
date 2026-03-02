@@ -7,6 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { computeEventStats, computeOverallStats, computePlayoffFinishes, computeBestFinish } from "@/lib/stats";
 import { updateLeaderboardEntry } from "@/lib/leaderboard";
 import { propagateHeroToOpponent } from "@/lib/match-linking";
+import { adjustHeroMatchupOnEdit } from "@/lib/hero-matchups";
 import { deleteFeedEventsForEvent } from "@/lib/feed";
 import { EventCard } from "@/components/events/EventCard";
 import { localDate } from "@/lib/constants";
@@ -47,6 +48,7 @@ export default function EventsPage() {
         );
         for (const match of affectedMatches) {
           propagateHeroToOpponent(user.uid, match, hero).catch(() => {});
+          adjustHeroMatchupOnEdit(user.uid, match, match.heroPlayed, hero).catch(() => {});
         }
       }
     },

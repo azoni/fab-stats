@@ -3,14 +3,14 @@ import { useState } from "react";
 import { getProfileBadges } from "@/lib/profile-badges";
 import { BADGE_ICON_MAP } from "./BadgeIcons";
 
-export function BadgeStrip({ matchCount, isCreator }: { matchCount: number; isCreator?: boolean }) {
+export function BadgeStrip({ matchCount, isCreator, className }: { matchCount: number; isCreator?: boolean; className?: string }) {
   const badges = getProfileBadges(matchCount, { isCreator });
   const [hoveredId, setHoveredId] = useState<string | null>(null);
 
   if (badges.length === 0) return null;
 
   return (
-    <div className="flex items-center gap-1.5">
+    <div className={`flex items-center gap-1.5 ${className || ""}`}>
       {badges.map((badge) => {
         const Icon = BADGE_ICON_MAP[badge.id];
         if (!Icon) return null;

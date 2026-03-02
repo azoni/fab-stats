@@ -378,7 +378,6 @@ export default function Dashboard() {
                         <span className="hidden sm:inline truncate">{topHero.heroName}</span>
                       </>
                     )}
-                    <BadgeStrip matchCount={matches.length} isCreator={isCreator} />
                   </div>
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0">
@@ -436,6 +435,7 @@ export default function Dashboard() {
                   )}
                 </div>
               </div>
+              <BadgeStrip matchCount={matches.length} isCreator={isCreator} className="mt-2 ml-1" />
             </div>
             {/* Quick stats + recent events + player spotlight */}
             <QuickStats overall={overall} last30={last30} />

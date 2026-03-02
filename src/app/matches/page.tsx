@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { MatchList } from "@/components/matches/MatchList";
 import { updateLeaderboardEntry } from "@/lib/leaderboard";
 import { propagateHeroToOpponent } from "@/lib/match-linking";
+import { adjustHeroMatchupOnEdit } from "@/lib/hero-matchups";
 import { SwordsIcon } from "@/components/icons/NavIcons";
 import type { MatchRecord } from "@/types";
 
@@ -20,11 +21,12 @@ export default function MatchesPage() {
         const updated = matches.map((m) => m.id === id ? { ...m, ...updates } : m);
         updateLeaderboardEntry(profile, updated).catch(() => {});
       }
-      // Propagate hero edit to linked opponent (non-blocking)
+      // Propagate hero edit to linked opponent + adjust community matchups (non-blocking)
       if (updates.heroPlayed && user) {
         const match = matches.find((m) => m.id === id);
         if (match) {
           propagateHeroToOpponent(user.uid, match, updates.heroPlayed).catch(() => {});
+          adjustHeroMatchupOnEdit(user.uid, match, match.heroPlayed, updates.heroPlayed).catch(() => {});
         }
       }
     },
