@@ -10,6 +10,7 @@ import { getEvents, saveEvents } from "@/lib/featured-events";
 import { lookupEvents, type LookupEvent } from "@/lib/event-lookup";
 import { getOrCreateConversation, sendMessage, sendMessageNotification } from "@/lib/messages";
 import { getAnalytics, type AnalyticsTimeRange } from "@/lib/analytics";
+import { getFeatureUsageCounts, getActivityFeed, type ActivityAction, type ActivityEvent } from "@/lib/activity-log";
 import { getBanner, saveBanner, type BannerConfig } from "@/lib/banner";
 import { getAllPolls, getPollResults, getPollVoters, savePoll, removePoll, clearVotes, mergeOptions, closePredictionVoting, reopenPredictionVoting, resolvePrediction } from "@/lib/polls";
 import { grantPredictionAchievements } from "@/lib/prediction-service";
@@ -132,13 +133,18 @@ export default function AdminPage() {
   const [mutedIds, setMutedIds] = useState<Set<string>>(new Set());
   const [aiCost, setAiCost] = useState<ChatGlobalStats>({ totalMessages: 0, totalCost: 0, users: {} });
   const anyToolRunning = fixingDates || backfilling || backfillingGemIds || linkingMatches || resyncingH2H;
-  const [activeTab, setActiveTab] = useState<"overview" | "users" | "feedback" | "content" | "poll" | "tools">(() => {
+  const [activeTab, setActiveTab] = useState<"overview" | "users" | "feedback" | "content" | "poll" | "tools" | "activity">(() => {
     if (typeof window !== "undefined") {
       const hash = window.location.hash.replace("#", "");
-      if (["overview", "users", "feedback", "content", "poll", "tools"].includes(hash)) return hash as any;
+      if (["overview", "users", "feedback", "content", "poll", "tools", "activity"].includes(hash)) return hash as any;
     }
     return "overview";
   });
+  const [activityCounts, setActivityCounts] = useState<Record<string, number>>({});
+  const [activityFeed, setActivityFeed] = useState<ActivityEvent[]>([]);
+  const [activityFilter, setActivityFilter] = useState<ActivityAction | "">("");
+  const [activityLoading, setActivityLoading] = useState(false);
+  const [activityHasMore, setActivityHasMore] = useState(false);
 
   // Redirect non-admins
   useEffect(() => {
@@ -199,6 +205,25 @@ export default function AdminPage() {
   useEffect(() => {
     if (isAdmin) fetchData();
   }, [isAdmin, fetchData]);
+
+  // Load activity data when tab is selected
+  const loadActivity = useCallback(async (filter?: ActivityAction | "") => {
+    setActivityLoading(true);
+    try {
+      const [counts, feed] = await Promise.all([
+        getFeatureUsageCounts(),
+        getActivityFeed(50, filter || undefined),
+      ]);
+      setActivityCounts(counts);
+      setActivityFeed(feed.events);
+      setActivityHasMore(feed.hasMore);
+    } catch { /* ignore */ }
+    setActivityLoading(false);
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === "activity" && activityFeed.length === 0) loadActivity(activityFilter || undefined);
+  }, [activeTab]);
 
   if (loading || !isAdmin) {
     return (
@@ -280,6 +305,7 @@ export default function AdminPage() {
           { id: "content", label: "Content" },
           { id: "poll", label: "Poll" },
           { id: "tools", label: "Tools" },
+          { id: "activity", label: "Activity" },
         ] as const).map((tab) => (
           <button
             key={tab.id}
@@ -1980,6 +2006,132 @@ export default function AdminPage() {
             </div>
           )}
 
+          </>}
+
+          {/* ── Activity Tab ── */}
+          {activeTab === "activity" && <>
+          <div className="space-y-4">
+            {/* Summary counters */}
+            <div className="bg-fab-surface border border-fab-border rounded-lg p-4">
+              <h2 className="text-sm font-semibold text-fab-text mb-3">Feature Usage</h2>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {([
+                  ["showcase_edit", "Showcase Edits"],
+                  ["profile_share", "Profile Shares"],
+                  ["placement_share", "Placement Shares"],
+                  ["bestfinish_share", "Best Finish Shares"],
+                  ["event_share", "Event Shares"],
+                  ["rivalry_share", "Rivalry Shares"],
+                  ["compare_share", "Compare Shares"],
+                ] as const).map(([key, label]) => (
+                  <div key={key} className="bg-fab-bg rounded-lg p-3 text-center">
+                    <p className="text-xl font-black text-fab-text">{activityCounts[key] || 0}</p>
+                    <p className="text-[10px] text-fab-muted uppercase tracking-wider mt-0.5">{label}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Activity feed */}
+            <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden">
+              <div className="px-4 py-3 border-b border-fab-border flex items-center justify-between">
+                <h2 className="text-sm font-semibold text-fab-text">Activity Feed</h2>
+                <button
+                  onClick={() => loadActivity(activityFilter || undefined)}
+                  disabled={activityLoading}
+                  className="text-xs text-fab-muted hover:text-fab-text transition-colors disabled:opacity-50"
+                >
+                  {activityLoading ? "Loading..." : "Refresh"}
+                </button>
+              </div>
+
+              {/* Filters */}
+              <div className="px-4 py-2 border-b border-fab-border flex gap-1.5 overflow-x-auto">
+                {([
+                  ["", "All"],
+                  ["showcase_edit", "Showcase"],
+                  ["profile_share", "Profile"],
+                  ["placement_share", "Placement"],
+                  ["bestfinish_share", "Finish"],
+                  ["event_share", "Event"],
+                  ["rivalry_share", "Rivalry"],
+                  ["compare_share", "Compare"],
+                ] as [ActivityAction | "", string][]).map(([value, label]) => (
+                  <button
+                    key={value}
+                    onClick={() => { setActivityFilter(value); loadActivity(value); }}
+                    className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${
+                      activityFilter === value
+                        ? "bg-fab-gold/15 text-fab-gold"
+                        : "text-fab-muted hover:text-fab-text hover:bg-fab-bg"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Feed list */}
+              <div className="divide-y divide-fab-border max-h-[600px] overflow-y-auto">
+                {activityLoading && activityFeed.length === 0 ? (
+                  <div className="p-8 text-center text-fab-muted animate-pulse">Loading activity...</div>
+                ) : activityFeed.length === 0 ? (
+                  <div className="p-8 text-center text-fab-muted">No activity yet</div>
+                ) : activityFeed.map((ev) => {
+                  const actionLabels: Record<string, string> = {
+                    showcase_edit: "edited showcase",
+                    profile_share: "shared profile",
+                    placement_share: "shared placement",
+                    bestfinish_share: "shared best finish",
+                    event_share: "shared event result",
+                    rivalry_share: "shared rivalry",
+                    compare_share: "shared comparison",
+                  };
+                  const ago = (() => {
+                    const diff = Date.now() - new Date(ev.ts).getTime();
+                    const mins = Math.floor(diff / 60000);
+                    if (mins < 1) return "just now";
+                    if (mins < 60) return `${mins}m ago`;
+                    const hrs = Math.floor(mins / 60);
+                    if (hrs < 24) return `${hrs}h ago`;
+                    const days = Math.floor(hrs / 24);
+                    return `${days}d ago`;
+                  })();
+                  return (
+                    <div key={ev.id} className="px-4 py-2.5 flex items-center gap-3 text-sm">
+                      <span className="text-fab-dim text-xs w-14 shrink-0">{ago}</span>
+                      <Link href={`/player/${ev.username}`} className="text-fab-gold hover:underline font-medium">@{ev.username}</Link>
+                      <span className="text-fab-muted">{actionLabels[ev.action] || ev.action}</span>
+                      {ev.meta && <span className="text-fab-dim text-xs truncate max-w-[200px]">{ev.meta}</span>}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Load more */}
+              {activityHasMore && (
+                <div className="px-4 py-3 border-t border-fab-border text-center">
+                  <button
+                    onClick={async () => {
+                      const last = activityFeed[activityFeed.length - 1];
+                      if (!last) return;
+                      setActivityLoading(true);
+                      try {
+                        const more = await getActivityFeed(50, activityFilter || undefined, last.ts);
+                        setActivityFeed((prev) => [...prev, ...more.events]);
+                        setActivityHasMore(more.hasMore);
+                      } catch { /* ignore */ }
+                      setActivityLoading(false);
+                    }}
+                    disabled={activityLoading}
+                    className="text-xs text-fab-gold hover:underline disabled:opacity-50"
+                  >
+                    Load More
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
           </>}
 
           {/* ── Tools Tab: Broadcast ── */}

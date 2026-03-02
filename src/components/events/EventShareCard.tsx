@@ -1,6 +1,7 @@
 "use client";
 import { useRef, useState } from "react";
 import { MatchResult, type EventStats } from "@/types";
+import { logActivity } from "@/lib/activity-log";
 import { getHeroByName } from "@/lib/heroes";
 import { HeroClassIcon } from "@/components/heroes/HeroClassIcon";
 import { FINISH_THEMES, type FinishTheme } from "@/components/profile/BestFinishCard";
@@ -196,11 +197,13 @@ export function EventShareModal({ event, playerName, onClose }: EventShareModalP
         await navigator.clipboard.write([
           new ClipboardItem({ "image/png": blob }),
         ]);
+        logActivity("event_share");
         setShareStatus("copied");
         setTimeout(() => { setShareStatus("idle"); onClose(); }, 1500);
         return;
       } else {
         await navigator.clipboard.writeText(shareText);
+        logActivity("event_share");
         setShareStatus("copied");
         setTimeout(() => { setShareStatus("idle"); onClose(); }, 1500);
         return;

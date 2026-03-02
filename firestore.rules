@@ -288,6 +288,13 @@ service cloud.firestore {
       allow read: if isAdmin();
     }
 
+    // ── Admin activity log (feature engagement tracking) ──
+    match /adminActivity/{activityId} {
+      allow create: if request.auth != null
+        && request.resource.data.uid == request.auth.uid;
+      allow read, delete: if isAdmin();
+    }
+
     // ── Admin configuration ──
     // Featured events are public (shown on homepage to all visitors)
     match /admin/featuredEvents {

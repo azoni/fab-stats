@@ -2,6 +2,7 @@
 import { useRef, useState } from "react";
 
 import { MatchResult } from "@/types";
+import { logActivity } from "@/lib/activity-log";
 import type { CardTheme } from "@/components/opponents/RivalryCard";
 import type { PlayoffFinish } from "@/lib/stats";
 
@@ -383,11 +384,13 @@ export function ProfileShareModal({
         await navigator.clipboard.write([
           new ClipboardItem({ "image/png": blob }),
         ]);
+        logActivity("profile_share");
         setShareStatus("copied");
         setTimeout(() => { setShareStatus("idle"); onClose(); }, 1500);
         return;
       } else {
         await navigator.clipboard.writeText(profileUrl);
+        logActivity("profile_share");
         setShareStatus("copied");
         setTimeout(() => { setShareStatus("idle"); onClose(); }, 1500);
         return;

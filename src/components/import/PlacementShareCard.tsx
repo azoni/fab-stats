@@ -1,6 +1,7 @@
 "use client";
 import { useRef, useState, useEffect } from "react";
 import type { PlayoffFinish } from "@/lib/stats";
+import { logActivity } from "@/lib/activity-log";
 import {
   TIER_MAP,
   PLACEMENT_TEXT,
@@ -177,11 +178,13 @@ export function PlacementShareModal({ playerName, finish, onClose }: PlacementSh
         await navigator.clipboard.write([
           new ClipboardItem({ "image/png": blob }),
         ]);
+        logActivity("placement_share", finish.eventName);
         setShareStatus("copied");
         setTimeout(() => { setShareStatus("idle"); onClose(); }, 1500);
         return;
       } else {
         await navigator.clipboard.writeText(shareText);
+        logActivity("placement_share", finish.eventName);
         setShareStatus("copied");
         setTimeout(() => { setShareStatus("idle"); onClose(); }, 1500);
         return;

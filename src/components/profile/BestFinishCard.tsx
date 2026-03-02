@@ -1,5 +1,6 @@
 "use client";
 import { useRef, useState } from "react";
+import { logActivity } from "@/lib/activity-log";
 
 
 export interface FinishTheme {
@@ -254,11 +255,13 @@ export function BestFinishShareModal({
         await navigator.clipboard.write([
           new ClipboardItem({ "image/png": blob }),
         ]);
+        logActivity("bestfinish_share");
         setShareStatus("copied");
         setTimeout(() => { setShareStatus("idle"); onClose(); }, 1500);
         return;
       } else {
         await navigator.clipboard.writeText(url);
+        logActivity("bestfinish_share");
         setShareStatus("copied");
         setTimeout(() => { setShareStatus("idle"); onClose(); }, 1500);
         return;

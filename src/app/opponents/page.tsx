@@ -3,6 +3,7 @@ import { useState, useMemo, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useMatches } from "@/hooks/useMatches";
+import { logActivity } from "@/lib/activity-log";
 import { useAuth } from "@/contexts/AuthContext";
 import { computeOpponentStats } from "@/lib/stats";
 import { MatchCard } from "@/components/matches/MatchCard";
@@ -713,11 +714,13 @@ function ShareModal({
         await navigator.clipboard.write([
           new ClipboardItem({ "image/png": blob }),
         ]);
+        logActivity("rivalry_share", opp.opponentName);
         setShareStatus("copied");
         setTimeout(() => { setShareStatus("idle"); onClose(); }, 1500);
         return;
       } else {
         await navigator.clipboard.writeText(url);
+        logActivity("rivalry_share", opp.opponentName);
         setShareStatus("copied");
         setTimeout(() => { setShareStatus("idle"); onClose(); }, 1500);
         return;

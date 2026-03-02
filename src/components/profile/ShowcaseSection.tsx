@@ -1,6 +1,7 @@
 "use client";
 import { useState, useCallback, useMemo } from "react";
 import { updateProfile } from "@/lib/firestore-storage";
+import { logActivity } from "@/lib/activity-log";
 import { FeaturedMatchCard } from "./showcase/FeaturedMatchCard";
 import { HeroSpotlightCard } from "./showcase/HeroSpotlightCard";
 import { BestFinishShowcase } from "./showcase/BestFinishShowcase";
@@ -91,6 +92,7 @@ export function ShowcaseSection({
         return clean as unknown as ShowcaseCard;
       });
       await updateProfile(profile.uid, { showcase: cleaned });
+      logActivity("showcase_edit", String(cleaned.length));
     } catch (err) {
       console.error("Failed to save showcase:", err);
     } finally {
