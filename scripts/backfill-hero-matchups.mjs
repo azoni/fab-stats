@@ -29,6 +29,19 @@ const db = getFirestore(app);
 
 // ── Helpers (mirroring src/lib/hero-matchups.ts) ──
 
+async function withRetry(fn, label, retries = 3) {
+  for (let i = 0; i < retries; i++) {
+    try {
+      return await fn();
+    } catch (err) {
+      if (i === retries - 1) throw err;
+      const delay = 1000 * Math.pow(2, i);
+      console.warn(`  Retry ${i + 1}/${retries} for ${label} after ${delay}ms: ${err.message}`);
+      await new Promise((r) => setTimeout(r, delay));
+    }
+  }
+}
+
 function getMonth(dateStr) {
   return dateStr.slice(0, 7); // "YYYY-MM"
 }
@@ -55,12 +68,12 @@ async function clearCollection() {
     batch.delete(doc.ref);
     count++;
     if (count % batchSize === 0) {
-      await batch.commit();
+      await withRetry(() => batch.commit(), `clear batch`);
       batch = db.batch();
     }
   }
   if (count % batchSize !== 0) {
-    await batch.commit();
+    await withRetry(() => batch.commit(), `clear final batch`);
   }
   console.log(`Cleared ${count} docs.`);
 }
@@ -80,10 +93,23 @@ async function backfill() {
 
   let totalLinked = 0;
   let usersWithMatches = 0;
+  let failedUsers = 0;
+  const failedUserIds = [];
 
   for (const userRef of userDocs) {
     const userId = userRef.id;
-    const matchesSnap = await db.collection(`users/${userId}/matches`).get();
+    let matchesSnap;
+    try {
+      matchesSnap = await withRetry(
+        () => db.collection(`users/${userId}/matches`).get(),
+        `read matches for ${userId}`,
+      );
+    } catch (err) {
+      failedUsers++;
+      failedUserIds.push(userId);
+      console.error(`  FAILED to read matches for ${userId}: ${err.message}`);
+      continue;
+    }
     if (matchesSnap.empty) continue;
 
     usersWithMatches++;
@@ -155,6 +181,9 @@ async function backfill() {
   }
 
   console.log(`\nAggregation complete: ${usersWithMatches} users with matches, ${totalLinked} linked matches counted.`);
+  if (failedUsers > 0) {
+    console.log(`${failedUsers} users failed to read (will be retried on next run).`);
+  }
   console.log(`${agg.size} hero matchup docs to write.\n`);
 
   // ── Step 3: Write to Firestore ──
@@ -162,6 +191,7 @@ async function backfill() {
   const batchSize = 400;
   let batch = db.batch();
   let count = 0;
+  let batchNum = 0;
 
   for (const [docId, g] of agg) {
     const ref = db.collection("heroMatchups").doc(docId);
@@ -182,17 +212,21 @@ async function backfill() {
     count++;
 
     if (count % batchSize === 0) {
-      await batch.commit();
+      batchNum++;
+      await withRetry(() => batch.commit(), `write batch ${batchNum}`);
       console.log(`  Written ${count} / ${agg.size} docs...`);
       batch = db.batch();
     }
   }
 
   if (count % batchSize !== 0) {
-    await batch.commit();
+    await withRetry(() => batch.commit(), `write final batch`);
   }
 
   console.log(`\nDone! Wrote ${count} heroMatchup docs to Firestore.`);
+  if (failedUserIds.length > 0) {
+    console.log(`\nFailed user IDs (${failedUserIds.length}):\n  ${failedUserIds.join("\n  ")}`);
+  }
 }
 
 // ── Run ──
