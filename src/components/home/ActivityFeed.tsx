@@ -12,12 +12,11 @@ import { playerHref } from "@/lib/constants";
 import type { FeedEvent } from "@/types";
 
 type ScopeTab = "community" | "friends";
-type TypeFilter = "all" | "import" | "achievement" | "placement" | "engagement";
+type TypeFilter = "all" | "import" | "placement" | "engagement";
 
 const TYPE_FILTERS: { value: TypeFilter; label: string; adminOnly?: boolean }[] = [
   { value: "all", label: "All" },
   { value: "import", label: "Imports" },
-  { value: "achievement", label: "Achievements" },
   { value: "placement", label: "Placements" },
   { value: "engagement", label: "Engagement", adminOnly: true },
 ];
@@ -25,7 +24,6 @@ const TYPE_FILTERS: { value: TypeFilter; label: string; adminOnly?: boolean }[] 
 const PAGE_SIZE = 5;
 const TYPE_CAPS: Record<string, number> = {
   import: 10,
-  achievement: 15,
   placement: 20,
 };
 const SCOPE_KEY = "fab-feed-scope";
@@ -44,7 +42,7 @@ export function ActivityFeed({ rankMap, eventTierMap }: { rankMap?: Map<string, 
   const { friends } = useFriends();
   const { favorites } = useFavorites();
   const [scope, _setScope] = useState<ScopeTab>(() => readStored(SCOPE_KEY, ["community", "friends"], "community"));
-  const [typeFilter, _setTypeFilter] = useState<TypeFilter>(() => readStored(TYPE_KEY, ["all", "import", "achievement", "placement", "engagement"], "placement"));
+  const [typeFilter, _setTypeFilter] = useState<TypeFilter>(() => readStored(TYPE_KEY, ["all", "import", "placement", "engagement"], "placement"));
 
   const [page, setPage] = useState(0);
   const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
@@ -82,7 +80,7 @@ export function ActivityFeed({ rankMap, eventTierMap }: { rankMap?: Map<string, 
   }, [friends, favorites, user?.uid]);
 
   const filteredEvents: FeedEvent[] = useMemo(() => {
-    let source = events.filter((e) => !deletedIds.has(e.id));
+    let source = events.filter((e) => !deletedIds.has(e.id) && e.type !== "achievement");
 
     // Scope filter
     if (scope === "friends") {
@@ -94,16 +92,9 @@ export function ActivityFeed({ rankMap, eventTierMap }: { rankMap?: Map<string, 
       source = source.filter((e) => e.type === typeFilter);
     }
 
-    // Placements: only show if the event happened within the last 2 weeks
-    // Achievements & imports: no time cutoff — TYPE_CAPS limits are sufficient
-    const TWO_WEEKS = 14 * 24 * 60 * 60 * 1000;
-    const placementCutoff = Date.now() - TWO_WEEKS;
-    source = source.filter((e) => {
-      if (e.type === "placement") {
-        return new Date(e.eventDate).getTime() >= placementCutoff;
-      }
-      return true;
-    });
+    // No display-time cutoff needed — the import flow already gates placement
+    // feed events with a 14-day freshness check at creation time.
+    // TYPE_CAPS (placement: 20, import: 10) limit how many of each type show.
 
     // Sort by the date the event happened (most recent first)
     source = [...source].sort((a, b) => {

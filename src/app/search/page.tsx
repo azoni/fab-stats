@@ -22,12 +22,11 @@ interface SearchResult {
 }
 
 type ScopeTab = "community" | "friends";
-type TypeFilter = "all" | "import" | "achievement" | "placement";
+type TypeFilter = "all" | "import" | "placement";
 
 const TYPE_FILTERS: { value: TypeFilter; label: string }[] = [
   { value: "all", label: "All" },
   { value: "import", label: "Imports" },
-  { value: "achievement", label: "Achievements" },
   { value: "placement", label: "Placements" },
 ];
 
@@ -70,7 +69,7 @@ function SearchContent() {
   const [scope, setScope] = useState<ScopeTab>("community");
   const initialType = searchParams.get("type") as TypeFilter | null;
   const [typeFilter, setTypeFilter] = useState<TypeFilter>(
-    initialType && (["all", "import", "achievement", "placement"] as TypeFilter[]).includes(initialType) ? initialType : "placement"
+    initialType && (["all", "import", "placement"] as TypeFilter[]).includes(initialType) ? initialType : "placement"
   );
   const [page, setPage] = useState(0);
   const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
@@ -105,7 +104,7 @@ function SearchContent() {
     const importCutoff = yesterday.getTime();
     const appLaunch = new Date("2026-02-24").getTime();
 
-    let source = allFeedEvents.filter((e) => !deletedIds.has(e.id));
+    let source = allFeedEvents.filter((e) => !deletedIds.has(e.id) && e.type !== "achievement");
 
     if (scope === "friends") {
       source = source.filter((e) => socialUserIds.has(e.userId));
@@ -346,7 +345,7 @@ function SearchContent() {
                   {scope === "friends"
                     ? "No recent activity from friends yet."
                     : typeFilter === "all"
-                      ? "No activity yet. When players import matches or earn achievements, it will show up here."
+                      ? "No activity yet. When players import matches or earn placements, it will show up here."
                       : `No ${typeFilter} activity yet.`}
                 </p>
               </div>

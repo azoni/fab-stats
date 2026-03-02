@@ -5,7 +5,7 @@ import { parseGemPaste, parseExtensionJson, type PasteImportResult } from "@/lib
 import { useAuth } from "@/contexts/AuthContext";
 import { importMatchesFirestore, clearAllMatchesFirestore, updateProfile, registerGemId } from "@/lib/firestore-storage";
 import { importMatchesLocal } from "@/lib/storage";
-import { createImportFeedEvent, createAchievementFeedEvent, createPlacementFeedEvent, deleteAllFeedEventsForUser } from "@/lib/feed";
+import { createImportFeedEvent, createPlacementFeedEvent, deleteAllFeedEventsForUser } from "@/lib/feed";
 import { detectNewAchievements } from "@/lib/achievement-tracking";
 import { evaluateAchievements } from "@/lib/achievements";
 import { computeOverallStats, computeHeroStats, computeOpponentStats, computeEventStats, computePlayoffFinishes, getEventName, type PlayoffFinish } from "@/lib/stats";
@@ -349,9 +349,6 @@ export default function ImportPage() {
       const newestDate = Math.max(...matches.map((m) => new Date(m.date).getTime()));
       const isFresh = Date.now() - newestDate <= 14 * 86400000;
       if (isFresh) {
-        if (detectedNew.length > 0) {
-          createAchievementFeedEvent(profile, detectedNew).catch(() => {});
-        }
         for (const finish of freshFinishes) {
           const eventMatches = afterMatches.filter((m) => getEventName(m) === finish.eventName && m.date === finish.eventDate);
           const hero = eventMatches[0]?.heroPlayed;

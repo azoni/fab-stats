@@ -5,7 +5,7 @@ import { auth } from "@/lib/firebase";
 import { parseSingleEventPaste } from "@/lib/single-event-import";
 import { importMatchesFirestore, getMatchesByUserId } from "@/lib/firestore-storage";
 import { importMatchesLocal } from "@/lib/storage";
-import { createImportFeedEvent, createAchievementFeedEvent, createPlacementFeedEvent } from "@/lib/feed";
+import { createImportFeedEvent, createPlacementFeedEvent } from "@/lib/feed";
 import { detectNewAchievements } from "@/lib/achievement-tracking";
 import { evaluateAchievements } from "@/lib/achievements";
 import { computeOverallStats, computeHeroStats, computeOpponentStats, computeEventStats, computePlayoffFinishes, getEventName } from "@/lib/stats";
@@ -193,11 +193,7 @@ export function QuickEventImportModal({ open, onClose, onImportComplete }: Quick
           const heroStats = computeHeroStats(allMatches);
           const oppStats = computeOpponentStats(allMatches);
           const earned = evaluateAchievements(allMatches, overall, heroStats, oppStats);
-          detectNewAchievements(user.uid, earned)
-            .then((newOnes) => {
-              if (newOnes.length > 0) createAchievementFeedEvent(profile, newOnes).catch(() => {});
-            })
-            .catch(() => {});
+          detectNewAchievements(user.uid, earned).catch(() => {});
 
           const eventStats = computeEventStats(allMatches);
           const allFinishes = computePlayoffFinishes(eventStats);

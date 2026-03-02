@@ -504,7 +504,7 @@ export default function PlayerProfile() {
             overall={overall}
             achievements={achievements}
             storageField="showcaseSecondary"
-            maxPoints={8}
+            maxPoints={12}
             label="Pinned"
           />
         </div>
