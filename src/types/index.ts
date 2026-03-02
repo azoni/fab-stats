@@ -349,6 +349,7 @@ export interface Season {
   format: string;       // "Classic Constructed", "Blitz", etc.
   eventType: string;    // "ProQuest", "Battle Hardened", etc.
   active: boolean;
+  backgroundImage?: string; // URL for season background image on meta table
 }
 
 // Polls

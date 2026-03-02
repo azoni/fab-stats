@@ -16,6 +16,7 @@ interface MetaSnapshotProps {
   seasonWeeks?: { label: string; start: string; end: string }[];
   selectedWeek?: number | null;
   onWeekChange?: (week: number | null) => void;
+  backgroundImage?: string;
 }
 
 const RANK_CLASS = ["meta-rank-1 font-black", "meta-rank-2 font-bold", "meta-rank-3 font-bold", "text-fab-muted font-bold", "text-fab-muted font-bold"];
@@ -28,7 +29,7 @@ const SORT_OPTIONS: { key: Top8Sort; label: string }[] = [
 
 const TOP8_PAGE_SIZE = 10;
 
-export const MetaSnapshot = memo(function MetaSnapshot({ topHeroes, top8Heroes, activeEventType, seasonName, seasonWeeks, selectedWeek, onWeekChange }: MetaSnapshotProps) {
+export const MetaSnapshot = memo(function MetaSnapshot({ topHeroes, top8Heroes, activeEventType, seasonName, seasonWeeks, selectedWeek, onWeekChange, backgroundImage }: MetaSnapshotProps) {
   const [sortBy, setSortBy] = useState<Top8Sort>("top8");
   const [top8Page, setTop8Page] = useState(0);
 
@@ -78,9 +79,21 @@ export const MetaSnapshot = memo(function MetaSnapshot({ topHeroes, top8Heroes, 
       <div className="relative bg-fab-surface border border-fab-border rounded-lg overflow-hidden flex-1">
         {/* Pitch strip */}
         <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-teal-400/30 to-transparent" />
+        {/* Season background image */}
+        {backgroundImage && (
+          <div
+            className="absolute inset-0 pointer-events-none z-0"
+            style={{
+              backgroundImage: `url(${backgroundImage})`,
+              backgroundSize: "cover",
+              backgroundPosition: "center top",
+              opacity: 0.08,
+            }}
+          />
+        )}
         {showEventMode ? (
           // Event weekend: show top 8 hero placements
-          <>
+          <div className="relative z-[1]">
             {/* Week pills for season mode */}
             {isSeason && seasonWeeks && seasonWeeks.length > 1 && onWeekChange && (
               <div className="flex items-center gap-1 px-4 py-2 border-b border-fab-border overflow-x-auto scrollbar-hide">
@@ -181,7 +194,7 @@ export const MetaSnapshot = memo(function MetaSnapshot({ topHeroes, top8Heroes, 
                 </div>
               )}
             </div>
-          </>
+          </div>
         ) : (
           // Default: show hero meta stats (weekly armory CC or all-time fallback)
           topHeroes.slice(0, 5).map((hero, i) => {

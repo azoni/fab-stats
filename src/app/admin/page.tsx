@@ -1539,11 +1539,28 @@ export default function AdminPage() {
                       ))}
                     </select>
                   </div>
+                  <div className="mt-2">
+                    <label className="text-[10px] text-fab-dim uppercase tracking-wider mb-0.5 block">Background Image URL</label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        placeholder="/seasons/proquest-lasvegas.jpg or https://..."
+                        value={s.backgroundImage || ""}
+                        onChange={(e) => setSeasonsList((prev) => prev.map((s2, j) => j === i ? { ...s2, backgroundImage: e.target.value } : s2))}
+                        className="flex-1 bg-fab-surface border border-fab-border text-fab-text text-sm rounded px-2 py-1.5 focus:outline-none focus:border-fab-gold"
+                      />
+                      {s.backgroundImage && (
+                        <div className="w-10 h-10 rounded border border-fab-border overflow-hidden shrink-0 bg-fab-surface">
+                          <img src={s.backgroundImage} alt="" className="w-full h-full object-cover" />
+                        </div>
+                      )}
+                    </div>
+                  </div>
                   {s.id && <p className="text-[10px] text-fab-dim mt-1.5">ID: {s.id}</p>}
                 </div>
               ))}
               <button
-                onClick={() => setSeasonsList((prev) => [...prev, { id: "", name: "", startDate: "", endDate: "", format: "", eventType: "", active: false }])}
+                onClick={() => setSeasonsList((prev) => [...prev, { id: "", name: "", startDate: "", endDate: "", format: "", eventType: "", active: false, backgroundImage: "" }])}
                 className="w-full py-2 rounded-lg text-sm font-medium border border-dashed border-fab-border text-fab-muted hover:text-fab-text hover:border-fab-gold/30 transition-colors"
               >
                 + Add Season
