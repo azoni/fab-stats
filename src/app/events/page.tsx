@@ -29,6 +29,7 @@ export default function EventsPage() {
   const [sortBy, setSortBy] = useState<SortKey>("newest");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
+  const [filterTop8, setFilterTop8] = useState(false);
   const [importModalOpen, setImportModalOpen] = useState(false);
 
   const handleBatchUpdateHero = useCallback(
@@ -97,7 +98,7 @@ export default function EventsPage() {
   // Reset to page 1 when filters/search/sort change
   useEffect(() => {
     setPage(1);
-  }, [filterFormat, filterEventType, filterHero, search, sortBy]);
+  }, [filterFormat, filterEventType, filterHero, filterTop8, search, sortBy]);
 
   const eventStats = useMemo(() => computeEventStats(matches), [matches]);
 
@@ -123,6 +124,12 @@ export default function EventsPage() {
     return eventStats.some((e) => !getEventHero(e));
   }, [eventStats, getEventHero]);
 
+  // Set of events with playoff finishes (for Top 8 filter)
+  const playoffEventKeys = useMemo(() => {
+    const finishes = computePlayoffFinishes(eventStats);
+    return new Set(finishes.map((f) => `${f.eventName}|${f.eventDate}`));
+  }, [eventStats]);
+
   const filtered = useMemo(() => {
     let result = eventStats;
     if (filterFormat !== "all") {
@@ -136,6 +143,9 @@ export default function EventsPage() {
     } else if (filterHero !== "all") {
       result = result.filter((e) => getEventHero(e) === filterHero);
     }
+    if (filterTop8) {
+      result = result.filter((e) => playoffEventKeys.has(`${e.eventName}|${e.eventDate}`));
+    }
     const q = search.trim().toLowerCase();
     if (q) {
       result = result.filter((e) => {
@@ -147,7 +157,7 @@ export default function EventsPage() {
       });
     }
     return result;
-  }, [eventStats, filterFormat, filterEventType, filterHero, getEventHero, search]);
+  }, [eventStats, filterFormat, filterEventType, filterHero, filterTop8, playoffEventKeys, getEventHero, search]);
 
   // Summary stats from filtered events
   const filteredMatches = useMemo(() => filtered.flatMap((e) => e.matches), [filtered]);
@@ -363,6 +373,20 @@ export default function EventsPage() {
               <option key={h} value={h}>{h}</option>
             ))}
           </select>
+        )}
+
+        {/* Top 8 filter */}
+        {playoffEventKeys.size > 0 && (
+          <button
+            onClick={() => setFilterTop8((v) => !v)}
+            className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors border ${
+              filterTop8
+                ? "bg-fab-gold/15 text-fab-gold border-fab-gold/30"
+                : "bg-fab-surface text-fab-dim border-fab-border hover:text-fab-muted"
+            }`}
+          >
+            Top 8s
+          </button>
         )}
 
         {/* Sort options */}
