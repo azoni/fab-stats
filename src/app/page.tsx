@@ -327,6 +327,9 @@ export default function Dashboard() {
         </div>
       )}
 
+      {/* On This Day — above profile card */}
+      {hasMatches && <OnThisDay matches={matches} />}
+
       {/* Has matches: minimal profile + activity feed | meta snapshot */}
       {hasMatches && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
@@ -460,14 +463,6 @@ export default function Dashboard() {
             {user && <ActivityFeed rankMap={rankMap} eventTierMap={eventTierMap} />}
           </div>
         </div>
-      )}
-
-      {/* On This Day */}
-      {hasMatches && (
-        <>
-          <div className="h-px bg-gradient-to-r from-transparent via-fab-gold/10 to-transparent" />
-          <OnThisDay matches={matches} />
-        </>
       )}
 
       {/* Event Showcase (admin-configurable) */}

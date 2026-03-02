@@ -23,6 +23,7 @@ const TYPE_FILTERS: { value: TypeFilter; label: string; adminOnly?: boolean }[] 
 ];
 
 const PAGE_SIZE = 5;
+const ENGAGEMENT_PAGE_SIZE = 10;
 
 interface ActivityGroup {
   event: ActivityEvent;
@@ -218,8 +219,8 @@ export function ActivityFeed({ rankMap, eventTierMap }: { rankMap?: Map<string, 
           </div>
         ) : (() => {
           const activityGroups = groupConsecutiveActivity(adminActivity);
-          const engagementPages = Math.max(1, Math.ceil(activityGroups.length / PAGE_SIZE));
-          const pageItems = activityGroups.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+          const engagementPages = Math.max(1, Math.ceil(activityGroups.length / ENGAGEMENT_PAGE_SIZE));
+          const pageItems = activityGroups.slice(page * ENGAGEMENT_PAGE_SIZE, (page + 1) * ENGAGEMENT_PAGE_SIZE);
           return (
             <>
               <div className="space-y-1.5">
@@ -256,7 +257,7 @@ export function ActivityFeed({ rankMap, eventTierMap }: { rankMap?: Map<string, 
                     </div>
                   );
                 })}
-                {pageItems.length < PAGE_SIZE && Array.from({ length: PAGE_SIZE - pageItems.length }, (_, i) => (
+                {pageItems.length < ENGAGEMENT_PAGE_SIZE && Array.from({ length: ENGAGEMENT_PAGE_SIZE - pageItems.length }, (_, i) => (
                   <div key={`spacer-${i}`} className="h-[68px]" aria-hidden="true" />
                 ))}
               </div>
