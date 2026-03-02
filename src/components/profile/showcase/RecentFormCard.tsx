@@ -31,6 +31,8 @@ export function RecentFormCard({ matches }: RecentFormCardProps) {
 
   return (
     <div className="spotlight-card spotlight-winrate bg-fab-surface border border-fab-border rounded-lg px-3 py-2 relative overflow-hidden h-full min-h-[88px]">
+      <img src="/assets/cards/bg-stats.png" alt="" className="absolute inset-0 w-full h-full object-cover opacity-[0.08] pointer-events-none" />
+      <div className="relative">
       <div className="flex items-center gap-1.5 mb-1">
         <p className="text-[10px] text-cyan-400/70 uppercase tracking-wider font-medium">Recent Form</p>
         {trending === "up" && (
@@ -56,6 +58,7 @@ export function RecentFormCard({ matches }: RecentFormCardProps) {
         {[...recent].reverse().map((m, i) => (
           <div key={i} className={`flex-1 h-1.5 rounded-full ${m.result === MatchResult.Win ? "bg-fab-win/60" : m.result === MatchResult.Loss ? "bg-fab-loss/60" : "bg-fab-draw/60"}`} />
         ))}
+      </div>
       </div>
     </div>
   );

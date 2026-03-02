@@ -14,6 +14,8 @@ export function RivalryShowcase({ opponent }: RivalryShowcaseProps) {
 
   return (
     <div className="spotlight-card spotlight-nemesis bg-fab-surface border border-fab-border rounded-lg px-3 py-2 relative overflow-hidden h-full min-h-[88px]">
+      <img src="/assets/cards/bg-rivalry.png" alt="" className="absolute inset-0 w-full h-full object-cover opacity-[0.08] pointer-events-none" />
+      <div className="relative">
       <div className="flex items-center gap-1.5">
         <span className="text-[10px] text-red-400/70 font-bold uppercase tracking-wider shrink-0">Rivalry</span>
         <span className="text-sm font-bold text-fab-text truncate">{opponent.opponentName}</span>
@@ -48,6 +50,7 @@ export function RivalryShowcase({ opponent }: RivalryShowcaseProps) {
             </>
           )}
         </div>
+      </div>
       </div>
     </div>
   );

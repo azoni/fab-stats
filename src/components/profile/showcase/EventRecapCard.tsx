@@ -20,6 +20,8 @@ export function EventRecapCard({ event, placementType }: EventRecapCardProps) {
 
   return (
     <div className="spotlight-card spotlight-active bg-fab-surface border border-fab-border rounded-lg px-3 py-2 relative overflow-hidden h-full min-h-[88px]">
+      <img src="/assets/cards/bg-scroll.png" alt="" className="absolute inset-0 w-full h-full object-cover opacity-[0.08] pointer-events-none" />
+      <div className="relative">
       <div className="flex items-center gap-2 mb-1">
         <p className="text-[10px] text-blue-400/70 uppercase tracking-wider font-medium">Event</p>
         {placement && <span className={`text-[11px] font-bold ${placement.color}`}>{placement.text}</span>}
@@ -41,6 +43,7 @@ export function EventRecapCard({ event, placementType }: EventRecapCardProps) {
       <p className="text-[11px] text-fab-dim truncate mt-0.5">
         {event.eventType && <>{event.eventType} · </>}{event.format} · {localDate(event.eventDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
       </p>
+      </div>
     </div>
   );
 }

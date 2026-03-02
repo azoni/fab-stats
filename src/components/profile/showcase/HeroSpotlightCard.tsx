@@ -16,6 +16,8 @@ export function HeroSpotlightCard({ heroStats, mastery }: HeroSpotlightCardProps
 
   return (
     <div className="spotlight-card spotlight-warrior bg-fab-surface border border-fab-border rounded-lg px-3 py-2 relative overflow-hidden h-full min-h-[88px] flex flex-col justify-center">
+      <img src="/assets/cards/bg-hero.png" alt="" className="absolute inset-0 w-full h-full object-cover opacity-[0.08] pointer-events-none" />
+      <div className="relative">
       <p className="text-[10px] text-purple-400/70 uppercase tracking-wider font-medium mb-1">Hero</p>
       <div className="flex items-center gap-2">
         <HeroClassIcon heroClass={heroClass} size="sm" />
@@ -35,6 +37,7 @@ export function HeroSpotlightCard({ heroStats, mastery }: HeroSpotlightCardProps
         </span>
       </div>
       <p className="text-[11px] text-fab-dim mt-0.5">{heroStats.totalMatches} matches</p>
+      </div>
     </div>
   );
 }

@@ -37,6 +37,13 @@ export const MetaSnapshot = memo(function MetaSnapshot({ topHeroes, top8Heroes, 
   const showEventMode = activeEventType && top8Heroes && top8Heroes.length > 0;
   const isSeason = !!seasonName;
 
+  // Auto-select season banner if none provided
+  const resolvedBg = backgroundImage || (isSeason && activeEventType
+    ? activeEventType.toLowerCase().includes("proquest") ? "proquest-banner.png"
+    : activeEventType.toLowerCase().includes("battle hardened") ? "battle-hardened-banner.png"
+    : undefined
+  : undefined) || undefined;
+
   const sortedTop8 = useMemo(() => {
     if (!top8Heroes) return [];
     const sorted = [...top8Heroes];
@@ -80,11 +87,11 @@ export const MetaSnapshot = memo(function MetaSnapshot({ topHeroes, top8Heroes, 
         {/* Pitch strip */}
         <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-teal-400/30 to-transparent" />
         {/* Season background image */}
-        {backgroundImage && (
+        {resolvedBg && (
           <div
             className="absolute inset-0 pointer-events-none z-0"
             style={{
-              backgroundImage: `url(${backgroundImage.startsWith("http") || backgroundImage.startsWith("/") ? backgroundImage : `/seasons/${backgroundImage}`})`,
+              backgroundImage: `url(${resolvedBg.startsWith("http") || resolvedBg.startsWith("/") ? resolvedBg : `/seasons/${resolvedBg}`})`,
               backgroundSize: "cover",
               backgroundPosition: "center top",
               opacity: 0.08,

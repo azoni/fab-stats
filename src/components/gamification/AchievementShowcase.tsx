@@ -112,7 +112,20 @@ export function AchievementShowcase({ earned, progress, forceExpanded }: { earne
     });
   }, [displayed]);
 
-  if (totalEarned === 0) return null;
+  if (totalEarned === 0) return (
+    <div id="achievements" className="bg-fab-surface/50 border border-fab-border rounded-lg overflow-hidden px-4 py-3">
+      <div className="flex items-center gap-3">
+        <img src="/assets/empty-states/no-achievements.png" alt="" className="w-10 h-10 object-contain opacity-60 shrink-0" />
+        <div>
+          <div className="flex items-center gap-2">
+            <AchievementIcon icon="section-achievements" className="w-4 h-4 text-fab-gold" />
+            <h2 className="text-sm font-semibold text-fab-text">Achievements</h2>
+          </div>
+          <p className="text-[11px] text-fab-dim mt-0.5">No achievements unlocked yet</p>
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <div id="achievements" className="bg-fab-surface/50 border border-fab-border rounded-lg overflow-hidden">

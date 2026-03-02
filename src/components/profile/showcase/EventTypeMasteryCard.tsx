@@ -58,6 +58,8 @@ export function EventTypeMasteryCard({ matches, sortBy = "mostPlayed", selectedI
 
   return (
     <div className="spotlight-card spotlight-active bg-fab-surface border border-fab-border rounded-lg px-3 py-2 relative overflow-hidden h-full min-h-[88px]">
+      <img src="/assets/cards/bg-stats.png" alt="" className="absolute inset-0 w-full h-full object-cover opacity-[0.08] pointer-events-none" />
+      <div className="relative">
       <p className="text-[10px] text-emerald-400/70 uppercase tracking-wider font-medium mb-1.5">
         Event Types {sortBy === "bestWinRate" ? "— by Win Rate" : "— by Matches"}
       </p>
@@ -72,6 +74,7 @@ export function EventTypeMasteryCard({ matches, sortBy = "mostPlayed", selectedI
             <span className={`text-[11px] font-semibold w-8 text-right ${t.winRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>{t.winRate.toFixed(0)}%</span>
           </div>
         ))}
+      </div>
       </div>
     </div>
   );

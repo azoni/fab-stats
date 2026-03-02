@@ -21,6 +21,8 @@ export function StreakShowcaseCard({ overall, matches }: StreakShowcaseCardProps
 
   return (
     <div className="spotlight-card spotlight-streak bg-fab-surface border border-fab-border rounded-lg px-3 py-2 relative overflow-hidden h-full min-h-[88px]">
+      <img src="/assets/cards/bg-streak.png" alt="" className="absolute inset-0 w-full h-full object-cover opacity-[0.08] pointer-events-none" />
+      <div className="relative">
       <p className="text-[10px] text-orange-400/70 uppercase tracking-wider font-medium mb-1">Streaks</p>
       <div className="flex items-baseline gap-3">
         {current ? (
@@ -45,6 +47,7 @@ export function StreakShowcaseCard({ overall, matches }: StreakShowcaseCardProps
           ))}
         </div>
         <span className="text-[11px] text-fab-dim ml-auto">Best: {streaks.longestWinStreak}W</span>
+      </div>
       </div>
     </div>
   );

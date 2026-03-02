@@ -44,7 +44,8 @@ export default function MatchesPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-6 relative overflow-hidden">
+        <img src="/assets/icons/swords.png" alt="" className="absolute right-0 top-1/2 -translate-y-1/2 w-20 h-20 object-contain opacity-[0.07] pointer-events-none" />
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-red-500/10 flex items-center justify-center ring-1 ring-inset ring-red-500/20">
             <SwordsIcon className="w-4 h-4 text-red-400" />
@@ -68,6 +69,7 @@ export default function MatchesPage() {
 
       {matches.length === 0 ? (
         <div className="text-center py-16 text-fab-dim">
+          <img src="/assets/empty-states/no-matches.png" alt="" className="w-24 h-24 mx-auto mb-4 object-contain opacity-70" />
           <p className="text-lg mb-2">No matches yet</p>
           <p className="text-sm mb-4">
             {user ? "Import your tournament history or log a match manually to get started" : "Sign up to track your Flesh and Blood tournament results"}
