@@ -231,20 +231,6 @@ export default function Dashboard() {
             </div>
           </Link>
 
-          {/* Log — gold action */}
-          <Link href="/events?import=1" className="group relative flex items-center gap-3 pl-3 pr-5 py-3 rounded-2xl shrink-0 overflow-hidden bg-gradient-to-br from-fab-gold/10 via-amber-950/20 to-transparent border border-dashed border-fab-gold/25 hover:border-fab-gold/45 hover:shadow-[0_0_24px_rgba(201,168,76,0.08)] hover:-translate-y-0.5 transition-all duration-300">
-            <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-fab-gold/40 to-transparent" />
-            <div className="w-10 h-10 rounded-xl bg-fab-gold/15 flex items-center justify-center shrink-0 ring-1 ring-inset ring-fab-gold/20 group-hover:bg-fab-gold/20 group-hover:ring-fab-gold/30 transition-all">
-              <svg className="w-5 h-5 text-fab-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-              </svg>
-            </div>
-            <div>
-              <p className="text-sm font-bold text-fab-text leading-tight">Log</p>
-              <p className="text-[11px] text-fab-gold/70 font-semibold leading-tight">Quick add</p>
-            </div>
-          </Link>
-
           {/* Tools — teal beta */}
           <Link href="/tools" className="group relative flex items-center gap-3 pl-3 pr-5 py-3 rounded-2xl shrink-0 overflow-hidden bg-gradient-to-br from-teal-500/10 via-teal-950/20 to-transparent border border-dashed border-teal-500/20 hover:border-teal-400/40 hover:shadow-[0_0_24px_rgba(20,184,166,0.08)] hover:-translate-y-0.5 transition-all duration-300">
             <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-teal-400/40 to-transparent" />
@@ -259,6 +245,20 @@ export default function Dashboard() {
                 <span className="text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-teal-400/15 text-teal-400 border border-teal-400/25">Beta</span>
               </div>
               <p className="text-[11px] text-teal-400/70 font-semibold leading-tight">Player tools</p>
+            </div>
+          </Link>
+
+          {/* Log — gold action */}
+          <Link href="/events?import=1" className="group relative flex items-center gap-3 pl-3 pr-5 py-3 rounded-2xl shrink-0 overflow-hidden bg-gradient-to-br from-fab-gold/10 via-amber-950/20 to-transparent border border-dashed border-fab-gold/25 hover:border-fab-gold/45 hover:shadow-[0_0_24px_rgba(201,168,76,0.08)] hover:-translate-y-0.5 transition-all duration-300">
+            <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-fab-gold/40 to-transparent" />
+            <div className="w-10 h-10 rounded-xl bg-fab-gold/15 flex items-center justify-center shrink-0 ring-1 ring-inset ring-fab-gold/20 group-hover:bg-fab-gold/20 group-hover:ring-fab-gold/30 transition-all">
+              <svg className="w-5 h-5 text-fab-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-sm font-bold text-fab-text leading-tight">Log</p>
+              <p className="text-[11px] text-fab-gold/70 font-semibold leading-tight">Quick add</p>
             </div>
           </Link>
         </div>

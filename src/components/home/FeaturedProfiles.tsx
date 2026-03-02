@@ -256,7 +256,7 @@ export function FeaturedProfiles({ profiles, rankMap, grid }: FeaturedProfilesPr
           <p className="text-[10px] text-fab-dim font-medium leading-tight">Community standouts</p>
         </div>
       </div>
-      <div className={grid ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2" : "space-y-2 flex-1"}>
+      <div className={grid ? "space-y-2" : "space-y-2 flex-1"}>
         {profiles.map((fp) => {
           const config = SPOTLIGHT_CONFIG[fp.reason] || DEFAULT_CONFIG;
           return (

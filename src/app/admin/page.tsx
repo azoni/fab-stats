@@ -62,6 +62,7 @@ export default function AdminPage() {
   const [savingCreators, setSavingCreators] = useState(false);
   const [creatorsSaved, setCreatorsSaved] = useState(false);
   const [eventsList, setEventsList] = useState<FeaturedEvent[]>([]);
+  const [expandedEvents, setExpandedEvents] = useState<Set<number>>(new Set());
   const [savingEvents, setSavingEvents] = useState(false);
   const [eventsSaved, setEventsSaved] = useState(false);
   const [lookupOpen, setLookupOpen] = useState(false);
@@ -454,7 +455,9 @@ export default function AdminPage() {
                   if (withWr.length === 0) return 0;
                   return Math.round((withWr.reduce((s, u) => s + (u.winRate ?? 0), 0) / withWr.length) * 10) / 10;
                 })()} subtext="players with 10+ matches" suffix="%" />
-                <MetricCard label="AI Chat Cost" value={aiCost.totalCost.toFixed(2)} prefix="$" subtext={`${aiCost.totalMessages} messages`} />
+                <button onClick={() => { setActiveTab("users"); setStatusFilter("chat"); }} className="text-left">
+                  <MetricCard label="AI Chat Cost" value={aiCost.totalCost.toFixed(2)} prefix="$" subtext={`${aiCost.totalMessages} msgs · ${Object.keys(aiCost.users).length} users`} />
+                </button>
               </div>
             );
           })()}
@@ -1229,17 +1232,32 @@ export default function AdminPage() {
               </div>
             </div>
             <div className="p-4 space-y-3">
-              {eventsList.map((ev, i) => (
-                <div key={i} className="bg-fab-bg border border-fab-border rounded-lg p-3">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs text-fab-dim font-medium">Event {i + 1}</span>
+              {eventsList.map((ev, i) => {
+                const isEventExpanded = expandedEvents.has(i);
+                return (
+                <div key={i} className="bg-fab-bg border border-fab-border rounded-lg">
+                  <div
+                    className="flex items-center justify-between px-3 py-2 cursor-pointer hover:bg-fab-surface/50 transition-colors"
+                    onClick={() => setExpandedEvents((prev) => {
+                      const next = new Set(prev);
+                      if (next.has(i)) next.delete(i); else next.add(i);
+                      return next;
+                    })}
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <svg className={`w-3 h-3 text-fab-dim shrink-0 transition-transform ${isEventExpanded ? "rotate-90" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+                      <span className="text-xs font-semibold text-fab-text truncate">{ev.name || `Event ${i + 1}`}</span>
+                      {ev.date && <span className="text-[10px] text-fab-dim shrink-0">{ev.date}</span>}
+                      {ev.players?.length > 0 && <span className="text-[10px] text-fab-dim shrink-0">{ev.players.length}p</span>}
+                    </div>
                     <button
-                      onClick={() => setEventsList((prev) => prev.filter((_, j) => j !== i))}
-                      className="text-xs text-fab-loss hover:text-fab-loss/80 transition-colors"
+                      onClick={(e) => { e.stopPropagation(); setEventsList((prev) => prev.filter((_, j) => j !== i)); }}
+                      className="text-xs text-fab-loss hover:text-fab-loss/80 transition-colors shrink-0 ml-2"
                     >
                       Remove
                     </button>
                   </div>
+                  {isEventExpanded && <div className="px-3 pb-3">
                   <div className="grid grid-cols-2 gap-2">
                     <input
                       type="text"
@@ -1313,8 +1331,10 @@ export default function AdminPage() {
                       </button>
                     </div>
                   </div>
+                  </div>}
                 </div>
-              ))}
+                );
+              })}
               <div className="flex gap-2">
                 <button
                   onClick={() => setEventsList((prev) => [...prev, { name: "", date: "", format: "", eventType: "", players: [] }])}
