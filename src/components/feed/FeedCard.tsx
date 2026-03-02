@@ -433,6 +433,7 @@ function PlacementContent({ event, compact }: { event: FeedEvent & { type: "plac
     return (
       <p className="text-[11px] text-fab-muted">
         <span className={`font-semibold ${info.color}`}>{info.label}</span> at {event.eventName}
+        {event.eventDate && <span className="text-fab-dim"> &middot; {formatEventDate(event.eventDate)}</span>}
         {event.hero && <span className="ml-1"><HeroPill hero={event.hero} compact /></span>}
       </p>
     );

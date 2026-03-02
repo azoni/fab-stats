@@ -3,6 +3,7 @@ import { memo, useState, useMemo } from "react";
 import Link from "next/link";
 import { getHeroByName } from "@/lib/heroes";
 import { HeroClassIcon } from "@/components/heroes/HeroClassIcon";
+import { MetaShareModal } from "@/components/meta/MetaShareCard";
 import type { HeroMetaStats } from "@/lib/meta-stats";
 import type { Top8HeroMeta } from "@/lib/meta-stats";
 
@@ -32,6 +33,7 @@ const TOP8_PAGE_SIZE = 10;
 export const MetaSnapshot = memo(function MetaSnapshot({ topHeroes, top8Heroes, activeEventType, seasonName, seasonWeeks, selectedWeek, onWeekChange, backgroundImage }: MetaSnapshotProps) {
   const [sortBy, setSortBy] = useState<Top8Sort>("top8");
   const [top8Page, setTop8Page] = useState(0);
+  const [metaShareOpen, setMetaShareOpen] = useState(false);
 
   // Event weekend mode: show top 8 heroes for the active event type
   const showEventMode = activeEventType && top8Heroes && top8Heroes.length > 0;
@@ -79,10 +81,33 @@ export const MetaSnapshot = memo(function MetaSnapshot({ topHeroes, top8Heroes, 
             )}
           </div>
         </div>
-        <Link href="/meta" className="text-xs text-fab-gold hover:text-fab-gold-light transition-colors ml-3 font-semibold">
-          View Full Meta
-        </Link>
+        <div className="flex items-center gap-2 ml-3">
+          {showEventMode && sortedTop8.length > 0 && (
+            <button
+              onClick={() => setMetaShareOpen(true)}
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-fab-surface border border-fab-border text-fab-dim hover:text-fab-text hover:border-fab-muted transition-colors"
+              title="Share meta breakdown"
+            >
+              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z" />
+              </svg>
+              <span className="text-[10px] font-semibold">Share</span>
+            </button>
+          )}
+          <Link href="/meta" className="text-xs text-fab-gold hover:text-fab-gold-light transition-colors font-semibold">
+            View Full Meta
+          </Link>
+        </div>
       </div>
+      {/* Meta share modal */}
+      {metaShareOpen && sortedTop8.length > 0 && (
+        <MetaShareModal
+          heroes={sortedTop8}
+          title={isSeason ? `${seasonName} Top 8s` : `${activeEventType} Top 8s`}
+          subtitle={isSeason ? "Season standings" : "Heroes making playoffs this week"}
+          onClose={() => setMetaShareOpen(false)}
+        />
+      )}
       <div className="relative bg-fab-surface border border-fab-border rounded-lg overflow-hidden flex-1">
         {/* Pitch strip */}
         <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-teal-400/30 to-transparent" />

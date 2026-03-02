@@ -7,6 +7,7 @@ import { getWeekStart, getMonthStart } from "@/lib/leaderboard";
 import { getSeasonWeeks } from "@/lib/seasons";
 import { getHeroByName } from "@/lib/heroes";
 import { HeroClassIcon } from "@/components/heroes/HeroClassIcon";
+import { MetaShareModal } from "@/components/meta/MetaShareCard";
 
 type SortKey = "usage" | "winrate";
 type PeriodSelection = MetaPeriod | `season:${string}` | "custom";
@@ -30,6 +31,7 @@ export default function MetaPage() {
   const [customEnd, setCustomEnd] = useState("");
   const [heroPage, setHeroPage] = useState(1);
   const [playoffPage, setPlayoffPage] = useState(1);
+  const [metaShareOpen, setMetaShareOpen] = useState(false);
 
   // Build dynamic period tabs: base tabs + active seasons + "Custom"
   const periodTabs = useMemo(() => {
@@ -242,6 +244,16 @@ export default function MetaPage() {
         </div>
       </div>
 
+      {/* Meta share modal */}
+      {metaShareOpen && top8Heroes.length > 0 && (
+        <MetaShareModal
+          heroes={top8Heroes}
+          title={activeSeason ? `${activeSeason.name} Top 8s` : periodSelection === "weekly" ? "This Week's Top 8s" : periodSelection === "monthly" ? "This Month's Top 8s" : "Playoff Heroes — All Time"}
+          subtitle={activeSeason ? `${activeSeason.format} · ${activeSeason.eventType}` : effectiveFormat || effectiveEventType ? [effectiveFormat, effectiveEventType].filter(Boolean).join(" · ") : undefined}
+          onClose={() => setMetaShareOpen(false)}
+        />
+      )}
+
       {/* Playoff Heroes — which heroes are making top 8s */}
       {top8Heroes.length > 0 && (() => {
         const pTotalPages = Math.max(1, Math.ceil(top8Heroes.length / 10));
@@ -250,9 +262,21 @@ export default function MetaPage() {
         const pSlice = top8Heroes.slice(pStart, pStart + 10);
         return (
           <div className="mb-6">
-            <h2 className="text-sm font-semibold text-fab-text mb-1">
-              Playoff Heroes
-            </h2>
+            <div className="flex items-center gap-2 mb-1">
+              <h2 className="text-sm font-semibold text-fab-text">
+                Playoff Heroes
+              </h2>
+              <button
+                onClick={() => setMetaShareOpen(true)}
+                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-fab-surface border border-fab-border text-fab-dim hover:text-fab-text hover:border-fab-muted transition-colors"
+                title="Share meta breakdown"
+              >
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z" />
+                </svg>
+                <span className="text-[10px] font-semibold">Share</span>
+              </button>
+            </div>
             <p className="text-[10px] text-fab-dim mb-3">
               Heroes making top 8s{periodSelection === "weekly" ? " (last 7 days)" : periodSelection === "monthly" ? " (last 30 days)" : activeSeason ? ` (${activeSeason.name})` : periodSelection === "custom" && sinceDate && untilDate ? ` (${sinceDate} — ${untilDate})` : ""}
               {top8Heroes.length > 10 && ` \u00b7 ${top8Heroes.length} heroes`}

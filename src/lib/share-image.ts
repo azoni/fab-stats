@@ -23,7 +23,10 @@ export async function captureCardBlob(
   opts: CaptureOptions,
 ): Promise<Blob | null> {
   const { toBlob } = await import("html-to-image");
-  const base = { pixelRatio: opts.pixelRatio ?? 2, backgroundColor: opts.backgroundColor, cacheBust: true };
+  // Use lower pixel ratio on mobile to keep image size manageable for share sheets
+  const isMobile = "ontouchstart" in window || navigator.maxTouchPoints > 0;
+  const defaultRatio = isMobile ? 1.5 : 2;
+  const base = { pixelRatio: opts.pixelRatio ?? defaultRatio, backgroundColor: opts.backgroundColor, cacheBust: true };
   try {
     return await toBlob(el, base);
   } catch {
@@ -67,8 +70,10 @@ export async function copyCardImage(
         await navigator.share({ title: opts.shareTitle, text: opts.shareText, files: [file] });
         return "shared";
       }
-    } catch {
-      // User cancelled or share failed — fall through
+    } catch (err) {
+      // User cancelled — don't fall through to clipboard
+      if (err instanceof DOMException && err.name === "AbortError") return "failed";
+      // Share failed (e.g. file too large) — fall through to clipboard
     }
   }
 
