@@ -439,7 +439,7 @@ export default function Dashboard() {
             </div>
             {/* Quick stats + recent events + player spotlight */}
             <QuickStats overall={overall} last30={last30} />
-            <RecentEvents eventStats={eventStats} />
+            <RecentEvents eventStats={eventStats} playerName={profile?.displayName} />
             {(featuredProfiles.length > 0 || creators.length > 0) && (
               <FeaturedProfiles profiles={featuredProfiles} creators={creators} rankMap={rankMap} grid />
             )}
