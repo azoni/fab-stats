@@ -45,6 +45,45 @@ export function FirstMatchBadge({ className = "w-5 h-5" }: { className?: string 
   );
 }
 
+export function ContentCreatorBadge({ className = "w-5 h-5" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="none">
+      <defs>
+        <radialGradient id="ccGlow" cx="0.5" cy="0.5" r="0.5">
+          <stop offset="0%" stopColor="#f87171" stopOpacity="0.2" />
+          <stop offset="100%" stopColor="#f87171" stopOpacity="0" />
+        </radialGradient>
+      </defs>
+      <circle cx="12" cy="12" r="11" fill="url(#ccGlow)" />
+      {/* Camera/film border */}
+      <path
+        d="M12 2.5c5.2.1 9.3 4.3 9.5 9.5.1 5.2-4.1 9.5-9.3 9.5S2.6 17.3 2.5 12.1C2.4 6.9 6.8 2.4 12 2.5z"
+        stroke="currentColor"
+        strokeWidth="1.2"
+        strokeLinecap="round"
+        fill="currentColor"
+        fillOpacity="0.08"
+      />
+      {/* Play button triangle */}
+      <path
+        d="M10 8.5v7l6-3.5-6-3.5z"
+        fill="currentColor"
+        fillOpacity="0.25"
+        stroke="currentColor"
+        strokeWidth="1"
+        strokeLinejoin="round"
+      />
+      {/* Small star above */}
+      <path
+        d="M12 5.5l.6 1.2 1.3.2-1 .9.2 1.3-1.1-.6-1.1.6.2-1.3-1-.9 1.3-.2z"
+        fill="currentColor"
+        fillOpacity="0.4"
+      />
+    </svg>
+  );
+}
+
 export const BADGE_ICON_MAP: Record<string, React.FC<{ className?: string }>> = {
   "first-match": FirstMatchBadge,
+  "content-creator": ContentCreatorBadge,
 };

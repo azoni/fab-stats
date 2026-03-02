@@ -417,7 +417,7 @@ export default function PlayerProfile() {
                     Updated {new Date(lastUpdated).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                   </span>
                 )}
-                <BadgeStrip matchCount={matches.length} />
+                <BadgeStrip matchCount={matches.length} isCreator={!!creatorInfo} />
               </div>
             </div>
             <EmblemDisplay talentEmblemId={profile.selectedEmblem} classEmblemId={profile.selectedClassEmblem} isOwner={isOwner} onClickTalent={() => setEmblemPickerMode("talent")} onClickClass={() => setEmblemPickerMode("class")} />
