@@ -79,7 +79,6 @@ const CARD_TYPE_LABELS: Record<string, string> = {
 
 export function getCardSize(type: ShowcaseCard["type"], card?: ShowcaseCard): 1 | 2 {
   if (MEDIUM_TYPES.has(type)) return 2;
-  if (type === "statHighlight" && card?.stats && card.stats.length > 2) return 2;
   return 1;
 }
 
@@ -101,8 +100,8 @@ export function ShowcaseSection({
   const savedCards = profile[storageField];
   const defaultShowcase = useMemo<ShowcaseCard[]>(() => {
     if (savedCards && savedCards.length > 0) return savedCards;
-    if (storageField !== "showcase") return [];
-    return [{ type: "statHighlight", stats: ["eventsPlayed", "uniqueOpponents", "winRate", "totalMatches", "longestWinStreak"], stat: "winRate" }];
+    if (storageField !== "showcaseSecondary") return [];
+    return [{ type: "statHighlight", stats: ["winRate", "totalMatches", "eventsPlayed", "longestWinStreak"], stat: "winRate" }];
   }, [savedCards, storageField]);
 
   const [cards, setCards] = useState<ShowcaseCard[]>(defaultShowcase);
