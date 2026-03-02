@@ -4,6 +4,7 @@ import { MatchResult } from "@/types";
 
 interface FormatMasteryCardProps {
   matches: MatchRecord[];
+  sortBy?: "mostPlayed" | "bestWinRate";
 }
 
 interface FormatData {
@@ -13,7 +14,7 @@ interface FormatData {
   winRate: number;
 }
 
-export function FormatMasteryCard({ matches }: FormatMasteryCardProps) {
+export function FormatMasteryCard({ matches, sortBy = "mostPlayed" }: FormatMasteryCardProps) {
   const formatMap = new Map<string, { matches: number; wins: number }>();
   for (const m of matches) {
     if (m.result === MatchResult.Bye) continue;
@@ -30,15 +31,17 @@ export function FormatMasteryCard({ matches }: FormatMasteryCardProps) {
       wins: data.wins,
       winRate: data.matches > 0 ? (data.wins / data.matches) * 100 : 0,
     }))
-    .sort((a, b) => b.matches - a.matches)
+    .sort((a, b) => sortBy === "bestWinRate" ? b.winRate - a.winRate || b.matches - a.matches : b.matches - a.matches)
     .slice(0, 8);
 
   if (formats.length === 0) return null;
-  const maxMatches = formats[0].matches;
+  const maxMatches = Math.max(...formats.map((f) => f.matches));
 
   return (
     <div className="spotlight-card spotlight-active bg-fab-surface border border-fab-border rounded-lg px-3 py-2 relative overflow-hidden h-full min-h-[88px]">
-      <p className="text-[8px] text-blue-400/70 uppercase tracking-wider font-medium mb-1.5">Formats</p>
+      <p className="text-[8px] text-blue-400/70 uppercase tracking-wider font-medium mb-1.5">
+        Formats {sortBy === "bestWinRate" ? "— by Win Rate" : "— by Matches"}
+      </p>
       <div className="space-y-1">
         {formats.map((f) => (
           <div key={f.format} className="flex items-center gap-1.5">

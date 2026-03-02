@@ -56,6 +56,7 @@ const MAX_POINTS = 8;
 // Card types that have editable selections
 const EDITABLE_TYPES = new Set<ShowcaseCard["type"]>([
   "featuredMatch", "heroSpotlight", "bestFinish", "rivalry", "eventRecap", "achievements", "statHighlight",
+  "formatMastery", "eventTypeMastery",
 ]);
 
 const CARD_TYPE_LABELS: Record<string, string> = {
@@ -360,6 +361,12 @@ function InlineCardEditor({ card, index, onReplace, onCancel, matches, heroStats
         {card.type === "statHighlight" && (
           <StatPicker onSelect={(stat, filter) => onReplace(index, { type: "statHighlight", stat, filter })} />
         )}
+        {(card.type === "formatMastery" || card.type === "eventTypeMastery") && (
+          <SortPicker
+            current={card.sortBy || "mostPlayed"}
+            onSelect={(sortBy) => onReplace(index, { type: card.type, sortBy })}
+          />
+        )}
       </div>
 
       {card.type === "achievements" && selectedAchievements.size > 0 && (
@@ -371,6 +378,37 @@ function InlineCardEditor({ card, index, onReplace, onCancel, matches, heroStats
         </button>
       )}
     </div>
+  );
+}
+
+// ── Sort Picker ──
+
+function SortPicker({ current, onSelect }: { current: "mostPlayed" | "bestWinRate"; onSelect: (sortBy: "mostPlayed" | "bestWinRate") => void }) {
+  const options: { key: "mostPlayed" | "bestWinRate"; label: string }[] = [
+    { key: "mostPlayed", label: "Most Played" },
+    { key: "bestWinRate", label: "Best Win Rate" },
+  ];
+  return (
+    <>
+      {options.map((opt) => (
+        <button
+          key={opt.key}
+          onClick={() => onSelect(opt.key)}
+          className={`w-full flex items-center gap-2 p-1.5 rounded text-left transition-colors ${
+            current === opt.key ? "bg-fab-gold/15 ring-1 ring-fab-gold/30" : "hover:bg-fab-surface-hover"
+          }`}
+        >
+          {current === opt.key ? (
+            <svg className="w-3.5 h-3.5 text-fab-gold shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+          ) : (
+            <div className="w-3.5 h-3.5 rounded-full border border-fab-border shrink-0" />
+          )}
+          <span className="text-[10px] text-fab-text">{opt.label}</span>
+        </button>
+      ))}
+    </>
   );
 }
 
@@ -415,9 +453,9 @@ function ShowcaseCardRenderer({ card, matches, heroStats, masteries, eventStats,
     case "statHighlight":
       return <StatHighlightCard stat={(card.stat || "winRate") as "winRate" | "totalMatches" | "longestWinStreak" | "uniqueHeroes" | "uniqueOpponents" | "eventsPlayed"} filter={card.filter} overall={overall} heroStats={heroStats} eventStats={eventStats} opponentCount={opponentStats.length} />;
     case "formatMastery":
-      return <FormatMasteryCard matches={matches} />;
+      return <FormatMasteryCard matches={matches} sortBy={card.sortBy} />;
     case "eventTypeMastery":
-      return <EventTypeMasteryCard matches={matches} />;
+      return <EventTypeMasteryCard matches={matches} sortBy={card.sortBy} />;
     case "streakShowcase":
       return <StreakShowcaseCard overall={overall} matches={matches} />;
     case "recentForm":

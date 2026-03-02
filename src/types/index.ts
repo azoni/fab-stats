@@ -152,6 +152,7 @@ export interface ShowcaseCard {
   achievementIds?: string[];
   stat?: string;
   filter?: string;
+  sortBy?: "mostPlayed" | "bestWinRate";
 }
 
 export interface EventStats {

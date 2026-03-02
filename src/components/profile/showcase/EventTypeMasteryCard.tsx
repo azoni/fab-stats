@@ -4,6 +4,7 @@ import { MatchResult } from "@/types";
 
 interface EventTypeMasteryCardProps {
   matches: MatchRecord[];
+  sortBy?: "mostPlayed" | "bestWinRate";
 }
 
 interface EventTypeData {
@@ -27,7 +28,7 @@ function getEventType(match: MatchRecord): string {
   return "Other";
 }
 
-export function EventTypeMasteryCard({ matches }: EventTypeMasteryCardProps) {
+export function EventTypeMasteryCard({ matches, sortBy = "mostPlayed" }: EventTypeMasteryCardProps) {
   const typeMap = new Map<string, { matches: number; wins: number }>();
   for (const m of matches) {
     if (m.result === MatchResult.Bye) continue;
@@ -45,15 +46,17 @@ export function EventTypeMasteryCard({ matches }: EventTypeMasteryCardProps) {
       wins: data.wins,
       winRate: data.matches > 0 ? (data.wins / data.matches) * 100 : 0,
     }))
-    .sort((a, b) => b.matches - a.matches)
+    .sort((a, b) => sortBy === "bestWinRate" ? b.winRate - a.winRate || b.matches - a.matches : b.matches - a.matches)
     .slice(0, 8);
 
   if (types.length === 0) return null;
-  const maxMatches = types[0].matches;
+  const maxMatches = Math.max(...types.map((t) => t.matches));
 
   return (
     <div className="spotlight-card spotlight-active bg-fab-surface border border-fab-border rounded-lg px-3 py-2 relative overflow-hidden h-full min-h-[88px]">
-      <p className="text-[8px] text-emerald-400/70 uppercase tracking-wider font-medium mb-1.5">Event Types</p>
+      <p className="text-[8px] text-emerald-400/70 uppercase tracking-wider font-medium mb-1.5">
+        Event Types {sortBy === "bestWinRate" ? "— by Win Rate" : "— by Matches"}
+      </p>
       <div className="space-y-1">
         {types.map((t) => (
           <div key={t.eventType} className="flex items-center gap-1.5">
