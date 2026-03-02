@@ -227,17 +227,16 @@ export function BestFinishShareModal({
     const url = buildBestFinishUrl(window.location.origin, playerName, bestFinish.label, bestFinish.eventName, bestFinish.eventDate, totalMatches, winRate, topHero);
     const shareText = `${playerName} — ${bestFinish.label} at ${bestFinish.eventName}\n${url}`;
 
+    logActivity("bestfinish_share");
     setShareStatus("sharing");
     const result = await copyCardImage(cardRef.current, {
       backgroundColor: selectedTheme.bg, fileName: "best-finish.png",
       shareTitle: "FaB Stats — Best Finish", shareText, fallbackText: url,
     });
     if (result === "image" || result === "shared") {
-      logActivity("bestfinish_share");
       setShareStatus("copied");
       setTimeout(() => { setShareStatus("idle"); onClose(); }, 1500);
     } else if (result === "text") {
-      logActivity("bestfinish_share");
       setShareStatus("text-copied");
       setTimeout(() => { setShareStatus("idle"); onClose(); }, 2000);
     } else {
@@ -246,9 +245,9 @@ export function BestFinishShareModal({
   }
 
   async function handleDownload() {
+    logActivity("bestfinish_share");
     setShareStatus("sharing");
     await downloadCardImage(cardRef.current, { backgroundColor: selectedTheme.bg, fileName: "best-finish.png" });
-    logActivity("bestfinish_share");
     setShareStatus("idle");
   }
 

@@ -691,17 +691,16 @@ function ShareModal({
     );
     const shareText = `${playerName} vs ${opp.opponentName}: ${opp.wins}W-${opp.losses}L${opp.draws > 0 ? `-${opp.draws}D` : ""} (${opp.winRate.toFixed(0)}%)\n${url}`;
 
+    logActivity("rivalry_share", opp.opponentName);
     setShareStatus("sharing");
     const result = await copyCardImage(cardRef.current, {
       backgroundColor: selectedTheme.bg, fileName: "h2h.png",
       shareTitle: "FaB Stats", shareText, fallbackText: url,
     });
     if (result === "image" || result === "shared") {
-      logActivity("rivalry_share", opp.opponentName);
       setShareStatus("copied");
       setTimeout(() => { setShareStatus("idle"); onClose(); }, 1500);
     } else if (result === "text") {
-      logActivity("rivalry_share", opp.opponentName);
       setShareStatus("text-copied");
       setTimeout(() => { setShareStatus("idle"); onClose(); }, 2000);
     } else {
@@ -710,11 +709,11 @@ function ShareModal({
   }
 
   async function handleDownload() {
+    logActivity("rivalry_share", opp.opponentName);
     setShareStatus("sharing");
     await downloadCardImage(cardRef.current, {
       backgroundColor: selectedTheme.bg, fileName: "h2h.png",
     });
-    logActivity("rivalry_share", opp.opponentName);
     setShareStatus("idle");
   }
 

@@ -1,19 +1,23 @@
 "use client";
 import type { OverallStats, HeroStats, EventStats } from "@/types";
 
-type StatType = "winRate" | "totalMatches" | "longestWinStreak" | "uniqueHeroes" | "uniqueOpponents" | "eventsPlayed";
+export type StatType = "winRate" | "totalMatches" | "longestWinStreak" | "uniqueHeroes" | "uniqueOpponents" | "eventsPlayed";
 
-interface StatHighlightCardProps {
-  stat: StatType;
-  filter?: string;
+interface StatDataProps {
   overall: OverallStats;
   heroStats: HeroStats[];
   eventStats: EventStats[];
   opponentCount: number;
 }
 
-function getStatValue(props: StatHighlightCardProps): { value: string; label: string; sub?: string } {
-  const { stat, filter, overall, heroStats, eventStats, opponentCount } = props;
+interface StatHighlightCardProps extends StatDataProps {
+  stat: StatType;
+  stats?: StatType[];
+  filter?: string;
+}
+
+function getStatValue(stat: StatType, data: StatDataProps, filter?: string): { value: string; label: string; sub?: string } {
+  const { overall, heroStats, eventStats, opponentCount } = data;
   switch (stat) {
     case "winRate": {
       if (filter) {
@@ -41,14 +45,36 @@ function getStatValue(props: StatHighlightCardProps): { value: string; label: st
 }
 
 export function StatHighlightCard(props: StatHighlightCardProps) {
-  const { value, label, sub } = getStatValue(props);
+  const { stat, stats, filter, ...data } = props;
+  // Use stats array if provided, otherwise fall back to single stat
+  const statList: StatType[] = stats && stats.length > 0 ? stats : [stat];
+
+  if (statList.length === 1) {
+    const { value, label, sub } = getStatValue(statList[0], data, filter);
+    return (
+      <div className="spotlight-card spotlight-winrate bg-fab-surface border border-fab-border rounded-lg px-3 py-2 relative overflow-hidden h-full min-h-[88px]">
+        <p className="text-[8px] text-cyan-400/70 uppercase tracking-wider font-medium mb-1">Stat</p>
+        <p className="text-xl font-black text-fab-text leading-tight">{value}</p>
+        <p className="text-[10px] text-fab-muted font-medium mt-0.5">{label}</p>
+        {sub && <p className="text-[9px] text-fab-dim">{sub}</p>}
+      </div>
+    );
+  }
 
   return (
     <div className="spotlight-card spotlight-winrate bg-fab-surface border border-fab-border rounded-lg px-3 py-2 relative overflow-hidden h-full min-h-[88px]">
-      <p className="text-[8px] text-cyan-400/70 uppercase tracking-wider font-medium mb-1">Stat</p>
-      <p className="text-xl font-black text-fab-text leading-tight">{value}</p>
-      <p className="text-[10px] text-fab-muted font-medium mt-0.5">{label}</p>
-      {sub && <p className="text-[9px] text-fab-dim">{sub}</p>}
+      <p className="text-[8px] text-cyan-400/70 uppercase tracking-wider font-medium mb-1.5">Stats</p>
+      <div className="space-y-1.5">
+        {statList.map((s) => {
+          const { value, label } = getStatValue(s, data, filter);
+          return (
+            <div key={s} className="flex items-baseline justify-between gap-2">
+              <p className="text-[10px] text-fab-muted font-medium truncate">{label}</p>
+              <p className="text-sm font-black text-fab-text leading-tight shrink-0">{value}</p>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }

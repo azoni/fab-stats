@@ -183,17 +183,16 @@ export function EventShareModal({ event, playerName, onClose }: EventShareModalP
   async function handleCopy() {
     const shareText = `${playerName} went ${event.wins}-${event.losses}${event.draws > 0 ? `-${event.draws}` : ""} at ${event.eventName}`;
 
+    logActivity("event_share");
     setShareStatus("sharing");
     const result = await copyCardImage(cardRef.current, {
       backgroundColor: selectedTheme.bg, fileName: "event-result.png",
       shareTitle: "FaB Stats — Event Result", shareText, fallbackText: shareText,
     });
     if (result === "image" || result === "shared") {
-      logActivity("event_share");
       setShareStatus("copied");
       setTimeout(() => { setShareStatus("idle"); onClose(); }, 1500);
     } else if (result === "text") {
-      logActivity("event_share");
       setShareStatus("text-copied");
       setTimeout(() => { setShareStatus("idle"); onClose(); }, 2000);
     } else {
@@ -202,9 +201,9 @@ export function EventShareModal({ event, playerName, onClose }: EventShareModalP
   }
 
   async function handleDownload() {
+    logActivity("event_share");
     setShareStatus("sharing");
     await downloadCardImage(cardRef.current, { backgroundColor: selectedTheme.bg, fileName: "event-result.png" });
-    logActivity("event_share");
     setShareStatus("idle");
   }
 

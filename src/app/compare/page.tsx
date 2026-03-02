@@ -1317,17 +1317,16 @@ function CompareShareModal({
     const url = `${window.location.origin}/compare?p2=${p2.username}`;
     const shareText = `${p1.displayName} vs ${p2.displayName} \u2014 Versus on FaB Stats\n${url}`;
 
+    logActivity("compare_share");
     setShareStatus("sharing");
     const result = await copyCardImage(cardRef.current, {
       backgroundColor: selectedTheme.bg, fileName: "versus.png",
       shareTitle: "FaB Stats", shareText, fallbackText: url,
     });
     if (result === "image" || result === "shared") {
-      logActivity("compare_share");
       setShareStatus("copied");
       setTimeout(() => { setShareStatus("idle"); onClose(); }, 1500);
     } else if (result === "text") {
-      logActivity("compare_share");
       setShareStatus("text-copied");
       setTimeout(() => { setShareStatus("idle"); onClose(); }, 2000);
     } else {
@@ -1336,9 +1335,9 @@ function CompareShareModal({
   }
 
   async function handleDownload() {
+    logActivity("compare_share");
     setShareStatus("sharing");
     await downloadCardImage(cardRef.current, { backgroundColor: selectedTheme.bg, fileName: "versus.png" });
-    logActivity("compare_share");
     setShareStatus("idle");
   }
 

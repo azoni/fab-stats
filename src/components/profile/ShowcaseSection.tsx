@@ -8,7 +8,7 @@ import { BestFinishShowcase } from "./showcase/BestFinishShowcase";
 import { RivalryShowcase } from "./showcase/RivalryShowcase";
 import { EventRecapCard } from "./showcase/EventRecapCard";
 import { AchievementShowcaseCard } from "./showcase/AchievementShowcaseCard";
-import { StatHighlightCard } from "./showcase/StatHighlightCard";
+import { StatHighlightCard, type StatType } from "./showcase/StatHighlightCard";
 import { FormatMasteryCard } from "./showcase/FormatMasteryCard";
 import { EventTypeMasteryCard } from "./showcase/EventTypeMasteryCard";
 import { StreakShowcaseCard } from "./showcase/StreakShowcaseCard";
@@ -360,7 +360,7 @@ function InlineCardEditor({ card, index, onReplace, onCancel, matches, heroStats
           <AchievementList achievements={achievements} selected={selectedAchievements} onToggle={toggleAchievement} />
         )}
         {card.type === "statHighlight" && (
-          <StatPicker onSelect={(stat, filter) => onReplace(index, { type: "statHighlight", stat, filter })} />
+          <StatPicker initialStats={card.stats || (card.stat ? [card.stat] : [])} onSelect={(stats) => onReplace(index, { type: "statHighlight", stats, stat: stats[0] })} />
         )}
         {(card.type === "formatMastery" || card.type === "eventTypeMastery") && (
           <MasteryEditor
@@ -530,7 +530,7 @@ function ShowcaseCardRenderer({ card, matches, heroStats, masteries, eventStats,
       return <AchievementShowcaseCard achievements={achs} />;
     }
     case "statHighlight":
-      return <StatHighlightCard stat={(card.stat || "winRate") as "winRate" | "totalMatches" | "longestWinStreak" | "uniqueHeroes" | "uniqueOpponents" | "eventsPlayed"} filter={card.filter} overall={overall} heroStats={heroStats} eventStats={eventStats} opponentCount={opponentStats.length} />;
+      return <StatHighlightCard stat={(card.stat || "winRate") as StatType} stats={card.stats as StatType[] | undefined} filter={card.filter} overall={overall} heroStats={heroStats} eventStats={eventStats} opponentCount={opponentStats.length} />;
     case "formatMastery":
       return <FormatMasteryCard matches={matches} sortBy={card.sortBy} selectedItems={card.selectedItems} />;
     case "eventTypeMastery":

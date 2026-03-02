@@ -151,6 +151,7 @@ export interface ShowcaseCard {
   opponentName?: string;
   achievementIds?: string[];
   stat?: string;
+  stats?: string[];
   filter?: string;
   sortBy?: "mostPlayed" | "bestWinRate";
   selectedItems?: string[];

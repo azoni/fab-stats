@@ -354,6 +354,7 @@ export function ProfileShareModal({
       : window.location.origin;
     const shareText = `${data.playerName} — ${data.winRate.toFixed(1)}% win rate across ${data.totalMatches} matches\n${profileUrl}`;
 
+    logActivity("profile_share");
     setShareStatus("sharing");
     const result = await copyCardImage(cardRef.current, {
       backgroundColor: selectedTheme.bg, fileName: "fab-stats.png",
@@ -361,11 +362,9 @@ export function ProfileShareModal({
       retryWithoutImages: true,
     });
     if (result === "image" || result === "shared") {
-      logActivity("profile_share");
       setShareStatus("copied");
       setTimeout(() => { setShareStatus("idle"); onClose(); }, 1500);
     } else if (result === "text") {
-      logActivity("profile_share");
       setShareStatus("text-copied");
       setTimeout(() => { setShareStatus("idle"); onClose(); }, 2000);
     } else {
@@ -374,12 +373,12 @@ export function ProfileShareModal({
   }
 
   async function handleDownload() {
+    logActivity("profile_share");
     setShareStatus("sharing");
     await downloadCardImage(cardRef.current, {
       backgroundColor: selectedTheme.bg, fileName: "fab-stats.png",
       retryWithoutImages: true,
     });
-    logActivity("profile_share");
     setShareStatus("idle");
   }
 

@@ -164,17 +164,16 @@ export function PlacementShareModal({ playerName, finish, onClose }: PlacementSh
   async function handleCopy() {
     const shareText = `${playerName} — ${getPlacementLabel(finish.type)} at ${finish.eventName}`;
 
+    logActivity("placement_share", finish.eventName);
     setShareStatus("sharing");
     const result = await copyCardImage(cardRef.current, {
       backgroundColor: selectedTheme.bg, fileName: "placement.png",
       shareTitle: "FaB Stats — Event Placement", shareText, fallbackText: shareText,
     });
     if (result === "image" || result === "shared") {
-      logActivity("placement_share", finish.eventName);
       setShareStatus("copied");
       setTimeout(() => { setShareStatus("idle"); onClose(); }, 1500);
     } else if (result === "text") {
-      logActivity("placement_share", finish.eventName);
       setShareStatus("text-copied");
       setTimeout(() => { setShareStatus("idle"); onClose(); }, 2000);
     } else {
@@ -183,9 +182,9 @@ export function PlacementShareModal({ playerName, finish, onClose }: PlacementSh
   }
 
   async function handleDownload() {
+    logActivity("placement_share", finish.eventName);
     setShareStatus("sharing");
     await downloadCardImage(cardRef.current, { backgroundColor: selectedTheme.bg, fileName: "placement.png" });
-    logActivity("placement_share", finish.eventName);
     setShareStatus("idle");
   }
 

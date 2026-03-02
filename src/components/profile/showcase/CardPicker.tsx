@@ -150,7 +150,7 @@ export function CardPicker({ onAdd, onCancel, matches, heroStats, eventStats, op
         {selectedType === "rivalry" && <OpponentPicker opponents={opponentStats} search={search} onSelect={(opponentName) => onAdd({ type: "rivalry", opponentName })} />}
         {selectedType === "eventRecap" && <EventPicker events={eventStats} search={search} onSelect={(eventDate, eventName) => onAdd({ type: "eventRecap", eventDate, eventName })} />}
         {selectedType === "achievements" && <AchievementList achievements={achievements} selected={selectedAchievements} onToggle={toggleAchievement} />}
-        {selectedType === "statHighlight" && <StatPicker onSelect={(stat, filter) => onAdd({ type: "statHighlight", stat, filter })} />}
+        {selectedType === "statHighlight" && <StatPicker onSelect={(stats) => onAdd({ type: "statHighlight", stats, stat: stats[0] })} />}
       </div>
 
       {/* Achievement confirm button — always visible outside scroll */}
@@ -298,14 +298,50 @@ export function AchievementList({ achievements, selected, onToggle }: { achievem
   );
 }
 
-export function StatPicker({ onSelect }: { onSelect: (stat: string, filter?: string) => void }) {
+export function StatPicker({ onSelect, initialStats }: { onSelect: (stats: string[]) => void; initialStats?: string[] }) {
+  const [selected, setSelected] = useState<Set<string>>(() => new Set(initialStats || []));
+
+  function toggle(key: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else if (next.size < 6) next.add(key);
+      return next;
+    });
+  }
+
   return (
     <>
-      {STAT_OPTIONS.map((opt) => (
-        <button key={opt.key} onClick={() => onSelect(opt.key)} className="w-full flex items-center gap-2 p-1.5 rounded hover:bg-fab-surface-hover text-left transition-colors">
-          <span className="text-[10px] text-fab-text">{opt.label}</span>
+      <p className="text-[8px] text-fab-dim mb-1">Select stats to display (up to 6):</p>
+      {STAT_OPTIONS.map((opt) => {
+        const isSelected = selected.has(opt.key);
+        return (
+          <button
+            key={opt.key}
+            onClick={() => toggle(opt.key)}
+            className={`w-full flex items-center gap-2 p-1.5 rounded text-left transition-colors ${
+              isSelected ? "bg-fab-gold/10 ring-1 ring-fab-gold/20" : "hover:bg-fab-surface-hover"
+            }`}
+          >
+            {isSelected ? (
+              <svg className="w-3.5 h-3.5 text-fab-gold shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+            ) : (
+              <div className="w-3.5 h-3.5 rounded border border-fab-border shrink-0" />
+            )}
+            <span className="text-[10px] text-fab-text">{opt.label}</span>
+          </button>
+        );
+      })}
+      {selected.size > 0 && (
+        <button
+          onClick={() => onSelect([...selected])}
+          className="w-full mt-1 px-3 py-1.5 bg-fab-gold/15 text-fab-gold text-xs font-medium rounded-lg hover:bg-fab-gold/25 transition-colors"
+        >
+          Save {selected.size} Stat{selected.size > 1 ? "s" : ""}
         </button>
-      ))}
+      )}
     </>
   );
 }
