@@ -58,7 +58,7 @@ export function ActivityFeed({ rankMap, eventTierMap }: { rankMap?: Map<string, 
     if (!isAdmin) return;
     setAdminActivityLoading(true);
     getActivityFeed(100).then(({ events }) => {
-      setAdminActivity(events);
+      setAdminActivity(events.filter((e) => e.uid !== user?.uid));
       setAdminActivityLoading(false);
     }).catch(() => setAdminActivityLoading(false));
   }, [isAdmin]);
