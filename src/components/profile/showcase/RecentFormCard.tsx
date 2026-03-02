@@ -32,7 +32,7 @@ export function RecentFormCard({ matches }: RecentFormCardProps) {
   return (
     <div className="spotlight-card spotlight-winrate bg-fab-surface border border-fab-border rounded-lg px-3 py-2 relative overflow-hidden h-full min-h-[88px]">
       <div className="flex items-center gap-1.5 mb-1">
-        <p className="text-[8px] text-cyan-400/70 uppercase tracking-wider font-medium">Recent Form</p>
+        <p className="text-[10px] text-cyan-400/70 uppercase tracking-wider font-medium">Recent Form</p>
         {trending === "up" && (
           <svg className="w-3 h-3 text-fab-win" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
@@ -45,10 +45,10 @@ export function RecentFormCard({ matches }: RecentFormCardProps) {
         )}
       </div>
       <div className="flex items-baseline gap-2">
-        <span className={`text-xl font-black leading-tight ${winRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>
+        <span className={`text-2xl font-black leading-tight ${winRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>
           {winRate.toFixed(0)}%
         </span>
-        <span className="text-[10px] text-fab-muted">
+        <span className="text-xs text-fab-muted">
           {wins}W-{recent.length - wins}L last {recent.length}
         </span>
       </div>

@@ -58,18 +58,18 @@ export function EventTypeMasteryCard({ matches, sortBy = "mostPlayed", selectedI
 
   return (
     <div className="spotlight-card spotlight-active bg-fab-surface border border-fab-border rounded-lg px-3 py-2 relative overflow-hidden h-full min-h-[88px]">
-      <p className="text-[8px] text-emerald-400/70 uppercase tracking-wider font-medium mb-1.5">
+      <p className="text-[10px] text-emerald-400/70 uppercase tracking-wider font-medium mb-1.5">
         Event Types {sortBy === "bestWinRate" ? "— by Win Rate" : "— by Matches"}
       </p>
       <div className="space-y-1">
         {types.map((t) => (
           <div key={t.eventType} className="flex items-center gap-1.5">
-            <span className="text-[9px] text-fab-muted w-16 truncate shrink-0">{t.eventType}</span>
+            <span className="text-[11px] text-fab-muted w-16 truncate shrink-0">{t.eventType}</span>
             <div className="flex-1 h-2.5 bg-fab-bg rounded-full overflow-hidden relative">
               <div className={`h-full rounded-full ${t.winRate >= 50 ? "bg-fab-win/25" : "bg-fab-loss/25"}`} style={{ width: `${(t.matches / maxMatches) * 100}%` }} />
-              <span className="absolute inset-0 flex items-center px-1 text-[7px] font-medium text-fab-text">{t.matches}</span>
+              <span className="absolute inset-0 flex items-center px-1 text-[9px] font-medium text-fab-text">{t.matches}</span>
             </div>
-            <span className={`text-[9px] font-semibold w-8 text-right ${t.winRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>{t.winRate.toFixed(0)}%</span>
+            <span className={`text-[11px] font-semibold w-8 text-right ${t.winRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>{t.winRate.toFixed(0)}%</span>
           </div>
         ))}
       </div>

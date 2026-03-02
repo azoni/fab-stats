@@ -16,24 +16,24 @@ export function HeroSpotlightCard({ heroStats, mastery }: HeroSpotlightCardProps
 
   return (
     <div className="spotlight-card spotlight-warrior bg-fab-surface border border-fab-border rounded-lg px-3 py-2 relative overflow-hidden h-full min-h-[88px]">
-      <p className="text-[8px] text-purple-400/70 uppercase tracking-wider font-medium mb-1">Hero</p>
+      <p className="text-[10px] text-purple-400/70 uppercase tracking-wider font-medium mb-1">Hero</p>
       <div className="flex items-center gap-2">
         <HeroClassIcon heroClass={heroClass} size="sm" />
-        <span className="text-xs font-bold text-fab-text truncate">{heroStats.heroName}</span>
+        <span className="text-sm font-bold text-fab-text truncate">{heroStats.heroName}</span>
         {tc && (
-          <span className={`text-[8px] font-bold px-1 py-0.5 rounded ${tc.bg} ${tc.color} ${tc.border} border leading-none shrink-0`}>
+          <span className={`text-[10px] font-bold px-1 py-0.5 rounded ${tc.bg} ${tc.color} ${tc.border} border leading-none shrink-0`}>
             {tc.label}
           </span>
         )}
       </div>
       <div className="flex items-center gap-2 mt-1">
-        <span className={`text-xs font-semibold ${heroStats.winRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>
+        <span className={`text-sm font-semibold ${heroStats.winRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>
           {heroStats.winRate.toFixed(1)}%
         </span>
-        <span className="text-[10px] text-fab-muted">
+        <span className="text-xs text-fab-muted">
           {heroStats.wins}W-{heroStats.losses}L{heroStats.draws > 0 && `-${heroStats.draws}D`}
         </span>
-        <span className="text-[10px] text-fab-dim">{heroStats.totalMatches}m</span>
+        <span className="text-xs text-fab-dim">{heroStats.totalMatches}m</span>
       </div>
       {heroStats.matchups.length > 0 && (
         <div className="flex items-center gap-1.5 mt-1">
@@ -42,7 +42,7 @@ export function HeroSpotlightCard({ heroStats, mastery }: HeroSpotlightCardProps
             return (
               <div key={mu.opponentHero} className="flex items-center gap-0.5">
                 <HeroClassIcon heroClass={muInfo?.classes[0]} size="sm" />
-                <span className={`text-[9px] font-medium ${mu.winRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>
+                <span className={`text-[11px] font-medium ${mu.winRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>
                   {mu.winRate.toFixed(0)}%
                 </span>
               </div>

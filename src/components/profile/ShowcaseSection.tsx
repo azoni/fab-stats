@@ -288,7 +288,7 @@ export function ShowcaseSection({
       )}
 
       {/* Add card button */}
-      {isEditing && cards.length > 0 && !showPicker && pointsLeft > 0 && (
+      {isEditing && !showPicker && pointsLeft > 0 && (
         <button onClick={() => setShowPicker(true)} className="w-full py-1.5 border border-dashed border-fab-border rounded-lg text-xs text-fab-muted hover:text-fab-text hover:border-fab-muted transition-colors">
           + Add Card ({usedPoints}/{maxPoints} pts)
         </button>

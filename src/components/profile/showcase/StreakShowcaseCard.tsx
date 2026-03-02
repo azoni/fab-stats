@@ -21,21 +21,21 @@ export function StreakShowcaseCard({ overall, matches }: StreakShowcaseCardProps
 
   return (
     <div className="spotlight-card spotlight-streak bg-fab-surface border border-fab-border rounded-lg px-3 py-2 relative overflow-hidden h-full min-h-[88px]">
-      <p className="text-[8px] text-orange-400/70 uppercase tracking-wider font-medium mb-1">Streaks</p>
+      <p className="text-[10px] text-orange-400/70 uppercase tracking-wider font-medium mb-1">Streaks</p>
       <div className="flex items-baseline gap-3">
         {current ? (
           <div className="flex items-baseline gap-1">
-            <span className={`text-xl font-black leading-tight ${current.type === MatchResult.Win ? "text-fab-win" : "text-fab-loss"}`}>
+            <span className={`text-2xl font-black leading-tight ${current.type === MatchResult.Win ? "text-fab-win" : "text-fab-loss"}`}>
               {current.count}
             </span>
-            <span className={`text-[10px] font-semibold ${current.type === MatchResult.Win ? "text-fab-win/70" : "text-fab-loss/70"}`}>
+            <span className={`text-xs font-semibold ${current.type === MatchResult.Win ? "text-fab-win/70" : "text-fab-loss/70"}`}>
               {current.type === MatchResult.Win ? "W" : "L"} streak
             </span>
-            {isHot && <span className="text-[9px] text-orange-400 font-bold ml-0.5">HOT</span>}
-            {isCold && <span className="text-[9px] text-blue-400 font-bold ml-0.5">COLD</span>}
+            {isHot && <span className="text-[11px] text-orange-400 font-bold ml-0.5">HOT</span>}
+            {isCold && <span className="text-[11px] text-blue-400 font-bold ml-0.5">COLD</span>}
           </div>
         ) : (
-          <span className="text-[10px] text-fab-dim">No active streak</span>
+          <span className="text-xs text-fab-dim">No active streak</span>
         )}
       </div>
       <div className="flex items-center gap-2 mt-1.5">
@@ -44,7 +44,7 @@ export function StreakShowcaseCard({ overall, matches }: StreakShowcaseCardProps
             <div key={i} className={`w-2 h-2 rounded-full ${m.result === MatchResult.Win ? "bg-fab-win" : m.result === MatchResult.Loss ? "bg-fab-loss" : "bg-fab-draw"}`} />
           ))}
         </div>
-        <span className="text-[9px] text-fab-dim ml-auto">Best: {streaks.longestWinStreak}W</span>
+        <span className="text-[11px] text-fab-dim ml-auto">Best: {streaks.longestWinStreak}W</span>
       </div>
     </div>
   );

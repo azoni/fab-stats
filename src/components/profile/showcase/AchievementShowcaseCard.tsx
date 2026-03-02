@@ -26,8 +26,8 @@ export function AchievementShowcaseCard({ achievements }: AchievementShowcaseCar
             <div key={ach.id} className={`flex items-center gap-1.5 px-2 py-1 rounded border ${style.border} ${style.glow} bg-fab-bg/50 flex-1 min-w-0`}>
               <AchievementIcon icon={ach.icon} className="w-4 h-4 shrink-0" />
               <div className="min-w-0">
-                <p className={`text-[10px] font-semibold truncate ${style.text}`}>{ach.name}</p>
-                <p className="text-[8px] text-fab-dim truncate">{ach.rarity}</p>
+                <p className={`text-xs font-semibold truncate ${style.text}`}>{ach.name}</p>
+                <p className="text-[10px] text-fab-dim truncate">{ach.rarity}</p>
               </div>
             </div>
           );

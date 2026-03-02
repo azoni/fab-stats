@@ -29,10 +29,10 @@ export function BestFinishShowcase({ finish }: BestFinishShowcaseProps) {
     <div className="spotlight-card spotlight-grinder bg-fab-surface border border-fab-border rounded-lg px-3 py-2 relative overflow-hidden h-full min-h-[88px]">
       <div className={`inline-flex items-center gap-1.5 px-1.5 py-0.5 rounded border ${cfg.accent} mb-1`}>
         <AchievementIcon icon={cfg.icon} className={`w-3.5 h-3.5 ${cfg.color}`} />
-        <span className={`text-[10px] font-bold ${cfg.color}`}>{cfg.label}</span>
+        <span className={`text-xs font-bold ${cfg.color}`}>{cfg.label}</span>
       </div>
-      <p className="text-xs font-semibold text-fab-text truncate">{finish.eventName}</p>
-      <p className="text-[9px] text-fab-dim truncate mt-0.5">
+      <p className="text-sm font-semibold text-fab-text truncate">{finish.eventName}</p>
+      <p className="text-[11px] text-fab-dim truncate mt-0.5">
         {finish.eventType} · {finish.format} · {localDate(finish.eventDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
       </p>
     </div>
