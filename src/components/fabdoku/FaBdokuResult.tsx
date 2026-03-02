@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import type { GameState, FaBdokuStats } from "@/lib/fabdoku/types";
+import type { GameState, FaBdokuStats, UniquenessData } from "@/lib/fabdoku/types";
 
 function TrophyIcon({ className }: { className?: string }) {
   return (
@@ -54,10 +54,11 @@ function CheckIcon({ className }: { className?: string }) {
 interface FaBdokuResultProps {
   gameState: GameState;
   stats: FaBdokuStats | null;
+  uniqueness: UniquenessData | null;
   onShare: () => void;
 }
 
-export function FaBdokuResult({ gameState, stats, onShare }: FaBdokuResultProps) {
+export function FaBdokuResult({ gameState, stats, uniqueness, onShare }: FaBdokuResultProps) {
   const [copied, setCopied] = useState(false);
   const [countdown, setCountdown] = useState("");
 
@@ -94,7 +95,10 @@ export function FaBdokuResult({ gameState, stats, onShare }: FaBdokuResultProps)
       )
       .join("\n");
 
-    return `FaBdoku ${gameState.date}\n${correctCount}/${totalCells} in ${gameState.guessesUsed} guesses\n\n${grid}\n\nfabstats.net/fabdoku`;
+    const uniquenessLine = uniqueness
+      ? `\nUniqueness: ${uniqueness.score}`
+      : "";
+    return `FaBdoku ${gameState.date}\n${correctCount}/${totalCells} in ${gameState.guessesUsed} guesses${uniquenessLine}\n\n${grid}\n\nfabstats.net/fabdoku`;
   }
 
   async function handleCopy() {
@@ -134,6 +138,33 @@ export function FaBdokuResult({ gameState, stats, onShare }: FaBdokuResultProps)
           </>
         )}
       </div>
+
+      {/* Uniqueness score */}
+      {uniqueness && (
+        <div className="bg-fab-bg/50 rounded-lg border border-fab-border p-3 mb-4">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-[10px] text-fab-dim uppercase tracking-wider">
+              Uniqueness
+            </p>
+            <p className="text-[10px] text-fab-dim">
+              {uniqueness.totalPlayers} player{uniqueness.totalPlayers !== 1 ? "s" : ""} today
+            </p>
+          </div>
+          <div className="flex items-baseline gap-2 justify-center">
+            <span className="text-2xl font-bold text-fab-gold font-mono">
+              {uniqueness.score}
+            </span>
+            {uniqueness.bestPossible > 0 && (
+              <span className="text-xs text-fab-dim">
+                / {uniqueness.bestPossible} best
+              </span>
+            )}
+          </div>
+          <p className="text-[10px] text-fab-dim text-center mt-1">
+            Lower is better — sum of % who picked same hero per cell
+          </p>
+        </div>
+      )}
 
       {/* Mini grid preview */}
       <div className="grid grid-cols-3 gap-1 w-20 mx-auto mb-4">

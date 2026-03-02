@@ -32,8 +32,15 @@ import {
   createFreshGameState,
   cleanupOldStates,
 } from "@/lib/fabdoku/game-state";
-import { buildResult, saveResult, loadStats } from "@/lib/fabdoku/firestore";
-import type { GameState, FaBdokuStats } from "@/lib/fabdoku/types";
+import {
+  buildResult,
+  saveResult,
+  loadStats,
+  savePicks,
+  loadPicks,
+  computeUniqueness,
+} from "@/lib/fabdoku/firestore";
+import type { GameState, FaBdokuStats, UniquenessData } from "@/lib/fabdoku/types";
 
 export default function FaBdokuPage() {
   const { user, isAdmin } = useAuth();
@@ -48,6 +55,7 @@ export default function FaBdokuPage() {
   const [showShare, setShowShare] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
   const [stats, setStats] = useState<FaBdokuStats | null>(null);
+  const [uniqueness, setUniqueness] = useState<UniquenessData | null>(null);
 
   // Track which hero names have already been guessed (no reuse)
   const usedHeroes = useMemo(() => {
@@ -61,14 +69,32 @@ export default function FaBdokuPage() {
     return set;
   }, [gameState]);
 
+  // Load uniqueness data for a completed game
+  const refreshUniqueness = useCallback(
+    async (state: GameState) => {
+      try {
+        const pickData = await loadPicks(state.date);
+        if (pickData) {
+          setUniqueness(computeUniqueness(state, pickData));
+        }
+      } catch {
+        // Non-critical — uniqueness display is optional
+      }
+    },
+    []
+  );
+
   // Load game state from localStorage
   useEffect(() => {
     const saved = loadGameState(dateStr);
     const state = saved ?? createFreshGameState(dateStr);
     setGameState(state);
-    if (state.completed) setShowResult(true);
+    if (state.completed) {
+      setShowResult(true);
+      refreshUniqueness(state);
+    }
     cleanupOldStates();
-  }, [dateStr]);
+  }, [dateStr, refreshUniqueness]);
 
   // Load stats from Firestore
   useEffect(() => {
@@ -123,21 +149,23 @@ export default function FaBdokuPage() {
       setSelectedCell(null);
 
       // Save to Firestore on completion
-      if (isCompleted && user?.uid) {
-        try {
-          const result = buildResult(newState);
-          await saveResult(user.uid, result);
-          const updatedStats = await loadStats(user.uid);
-          if (updatedStats) setStats(updatedStats);
-        } catch {
-          // Silently fail — game state is saved locally
+      if (isCompleted) {
+        if (user?.uid) {
+          try {
+            const result = buildResult(newState);
+            await saveResult(user.uid, result);
+            await savePicks(newState);
+            const updatedStats = await loadStats(user.uid);
+            if (updatedStats) setStats(updatedStats);
+          } catch {
+            // Silently fail — game state is saved locally
+          }
         }
         setShowResult(true);
-      } else if (isCompleted) {
-        setShowResult(true);
+        refreshUniqueness(newState);
       }
     },
-    [gameState, selectedCell, puzzle, user?.uid]
+    [gameState, selectedCell, puzzle, user?.uid, refreshUniqueness]
   );
 
   if (!isAdmin) {
@@ -227,6 +255,7 @@ export default function FaBdokuPage() {
         cells={gameState.cells}
         disabled={gameState.completed}
         onCellClick={handleCellClick}
+        cellPcts={gameState.completed ? uniqueness?.cellPcts : undefined}
       />
 
       {/* Result panel (shown when game is over) */}
@@ -234,6 +263,7 @@ export default function FaBdokuPage() {
         <FaBdokuResult
           gameState={gameState}
           stats={stats}
+          uniqueness={uniqueness}
           onShare={() => setShowShare(true)}
         />
       )}
@@ -251,6 +281,7 @@ export default function FaBdokuPage() {
       {showShare && (
         <FaBdokuShareCard
           gameState={gameState}
+          uniqueness={uniqueness}
           onClose={() => setShowShare(false)}
         />
       )}

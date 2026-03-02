@@ -3,15 +3,24 @@ import {
   getDoc,
   setDoc,
   getDocs,
+  updateDoc,
+  increment,
   collection,
   query,
   where,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import type { FaBdokuResult, FaBdokuStats, GameState } from "./types";
+import type {
+  FaBdokuResult,
+  FaBdokuStats,
+  GameState,
+  PickData,
+  UniquenessData,
+} from "./types";
 
 const RESULTS_COL = "fabdoku-results";
 const STATS_DOC = "fabdoku-stats";
+const PICKS_COL = "fabdoku-picks";
 
 /** Build a FaBdokuResult from completed game state. */
 export function buildResult(gameState: GameState): FaBdokuResult {
@@ -89,6 +98,94 @@ export async function loadTodayResults(
   );
   const snap = await getDocs(q);
   return snap.docs.map((d) => d.data() as FaBdokuResult);
+}
+
+/** Save per-cell hero picks for uniqueness scoring (atomic increments). */
+export async function savePicks(gameState: GameState): Promise<void> {
+  const ref = doc(db, PICKS_COL, gameState.date);
+  const snap = await getDoc(ref);
+
+  // Build the increment update
+  const updates: Record<string, ReturnType<typeof increment>> = {
+    totalPlayers: increment(1),
+  };
+
+  for (let r = 0; r < 3; r++) {
+    for (let c = 0; c < 3; c++) {
+      const cell = gameState.cells[r][c];
+      if (cell.heroName && cell.locked) {
+        // Firestore dot-notation for nested map fields
+        updates[`cells.${r}-${c}.${cell.heroName}`] = increment(1);
+      }
+    }
+  }
+
+  if (snap.exists()) {
+    await updateDoc(ref, updates);
+  } else {
+    // First player: create the doc with initial values
+    const initial: Record<string, unknown> = { totalPlayers: 1, cells: {} };
+    for (let r = 0; r < 3; r++) {
+      for (let c = 0; c < 3; c++) {
+        const cell = gameState.cells[r][c];
+        const key = `${r}-${c}`;
+        (initial.cells as Record<string, Record<string, number>>)[key] = {};
+        if (cell.heroName && cell.locked) {
+          (initial.cells as Record<string, Record<string, number>>)[key][
+            cell.heroName
+          ] = 1;
+        }
+      }
+    }
+    await setDoc(ref, initial);
+  }
+}
+
+/** Load pick data for a given date. */
+export async function loadPicks(dateStr: string): Promise<PickData | null> {
+  const ref = doc(db, PICKS_COL, dateStr);
+  const snap = await getDoc(ref);
+  if (!snap.exists()) return null;
+  return snap.data() as PickData;
+}
+
+/** Compute uniqueness data from pick data and a completed game state. */
+export function computeUniqueness(
+  gameState: GameState,
+  pickData: PickData
+): UniquenessData {
+  const cellPcts: number[][] = [];
+  let score = 0;
+  let bestPossible = 0;
+  const total = pickData.totalPlayers;
+
+  for (let r = 0; r < 3; r++) {
+    const row: number[] = [];
+    for (let c = 0; c < 3; c++) {
+      const cell = gameState.cells[r][c];
+      const key = `${r}-${c}`;
+      const cellPicks = pickData.cells[key] ?? {};
+
+      // This player's pick percentage
+      let pct = 100; // default for wrong/empty cells
+      if (cell.heroName && cell.locked && total > 0) {
+        const count = cellPicks[cell.heroName] ?? 0;
+        pct = Math.round((count / total) * 100);
+      }
+      row.push(pct);
+      score += pct;
+
+      // Best possible: the minimum % in this cell
+      const counts = Object.values(cellPicks);
+      if (counts.length > 0 && total > 0) {
+        const minCount = Math.min(...counts);
+        bestPossible += Math.round((minCount / total) * 100);
+      }
+    }
+    cellPcts.push(row);
+  }
+
+  return { cellPcts, score, bestPossible, totalPlayers: total };
 }
 
 /** Helper: offset a YYYY-MM-DD date string by N days. */

@@ -34,14 +34,15 @@ function DownloadIcon({ className }: { className?: string }) {
     </svg>
   );
 }
-import type { GameState } from "@/lib/fabdoku/types";
+import type { GameState, UniquenessData } from "@/lib/fabdoku/types";
 
 interface FaBdokuShareCardProps {
   gameState: GameState;
+  uniqueness: UniquenessData | null;
   onClose: () => void;
 }
 
-export function FaBdokuShareCard({ gameState, onClose }: FaBdokuShareCardProps) {
+export function FaBdokuShareCard({ gameState, uniqueness, onClose }: FaBdokuShareCardProps) {
   const cardRef = useRef<HTMLDivElement>(null);
   const [status, setStatus] = useState<"idle" | "copying" | "copied" | "downloaded">("idle");
 
@@ -53,8 +54,8 @@ export function FaBdokuShareCard({ gameState, onClose }: FaBdokuShareCardProps) 
       backgroundColor: "#0e0c08",
       fileName: `fabdoku-${gameState.date}.png`,
       shareTitle: `FaBdoku ${gameState.date}`,
-      shareText: `FaBdoku ${gameState.date} — ${correctCount}/9 in ${gameState.guessesUsed} guesses`,
-      fallbackText: `FaBdoku ${gameState.date}\n${correctCount}/9 in ${gameState.guessesUsed} guesses\nfabstats.net/fabdoku`,
+      shareText: `FaBdoku ${gameState.date} — ${correctCount}/9 in ${gameState.guessesUsed} guesses${uniqueness ? ` · Uniqueness: ${uniqueness.score}` : ""}`,
+      fallbackText: `FaBdoku ${gameState.date}\n${correctCount}/9 in ${gameState.guessesUsed} guesses${uniqueness ? `\nUniqueness: ${uniqueness.score}` : ""}\nfabstats.net/fabdoku`,
     });
     setStatus(result === "failed" ? "idle" : "copied");
     if (result !== "failed") setTimeout(() => setStatus("idle"), 2000);
@@ -119,7 +120,12 @@ export function FaBdokuShareCard({ gameState, onClose }: FaBdokuShareCardProps) 
               <p className="text-sm font-bold text-fab-text">
                 {correctCount}/9 in {gameState.guessesUsed} guesses
               </p>
-              {gameState.won && (
+              {uniqueness && (
+                <p className="text-xs text-fab-gold font-bold mt-1">
+                  Uniqueness: {uniqueness.score}
+                </p>
+              )}
+              {gameState.won && !uniqueness && (
                 <p className="text-[10px] text-fab-gold mt-0.5">
                   Puzzle Solved!
                 </p>

@@ -46,3 +46,22 @@ export interface FaBdokuStats {
   maxStreak: number;
   lastPlayedDate: string;
 }
+
+/** Per-cell pick counts for uniqueness scoring. */
+export interface PickData {
+  totalPlayers: number;
+  /** Map of "row-col" → { heroName: count } */
+  cells: Record<string, Record<string, number>>;
+}
+
+/** Computed uniqueness info for a completed game. */
+export interface UniquenessData {
+  /** Per-cell percentage (0–100): what % of players picked the same hero */
+  cellPcts: number[][];
+  /** Overall uniqueness score: sum of all 9 cell percentages (lower = better) */
+  score: number;
+  /** Lowest possible score for today (sum of minimum % per cell) */
+  bestPossible: number;
+  /** Total players who completed today */
+  totalPlayers: number;
+}

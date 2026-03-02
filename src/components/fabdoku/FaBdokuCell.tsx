@@ -32,6 +32,16 @@ interface FaBdokuCellProps {
   locked: boolean;
   disabled: boolean;
   onClick: () => void;
+  /** Uniqueness percentage (0–100) shown after game completion */
+  pct?: number;
+}
+
+function getPctColor(pct: number): string {
+  if (pct <= 5) return "text-fab-gold";     // very unique
+  if (pct <= 15) return "text-emerald-400"; // unique
+  if (pct <= 30) return "text-sky-400";     // uncommon
+  if (pct <= 50) return "text-fab-muted";   // common
+  return "text-fab-dim";                     // very common
 }
 
 export function FaBdokuCell({
@@ -40,6 +50,7 @@ export function FaBdokuCell({
   locked,
   disabled,
   onClick,
+  pct,
 }: FaBdokuCellProps) {
   const hero = heroName ? getHeroByName(heroName) : null;
 
@@ -90,11 +101,17 @@ export function FaBdokuCell({
           <XIcon className="w-3 h-3 text-white" />
         )}
       </div>
-      {/* Hero name overlay */}
+      {/* Hero name + uniqueness % overlay */}
       <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 to-transparent px-1.5 pb-1 pt-3">
-        <p className="text-[9px] font-bold text-white leading-tight truncate">
-          {heroName.split(",")[0]}
-        </p>
+        {pct !== undefined ? (
+          <p className={`text-xs font-bold leading-tight ${getPctColor(pct)}`}>
+            {pct}%
+          </p>
+        ) : (
+          <p className="text-[9px] font-bold text-white leading-tight truncate">
+            {heroName.split(",")[0]}
+          </p>
+        )}
       </div>
     </div>
   );
