@@ -395,10 +395,17 @@ export function invalidateLeaderboardCache() {
   cacheTimestampAll = 0;
 }
 
-/** Look up a userId by display name from leaderboard (for users with invalid usernames). */
-export async function findUserIdByDisplayName(displayName: string): Promise<string | null> {
-  const q = query(leaderboardCollection(), where("displayName", "==", displayName));
-  const snap = await getDocs(q);
-  if (snap.empty) return null;
-  return (snap.docs[0].data() as LeaderboardEntry).userId;
+/** Look up a userId from leaderboard by stale username or display name. */
+export async function findUserIdByStaleUsername(name: string): Promise<string | null> {
+  // Try matching by username field (handles stale/changed usernames)
+  const qUser = query(leaderboardCollection(), where("username", "==", name));
+  const snapUser = await getDocs(qUser);
+  if (!snapUser.empty) return (snapUser.docs[0].data() as LeaderboardEntry).userId;
+
+  // Try matching by display name
+  const qName = query(leaderboardCollection(), where("displayName", "==", name));
+  const snapName = await getDocs(qName);
+  if (!snapName.empty) return (snapName.docs[0].data() as LeaderboardEntry).userId;
+
+  return null;
 }

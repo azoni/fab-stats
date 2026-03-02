@@ -6,7 +6,7 @@ import { getProfileByUsername, getMatchesByUserId, updateProfile, searchUsername
 import { BadgeStrip } from "@/components/profile/BadgeStrip";
 import { EmblemDisplay } from "@/components/profile/EmblemDisplay";
 import { EmblemPicker } from "@/components/profile/EmblemPicker";
-import { updateLeaderboardEntry, findUserIdByDisplayName } from "@/lib/leaderboard";
+import { updateLeaderboardEntry, findUserIdByStaleUsername } from "@/lib/leaderboard";
 import { computeOverallStats, computeHeroStats, computeEventStats, computeOpponentStats, computeBestFinish, computePlayoffFinishes, getEventType, getRoundNumber } from "@/lib/stats";
 import { evaluateAchievements, getAchievementProgress } from "@/lib/achievements";
 import { getUserBadgeIds } from "@/lib/badge-service";
@@ -150,18 +150,23 @@ export default function PlayerProfile() {
       try {
         let profile = await getProfileByUsername(username);
 
-        // Fallback: if not found and looks like a display name (has spaces), try to resolve
-        if (!profile && username.includes(" ")) {
-          // Try username search first (matches searchName field)
+        // Fallback: if not found, try to resolve stale/changed username
+        if (!profile) {
+          // Search usernames collection by name
           const results = await searchUsernames(username, 1);
           if (results.length > 0) {
             router.replace(`/player/${results[0].username}`);
             return;
           }
-          // Try leaderboard display name lookup
-          const userId = await findUserIdByDisplayName(username);
+          // Search leaderboard by stale username or display name
+          const userId = await findUserIdByStaleUsername(username);
           if (userId) {
             profile = await getProfile(userId);
+            // If the profile has a valid username, redirect to it
+            if (profile && profile.username && !profile.username.includes(" ")) {
+              router.replace(`/player/${profile.username}`);
+              return;
+            }
           }
         }
 
