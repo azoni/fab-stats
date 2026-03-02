@@ -218,8 +218,34 @@ export function computeTop8HeroMeta(
         heroPlayers.set(hb.hero, players);
       }
     }
+  } else {
+    // Date-range mode: find players active in the date range (have any top8 entry),
+    // then count ALL their heroes from heroBreakdownDetailed (not just top8 heroes)
+    const activePlayers = new Set<string>();
+    for (const entry of entries) {
+      if (!entry.top8Heroes) continue;
+      for (const t8 of entry.top8Heroes) {
+        if (filterEventType && t8.eventType !== filterEventType) continue;
+        if (filterFormat && t8.format !== filterFormat) continue;
+        if (t8.eventDate < sinceDateStr!) continue;
+        if (t8.eventDate > untilDateStr!) continue;
+        activePlayers.add(entry.userId);
+        break; // only need one match to know this player was active
+      }
+    }
+    for (const entry of entries) {
+      if (!activePlayers.has(entry.userId)) continue;
+      if (!entry.heroBreakdownDetailed) continue;
+      for (const hb of entry.heroBreakdownDetailed) {
+        if (!validHeroNames.has(hb.hero)) continue;
+        if (filterEventType && hb.eventType !== filterEventType) continue;
+        if (filterFormat && hb.format !== filterFormat) continue;
+        const players = heroPlayers.get(hb.hero) || new Set<string>();
+        players.add(entry.userId);
+        heroPlayers.set(hb.hero, players);
+      }
+    }
   }
-  // Date-range mode: heroPlayers is populated from date-filtered top8Heroes below
 
   for (const entry of entries) {
     if (!entry.top8Heroes) continue;
@@ -237,13 +263,6 @@ export function computeTop8HeroMeta(
       else if (t8.placementType === "top4") cur.top4++;
       else cur.top8++;
       heroAgg.set(t8.hero, cur);
-
-      // In date-range mode, count players from the date-filtered top8 entries
-      if (isDateRange) {
-        const players = heroPlayers.get(t8.hero) || new Set<string>();
-        players.add(entry.userId);
-        heroPlayers.set(t8.hero, players);
-      }
     }
   }
 
