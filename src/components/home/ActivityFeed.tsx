@@ -92,9 +92,15 @@ export function ActivityFeed({ rankMap, eventTierMap }: { rankMap?: Map<string, 
       source = source.filter((e) => e.type === typeFilter);
     }
 
-    // No display-time cutoff needed — the import flow already gates placement
-    // feed events with a 14-day freshness check at creation time.
-    // TYPE_CAPS (placement: 20, import: 10) limit how many of each type show.
+    // Filter out stale placements — only show events from the last 2 weeks
+    const TWO_WEEKS = 14 * 24 * 60 * 60 * 1000;
+    const placementCutoff = Date.now() - TWO_WEEKS;
+    source = source.filter((e) => {
+      if (e.type === "placement") {
+        return new Date(e.eventDate).getTime() >= placementCutoff;
+      }
+      return true;
+    });
 
     // Sort by the date the event happened (most recent first)
     source = [...source].sort((a, b) => {
