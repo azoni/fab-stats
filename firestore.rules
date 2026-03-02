@@ -308,6 +308,10 @@ service cloud.firestore {
     match /admin/badges {
       allow read: if true;
     }
+    // Season definitions are public (shown in meta page dropdowns)
+    match /admin/seasons {
+      allow read: if true;
+    }
     // Poll config is public (shown on homepage); votes are per-user
     match /admin/poll {
       allow read: if true;

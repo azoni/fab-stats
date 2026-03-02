@@ -12,6 +12,8 @@ import { CommunityHighlights } from "@/components/home/CommunityHighlights";
 import { useFeaturedEvents } from "@/hooks/useFeaturedEvents";
 import { computeMetaStats, computeTop8HeroMeta, detectActiveEventType } from "@/lib/meta-stats";
 import { getWeekStart } from "@/lib/leaderboard";
+import { useSeasons } from "@/hooks/useSeasons";
+import { getCurrentSeason, getSeasonWeeks } from "@/lib/seasons";
 import { ActivityFeed } from "@/components/home/ActivityFeed";
 import { BestFinishShareModal } from "@/components/profile/BestFinishCard";
 import { ProfileShareModal } from "@/components/profile/ProfileCard";
@@ -99,18 +101,37 @@ export default function Dashboard() {
   }, [playoffFinishes]);
 
   // Community section data
-  const activeEventType = useMemo(() => detectActiveEventType(lbEntries), [lbEntries]);
+  const { seasons } = useSeasons();
+  const currentSeason = useMemo(() => getCurrentSeason(seasons), [seasons]);
+  const seasonWeeks = useMemo(() => currentSeason ? getSeasonWeeks(currentSeason) : [], [currentSeason]);
+  const [selectedWeek, setSelectedWeek] = useState<number | null>(null);
+
+  const activeEventType = useMemo(() => {
+    if (currentSeason) return currentSeason.eventType;
+    return detectActiveEventType(lbEntries);
+  }, [lbEntries, currentSeason]);
+
   const communityMeta = useMemo(() => {
-    // During event weekends, show all-time stats; otherwise show weekly armory CC if data exists
     if (activeEventType) return computeMetaStats(lbEntries);
     const weekly = computeMetaStats(lbEntries, "Classic Constructed", "Armory", "weekly");
     return weekly.heroStats.length > 0 ? weekly : computeMetaStats(lbEntries);
   }, [lbEntries, activeEventType]);
   const communityTopHeroes = useMemo(() => communityMeta.heroStats.slice(0, 5), [communityMeta]);
+
   const top8Heroes = useMemo(() => {
+    if (currentSeason) {
+      // Season mode: filter by season's date range, optionally narrowed to a week
+      let sinceDate = currentSeason.startDate;
+      let untilDate = currentSeason.endDate;
+      if (selectedWeek !== null && seasonWeeks[selectedWeek]) {
+        sinceDate = seasonWeeks[selectedWeek].start;
+        untilDate = seasonWeeks[selectedWeek].end;
+      }
+      return computeTop8HeroMeta(lbEntries, currentSeason.eventType, currentSeason.format, sinceDate, untilDate);
+    }
     if (!activeEventType) return [];
     return computeTop8HeroMeta(lbEntries, activeEventType, undefined, getWeekStart());
-  }, [lbEntries, activeEventType]);
+  }, [lbEntries, activeEventType, currentSeason, selectedWeek, seasonWeeks]);
   const rankMap = useMemo(() => computeRankMap(lbEntries), [lbEntries]);
   const featuredProfiles = useMemo(() => selectFeaturedProfiles(lbEntries), [lbEntries]);
   const eventTierMap = useMemo(() => computeEventTierMap(lbEntries), [lbEntries]);
@@ -275,7 +296,7 @@ export default function Dashboard() {
             </div>
             {user && <ActivityFeed rankMap={rankMap} eventTierMap={eventTierMap} />}
           </div>
-          <MetaSnapshot topHeroes={communityTopHeroes} top8Heroes={top8Heroes} activeEventType={activeEventType} />
+          <MetaSnapshot topHeroes={communityTopHeroes} top8Heroes={top8Heroes} activeEventType={activeEventType} seasonName={currentSeason?.name} seasonWeeks={seasonWeeks} selectedWeek={selectedWeek} onWeekChange={setSelectedWeek} />
         </div>
       )}
 
@@ -392,7 +413,7 @@ export default function Dashboard() {
             {/* Activity feed */}
             {user && <ActivityFeed rankMap={rankMap} eventTierMap={eventTierMap} />}
           </div>
-          <MetaSnapshot topHeroes={communityTopHeroes} top8Heroes={top8Heroes} activeEventType={activeEventType} />
+          <MetaSnapshot topHeroes={communityTopHeroes} top8Heroes={top8Heroes} activeEventType={activeEventType} seasonName={currentSeason?.name} seasonWeeks={seasonWeeks} selectedWeek={selectedWeek} onWeekChange={setSelectedWeek} />
         </div>
       )}
 

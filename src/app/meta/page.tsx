@@ -1,15 +1,18 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
 import { useLeaderboard } from "@/hooks/useLeaderboard";
+import { useSeasons } from "@/hooks/useSeasons";
 import { computeMetaStats, getAvailableFormats, getAvailableEventTypes, computeTop8HeroMeta, type HeroMetaStats, type MetaPeriod, type Top8HeroMeta } from "@/lib/meta-stats";
 import { getWeekStart, getMonthStart } from "@/lib/leaderboard";
+import { getSeasonWeeks } from "@/lib/seasons";
 import { getHeroByName } from "@/lib/heroes";
 import { HeroClassIcon } from "@/components/heroes/HeroClassIcon";
 
 type SortKey = "usage" | "winrate";
+type PeriodSelection = MetaPeriod | `season:${string}` | "custom";
 const HERO_PAGE_SIZE = 20;
 
-const PERIOD_TABS: { id: MetaPeriod; label: string }[] = [
+const BASE_PERIOD_TABS: { id: PeriodSelection; label: string }[] = [
   { id: "all", label: "All Time" },
   { id: "monthly", label: "Last 30 Days" },
   { id: "weekly", label: "Last 7 Days" },
@@ -17,13 +20,51 @@ const PERIOD_TABS: { id: MetaPeriod; label: string }[] = [
 
 export default function MetaPage() {
   const { entries, loading } = useLeaderboard(true);
+  const { seasons } = useSeasons();
   const [sortBy, setSortBy] = useState<SortKey>("usage");
   const [search, setSearch] = useState("");
   const [filterFormat, setFilterFormat] = useState("all");
   const [filterEventType, setFilterEventType] = useState("all");
-  const [period, setPeriod] = useState<MetaPeriod>("all");
+  const [periodSelection, setPeriodSelection] = useState<PeriodSelection>("all");
+  const [customStart, setCustomStart] = useState("");
+  const [customEnd, setCustomEnd] = useState("");
   const [heroPage, setHeroPage] = useState(1);
   const [playoffPage, setPlayoffPage] = useState(1);
+
+  // Build dynamic period tabs: base tabs + active seasons + "Custom"
+  const periodTabs = useMemo(() => {
+    const tabs = [...BASE_PERIOD_TABS];
+    for (const s of seasons) {
+      if (s.active) {
+        tabs.push({ id: `season:${s.id}`, label: s.name });
+      }
+    }
+    tabs.push({ id: "custom", label: "Custom" });
+    return tabs;
+  }, [seasons]);
+
+  // Resolve the currently selected season (if any)
+  const activeSeason = useMemo(() => {
+    if (!periodSelection.startsWith("season:")) return null;
+    const id = periodSelection.slice(7);
+    return seasons.find((s) => s.id === id) || null;
+  }, [periodSelection, seasons]);
+
+  // Effective format/eventType (season overrides manual filter)
+  const effectiveFormat = activeSeason ? activeSeason.format : filterFormat !== "all" ? filterFormat : undefined;
+  const effectiveEventType = activeSeason ? activeSeason.eventType : filterEventType !== "all" ? filterEventType : undefined;
+
+  // Derive the MetaPeriod for computeMetaStats (seasons/custom use "all" base)
+  const basePeriod: MetaPeriod = periodSelection === "weekly" ? "weekly" : periodSelection === "monthly" ? "monthly" : "all";
+
+  // Derive date range for Top 8 filtering
+  const { sinceDate, untilDate } = useMemo(() => {
+    if (activeSeason) return { sinceDate: activeSeason.startDate, untilDate: activeSeason.endDate };
+    if (periodSelection === "custom" && customStart && customEnd) return { sinceDate: customStart, untilDate: customEnd };
+    if (periodSelection === "weekly") return { sinceDate: getWeekStart(), untilDate: undefined };
+    if (periodSelection === "monthly") return { sinceDate: getMonthStart(), untilDate: undefined };
+    return { sinceDate: undefined, untilDate: undefined };
+  }, [periodSelection, activeSeason, customStart, customEnd]);
 
   const allFormats = useMemo(() => getAvailableFormats(entries), [entries]);
   const allEventTypes = useMemo(() => getAvailableEventTypes(entries), [entries]);
@@ -31,23 +72,23 @@ export default function MetaPage() {
   const { overview, heroStats } = useMemo(
     () => computeMetaStats(
       entries,
-      filterFormat !== "all" ? filterFormat : undefined,
-      filterEventType !== "all" ? filterEventType : undefined,
-      period,
+      effectiveFormat,
+      effectiveEventType,
+      basePeriod,
     ),
-    [entries, filterFormat, filterEventType, period],
+    [entries, effectiveFormat, effectiveEventType, basePeriod],
   );
 
-  // Top 8 heroes — filtered by period, format, and event type
+  // Top 8 heroes — filtered by period/season/custom, format, and event type
   const top8Heroes = useMemo(() => {
-    const sinceDate = period === "weekly" ? getWeekStart() : period === "monthly" ? getMonthStart() : undefined;
     return computeTop8HeroMeta(
       entries,
-      filterEventType !== "all" ? filterEventType : undefined,
-      filterFormat !== "all" ? filterFormat : undefined,
+      effectiveEventType,
+      effectiveFormat,
       sinceDate,
+      untilDate,
     );
-  }, [entries, filterEventType, filterFormat, period]);
+  }, [entries, effectiveEventType, effectiveFormat, sinceDate, untilDate]);
 
   const sortedHeroes = useMemo(() => {
     let list = [...heroStats];
@@ -64,7 +105,7 @@ export default function MetaPage() {
   }, [heroStats, sortBy, search]);
 
   // Reset hero page when filters change
-  useEffect(() => { setHeroPage(1); setPlayoffPage(1); }, [sortBy, search, filterFormat, filterEventType, period]);
+  useEffect(() => { setHeroPage(1); setPlayoffPage(1); }, [sortBy, search, filterFormat, filterEventType, periodSelection, customStart, customEnd]);
 
   const heroTotalPages = Math.max(1, Math.ceil(sortedHeroes.length / HERO_PAGE_SIZE));
   const heroSafePage = Math.min(heroPage, heroTotalPages);
@@ -109,20 +150,21 @@ export default function MetaPage() {
               <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-fab-gold/15 text-fab-gold">Beta</span>
             </div>
             <p className="text-xs text-fab-muted leading-tight">
-              {overview.totalPlayers} public players{period !== "all" && " · recent imports only"}
+              {overview.totalPlayers} public players{basePeriod !== "all" && " · recent imports only"}
+              {activeSeason && ` · ${activeSeason.format}`}
             </p>
           </div>
         </div>
       </div>
 
       {/* Period tabs */}
-      <div className="flex gap-1 mb-4">
-        {PERIOD_TABS.map((tab) => (
+      <div className="flex gap-1 mb-4 flex-wrap">
+        {periodTabs.map((tab) => (
           <button
             key={tab.id}
-            onClick={() => setPeriod(tab.id)}
+            onClick={() => setPeriodSelection(tab.id)}
             className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${
-              period === tab.id
+              periodSelection === tab.id
                 ? "bg-fab-gold text-fab-bg"
                 : "bg-fab-surface text-fab-muted hover:text-fab-text border border-fab-border"
             }`}
@@ -131,6 +173,50 @@ export default function MetaPage() {
           </button>
         ))}
       </div>
+
+      {/* Custom date range picker */}
+      {periodSelection === "custom" && (
+        <div className="flex items-center gap-2 mb-4 flex-wrap">
+          <label className="text-xs text-fab-dim">From</label>
+          <input
+            type="date"
+            value={customStart}
+            onChange={(e) => setCustomStart(e.target.value)}
+            className="bg-fab-surface border border-fab-border text-fab-text text-sm rounded px-2 py-1.5 focus:outline-none focus:border-fab-gold"
+          />
+          <label className="text-xs text-fab-dim">To</label>
+          <input
+            type="date"
+            value={customEnd}
+            onChange={(e) => setCustomEnd(e.target.value)}
+            className="bg-fab-surface border border-fab-border text-fab-text text-sm rounded px-2 py-1.5 focus:outline-none focus:border-fab-gold"
+          />
+          {customStart && customEnd && (
+            <span className="text-[10px] text-fab-dim">Top 8s filtered to this date range</span>
+          )}
+        </div>
+      )}
+
+      {/* Season info bar */}
+      {activeSeason && (() => {
+        const weeks = getSeasonWeeks(activeSeason);
+        return (
+          <div className="mb-4 bg-fab-surface border border-fab-border rounded-lg px-4 py-2.5">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-xs font-semibold text-fab-text">{activeSeason.name}</span>
+              <span className="text-[10px] text-fab-dim">{activeSeason.startDate} — {activeSeason.endDate}</span>
+              <span className="text-[10px] text-fab-dim">·</span>
+              <span className="text-[10px] text-fab-dim">{activeSeason.eventType} · {activeSeason.format === "Classic Constructed" ? "CC" : activeSeason.format}</span>
+              {weeks.length > 1 && (
+                <>
+                  <span className="text-[10px] text-fab-dim">·</span>
+                  <span className="text-[10px] text-fab-dim">{weeks.length} weeks</span>
+                </>
+              )}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Community Overview */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
@@ -167,7 +253,7 @@ export default function MetaPage() {
               Playoff Heroes
             </h2>
             <p className="text-[10px] text-fab-dim mb-3">
-              Heroes making top 8s{period === "weekly" ? " (last 7 days)" : period === "monthly" ? " (last 30 days)" : ""}
+              Heroes making top 8s{periodSelection === "weekly" ? " (last 7 days)" : periodSelection === "monthly" ? " (last 30 days)" : activeSeason ? ` (${activeSeason.name})` : periodSelection === "custom" && sinceDate && untilDate ? ` (${sinceDate} — ${untilDate})` : ""}
               {top8Heroes.length > 10 && ` \u00b7 ${top8Heroes.length} heroes`}
             </p>
             <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden">
@@ -226,6 +312,13 @@ export default function MetaPage() {
         );
       })()}
 
+      {/* Season/custom disclaimer for hero win-rate data */}
+      {(activeSeason || (periodSelection === "custom" && customStart && customEnd)) && (
+        <p className="text-[10px] text-fab-dim mb-3 italic">
+          Top 8 data is filtered to the selected date range. Hero win rates below are based on all-time data.
+        </p>
+      )}
+
       {/* Filters + Sort + Search */}
       <div className="flex flex-wrap items-center gap-2 mb-4">
         <input
@@ -236,8 +329,8 @@ export default function MetaPage() {
           className="bg-fab-surface border border-fab-border rounded-md px-3 py-1.5 text-fab-text text-sm placeholder:text-fab-dim focus:outline-none focus:border-fab-gold w-40"
         />
 
-        {/* Format pills */}
-        {allFormats.length > 1 && (
+        {/* Format pills (hidden when season auto-sets format) */}
+        {allFormats.length > 1 && !activeSeason && (
           <div className="flex gap-0.5 bg-fab-bg rounded-lg p-0.5 border border-fab-border">
             <button
               onClick={() => setFilterFormat("all")}
@@ -261,8 +354,8 @@ export default function MetaPage() {
           </div>
         )}
 
-        {/* Event type pills */}
-        {allEventTypes.length > 1 && (
+        {/* Event type pills (hidden when season auto-sets event type) */}
+        {allEventTypes.length > 1 && !activeSeason && (
           <div className="flex gap-0.5 bg-fab-bg rounded-lg p-0.5 border border-fab-border overflow-x-auto scrollbar-hide">
             <button
               onClick={() => setFilterEventType("all")}
@@ -312,9 +405,9 @@ export default function MetaPage() {
         <div className="text-center py-16">
           <p className="text-fab-muted">No hero data available yet.</p>
           <p className="text-fab-dim text-sm mt-1">
-            {period !== "all"
+            {basePeriod !== "all"
               ? "No data for this time period. Players need to re-import matches for weekly/monthly stats."
-              : filterFormat !== "all" || filterEventType !== "all"
+              : effectiveFormat || effectiveEventType
                 ? "No data for the selected filters. Players need to re-import matches for filtered stats."
                 : "Players need to import matches for meta data to appear."}
           </p>

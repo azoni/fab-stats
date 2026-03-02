@@ -17,9 +17,11 @@ import { searchHeroes } from "@/lib/heroes";
 import { getAllBadgeAssignments, assignBadge, revokeBadge } from "@/lib/badge-service";
 import { getMutedUserIds, muteUser, unmuteUser } from "@/lib/mute-service";
 import { getEventShowcase, saveEventShowcase } from "@/lib/event-showcase";
+import { getSeasons, saveSeasons, slugify } from "@/lib/seasons";
 import { getDefaultTheme, saveDefaultTheme, resetAllUserThemes, THEME_OPTIONS, type ThemeName } from "@/lib/theme-config";
 import { ADMIN_BADGES } from "@/lib/badges";
 import { GameFormat } from "@/types";
+import type { Season } from "@/types";
 import type { EventShowcaseConfig, EventShowcaseImage } from "@/types";
 import type { FeedbackItem, Creator, FeaturedEvent, FeaturedEventPlayer, UserProfile, Poll, PollResults, PollVoter } from "@/types";
 
@@ -122,6 +124,10 @@ export default function AdminPage() {
   const [showcaseDiscussionEnabled, setShowcaseDiscussionEnabled] = useState(false);
   const [savingShowcase, setSavingShowcase] = useState(false);
   const [showcaseSaved, setShowcaseSaved] = useState(false);
+  // Seasons
+  const [seasonsList, setSeasonsList] = useState<Season[]>([]);
+  const [savingSeasons, setSavingSeasons] = useState(false);
+  const [seasonsSaved, setSeasonsSaved] = useState(false);
   // Default theme
   const [defaultTheme, setDefaultTheme] = useState<ThemeName>("grimoire");
   const [savingTheme, setSavingTheme] = useState(false);
@@ -151,7 +157,7 @@ export default function AdminPage() {
     setFetching(true);
     setError("");
     try {
-      const [result, fb, cr, ev, analytics, polls, bannerData, badges, muted, showcaseData, themeDefault, chatStats] = await Promise.all([getAdminDashboardData(), getAllFeedback(), getCreators(), getEvents(), getAnalytics(), getAllPolls(), getBanner(), getAllBadgeAssignments(), getMutedUserIds(), getEventShowcase(), getDefaultTheme(), getChatGlobalStats()]);
+      const [result, fb, cr, ev, analytics, polls, bannerData, badges, muted, showcaseData, themeDefault, chatStats, seasonsData] = await Promise.all([getAdminDashboardData(), getAllFeedback(), getCreators(), getEvents(), getAnalytics(), getAllPolls(), getBanner(), getAllBadgeAssignments(), getMutedUserIds(), getEventShowcase(), getDefaultTheme(), getChatGlobalStats(), getSeasons()]);
       setData(result);
       setAiCost(chatStats);
       setFeedback(fb);
@@ -189,6 +195,7 @@ export default function AdminPage() {
         setShowcaseDiscussionId(showcaseData.discussion?.eventId || "");
         setShowcaseDiscussionEnabled(showcaseData.discussion?.enabled ?? false);
       }
+      setSeasonsList(seasonsData);
     } catch {
       setError("Failed to load admin data.");
     } finally {
@@ -1429,6 +1436,118 @@ export default function AdminPage() {
               {lookupOpen && !lookupLoading && lookupResults.length === 0 && (
                 <p className="mt-2 text-sm text-fab-dim text-center py-3">No events found</p>
               )}
+            </div>
+          </div>
+
+          {/* Seasons Management */}
+          <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden mt-6">
+            <div className="px-4 py-3 border-b border-fab-border flex items-center justify-between">
+              <h2 className="text-sm font-semibold text-fab-text">Seasons ({seasonsList.length})</h2>
+              <div className="flex items-center gap-2">
+                {seasonsSaved && <span className="text-xs text-fab-win">Saved!</span>}
+                <button
+                  onClick={async () => {
+                    setSavingSeasons(true);
+                    setSeasonsSaved(false);
+                    try {
+                      await saveSeasons(seasonsList);
+                      setSeasonsSaved(true);
+                      setTimeout(() => setSeasonsSaved(false), 2000);
+                    } catch {
+                      setError("Failed to save seasons.");
+                    } finally {
+                      setSavingSeasons(false);
+                    }
+                  }}
+                  disabled={savingSeasons}
+                  className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors disabled:opacity-50"
+                >
+                  {savingSeasons ? "Saving..." : "Save Seasons"}
+                </button>
+              </div>
+            </div>
+            <div className="p-4 space-y-3">
+              <p className="text-xs text-fab-dim">Define competitive seasons to aggregate Top 8 data across weeks on the Meta page and homepage spotlight.</p>
+              {seasonsList.map((s, i) => (
+                <div key={i} className="bg-fab-bg border border-fab-border rounded-lg p-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-fab-dim font-medium">Season {i + 1}</span>
+                      {s.active && <span className="text-[10px] text-fab-win font-medium">(Active)</span>}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setSeasonsList((prev) => prev.map((s2, j) => j === i ? { ...s2, active: !s2.active } : s2))}
+                        className={`relative w-8 h-4.5 rounded-full transition-colors ${s.active ? "bg-fab-win" : "bg-fab-border"}`}
+                        title={s.active ? "Deactivate" : "Activate"}
+                      >
+                        <span className={`absolute top-0.5 left-0.5 w-3.5 h-3.5 rounded-full bg-white transition-transform ${s.active ? "translate-x-3.5" : ""}`} />
+                      </button>
+                      <button
+                        onClick={() => setSeasonsList((prev) => prev.filter((_, j) => j !== i))}
+                        className="text-xs text-fab-loss hover:text-fab-loss/80 transition-colors"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <input
+                      type="text"
+                      placeholder="Season Name (e.g. PQ CC Season 1)"
+                      value={s.name}
+                      onChange={(e) => setSeasonsList((prev) => prev.map((s2, j) => j === i ? { ...s2, name: e.target.value, id: slugify(e.target.value) } : s2))}
+                      className="bg-fab-surface border border-fab-border text-fab-text text-sm rounded px-2 py-1.5 focus:outline-none focus:border-fab-gold col-span-2"
+                    />
+                    <div>
+                      <label className="text-[10px] text-fab-dim uppercase tracking-wider mb-0.5 block">Start Date</label>
+                      <input
+                        type="date"
+                        value={s.startDate}
+                        onChange={(e) => setSeasonsList((prev) => prev.map((s2, j) => j === i ? { ...s2, startDate: e.target.value } : s2))}
+                        className="w-full bg-fab-surface border border-fab-border text-fab-text text-sm rounded px-2 py-1.5 focus:outline-none focus:border-fab-gold"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-fab-dim uppercase tracking-wider mb-0.5 block">End Date</label>
+                      <input
+                        type="date"
+                        value={s.endDate}
+                        onChange={(e) => setSeasonsList((prev) => prev.map((s2, j) => j === i ? { ...s2, endDate: e.target.value } : s2))}
+                        className="w-full bg-fab-surface border border-fab-border text-fab-text text-sm rounded px-2 py-1.5 focus:outline-none focus:border-fab-gold"
+                      />
+                    </div>
+                    <select
+                      value={s.format}
+                      onChange={(e) => setSeasonsList((prev) => prev.map((s2, j) => j === i ? { ...s2, format: e.target.value } : s2))}
+                      className="bg-fab-surface border border-fab-border text-fab-text text-sm rounded px-2 py-1.5 focus:outline-none focus:border-fab-gold cursor-pointer"
+                    >
+                      <option value="">Format</option>
+                      {Object.values(GameFormat).map((f) => (
+                        <option key={f} value={f}>{f}</option>
+                      ))}
+                    </select>
+                    <select
+                      value={s.eventType}
+                      onChange={(e) => setSeasonsList((prev) => prev.map((s2, j) => j === i ? { ...s2, eventType: e.target.value } : s2))}
+                      className="bg-fab-surface border border-fab-border text-fab-text text-sm rounded px-2 py-1.5 focus:outline-none focus:border-fab-gold cursor-pointer"
+                    >
+                      <option value="">Event Type</option>
+                      {FEATURED_EVENT_TYPES.map((t) => (
+                        <option key={t} value={t}>{t}</option>
+                      ))}
+                    </select>
+                  </div>
+                  {s.id && <p className="text-[10px] text-fab-dim mt-1.5">ID: {s.id}</p>}
+                </div>
+              ))}
+              <button
+                onClick={() => setSeasonsList((prev) => [...prev, { id: "", name: "", startDate: "", endDate: "", format: "", eventType: "", active: false }])}
+                className="w-full py-2 rounded-lg text-sm font-medium border border-dashed border-fab-border text-fab-muted hover:text-fab-text hover:border-fab-gold/30 transition-colors"
+              >
+                + Add Season
+              </button>
             </div>
           </div>
 
