@@ -49,10 +49,10 @@ interface ShowcaseSectionProps {
   achievements: Achievement[];
 }
 
-// Point system: small=1 (half-width), medium=2 (full-width). Budget = 8.
+// Point system: small=1 (half-width), medium=2 (full-width). Budget = 12.
 // Only achievements stays full-width; everything else is half-width.
 const MEDIUM_TYPES = new Set(["achievements"]);
-const MAX_POINTS = 8;
+const MAX_POINTS = 12;
 
 // Card types that have editable selections
 const EDITABLE_TYPES = new Set<ShowcaseCard["type"]>([
@@ -251,14 +251,31 @@ export function ShowcaseSection({
         </div>
       )}
 
-      {/* Empty state */}
+      {/* Empty state — onboarding for owners */}
       {cards.length === 0 && isOwner && !showPicker && (
-        <div className="bg-fab-surface/50 border border-dashed border-fab-border rounded-lg p-5 text-center">
-          <p className="text-sm text-fab-muted mb-1">Customize your showcase</p>
-          <p className="text-[10px] text-fab-dim mb-3">Pin your best stats, matches, and achievements</p>
-          <button onClick={() => { setIsEditing(true); setShowPicker(true); }} className="px-3 py-1.5 bg-fab-gold/15 text-fab-gold text-xs font-medium rounded-lg hover:bg-fab-gold/25 transition-colors">
-            + Add Card
-          </button>
+        <div className="relative bg-fab-surface/50 border border-dashed border-fab-gold/25 rounded-lg p-6 text-center overflow-hidden">
+          <div className="absolute -top-10 -right-10 w-32 h-32 bg-fab-gold/5 rounded-full blur-2xl pointer-events-none" />
+          <div className="absolute -bottom-8 -left-8 w-24 h-24 bg-fab-gold/5 rounded-full blur-xl pointer-events-none" />
+          <div className="relative">
+            <div className="w-10 h-10 rounded-full bg-fab-gold/15 flex items-center justify-center mx-auto mb-3 ring-1 ring-fab-gold/20">
+              <svg className="w-5 h-5 text-fab-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+              </svg>
+            </div>
+            <h3 className="text-sm font-semibold text-fab-text mb-1">Customize Your Profile</h3>
+            <p className="text-xs text-fab-muted mb-1 max-w-xs mx-auto">
+              Choose what to show on your profile — stats, achievements, event results, rivalries, and more.
+            </p>
+            <p className="text-[10px] text-fab-dim mb-4 max-w-xs mx-auto">
+              Your match data stays private. Only what you add here is visible to others.
+            </p>
+            <button
+              onClick={() => { setIsEditing(true); setShowPicker(true); }}
+              className="px-4 py-2 bg-fab-gold/15 text-fab-gold text-xs font-semibold rounded-lg hover:bg-fab-gold/25 transition-colors ring-1 ring-fab-gold/20"
+            >
+              Set Up Showcase
+            </button>
+          </div>
         </div>
       )}
 

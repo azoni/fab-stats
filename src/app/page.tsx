@@ -140,6 +140,18 @@ export default function Dashboard() {
       {/* Full-width nav bar (logged-in users with matches) */}
       {hasMatches && (
         <div className="flex items-center gap-3 overflow-x-auto scrollbar-hide pb-0.5">
+          {/* My Stats — gold, first position, prominent */}
+          <Link href="/trends" className="group relative flex items-center gap-3 pl-3 pr-6 py-3.5 rounded-2xl shrink-0 overflow-hidden bg-gradient-to-br from-fab-gold/15 via-amber-950/20 to-transparent border border-fab-gold/30 hover:border-fab-gold/50 hover:shadow-[0_0_24px_rgba(201,168,76,0.12)] hover:-translate-y-0.5 transition-all duration-300">
+            <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-fab-gold/50 to-transparent" />
+            <div className="w-11 h-11 rounded-xl bg-fab-gold/15 flex items-center justify-center shrink-0 ring-1 ring-inset ring-fab-gold/30 group-hover:bg-fab-gold/25 group-hover:ring-fab-gold/40 transition-all">
+              <TrendsIcon className="w-5.5 h-5.5 text-fab-gold" />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-fab-gold leading-tight">My Stats</p>
+              <p className="text-[11px] text-fab-gold/60 font-semibold leading-tight">Your numbers</p>
+            </div>
+          </Link>
+
           {/* Matches — crimson combat */}
           <Link href="/matches" className="group relative flex items-center gap-3 pl-3 pr-5 py-3 rounded-2xl shrink-0 overflow-hidden bg-gradient-to-br from-red-500/10 via-red-950/20 to-transparent border border-red-500/20 hover:border-red-400/40 hover:shadow-[0_0_24px_rgba(239,68,68,0.08)] hover:-translate-y-0.5 transition-all duration-300">
             <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-red-400/40 to-transparent" />
@@ -179,18 +191,6 @@ export default function Dashboard() {
               {allOpponentStats.length > 0 && (
                 <p className="text-[11px] text-purple-400/70 font-semibold leading-tight">{allOpponentStats.length}</p>
               )}
-            </div>
-          </Link>
-
-          {/* Trends — emerald growth */}
-          <Link href="/trends" className="group relative flex items-center gap-3 pl-3 pr-5 py-3 rounded-2xl shrink-0 overflow-hidden bg-gradient-to-br from-emerald-500/10 via-emerald-950/20 to-transparent border border-emerald-500/20 hover:border-emerald-400/40 hover:shadow-[0_0_24px_rgba(16,185,129,0.08)] hover:-translate-y-0.5 transition-all duration-300">
-            <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-emerald-400/40 to-transparent" />
-            <div className="w-10 h-10 rounded-xl bg-emerald-500/15 flex items-center justify-center shrink-0 ring-1 ring-inset ring-emerald-500/20 group-hover:bg-emerald-500/20 group-hover:ring-emerald-400/30 transition-all">
-              <TrendsIcon className="w-5 h-5 text-emerald-400" />
-            </div>
-            <div>
-              <p className="text-sm font-bold text-fab-text leading-tight">Trends</p>
-              <p className="text-[11px] text-emerald-400/70 font-semibold leading-tight">Analytics</p>
             </div>
           </Link>
 

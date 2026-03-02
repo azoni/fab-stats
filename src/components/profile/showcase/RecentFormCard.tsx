@@ -1,6 +1,7 @@
 "use client";
 import type { MatchRecord } from "@/types";
 import { MatchResult } from "@/types";
+import { getRoundNumber } from "@/lib/stats";
 
 interface RecentFormCardProps {
   matches: MatchRecord[];
@@ -9,7 +10,11 @@ interface RecentFormCardProps {
 export function RecentFormCard({ matches }: RecentFormCardProps) {
   const recent = [...matches]
     .filter((m) => m.result !== MatchResult.Bye)
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    .sort((a, b) => {
+      const dateDiff = new Date(b.date).getTime() - new Date(a.date).getTime();
+      if (dateDiff !== 0) return dateDiff;
+      return getRoundNumber(b) - getRoundNumber(a);
+    })
     .slice(0, 20);
 
   if (recent.length === 0) return null;

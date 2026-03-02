@@ -64,7 +64,7 @@ const moreLinks: { href: string; label: string; icon: ReactNode; authOnly?: bool
   { href: "/events", label: "Events", icon: <CalendarIcon className="w-4 h-4" /> },
   { href: "/opponents", label: "Opponents", icon: <OpponentsIcon className="w-4 h-4" /> },
   { href: "/compare", label: "Versus", icon: <CompareIcon className="w-4 h-4" /> },
-  { href: "/trends", label: "Trends", icon: <TrendsIcon className="w-4 h-4" />, authOnly: true },
+  { href: "/trends", label: "My Stats", icon: <TrendsIcon className="w-4 h-4" />, authOnly: true },
   { href: "/changelog", label: "Changelog", icon: <ChangelogIcon className="w-4 h-4" /> },
   { href: "/docs", label: "Docs", icon: <DocsIcon className="w-4 h-4" /> },
 ];

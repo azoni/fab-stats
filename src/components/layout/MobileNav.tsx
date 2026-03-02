@@ -131,7 +131,7 @@ const moreSections: { title: string; links: MoreLink[] }[] = [
     links: [
       { href: "/import", label: "Import Matches", icon: <ImportIcon />, authOnly: true },
       { href: "/events", label: "Events", icon: <CalendarIcon /> },
-      { href: "/trends", label: "Trends", icon: <TrendsIcon />, authOnly: true },
+      { href: "/trends", label: "My Stats", icon: <TrendsIcon />, authOnly: true },
     ],
   },
   {
