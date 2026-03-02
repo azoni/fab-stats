@@ -442,18 +442,24 @@ async function saveMessages(
     totalCost: FieldValue.increment(usage.cost),
   }, { merge: true });
 
-  // Update global counter (single doc for admin overview + per-user breakdown)
+  // Update global totals (non-nested fields only — set+merge is safe here)
   const globalRef = db.doc("admin/chatStats");
   batch.set(globalRef, {
     totalMessages: FieldValue.increment(1),
     totalCost: FieldValue.increment(usage.cost),
     totalInputTokens: FieldValue.increment(usage.inputTokens),
     totalOutputTokens: FieldValue.increment(usage.outputTokens),
-    [`users.${userId}.messages`]: FieldValue.increment(1),
-    [`users.${userId}.cost`]: FieldValue.increment(usage.cost),
   }, { merge: true });
 
   await batch.commit();
+
+  // Per-user breakdown: update() interprets dot-notation as nested field paths
+  // (set() treats dots as literal field names, which was the bug)
+  await globalRef.update({
+    [`users.${userId}.messages`]: FieldValue.increment(1),
+    [`users.${userId}.cost`]: FieldValue.increment(usage.cost),
+  });
+
   return assistantRef.id;
 }
 
