@@ -1,7 +1,9 @@
 "use client";
+import { useMemo } from "react";
 import type { ReactNode } from "react";
 import Link from "next/link";
 import type { FeaturedProfile } from "@/lib/featured-profiles";
+import type { Creator } from "@/types";
 import { rankBorderClass } from "@/lib/leaderboard-ranks";
 import { playerHref } from "@/lib/constants";
 
@@ -233,15 +235,53 @@ const SPOTLIGHT_CONFIG: Record<string, { css: string; accent: string; iconBg: st
 
 const DEFAULT_CONFIG = SPOTLIGHT_CONFIG["Most Active"];
 
+const PLATFORM_ICONS: Record<string, ReactNode> = {
+  youtube: (
+    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M23.5 6.2a3 3 0 00-2.1-2.1C19.5 3.5 12 3.5 12 3.5s-7.5 0-9.4.6A3 3 0 00.5 6.2 31.5 31.5 0 000 12a31.5 31.5 0 00.5 5.8 3 3 0 002.1 2.1c1.9.6 9.4.6 9.4.6s7.5 0 9.4-.6a3 3 0 002.1-2.1A31.5 31.5 0 0024 12a31.5 31.5 0 00-.5-5.8zM9.6 15.6V8.4l6.3 3.6-6.3 3.6z" />
+    </svg>
+  ),
+  twitch: (
+    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714z" />
+    </svg>
+  ),
+  twitter: (
+    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+    </svg>
+  ),
+  website: (
+    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9 9 0 100-18 9 9 0 000 18zM3.6 9h16.8M3.6 15h16.8M12 3a15.3 15.3 0 014 9 15.3 15.3 0 01-4 9 15.3 15.3 0 01-4-9 15.3 15.3 0 014-9z" />
+    </svg>
+  ),
+};
+
+const PLATFORM_ACCENT: Record<string, { text: string; bg: string }> = {
+  youtube: { text: "text-red-400", bg: "bg-red-500/15 text-red-400" },
+  twitch: { text: "text-purple-400", bg: "bg-purple-500/15 text-purple-400" },
+  twitter: { text: "text-sky-400", bg: "bg-sky-500/15 text-sky-400" },
+  website: { text: "text-emerald-400", bg: "bg-emerald-500/15 text-emerald-400" },
+};
+
 interface FeaturedProfilesProps {
   profiles: FeaturedProfile[];
+  creators?: Creator[];
   rankMap?: Map<string, 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8>;
   /** Use grid layout (for homepage) instead of vertical list (for sidebar) */
   grid?: boolean;
 }
 
-export function FeaturedProfiles({ profiles, rankMap, grid }: FeaturedProfilesProps) {
-  if (profiles.length === 0) return null;
+export function FeaturedProfiles({ profiles, creators, rankMap, grid }: FeaturedProfilesProps) {
+  // Pick 2 random creators, stable per render
+  const spotlightCreators = useMemo(() => {
+    if (!creators || creators.length === 0) return [];
+    const shuffled = [...creators].sort(() => Math.random() - 0.5);
+    return shuffled.slice(0, 2);
+  }, [creators]);
+
+  if (profiles.length === 0 && spotlightCreators.length === 0) return null;
 
   return (
     <div className="flex flex-col">
@@ -252,8 +292,8 @@ export function FeaturedProfiles({ profiles, rankMap, grid }: FeaturedProfilesPr
           </svg>
         </div>
         <div>
-          <h2 className="text-lg font-semibold text-fab-text leading-tight">Player Spotlight</h2>
-          <p className="text-[10px] text-fab-dim font-medium leading-tight">Community standouts</p>
+          <h2 className="text-lg font-semibold text-fab-text leading-tight">Spotlight</h2>
+          <p className="text-[10px] text-fab-dim font-medium leading-tight">Players & creators</p>
         </div>
       </div>
       <div className={grid ? "space-y-2" : "space-y-2 flex-1"}>
@@ -293,6 +333,41 @@ export function FeaturedProfiles({ profiles, rankMap, grid }: FeaturedProfilesPr
                 {config.icon}
               </div>
             </Link>
+          );
+        })}
+        {spotlightCreators.map((c) => {
+          const accent = PLATFORM_ACCENT[c.platform] || PLATFORM_ACCENT.website;
+          return (
+            <a
+              key={c.name}
+              href={c.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="spotlight-card relative flex items-center gap-3 bg-fab-surface border border-fab-border rounded-lg px-3 py-2.5 hover:bg-fab-surface-hover transition-all group overflow-hidden"
+            >
+              <div className={`absolute top-0 inset-x-0 h-px opacity-40 bg-gradient-to-r from-transparent via-current to-transparent ${accent.text}`} />
+              {c.imageUrl ? (
+                <img src={c.imageUrl} alt="" className="w-8 h-8 rounded-full object-cover shrink-0" />
+              ) : (
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${accent.bg}`}>
+                  {PLATFORM_ICONS[c.platform] || PLATFORM_ICONS.website}
+                </div>
+              )}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <p className="font-semibold text-fab-text truncate text-sm group-hover:text-fab-gold transition-colors">
+                    {c.name}
+                  </p>
+                  <span className={`text-[9px] font-bold uppercase tracking-wider shrink-0 ${accent.text}`}>
+                    Creator
+                  </span>
+                </div>
+                <p className="text-xs text-fab-dim truncate">{c.description}</p>
+              </div>
+              <div className={`w-5 h-5 rounded flex items-center justify-center shrink-0 ${accent.bg}`}>
+                {PLATFORM_ICONS[c.platform] || PLATFORM_ICONS.website}
+              </div>
+            </a>
           );
         })}
       </div>

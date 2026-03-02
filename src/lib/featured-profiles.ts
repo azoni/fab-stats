@@ -201,7 +201,7 @@ export function selectFeaturedProfiles(entries: LeaderboardEntry[]): FeaturedPro
   const shuffled = [...pools].sort(() => Math.random() - 0.5);
 
   for (const pool of shuffled) {
-    if (selected.length >= 6) break;
+    if (selected.length >= 5) break;
     const available = pool.candidates.filter((c) => !usedIds.has(c.userId));
     if (available.length === 0) continue;
 

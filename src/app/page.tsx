@@ -23,6 +23,7 @@ import { MetaSnapshot } from "@/components/home/MetaSnapshot";
 import { OnThisDay } from "@/components/home/OnThisDay";
 import { FeaturedProfiles } from "@/components/home/FeaturedProfiles";
 import { selectFeaturedProfiles } from "@/lib/featured-profiles";
+import { useCreators } from "@/hooks/useCreators";
 import { getUnlockedColors } from "@/lib/comment-format";
 import { getActivePrediction } from "@/lib/polls";
 import { getEventShowcase } from "@/lib/event-showcase";
@@ -34,6 +35,7 @@ export default function Dashboard() {
   const { user, profile } = useAuth();
   const { entries: lbEntries } = useLeaderboard(true);
   const featuredEvents = useFeaturedEvents();
+  const creators = useCreators();
   const [shareCopied, setShareCopied] = useState(false);
   const [bestFinishShareOpen, setBestFinishShareOpen] = useState(false);
   const [profileShareOpen, setProfileShareOpen] = useState(false);
@@ -432,8 +434,8 @@ export default function Dashboard() {
             {/* Quick stats + recent events + player spotlight */}
             <QuickStats overall={overall} last30={last30} />
             <RecentEvents eventStats={eventStats} />
-            {featuredProfiles.length > 0 && (
-              <FeaturedProfiles profiles={featuredProfiles} rankMap={rankMap} grid />
+            {(featuredProfiles.length > 0 || creators.length > 0) && (
+              <FeaturedProfiles profiles={featuredProfiles} creators={creators} rankMap={rankMap} grid />
             )}
           </div>
           <div className="flex flex-col gap-6">
