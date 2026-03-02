@@ -94,12 +94,15 @@ export function ActivityFeed({ rankMap, eventTierMap }: { rankMap?: Map<string, 
       source = source.filter((e) => e.type === typeFilter);
     }
 
-    // Filter out stale events (older than 2 weeks based on event date for placements, createdAt otherwise)
+    // Placements: only show if the event happened within the last 2 weeks
+    // Achievements & imports: no time cutoff — TYPE_CAPS limits are sufficient
     const TWO_WEEKS = 14 * 24 * 60 * 60 * 1000;
-    const cutoff = Date.now() - TWO_WEEKS;
+    const placementCutoff = Date.now() - TWO_WEEKS;
     source = source.filter((e) => {
-      const relevantDate = e.type === "placement" ? e.eventDate : e.createdAt;
-      return new Date(relevantDate).getTime() >= cutoff;
+      if (e.type === "placement") {
+        return new Date(e.eventDate).getTime() >= placementCutoff;
+      }
+      return true;
     });
 
     // Sort by the date the event happened (most recent first)
