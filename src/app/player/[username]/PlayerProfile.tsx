@@ -1,8 +1,8 @@
 "use client";
 import { useState, useEffect, useMemo, useRef } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
-import { getProfileByUsername, getMatchesByUserId, updateProfile } from "@/lib/firestore-storage";
+import { getProfileByUsername, getMatchesByUserId, updateProfile, searchUsernames } from "@/lib/firestore-storage";
 import { BadgeStrip } from "@/components/profile/BadgeStrip";
 import { EmblemDisplay } from "@/components/profile/EmblemDisplay";
 import { EmblemPicker } from "@/components/profile/EmblemPicker";
@@ -50,7 +50,8 @@ type PageState =
 
 export default function PlayerProfile() {
   const pathname = usePathname();
-  const username = pathname.split("/").pop() || "";
+  const router = useRouter();
+  const username = decodeURIComponent(pathname.split("/").pop() || "");
   const [state, setState] = useState<PageState>({ status: "loading" });
   const { isAdmin, user: currentUser, isGuest } = useAuth();
   const { entries: lbEntries } = useLeaderboard();
@@ -147,7 +148,17 @@ export default function PlayerProfile() {
       setState({ status: "loading" });
 
       try {
-        const profile = await getProfileByUsername(username);
+        let profile = await getProfileByUsername(username);
+
+        // Fallback: if not found and looks like a display name (has spaces), search by name
+        if (!profile && username.includes(" ")) {
+          const results = await searchUsernames(username, 1);
+          if (results.length > 0) {
+            router.replace(`/player/${results[0].username}`);
+            return;
+          }
+        }
+
         if (cancelled) return;
         if (!profile) {
           setState({ status: "not_found" });
