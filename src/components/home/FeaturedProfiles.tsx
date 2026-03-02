@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import type { FeaturedProfile } from "@/lib/featured-profiles";
 import { rankBorderClass } from "@/lib/leaderboard-ranks";
+import { playerHref } from "@/lib/constants";
 
 const SPOTLIGHT_CONFIG: Record<string, { css: string; accent: string; iconBg: string; icon: ReactNode }> = {
   "Hot Streak": {
@@ -261,7 +262,7 @@ export function FeaturedProfiles({ profiles, rankMap, grid }: FeaturedProfilesPr
           return (
             <Link
               key={fp.entry.userId}
-              href={`/player/${fp.entry.username}`}
+              href={playerHref(fp.entry.username)}
               className={`spotlight-card ${config.css} relative flex items-center gap-3 bg-fab-surface border border-fab-border rounded-lg px-3 py-2.5 hover:bg-fab-surface-hover transition-all group overflow-hidden`}
             >
               {/* Subtle pitch strip accent */}

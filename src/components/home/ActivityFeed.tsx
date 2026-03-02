@@ -8,6 +8,7 @@ import { useFavorites } from "@/hooks/useFavorites";
 import { useAuth } from "@/contexts/AuthContext";
 import { groupConsecutiveEvents, GroupedFeedCard } from "@/components/feed/FeedCard";
 import { getActivityFeed, ACTIVITY_LABELS, type ActivityEvent } from "@/lib/activity-log";
+import { playerHref } from "@/lib/constants";
 import type { FeedEvent } from "@/types";
 
 type ScopeTab = "community" | "friends";
@@ -216,7 +217,7 @@ export function ActivityFeed({ rankMap, eventTierMap }: { rankMap?: Map<string, 
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-[11px] text-fab-muted">
-                          <Link href={`/player/${ev.username}`} className="font-semibold text-fab-text hover:text-fab-gold transition-colors">
+                          <Link href={playerHref(ev.username)} className="font-semibold text-fab-text hover:text-fab-gold transition-colors">
                             {ev.username}
                           </Link>
                           {" "}{ACTIVITY_LABELS[ev.action] || ev.action}

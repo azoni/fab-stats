@@ -10,6 +10,7 @@ import { getWeekStart, getMonthStart } from "@/lib/leaderboard";
 import { countQualifyingTabs, computeUserRanks, computeUserRanksByTab, type LeaderboardRank } from "@/lib/leaderboard-ranks";
 import { computePowerLevel, getPowerTier } from "@/lib/power-level";
 import { TrophyIcon } from "@/components/icons/NavIcons";
+import { playerHref } from "@/lib/constants";
 import type { LeaderboardEntry, OpponentStats } from "@/types";
 
 const SITE_CREATOR = "azoni";
@@ -662,7 +663,7 @@ export default function LeaderboardPage() {
                 return (
                   <Link
                     key={entry.userId}
-                    href={`/player/${entry.username}`}
+                    href={playerHref(entry.username)}
                     className={`flex flex-col items-center text-center rounded-xl transition-all hover:scale-[1.02] ${
                       isCenter ? "pt-4 pb-5 px-3" : "pt-6 pb-4 px-3 mt-4"
                     } ${
@@ -835,7 +836,7 @@ function LeaderboardRow({
   return (
     <Link
       id={`lb-row-${entry.userId}`}
-      href={`/player/${entry.username}`}
+      href={playerHref(entry.username)}
       className={`flex items-center gap-3 rounded-lg px-4 py-3 hover:border-fab-gold/30 transition-colors ${cardClass} ${isMe ? "ring-1 ring-fab-gold/30" : ""}`}
     >
       {/* Rank */}

@@ -3,6 +3,7 @@ import { Suspense, useState, useEffect, useMemo, useCallback } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { searchUsernames, getProfile } from "@/lib/firestore-storage";
+import { playerHref } from "@/lib/constants";
 import { useAuth } from "@/contexts/AuthContext";
 import { useFeed } from "@/hooks/useFeed";
 import { useFriends } from "@/hooks/useFriends";
@@ -248,7 +249,7 @@ function SearchContent() {
           {results.map((r) => (
             <Link
               key={r.username}
-              href={`/player/${r.username}`}
+              href={playerHref(r.username)}
               className="block bg-fab-surface border border-fab-border rounded-lg p-4 hover:bg-fab-surface-hover transition-colors"
             >
               <div className="flex items-center gap-3">

@@ -3,7 +3,7 @@ import Link from "next/link";
 import { getHeroByName } from "@/lib/heroes";
 import { HeroClassIcon } from "@/components/heroes/HeroClassIcon";
 import type { FeaturedEvent, LeaderboardEntry } from "@/types";
-import { localDate } from "@/lib/constants";
+import { localDate, playerHref } from "@/lib/constants";
 
 // Tournament bracket placements: 1st, 2nd, 3-4th, 5-8th
 const BRACKET_PLACEMENT = [1, 2, 3, 3, 5, 5, 5, 5];
@@ -90,7 +90,7 @@ export function TournamentCard({ event, entryMap, fullImage }: TournamentCardPro
 
                   {lbEntry ? (
                     <Link
-                      href={`/player/${player.username}`}
+                      href={playerHref(player.username!)}
                       className="flex items-center gap-2 min-w-0 flex-1 hover:opacity-80 transition-opacity"
                     >
                       {lbEntry.photoUrl ? (

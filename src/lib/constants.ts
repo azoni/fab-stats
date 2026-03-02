@@ -1,6 +1,15 @@
 export const STORAGE_KEY = "fab-stats-data";
 export const CURRENT_VERSION = 1;
 
+/** Valid username slug pattern (lowercase alphanumeric, underscores, hyphens). */
+const VALID_USERNAME = /^[a-z0-9_-]+$/i;
+
+/** Returns the correct href for a player link. Invalid usernames redirect to search. */
+export function playerHref(username: string): string {
+  if (VALID_USERNAME.test(username)) return `/player/${username}`;
+  return `/search?q=${encodeURIComponent(username)}`;
+}
+
 /**
  * Parse a date string as local time.
  * Date-only strings like "2024-01-15" are parsed by JS as UTC midnight,

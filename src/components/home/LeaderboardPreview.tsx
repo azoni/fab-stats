@@ -2,6 +2,7 @@
 import Link from "next/link";
 import type { LeaderboardEntry } from "@/types";
 import { rankBorderClass } from "@/lib/leaderboard-ranks";
+import { playerHref } from "@/lib/constants";
 
 interface LeaderboardPreviewProps {
   entries: LeaderboardEntry[];
@@ -32,7 +33,7 @@ export function LeaderboardPreview({ entries, rankMap }: LeaderboardPreviewProps
         {top5.map((entry, i) => (
           <Link
             key={entry.userId}
-            href={`/player/${entry.username}`}
+            href={playerHref(entry.username)}
             className="flex items-center gap-3 px-4 py-2.5 hover:bg-fab-surface-hover transition-colors"
           >
             <span className="text-sm font-bold w-5 text-center text-fab-dim">{i + 1}</span>
