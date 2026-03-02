@@ -32,6 +32,19 @@ const badgeLabels: Record<ChangeType, string> = {
 
 const changelog: Entry[] = [
   {
+    date: "March 2, 2026",
+    id: "mar-2",
+    changes: [
+      { type: "new", text: "Roadmap page — public todo list for planned features and known issues, accessible from the More menu" },
+      { type: "improved", text: "Activity feed now sorted by upload time instead of event date — newly imported placements appear at the top" },
+      { type: "improved", text: "Event date displayed above placement cards in the activity feed for better scannability" },
+      { type: "improved", text: "On This Day moved above profile card on homepage" },
+      { type: "improved", text: "Share profile card now shows site creator crown, content creator badge, first-match badge, and talent/class emblems" },
+      { type: "improved", text: "Engagement tab shows 10 items per page (up from 5)" },
+      { type: "fixed", text: "Event dates no longer shift back a day due to timezone parsing — dates now parsed in UTC" },
+    ],
+  },
+  {
     date: "March 1, 2026",
     id: "mar-1",
     changes: [

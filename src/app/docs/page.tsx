@@ -28,6 +28,7 @@ const TOC = [
   { id: "community-meta", label: "Community Meta" },
   { id: "tournaments", label: "Tournaments" },
   { id: "privacy", label: "Privacy" },
+  { id: "roadmap", label: "Roadmap" },
 ];
 
 export default function DocsPage() {
@@ -755,6 +756,16 @@ export default function DocsPage() {
                 aren&apos;t logged in. Disabled by default.
               </p>
             </div>
+          </section>
+
+          {/* ─── Roadmap ─── */}
+          <section id="roadmap">
+            <h2 className="text-xl font-semibold text-fab-text mb-3 pb-2 border-b border-fab-border">Roadmap</h2>
+            <p className="text-sm text-fab-muted">
+              Check out the <Link href="/roadmap" className="text-fab-gold hover:underline">Roadmap</Link> page
+              for a public list of planned features, improvements, and fixes. Items are added and removed as
+              development progresses.
+            </p>
           </section>
         </div>
 
