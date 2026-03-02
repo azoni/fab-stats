@@ -52,20 +52,11 @@ export const metadata: Metadata = {
     siteName: SITE_NAME,
     title: "FaB Stats - Flesh and Blood Match Tracker",
     description: SITE_DESCRIPTION,
-    images: [
-      {
-        url: "/og-image.png",
-        width: 1200,
-        height: 630,
-        alt: "FaB Stats - Track your Flesh and Blood match history",
-      },
-    ],
   },
   twitter: {
-    card: "summary_large_image",
+    card: "summary",
     title: "FaB Stats - Flesh and Blood Match Tracker",
     description: SITE_DESCRIPTION,
-    images: ["/og-image.png"],
   },
   keywords: [
     "Flesh and Blood",
