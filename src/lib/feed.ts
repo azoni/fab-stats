@@ -93,6 +93,18 @@ export async function createPlacementFeedEvent(
 ): Promise<void> {
   if (!profile.isPublic || profile.hideFromFeed) return;
 
+  // Dedup: skip if this user already has a placement event for this event+date
+  const dupCheck = query(
+    feedCollection(),
+    where("userId", "==", profile.uid),
+    where("type", "==", "placement"),
+    where("eventDate", "==", finish.eventDate),
+    where("eventName", "==", finish.eventName),
+    limit(1),
+  );
+  const existing = await getDocs(dupCheck);
+  if (!existing.empty) return;
+
   const data: Omit<PlacementFeedEvent, "id"> = {
     type: "placement",
     userId: profile.uid,

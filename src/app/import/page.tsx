@@ -345,15 +345,11 @@ export default function ImportPage() {
         registerGemId(user.uid, pasteResult.extensionMeta.userGemId).catch(() => {});
       }
 
-      // Achievement + placement feed events (non-blocking, gated by 14-day freshness)
-      const newestDate = Math.max(...matches.map((m) => new Date(m.date).getTime()));
-      const isFresh = Date.now() - newestDate <= 14 * 86400000;
-      if (isFresh) {
-        for (const finish of freshFinishes) {
-          const eventMatches = afterMatches.filter((m) => getEventName(m) === finish.eventName && m.date === finish.eventDate);
-          const hero = eventMatches[0]?.heroPlayed;
-          createPlacementFeedEvent(profile, finish, hero).catch(() => {});
-        }
+      // Placement feed events (non-blocking, dedup handled in createPlacementFeedEvent)
+      for (const finish of freshFinishes) {
+        const eventMatches = afterMatches.filter((m) => getEventName(m) === finish.eventName && m.date === finish.eventDate);
+        const hero = eventMatches[0]?.heroPlayed;
+        createPlacementFeedEvent(profile, finish, hero).catch(() => {});
       }
 
       // Cross-player match linking + H2H precomputation (non-blocking)
