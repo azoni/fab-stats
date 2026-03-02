@@ -153,6 +153,7 @@ export interface ShowcaseCard {
   stat?: string;
   filter?: string;
   sortBy?: "mostPlayed" | "bestWinRate";
+  selectedItems?: string[];
 }
 
 export interface EventStats {

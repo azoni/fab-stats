@@ -24,6 +24,7 @@ import {
   StatPicker,
 } from "./showcase/CardPicker";
 import type { ShowcaseCard, UserProfile, MatchRecord, HeroStats, EventStats, OpponentStats, OverallStats, Achievement } from "@/types";
+import { MatchResult } from "@/types";
 import type { HeroMastery } from "@/types";
 
 interface PlayoffFinishData {
@@ -362,9 +363,10 @@ function InlineCardEditor({ card, index, onReplace, onCancel, matches, heroStats
           <StatPicker onSelect={(stat, filter) => onReplace(index, { type: "statHighlight", stat, filter })} />
         )}
         {(card.type === "formatMastery" || card.type === "eventTypeMastery") && (
-          <SortPicker
-            current={card.sortBy || "mostPlayed"}
-            onSelect={(sortBy) => onReplace(index, { type: card.type, sortBy })}
+          <MasteryEditor
+            card={card}
+            matches={matches}
+            onSave={(sortBy, selectedItems) => onReplace(index, { type: card.type, sortBy, selectedItems: selectedItems.length > 0 ? selectedItems : undefined })}
           />
         )}
       </div>
@@ -381,35 +383,112 @@ function InlineCardEditor({ card, index, onReplace, onCancel, matches, heroStats
   );
 }
 
-// ── Sort Picker ──
+// ── Mastery Editor (format/event type item selection + sort) ──
 
-function SortPicker({ current, onSelect }: { current: "mostPlayed" | "bestWinRate"; onSelect: (sortBy: "mostPlayed" | "bestWinRate") => void }) {
-  const options: { key: "mostPlayed" | "bestWinRate"; label: string }[] = [
-    { key: "mostPlayed", label: "Most Played" },
-    { key: "bestWinRate", label: "Best Win Rate" },
-  ];
+function MasteryEditor({ card, matches, onSave }: {
+  card: ShowcaseCard;
+  matches: MatchRecord[];
+  onSave: (sortBy: "mostPlayed" | "bestWinRate", selectedItems: string[]) => void;
+}) {
+  const [sortBy, setSortBy] = useState<"mostPlayed" | "bestWinRate">(card.sortBy || "mostPlayed");
+  const [selected, setSelected] = useState<Set<string>>(() => new Set(card.selectedItems || []));
+
+  // Compute all available items from match data
+  const allItems = useMemo(() => {
+    const map = new Map<string, { matches: number; wins: number }>();
+    for (const m of matches) {
+      if (m.result === MatchResult.Bye) continue;
+      const key = card.type === "formatMastery" ? m.format : getEditorEventType(m);
+      const cur = map.get(key) || { matches: 0, wins: 0 };
+      cur.matches++;
+      if (m.result === MatchResult.Win) cur.wins++;
+      map.set(key, cur);
+    }
+    return [...map.entries()]
+      .map(([name, data]) => ({
+        name,
+        matches: data.matches,
+        winRate: data.matches > 0 ? (data.wins / data.matches) * 100 : 0,
+      }))
+      .sort((a, b) => b.matches - a.matches);
+  }, [matches, card.type]);
+
+  function toggle(name: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(name)) next.delete(name);
+      else if (next.size < 8) next.add(name);
+      return next;
+    });
+  }
+
   return (
-    <>
-      {options.map((opt) => (
-        <button
-          key={opt.key}
-          onClick={() => onSelect(opt.key)}
-          className={`w-full flex items-center gap-2 p-1.5 rounded text-left transition-colors ${
-            current === opt.key ? "bg-fab-gold/15 ring-1 ring-fab-gold/30" : "hover:bg-fab-surface-hover"
-          }`}
-        >
-          {current === opt.key ? (
-            <svg className="w-3.5 h-3.5 text-fab-gold shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-            </svg>
-          ) : (
-            <div className="w-3.5 h-3.5 rounded-full border border-fab-border shrink-0" />
-          )}
-          <span className="text-[10px] text-fab-text">{opt.label}</span>
-        </button>
-      ))}
-    </>
+    <div className="space-y-2">
+      {/* Sort toggle */}
+      <div className="flex gap-1">
+        {(["mostPlayed", "bestWinRate"] as const).map((opt) => (
+          <button
+            key={opt}
+            onClick={() => setSortBy(opt)}
+            className={`flex-1 text-[9px] font-medium py-1 rounded transition-colors ${
+              sortBy === opt ? "bg-fab-gold/15 text-fab-gold ring-1 ring-fab-gold/30" : "text-fab-dim hover:text-fab-muted"
+            }`}
+          >
+            {opt === "mostPlayed" ? "Most Played" : "Best Win Rate"}
+          </button>
+        ))}
+      </div>
+
+      {/* Item checkboxes */}
+      <p className="text-[8px] text-fab-dim">Select which to show (leave empty for top 8):</p>
+      {allItems.map((item) => {
+        const isSelected = selected.has(item.name);
+        return (
+          <button
+            key={item.name}
+            onClick={() => toggle(item.name)}
+            className={`w-full flex items-center gap-2 p-1.5 rounded text-left transition-colors ${
+              isSelected ? "bg-fab-gold/10 ring-1 ring-fab-gold/20" : "hover:bg-fab-surface-hover"
+            }`}
+          >
+            {isSelected ? (
+              <svg className="w-3.5 h-3.5 text-fab-gold shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+            ) : (
+              <div className="w-3.5 h-3.5 rounded border border-fab-border shrink-0" />
+            )}
+            <span className="text-[10px] text-fab-text truncate flex-1">{item.name}</span>
+            <span className="text-[9px] text-fab-dim">{item.matches}m</span>
+            <span className={`text-[9px] font-medium ${item.winRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>{item.winRate.toFixed(0)}%</span>
+          </button>
+        );
+      })}
+
+      {/* Save button */}
+      <button
+        onClick={() => onSave(sortBy, [...selected])}
+        className="w-full mt-1 px-3 py-1.5 bg-fab-gold/15 text-fab-gold text-xs font-medium rounded-lg hover:bg-fab-gold/25 transition-colors"
+      >
+        Save{selected.size > 0 ? ` (${selected.size} selected)` : ""}
+      </button>
+    </div>
   );
+}
+
+// Helper to get event type for editor (mirrors EventTypeMasteryCard logic)
+function getEditorEventType(match: MatchRecord): string {
+  if (match.eventType) return match.eventType;
+  const notes = match.notes?.split("|")[0]?.trim().toLowerCase() || "";
+  if (notes.includes("armory")) return "Armory";
+  if (notes.includes("skirmish")) return "Skirmish";
+  if (notes.includes("proquest")) return "ProQuest";
+  if (notes.includes("battle hardened")) return "Battle Hardened";
+  if (notes.includes("calling")) return "The Calling";
+  if (notes.includes("national")) return "Nationals";
+  if (notes.includes("pro tour")) return "Pro Tour";
+  if (notes.includes("rtn") || notes.includes("road to nationals")) return "RTN";
+  return "Other";
 }
 
 // ── Card Renderer ──
@@ -453,9 +532,9 @@ function ShowcaseCardRenderer({ card, matches, heroStats, masteries, eventStats,
     case "statHighlight":
       return <StatHighlightCard stat={(card.stat || "winRate") as "winRate" | "totalMatches" | "longestWinStreak" | "uniqueHeroes" | "uniqueOpponents" | "eventsPlayed"} filter={card.filter} overall={overall} heroStats={heroStats} eventStats={eventStats} opponentCount={opponentStats.length} />;
     case "formatMastery":
-      return <FormatMasteryCard matches={matches} sortBy={card.sortBy} />;
+      return <FormatMasteryCard matches={matches} sortBy={card.sortBy} selectedItems={card.selectedItems} />;
     case "eventTypeMastery":
-      return <EventTypeMasteryCard matches={matches} sortBy={card.sortBy} />;
+      return <EventTypeMasteryCard matches={matches} sortBy={card.sortBy} selectedItems={card.selectedItems} />;
     case "streakShowcase":
       return <StreakShowcaseCard overall={overall} matches={matches} />;
     case "recentForm":

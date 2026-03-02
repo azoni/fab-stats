@@ -5,6 +5,7 @@ import { MatchResult } from "@/types";
 interface FormatMasteryCardProps {
   matches: MatchRecord[];
   sortBy?: "mostPlayed" | "bestWinRate";
+  selectedItems?: string[];
 }
 
 interface FormatData {
@@ -14,7 +15,7 @@ interface FormatData {
   winRate: number;
 }
 
-export function FormatMasteryCard({ matches, sortBy = "mostPlayed" }: FormatMasteryCardProps) {
+export function FormatMasteryCard({ matches, sortBy = "mostPlayed", selectedItems }: FormatMasteryCardProps) {
   const formatMap = new Map<string, { matches: number; wins: number }>();
   for (const m of matches) {
     if (m.result === MatchResult.Bye) continue;
@@ -24,15 +25,18 @@ export function FormatMasteryCard({ matches, sortBy = "mostPlayed" }: FormatMast
     formatMap.set(m.format, cur);
   }
 
-  const formats: FormatData[] = [...formatMap.entries()]
+  const allFormats: FormatData[] = [...formatMap.entries()]
     .map(([format, data]) => ({
       format,
       matches: data.matches,
       wins: data.wins,
       winRate: data.matches > 0 ? (data.wins / data.matches) * 100 : 0,
     }))
-    .sort((a, b) => sortBy === "bestWinRate" ? b.winRate - a.winRate || b.matches - a.matches : b.matches - a.matches)
-    .slice(0, 8);
+    .sort((a, b) => sortBy === "bestWinRate" ? b.winRate - a.winRate || b.matches - a.matches : b.matches - a.matches);
+
+  const formats = selectedItems && selectedItems.length > 0
+    ? allFormats.filter((f) => selectedItems.includes(f.format))
+    : allFormats.slice(0, 8);
 
   if (formats.length === 0) return null;
   const maxMatches = Math.max(...formats.map((f) => f.matches));

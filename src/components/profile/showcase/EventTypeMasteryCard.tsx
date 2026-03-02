@@ -5,6 +5,7 @@ import { MatchResult } from "@/types";
 interface EventTypeMasteryCardProps {
   matches: MatchRecord[];
   sortBy?: "mostPlayed" | "bestWinRate";
+  selectedItems?: string[];
 }
 
 interface EventTypeData {
@@ -28,7 +29,7 @@ function getEventType(match: MatchRecord): string {
   return "Other";
 }
 
-export function EventTypeMasteryCard({ matches, sortBy = "mostPlayed" }: EventTypeMasteryCardProps) {
+export function EventTypeMasteryCard({ matches, sortBy = "mostPlayed", selectedItems }: EventTypeMasteryCardProps) {
   const typeMap = new Map<string, { matches: number; wins: number }>();
   for (const m of matches) {
     if (m.result === MatchResult.Bye) continue;
@@ -39,15 +40,18 @@ export function EventTypeMasteryCard({ matches, sortBy = "mostPlayed" }: EventTy
     typeMap.set(et, cur);
   }
 
-  const types: EventTypeData[] = [...typeMap.entries()]
+  const allTypes: EventTypeData[] = [...typeMap.entries()]
     .map(([eventType, data]) => ({
       eventType,
       matches: data.matches,
       wins: data.wins,
       winRate: data.matches > 0 ? (data.wins / data.matches) * 100 : 0,
     }))
-    .sort((a, b) => sortBy === "bestWinRate" ? b.winRate - a.winRate || b.matches - a.matches : b.matches - a.matches)
-    .slice(0, 8);
+    .sort((a, b) => sortBy === "bestWinRate" ? b.winRate - a.winRate || b.matches - a.matches : b.matches - a.matches);
+
+  const types = selectedItems && selectedItems.length > 0
+    ? allTypes.filter((t) => selectedItems.includes(t.eventType))
+    : allTypes.slice(0, 8);
 
   if (types.length === 0) return null;
   const maxMatches = Math.max(...types.map((t) => t.matches));
