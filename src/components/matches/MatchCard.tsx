@@ -5,6 +5,7 @@ import { CommentSection } from "@/components/comments/CommentSection";
 import { HeroSelect } from "@/components/heroes/HeroSelect";
 import { getHeroByName } from "@/lib/heroes";
 import { HeroClassIcon } from "@/components/heroes/HeroClassIcon";
+import { HeroAvatar } from "@/components/heroes/HeroAvatar";
 import { MatchResult, type MatchRecord } from "@/types";
 import { localDate } from "@/lib/constants";
 
@@ -131,17 +132,13 @@ export function MatchCard({ match, matchOwnerUid, enableComments = false, obfusc
           {(hasHero || hasOppHero) && !editing && (
             <div className="hidden sm:flex items-center gap-1.5 shrink-0">
               {hasHero && heroInfo && (
-                <div title={match.heroPlayed!}>
-                  <HeroClassIcon heroClass={heroInfo.classes[0]} size="sm" />
-                </div>
+                <HeroAvatar heroName={match.heroPlayed!} heroClass={heroInfo.classes[0]} size="sm" />
               )}
               {hasHero && hasOppHero && (
                 <span className="text-[10px] text-fab-dim">vs</span>
               )}
               {hasOppHero && oppHeroInfo && (
-                <div title={match.opponentHero!}>
-                  <HeroClassIcon heroClass={oppHeroInfo.classes[0]} size="sm" />
-                </div>
+                <HeroAvatar heroName={match.opponentHero!} heroClass={oppHeroInfo.classes[0]} size="sm" />
               )}
               {editable && onUpdateMatch && (
                 <button onClick={startEditing} className="ml-0.5 text-fab-dim hover:text-fab-gold transition-colors" title="Edit heroes">
@@ -158,19 +155,13 @@ export function MatchCard({ match, matchOwnerUid, enableComments = false, obfusc
         {(hasHero || hasOppHero) && !editing && (
           <div className="flex sm:hidden items-center gap-1.5 mt-1">
             {hasHero && heroInfo && (
-              <div className="flex items-center gap-1">
-                <HeroClassIcon heroClass={heroInfo.classes[0]} size="sm" />
-                <span className="text-xs text-fab-muted">{match.heroPlayed}</span>
-              </div>
+              <HeroAvatar heroName={match.heroPlayed!} heroClass={heroInfo.classes[0]} size="sm" />
             )}
             {hasHero && hasOppHero && (
               <span className="text-xs text-fab-dim">vs</span>
             )}
             {hasOppHero && oppHeroInfo && (
-              <div className="flex items-center gap-1">
-                <HeroClassIcon heroClass={oppHeroInfo.classes[0]} size="sm" />
-                <span className="text-xs text-fab-muted">{match.opponentHero}</span>
-              </div>
+              <HeroAvatar heroName={match.opponentHero!} heroClass={oppHeroInfo.classes[0]} size="sm" />
             )}
             {editable && onUpdateMatch && (
               <button onClick={startEditing} className="ml-1 text-fab-dim hover:text-fab-gold transition-colors" title="Edit heroes">

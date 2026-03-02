@@ -501,3 +501,17 @@ export interface EventShowcaseImage {
   url: string;
   alt?: string;
 }
+
+// ── Community Hero Matchups ──
+
+export interface HeroMatchupDoc {
+  hero1: string;
+  hero2: string;
+  month: string;
+  hero1Wins: number;
+  hero2Wins: number;
+  draws: number;
+  total: number;
+  byFormat?: Record<string, { hero1Wins: number; hero2Wins: number; draws: number; total: number }>;
+  updatedAt: string;
+}

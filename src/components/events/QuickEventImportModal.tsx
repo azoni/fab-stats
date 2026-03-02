@@ -11,6 +11,7 @@ import { evaluateAchievements } from "@/lib/achievements";
 import { computeOverallStats, computeHeroStats, computeOpponentStats, computeEventStats, computePlayoffFinishes, getEventName } from "@/lib/stats";
 import { updateLeaderboardEntry } from "@/lib/leaderboard";
 import { computeH2HForUser } from "@/lib/h2h";
+import { updateCommunityHeroMatchups } from "@/lib/hero-matchups";
 import { allHeroes } from "@/lib/heroes";
 import { MatchResult, type MatchRecord } from "@/types";
 import { localDate } from "@/lib/constants";
@@ -183,6 +184,7 @@ export function QuickEventImportModal({ open, onClose, onImportComplete }: Quick
         .then((allMatches) => {
           updateLeaderboardEntry(profile, allMatches);
           computeH2HForUser(user.uid, allMatches);
+          updateCommunityHeroMatchups(user.uid, allMatches);
 
           // Achievement + placement feed events (non-blocking)
           const importedMatches = parsedEvent?.matches || [];

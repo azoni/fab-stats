@@ -150,7 +150,7 @@ const ICONS: Record<string, ReactNode> = {
 
 const DEFAULT_ICON = ICONS.Warrior;
 
-const CLASS_COLORS: Record<string, { bg: string; text: string }> = {
+export const CLASS_COLORS: Record<string, { bg: string; text: string }> = {
   Warrior:       { bg: "bg-red-900/40",     text: "text-red-400" },
   Ninja:         { bg: "bg-indigo-900/40",  text: "text-indigo-400" },
   Brute:         { bg: "bg-orange-900/40",  text: "text-orange-400" },

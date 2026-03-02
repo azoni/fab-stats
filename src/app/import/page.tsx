@@ -11,6 +11,7 @@ import { evaluateAchievements } from "@/lib/achievements";
 import { computeOverallStats, computeHeroStats, computeOpponentStats, computeEventStats, computePlayoffFinishes, getEventName, type PlayoffFinish } from "@/lib/stats";
 import { linkMatchesWithOpponents } from "@/lib/match-linking";
 import { computeH2HForUser } from "@/lib/h2h";
+import { updateCommunityHeroMatchups } from "@/lib/hero-matchups";
 import type { GemMetadata } from "@/lib/gem-import";
 import { updateLeaderboardEntry } from "@/lib/leaderboard";
 import { getMatchesByUserId } from "@/lib/firestore-storage";
@@ -352,11 +353,12 @@ export default function ImportPage() {
         createPlacementFeedEvent(profile, finish, hero).catch(() => {});
       }
 
-      // Cross-player match linking + H2H precomputation (non-blocking)
+      // Cross-player match linking + H2H + community matchups (non-blocking)
       getMatchesByUserId(user.uid)
         .then((allMatches) => {
           linkMatchesWithOpponents(user.uid, allMatches);
           computeH2HForUser(user.uid, allMatches);
+          updateCommunityHeroMatchups(user.uid, allMatches);
         })
         .catch(() => {});
     }
