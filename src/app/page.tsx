@@ -412,9 +412,9 @@ export default function Dashboard() {
                 </div>
               </div>
             </div>
-            {/* Recent events + quick stats */}
+            {/* Quick stats + recent events */}
+            <QuickStats overall={overall} last30={last30} />
             <RecentEvents eventStats={eventStats} />
-            <QuickStats overall={overall} playoffFinishes={playoffFinishes} last30={last30} />
           </div>
           <div className="flex flex-col gap-6">
             <MetaSnapshot topHeroes={communityTopHeroes} top8Heroes={top8Heroes} activeEventType={activeEventType} seasonName={currentSeason?.name} seasonWeeks={seasonWeeks} selectedWeek={selectedWeek} onWeekChange={setSelectedWeek} backgroundImage={currentSeason?.backgroundImage} />

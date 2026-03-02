@@ -1,30 +1,13 @@
 "use client";
 import { MatchResult } from "@/types";
 import type { OverallStats, MatchRecord } from "@/types";
-import type { PlayoffFinish } from "@/lib/stats";
-
-const TIER_COLORS: Record<string, { text: string; bg: string; border: string }> = {
-  Worlds: { text: "text-yellow-400", bg: "bg-yellow-400/10", border: "border-yellow-400/25" },
-  "Pro Tour": { text: "text-purple-400", bg: "bg-purple-400/10", border: "border-purple-400/25" },
-  Nationals: { text: "text-red-400", bg: "bg-red-400/10", border: "border-red-400/25" },
-  "The Calling": { text: "text-blue-400", bg: "bg-blue-400/10", border: "border-blue-400/25" },
-  "Battle Hardened": { text: "text-orange-400", bg: "bg-orange-400/10", border: "border-orange-400/25" },
-};
-
-const PLACEMENT_LABELS: Record<string, string> = {
-  champion: "Champion",
-  finalist: "Finalist",
-  top4: "Top 4",
-  top8: "Top 8",
-};
 
 interface QuickStatsProps {
   overall: OverallStats;
-  playoffFinishes: PlayoffFinish[];
   last30: MatchRecord[];
 }
 
-export function QuickStats({ overall, playoffFinishes, last30 }: QuickStatsProps) {
+export function QuickStats({ overall, last30 }: QuickStatsProps) {
   const { streaks } = overall;
   // Last 15 non-bye matches for form dots
   const formMatches = last30.filter((m) => m.result !== MatchResult.Bye).slice(-15);
@@ -82,7 +65,7 @@ export function QuickStats({ overall, playoffFinishes, last30 }: QuickStatsProps
 
       {/* Recent Form */}
       {formMatches.length > 0 && (
-        <div className="mb-4">
+        <div>
           <p className="text-[10px] text-fab-dim mb-1.5">Recent Form</p>
           <div className="flex items-center gap-1">
             {formMatches.map((m, i) => (
@@ -98,26 +81,6 @@ export function QuickStats({ overall, playoffFinishes, last30 }: QuickStatsProps
                 title={`${m.result}${m.opponentName ? ` vs ${m.opponentName}` : ""}`}
               />
             ))}
-          </div>
-        </div>
-      )}
-
-      {/* Best Finishes */}
-      {playoffFinishes.length > 0 && (
-        <div>
-          <p className="text-[10px] text-fab-dim mb-1.5">Best Finishes</p>
-          <div className="space-y-1">
-            {playoffFinishes.slice(0, 3).map((f) => {
-              const colors = TIER_COLORS[f.eventType] || { text: "text-fab-muted", bg: "bg-fab-bg", border: "border-fab-border" };
-              return (
-                <div key={`${f.eventName}-${f.eventDate}`} className="flex items-center gap-2">
-                  <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${colors.text} ${colors.bg} ${colors.border}`}>
-                    {PLACEMENT_LABELS[f.type] || f.type}
-                  </span>
-                  <span className="text-[11px] text-fab-muted truncate">{f.eventName}</span>
-                </div>
-              );
-            })}
           </div>
         </div>
       )}
