@@ -481,7 +481,7 @@ export default function AdminPage() {
                   return Math.round((withWr.reduce((s, u) => s + (u.winRate ?? 0), 0) / withWr.length) * 10) / 10;
                 })()} subtext="players with 10+ matches" suffix="%" />
                 <button onClick={() => { setActiveTab("users"); setStatusFilter("chat"); }} className="text-left">
-                  <MetricCard label="AI Chat Cost" value={aiCost.totalCost.toFixed(2)} prefix="$" subtext={`${aiCost.totalMessages} msgs · ${Object.keys(aiCost.users).length} users`} />
+                  <MetricCard label="AI Chat Cost" value={aiCost.totalCost.toFixed(4)} prefix="$" subtext={`${aiCost.totalMessages} msgs · ${Object.keys(aiCost.users).length} users`} />
                 </button>
               </div>
             );
@@ -618,7 +618,7 @@ export default function AdminPage() {
                             return (
                               <td className="px-4 py-2 text-right font-mono">
                                 <span className="text-fab-text">{cs?.messages || 0}</span>
-                                {(cs?.cost || 0) > 0 && <div className="text-[10px] text-fab-dim">${cs.cost.toFixed(3)}</div>}
+                                {(cs?.cost || 0) > 0 && <div className="text-[10px] text-fab-dim">${cs.cost.toFixed(4)}</div>}
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation();
