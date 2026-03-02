@@ -122,11 +122,9 @@ export function ActivityFeed({ rankMap, eventTierMap }: { rankMap?: Map<string, 
       return true;
     });
 
-    // Sort by the date the event happened (most recent first)
+    // Sort by when the event was uploaded (most recent first)
     source = [...source].sort((a, b) => {
-      const dateA = a.type === "placement" ? a.eventDate : a.createdAt;
-      const dateB = b.type === "placement" ? b.eventDate : b.createdAt;
-      return new Date(dateB).getTime() - new Date(dateA).getTime();
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
 
     // Per-type caps: keep only N most recent of each type

@@ -421,9 +421,11 @@ function AchievementContent({ event, compact }: { event: FeedEvent & { type: "ac
   );
 }
 
+const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
 function formatEventDate(isoDate: string): string {
-  const d = new Date(isoDate);
-  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  const [y, m, d] = isoDate.split("-").map(Number);
+  return `${MONTH_NAMES[m - 1]} ${d}, ${y}`;
 }
 
 function PlacementContent({ event, compact }: { event: FeedEvent & { type: "placement" }; compact?: boolean }) {

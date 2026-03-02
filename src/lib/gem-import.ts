@@ -16,14 +16,15 @@ export interface GemImportResult {
 
 function parseDate(dateStr: string): string {
   // Format: "Jan. 15, 2025" or variations
-  const cleaned = dateStr.replace(/noon/gi, "12:00 PM").trim();
-  const d = new Date(cleaned);
+  const cleaned = dateStr.replace(/noon/gi, "").replace(/,\s*\d{1,2}:\d{2}\s*(AM|PM)/i, "").trim();
+  // Parse with UTC to avoid timezone-shifting the date
+  const d = new Date(cleaned + " UTC");
   if (!isNaN(d.getTime())) {
     return d.toISOString().split("T")[0];
   }
   // Fallback: try removing periods from month abbreviation
   const noPeriod = cleaned.replace(/(\w{3})\./g, "$1");
-  const d2 = new Date(noPeriod);
+  const d2 = new Date(noPeriod + " UTC");
   if (!isNaN(d2.getTime())) {
     return d2.toISOString().split("T")[0];
   }
