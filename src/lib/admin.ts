@@ -7,6 +7,7 @@ import {
   collection,
   query,
   orderBy,
+  writeBatch,
 } from "firebase/firestore";
 import { db } from "./firebase";
 import { updateLeaderboardEntry } from "./leaderboard";
@@ -646,6 +647,18 @@ export async function backfillH2H(
 export async function backfillHeroMatchups(
   onProgress?: (done: number, total: number, message?: string) => void
 ): Promise<{ usersProcessed: number; matchesCounted: number; failed: number }> {
+  // Wipe existing heroMatchups to prevent double-counting from increment()
+  onProgress?.(0, 0, "Clearing existing matchup data...");
+  const existingSnap = await getDocs(collection(db, "heroMatchups"));
+  if (!existingSnap.empty) {
+    const docs = existingSnap.docs;
+    for (let i = 0; i < docs.length; i += 400) {
+      const batch = writeBatch(db);
+      for (const d of docs.slice(i, i + 400)) batch.delete(d.ref);
+      await batch.commit();
+    }
+  }
+
   const usernamesSnap = await getDocs(collection(db, "usernames"));
   const userEntries = usernamesSnap.docs.map((d) => ({
     username: d.id,
