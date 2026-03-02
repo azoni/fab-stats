@@ -15,6 +15,8 @@ import { getWeekStart } from "@/lib/leaderboard";
 import { useSeasons } from "@/hooks/useSeasons";
 import { getCurrentSeason, getSeasonWeeks } from "@/lib/seasons";
 import { ActivityFeed } from "@/components/home/ActivityFeed";
+import { RecentEvents } from "@/components/home/RecentEvents";
+import { QuickStats } from "@/components/home/QuickStats";
 import { BestFinishShareModal } from "@/components/profile/BestFinishCard";
 import { ProfileShareModal } from "@/components/profile/ProfileCard";
 import { MetaSnapshot } from "@/components/home/MetaSnapshot";
@@ -410,10 +412,14 @@ export default function Dashboard() {
                 </div>
               </div>
             </div>
-            {/* Activity feed */}
+            {/* Recent events + quick stats */}
+            <RecentEvents eventStats={eventStats} />
+            <QuickStats overall={overall} playoffFinishes={playoffFinishes} last30={last30} />
+          </div>
+          <div className="flex flex-col gap-6">
+            <MetaSnapshot topHeroes={communityTopHeroes} top8Heroes={top8Heroes} activeEventType={activeEventType} seasonName={currentSeason?.name} seasonWeeks={seasonWeeks} selectedWeek={selectedWeek} onWeekChange={setSelectedWeek} backgroundImage={currentSeason?.backgroundImage} />
             {user && <ActivityFeed rankMap={rankMap} eventTierMap={eventTierMap} />}
           </div>
-          <MetaSnapshot topHeroes={communityTopHeroes} top8Heroes={top8Heroes} activeEventType={activeEventType} seasonName={currentSeason?.name} seasonWeeks={seasonWeeks} selectedWeek={selectedWeek} onWeekChange={setSelectedWeek} backgroundImage={currentSeason?.backgroundImage} />
         </div>
       )}
 
