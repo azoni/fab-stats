@@ -20,7 +20,7 @@ function formatDate(dateStr: string): string {
 export function RecentEvents({ eventStats }: { eventStats: EventStats[] }) {
   const recent = [...eventStats]
     .sort((a, b) => new Date(b.eventDate).getTime() - new Date(a.eventDate).getTime())
-    .slice(0, 8);
+    .slice(0, 5);
 
   if (recent.length === 0) return null;
 

@@ -429,25 +429,18 @@ export default function Dashboard() {
                 </div>
               </div>
             </div>
-            {/* Quick stats + recent events */}
+            {/* Quick stats + recent events + player spotlight */}
             <QuickStats overall={overall} last30={last30} />
             <RecentEvents eventStats={eventStats} />
+            {featuredProfiles.length > 0 && (
+              <FeaturedProfiles profiles={featuredProfiles} rankMap={rankMap} grid />
+            )}
           </div>
           <div className="flex flex-col gap-6">
             <MetaSnapshot topHeroes={communityTopHeroes} top8Heroes={top8Heroes} activeEventType={activeEventType} seasonName={currentSeason?.name} seasonWeeks={seasonWeeks} selectedWeek={selectedWeek} onWeekChange={setSelectedWeek} backgroundImage={currentSeason?.backgroundImage} />
             {user && <ActivityFeed rankMap={rankMap} eventTierMap={eventTierMap} />}
           </div>
         </div>
-      )}
-
-      {/* Section divider */}
-      {(featuredProfiles.length > 0 || hasMatches) && (
-        <div className="h-px bg-gradient-to-r from-transparent via-fab-gold/15 to-transparent" />
-      )}
-
-      {/* Player Spotlight */}
-      {featuredProfiles.length > 0 && (
-        <FeaturedProfiles profiles={featuredProfiles} rankMap={rankMap} grid />
       )}
 
       {/* On This Day */}
