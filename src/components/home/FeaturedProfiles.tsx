@@ -340,14 +340,8 @@ export function FeaturedProfiles({ profiles, creators, rankMap, grid }: Featured
         )}
         {spotlightCreators.map((c) => {
           const accent = PLATFORM_ACCENT[c.platform] || PLATFORM_ACCENT.website;
-          return (
-            <a
-              key={c.name}
-              href={c.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="spotlight-card relative flex items-center gap-3 bg-fab-surface border border-fab-border rounded-lg px-3 py-2.5 hover:bg-fab-surface-hover transition-all group overflow-hidden"
-            >
+          const inner = (
+            <>
               <div className={`absolute top-0 inset-x-0 h-px opacity-40 bg-gradient-to-r from-transparent via-current to-transparent ${accent.text}`} />
               {c.imageUrl ? (
                 <img src={c.imageUrl} alt="" className="w-8 h-8 rounded-full object-cover shrink-0" />
@@ -370,6 +364,25 @@ export function FeaturedProfiles({ profiles, creators, rankMap, grid }: Featured
               <div className={`w-5 h-5 rounded flex items-center justify-center shrink-0 ${accent.bg}`}>
                 {PLATFORM_ICONS[c.platform] || PLATFORM_ICONS.website}
               </div>
+            </>
+          );
+          return c.username ? (
+            <Link
+              key={c.name}
+              href={playerHref(c.username)}
+              className="spotlight-card relative flex items-center gap-3 bg-fab-surface border border-fab-border rounded-lg px-3 py-2.5 hover:bg-fab-surface-hover transition-all group overflow-hidden"
+            >
+              {inner}
+            </Link>
+          ) : (
+            <a
+              key={c.name}
+              href={c.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="spotlight-card relative flex items-center gap-3 bg-fab-surface border border-fab-border rounded-lg px-3 py-2.5 hover:bg-fab-surface-hover transition-all group overflow-hidden"
+            >
+              {inner}
             </a>
           );
         })}

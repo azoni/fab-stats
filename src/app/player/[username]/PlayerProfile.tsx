@@ -38,6 +38,8 @@ import type { MatchRecord, UserProfile, Achievement } from "@/types";
 import { MatchResult } from "@/types";
 import { allHeroes as knownHeroes } from "@/lib/heroes";
 import { localDate } from "@/lib/constants";
+import { useCreators } from "@/hooks/useCreators";
+import type { Creator } from "@/types";
 
 const VALID_HERO_NAMES = new Set(knownHeroes.map((h) => h.name));
 
@@ -57,6 +59,7 @@ export default function PlayerProfile() {
   const { entries: lbEntries } = useLeaderboard();
   const { isFavorited, toggleFavorite } = useFavorites();
   const { isFriend, hasSentRequest, hasReceivedRequest, getFriendshipForUser, sendRequest, acceptRequest } = useFriends();
+  const creators = useCreators();
   const [filterFormat, setFilterFormat] = useState<string>("all");
   const [filterRated, setFilterRated] = useState<string>("all");
   const [filterHero, setFilterHero] = useState<string>("all");
@@ -277,6 +280,11 @@ export default function PlayerProfile() {
     return known.length > 0 ? known[0] : null;
   }, [heroStats]);
 
+  const creatorInfo = useMemo(() => {
+    if (state.status !== "loaded") return null;
+    return creators.find((c) => c.username === state.profile.username) ?? null;
+  }, [creators, state]);
+
   // Card border = highest event tier where the player made playoffs
   const cardBorder = useMemo(() => {
     const tierRank: Record<string, number> = {
@@ -401,20 +409,69 @@ export default function PlayerProfile() {
           <div className="flex items-center gap-3">
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-3">
-                <ProfileHeader profile={profile} bestRank={bestRank} isAdmin={isAdmin} isOwner={isOwner} isFavorited={!isOwner && !!currentUser && !isGuest && isFavorited(profile.uid)} onToggleFavorite={!isOwner && !!currentUser && !isGuest ? () => toggleFavorite(profile) : undefined} friendStatus={!isOwner && !!currentUser && !isGuest ? (isFriend(profile.uid) ? "friends" : hasSentRequest(profile.uid) ? "sent" : hasReceivedRequest(profile.uid) ? "received" : "none") : undefined} onFriendAction={!isOwner && !!currentUser && !isGuest ? () => { const fs = getFriendshipForUser(profile.uid); if (isFriend(profile.uid)) return; if (hasReceivedRequest(profile.uid) && fs) { acceptRequest(fs.id); } else if (!hasSentRequest(profile.uid)) { sendRequest(profile); } } : undefined} onShareCard={isOwner || isAdmin ? () => setProfileShareOpen(true) : undefined} friendCount={isAdmin ? friendCount : undefined} />
+                <ProfileHeader profile={profile} bestRank={bestRank} isAdmin={isAdmin} isOwner={isOwner} isFavorited={!isOwner && !!currentUser && !isGuest && isFavorited(profile.uid)} onToggleFavorite={!isOwner && !!currentUser && !isGuest ? () => toggleFavorite(profile) : undefined} friendStatus={!isOwner && !!currentUser && !isGuest ? (isFriend(profile.uid) ? "friends" : hasSentRequest(profile.uid) ? "sent" : hasReceivedRequest(profile.uid) ? "received" : "none") : undefined} onFriendAction={!isOwner && !!currentUser && !isGuest ? () => { const fs = getFriendshipForUser(profile.uid); if (isFriend(profile.uid)) return; if (hasReceivedRequest(profile.uid) && fs) { acceptRequest(fs.id); } else if (!hasSentRequest(profile.uid)) { sendRequest(profile); } } : undefined} onShareCard={isOwner || isAdmin ? () => setProfileShareOpen(true) : undefined} friendCount={isAdmin ? friendCount : undefined} creator={creatorInfo} />
               </div>
-              <BadgeStrip matchCount={matches.length} />
+              <div className="flex items-center gap-2 mt-0.5">
+                {lastUpdated && (
+                  <span className="text-[10px] text-fab-dim shrink-0">
+                    Updated {new Date(lastUpdated).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                  </span>
+                )}
+                <BadgeStrip matchCount={matches.length} />
+              </div>
             </div>
             <EmblemDisplay talentEmblemId={profile.selectedEmblem} classEmblemId={profile.selectedClassEmblem} isOwner={isOwner} onClickTalent={() => setEmblemPickerMode("talent")} onClickClass={() => setEmblemPickerMode("class")} />
           </div>
-
-          {/* Last updated */}
-          {lastUpdated && (
-            <p className="text-[10px] text-fab-dim mt-3 pt-3 border-t border-fab-border/50">
-              Last updated {new Date(lastUpdated).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-            </p>
-          )}
         </div>
+
+        {/* Creator spotlight card */}
+        {creatorInfo && (
+          <div className="bg-gradient-to-r from-fab-surface to-fab-surface/80 border border-fab-border rounded-lg px-4 py-3 overflow-hidden relative">
+            <div className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-fab-gold/40 to-transparent" />
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-fab-gold/10 flex items-center justify-center ring-1 ring-inset ring-fab-gold/20 shrink-0">
+                <svg className="w-4 h-4 text-fab-gold" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M2.5 19h19v3h-19zM22.5 7l-5 4-5.5-7-5.5 7-5-4 2 12h17z" />
+                </svg>
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-semibold text-fab-gold">Content Creator</span>
+                  <span className={`text-[9px] font-bold uppercase tracking-wider ${
+                    creatorInfo.platform === "youtube" ? "text-red-400" :
+                    creatorInfo.platform === "twitch" ? "text-purple-400" :
+                    creatorInfo.platform === "twitter" ? "text-sky-400" : "text-emerald-400"
+                  }`}>
+                    {creatorInfo.platform === "twitter" ? "X" : creatorInfo.platform}
+                  </span>
+                </div>
+                <p className="text-xs text-fab-muted truncate">{creatorInfo.description}</p>
+              </div>
+              <a
+                href={creatorInfo.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors shrink-0 ${
+                  creatorInfo.platform === "youtube" ? "bg-red-500/10 text-red-400 hover:bg-red-500/20 ring-1 ring-inset ring-red-500/20" :
+                  creatorInfo.platform === "twitch" ? "bg-purple-500/10 text-purple-400 hover:bg-purple-500/20 ring-1 ring-inset ring-purple-500/20" :
+                  creatorInfo.platform === "twitter" ? "bg-sky-500/10 text-sky-400 hover:bg-sky-500/20 ring-1 ring-inset ring-sky-500/20" :
+                  "bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 ring-1 ring-inset ring-emerald-500/20"
+                }`}
+              >
+                {creatorInfo.platform === "youtube" ? (
+                  <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor"><path d="M23.5 6.2a3 3 0 00-2.1-2.1C19.5 3.5 12 3.5 12 3.5s-7.5 0-9.4.6A3 3 0 00.5 6.2 31.5 31.5 0 000 12a31.5 31.5 0 00.5 5.8 3 3 0 002.1 2.1c1.9.6 9.4.6 9.4.6s7.5 0 9.4-.6a3 3 0 002.1-2.1A31.5 31.5 0 0024 12a31.5 31.5 0 00-.5-5.8zM9.6 15.6V8.4l6.3 3.6-6.3 3.6z" /></svg>
+                ) : creatorInfo.platform === "twitch" ? (
+                  <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor"><path d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714z" /></svg>
+                ) : creatorInfo.platform === "twitter" ? (
+                  <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
+                ) : (
+                  <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9 9 0 100-18 9 9 0 000 18z" /></svg>
+                )}
+                {creatorInfo.platform === "youtube" ? "Watch" : creatorInfo.platform === "twitch" ? "Watch" : creatorInfo.platform === "twitter" ? "Follow" : "Visit"}
+              </a>
+            </div>
+          </div>
+        )}
 
         {/* Filters */}
         <div className="flex gap-2 flex-wrap items-center">
@@ -695,10 +752,10 @@ export default function PlayerProfile() {
   );
 }
 
-function ProfileHeader({ profile, bestRank, isAdmin, isOwner, isFavorited, onToggleFavorite, friendStatus, onFriendAction, onShareCard, friendCount }: { profile: UserProfile; bestRank?: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | null; isAdmin?: boolean; isOwner?: boolean; isFavorited?: boolean; onToggleFavorite?: () => void; friendStatus?: "none" | "sent" | "received" | "friends"; onFriendAction?: () => void; onShareCard?: () => void; friendCount?: number | null }) {
+function ProfileHeader({ profile, bestRank, isAdmin, isOwner, isFavorited, onToggleFavorite, friendStatus, onFriendAction, onShareCard, friendCount, creator }: { profile: UserProfile; bestRank?: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | null; isAdmin?: boolean; isOwner?: boolean; isFavorited?: boolean; onToggleFavorite?: () => void; friendStatus?: "none" | "sent" | "received" | "friends"; onFriendAction?: () => void; onShareCard?: () => void; friendCount?: number | null; creator?: Creator | null }) {
   const [linkCopied, setLinkCopied] = useState(false);
   const ringClass = rankBorderClass(bestRank ?? null);
-  const isCreator = profile.username === "azoni";
+  const isCreator = !!creator;
   return (
     <div className="flex items-center gap-4 flex-1 min-w-0">
       <div className="relative shrink-0">

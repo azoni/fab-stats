@@ -14,6 +14,7 @@ import { getBanner, saveBanner, type BannerConfig } from "@/lib/banner";
 import { getAllPolls, getPollResults, getPollVoters, savePoll, removePoll, clearVotes, mergeOptions, closePredictionVoting, reopenPredictionVoting, resolvePrediction } from "@/lib/polls";
 import { grantPredictionAchievements } from "@/lib/prediction-service";
 import { searchHeroes } from "@/lib/heroes";
+import { searchUsernames } from "@/lib/firestore-storage";
 import { getAllBadgeAssignments, assignBadge, revokeBadge } from "@/lib/badge-service";
 import { getMutedUserIds, muteUser, unmuteUser } from "@/lib/mute-service";
 import { getEventShowcase, saveEventShowcase } from "@/lib/event-showcase";
@@ -61,6 +62,8 @@ export default function AdminPage() {
   const [creatorsList, setCreatorsList] = useState<Creator[]>([]);
   const [savingCreators, setSavingCreators] = useState(false);
   const [creatorsSaved, setCreatorsSaved] = useState(false);
+  const [creatorUserSearch, setCreatorUserSearch] = useState<Record<number, string>>({});
+  const [creatorUserResults, setCreatorUserResults] = useState<Record<number, { username: string; userId: string }[]>>({});
   const [eventsList, setEventsList] = useState<FeaturedEvent[]>([]);
   const [expandedEvents, setExpandedEvents] = useState<Set<number>>(new Set());
   const [savingEvents, setSavingEvents] = useState(false);
@@ -1295,6 +1298,69 @@ export default function AdminPage() {
                       onChange={(e) => setCreatorsList((prev) => prev.map((cr, j) => j === i ? { ...cr, imageUrl: e.target.value || undefined } : cr))}
                       className="bg-fab-surface border border-fab-border text-fab-text text-sm rounded px-2 py-1.5 focus:outline-none focus:border-fab-gold col-span-2"
                     />
+                    {/* Linked FabStats account */}
+                    <div className="col-span-2 relative">
+                      <div className="flex items-center gap-2">
+                        <div className="relative flex-1">
+                          <input
+                            type="text"
+                            placeholder="Search FabStats username..."
+                            value={creatorUserSearch[i] ?? c.username ?? ""}
+                            onChange={async (e) => {
+                              const val = e.target.value;
+                              setCreatorUserSearch((prev) => ({ ...prev, [i]: val }));
+                              if (val.trim().length >= 2) {
+                                const results = await searchUsernames(val.trim(), 5);
+                                setCreatorUserResults((prev) => ({ ...prev, [i]: results }));
+                              } else {
+                                setCreatorUserResults((prev) => ({ ...prev, [i]: [] }));
+                              }
+                            }}
+                            onFocus={async () => {
+                              const val = creatorUserSearch[i] ?? c.username ?? "";
+                              if (val.trim().length >= 2) {
+                                const results = await searchUsernames(val.trim(), 5);
+                                setCreatorUserResults((prev) => ({ ...prev, [i]: results }));
+                              }
+                            }}
+                            className="bg-fab-surface border border-fab-border text-fab-text text-sm rounded px-2 py-1.5 focus:outline-none focus:border-fab-gold w-full"
+                          />
+                          {(creatorUserResults[i]?.length ?? 0) > 0 && (
+                            <div className="absolute top-full left-0 right-0 mt-1 bg-fab-surface border border-fab-border rounded-lg shadow-lg z-50 overflow-hidden">
+                              {creatorUserResults[i].map((r) => (
+                                <button
+                                  key={r.userId}
+                                  type="button"
+                                  onClick={() => {
+                                    setCreatorsList((prev) => prev.map((cr, j) => j === i ? { ...cr, username: r.username } : cr));
+                                    setCreatorUserSearch((prev) => ({ ...prev, [i]: r.username }));
+                                    setCreatorUserResults((prev) => ({ ...prev, [i]: [] }));
+                                  }}
+                                  className="w-full text-left px-3 py-2 text-sm text-fab-text hover:bg-fab-gold/10 transition-colors"
+                                >
+                                  {r.username}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                        {c.username && (
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <span className="text-xs text-fab-win font-medium">Linked: {c.username}</span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setCreatorsList((prev) => prev.map((cr, j) => j === i ? { ...cr, username: undefined } : cr));
+                                setCreatorUserSearch((prev) => ({ ...prev, [i]: "" }));
+                              }}
+                              className="text-xs text-fab-loss hover:text-fab-loss/80"
+                            >
+                              Unlink
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </div>
               ))}

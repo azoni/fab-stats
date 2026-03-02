@@ -139,6 +139,10 @@ export default function Dashboard() {
   const rankMap = useMemo(() => computeRankMap(lbEntries), [lbEntries]);
   const featuredProfiles = useMemo(() => selectFeaturedProfiles(lbEntries), [lbEntries]);
   const eventTierMap = useMemo(() => computeEventTierMap(lbEntries), [lbEntries]);
+  const isCreator = useMemo(() => {
+    if (!profile) return false;
+    return creators.some((c) => c.username === profile.username);
+  }, [profile, creators]);
   const unlockedColors = useMemo(() => {
     if (!user) return [];
     const myLb = lbEntries.find((e) => e.userId === user.uid);
@@ -337,7 +341,7 @@ export default function Dashboard() {
               <div className="flex items-center gap-3">
                 {profile ? (
                   <Link href={`/player/${profile.username}`} className="relative shrink-0">
-                    {profile.username === "azoni" && (
+                    {isCreator && (
                       <svg className="absolute -top-3.5 left-1/2 -translate-x-1/2 w-6 h-6 text-fab-gold drop-shadow-[0_0_6px_rgba(201,168,76,0.6)] z-10" viewBox="0 0 24 24" fill="currentColor">
                         <path d="M2.5 19h19v3h-19zM22.5 7l-5 4-5.5-7-5.5 7-5-4 2 12h17z" />
                       </svg>

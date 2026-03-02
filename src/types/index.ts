@@ -324,6 +324,7 @@ export interface Creator {
   url: string;
   platform: "youtube" | "twitch" | "twitter" | "website";
   imageUrl?: string;
+  username?: string;
 }
 
 export interface FeaturedEventPlayer {
