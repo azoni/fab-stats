@@ -107,7 +107,7 @@ function FeedCardHeader({ event, compact, rankMap }: { event: FeedEvent; compact
   );
 
   if (event.isPublic) {
-    return <Link href={`/player/${event.username}`}>{avatar}</Link>;
+    return <Link href={`/player/${event.username}`} onClick={(e) => e.stopPropagation()}>{avatar}</Link>;
   }
   return avatar;
 }
@@ -116,7 +116,7 @@ function NameAndTime({ event, compact }: { event: FeedEvent; compact?: boolean }
   return (
     <div className="flex items-center gap-1.5 flex-wrap">
       {event.isPublic ? (
-        <Link href={`/player/${event.username}`} className={`font-semibold text-fab-text hover:text-fab-gold transition-colors ${compact ? "text-xs" : ""}`}>
+        <Link href={`/player/${event.username}`} onClick={(e) => e.stopPropagation()} className={`font-semibold text-fab-text hover:text-fab-gold transition-colors ${compact ? "text-xs" : ""}`}>
           {event.displayName}
         </Link>
       ) : (
