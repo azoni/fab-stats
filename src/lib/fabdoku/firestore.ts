@@ -8,6 +8,7 @@ import {
   collection,
   query,
   where,
+  limit,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import type {
@@ -87,25 +88,46 @@ export async function saveResult(
 export async function loadStats(
   uid: string
 ): Promise<FaBdokuStats | null> {
+  let stats: FaBdokuStats | null = null;
+
   // Try top-level public collection first (works for any viewer)
   try {
     const pubSnap = await getDoc(doc(db, STATS_PUBLIC_COL, uid));
-    if (pubSnap.exists()) return pubSnap.data() as FaBdokuStats;
+    if (pubSnap.exists()) stats = pubSnap.data() as FaBdokuStats;
   } catch {}
+
   // Fallback to subcollection (works for owner / admin)
-  try {
-    const statsRef = doc(db, "users", uid, STATS_DOC, "data");
-    const snap = await getDoc(statsRef);
-    if (snap.exists()) {
-      const stats = snap.data() as FaBdokuStats;
-      // Backfill public collection so other viewers can see stats
-      setDoc(doc(db, STATS_PUBLIC_COL, uid), stats).catch(() => {});
-      return stats;
-    }
-    return null;
-  } catch {
-    return null;
+  if (!stats) {
+    try {
+      const statsRef = doc(db, "users", uid, STATS_DOC, "data");
+      const snap = await getDoc(statsRef);
+      if (snap.exists()) {
+        stats = snap.data() as FaBdokuStats;
+        // Backfill public collection so other viewers can see stats
+        setDoc(doc(db, STATS_PUBLIC_COL, uid), stats).catch(() => {});
+      }
+    } catch {}
   }
+
+  // Self-heal hasShared: check feed events for existing shares
+  if (stats && !stats.hasShared) {
+    try {
+      const q = query(
+        collection(db, "feedEvents"),
+        where("userId", "==", uid),
+        where("type", "==", "fabdoku"),
+        where("subtype", "==", "shared"),
+        limit(1),
+      );
+      const snap = await getDocs(q);
+      if (!snap.empty) {
+        stats.hasShared = true;
+        markShared(uid).catch(() => {});
+      }
+    } catch {}
+  }
+
+  return stats;
 }
 
 /** Mark that a user has shared their FaBdoku result. Idempotent. */

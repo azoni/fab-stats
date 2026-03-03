@@ -12,6 +12,7 @@ export const EMBLEMS: Emblem[] = [
 ];
 
 export const TALENT_EMBLEMS: Emblem[] = [
+  { id: "t-generic",   name: "Generic",   description: "Unaligned talent" },
   { id: "t-light",     name: "Light",     description: "Radiance and purity" },
   { id: "t-shadow",    name: "Shadow",    description: "Darkness and void" },
   { id: "t-draconic",  name: "Draconic",  description: "Dragon flame" },

@@ -1,6 +1,31 @@
 // Talent Emblem SVGs — 48x48 viewBox, dashed ring background, gradient fills
 // Each follows the same pattern as the original MeleeEmblem/RangedEmblem/MagicEmblem
 
+export function GenericTalentEmblem({ className = "w-11 h-11" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 48 48" className={className} fill="none">
+      <defs>
+        <radialGradient id="genericGrad" cx="0.5" cy="0.4" r="0.5">
+          <stop offset="0%" stopColor="#94a3b8" stopOpacity="0.4" />
+          <stop offset="70%" stopColor="#64748b" stopOpacity="0.2" />
+          <stop offset="100%" stopColor="#475569" stopOpacity="0.08" />
+        </radialGradient>
+      </defs>
+      <circle cx="24" cy="24" r="21" fill="currentColor" fillOpacity="0.05" stroke="currentColor" strokeWidth="1" strokeDasharray="3 2" strokeOpacity="0.3" />
+      {/* Diamond shape */}
+      <path d="M24 8l12 16-12 16-12-16z" fill="url(#genericGrad)" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />
+      {/* Inner facets */}
+      <path d="M24 8l4 10H16z" fill="currentColor" fillOpacity="0.12" />
+      <path d="M16 18h16L24 40z" fill="currentColor" fillOpacity="0.06" />
+      {/* Center highlight */}
+      <circle cx="24" cy="22" r="3" fill="currentColor" fillOpacity="0.15" />
+      <circle cx="24" cy="22" r="1.2" fill="currentColor" fillOpacity="0.25" />
+      {/* Sparkle accents */}
+      <path d="M14 14l1 1M34 14l-1 1M14 34l1-1M34 34l-1-1" stroke="currentColor" strokeWidth="0.7" strokeLinecap="round" strokeOpacity="0.25" />
+    </svg>
+  );
+}
+
 export function LightEmblem({ className = "w-11 h-11" }: { className?: string }) {
   return (
     <svg viewBox="0 0 48 48" className={className} fill="none">
@@ -319,6 +344,7 @@ export function ReviledEmblem({ className = "w-11 h-11" }: { className?: string 
 }
 
 export const TALENT_EMBLEM_COMPONENTS: Record<string, React.FC<{ className?: string }>> = {
+  "t-generic": GenericTalentEmblem,
   "t-light": LightEmblem,
   "t-shadow": ShadowEmblem,
   "t-draconic": DraconicEmblem,
@@ -334,6 +360,7 @@ export const TALENT_EMBLEM_COMPONENTS: Record<string, React.FC<{ className?: str
 };
 
 export const TALENT_EMBLEM_COLORS: Record<string, { text: string; glow: string }> = {
+  "t-generic":   { text: "text-slate-400",   glow: "hover:drop-shadow-[0_0_10px_rgba(148,163,184,0.4)]" },
   "t-light":     { text: "text-yellow-400",  glow: "hover:drop-shadow-[0_0_10px_rgba(250,204,21,0.4)]" },
   "t-shadow":    { text: "text-purple-400",  glow: "hover:drop-shadow-[0_0_10px_rgba(168,85,247,0.4)]" },
   "t-draconic":  { text: "text-red-400",     glow: "hover:drop-shadow-[0_0_10px_rgba(239,68,68,0.4)]" },
