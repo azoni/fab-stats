@@ -9,6 +9,7 @@ import {
   collection,
   getDocs,
   query,
+  where,
   orderBy,
   limit,
 } from "firebase/firestore";
@@ -142,10 +143,13 @@ export async function giveKudos(
   giverDisplayName: string,
   recipientId: string,
   kudosType: string,
+  options?: { skipLimits?: boolean },
 ): Promise<void> {
   if (giverId === recipientId) throw new Error("Cannot give kudos to yourself");
-  if (isOnCooldown(recipientId, kudosType)) throw new Error("Cooldown active for this kudos type");
-  if (getRemainingKudos() <= 0) throw new Error("Daily kudos limit reached");
+  if (!options?.skipLimits) {
+    if (isOnCooldown(recipientId, kudosType)) throw new Error("Cooldown active for this kudos type");
+    if (getRemainingKudos() <= 0) throw new Error("Daily kudos limit reached");
+  }
 
   const docId = kudosDocId(recipientId, giverId, kudosType);
   const kudosRef = doc(db, "kudos", docId);
@@ -238,6 +242,18 @@ export async function revokeKudos(
     [kudosType]: increment(-1),
     total: increment(-1),
   }).catch(() => {});
+
+  // Delete the kudos notification from recipient's inbox
+  try {
+    const notifQ = query(
+      collection(db, "users", recipientId, "notifications"),
+      where("type", "==", "kudos"),
+      where("kudosGiverUid", "==", giverId),
+      where("kudosType", "==", kudosType),
+    );
+    const notifSnap = await getDocs(notifQ);
+    await Promise.all(notifSnap.docs.map((d) => deleteDoc(d.ref)));
+  } catch {}
 }
 
 /** Load aggregated kudos counts for a player. */

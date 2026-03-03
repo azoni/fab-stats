@@ -42,12 +42,15 @@ interface KudosSectionProps {
   currentUserId?: string;
   currentDisplayName?: string;
   counts: Record<string, number>;
+  givenCounts?: Record<string, number>;
   givenByMe: Set<string>;
   onUpdate: (newCounts: Record<string, number>, newGiven: Set<string>) => void;
   /** When true, renders without its own card wrapper (for embedding inside another card) */
   inline?: boolean;
   /** Set of kudos types the admin has given this player */
   adminGiven?: Set<string>;
+  /** Admin users bypass daily limits and cooldowns */
+  isAdmin?: boolean;
 }
 
 export function KudosSection({
@@ -55,10 +58,12 @@ export function KudosSection({
   currentUserId,
   currentDisplayName,
   counts,
+  givenCounts,
   givenByMe,
   onUpdate,
   inline,
   adminGiven,
+  isAdmin,
 }: KudosSectionProps) {
   const [loading, setLoading] = useState<string | null>(null);
   const [hint, setHint] = useState<string | null>(null);
@@ -70,19 +75,22 @@ export function KudosSection({
 
       const isGiven = givenByMe.has(kudosType);
 
-      // Check cooldown before giving non-props types (not revoking)
-      if (!isGiven && isOnCooldown(recipientId, kudosType)) {
-        const remaining = getCooldownRemaining(recipientId, kudosType);
-        setHint(`Wait ${remaining} to re-give`);
-        setTimeout(() => setHint(null), 2500);
-        return;
-      }
+      // Admin bypasses all limits
+      if (!isAdmin) {
+        // Check cooldown before giving non-props types (not revoking)
+        if (!isGiven && isOnCooldown(recipientId, kudosType)) {
+          const remaining = getCooldownRemaining(recipientId, kudosType);
+          setHint(`Wait ${remaining} to re-give`);
+          setTimeout(() => setHint(null), 2500);
+          return;
+        }
 
-      // Check daily limit
-      if (!isGiven && getRemainingKudos() <= 0) {
-        setHint("No kudos left today!");
-        setTimeout(() => setHint(null), 2500);
-        return;
+        // Check daily limit
+        if (!isGiven && getRemainingKudos() <= 0) {
+          setHint("No kudos left today!");
+          setTimeout(() => setHint(null), 2500);
+          return;
+        }
       }
 
       setLoading(kudosType);
@@ -95,7 +103,7 @@ export function KudosSection({
           newCounts.total = Math.max(0, (newCounts.total || 0) - 1);
           onUpdate(newCounts, newGiven);
         } else {
-          await giveKudos(currentUserId, currentDisplayName, recipientId, kudosType);
+          await giveKudos(currentUserId, currentDisplayName, recipientId, kudosType, { skipLimits: isAdmin });
           logActivity("kudos_given", kudosType);
           const newGiven = new Set(givenByMe);
           newGiven.add(kudosType);
@@ -103,9 +111,11 @@ export function KudosSection({
           newCounts.total = (newCounts.total || 0) + 1;
           onUpdate(newCounts, newGiven);
 
-          const remaining = getRemainingKudos();
-          setHint(`${remaining} kudos left today`);
-          setTimeout(() => setHint(null), 2000);
+          if (!isAdmin) {
+            const remaining = getRemainingKudos();
+            setHint(`${remaining} kudos left today`);
+            setTimeout(() => setHint(null), 2000);
+          }
         }
       } catch {
         // Silently fail
@@ -113,15 +123,16 @@ export function KudosSection({
         setLoading(null);
       }
     },
-    [currentUserId, currentDisplayName, recipientId, counts, givenByMe, onUpdate, loading]
+    [currentUserId, currentDisplayName, recipientId, counts, givenByMe, onUpdate, loading, isAdmin]
   );
 
   const isOwnProfile = currentUserId === recipientId;
   const canInteract = !!currentUserId && !isOwnProfile;
   const totalKudos = counts.total || 0;
+  const totalGiven = givenCounts?.total || 0;
 
   // Don't render if no kudos and it's own profile
-  if (isOwnProfile && totalKudos === 0) return null;
+  if (isOwnProfile && totalKudos === 0 && totalGiven === 0) return null;
 
   return (
     <div className={inline ? "" : "bg-fab-surface border border-fab-border rounded-lg px-3 py-2.5"}>
@@ -133,6 +144,7 @@ export function KudosSection({
         )}
         {KUDOS_TYPES.map((kt) => {
           const count = counts[kt.id] || 0;
+          const given = givenCounts?.[kt.id] || 0;
           const isGiven = givenByMe.has(kt.id);
           const isLoading = loading === kt.id;
           const hasAdminKudos = adminGiven?.has(kt.id);
@@ -143,7 +155,7 @@ export function KudosSection({
               type="button"
               disabled={!canInteract || isLoading}
               onClick={() => handleToggle(kt.id)}
-              title={`${kt.label}: ${kt.description}${isGiven ? " (click to remove)" : ""}${hasAdminKudos ? " ✦ Endorsed by admin" : ""}`}
+              title={`${kt.label}: ${kt.description}${isGiven ? " (click to remove)" : ""}${hasAdminKudos ? " ✦ Endorsed by admin" : ""}${given > 0 ? ` · ${given} given` : ""}`}
               className={`flex flex-col items-center gap-0.5 w-[52px] py-1.5 rounded-lg transition-all ${
                 isLoading
                   ? "opacity-50 cursor-wait"
@@ -163,7 +175,7 @@ export function KudosSection({
               <span className={`text-[10px] font-bold leading-tight tabular-nums ${
                 isGiven ? "text-fab-gold" : "text-fab-dim"
               }`}>
-                {count}
+                {count}{given > 0 && <span className="text-fab-dim font-normal">/{given}</span>}
               </span>
               <span className={`text-[8px] leading-tight ${
                 isGiven ? "text-fab-gold/70" : "text-fab-dim"

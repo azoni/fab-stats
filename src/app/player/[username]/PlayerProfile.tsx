@@ -35,7 +35,7 @@ import { BestFinishShareModal } from "@/components/profile/BestFinishCard";
 import { ProfileShareModal } from "@/components/profile/ProfileCard";
 import { ShowcaseSection } from "@/components/profile/ShowcaseSection";
 import { KudosSection } from "@/components/profile/KudosSection";
-import { loadKudosCounts, loadGivenKudos, loadKudosGivenCounts, KUDOS_TYPES } from "@/lib/kudos";
+import { loadKudosCounts, loadGivenKudos, loadKudosGivenCounts } from "@/lib/kudos";
 import type { MatchRecord, UserProfile, Achievement } from "@/types";
 import { MatchResult } from "@/types";
 import { allHeroes as knownHeroes } from "@/lib/heroes";
@@ -517,30 +517,13 @@ export default function PlayerProfile() {
               </div>
             </div>
             <div className="flex items-center gap-3 shrink-0">
-              {/* Kudos Given (read-only) */}
-              {(kudosGivenCounts.total ?? 0) > 0 && (
-                <div className="flex items-center gap-1.5">
-                  <div className="flex items-center gap-0.5 opacity-60" title="Kudos given to others">
-                    {KUDOS_TYPES.map((kt) => {
-                      const count = kudosGivenCounts[kt.id] || 0;
-                      if (count === 0) return null;
-                      return (
-                        <div key={kt.id} className="flex flex-col items-center px-1 py-0.5 min-w-[28px]">
-                          <span className="text-[10px] font-bold text-fab-dim tabular-nums">{count}</span>
-                          <span className="text-[7px] text-fab-dim leading-tight">Given</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                  <div className="w-px h-6 bg-fab-border" />
-                </div>
-              )}
-              {/* Kudos Received (interactive) */}
+              {/* Kudos — received counts with given counts inline */}
               <KudosSection
                 recipientId={profile.uid}
                 currentUserId={currentUser?.uid}
                 currentDisplayName={currentUser?.displayName || myProfile?.username || currentUser?.email?.split("@")[0] || undefined}
                 counts={kudosCounts}
+                givenCounts={kudosGivenCounts}
                 givenByMe={kudosGivenByMe}
                 onUpdate={(newCounts, newGiven) => {
                   setKudosCounts(newCounts);
@@ -548,6 +531,7 @@ export default function PlayerProfile() {
                 }}
                 inline
                 adminGiven={adminKudosGiven}
+                isAdmin={isAdmin}
               />
               <EmblemDisplay talentEmblemId={profile.selectedEmblem} classEmblemId={profile.selectedClassEmblem} isOwner={isOwner} onClickTalent={() => setEmblemPickerMode("talent")} onClickClass={() => setEmblemPickerMode("class")} />
             </div>
