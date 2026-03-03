@@ -43,7 +43,7 @@ import {
 import type { GameState, FaBdokuStats, UniquenessData } from "@/lib/fabdoku/types";
 
 export default function FaBdokuPage() {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const dateStr = useMemo(() => getTodayDateStr(), []);
   const puzzle = useMemo(() => generateDailyPuzzle(dateStr), [dateStr]);
 
@@ -258,6 +258,26 @@ export default function FaBdokuPage() {
           uniqueness={uniqueness}
           onShare={() => setShowShare(true)}
         />
+      )}
+
+      {/* Admin replay button */}
+      {isAdmin && gameState.completed && (
+        <div className="mt-4 flex justify-center">
+          <button
+            onClick={() => {
+              if (typeof window !== "undefined") {
+                localStorage.removeItem(`fabdoku-${dateStr}`);
+              }
+              setGameState(createFreshGameState(dateStr));
+              setShowResult(false);
+              setShowShare(false);
+              setUniqueness(null);
+            }}
+            className="px-4 py-2 text-xs font-medium rounded-lg bg-fab-surface border border-fab-border text-fab-muted hover:text-fab-text hover:border-fab-gold/50 transition-colors"
+          >
+            Replay Puzzle (Admin)
+          </button>
+        </div>
       )}
 
       {/* Hero search modal */}
