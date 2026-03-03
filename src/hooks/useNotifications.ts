@@ -11,14 +11,17 @@ import {
 import type { UserNotification } from "@/types";
 
 export function useNotifications() {
-  const { user, isGuest } = useAuth();
+  const { user, isGuest, profile } = useAuth();
   const [notifications, setNotifications] = useState<UserNotification[]>([]);
   const [loaded, setLoaded] = useState(false);
 
+  // Default to true if not explicitly set
+  const enabled = profile?.notificationsEnabled !== false;
+
   useEffect(() => {
-    if (isGuest || !user) {
+    if (isGuest || !user || !enabled) {
       setNotifications([]);
-      setLoaded(false);
+      setLoaded(!user ? false : true);
       return;
     }
 
@@ -28,7 +31,7 @@ export function useNotifications() {
     });
 
     return unsubscribe;
-  }, [user, isGuest]);
+  }, [user, isGuest, enabled]);
 
   // Unread count: group message notifications by sender (each sender = 1 count)
   const unreadCount = useMemo(() => {

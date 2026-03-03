@@ -145,6 +145,7 @@ export interface UserProfile {
   showcaseSecondary?: ShowcaseCard[];
   selectedEmblem?: string;
   selectedClassEmblem?: string;
+  notificationsEnabled?: boolean;
 }
 
 export interface ShowcaseCard {
