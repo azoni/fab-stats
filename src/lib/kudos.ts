@@ -199,3 +199,30 @@ export async function loadKudosLeaderboard(
     .map((d) => ({ uid: d.id, count: (d.data()[category] as number) || 0 }))
     .filter((e) => e.count > 0);
 }
+
+export interface KudosCountsEntry {
+  uid: string;
+  total: number;
+  props: number;
+  good_sport: number;
+  skilled: number;
+  helpful: number;
+}
+
+/** Load all kudos counts documents (for leaderboard page). */
+export async function loadAllKudosCounts(): Promise<KudosCountsEntry[]> {
+  const snap = await getDocs(collection(db, "kudosCounts"));
+  return snap.docs
+    .map((d) => {
+      const data = d.data();
+      return {
+        uid: d.id,
+        total: (data.total as number) || 0,
+        props: (data.props as number) || 0,
+        good_sport: (data.good_sport as number) || 0,
+        skilled: (data.skilled as number) || 0,
+        helpful: (data.helpful as number) || 0,
+      };
+    })
+    .filter((e) => e.total > 0);
+}

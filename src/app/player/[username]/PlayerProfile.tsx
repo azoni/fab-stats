@@ -35,7 +35,6 @@ import { BestFinishShareModal } from "@/components/profile/BestFinishCard";
 import { ProfileShareModal } from "@/components/profile/ProfileCard";
 import { ShowcaseSection } from "@/components/profile/ShowcaseSection";
 import { KudosSection } from "@/components/profile/KudosSection";
-import { KudosLeaderboard } from "@/components/profile/KudosLeaderboard";
 import { loadKudosCounts, loadGivenKudos } from "@/lib/kudos";
 import type { MatchRecord, UserProfile, Achievement } from "@/types";
 import { MatchResult } from "@/types";
@@ -459,19 +458,29 @@ export default function PlayerProfile() {
               <EmblemDisplay talentEmblemId={profile.selectedEmblem} classEmblemId={profile.selectedClassEmblem} isOwner={isOwner} onClickTalent={() => setEmblemPickerMode("talent")} onClickClass={() => setEmblemPickerMode("class")} />
             </div>
           </div>
-          {/* Daily FaBdoku score — bottom right */}
-          {fabdokuScore !== null && (
-            <Link href="/fabdoku" className="absolute bottom-2 right-3 flex items-center gap-1 px-2 py-0.5 rounded-md bg-fab-bg/80 border border-fab-border hover:border-fab-gold/40 transition-colors group" title="Today's FaBdoku score">
-              <svg className="w-3 h-3 text-fab-dim group-hover:text-fab-gold transition-colors" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-                <rect x="3" y="3" width="18" height="18" rx="2" />
-                <line x1="3" y1="9" x2="21" y2="9" />
-                <line x1="3" y1="15" x2="21" y2="15" />
-                <line x1="9" y1="3" x2="9" y2="21" />
-                <line x1="15" y1="3" x2="15" y2="21" />
-              </svg>
-              <span className="text-[10px] font-bold text-fab-dim group-hover:text-fab-gold transition-colors tabular-nums">{fabdokuScore}/9</span>
-            </Link>
-          )}
+          {/* Score badges — bottom right */}
+          <div className="absolute bottom-2 right-3 flex items-center gap-1.5">
+            {(kudosCounts.total ?? 0) > 0 && (
+              <Link href="/leaderboard?tab=kudos_total" className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-fab-bg/80 border border-fab-border hover:border-fab-gold/40 transition-colors group" title="Total kudos received">
+                <svg className="w-3 h-3 text-fab-dim group-hover:text-fab-gold transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6.633 10.25c.806 0 1.533-.446 2.031-1.08a9.041 9.041 0 0 1 2.861-2.4c.723-.384 1.35-.956 1.653-1.715a4.498 4.498 0 0 0 .322-1.672V2.75a.75.75 0 0 1 .75-.75 2.25 2.25 0 0 1 2.25 2.25c0 1.152-.26 2.243-.723 3.218-.266.558.107 1.282.725 1.282m0 0h3.126c1.026 0 1.945.694 2.054 1.715.045.422.068.85.068 1.285a11.95 11.95 0 0 1-2.649 7.521c-.388.482-.987.729-1.605.729H13.48c-.483 0-.964-.078-1.423-.23l-3.114-1.04a4.501 4.501 0 0 0-1.423-.23H5.904m10.598-9.75H14.25M5.904 18.5c.083.205.173.405.27.602.197.4-.078.898-.523.898h-.908c-.889 0-1.713-.518-1.972-1.368a12 12 0 0 1-.521-3.507c0-1.553.295-3.036.831-4.398C3.387 9.953 4.167 9.5 5 9.5h1.053c.472 0 .745.556.5.96a8.958 8.958 0 0 0-1.302 4.665c0 1.194.232 2.333.654 3.375Z" />
+                </svg>
+                <span className="text-[10px] font-bold text-fab-dim group-hover:text-fab-gold transition-colors tabular-nums">{kudosCounts.total}</span>
+              </Link>
+            )}
+            {fabdokuScore !== null && (
+              <Link href="/fabdoku" className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-fab-bg/80 border border-fab-border hover:border-fab-gold/40 transition-colors group" title="Today's FaBdoku score">
+                <svg className="w-3 h-3 text-fab-dim group-hover:text-fab-gold transition-colors" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                  <rect x="3" y="3" width="18" height="18" rx="2" />
+                  <line x1="3" y1="9" x2="21" y2="9" />
+                  <line x1="3" y1="15" x2="21" y2="15" />
+                  <line x1="9" y1="3" x2="9" y2="21" />
+                  <line x1="15" y1="3" x2="15" y2="21" />
+                </svg>
+                <span className="text-[10px] font-bold text-fab-dim group-hover:text-fab-gold transition-colors tabular-nums">{fabdokuScore}/9</span>
+              </Link>
+            )}
+          </div>
         </div>
 
         {/* Creator spotlight card */}
@@ -522,9 +531,6 @@ export default function PlayerProfile() {
             </div>
           </div>
         )}
-
-        {/* Kudos Leaderboard */}
-        <KudosLeaderboard />
 
         {/* Filters */}
         <div className="flex gap-2 flex-wrap items-center">
@@ -581,6 +587,25 @@ export default function PlayerProfile() {
 
       {/* Two-column grid: Showcases side by side on desktop, stacked on mobile */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        {/* Pinned */}
+        <div>
+          <ShowcaseSection
+            profile={profile}
+            isOwner={isOwner}
+            matches={fm}
+            heroStats={heroStats}
+            masteries={masteries}
+            eventStats={eventStats}
+            playoffFinishes={playoffFinishes}
+            opponentStats={allOpponentStats}
+            overall={overall}
+            achievements={achievements}
+            storageField="showcaseSecondary"
+            maxPoints={12}
+            label="Pinned"
+          />
+        </div>
+
         {/* Main Showcase */}
         <div>
           <ShowcaseSection
@@ -597,25 +622,6 @@ export default function PlayerProfile() {
             storageField="showcase"
             maxPoints={12}
             label="Showcase"
-          />
-        </div>
-
-        {/* Secondary Showcase */}
-        <div>
-          <ShowcaseSection
-            profile={profile}
-            isOwner={isOwner}
-            matches={fm}
-            heroStats={heroStats}
-            masteries={masteries}
-            eventStats={eventStats}
-            playoffFinishes={playoffFinishes}
-            opponentStats={allOpponentStats}
-            overall={overall}
-            achievements={achievements}
-            storageField="showcaseSecondary"
-            maxPoints={12}
-            label="Pinned"
           />
         </div>
       </div>
