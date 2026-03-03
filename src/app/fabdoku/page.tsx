@@ -218,7 +218,7 @@ export default function FaBdokuPage() {
             profile, "completed", dateStr, isWon, cc,
             newGuessesUsed, buildGrid(newState),
             uData?.score,
-          ).catch(() => {});
+          ).catch((err) => console.error("FaBdoku feed event failed:", err));
         }
       }
     },
@@ -361,7 +361,7 @@ export default function FaBdokuPage() {
                 profile, "shared", dateStr, gameState.won, cc,
                 gameState.guessesUsed, buildGrid(gameState),
                 uniqueness?.score,
-              ).catch(() => {});
+              ).catch((err) => console.error("FaBdoku feed event failed:", err));
             }
           }}
         />
