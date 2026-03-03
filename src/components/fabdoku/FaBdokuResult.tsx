@@ -163,6 +163,9 @@ export function FaBdokuResult({ gameState, stats, uniqueness, onShare }: FaBdoku
           <p className="text-[10px] text-fab-dim text-center mt-1">
             Lower is better — sum of % who picked same hero per cell
           </p>
+          <p className="text-[10px] text-fab-gold/70 text-center mt-1.5">
+            Live score — come back tomorrow for final results
+          </p>
         </div>
       )}
 

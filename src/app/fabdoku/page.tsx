@@ -42,9 +42,19 @@ import {
 } from "@/lib/fabdoku/firestore";
 import type { GameState, FaBdokuStats, UniquenessData } from "@/lib/fabdoku/types";
 
+function getYesterdayDateStr(): string {
+  const d = new Date();
+  d.setDate(d.getDate() - 1);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${dd}`;
+}
+
 export default function FaBdokuPage() {
   const { user, isAdmin } = useAuth();
   const dateStr = useMemo(() => getTodayDateStr(), []);
+  const yesterdayStr = useMemo(() => getYesterdayDateStr(), []);
   const puzzle = useMemo(() => generateDailyPuzzle(dateStr), [dateStr]);
 
   const [gameState, setGameState] = useState<GameState | null>(null);
@@ -56,6 +66,8 @@ export default function FaBdokuPage() {
   const [showHelp, setShowHelp] = useState(false);
   const [stats, setStats] = useState<FaBdokuStats | null>(null);
   const [uniqueness, setUniqueness] = useState<UniquenessData | null>(null);
+  const [yesterdayScore, setYesterdayScore] = useState<UniquenessData | null>(null);
+  const [showYesterday, setShowYesterday] = useState(true);
 
   // Track which hero names have already been guessed (no reuse)
   const usedHeroes = useMemo(() => {
@@ -102,6 +114,20 @@ export default function FaBdokuPage() {
       loadStats(user.uid).then(setStats).catch(() => {});
     }
   }, [user?.uid]);
+
+  // Load yesterday's final score
+  useEffect(() => {
+    const yesterdayState = loadGameState(yesterdayStr);
+    if (!yesterdayState?.completed) return;
+
+    loadPicks(yesterdayStr)
+      .then((pickData) => {
+        if (pickData) {
+          setYesterdayScore(computeUniqueness(yesterdayState, pickData));
+        }
+      })
+      .catch(() => {});
+  }, [yesterdayStr]);
 
   const handleCellClick = useCallback(
     (row: number, col: number) => {
@@ -239,6 +265,36 @@ export default function FaBdokuPage() {
           </span>
         </div>
       </div>
+
+      {/* Yesterday's final score */}
+      {showYesterday && yesterdayScore && (
+        <div className="bg-fab-surface border border-fab-border rounded-lg p-3 mb-3 flex items-center justify-between">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="shrink-0 text-center">
+              <p className="text-lg font-bold text-fab-gold font-mono leading-tight">
+                {yesterdayScore.score}
+              </p>
+              <p className="text-[9px] text-fab-dim">score</p>
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs font-semibold text-fab-text">
+                Yesterday&apos;s Final Score
+              </p>
+              <p className="text-[10px] text-fab-dim">
+                {yesterdayStr} &middot; {yesterdayScore.totalPlayers} player{yesterdayScore.totalPlayers !== 1 ? "s" : ""}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => setShowYesterday(false)}
+            className="shrink-0 text-fab-dim hover:text-fab-muted transition-colors ml-2"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      )}
 
       {/* Game board */}
       <FaBdokuBoard
