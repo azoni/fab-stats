@@ -64,9 +64,11 @@ export function ImportIcon({ className = iconClass }: { className?: string }) {
 
 export function ShieldIcon({ className = iconClass }: { className?: string }) {
   return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M12 2L4 7v5c0 5.55 3.41 10.74 8 12 4.59-1.26 8-6.45 8-12V7l-8-5z" />
-      <path d="M12 8l-1.5 4.5h-3.5l3 2.2-1.2 3.8L12 16l3.2 2.5-1.2-3.8 3-2.2h-3.5L12 8z" fill="currentColor" fillOpacity="0.15" />
+    <svg className={className} viewBox="0 0 24 24" fill="none">
+      <rect x="5" y="2" width="14" height="20" rx="2" stroke="#D9A05B" strokeWidth="2" />
+      <rect x="8" y="13" width="2" height="3" fill="#E53935" />
+      <rect x="12" y="10" width="2" height="6" fill="#FBC02D" />
+      <rect x="16" y="6" width="2" height="10" fill="#1E88E5" />
     </svg>
   );
 }

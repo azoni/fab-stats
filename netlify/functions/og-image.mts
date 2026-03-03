@@ -226,10 +226,12 @@ function renderCard(player: PlayerData | null): VNode {
                               children: {
                                 type: "svg",
                                 props: {
-                                  width: 24, height: 24, viewBox: "0 0 32 32",
+                                  width: 24, height: 24, viewBox: "0 0 24 24", fill: "none",
                                   children: [
-                                    { type: "path", props: { d: "M16 4L6 9v7c0 6.2 4.3 11.9 10 13.7 5.7-1.8 10-7.5 10-13.7V9L16 4z", fill: gold, opacity: 0.3 } },
-                                    { type: "path", props: { d: "M16 4L6 9v7c0 6.2 4.3 11.9 10 13.7 5.7-1.8 10-7.5 10-13.7V9L16 4z", stroke: gold, strokeWidth: 1.5, fill: "none" } },
+                                    { type: "rect", props: { x: 5, y: 2, width: 14, height: 20, rx: 2, stroke: "#D9A05B", strokeWidth: 2 } },
+                                    { type: "rect", props: { x: 8, y: 13, width: 2, height: 3, fill: "#E53935" } },
+                                    { type: "rect", props: { x: 12, y: 10, width: 2, height: 6, fill: "#FBC02D" } },
+                                    { type: "rect", props: { x: 16, y: 6, width: 2, height: 10, fill: "#1E88E5" } },
                                   ],
                                 },
                               },
@@ -542,10 +544,12 @@ function renderMetaCard(meta: MetaPageData | null): VNode {
                         children: {
                           type: "svg",
                           props: {
-                            width: 32, height: 32, viewBox: "0 0 32 32",
+                            width: 32, height: 32, viewBox: "0 0 24 24", fill: "none",
                             children: [
-                              { type: "path", props: { d: "M16 4L6 9v7c0 6.2 4.3 11.9 10 13.7 5.7-1.8 10-7.5 10-13.7V9L16 4z", fill: gold, opacity: 0.3 } },
-                              { type: "path", props: { d: "M16 4L6 9v7c0 6.2 4.3 11.9 10 13.7 5.7-1.8 10-7.5 10-13.7V9L16 4z", stroke: gold, strokeWidth: 1.5, fill: "none" } },
+                              { type: "rect", props: { x: 5, y: 2, width: 14, height: 20, rx: 2, stroke: "#D9A05B", strokeWidth: 2 } },
+                              { type: "rect", props: { x: 8, y: 13, width: 2, height: 3, fill: "#E53935" } },
+                              { type: "rect", props: { x: 12, y: 10, width: 2, height: 6, fill: "#FBC02D" } },
+                              { type: "rect", props: { x: 16, y: 6, width: 2, height: 10, fill: "#1E88E5" } },
                             ],
                           },
                         },

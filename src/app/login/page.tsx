@@ -91,19 +91,11 @@ export default function LoginPage() {
         {/* Logo */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-2 mb-2">
-            <svg viewBox="0 0 32 32" className="w-10 h-10">
-              <rect width="32" height="32" rx="6" fill="#0c0a0e" />
-              <path
-                d="M16 4L6 9v7c0 6.2 4.3 11.9 10 13.7 5.7-1.8 10-7.5 10-13.7V9L16 4z"
-                stroke="#c9a84c"
-                strokeWidth="1.2"
-                fill="#c9a84c"
-                fillOpacity="0.1"
-              />
-              <path
-                d="M16 9l-1.8 5.5H9.5l3.7 2.7-1.4 4.3L16 18.8l4.2 2.7-1.4-4.3 3.7-2.7h-4.7L16 9z"
-                fill="#c9a84c"
-              />
+            <svg viewBox="0 0 24 24" className="w-10 h-10" fill="none">
+              <rect x="5" y="2" width="14" height="20" rx="2" stroke="#D9A05B" strokeWidth="2" />
+              <rect x="8" y="13" width="2" height="3" fill="#E53935" />
+              <rect x="12" y="10" width="2" height="6" fill="#FBC02D" />
+              <rect x="16" y="6" width="2" height="10" fill="#1E88E5" />
             </svg>
             <span className="text-2xl font-bold text-fab-gold">FaB Stats</span>
           </div>
