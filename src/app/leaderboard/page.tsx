@@ -496,7 +496,7 @@ export default function LeaderboardPage() {
       case "kudos_given_helpful": {
         const field = kudosField(activeTab);
         return [...visibleEntries]
-          .filter((e) => (kudosGivenMap.get(e.userId)?.[field] ?? 0) > 0)
+          .filter((e) => e.username !== SITE_CREATOR && (kudosGivenMap.get(e.userId)?.[field] ?? 0) > 0)
           .sort((a, b) => (kudosGivenMap.get(b.userId)?.[field] ?? 0) - (kudosGivenMap.get(a.userId)?.[field] ?? 0) || (kudosGivenMap.get(b.userId)?.total ?? 0) - (kudosGivenMap.get(a.userId)?.total ?? 0));
       }
       default:
@@ -540,10 +540,13 @@ export default function LeaderboardPage() {
     if (!user) return new Map<string, number>();
     if (activeCategory === "kudos" || activeCategory === "kudos_given") {
       const data = activeCategory === "kudos_given" ? kudosGivenData : kudosData;
+      // Exclude admin from kudos given rankings
+      const adminEntry = activeCategory === "kudos_given" ? visibleEntries.find((e) => e.username === SITE_CREATOR) : null;
+      const adminUid = adminEntry?.userId;
       const map = new Map<string, number>();
       for (const tabId of activeCategoryObj.tabs) {
         const field = kudosField(tabId as Tab);
-        const sorted = [...data].filter((e) => e[field] > 0).sort((a, b) => b[field] - a[field]);
+        const sorted = [...data].filter((e) => e[field] > 0 && !(adminUid && e.uid === adminUid)).sort((a, b) => b[field] - a[field]);
         const idx = sorted.findIndex((e) => e.uid === user.uid);
         if (idx >= 0) map.set(tabId, idx + 1);
       }
