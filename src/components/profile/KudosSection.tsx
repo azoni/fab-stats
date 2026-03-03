@@ -65,12 +65,11 @@ export function KudosSection({
   adminGiven,
   isAdmin,
 }: KudosSectionProps) {
-  const [loading, setLoading] = useState<string | null>(null);
   const [hint, setHint] = useState<string | null>(null);
 
   const handleToggle = useCallback(
-    async (kudosType: KudosId) => {
-      if (!currentUserId || !currentDisplayName || loading) return;
+    (kudosType: KudosId) => {
+      if (!currentUserId || !currentDisplayName) return;
       if (currentUserId === recipientId) return;
 
       const isGiven = givenByMe.has(kudosType);
@@ -93,37 +92,31 @@ export function KudosSection({
         }
       }
 
-      setLoading(kudosType);
-      try {
-        if (isGiven) {
-          await revokeKudos(currentUserId, recipientId, kudosType);
-          const newGiven = new Set(givenByMe);
-          newGiven.delete(kudosType);
-          const newCounts = { ...counts, [kudosType]: Math.max(0, (counts[kudosType] || 0) - 1) };
-          newCounts.total = Math.max(0, (newCounts.total || 0) - 1);
-          onUpdate(newCounts, newGiven);
-        } else {
-          await giveKudos(currentUserId, currentDisplayName, recipientId, kudosType, { skipLimits: isAdmin });
-          logActivity("kudos_given", kudosType);
-          const newGiven = new Set(givenByMe);
-          newGiven.add(kudosType);
-          const newCounts = { ...counts, [kudosType]: (counts[kudosType] || 0) + 1 };
-          newCounts.total = (newCounts.total || 0) + 1;
-          onUpdate(newCounts, newGiven);
+      // Optimistic UI update — apply immediately, fire Firestore writes in background
+      if (isGiven) {
+        const newGiven = new Set(givenByMe);
+        newGiven.delete(kudosType);
+        const newCounts = { ...counts, [kudosType]: Math.max(0, (counts[kudosType] || 0) - 1) };
+        newCounts.total = Math.max(0, (newCounts.total || 0) - 1);
+        onUpdate(newCounts, newGiven);
+        revokeKudos(currentUserId, recipientId, kudosType).catch(() => {});
+      } else {
+        const newGiven = new Set(givenByMe);
+        newGiven.add(kudosType);
+        const newCounts = { ...counts, [kudosType]: (counts[kudosType] || 0) + 1 };
+        newCounts.total = (newCounts.total || 0) + 1;
+        onUpdate(newCounts, newGiven);
+        giveKudos(currentUserId, currentDisplayName, recipientId, kudosType, { skipLimits: isAdmin }).catch(() => {});
+        logActivity("kudos_given", kudosType);
 
-          if (!isAdmin) {
-            const remaining = getRemainingKudos();
-            setHint(`${remaining} kudos left today`);
-            setTimeout(() => setHint(null), 2000);
-          }
+        if (!isAdmin) {
+          const remaining = getRemainingKudos();
+          setHint(`${remaining} kudos left today`);
+          setTimeout(() => setHint(null), 2000);
         }
-      } catch {
-        // Silently fail
-      } finally {
-        setLoading(null);
       }
     },
-    [currentUserId, currentDisplayName, recipientId, counts, givenByMe, onUpdate, loading, isAdmin]
+    [currentUserId, currentDisplayName, recipientId, counts, givenByMe, onUpdate, isAdmin]
   );
 
   const isOwnProfile = currentUserId === recipientId;
@@ -146,20 +139,17 @@ export function KudosSection({
           const count = counts[kt.id] || 0;
           const given = givenCounts?.[kt.id] || 0;
           const isGiven = givenByMe.has(kt.id);
-          const isLoading = loading === kt.id;
           const hasAdminKudos = adminGiven?.has(kt.id);
 
           return (
             <button
               key={kt.id}
               type="button"
-              disabled={!canInteract || isLoading}
+              disabled={!canInteract}
               onClick={() => handleToggle(kt.id)}
               title={`${kt.label}: ${kt.description}${isGiven ? " (click to remove)" : ""}${hasAdminKudos ? " ✦ Endorsed by admin" : ""}${given > 0 ? ` · ${given} given` : ""}`}
               className={`flex flex-col items-center gap-0.5 w-[52px] py-1.5 rounded-lg transition-all ${
-                isLoading
-                  ? "opacity-50 cursor-wait"
-                  : !canInteract
+                !canInteract
                   ? "opacity-60 cursor-default"
                   : isGiven
                   ? "bg-fab-gold/15 border border-fab-gold/30 hover:bg-fab-gold/25"
