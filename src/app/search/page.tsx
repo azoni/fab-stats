@@ -23,12 +23,13 @@ interface SearchResult {
 }
 
 type ScopeTab = "community" | "friends";
-type TypeFilter = "all" | "import" | "placement";
+type TypeFilter = "all" | "import" | "placement" | "fabdoku";
 
 const TYPE_FILTERS: { value: TypeFilter; label: string }[] = [
   { value: "all", label: "All" },
   { value: "import", label: "Imports" },
   { value: "placement", label: "Placements" },
+  { value: "fabdoku", label: "FaBdoku" },
 ];
 
 const PAGE_SIZE = 15;
@@ -69,7 +70,7 @@ function SearchContent() {
   const [scope, setScope] = useState<ScopeTab>("community");
   const initialType = searchParams.get("type") as TypeFilter | null;
   const [typeFilter, setTypeFilter] = useState<TypeFilter>(
-    initialType && (["all", "import", "placement"] as TypeFilter[]).includes(initialType) ? initialType : "placement"
+    initialType && (["all", "import", "placement", "fabdoku"] as TypeFilter[]).includes(initialType) ? initialType : "placement"
   );
   const { events: allFeedEvents, loading: feedLoading } = useFeed(typeFilter);
   const [page, setPage] = useState(0);

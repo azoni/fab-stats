@@ -316,7 +316,18 @@ export interface PlacementFeedEvent extends FeedEventBase {
   hero?: string;
 }
 
-export type FeedEvent = ImportFeedEvent | AchievementFeedEvent | PlacementFeedEvent;
+export interface FaBdokuFeedEvent extends FeedEventBase {
+  type: "fabdoku";
+  subtype: "completed" | "shared";
+  date: string;
+  won: boolean;
+  correctCount: number;
+  guessesUsed: number;
+  uniquenessScore?: number;
+  grid: ("correct" | "wrong" | "empty")[][];
+}
+
+export type FeedEvent = ImportFeedEvent | AchievementFeedEvent | PlacementFeedEvent | FaBdokuFeedEvent;
 
 export interface Creator {
   name: string;

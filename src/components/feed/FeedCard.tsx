@@ -1,7 +1,7 @@
 "use client";
 import { useState, useCallback } from "react";
 import Link from "next/link";
-import type { FeedEvent, ImportFeedEvent } from "@/types";
+import type { FeedEvent, ImportFeedEvent, FaBdokuFeedEvent } from "@/types";
 import { rankBorderClass } from "@/lib/leaderboard-ranks";
 import { playerHref } from "@/lib/constants";
 import { FEED_REACTIONS, addFeedReaction, removeFeedReaction, deleteFeedEvent } from "@/lib/feed";
@@ -356,6 +356,7 @@ export function FeedCard({ event, compact, rankMap, eventTierMap, userId, isAdmi
           {event.type === "import" && <ImportContent event={event} compact={compact} />}
           {event.type === "achievement" && <AchievementContent event={event} compact={compact} />}
           {event.type === "placement" && <PlacementContent event={event} compact={compact} />}
+          {event.type === "fabdoku" && <FaBdokuContent event={event} compact={compact} />}
           <ReactionBar event={event} userId={userId} compact={compact} />
         </div>
       </div>
@@ -459,6 +460,60 @@ function PlacementContent({ event, compact }: { event: FeedEvent & { type: "plac
         <span className="px-2 py-0.5 rounded-full bg-fab-surface text-fab-dim text-xs">
           {event.eventType}
         </span>
+      </div>
+    </>
+  );
+}
+
+const gridCellColor: Record<string, string> = {
+  correct: "bg-fab-win",
+  wrong: "bg-fab-loss",
+  empty: "bg-fab-border",
+};
+
+function FaBdokuContent({ event, compact }: { event: FaBdokuFeedEvent; compact?: boolean }) {
+  const actionText = event.subtype === "shared" ? "shared" : "completed";
+
+  if (compact) {
+    return (
+      <div className="flex items-center gap-2">
+        <p className="text-[11px] text-fab-muted">
+          {actionText} FaBdoku &middot;{" "}
+          <span className="font-semibold text-fab-text">{event.correctCount}/9</span>
+          {event.uniquenessScore !== undefined && (
+            <span className="ml-1 text-fab-gold font-semibold">{event.uniquenessScore}pts</span>
+          )}
+        </p>
+        <div className="grid grid-cols-3 gap-px shrink-0">
+          {event.grid.flat().map((cell, i) => (
+            <div key={i} className={`w-2 h-2 rounded-[1px] ${gridCellColor[cell]}`} />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <div className="flex items-center gap-3 mt-1">
+        <div>
+          <p className="text-sm text-fab-muted">
+            {actionText}{" "}
+            <Link href="/fabdoku" className="font-semibold text-fab-gold hover:underline">FaBdoku</Link>
+            {" "}&mdash;{" "}
+            <span className="font-semibold text-fab-text">{event.correctCount}/9</span> in {event.guessesUsed} guesses
+          </p>
+          {event.uniquenessScore !== undefined && (
+            <p className="text-xs text-fab-muted mt-0.5">
+              Uniqueness: <span className="font-semibold text-fab-gold">{event.uniquenessScore}</span>
+            </p>
+          )}
+        </div>
+        <div className="grid grid-cols-3 gap-0.5 shrink-0 ml-auto">
+          {event.grid.flat().map((cell, i) => (
+            <div key={i} className={`w-3.5 h-3.5 rounded-sm ${gridCellColor[cell]}`} />
+          ))}
+        </div>
       </div>
     </>
   );

@@ -16,7 +16,7 @@ import {
   type QueryConstraint,
 } from "firebase/firestore";
 import { db } from "./firebase";
-import type { FeedEvent, ImportFeedEvent, AchievementFeedEvent, PlacementFeedEvent, UserProfile, ImportSource, Achievement } from "@/types";
+import type { FeedEvent, ImportFeedEvent, AchievementFeedEvent, PlacementFeedEvent, FaBdokuFeedEvent, UserProfile, ImportSource, Achievement } from "@/types";
 import type { PlayoffFinish } from "./stats";
 
 function feedCollection() {
@@ -129,6 +129,56 @@ export async function createPlacementFeedEvent(
   invalidateFeedCache();
 }
 
+export async function createFaBdokuFeedEvent(
+  profile: UserProfile,
+  subtype: "completed" | "shared",
+  puzzleDate: string,
+  won: boolean,
+  correctCount: number,
+  guessesUsed: number,
+  grid: ("correct" | "wrong" | "empty")[][],
+  uniquenessScore?: number,
+): Promise<void> {
+  if (!profile.isPublic || profile.hideFromFeed) return;
+
+  // Dedup: don't post multiple events for the same puzzle+subtype
+  const dupCheck = query(
+    feedCollection(),
+    where("userId", "==", profile.uid),
+    where("type", "==", "fabdoku"),
+    where("date", "==", puzzleDate),
+    where("subtype", "==", subtype),
+    limit(1),
+  );
+  const existing = await getDocs(dupCheck);
+  if (!existing.empty) return;
+
+  const data: Omit<FaBdokuFeedEvent, "id"> = {
+    type: "fabdoku",
+    subtype,
+    userId: profile.uid,
+    username: profile.username,
+    displayName: profile.displayName,
+    isPublic: profile.isPublic,
+    date: puzzleDate,
+    won,
+    correctCount,
+    guessesUsed,
+    grid,
+    createdAt: new Date().toISOString(),
+  };
+
+  const clean: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(data)) {
+    if (v !== undefined) clean[k] = v;
+  }
+  if (profile.photoUrl) clean.photoUrl = profile.photoUrl;
+  if (uniquenessScore !== undefined) clean.uniquenessScore = uniquenessScore;
+
+  await addDoc(feedCollection(), clean);
+  invalidateFeedCache();
+}
+
 /** Delete all placement feed events for a specific event (used when an event is deleted). */
 export async function deleteFeedEventsForEvent(
   userId: string,
@@ -189,7 +239,7 @@ export function invalidateFeedCache() {
   feedCache.clear();
 }
 
-export type FeedEventType = "all" | "import" | "achievement" | "placement";
+export type FeedEventType = "all" | "import" | "achievement" | "placement" | "fabdoku";
 
 export interface PaginatedFeedResult {
   events: FeedEvent[];

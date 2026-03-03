@@ -13,12 +13,13 @@ import type { FeedEventType } from "@/lib/feed";
 import type { FeedEvent } from "@/types";
 
 type ScopeTab = "community" | "friends";
-type TypeFilter = "all" | "import" | "placement" | "engagement";
+type TypeFilter = "all" | "import" | "placement" | "fabdoku" | "engagement";
 
 const TYPE_FILTERS: { value: TypeFilter; label: string; adminOnly?: boolean }[] = [
   { value: "all", label: "All" },
   { value: "import", label: "Imports" },
   { value: "placement", label: "Placements" },
+  { value: "fabdoku", label: "FaBdoku" },
   { value: "engagement", label: "Engagement", adminOnly: true },
 ];
 
@@ -61,7 +62,7 @@ export function ActivityFeed({ rankMap, eventTierMap }: { rankMap?: Map<string, 
   const { friends } = useFriends();
   const { favorites } = useFavorites();
   const [scope, _setScope] = useState<ScopeTab>(() => readStored(SCOPE_KEY, ["community", "friends"], "community"));
-  const [typeFilter, _setTypeFilter] = useState<TypeFilter>(() => readStored(TYPE_KEY, ["all", "import", "placement", "engagement"], "placement"));
+  const [typeFilter, _setTypeFilter] = useState<TypeFilter>(() => readStored(TYPE_KEY, ["all", "import", "placement", "fabdoku", "engagement"], "placement"));
   const feedTypeFilter: FeedEventType = typeFilter === "engagement" ? "all" : typeFilter;
   const { events, loading } = useFeed(feedTypeFilter);
 

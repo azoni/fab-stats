@@ -40,6 +40,7 @@ import {
   loadPicks,
   computeUniqueness,
 } from "@/lib/fabdoku/firestore";
+import { createFaBdokuFeedEvent } from "@/lib/feed";
 import type { GameState, FaBdokuStats, UniquenessData } from "@/lib/fabdoku/types";
 
 function getYesterdayDateStr(): string {
@@ -51,8 +52,14 @@ function getYesterdayDateStr(): string {
   return `${y}-${m}-${dd}`;
 }
 
+function buildGrid(state: GameState): ("correct" | "wrong" | "empty")[][] {
+  return state.cells.map((row) =>
+    row.map((c) => (c.correct ? "correct" : c.locked ? "wrong" : "empty"))
+  );
+}
+
 export default function FaBdokuPage() {
-  const { user, isAdmin } = useAuth();
+  const { user, profile, isAdmin } = useAuth();
   const dateStr = useMemo(() => getTodayDateStr(), []);
   const yesterdayStr = useMemo(() => getYesterdayDateStr(), []);
   const puzzle = useMemo(() => generateDailyPuzzle(dateStr), [dateStr]);
@@ -189,9 +196,18 @@ export default function FaBdokuPage() {
         }
         setShowResult(true);
         refreshUniqueness(newState);
+
+        // Post to activity feed (non-blocking)
+        if (profile) {
+          const cc = newCells.flat().filter((c) => c.correct).length;
+          createFaBdokuFeedEvent(
+            profile, "completed", dateStr, isWon, cc,
+            newGuessesUsed, buildGrid(newState),
+          ).catch(() => {});
+        }
       }
     },
-    [gameState, selectedCell, puzzle, user?.uid, refreshUniqueness]
+    [gameState, selectedCell, puzzle, user?.uid, profile, dateStr, refreshUniqueness]
   );
 
   if (!gameState) {
@@ -312,7 +328,17 @@ export default function FaBdokuPage() {
           gameState={gameState}
           stats={stats}
           uniqueness={uniqueness}
-          onShare={() => setShowShare(true)}
+          onShare={() => {
+            setShowShare(true);
+            if (profile) {
+              const cc = gameState.cells.flat().filter((c) => c.correct).length;
+              createFaBdokuFeedEvent(
+                profile, "shared", dateStr, gameState.won, cc,
+                gameState.guessesUsed, buildGrid(gameState),
+                uniqueness?.score,
+              ).catch(() => {});
+            }
+          }}
         />
       )}
 
