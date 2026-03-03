@@ -394,24 +394,92 @@ export default function FaBdokuPage() {
         />
       )}
 
-      {/* Admin replay button */}
-      {isAdmin && gameState.guessesUsed > 0 && (
-        <div className="mt-4 flex justify-center">
-          <button
-            onClick={() => {
-              if (typeof window !== "undefined") {
-                localStorage.removeItem(`fabdoku-${dateStr}`);
-              }
-              setGameState(createFreshGameState(dateStr));
-              setShowResult(false);
-              setShowShare(false);
-              setUniqueness(null);
-              setIsReplay(true);
-            }}
-            className="px-4 py-2 text-xs font-medium rounded-lg bg-fab-surface border border-fab-border text-fab-muted hover:text-fab-text hover:border-fab-gold/50 transition-colors"
-          >
-            Reset Puzzle (Admin)
-          </button>
+      {/* Admin buttons */}
+      {isAdmin && (
+        <div className="mt-4 flex justify-center gap-2">
+          {gameState.guessesUsed > 0 && (
+            <button
+              onClick={() => {
+                if (typeof window !== "undefined") {
+                  localStorage.removeItem(`fabdoku-${dateStr}`);
+                }
+                setGameState(createFreshGameState(dateStr));
+                setShowResult(false);
+                setShowShare(false);
+                setUniqueness(null);
+                setIsReplay(true);
+              }}
+              className="px-4 py-2 text-xs font-medium rounded-lg bg-fab-surface border border-fab-border text-fab-muted hover:text-fab-text hover:border-fab-gold/50 transition-colors"
+            >
+              Reset Puzzle
+            </button>
+          )}
+          {!gameState.completed && (
+            <button
+              onClick={() => {
+                // Auto-fill with random correct answers (no duplicates)
+                const used = new Set<string>();
+                const newCells = gameState.cells.map((row, r) =>
+                  row.map((cell, c) => {
+                    if (cell.correct) {
+                      if (cell.heroName) used.add(cell.heroName);
+                      return { ...cell };
+                    }
+                    const options = puzzle.validAnswers[r][c].filter((h) => !used.has(h));
+                    const pick = options[Math.floor(Math.random() * options.length)] ?? puzzle.validAnswers[r][c][0];
+                    used.add(pick);
+                    return { heroName: pick, correct: true, locked: true };
+                  })
+                );
+                const filledCount = newCells.flat().filter((c) => !gameState.cells.flat().find(
+                  (orig, i) => i === newCells.flat().indexOf(c) && orig.locked
+                )).length;
+                const newState: GameState = {
+                  ...gameState,
+                  cells: newCells,
+                  guessesUsed: gameState.guessesUsed + newCells.flat().filter((_, i) => !gameState.cells.flat()[i].locked).length,
+                  completed: true,
+                  won: true,
+                };
+                setGameState(newState);
+                saveGameState(newState);
+                setSelectedCell(null);
+                // Trigger completion flow
+                (async () => {
+                  const shouldSave = !isReplay && !hasPicksSaved(dateStr);
+                  if (user?.uid) {
+                    try {
+                      const result = buildResult(newState);
+                      await saveResult(user.uid, result);
+                      if (shouldSave) {
+                        await savePicks(newState);
+                        markPicksSaved(dateStr);
+                      }
+                      const updatedStats = await loadStats(user.uid);
+                      if (updatedStats) setStats(updatedStats);
+                    } catch {}
+                  } else if (shouldSave) {
+                    try {
+                      await savePicks(newState);
+                      markPicksSaved(dateStr);
+                    } catch {}
+                  }
+                  setShowResult(true);
+                  const uData = await refreshUniqueness(newState);
+                  if (profile) {
+                    createFaBdokuFeedEvent(
+                      profile, "completed", dateStr, true,
+                      9, newState.guessesUsed, buildGrid(newState),
+                      uData?.score,
+                    ).catch(() => {});
+                  }
+                })();
+              }}
+              className="px-4 py-2 text-xs font-medium rounded-lg bg-fab-gold/20 border border-fab-gold/40 text-fab-gold hover:bg-fab-gold/30 transition-colors"
+            >
+              Auto-fill (Admin)
+            </button>
+          )}
         </div>
       )}
 
