@@ -76,17 +76,20 @@ export default function FaBdokuPage() {
   const [yesterdayScore, setYesterdayScore] = useState<UniquenessData | null>(null);
   const [showYesterday, setShowYesterday] = useState(true);
 
-  // Track which hero names have already been guessed (no reuse)
+  // Track which hero names have already been guessed (no reuse).
+  // Excludes the hero in the currently selected cell so it can be replaced.
   const usedHeroes = useMemo(() => {
     if (!gameState) return new Set<string>();
     const set = new Set<string>();
-    for (const row of gameState.cells) {
-      for (const cell of row) {
+    for (let r = 0; r < gameState.cells.length; r++) {
+      for (let c = 0; c < gameState.cells[r].length; c++) {
+        if (selectedCell && selectedCell[0] === r && selectedCell[1] === c) continue;
+        const cell = gameState.cells[r][c];
         if (cell.heroName) set.add(cell.heroName);
       }
     }
     return set;
-  }, [gameState]);
+  }, [gameState, selectedCell]);
 
   // Load uniqueness data for a completed game
   const refreshUniqueness = useCallback(
@@ -139,7 +142,6 @@ export default function FaBdokuPage() {
   const handleCellClick = useCallback(
     (row: number, col: number) => {
       if (!gameState || gameState.completed) return;
-      if (gameState.cells[row][col].locked) return;
       setSelectedCell([row, col]);
     },
     [gameState]
@@ -250,7 +252,8 @@ export default function FaBdokuPage() {
           <p className="font-semibold text-fab-text">How to Play</p>
           <ul className="list-disc list-inside space-y-1.5 text-xs">
             <li>Fill each cell with a Flesh and Blood hero that matches <strong className="text-fab-text">both</strong> the row and column categories.</li>
-            <li>You get <strong className="text-fab-text">9 guesses</strong> &mdash; one per cell. Each guess is <strong className="text-fab-text">locked in</strong> and cannot be changed.</li>
+            <li>You have <strong className="text-fab-text">12 guesses</strong> to fill all 9 cells. That gives you <strong className="text-fab-text">3 extra</strong> to change your mind.</li>
+            <li>Tap a filled cell to <strong className="text-fab-text">replace</strong> your pick &mdash; this uses another guess.</li>
             <li>Each hero can only be used <strong className="text-fab-text">once</strong> across the entire grid.</li>
             <li>A new puzzle appears every day at midnight.</li>
           </ul>
@@ -267,31 +270,26 @@ export default function FaBdokuPage() {
         </div>
       )}
 
-      {/* Progress */}
+      {/* Guesses remaining */}
       <div className="flex items-center justify-between mb-3 px-1">
         <p className="text-xs text-fab-muted">
           {gameState.date}
         </p>
         <div className="flex items-center gap-2">
           <div className="flex gap-0.5">
-            {Array.from({ length: 9 }, (_, i) => {
-              const cell = gameState.cells[Math.floor(i / 3)][i % 3];
-              return (
-                <div
-                  key={i}
-                  className={`w-2 h-2 rounded-full transition-colors ${
-                    cell.correct
-                      ? "bg-fab-win"
-                      : cell.locked
-                      ? "bg-fab-loss"
-                      : "bg-fab-border"
-                  }`}
-                />
-              );
-            })}
+            {Array.from({ length: gameState.maxGuesses }, (_, i) => (
+              <div
+                key={i}
+                className={`w-2 h-2 rounded-full transition-colors ${
+                  i < gameState.guessesUsed
+                    ? "bg-fab-gold"
+                    : "bg-fab-border"
+                }`}
+              />
+            ))}
           </div>
           <span className="text-xs text-fab-muted">
-            {gameState.guessesUsed}/9
+            {gameState.maxGuesses - gameState.guessesUsed} left
           </span>
         </div>
       </div>

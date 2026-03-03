@@ -76,10 +76,17 @@ export function FaBdokuCell({
     : "border-fab-loss ring-1 ring-fab-loss/30";
 
   const shortName = heroName.split(",")[0];
+  const canReplace = !disabled;
 
   return (
     <div
-      className={`relative aspect-square rounded-lg overflow-hidden border-2 ${borderColor} transition-all`}
+      role={canReplace ? "button" : undefined}
+      tabIndex={canReplace ? 0 : undefined}
+      onClick={canReplace ? onClick : undefined}
+      onKeyDown={canReplace ? (e) => { if (e.key === "Enter" || e.key === " ") onClick(); } : undefined}
+      className={`relative aspect-square rounded-lg overflow-hidden border-2 ${borderColor} transition-all ${
+        canReplace ? "cursor-pointer hover:brightness-110 hover:ring-2 hover:ring-fab-gold/40" : ""
+      }`}
     >
       {showImg ? (
         <img

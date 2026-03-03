@@ -1,7 +1,7 @@
 import type { GameState, CellState } from "./types";
 
 const STORAGE_PREFIX = "fabdoku-";
-const MAX_GUESSES = 9;
+const MAX_GUESSES = 12;
 
 function createEmptyCell(): CellState {
   return { heroName: null, correct: false, locked: false };

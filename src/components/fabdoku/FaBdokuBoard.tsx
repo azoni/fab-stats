@@ -103,7 +103,7 @@ export function FaBdokuBoard({
                 heroName={cell.heroName}
                 correct={cell.correct}
                 locked={cell.locked}
-                disabled={disabled || cell.locked}
+                disabled={disabled}
                 onClick={() => onCellClick(ri, ci)}
                 pct={cellPcts?.[ri]?.[ci]}
               />
