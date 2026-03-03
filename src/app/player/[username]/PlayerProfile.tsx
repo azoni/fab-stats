@@ -517,22 +517,24 @@ export default function PlayerProfile() {
               </div>
             </div>
             <div className="flex items-center gap-3 shrink-0">
-              {/* Kudos — received counts with given counts inline */}
-              <KudosSection
-                recipientId={profile.uid}
-                currentUserId={currentUser?.uid}
-                currentDisplayName={currentUser?.displayName || myProfile?.username || currentUser?.email?.split("@")[0] || undefined}
-                counts={kudosCounts}
-                givenCounts={kudosGivenCounts}
-                givenByMe={kudosGivenByMe}
-                onUpdate={(newCounts, newGiven) => {
-                  setKudosCounts(newCounts);
-                  setKudosGivenByMe(newGiven);
-                }}
-                inline
-                adminGiven={adminKudosGiven}
-                isAdmin={isAdmin}
-              />
+              {/* Kudos — received counts with given counts inline (hidden on private profiles) */}
+              {profile.isPublic && (
+                <KudosSection
+                  recipientId={profile.uid}
+                  currentUserId={currentUser?.uid}
+                  currentDisplayName={currentUser?.displayName || myProfile?.username || currentUser?.email?.split("@")[0] || undefined}
+                  counts={kudosCounts}
+                  givenCounts={kudosGivenCounts}
+                  givenByMe={kudosGivenByMe}
+                  onUpdate={(newCounts, newGiven) => {
+                    setKudosCounts(newCounts);
+                    setKudosGivenByMe(newGiven);
+                  }}
+                  inline
+                  adminGiven={adminKudosGiven}
+                  isAdmin={isAdmin}
+                />
+              )}
               <EmblemDisplay talentEmblemId={profile.selectedEmblem} classEmblemId={profile.selectedClassEmblem} isOwner={isOwner} onClickTalent={() => setEmblemPickerMode("talent")} onClickClass={() => setEmblemPickerMode("class")} />
             </div>
           </div>

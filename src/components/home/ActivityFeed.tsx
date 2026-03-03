@@ -119,20 +119,23 @@ export function ActivityFeed({ rankMap, eventTierMap }: { rankMap?: Map<string, 
       source = source.filter((e) => e.type !== "fabdoku" || (e as { subtype?: string }).subtype !== "shared");
     }
 
-    // Filter out stale placements — only show if uploaded within the last 30 days
-    const THIRTY_DAYS = 30 * 24 * 60 * 60 * 1000;
-    const placementCutoff = Date.now() - THIRTY_DAYS;
+    // Filter out stale placements — only show events from the last 2 weeks
+    const TWO_WEEKS = 14 * 24 * 60 * 60 * 1000;
+    const placementCutoff = Date.now() - TWO_WEEKS;
     source = source.filter((e) => {
       if (e.type === "placement") {
-        return new Date(e.createdAt).getTime() >= placementCutoff;
+        return new Date(e.eventDate).getTime() >= placementCutoff;
       }
       return true;
     });
 
     // Sort by when the event was uploaded (most recent first)
-    source = [...source].sort((a, b) => {
-      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-    });
+    // createdAt may be a Firestore Timestamp object — handle both Timestamp and string/Date
+    const toMs = (v: unknown): number =>
+      v && typeof v === "object" && "toMillis" in v
+        ? (v as { toMillis: () => number }).toMillis()
+        : new Date(v as string | number).getTime();
+    source = [...source].sort((a, b) => toMs(b.createdAt) - toMs(a.createdAt));
 
     // Per-type caps: keep only N most recent of each type
     const typeCounts: Record<string, number> = {};
