@@ -162,17 +162,10 @@ export function Navbar() {
         <div className="flex h-14 items-center justify-between">
           <Link href="/" className="flex items-center gap-2.5 shrink-0">
             <svg className="w-7 h-7" viewBox="0 0 24 24" fill="none">
-              <defs>
-                <linearGradient id="fabGold" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#FDE08B" />
-                  <stop offset="50%" stopColor="#D9A05B" />
-                  <stop offset="100%" stopColor="#A67B42" />
-                </linearGradient>
-              </defs>
-              <rect x="5" y="2" width="14" height="20" rx="2" stroke="url(#fabGold)" strokeWidth="2" />
-              <rect x="8" y="13" width="2" height="3" fill="url(#fabGold)" />
-              <rect x="12" y="10" width="2" height="6" fill="url(#fabGold)" />
-              <rect x="16" y="6" width="2" height="10" fill="url(#fabGold)" />
+              <rect x="5" y="2" width="14" height="20" rx="2" stroke="#D9A05B" strokeWidth="2" />
+              <rect x="8" y="13" width="2" height="3" fill="#E53935" />
+              <rect x="12" y="10" width="2" height="6" fill="#FBC02D" />
+              <rect x="16" y="6" width="2" height="10" fill="#1E88E5" />
             </svg>
             <span className="text-xl font-bold text-fab-gold tracking-tight">FaB Stats</span>
             {(userCount > 0 || matchCount > 0) && (
