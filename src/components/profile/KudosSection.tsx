@@ -165,7 +165,7 @@ export function KudosSection({
               <span className={`text-[10px] font-bold leading-tight tabular-nums ${
                 isGiven ? "text-fab-gold" : "text-fab-dim"
               }`}>
-                {count}{given > 0 && <span className="text-fab-dim font-normal">/{given}</span>}
+                {count}
               </span>
               <span className={`text-[8px] leading-tight ${
                 isGiven ? "text-fab-gold/70" : "text-fab-dim"

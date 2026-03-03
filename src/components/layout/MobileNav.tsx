@@ -88,7 +88,7 @@ const tabs: { href: string; label: string; icon: ReactNode; color: string }[] = 
   { href: "/matches", label: "Matches", icon: <SwordsIcon />, color: "text-red-400" },
   { href: "/leaderboard", label: "Rankings", icon: <TrophyIcon />, color: "text-amber-400" },
   { href: "/opponents", label: "Opponents", icon: <OpponentsIcon />, color: "text-purple-400" },
-  { href: "/search", label: "Discover", icon: <SearchIcon />, color: "text-cyan-400" },
+  { href: "/search", label: "Search", icon: <SearchIcon />, color: "text-cyan-400" },
 ];
 
 function MetaIcon(props: { className?: string }) {

@@ -19,7 +19,7 @@ export function RecentActivity({ events }: RecentActivityProps) {
           <h2 className="text-lg font-semibold text-fab-text">Recent Activity</h2>
         </div>
         <Link href="/search" className="text-sm text-fab-gold hover:text-fab-gold-light transition-colors ml-3">
-          View All
+          View Feed
         </Link>
       </div>
       <div className="space-y-1.5">
