@@ -161,9 +161,18 @@ export function Navbar() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-14 items-center justify-between">
           <Link href="/" className="flex items-center gap-2.5 shrink-0">
-            <svg className="w-7 h-7 text-fab-gold" viewBox="0 0 32 32" fill="none">
-              <path d="M16 2L4 8v8c0 7.2 5.1 13.9 12 16 6.9-2.1 12-8.8 12-16V8L16 2z" stroke="currentColor" strokeWidth="1.5" fill="currentColor" fillOpacity="0.1" />
-              <path d="M16 8l-2 6h-5l4 3-1.5 5L16 19l4.5 3L19 17l4-3h-5L16 8z" fill="currentColor" />
+            <svg className="w-7 h-7" viewBox="0 0 24 24" fill="none">
+              <defs>
+                <linearGradient id="fabGold" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#FDE08B" />
+                  <stop offset="50%" stopColor="#D9A05B" />
+                  <stop offset="100%" stopColor="#A67B42" />
+                </linearGradient>
+              </defs>
+              <rect x="5" y="2" width="14" height="20" rx="2" stroke="url(#fabGold)" strokeWidth="2" />
+              <line x1="8" y1="16" x2="8" y2="13" stroke="url(#fabGold)" strokeWidth="2" strokeLinecap="round" />
+              <line x1="12" y1="16" x2="12" y2="10" stroke="url(#fabGold)" strokeWidth="2" strokeLinecap="round" />
+              <line x1="16" y1="16" x2="16" y2="6" stroke="url(#fabGold)" strokeWidth="2" strokeLinecap="round" />
             </svg>
             <span className="text-xl font-bold text-fab-gold tracking-tight">FaB Stats</span>
             {(userCount > 0 || matchCount > 0) && (
