@@ -96,8 +96,8 @@ export function FaBdokuResult({ gameState, stats, uniqueness, onShare }: FaBdoku
       .join("\n");
 
     const timeStr = new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
-    const uniquenessLine = uniqueness && uniqueness.totalPlayers > 1
-      ? `\nScore: ${uniqueness.score} (${uniqueness.totalPlayers} players as of ${timeStr})`
+    const uniquenessLine = uniqueness
+      ? `\nScore: ${uniqueness.score} (${uniqueness.totalPlayers} player${uniqueness.totalPlayers !== 1 ? "s" : ""} as of ${timeStr})`
       : "";
     return `FaBdoku ${gameState.date}\n${correctCount}/${totalCells}${uniquenessLine}\n\n${grid}\n\nfabstats.net/fabdoku`;
   }
@@ -141,7 +141,7 @@ export function FaBdokuResult({ gameState, stats, uniqueness, onShare }: FaBdoku
       </div>
 
       {/* Uniqueness score */}
-      {uniqueness && uniqueness.totalPlayers > 1 ? (
+      {uniqueness ? (
         <div className="bg-fab-bg/50 rounded-lg border border-fab-border p-3 mb-4">
           <div className="flex items-center justify-between mb-2">
             <p className="text-[10px] text-fab-dim uppercase tracking-wider">
@@ -165,7 +165,7 @@ export function FaBdokuResult({ gameState, stats, uniqueness, onShare }: FaBdoku
             Lower is better — sum of % who picked same hero per cell
           </p>
           <p className="text-[10px] text-fab-gold/70 text-center mt-1.5">
-            Live score — come back tomorrow for final results
+            Live score — changes as more players complete the puzzle
           </p>
         </div>
       ) : (
@@ -174,7 +174,7 @@ export function FaBdokuResult({ gameState, stats, uniqueness, onShare }: FaBdoku
             Uniqueness
           </p>
           <p className="text-xs text-fab-muted">
-            Waiting for more players — scores appear when 2+ players complete today&apos;s puzzle
+            Loading scores...
           </p>
         </div>
       )}

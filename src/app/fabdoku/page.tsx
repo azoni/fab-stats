@@ -210,29 +210,27 @@ export default function FaBdokuPage() {
 
       // Save to Firestore on completion
       if (isCompleted) {
-        const shouldSavePicks = !hasPicksSaved(dateStr);
-
+        // Save result and picks independently so one failure doesn't block the other
         if (user?.uid) {
-          // Authenticated: save result + picks + stats
           try {
             const result = buildResult(newState);
             await saveResult(user.uid, result);
-            if (shouldSavePicks) {
-              await savePicks(newState);
-              markPicksSaved(dateStr);
-            }
+          } catch {
+            // Result save failed (e.g. replay overwrites blocked) — non-critical
+          }
+          try {
             const updatedStats = await loadStats(user.uid);
             if (updatedStats) setStats(updatedStats);
-          } catch {
-            // Silently fail — game state is saved locally
-          }
-        } else if (shouldSavePicks) {
-          // Anonymous: just save picks (counts toward uniqueness)
+          } catch {}
+        }
+        // Save picks (independent of result save)
+        const shouldSavePicks = !hasPicksSaved(dateStr);
+        if (shouldSavePicks) {
           try {
             await savePicks(newState);
             markPicksSaved(dateStr);
           } catch {
-            // Firestore write failed — anonymous picks not saved
+            // Picks save failed — uniqueness will fall back to local
           }
         }
         setShowResult(true);
@@ -371,7 +369,7 @@ export default function FaBdokuPage() {
         cells={gameState.cells}
         disabled={gameState.completed}
         onCellClick={handleCellClick}
-        cellPcts={gameState.completed && uniqueness && uniqueness.totalPlayers > 1 ? uniqueness.cellPcts : undefined}
+        cellPcts={gameState.completed && uniqueness ? uniqueness.cellPcts : undefined}
       />
 
       {/* Result panel (shown when game is over) */}
@@ -447,23 +445,28 @@ export default function FaBdokuPage() {
                 setSelectedCell(null);
                 // Trigger completion flow
                 (async () => {
-                  const shouldSave = !hasPicksSaved(dateStr);
+                  // Save result and picks independently so one failure doesn't block the other
                   if (user?.uid) {
                     try {
                       const result = buildResult(newState);
                       await saveResult(user.uid, result);
-                      if (shouldSave) {
-                        await savePicks(newState);
-                        markPicksSaved(dateStr);
-                      }
+                    } catch {
+                      // Result save failed (e.g. replay overwrites blocked) — non-critical
+                    }
+                    try {
                       const updatedStats = await loadStats(user.uid);
                       if (updatedStats) setStats(updatedStats);
                     } catch {}
-                  } else if (shouldSave) {
+                  }
+                  // Save picks (independent of result save)
+                  const shouldSave = !hasPicksSaved(dateStr);
+                  if (shouldSave) {
                     try {
                       await savePicks(newState);
                       markPicksSaved(dateStr);
-                    } catch {}
+                    } catch {
+                      // Picks save failed — uniqueness will fall back to local
+                    }
                   }
                   setShowResult(true);
                   const uData = await refreshUniqueness(newState);

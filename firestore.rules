@@ -393,6 +393,10 @@ service cloud.firestore {
       // Authenticated users can create their own result (uid must match)
       allow create: if request.auth != null
         && request.resource.data.uid == request.auth.uid;
+      // Owner can update their own result (replays overwrite)
+      allow update: if request.auth != null
+        && resource.data.uid == request.auth.uid
+        && request.resource.data.uid == request.auth.uid;
     }
     // Pick aggregation: atomic increments for uniqueness scoring
     match /fabdoku-picks/{dateStr} {
