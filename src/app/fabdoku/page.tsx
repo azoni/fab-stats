@@ -218,8 +218,6 @@ export default function FaBdokuPage() {
     );
   }
 
-  const guessesRemaining = gameState.maxGuesses - gameState.guessesUsed;
-
   return (
     <div className="max-w-lg mx-auto px-3 sm:px-4 py-4 sm:py-6">
       {/* Header */}
@@ -239,45 +237,61 @@ export default function FaBdokuPage() {
         </div>
         <button
           onClick={() => setShowHelp((v) => !v)}
-          className="text-fab-dim hover:text-fab-muted transition-colors"
+          className="flex items-center gap-1 px-2 py-1 rounded-md text-fab-muted hover:text-fab-text bg-fab-surface border border-fab-border hover:border-fab-gold/40 transition-colors text-xs font-medium"
         >
-          <HelpIcon className="w-5 h-5" />
+          <HelpIcon className="w-4 h-4" />
+          How to Play
         </button>
       </div>
 
       {/* How to play */}
       {showHelp && (
-        <div className="bg-fab-surface border border-fab-border rounded-lg p-4 mb-4 text-sm text-fab-muted space-y-2">
+        <div className="bg-fab-surface border border-fab-border rounded-lg p-4 mb-4 text-sm text-fab-muted space-y-3">
           <p className="font-semibold text-fab-text">How to Play</p>
-          <ul className="list-disc list-inside space-y-1 text-xs">
-            <li>Fill each cell with a hero that matches both the row and column categories.</li>
-            <li>You have <strong className="text-fab-text">{gameState.maxGuesses} guesses</strong> to fill all 9 cells (3 mistakes allowed).</li>
-            <li>Each hero can only be used once.</li>
+          <ul className="list-disc list-inside space-y-1.5 text-xs">
+            <li>Fill each cell with a Flesh and Blood hero that matches <strong className="text-fab-text">both</strong> the row and column categories.</li>
+            <li>You get <strong className="text-fab-text">9 guesses</strong> &mdash; one per cell. Each guess is <strong className="text-fab-text">locked in</strong> and cannot be changed.</li>
+            <li>Each hero can only be used <strong className="text-fab-text">once</strong> across the entire grid.</li>
             <li>A new puzzle appears every day at midnight.</li>
           </ul>
+
+          <div className="border-t border-fab-border pt-3">
+            <p className="font-semibold text-fab-gold text-xs mb-1.5">Uniqueness Scoring</p>
+            <ul className="list-disc list-inside space-y-1.5 text-xs">
+              <li>After you finish, each cell shows what <strong className="text-fab-text">% of players</strong> picked the same hero as you.</li>
+              <li>Your <strong className="text-fab-gold">uniqueness score</strong> is the sum of all 9 cell percentages. <strong className="text-fab-text">Lower is better</strong> &mdash; like golf.</li>
+              <li>Picking obscure heroes that fewer players choose gives a better score.</li>
+              <li>Scores are <strong className="text-fab-text">live</strong> and update as more players finish. Come back tomorrow to see your final score.</li>
+            </ul>
+          </div>
         </div>
       )}
 
-      {/* Guesses remaining */}
+      {/* Progress */}
       <div className="flex items-center justify-between mb-3 px-1">
         <p className="text-xs text-fab-muted">
           {gameState.date}
         </p>
         <div className="flex items-center gap-2">
           <div className="flex gap-0.5">
-            {Array.from({ length: gameState.maxGuesses }, (_, i) => (
-              <div
-                key={i}
-                className={`w-2 h-2 rounded-full transition-colors ${
-                  i < gameState.guessesUsed
-                    ? "bg-fab-gold"
-                    : "bg-fab-border"
-                }`}
-              />
-            ))}
+            {Array.from({ length: 9 }, (_, i) => {
+              const cell = gameState.cells[Math.floor(i / 3)][i % 3];
+              return (
+                <div
+                  key={i}
+                  className={`w-2 h-2 rounded-full transition-colors ${
+                    cell.correct
+                      ? "bg-fab-win"
+                      : cell.locked
+                      ? "bg-fab-loss"
+                      : "bg-fab-border"
+                  }`}
+                />
+              );
+            })}
           </div>
           <span className="text-xs text-fab-muted">
-            {guessesRemaining} left
+            {gameState.guessesUsed}/9
           </span>
         </div>
       </div>
@@ -343,7 +357,7 @@ export default function FaBdokuPage() {
       )}
 
       {/* Admin replay button */}
-      {isAdmin && gameState.completed && (
+      {isAdmin && gameState.guessesUsed > 0 && (
         <div className="mt-4 flex justify-center">
           <button
             onClick={() => {
@@ -357,7 +371,7 @@ export default function FaBdokuPage() {
             }}
             className="px-4 py-2 text-xs font-medium rounded-lg bg-fab-surface border border-fab-border text-fab-muted hover:text-fab-text hover:border-fab-gold/50 transition-colors"
           >
-            Replay Puzzle (Admin)
+            Reset Puzzle (Admin)
           </button>
         </div>
       )}

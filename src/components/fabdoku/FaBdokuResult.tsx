@@ -95,10 +95,11 @@ export function FaBdokuResult({ gameState, stats, uniqueness, onShare }: FaBdoku
       )
       .join("\n");
 
+    const timeStr = new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
     const uniquenessLine = uniqueness
-      ? `\nUniqueness: ${uniqueness.score}`
+      ? `\nScore: ${uniqueness.score} (${uniqueness.totalPlayers} players as of ${timeStr})`
       : "";
-    return `FaBdoku ${gameState.date}\n${correctCount}/${totalCells} in ${gameState.guessesUsed} guesses${uniquenessLine}\n\n${grid}\n\nfabstats.net/fabdoku`;
+    return `FaBdoku ${gameState.date}\n${correctCount}/${totalCells}${uniquenessLine}\n\n${grid}\n\nfabstats.net/fabdoku`;
   }
 
   async function handleCopy() {

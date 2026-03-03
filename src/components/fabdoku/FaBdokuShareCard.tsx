@@ -47,15 +47,17 @@ export function FaBdokuShareCard({ gameState, uniqueness, onClose }: FaBdokuShar
   const [status, setStatus] = useState<"idle" | "copying" | "copied" | "downloaded">("idle");
 
   const correctCount = gameState.cells.flat().filter((c) => c.correct).length;
+  const timeStr = new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
 
   async function handleCopy() {
     setStatus("copying");
+    const uniqueLine = uniqueness ? ` · Score: ${uniqueness.score} (${uniqueness.totalPlayers} players)` : "";
     const result = await copyCardImage(cardRef.current, {
       backgroundColor: "#0e0c08",
       fileName: `fabdoku-${gameState.date}.png`,
       shareTitle: `FaBdoku ${gameState.date}`,
-      shareText: `FaBdoku ${gameState.date} — ${correctCount}/9 in ${gameState.guessesUsed} guesses${uniqueness ? ` · Uniqueness: ${uniqueness.score}` : ""}`,
-      fallbackText: `FaBdoku ${gameState.date}\n${correctCount}/9 in ${gameState.guessesUsed} guesses${uniqueness ? `\nUniqueness: ${uniqueness.score}` : ""}\nfabstats.net/fabdoku`,
+      shareText: `FaBdoku ${gameState.date} — ${correctCount}/9${uniqueLine}`,
+      fallbackText: `FaBdoku ${gameState.date}\n${correctCount}/9 in ${gameState.guessesUsed} guesses${uniqueness ? `\nScore: ${uniqueness.score} (${uniqueness.totalPlayers} players as of ${timeStr})` : ""}\nfabstats.net/fabdoku`,
     });
     setStatus(result === "failed" ? "idle" : "copied");
     if (result !== "failed") setTimeout(() => setStatus("idle"), 2000);
@@ -118,12 +120,17 @@ export function FaBdokuShareCard({ gameState, uniqueness, onClose }: FaBdokuShar
             {/* Score */}
             <div className="text-center">
               <p className="text-sm font-bold text-fab-text">
-                {correctCount}/9 in {gameState.guessesUsed} guesses
+                {correctCount}/9 correct
               </p>
               {uniqueness && (
-                <p className="text-xs text-fab-gold font-bold mt-1">
-                  Uniqueness: {uniqueness.score}
-                </p>
+                <>
+                  <p className="text-lg text-fab-gold font-bold mt-1 font-mono">
+                    {uniqueness.score}
+                  </p>
+                  <p className="text-[10px] text-fab-dim">
+                    uniqueness score &middot; {uniqueness.totalPlayers} player{uniqueness.totalPlayers !== 1 ? "s" : ""} as of {timeStr}
+                  </p>
+                </>
               )}
               {gameState.won && !uniqueness && (
                 <p className="text-[10px] text-fab-gold mt-0.5">
