@@ -163,9 +163,9 @@ export function Navbar() {
           <Link href="/" className="flex items-center gap-2.5 shrink-0">
             <svg className="w-7 h-7" viewBox="0 0 24 24" fill="none">
               <rect x="5" y="2" width="14" height="20" rx="2" stroke="#D9A05B" strokeWidth="2" />
-              <rect x="8" y="13" width="2" height="3" fill="#E53935" />
-              <rect x="12" y="10" width="2" height="6" fill="#FBC02D" />
-              <rect x="16" y="6" width="2" height="10" fill="#1E88E5" />
+              <rect x="7.5" y="13" width="2" height="3" fill="#E53935" />
+              <rect x="11" y="10" width="2" height="6" fill="#FBC02D" />
+              <rect x="14.5" y="6" width="2" height="10" fill="#1E88E5" />
             </svg>
             <span className="text-xl font-bold text-fab-gold tracking-tight">FaB Stats</span>
             {(userCount > 0 || matchCount > 0) && (

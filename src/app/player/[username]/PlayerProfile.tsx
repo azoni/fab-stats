@@ -435,6 +435,22 @@ export default function PlayerProfile() {
             </div>
             <EmblemDisplay talentEmblemId={profile.selectedEmblem} classEmblemId={profile.selectedClassEmblem} isOwner={isOwner} onClickTalent={() => setEmblemPickerMode("talent")} onClickClass={() => setEmblemPickerMode("class")} />
           </div>
+
+          {/* Kudos — inline within profile card */}
+          <div className="mt-3 pt-3 border-t border-fab-border/50">
+            <KudosSection
+              recipientId={profile.uid}
+              currentUserId={currentUser?.uid}
+              currentDisplayName={currentUser?.displayName || myProfile?.username || currentUser?.email?.split("@")[0] || undefined}
+              counts={kudosCounts}
+              givenByMe={kudosGivenByMe}
+              onUpdate={(newCounts, newGiven) => {
+                setKudosCounts(newCounts);
+                setKudosGivenByMe(newGiven);
+              }}
+              inline
+            />
+          </div>
         </div>
 
         {/* Creator spotlight card */}
@@ -485,19 +501,6 @@ export default function PlayerProfile() {
             </div>
           </div>
         )}
-
-        {/* Kudos */}
-        <KudosSection
-          recipientId={profile.uid}
-          currentUserId={currentUser?.uid}
-          currentDisplayName={currentUser?.displayName || myProfile?.username || currentUser?.email?.split("@")[0] || undefined}
-          counts={kudosCounts}
-          givenByMe={kudosGivenByMe}
-          onUpdate={(newCounts, newGiven) => {
-            setKudosCounts(newCounts);
-            setKudosGivenByMe(newGiven);
-          }}
-        />
 
         {/* Filters */}
         <div className="flex gap-2 flex-wrap items-center">

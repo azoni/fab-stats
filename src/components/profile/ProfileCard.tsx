@@ -367,7 +367,16 @@ export function ProfileCard({ data, theme }: { data: ProfileCardData; theme?: Ca
       )}
 
       {/* Footer */}
-      <div style={{ backgroundColor: t.bg, borderTop: `1px solid ${t.border}` }} className="px-5 py-1.5">
+      <div style={{ backgroundColor: t.bg, borderTop: `1px solid ${t.border}` }} className="px-5 py-1.5 flex items-center gap-1.5">
+        <svg width="14" height="14" viewBox="0 0 32 32" style={{ opacity: 0.5 }}>
+          <rect width="32" height="32" rx="6" fill={t.accent} />
+          <g transform="translate(4, 4)">
+            <rect x="5" y="2" width="14" height="20" rx="2" stroke={t.bg} strokeWidth="2" fill="none" />
+            <rect x="7.5" y="13" width="2" height="3" fill={t.bg} />
+            <rect x="11" y="10" width="2" height="6" fill={t.bg} />
+            <rect x="14.5" y="6" width="2" height="10" fill={t.bg} />
+          </g>
+        </svg>
         <p style={{ color: t.accent, opacity: 0.5 }} className="text-[10px] tracking-wider font-semibold">fabstats.net</p>
       </div>
     </div>

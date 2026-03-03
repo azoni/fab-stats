@@ -44,6 +44,8 @@ interface KudosSectionProps {
   counts: Record<string, number>;
   givenByMe: Set<string>;
   onUpdate: (newCounts: Record<string, number>, newGiven: Set<string>) => void;
+  /** When true, renders without its own card wrapper (for embedding inside another card) */
+  inline?: boolean;
 }
 
 export function KudosSection({
@@ -53,6 +55,7 @@ export function KudosSection({
   counts,
   givenByMe,
   onUpdate,
+  inline,
 }: KudosSectionProps) {
   const [loading, setLoading] = useState<string | null>(null);
 
@@ -97,7 +100,7 @@ export function KudosSection({
   if (isOwnProfile && totalKudos === 0) return null;
 
   return (
-    <div className="bg-fab-surface border border-fab-border rounded-lg px-3 py-2.5">
+    <div className={inline ? "" : "bg-fab-surface border border-fab-border rounded-lg px-3 py-2.5"}>
       <div className="flex items-center gap-1.5 mb-2">
         <span className="text-[10px] font-semibold text-fab-dim uppercase tracking-wider">Kudos</span>
         {totalKudos > 0 && (

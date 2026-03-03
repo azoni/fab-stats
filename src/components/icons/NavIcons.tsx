@@ -66,9 +66,9 @@ export function ShieldIcon({ className = iconClass }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none">
       <rect x="5" y="2" width="14" height="20" rx="2" stroke="#D9A05B" strokeWidth="2" />
-      <rect x="8" y="13" width="2" height="3" fill="#E53935" />
-      <rect x="12" y="10" width="2" height="6" fill="#FBC02D" />
-      <rect x="16" y="6" width="2" height="10" fill="#1E88E5" />
+      <rect x="7.5" y="13" width="2" height="3" fill="#E53935" />
+      <rect x="11" y="10" width="2" height="6" fill="#FBC02D" />
+      <rect x="14.5" y="6" width="2" height="10" fill="#1E88E5" />
     </svg>
   );
 }

@@ -348,7 +348,7 @@ export default function FaBdokuPage() {
         cells={gameState.cells}
         disabled={gameState.completed}
         onCellClick={handleCellClick}
-        cellPcts={gameState.completed ? uniqueness?.cellPcts : undefined}
+        cellPcts={gameState.completed && uniqueness && uniqueness.totalPlayers > 1 ? uniqueness.cellPcts : undefined}
       />
 
       {/* Result panel (shown when game is over) */}

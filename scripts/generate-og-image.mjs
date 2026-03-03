@@ -176,15 +176,15 @@ const svg = await satori(
                                 },
                                 {
                                   type: "rect",
-                                  props: { x: "8", y: "13", width: "2", height: "3", fill: RED },
+                                  props: { x: "7.5", y: "13", width: "2", height: "3", fill: RED },
                                 },
                                 {
                                   type: "rect",
-                                  props: { x: "12", y: "10", width: "2", height: "6", fill: YELLOW },
+                                  props: { x: "11", y: "10", width: "2", height: "6", fill: YELLOW },
                                 },
                                 {
                                   type: "rect",
-                                  props: { x: "16", y: "6", width: "2", height: "10", fill: BLUE },
+                                  props: { x: "14.5", y: "6", width: "2", height: "10", fill: BLUE },
                                 },
                               ],
                             },
