@@ -21,21 +21,21 @@ import { LeaderboardCrowns } from "@/components/profile/LeaderboardCrowns";
 import { TrophyCase } from "@/components/profile/TrophyCase";
 import { ArmoryGarden } from "@/components/profile/ArmoryGarden";
 import { computeEventBadges } from "@/lib/events";
-import { checkIsAdmin } from "@/lib/admin";
+import { checkIsAdmin, getAdminUid } from "@/lib/admin";
 import { useLeaderboard } from "@/hooks/useLeaderboard";
 import { computeUserRanks, getBestRank, rankBorderClass } from "@/lib/leaderboard-ranks";
 import { QuestionCircleIcon, LockIcon, SwordsIcon, CalendarIcon } from "@/components/icons/NavIcons";
 import { useAuth } from "@/contexts/AuthContext";
 import { useFavorites } from "@/hooks/useFavorites";
 import { useFriends } from "@/hooks/useFriends";
-import { getFriendCount } from "@/lib/friends";
+import { getFriendCount, getFriendship } from "@/lib/friends";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { BestFinishShareModal } from "@/components/profile/BestFinishCard";
 import { ProfileShareModal } from "@/components/profile/ProfileCard";
 import { ShowcaseSection } from "@/components/profile/ShowcaseSection";
 import { KudosSection } from "@/components/profile/KudosSection";
-import { loadKudosCounts, loadGivenKudos } from "@/lib/kudos";
+import { loadKudosCounts, loadGivenKudos, loadKudosGivenCounts, KUDOS_TYPES } from "@/lib/kudos";
 import type { MatchRecord, UserProfile, Achievement } from "@/types";
 import { MatchResult } from "@/types";
 import { allHeroes as knownHeroes } from "@/lib/heroes";
@@ -78,9 +78,12 @@ export default function PlayerProfile() {
   const [assignedBadgeIds, setAssignedBadgeIds] = useState<string[]>([]);
   const [friendCount, setFriendCount] = useState<number | null>(null);
   const [kudosCounts, setKudosCounts] = useState<Record<string, number>>({});
+  const [kudosGivenCounts, setKudosGivenCounts] = useState<Record<string, number>>({});
   const [kudosGivenByMe, setKudosGivenByMe] = useState<Set<string>>(new Set());
+  const [adminKudosGiven, setAdminKudosGiven] = useState<Set<string>>(new Set());
   const [fabdokuScore, setFabdokuScore] = useState<number | null>(null);
   const [fabdokuGamesPlayed, setFabdokuGamesPlayed] = useState(0);
+  const [previewAsVisitor, setPreviewAsVisitor] = useState(false);
 
   // Auto-expand achievements if navigated with #achievements hash
   useEffect(() => {
@@ -190,9 +193,22 @@ export default function PlayerProfile() {
         const isOwner = !!viewerUid && viewerUid === profile.uid;
         const viewerIsAdmin = viewerEmail ? await checkIsAdmin(viewerEmail) : false;
 
-        if (!profile.isPublic && !isOwner && !viewerIsAdmin) {
+        // Visibility check: public → anyone, friends → friends only, private → owner only
+        const visibility = profile.profileVisibility ?? (profile.isPublic ? "public" : "private");
+        if (visibility === "private" && !isOwner && !viewerIsAdmin) {
           setState({ status: "private" });
           return;
+        }
+        if (visibility === "friends" && !isOwner && !viewerIsAdmin) {
+          if (!viewerUid) {
+            setState({ status: "private" });
+            return;
+          }
+          const friendship = await getFriendship(viewerUid, profile.uid);
+          if (!friendship || friendship.status !== "accepted") {
+            setState({ status: "private" });
+            return;
+          }
         }
 
         // Hide from guests: if hideFromGuests is true and viewer is not logged in
@@ -247,13 +263,18 @@ export default function PlayerProfile() {
     }).catch(() => {});
   }, [profileUid]);
 
-  // Load kudos counts + which ones the current user has given
+  // Load kudos counts + given counts + which ones the current user has given + admin kudos
   useEffect(() => {
     if (!profileUid) return;
     loadKudosCounts(profileUid).then(setKudosCounts).catch(() => {});
+    loadKudosGivenCounts(profileUid).then(setKudosGivenCounts).catch(() => {});
     if (currentUser?.uid && currentUser.uid !== profileUid) {
       loadGivenKudos(currentUser.uid, profileUid).then(setKudosGivenByMe).catch(() => {});
     }
+    // Load admin's kudos for this player (for special border)
+    getAdminUid().then((adminUid) => {
+      if (adminUid) loadGivenKudos(adminUid, profileUid).then(setAdminKudosGiven).catch(() => {});
+    }).catch(() => {});
   }, [profileUid, currentUser?.uid]);
 
   // Load today's fabdoku score + stats for this profile
@@ -391,7 +412,8 @@ export default function PlayerProfile() {
     );
   }
 
-  const { profile, matches, isOwner } = state;
+  const { profile, matches, isOwner: actualIsOwner } = state;
+  const isOwner = actualIsOwner && !previewAsVisitor;
 
   const isFiltered = filterFormat !== "all" || filterRated !== "all" || filterHero !== "all";
   const { streaks } = overall;
@@ -399,7 +421,21 @@ export default function PlayerProfile() {
   if (matches.length === 0) {
     return (
       <div className="space-y-8">
-        {isAdmin && !profile.isPublic && (
+        {isOwner && (profile.profileVisibility === "private" || (!profile.profileVisibility && !profile.isPublic)) && (
+          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/25">
+            <LockIcon className="w-4 h-4 text-amber-400 shrink-0" />
+            <span className="text-xs font-semibold text-amber-300">Your profile is private — only you can see it.</span>
+            <Link href="/settings" className="text-[10px] text-fab-gold hover:underline ml-auto shrink-0">Settings</Link>
+          </div>
+        )}
+        {isOwner && profile.profileVisibility === "friends" && (
+          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-sky-500/10 border border-sky-500/25">
+            <LockIcon className="w-4 h-4 text-sky-400 shrink-0" />
+            <span className="text-xs font-semibold text-sky-300">Your profile is friends-only — only your friends can see it.</span>
+            <Link href="/settings" className="text-[10px] text-fab-gold hover:underline ml-auto shrink-0">Settings</Link>
+          </div>
+        )}
+        {isAdmin && !isOwner && !profile.isPublic && (
           <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-fab-dim/10 border border-fab-dim/20">
             <LockIcon className="w-4 h-4 text-fab-dim shrink-0" />
             <span className="text-xs font-semibold text-fab-dim">Private Profile — only visible to you (admin) and the owner</span>
@@ -422,18 +458,54 @@ export default function PlayerProfile() {
           className="bg-fab-surface border border-fab-border rounded-lg p-5 relative"
           style={cardBorder ? { borderColor: cardBorder.border, boxShadow: cardBorder.shadow } : undefined}
         >
+          {/* Owner: private/friends-only profile banner */}
+          {isOwner && (profile.profileVisibility === "private" || (!profile.profileVisibility && !profile.isPublic)) && (
+            <div className="flex items-center gap-2 mb-4 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/25">
+              <LockIcon className="w-4 h-4 text-amber-400 shrink-0" />
+              <span className="text-xs font-semibold text-amber-300">Your profile is private — only you can see it.</span>
+              <Link href="/settings" className="text-[10px] text-fab-gold hover:underline ml-auto shrink-0">Settings</Link>
+            </div>
+          )}
+          {isOwner && profile.profileVisibility === "friends" && (
+            <div className="flex items-center gap-2 mb-4 px-3 py-2 rounded-lg bg-sky-500/10 border border-sky-500/25">
+              <LockIcon className="w-4 h-4 text-sky-400 shrink-0" />
+              <span className="text-xs font-semibold text-sky-300">Your profile is friends-only — only your friends can see it.</span>
+              <Link href="/settings" className="text-[10px] text-fab-gold hover:underline ml-auto shrink-0">Settings</Link>
+            </div>
+          )}
           {/* Admin: private profile banner */}
-          {isAdmin && !profile.isPublic && (
+          {isAdmin && !isOwner && !profile.isPublic && (
             <div className="flex items-center gap-2 mb-4 px-3 py-2 rounded-lg bg-fab-dim/10 border border-fab-dim/20">
               <LockIcon className="w-4 h-4 text-fab-dim shrink-0" />
               <span className="text-xs font-semibold text-fab-dim">Private Profile — only visible to you (admin) and the owner</span>
+            </div>
+          )}
+          {/* View as visitor toggle */}
+          {actualIsOwner && (
+            <div className={`flex items-center justify-between mb-4 px-3 py-2 rounded-lg ${previewAsVisitor ? "bg-indigo-500/10 border border-indigo-500/25" : "border border-transparent"}`}>
+              {previewAsVisitor && (
+                <span className="text-xs font-medium text-indigo-300">Viewing as visitor</span>
+              )}
+              <button
+                onClick={() => setPreviewAsVisitor((v) => !v)}
+                className={`inline-flex items-center gap-1.5 text-xs font-medium transition-colors ${previewAsVisitor ? "text-indigo-300 hover:text-indigo-200 ml-auto" : "text-fab-dim hover:text-fab-text ml-auto"}`}
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  {previewAsVisitor ? (
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.451 10.451 0 0 1 12 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 0 1-4.293 5.774M6.228 6.228 3 3m3.228 3.228 3.65 3.65m7.894 7.894L21 21m-3.228-3.228-3.65-3.65m0 0a3 3 0 1 0-4.243-4.243m4.242 4.242L9.88 9.88" />
+                  ) : (
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178ZM15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                  )}
+                </svg>
+                {previewAsVisitor ? "Back to my view" : "View as visitor"}
+              </button>
             </div>
           )}
           {/* Profile row + emblem */}
           <div className="flex items-center gap-3">
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-3">
-                <ProfileHeader profile={profile} bestRank={bestRank} isAdmin={isAdmin} isOwner={isOwner} isFavorited={!isOwner && !!currentUser && !isGuest && isFavorited(profile.uid)} onToggleFavorite={!isOwner && !!currentUser && !isGuest ? () => toggleFavorite(profile) : undefined} friendStatus={!isOwner && !!currentUser && !isGuest ? (isFriend(profile.uid) ? "friends" : hasSentRequest(profile.uid) ? "sent" : hasReceivedRequest(profile.uid) ? "received" : "none") : undefined} onFriendAction={!isOwner && !!currentUser && !isGuest ? () => { const fs = getFriendshipForUser(profile.uid); if (isFriend(profile.uid)) return; if (hasReceivedRequest(profile.uid) && fs) { acceptRequest(fs.id); } else if (!hasSentRequest(profile.uid)) { sendRequest(profile); } } : undefined} onShareCard={isOwner || isAdmin ? () => setProfileShareOpen(true) : undefined} friendCount={isAdmin ? friendCount : undefined} creator={creatorInfo} />
+                <ProfileHeader profile={profile} bestRank={bestRank} isAdmin={isAdmin} isOwner={isOwner} isFavorited={!actualIsOwner && !!currentUser && !isGuest && isFavorited(profile.uid)} onToggleFavorite={!actualIsOwner && !!currentUser && !isGuest ? () => toggleFavorite(profile) : undefined} friendStatus={!actualIsOwner && !!currentUser && !isGuest ? (isFriend(profile.uid) ? "friends" : hasSentRequest(profile.uid) ? "sent" : hasReceivedRequest(profile.uid) ? "received" : "none") : undefined} onFriendAction={!actualIsOwner && !!currentUser && !isGuest ? () => { const fs = getFriendshipForUser(profile.uid); if (isFriend(profile.uid)) return; if (hasReceivedRequest(profile.uid) && fs) { acceptRequest(fs.id); } else if (!hasSentRequest(profile.uid)) { sendRequest(profile); } } : undefined} onShareCard={actualIsOwner || isAdmin ? () => setProfileShareOpen(true) : undefined} friendCount={isAdmin ? friendCount : undefined} creator={creatorInfo} />
               </div>
               <div className="flex items-center gap-2 mt-0.5">
                 {lastUpdated && (
@@ -445,6 +517,25 @@ export default function PlayerProfile() {
               </div>
             </div>
             <div className="flex items-center gap-3 shrink-0">
+              {/* Kudos Given (read-only) */}
+              {(kudosGivenCounts.total ?? 0) > 0 && (
+                <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-0.5 opacity-60" title="Kudos given to others">
+                    {KUDOS_TYPES.map((kt) => {
+                      const count = kudosGivenCounts[kt.id] || 0;
+                      if (count === 0) return null;
+                      return (
+                        <div key={kt.id} className="flex flex-col items-center px-1 py-0.5 min-w-[28px]">
+                          <span className="text-[10px] font-bold text-fab-dim tabular-nums">{count}</span>
+                          <span className="text-[7px] text-fab-dim leading-tight">Given</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div className="w-px h-6 bg-fab-border" />
+                </div>
+              )}
+              {/* Kudos Received (interactive) */}
               <KudosSection
                 recipientId={profile.uid}
                 currentUserId={currentUser?.uid}
@@ -456,12 +547,13 @@ export default function PlayerProfile() {
                   setKudosGivenByMe(newGiven);
                 }}
                 inline
+                adminGiven={adminKudosGiven}
               />
               <EmblemDisplay talentEmblemId={profile.selectedEmblem} classEmblemId={profile.selectedClassEmblem} isOwner={isOwner} onClickTalent={() => setEmblemPickerMode("talent")} onClickClass={() => setEmblemPickerMode("class")} />
             </div>
           </div>
           {/* Score badges — bottom right */}
-          <div className="absolute bottom-2 right-3 flex items-center gap-1.5">
+          <div className="absolute bottom-2 right-3 flex items-center gap-1.5 z-10">
             {(kudosCounts.total ?? 0) > 0 && (
               <Link href="/leaderboard?tab=kudos_total" className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-fab-bg/80 border border-fab-border hover:border-fab-gold/40 transition-colors group" title="Total kudos received">
                 <svg className="w-3 h-3 text-fab-dim group-hover:text-fab-gold transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>

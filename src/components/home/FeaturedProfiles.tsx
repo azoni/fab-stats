@@ -6,6 +6,7 @@ import type { FeaturedProfile } from "@/lib/featured-profiles";
 import type { Creator } from "@/types";
 import { rankBorderClass } from "@/lib/leaderboard-ranks";
 import { playerHref } from "@/lib/constants";
+import { trackCreatorClick } from "@/lib/analytics";
 
 const SPOTLIGHT_CONFIG: Record<string, { css: string; accent: string; iconBg: string; icon: ReactNode }> = {
   "Hot Streak": {
@@ -370,6 +371,7 @@ export function FeaturedProfiles({ profiles, creators, rankMap, grid }: Featured
             <Link
               key={c.name}
               href={playerHref(c.username)}
+              onClick={() => trackCreatorClick(c.name)}
               className="spotlight-card relative flex items-center gap-3 bg-fab-surface border border-fab-border rounded-lg px-3 py-2.5 hover:bg-fab-surface-hover transition-all group overflow-hidden"
             >
               {inner}
@@ -380,6 +382,7 @@ export function FeaturedProfiles({ profiles, creators, rankMap, grid }: Featured
               href={c.url}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={() => trackCreatorClick(c.name)}
               className="spotlight-card relative flex items-center gap-3 bg-fab-surface border border-fab-border rounded-lg px-3 py-2.5 hover:bg-fab-surface-hover transition-all group overflow-hidden"
             >
               {inner}
