@@ -253,6 +253,12 @@ export function computeTop8HeroMeta(
       else if (t8.placementType === "top4") cur.top4++;
       else cur.top8++;
       heroAgg.set(t8.hero, cur);
+
+      // Also count top 8 finishers as players of that hero (supplements heroBreakdownDetailed
+      // which may have truncated this hero/format/eventType combo due to its entry limit)
+      const players = heroPlayers.get(t8.hero) || new Set<string>();
+      players.add(entry.userId);
+      heroPlayers.set(t8.hero, players);
     }
   }
 
