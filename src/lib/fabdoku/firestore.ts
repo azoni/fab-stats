@@ -108,6 +108,13 @@ export async function loadStats(
   }
 }
 
+/** Mark that a user has shared their FaBdoku result. Idempotent. */
+export async function markShared(uid: string): Promise<void> {
+  const statsRef = doc(db, "users", uid, STATS_DOC, "data");
+  await updateDoc(statsRef, { hasShared: true }).catch(() => {});
+  await updateDoc(doc(db, STATS_PUBLIC_COL, uid), { hasShared: true }).catch(() => {});
+}
+
 /** Load a specific user's result for a given date. */
 export async function loadUserResult(
   uid: string,

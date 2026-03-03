@@ -348,6 +348,13 @@ const icons: Record<string, ReactNode> = {
       <path d="M9 17c-1-2-3-4-3-7a6 6 0 1112 0c0 3-2 5-3 7" fill="currentColor" fillOpacity="0.08" />
     </svg>
   ),
+  grid: (
+    <svg className={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="3" width="18" height="18" rx="2" />
+      <path d="M3 9h18M3 15h18M9 3v18M15 3v18" />
+      <rect x="9.5" y="9.5" width="5" height="5" fill="currentColor" fillOpacity="0.15" />
+    </svg>
+  ),
   // Section header icons
   "section-achievements": (
     <svg className={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">

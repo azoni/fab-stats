@@ -31,6 +31,7 @@ import { EventShowcase } from "@/components/home/EventShowcase";
 import { BadgeStrip } from "@/components/profile/BadgeStrip";
 import { getHeroByName } from "@/lib/heroes";
 import { loadUserResult, loadStats } from "@/lib/fabdoku/firestore";
+import type { FaBdokuStats } from "@/lib/fabdoku/types";
 import { getTodayDateStr } from "@/lib/fabdoku/puzzle-generator";
 import { loadKudosCounts } from "@/lib/kudos";
 import type { Poll, EventShowcaseConfig } from "@/types";
@@ -126,7 +127,7 @@ export default function Dashboard() {
   const [activePrediction, setActivePrediction] = useState<Poll | null>(null);
   const [showcaseConfig, setShowcaseConfig] = useState<EventShowcaseConfig | null>(null);
   const [fabdokuScore, setFabdokuScore] = useState<number | null>(null);
-  const [fabdokuGamesPlayed, setFabdokuGamesPlayed] = useState(0);
+  const [fabdokuFullStats, setFabdokuFullStats] = useState<FaBdokuStats | null>(null);
   const [kudosTotal, setKudosTotal] = useState<number | null>(null);
   const leaderboardUpdated = useRef(false);
 
@@ -134,7 +135,7 @@ export default function Dashboard() {
   useEffect(() => {
     if (!user) return;
     loadUserResult(user.uid, getTodayDateStr()).then((r) => setFabdokuScore(r?.score ?? null)).catch(() => {});
-    loadStats(user.uid).then((s) => setFabdokuGamesPlayed(s?.gamesPlayed ?? 0)).catch(() => {});
+    loadStats(user.uid).then((s) => setFabdokuFullStats(s ?? null)).catch(() => {});
     loadKudosCounts(user.uid).then((c) => setKudosTotal(c.total > 0 ? c.total : null)).catch(() => {});
   }, [user]);
 
@@ -566,7 +567,7 @@ export default function Dashboard() {
                   )}
                 </div>
               </div>
-              <BadgeStrip matchCount={matches.length} isCreator={isCreator} className="mt-2 ml-1" />
+              <BadgeStrip matchCount={matches.length} isCreator={isCreator} hasSharedFabdoku={fabdokuFullStats?.hasShared} className="mt-2 ml-1" />
               {/* Score badges — bottom right */}
               <div className="absolute bottom-1.5 right-2.5 flex items-center gap-1.5 z-10">
                 {kudosTotal !== null && (
@@ -577,7 +578,7 @@ export default function Dashboard() {
                     <span className="text-[10px] font-bold text-fab-dim group-hover:text-fab-gold transition-colors tabular-nums">{kudosTotal}</span>
                   </Link>
                 )}
-                {(fabdokuScore !== null || fabdokuGamesPlayed > 0) && (
+                {(fabdokuScore !== null || (fabdokuFullStats?.gamesPlayed ?? 0) > 0) && (
                   <Link href="/fabdoku" className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-fab-bg/80 border border-fab-border hover:border-fab-gold/40 transition-colors group" title={fabdokuScore !== null ? "Today's FaBdoku score" : "FaBdoku games played"}>
                     <svg className="w-3 h-3 text-fab-dim group-hover:text-fab-gold transition-colors" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
                       <rect x="3" y="3" width="18" height="18" rx="2" />
@@ -587,7 +588,7 @@ export default function Dashboard() {
                       <line x1="15" y1="3" x2="15" y2="21" />
                     </svg>
                     <span className="text-[10px] font-bold text-fab-dim group-hover:text-fab-gold transition-colors tabular-nums">
-                      {fabdokuScore !== null ? `${fabdokuScore}/9` : `${fabdokuGamesPlayed}g`}
+                      {fabdokuScore !== null ? `${fabdokuScore}/9` : `${(fabdokuFullStats?.gamesPlayed ?? 0)}g`}
                     </span>
                   </Link>
                 )}
@@ -669,6 +670,7 @@ export default function Dashboard() {
             armoryUndefeated: eventStats.filter(e => e.eventType === "Armory" && e.losses === 0 && e.wins > 0).length,
             isSiteCreator: profile.username === "azoni",
             isCreator,
+            hasSharedFabdoku: fabdokuFullStats?.hasShared,
           }}
           onClose={() => setProfileShareOpen(false)}
         />

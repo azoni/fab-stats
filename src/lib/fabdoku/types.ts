@@ -45,6 +45,7 @@ export interface FaBdokuStats {
   currentStreak: number;
   maxStreak: number;
   lastPlayedDate: string;
+  hasShared?: boolean;
 }
 
 /** Per-cell pick counts for uniqueness scoring. */

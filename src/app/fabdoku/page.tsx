@@ -44,6 +44,7 @@ import {
   computeUniqueness,
   buildLocalPicks,
   buildPicksFromResults,
+  markShared,
 } from "@/lib/fabdoku/firestore";
 import { createFaBdokuFeedEvent, createGuestFaBdokuFeedEvent, deleteFaBdokuFeedEvents } from "@/lib/feed";
 import type { GameState, FaBdokuStats, UniquenessData } from "@/lib/fabdoku/types";
@@ -395,6 +396,9 @@ export default function FaBdokuPage() {
                 gameState.guessesUsed, buildGrid(gameState),
                 uniqueness?.score,
               ).catch((err) => console.error("FaBdoku feed event failed:", err));
+            }
+            if (user?.uid) {
+              markShared(user.uid).catch(() => {});
             }
           }}
         />

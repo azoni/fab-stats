@@ -3,8 +3,8 @@ import { useState } from "react";
 import { getProfileBadges } from "@/lib/profile-badges";
 import { BADGE_ICON_MAP } from "./BadgeIcons";
 
-export function BadgeStrip({ matchCount, isCreator, className }: { matchCount: number; isCreator?: boolean; className?: string }) {
-  const badges = getProfileBadges(matchCount, { isCreator });
+export function BadgeStrip({ matchCount, isCreator, hasSharedFabdoku, className }: { matchCount: number; isCreator?: boolean; hasSharedFabdoku?: boolean; className?: string }) {
+  const badges = getProfileBadges(matchCount, { isCreator, hasSharedFabdoku });
   const [hoveredId, setHoveredId] = useState<string | null>(null);
 
   if (badges.length === 0) return null;

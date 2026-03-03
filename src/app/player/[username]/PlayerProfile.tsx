@@ -41,6 +41,7 @@ import { MatchResult } from "@/types";
 import { allHeroes as knownHeroes } from "@/lib/heroes";
 import { localDate } from "@/lib/constants";
 import { loadUserResult, loadStats as loadFabdokuStats } from "@/lib/fabdoku/firestore";
+import type { FaBdokuStats } from "@/lib/fabdoku/types";
 import { getTodayDateStr } from "@/lib/fabdoku/puzzle-generator";
 import { useCreators } from "@/hooks/useCreators";
 import type { Creator } from "@/types";
@@ -82,7 +83,7 @@ export default function PlayerProfile() {
   const [kudosGivenByMe, setKudosGivenByMe] = useState<Set<string>>(new Set());
   const [adminKudosGiven, setAdminKudosGiven] = useState<Set<string>>(new Set());
   const [fabdokuScore, setFabdokuScore] = useState<number | null>(null);
-  const [fabdokuGamesPlayed, setFabdokuGamesPlayed] = useState(0);
+  const [fabdokuFullStats, setFabdokuFullStats] = useState<FaBdokuStats | null>(null);
   const [previewAsVisitor, setPreviewAsVisitor] = useState(false);
 
   // Auto-expand achievements if navigated with #achievements hash
@@ -281,7 +282,7 @@ export default function PlayerProfile() {
   useEffect(() => {
     if (!profileUid) return;
     loadUserResult(profileUid, getTodayDateStr()).then((r) => setFabdokuScore(r?.score ?? null)).catch(() => {});
-    loadFabdokuStats(profileUid).then((s) => setFabdokuGamesPlayed(s?.gamesPlayed ?? 0)).catch(() => {});
+    loadFabdokuStats(profileUid).then((s) => setFabdokuFullStats(s ?? null)).catch(() => {});
   }, [profileUid]);
 
   // Admin: fetch friend count for the viewed profile
@@ -302,9 +303,9 @@ export default function PlayerProfile() {
       || new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
     [fm]
   );
-  const computedAchievements = useMemo(() => evaluateAchievements(fm, overall, heroStats, opponentStats, kudosCounts), [fm, overall, heroStats, opponentStats, kudosCounts]);
+  const computedAchievements = useMemo(() => evaluateAchievements(fm, overall, heroStats, opponentStats, kudosCounts, fabdokuFullStats ?? undefined), [fm, overall, heroStats, opponentStats, kudosCounts, fabdokuFullStats]);
   const achievements = useMemo(() => [...userBadges, ...computedAchievements], [userBadges, computedAchievements]);
-  const achievementProgress = useMemo(() => getAchievementProgress(fm, overall, heroStats, opponentStats, kudosCounts), [fm, overall, heroStats, opponentStats, kudosCounts]);
+  const achievementProgress = useMemo(() => getAchievementProgress(fm, overall, heroStats, opponentStats, kudosCounts, fabdokuFullStats ?? undefined), [fm, overall, heroStats, opponentStats, kudosCounts, fabdokuFullStats]);
   const masteries = useMemo(() => computeHeroMastery(heroStats), [heroStats]);
   const bestFinish = useMemo(() => computeBestFinish(eventStats), [eventStats]);
   const playoffFinishes = useMemo(() => computePlayoffFinishes(eventStats), [eventStats]);
@@ -513,7 +514,7 @@ export default function PlayerProfile() {
                     Updated {new Date(lastUpdated).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                   </span>
                 )}
-                <BadgeStrip matchCount={matches.length} isCreator={!!creatorInfo} />
+                <BadgeStrip matchCount={matches.length} isCreator={!!creatorInfo} hasSharedFabdoku={fabdokuFullStats?.hasShared} />
               </div>
             </div>
             <div className="flex items-center gap-3 shrink-0">
@@ -548,7 +549,7 @@ export default function PlayerProfile() {
                 <span className="text-[10px] font-bold text-fab-dim group-hover:text-fab-gold transition-colors tabular-nums">{kudosCounts.total}</span>
               </Link>
             )}
-            {(fabdokuScore !== null || fabdokuGamesPlayed > 0) && (
+            {(fabdokuScore !== null || (fabdokuFullStats?.gamesPlayed ?? 0) > 0) && (
               <Link href="/fabdoku" className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-fab-bg/80 border border-fab-border hover:border-fab-gold/40 transition-colors group" title={fabdokuScore !== null ? "Today's FaBdoku score" : "FaBdoku games played"}>
                 <svg className="w-3 h-3 text-fab-dim group-hover:text-fab-gold transition-colors" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
                   <rect x="3" y="3" width="18" height="18" rx="2" />
@@ -558,7 +559,7 @@ export default function PlayerProfile() {
                   <line x1="15" y1="3" x2="15" y2="21" />
                 </svg>
                 <span className="text-[10px] font-bold text-fab-dim group-hover:text-fab-gold transition-colors tabular-nums">
-                  {fabdokuScore !== null ? `${fabdokuScore}/9` : `${fabdokuGamesPlayed}g`}
+                  {fabdokuScore !== null ? `${fabdokuScore}/9` : `${(fabdokuFullStats?.gamesPlayed ?? 0)}g`}
                 </span>
               </Link>
             )}
@@ -813,6 +814,7 @@ export default function PlayerProfile() {
             armoryUndefeated: eventStats.filter(e => e.eventType === "Armory" && e.losses === 0 && e.wins > 0).length,
             isSiteCreator: profile.username === "azoni",
             isCreator: !!creatorInfo,
+            hasSharedFabdoku: fabdokuFullStats?.hasShared,
           }}
           onClose={() => setProfileShareOpen(false)}
         />
