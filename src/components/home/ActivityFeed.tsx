@@ -119,12 +119,12 @@ export function ActivityFeed({ rankMap, eventTierMap }: { rankMap?: Map<string, 
       source = source.filter((e) => e.type !== "fabdoku" || (e as { subtype?: string }).subtype !== "shared");
     }
 
-    // Filter out stale placements — only show events from the last 2 weeks
-    const TWO_WEEKS = 14 * 24 * 60 * 60 * 1000;
-    const placementCutoff = Date.now() - TWO_WEEKS;
+    // Filter out stale placements — only show if uploaded within the last 30 days
+    const THIRTY_DAYS = 30 * 24 * 60 * 60 * 1000;
+    const placementCutoff = Date.now() - THIRTY_DAYS;
     source = source.filter((e) => {
       if (e.type === "placement") {
-        return new Date(e.eventDate).getTime() >= placementCutoff;
+        return new Date(e.createdAt).getTime() >= placementCutoff;
       }
       return true;
     });

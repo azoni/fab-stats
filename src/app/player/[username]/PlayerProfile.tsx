@@ -696,6 +696,7 @@ export default function PlayerProfile() {
             opponentStats={allOpponentStats}
             overall={overall}
             achievements={achievements}
+            leaderboardRanks={userRanks}
             storageField="showcaseSecondary"
             maxPoints={12}
             label="Pinned"
@@ -715,6 +716,7 @@ export default function PlayerProfile() {
             opponentStats={allOpponentStats}
             overall={overall}
             achievements={achievements}
+            leaderboardRanks={userRanks}
             storageField="showcase"
             maxPoints={12}
             label="Showcase"

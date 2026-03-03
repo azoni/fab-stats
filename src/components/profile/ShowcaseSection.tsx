@@ -13,6 +13,8 @@ import { FormatMasteryCard } from "./showcase/FormatMasteryCard";
 import { EventTypeMasteryCard } from "./showcase/EventTypeMasteryCard";
 import { StreakShowcaseCard } from "./showcase/StreakShowcaseCard";
 import { RecentFormCard } from "./showcase/RecentFormCard";
+import { LeaderboardRankCard } from "./showcase/LeaderboardRankCard";
+import type { LeaderboardRank } from "@/lib/leaderboard-ranks";
 import {
   CardPicker,
   MatchPicker,
@@ -47,6 +49,7 @@ interface ShowcaseSectionProps {
   opponentStats: OpponentStats[];
   overall: OverallStats;
   achievements: Achievement[];
+  leaderboardRanks?: LeaderboardRank[];
   maxPoints?: number;
   storageField?: "showcase" | "showcaseSecondary";
   label?: string;
@@ -75,6 +78,7 @@ const CARD_TYPE_LABELS: Record<string, string> = {
   eventTypeMastery: "Event Types",
   streakShowcase: "Streaks",
   recentForm: "Form",
+  leaderboardRank: "Rankings",
 };
 
 export function getCardSize(type: ShowcaseCard["type"], card?: ShowcaseCard): 1 | 2 {
@@ -93,6 +97,7 @@ export function ShowcaseSection({
   opponentStats,
   overall,
   achievements,
+  leaderboardRanks,
   maxPoints = 12,
   storageField = "showcase",
   label = "Showcase",
@@ -245,7 +250,7 @@ export function ShowcaseSection({
                     achievements={achievements}
                   />
                 ) : (
-                  <ShowcaseCardRenderer card={card} matches={matches} heroStats={heroStats} masteries={masteries} eventStats={eventStats} playoffFinishes={playoffFinishes} opponentStats={opponentStats} overall={overall} achievements={achievements} />
+                  <ShowcaseCardRenderer card={card} matches={matches} heroStats={heroStats} masteries={masteries} eventStats={eventStats} playoffFinishes={playoffFinishes} opponentStats={opponentStats} overall={overall} achievements={achievements} leaderboardRanks={leaderboardRanks} />
                 )}
               </div>
             );
@@ -508,8 +513,8 @@ function getEditorEventType(match: MatchRecord): string {
 
 // ── Card Renderer ──
 
-function ShowcaseCardRenderer({ card, matches, heroStats, masteries, eventStats, playoffFinishes, opponentStats, overall, achievements }: {
-  card: ShowcaseCard; matches: MatchRecord[]; heroStats: HeroStats[]; masteries: HeroMastery[]; eventStats: EventStats[]; playoffFinishes: PlayoffFinishData[]; opponentStats: OpponentStats[]; overall: OverallStats; achievements: Achievement[];
+function ShowcaseCardRenderer({ card, matches, heroStats, masteries, eventStats, playoffFinishes, opponentStats, overall, achievements, leaderboardRanks }: {
+  card: ShowcaseCard; matches: MatchRecord[]; heroStats: HeroStats[]; masteries: HeroMastery[]; eventStats: EventStats[]; playoffFinishes: PlayoffFinishData[]; opponentStats: OpponentStats[]; overall: OverallStats; achievements: Achievement[]; leaderboardRanks?: LeaderboardRank[];
 }) {
   switch (card.type) {
     case "featuredMatch": {
@@ -554,6 +559,10 @@ function ShowcaseCardRenderer({ card, matches, heroStats, masteries, eventStats,
       return <StreakShowcaseCard overall={overall} matches={matches} />;
     case "recentForm":
       return <RecentFormCard matches={matches} />;
+    case "leaderboardRank":
+      return leaderboardRanks && leaderboardRanks.length > 0
+        ? <LeaderboardRankCard ranks={leaderboardRanks} />
+        : <MissingCard label="No rankings yet" />;
     default:
       return <MissingCard label="Unknown card type" />;
   }

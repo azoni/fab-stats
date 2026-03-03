@@ -62,6 +62,7 @@ export const MetaSnapshot = memo(function MetaSnapshot({ topHeroes, top8Heroes, 
   }, [showResults, top8Heroes]);
 
   const donutTotal = showResults && top8Heroes ? top8Heroes.reduce((sum, h) => sum + h.count, 0) : 0;
+  const totalPlayers = top8Heroes ? top8Heroes.reduce((sum, h) => sum + h.totalPlayers, 0) : 0;
 
   if (!showResults && !showEventMode && topHeroes.length === 0) return null;
 
@@ -143,6 +144,9 @@ export const MetaSnapshot = memo(function MetaSnapshot({ topHeroes, top8Heroes, 
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
                   <p className="text-3xl font-black text-fab-text leading-none">{donutTotal}</p>
                   <p className="text-[10px] uppercase tracking-wider font-bold text-fab-muted mt-0.5">Top 8s</p>
+                  {totalPlayers > 0 && (
+                    <p className="text-[9px] text-fab-dim mt-1">{totalPlayers} players</p>
+                  )}
                 </div>
               </div>
 
@@ -258,6 +262,32 @@ export const MetaSnapshot = memo(function MetaSnapshot({ topHeroes, top8Heroes, 
                 );
               })}
             </div>
+            {/* Most Wins section */}
+            {top8Heroes && (() => {
+              const topWinners = [...top8Heroes]
+                .filter((h) => h.champions > 0)
+                .sort((a, b) => b.champions - a.champions)
+                .slice(0, 5);
+              return topWinners.length > 0 ? (
+                <div className="px-4 py-2.5 border-t border-fab-border">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <p className="text-[10px] text-fab-dim uppercase tracking-wider font-semibold">Most Wins</p>
+                    {totalPlayers > 0 && (
+                      <p className="text-[10px] text-fab-dim">{totalPlayers} total players</p>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-5 gap-1">
+                    {topWinners.map((h, i) => (
+                      <div key={h.hero} className="flex flex-col items-center gap-0.5 py-1">
+                        <HeroClassIcon heroClass={getHeroByName(h.hero)?.classes[0]} size="sm" />
+                        <span className={`text-[10px] truncate max-w-full ${i === 0 ? "font-bold text-fab-gold" : "text-fab-text"}`}>{h.hero.split(",")[0]}</span>
+                        <span className="text-[10px] text-fab-muted tabular-nums font-semibold">{h.champions}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : null;
+            })()}
             {/* Pagination + disclaimer */}
             <div className="px-4 py-2 border-t border-fab-border flex items-center justify-between">
               <p className="text-[10px] text-fab-dim leading-tight italic">Top 8s / tracked players — conversion may be skewed</p>

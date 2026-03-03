@@ -44,6 +44,7 @@ const CARD_TYPES: { type: CardType; label: string; icon: string; desc: string }[
   { type: "eventTypeMastery", label: "Event Types", icon: "scroll", desc: "Win rate by event type" },
   { type: "streakShowcase", label: "Streaks", icon: "flame", desc: "Current & best streaks" },
   { type: "recentForm", label: "Recent Form", icon: "chart", desc: "Last 20 match performance" },
+  { type: "leaderboardRank", label: "Rankings", icon: "crown", desc: "Your leaderboard positions" },
 ];
 
 const STAT_OPTIONS: { key: string; label: string }[] = [
@@ -61,7 +62,7 @@ export function CardPicker({ onAdd, onCancel, matches, heroStats, eventStats, op
   const [search, setSearch] = useState("");
   const [selectedAchievements, setSelectedAchievements] = useState<Set<string>>(new Set());
 
-  const AUTO_TYPES = new Set<CardType>(["formatMastery", "eventTypeMastery", "streakShowcase", "recentForm"]);
+  const AUTO_TYPES = new Set<CardType>(["formatMastery", "eventTypeMastery", "streakShowcase", "recentForm", "leaderboardRank"]);
   const hasSingleton = (t: CardType) => existingCards.some((c) => c.type === t);
 
   function selectType(type: CardType) {

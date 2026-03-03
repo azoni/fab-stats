@@ -6,14 +6,21 @@ export const metadata: Metadata = {
     "Daily Flesh and Blood hero puzzle. Fill the 3x3 grid with heroes that match both row and column categories!",
   openGraph: {
     title: "FaBdoku | FaB Stats",
-    description: "Daily Flesh and Blood hero puzzle",
+    description: "Daily Flesh and Blood hero puzzle — fill the 3x3 grid with heroes that match both row and column categories!",
     images: [
       {
-        url: "https://www.fabstats.net/favicon.svg",
-        width: 64,
-        height: 64,
+        url: "https://www.fabstats.net/og-preview.png",
+        width: 1200,
+        height: 630,
+        alt: "FaBdoku - Daily Flesh and Blood hero puzzle",
       },
     ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "FaBdoku | FaB Stats",
+    description: "Daily Flesh and Blood hero puzzle",
+    images: ["https://www.fabstats.net/og-preview.png"],
   },
 };
 

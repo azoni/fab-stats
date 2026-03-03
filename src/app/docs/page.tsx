@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { DocsSearch } from "./DocsSearch";
 
 export const metadata: Metadata = {
   title: "Docs",
@@ -24,6 +25,9 @@ const TOC = [
   { id: "nemesis", label: "Nemesis & Best Friend" },
   { id: "activity-feed", label: "Activity Feed" },
   { id: "friends", label: "Friends" },
+  { id: "kudos", label: "Kudos" },
+  { id: "fabdoku", label: "FaBdoku" },
+  { id: "showcase", label: "Showcase & Pinned" },
   { id: "on-this-day", label: "On This Day" },
   { id: "community-meta", label: "Community Meta" },
   { id: "tournaments", label: "Tournaments" },
@@ -53,7 +57,10 @@ export default function DocsPage() {
 
       {/* Main content */}
       <div className="flex-1 min-w-0">
-        <h1 className="text-3xl font-bold text-fab-gold mb-2">Documentation</h1>
+        <div className="flex items-center justify-between gap-4 mb-2">
+          <h1 className="text-3xl font-bold text-fab-gold">Documentation</h1>
+          <DocsSearch toc={TOC} />
+        </div>
         <p className="text-sm text-fab-muted mb-12">
           Everything you need to know about how FaB Stats works.
         </p>
@@ -683,6 +690,89 @@ export default function DocsPage() {
                 Opponents page to add them as a favorite. Favorites appear in the Friends activity filter
                 alongside accepted friends.
               </p>
+              <p>
+                <span className="font-medium text-fab-text">Friends-only profiles</span> — Players can set their
+                profile visibility to &quot;Friends&quot; in Settings so only accepted friends can view their stats.
+                Non-friends will see a locked profile message.
+              </p>
+            </div>
+          </section>
+
+          {/* ─── Kudos ─── */}
+          <section id="kudos">
+            <h2 className="text-xl font-semibold text-fab-text mb-3 pb-2 border-b border-fab-border">Kudos</h2>
+            <p className="text-sm text-fab-muted mb-3">
+              Give kudos to other players to recognize their gameplay and sportsmanship.
+              Kudos appear on player profiles and are tracked on the Leaderboard.
+            </p>
+            <div className="space-y-2 text-sm text-fab-muted">
+              <p>
+                <span className="font-medium text-fab-text">Types</span> — There are four kudos types:
+                Props (general), Good Sport (sportsmanship), Skilled (gameplay), and Helpful (community).
+                Each appears as a button on player profiles.
+              </p>
+              <p>
+                <span className="font-medium text-fab-text">Limits</span> — You can give up to 10 kudos per day
+                across all types. Each player can receive at most one of each type from you. After revoking a
+                non-Props kudos, there&apos;s a 7-day cooldown before you can re-give the same type to that player.
+              </p>
+              <p>
+                <span className="font-medium text-fab-text">Admin endorsement</span> — When the site admin gives
+                kudos to a player, those boxes display a subtle glowing border to highlight the endorsement.
+              </p>
+              <p>
+                <span className="font-medium text-fab-text">Leaderboard</span> — Kudos received and given are
+                tracked on the Rankings page with separate leaderboards for each type and a total category.
+              </p>
+            </div>
+          </section>
+
+          {/* ─── FaBdoku ─── */}
+          <section id="fabdoku">
+            <h2 className="text-xl font-semibold text-fab-text mb-3 pb-2 border-b border-fab-border">FaBdoku</h2>
+            <p className="text-sm text-fab-muted mb-3">
+              FaBdoku is a daily puzzle game where you fill a 3&times;3 grid with Flesh and Blood heroes.
+              Each hero must satisfy both its row and column constraints (class, talent, cost, set, etc.).
+            </p>
+            <div className="space-y-2 text-sm text-fab-muted">
+              <p>
+                <span className="font-medium text-fab-text">Scoring</span> — Each correct cell earns 1 point
+                (max 9/9). Your score and number of games played appear as a badge on your profile card.
+              </p>
+              <p>
+                <span className="font-medium text-fab-text">Streaks</span> — Win streaks are tracked across
+                consecutive days. Your current streak and best streak are shown in your FaBdoku stats.
+              </p>
+              <p>
+                <span className="font-medium text-fab-text">Uniqueness</span> — After completing the puzzle,
+                you can see how common each of your picks was compared to other players. Lower percentages
+                mean more unique choices.
+              </p>
+            </div>
+          </section>
+
+          {/* ─── Showcase & Pinned ─── */}
+          <section id="showcase">
+            <h2 className="text-xl font-semibold text-fab-text mb-3 pb-2 border-b border-fab-border">Showcase & Pinned</h2>
+            <p className="text-sm text-fab-muted mb-3">
+              Customize your profile with two configurable sections: Pinned (top) and Showcase (below).
+              Each section has a budget of 12 points — most cards cost 1 point (half-width), achievements cost 2 (full-width).
+            </p>
+            <div className="space-y-2 text-sm text-fab-muted">
+              <p>
+                <span className="font-medium text-fab-text">Card types</span> — Featured Match, Hero Spotlight,
+                Best Finish, Rivalry, Event Recap, Achievements, Stat Highlight, Format Mastery, Event Types,
+                Streaks, Recent Form, and Rankings.
+              </p>
+              <p>
+                <span className="font-medium text-fab-text">Rankings card</span> — Shows your current leaderboard
+                positions (top 8). If you drop off a leaderboard, that position automatically disappears from the card.
+              </p>
+              <p>
+                <span className="font-medium text-fab-text">Editing</span> — Click Edit to rearrange, add, or
+                remove cards. Changes save automatically. Each card type can be configured — pick a specific
+                match, hero, event, or stat to highlight.
+              </p>
             </div>
           </section>
 
@@ -746,6 +836,10 @@ export default function DocsPage() {
                 <span className="font-medium text-fab-text">Public profiles</span> — Your stats, hero breakdown, and events are visible to anyone.
                 Opponent names are hidden on public profiles to protect their privacy. If an opponent has
                 opted in via &quot;Show name on profiles&quot; in their settings, their name will be visible.
+              </p>
+              <p>
+                <span className="font-medium text-fab-text">Friends-only</span> — A middle ground between public and private. Only accepted friends can see your stats.
+                Non-friends see a locked profile message.
               </p>
               <p>
                 <span className="font-medium text-fab-text">Private profiles</span> — Only you can see your data. You won&apos;t appear on the Leaderboard or in search results.

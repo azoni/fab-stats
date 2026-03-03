@@ -32,6 +32,25 @@ const badgeLabels: Record<ChangeType, string> = {
 
 const changelog: Entry[] = [
   {
+    date: "March 3, 2026",
+    id: "mar-3",
+    changes: [
+      { type: "new", text: "Kudos system — give Props, Good Sport, Skilled, and Helpful kudos to other players (10/day limit)" },
+      { type: "new", text: "Kudos leaderboards — received and given categories on the Rankings page" },
+      { type: "new", text: "Admin kudos endorsement — admin-given kudos display a glowing border on profiles" },
+      { type: "new", text: "FaBdoku score badges — profile cards now show your FaBdoku score and games played" },
+      { type: "new", text: "Friends-only profile visibility — set your profile to friends-only in Settings" },
+      { type: "new", text: "Leaderboard Rankings showcase card — show your current leaderboard positions on your profile" },
+      { type: "new", text: "Docs search — quickly find topics in the growing documentation" },
+      { type: "improved", text: "Kudos boxes all same size with clearer filled icons" },
+      { type: "improved", text: "Privacy settings expanded by default and now includes Public / Friends / Private selector" },
+      { type: "improved", text: "Meta results donut chart now shows total players count and Most Wins section with top 5 heroes" },
+      { type: "improved", text: "Documentation updated with Kudos, FaBdoku, Showcase, and Friends-only visibility sections" },
+      { type: "fixed", text: "Activity feed placements no longer disappear — now uses upload time (30 days) instead of event date (2 weeks)" },
+      { type: "fixed", text: "FaBdoku stats now load from a publicly-readable collection, fixing cross-user profile badge display" },
+    ],
+  },
+  {
     date: "March 2, 2026",
     id: "mar-2",
     changes: [

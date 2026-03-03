@@ -20,6 +20,7 @@ import type {
 
 const RESULTS_COL = "fabdoku-results";
 const STATS_DOC = "fabdoku-stats";
+const STATS_PUBLIC_COL = "fabdokuPlayerStats"; // top-level for public reads
 const PICKS_COL = "fabdoku-picks";
 
 /** Build a FaBdokuResult from completed game state. */
@@ -77,15 +78,28 @@ export async function saveResult(
   };
 
   await setDoc(statsRef, updated);
+
+  // Also write to top-level public collection for cross-user reads
+  await setDoc(doc(db, STATS_PUBLIC_COL, uid), updated).catch(() => {});
 }
 
-/** Load stats for a user. */
+/** Load stats for a user (tries public collection first, falls back to subcollection). */
 export async function loadStats(
   uid: string
 ): Promise<FaBdokuStats | null> {
-  const statsRef = doc(db, "users", uid, STATS_DOC, "data");
-  const snap = await getDoc(statsRef);
-  return snap.exists() ? (snap.data() as FaBdokuStats) : null;
+  // Try top-level public collection first (works for any viewer)
+  try {
+    const pubSnap = await getDoc(doc(db, STATS_PUBLIC_COL, uid));
+    if (pubSnap.exists()) return pubSnap.data() as FaBdokuStats;
+  } catch {}
+  // Fallback to subcollection (works for owner / admin)
+  try {
+    const statsRef = doc(db, "users", uid, STATS_DOC, "data");
+    const snap = await getDoc(statsRef);
+    return snap.exists() ? (snap.data() as FaBdokuStats) : null;
+  } catch {
+    return null;
+  }
 }
 
 /** Load a specific user's result for a given date. */

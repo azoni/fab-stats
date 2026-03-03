@@ -11,19 +11,23 @@ import { countQualifyingTabs, computeUserRanks, computeUserRanksByTab, type Lead
 import { computePowerLevel, getPowerTier } from "@/lib/power-level";
 import { TrophyIcon } from "@/components/icons/NavIcons";
 import { playerHref } from "@/lib/constants";
-import { loadAllKudosCounts, KUDOS_TYPES, type KudosCountsEntry } from "@/lib/kudos";
+import { loadAllKudosCounts, loadAllKudosGivenCounts, KUDOS_TYPES, type KudosCountsEntry } from "@/lib/kudos";
 import type { LeaderboardEntry, OpponentStats } from "@/types";
 
 const SITE_CREATOR = "azoni";
 
-type Tab = "winrate" | "volume" | "mostwins" | "mostlosses" | "streaks" | "draws" | "drawrate" | "lowdrawrate" | "fewestdraws" | "byes" | "byerate" | "balanced" | "events" | "eventgrinder" | "rated" | "ratedstreak" | "heroes" | "dedication" | "loyaltyrate" | "hotstreak" | "coldstreak" | "weeklymatches" | "weeklywins" | "monthlymatches" | "monthlywins" | "monthlywinrate" | "earnings" | "armorywinrate" | "armoryattendance" | "armorymatches" | "top8s" | "top8s_skirmish" | "top8s_pq" | "top8s_bh" | "top8s_rtn" | "top8s_calling" | "top8s_nationals" | "powerlevel" | "uniqueopponents" | "silvermedals" | "lossstreak" | "globetrotter" | "leaderboardcount" | "kudos_total" | "kudos_props" | "kudos_good_sport" | "kudos_skilled" | "kudos_helpful";
+type Tab = "winrate" | "volume" | "mostwins" | "mostlosses" | "streaks" | "draws" | "drawrate" | "lowdrawrate" | "fewestdraws" | "byes" | "byerate" | "balanced" | "events" | "eventgrinder" | "rated" | "ratedstreak" | "heroes" | "dedication" | "loyaltyrate" | "hotstreak" | "coldstreak" | "weeklymatches" | "weeklywins" | "monthlymatches" | "monthlywins" | "monthlywinrate" | "earnings" | "armorywinrate" | "armoryattendance" | "armorymatches" | "top8s" | "top8s_skirmish" | "top8s_pq" | "top8s_bh" | "top8s_rtn" | "top8s_calling" | "top8s_nationals" | "powerlevel" | "uniqueopponents" | "silvermedals" | "lossstreak" | "globetrotter" | "leaderboardcount" | "kudos_total" | "kudos_props" | "kudos_good_sport" | "kudos_skilled" | "kudos_helpful" | "kudos_given_total" | "kudos_given_props" | "kudos_given_good_sport" | "kudos_given_skilled" | "kudos_given_helpful";
 
 function isKudosTab(tab: Tab): boolean {
-  return tab.startsWith("kudos_");
+  return tab.startsWith("kudos_") && !tab.startsWith("kudos_given_");
+}
+
+function isKudosGivenTab(tab: Tab): boolean {
+  return tab.startsWith("kudos_given_");
 }
 
 function kudosField(tab: Tab): "total" | "props" | "good_sport" | "skilled" | "helpful" {
-  return tab.replace("kudos_", "") as "total" | "props" | "good_sport" | "skilled" | "helpful";
+  return tab.replace("kudos_given_", "").replace("kudos_", "") as "total" | "props" | "good_sport" | "skilled" | "helpful";
 }
 
 // ── Tab definitions ──
@@ -77,6 +81,11 @@ const tabs: { id: Tab; label: string; description: string }[] = [
   { id: "kudos_good_sport", label: "Good Sport", description: "Most 'Good Sport' kudos — great sportsmanship and attitude." },
   { id: "kudos_skilled", label: "Skilled", description: "Most 'Skilled' kudos — impressive gameplay and deck building." },
   { id: "kudos_helpful", label: "Helpful", description: "Most 'Helpful' kudos — goes out of their way to help others." },
+  { id: "kudos_given_total", label: "Overall", description: "Most total kudos given to other players." },
+  { id: "kudos_given_props", label: "Props", description: "Most 'Props' kudos given to other players." },
+  { id: "kudos_given_good_sport", label: "Good Sport", description: "Most 'Good Sport' kudos given to other players." },
+  { id: "kudos_given_skilled", label: "Skilled", description: "Most 'Skilled' kudos given to other players." },
+  { id: "kudos_given_helpful", label: "Helpful", description: "Most 'Helpful' kudos given to other players." },
 ];
 
 const tabMap = Object.fromEntries(tabs.map((t) => [t.id, t]));
@@ -100,6 +109,7 @@ const allCategories: Category[] = [
   { id: "rated", label: "Rated", tabs: ["rated", "ratedstreak"] },
   { id: "fun", label: "Fun", tabs: ["uniqueopponents", "silvermedals", "lossstreak", "globetrotter", "leaderboardcount", "draws", "drawrate", "lowdrawrate", "fewestdraws", "byes", "byerate", "balanced"] },
   { id: "kudos", label: "Kudos", tabs: ["kudos_total", "kudos_props", "kudos_good_sport", "kudos_skilled", "kudos_helpful"] },
+  { id: "kudos_given", label: "Kudos Given", tabs: ["kudos_given_total", "kudos_given_props", "kudos_given_good_sport", "kudos_given_skilled", "kudos_given_helpful"] },
   { id: "power", label: "Power Level", tabs: ["powerlevel"], adminOnly: true },
 ];
 
@@ -233,15 +243,17 @@ function getStat(entry: LeaderboardEntry, tab: Tab): { value: string; sub: strin
 function getKudosStat(entry: KudosCountsEntry, tab: Tab): { value: string; sub: string; color: string; rate?: number } {
   const field = kudosField(tab);
   const count = entry[field] as number;
-  if (tab === "kudos_total") {
+  const isGiven = isKudosGivenTab(tab);
+  const suffix = isGiven ? " given" : "";
+  if (tab === "kudos_total" || tab === "kudos_given_total") {
     const parts: string[] = [];
     if (entry.props > 0) parts.push(`${entry.props} Props`);
     if (entry.good_sport > 0) parts.push(`${entry.good_sport} Sport`);
     if (entry.skilled > 0) parts.push(`${entry.skilled} Skilled`);
     if (entry.helpful > 0) parts.push(`${entry.helpful} Helpful`);
-    return { value: String(count), sub: parts.slice(0, 3).join(" · ") || "kudos", color: "text-fab-gold" };
+    return { value: String(count), sub: parts.slice(0, 3).join(" · ") || ("kudos" + suffix), color: "text-fab-gold" };
   }
-  return { value: String(count), sub: `${entry.total} total kudos`, color: "text-fab-gold" };
+  return { value: String(count), sub: `${entry.total} total${suffix}`, color: "text-fab-gold" };
 }
 
 // Check if tab shows a rate (for progress bars)
@@ -281,6 +293,9 @@ function getEmptyMessage(tab: Tab): string {
     case "kudos_total": return "No players have received kudos yet. Give kudos from player profiles!";
     case "kudos_props": case "kudos_good_sport": case "kudos_skilled": case "kudos_helpful":
       return "No players have received this type of kudos yet.";
+    case "kudos_given_total": return "No players have given kudos yet. Give kudos from player profiles!";
+    case "kudos_given_props": case "kudos_given_good_sport": case "kudos_given_skilled": case "kudos_given_helpful":
+      return "No players have given this type of kudos yet.";
     default:
       if (tab.startsWith("top8s")) return "No players have Top 8 finishes in this category yet.";
       return "Import matches to appear on the leaderboard.";
@@ -308,8 +323,10 @@ export default function LeaderboardPage() {
 
   // Kudos data (loaded from separate collection)
   const [kudosData, setKudosData] = useState<KudosCountsEntry[]>([]);
+  const [kudosGivenData, setKudosGivenData] = useState<KudosCountsEntry[]>([]);
   const [kudosLoading, setKudosLoading] = useState(false);
   const kudosLoaded = useRef(false);
+  const kudosGivenLoaded = useRef(false);
 
   // Load kudos data when kudos category is first selected
   useEffect(() => {
@@ -319,11 +336,25 @@ export default function LeaderboardPage() {
     loadAllKudosCounts().then(setKudosData).catch(() => {}).finally(() => setKudosLoading(false));
   }, [activeCategory]);
 
+  // Load kudos given data when kudos_given category is first selected
+  useEffect(() => {
+    if (activeCategory !== "kudos_given" || kudosGivenLoaded.current) return;
+    kudosGivenLoaded.current = true;
+    setKudosLoading(true);
+    loadAllKudosGivenCounts().then(setKudosGivenData).catch(() => {}).finally(() => setKudosLoading(false));
+  }, [activeCategory]);
+
   const kudosMap = useMemo(() => {
     const m = new Map<string, KudosCountsEntry>();
     for (const e of kudosData) m.set(e.uid, e);
     return m;
   }, [kudosData]);
+
+  const kudosGivenMap = useMemo(() => {
+    const m = new Map<string, KudosCountsEntry>();
+    for (const e of kudosGivenData) m.set(e.uid, e);
+    return m;
+  }, [kudosGivenData]);
 
   // Filter categories by admin access
   const categories = useMemo(() => isAdmin ? allCategories : allCategories.filter((c) => !c.adminOnly), [isAdmin]);
@@ -458,10 +489,20 @@ export default function LeaderboardPage() {
           .filter((e) => (kudosMap.get(e.userId)?.[field] ?? 0) > 0)
           .sort((a, b) => (kudosMap.get(b.userId)?.[field] ?? 0) - (kudosMap.get(a.userId)?.[field] ?? 0) || (kudosMap.get(b.userId)?.total ?? 0) - (kudosMap.get(a.userId)?.total ?? 0));
       }
+      case "kudos_given_total":
+      case "kudos_given_props":
+      case "kudos_given_good_sport":
+      case "kudos_given_skilled":
+      case "kudos_given_helpful": {
+        const field = kudosField(activeTab);
+        return [...visibleEntries]
+          .filter((e) => (kudosGivenMap.get(e.userId)?.[field] ?? 0) > 0)
+          .sort((a, b) => (kudosGivenMap.get(b.userId)?.[field] ?? 0) - (kudosGivenMap.get(a.userId)?.[field] ?? 0) || (kudosGivenMap.get(b.userId)?.total ?? 0) - (kudosGivenMap.get(a.userId)?.total ?? 0));
+      }
       default:
         return visibleEntries;
     }
-  }, [visibleEntries, activeTab, currentWeekStart, currentMonthStart, kudosMap]);
+  }, [visibleEntries, activeTab, currentWeekStart, currentMonthStart, kudosMap, kudosGivenMap]);
 
   // Search filter
   const filtered = useMemo(() => {
@@ -497,19 +538,19 @@ export default function LeaderboardPage() {
   // User's rank for each sub-tab in the current category
   const mySubTabRanks = useMemo(() => {
     if (!user) return new Map<string, number>();
-    if (activeCategory === "kudos") {
-      // Compute kudos ranks from kudosData
+    if (activeCategory === "kudos" || activeCategory === "kudos_given") {
+      const data = activeCategory === "kudos_given" ? kudosGivenData : kudosData;
       const map = new Map<string, number>();
       for (const tabId of activeCategoryObj.tabs) {
         const field = kudosField(tabId as Tab);
-        const sorted = [...kudosData].filter((e) => e[field] > 0).sort((a, b) => b[field] - a[field]);
+        const sorted = [...data].filter((e) => e[field] > 0).sort((a, b) => b[field] - a[field]);
         const idx = sorted.findIndex((e) => e.uid === user.uid);
         if (idx >= 0) map.set(tabId, idx + 1);
       }
       return map;
     }
     return computeUserRanksByTab(visibleEntries, user.uid, activeCategoryObj.tabs);
-  }, [visibleEntries, user, activeCategoryObj.tabs, activeCategory, kudosData]);
+  }, [visibleEntries, user, activeCategoryObj.tabs, activeCategory, kudosData, kudosGivenData]);
 
   function selectCategory(catId: string) {
     const cat = categories.find((c) => c.id === catId);
@@ -731,8 +772,8 @@ export default function LeaderboardPage() {
             <div className="grid grid-cols-3 gap-3 mb-6">
               {[podium[1], podium[0], podium[2]].map((entry, i) => {
                 const place = [2, 1, 3][i];
-                const kudosEntry = kudosMap.get(entry.userId);
-                const stat = isKudosTab(activeTab) && kudosEntry ? getKudosStat(kudosEntry, activeTab) : getStat(entry, activeTab);
+                const kudosEntry = isKudosGivenTab(activeTab) ? kudosGivenMap.get(entry.userId) : kudosMap.get(entry.userId);
+                const stat = (isKudosTab(activeTab) || isKudosGivenTab(activeTab)) && kudosEntry ? getKudosStat(kudosEntry, activeTab) : getStat(entry, activeTab);
                 const isCenter = place === 1;
                 return (
                   <Link
@@ -824,7 +865,7 @@ export default function LeaderboardPage() {
                   tab={activeTab}
                   h2h={h2hMap.get(entry.displayName.toLowerCase())}
                   isMe={entry.userId === user?.uid}
-                  kudosEntry={kudosMap.get(entry.userId)}
+                  kudosEntry={isKudosGivenTab(activeTab) ? kudosGivenMap.get(entry.userId) : kudosMap.get(entry.userId)}
                 />
               );
             })}
@@ -882,7 +923,7 @@ function LeaderboardRow({
     .toUpperCase()
     .slice(0, 2);
 
-  const stat = isKudosTab(tab) && kudosEntry ? getKudosStat(kudosEntry, tab) : getStat(entry, tab);
+  const stat = (isKudosTab(tab) || isKudosGivenTab(tab)) && kudosEntry ? getKudosStat(kudosEntry, tab) : getStat(entry, tab);
   const showBar = isRateTab(tab) && stat.rate !== undefined;
   const isCreator = entry.username === SITE_CREATOR;
 
