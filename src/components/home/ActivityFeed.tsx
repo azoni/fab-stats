@@ -313,7 +313,7 @@ export function ActivityFeed({ rankMap, eventTierMap }: { rankMap?: Map<string, 
                 key={group.events[0].id}
                 onClick={(e) => {
                   if ((e.target as HTMLElement).closest("a")) return;
-                  router.push(`/search?type=${group.events[0].type}`);
+                  router.push(group.events[0].type === "fabdoku" ? "/fabdoku" : `/search?type=${group.events[0].type}`);
                 }}
                 className="cursor-pointer"
               >

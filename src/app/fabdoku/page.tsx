@@ -76,6 +76,7 @@ export default function FaBdokuPage() {
   const [uniqueness, setUniqueness] = useState<UniquenessData | null>(null);
   const [yesterdayScore, setYesterdayScore] = useState<UniquenessData | null>(null);
   const [showYesterday, setShowYesterday] = useState(true);
+  const [isReplay, setIsReplay] = useState(false);
 
   // Track which hero names have already been guessed (no reuse).
   // Excludes the hero in the currently selected cell so it can be replaced.
@@ -200,7 +201,7 @@ export default function FaBdokuPage() {
           try {
             const result = buildResult(newState);
             await saveResult(user.uid, result);
-            await savePicks(newState);
+            if (!isReplay) await savePicks(newState);
             const updatedStats = await loadStats(user.uid);
             if (updatedStats) setStats(updatedStats);
           } catch {
@@ -221,7 +222,7 @@ export default function FaBdokuPage() {
         }
       }
     },
-    [gameState, selectedCell, puzzle, user?.uid, profile, dateStr, refreshUniqueness]
+    [gameState, selectedCell, puzzle, user?.uid, profile, dateStr, refreshUniqueness, isReplay]
   );
 
   if (!gameState) {
@@ -378,6 +379,7 @@ export default function FaBdokuPage() {
               setShowResult(false);
               setShowShare(false);
               setUniqueness(null);
+              setIsReplay(true);
             }}
             className="px-4 py-2 text-xs font-medium rounded-lg bg-fab-surface border border-fab-border text-fab-muted hover:text-fab-text hover:border-fab-gold/50 transition-colors"
           >
