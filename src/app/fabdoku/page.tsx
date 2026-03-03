@@ -210,7 +210,7 @@ export default function FaBdokuPage() {
 
       // Save to Firestore on completion
       if (isCompleted) {
-        const shouldSavePicks = !isReplay && !hasPicksSaved(dateStr);
+        const shouldSavePicks = !hasPicksSaved(dateStr);
 
         if (user?.uid) {
           // Authenticated: save result + picks + stats
@@ -402,6 +402,7 @@ export default function FaBdokuPage() {
               onClick={() => {
                 if (typeof window !== "undefined") {
                   localStorage.removeItem(`fabdoku-${dateStr}`);
+                  localStorage.removeItem(`fabdoku-picks-saved-${dateStr}`);
                 }
                 setGameState(createFreshGameState(dateStr));
                 setShowResult(false);
@@ -446,7 +447,7 @@ export default function FaBdokuPage() {
                 setSelectedCell(null);
                 // Trigger completion flow
                 (async () => {
-                  const shouldSave = !isReplay && !hasPicksSaved(dateStr);
+                  const shouldSave = !hasPicksSaved(dateStr);
                   if (user?.uid) {
                     try {
                       const result = buildResult(newState);
