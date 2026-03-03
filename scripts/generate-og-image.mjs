@@ -88,20 +88,6 @@ const svg = await satori(
         overflow: "hidden",
       },
       children: [
-        // Subtle gradient overlay at top
-        {
-          type: "div",
-          props: {
-            style: {
-              position: "absolute",
-              top: 0,
-              left: 0,
-              right: 0,
-              height: "200px",
-              background: `linear-gradient(180deg, ${GOLD}08 0%, transparent 100%)`,
-            },
-          },
-        },
         // Top gold accent line
         {
           type: "div",
@@ -111,12 +97,26 @@ const svg = await satori(
               top: 0,
               left: 0,
               right: 0,
-              height: "3px",
-              background: `linear-gradient(90deg, transparent 10%, ${GOLD} 50%, transparent 90%)`,
+              height: "4px",
+              background: `linear-gradient(90deg, transparent 5%, ${GOLD} 50%, transparent 95%)`,
             },
           },
         },
-        // Main content container
+        // Bottom gold accent line
+        {
+          type: "div",
+          props: {
+            style: {
+              position: "absolute",
+              bottom: 0,
+              left: 0,
+              right: 0,
+              height: "4px",
+              background: `linear-gradient(90deg, transparent 5%, ${GOLD} 50%, transparent 95%)`,
+            },
+          },
+        },
+        // Main content — big logo + title + tagline
         {
           type: "div",
           props: {
@@ -125,7 +125,7 @@ const svg = await satori(
               flexDirection: "column",
               alignItems: "center",
               justifyContent: "center",
-              gap: "32px",
+              gap: "28px",
             },
             children: [
               // Logo + Title row
@@ -135,30 +135,29 @@ const svg = await satori(
                   style: {
                     display: "flex",
                     alignItems: "center",
-                    gap: "20px",
+                    gap: "32px",
                   },
                   children: [
-                    // Logo icon (card with bars)
+                    // Logo icon — large
                     {
                       type: "div",
                       props: {
                         style: {
-                          width: "72px",
-                          height: "72px",
-                          borderRadius: "16px",
+                          width: "140px",
+                          height: "140px",
+                          borderRadius: "28px",
                           background: SURFACE,
-                          border: `2px solid ${BORDER}`,
+                          border: `3px solid ${BORDER}`,
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
-                          position: "relative",
                         },
                         children: [
                           {
                             type: "svg",
                             props: {
-                              width: "44",
-                              height: "44",
+                              width: "90",
+                              height: "90",
                               viewBox: "0 0 24 24",
                               fill: "none",
                               children: [
@@ -171,7 +170,7 @@ const svg = await satori(
                                     height: "20",
                                     rx: "2",
                                     stroke: GOLD,
-                                    strokeWidth: "2",
+                                    strokeWidth: "1.8",
                                   },
                                 },
                                 {
@@ -192,105 +191,47 @@ const svg = await satori(
                         ],
                       },
                     },
-                    // Title
+                    // Title text
                     {
                       type: "div",
                       props: {
                         style: {
-                          display: "flex",
-                          flexDirection: "column",
+                          fontSize: "120px",
+                          fontWeight: 700,
+                          color: GOLD,
+                          letterSpacing: "-3px",
+                          lineHeight: 1,
                         },
-                        children: [
-                          {
-                            type: "div",
-                            props: {
-                              style: {
-                                fontSize: "56px",
-                                fontWeight: 700,
-                                color: GOLD,
-                                letterSpacing: "-1px",
-                                lineHeight: 1.1,
-                              },
-                              children: "FaB Stats",
-                            },
-                          },
-                        ],
+                        children: "FaB Stats",
                       },
                     },
                   ],
                 },
               },
-              // Tagline
+              // Tagline — short and punchy
               {
                 type: "div",
                 props: {
                   style: {
-                    fontSize: "22px",
+                    fontSize: "36px",
                     fontWeight: 400,
                     color: MUTED,
                     textAlign: "center",
-                    maxWidth: "700px",
-                    lineHeight: 1.5,
+                    lineHeight: 1.4,
                   },
-                  children: "Track your Flesh and Blood match history, win rates, hero matchups, and event performance.",
+                  children: "Flesh and Blood Match Tracker",
                 },
               },
-              // Feature pills row
+              // Domain
               {
                 type: "div",
                 props: {
                   style: {
-                    display: "flex",
-                    gap: "12px",
-                    marginTop: "8px",
-                  },
-                  children: [
-                    "Win Rates",
-                    "Matchups",
-                    "Opponents",
-                    "Events",
-                    "Leaderboard",
-                  ].map((label) => ({
-                    type: "div",
-                    props: {
-                      style: {
-                        padding: "8px 20px",
-                        borderRadius: "8px",
-                        background: SURFACE,
-                        border: `1px solid ${BORDER}`,
-                        fontSize: "15px",
-                        fontWeight: 600,
-                        color: TEXT,
-                        letterSpacing: "0.2px",
-                      },
-                      children: label,
-                    },
-                  })),
-                },
-              },
-            ],
-          },
-        },
-        // Bottom domain
-        {
-          type: "div",
-          props: {
-            style: {
-              position: "absolute",
-              bottom: "28px",
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-            },
-            children: [
-              {
-                type: "div",
-                props: {
-                  style: {
-                    fontSize: "16px",
+                    fontSize: "24px",
                     color: DIM,
                     fontWeight: 400,
-                    letterSpacing: "0.5px",
+                    letterSpacing: "2px",
+                    marginTop: "12px",
                   },
                   children: "fabstats.net",
                 },
