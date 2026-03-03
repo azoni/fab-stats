@@ -1,12 +1,12 @@
 "use client";
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useMatches } from "@/hooks/useMatches";
 import { useAuth } from "@/contexts/AuthContext";
 import { computeEventStats, computeOverallStats, computePlayoffFinishes, computeBestFinish } from "@/lib/stats";
 import { updateLeaderboardEntry } from "@/lib/leaderboard";
-import { propagateHeroToOpponent } from "@/lib/match-linking";
+import { propagateHeroToOpponent, linkMatchesWithOpponents } from "@/lib/match-linking";
 import { adjustHeroMatchupOnEdit } from "@/lib/hero-matchups";
 import { deleteFeedEventsForEvent } from "@/lib/feed";
 import { EventCard } from "@/components/events/EventCard";
@@ -86,7 +86,9 @@ export default function EventsPage() {
   const handleUpdateMatch = useCallback(
     async (id: string, updates: Partial<Omit<MatchRecord, "id" | "createdAt">>) => {
       await updateMatch(id, updates);
-      if (profile && matches.length > 0) {
+      // Only recompute leaderboard for stat-affecting changes (not opponentHero edits)
+      const isOpponentHeroOnly = Object.keys(updates).length === 1 && "opponentHero" in updates;
+      if (!isOpponentHeroOnly && profile && matches.length > 0) {
         const updated = matches.map((m) => m.id === id ? { ...m, ...updates } : m);
         updateLeaderboardEntry(profile, updated).catch(() => {});
       }
@@ -100,6 +102,21 @@ export default function EventsPage() {
     },
     [updateMatch, profile, matches, user]
   );
+
+  // Background sync on mount: re-link opponents and refresh to pick up hero updates
+  const didSyncRef = useRef(false);
+  useEffect(() => {
+    if (!user || !isLoaded || didSyncRef.current) return;
+    didSyncRef.current = true;
+    const hasGemMatches = matches.some((m) => m.opponentGemId);
+    if (hasGemMatches) {
+      linkMatchesWithOpponents(user.uid, matches)
+        .then((result) => {
+          if (result.heroesReceived > 0) refreshMatches();
+        })
+        .catch(() => {});
+    }
+  }, [user, isLoaded, matches, refreshMatches]);
 
   // Auto-open import modal from ?import=1 (e.g. from navbar "Log Event")
   // Also initialize filters from URL params (e.g. from trends page links)

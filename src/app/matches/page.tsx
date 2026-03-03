@@ -17,7 +17,9 @@ export default function MatchesPage() {
   const handleUpdateMatch = useCallback(
     async (id: string, updates: Partial<Omit<MatchRecord, "id" | "createdAt">>) => {
       await updateMatch(id, updates);
-      if (profile && matches.length > 0) {
+      // Only recompute leaderboard for stat-affecting changes (not opponentHero edits)
+      const isOpponentHeroOnly = Object.keys(updates).length === 1 && "opponentHero" in updates;
+      if (!isOpponentHeroOnly && profile && matches.length > 0) {
         const updated = matches.map((m) => m.id === id ? { ...m, ...updates } : m);
         updateLeaderboardEntry(profile, updated).catch(() => {});
       }
