@@ -229,7 +229,7 @@ export function ActivityFeed({ rankMap, eventTierMap }: { rankMap?: Map<string, 
           const pageItems = activityGroups.slice(page * ENGAGEMENT_PAGE_SIZE, (page + 1) * ENGAGEMENT_PAGE_SIZE);
           return (
             <>
-              <div className="space-y-1.5">
+              <div className="space-y-1.5 min-h-[440px]">
                 {pageItems.map(({ event: ev, count }) => {
                   const ago = (() => {
                     const diff = Date.now() - new Date(ev.ts).getTime();
@@ -263,9 +263,6 @@ export function ActivityFeed({ rankMap, eventTierMap }: { rankMap?: Map<string, 
                     </div>
                   );
                 })}
-                {pageItems.length < ENGAGEMENT_PAGE_SIZE && Array.from({ length: ENGAGEMENT_PAGE_SIZE - pageItems.length }, (_, i) => (
-                  <div key={`spacer-${i}`} className="h-[68px]" aria-hidden="true" />
-                ))}
               </div>
               {engagementPages > 1 && (
                 <div className="flex items-center justify-between mt-3">
@@ -307,7 +304,7 @@ export function ActivityFeed({ rankMap, eventTierMap }: { rankMap?: Map<string, 
         </div>
       ) : (
         <>
-          <div className="space-y-2">
+          <div className="space-y-2 min-h-[440px]">
             {groups.map((group) => (
               <div
                 key={group.events[0].id}
@@ -319,10 +316,6 @@ export function ActivityFeed({ rankMap, eventTierMap }: { rankMap?: Map<string, 
               >
                 <GroupedFeedCard group={group} compact rankMap={rankMap} eventTierMap={eventTierMap} userId={user?.uid} isAdmin={isAdmin} onDelete={handleDelete} />
               </div>
-            ))}
-            {/* Invisible spacers to maintain consistent height on partial pages */}
-            {groups.length < PAGE_SIZE && Array.from({ length: PAGE_SIZE - groups.length }, (_, i) => (
-              <div key={`spacer-${i}`} className="h-[68px]" aria-hidden="true" />
             ))}
           </div>
 
