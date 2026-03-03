@@ -30,7 +30,7 @@ import { getEventShowcase } from "@/lib/event-showcase";
 import { EventShowcase } from "@/components/home/EventShowcase";
 import { BadgeStrip } from "@/components/profile/BadgeStrip";
 import { getHeroByName } from "@/lib/heroes";
-import { loadUserResult } from "@/lib/fabdoku/firestore";
+import { loadUserResult, loadStats } from "@/lib/fabdoku/firestore";
 import { getTodayDateStr } from "@/lib/fabdoku/puzzle-generator";
 import { loadKudosCounts } from "@/lib/kudos";
 import type { Poll, EventShowcaseConfig } from "@/types";
@@ -126,13 +126,15 @@ export default function Dashboard() {
   const [activePrediction, setActivePrediction] = useState<Poll | null>(null);
   const [showcaseConfig, setShowcaseConfig] = useState<EventShowcaseConfig | null>(null);
   const [fabdokuScore, setFabdokuScore] = useState<number | null>(null);
+  const [fabdokuGamesPlayed, setFabdokuGamesPlayed] = useState(0);
   const [kudosTotal, setKudosTotal] = useState<number | null>(null);
   const leaderboardUpdated = useRef(false);
 
-  // Load today's fabdoku score and kudos total for the current user
+  // Load today's fabdoku score, stats, and kudos total for the current user
   useEffect(() => {
     if (!user) return;
     loadUserResult(user.uid, getTodayDateStr()).then((r) => setFabdokuScore(r?.score ?? null)).catch(() => {});
+    loadStats(user.uid).then((s) => setFabdokuGamesPlayed(s?.gamesPlayed ?? 0)).catch(() => {});
     loadKudosCounts(user.uid).then((c) => setKudosTotal(c.total > 0 ? c.total : null)).catch(() => {});
   }, [user]);
 
@@ -575,8 +577,8 @@ export default function Dashboard() {
                     <span className="text-[10px] font-bold text-fab-dim group-hover:text-fab-gold transition-colors tabular-nums">{kudosTotal}</span>
                   </Link>
                 )}
-                {fabdokuScore !== null && (
-                  <Link href="/fabdoku" className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-fab-bg/80 border border-fab-border hover:border-fab-gold/40 transition-colors group" title="Today's FaBdoku score">
+                {(fabdokuScore !== null || fabdokuGamesPlayed > 0) && (
+                  <Link href="/fabdoku" className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-fab-bg/80 border border-fab-border hover:border-fab-gold/40 transition-colors group" title={fabdokuScore !== null ? "Today's FaBdoku score" : "FaBdoku games played"}>
                     <svg className="w-3 h-3 text-fab-dim group-hover:text-fab-gold transition-colors" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
                       <rect x="3" y="3" width="18" height="18" rx="2" />
                       <line x1="3" y1="9" x2="21" y2="9" />
@@ -584,7 +586,9 @@ export default function Dashboard() {
                       <line x1="9" y1="3" x2="9" y2="21" />
                       <line x1="15" y1="3" x2="15" y2="21" />
                     </svg>
-                    <span className="text-[10px] font-bold text-fab-dim group-hover:text-fab-gold transition-colors tabular-nums">{fabdokuScore}/9</span>
+                    <span className="text-[10px] font-bold text-fab-dim group-hover:text-fab-gold transition-colors tabular-nums">
+                      {fabdokuScore !== null ? `${fabdokuScore}/9` : `${fabdokuGamesPlayed}g`}
+                    </span>
                   </Link>
                 )}
               </div>
