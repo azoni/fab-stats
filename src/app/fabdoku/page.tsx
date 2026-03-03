@@ -344,7 +344,17 @@ export default function FaBdokuPage() {
           gameState={gameState}
           stats={stats}
           uniqueness={uniqueness}
-          onShare={() => setShowShare(true)}
+          onShare={() => {
+            setShowShare(true);
+            if (profile) {
+              const cc = gameState.cells.flat().filter((c) => c.correct).length;
+              createFaBdokuFeedEvent(
+                profile, "shared", dateStr, gameState.won, cc,
+                gameState.guessesUsed, buildGrid(gameState),
+                uniqueness?.score,
+              ).catch(() => {});
+            }
+          }}
         />
       )}
 

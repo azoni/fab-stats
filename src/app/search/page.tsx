@@ -117,6 +117,11 @@ function SearchContent() {
       source = source.filter((e) => e.type === typeFilter);
     }
 
+    // Hide "shared" fabdoku events from the public FaBdoku tab
+    if (typeFilter === "fabdoku") {
+      source = source.filter((e) => e.type !== "fabdoku" || (e as { subtype?: string }).subtype !== "shared");
+    }
+
     source = source.filter((e) => {
       const dateStr = e.type === "placement" ? e.eventDate : e.createdAt;
       const ts = new Date(dateStr).getTime();

@@ -114,6 +114,11 @@ export function ActivityFeed({ rankMap, eventTierMap }: { rankMap?: Map<string, 
       source = source.filter((e) => e.type === typeFilter);
     }
 
+    // Hide "shared" fabdoku events from the public FaBdoku tab (admin sees them in Engagement)
+    if (typeFilter === "fabdoku") {
+      source = source.filter((e) => e.type !== "fabdoku" || (e as { subtype?: string }).subtype !== "shared");
+    }
+
     // Filter out stale placements — only show events from the last 2 weeks
     const TWO_WEEKS = 14 * 24 * 60 * 60 * 1000;
     const placementCutoff = Date.now() - TWO_WEEKS;
