@@ -22,6 +22,7 @@ import { FaBdokuBoard } from "@/components/fabdoku/FaBdokuBoard";
 import { HeroSearchModal } from "@/components/fabdoku/HeroSearchModal";
 import { FaBdokuResult } from "@/components/fabdoku/FaBdokuResult";
 import { FaBdokuShareCard } from "@/components/fabdoku/FaBdokuShareCard";
+import { FaBdokuRecap } from "@/components/fabdoku/FaBdokuRecap";
 import {
   generateDailyPuzzle,
   getTodayDateStr,
@@ -47,7 +48,7 @@ import {
   markShared,
 } from "@/lib/fabdoku/firestore";
 import { createFaBdokuFeedEvent, createGuestFaBdokuFeedEvent, deleteFaBdokuFeedEvents } from "@/lib/feed";
-import type { GameState, FaBdokuStats, UniquenessData } from "@/lib/fabdoku/types";
+import type { GameState, FaBdokuStats, UniquenessData, PickData } from "@/lib/fabdoku/types";
 
 function getYesterdayDateStr(): string {
   const d = new Date();
@@ -69,6 +70,7 @@ export default function FaBdokuPage() {
   const dateStr = useMemo(() => getTodayDateStr(), []);
   const yesterdayStr = useMemo(() => getYesterdayDateStr(), []);
   const puzzle = useMemo(() => generateDailyPuzzle(dateStr), [dateStr]);
+  const yesterdayPuzzle = useMemo(() => generateDailyPuzzle(yesterdayStr), [yesterdayStr]);
 
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [selectedCell, setSelectedCell] = useState<[number, number] | null>(
@@ -80,7 +82,10 @@ export default function FaBdokuPage() {
   const [stats, setStats] = useState<FaBdokuStats | null>(null);
   const [uniqueness, setUniqueness] = useState<UniquenessData | null>(null);
   const [yesterdayScore, setYesterdayScore] = useState<UniquenessData | null>(null);
+  const [yesterdayPickData, setYesterdayPickData] = useState<PickData | null>(null);
+  const [yesterdayGameState, setYesterdayGameState] = useState<GameState | null>(null);
   const [showYesterday, setShowYesterday] = useState(true);
+  const [showRecap, setShowRecap] = useState(false);
   const [isReplay, setIsReplay] = useState(false);
 
   // Track which hero names have already been guessed (no reuse).
@@ -151,19 +156,26 @@ export default function FaBdokuPage() {
     }
   }, [user?.uid]);
 
-  // Load yesterday's final score
+  // Load yesterday's final score + pick data for recap
   useEffect(() => {
-    const yesterdayState = loadGameState(yesterdayStr);
-    if (!yesterdayState?.completed) return;
+    const yState = loadGameState(yesterdayStr);
+    if (!yState?.completed) return;
+    setYesterdayGameState(yState);
 
-    loadTodayResults(yesterdayStr)
-      .then((results) => {
-        if (results.length > 0) {
-          const pickData = buildPicksFromResults(results);
-          setYesterdayScore(computeUniqueness(yesterdayState, pickData));
+    (async () => {
+      try {
+        // Prefer picks doc (single read, includes anonymous players)
+        let pd = await loadPicks(yesterdayStr);
+        if (!pd) {
+          const results = await loadTodayResults(yesterdayStr);
+          if (results.length > 0) pd = buildPicksFromResults(results);
         }
-      })
-      .catch(() => {});
+        if (pd) {
+          setYesterdayPickData(pd);
+          setYesterdayScore(computeUniqueness(yState, pd));
+        }
+      } catch {}
+    })();
   }, [yesterdayStr]);
 
   const handleCellClick = useCallback(
@@ -341,34 +353,55 @@ export default function FaBdokuPage() {
         </div>
       </div>
 
-      {/* Yesterday's final score */}
-      {showYesterday && yesterdayScore && (
-        <div className="bg-fab-surface border border-fab-border rounded-lg p-3 mb-3 flex items-center justify-between">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="shrink-0 text-center">
-              <p className="text-lg font-bold text-fab-gold font-mono leading-tight">
-                {yesterdayScore.score}
-              </p>
-              <p className="text-[9px] text-fab-dim">score</p>
+      {/* Yesterday's recap / score */}
+      {showYesterday && yesterdayScore && yesterdayGameState && (
+        showRecap && yesterdayPickData ? (
+          <FaBdokuRecap
+            dateStr={yesterdayStr}
+            gameState={yesterdayGameState}
+            puzzle={yesterdayPuzzle}
+            uniqueness={yesterdayScore}
+            pickData={yesterdayPickData}
+            onCollapse={() => setShowRecap(false)}
+          />
+        ) : (
+          <div className="bg-fab-surface border border-fab-border rounded-lg p-3 mb-3 flex items-center justify-between">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="shrink-0 text-center">
+                <p className="text-lg font-bold text-fab-gold font-mono leading-tight">
+                  {yesterdayScore.score}
+                </p>
+                <p className="text-[9px] text-fab-dim">score</p>
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-semibold text-fab-text">
+                  Yesterday&apos;s Final Score
+                </p>
+                <p className="text-[10px] text-fab-dim">
+                  {yesterdayStr} &middot; {yesterdayScore.totalPlayers} player{yesterdayScore.totalPlayers !== 1 ? "s" : ""}
+                </p>
+              </div>
             </div>
-            <div className="min-w-0">
-              <p className="text-xs font-semibold text-fab-text">
-                Yesterday&apos;s Final Score
-              </p>
-              <p className="text-[10px] text-fab-dim">
-                {yesterdayStr} &middot; {yesterdayScore.totalPlayers} player{yesterdayScore.totalPlayers !== 1 ? "s" : ""}
-              </p>
+            <div className="flex items-center gap-2 shrink-0 ml-2">
+              {yesterdayPickData && (
+                <button
+                  onClick={() => setShowRecap(true)}
+                  className="text-xs font-medium text-fab-gold hover:text-fab-gold/80 transition-colors"
+                >
+                  View Recap
+                </button>
+              )}
+              <button
+                onClick={() => setShowYesterday(false)}
+                className="text-fab-dim hover:text-fab-muted transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
             </div>
           </div>
-          <button
-            onClick={() => setShowYesterday(false)}
-            className="shrink-0 text-fab-dim hover:text-fab-muted transition-colors ml-2"
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
+        )
       )}
 
       {/* Game board */}

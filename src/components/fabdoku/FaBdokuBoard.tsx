@@ -68,6 +68,8 @@ interface FaBdokuBoardProps {
   onCellClick: (row: number, col: number) => void;
   /** Per-cell uniqueness percentages (shown after game completion) */
   cellPcts?: number[][];
+  /** Highlighted cell for recap selection */
+  selectedCell?: [number, number] | null;
 }
 
 export function FaBdokuBoard({
@@ -77,6 +79,7 @@ export function FaBdokuBoard({
   disabled,
   onCellClick,
   cellPcts,
+  selectedCell,
 }: FaBdokuBoardProps) {
   return (
     <div className="grid grid-cols-4 gap-1.5 sm:gap-2 w-full max-w-[400px] mx-auto">
@@ -106,6 +109,7 @@ export function FaBdokuBoard({
                 disabled={disabled}
                 onClick={() => onCellClick(ri, ci)}
                 pct={cellPcts?.[ri]?.[ci]}
+                selected={selectedCell?.[0] === ri && selectedCell?.[1] === ci}
               />
             );
           })}

@@ -35,6 +35,8 @@ interface FaBdokuCellProps {
   onClick: () => void;
   /** Uniqueness percentage (0–100) shown after game completion */
   pct?: number;
+  /** Highlight ring for recap cell selection */
+  selected?: boolean;
 }
 
 function getPctColor(pct: number): string {
@@ -52,6 +54,7 @@ export function FaBdokuCell({
   disabled,
   onClick,
   pct,
+  selected,
 }: FaBdokuCellProps) {
   const hero = heroName ? getHeroByName(heroName) : null;
   const [imgError, setImgError] = useState(false);
@@ -71,7 +74,9 @@ export function FaBdokuCell({
   }
 
   // Filled cell
-  const borderColor = correct
+  const borderColor = selected
+    ? "border-fab-gold ring-2 ring-fab-gold/50"
+    : correct
     ? "border-fab-win ring-1 ring-fab-win/30"
     : "border-fab-loss ring-1 ring-fab-loss/30";
 
