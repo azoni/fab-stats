@@ -150,8 +150,8 @@ export function ActivityFeed({ rankMap, eventTierMap }: { rankMap?: Map<string, 
   const totalPages = Math.max(1, Math.ceil(allGroups.length / PAGE_SIZE));
   const groups = allGroups.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
 
-  // Don't render section if no events at all (only when showing everything)
-  if (!loading && events.length === 0 && typeFilter === "all") return null;
+  // Don't render section if no events at all and showing everything
+  if (!loading && events.length === 0 && typeFilter === "all" && scope === "community") return null;
 
   return (
     <div className="flex flex-col h-full">
@@ -300,6 +300,8 @@ export function ActivityFeed({ rankMap, eventTierMap }: { rankMap?: Map<string, 
           <p className="text-xs text-fab-dim">
             {scope === "friends"
               ? "No recent activity from friends yet."
+              : typeFilter !== "all"
+              ? `No ${TYPE_FILTERS.find((f) => f.value === typeFilter)?.label ?? typeFilter} activity yet.`
               : "No recent activity yet. Import some matches to get started!"}
           </p>
         </div>
