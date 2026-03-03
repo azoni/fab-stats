@@ -1,6 +1,6 @@
 import type { MatchRecord, HeroStats, OverallStats, OpponentStats, Achievement } from "@/types";
 import { MatchResult, GameFormat } from "@/types";
-import { computeEventStats, computePlayoffFinishes } from "@/lib/stats";
+import { computeEventStats, computePlayoffFinishes, getEventType } from "@/lib/stats";
 
 interface CheckContext {
   matches: MatchRecord[];
@@ -20,16 +20,16 @@ interface AchievementDef extends Achievement {
   progress?: (ctx: CheckContext) => AchievementProgress;
 }
 
-// Helper: count matches by event type
+// Helper: count matches by event type (uses refined classification, not raw field)
 function countEventType(ctx: CheckContext, type: string): number {
-  return ctx.matches.filter((m) => m.eventType === type).length;
+  return ctx.matches.filter((m) => getEventType(m) === type).length;
 }
 
 // Helper: count distinct events (by date + venue + eventType combos)
 function countDistinctEvents(ctx: CheckContext, type: string): number {
   const events = new Set<string>();
   for (const m of ctx.matches) {
-    if (m.eventType === type) {
+    if (getEventType(m) === type) {
       events.add(`${m.date}|${m.venue || ""}`);
     }
   }
@@ -38,7 +38,7 @@ function countDistinctEvents(ctx: CheckContext, type: string): number {
 
 // Helper: count wins by event type
 function countEventTypeWins(ctx: CheckContext, type: string): number {
-  return ctx.matches.filter((m) => m.eventType === type && m.result === MatchResult.Win).length;
+  return ctx.matches.filter((m) => getEventType(m) === type && m.result === MatchResult.Win).length;
 }
 
 // Helper: check if player won (champion finish) at a given event type

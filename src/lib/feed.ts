@@ -179,6 +179,46 @@ export async function createFaBdokuFeedEvent(
   invalidateFeedCache();
 }
 
+/** Post a FaBdoku feed event for a guest (no profile required). */
+export async function createGuestFaBdokuFeedEvent(
+  puzzleDate: string,
+  won: boolean,
+  correctCount: number,
+  guessesUsed: number,
+  grid: ("correct" | "wrong" | "empty")[][],
+  uniquenessScore?: number,
+): Promise<void> {
+  // Dedup: only one guest event per puzzle date
+  const dupCheck = query(
+    feedCollection(),
+    where("userId", "==", "guest"),
+    where("type", "==", "fabdoku"),
+    where("date", "==", puzzleDate),
+    limit(1),
+  );
+  const existing = await getDocs(dupCheck);
+  if (!existing.empty) return;
+
+  const data: Record<string, unknown> = {
+    type: "fabdoku",
+    subtype: "completed",
+    userId: "guest",
+    username: "guest",
+    displayName: "Guest",
+    isPublic: true,
+    date: puzzleDate,
+    won,
+    correctCount,
+    guessesUsed,
+    grid: grid.flat(),
+    createdAt: new Date().toISOString(),
+  };
+  if (uniquenessScore !== undefined) data.uniquenessScore = uniquenessScore;
+
+  await addDoc(feedCollection(), data);
+  invalidateFeedCache();
+}
+
 /** Delete all FaBdoku feed events for a user on a given date (used by admin reset). */
 export async function deleteFaBdokuFeedEvents(
   userId: string,

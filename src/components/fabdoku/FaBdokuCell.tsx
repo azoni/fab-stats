@@ -116,8 +116,11 @@ export function FaBdokuCell({
       </div>
       {/* Uniqueness % center overlay */}
       {pct !== undefined && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-          <span className={`text-lg sm:text-xl font-bold drop-shadow-lg ${getPctColor(pct)}`}>
+        <div className="absolute inset-0 flex items-center justify-center bg-black/70">
+          <span
+            className={`text-xl sm:text-2xl font-black ${getPctColor(pct)}`}
+            style={{ textShadow: "0 0 8px rgba(0,0,0,0.9), 0 2px 4px rgba(0,0,0,0.8)" }}
+          >
             {pct}%
           </span>
         </div>

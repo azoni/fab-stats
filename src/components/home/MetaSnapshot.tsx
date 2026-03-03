@@ -81,7 +81,7 @@ export const MetaSnapshot = memo(function MetaSnapshot({ topHeroes, top8Heroes, 
             {(showResults || showEventMode) && (
               <p className="text-xs text-fab-muted leading-tight">
                 {showResults
-                  ? "Season results"
+                  ? "Hero breakdown by Top 8 finishes"
                   : isSeason
                     ? selectedWeek != null && seasonWeeks?.[selectedWeek]
                       ? seasonWeeks[selectedWeek].label
@@ -142,7 +142,7 @@ export const MetaSnapshot = memo(function MetaSnapshot({ topHeroes, top8Heroes, 
                 <DonutChart segments={donutSegments} size={180} strokeWidth={28} />
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
                   <p className="text-3xl font-black text-fab-text leading-none">{donutTotal}</p>
-                  <p className="text-[9px] uppercase tracking-wider font-semibold text-fab-dim">Top 8s</p>
+                  <p className="text-[10px] uppercase tracking-wider font-bold text-fab-muted mt-0.5">Top 8s</p>
                 </div>
               </div>
 
@@ -158,13 +158,23 @@ export const MetaSnapshot = memo(function MetaSnapshot({ topHeroes, top8Heroes, 
                 ))}
               </div>
 
-              {/* Top champion */}
+              {/* Top 5 heroes by wins */}
               {top8Heroes && top8Heroes.length > 0 && (() => {
-                const topChampion = top8Heroes.find((h) => h.champions > 0);
-                return topChampion ? (
-                  <div className="w-full border-t border-fab-border pt-2 flex items-center justify-between">
-                    <p className="text-[10px] text-fab-dim uppercase tracking-wider font-semibold">Most Wins</p>
-                    <p className="text-xs font-bold text-fab-gold">{topChampion.hero} ({topChampion.champions})</p>
+                const topWinners = [...top8Heroes]
+                  .filter((h) => h.champions > 0)
+                  .sort((a, b) => b.champions - a.champions)
+                  .slice(0, 5);
+                return topWinners.length > 0 ? (
+                  <div className="w-full border-t border-fab-border pt-2">
+                    <p className="text-[10px] text-fab-dim uppercase tracking-wider font-semibold mb-1.5">Most Wins</p>
+                    <div className="space-y-1">
+                      {topWinners.map((h, i) => (
+                        <div key={h.hero} className="flex items-center justify-between">
+                          <span className={`text-xs ${i === 0 ? "font-bold text-fab-gold" : "text-fab-text"}`}>{h.hero}</span>
+                          <span className="text-xs text-fab-muted tabular-nums">{h.champions}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 ) : null;
               })()}

@@ -326,7 +326,7 @@ export async function searchUsernames(
 
 export async function updateProfile(
   userId: string,
-  updates: Partial<Pick<UserProfile, "displayName" | "photoUrl" | "isPublic" | "firstName" | "lastName" | "searchName" | "earnings" | "showNameOnProfiles" | "hideFromSpotlight" | "hideFromFeed" | "hideFromGuests" | "gemId" | "unlockedCans" | "showcase" | "showcaseSecondary" | "selectedEmblem" | "selectedClassEmblem">>
+  updates: Partial<Pick<UserProfile, "displayName" | "photoUrl" | "isPublic" | "profileVisibility" | "firstName" | "lastName" | "searchName" | "earnings" | "showNameOnProfiles" | "hideFromSpotlight" | "hideFromFeed" | "hideFromGuests" | "gemId" | "unlockedCans" | "showcase" | "showcaseSecondary" | "selectedEmblem" | "selectedClassEmblem">>
 ): Promise<void> {
   const profileRef = doc(db, "users", userId, "profile", "main");
   // Strip undefined values — Firestore rejects them
@@ -432,4 +432,25 @@ export async function deleteAccountData(userId: string): Promise<void> {
       await friendBatch.commit();
     }
   } catch { /* may not exist */ }
+}
+
+/** Send a hero correction request notification to a linked opponent. */
+export async function sendHeroCorrectionNotification(
+  targetUserId: string,
+  requesterUid: string,
+  requesterName: string,
+  targetMatchId: string,
+  suggestedHero: string,
+  matchSummary: string,
+): Promise<void> {
+  await addDoc(collection(db, "users", targetUserId, "notifications"), {
+    type: "heroCorrection",
+    requesterUid,
+    requesterName,
+    targetMatchId,
+    suggestedHero,
+    matchSummary,
+    createdAt: new Date().toISOString(),
+    read: false,
+  });
 }

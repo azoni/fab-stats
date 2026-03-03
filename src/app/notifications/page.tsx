@@ -3,8 +3,11 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNotifications } from "@/hooks/useNotifications";
-import { getProfile } from "@/lib/firestore-storage";
-import type { UserNotification } from "@/types";
+import { getProfile, updateMatchFirestore } from "@/lib/firestore-storage";
+import { propagateHeroToOpponent } from "@/lib/match-linking";
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
+import type { UserNotification, MatchRecord } from "@/types";
 
 function timeAgo(dateStr: string): string {
   const now = Date.now();
@@ -80,7 +83,7 @@ export default function NotificationsPage() {
 
   // Look up usernames for UIDs so we can navigate to profiles
   useEffect(() => {
-    const uids = [...new Set(notifications.map((n) => n.matchOwnerUid || n.senderUid || n.friendRequestFromUid || n.kudosGiverUid).filter(Boolean))] as string[];
+    const uids = [...new Set(notifications.map((n) => n.matchOwnerUid || n.senderUid || n.friendRequestFromUid || n.kudosGiverUid || n.requesterUid).filter(Boolean))] as string[];
     const missing = uids.filter((uid) => !usernameCache[uid]);
     if (missing.length === 0) return;
 
@@ -151,7 +154,27 @@ export default function NotificationsPage() {
       await markAsRead(n.id);
       const username = usernameCache[n.kudosGiverUid];
       if (username) router.push(`/player/${username}`);
+    } else if (n.type === "heroCorrection") {
+      // Don't navigate — handled by inline Accept/Dismiss buttons
+      await markAsRead(n.id);
     }
+  }
+
+  async function handleAcceptCorrection(n: UserNotification) {
+    if (!user || !n.targetMatchId || !n.suggestedHero) return;
+
+    // Update heroPlayed on the user's own match
+    await updateMatchFirestore(user.uid, n.targetMatchId, { heroPlayed: n.suggestedHero });
+
+    // Read the updated match to propagate the change back to the requester
+    const matchSnap = await getDoc(doc(db, "users", user.uid, "matches", n.targetMatchId));
+    if (matchSnap.exists()) {
+      const match = { id: matchSnap.id, ...matchSnap.data() } as MatchRecord;
+      propagateHeroToOpponent(user.uid, match, n.suggestedHero).catch(() => {});
+    }
+
+    // Delete the notification
+    await deleteNotification(n.id);
   }
 
   async function handleGroupDelete(group: NotificationGroup) {
@@ -231,6 +254,10 @@ export default function NotificationsPage() {
                           <path strokeLinecap="round" strokeLinejoin="round" d="M6.633 10.25c.806 0 1.533-.446 2.031-1.08a9.041 9.041 0 0 1 2.861-2.4c.723-.384 1.35-.956 1.653-1.715a4.498 4.498 0 0 0 .322-1.672V2.75a.75.75 0 0 1 .75-.75 2.25 2.25 0 0 1 2.25 2.25c0 1.152-.26 2.243-.723 3.218-.266.558.107 1.282.725 1.282m0 0h3.126c1.026 0 1.945.694 2.054 1.715.045.422.068.85.068 1.285a11.95 11.95 0 0 1-2.649 7.521c-.388.482-.987.729-1.605.729H13.48c-.483 0-.964-.078-1.423-.23l-3.114-1.04a4.501 4.501 0 0 0-1.423-.23H5.904m10.598-9.75H14.25M5.904 18.5c.083.205.173.405.27.602.197.4-.078.898-.523.898h-.908c-.889 0-1.713-.518-1.972-1.368a12 12 0 0 1-.521-3.507c0-1.553.295-3.036.831-4.398C3.387 9.953 4.167 9.5 5 9.5h1.053c.472 0 .745.556.5.96a8.958 8.958 0 0 0-1.302 4.665c0 1.194.232 2.333.654 3.375Z" />
                         </svg>
                       </div>
+                    ) : n.type === "heroCorrection" ? (
+                      <div className="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-400 text-sm font-bold">
+                        {(n.requesterName || "?").charAt(0).toUpperCase()}
+                      </div>
                     ) : (() => {
                       const photo = n.type === "message" ? n.senderPhoto : n.type === "friendRequest" || n.type === "friendAccepted" ? n.friendRequestFromPhoto : n.commentAuthorPhoto;
                       const name = n.type === "message" ? (n.senderName || "?") : n.type === "friendRequest" || n.type === "friendAccepted" ? (n.friendRequestFromName || "?") : (n.commentAuthorName || "?");
@@ -279,6 +306,37 @@ export default function NotificationsPage() {
                         <span className="font-semibold">{n.kudosGiverName}</span>{" "}
                         gave you <span className="font-semibold text-fab-gold">{n.kudosType === "good_sport" ? "Good Sport" : n.kudosType === "props" ? "Props" : n.kudosType === "skilled" ? "Skilled" : n.kudosType === "helpful" ? "Helpful" : n.kudosType}</span> kudos
                       </p>
+                    ) : n.type === "heroCorrection" ? (
+                      <>
+                        <p className="text-sm text-fab-text">
+                          <span className="font-semibold">{n.requesterName}</span>{" "}
+                          thinks you played{" "}
+                          <span className="font-semibold text-fab-gold">{n.suggestedHero}</span>
+                          {n.matchSummary && (
+                            <span className="text-fab-muted"> in {n.matchSummary}</span>
+                          )}
+                        </p>
+                        <div className="flex items-center gap-2 mt-2">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleAcceptCorrection(n);
+                            }}
+                            className="px-2.5 py-1 rounded text-xs font-medium bg-fab-win/20 text-fab-win hover:bg-fab-win/30 transition-colors"
+                          >
+                            Accept
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleGroupDelete(group);
+                            }}
+                            className="px-2.5 py-1 rounded text-xs font-medium text-fab-dim hover:text-fab-text transition-colors"
+                          >
+                            Dismiss
+                          </button>
+                        </div>
+                      </>
                     ) : (
                       <>
                         <p className="text-sm text-fab-text">

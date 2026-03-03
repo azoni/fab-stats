@@ -45,7 +45,7 @@ import {
   buildLocalPicks,
   buildPicksFromResults,
 } from "@/lib/fabdoku/firestore";
-import { createFaBdokuFeedEvent, deleteFaBdokuFeedEvents } from "@/lib/feed";
+import { createFaBdokuFeedEvent, createGuestFaBdokuFeedEvent, deleteFaBdokuFeedEvents } from "@/lib/feed";
 import type { GameState, FaBdokuStats, UniquenessData } from "@/lib/fabdoku/types";
 
 function getYesterdayDateStr(): string {
@@ -244,6 +244,14 @@ export default function FaBdokuPage() {
             newGuessesUsed, buildGrid(newState),
             uData?.score,
           ).catch((err) => console.error("FaBdoku feed event failed:", err));
+        } else {
+          // Guest completion — post a single guest event to the feed
+          const cc = newCells.flat().filter((c) => c.correct).length;
+          createGuestFaBdokuFeedEvent(
+            dateStr, isWon, cc,
+            newGuessesUsed, buildGrid(newState),
+            uData?.score,
+          ).catch(() => {});
         }
       }
     },
@@ -479,6 +487,11 @@ export default function FaBdokuPage() {
                       profile, "completed", dateStr, true,
                       9, newState.guessesUsed, buildGrid(newState),
                       uData?.score,
+                    ).catch(() => {});
+                  } else {
+                    createGuestFaBdokuFeedEvent(
+                      dateStr, true, 9, newState.guessesUsed,
+                      buildGrid(newState), uData?.score,
                     ).catch(() => {});
                   }
                 })();

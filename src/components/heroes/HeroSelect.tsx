@@ -36,6 +36,13 @@ export function HeroSelect({ value, onChange, label, format, allowClear }: HeroS
   }, []);
 
   useEffect(() => {
+    if (isOpen) {
+      // Delay slightly to ensure the input is rendered (when switching from value display to input)
+      requestAnimationFrame(() => inputRef.current?.focus());
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
     setHighlighted(0);
   }, [query]);
 

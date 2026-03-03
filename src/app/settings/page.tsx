@@ -206,6 +206,9 @@ export default function SettingsPage() {
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [isPublic, setIsPublic] = useState(profile?.isPublic ?? false);
+  const [profileVisibility, setProfileVisibility] = useState<"public" | "friends" | "private">(
+    profile?.profileVisibility ?? (profile?.isPublic ? "public" : "private")
+  );
   const [togglingPublic, setTogglingPublic] = useState(false);
   const [showNameOnProfiles, setShowNameOnProfiles] = useState(profile?.showNameOnProfiles ?? false);
   const [togglingName, setTogglingName] = useState(false);
@@ -215,7 +218,7 @@ export default function SettingsPage() {
   const [togglingFeed, setTogglingFeed] = useState(false);
   const [hideFromGuests, setHideFromGuests] = useState(profile?.hideFromGuests ?? false);
   const [togglingGuests, setTogglingGuests] = useState(false);
-  const [privacyOpen, setPrivacyOpen] = useState(false);
+  const [privacyOpen, setPrivacyOpen] = useState(true);
   const [creatorsOpen, setCreatorsOpen] = useState(false);
   const [confirmClear, setConfirmClear] = useState(false);
   const [clearing, setClearing] = useState(false);
@@ -510,40 +513,47 @@ export default function SettingsPage() {
         </button>
         {privacyOpen && (
           <div className="mt-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-fab-text">Public Profile</p>
-                <p className="text-xs text-fab-dim mt-0.5">
-                  {isPublic
-                    ? "Anyone can view your profile, match history, and stats. Opponent names are hidden from viewers."
-                    : "Your profile is private. Only you can see your data."}
-                </p>
+            <div>
+              <p className="text-sm text-fab-text mb-1">Profile Visibility</p>
+              <p className="text-xs text-fab-dim mb-3">
+                {profileVisibility === "public"
+                  ? "Anyone can view your profile, match history, and stats. Opponent names are hidden from viewers."
+                  : profileVisibility === "friends"
+                  ? "Only your friends can view your profile. Others will see a private profile page."
+                  : "Your profile is private. Only you can see your data."}
+              </p>
+              <div className={`flex rounded-lg border border-fab-border overflow-hidden ${togglingPublic ? "opacity-50 pointer-events-none" : ""}`}>
+                {(["public", "friends", "private"] as const).map((opt) => (
+                  <button
+                    key={opt}
+                    onClick={async () => {
+                      if (!user || profileVisibility === opt) return;
+                      setTogglingPublic(true);
+                      try {
+                        const nextPublic = opt === "public";
+                        await updateProfile(user.uid, { isPublic: nextPublic, profileVisibility: opt });
+                        setIsPublic(nextPublic);
+                        setProfileVisibility(opt);
+                      } catch {
+                        setError("Failed to update privacy setting.");
+                      } finally {
+                        setTogglingPublic(false);
+                      }
+                    }}
+                    className={`flex-1 px-3 py-2 text-xs font-semibold transition-colors ${
+                      profileVisibility === opt
+                        ? opt === "public"
+                          ? "bg-fab-win/20 text-fab-win border-r border-fab-border"
+                          : opt === "friends"
+                          ? "bg-sky-500/20 text-sky-400 border-r border-fab-border"
+                          : "bg-fab-border text-fab-text"
+                        : "bg-fab-bg text-fab-dim hover:text-fab-muted border-r border-fab-border last:border-r-0"
+                    }`}
+                  >
+                    {opt === "public" ? "Public" : opt === "friends" ? "Friends" : "Private"}
+                  </button>
+                ))}
               </div>
-              <button
-                onClick={async () => {
-                  if (!user) return;
-                  setTogglingPublic(true);
-                  try {
-                    const next = !isPublic;
-                    await updateProfile(user.uid, { isPublic: next });
-                    setIsPublic(next);
-                  } catch {
-                    setError("Failed to update privacy setting.");
-                  } finally {
-                    setTogglingPublic(false);
-                  }
-                }}
-                disabled={togglingPublic}
-                className={`relative w-11 h-6 rounded-full transition-colors shrink-0 ${
-                  isPublic ? "bg-fab-win" : "bg-fab-border"
-                } ${togglingPublic ? "opacity-50" : ""}`}
-              >
-                <span
-                  className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${
-                    isPublic ? "translate-x-5" : ""
-                  }`}
-                />
-              </button>
             </div>
 
             <div className="flex items-center justify-between mt-4 pt-4 border-t border-fab-border">

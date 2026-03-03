@@ -866,6 +866,18 @@ export default function ImportPage() {
             </div>
           )}
 
+          {/* Save disclaimer */}
+          {!autoDetected && (
+            <div className="bg-sky-900/20 border border-sky-700/30 rounded-lg p-3 text-sm flex items-start gap-2">
+              <svg className="w-4 h-4 text-sky-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
+              </svg>
+              <p className="text-fab-muted">
+                Review your matches below. Nothing is saved until you click <strong className="text-fab-text">Import</strong> at the bottom. Re-importing will not overwrite matches you&apos;ve already edited.
+              </p>
+            </div>
+          )}
+
           {/* Summary stats */}
           <div className="bg-fab-surface border border-fab-border rounded-lg p-4">
             {(() => {

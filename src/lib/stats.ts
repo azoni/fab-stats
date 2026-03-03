@@ -546,7 +546,25 @@ export function computePlayoffFinishes(
       }
     }
 
-    if (playoffMatches.length === 0) continue;
+    if (playoffMatches.length === 0) {
+      // For Skirmish events without playoffs (not enough players for top cut),
+      // an undefeated record means the player won the event
+      if (refinedEventType === "Skirmish") {
+        const wins = event.matches.filter((m) => m.result === MatchResult.Win).length;
+        const losses = event.matches.filter((m) => m.result === MatchResult.Loss).length;
+        if (wins > 0 && losses === 0) {
+          finishes.push({
+            type: "champion",
+            eventName: event.eventName,
+            eventDate: event.eventDate,
+            format: event.format,
+            eventType: refinedEventType,
+            hero: event.matches[0]?.heroPlayed,
+          });
+        }
+      }
+      continue;
+    }
 
     const playoffWins = playoffMatches.filter((m) => m.result === MatchResult.Win).length;
     const playoffLosses = playoffMatches.filter((m) => m.result === MatchResult.Loss).length;

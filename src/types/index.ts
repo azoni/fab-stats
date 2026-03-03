@@ -138,6 +138,7 @@ export interface UserProfile {
   hideFromSpotlight?: boolean;
   hideFromGuests?: boolean;
   hideFromFeed?: boolean;
+  profileVisibility?: "public" | "friends" | "private";
   gemId?: string;
   unlockedCans?: string[];
   showcase?: ShowcaseCard[];
@@ -194,7 +195,7 @@ export interface MatchComment {
 
 export interface UserNotification {
   id: string;
-  type: "comment" | "message" | "friendRequest" | "friendAccepted" | "badge" | "kudos";
+  type: "comment" | "message" | "friendRequest" | "friendAccepted" | "badge" | "kudos" | "heroCorrection";
   // Comment fields
   matchId?: string;
   matchOwnerUid?: string;
@@ -203,6 +204,11 @@ export interface UserNotification {
   commentAuthorPhoto?: string;
   commentPreview?: string;
   matchSummary?: string;
+  // Hero correction fields
+  suggestedHero?: string;
+  requesterUid?: string;
+  requesterName?: string;
+  targetMatchId?: string;
   // Message fields
   conversationId?: string;
   senderUid?: string;

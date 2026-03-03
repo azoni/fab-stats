@@ -141,7 +141,7 @@ export function MetaShareCard({ heroes, title, subtitle, theme }: MetaShareCardP
             {/* Center label */}
             <div className="absolute inset-0 flex flex-col items-center justify-center">
               <p style={{ color: t.text }} className="text-2xl font-black leading-none">{total}</p>
-              <p style={{ color: t.dim }} className="text-[9px] uppercase tracking-wider font-semibold">Top 8s</p>
+              <p style={{ color: t.muted }} className="text-[10px] uppercase tracking-wider font-bold mt-0.5">Top 8s</p>
             </div>
           </div>
 
@@ -159,14 +159,22 @@ export function MetaShareCard({ heroes, title, subtitle, theme }: MetaShareCardP
         </div>
       </div>
 
-      {/* Win stats bar */}
+      {/* Top 5 heroes by wins */}
       {heroes.length > 0 && (() => {
-        const topChampion = heroes.find((h) => h.champions > 0);
-        return topChampion ? (
+        const topWinners = [...heroes]
+          .filter((h) => h.champions > 0)
+          .sort((a, b) => b.champions - a.champions)
+          .slice(0, 5);
+        return topWinners.length > 0 ? (
           <div style={{ borderColor: t.border }} className="border-t mx-5 py-2">
-            <div className="flex items-center justify-between">
-              <p style={{ color: t.dim }} className="text-[9px] uppercase tracking-wider font-semibold">Most Wins</p>
-              <p style={{ color: t.trophy }} className="text-xs font-bold">{topChampion.hero} ({topChampion.champions})</p>
+            <p style={{ color: t.dim }} className="text-[9px] uppercase tracking-wider font-semibold mb-1">Most Wins</p>
+            <div className="space-y-0.5">
+              {topWinners.map((h, i) => (
+                <div key={h.hero} className="flex items-center justify-between">
+                  <span style={{ color: i === 0 ? t.trophy : t.text }} className={`text-[11px] ${i === 0 ? "font-bold" : "font-medium"}`}>{h.hero}</span>
+                  <span style={{ color: t.muted }} className="text-[10px] tabular-nums">{h.champions}</span>
+                </div>
+              ))}
             </div>
           </div>
         ) : null;

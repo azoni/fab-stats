@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
+import { useAuth } from "@/contexts/AuthContext";
 import { CommentSection } from "@/components/comments/CommentSection";
 import { HeroSelect } from "@/components/heroes/HeroSelect";
 import { getHeroByName } from "@/lib/heroes";
@@ -8,6 +9,7 @@ import { HeroClassIcon } from "@/components/heroes/HeroClassIcon";
 import { HeroAvatar } from "@/components/heroes/HeroAvatar";
 import { MatchResult, type MatchRecord } from "@/types";
 import { localDate } from "@/lib/constants";
+import { lookupGemId, sendHeroCorrectionNotification, getMatchesByUserId } from "@/lib/firestore-storage";
 
 interface MatchCardProps {
   match: MatchRecord;
@@ -44,12 +46,19 @@ function getPlayoffBadge(roundInfo: string | undefined): { label: string; bg: st
 }
 
 export function MatchCard({ match, matchOwnerUid, enableComments = false, obfuscateOpponents = false, visibleOpponents, editable = false, onUpdateMatch, missingGemId }: MatchCardProps) {
+  const { user, profile } = useAuth();
   const [showComments, setShowComments] = useState(false);
   const [editing, setEditing] = useState(false);
   const [editHero, setEditHero] = useState(match.heroPlayed || "");
   const [editOppHero, setEditOppHero] = useState(match.opponentHero || "");
   const [saving, setSaving] = useState(false);
   const [showGemNudge, setShowGemNudge] = useState(false);
+  const [suggestingHero, setSuggestingHero] = useState(false);
+  const [suggestedHeroValue, setSuggestedHeroValue] = useState("");
+  const [sendingCorrection, setSendingCorrection] = useState(false);
+  const [correctionSent, setCorrectionSent] = useState(false);
+
+  const canSuggestCorrection = !!(match.opponentGemId && user && matchOwnerUid === user.uid);
 
   const style = resultStyles[match.result] || resultStyles[MatchResult.Bye];
   const eventName = match.notes?.split(" | ")[0];
@@ -93,6 +102,47 @@ export function MatchCard({ match, matchOwnerUid, enableComments = false, obfusc
     setEditHero(match.heroPlayed || "");
     setEditOppHero(match.opponentHero || "");
     setEditing(true);
+  }
+
+  async function handleSendCorrection() {
+    if (!user || !profile || !match.opponentGemId || !suggestedHeroValue) return;
+    setSendingCorrection(true);
+    try {
+      const opponentUserId = await lookupGemId(match.opponentGemId);
+      if (!opponentUserId) return;
+
+      // Find the linked match on opponent's side
+      const oppMatches = await getMatchesByUserId(opponentUserId);
+      const myEvent = match.notes?.split(" | ")[0]?.toLowerCase() || "";
+      const myRound = match.notes?.split(" | ")[1]?.toLowerCase() || "";
+      const myKey = `${match.date}|${myEvent}|${myRound}`;
+      const oppositeResult: Record<string, string> = {
+        [MatchResult.Win]: MatchResult.Loss,
+        [MatchResult.Loss]: MatchResult.Win,
+        [MatchResult.Draw]: MatchResult.Draw,
+      };
+      const linked = oppMatches.find((om) => {
+        const omEvent = om.notes?.split(" | ")[0]?.toLowerCase() || "";
+        const omRound = om.notes?.split(" | ")[1]?.toLowerCase() || "";
+        return `${om.date}|${omEvent}|${omRound}` === myKey && om.result === oppositeResult[match.result];
+      });
+      if (!linked) return;
+
+      const summary = [eventName, roundInfo, dateStr].filter(Boolean).join(", ");
+      await sendHeroCorrectionNotification(
+        opponentUserId,
+        user.uid,
+        profile.displayName || "A player",
+        linked.id,
+        suggestedHeroValue,
+        summary,
+      );
+      setCorrectionSent(true);
+      setSuggestingHero(false);
+      setSuggestedHeroValue("");
+    } finally {
+      setSendingCorrection(false);
+    }
   }
 
   return (
@@ -189,6 +239,19 @@ export function MatchCard({ match, matchOwnerUid, enableComments = false, obfusc
           </p>
         )}
 
+        {/* Suggest hero correction for linked opponent */}
+        {canSuggestCorrection && !editing && !suggestingHero && !correctionSent && (
+          <button onClick={() => setSuggestingHero(true)} className="flex items-center gap-1 mt-1 text-xs text-fab-dim hover:text-fab-gold transition-colors">
+            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+            </svg>
+            Suggest hero correction
+          </button>
+        )}
+        {correctionSent && (
+          <p className="text-xs text-fab-win mt-1">Correction suggestion sent to {match.opponentName || "opponent"}!</p>
+        )}
+
         {/* Meta row: event, venue, date, format */}
         <div className="flex items-center gap-2 mt-1.5 text-xs flex-wrap">
           <div className="flex items-center gap-2 flex-1 min-w-0 text-fab-muted">
@@ -239,6 +302,32 @@ export function MatchCard({ match, matchOwnerUid, enableComments = false, obfusc
             <button
               onClick={() => setEditing(false)}
               disabled={saving}
+              className="px-3 py-1 rounded text-xs font-medium text-fab-muted hover:text-fab-text transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Inline hero correction suggestion */}
+      {suggestingHero && (
+        <div className="px-3 pb-3 pt-2 border-t border-fab-border/30 space-y-2">
+          <p className="text-xs text-fab-muted">
+            What hero did <span className="text-fab-text font-medium">{match.opponentName || "your opponent"}</span> play?
+          </p>
+          <HeroSelect value={suggestedHeroValue} onChange={setSuggestedHeroValue} label="Suggested hero" format={match.format} />
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleSendCorrection}
+              disabled={sendingCorrection || !suggestedHeroValue}
+              className="px-3 py-1 rounded text-xs font-medium bg-fab-gold text-fab-bg hover:bg-fab-gold-light disabled:opacity-50 transition-colors"
+            >
+              {sendingCorrection ? "Sending..." : "Send suggestion"}
+            </button>
+            <button
+              onClick={() => { setSuggestingHero(false); setSuggestedHeroValue(""); }}
+              disabled={sendingCorrection}
               className="px-3 py-1 rounded text-xs font-medium text-fab-muted hover:text-fab-text transition-colors"
             >
               Cancel
