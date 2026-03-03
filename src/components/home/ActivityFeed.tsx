@@ -150,8 +150,8 @@ export function ActivityFeed({ rankMap, eventTierMap }: { rankMap?: Map<string, 
   const totalPages = Math.max(1, Math.ceil(allGroups.length / PAGE_SIZE));
   const groups = allGroups.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
 
-  // Don't render section if no events at all
-  if (!loading && events.length === 0) return null;
+  // Don't render section if no events at all (only when showing everything)
+  if (!loading && events.length === 0 && typeFilter === "all") return null;
 
   return (
     <div className="flex flex-col h-full">
