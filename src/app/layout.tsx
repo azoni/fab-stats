@@ -54,7 +54,7 @@ export const metadata: Metadata = {
     description: SITE_DESCRIPTION,
     images: [
       {
-        url: "/og-image.png",
+        url: "/og-preview.png",
         width: 1200,
         height: 630,
         alt: "FaB Stats - Track your Flesh and Blood match history",
@@ -65,7 +65,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "FaB Stats - Flesh and Blood Match Tracker",
     description: SITE_DESCRIPTION,
-    images: ["/og-image.png"],
+    images: ["/og-preview.png"],
   },
   keywords: [
     "Flesh and Blood",
