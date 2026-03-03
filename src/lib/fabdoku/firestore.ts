@@ -204,6 +204,28 @@ export function buildLocalPicks(state: GameState): PickData {
   return { totalPlayers: 1, cells };
 }
 
+/** Build PickData from all results for a date (deduped, no auth required). */
+export function buildPicksFromResults(results: FaBdokuResult[]): PickData {
+  const cells: Record<string, Record<string, number>> = {};
+  for (let r = 0; r < 3; r++) {
+    for (let c = 0; c < 3; c++) {
+      cells[`${r}-${c}`] = {};
+    }
+  }
+  for (const result of results) {
+    for (let r = 0; r < result.cells.length; r++) {
+      for (let c = 0; c < result.cells[r].length; c++) {
+        const cell = result.cells[r][c];
+        if (cell.hero) {
+          const key = `${r}-${c}`;
+          cells[key][cell.hero] = (cells[key][cell.hero] ?? 0) + 1;
+        }
+      }
+    }
+  }
+  return { totalPlayers: results.length, cells };
+}
+
 /** Helper: offset a YYYY-MM-DD date string by N days. */
 function getDateOffset(dateStr: string, days: number): string {
   const d = new Date(dateStr + "T00:00:00");

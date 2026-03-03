@@ -37,9 +37,10 @@ import {
   saveResult,
   loadStats,
   savePicks,
-  loadPicks,
+  loadTodayResults,
   computeUniqueness,
   buildLocalPicks,
+  buildPicksFromResults,
 } from "@/lib/fabdoku/firestore";
 import { createFaBdokuFeedEvent } from "@/lib/feed";
 import type { GameState, FaBdokuStats, UniquenessData } from "@/lib/fabdoku/types";
@@ -97,8 +98,10 @@ export default function FaBdokuPage() {
   const refreshUniqueness = useCallback(
     async (state: GameState): Promise<UniquenessData | null> => {
       try {
-        const pickData = await loadPicks(state.date);
-        if (pickData) {
+        // Build picks from results (deduped by uid, readable by everyone)
+        const results = await loadTodayResults(state.date);
+        if (results.length > 0) {
+          const pickData = buildPicksFromResults(results);
           const data = computeUniqueness(state, pickData);
           setUniqueness(data);
           return data;
@@ -143,9 +146,10 @@ export default function FaBdokuPage() {
     const yesterdayState = loadGameState(yesterdayStr);
     if (!yesterdayState?.completed) return;
 
-    loadPicks(yesterdayStr)
-      .then((pickData) => {
-        if (pickData) {
+    loadTodayResults(yesterdayStr)
+      .then((results) => {
+        if (results.length > 0) {
+          const pickData = buildPicksFromResults(results);
           setYesterdayScore(computeUniqueness(yesterdayState, pickData));
         }
       })
