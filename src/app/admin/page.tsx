@@ -2566,6 +2566,13 @@ const ROUTE_LABELS: Record<string, string> = {
   inbox: "Inbox",
   privacy: "Privacy",
   feedback: "Feedback",
+  compare: "Versus",
+  tools: "Player Tools",
+  friends: "Friends",
+  docs: "Docs",
+  roadmap: "Roadmap",
+  tournaments: "Tournaments",
+  fabdoku: "FaBdoku",
 };
 
 function ActivitySection({ analytics: initialAnalytics }: { analytics: { pageViews: Record<string, number>; creatorClicks: Record<string, number> } }) {
