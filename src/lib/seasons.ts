@@ -34,10 +34,9 @@ export async function saveSeasons(list: Season[]): Promise<void> {
   } catch {}
 }
 
-/** Return the first active season whose date range contains today */
+/** Return the first active season (toggle controls visibility, dates only filter event data) */
 export function getCurrentSeason(seasons: Season[]): Season | null {
-  const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
-  return seasons.find((s) => s.active && s.startDate <= today && s.endDate >= today) || null;
+  return seasons.find((s) => s.active) || null;
 }
 
 /** Split a season into 7-day week chunks */
