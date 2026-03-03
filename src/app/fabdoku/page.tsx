@@ -176,11 +176,10 @@ export default function FaBdokuPage() {
       };
 
       const newGuessesUsed = gameState.guessesUsed + 1;
-      const allLocked = newCells.flat().every((c) => c.locked);
       const correctCount = newCells.flat().filter((c) => c.correct).length;
       const outOfGuesses = newGuessesUsed >= gameState.maxGuesses;
       const allCorrect = correctCount === 9;
-      const isCompleted = allLocked || outOfGuesses || allCorrect;
+      const isCompleted = outOfGuesses || allCorrect;
       const isWon = allCorrect;
 
       const newState: GameState = {
