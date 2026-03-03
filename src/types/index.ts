@@ -328,7 +328,7 @@ export interface FaBdokuFeedEvent extends FeedEventBase {
   correctCount: number;
   guessesUsed: number;
   uniquenessScore?: number;
-  grid: ("correct" | "wrong" | "empty")[][];
+  grid: ("correct" | "wrong" | "empty")[];
 }
 
 export type FeedEvent = ImportFeedEvent | AchievementFeedEvent | PlacementFeedEvent | FaBdokuFeedEvent;

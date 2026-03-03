@@ -164,7 +164,7 @@ export async function createFaBdokuFeedEvent(
     won,
     correctCount,
     guessesUsed,
-    grid,
+    grid: grid.flat(),
     createdAt: new Date().toISOString(),
   };
 

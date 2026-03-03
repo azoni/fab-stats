@@ -485,7 +485,7 @@ function FaBdokuContent({ event, compact }: { event: FaBdokuFeedEvent; compact?:
           )}
         </p>
         <div className="grid grid-cols-3 gap-px shrink-0">
-          {event.grid.flat().map((cell, i) => (
+          {(Array.isArray(event.grid[0]) ? event.grid.flat() : event.grid).map((cell, i) => (
             <div key={i} className={`w-2 h-2 rounded-[1px] ${gridCellColor[cell]}`} />
           ))}
         </div>
@@ -510,7 +510,7 @@ function FaBdokuContent({ event, compact }: { event: FaBdokuFeedEvent; compact?:
           )}
         </div>
         <div className="grid grid-cols-3 gap-0.5 shrink-0 ml-auto">
-          {event.grid.flat().map((cell, i) => (
+          {(Array.isArray(event.grid[0]) ? event.grid.flat() : event.grid).map((cell, i) => (
             <div key={i} className={`w-3.5 h-3.5 rounded-sm ${gridCellColor[cell]}`} />
           ))}
         </div>
