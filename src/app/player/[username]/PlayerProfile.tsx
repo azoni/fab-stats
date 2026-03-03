@@ -34,6 +34,8 @@ import { auth } from "@/lib/firebase";
 import { BestFinishShareModal } from "@/components/profile/BestFinishCard";
 import { ProfileShareModal } from "@/components/profile/ProfileCard";
 import { ShowcaseSection } from "@/components/profile/ShowcaseSection";
+import { KudosSection } from "@/components/profile/KudosSection";
+import { loadKudosCounts, loadGivenKudos } from "@/lib/kudos";
 import type { MatchRecord, UserProfile, Achievement } from "@/types";
 import { MatchResult } from "@/types";
 import { allHeroes as knownHeroes } from "@/lib/heroes";
@@ -73,6 +75,8 @@ export default function PlayerProfile() {
   const [userBadges, setUserBadges] = useState<Achievement[]>([]);
   const [assignedBadgeIds, setAssignedBadgeIds] = useState<string[]>([]);
   const [friendCount, setFriendCount] = useState<number | null>(null);
+  const [kudosCounts, setKudosCounts] = useState<Record<string, number>>({});
+  const [kudosGivenByMe, setKudosGivenByMe] = useState<Set<string>>(new Set());
 
   // Auto-expand achievements if navigated with #achievements hash
   useEffect(() => {
@@ -239,6 +243,15 @@ export default function PlayerProfile() {
     }).catch(() => {});
   }, [profileUid]);
 
+  // Load kudos counts + which ones the current user has given
+  useEffect(() => {
+    if (!profileUid) return;
+    loadKudosCounts(profileUid).then(setKudosCounts).catch(() => {});
+    if (currentUser?.uid && currentUser.uid !== profileUid) {
+      loadGivenKudos(currentUser.uid, profileUid).then(setKudosGivenByMe).catch(() => {});
+    }
+  }, [profileUid, currentUser?.uid]);
+
   // Admin: fetch friend count for the viewed profile
   useEffect(() => {
     if (!isAdmin || !profileUid) return;
@@ -257,9 +270,9 @@ export default function PlayerProfile() {
       || new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
     [fm]
   );
-  const computedAchievements = useMemo(() => evaluateAchievements(fm, overall, heroStats, opponentStats), [fm, overall, heroStats, opponentStats]);
+  const computedAchievements = useMemo(() => evaluateAchievements(fm, overall, heroStats, opponentStats, kudosCounts), [fm, overall, heroStats, opponentStats, kudosCounts]);
   const achievements = useMemo(() => [...userBadges, ...computedAchievements], [userBadges, computedAchievements]);
-  const achievementProgress = useMemo(() => getAchievementProgress(fm, overall, heroStats, opponentStats), [fm, overall, heroStats, opponentStats]);
+  const achievementProgress = useMemo(() => getAchievementProgress(fm, overall, heroStats, opponentStats, kudosCounts), [fm, overall, heroStats, opponentStats, kudosCounts]);
   const masteries = useMemo(() => computeHeroMastery(heroStats), [heroStats]);
   const bestFinish = useMemo(() => computeBestFinish(eventStats), [eventStats]);
   const playoffFinishes = useMemo(() => computePlayoffFinishes(eventStats), [eventStats]);
@@ -472,6 +485,19 @@ export default function PlayerProfile() {
             </div>
           </div>
         )}
+
+        {/* Kudos */}
+        <KudosSection
+          recipientId={profile.uid}
+          currentUserId={currentUser?.uid}
+          currentDisplayName={currentUser?.displayName || undefined}
+          counts={kudosCounts}
+          givenByMe={kudosGivenByMe}
+          onUpdate={(newCounts, newGiven) => {
+            setKudosCounts(newCounts);
+            setKudosGivenByMe(newGiven);
+          }}
+        />
 
         {/* Filters */}
         <div className="flex gap-2 flex-wrap items-center">

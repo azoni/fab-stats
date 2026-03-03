@@ -7,6 +7,7 @@ interface CheckContext {
   overall: OverallStats;
   heroStats: HeroStats[];
   opponentStats: OpponentStats[];
+  kudosCounts?: Record<string, number>;
 }
 
 interface AchievementProgress {
@@ -52,6 +53,13 @@ function countChampionFinishes(ctx: CheckContext, eventType: string): number {
   const eventStats = computeEventStats(ctx.matches);
   const finishes = computePlayoffFinishes(eventStats);
   return finishes.filter((f) => f.type === "champion" && f.eventType === eventType).length;
+}
+
+// Helper: check if player has a placement finish at a given event type
+function hasPlacementFinish(ctx: CheckContext, eventType: string, placementType: string): boolean {
+  const eventStats = computeEventStats(ctx.matches);
+  const finishes = computePlayoffFinishes(eventStats);
+  return finishes.some((f) => f.type === placementType && f.eventType === eventType);
 }
 
 // Helper: hero stats excluding "Unknown"
@@ -171,6 +179,30 @@ const ACHIEVEMENTS: AchievementDef[] = [
     check: (ctx) => ctx.matches.length >= 5000,
     progress: (ctx) => ({ current: ctx.matches.length, target: 5000 }),
   },
+  {
+    id: "matches_7500",
+    name: "Immortal",
+    description: "Log 7,500 matches",
+    category: "milestone",
+    icon: "infinity",
+    rarity: "legendary",
+    group: "matches",
+    tier: 10,
+    check: (ctx) => ctx.matches.length >= 7500,
+    progress: (ctx) => ({ current: ctx.matches.length, target: 7500 }),
+  },
+  {
+    id: "matches_10000",
+    name: "Eternal",
+    description: "Log 10,000 matches",
+    category: "milestone",
+    icon: "infinity",
+    rarity: "legendary",
+    group: "matches",
+    tier: 11,
+    check: (ctx) => ctx.matches.length >= 10000,
+    progress: (ctx) => ({ current: ctx.matches.length, target: 10000 }),
+  },
 
   // ══════════════════════════════════════════
   // WIN MILESTONES (tiered)
@@ -270,6 +302,18 @@ const ACHIEVEMENTS: AchievementDef[] = [
     tier: 8,
     check: (ctx) => ctx.overall.totalWins >= 2500,
     progress: (ctx) => ({ current: ctx.overall.totalWins, target: 2500 }),
+  },
+  {
+    id: "wins_5000",
+    name: "Invincible",
+    description: "Win 5,000 matches",
+    category: "milestone",
+    icon: "infinity",
+    rarity: "legendary",
+    group: "wins",
+    tier: 9,
+    check: (ctx) => ctx.overall.totalWins >= 5000,
+    progress: (ctx) => ({ current: ctx.overall.totalWins, target: 5000 }),
   },
 
   // ══════════════════════════════════════════
@@ -387,6 +431,18 @@ const ACHIEVEMENTS: AchievementDef[] = [
     check: (ctx) => realHeroStats(ctx).some((h) => h.totalMatches >= 250),
     progress: (ctx) => ({ current: Math.max(0, ...realHeroStats(ctx).map((h) => h.totalMatches)), target: 250 }),
   },
+  {
+    id: "hero_obsessed",
+    name: "Obsessed",
+    description: "Play 500+ matches with one hero",
+    category: "mastery",
+    icon: "target",
+    rarity: "legendary",
+    group: "hero_mastery",
+    tier: 5,
+    check: (ctx) => realHeroStats(ctx).some((h) => h.totalMatches >= 500),
+    progress: (ctx) => ({ current: Math.max(0, ...realHeroStats(ctx).map((h) => h.totalMatches)), target: 500 }),
+  },
 
   // ══════════════════════════════════════════
   // HERO EXPLORATION (tiered)
@@ -438,6 +494,18 @@ const ACHIEVEMENTS: AchievementDef[] = [
     tier: 4,
     check: (ctx) => realHeroStats(ctx).length >= 20,
     progress: (ctx) => ({ current: realHeroStats(ctx).length, target: 20 }),
+  },
+  {
+    id: "heroes_30",
+    name: "Collector",
+    description: "Play 30 different heroes",
+    category: "exploration",
+    icon: "masks",
+    rarity: "legendary",
+    group: "heroes_played",
+    tier: 5,
+    check: (ctx) => realHeroStats(ctx).length >= 30,
+    progress: (ctx) => ({ current: realHeroStats(ctx).length, target: 30 }),
   },
 
   // ══════════════════════════════════════════
@@ -491,6 +559,30 @@ const ACHIEVEMENTS: AchievementDef[] = [
     check: (ctx) => ctx.opponentStats.filter((o) => o.opponentName !== "Unknown").length >= 100,
     progress: (ctx) => ({ current: ctx.opponentStats.filter((o) => o.opponentName !== "Unknown").length, target: 100 }),
   },
+  {
+    id: "opponents_150",
+    name: "The Colosseum",
+    description: "Play against 150 different opponents",
+    category: "exploration",
+    icon: "people",
+    rarity: "legendary",
+    group: "opponents",
+    tier: 5,
+    check: (ctx) => ctx.opponentStats.filter((o) => o.opponentName !== "Unknown").length >= 150,
+    progress: (ctx) => ({ current: ctx.opponentStats.filter((o) => o.opponentName !== "Unknown").length, target: 150 }),
+  },
+  {
+    id: "opponents_200",
+    name: "Everyone Knows Your Name",
+    description: "Play against 200 different opponents",
+    category: "exploration",
+    icon: "people",
+    rarity: "legendary",
+    group: "opponents",
+    tier: 6,
+    check: (ctx) => ctx.opponentStats.filter((o) => o.opponentName !== "Unknown").length >= 200,
+    progress: (ctx) => ({ current: ctx.opponentStats.filter((o) => o.opponentName !== "Unknown").length, target: 200 }),
+  },
 
   // ══════════════════════════════════════════
   // EVENT TYPE: ARMORY (tiered)
@@ -530,6 +622,18 @@ const ACHIEVEMENTS: AchievementDef[] = [
     tier: 3,
     check: (ctx) => countEventType(ctx, "Armory") >= 200,
     progress: (ctx) => ({ current: countEventType(ctx, "Armory"), target: 200 }),
+  },
+  {
+    id: "armory_500",
+    name: "Armory Overlord",
+    description: "Play 500 Armory matches",
+    category: "exploration",
+    icon: "shield",
+    rarity: "legendary",
+    group: "armory",
+    tier: 4,
+    check: (ctx) => countEventType(ctx, "Armory") >= 500,
+    progress: (ctx) => ({ current: countEventType(ctx, "Armory"), target: 500 }),
   },
 
   // ══════════════════════════════════════════
@@ -571,6 +675,18 @@ const ACHIEVEMENTS: AchievementDef[] = [
     check: (ctx) => countEventType(ctx, "Skirmish") >= 100,
     progress: (ctx) => ({ current: countEventType(ctx, "Skirmish"), target: 100 }),
   },
+  {
+    id: "skirmish_200",
+    name: "Skirmish Overlord",
+    description: "Play 200 Skirmish matches",
+    category: "exploration",
+    icon: "swords",
+    rarity: "epic",
+    group: "skirmish",
+    tier: 4,
+    check: (ctx) => countEventType(ctx, "Skirmish") >= 200,
+    progress: (ctx) => ({ current: countEventType(ctx, "Skirmish"), target: 200 }),
+  },
 
   // ══════════════════════════════════════════
   // EVENT TYPE: PROQUEST (tiered)
@@ -611,6 +727,18 @@ const ACHIEVEMENTS: AchievementDef[] = [
     check: (ctx) => countEventType(ctx, "ProQuest") >= 75,
     progress: (ctx) => ({ current: countEventType(ctx, "ProQuest"), target: 75 }),
   },
+  {
+    id: "pq_150",
+    name: "Quest Overlord",
+    description: "Play 150 ProQuest matches",
+    category: "exploration",
+    icon: "compass",
+    rarity: "epic",
+    group: "proquest",
+    tier: 4,
+    check: (ctx) => countEventType(ctx, "ProQuest") >= 150,
+    progress: (ctx) => ({ current: countEventType(ctx, "ProQuest"), target: 150 }),
+  },
 
   // ══════════════════════════════════════════
   // EVENT TYPE: ROAD TO NATIONALS (tiered)
@@ -650,6 +778,18 @@ const ACHIEVEMENTS: AchievementDef[] = [
     tier: 3,
     check: (ctx) => countEventType(ctx, "Road to Nationals") >= 75,
     progress: (ctx) => ({ current: countEventType(ctx, "Road to Nationals"), target: 75 }),
+  },
+  {
+    id: "rtn_150",
+    name: "Road Overlord",
+    description: "Play 150 Road to Nationals matches",
+    category: "exploration",
+    icon: "trending",
+    rarity: "epic",
+    group: "rtn",
+    tier: 4,
+    check: (ctx) => countEventType(ctx, "Road to Nationals") >= 150,
+    progress: (ctx) => ({ current: countEventType(ctx, "Road to Nationals"), target: 150 }),
   },
 
   // ══════════════════════════════════════════
@@ -703,6 +843,18 @@ const ACHIEVEMENTS: AchievementDef[] = [
     check: (ctx) => countDistinctEvents(ctx, "Battle Hardened") >= 10,
     progress: (ctx) => ({ current: countDistinctEvents(ctx, "Battle Hardened"), target: 10 }),
   },
+  {
+    id: "bh_15",
+    name: "Battle Forged",
+    description: "Attend 15 Battle Hardened events",
+    category: "exploration",
+    icon: "sword",
+    rarity: "legendary",
+    group: "battle_hardened",
+    tier: 5,
+    check: (ctx) => countDistinctEvents(ctx, "Battle Hardened") >= 15,
+    progress: (ctx) => ({ current: countDistinctEvents(ctx, "Battle Hardened"), target: 15 }),
+  },
 
   // ══════════════════════════════════════════
   // EVENT TYPE: THE CALLING (tiered)
@@ -754,6 +906,18 @@ const ACHIEVEMENTS: AchievementDef[] = [
     tier: 4,
     check: (ctx) => countDistinctEvents(ctx, "The Calling") >= 10,
     progress: (ctx) => ({ current: countDistinctEvents(ctx, "The Calling"), target: 10 }),
+  },
+  {
+    id: "calling_15",
+    name: "Voice of the Calling",
+    description: "Attend 15 Callings",
+    category: "exploration",
+    icon: "horn",
+    rarity: "legendary",
+    group: "calling",
+    tier: 5,
+    check: (ctx) => countDistinctEvents(ctx, "The Calling") >= 15,
+    progress: (ctx) => ({ current: countDistinctEvents(ctx, "The Calling"), target: 15 }),
   },
 
   // ══════════════════════════════════════════
@@ -903,6 +1067,190 @@ const ACHIEVEMENTS: AchievementDef[] = [
     rarity: "rare",
     check: (ctx) => hasChampionFinish(ctx, "Road to Nationals"),
   },
+
+  // ══════════════════════════════════════════
+  // PLACEMENT ACHIEVEMENTS (Finalist / Top 4 / Top 8)
+  // ══════════════════════════════════════════
+  // Skirmish
+  {
+    id: "finalist_skirmish",
+    name: "Skirmish Finalist",
+    description: "Finish as runner-up at a Skirmish",
+    category: "milestone",
+    icon: "swords",
+    rarity: "common",
+    check: (ctx) => hasPlacementFinish(ctx, "Skirmish", "finalist"),
+  },
+  // Road to Nationals
+  {
+    id: "finalist_rtn",
+    name: "Road to Nationals Finalist",
+    description: "Finish as runner-up at a Road to Nationals",
+    category: "milestone",
+    icon: "trending",
+    rarity: "uncommon",
+    check: (ctx) => hasPlacementFinish(ctx, "Road to Nationals", "finalist"),
+  },
+  // ProQuest
+  {
+    id: "top4_pq",
+    name: "ProQuest Top 4",
+    description: "Finish Top 4 at a ProQuest",
+    category: "milestone",
+    icon: "compass",
+    rarity: "uncommon",
+    check: (ctx) => hasPlacementFinish(ctx, "ProQuest", "top4"),
+  },
+  {
+    id: "finalist_pq",
+    name: "ProQuest Finalist",
+    description: "Finish as runner-up at a ProQuest",
+    category: "milestone",
+    icon: "compass",
+    rarity: "rare",
+    check: (ctx) => hasPlacementFinish(ctx, "ProQuest", "finalist"),
+  },
+  // Battle Hardened
+  {
+    id: "top8_bh",
+    name: "Battle Hardened Top 8",
+    description: "Finish Top 8 at a Battle Hardened",
+    category: "milestone",
+    icon: "sword",
+    rarity: "uncommon",
+    check: (ctx) => hasPlacementFinish(ctx, "Battle Hardened", "top8"),
+  },
+  {
+    id: "top4_bh",
+    name: "Battle Hardened Top 4",
+    description: "Finish Top 4 at a Battle Hardened",
+    category: "milestone",
+    icon: "sword",
+    rarity: "rare",
+    check: (ctx) => hasPlacementFinish(ctx, "Battle Hardened", "top4"),
+  },
+  {
+    id: "finalist_bh",
+    name: "Battle Hardened Finalist",
+    description: "Finish as runner-up at a Battle Hardened",
+    category: "milestone",
+    icon: "sword",
+    rarity: "epic",
+    check: (ctx) => hasPlacementFinish(ctx, "Battle Hardened", "finalist"),
+  },
+  // The Calling
+  {
+    id: "top8_calling",
+    name: "Calling Top 8",
+    description: "Finish Top 8 at a Calling",
+    category: "milestone",
+    icon: "horn",
+    rarity: "rare",
+    check: (ctx) => hasPlacementFinish(ctx, "The Calling", "top8"),
+  },
+  {
+    id: "top4_calling",
+    name: "Calling Top 4",
+    description: "Finish Top 4 at a Calling",
+    category: "milestone",
+    icon: "horn",
+    rarity: "epic",
+    check: (ctx) => hasPlacementFinish(ctx, "The Calling", "top4"),
+  },
+  {
+    id: "finalist_calling",
+    name: "Calling Finalist",
+    description: "Finish as runner-up at a Calling",
+    category: "milestone",
+    icon: "horn",
+    rarity: "epic",
+    check: (ctx) => hasPlacementFinish(ctx, "The Calling", "finalist"),
+  },
+  // Nationals
+  {
+    id: "top8_nationals",
+    name: "Nationals Top 8",
+    description: "Finish Top 8 at a Nationals",
+    category: "milestone",
+    icon: "flag",
+    rarity: "rare",
+    check: (ctx) => hasPlacementFinish(ctx, "Nationals", "top8"),
+  },
+  {
+    id: "top4_nationals",
+    name: "Nationals Top 4",
+    description: "Finish Top 4 at a Nationals",
+    category: "milestone",
+    icon: "flag",
+    rarity: "epic",
+    check: (ctx) => hasPlacementFinish(ctx, "Nationals", "top4"),
+  },
+  {
+    id: "finalist_nationals",
+    name: "Nationals Finalist",
+    description: "Finish as runner-up at a Nationals",
+    category: "milestone",
+    icon: "flag",
+    rarity: "legendary",
+    check: (ctx) => hasPlacementFinish(ctx, "Nationals", "finalist"),
+  },
+  // Pro Tour
+  {
+    id: "top8_protour",
+    name: "Pro Tour Top 8",
+    description: "Finish Top 8 at a Pro Tour",
+    category: "milestone",
+    icon: "star",
+    rarity: "epic",
+    check: (ctx) => hasPlacementFinish(ctx, "Pro Tour", "top8"),
+  },
+  {
+    id: "top4_protour",
+    name: "Pro Tour Top 4",
+    description: "Finish Top 4 at a Pro Tour",
+    category: "milestone",
+    icon: "star",
+    rarity: "legendary",
+    check: (ctx) => hasPlacementFinish(ctx, "Pro Tour", "top4"),
+  },
+  {
+    id: "finalist_protour",
+    name: "Pro Tour Finalist",
+    description: "Finish as runner-up at a Pro Tour",
+    category: "milestone",
+    icon: "star",
+    rarity: "legendary",
+    check: (ctx) => hasPlacementFinish(ctx, "Pro Tour", "finalist"),
+  },
+  // Worlds
+  {
+    id: "top8_worlds",
+    name: "Worlds Top 8",
+    description: "Finish Top 8 at a World Championship",
+    category: "milestone",
+    icon: "globe",
+    rarity: "epic",
+    check: (ctx) => hasPlacementFinish(ctx, "Worlds", "top8"),
+  },
+  {
+    id: "top4_worlds",
+    name: "Worlds Top 4",
+    description: "Finish Top 4 at a World Championship",
+    category: "milestone",
+    icon: "globe",
+    rarity: "legendary",
+    check: (ctx) => hasPlacementFinish(ctx, "Worlds", "top4"),
+  },
+  {
+    id: "finalist_worlds",
+    name: "Worlds Finalist",
+    description: "Finish as runner-up at a World Championship",
+    category: "milestone",
+    icon: "globe",
+    rarity: "legendary",
+    check: (ctx) => hasPlacementFinish(ctx, "Worlds", "finalist"),
+  },
+
   // ══════════════════════════════════════════
   // HERO MASTERY (single)
   // ══════════════════════════════════════════
@@ -966,6 +1314,36 @@ const ACHIEVEMENTS: AchievementDef[] = [
     },
     progress: (ctx) => ({ current: new Set(ctx.matches.map((m) => m.venue).filter(Boolean)).size, target: 15 }),
   },
+  {
+    id: "venue_master",
+    name: "Venue Master",
+    description: "Play at 25+ different venues",
+    category: "exploration",
+    icon: "globe",
+    rarity: "epic",
+    group: "venues",
+    tier: 3,
+    check: (ctx) => {
+      const venues = new Set(ctx.matches.map((m) => m.venue).filter(Boolean));
+      return venues.size >= 25;
+    },
+    progress: (ctx) => ({ current: new Set(ctx.matches.map((m) => m.venue).filter(Boolean)).size, target: 25 }),
+  },
+  {
+    id: "venue_legend",
+    name: "Venue Legend",
+    description: "Play at 40+ different venues",
+    category: "exploration",
+    icon: "globe",
+    rarity: "legendary",
+    group: "venues",
+    tier: 4,
+    check: (ctx) => {
+      const venues = new Set(ctx.matches.map((m) => m.venue).filter(Boolean));
+      return venues.size >= 40;
+    },
+    progress: (ctx) => ({ current: new Set(ctx.matches.map((m) => m.venue).filter(Boolean)).size, target: 40 }),
+  },
 
   // ══════════════════════════════════════════
   // FORMAT SPECIFIC (tiered)
@@ -995,6 +1373,30 @@ const ACHIEVEMENTS: AchievementDef[] = [
     progress: (ctx) => ({ current: ctx.matches.filter((m) => m.format === GameFormat.Blitz).length, target: 100 }),
   },
   {
+    id: "blitz_250",
+    name: "Blitz Master",
+    description: "Play 250 Blitz matches",
+    category: "fun",
+    icon: "bolt",
+    rarity: "epic",
+    group: "blitz",
+    tier: 3,
+    check: (ctx) => ctx.matches.filter((m) => m.format === GameFormat.Blitz).length >= 250,
+    progress: (ctx) => ({ current: ctx.matches.filter((m) => m.format === GameFormat.Blitz).length, target: 250 }),
+  },
+  {
+    id: "blitz_500",
+    name: "Blitz Legend",
+    description: "Play 500 Blitz matches",
+    category: "fun",
+    icon: "bolt",
+    rarity: "legendary",
+    group: "blitz",
+    tier: 4,
+    check: (ctx) => ctx.matches.filter((m) => m.format === GameFormat.Blitz).length >= 500,
+    progress: (ctx) => ({ current: ctx.matches.filter((m) => m.format === GameFormat.Blitz).length, target: 500 }),
+  },
+  {
     id: "cc_10",
     name: "CC Grinder",
     description: "Play 10 Classic Constructed matches",
@@ -1019,6 +1421,30 @@ const ACHIEVEMENTS: AchievementDef[] = [
     progress: (ctx) => ({ current: ctx.matches.filter((m) => m.format === GameFormat.ClassicConstructed).length, target: 100 }),
   },
   {
+    id: "cc_250",
+    name: "CC Master",
+    description: "Play 250 Classic Constructed matches",
+    category: "fun",
+    icon: "hammer",
+    rarity: "epic",
+    group: "cc",
+    tier: 3,
+    check: (ctx) => ctx.matches.filter((m) => m.format === GameFormat.ClassicConstructed).length >= 250,
+    progress: (ctx) => ({ current: ctx.matches.filter((m) => m.format === GameFormat.ClassicConstructed).length, target: 250 }),
+  },
+  {
+    id: "cc_500",
+    name: "CC Legend",
+    description: "Play 500 Classic Constructed matches",
+    category: "fun",
+    icon: "hammer",
+    rarity: "legendary",
+    group: "cc",
+    tier: 4,
+    check: (ctx) => ctx.matches.filter((m) => m.format === GameFormat.ClassicConstructed).length >= 500,
+    progress: (ctx) => ({ current: ctx.matches.filter((m) => m.format === GameFormat.ClassicConstructed).length, target: 500 }),
+  },
+  {
     id: "draft_5",
     name: "Drafter",
     description: "Play 5 Draft matches",
@@ -1041,6 +1467,30 @@ const ACHIEVEMENTS: AchievementDef[] = [
     tier: 2,
     check: (ctx) => ctx.matches.filter((m) => m.format === GameFormat.Draft).length >= 25,
     progress: (ctx) => ({ current: ctx.matches.filter((m) => m.format === GameFormat.Draft).length, target: 25 }),
+  },
+  {
+    id: "draft_50",
+    name: "Draft Master",
+    description: "Play 50 Draft matches",
+    category: "fun",
+    icon: "cards",
+    rarity: "epic",
+    group: "draft",
+    tier: 3,
+    check: (ctx) => ctx.matches.filter((m) => m.format === GameFormat.Draft).length >= 50,
+    progress: (ctx) => ({ current: ctx.matches.filter((m) => m.format === GameFormat.Draft).length, target: 50 }),
+  },
+  {
+    id: "draft_100",
+    name: "Draft Legend",
+    description: "Play 100 Draft matches",
+    category: "fun",
+    icon: "cards",
+    rarity: "legendary",
+    group: "draft",
+    tier: 4,
+    check: (ctx) => ctx.matches.filter((m) => m.format === GameFormat.Draft).length >= 100,
+    progress: (ctx) => ({ current: ctx.matches.filter((m) => m.format === GameFormat.Draft).length, target: 100 }),
   },
 
   // ══════════════════════════════════════════
@@ -1083,6 +1533,18 @@ const ACHIEVEMENTS: AchievementDef[] = [
     progress: (ctx) => ({ current: ctx.overall.totalDraws, target: 15 }),
   },
   {
+    id: "swiss_master",
+    name: "Master Diplomat",
+    description: "Draw 25 matches",
+    category: "fun",
+    icon: "dove",
+    rarity: "epic",
+    group: "draws",
+    tier: 4,
+    check: (ctx) => ctx.overall.totalDraws >= 25,
+    progress: (ctx) => ({ current: ctx.overall.totalDraws, target: 25 }),
+  },
+  {
     id: "comeback_king",
     name: "Comeback Story",
     description: "Win 50%+ overall after 20+ matches",
@@ -1115,6 +1577,30 @@ const ACHIEVEMENTS: AchievementDef[] = [
     tier: 2,
     check: (ctx) => ctx.opponentStats.some((o) => o.totalMatches >= 15 && o.opponentName !== "Unknown"),
     progress: (ctx) => ({ current: Math.max(0, ...ctx.opponentStats.filter((o) => o.opponentName !== "Unknown").map((o) => o.totalMatches)), target: 15 }),
+  },
+  {
+    id: "nemesis",
+    name: "Nemesis",
+    description: "Play the same opponent 25+ times",
+    category: "fun",
+    icon: "versus",
+    rarity: "epic",
+    group: "rival",
+    tier: 3,
+    check: (ctx) => ctx.opponentStats.some((o) => o.totalMatches >= 25 && o.opponentName !== "Unknown"),
+    progress: (ctx) => ({ current: Math.max(0, ...ctx.opponentStats.filter((o) => o.opponentName !== "Unknown").map((o) => o.totalMatches)), target: 25 }),
+  },
+  {
+    id: "eternal_rival",
+    name: "Eternal Rival",
+    description: "Play the same opponent 50+ times",
+    category: "fun",
+    icon: "versus",
+    rarity: "legendary",
+    group: "rival",
+    tier: 4,
+    check: (ctx) => ctx.opponentStats.some((o) => o.totalMatches >= 50 && o.opponentName !== "Unknown"),
+    progress: (ctx) => ({ current: Math.max(0, ...ctx.opponentStats.filter((o) => o.opponentName !== "Unknown").map((o) => o.totalMatches)), target: 50 }),
   },
   {
     id: "nemesis_slayer",
@@ -1150,6 +1636,30 @@ const ACHIEVEMENTS: AchievementDef[] = [
     tier: 2,
     check: (ctx) => ctx.matches.filter((m) => m.rated).length >= 50,
     progress: (ctx) => ({ current: ctx.matches.filter((m) => m.rated).length, target: 50 }),
+  },
+  {
+    id: "rated_100",
+    name: "Rated Master",
+    description: "Play 100 rated matches",
+    category: "fun",
+    icon: "star-badge",
+    rarity: "epic",
+    group: "rated",
+    tier: 3,
+    check: (ctx) => ctx.matches.filter((m) => m.rated).length >= 100,
+    progress: (ctx) => ({ current: ctx.matches.filter((m) => m.rated).length, target: 100 }),
+  },
+  {
+    id: "rated_250",
+    name: "Rated Legend",
+    description: "Play 250 rated matches",
+    category: "fun",
+    icon: "star-badge",
+    rarity: "legendary",
+    group: "rated",
+    tier: 4,
+    check: (ctx) => ctx.matches.filter((m) => m.rated).length >= 250,
+    progress: (ctx) => ({ current: ctx.matches.filter((m) => m.rated).length, target: 250 }),
   },
   {
     id: "win_rate_60",
@@ -1226,6 +1736,254 @@ const ACHIEVEMENTS: AchievementDef[] = [
     tier: 4,
     check: () => false,
   },
+
+  // ══════════════════════════════════════════
+  // KUDOS (peer endorsements — tiered per type)
+  // ══════════════════════════════════════════
+  // Props
+  {
+    id: "kudos_props_1",
+    name: "Acknowledged",
+    description: "Receive props from 1 player",
+    category: "special",
+    icon: "thumbsUp",
+    rarity: "common",
+    group: "kudos_props",
+    tier: 1,
+    check: (ctx) => (ctx.kudosCounts?.props ?? 0) >= 1,
+    progress: (ctx) => ({ current: ctx.kudosCounts?.props ?? 0, target: 1 }),
+  },
+  {
+    id: "kudos_props_5",
+    name: "Well Liked",
+    description: "Receive props from 5 players",
+    category: "special",
+    icon: "thumbsUp",
+    rarity: "uncommon",
+    group: "kudos_props",
+    tier: 2,
+    check: (ctx) => (ctx.kudosCounts?.props ?? 0) >= 5,
+    progress: (ctx) => ({ current: ctx.kudosCounts?.props ?? 0, target: 5 }),
+  },
+  {
+    id: "kudos_props_15",
+    name: "Fan Favorite",
+    description: "Receive props from 15 players",
+    category: "special",
+    icon: "thumbsUp",
+    rarity: "rare",
+    group: "kudos_props",
+    tier: 3,
+    check: (ctx) => (ctx.kudosCounts?.props ?? 0) >= 15,
+    progress: (ctx) => ({ current: ctx.kudosCounts?.props ?? 0, target: 15 }),
+  },
+  {
+    id: "kudos_props_30",
+    name: "Community Star",
+    description: "Receive props from 30 players",
+    category: "special",
+    icon: "thumbsUp",
+    rarity: "epic",
+    group: "kudos_props",
+    tier: 4,
+    check: (ctx) => (ctx.kudosCounts?.props ?? 0) >= 30,
+    progress: (ctx) => ({ current: ctx.kudosCounts?.props ?? 0, target: 30 }),
+  },
+  {
+    id: "kudos_props_50",
+    name: "Beloved",
+    description: "Receive props from 50 players",
+    category: "special",
+    icon: "thumbsUp",
+    rarity: "legendary",
+    group: "kudos_props",
+    tier: 5,
+    check: (ctx) => (ctx.kudosCounts?.props ?? 0) >= 50,
+    progress: (ctx) => ({ current: ctx.kudosCounts?.props ?? 0, target: 50 }),
+  },
+  // Good Sport
+  {
+    id: "kudos_good_sport_1",
+    name: "Good Sport",
+    description: "Recognized as a good sport by 1 player",
+    category: "special",
+    icon: "handshake",
+    rarity: "common",
+    group: "kudos_good_sport",
+    tier: 1,
+    check: (ctx) => (ctx.kudosCounts?.good_sport ?? 0) >= 1,
+    progress: (ctx) => ({ current: ctx.kudosCounts?.good_sport ?? 0, target: 1 }),
+  },
+  {
+    id: "kudos_good_sport_5",
+    name: "Sportsman",
+    description: "Recognized as a good sport by 5 players",
+    category: "special",
+    icon: "handshake",
+    rarity: "uncommon",
+    group: "kudos_good_sport",
+    tier: 2,
+    check: (ctx) => (ctx.kudosCounts?.good_sport ?? 0) >= 5,
+    progress: (ctx) => ({ current: ctx.kudosCounts?.good_sport ?? 0, target: 5 }),
+  },
+  {
+    id: "kudos_good_sport_15",
+    name: "Gracious",
+    description: "Recognized as a good sport by 15 players",
+    category: "special",
+    icon: "handshake",
+    rarity: "rare",
+    group: "kudos_good_sport",
+    tier: 3,
+    check: (ctx) => (ctx.kudosCounts?.good_sport ?? 0) >= 15,
+    progress: (ctx) => ({ current: ctx.kudosCounts?.good_sport ?? 0, target: 15 }),
+  },
+  {
+    id: "kudos_good_sport_30",
+    name: "True Sportsman",
+    description: "Recognized as a good sport by 30 players",
+    category: "special",
+    icon: "handshake",
+    rarity: "epic",
+    group: "kudos_good_sport",
+    tier: 4,
+    check: (ctx) => (ctx.kudosCounts?.good_sport ?? 0) >= 30,
+    progress: (ctx) => ({ current: ctx.kudosCounts?.good_sport ?? 0, target: 30 }),
+  },
+  {
+    id: "kudos_good_sport_50",
+    name: "Zen Master",
+    description: "Recognized as a good sport by 50 players",
+    category: "special",
+    icon: "handshake",
+    rarity: "legendary",
+    group: "kudos_good_sport",
+    tier: 5,
+    check: (ctx) => (ctx.kudosCounts?.good_sport ?? 0) >= 50,
+    progress: (ctx) => ({ current: ctx.kudosCounts?.good_sport ?? 0, target: 50 }),
+  },
+  // Skilled
+  {
+    id: "kudos_skilled_1",
+    name: "Noticed",
+    description: "Recognized as skilled by 1 player",
+    category: "special",
+    icon: "bolt",
+    rarity: "common",
+    group: "kudos_skilled",
+    tier: 1,
+    check: (ctx) => (ctx.kudosCounts?.skilled ?? 0) >= 1,
+    progress: (ctx) => ({ current: ctx.kudosCounts?.skilled ?? 0, target: 1 }),
+  },
+  {
+    id: "kudos_skilled_5",
+    name: "Respected",
+    description: "Recognized as skilled by 5 players",
+    category: "special",
+    icon: "bolt",
+    rarity: "uncommon",
+    group: "kudos_skilled",
+    tier: 2,
+    check: (ctx) => (ctx.kudosCounts?.skilled ?? 0) >= 5,
+    progress: (ctx) => ({ current: ctx.kudosCounts?.skilled ?? 0, target: 5 }),
+  },
+  {
+    id: "kudos_skilled_15",
+    name: "Feared",
+    description: "Recognized as skilled by 15 players",
+    category: "special",
+    icon: "bolt",
+    rarity: "rare",
+    group: "kudos_skilled",
+    tier: 3,
+    check: (ctx) => (ctx.kudosCounts?.skilled ?? 0) >= 15,
+    progress: (ctx) => ({ current: ctx.kudosCounts?.skilled ?? 0, target: 15 }),
+  },
+  {
+    id: "kudos_skilled_30",
+    name: "Prodigy",
+    description: "Recognized as skilled by 30 players",
+    category: "special",
+    icon: "bolt",
+    rarity: "epic",
+    group: "kudos_skilled",
+    tier: 4,
+    check: (ctx) => (ctx.kudosCounts?.skilled ?? 0) >= 30,
+    progress: (ctx) => ({ current: ctx.kudosCounts?.skilled ?? 0, target: 30 }),
+  },
+  {
+    id: "kudos_skilled_50",
+    name: "Grandmaster",
+    description: "Recognized as skilled by 50 players",
+    category: "special",
+    icon: "bolt",
+    rarity: "legendary",
+    group: "kudos_skilled",
+    tier: 5,
+    check: (ctx) => (ctx.kudosCounts?.skilled ?? 0) >= 50,
+    progress: (ctx) => ({ current: ctx.kudosCounts?.skilled ?? 0, target: 50 }),
+  },
+  // Helpful
+  {
+    id: "kudos_helpful_1",
+    name: "Helping Hand",
+    description: "Recognized as helpful by 1 player",
+    category: "special",
+    icon: "sparkles",
+    rarity: "common",
+    group: "kudos_helpful",
+    tier: 1,
+    check: (ctx) => (ctx.kudosCounts?.helpful ?? 0) >= 1,
+    progress: (ctx) => ({ current: ctx.kudosCounts?.helpful ?? 0, target: 1 }),
+  },
+  {
+    id: "kudos_helpful_5",
+    name: "Guide",
+    description: "Recognized as helpful by 5 players",
+    category: "special",
+    icon: "sparkles",
+    rarity: "uncommon",
+    group: "kudos_helpful",
+    tier: 2,
+    check: (ctx) => (ctx.kudosCounts?.helpful ?? 0) >= 5,
+    progress: (ctx) => ({ current: ctx.kudosCounts?.helpful ?? 0, target: 5 }),
+  },
+  {
+    id: "kudos_helpful_15",
+    name: "Mentor",
+    description: "Recognized as helpful by 15 players",
+    category: "special",
+    icon: "sparkles",
+    rarity: "rare",
+    group: "kudos_helpful",
+    tier: 3,
+    check: (ctx) => (ctx.kudosCounts?.helpful ?? 0) >= 15,
+    progress: (ctx) => ({ current: ctx.kudosCounts?.helpful ?? 0, target: 15 }),
+  },
+  {
+    id: "kudos_helpful_30",
+    name: "Pillar of the Community",
+    description: "Recognized as helpful by 30 players",
+    category: "special",
+    icon: "sparkles",
+    rarity: "epic",
+    group: "kudos_helpful",
+    tier: 4,
+    check: (ctx) => (ctx.kudosCounts?.helpful ?? 0) >= 30,
+    progress: (ctx) => ({ current: ctx.kudosCounts?.helpful ?? 0, target: 30 }),
+  },
+  {
+    id: "kudos_helpful_50",
+    name: "Sage",
+    description: "Recognized as helpful by 50 players",
+    category: "special",
+    icon: "sparkles",
+    rarity: "legendary",
+    group: "kudos_helpful",
+    tier: 5,
+    check: (ctx) => (ctx.kudosCounts?.helpful ?? 0) >= 50,
+    progress: (ctx) => ({ current: ctx.kudosCounts?.helpful ?? 0, target: 50 }),
+  },
 ];
 
 /** Evaluate which achievements a player has earned */
@@ -1234,8 +1992,9 @@ export function evaluateAchievements(
   overall: OverallStats,
   heroStats: HeroStats[],
   opponentStats: OpponentStats[],
+  kudosCounts?: Record<string, number>,
 ): Achievement[] {
-  const ctx: CheckContext = { matches, overall, heroStats, opponentStats };
+  const ctx: CheckContext = { matches, overall, heroStats, opponentStats, kudosCounts };
   return ACHIEVEMENTS.filter((a) => a.check(ctx)).map(({ check: _, progress: _p, ...rest }) => rest);
 }
 
@@ -1250,8 +2009,9 @@ export function getAchievementProgress(
   overall: OverallStats,
   heroStats: HeroStats[],
   opponentStats: OpponentStats[],
+  kudosCounts?: Record<string, number>,
 ): Record<string, { current: number; target: number }> {
-  const ctx: CheckContext = { matches, overall, heroStats, opponentStats };
+  const ctx: CheckContext = { matches, overall, heroStats, opponentStats, kudosCounts };
   const result: Record<string, { current: number; target: number }> = {};
   for (const a of ACHIEVEMENTS) {
     if (a.progress) {

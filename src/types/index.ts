@@ -194,7 +194,7 @@ export interface MatchComment {
 
 export interface UserNotification {
   id: string;
-  type: "comment" | "message" | "friendRequest" | "friendAccepted" | "badge";
+  type: "comment" | "message" | "friendRequest" | "friendAccepted" | "badge" | "kudos";
   // Comment fields
   matchId?: string;
   matchOwnerUid?: string;
@@ -219,6 +219,10 @@ export interface UserNotification {
   badgeId?: string;
   badgeName?: string;
   badgeRarity?: string;
+  // Kudos fields
+  kudosType?: string;
+  kudosGiverUid?: string;
+  kudosGiverName?: string;
   // Common
   createdAt: string;
   read: boolean;

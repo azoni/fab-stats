@@ -80,7 +80,7 @@ export default function NotificationsPage() {
 
   // Look up usernames for UIDs so we can navigate to profiles
   useEffect(() => {
-    const uids = [...new Set(notifications.map((n) => n.matchOwnerUid || n.senderUid || n.friendRequestFromUid).filter(Boolean))] as string[];
+    const uids = [...new Set(notifications.map((n) => n.matchOwnerUid || n.senderUid || n.friendRequestFromUid || n.kudosGiverUid).filter(Boolean))] as string[];
     const missing = uids.filter((uid) => !usernameCache[uid]);
     if (missing.length === 0) return;
 
@@ -147,6 +147,10 @@ export default function NotificationsPage() {
         const p = await getProfile(user.uid);
         if (p?.username) router.push(`/player/${p.username}#achievements`);
       }
+    } else if (n.type === "kudos" && n.kudosGiverUid) {
+      await markAsRead(n.id);
+      const username = usernameCache[n.kudosGiverUid];
+      if (username) router.push(`/player/${username}`);
     }
   }
 
@@ -221,6 +225,12 @@ export default function NotificationsPage() {
                           <path d="M12 2l2.09 6.26L20.18 9.27l-4.64 4.14L16.82 20 12 16.77 7.18 20l1.27-6.59L3.82 9.27l6.09-1.01L12 2z" />
                         </svg>
                       </div>
+                    ) : n.type === "kudos" ? (
+                      <div className="w-8 h-8 rounded-full bg-fab-gold/20 flex items-center justify-center">
+                        <svg className="w-4 h-4 text-fab-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M6.633 10.25c.806 0 1.533-.446 2.031-1.08a9.041 9.041 0 0 1 2.861-2.4c.723-.384 1.35-.956 1.653-1.715a4.498 4.498 0 0 0 .322-1.672V2.75a.75.75 0 0 1 .75-.75 2.25 2.25 0 0 1 2.25 2.25c0 1.152-.26 2.243-.723 3.218-.266.558.107 1.282.725 1.282m0 0h3.126c1.026 0 1.945.694 2.054 1.715.045.422.068.85.068 1.285a11.95 11.95 0 0 1-2.649 7.521c-.388.482-.987.729-1.605.729H13.48c-.483 0-.964-.078-1.423-.23l-3.114-1.04a4.501 4.501 0 0 0-1.423-.23H5.904m10.598-9.75H14.25M5.904 18.5c.083.205.173.405.27.602.197.4-.078.898-.523.898h-.908c-.889 0-1.713-.518-1.972-1.368a12 12 0 0 1-.521-3.507c0-1.553.295-3.036.831-4.398C3.387 9.953 4.167 9.5 5 9.5h1.053c.472 0 .745.556.5.96a8.958 8.958 0 0 0-1.302 4.665c0 1.194.232 2.333.654 3.375Z" />
+                        </svg>
+                      </div>
                     ) : (() => {
                       const photo = n.type === "message" ? n.senderPhoto : n.type === "friendRequest" || n.type === "friendAccepted" ? n.friendRequestFromPhoto : n.commentAuthorPhoto;
                       const name = n.type === "message" ? (n.senderName || "?") : n.type === "friendRequest" || n.type === "friendAccepted" ? (n.friendRequestFromName || "?") : (n.commentAuthorName || "?");
@@ -263,6 +273,11 @@ export default function NotificationsPage() {
                     ) : n.type === "badge" ? (
                       <p className="text-sm text-fab-text">
                         You earned the <span className="font-semibold text-violet-300">{n.badgeName}</span> badge!
+                      </p>
+                    ) : n.type === "kudos" ? (
+                      <p className="text-sm text-fab-text">
+                        <span className="font-semibold">{n.kudosGiverName}</span>{" "}
+                        gave you <span className="font-semibold text-fab-gold">{n.kudosType === "good_sport" ? "Good Sport" : n.kudosType === "props" ? "Props" : n.kudosType === "skilled" ? "Skilled" : n.kudosType === "helpful" ? "Helpful" : n.kudosType}</span> kudos
                       </p>
                     ) : (
                       <>

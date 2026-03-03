@@ -9,7 +9,8 @@ export type ActivityAction =
   | "event_share"
   | "rivalry_share"
   | "compare_share"
-  | "meta_share";
+  | "meta_share"
+  | "kudos_given";
 
 export interface ActivityEvent {
   id: string;
@@ -71,6 +72,7 @@ export const ACTIVITY_LABELS: Record<ActivityAction, string> = {
   rivalry_share: "shared a rivalry card",
   compare_share: "shared a comparison card",
   meta_share: "shared a meta breakdown",
+  kudos_given: "gave kudos",
 };
 
 /** Admin: read feature usage counters (single doc read). */
