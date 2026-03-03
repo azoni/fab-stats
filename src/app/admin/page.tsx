@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
-import { getAdminDashboardData, getChatGlobalStats, getAdminChatMessages, backfillLeaderboard, broadcastMessage, fixMatchDates, backfillGemIds, backfillMatchLinking, backfillH2H, backfillHeroMatchups, type AdminDashboardData, type AdminUserStats, type ChatGlobalStats } from "@/lib/admin";
+import { getAdminDashboardData, getChatGlobalStats, getAdminChatMessages, backfillLeaderboard, backfillPlacementFeedEvents, broadcastMessage, fixMatchDates, backfillGemIds, backfillMatchLinking, backfillH2H, backfillHeroMatchups, type AdminDashboardData, type AdminUserStats, type ChatGlobalStats } from "@/lib/admin";
 import { getAllFeedback, updateFeedbackStatus } from "@/lib/feedback";
 import { getCreators, saveCreators } from "@/lib/creators";
 import { getEvents, saveEvents } from "@/lib/featured-events";
@@ -86,6 +86,8 @@ export default function AdminPage() {
   const [h2hProgress, setH2hProgress] = useState("");
   const [backfillingMatchups, setBackfillingMatchups] = useState(false);
   const [matchupProgress, setMatchupProgress] = useState("");
+  const [backfillingPlacements, setBackfillingPlacements] = useState(false);
+  const [placementProgress, setPlacementProgress] = useState("");
   // Poll: new poll form
   const [newPollQuestion, setNewPollQuestion] = useState("");
   const [newPollOptions, setNewPollOptions] = useState<string[]>(["", ""]);
@@ -146,7 +148,7 @@ export default function AdminPage() {
   const [chatLogUid, setChatLogUid] = useState<string | null>(null);
   const [chatLogMessages, setChatLogMessages] = useState<any[]>([]);
   const [chatLogLoading, setChatLogLoading] = useState(false);
-  const anyToolRunning = fixingDates || backfilling || backfillingGemIds || linkingMatches || resyncingH2H || backfillingMatchups;
+  const anyToolRunning = fixingDates || backfilling || backfillingGemIds || linkingMatches || resyncingH2H || backfillingMatchups || backfillingPlacements;
   const [activeTab, setActiveTab] = useState<"overview" | "users" | "feedback" | "content" | "poll" | "tools">(() => {
     if (typeof window !== "undefined") {
       const hash = window.location.hash.replace("#", "");
@@ -439,9 +441,29 @@ export default function AdminPage() {
             >
               {backfillingMatchups ? "Backfilling..." : "Backfill Matchups"}
             </button>
+            <button
+              onClick={async () => {
+                setBackfillingPlacements(true);
+                setPlacementProgress("Starting...");
+                try {
+                  const { created, skipped, failed } = await backfillPlacementFeedEvents((done, total) => {
+                    setPlacementProgress(`${done}/${total} users`);
+                  });
+                  setPlacementProgress(`Done: ${created} created, ${skipped} skipped, ${failed} failed`);
+                } catch {
+                  setPlacementProgress("Placement backfill failed");
+                } finally {
+                  setBackfillingPlacements(false);
+                }
+              }}
+              disabled={anyToolRunning}
+              className="px-3 py-1.5 rounded text-xs font-medium bg-fab-bg border border-fab-border text-fab-muted hover:text-fab-text hover:border-fab-gold transition-colors disabled:opacity-50"
+            >
+              {backfillingPlacements ? "Backfilling..." : "Backfill Placements"}
+            </button>
           </div>
-          {(backfillProgress || fixDatesProgress || linkProgress || gemIdProgress || h2hProgress || matchupProgress) && (
-            <p className="text-xs text-fab-dim">{matchupProgress || h2hProgress || linkProgress || gemIdProgress || fixDatesProgress || backfillProgress}</p>
+          {(backfillProgress || fixDatesProgress || linkProgress || gemIdProgress || h2hProgress || matchupProgress || placementProgress) && (
+            <p className="text-xs text-fab-dim">{placementProgress || matchupProgress || h2hProgress || linkProgress || gemIdProgress || fixDatesProgress || backfillProgress}</p>
           )}
         </div>
       )}

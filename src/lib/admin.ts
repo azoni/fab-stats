@@ -297,6 +297,71 @@ export async function backfillLeaderboard(
   return { updated, skipped, failed };
 }
 
+/** Backfill placement feed events for all public users who have playoff finishes. */
+export async function backfillPlacementFeedEvents(
+  onProgress?: (done: number, total: number) => void
+): Promise<{ created: number; skipped: number; failed: number }> {
+  const { computeEventStats, computePlayoffFinishes } = await import("./stats");
+  const { createPlacementFeedEvent } = await import("./feed");
+
+  const usernamesSnap = await getDocs(collection(db, "usernames"));
+  const userEntries = usernamesSnap.docs.map((d) => ({
+    username: d.id,
+    userId: (d.data() as { userId: string }).userId,
+  }));
+
+  let created = 0;
+  let skipped = 0;
+  let failed = 0;
+  let done = 0;
+
+  const BATCH_SIZE = 25;
+  for (let i = 0; i < userEntries.length; i += BATCH_SIZE) {
+    const batch = userEntries.slice(i, i + BATCH_SIZE);
+    const results = await Promise.allSettled(
+      batch.map(async ({ userId }) => {
+        const profileSnap = await getDoc(doc(db, "users", userId, "profile", "main"));
+        if (!profileSnap.exists()) return 0;
+        const profile = profileSnap.data() as UserProfile;
+
+        if (!profile.isPublic || profile.hideFromFeed) return 0;
+
+        const matchesSnap = await getDocs(
+          query(collection(db, "users", userId, "matches"), orderBy("createdAt", "desc"))
+        );
+        const matches = matchesSnap.docs.map((d) => ({ id: d.id, ...d.data() })) as MatchRecord[];
+        if (matches.length === 0) return 0;
+
+        const eventStats = computeEventStats(matches);
+        const finishes = computePlayoffFinishes(eventStats);
+        let count = 0;
+        for (const finish of finishes) {
+          try {
+            await createPlacementFeedEvent(profile, finish, finish.hero);
+            count++;
+          } catch {
+            // Dedup or other error — skip
+          }
+        }
+        return count;
+      })
+    );
+
+    for (const r of results) {
+      done++;
+      if (r.status === "fulfilled") {
+        if (r.value > 0) created += r.value;
+        else skipped++;
+      } else {
+        failed++;
+      }
+    }
+    onProgress?.(done, userEntries.length);
+  }
+
+  return { created, skipped, failed };
+}
+
 /** Get the admin user's UID by looking up the "azoni" username doc */
 let adminUidCache: { uid: string; ts: number } | null = null;
 

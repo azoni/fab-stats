@@ -11,7 +11,7 @@ import {
   EmailAuthProvider,
   reauthenticateWithCredential,
 } from "firebase/auth";
-import { deleteAllFeedEventsForUser } from "@/lib/feed";
+import { deleteAllFeedEventsForUser, syncFeedEventsVisibility } from "@/lib/feed";
 import { SparklesIcon } from "@/components/icons/NavIcons";
 import { FeedbackModal } from "@/components/feedback/FeedbackModal";
 import { useCreators } from "@/hooks/useCreators";
@@ -534,6 +534,13 @@ export default function SettingsPage() {
                         await updateProfile(user.uid, { isPublic: nextPublic, profileVisibility: opt });
                         setIsPublic(nextPublic);
                         setProfileVisibility(opt);
+                        // Sync feed events visibility in background
+                        if (profile) {
+                          const updatedProfile = { ...profile, isPublic: nextPublic };
+                          getMatchesByUserId(user.uid)
+                            .then((matches) => syncFeedEventsVisibility(updatedProfile, matches))
+                            .catch(() => {});
+                        }
                       } catch {
                         setError("Failed to update privacy setting.");
                       } finally {

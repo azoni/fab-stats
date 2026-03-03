@@ -16,7 +16,7 @@ import {
   type QueryConstraint,
 } from "firebase/firestore";
 import { db } from "./firebase";
-import type { FeedEvent, ImportFeedEvent, AchievementFeedEvent, PlacementFeedEvent, FaBdokuFeedEvent, UserProfile, ImportSource, Achievement } from "@/types";
+import type { FeedEvent, ImportFeedEvent, AchievementFeedEvent, PlacementFeedEvent, FaBdokuFeedEvent, UserProfile, ImportSource, Achievement, MatchRecord } from "@/types";
 import type { PlayoffFinish } from "./stats";
 
 function feedCollection() {
@@ -342,6 +342,44 @@ export async function getFeedEventsPaginated(
 /** Delete a single feed event by ID. */
 export async function deleteFeedEvent(eventId: string): Promise<void> {
   await deleteDoc(doc(db, "feedEvents", eventId));
+  invalidateFeedCache();
+}
+
+/** Sync a user's feed events when their profile visibility changes.
+ *  - Flips `isPublic` on all existing feed event docs
+ *  - If going public: creates any missing placement feed events from their matches
+ */
+export async function syncFeedEventsVisibility(
+  profile: UserProfile,
+  matches: MatchRecord[],
+): Promise<void> {
+  const isPublic = profile.isPublic && !profile.hideFromFeed;
+
+  // 1. Batch-update isPublic on all existing feed events for this user
+  const q = query(feedCollection(), where("userId", "==", profile.uid));
+  const snapshot = await getDocs(q);
+  if (snapshot.docs.length > 0) {
+    const batchSize = 500;
+    for (let i = 0; i < snapshot.docs.length; i += batchSize) {
+      const batch = writeBatch(db);
+      snapshot.docs.slice(i, i + batchSize).forEach((d) => {
+        batch.update(d.ref, { isPublic });
+      });
+      await batch.commit();
+    }
+  }
+
+  // 2. If going public, create any missing placement feed events
+  if (isPublic && matches.length > 0) {
+    const { computeEventStats, computePlayoffFinishes } = await import("./stats");
+    const eventStats = computeEventStats(matches);
+    const finishes = computePlayoffFinishes(eventStats);
+    for (const finish of finishes) {
+      const hero = finish.hero;
+      await createPlacementFeedEvent(profile, finish, hero).catch(() => {});
+    }
+  }
+
   invalidateFeedCache();
 }
 
