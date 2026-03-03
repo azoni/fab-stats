@@ -327,35 +327,47 @@ export async function backfillPlacementFeedEvents(
   let failed = 0;
   let done = 0;
 
-  // Process users sequentially to avoid overloading Firestore with parallel dedup queries
-  for (const { userId } of userEntries) {
-    try {
-      const profileSnap = await getDoc(doc(db, "users", userId, "profile", "main"));
-      if (!profileSnap.exists()) { skipped++; done++; onProgress?.(done, userEntries.length); continue; }
-      const profile = profileSnap.data() as UserProfile;
+  const BATCH_SIZE = 25;
+  for (let i = 0; i < userEntries.length; i += BATCH_SIZE) {
+    const batch = userEntries.slice(i, i + BATCH_SIZE);
+    const results = await Promise.allSettled(
+      batch.map(async ({ userId }) => {
+        const profileSnap = await getDoc(doc(db, "users", userId, "profile", "main"));
+        if (!profileSnap.exists()) return 0;
+        const profile = profileSnap.data() as UserProfile;
 
-      if (!profile.isPublic || profile.hideFromFeed) { skipped++; done++; onProgress?.(done, userEntries.length); continue; }
+        if (!profile.isPublic || profile.hideFromFeed) return 0;
 
-      const matchesSnap = await getDocs(
-        query(collection(db, "users", userId, "matches"), orderBy("createdAt", "desc"))
-      );
-      const matches = matchesSnap.docs.map((d) => ({ id: d.id, ...d.data() })) as MatchRecord[];
-      if (matches.length === 0) { skipped++; done++; onProgress?.(done, userEntries.length); continue; }
+        const matchesSnap = await getDocs(
+          query(collection(db, "users", userId, "matches"), orderBy("createdAt", "desc"))
+        );
+        const matches = matchesSnap.docs.map((d) => ({ id: d.id, ...d.data() })) as MatchRecord[];
+        if (matches.length === 0) return 0;
 
-      const eventStats = computeEventStats(matches);
-      const finishes = computePlayoffFinishes(eventStats);
-      for (const finish of finishes) {
-        try {
-          await createPlacementFeedEvent(profile, finish, finish.hero);
-          created++;
-        } catch {
-          // Dedup or other error — skip
+        const eventStats = computeEventStats(matches);
+        const finishes = computePlayoffFinishes(eventStats);
+        let count = 0;
+        for (const finish of finishes) {
+          try {
+            await createPlacementFeedEvent(profile, finish, finish.hero);
+            count++;
+          } catch {
+            // Dedup or other error — skip
+          }
         }
+        return count;
+      })
+    );
+
+    for (const r of results) {
+      done++;
+      if (r.status === "fulfilled") {
+        if (r.value > 0) created += r.value;
+        else skipped++;
+      } else {
+        failed++;
       }
-    } catch {
-      failed++;
     }
-    done++;
     onProgress?.(done, userEntries.length);
   }
 
