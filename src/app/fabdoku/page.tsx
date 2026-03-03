@@ -39,6 +39,7 @@ import {
   savePicks,
   loadPicks,
   computeUniqueness,
+  buildLocalPicks,
 } from "@/lib/fabdoku/firestore";
 import { createFaBdokuFeedEvent } from "@/lib/feed";
 import type { GameState, FaBdokuStats, UniquenessData } from "@/lib/fabdoku/types";
@@ -102,7 +103,15 @@ export default function FaBdokuPage() {
           return data;
         }
       } catch {
-        // Non-critical — uniqueness display is optional
+        // Firestore read failed — fall through to local fallback
+      }
+      // Fallback: compute from local state only (single-player baseline)
+      try {
+        const data = computeUniqueness(state, buildLocalPicks(state));
+        setUniqueness(data);
+        return data;
+      } catch {
+        // Truly failed
       }
       return null;
     },

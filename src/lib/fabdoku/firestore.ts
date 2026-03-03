@@ -188,6 +188,22 @@ export function computeUniqueness(
   return { cellPcts, score, bestPossible, totalPlayers: total };
 }
 
+/** Build a single-player PickData from a completed game state (local fallback). */
+export function buildLocalPicks(state: GameState): PickData {
+  const cells: Record<string, Record<string, number>> = {};
+  for (let r = 0; r < 3; r++) {
+    for (let c = 0; c < 3; c++) {
+      const cell = state.cells[r][c];
+      const key = `${r}-${c}`;
+      cells[key] = {};
+      if (cell.heroName && cell.locked) {
+        cells[key][cell.heroName] = 1;
+      }
+    }
+  }
+  return { totalPlayers: 1, cells };
+}
+
 /** Helper: offset a YYYY-MM-DD date string by N days. */
 function getDateOffset(dateStr: string, days: number): string {
   const d = new Date(dateStr + "T00:00:00");
