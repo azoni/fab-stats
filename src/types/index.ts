@@ -416,7 +416,7 @@ export interface FeedbackItem {
 }
 
 // Gamification
-export type AchievementCategory = "milestone" | "streak" | "mastery" | "exploration" | "fun" | "special";
+export type AchievementCategory = "milestone" | "streak" | "mastery" | "exploration" | "fun" | "special" | "social";
 
 export interface Achievement {
   id: string;

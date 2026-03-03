@@ -57,7 +57,7 @@ export default function PlayerProfile() {
   const router = useRouter();
   const username = decodeURIComponent(pathname.split("/").pop() || "");
   const [state, setState] = useState<PageState>({ status: "loading" });
-  const { isAdmin, user: currentUser, isGuest } = useAuth();
+  const { isAdmin, user: currentUser, isGuest, profile: myProfile } = useAuth();
   const { entries: lbEntries } = useLeaderboard();
   const { isFavorited, toggleFavorite } = useFavorites();
   const { isFriend, hasSentRequest, hasReceivedRequest, getFriendshipForUser, sendRequest, acceptRequest } = useFriends();
@@ -490,7 +490,7 @@ export default function PlayerProfile() {
         <KudosSection
           recipientId={profile.uid}
           currentUserId={currentUser?.uid}
-          currentDisplayName={currentUser?.displayName || undefined}
+          currentDisplayName={currentUser?.displayName || myProfile?.username || currentUser?.email?.split("@")[0] || undefined}
           counts={kudosCounts}
           givenByMe={kudosGivenByMe}
           onUpdate={(newCounts, newGiven) => {
