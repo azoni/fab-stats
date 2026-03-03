@@ -8,7 +8,6 @@ import {
   collection,
   query,
   where,
-  limit,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import type {
@@ -105,24 +104,6 @@ export async function loadStats(
         stats = snap.data() as FaBdokuStats;
         // Backfill public collection so other viewers can see stats
         setDoc(doc(db, STATS_PUBLIC_COL, uid), stats).catch(() => {});
-      }
-    } catch {}
-  }
-
-  // Self-heal hasShared: check feed events for existing shares
-  if (stats && !stats.hasShared) {
-    try {
-      const q = query(
-        collection(db, "feedEvents"),
-        where("userId", "==", uid),
-        where("type", "==", "fabdoku"),
-        where("subtype", "==", "shared"),
-        limit(1),
-      );
-      const snap = await getDocs(q);
-      if (!snap.empty) {
-        stats.hasShared = true;
-        markShared(uid).catch(() => {});
       }
     } catch {}
   }
