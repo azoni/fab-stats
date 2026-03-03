@@ -173,6 +173,18 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     }
   }
 
+  // Deduplicate by uid (a user may have multiple username docs from renames)
+  const seenUids = new Set<string>();
+  const dedupedUsers: AdminUserStats[] = [];
+  for (const u of users) {
+    if (!seenUids.has(u.uid)) {
+      seenUids.add(u.uid);
+      dedupedUsers.push(u);
+    }
+  }
+  users.length = 0;
+  users.push(...dedupedUsers);
+
   // Step 3: Merge visit data into user stats
   // Note: Chat stats are populated lazily via fetchChatStatsForUsers() after initial load
   for (const u of users) {
