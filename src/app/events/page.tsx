@@ -6,7 +6,7 @@ import { useMatches } from "@/hooks/useMatches";
 import { useAuth } from "@/contexts/AuthContext";
 import { computeEventStats, computeOverallStats, computePlayoffFinishes, computeBestFinish } from "@/lib/stats";
 import { updateLeaderboardEntry } from "@/lib/leaderboard";
-import { propagateHeroToOpponent, linkMatchesWithOpponents } from "@/lib/match-linking";
+import { propagateHeroToOpponent } from "@/lib/match-linking";
 import { adjustHeroMatchupOnEdit } from "@/lib/hero-matchups";
 import { deleteFeedEventsForEvent } from "@/lib/feed";
 import { EventCard } from "@/components/events/EventCard";
@@ -103,20 +103,13 @@ export default function EventsPage() {
     [updateMatch, profile, matches, user]
   );
 
-  // Background sync on mount: re-link opponents and refresh to pick up hero updates
-  const didSyncRef = useRef(false);
+  // Refresh match cache on mount to pick up opponent hero updates written to Firestore
+  const didRefreshRef = useRef(false);
   useEffect(() => {
-    if (!user || !isLoaded || didSyncRef.current) return;
-    didSyncRef.current = true;
-    const hasGemMatches = matches.some((m) => m.opponentGemId);
-    if (hasGemMatches) {
-      linkMatchesWithOpponents(user.uid, matches)
-        .then((result) => {
-          if (result.heroesReceived > 0) refreshMatches();
-        })
-        .catch(() => {});
-    }
-  }, [user, isLoaded, matches, refreshMatches]);
+    if (!user || !isLoaded || didRefreshRef.current) return;
+    didRefreshRef.current = true;
+    refreshMatches();
+  }, [user, isLoaded, refreshMatches]);
 
   // Auto-open import modal from ?import=1 (e.g. from navbar "Log Event")
   // Also initialize filters from URL params (e.g. from trends page links)
