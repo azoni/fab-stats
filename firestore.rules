@@ -88,6 +88,10 @@ service cloud.firestore {
       allow update: if request.auth != null
         && resource.data.type == "message"
         && resource.data.senderUid == request.auth.uid;
+      // Allow kudos giver to delete their kudos notification (when revoking)
+      allow delete: if request.auth != null
+        && resource.data.type == "kudos"
+        && resource.data.kudosGiverUid == request.auth.uid;
     }
 
     // ── Favorites ──
@@ -384,6 +388,13 @@ service cloud.firestore {
       // Authenticated users can create/update (increment/decrement counters)
       allow create, update: if request.auth != null;
     }
+    // Aggregated kudos given counts per giver
+    match /kudosGivenCounts/{giverId} {
+      // Anyone can read (displayed on profiles and leaderboard)
+      allow read: if true;
+      // Authenticated users can create/update (increment/decrement counters)
+      allow create, update: if request.auth != null;
+    }
 
     // ── FaBdoku (daily hero puzzle game) ──
     // Results: one per user per day
@@ -415,6 +426,11 @@ service cloud.firestore {
     match /users/{userId}/fabdoku-stats/{docId} {
       allow read: if request.auth != null && request.auth.uid == userId;
       allow write: if request.auth != null && request.auth.uid == userId;
+    }
+    // Public FaBdoku player stats (cross-user readable for profile cards)
+    match /fabdokuPlayerStats/{uid} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.uid == uid;
     }
 
     match /admin/{docId} {

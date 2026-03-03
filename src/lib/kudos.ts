@@ -186,12 +186,16 @@ export async function giveKudos(
   }
 
   // Increment the "given" counter for the giver
-  const givenRef = doc(db, "kudosGivenCounts", giverId);
-  const givenSnap = await getDoc(givenRef);
-  if (givenSnap.exists()) {
-    await updateDoc(givenRef, { [kudosType]: increment(1), total: increment(1) });
-  } else {
-    await setDoc(givenRef, { [kudosType]: 1, total: 1 });
+  try {
+    const givenRef = doc(db, "kudosGivenCounts", giverId);
+    const givenSnap = await getDoc(givenRef);
+    if (givenSnap.exists()) {
+      await updateDoc(givenRef, { [kudosType]: increment(1), total: increment(1) });
+    } else {
+      await setDoc(givenRef, { [kudosType]: 1, total: 1 });
+    }
+  } catch {
+    // Non-critical — don't fail the whole kudos operation if given count fails
   }
 
   // Set cooldown for non-props types
