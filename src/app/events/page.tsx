@@ -11,7 +11,7 @@ import { adjustHeroMatchupOnEdit } from "@/lib/hero-matchups";
 import { deleteFeedEventsForEvent } from "@/lib/feed";
 import { EventCard } from "@/components/events/EventCard";
 import { localDate } from "@/lib/constants";
-import { type GameFormat } from "@/types";
+import { type GameFormat, type MatchRecord } from "@/types";
 import { QuickEventImportModal } from "@/components/events/QuickEventImportModal";
 import { CalendarIcon } from "@/components/icons/NavIcons";
 
@@ -21,7 +21,7 @@ const PAGE_SIZE = 25;
 
 export default function EventsPage() {
   const searchParams = useSearchParams();
-  const { matches, isLoaded, refreshMatches, batchUpdateHero, batchUpdateFormat, batchDeleteMatches } = useMatches();
+  const { matches, isLoaded, refreshMatches, updateMatch, batchUpdateHero, batchUpdateFormat, batchDeleteMatches } = useMatches();
   const { user, profile } = useAuth();
   const [filterFormat, setFilterFormat] = useState("all");
   const [filterEventType, setFilterEventType] = useState("all");
@@ -81,6 +81,24 @@ export default function EventsPage() {
       }
     },
     [batchDeleteMatches, profile, matches, user]
+  );
+
+  const handleUpdateMatch = useCallback(
+    async (id: string, updates: Partial<Omit<MatchRecord, "id" | "createdAt">>) => {
+      await updateMatch(id, updates);
+      if (profile && matches.length > 0) {
+        const updated = matches.map((m) => m.id === id ? { ...m, ...updates } : m);
+        updateLeaderboardEntry(profile, updated).catch(() => {});
+      }
+      if (updates.heroPlayed && user) {
+        const match = matches.find((m) => m.id === id);
+        if (match) {
+          propagateHeroToOpponent(user.uid, match, updates.heroPlayed).catch(() => {});
+          adjustHeroMatchupOnEdit(user.uid, match, match.heroPlayed, updates.heroPlayed).catch(() => {});
+        }
+      }
+    },
+    [updateMatch, profile, matches, user]
   );
 
   // Auto-open import modal from ?import=1 (e.g. from navbar "Log Event")
@@ -440,7 +458,7 @@ export default function EventsPage() {
           </p>
           <div className="space-y-2">
             {pageEvents.map((event) => (
-              <EventCard key={`${event.eventName}-${event.eventDate}`} event={event} playerName={profile?.displayName || profile?.username} editable={!!user} onBatchUpdateHero={handleBatchUpdateHero} onBatchUpdateFormat={handleBatchUpdateFormat} onDeleteEvent={handleDeleteEvent} missingGemId={!!user && !profile?.gemId} />
+              <EventCard key={`${event.eventName}-${event.eventDate}`} event={event} playerName={profile?.displayName || profile?.username} editable={!!user} onBatchUpdateHero={handleBatchUpdateHero} onBatchUpdateFormat={handleBatchUpdateFormat} onDeleteEvent={handleDeleteEvent} onUpdateMatch={handleUpdateMatch} missingGemId={!!user && !profile?.gemId} />
             ))}
           </div>
         </>

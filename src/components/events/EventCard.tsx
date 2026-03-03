@@ -7,7 +7,7 @@ import { getHeroByName } from "@/lib/heroes";
 import { HeroClassIcon } from "@/components/heroes/HeroClassIcon";
 import { MatchResult, GameFormat } from "@/types";
 import { localDate } from "@/lib/constants";
-import type { EventStats } from "@/types";
+import type { EventStats, MatchRecord } from "@/types";
 import { EventShareModal } from "@/components/events/EventShareCard";
 
 interface EventCardProps {
@@ -19,6 +19,7 @@ interface EventCardProps {
   onBatchUpdateHero?: (matchIds: string[], hero: string) => Promise<void>;
   onBatchUpdateFormat?: (matchIds: string[], format: GameFormat) => Promise<void>;
   onDeleteEvent?: (matchIds: string[], eventName: string, eventDate: string) => Promise<void>;
+  onUpdateMatch?: (id: string, updates: Partial<Omit<MatchRecord, "id" | "createdAt">>) => Promise<void>;
   missingGemId?: boolean;
 }
 
@@ -45,7 +46,7 @@ interface HeroSegment {
   toRound: string;
 }
 
-export function EventCard({ event, playerName, obfuscateOpponents = false, visibleOpponents, editable = false, onBatchUpdateHero, onBatchUpdateFormat, onDeleteEvent, missingGemId }: EventCardProps) {
+export function EventCard({ event, playerName, obfuscateOpponents = false, visibleOpponents, editable = false, onBatchUpdateHero, onBatchUpdateFormat, onDeleteEvent, onUpdateMatch, missingGemId }: EventCardProps) {
   const [expanded, setExpanded] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const initHero = (() => {
@@ -61,6 +62,8 @@ export function EventCard({ event, playerName, obfuscateOpponents = false, visib
   const [error, setError] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [editingOppHeroId, setEditingOppHeroId] = useState<string | null>(null);
+  const [savingOppHeroId, setSavingOppHeroId] = useState<string | null>(null);
 
   // Determine best playoff placement from match rounds
   let bestPlayoff: string | null = null;
@@ -329,6 +332,7 @@ export function EventCard({ event, playerName, obfuscateOpponents = false, visib
                 {showHeroColumn && (
                   <th className="text-left px-4 py-2 font-medium hidden sm:table-cell">Hero</th>
                 )}
+                <th className="text-left px-4 py-2 font-medium hidden sm:table-cell">Vs Hero</th>
                 <th className="text-right px-4 py-2 font-medium w-16">Result</th>
               </tr>
             </thead>
@@ -343,7 +347,7 @@ export function EventCard({ event, playerName, obfuscateOpponents = false, visib
 
                 // Format divider: show when this match starts a new format segment
                 const segment = isMultiFormat ? formatSegments.find((s) => s.startIdx === i) : null;
-                const colSpan = 2 + (showHeroColumn ? 1 : 0) + 1;
+                const colSpan = 2 + (showHeroColumn ? 1 : 0) + 1 + 1;
 
                 return (
                   <Fragment key={match.id}>{segment && (
@@ -396,6 +400,55 @@ export function EventCard({ event, playerName, obfuscateOpponents = false, visib
                         )}
                       </td>
                     )}
+                    <td className="px-4 py-2.5 hidden sm:table-cell">
+                      {editingOppHeroId === match.id ? (
+                        <div className="w-40">
+                          <HeroSelect
+                            value={match.opponentHero || ""}
+                            onChange={async (hero) => {
+                              setEditingOppHeroId(null);
+                              if (!onUpdateMatch) return;
+                              setSavingOppHeroId(match.id);
+                              try {
+                                await onUpdateMatch(match.id, { opponentHero: hero || undefined });
+                              } catch { /* ignore */ }
+                              setSavingOppHeroId(null);
+                            }}
+                            label="Opponent hero"
+                            format={match.format}
+                            allowClear
+                          />
+                        </div>
+                      ) : (() => {
+                        const oppHero = match.opponentHero && match.opponentHero !== "Unknown" ? match.opponentHero : null;
+                        const oppHeroInfo = oppHero ? getHeroByName(oppHero) : null;
+                        const isEditable = editable && onUpdateMatch;
+                        return (
+                          <div
+                            className={`flex items-center gap-1 ${isEditable ? "cursor-pointer group" : ""}`}
+                            onClick={isEditable ? () => setEditingOppHeroId(match.id) : undefined}
+                          >
+                            {savingOppHeroId === match.id ? (
+                              <span className="text-fab-dim text-xs">Saving...</span>
+                            ) : oppHeroInfo ? (
+                              <>
+                                <HeroClassIcon heroClass={oppHeroInfo.classes[0]} size="sm" />
+                                <span className="text-xs text-fab-muted">{oppHero}</span>
+                                {isEditable && (
+                                  <svg className="w-3 h-3 text-fab-dim opacity-0 group-hover:opacity-100 transition-opacity ml-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                  </svg>
+                                )}
+                              </>
+                            ) : isEditable ? (
+                              <span className="text-fab-dim text-xs group-hover:text-fab-muted transition-colors">+ add</span>
+                            ) : (
+                              <span className="text-fab-dim text-xs">—</span>
+                            )}
+                          </div>
+                        );
+                      })()}
+                    </td>
                     <td className={`px-4 py-2.5 text-right font-bold ${resultColors[match.result]}`}>
                       {resultLabels[match.result]}
                     </td>
