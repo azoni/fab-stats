@@ -33,7 +33,7 @@ interface DonutSegment {
   color: string;
 }
 
-function buildSegments(heroes: Top8HeroMeta[], maxSegments = 12): DonutSegment[] {
+export function buildSegments(heroes: Top8HeroMeta[], maxSegments = 12): DonutSegment[] {
   const total = heroes.reduce((sum, h) => sum + h.count, 0);
   if (total === 0) return [];
 
@@ -74,7 +74,7 @@ function describeArc(cx: number, cy: number, r: number, startAngle: number, endA
   return `M ${x1} ${y1} A ${r} ${r} 0 ${largeArc} 1 ${x2} ${y2}`;
 }
 
-function DonutChart({ segments, size = 200, strokeWidth = 32 }: { segments: DonutSegment[]; size?: number; strokeWidth?: number }) {
+export function DonutChart({ segments, size = 200, strokeWidth = 32 }: { segments: DonutSegment[]; size?: number; strokeWidth?: number }) {
   const cx = size / 2;
   const cy = size / 2;
   const r = (size - strokeWidth) / 2;

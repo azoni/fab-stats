@@ -35,11 +35,14 @@ import { BestFinishShareModal } from "@/components/profile/BestFinishCard";
 import { ProfileShareModal } from "@/components/profile/ProfileCard";
 import { ShowcaseSection } from "@/components/profile/ShowcaseSection";
 import { KudosSection } from "@/components/profile/KudosSection";
+import { KudosLeaderboard } from "@/components/profile/KudosLeaderboard";
 import { loadKudosCounts, loadGivenKudos } from "@/lib/kudos";
 import type { MatchRecord, UserProfile, Achievement } from "@/types";
 import { MatchResult } from "@/types";
 import { allHeroes as knownHeroes } from "@/lib/heroes";
 import { localDate } from "@/lib/constants";
+import { loadUserResult } from "@/lib/fabdoku/firestore";
+import { getTodayDateStr } from "@/lib/fabdoku/puzzle-generator";
 import { useCreators } from "@/hooks/useCreators";
 import type { Creator } from "@/types";
 
@@ -77,6 +80,7 @@ export default function PlayerProfile() {
   const [friendCount, setFriendCount] = useState<number | null>(null);
   const [kudosCounts, setKudosCounts] = useState<Record<string, number>>({});
   const [kudosGivenByMe, setKudosGivenByMe] = useState<Set<string>>(new Set());
+  const [fabdokuScore, setFabdokuScore] = useState<number | null>(null);
 
   // Auto-expand achievements if navigated with #achievements hash
   useEffect(() => {
@@ -252,6 +256,12 @@ export default function PlayerProfile() {
     }
   }, [profileUid, currentUser?.uid]);
 
+  // Load today's fabdoku score for this profile
+  useEffect(() => {
+    if (!profileUid) return;
+    loadUserResult(profileUid, getTodayDateStr()).then((r) => setFabdokuScore(r?.score ?? null)).catch(() => {});
+  }, [profileUid]);
+
   // Admin: fetch friend count for the viewed profile
   useEffect(() => {
     if (!isAdmin || !profileUid) return;
@@ -408,7 +418,7 @@ export default function PlayerProfile() {
       <div className="space-y-5">
         {/* Profile Header */}
         <div
-          className="bg-fab-surface border border-fab-border rounded-lg p-5"
+          className="bg-fab-surface border border-fab-border rounded-lg p-5 relative"
           style={cardBorder ? { borderColor: cardBorder.border, boxShadow: cardBorder.shadow } : undefined}
         >
           {/* Admin: private profile banner */}
@@ -433,24 +443,35 @@ export default function PlayerProfile() {
                 <BadgeStrip matchCount={matches.length} isCreator={!!creatorInfo} />
               </div>
             </div>
-            <EmblemDisplay talentEmblemId={profile.selectedEmblem} classEmblemId={profile.selectedClassEmblem} isOwner={isOwner} onClickTalent={() => setEmblemPickerMode("talent")} onClickClass={() => setEmblemPickerMode("class")} />
+            <div className="flex items-center gap-3 shrink-0">
+              <KudosSection
+                recipientId={profile.uid}
+                currentUserId={currentUser?.uid}
+                currentDisplayName={currentUser?.displayName || myProfile?.username || currentUser?.email?.split("@")[0] || undefined}
+                counts={kudosCounts}
+                givenByMe={kudosGivenByMe}
+                onUpdate={(newCounts, newGiven) => {
+                  setKudosCounts(newCounts);
+                  setKudosGivenByMe(newGiven);
+                }}
+                inline
+              />
+              <EmblemDisplay talentEmblemId={profile.selectedEmblem} classEmblemId={profile.selectedClassEmblem} isOwner={isOwner} onClickTalent={() => setEmblemPickerMode("talent")} onClickClass={() => setEmblemPickerMode("class")} />
+            </div>
           </div>
-
-          {/* Kudos — inline within profile card */}
-          <div className="mt-3 pt-3 border-t border-fab-border/50">
-            <KudosSection
-              recipientId={profile.uid}
-              currentUserId={currentUser?.uid}
-              currentDisplayName={currentUser?.displayName || myProfile?.username || currentUser?.email?.split("@")[0] || undefined}
-              counts={kudosCounts}
-              givenByMe={kudosGivenByMe}
-              onUpdate={(newCounts, newGiven) => {
-                setKudosCounts(newCounts);
-                setKudosGivenByMe(newGiven);
-              }}
-              inline
-            />
-          </div>
+          {/* Daily FaBdoku score — bottom right */}
+          {fabdokuScore !== null && (
+            <Link href="/fabdoku" className="absolute bottom-2 right-3 flex items-center gap-1 px-2 py-0.5 rounded-md bg-fab-bg/80 border border-fab-border hover:border-fab-gold/40 transition-colors group" title="Today's FaBdoku score">
+              <svg className="w-3 h-3 text-fab-dim group-hover:text-fab-gold transition-colors" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                <rect x="3" y="3" width="18" height="18" rx="2" />
+                <line x1="3" y1="9" x2="21" y2="9" />
+                <line x1="3" y1="15" x2="21" y2="15" />
+                <line x1="9" y1="3" x2="9" y2="21" />
+                <line x1="15" y1="3" x2="15" y2="21" />
+              </svg>
+              <span className="text-[10px] font-bold text-fab-dim group-hover:text-fab-gold transition-colors tabular-nums">{fabdokuScore}/9</span>
+            </Link>
+          )}
         </div>
 
         {/* Creator spotlight card */}
@@ -501,6 +522,9 @@ export default function PlayerProfile() {
             </div>
           </div>
         )}
+
+        {/* Kudos Leaderboard */}
+        <KudosLeaderboard />
 
         {/* Filters */}
         <div className="flex gap-2 flex-wrap items-center">

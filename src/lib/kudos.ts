@@ -7,6 +7,10 @@ import {
   updateDoc,
   addDoc,
   collection,
+  getDocs,
+  query,
+  orderBy,
+  limit,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
@@ -28,6 +32,44 @@ export const KUDOS_TYPES: KudosType[] = [
 
 export type KudosId = typeof KUDOS_TYPES[number]["id"];
 
+// ── Daily Rate Limit (client-side) ──
+
+const DAILY_LIMIT = 20;
+const RATE_KEY = "fab-kudos-daily";
+
+function todayStr(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function getDailyUsage(): { date: string; count: number } {
+  try {
+    const raw = localStorage.getItem(RATE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed.date === todayStr()) return parsed;
+    }
+  } catch {}
+  return { date: todayStr(), count: 0 };
+}
+
+function incrementDailyUsage(): void {
+  const usage = getDailyUsage();
+  usage.count += 1;
+  usage.date = todayStr();
+  localStorage.setItem(RATE_KEY, JSON.stringify(usage));
+}
+
+function decrementDailyUsage(): void {
+  const usage = getDailyUsage();
+  usage.count = Math.max(0, usage.count - 1);
+  localStorage.setItem(RATE_KEY, JSON.stringify(usage));
+}
+
+/** Returns how many kudos the user can still give today. */
+export function getRemainingKudos(): number {
+  return Math.max(0, DAILY_LIMIT - getDailyUsage().count);
+}
+
 // ── Firestore Helpers ──
 
 /** Deterministic doc ID for a single kudos: recipientId_giverId_kudosType */
@@ -43,6 +85,7 @@ export async function giveKudos(
   kudosType: string,
 ): Promise<void> {
   if (giverId === recipientId) throw new Error("Cannot give kudos to yourself");
+  if (getRemainingKudos() <= 0) throw new Error("Daily kudos limit reached");
 
   const docId = kudosDocId(recipientId, giverId, kudosType);
   const kudosRef = doc(db, "kudos", docId);
@@ -75,6 +118,9 @@ export async function giveKudos(
     });
   }
 
+  // Track daily usage
+  incrementDailyUsage();
+
   // Send notification to recipient
   await addDoc(collection(db, "users", recipientId, "notifications"), {
     type: "kudos",
@@ -99,6 +145,7 @@ export async function revokeKudos(
   if (!existing.exists()) return;
 
   await deleteDoc(kudosRef);
+  decrementDailyUsage();
 
   // Decrement the counter
   const countRef = doc(db, "kudosCounts", recipientId);
@@ -130,4 +177,25 @@ export async function loadGivenKudos(
     if (snap.exists()) given.add(kt.id);
   }
   return given;
+}
+
+export interface KudosLeaderEntry {
+  uid: string;
+  count: number;
+}
+
+/** Load top N players for a specific kudos category (or "total"). */
+export async function loadKudosLeaderboard(
+  category: string,
+  max = 10,
+): Promise<KudosLeaderEntry[]> {
+  const q = query(
+    collection(db, "kudosCounts"),
+    orderBy(category, "desc"),
+    limit(max),
+  );
+  const snap = await getDocs(q);
+  return snap.docs
+    .map((d) => ({ uid: d.id, count: (d.data()[category] as number) || 0 }))
+    .filter((e) => e.count > 0);
 }

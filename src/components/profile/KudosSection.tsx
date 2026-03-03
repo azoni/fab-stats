@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { KUDOS_TYPES, giveKudos, revokeKudos } from "@/lib/kudos";
+import { KUDOS_TYPES, giveKudos, revokeKudos, getRemainingKudos } from "@/lib/kudos";
 import { logActivity } from "@/lib/activity-log";
 import type { KudosId } from "@/lib/kudos";
 
@@ -58,15 +58,24 @@ export function KudosSection({
   inline,
 }: KudosSectionProps) {
   const [loading, setLoading] = useState<string | null>(null);
+  const [hint, setHint] = useState<string | null>(null);
 
   const handleToggle = useCallback(
     async (kudosType: KudosId) => {
       if (!currentUserId || !currentDisplayName || loading) return;
       if (currentUserId === recipientId) return;
 
+      const isGiven = givenByMe.has(kudosType);
+
+      // Check rate limit before giving (not revoking)
+      if (!isGiven && getRemainingKudos() <= 0) {
+        setHint("No kudos left today!");
+        setTimeout(() => setHint(null), 2500);
+        return;
+      }
+
       setLoading(kudosType);
       try {
-        const isGiven = givenByMe.has(kudosType);
         if (isGiven) {
           await revokeKudos(currentUserId, recipientId, kudosType);
           const newGiven = new Set(givenByMe);
@@ -82,6 +91,11 @@ export function KudosSection({
           const newCounts = { ...counts, [kudosType]: (counts[kudosType] || 0) + 1 };
           newCounts.total = (newCounts.total || 0) + 1;
           onUpdate(newCounts, newGiven);
+
+          // Show remaining kudos hint
+          const remaining = getRemainingKudos();
+          setHint(`${remaining} kudos left today`);
+          setTimeout(() => setHint(null), 2000);
         }
       } catch {
         // Silently fail
@@ -101,13 +115,12 @@ export function KudosSection({
 
   return (
     <div className={inline ? "" : "bg-fab-surface border border-fab-border rounded-lg px-3 py-2.5"}>
-      <div className="flex items-center gap-1.5 mb-2">
-        <span className="text-[10px] font-semibold text-fab-dim uppercase tracking-wider">Kudos</span>
-        {totalKudos > 0 && (
-          <span className="text-[10px] text-fab-dim font-mono">{totalKudos}</span>
+      <div className="flex items-center gap-2 relative">
+        {hint && (
+          <div className="absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap bg-fab-bg border border-fab-border rounded-md px-2 py-0.5 text-[10px] text-fab-muted z-10 animate-fade-in pointer-events-none">
+            {hint}
+          </div>
         )}
-      </div>
-      <div className="flex items-center gap-2">
         {KUDOS_TYPES.map((kt) => {
           const count = counts[kt.id] || 0;
           const isGiven = givenByMe.has(kt.id);
@@ -120,7 +133,7 @@ export function KudosSection({
               disabled={!canInteract || isLoading}
               onClick={() => handleToggle(kt.id)}
               title={`${kt.label}: ${kt.description}${isGiven ? " (click to remove)" : ""}`}
-              className={`flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-lg transition-all min-w-[48px] ${
+              className={`flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-lg transition-all min-w-[44px] ${
                 isLoading
                   ? "opacity-50 cursor-wait"
                   : !canInteract
@@ -136,10 +149,15 @@ export function KudosSection({
                   isGiven ? "text-fab-gold" : "text-fab-muted"
                 }`}
               />
-              <span className={`text-[10px] font-medium leading-tight ${
+              <span className={`text-[10px] font-bold leading-tight tabular-nums ${
                 isGiven ? "text-fab-gold" : "text-fab-dim"
               }`}>
                 {count}
+              </span>
+              <span className={`text-[8px] leading-tight ${
+                isGiven ? "text-fab-gold/70" : "text-fab-dim"
+              }`}>
+                {kt.label}
               </span>
             </button>
           );

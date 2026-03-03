@@ -368,6 +368,7 @@ export interface Season {
   eventType: string;    // "ProQuest", "Battle Hardened", etc.
   active: boolean;
   backgroundImage?: string; // URL for season background image on meta table
+  showResults?: boolean;    // Show donut chart on homepage after season ends
 }
 
 // Polls

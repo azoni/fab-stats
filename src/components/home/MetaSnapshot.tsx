@@ -3,7 +3,7 @@ import { memo, useState, useMemo } from "react";
 import Link from "next/link";
 import { getHeroByName } from "@/lib/heroes";
 import { HeroClassIcon } from "@/components/heroes/HeroClassIcon";
-import { MetaShareModal } from "@/components/meta/MetaShareCard";
+import { MetaShareModal, DonutChart, buildSegments } from "@/components/meta/MetaShareCard";
 import type { HeroMetaStats } from "@/lib/meta-stats";
 import type { Top8HeroMeta } from "@/lib/meta-stats";
 
@@ -18,6 +18,7 @@ interface MetaSnapshotProps {
   selectedWeek?: number | null;
   onWeekChange?: (week: number | null) => void;
   backgroundImage?: string;
+  showResults?: boolean;
 }
 
 const RANK_CLASS = ["meta-rank-1 font-black", "meta-rank-2 font-bold", "meta-rank-3 font-bold", "text-fab-muted font-bold", "text-fab-muted font-bold"];
@@ -30,7 +31,7 @@ const SORT_OPTIONS: { key: Top8Sort; label: string }[] = [
 
 const TOP8_PAGE_SIZE = 10;
 
-export const MetaSnapshot = memo(function MetaSnapshot({ topHeroes, top8Heroes, activeEventType, seasonName, seasonWeeks, selectedWeek, onWeekChange, backgroundImage }: MetaSnapshotProps) {
+export const MetaSnapshot = memo(function MetaSnapshot({ topHeroes, top8Heroes, activeEventType, seasonName, seasonWeeks, selectedWeek, onWeekChange, backgroundImage, showResults }: MetaSnapshotProps) {
   const [sortBy, setSortBy] = useState<Top8Sort>("top8");
   const [top8Page, setTop8Page] = useState(0);
   const [metaShareOpen, setMetaShareOpen] = useState(false);
@@ -55,7 +56,14 @@ export const MetaSnapshot = memo(function MetaSnapshot({ topHeroes, top8Heroes, 
     return sorted;
   }, [top8Heroes, sortBy]);
 
-  if (!showEventMode && topHeroes.length === 0) return null;
+  const donutSegments = useMemo(() => {
+    if (!showResults || !top8Heroes || top8Heroes.length === 0) return [];
+    return buildSegments(top8Heroes);
+  }, [showResults, top8Heroes]);
+
+  const donutTotal = showResults && top8Heroes ? top8Heroes.reduce((sum, h) => sum + h.count, 0) : 0;
+
+  if (!showResults && !showEventMode && topHeroes.length === 0) return null;
 
   return (
     <div className="flex flex-col">
@@ -68,21 +76,23 @@ export const MetaSnapshot = memo(function MetaSnapshot({ topHeroes, top8Heroes, 
           </div>
           <div>
             <h2 className="text-lg font-semibold text-fab-text leading-tight">
-              {isSeason ? `${seasonName} Top 8s` : showEventMode ? `${activeEventType} Top 8s` : "Meta Snapshot"}
+              {showResults ? `${seasonName} Results` : isSeason ? `${seasonName} Top 8s` : showEventMode ? `${activeEventType} Top 8s` : "Meta Snapshot"}
             </h2>
-            {showEventMode && (
+            {(showResults || showEventMode) && (
               <p className="text-xs text-fab-muted leading-tight">
-                {isSeason
-                  ? selectedWeek != null && seasonWeeks?.[selectedWeek]
-                    ? seasonWeeks[selectedWeek].label
-                    : "Season standings"
-                  : "Heroes making playoffs this week"}
+                {showResults
+                  ? "Season results"
+                  : isSeason
+                    ? selectedWeek != null && seasonWeeks?.[selectedWeek]
+                      ? seasonWeeks[selectedWeek].label
+                      : "Season standings"
+                    : "Heroes making playoffs this week"}
               </p>
             )}
           </div>
         </div>
         <div className="flex items-center gap-2 ml-3">
-          {showEventMode && sortedTop8.length > 0 && (
+          {(showEventMode || (showResults && top8Heroes && top8Heroes.length > 0)) && sortedTop8.length > 0 && (
             <button
               onClick={() => setMetaShareOpen(true)}
               className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-fab-surface border border-fab-border text-fab-dim hover:text-fab-text hover:border-fab-muted transition-colors"
@@ -103,8 +113,8 @@ export const MetaSnapshot = memo(function MetaSnapshot({ topHeroes, top8Heroes, 
       {metaShareOpen && sortedTop8.length > 0 && (
         <MetaShareModal
           heroes={sortedTop8}
-          title={isSeason ? `${seasonName} Top 8s` : `${activeEventType} Top 8s`}
-          subtitle={isSeason ? "Season standings" : "Heroes making playoffs this week"}
+          title={showResults ? `${seasonName} Results` : isSeason ? `${seasonName} Top 8s` : `${activeEventType} Top 8s`}
+          subtitle={showResults ? "Season results" : isSeason ? "Season standings" : "Heroes making playoffs this week"}
           onClose={() => setMetaShareOpen(false)}
         />
       )}
@@ -123,7 +133,44 @@ export const MetaSnapshot = memo(function MetaSnapshot({ topHeroes, top8Heroes, 
             }}
           />
         )}
-        {showEventMode ? (
+        {showResults && donutSegments.length > 0 ? (
+          // Results mode: show donut chart
+          <div className="relative z-[1] p-5">
+            <div className="flex flex-col items-center gap-4">
+              {/* Donut chart */}
+              <div className="relative">
+                <DonutChart segments={donutSegments} size={180} strokeWidth={28} />
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <p className="text-3xl font-black text-fab-text leading-none">{donutTotal}</p>
+                  <p className="text-[9px] uppercase tracking-wider font-semibold text-fab-dim">Top 8s</p>
+                </div>
+              </div>
+
+              {/* Legend */}
+              <div className="w-full grid grid-cols-2 gap-x-4 gap-y-1">
+                {donutSegments.map((seg) => (
+                  <div key={seg.hero} className="flex items-center gap-1.5 min-w-0">
+                    <div className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ backgroundColor: seg.color }} />
+                    <span className="text-xs text-fab-text font-medium truncate flex-1">{seg.hero}</span>
+                    <span className="text-[10px] text-fab-muted font-bold shrink-0 tabular-nums">{seg.count}</span>
+                    <span className="text-[10px] text-fab-dim shrink-0 tabular-nums w-8 text-right">{seg.percent.toFixed(0)}%</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Top champion */}
+              {top8Heroes && top8Heroes.length > 0 && (() => {
+                const topChampion = top8Heroes.find((h) => h.champions > 0);
+                return topChampion ? (
+                  <div className="w-full border-t border-fab-border pt-2 flex items-center justify-between">
+                    <p className="text-[10px] text-fab-dim uppercase tracking-wider font-semibold">Most Wins</p>
+                    <p className="text-xs font-bold text-fab-gold">{topChampion.hero} ({topChampion.champions})</p>
+                  </div>
+                ) : null;
+              })()}
+            </div>
+          </div>
+        ) : showEventMode ? (
           // Event weekend: show top 8 hero placements
           <div className="relative z-[1]">
             {/* Week pills for season mode */}

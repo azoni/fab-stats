@@ -13,7 +13,7 @@ import { useFeaturedEvents } from "@/hooks/useFeaturedEvents";
 import { computeMetaStats, computeTop8HeroMeta, detectActiveEventType } from "@/lib/meta-stats";
 import { getWeekStart } from "@/lib/leaderboard";
 import { useSeasons } from "@/hooks/useSeasons";
-import { getCurrentSeason, getSeasonWeeks } from "@/lib/seasons";
+import { getCurrentSeason, getResultsSeason, getSeasonWeeks } from "@/lib/seasons";
 import { ActivityFeed } from "@/components/home/ActivityFeed";
 import { RecentEvents } from "@/components/home/RecentEvents";
 import { QuickStats } from "@/components/home/QuickStats";
@@ -30,6 +30,8 @@ import { getEventShowcase } from "@/lib/event-showcase";
 import { EventShowcase } from "@/components/home/EventShowcase";
 import { BadgeStrip } from "@/components/profile/BadgeStrip";
 import { getHeroByName } from "@/lib/heroes";
+import { loadUserResult } from "@/lib/fabdoku/firestore";
+import { getTodayDateStr } from "@/lib/fabdoku/puzzle-generator";
 import type { Poll, EventShowcaseConfig } from "@/types";
 
 function ResourcesPopout() {
@@ -122,7 +124,14 @@ export default function Dashboard() {
   const [profileShareOpen, setProfileShareOpen] = useState(false);
   const [activePrediction, setActivePrediction] = useState<Poll | null>(null);
   const [showcaseConfig, setShowcaseConfig] = useState<EventShowcaseConfig | null>(null);
+  const [fabdokuScore, setFabdokuScore] = useState<number | null>(null);
   const leaderboardUpdated = useRef(false);
+
+  // Load today's fabdoku score for the current user
+  useEffect(() => {
+    if (!user) return;
+    loadUserResult(user.uid, getTodayDateStr()).then((r) => setFabdokuScore(r?.score ?? null)).catch(() => {});
+  }, [user]);
 
   // Fetch active prediction + event showcase config
   useEffect(() => {
@@ -188,13 +197,15 @@ export default function Dashboard() {
   // Community section data
   const { seasons } = useSeasons();
   const currentSeason = useMemo(() => getCurrentSeason(seasons), [seasons]);
-  const seasonWeeks = useMemo(() => currentSeason ? getSeasonWeeks(currentSeason) : [], [currentSeason]);
+  const resultsSeason = useMemo(() => currentSeason ? null : getResultsSeason(seasons), [seasons, currentSeason]);
+  const displaySeason = currentSeason || resultsSeason;
+  const seasonWeeks = useMemo(() => displaySeason ? getSeasonWeeks(displaySeason) : [], [displaySeason]);
   const [selectedWeek, setSelectedWeek] = useState<number | null>(null);
 
   const activeEventType = useMemo(() => {
-    if (currentSeason) return currentSeason.eventType;
+    if (displaySeason) return displaySeason.eventType;
     return detectActiveEventType(lbEntries);
-  }, [lbEntries, currentSeason]);
+  }, [lbEntries, displaySeason]);
 
   const communityMeta = useMemo(() => {
     if (activeEventType) return computeMetaStats(lbEntries);
@@ -204,19 +215,19 @@ export default function Dashboard() {
   const communityTopHeroes = useMemo(() => communityMeta.heroStats.slice(0, 5), [communityMeta]);
 
   const top8Heroes = useMemo(() => {
-    if (currentSeason) {
+    if (displaySeason) {
       // Season mode: filter by season's date range, optionally narrowed to a week
-      let sinceDate = currentSeason.startDate;
-      let untilDate = currentSeason.endDate;
+      let sinceDate = displaySeason.startDate;
+      let untilDate = displaySeason.endDate;
       if (selectedWeek !== null && seasonWeeks[selectedWeek]) {
         sinceDate = seasonWeeks[selectedWeek].start;
         untilDate = seasonWeeks[selectedWeek].end;
       }
-      return computeTop8HeroMeta(lbEntries, currentSeason.eventType, currentSeason.format, sinceDate, untilDate);
+      return computeTop8HeroMeta(lbEntries, displaySeason.eventType, displaySeason.format, sinceDate, untilDate);
     }
     if (!activeEventType) return [];
     return computeTop8HeroMeta(lbEntries, activeEventType, undefined, getWeekStart());
-  }, [lbEntries, activeEventType, currentSeason, selectedWeek, seasonWeeks]);
+  }, [lbEntries, activeEventType, displaySeason, selectedWeek, seasonWeeks]);
   const rankMap = useMemo(() => computeRankMap(lbEntries), [lbEntries]);
   const featuredProfiles = useMemo(() => selectFeaturedProfiles(lbEntries), [lbEntries]);
   const eventTierMap = useMemo(() => computeEventTierMap(lbEntries), [lbEntries]);
@@ -424,7 +435,7 @@ export default function Dashboard() {
             </div>
             {user && <ActivityFeed rankMap={rankMap} eventTierMap={eventTierMap} />}
           </div>
-          <MetaSnapshot topHeroes={communityTopHeroes} top8Heroes={top8Heroes} activeEventType={activeEventType} seasonName={currentSeason?.name} seasonWeeks={seasonWeeks} selectedWeek={selectedWeek} onWeekChange={setSelectedWeek} backgroundImage={currentSeason?.backgroundImage} />
+          <MetaSnapshot topHeroes={communityTopHeroes} top8Heroes={top8Heroes} activeEventType={activeEventType} seasonName={displaySeason?.name} seasonWeeks={seasonWeeks} selectedWeek={selectedWeek} onWeekChange={setSelectedWeek} backgroundImage={displaySeason?.backgroundImage} showResults={!!resultsSeason} />
         </div>
       )}
 
@@ -551,6 +562,19 @@ export default function Dashboard() {
                 </div>
               </div>
               <BadgeStrip matchCount={matches.length} isCreator={isCreator} className="mt-2 ml-1" />
+              {/* Daily FaBdoku score — bottom right */}
+              {fabdokuScore !== null && (
+                <Link href="/fabdoku" className="absolute bottom-1.5 right-2.5 flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-fab-bg/80 border border-fab-border hover:border-fab-gold/40 transition-colors group z-10" title="Today's FaBdoku score">
+                  <svg className="w-3 h-3 text-fab-dim group-hover:text-fab-gold transition-colors" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                    <rect x="3" y="3" width="18" height="18" rx="2" />
+                    <line x1="3" y1="9" x2="21" y2="9" />
+                    <line x1="3" y1="15" x2="21" y2="15" />
+                    <line x1="9" y1="3" x2="9" y2="21" />
+                    <line x1="15" y1="3" x2="15" y2="21" />
+                  </svg>
+                  <span className="text-[10px] font-bold text-fab-dim group-hover:text-fab-gold transition-colors tabular-nums">{fabdokuScore}/9</span>
+                </Link>
+              )}
             </div>
             {/* Quick stats + recent events + player spotlight */}
             <QuickStats overall={overall} last30={last30} />
@@ -560,7 +584,7 @@ export default function Dashboard() {
             )}
           </div>
           <div className="flex flex-col gap-6">
-            <MetaSnapshot topHeroes={communityTopHeroes} top8Heroes={top8Heroes} activeEventType={activeEventType} seasonName={currentSeason?.name} seasonWeeks={seasonWeeks} selectedWeek={selectedWeek} onWeekChange={setSelectedWeek} backgroundImage={currentSeason?.backgroundImage} />
+            <MetaSnapshot topHeroes={communityTopHeroes} top8Heroes={top8Heroes} activeEventType={activeEventType} seasonName={displaySeason?.name} seasonWeeks={seasonWeeks} selectedWeek={selectedWeek} onWeekChange={setSelectedWeek} backgroundImage={displaySeason?.backgroundImage} showResults={!!resultsSeason} />
             {user && <ActivityFeed rankMap={rankMap} eventTierMap={eventTierMap} />}
           </div>
         </div>

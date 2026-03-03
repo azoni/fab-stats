@@ -88,6 +88,16 @@ export async function loadStats(
   return snap.exists() ? (snap.data() as FaBdokuStats) : null;
 }
 
+/** Load a specific user's result for a given date. */
+export async function loadUserResult(
+  uid: string,
+  dateStr: string
+): Promise<FaBdokuResult | null> {
+  const ref = doc(db, RESULTS_COL, `${dateStr}_${uid}`);
+  const snap = await getDoc(ref);
+  return snap.exists() ? (snap.data() as FaBdokuResult) : null;
+}
+
 /** Load all results for a given date (for uniqueness scoring). */
 export async function loadTodayResults(
   dateStr: string

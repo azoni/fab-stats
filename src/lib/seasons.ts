@@ -39,6 +39,11 @@ export function getCurrentSeason(seasons: Season[]): Season | null {
   return seasons.find((s) => s.active) || null;
 }
 
+/** Return the first season with showResults enabled (for post-season donut chart display) */
+export function getResultsSeason(seasons: Season[]): Season | null {
+  return seasons.find((s) => s.showResults) || null;
+}
+
 /** Split a season into 7-day week chunks */
 export function getSeasonWeeks(season: Season): { label: string; start: string; end: string }[] {
   const weeks: { label: string; start: string; end: string }[] = [];

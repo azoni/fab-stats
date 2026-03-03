@@ -1664,16 +1664,31 @@ export default function AdminPage() {
                     <div className="flex items-center gap-2">
                       <span className="text-xs text-fab-dim font-medium">Season {i + 1}</span>
                       {s.active && <span className="text-[10px] text-fab-win font-medium">(Active)</span>}
+                      {s.showResults && <span className="text-[10px] text-fab-gold font-medium">(Results)</span>}
                     </div>
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setSeasonsList((prev) => prev.map((s2, j) => j === i ? { ...s2, active: !s2.active } : s2))}
-                        className={`relative w-8 h-4.5 rounded-full transition-colors ${s.active ? "bg-fab-win" : "bg-fab-border"}`}
-                        title={s.active ? "Deactivate" : "Activate"}
-                      >
-                        <span className={`absolute top-0.5 left-0.5 w-3.5 h-3.5 rounded-full bg-white transition-transform ${s.active ? "translate-x-3.5" : ""}`} />
-                      </button>
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[10px] text-fab-dim">Active</span>
+                        <button
+                          type="button"
+                          onClick={() => setSeasonsList((prev) => prev.map((s2, j) => j === i ? { ...s2, active: !s2.active } : s2))}
+                          className={`relative w-8 h-4.5 rounded-full transition-colors ${s.active ? "bg-fab-win" : "bg-fab-border"}`}
+                          title={s.active ? "Deactivate" : "Activate"}
+                        >
+                          <span className={`absolute top-0.5 left-0.5 w-3.5 h-3.5 rounded-full bg-white transition-transform ${s.active ? "translate-x-3.5" : ""}`} />
+                        </button>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[10px] text-fab-dim">Results</span>
+                        <button
+                          type="button"
+                          onClick={() => setSeasonsList((prev) => prev.map((s2, j) => j === i ? { ...s2, showResults: !s2.showResults } : s2))}
+                          className={`relative w-8 h-4.5 rounded-full transition-colors ${s.showResults ? "bg-fab-gold" : "bg-fab-border"}`}
+                          title={s.showResults ? "Hide results" : "Show donut chart on homepage"}
+                        >
+                          <span className={`absolute top-0.5 left-0.5 w-3.5 h-3.5 rounded-full bg-white transition-transform ${s.showResults ? "translate-x-3.5" : ""}`} />
+                        </button>
+                      </div>
                       <button
                         onClick={() => setSeasonsList((prev) => prev.filter((_, j) => j !== i))}
                         className="text-xs text-fab-loss hover:text-fab-loss/80 transition-colors"
@@ -1750,7 +1765,7 @@ export default function AdminPage() {
                 </div>
               ))}
               <button
-                onClick={() => setSeasonsList((prev) => [...prev, { id: "", name: "", startDate: "", endDate: "", format: "", eventType: "", active: false, backgroundImage: "" }])}
+                onClick={() => setSeasonsList((prev) => [...prev, { id: "", name: "", startDate: "", endDate: "", format: "", eventType: "", active: false, backgroundImage: "", showResults: false }])}
                 className="w-full py-2 rounded-lg text-sm font-medium border border-dashed border-fab-border text-fab-muted hover:text-fab-text hover:border-fab-gold/30 transition-colors"
               >
                 + Add Season
