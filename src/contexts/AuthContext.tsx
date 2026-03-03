@@ -75,13 +75,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Listen to auth state
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (u) => {
-      // Skip anonymous auth users — used only for FaBdoku Firestore writes
-      if (u?.isAnonymous) {
-        setLoading(false);
-        setProfileLoading(false);
-        return;
-      }
-
       setUser(u);
 
       // Migrate guest data to Firestore when user signs in

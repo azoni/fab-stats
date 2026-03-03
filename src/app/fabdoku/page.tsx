@@ -1,8 +1,6 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { signInAnonymously } from "firebase/auth";
-import { auth } from "@/lib/firebase";
 import { useAuth } from "@/contexts/AuthContext";
 
 function GridIcon({ className }: { className?: string }) {
@@ -39,6 +37,7 @@ import {
   saveResult,
   loadStats,
   savePicks,
+  loadPicks,
   loadTodayResults,
   computeUniqueness,
   buildLocalPicks,
@@ -100,11 +99,17 @@ export default function FaBdokuPage() {
   const refreshUniqueness = useCallback(
     async (state: GameState): Promise<UniquenessData | null> => {
       try {
-        // Build picks from results (deduped by uid, readable by everyone)
+        // Prefer the atomic picks counter (includes anonymous players)
+        const pickData = await loadPicks(state.date);
+        if (pickData) {
+          const data = computeUniqueness(state, pickData);
+          setUniqueness(data);
+          return data;
+        }
+        // Fallback: build from results (auth users only)
         const results = await loadTodayResults(state.date);
         if (results.length > 0) {
-          const pickData = buildPicksFromResults(results);
-          const data = computeUniqueness(state, pickData);
+          const data = computeUniqueness(state, buildPicksFromResults(results));
           setUniqueness(data);
           return data;
         }
@@ -203,29 +208,25 @@ export default function FaBdokuPage() {
 
       // Save to Firestore on completion
       if (isCompleted) {
-        // Get a UID for Firestore writes — sign in anonymously if needed
-        let effectiveUid = user?.uid;
-        if (!effectiveUid) {
-          try {
-            const cred = await signInAnonymously(auth);
-            effectiveUid = cred.user.uid;
-          } catch {
-            // Anonymous sign-in failed (not enabled or offline)
-          }
-        }
-
-        if (effectiveUid) {
+        if (user?.uid) {
+          // Authenticated: save result + picks + stats
           try {
             const result = buildResult(newState);
-            await saveResult(effectiveUid, result);
+            await saveResult(user.uid, result);
             if (!isReplay) await savePicks(newState);
-            // Only load stats for real (non-anonymous) users
-            if (user?.uid) {
-              const updatedStats = await loadStats(user.uid);
-              if (updatedStats) setStats(updatedStats);
-            }
+            const updatedStats = await loadStats(user.uid);
+            if (updatedStats) setStats(updatedStats);
           } catch {
             // Silently fail — game state is saved locally
+          }
+        } else {
+          // Anonymous: just save picks (counts toward uniqueness, no auth needed)
+          if (!isReplay) {
+            try {
+              await savePicks(newState);
+            } catch {
+              // Firestore write failed — anonymous picks not saved
+            }
           }
         }
         setShowResult(true);

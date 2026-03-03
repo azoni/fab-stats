@@ -398,8 +398,8 @@ service cloud.firestore {
     match /fabdoku-picks/{dateStr} {
       // Anyone can read (needed to display uniqueness % after game)
       allow read: if true;
-      // Authenticated users can create or update (increment counters)
-      allow create, update: if request.auth != null;
+      // Anyone can create or update (anonymous players contribute to uniqueness)
+      allow create, update: if true;
     }
     // Per-user FaBdoku stats (streaks, games played)
     match /users/{userId}/fabdoku-stats/{docId} {
