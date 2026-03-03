@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
+import { signInAnonymously } from "firebase/auth";
+import { auth } from "@/lib/firebase";
 import { useAuth } from "@/contexts/AuthContext";
 
 function GridIcon({ className }: { className?: string }) {
@@ -201,13 +203,27 @@ export default function FaBdokuPage() {
 
       // Save to Firestore on completion
       if (isCompleted) {
-        if (user?.uid) {
+        // Get a UID for Firestore writes — sign in anonymously if needed
+        let effectiveUid = user?.uid;
+        if (!effectiveUid) {
+          try {
+            const cred = await signInAnonymously(auth);
+            effectiveUid = cred.user.uid;
+          } catch {
+            // Anonymous sign-in failed (not enabled or offline)
+          }
+        }
+
+        if (effectiveUid) {
           try {
             const result = buildResult(newState);
-            await saveResult(user.uid, result);
+            await saveResult(effectiveUid, result);
             if (!isReplay) await savePicks(newState);
-            const updatedStats = await loadStats(user.uid);
-            if (updatedStats) setStats(updatedStats);
+            // Only load stats for real (non-anonymous) users
+            if (user?.uid) {
+              const updatedStats = await loadStats(user.uid);
+              if (updatedStats) setStats(updatedStats);
+            }
           } catch {
             // Silently fail — game state is saved locally
           }
