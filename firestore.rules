@@ -399,7 +399,13 @@ service cloud.firestore {
       // Anyone can read (needed to display uniqueness % after game)
       allow read: if true;
       // Anyone can create or update (anonymous players contribute to uniqueness)
-      allow create, update: if true;
+      // Validate: must have totalPlayers (number) and cells (map), doc size stays reasonable
+      allow create: if request.resource.data.totalPlayers is int
+        && request.resource.data.cells is map
+        && request.resource.data.keys().hasOnly(['totalPlayers', 'cells']);
+      allow update: if request.resource.data.totalPlayers is int
+        && request.resource.data.cells is map
+        && request.resource.data.keys().hasOnly(['totalPlayers', 'cells']);
     }
     // Per-user FaBdoku stats (streaks, games played)
     match /users/{userId}/fabdoku-stats/{docId} {

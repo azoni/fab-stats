@@ -40,6 +40,22 @@ export function saveGameState(state: GameState): void {
   }
 }
 
+/** Check if picks have already been saved for this date (prevents double-counting). */
+export function hasPicksSaved(dateStr: string): boolean {
+  if (typeof window === "undefined") return false;
+  return localStorage.getItem(`fabdoku-picks-saved-${dateStr}`) === "1";
+}
+
+/** Mark picks as saved for this date. */
+export function markPicksSaved(dateStr: string): void {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(`fabdoku-picks-saved-${dateStr}`, "1");
+  } catch {
+    // Storage full — non-critical
+  }
+}
+
 /** Remove game states older than 7 days. */
 export function cleanupOldStates(): void {
   if (typeof window === "undefined") return;
@@ -50,8 +66,9 @@ export function cleanupOldStates(): void {
 
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
-      if (!key?.startsWith(STORAGE_PREFIX)) continue;
-      const dateStr = key.slice(STORAGE_PREFIX.length);
+      if (!key?.startsWith(STORAGE_PREFIX) && !key?.startsWith("fabdoku-picks-saved-")) continue;
+      const prefix = key.startsWith(STORAGE_PREFIX) ? STORAGE_PREFIX : "fabdoku-picks-saved-";
+      const dateStr = key.slice(prefix.length);
       const date = new Date(dateStr);
       if (isNaN(date.getTime())) continue;
       if (now - date.getTime() > sevenDays) {

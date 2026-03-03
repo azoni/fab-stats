@@ -31,6 +31,8 @@ import {
   saveGameState,
   createFreshGameState,
   cleanupOldStates,
+  hasPicksSaved,
+  markPicksSaved,
 } from "@/lib/fabdoku/game-state";
 import {
   buildResult,
@@ -208,25 +210,29 @@ export default function FaBdokuPage() {
 
       // Save to Firestore on completion
       if (isCompleted) {
+        const shouldSavePicks = !isReplay && !hasPicksSaved(dateStr);
+
         if (user?.uid) {
           // Authenticated: save result + picks + stats
           try {
             const result = buildResult(newState);
             await saveResult(user.uid, result);
-            if (!isReplay) await savePicks(newState);
+            if (shouldSavePicks) {
+              await savePicks(newState);
+              markPicksSaved(dateStr);
+            }
             const updatedStats = await loadStats(user.uid);
             if (updatedStats) setStats(updatedStats);
           } catch {
             // Silently fail — game state is saved locally
           }
-        } else {
-          // Anonymous: just save picks (counts toward uniqueness, no auth needed)
-          if (!isReplay) {
-            try {
-              await savePicks(newState);
-            } catch {
-              // Firestore write failed — anonymous picks not saved
-            }
+        } else if (shouldSavePicks) {
+          // Anonymous: just save picks (counts toward uniqueness)
+          try {
+            await savePicks(newState);
+            markPicksSaved(dateStr);
+          } catch {
+            // Firestore write failed — anonymous picks not saved
           }
         }
         setShowResult(true);
