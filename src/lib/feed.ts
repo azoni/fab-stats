@@ -179,6 +179,25 @@ export async function createFaBdokuFeedEvent(
   invalidateFeedCache();
 }
 
+/** Delete all FaBdoku feed events for a user on a given date (used by admin reset). */
+export async function deleteFaBdokuFeedEvents(
+  userId: string,
+  puzzleDate: string,
+): Promise<void> {
+  const q = query(
+    feedCollection(),
+    where("userId", "==", userId),
+    where("type", "==", "fabdoku"),
+    where("date", "==", puzzleDate),
+  );
+  const snap = await getDocs(q);
+  if (snap.empty) return;
+  const batch = writeBatch(db);
+  snap.docs.forEach((d) => batch.delete(d.ref));
+  await batch.commit();
+  invalidateFeedCache();
+}
+
 /** Delete all placement feed events for a specific event (used when an event is deleted). */
 export async function deleteFeedEventsForEvent(
   userId: string,

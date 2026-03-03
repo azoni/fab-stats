@@ -45,7 +45,7 @@ import {
   buildLocalPicks,
   buildPicksFromResults,
 } from "@/lib/fabdoku/firestore";
-import { createFaBdokuFeedEvent } from "@/lib/feed";
+import { createFaBdokuFeedEvent, deleteFaBdokuFeedEvents } from "@/lib/feed";
 import type { GameState, FaBdokuStats, UniquenessData } from "@/lib/fabdoku/types";
 
 function getYesterdayDateStr(): string {
@@ -401,6 +401,10 @@ export default function FaBdokuPage() {
                 if (typeof window !== "undefined") {
                   localStorage.removeItem(`fabdoku-${dateStr}`);
                   localStorage.removeItem(`fabdoku-picks-saved-${dateStr}`);
+                }
+                // Delete existing feed events so next completion can post fresh
+                if (user?.uid) {
+                  deleteFaBdokuFeedEvents(user.uid, dateStr).catch(() => {});
                 }
                 setGameState(createFreshGameState(dateStr));
                 setShowResult(false);
