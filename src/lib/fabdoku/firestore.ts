@@ -96,7 +96,13 @@ export async function loadStats(
   try {
     const statsRef = doc(db, "users", uid, STATS_DOC, "data");
     const snap = await getDoc(statsRef);
-    return snap.exists() ? (snap.data() as FaBdokuStats) : null;
+    if (snap.exists()) {
+      const stats = snap.data() as FaBdokuStats;
+      // Backfill public collection so other viewers can see stats
+      setDoc(doc(db, STATS_PUBLIC_COL, uid), stats).catch(() => {});
+      return stats;
+    }
+    return null;
   } catch {
     return null;
   }

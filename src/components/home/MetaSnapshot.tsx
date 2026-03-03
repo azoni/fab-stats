@@ -145,7 +145,7 @@ export const MetaSnapshot = memo(function MetaSnapshot({ topHeroes, top8Heroes, 
                   <p className="text-3xl font-black text-fab-text leading-none">{donutTotal}</p>
                   <p className="text-[10px] uppercase tracking-wider font-bold text-fab-muted mt-0.5">Top 8s</p>
                   {totalPlayers > 0 && (
-                    <p className="text-[9px] text-fab-dim mt-1">{totalPlayers} players</p>
+                    <p className="text-[10px] text-fab-muted mt-1">{totalPlayers} players</p>
                   )}
                 </div>
               </div>
