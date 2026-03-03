@@ -93,15 +93,18 @@ export default function FaBdokuPage() {
 
   // Load uniqueness data for a completed game
   const refreshUniqueness = useCallback(
-    async (state: GameState) => {
+    async (state: GameState): Promise<UniquenessData | null> => {
       try {
         const pickData = await loadPicks(state.date);
         if (pickData) {
-          setUniqueness(computeUniqueness(state, pickData));
+          const data = computeUniqueness(state, pickData);
+          setUniqueness(data);
+          return data;
         }
       } catch {
         // Non-critical — uniqueness display is optional
       }
+      return null;
     },
     []
   );
@@ -197,14 +200,15 @@ export default function FaBdokuPage() {
           }
         }
         setShowResult(true);
-        refreshUniqueness(newState);
 
-        // Post to activity feed (non-blocking)
+        // Load uniqueness then post to activity feed
+        const uData = await refreshUniqueness(newState);
         if (profile) {
           const cc = newCells.flat().filter((c) => c.correct).length;
           createFaBdokuFeedEvent(
             profile, "completed", dateStr, isWon, cc,
             newGuessesUsed, buildGrid(newState),
+            uData?.score,
           ).catch(() => {});
         }
       }
@@ -340,17 +344,7 @@ export default function FaBdokuPage() {
           gameState={gameState}
           stats={stats}
           uniqueness={uniqueness}
-          onShare={() => {
-            setShowShare(true);
-            if (profile) {
-              const cc = gameState.cells.flat().filter((c) => c.correct).length;
-              createFaBdokuFeedEvent(
-                profile, "shared", dateStr, gameState.won, cc,
-                gameState.guessesUsed, buildGrid(gameState),
-                uniqueness?.score,
-              ).catch(() => {});
-            }
-          }}
+          onShare={() => setShowShare(true)}
         />
       )}
 
