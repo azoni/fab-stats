@@ -114,17 +114,19 @@ export function FaBdokuCell({
           <XIcon className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-white" />
         )}
       </div>
-      {/* Hero name + uniqueness % overlay */}
-      <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 to-transparent px-1 pb-0.5 pt-2 sm:px-1.5 sm:pb-1 sm:pt-3">
-        {pct !== undefined ? (
-          <p className={`text-[10px] sm:text-xs font-bold leading-tight ${getPctColor(pct)}`}>
+      {/* Uniqueness % center overlay */}
+      {pct !== undefined && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+          <span className={`text-lg sm:text-xl font-bold drop-shadow-lg ${getPctColor(pct)}`}>
             {pct}%
-          </p>
-        ) : (
-          <p className="text-[8px] sm:text-[9px] font-bold text-white leading-tight truncate">
-            {shortName}
-          </p>
-        )}
+          </span>
+        </div>
+      )}
+      {/* Hero name overlay */}
+      <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 to-transparent px-1 pb-0.5 pt-2 sm:px-1.5 sm:pb-1 sm:pt-3">
+        <p className="text-[8px] sm:text-[9px] font-bold text-white leading-tight truncate">
+          {shortName}
+        </p>
       </div>
     </div>
   );
