@@ -1,7 +1,7 @@
 "use client";
 import { useState, useCallback } from "react";
 import Link from "next/link";
-import type { FeedEvent, ImportFeedEvent, FaBdokuFeedEvent, CrosswordFeedEvent } from "@/types";
+import type { FeedEvent, ImportFeedEvent, FaBdokuFeedEvent, CrosswordFeedEvent, HeroGuesserFeedEvent, MatchupManiaFeedEvent, TriviaFeedEvent, TimelineFeedEvent, ConnectionsFeedEvent } from "@/types";
 import { rankBorderClass } from "@/lib/leaderboard-ranks";
 import { playerHref } from "@/lib/constants";
 import { FEED_REACTIONS, addFeedReaction, removeFeedReaction, deleteFeedEvent } from "@/lib/feed";
@@ -365,6 +365,11 @@ export function FeedCard({ event, compact, rankMap, eventTierMap, underlineTierM
           {event.type === "placement" && <PlacementContent event={event} compact={compact} />}
           {event.type === "fabdoku" && <FaBdokuContent event={event} compact={compact} />}
           {event.type === "crossword" && <CrosswordContent event={event} compact={compact} />}
+          {event.type === "heroguesser" && <HeroGuesserContent event={event} compact={compact} />}
+          {event.type === "matchupmania" && <MatchupManiaContent event={event} compact={compact} />}
+          {event.type === "trivia" && <TriviaContent event={event} compact={compact} />}
+          {event.type === "timeline" && <TimelineContent event={event} compact={compact} />}
+          {event.type === "connections" && <ConnectionsContent event={event} compact={compact} />}
           <ReactionBar event={event} userId={userId} compact={compact} />
         </div>
       </div>
@@ -567,6 +572,131 @@ function CrosswordContent({ event, compact }: { event: CrosswordFeedEvent; compa
       ) : hintText && (
         <p className="text-xs text-fab-dim mt-0.5">{hintText}</p>
       )}
+    </div>
+  );
+}
+
+function TriviaContent({ event, compact }: { event: TriviaFeedEvent; compact?: boolean }) {
+  const actionText = event.subtype === "shared" ? "shared" : "completed";
+  const statusText = `${event.score}/${event.totalQuestions}`;
+
+  if (compact) {
+    return (
+      <p className="text-[11px] text-fab-muted">
+        {actionText} FaB Trivia &middot;{" "}
+        <span className={`font-semibold ${event.won ? "text-fab-win" : "text-fab-loss"}`}>{statusText}</span>
+      </p>
+    );
+  }
+
+  return (
+    <div className="mt-1">
+      <p className="text-sm text-fab-muted">
+        {actionText}{" "}
+        <Link href="/trivia" className="font-semibold text-red-400 hover:underline">FaB Trivia</Link>
+        {" "}&mdash;{" "}
+        <span className={`font-semibold ${event.won ? "text-fab-win" : "text-fab-loss"}`}>{statusText} correct</span>
+      </p>
+    </div>
+  );
+}
+
+function TimelineContent({ event, compact }: { event: TimelineFeedEvent; compact?: boolean }) {
+  const actionText = event.subtype === "shared" ? "shared" : "completed";
+  const statusText = event.won ? `Won with ${event.livesRemaining} lives left` : "Failed";
+
+  if (compact) {
+    return (
+      <p className="text-[11px] text-fab-muted">
+        {actionText} Timeline &middot;{" "}
+        <span className={`font-semibold ${event.won ? "text-fab-win" : "text-fab-loss"}`}>{statusText}</span>
+      </p>
+    );
+  }
+
+  return (
+    <div className="mt-1">
+      <p className="text-sm text-fab-muted">
+        {actionText}{" "}
+        <Link href="/timeline" className="font-semibold text-cyan-400 hover:underline">FaB Timeline</Link>
+        {" "}&mdash;{" "}
+        <span className={`font-semibold ${event.won ? "text-fab-win" : "text-fab-loss"}`}>{statusText}</span>
+      </p>
+    </div>
+  );
+}
+
+function ConnectionsContent({ event, compact }: { event: ConnectionsFeedEvent; compact?: boolean }) {
+  const actionText = event.subtype === "shared" ? "shared" : "completed";
+  const statusText = event.won ? `Solved (${event.mistakesUsed} mistakes)` : `${event.groupsFound}/4 groups`;
+
+  if (compact) {
+    return (
+      <p className="text-[11px] text-fab-muted">
+        {actionText} Connections &middot;{" "}
+        <span className={`font-semibold ${event.won ? "text-fab-win" : "text-fab-loss"}`}>{statusText}</span>
+      </p>
+    );
+  }
+
+  return (
+    <div className="mt-1">
+      <p className="text-sm text-fab-muted">
+        {actionText}{" "}
+        <Link href="/connections" className="font-semibold text-yellow-400 hover:underline">FaB Connections</Link>
+        {" "}&mdash;{" "}
+        <span className={`font-semibold ${event.won ? "text-fab-win" : "text-fab-loss"}`}>{statusText}</span>
+      </p>
+    </div>
+  );
+}
+
+function MatchupManiaContent({ event, compact }: { event: MatchupManiaFeedEvent; compact?: boolean }) {
+  const actionText = event.subtype === "shared" ? "shared" : "completed";
+  const statusText = `${event.score}/${event.totalRounds}`;
+
+  if (compact) {
+    return (
+      <p className="text-[11px] text-fab-muted">
+        {actionText} Matchup Mania &middot;{" "}
+        <span className={`font-semibold ${event.won ? "text-fab-win" : "text-fab-loss"}`}>{statusText}</span>
+      </p>
+    );
+  }
+
+  return (
+    <div className="mt-1">
+      <p className="text-sm text-fab-muted">
+        {actionText}{" "}
+        <Link href="/matchupmania" className="font-semibold text-orange-400 hover:underline">Matchup Mania</Link>
+        {" "}&mdash;{" "}
+        <span className={`font-semibold ${event.won ? "text-fab-win" : "text-fab-loss"}`}>{statusText} correct</span>
+      </p>
+    </div>
+  );
+}
+
+function HeroGuesserContent({ event, compact }: { event: HeroGuesserFeedEvent; compact?: boolean }) {
+  const actionText = event.subtype === "shared" ? "shared" : "completed";
+  const statusText = event.won ? `Solved in ${event.guessCount}/${event.maxGuesses}` : `Failed ${event.guessCount}/${event.maxGuesses}`;
+
+  if (compact) {
+    return (
+      <p className="text-[11px] text-fab-muted">
+        {actionText} Hero Guesser &middot;{" "}
+        <span className={`font-semibold ${event.won ? "text-fab-win" : "text-fab-loss"}`}>{statusText}</span>
+      </p>
+    );
+  }
+
+  return (
+    <div className="mt-1">
+      <p className="text-sm text-fab-muted">
+        {actionText}{" "}
+        <Link href="/heroguesser" className="font-semibold text-purple-400 hover:underline">Hero Guesser</Link>
+        {" "}&mdash;{" "}
+        <span className={`font-semibold ${event.won ? "text-fab-win" : "text-fab-loss"}`}>{statusText}</span>
+      </p>
     </div>
   );
 }

@@ -359,7 +359,52 @@ export interface CrosswordFeedEvent extends FeedEventBase {
   revealsUsed: number;
 }
 
-export type FeedEvent = ImportFeedEvent | AchievementFeedEvent | PlacementFeedEvent | FaBdokuFeedEvent | CrosswordFeedEvent;
+export interface HeroGuesserFeedEvent extends FeedEventBase {
+  type: "heroguesser";
+  subtype: "completed" | "shared";
+  date: string;
+  won: boolean;
+  guessCount: number;
+  maxGuesses: number;
+}
+
+export interface MatchupManiaFeedEvent extends FeedEventBase {
+  type: "matchupmania";
+  subtype: "completed" | "shared";
+  date: string;
+  won: boolean;
+  score: number;
+  totalRounds: number;
+}
+
+export interface TriviaFeedEvent extends FeedEventBase {
+  type: "trivia";
+  subtype: "completed" | "shared";
+  date: string;
+  won: boolean;
+  score: number;
+  totalQuestions: number;
+}
+
+export interface TimelineFeedEvent extends FeedEventBase {
+  type: "timeline";
+  subtype: "completed" | "shared";
+  date: string;
+  won: boolean;
+  livesRemaining: number;
+  totalItems: number;
+}
+
+export interface ConnectionsFeedEvent extends FeedEventBase {
+  type: "connections";
+  subtype: "completed" | "shared";
+  date: string;
+  won: boolean;
+  groupsFound: number;
+  mistakesUsed: number;
+}
+
+export type FeedEvent = ImportFeedEvent | AchievementFeedEvent | PlacementFeedEvent | FaBdokuFeedEvent | CrosswordFeedEvent | HeroGuesserFeedEvent | MatchupManiaFeedEvent | TriviaFeedEvent | TimelineFeedEvent | ConnectionsFeedEvent;
 
 export interface Creator {
   name: string;

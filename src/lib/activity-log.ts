@@ -12,7 +12,12 @@ export type ActivityAction =
   | "compare_share"
   | "meta_share"
   | "kudos_given"
-  | "crossword_share";
+  | "crossword_share"
+  | "heroguesser_share"
+  | "matchupmania_share"
+  | "trivia_share"
+  | "timeline_share"
+  | "connections_share";
 
 export interface ActivityEvent {
   id: string;
@@ -77,6 +82,11 @@ export const ACTIVITY_LABELS: Record<ActivityAction, string> = {
   meta_share: "shared a meta breakdown",
   kudos_given: "gave kudos",
   crossword_share: "shared a crossword result",
+  heroguesser_share: "shared a hero guesser result",
+  matchupmania_share: "shared a matchup mania result",
+  trivia_share: "shared a trivia result",
+  timeline_share: "shared a timeline result",
+  connections_share: "shared a connections result",
 };
 
 /** Admin: read feature usage counters (single doc read). */
