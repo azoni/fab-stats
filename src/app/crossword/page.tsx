@@ -210,7 +210,7 @@ export default function CrosswordPage() {
         ).catch(() => {});
       }
     },
-    [user?.uid, puzzle.words.length]
+    [user?.uid, profile, puzzle.words.length]
   );
 
   const handleLetterInput = useCallback(

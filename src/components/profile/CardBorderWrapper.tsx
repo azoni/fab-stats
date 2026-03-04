@@ -19,20 +19,149 @@ export type BorderStyleType = "beam" | "glow";
 
 function UnderlineBar({ underline }: { underline: UnderlineConfig | null | undefined }) {
   if (!underline) return null;
-  const height = underline.placement >= 4 ? 4 : underline.placement >= 3 ? 3.5 : 3;
-  const glow = underline.placement >= 3
-    ? `0 0 8px rgba(${underline.rgb},0.5)`
-    : `0 0 5px rgba(${underline.rgb},0.3)`;
+  const p = underline.placement;
+  const { color, rgb } = underline;
+
+  // ── Placement 1 (top8 / undefeated): Clean solid bar ──
+  if (p <= 1) {
+    return (
+      <div
+        className="absolute bottom-0 left-0 right-0 z-20 pointer-events-none"
+        style={{
+          height: 2.5,
+          background: color,
+          boxShadow: `0 0 4px rgba(${rgb},0.3)`,
+          borderRadius: "0 0 7px 7px",
+        }}
+      />
+    );
+  }
+
+  // ── Placement 2 (top4): Diagonal stripes texture ──
+  if (p === 2) {
+    return (
+      <div
+        className="absolute bottom-0 left-0 right-0 z-20 pointer-events-none"
+        style={{
+          height: 3.5,
+          background: `repeating-linear-gradient(
+            -45deg,
+            ${color},
+            ${color} 3px,
+            rgba(255,255,255,0.18) 3px,
+            rgba(255,255,255,0.18) 5px
+          ), ${color}`,
+          backgroundBlendMode: "overlay, normal",
+          boxShadow: `0 0 6px rgba(${rgb},0.4), 0 0 12px rgba(${rgb},0.15)`,
+          borderRadius: "0 0 7px 7px",
+        }}
+      />
+    );
+  }
+
+  // ── Placement 3 (finalist): Shimmer sweep + diamond accents ──
+  if (p === 3) {
+    return (
+      <>
+        <style>{`
+          @keyframes ul-shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+          }
+        `}</style>
+        <div className="absolute bottom-0 left-0 right-0 z-20 pointer-events-none">
+          {/* Diamond accents along the top edge */}
+          {[8, 25, 50, 75, 92].map((pos) => (
+            <div
+              key={pos}
+              style={{
+                position: "absolute",
+                left: `${pos}%`,
+                top: -3,
+                width: 5,
+                height: 5,
+                transform: "rotate(45deg)",
+                background: color,
+                boxShadow: `0 0 4px rgba(${rgb},0.6)`,
+                opacity: 0.7,
+              }}
+            />
+          ))}
+          {/* Main bar with animated shimmer */}
+          <div
+            style={{
+              height: 4,
+              background: `linear-gradient(90deg, ${color} 0%, ${color} 35%, rgba(255,255,255,0.45) 50%, ${color} 65%, ${color} 100%)`,
+              backgroundSize: "200% 100%",
+              animation: "ul-shimmer 3s ease-in-out infinite",
+              boxShadow: `0 0 8px rgba(${rgb},0.5), 0 0 18px rgba(${rgb},0.2)`,
+              borderRadius: "0 0 7px 7px",
+            }}
+          />
+        </div>
+      </>
+    );
+  }
+
+  // ── Placement 4 (champion): Flame waves + flowing gradient + sparkles ──
   return (
-    <div
-      className="absolute bottom-0 left-0 right-0 z-20 pointer-events-none"
-      style={{
-        height,
-        background: underline.color,
-        boxShadow: glow,
-        borderRadius: "0 0 7px 7px",
-      }}
-    />
+    <>
+      <style>{`
+        @keyframes ul-flow {
+          0%, 100% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+        }
+        @keyframes ul-sparkle {
+          0%, 100% { opacity: 0.2; transform: scale(0.5); }
+          50% { opacity: 1; transform: scale(1.3); }
+        }
+        @keyframes ul-flame-flicker {
+          0%, 100% { opacity: 0.5; transform: scaleY(1); }
+          50% { opacity: 0.8; transform: scaleY(1.3); }
+        }
+      `}</style>
+      <div className="absolute bottom-0 left-0 right-0 z-20 pointer-events-none">
+        {/* Flame-like waves above the bar */}
+        <svg
+          className="absolute left-0 right-0"
+          style={{ bottom: 4, height: 8, width: "100%", animation: "ul-flame-flicker 2s ease-in-out infinite" }}
+          viewBox="0 0 200 8"
+          preserveAspectRatio="none"
+          fill={color}
+          opacity={0.45}
+        >
+          <path d="M0,8 Q5,2 10,8 Q15,0 20,8 Q25,3 30,8 Q35,1 40,8 Q45,2 50,8 Q55,0 60,8 Q65,3 70,8 Q75,1 80,8 Q85,2 90,8 Q95,0 100,8 Q105,3 110,8 Q115,1 120,8 Q125,2 130,8 Q135,0 140,8 Q145,3 150,8 Q155,1 160,8 Q165,2 170,8 Q175,0 180,8 Q185,3 190,8 Q195,1 200,8 Z" />
+        </svg>
+        {/* Sparkle dots */}
+        {[6, 22, 38, 54, 70, 86].map((pos, i) => (
+          <div
+            key={pos}
+            style={{
+              position: "absolute",
+              left: `${pos}%`,
+              bottom: 7,
+              width: 3,
+              height: 3,
+              borderRadius: "50%",
+              background: `rgba(${rgb},0.9)`,
+              boxShadow: `0 0 5px rgba(${rgb},0.8)`,
+              animation: `ul-sparkle 2s ease-in-out ${i * 0.3}s infinite`,
+            }}
+          />
+        ))}
+        {/* Main bar with flowing animated gradient */}
+        <div
+          style={{
+            height: 5,
+            background: `linear-gradient(90deg, ${color}, rgba(255,255,255,0.35), ${color}, rgba(255,255,255,0.2), ${color})`,
+            backgroundSize: "300% 100%",
+            animation: "ul-flow 4s ease infinite",
+            boxShadow: `0 0 10px rgba(${rgb},0.6), 0 0 22px rgba(${rgb},0.3), 0 0 40px rgba(${rgb},0.1)`,
+            borderRadius: "0 0 7px 7px",
+          }}
+        />
+      </div>
+    </>
   );
 }
 

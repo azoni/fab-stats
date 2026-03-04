@@ -781,6 +781,7 @@ export default function Dashboard() {
             bestFinishEvent: bestFinish?.eventName || null,
             recentResults: last30.map(m => m.result),
             cardBorder,
+            underline: underlineConfig,
             bestRank,
             playoffFinishes,
             armoryCount: eventStats.filter(e => e.eventType === "Armory").length,

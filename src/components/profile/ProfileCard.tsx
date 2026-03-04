@@ -29,6 +29,7 @@ export interface ProfileCardData {
   bestFinishEvent?: string | null;
   recentResults: MatchResult[];
   cardBorder?: { border: string; shadow: string; rgb?: string; placement?: number } | null;
+  underline?: { color: string; rgb: string; placement: number } | null;
   bestRank?: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | null;
   playoffFinishes?: PlayoffFinish[];
   armoryCount?: number;
@@ -378,17 +379,32 @@ export function ProfileCard({ data, theme }: { data: ProfileCardData; theme?: Ca
       )}
 
       {/* Footer */}
-      <div style={{ backgroundColor: t.bg, borderTop: `1px solid ${t.border}` }} className="px-5 py-1.5 flex items-center gap-1.5">
-        <svg width="14" height="14" viewBox="0 0 32 32" style={{ opacity: 0.5 }}>
-          <rect width="32" height="32" rx="6" fill={t.accent} />
-          <g transform="translate(4, 4)">
-            <rect x="5" y="2" width="14" height="20" rx="2" stroke={t.bg} strokeWidth="2" fill="none" />
-            <rect x="7.5" y="13" width="2" height="3" fill={t.bg} />
-            <rect x="11" y="10" width="2" height="6" fill={t.bg} />
-            <rect x="14.5" y="6" width="2" height="10" fill={t.bg} />
-          </g>
-        </svg>
-        <p style={{ color: t.accent, opacity: 0.5 }} className="text-[10px] tracking-wider font-semibold">fabstats.net</p>
+      <div className="relative">
+        <div style={{ backgroundColor: t.bg, borderTop: `1px solid ${t.border}` }} className="px-5 py-1.5 flex items-center gap-1.5">
+          <svg width="14" height="14" viewBox="0 0 32 32" style={{ opacity: 0.5 }}>
+            <rect width="32" height="32" rx="6" fill={t.accent} />
+            <g transform="translate(4, 4)">
+              <rect x="5" y="2" width="14" height="20" rx="2" stroke={t.bg} strokeWidth="2" fill="none" />
+              <rect x="7.5" y="13" width="2" height="3" fill={t.bg} />
+              <rect x="11" y="10" width="2" height="6" fill={t.bg} />
+              <rect x="14.5" y="6" width="2" height="10" fill={t.bg} />
+            </g>
+          </svg>
+          <p style={{ color: t.accent, opacity: 0.5 }} className="text-[10px] tracking-wider font-semibold">fabstats.net</p>
+        </div>
+        {/* Underline bar */}
+        {data.underline && (
+          <div
+            style={{
+              height: data.underline.placement >= 4 ? 4 : data.underline.placement >= 3 ? 3.5 : data.underline.placement >= 2 ? 3 : 2.5,
+              background: data.underline.color,
+              boxShadow: data.underline.placement >= 3
+                ? `0 0 8px rgba(${data.underline.rgb},0.5), 0 0 16px rgba(${data.underline.rgb},0.2)`
+                : `0 0 5px rgba(${data.underline.rgb},0.3)`,
+              borderRadius: "0 0 10px 10px",
+            }}
+          />
+        )}
       </div>
     </div>
   );
