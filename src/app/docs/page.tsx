@@ -1073,10 +1073,22 @@ export default function DocsPage() {
               <p><code className="text-fab-gold">/herolist [sort]</code> — Community hero tier list sorted by matches, win rate, or players.</p>
             </div>
 
+            <h3 className="text-sm font-semibold text-fab-text mt-4 mb-2">Weekly Armory Recaps</h3>
+            <div className="space-y-1.5 text-sm text-fab-muted">
+              <p><code className="text-fab-gold">/armory-subscribe</code> — Opt in (or out) of weekly armory stat recaps for your server. Requires <code>/link</code> first.</p>
+              <p><code className="text-fab-gold">/armory-channel</code> — Set the current channel as the destination for weekly armory recap posts (requires Manage Channels).</p>
+            </div>
+            <p className="text-xs text-fab-dim mt-2">
+              Every Sunday at 6 PM, the bot automatically posts a recap showing each subscriber&apos;s armory win-loss
+              record and heroes for the week. Players who didn&apos;t play that week are silently omitted. Results are
+              pulled from your FaB Stats match data — just import your matches as usual and the bot picks them up automatically.
+            </p>
+
             <h3 className="text-sm font-semibold text-fab-text mt-4 mb-2">Account</h3>
             <div className="space-y-1.5 text-sm text-fab-muted">
-              <p><code className="text-fab-gold">/link &lt;username&gt;</code> — Link your Discord account to your FaB Stats profile. Required for <code>/h2h</code> and <code>/matchup</code>.</p>
+              <p><code className="text-fab-gold">/link &lt;username&gt;</code> — Link your Discord account to your FaB Stats profile. Required for <code>/h2h</code>, <code>/matchup</code>, and <code>/armory-subscribe</code>.</p>
               <p><code className="text-fab-gold">/unlink</code> — Remove the link between your Discord and FaB Stats accounts.</p>
+              <p><code className="text-fab-gold">/manage-link @user [action] [username]</code> — View, set, or remove a player&apos;s Discord–FaB Stats link. Requires Manage Server permission or bot owner.</p>
             </div>
 
             <h3 className="text-sm font-semibold text-fab-text mt-4 mb-2">Utility</h3>

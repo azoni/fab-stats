@@ -32,6 +32,17 @@ const badgeLabels: Record<ChangeType, string> = {
 
 const changelog: Entry[] = [
   {
+    date: "March 4, 2026",
+    id: "mar-4",
+    changes: [
+      { type: "new", text: "Weekly Armory Recaps — Discord bot posts automated weekly armory stat rankings every Sunday to a configured channel" },
+      { type: "new", text: "/armory-subscribe — opt in or out of weekly armory recaps per server (requires /link)" },
+      { type: "new", text: "/armory-channel — set the channel for weekly armory posts (admin)" },
+      { type: "new", text: "/manage-link — admins and bot owner can view, set, or remove any player's Discord–FaB Stats link" },
+      { type: "improved", text: "Share cards redesigned with ornamental accents — corner filigrees, decorative dividers, geometric background patterns, and accent top bars" },
+    ],
+  },
+  {
     date: "March 3, 2026",
     id: "mar-3",
     changes: [
