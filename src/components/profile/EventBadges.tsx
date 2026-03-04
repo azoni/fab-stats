@@ -70,20 +70,61 @@ const finishColors: Record<string, string> = {
   Playoff: "bg-fab-gold/10 text-fab-gold",
 };
 
-/** Border + glow styles for playoff finishes on the card itself */
-const finishBorderStyle: Record<string, { border: string; shadow: string }> = {
-  Playoff: { border: "#cd7f32", shadow: "0 0 8px rgba(205,127,50,0.25)" },
-  "Top 8": { border: "#cd7f32", shadow: "0 0 8px rgba(205,127,50,0.3)" },
-  "Top 4": { border: "#c0c0c0", shadow: "0 0 8px rgba(192,192,192,0.35)" },
-  Finalist: { border: "#fbbf24", shadow: "0 0 10px rgba(251,191,36,0.4)" },
-  Champion: { border: "#a78bfa", shadow: "0 0 12px rgba(167,139,250,0.5), 0 0 24px rgba(167,139,250,0.2)" },
+/** Border + glow + animation styles for playoff finishes — graduated excitement */
+const finishBorderStyle: Record<string, { border: string; shadow: string; animation?: string }> = {
+  Playoff: {
+    border: "#cd7f32",
+    shadow: "0 0 8px rgba(205,127,50,0.3), 0 0 16px rgba(205,127,50,0.1)",
+  },
+  "Top 8": {
+    border: "#cd7f32",
+    shadow: "0 0 8px rgba(205,127,50,0.3), 0 0 16px rgba(205,127,50,0.1)",
+  },
+  "Top 4": {
+    border: "#c0c0c0",
+    shadow: "0 0 8px rgba(192,192,192,0.4), 0 0 20px rgba(192,192,192,0.15)",
+    animation: "eb-silver-pulse 3s ease-in-out infinite",
+  },
+  Finalist: {
+    border: "#fbbf24",
+    shadow: "0 0 12px rgba(251,191,36,0.5), 0 0 28px rgba(251,191,36,0.2)",
+    animation: "eb-gold-glow 2.5s ease-in-out infinite",
+  },
+  Champion: {
+    border: "#a78bfa",
+    shadow: "0 0 16px rgba(167,139,250,0.6), 0 0 32px rgba(251,191,36,0.25), 0 0 48px rgba(167,139,250,0.15)",
+    animation: "eb-champion-shimmer 4s linear infinite",
+  },
 };
+
+const EVENT_BADGE_KEYFRAMES = `
+  @keyframes eb-silver-pulse {
+    0%, 100% { box-shadow: 0 0 8px rgba(192,192,192,0.4), 0 0 20px rgba(192,192,192,0.15); }
+    50% { box-shadow: 0 0 14px rgba(192,192,192,0.6), 0 0 28px rgba(192,192,192,0.25); }
+  }
+  @keyframes eb-gold-glow {
+    0%, 100% { box-shadow: 0 0 12px rgba(251,191,36,0.5), 0 0 28px rgba(251,191,36,0.2); }
+    50% { box-shadow: 0 0 20px rgba(251,191,36,0.7), 0 0 36px rgba(251,191,36,0.3); }
+  }
+  @keyframes eb-champion-shimmer {
+    0% { box-shadow: 0 0 16px rgba(167,139,250,0.6), 0 0 32px rgba(251,191,36,0.25), 0 0 48px rgba(167,139,250,0.15); filter: hue-rotate(0deg); }
+    50% { box-shadow: 0 0 22px rgba(251,191,36,0.6), 0 0 40px rgba(167,139,250,0.35), 0 0 56px rgba(251,191,36,0.2); }
+    100% { box-shadow: 0 0 16px rgba(167,139,250,0.6), 0 0 32px rgba(251,191,36,0.25), 0 0 48px rgba(167,139,250,0.15); filter: hue-rotate(360deg); }
+  }
+`;
 
 export function EventBadges({ badges, inline }: { badges: EventBadge[]; inline?: boolean }) {
   if (badges.length === 0) return null;
 
+  // Check if any badge needs animations
+  const needsAnimations = badges.some((b) => {
+    const fbs = b.bestFinish ? finishBorderStyle[b.bestFinish] : null;
+    return fbs?.animation;
+  });
+
   return (
     <div>
+      {needsAnimations && <style>{EVENT_BADGE_KEYFRAMES}</style>}
       {!inline && <h2 className="text-lg font-semibold text-fab-text mb-3">Major Events</h2>}
       <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide sm:flex-wrap sm:overflow-visible">
         {badges.map((badge, i) => {
@@ -94,7 +135,11 @@ export function EventBadges({ badges, inline }: { badges: EventBadge[]; inline?:
             <div
               key={`${badge.eventName}-${badge.date}-${i}`}
               className={`shrink-0 w-[140px] rounded-lg border ${fbs ? "" : config.border} ${config.bg} p-3 relative overflow-hidden`}
-              style={fbs ? { borderColor: fbs.border, boxShadow: fbs.shadow } : undefined}
+              style={fbs ? {
+                borderColor: fbs.border,
+                boxShadow: fbs.shadow,
+                animation: fbs.animation || undefined,
+              } : undefined}
             >
               {/* Faint watermark */}
               <div className={`absolute -bottom-2 -right-2 opacity-[0.06] ${config.color}`}>

@@ -262,7 +262,7 @@ export async function deleteFeedEventsForEvent(
 // ── Cached one-time fetch (replaces real-time onSnapshot subscription) ──
 
 const feedCache = new Map<string, { events: FeedEvent[]; timestamp: number }>();
-const FEED_CACHE_TTL = 3 * 60_000; // 3 minutes
+const FEED_CACHE_TTL = 5 * 60_000; // 5 minutes
 
 export async function getFeedEvents(limitCount = 50, typeFilter: FeedEventType = "all"): Promise<FeedEvent[]> {
   const now = Date.now();

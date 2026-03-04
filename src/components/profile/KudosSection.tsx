@@ -129,7 +129,7 @@ export function KudosSection({
 
   return (
     <div className={inline ? "" : "bg-fab-surface border border-fab-border rounded-lg px-3 py-2.5"}>
-      <div className="flex items-center gap-2 relative">
+      <div className="flex items-center gap-1 sm:gap-2 relative">
         {hint && (
           <div className="absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap bg-fab-bg border border-fab-border rounded-md px-2 py-0.5 text-[10px] text-fab-muted z-10 animate-fade-in pointer-events-none">
             {hint}
@@ -148,7 +148,7 @@ export function KudosSection({
               disabled={!canInteract}
               onClick={() => handleToggle(kt.id)}
               title={`${kt.label}: ${kt.description}${isGiven ? " (click to remove)" : ""}${hasAdminKudos ? " ✦ Endorsed by admin" : ""}${given > 0 ? ` · ${given} given` : ""}`}
-              className={`flex flex-col items-center gap-0.5 w-[52px] py-1.5 rounded-lg transition-all ${
+              className={`flex flex-col items-center gap-0.5 w-10 sm:w-[52px] py-1 sm:py-1.5 rounded-lg transition-all ${
                 !canInteract
                   ? "opacity-60 cursor-default"
                   : isGiven
@@ -158,7 +158,7 @@ export function KudosSection({
             >
               <KudosIcon
                 type={kt.icon}
-                className={`w-3.5 h-3.5 transition-colors ${
+                className={`w-3 h-3 sm:w-3.5 sm:h-3.5 transition-colors ${
                   isGiven ? "text-fab-gold" : hasAdminKudos ? "text-fuchsia-400/70" : "text-fab-muted"
                 }`}
               />
@@ -167,7 +167,7 @@ export function KudosSection({
               }`}>
                 {count}
               </span>
-              <span className={`text-[8px] leading-tight ${
+              <span className={`text-[8px] leading-tight hidden sm:block ${
                 isGiven ? "text-fab-gold/70" : "text-fab-dim"
               }`}>
                 {kt.label}

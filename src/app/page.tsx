@@ -188,16 +188,31 @@ export default function Dashboard() {
       "Pro Tour": { border: "#a78bfa", shadow: "0 0 12px rgba(167,139,250,0.35)" },
       Worlds: { border: "#fbbf24", shadow: "0 0 12px rgba(251,191,36,0.4), 0 0 24px rgba(251,191,36,0.15)" },
     };
+    const placementRank: Record<string, number> = { top8: 1, top4: 2, finalist: 3, champion: 4 };
     let best: string | null = null;
     let bestScore = 0;
+    let bestPlacement = 0;
     for (const f of playoffFinishes) {
       const score = tierRank[f.eventType] || 0;
       if (score > bestScore) {
         best = f.eventType;
         bestScore = score;
       }
+      const pRank = placementRank[f.type] || 0;
+      if (pRank > bestPlacement) bestPlacement = pRank;
     }
-    return best ? tierStyle[best] : null;
+    if (!best) return null;
+    const base = tierStyle[best];
+    if (bestPlacement >= 4) {
+      return { border: base.border, shadow: `0 0 16px ${base.border}99, 0 0 32px ${base.border}55, 0 0 48px ${base.border}22`, animation: "cb-champion-shimmer 4s linear infinite" };
+    }
+    if (bestPlacement >= 3) {
+      return { border: base.border, shadow: `0 0 12px ${base.border}88, 0 0 28px ${base.border}44`, animation: "cb-gold-glow 2.5s ease-in-out infinite" };
+    }
+    if (bestPlacement >= 2) {
+      return { border: base.border, shadow: `0 0 10px ${base.border}77, 0 0 22px ${base.border}33`, animation: "cb-silver-pulse 3s ease-in-out infinite" };
+    }
+    return base;
   }, [playoffFinishes]);
 
   // Community section data
@@ -261,6 +276,13 @@ export default function Dashboard() {
 
   return (
     <div className="relative space-y-8">
+      {(cardBorder as { animation?: string } | null)?.animation && (
+        <style>{`
+          @keyframes cb-silver-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.85; } }
+          @keyframes cb-gold-glow { 0%, 100% { opacity: 1; } 50% { opacity: 0.9; } }
+          @keyframes cb-champion-shimmer { 0% { filter: hue-rotate(0deg); } 100% { filter: hue-rotate(360deg); } }
+        `}</style>
+      )}
       {/* Ambient page glow — subtle gold atmosphere at the top */}
       <div className="pointer-events-none absolute inset-x-0 -top-24 h-72 bg-[radial-gradient(ellipse_60%_50%_at_50%_-10%,rgba(201,168,76,0.06),transparent)]" />
 
@@ -455,7 +477,7 @@ export default function Dashboard() {
             {/* Profile card */}
             <div
               className="relative bg-fab-surface border border-fab-border rounded-lg px-4 py-3 overflow-visible"
-              style={cardBorder ? { borderColor: cardBorder.border, boxShadow: cardBorder.shadow } : undefined}
+              style={cardBorder ? { borderColor: cardBorder.border, boxShadow: cardBorder.shadow, animation: (cardBorder as { animation?: string }).animation || undefined } : undefined}
             >
               {/* FaB-inspired pitch strip — thin gold accent across the top */}
               <div className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-fab-gold/30 to-transparent" />

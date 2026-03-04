@@ -28,6 +28,7 @@ interface FaBdokuRecapProps {
   uniqueness: UniquenessData;
   pickData: PickData;
   onCollapse: () => void;
+  onShare?: () => void;
 }
 
 export function FaBdokuRecap({
@@ -37,6 +38,7 @@ export function FaBdokuRecap({
   uniqueness,
   pickData,
   onCollapse,
+  onShare,
 }: FaBdokuRecapProps) {
   const [selectedCell, setSelectedCell] = useState<[number, number] | null>(null);
 
@@ -84,6 +86,17 @@ export function FaBdokuRecap({
           <span className="text-[10px] text-fab-dim">
             {correctCount}/9 · {uniqueness.totalPlayers} player{uniqueness.totalPlayers !== 1 ? "s" : ""}
           </span>
+          {onShare && (
+            <button
+              onClick={onShare}
+              className="text-fab-dim hover:text-fab-gold transition-colors"
+              title="Share yesterday's score"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0 0a2.25 2.25 0 103.935 2.186 2.25 2.25 0 00-3.935-2.186zm0-12.814a2.25 2.25 0 103.933-2.185 2.25 2.25 0 00-3.933 2.185z" />
+              </svg>
+            </button>
+          )}
           <button
             onClick={onCollapse}
             className="text-fab-dim hover:text-fab-muted transition-colors"

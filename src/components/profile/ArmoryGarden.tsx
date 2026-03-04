@@ -50,13 +50,16 @@ function buildGarden(eventStats: EventStats[]) {
   }
 
   // Sunflowers: one per 2 undefeated armories, plus a partial
+  // Golden colors to distinguish from daisies
+  const GOLD_COLORS = ["#fbbf24", "#f59e0b", "#fcd34d", "#fde047"];
+  const GOLD_ACCENTS = ["#d97706", "#b45309", "#f59e0b", "#eab308"];
   const sunFull = Math.floor(undefeated / 2);
   const sunRem = undefeated % 2;
   for (let i = 0; i < sunFull; i++) {
-    flowers.push({ type: "crown", growth: 1, color: COLORS[idx % COLORS.length], accent: ACCENT[idx % ACCENT.length], idx: idx++ });
+    flowers.push({ type: "crown", growth: 1, color: GOLD_COLORS[idx % GOLD_COLORS.length], accent: GOLD_ACCENTS[idx % GOLD_ACCENTS.length], idx: idx++ });
   }
   if (sunRem > 0) {
-    flowers.push({ type: "crown", growth: sunRem / 2, color: COLORS[idx % COLORS.length], accent: ACCENT[idx % ACCENT.length], idx: idx++ });
+    flowers.push({ type: "crown", growth: sunRem / 2, color: GOLD_COLORS[idx % GOLD_COLORS.length], accent: GOLD_ACCENTS[idx % GOLD_ACCENTS.length], idx: idx++ });
   }
 
   return { flowers, attended, undefeated };
@@ -187,7 +190,9 @@ function SunflowerSVG({ color, accent, idx, growth }: { color: string; accent: s
   return (
     <svg width="26" height={h} viewBox={`0 0 26 ${h}`} className="garden-flower"
       style={{ animationDelay: `${(idx % 8) * 0.35}s` }}>
-      {growth === 1 && <circle cx={cx - 1} cy={cy} r="15" fill="#fbbf24" opacity="0.05" />}
+      {/* Golden glow for undefeated */}
+      {growth === 1 && <circle cx={cx - 1} cy={cy} r="16" fill="#fbbf24" opacity="0.12" />}
+      {growth === 1 && <circle cx={cx - 1} cy={cy} r="20" fill="#fbbf24" opacity="0.04" />}
       <line x1="13" y1={cy + 7} x2="13" y2={h} stroke="#16a34a" strokeWidth="1.8" strokeLinecap="round" />
       <ellipse cx="17" cy={leaf1Y} rx="4" ry="1.3" fill="#22c55e" transform={`rotate(-28 17 ${leaf1Y})`} />
       <ellipse cx="9" cy={leaf2Y} rx="4" ry="1.3" fill="#22c55e" transform={`rotate(28 9 ${leaf2Y})`} />
@@ -225,6 +230,8 @@ function SunflowerSVG({ color, accent, idx, growth }: { color: string; accent: s
       })}
       <circle cx={cx - 1} cy={cy} r={1.2 * scale} fill="#b45309" />
       {growth === 1 && <circle cx={cx - 2} cy={cy - 1} r="0.7" fill="#fde047" opacity="0.5" />}
+      {/* Star crown for fully-grown sunflower */}
+      {growth === 1 && <text x={cx - 1} y={cy - 13} textAnchor="middle" fontSize="5" fill="#fbbf24" className="garden-sparkle" style={{ animationDelay: `${(idx % 5) * 0.6}s` }}>★</text>}
     </svg>
   );
 }
@@ -307,6 +314,13 @@ export function ArmoryGarden({ eventStats, ownerProfile, isOwner }: { eventStats
           0% { opacity: 0.8; transform: translateY(0); }
           100% { opacity: 0; transform: translateY(20px); }
         }
+        @keyframes garden-sparkle {
+          0%, 100% { opacity: 0.9; transform: scale(1); }
+          50% { opacity: 0.4; transform: scale(0.7); }
+        }
+        .garden-sparkle {
+          animation: garden-sparkle 2s ease-in-out infinite;
+        }
       `}</style>
 
         <div className="flex items-center justify-between mb-2">
@@ -352,7 +366,7 @@ export function ArmoryGarden({ eventStats, ownerProfile, isOwner }: { eventStats
             <p className="text-[10px] text-fab-dim">
               {attended} armor{attended !== 1 ? "ies" : "y"}
               {undefeated > 0 && (
-                <span className="text-amber-400/80">
+                <span className="text-amber-400 font-semibold">
                   {" "}&middot; {undefeated} undefeated
                 </span>
               )}

@@ -202,6 +202,7 @@ export function ProfileCard({ data, theme }: { data: ProfileCardData; theme?: Ca
         backgroundColor: t.surface,
         borderColor: cardBorder?.border || t.border,
         boxShadow: cardBorder?.shadow || undefined,
+        animation: (cardBorder as { animation?: string } | null)?.animation || undefined,
         width: 440,
       }}
       className="border-2 rounded-xl overflow-hidden"
@@ -442,10 +443,12 @@ export function ProfileShareModal({
           </button>
         </div>
 
-        {/* Card preview */}
-        <div className="p-4 flex justify-center overflow-x-auto">
-          <div ref={cardRef}>
-            <ProfileCard data={data} theme={selectedTheme} />
+        {/* Card preview — scale down on mobile to fit viewport */}
+        <div className="p-4 flex justify-center overflow-hidden">
+          <div className="scale-[0.82] sm:scale-100 origin-top">
+            <div ref={cardRef}>
+              <ProfileCard data={data} theme={selectedTheme} />
+            </div>
           </div>
         </div>
 

@@ -85,6 +85,8 @@ export default function PlayerProfile() {
   const [fabdokuScore, setFabdokuScore] = useState<number | null>(null);
   const [fabdokuFullStats, setFabdokuFullStats] = useState<FaBdokuStats | null>(null);
   const [previewAsVisitor, setPreviewAsVisitor] = useState(false);
+  const [editingSocials, setEditingSocials] = useState(false);
+  const [socialDraft, setSocialDraft] = useState<{ twitter: string; discord: string; fabrary: string }>({ twitter: "", discord: "", fabrary: "" });
 
   // Auto-expand achievements if navigated with #achievements hash
   useEffect(() => {
@@ -347,16 +349,35 @@ export default function PlayerProfile() {
       "Pro Tour": { border: "#a78bfa", shadow: "0 0 12px rgba(167,139,250,0.35)" },
       Worlds: { border: "#fbbf24", shadow: "0 0 12px rgba(251,191,36,0.4), 0 0 24px rgba(251,191,36,0.15)" },
     };
+    const placementRank: Record<string, number> = { top8: 1, top4: 2, finalist: 3, champion: 4 };
     let best: string | null = null;
     let bestScore = 0;
+    let bestPlacement = 0;
     for (const f of playoffFinishes) {
       const score = tierRank[f.eventType] || 0;
       if (score > bestScore) {
         best = f.eventType;
         bestScore = score;
       }
+      const pRank = placementRank[f.type] || 0;
+      if (pRank > bestPlacement) bestPlacement = pRank;
     }
-    return best ? tierStyle[best] : null;
+    if (!best) return null;
+    const base = tierStyle[best];
+    // Amplify glow based on best placement
+    if (bestPlacement >= 4) {
+      // Champion: intense multi-layer glow + shimmer
+      return { border: base.border, shadow: `0 0 16px ${base.border}99, 0 0 32px ${base.border}55, 0 0 48px ${base.border}22`, animation: "cb-champion-shimmer 4s linear infinite" };
+    }
+    if (bestPlacement >= 3) {
+      // Finalist: strong pulsing glow
+      return { border: base.border, shadow: `0 0 12px ${base.border}88, 0 0 28px ${base.border}44`, animation: "cb-gold-glow 2.5s ease-in-out infinite" };
+    }
+    if (bestPlacement >= 2) {
+      // Top 4: 1.5x glow with subtle pulse
+      return { border: base.border, shadow: `0 0 10px ${base.border}77, 0 0 22px ${base.border}33`, animation: "cb-silver-pulse 3s ease-in-out infinite" };
+    }
+    return base;
   }, [playoffFinishes]);
 
 
@@ -452,12 +473,28 @@ export default function PlayerProfile() {
 
   return (
     <div className="space-y-5">
+      {(cardBorder as { animation?: string } | null)?.animation && (
+        <style>{`
+          @keyframes cb-silver-pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.85; }
+          }
+          @keyframes cb-gold-glow {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.9; }
+          }
+          @keyframes cb-champion-shimmer {
+            0% { filter: hue-rotate(0deg); }
+            100% { filter: hue-rotate(360deg); }
+          }
+        `}</style>
+      )}
       {/* Profile + Filters (always on top) */}
       <div className="space-y-5">
         {/* Profile Header */}
         <div
           className="bg-fab-surface border border-fab-border rounded-lg p-5 relative"
-          style={cardBorder ? { borderColor: cardBorder.border, boxShadow: cardBorder.shadow } : undefined}
+          style={cardBorder ? { borderColor: cardBorder.border, boxShadow: cardBorder.shadow, animation: (cardBorder as { animation?: string }).animation || undefined } : undefined}
         >
           {/* Owner: private/friends-only profile banner */}
           {isOwner && (profile.profileVisibility === "private" || (!profile.profileVisibility && !profile.isPublic)) && (
@@ -503,7 +540,7 @@ export default function PlayerProfile() {
             </div>
           )}
           {/* Profile row + emblem */}
-          <div className="flex items-center gap-3">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-3">
                 <ProfileHeader profile={profile} bestRank={bestRank} isAdmin={isAdmin} isOwner={isOwner} isFavorited={!actualIsOwner && !!currentUser && !isGuest && isFavorited(profile.uid)} onToggleFavorite={!actualIsOwner && !!currentUser && !isGuest ? () => toggleFavorite(profile) : undefined} friendStatus={!actualIsOwner && !!currentUser && !isGuest ? (isFriend(profile.uid) ? "friends" : hasSentRequest(profile.uid) ? "sent" : hasReceivedRequest(profile.uid) ? "received" : "none") : undefined} onFriendAction={!actualIsOwner && !!currentUser && !isGuest ? () => { const fs = getFriendshipForUser(profile.uid); if (isFriend(profile.uid)) return; if (hasReceivedRequest(profile.uid) && fs) { acceptRequest(fs.id); } else if (!hasSentRequest(profile.uid)) { sendRequest(profile); } } : undefined} onShareCard={actualIsOwner || isAdmin ? () => setProfileShareOpen(true) : undefined} friendCount={isAdmin ? friendCount : undefined} creator={creatorInfo} />
@@ -516,6 +553,92 @@ export default function PlayerProfile() {
                 )}
                 <BadgeStrip matchCount={matches.length} isCreator={!!creatorInfo} hasSharedFabdoku={fabdokuFullStats?.hasShared} />
               </div>
+              {/* Social links */}
+              {(profile.socialLinks?.twitter || profile.socialLinks?.discord || profile.socialLinks?.fabrary || isOwner) && !editingSocials && (
+                <div className="flex items-center gap-2 mt-1 flex-wrap">
+                  {profile.socialLinks?.twitter && (
+                    <a href={`https://x.com/${profile.socialLinks.twitter.replace(/^@/, "")}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-[11px] text-fab-muted hover:text-fab-text transition-colors">
+                      <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                      <span>@{profile.socialLinks.twitter.replace(/^@/, "")}</span>
+                    </a>
+                  )}
+                  {profile.socialLinks?.discord && (
+                    <span className="flex items-center gap-1 text-[11px] text-fab-muted" title="Discord">
+                      <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.37a19.791 19.791 0 00-4.885-1.515.074.074 0 00-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 00-5.487 0 12.64 12.64 0 00-.617-1.25.077.077 0 00-.079-.037A19.736 19.736 0 003.677 4.37a.07.07 0 00-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 00.031.057 19.9 19.9 0 005.993 3.03.078.078 0 00.084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 00-.041-.106 13.107 13.107 0 01-1.872-.892.077.077 0 01-.008-.128 10.2 10.2 0 00.372-.292.074.074 0 01.077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 01.078.01c.12.098.246.198.373.292a.077.077 0 01-.006.127 12.299 12.299 0 01-1.873.892.077.077 0 00-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 00.084.028 19.839 19.839 0 006.002-3.03.077.077 0 00.032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 00-.031-.03z"/></svg>
+                      <span>{profile.socialLinks.discord}</span>
+                    </span>
+                  )}
+                  {profile.socialLinks?.fabrary && (
+                    <a href={`https://fabrary.net/decks?owner=${encodeURIComponent(profile.socialLinks.fabrary)}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-[11px] text-fab-muted hover:text-fab-text transition-colors">
+                      <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
+                      <span>{profile.socialLinks.fabrary}</span>
+                    </a>
+                  )}
+                  {isOwner && (
+                    <button
+                      onClick={() => {
+                        setSocialDraft({
+                          twitter: profile.socialLinks?.twitter || "",
+                          discord: profile.socialLinks?.discord || "",
+                          fabrary: profile.socialLinks?.fabrary || "",
+                        });
+                        setEditingSocials(true);
+                      }}
+                      className="text-[10px] text-fab-dim hover:text-fab-muted transition-colors"
+                      title="Edit social links"
+                    >
+                      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
+              )}
+              {editingSocials && (
+                <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                  <input
+                    type="text"
+                    placeholder="X handle"
+                    value={socialDraft.twitter}
+                    onChange={(e) => setSocialDraft((d) => ({ ...d, twitter: e.target.value }))}
+                    className="w-24 px-1.5 py-0.5 rounded text-[11px] bg-fab-bg border border-fab-border text-fab-text placeholder:text-fab-dim focus:border-fab-gold/40 focus:outline-none"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Discord"
+                    value={socialDraft.discord}
+                    onChange={(e) => setSocialDraft((d) => ({ ...d, discord: e.target.value }))}
+                    className="w-24 px-1.5 py-0.5 rounded text-[11px] bg-fab-bg border border-fab-border text-fab-text placeholder:text-fab-dim focus:border-fab-gold/40 focus:outline-none"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Fabrary"
+                    value={socialDraft.fabrary}
+                    onChange={(e) => setSocialDraft((d) => ({ ...d, fabrary: e.target.value }))}
+                    className="w-24 px-1.5 py-0.5 rounded text-[11px] bg-fab-bg border border-fab-border text-fab-text placeholder:text-fab-dim focus:border-fab-gold/40 focus:outline-none"
+                  />
+                  <button
+                    onClick={async () => {
+                      const links: { twitter?: string; discord?: string; fabrary?: string } = {};
+                      if (socialDraft.twitter.trim()) links.twitter = socialDraft.twitter.trim().replace(/^@/, "");
+                      if (socialDraft.discord.trim()) links.discord = socialDraft.discord.trim();
+                      if (socialDraft.fabrary.trim()) links.fabrary = socialDraft.fabrary.trim();
+                      await updateProfile(profile.uid, { socialLinks: Object.keys(links).length > 0 ? links : undefined });
+                      setState((prev) => prev.status === "loaded" ? { ...prev, profile: { ...prev.profile, socialLinks: Object.keys(links).length > 0 ? links : undefined } } : prev);
+                      setEditingSocials(false);
+                    }}
+                    className="px-2 py-0.5 rounded text-[11px] font-medium bg-fab-gold/20 text-fab-gold hover:bg-fab-gold/30 transition-colors"
+                  >
+                    Save
+                  </button>
+                  <button
+                    onClick={() => setEditingSocials(false)}
+                    className="px-2 py-0.5 rounded text-[11px] text-fab-dim hover:text-fab-muted transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              )}
             </div>
             <div className="flex items-center gap-3 shrink-0">
               {/* Kudos — received counts with given counts inline (hidden on private profiles) */}

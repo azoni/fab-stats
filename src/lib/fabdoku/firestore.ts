@@ -43,9 +43,13 @@ export async function saveResult(
   uid: string,
   result: FaBdokuResult
 ): Promise<void> {
-  // Save result
+  // Save result (overwrites if played on another device)
   const resultRef = doc(db, RESULTS_COL, `${result.date}_${uid}`);
+  const existingResult = await getDoc(resultRef);
   await setDoc(resultRef, { uid, ...result });
+
+  // Skip stats update if this date was already counted (cross-device replay)
+  if (existingResult.exists()) return;
 
   // Update stats
   const statsRef = doc(db, "users", uid, STATS_DOC, "data");
@@ -75,6 +79,7 @@ export async function saveResult(
     currentStreak: newStreak,
     maxStreak: Math.max(prev.maxStreak, newStreak),
     lastPlayedDate: result.date,
+    ...(prev.hasShared ? { hasShared: true } : {}),
   };
 
   await setDoc(statsRef, updated);
