@@ -63,6 +63,7 @@ export default function ImportPage() {
   const [clearBeforeImport, setClearBeforeImport] = useState(false);
   const [quickMode, setQuickMode] = useState(false);
   const [showHeroWarning, setShowHeroWarning] = useState(false);
+  const [confirmSkipHero, setConfirmSkipHero] = useState(false);
 
   // Detect mobile viewport
   useEffect(() => {
@@ -1074,15 +1075,15 @@ export default function ImportPage() {
       {/* Hero Warning Dialog */}
       {showHeroWarning && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowHeroWarning(false)} />
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => { setShowHeroWarning(false); setConfirmSkipHero(false); }} />
           <div className="relative bg-fab-bg border border-fab-border rounded-xl shadow-2xl w-full max-w-md p-6">
             <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 rounded-full bg-fab-draw/15 flex items-center justify-center shrink-0">
-                <svg className="w-5 h-5 text-fab-draw" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <div className="w-10 h-10 rounded-full bg-fab-loss/15 flex items-center justify-center shrink-0">
+                <svg className="w-5 h-5 text-fab-loss" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
                 </svg>
               </div>
-              <h3 className="text-lg font-bold text-fab-text">Missing Hero Info</h3>
+              <h3 className="text-lg font-bold text-fab-text">Heroes Missing!</h3>
             </div>
             <p className="text-sm text-fab-muted mb-2">
               {(() => {
@@ -1095,22 +1096,34 @@ export default function ImportPage() {
                 return "Your matches are missing hero information.";
               })()}
             </p>
+            <p className="text-sm text-fab-muted mb-2">
+              Without heroes, your stats will be incomplete and your placements will show without a hero on the feed.
+            </p>
             <p className="text-sm text-fab-muted mb-5">
-              Hero data powers your per-hero stats, matchup breakdowns, and showcase cards. You can set heroes per event in the preview above, or use the Chrome Extension for automatic detection.
+              Set heroes per event in the preview above, or use the Chrome Extension for automatic detection.
             </p>
             <div className="flex flex-col gap-2">
               <button
-                onClick={() => setShowHeroWarning(false)}
+                onClick={() => { setShowHeroWarning(false); setConfirmSkipHero(false); }}
                 className="w-full min-h-[44px] py-2.5 rounded-lg font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors text-sm"
               >
                 Go Back &amp; Add Heroes
               </button>
-              <button
-                onClick={() => { setShowHeroWarning(false); handleImport(); }}
-                className="w-full min-h-[44px] py-2.5 rounded-lg font-semibold bg-fab-surface border border-fab-border text-fab-muted hover:text-fab-text transition-colors text-sm"
-              >
-                Import Anyway
-              </button>
+              {!confirmSkipHero ? (
+                <button
+                  onClick={() => setConfirmSkipHero(true)}
+                  className="w-full min-h-[44px] py-2.5 rounded-lg font-semibold bg-fab-surface border border-fab-border text-fab-dim hover:text-fab-muted transition-colors text-xs"
+                >
+                  Import without heroes...
+                </button>
+              ) : (
+                <button
+                  onClick={() => { setShowHeroWarning(false); setConfirmSkipHero(false); handleImport(); }}
+                  className="w-full min-h-[44px] py-2.5 rounded-lg font-semibold bg-fab-loss/20 border border-fab-loss/30 text-fab-loss hover:bg-fab-loss/30 transition-colors text-sm"
+                >
+                  Yes, import without heroes
+                </button>
+              )}
             </div>
           </div>
         </div>

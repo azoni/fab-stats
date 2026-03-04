@@ -661,7 +661,7 @@ function MoreDropdown({
   isAdmin?: boolean;
 }) {
   const [open, setOpen] = useState(false);
-  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [expanded, setExpanded] = useState<Set<string>>(new Set(["games"]));
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -716,6 +716,7 @@ function MoreDropdown({
           <circle cx="12" cy="19" r="1" fill="currentColor" />
         </svg>
         <span className="hidden lg:inline">More</span>
+        <span className="text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-teal-400/15 text-teal-400 border border-teal-400/25">New</span>
         <svg className={`w-3 h-3 transition-transform ${open ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
         </svg>

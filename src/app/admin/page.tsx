@@ -2409,35 +2409,63 @@ export default function AdminPage() {
               })()}
 
               {/* Servers List */}
-              {botAnalytics.heartbeat?.servers?.length > 0 && (
-                <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden">
-                  <div className="px-4 py-3 border-b border-fab-border">
-                    <h2 className="text-sm font-semibold text-fab-text">Servers ({botAnalytics.heartbeat.servers.length})</h2>
-                  </div>
-                  <div className="divide-y divide-fab-border">
-                    {[...botAnalytics.heartbeat.servers]
-                      .sort((a, b) => b.memberCount - a.memberCount)
-                      .map((s) => (
-                        <div key={s.id} className="px-4 py-2.5 flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            {s.icon ? (
-                              <img src={`https://cdn.discordapp.com/icons/${s.id}/${s.icon}.webp?size=32`} alt="" className="w-6 h-6 rounded-full" />
-                            ) : (
-                              <div className="w-6 h-6 rounded-full bg-fab-dim/20 flex items-center justify-center text-[10px] text-fab-muted font-bold">
-                                {s.name.charAt(0)}
+              {botAnalytics.heartbeat?.servers?.length > 0 && (() => {
+                // Build per-server command counts from the log (no extra reads)
+                const serverCmds: Record<string, Record<string, number>> = {};
+                for (const entry of botLog) {
+                  if (!entry.serverId) continue;
+                  if (!serverCmds[entry.serverId]) serverCmds[entry.serverId] = {};
+                  serverCmds[entry.serverId][entry.command] = (serverCmds[entry.serverId][entry.command] || 0) + 1;
+                }
+                return (
+                  <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden">
+                    <div className="px-4 py-3 border-b border-fab-border">
+                      <h2 className="text-sm font-semibold text-fab-text">Servers ({botAnalytics.heartbeat.servers.length})</h2>
+                    </div>
+                    <div className="divide-y divide-fab-border">
+                      {[...botAnalytics.heartbeat.servers]
+                        .sort((a, b) => b.memberCount - a.memberCount)
+                        .map((s) => {
+                          const cmds = serverCmds[s.id];
+                          const cmdEntries = cmds ? Object.entries(cmds).sort(([, a], [, b]) => b - a) : [];
+                          const cmdTotal = cmdEntries.reduce((sum, [, c]) => sum + c, 0);
+                          return (
+                            <div key={s.id} className="px-4 py-2.5">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                  {s.icon ? (
+                                    <img src={`https://cdn.discordapp.com/icons/${s.id}/${s.icon}.webp?size=32`} alt="" className="w-6 h-6 rounded-full" />
+                                  ) : (
+                                    <div className="w-6 h-6 rounded-full bg-fab-dim/20 flex items-center justify-center text-[10px] text-fab-muted font-bold">
+                                      {s.name.charAt(0)}
+                                    </div>
+                                  )}
+                                  <span className="text-sm text-fab-text">{s.name}</span>
+                                </div>
+                                <div className="text-xs text-fab-muted">
+                                  {s.memberCount.toLocaleString()} members
+                                  <span className="text-fab-dim ml-2">joined {new Date(s.joinedAt).toLocaleDateString()}</span>
+                                </div>
                               </div>
-                            )}
-                            <span className="text-sm text-fab-text">{s.name}</span>
-                          </div>
-                          <div className="text-xs text-fab-muted">
-                            {s.memberCount.toLocaleString()} members
-                            <span className="text-fab-dim ml-2">joined {new Date(s.joinedAt).toLocaleDateString()}</span>
-                          </div>
-                        </div>
-                      ))}
+                              {cmdEntries.length > 0 && (
+                                <div className="mt-1.5 ml-9 flex flex-wrap gap-1.5">
+                                  {cmdEntries.map(([cmd, count]) => (
+                                    <span key={cmd} className="text-[10px] px-1.5 py-0.5 rounded bg-fab-bg text-fab-dim">
+                                      /{cmd} <span className="text-fab-muted font-medium">{count}</span>
+                                    </span>
+                                  ))}
+                                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-fab-gold/10 text-fab-gold font-medium">
+                                    {cmdTotal} total
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                    </div>
                   </div>
-                </div>
-              )}
+                );
+              })()}
 
               {/* Command Usage Breakdown */}
               {botAnalytics.totalCommands && Object.keys(botAnalytics.totalCommands).length > 0 && (

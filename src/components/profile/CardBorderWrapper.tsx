@@ -134,88 +134,146 @@ function InnerAccent({ p }: { p: number }) {
   );
 }
 
-// ── Underline bar ──
+// ── Underline bar — SVG ornamental dividers ──
 
 function UnderlineBar({ underline }: { underline: UnderlineConfig | null | undefined }) {
   if (!underline) return null;
   const p = underline.placement;
   const { color, rgb } = underline;
 
-  // ── T8 / Undefeated: Solid colored bar with subtle glow ──
+  // ── T8 / Undefeated: Simple line with center diamond ──
   if (p <= 1) {
     return (
-      <div
-        className="absolute bottom-0 left-0 right-0 z-20 pointer-events-none"
-        style={{
-          height: 2.5,
-          background: color,
-          boxShadow: `0 0 4px rgba(${rgb},0.3)`,
-          borderRadius: "0 0 7px 7px",
-        }}
-      />
+      <div className="absolute bottom-0 left-0 right-0 z-20 pointer-events-none" style={{ height: 10 }}>
+        <svg
+          viewBox="0 0 400 10"
+          preserveAspectRatio="none"
+          className="absolute inset-0 w-full h-full"
+          fill="none"
+        >
+          {/* Thin horizontal line */}
+          <line x1="0" y1="7" x2="400" y2="7" stroke={color} strokeWidth="1.5" opacity="0.7" />
+          {/* Center diamond */}
+          <rect x="196" y="3" width="8" height="8" rx="1" transform="rotate(45 200 7)" fill={color} opacity="0.85" />
+        </svg>
+      </div>
     );
   }
 
-  // ── Top 4: Thicker bar with animated glow pulse ──
+  // ── Top 4: Line with scrollwork curl accents ──
   if (p === 2) {
     return (
       <>
         <style>{`
-          @keyframes ul-pulse-t4 {
-            0%, 100% { box-shadow: 0 0 4px rgba(${rgb},0.3); }
-            50% { box-shadow: 0 0 12px rgba(${rgb},0.55), 0 0 24px rgba(${rgb},0.25); }
+          @keyframes ul-glow-t4 {
+            0%, 100% { filter: drop-shadow(0 0 2px rgba(${rgb},0.3)); }
+            50% { filter: drop-shadow(0 0 6px rgba(${rgb},0.6)) drop-shadow(0 0 12px rgba(${rgb},0.2)); }
           }
         `}</style>
-        <div
-          className="absolute bottom-0 left-0 right-0 z-20 pointer-events-none"
-          style={{
-            height: 4,
-            background: color,
-            animation: "ul-pulse-t4 3.5s ease-in-out infinite",
-            borderRadius: "0 0 7px 7px",
-          }}
-        />
+        <div className="absolute bottom-0 left-0 right-0 z-20 pointer-events-none" style={{ height: 16 }}>
+          <svg
+            viewBox="0 0 400 16"
+            preserveAspectRatio="none"
+            className="absolute inset-0 w-full h-full"
+            fill="none"
+            style={{ animation: "ul-glow-t4 4s ease-in-out infinite" }}
+          >
+            {/* Lines extending to edges */}
+            <line x1="0" y1="10" x2="155" y2="10" stroke={color} strokeWidth="1.5" opacity="0.5" />
+            <line x1="245" y1="10" x2="400" y2="10" stroke={color} strokeWidth="1.5" opacity="0.5" />
+          </svg>
+          {/* Center ornament — fixed size, centered */}
+          <svg
+            viewBox="0 0 90 16"
+            className="absolute left-1/2 top-0 h-full"
+            style={{ width: 90, transform: "translateX(-50%)" }}
+            fill="none"
+          >
+            {/* Left scroll curl */}
+            <path d="M10,10 Q10,4 18,4 Q14,4 14,8 Q14,11 18,11" stroke={color} strokeWidth="1.5" strokeLinecap="round" opacity="0.8" />
+            {/* Right scroll curl (mirrored) */}
+            <path d="M80,10 Q80,4 72,4 Q76,4 76,8 Q76,11 72,11" stroke={color} strokeWidth="1.5" strokeLinecap="round" opacity="0.8" />
+            {/* Connecting lines to center */}
+            <line x1="18" y1="10" x2="38" y2="10" stroke={color} strokeWidth="1.5" opacity="0.6" />
+            <line x1="52" y1="10" x2="72" y2="10" stroke={color} strokeWidth="1.5" opacity="0.6" />
+            {/* Center diamond */}
+            <rect x="41" y="6" width="8" height="8" rx="1" transform="rotate(45 45 10)" fill={color} opacity="0.9" />
+            {/* Small accent dots */}
+            <circle cx="25" cy="10" r="1.5" fill={color} opacity="0.5" />
+            <circle cx="65" cy="10" r="1.5" fill={color} opacity="0.5" />
+          </svg>
+        </div>
       </>
     );
   }
 
-  // ── Finalist: Shimmer sweep + diamond accents + strong glow ──
+  // ── Finalist: Winged filigree ornament ──
   if (p === 3) {
     return (
       <>
         <style>{`
-          @keyframes ul-shimmer {
-            0% { background-position: -200% 0; }
-            100% { background-position: 200% 0; }
+          @keyframes ul-shimmer-f {
+            0% { left: -20%; opacity: 0; }
+            15% { opacity: 0.8; }
+            85% { opacity: 0.8; }
+            100% { left: 120%; opacity: 0; }
           }
         `}</style>
-        <div className="absolute bottom-0 left-0 right-0 z-20 pointer-events-none">
-          {/* Diamond accents — 7 diamonds, bigger */}
-          {[6, 20, 38, 50, 62, 80, 94].map((pos) => (
-            <div
-              key={pos}
-              style={{
-                position: "absolute",
-                left: `${pos}%`,
-                top: -5,
-                width: 7,
-                height: 7,
-                transform: "rotate(45deg)",
-                background: color,
-                boxShadow: `0 0 8px rgba(${rgb},0.8)`,
-                opacity: 0.85,
-              }}
+        <div className="absolute bottom-0 left-0 right-0 z-20 pointer-events-none" style={{ height: 24 }}>
+          {/* Edge lines — stretched */}
+          <svg
+            viewBox="0 0 400 24"
+            preserveAspectRatio="none"
+            className="absolute inset-0 w-full h-full"
+            fill="none"
+          >
+            <line x1="0" y1="16" x2="120" y2="16" stroke={color} strokeWidth="1.5" opacity="0.4" />
+            <line x1="280" y1="16" x2="400" y2="16" stroke={color} strokeWidth="1.5" opacity="0.4" />
+          </svg>
+          {/* Center filigree ornament — fixed width */}
+          <svg
+            viewBox="0 0 160 24"
+            className="absolute left-1/2 top-0 h-full"
+            style={{ width: 160, transform: "translateX(-50%)", filter: `drop-shadow(0 0 4px rgba(${rgb},0.4))` }}
+            fill="none"
+          >
+            {/* Left wing flourish */}
+            <path
+              d="M30,16 C30,16 24,16 20,14 C16,12 12,8 8,8 C4,8 4,12 8,13 C12,14 16,13 20,14 C24,15 22,18 18,18"
+              stroke={color} strokeWidth="1.5" strokeLinecap="round" opacity="0.75"
             />
-          ))}
-          {/* Main bar with animated shimmer */}
+            <path
+              d="M36,16 C32,14 28,10 24,10 C20,10 22,14 26,14"
+              stroke={color} strokeWidth="1.2" strokeLinecap="round" opacity="0.5"
+            />
+            {/* Right wing flourish (mirrored) */}
+            <path
+              d="M130,16 C130,16 136,16 140,14 C144,12 148,8 152,8 C156,8 156,12 152,13 C148,14 144,13 140,14 C136,15 138,18 142,18"
+              stroke={color} strokeWidth="1.5" strokeLinecap="round" opacity="0.75"
+            />
+            <path
+              d="M124,16 C128,14 132,10 136,10 C140,10 138,14 134,14"
+              stroke={color} strokeWidth="1.2" strokeLinecap="round" opacity="0.5"
+            />
+            {/* Center connecting lines */}
+            <line x1="36" y1="16" x2="70" y2="16" stroke={color} strokeWidth="1.5" opacity="0.6" />
+            <line x1="90" y1="16" x2="124" y2="16" stroke={color} strokeWidth="1.5" opacity="0.6" />
+            {/* Center ornamental diamond with ring */}
+            <circle cx="80" cy="14" r="6" stroke={color} strokeWidth="1.2" opacity="0.5" />
+            <rect x="76.5" y="10.5" width="7" height="7" rx="1" transform="rotate(45 80 14)" fill={color} opacity="0.9" />
+            {/* Small accent dots along wings */}
+            <circle cx="14" cy="10" r="1.2" fill={color} opacity="0.45" />
+            <circle cx="146" cy="10" r="1.2" fill={color} opacity="0.45" />
+            <circle cx="48" cy="16" r="1.5" fill={color} opacity="0.4" />
+            <circle cx="112" cy="16" r="1.5" fill={color} opacity="0.4" />
+          </svg>
+          {/* Shimmer sweep */}
           <div
+            className="absolute top-0 h-full pointer-events-none"
             style={{
-              height: 5.5,
-              background: `linear-gradient(90deg, ${color} 0%, ${color} 25%, rgba(255,255,255,0.55) 50%, ${color} 75%, ${color} 100%)`,
-              backgroundSize: "200% 100%",
-              animation: "ul-shimmer 2s ease-in-out infinite",
-              boxShadow: `0 0 12px rgba(${rgb},0.6), 0 0 28px rgba(${rgb},0.3)`,
-              borderRadius: "0 0 7px 7px",
+              width: "15%",
+              background: `linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent)`,
+              animation: "ul-shimmer-f 5s ease-in-out infinite",
             }}
           />
         </div>
@@ -223,88 +281,114 @@ function UnderlineBar({ underline }: { underline: UnderlineConfig | null | undef
     );
   }
 
-  // ── Champion: Flames + sparkles + flowing gradient + white/gold accents ──
+  // ── Champion: Crown filigree banner ──
   return (
     <>
       <style>{`
-        @keyframes ul-flow {
-          0%, 100% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
+        @keyframes ul-shimmer-w {
+          0% { left: -15%; opacity: 0; }
+          10% { opacity: 0.6; }
+          90% { opacity: 0.6; }
+          100% { left: 115%; opacity: 0; }
         }
-        @keyframes ul-sparkle {
-          0%, 100% { opacity: 0.05; transform: scale(0.2); }
-          50% { opacity: 1; transform: scale(1.6); }
-        }
-        @keyframes ul-flame-flicker {
-          0%, 100% { opacity: 0.45; transform: scaleY(1); }
-          50% { opacity: 0.95; transform: scaleY(1.6); }
+        @keyframes ul-crown-glow {
+          0%, 100% { filter: drop-shadow(0 0 4px rgba(${rgb},0.5)); }
+          50% { filter: drop-shadow(0 0 8px rgba(${rgb},0.8)) drop-shadow(0 0 16px rgba(${rgb},0.3)); }
         }
       `}</style>
-      <div className="absolute bottom-0 left-0 right-0 z-20 pointer-events-none">
-        {/* Double flame layers — taller */}
+      <div className="absolute bottom-0 left-0 right-0 z-20 pointer-events-none" style={{ height: 32 }}>
+        {/* Edge lines — stretched */}
         <svg
-          className="absolute left-0 right-0"
-          style={{ bottom: 7, height: 16, width: "100%", animation: "ul-flame-flicker 1.6s ease-in-out infinite" }}
-          viewBox="0 0 200 8"
+          viewBox="0 0 400 32"
           preserveAspectRatio="none"
-          fill={color}
-          opacity={0.55}
+          className="absolute inset-0 w-full h-full"
+          fill="none"
         >
-          <path d="M0,8 Q5,2 10,8 Q15,0 20,8 Q25,3 30,8 Q35,1 40,8 Q45,2 50,8 Q55,0 60,8 Q65,3 70,8 Q75,1 80,8 Q85,2 90,8 Q95,0 100,8 Q105,3 110,8 Q115,1 120,8 Q125,2 130,8 Q135,0 140,8 Q145,3 150,8 Q155,1 160,8 Q165,2 170,8 Q175,0 180,8 Q185,3 190,8 Q195,1 200,8 Z" />
+          {/* Double lines for richness */}
+          <line x1="0" y1="21" x2="90" y2="21" stroke={color} strokeWidth="1.5" opacity="0.35" />
+          <line x1="0" y1="24" x2="70" y2="24" stroke={color} strokeWidth="0.75" opacity="0.2" />
+          <line x1="310" y1="21" x2="400" y2="21" stroke={color} strokeWidth="1.5" opacity="0.35" />
+          <line x1="330" y1="24" x2="400" y2="24" stroke={color} strokeWidth="0.75" opacity="0.2" />
         </svg>
+        {/* Center ornament — fixed width, animated glow */}
         <svg
-          className="absolute left-0 right-0"
-          style={{ bottom: 4, height: 12, width: "100%", animation: "ul-flame-flicker 2.2s ease-in-out 0.4s infinite" }}
-          viewBox="0 0 200 8"
-          preserveAspectRatio="none"
-          fill={color}
-          opacity={0.35}
-        >
-          <path d="M5,8 Q10,1 15,8 Q20,3 25,8 Q30,0 35,8 Q40,2 45,8 Q50,1 55,8 Q60,3 65,8 Q70,0 75,8 Q80,2 85,8 Q90,1 95,8 Q100,3 105,8 Q110,0 115,8 Q120,2 125,8 Q130,1 135,8 Q140,3 145,8 Q150,0 155,8 Q160,2 165,8 Q170,1 175,8 Q180,3 185,8 Q190,0 195,8 Z" />
-        </svg>
-        {/* Colored sparkle dots — 10 */}
-        {[4, 14, 24, 34, 44, 54, 64, 74, 84, 94].map((pos, i) => (
-          <div
-            key={pos}
-            style={{
-              position: "absolute",
-              left: `${pos}%`,
-              bottom: 14,
-              width: 4,
-              height: 4,
-              borderRadius: "50%",
-              background: `rgba(${rgb},0.95)`,
-              boxShadow: `0 0 8px rgba(${rgb},0.9), 0 0 16px rgba(${rgb},0.4)`,
-              animation: `ul-sparkle 1.6s ease-in-out ${i * 0.16}s infinite`,
-            }}
-          />
-        ))}
-        {/* White/gold accent sparkles — interspersed */}
-        {[9, 29, 49, 69, 89].map((pos, i) => (
-          <div
-            key={`w-${pos}`}
-            style={{
-              position: "absolute",
-              left: `${pos}%`,
-              bottom: 16,
-              width: 3,
-              height: 3,
-              borderRadius: "50%",
-              background: "rgba(255,255,255,0.9)",
-              boxShadow: "0 0 6px rgba(255,255,255,0.7), 0 0 12px rgba(255,215,0,0.3)",
-              animation: `ul-sparkle 2s ease-in-out ${i * 0.35 + 0.2}s infinite`,
-            }}
-          />
-        ))}
-        {/* Main bar with flowing gradient + gold accent */}
-        <div
+          viewBox="0 0 220 32"
+          className="absolute left-1/2 top-0 h-full"
           style={{
-            height: 8,
-            background: `linear-gradient(90deg, ${color}, rgba(255,255,255,0.45), ${color}, rgba(255,215,0,0.3), ${color}, rgba(255,255,255,0.4), ${color})`,
-            backgroundSize: "400% 100%",
-            animation: "ul-flow 2.5s ease infinite",
-            boxShadow: `0 0 14px rgba(${rgb},0.75), 0 0 32px rgba(${rgb},0.4), 0 0 56px rgba(${rgb},0.18)`,
-            borderRadius: "0 0 7px 7px",
+            width: 220,
+            transform: "translateX(-50%)",
+            animation: "ul-crown-glow 4s ease-in-out infinite",
+          }}
+          fill="none"
+        >
+          {/* Crown center — three pointed peaks */}
+          <path
+            d="M100,8 L104,4 L108,8 L112,2 L116,8 L120,4 L124,8"
+            stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" opacity="0.9"
+          />
+          {/* Crown base arc */}
+          <path
+            d="M98,10 Q112,14 126,10"
+            stroke={color} strokeWidth="1.5" strokeLinecap="round" opacity="0.8"
+          />
+          {/* Crown jewel */}
+          <circle cx="112" cy="7" r="1.5" fill="rgba(255,255,255,0.8)" />
+
+          {/* Left elaborate flourish — outer sweep */}
+          <path
+            d="M92,20 C88,18 80,14 72,10 C64,6 56,6 52,10 C48,14 52,16 58,15 C64,14 68,12 72,14 C76,16 72,20 66,20"
+            stroke={color} strokeWidth="1.5" strokeLinecap="round" opacity="0.7"
+          />
+          {/* Left inner flourish */}
+          <path
+            d="M90,22 C84,20 76,16 68,14 C60,12 58,16 64,17 C70,18 74,16 76,18"
+            stroke={color} strokeWidth="1.2" strokeLinecap="round" opacity="0.45"
+          />
+          {/* Left extended vine */}
+          <path
+            d="M52,10 C48,8 40,10 36,14 C32,18 28,18 24,16"
+            stroke={color} strokeWidth="1" strokeLinecap="round" opacity="0.35"
+          />
+
+          {/* Right elaborate flourish — outer sweep (mirrored) */}
+          <path
+            d="M132,20 C136,18 144,14 152,10 C160,6 168,6 172,10 C176,14 172,16 166,15 C160,14 156,12 152,14 C148,16 152,20 158,20"
+            stroke={color} strokeWidth="1.5" strokeLinecap="round" opacity="0.7"
+          />
+          {/* Right inner flourish */}
+          <path
+            d="M134,22 C140,20 148,16 156,14 C164,12 166,16 160,17 C154,18 150,16 148,18"
+            stroke={color} strokeWidth="1.2" strokeLinecap="round" opacity="0.45"
+          />
+          {/* Right extended vine */}
+          <path
+            d="M172,10 C176,8 184,10 188,14 C192,18 196,18 200,16"
+            stroke={color} strokeWidth="1" strokeLinecap="round" opacity="0.35"
+          />
+
+          {/* Connecting lines from flourish to crown */}
+          <line x1="92" y1="20" x2="98" y2="14" stroke={color} strokeWidth="1.5" opacity="0.6" />
+          <line x1="132" y1="20" x2="126" y2="14" stroke={color} strokeWidth="1.5" opacity="0.6" />
+
+          {/* Ornamental ring around crown base */}
+          <ellipse cx="112" cy="14" rx="18" ry="8" stroke={color} strokeWidth="1" opacity="0.25" />
+
+          {/* Accent dots at flourish tips */}
+          <circle cx="24" cy="16" r="1.5" fill={color} opacity="0.4" />
+          <circle cx="200" cy="16" r="1.5" fill={color} opacity="0.4" />
+          <circle cx="66" cy="20" r="1.5" fill={color} opacity="0.35" />
+          <circle cx="158" cy="20" r="1.5" fill={color} opacity="0.35" />
+          {/* Gold/white accent dots near crown */}
+          <circle cx="104" cy="4" r="1" fill="rgba(255,215,0,0.7)" />
+          <circle cx="120" cy="4" r="1" fill="rgba(255,215,0,0.7)" />
+        </svg>
+        {/* Shimmer sweep */}
+        <div
+          className="absolute top-0 h-full pointer-events-none"
+          style={{
+            width: "12%",
+            background: `linear-gradient(90deg, transparent, rgba(255,255,255,0.2), rgba(255,215,0,0.1), transparent)`,
+            animation: "ul-shimmer-w 6s ease-in-out infinite",
           }}
         />
       </div>

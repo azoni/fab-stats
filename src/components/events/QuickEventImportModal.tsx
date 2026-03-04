@@ -56,6 +56,7 @@ export function QuickEventImportModal({ open, onClose, onImportComplete }: Quick
   const [imageProcessing, setImageProcessing] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const [showHeroWarning, setShowHeroWarning] = useState(false);
+  const [confirmSkipHero, setConfirmSkipHero] = useState(false);
 
   function handleReset() {
     setPhase("input");
@@ -68,6 +69,7 @@ export function QuickEventImportModal({ open, onClose, onImportComplete }: Quick
     setImageProcessing(false);
     setDragActive(false);
     setShowHeroWarning(false);
+    setConfirmSkipHero(false);
   }
 
   function handleClose() {
@@ -358,7 +360,7 @@ export function QuickEventImportModal({ open, onClose, onImportComplete }: Quick
 
               {/* Hero picker */}
               <div className="mb-4">
-                <label className="block text-sm text-fab-muted mb-1">Hero you played (optional)</label>
+                <label className="block text-sm text-fab-muted mb-1">Hero you played</label>
                 <select
                   value={heroPlayed}
                   onChange={(e) => setHeroPlayed(e.target.value)}
@@ -433,29 +435,38 @@ export function QuickEventImportModal({ open, onClose, onImportComplete }: Quick
 
           {/* Hero Warning */}
           {showHeroWarning && phase === "review" && (
-            <div className="bg-fab-draw/10 border border-fab-draw/30 rounded-lg p-4 mb-4">
+            <div className="bg-fab-loss/10 border border-fab-loss/30 rounded-lg p-4 mb-4">
               <div className="flex items-center gap-2 mb-2">
-                <svg className="w-5 h-5 text-fab-draw shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <svg className="w-5 h-5 text-fab-loss shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
                 </svg>
-                <p className="text-sm font-semibold text-fab-draw">No hero selected</p>
+                <p className="text-sm font-semibold text-fab-loss">No hero selected!</p>
               </div>
               <p className="text-sm text-fab-muted mb-3">
-                Hero data powers your per-hero stats, matchup breakdowns, and showcase cards. Select a hero above for better tracking.
+                Without a hero, your stats will be incomplete and placements will show without a hero on the feed. Select a hero above.
               </p>
-              <div className="flex gap-2">
+              <div className="flex flex-col gap-2">
                 <button
-                  onClick={() => setShowHeroWarning(false)}
-                  className="flex-1 py-2 rounded-lg text-sm font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors"
+                  onClick={() => { setShowHeroWarning(false); setConfirmSkipHero(false); }}
+                  className="w-full py-2 rounded-lg text-sm font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors"
                 >
-                  Add Hero
+                  Select a Hero
                 </button>
-                <button
-                  onClick={() => { setShowHeroWarning(false); handleImport(); }}
-                  className="flex-1 py-2 rounded-lg text-sm font-semibold bg-fab-surface border border-fab-border text-fab-muted hover:text-fab-text transition-colors"
-                >
-                  Skip
-                </button>
+                {!confirmSkipHero ? (
+                  <button
+                    onClick={() => setConfirmSkipHero(true)}
+                    className="w-full py-2 rounded-lg text-xs font-semibold bg-fab-surface border border-fab-border text-fab-dim hover:text-fab-muted transition-colors"
+                  >
+                    Import without hero...
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => { setShowHeroWarning(false); setConfirmSkipHero(false); handleImport(); }}
+                    className="w-full py-2 rounded-lg text-sm font-semibold bg-fab-loss/20 border border-fab-loss/30 text-fab-loss hover:bg-fab-loss/30 transition-colors"
+                  >
+                    Yes, import without hero
+                  </button>
+                )}
               </div>
             </div>
           )}
