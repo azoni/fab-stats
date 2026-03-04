@@ -234,7 +234,7 @@ export const TRIVIA_QUESTIONS: TriviaQuestion[] = [
     id: 31,
     question: "Aurora is a hero from which class in Flesh and Blood?",
     options: ["Runeblade", "Warrior", "Guardian", "Ranger"],
-    correctIndex: 1,
+    correctIndex: 0,
     category: "lore",
   },
   {
@@ -363,9 +363,9 @@ export const TRIVIA_QUESTIONS: TriviaQuestion[] = [
   },
   {
     id: 47,
-    question: "What keyword allows an attack to deal damage even if it is fully defended?",
-    options: ["Piercing", "Dominate", "Overwhelm", "Intimidate"],
-    correctIndex: 2,
+    question: "What keyword means the defending hero can only defend with one card from hand?",
+    options: ["Piercing", "Dominate", "Overpower", "Intimidate"],
+    correctIndex: 1,
     category: "mechanics",
   },
   {
@@ -699,7 +699,7 @@ export const TRIVIA_QUESTIONS: TriviaQuestion[] = [
     options: [
       "It gains an ability until end of turn",
       "The equipment provides +1 to all attacks",
-      "The equipment can block one additional time before being destroyed",
+      "When it defends, it gets a -1 defense counter; destroyed at 0 defense",
       "When the equipment would be destroyed, instead put a -1 counter on it",
     ],
     correctIndex: 2,
@@ -824,8 +824,8 @@ export const TRIVIA_QUESTIONS: TriviaQuestion[] = [
   {
     id: 90,
     question: "Which hero was the first to achieve Living Legend status?",
-    options: ["Bravo", "Prism", "Chane", "Katsu"],
-    correctIndex: 2,
+    options: ["Bravo, Star of the Show", "Prism", "Chane", "Katsu"],
+    correctIndex: 0,
     category: "tournament",
   },
   {
@@ -953,7 +953,7 @@ export const TRIVIA_QUESTIONS: TriviaQuestion[] = [
     id: 104,
     question: "Bravo, Star of the Show was the first hero to achieve Living Legend in which format?",
     options: ["Classic Constructed", "Draft", "Blitz", "Both simultaneously"],
-    correctIndex: 2,
+    correctIndex: 0,
     category: "tournament",
   },
   {
@@ -1123,7 +1123,7 @@ export const TRIVIA_QUESTIONS: TriviaQuestion[] = [
     id: 119,
     question: "What country hosted the first Flesh and Blood World Championship?",
     options: ["United States", "New Zealand", "Japan", "Australia"],
-    correctIndex: 1,
+    correctIndex: 0,
     category: "tournament",
   },
   {
@@ -1153,7 +1153,7 @@ export const TRIVIA_QUESTIONS: TriviaQuestion[] = [
     id: 122,
     question: "What is the name of Rhinar's signature weapon?",
     options: ["Mandible Claw", "Romping Club", "Scabskin Leathers", "Ravenous Meataxe"],
-    correctIndex: 3,
+    correctIndex: 1,
     category: "cards",
   },
   {
@@ -1181,7 +1181,7 @@ export const TRIVIA_QUESTIONS: TriviaQuestion[] = [
     id: 126,
     question: "What does the card 'Enlightened Strike' do?",
     options: [
-      "It's a powerful Generic attack action that draws a card if it deals damage",
+      "It's a powerful Generic attack that lets you choose: draw a card, gain power, or gain go again",
       "It's an Instant that prevents all damage",
       "It's a 0-cost attack with Go Again",
       "It's a Defense Reaction that gains you life",
@@ -1252,14 +1252,9 @@ export const TRIVIA_QUESTIONS: TriviaQuestion[] = [
   },
   {
     id: 135,
-    question: "The card 'Pummel' is used for what purpose?",
-    options: [
-      "Dealing arcane damage",
-      "Creating tokens",
-      "Preventing the defending hero from playing Defense Reactions during a combat chain",
-      "Drawing cards",
-    ],
-    correctIndex: 2,
+    question: "The card 'Pummel' is primarily used as what type of card?",
+    options: ["Defense Reaction", "Attack Reaction that gives +4 power", "Instant", "Non-attack Action"],
+    correctIndex: 1,
     category: "cards",
   },
   {
@@ -1274,7 +1269,7 @@ export const TRIVIA_QUESTIONS: TriviaQuestion[] = [
     question: "What does the card 'Tome of Fyendal' do?",
     options: [
       "Deal 10 arcane damage",
-      "Gain 4 life and draw a card",
+      "Draw 2 cards; if played from arsenal, gain life equal to cards in hand",
       "Search your deck for any card",
       "Destroy an equipment",
     ],
@@ -1375,14 +1370,14 @@ export const TRIVIA_QUESTIONS: TriviaQuestion[] = [
     id: 148,
     question: "Which Generic attack action has become a staple in many aggressive decks due to its 'on-hit' draw effect?",
     options: ["Enlightened Strike", "Snatch", "Razor Reflex", "Sink Below"],
-    correctIndex: 0,
+    correctIndex: 1,
     category: "cards",
   },
   {
     id: 149,
     question: "What type of card is 'Courage of Bladehold'?",
-    options: ["Attack Action", "Defense Reaction", "Instant", "Attack Reaction"],
-    correctIndex: 3,
+    options: ["Attack Action", "Defense Reaction", "Equipment", "Attack Reaction"],
+    correctIndex: 2,
     category: "cards",
   },
   {
@@ -1413,7 +1408,7 @@ export const TRIVIA_QUESTIONS: TriviaQuestion[] = [
   },
   {
     id: 153,
-    question: "The card 'Wounded Bull' is associated with which hero class?",
+    question: "The card 'Wounded Bull' is thematically associated with which class?",
     options: ["Brute", "Warrior", "Ninja", "Guardian"],
     correctIndex: 0,
     category: "cards",
@@ -1437,7 +1432,7 @@ export const TRIVIA_QUESTIONS: TriviaQuestion[] = [
     question: "What does the card 'Fate Foreseen' do?",
     options: [
       "Draw 2 cards",
-      "It's a Defense Reaction that defends for 4 and lets you Opt 2",
+      "It's a Defense Reaction that defends for 4 and lets you Opt 1",
       "Deal 4 arcane damage",
       "Create 2 Spectral Shield tokens",
     ],
@@ -1472,7 +1467,7 @@ export const TRIVIA_QUESTIONS: TriviaQuestion[] = [
       "Arcane Barrier 2",
       "Draw a card at the start of each turn",
       "+2 defense to all attacks",
-      "Once per turn, gain 1 resource when an action card you control hits",
+      "Accumulates energy counters; remove 3 to gain 1 resource as an instant",
     ],
     correctIndex: 3,
     category: "cards",
@@ -1617,13 +1612,13 @@ export const TRIVIA_QUESTIONS: TriviaQuestion[] = [
     id: 177,
     question: "What year did Flesh and Blood hold its first official World Championship?",
     options: ["2019", "2021", "2020", "2022"],
-    correctIndex: 1,
+    correctIndex: 3,
     category: "history",
   },
   {
     id: 178,
     question: "Heavy Hitters introduced heroes from which class archetype?",
-    options: ["Ninja and Wizard", "Brute and Guardian", "Guardian and Warrior", "Assassin and Ranger"],
+    options: ["Ninja and Wizard", "Brute, Guardian, and Warrior", "Guardian and Warrior", "Assassin and Ranger"],
     correctIndex: 1,
     category: "history",
   },
