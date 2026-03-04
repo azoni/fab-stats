@@ -764,20 +764,6 @@ export default function Dashboard() {
                     <span className="text-[10px] font-bold text-fab-dim group-hover:text-fab-gold transition-colors tabular-nums">{kudosTotal}</span>
                   </Link>
                 )}
-                {(fabdokuScore !== null || (fabdokuFullStats?.gamesPlayed ?? 0) > 0) && (
-                  <Link href="/fabdoku" className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-fab-bg/80 border border-fab-border hover:border-fab-gold/40 transition-colors group" title={fabdokuScore !== null ? "Today's FaBdoku score" : "FaBdoku games played"}>
-                    <svg className="w-3 h-3 text-fab-dim group-hover:text-fab-gold transition-colors" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-                      <rect x="3" y="3" width="18" height="18" rx="2" />
-                      <line x1="3" y1="9" x2="21" y2="9" />
-                      <line x1="3" y1="15" x2="21" y2="15" />
-                      <line x1="9" y1="3" x2="9" y2="21" />
-                      <line x1="15" y1="3" x2="15" y2="21" />
-                    </svg>
-                    <span className="text-[10px] font-bold text-fab-dim group-hover:text-fab-gold transition-colors tabular-nums">
-                      {fabdokuScore !== null ? `${fabdokuScore}/9` : `${(fabdokuFullStats?.gamesPlayed ?? 0)}g`}
-                    </span>
-                  </Link>
-                )}
               </div>
             </CardBorderWrapper>
             {/* Games link — compact */}
