@@ -146,7 +146,10 @@ export interface UserProfile {
   selectedEmblem?: string;
   selectedClassEmblem?: string;
   notificationsEnabled?: boolean;
-  socialLinks?: { twitter?: string; discord?: string; fabrary?: string };
+  socialLinks?: { twitter?: string; discord?: string; fabrary?: string; fabraryName?: string };
+  borderStyle?: "beam" | "glow";
+  borderEventType?: string;
+  borderPlacement?: string;
 }
 
 export interface ShowcaseCard {

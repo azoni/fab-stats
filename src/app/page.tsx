@@ -34,6 +34,7 @@ import { loadUserResult, loadStats } from "@/lib/fabdoku/firestore";
 import type { FaBdokuStats } from "@/lib/fabdoku/types";
 import { getTodayDateStr } from "@/lib/fabdoku/puzzle-generator";
 import { loadKudosCounts } from "@/lib/kudos";
+import { CardBorderWrapper } from "@/components/profile/CardBorderWrapper";
 import type { Poll, EventShowcaseConfig } from "@/types";
 
 function ResourcesPopout() {
@@ -174,13 +175,7 @@ export default function Dashboard() {
   const last30 = useMemo(() => sortedByDateDesc.slice(0, 30).reverse(), [sortedByDateDesc]);
   const playoffFinishes = useMemo(() => computePlayoffFinishes(eventStats), [eventStats]);
   const cardBorder = useMemo(() => {
-    const tierRank: Record<string, number> = {
-      "Battle Hardened": 1,
-      "The Calling": 2,
-      Nationals: 3,
-      "Pro Tour": 4,
-      Worlds: 5,
-    };
+    const tierRank: Record<string, number> = { "Battle Hardened": 1, "The Calling": 2, Nationals: 3, "Pro Tour": 4, Worlds: 5 };
     const tierStyle: Record<string, { border: string; shadow: string; rgb: string }> = {
       "Battle Hardened": { border: "#cd7f32", shadow: "0 0 8px rgba(205,127,50,0.25)", rgb: "205,127,50" },
       "The Calling": { border: "#60a5fa", shadow: "0 0 8px rgba(96,165,250,0.3)", rgb: "96,165,250" },
@@ -189,22 +184,28 @@ export default function Dashboard() {
       Worlds: { border: "#fbbf24", shadow: "0 0 12px rgba(251,191,36,0.4), 0 0 24px rgba(251,191,36,0.15)", rgb: "251,191,36" },
     };
     const placementRank: Record<string, number> = { top8: 1, top4: 2, finalist: 3, champion: 4 };
+
+    // Check for user-selected border
+    const selEvt = profile?.borderEventType;
+    const selPl = profile?.borderPlacement;
+    if (selEvt && selPl && tierStyle[selEvt]) {
+      const hasFinish = playoffFinishes.some(f => f.eventType === selEvt && f.type === selPl);
+      if (hasFinish) return { ...tierStyle[selEvt], placement: placementRank[selPl] || 0 };
+    }
+
+    // Default: best event tier + best placement
     let best: string | null = null;
     let bestScore = 0;
     let bestPlacement = 0;
     for (const f of playoffFinishes) {
       const score = tierRank[f.eventType] || 0;
-      if (score > bestScore) {
-        best = f.eventType;
-        bestScore = score;
-      }
+      if (score > bestScore) { best = f.eventType; bestScore = score; }
       const pRank = placementRank[f.type] || 0;
       if (pRank > bestPlacement) bestPlacement = pRank;
     }
     if (!best) return null;
-    const base = tierStyle[best];
-    return { ...base, placement: bestPlacement };
-  }, [playoffFinishes]);
+    return { ...tierStyle[best], placement: bestPlacement };
+  }, [playoffFinishes, profile?.borderEventType, profile?.borderPlacement]);
 
   // Community section data
   const { seasons } = useSeasons();
@@ -267,12 +268,6 @@ export default function Dashboard() {
 
   return (
     <div className="relative space-y-8">
-      {((cardBorder as { placement?: number } | null)?.placement ?? 0) >= 2 && (
-        <style>{`
-          @keyframes cb-spin { to { transform: rotate(1turn); } }
-          @keyframes cb-sparkle-dot { 0%, 100% { opacity: 0.2; transform: scale(0.5); } 50% { opacity: 1; transform: scale(1.2); } }
-        `}</style>
-      )}
       {/* Ambient page glow — subtle gold atmosphere at the top */}
       <div className="pointer-events-none absolute inset-x-0 -top-24 h-72 bg-[radial-gradient(ellipse_60%_50%_at_50%_-10%,rgba(201,168,76,0.06),transparent)]" />
 
@@ -464,64 +459,8 @@ export default function Dashboard() {
       {hasMatches && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
           <div className="flex flex-col gap-6">
-            {/* Profile card — beam border wrapper for Top 4+ */}
-            <div
-              className={((cardBorder as { placement?: number } | null)?.placement ?? 0) >= 2 ? "relative rounded-lg" : ""}
-              style={((cardBorder as { placement?: number } | null)?.placement ?? 0) >= 2 ? {
-                padding: 2,
-                boxShadow: (() => {
-                  const p = (cardBorder as { placement?: number }).placement!;
-                  const rgb = (cardBorder as { rgb: string }).rgb;
-                  if (p >= 4) return `0 0 20px rgba(${rgb},0.5), 0 0 40px rgba(${rgb},0.25), 0 0 70px rgba(${rgb},0.1)`;
-                  if (p >= 3) return `0 0 14px rgba(${rgb},0.4), 0 0 30px rgba(${rgb},0.2), 0 0 50px rgba(${rgb},0.08)`;
-                  return `0 0 10px rgba(${rgb},0.3), 0 0 20px rgba(${rgb},0.15)`;
-                })(),
-              } : undefined}
-            >
-              {((cardBorder as { placement?: number } | null)?.placement ?? 0) >= 2 && (() => {
-                const p = (cardBorder as { placement: number; rgb: string }).placement;
-                const rgb = (cardBorder as { rgb: string }).rgb;
-                const speed = p >= 4 ? '3s' : p >= 3 ? '4s' : '5s';
-                return (
-                  <div className="absolute inset-0 rounded-lg overflow-hidden">
-                    <div style={{ position: 'absolute', inset: '-200%', background: `conic-gradient(from 0deg, transparent ${p >= 4 ? '30%' : '40%'}, rgba(${rgb},${p >= 3 ? 0.9 : 0.7}) 50%, transparent ${p >= 4 ? '70%' : '60%'})`, animation: `cb-spin ${speed} linear infinite` }} />
-                    {p >= 4 && <div style={{ position: 'absolute', inset: '-200%', background: `conic-gradient(from 180deg, transparent 35%, rgba(${rgb},0.5) 50%, transparent 65%)`, animation: 'cb-spin 4.5s linear infinite reverse' }} />}
-                  </div>
-                );
-              })()}
-              {((cardBorder as { placement?: number } | null)?.placement ?? 0) >= 3 && (() => {
-                const p = (cardBorder as { placement: number; rgb: string }).placement;
-                const rgb = (cardBorder as { rgb: string }).rgb;
-                const s = p >= 4 ? 20 : 14;
-                const t = p >= 4 ? 2.5 : 1.5;
-                const o = p >= 4 ? -8 : -5;
-                const c = `rgba(${rgb},${p >= 4 ? 0.8 : 0.5})`;
-                return (
-                  <>
-                    {[
-                      { top: o, left: o, borderTop: `${t}px solid ${c}`, borderLeft: `${t}px solid ${c}` },
-                      { top: o, right: o, borderTop: `${t}px solid ${c}`, borderRight: `${t}px solid ${c}` },
-                      { bottom: o, left: o, borderBottom: `${t}px solid ${c}`, borderLeft: `${t}px solid ${c}` },
-                      { bottom: o, right: o, borderBottom: `${t}px solid ${c}`, borderRight: `${t}px solid ${c}` },
-                    ].map((style, i) => <div key={i} className="absolute pointer-events-none z-10" style={{ ...style, width: s, height: s }} />)}
-                    {p >= 4 && [
-                      { top: -3, left: -3 }, { top: -3, right: -3 }, { bottom: -3, left: -3 }, { bottom: -3, right: -3 },
-                    ].map((pos, i) => (
-                      <div key={`sp-${i}`} className="absolute w-1.5 h-1.5 rounded-full pointer-events-none z-10" style={{ ...pos, background: `rgba(${rgb},0.9)`, boxShadow: `0 0 6px rgba(${rgb},0.6)`, animation: `cb-sparkle-dot 2.5s ease-in-out ${i * 0.6}s infinite` }} />
-                    ))}
-                  </>
-                );
-              })()}
-            <div
-              className={`relative bg-fab-surface ${((cardBorder as { placement?: number } | null)?.placement ?? 0) >= 2 ? "rounded-[7px]" : "border border-fab-border rounded-lg"} px-4 py-3 overflow-visible`}
-              style={(() => {
-                const p = (cardBorder as { placement?: number } | null)?.placement ?? 0;
-                const rgb = (cardBorder as { rgb?: string } | null)?.rgb;
-                if (p >= 2 && rgb) return p >= 4 ? { boxShadow: `inset 0 0 20px rgba(${rgb},0.04)` } as React.CSSProperties : p >= 3 ? { boxShadow: `inset 0 0 12px rgba(${rgb},0.03)` } as React.CSSProperties : undefined;
-                if (cardBorder) return { borderColor: cardBorder.border, boxShadow: cardBorder.shadow } as React.CSSProperties;
-                return undefined;
-              })()}
-            >
+            {/* Profile card */}
+            <CardBorderWrapper cardBorder={cardBorder} borderStyle={profile?.borderStyle || "beam"} contentClassName="relative bg-fab-surface px-4 py-3 overflow-visible">
               {/* FaB-inspired pitch strip — thin gold accent across the top */}
               <div className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-fab-gold/30 to-transparent" />
               {/* Subtle decorative accent + hero card art — clipped to card bounds */}
@@ -658,8 +597,7 @@ export default function Dashboard() {
                   </Link>
                 )}
               </div>
-            </div>
-            </div>
+            </CardBorderWrapper>
             {/* Quick stats + recent events + player spotlight */}
             <QuickStats overall={overall} last30={last30} />
             <RecentEvents eventStats={eventStats} playerName={profile?.displayName} />

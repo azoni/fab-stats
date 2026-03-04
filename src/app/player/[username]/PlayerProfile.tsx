@@ -35,6 +35,8 @@ import { BestFinishShareModal } from "@/components/profile/BestFinishCard";
 import { ProfileShareModal } from "@/components/profile/ProfileCard";
 import { ShowcaseSection } from "@/components/profile/ShowcaseSection";
 import { KudosSection } from "@/components/profile/KudosSection";
+import { CardBorderWrapper, BorderPicker } from "@/components/profile/CardBorderWrapper";
+import type { BorderStyleType, BorderSelection } from "@/components/profile/CardBorderWrapper";
 import { loadKudosCounts, loadGivenKudos, loadKudosGivenCounts } from "@/lib/kudos";
 import type { MatchRecord, UserProfile, Achievement } from "@/types";
 import { MatchResult } from "@/types";
@@ -86,7 +88,8 @@ export default function PlayerProfile() {
   const [fabdokuFullStats, setFabdokuFullStats] = useState<FaBdokuStats | null>(null);
   const [previewAsVisitor, setPreviewAsVisitor] = useState(false);
   const [editingSocials, setEditingSocials] = useState(false);
-  const [socialDraft, setSocialDraft] = useState<{ twitter: string; discord: string; fabrary: string }>({ twitter: "", discord: "", fabrary: "" });
+  const [socialDraft, setSocialDraft] = useState<{ twitter: string; discord: string; fabrary: string; fabraryName: string }>({ twitter: "", discord: "", fabrary: "", fabraryName: "" });
+  const [discordCopied, setDiscordCopied] = useState(false);
 
   // Auto-expand achievements if navigated with #achievements hash
   useEffect(() => {
@@ -333,16 +336,10 @@ export default function PlayerProfile() {
     return creators.find((c) => c.username === state.profile.username) ?? null;
   }, [creators, state]);
 
-  // Card border = highest event tier where the player made playoffs
-  // Color = event tier. Design intensity = best placement.
+  // Card border = event tier color + placement intensity
+  // User can select which event+placement combo to display
+  const profileObj = state.status === "loaded" ? state.profile : null;
   const cardBorder = useMemo(() => {
-    const tierRank: Record<string, number> = {
-      "Battle Hardened": 1,
-      "The Calling": 2,
-      Nationals: 3,
-      "Pro Tour": 4,
-      Worlds: 5,
-    };
     const tierStyle: Record<string, { border: string; shadow: string; rgb: string }> = {
       "Battle Hardened": { border: "#cd7f32", shadow: "0 0 8px rgba(205,127,50,0.25)", rgb: "205,127,50" },
       "The Calling": { border: "#60a5fa", shadow: "0 0 8px rgba(96,165,250,0.3)", rgb: "96,165,250" },
@@ -351,22 +348,31 @@ export default function PlayerProfile() {
       Worlds: { border: "#fbbf24", shadow: "0 0 12px rgba(251,191,36,0.4), 0 0 24px rgba(251,191,36,0.15)", rgb: "251,191,36" },
     };
     const placementRank: Record<string, number> = { top8: 1, top4: 2, finalist: 3, champion: 4 };
+    const tierRank: Record<string, number> = { "Battle Hardened": 1, "The Calling": 2, Nationals: 3, "Pro Tour": 4, Worlds: 5 };
+
+    // Check for user-selected border
+    const selEvt = profileObj?.borderEventType;
+    const selPl = profileObj?.borderPlacement;
+    if (selEvt && selPl && tierStyle[selEvt]) {
+      const hasFinish = playoffFinishes.some(f => f.eventType === selEvt && f.type === selPl);
+      if (hasFinish) {
+        return { ...tierStyle[selEvt], placement: placementRank[selPl] || 0 };
+      }
+    }
+
+    // Default: best event tier + best placement
     let best: string | null = null;
     let bestScore = 0;
     let bestPlacement = 0;
     for (const f of playoffFinishes) {
       const score = tierRank[f.eventType] || 0;
-      if (score > bestScore) {
-        best = f.eventType;
-        bestScore = score;
-      }
+      if (score > bestScore) { best = f.eventType; bestScore = score; }
       const pRank = placementRank[f.type] || 0;
       if (pRank > bestPlacement) bestPlacement = pRank;
     }
     if (!best) return null;
-    const base = tierStyle[best];
-    return { ...base, placement: bestPlacement };
-  }, [playoffFinishes]);
+    return { ...tierStyle[best], placement: bestPlacement };
+  }, [playoffFinishes, profileObj?.borderEventType, profileObj?.borderPlacement]);
 
 
   if (state.status === "loading") {
@@ -461,75 +467,10 @@ export default function PlayerProfile() {
 
   return (
     <div className="space-y-5">
-      {(() => { const p = (cardBorder as { placement?: number } | null)?.placement ?? 0; return p >= 2; })() && (
-        <style>{`
-          @keyframes cb-spin { to { transform: rotate(1turn); } }
-          @keyframes cb-sparkle-dot { 0%, 100% { opacity: 0.2; transform: scale(0.5); } 50% { opacity: 1; transform: scale(1.2); } }
-        `}</style>
-      )}
       {/* Profile + Filters (always on top) */}
       <div className="space-y-5">
-        {/* Profile Header — beam border wrapper for Top 4+ */}
-        <div
-          className={((cardBorder as { placement?: number } | null)?.placement ?? 0) >= 2 ? "relative rounded-lg" : ""}
-          style={((cardBorder as { placement?: number } | null)?.placement ?? 0) >= 2 ? {
-            padding: 2,
-            boxShadow: (() => {
-              const p = (cardBorder as { placement?: number }).placement!;
-              const rgb = (cardBorder as { rgb: string }).rgb;
-              if (p >= 4) return `0 0 20px rgba(${rgb},0.5), 0 0 40px rgba(${rgb},0.25), 0 0 70px rgba(${rgb},0.1)`;
-              if (p >= 3) return `0 0 14px rgba(${rgb},0.4), 0 0 30px rgba(${rgb},0.2), 0 0 50px rgba(${rgb},0.08)`;
-              return `0 0 10px rgba(${rgb},0.3), 0 0 20px rgba(${rgb},0.15)`;
-            })(),
-          } : undefined}
-        >
-          {/* Spinning gradient beam(s) */}
-          {((cardBorder as { placement?: number } | null)?.placement ?? 0) >= 2 && (() => {
-            const p = (cardBorder as { placement: number; rgb: string }).placement;
-            const rgb = (cardBorder as { rgb: string }).rgb;
-            const speed = p >= 4 ? '3s' : p >= 3 ? '4s' : '5s';
-            return (
-              <div className="absolute inset-0 rounded-lg overflow-hidden">
-                <div style={{ position: 'absolute', inset: '-200%', background: `conic-gradient(from 0deg, transparent ${p >= 4 ? '30%' : '40%'}, rgba(${rgb},${p >= 3 ? 0.9 : 0.7}) 50%, transparent ${p >= 4 ? '70%' : '60%'})`, animation: `cb-spin ${speed} linear infinite` }} />
-                {p >= 4 && <div style={{ position: 'absolute', inset: '-200%', background: `conic-gradient(from 180deg, transparent 35%, rgba(${rgb},0.5) 50%, transparent 65%)`, animation: 'cb-spin 4.5s linear infinite reverse' }} />}
-              </div>
-            );
-          })()}
-          {/* Corner brackets for finalist+ */}
-          {((cardBorder as { placement?: number } | null)?.placement ?? 0) >= 3 && (() => {
-            const p = (cardBorder as { placement: number; rgb: string }).placement;
-            const rgb = (cardBorder as { rgb: string }).rgb;
-            const s = p >= 4 ? 20 : 14;
-            const t = p >= 4 ? 2.5 : 1.5;
-            const o = p >= 4 ? -8 : -5;
-            const c = `rgba(${rgb},${p >= 4 ? 0.8 : 0.5})`;
-            return (
-              <>
-                {[
-                  { top: o, left: o, borderTop: `${t}px solid ${c}`, borderLeft: `${t}px solid ${c}` },
-                  { top: o, right: o, borderTop: `${t}px solid ${c}`, borderRight: `${t}px solid ${c}` },
-                  { bottom: o, left: o, borderBottom: `${t}px solid ${c}`, borderLeft: `${t}px solid ${c}` },
-                  { bottom: o, right: o, borderBottom: `${t}px solid ${c}`, borderRight: `${t}px solid ${c}` },
-                ].map((style, i) => <div key={i} className="absolute pointer-events-none z-10" style={{ ...style, width: s, height: s }} />)}
-                {p >= 4 && [
-                  { top: -3, left: -3 }, { top: -3, right: -3 }, { bottom: -3, left: -3 }, { bottom: -3, right: -3 },
-                ].map((pos, i) => (
-                  <div key={`sp-${i}`} className="absolute w-1.5 h-1.5 rounded-full pointer-events-none z-10" style={{ ...pos, background: `rgba(${rgb},0.9)`, boxShadow: `0 0 6px rgba(${rgb},0.6)`, animation: `cb-sparkle-dot 2.5s ease-in-out ${i * 0.6}s infinite` }} />
-                ))}
-              </>
-            );
-          })()}
-          {/* Card content */}
-          <div
-            className={`bg-fab-surface p-5 relative ${((cardBorder as { placement?: number } | null)?.placement ?? 0) >= 2 ? "rounded-[7px]" : "border border-fab-border rounded-lg"}`}
-            style={(() => {
-              const p = (cardBorder as { placement?: number } | null)?.placement ?? 0;
-              const rgb = (cardBorder as { rgb?: string } | null)?.rgb;
-              if (p >= 2 && rgb) return p >= 4 ? { boxShadow: `inset 0 0 20px rgba(${rgb},0.04)` } as React.CSSProperties : p >= 3 ? { boxShadow: `inset 0 0 12px rgba(${rgb},0.03)` } as React.CSSProperties : undefined;
-              if (cardBorder) return { borderColor: cardBorder.border, boxShadow: cardBorder.shadow } as React.CSSProperties;
-              return undefined;
-            })()}
-          >
+        {/* Profile Header */}
+        <CardBorderWrapper cardBorder={cardBorder} borderStyle={profile.borderStyle || "beam"} contentClassName="bg-fab-surface p-5 relative">
           {/* Owner: private/friends-only profile banner */}
           {isOwner && (profile.profileVisibility === "private" || (!profile.profileVisibility && !profile.isPublic)) && (
             <div className="flex items-center gap-2 mb-4 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/25">
@@ -597,15 +538,19 @@ export default function PlayerProfile() {
                     </a>
                   )}
                   {profile.socialLinks?.discord && (
-                    <span className="flex items-center gap-1 text-[11px] text-fab-muted" title="Discord">
+                    <button
+                      onClick={() => { navigator.clipboard.writeText(profile.socialLinks!.discord!); setDiscordCopied(true); setTimeout(() => setDiscordCopied(false), 2000); }}
+                      className="flex items-center gap-1 text-[11px] text-fab-muted hover:text-fab-text transition-colors"
+                      title="Copy Discord username"
+                    >
                       <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.37a19.791 19.791 0 00-4.885-1.515.074.074 0 00-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 00-5.487 0 12.64 12.64 0 00-.617-1.25.077.077 0 00-.079-.037A19.736 19.736 0 003.677 4.37a.07.07 0 00-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 00.031.057 19.9 19.9 0 005.993 3.03.078.078 0 00.084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 00-.041-.106 13.107 13.107 0 01-1.872-.892.077.077 0 01-.008-.128 10.2 10.2 0 00.372-.292.074.074 0 01.077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 01.078.01c.12.098.246.198.373.292a.077.077 0 01-.006.127 12.299 12.299 0 01-1.873.892.077.077 0 00-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 00.084.028 19.839 19.839 0 006.002-3.03.077.077 0 00.032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 00-.031-.03z"/></svg>
-                      <span>{profile.socialLinks.discord}</span>
-                    </span>
+                      <span>{discordCopied ? "Copied!" : profile.socialLinks.discord}</span>
+                    </button>
                   )}
                   {profile.socialLinks?.fabrary && (
-                    <a href={`https://fabrary.net/decks?owner=${encodeURIComponent(profile.socialLinks.fabrary)}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-[11px] text-fab-muted hover:text-fab-text transition-colors">
+                    <a href={profile.socialLinks.fabrary.startsWith("http") ? profile.socialLinks.fabrary : `https://fabrary.net/decks/${profile.socialLinks.fabrary}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-[11px] text-fab-muted hover:text-fab-text transition-colors">
                       <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
-                      <span>{profile.socialLinks.fabrary}</span>
+                      <span>{profile.socialLinks.fabraryName || "Deck"}</span>
                     </a>
                   )}
                   {isOwner && (
@@ -615,6 +560,7 @@ export default function PlayerProfile() {
                           twitter: profile.socialLinks?.twitter || "",
                           discord: profile.socialLinks?.discord || "",
                           fabrary: profile.socialLinks?.fabrary || "",
+                          fabraryName: profile.socialLinks?.fabraryName || "",
                         });
                         setEditingSocials(true);
                       }}
@@ -646,17 +592,27 @@ export default function PlayerProfile() {
                   />
                   <input
                     type="text"
-                    placeholder="Fabrary"
+                    placeholder="Deck URL"
                     value={socialDraft.fabrary}
                     onChange={(e) => setSocialDraft((d) => ({ ...d, fabrary: e.target.value }))}
-                    className="w-24 px-1.5 py-0.5 rounded text-[11px] bg-fab-bg border border-fab-border text-fab-text placeholder:text-fab-dim focus:border-fab-gold/40 focus:outline-none"
+                    className="w-32 px-1.5 py-0.5 rounded text-[11px] bg-fab-bg border border-fab-border text-fab-text placeholder:text-fab-dim focus:border-fab-gold/40 focus:outline-none"
                   />
+                  {socialDraft.fabrary.trim() && (
+                    <input
+                      type="text"
+                      placeholder="Deck name"
+                      value={socialDraft.fabraryName}
+                      onChange={(e) => setSocialDraft((d) => ({ ...d, fabraryName: e.target.value }))}
+                      className="w-24 px-1.5 py-0.5 rounded text-[11px] bg-fab-bg border border-fab-border text-fab-text placeholder:text-fab-dim focus:border-fab-gold/40 focus:outline-none"
+                    />
+                  )}
                   <button
                     onClick={async () => {
-                      const links: { twitter?: string; discord?: string; fabrary?: string } = {};
+                      const links: { twitter?: string; discord?: string; fabrary?: string; fabraryName?: string } = {};
                       if (socialDraft.twitter.trim()) links.twitter = socialDraft.twitter.trim().replace(/^@/, "");
                       if (socialDraft.discord.trim()) links.discord = socialDraft.discord.trim();
                       if (socialDraft.fabrary.trim()) links.fabrary = socialDraft.fabrary.trim();
+                      if (socialDraft.fabraryName.trim()) links.fabraryName = socialDraft.fabraryName.trim();
                       await updateProfile(profile.uid, { socialLinks: Object.keys(links).length > 0 ? links : undefined });
                       setState((prev) => prev.status === "loaded" ? { ...prev, profile: { ...prev.profile, socialLinks: Object.keys(links).length > 0 ? links : undefined } } : prev);
                       setEditingSocials(false);
@@ -721,8 +677,22 @@ export default function PlayerProfile() {
               </Link>
             )}
           </div>
-        </div>
-        </div>
+        </CardBorderWrapper>
+        {/* Border picker — only for owner with playoff finishes */}
+        {isOwner && playoffFinishes.length > 0 && (
+          <BorderPicker
+            playoffFinishes={playoffFinishes}
+            current={{
+              eventType: profile.borderEventType || (() => { const tierRank: Record<string, number> = { "Battle Hardened": 1, "The Calling": 2, Nationals: 3, "Pro Tour": 4, Worlds: 5 }; let best = ""; let bestScore = 0; for (const f of playoffFinishes) { const s = tierRank[f.eventType] || 0; if (s > bestScore) { best = f.eventType; bestScore = s; } } return best; })(),
+              placement: profile.borderPlacement || (() => { const pr: Record<string, number> = { top8: 1, top4: 2, finalist: 3, champion: 4 }; let best = "top8"; let bestR = 0; for (const f of playoffFinishes) { const r = pr[f.type] || 0; if (r > bestR) { best = f.type; bestR = r; } } return best; })(),
+              style: (profile.borderStyle || "beam") as BorderStyleType,
+            }}
+            onChange={async (sel: BorderSelection) => {
+              await updateProfile(profile.uid, { borderStyle: sel.style, borderEventType: sel.eventType, borderPlacement: sel.placement });
+              setState((prev) => prev.status === "loaded" ? { ...prev, profile: { ...prev.profile, borderStyle: sel.style, borderEventType: sel.eventType, borderPlacement: sel.placement } } : prev);
+            }}
+          />
+        )}
 
         {/* Creator spotlight card */}
         {creatorInfo && (
