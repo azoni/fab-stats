@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="440" height="600" viewBox="0 0 440 600">
+  <defs>
+    <radialGradient id="glow" cx="50%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="#2a1a3e"/>
+      <stop offset="100%" stop-color="#0a0612"/>
+    </radialGradient>
+    <pattern id="diamonds" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M20 0L40 20L20 40L0 20Z" fill="none" stroke="rgba(180,140,255,0.08)" stroke-width="0.5"/>
+    </pattern>
+    <pattern id="filigree" x="0" y="0" width="80" height="80" patternUnits="userSpaceOnUse">
+      <circle cx="40" cy="40" r="18" fill="none" stroke="rgba(180,140,255,0.06)" stroke-width="0.5"/>
+      <circle cx="40" cy="40" r="8" fill="none" stroke="rgba(180,140,255,0.04)" stroke-width="0.5"/>
+      <path d="M40 22L40 58M22 40L58 40" stroke="rgba(180,140,255,0.04)" stroke-width="0.3"/>
+    </pattern>
+    <linearGradient id="sideFade" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="rgba(139,92,246,0.12)"/>
+      <stop offset="50%" stop-color="rgba(139,92,246,0)"/>
+      <stop offset="100%" stop-color="rgba(139,92,246,0.12)"/>
+    </linearGradient>
+  </defs>
+  <rect width="440" height="600" fill="url(#glow)"/>
+  <rect width="440" height="600" fill="url(#diamonds)"/>
+  <rect width="440" height="600" fill="url(#filigree)"/>
+  <!-- Ornamental corners -->
+  <g opacity="0.15" stroke="#8b5cf6" fill="none" stroke-width="1">
+    <!-- Top left corner -->
+    <path d="M10 60 Q10 10 60 10"/>
+    <path d="M15 55 Q15 15 55 15"/>
+    <circle cx="10" cy="60" r="2" fill="#8b5cf6"/>
+    <circle cx="60" cy="10" r="2" fill="#8b5cf6"/>
+    <!-- Top right corner -->
+    <path d="M380 10 Q430 10 430 60"/>
+    <path d="M385 15 Q425 15 425 55"/>
+    <circle cx="380" cy="10" r="2" fill="#8b5cf6"/>
+    <circle cx="430" cy="60" r="2" fill="#8b5cf6"/>
+    <!-- Bottom left corner -->
+    <path d="M10 540 Q10 590 60 590"/>
+    <path d="M15 545 Q15 585 55 585"/>
+    <circle cx="10" cy="540" r="2" fill="#8b5cf6"/>
+    <circle cx="60" cy="590" r="2" fill="#8b5cf6"/>
+    <!-- Bottom right corner -->
+    <path d="M380 590 Q430 590 430 540"/>
+    <path d="M385 585 Q425 585 425 545"/>
+    <circle cx="380" cy="590" r="2" fill="#8b5cf6"/>
+    <circle cx="430" cy="540" r="2" fill="#8b5cf6"/>
+  </g>
+  <!-- Center ornament -->
+  <g transform="translate(220,300)" opacity="0.06">
+    <circle r="100" stroke="#8b5cf6" fill="none" stroke-width="0.5"/>
+    <circle r="80" stroke="#8b5cf6" fill="none" stroke-width="0.5"/>
+    <circle r="60" stroke="#8b5cf6" fill="none" stroke-width="0.3"/>
+    <path d="M0 -100L0 100M-100 0L100 0" stroke="#8b5cf6" stroke-width="0.3"/>
+    <path d="M-70 -70L70 70M70 -70L-70 70" stroke="#8b5cf6" stroke-width="0.3"/>
+  </g>
+  <!-- Side accent lines -->
+  <rect x="0" y="0" width="1" height="600" fill="url(#sideFade)"/>
+  <rect x="439" y="0" width="1" height="600" fill="url(#sideFade)"/>
+  <!-- Subtle horizontal rule lines -->
+  <line x1="30" y1="80" x2="410" y2="80" stroke="rgba(139,92,246,0.06)" stroke-width="0.5"/>
+  <line x1="30" y1="520" x2="410" y2="520" stroke="rgba(139,92,246,0.06)" stroke-width="0.5"/>
+</svg>
