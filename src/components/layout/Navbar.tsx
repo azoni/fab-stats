@@ -619,6 +619,36 @@ export const platformIcons: Record<Creator["platform"], ReactNode> = {
   ),
 };
 
+function CollapsibleSection({
+  label,
+  children,
+  expanded,
+  onToggle,
+  borderTop = true,
+}: {
+  label: string;
+  children: ReactNode;
+  expanded: boolean;
+  onToggle: () => void;
+  borderTop?: boolean;
+}) {
+  return (
+    <>
+      {borderTop && <div className="border-t border-fab-border" />}
+      <button
+        onClick={onToggle}
+        className="flex items-center justify-between w-full px-4 py-2 hover:bg-fab-surface-hover transition-colors"
+      >
+        <span className="text-xs text-fab-dim font-medium uppercase tracking-wider">{label}</span>
+        <svg className={`w-3 h-3 text-fab-dim transition-transform ${expanded ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+        </svg>
+      </button>
+      {expanded && <div className="px-1.5 pb-1.5">{children}</div>}
+    </>
+  );
+}
+
 function MoreDropdown({
   pathname,
   creators,
@@ -631,6 +661,7 @@ function MoreDropdown({
   isAdmin?: boolean;
 }) {
   const [open, setOpen] = useState(false);
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -643,7 +674,31 @@ function MoreDropdown({
     return () => document.removeEventListener("mousedown", handleClick);
   }, [open]);
 
-  const visibleMoreLinks = moreLinks.filter((l) => (!l.authOnly || isAuthenticated) && (!l.adminOnly || isAdmin));
+  const toggle = useCallback((section: string) => {
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(section)) next.delete(section);
+      else next.add(section);
+      return next;
+    });
+  }, []);
+
+  // Split moreLinks into main links (before first divider) and sections
+  const mainLinks = moreLinks.filter((l) => !l.divider && !l.sectionLabel && moreLinks.indexOf(l) < moreLinks.findIndex((x) => x.divider));
+  const visibleMainLinks = mainLinks.filter((l) => (!l.authOnly || isAuthenticated) && (!l.adminOnly || isAdmin));
+
+  // Extract Games links
+  const gamesStart = moreLinks.findIndex((l) => l.sectionLabel === "Games");
+  const resourcesStart = moreLinks.findIndex((l) => l.sectionLabel === "Resources");
+  const gamesLinks = moreLinks.slice(gamesStart + 1, resourcesStart);
+  const resourcesLinks = moreLinks.slice(resourcesStart + 1);
+
+  const linkClass = (href: string) =>
+    `flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+      pathname === href
+        ? "text-fab-gold bg-fab-gold/10"
+        : "text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover"
+    }`;
 
   return (
     <div className="relative" ref={ref}>
@@ -667,91 +722,93 @@ function MoreDropdown({
       </button>
 
       {open && (
-        <div className="absolute top-full right-0 mt-1 w-64 bg-fab-surface border border-fab-border rounded-lg shadow-xl overflow-hidden z-50">
-          <div className="p-2">
-            {visibleMoreLinks.map((link, i) => (
-              link.divider ? (
-                <div key={`divider-${i}`} className={i > 0 ? "border-t border-fab-border mt-1 pt-1" : ""}>
-                  <p className="px-3 py-1.5 text-xs text-fab-dim font-medium uppercase tracking-wider">{link.sectionLabel}</p>
-                </div>
-              ) : (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  onClick={() => setOpen(false)}
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors ${
-                    pathname === link.href
-                      ? "text-fab-gold bg-fab-gold/10"
-                      : "text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover"
-                  }`}
-                >
-                  {link.icon}
-                  {link.label}
-                  {link.badge && <span className="text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-teal-400/15 text-teal-400 border border-teal-400/25 ml-auto">{link.badge}</span>}
-                </Link>
-              )
+        <div className="absolute top-full right-0 mt-1 w-64 bg-fab-surface border border-fab-border rounded-lg shadow-xl overflow-hidden z-50 max-h-[calc(100vh-4rem)] overflow-y-auto">
+          {/* Main links — always visible */}
+          <div className="p-1.5">
+            {visibleMainLinks.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                onClick={() => setOpen(false)}
+                className={linkClass(link.href)}
+              >
+                {link.icon}
+                {link.label}
+                {link.badge && <span className="text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-teal-400/15 text-teal-400 border border-teal-400/25 ml-auto">{link.badge}</span>}
+              </Link>
             ))}
           </div>
+
+          {/* Games — collapsible */}
+          <CollapsibleSection label="Games" expanded={expanded.has("games")} onToggle={() => toggle("games")}>
+            {gamesLinks.map((link) => (
+              <Link key={link.href} href={link.href} onClick={() => setOpen(false)} className={linkClass(link.href)}>
+                {link.icon}
+                {link.label}
+                {link.badge && <span className="text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-teal-400/15 text-teal-400 border border-teal-400/25 ml-auto">{link.badge}</span>}
+              </Link>
+            ))}
+          </CollapsibleSection>
+
+          {/* Resources — collapsible */}
+          <CollapsibleSection label="Resources" expanded={expanded.has("resources")} onToggle={() => toggle("resources")}>
+            {resourcesLinks.map((link) => (
+              <Link key={link.href} href={link.href} onClick={() => setOpen(false)} className={linkClass(link.href)}>
+                {link.icon}
+                {link.label}
+                {link.badge && <span className="text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-teal-400/15 text-teal-400 border border-teal-400/25 ml-auto">{link.badge}</span>}
+              </Link>
+            ))}
+          </CollapsibleSection>
+
+          {/* Featured Creators — collapsible */}
           {creators.length > 0 && (
-            <>
-              <div className="border-t border-fab-border" />
-              <div className="p-2">
-                <p className="px-3 py-1.5 text-xs text-fab-dim font-medium uppercase tracking-wider">
-                  Featured Creators
-                </p>
-                {creators.map((creator) => (
-                  <a
-                    key={creator.name}
-                    href={creator.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-3 px-3 py-2.5 rounded-md hover:bg-fab-surface-hover transition-colors group"
-                    onClick={() => {
-                      trackCreatorClick(creator.name);
-                      setOpen(false);
-                    }}
-                  >
-                    {creator.imageUrl ? (
-                      <img src={creator.imageUrl} alt="" className="w-6 h-6 rounded-full object-cover shrink-0" />
-                    ) : (
-                      platformIcons[creator.platform]
-                    )}
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium text-fab-text group-hover:text-fab-gold transition-colors truncate">
-                        {creator.name}
-                      </p>
-                      <p className="text-xs text-fab-dim truncate">{creator.description}</p>
-                    </div>
-                    <svg className="w-3.5 h-3.5 text-fab-dim shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
-                    </svg>
-                  </a>
-                ))}
-              </div>
-            </>
+            <CollapsibleSection label="Featured Creators" expanded={expanded.has("creators")} onToggle={() => toggle("creators")}>
+              {creators.map((creator) => (
+                <a
+                  key={creator.name}
+                  href={creator.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-fab-surface-hover transition-colors group"
+                  onClick={() => {
+                    trackCreatorClick(creator.name);
+                    setOpen(false);
+                  }}
+                >
+                  {creator.imageUrl ? (
+                    <img src={creator.imageUrl} alt="" className="w-6 h-6 rounded-full object-cover shrink-0" />
+                  ) : (
+                    platformIcons[creator.platform]
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-fab-text group-hover:text-fab-gold transition-colors truncate">
+                      {creator.name}
+                    </p>
+                    <p className="text-xs text-fab-dim truncate">{creator.description}</p>
+                  </div>
+                  <svg className="w-3.5 h-3.5 text-fab-dim shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+                  </svg>
+                </a>
+              ))}
+            </CollapsibleSection>
           )}
-          <div className="border-t border-fab-border" />
-          <div className="p-2">
-            <p className="px-3 py-1.5 text-xs text-fab-dim font-medium uppercase tracking-wider">
-              Buy Me a Booster
-            </p>
+
+          {/* Support — collapsible */}
+          <CollapsibleSection label="Support" expanded={expanded.has("support")} onToggle={() => toggle("support")}>
             <a
               href="https://github.com/sponsors/azoni"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-3 px-3 py-2.5 rounded-md hover:bg-fab-surface-hover transition-colors group"
+              className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-fab-surface-hover transition-colors group"
               onClick={() => setOpen(false)}
             >
               <svg className="w-4 h-4 text-pink-400 shrink-0" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
               </svg>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium text-fab-text group-hover:text-fab-gold transition-colors truncate">
-                  GitHub Sponsors
-                </p>
-                <p className="text-xs text-fab-dim truncate">100% goes to the developer</p>
-              </div>
-              <svg className="w-3.5 h-3.5 text-fab-dim shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <span className="text-sm font-medium text-fab-muted group-hover:text-fab-text transition-colors">GitHub Sponsors</span>
+              <svg className="w-3.5 h-3.5 text-fab-dim shrink-0 ml-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
               </svg>
             </a>
@@ -759,37 +816,34 @@ function MoreDropdown({
               href="https://ko-fi.com/azoni"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-3 px-3 py-2.5 rounded-md hover:bg-fab-surface-hover transition-colors group"
+              className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-fab-surface-hover transition-colors group"
               onClick={() => setOpen(false)}
             >
               <svg className="w-4 h-4 text-yellow-400 shrink-0" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M23.881 8.948c-.773-4.085-4.859-4.593-4.859-4.593H.723c-.604 0-.679.798-.679.798s-.082 7.324-.022 11.822c.164 2.424 2.586 2.672 2.586 2.672s8.267-.023 11.966-.049c2.438-.426 2.683-2.566 2.658-3.734 4.352.24 7.422-2.831 6.649-6.916zm-11.062 3.511c-1.246 1.453-4.011 3.976-4.011 3.976s-.121.119-.31.023c-.076-.057-.108-.09-.108-.09-.443-.441-3.368-3.049-4.034-3.954-.709-.965-1.041-2.7-.091-3.71.951-1.01 3.005-1.086 4.363.407 0 0 1.565-1.782 3.468-.963 1.904.82 1.832 3.011.723 4.311zm6.173.478c-.928.116-1.682.028-1.682.028V7.284h1.493s1.535-.199 2.089 1.024c.603 1.332-.084 4.39-1.9 4.629z" />
               </svg>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium text-fab-text group-hover:text-fab-gold transition-colors truncate">
-                  Ko-fi
-                </p>
-                <p className="text-xs text-fab-dim truncate">Buy me a booster</p>
-              </div>
-              <svg className="w-3.5 h-3.5 text-fab-dim shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <span className="text-sm font-medium text-fab-muted group-hover:text-fab-text transition-colors">Ko-fi</span>
+              <svg className="w-3.5 h-3.5 text-fab-dim shrink-0 ml-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
               </svg>
             </a>
+          </CollapsibleSection>
+
+          {/* Discord Bot — always visible at bottom */}
+          <div className="border-t border-fab-border">
             <a
               href="https://discord.com/oauth2/authorize?client_id=1478583612537573479&permissions=0&scope=bot+applications.commands"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-3 px-3 py-2.5 rounded-md hover:bg-fab-surface-hover transition-colors group"
+              className="flex items-center gap-3 px-4 py-2.5 hover:bg-fab-surface-hover transition-colors group"
               onClick={() => setOpen(false)}
             >
               <svg className="w-4 h-4 text-indigo-400 shrink-0" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M20.317 4.37a19.791 19.791 0 00-4.885-1.515.074.074 0 00-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 00-5.487 0 12.64 12.64 0 00-.617-1.25.077.077 0 00-.079-.037A19.736 19.736 0 003.677 4.37a.07.07 0 00-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 00.031.057 19.9 19.9 0 005.993 3.03.078.078 0 00.084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 00-.041-.106 13.107 13.107 0 01-1.872-.892.077.077 0 01-.008-.128 10.2 10.2 0 00.372-.292.074.074 0 01.077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 01.078.01c.12.098.246.198.373.292a.077.077 0 01-.006.127 12.299 12.299 0 01-1.873.892.077.077 0 00-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 00.084.028 19.839 19.839 0 006.002-3.03.077.077 0 00.032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 00-.031-.03z" />
               </svg>
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium text-fab-text group-hover:text-fab-gold transition-colors truncate">
-                  Discord Bot
-                </p>
-                <p className="text-xs text-fab-dim truncate">Add Fab Stats to your server</p>
+                <p className="text-sm font-medium text-fab-text group-hover:text-fab-gold transition-colors">Discord Bot</p>
+                <p className="text-xs text-fab-dim">Add FaB Stats to your server</p>
               </div>
               <svg className="w-3.5 h-3.5 text-fab-dim shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
