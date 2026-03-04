@@ -609,6 +609,79 @@ export function computePlayoffFinishes(
   return finishes.sort((a, b) => new Date(b.eventDate).getTime() - new Date(a.eventDate).getTime());
 }
 
+export interface MinorEventFinish {
+  type: "undefeated" | "champion" | "finalist" | "top4" | "top8";
+  eventName: string;
+  eventDate: string;
+  format: string;
+  eventType: string;
+  hero?: string;
+}
+
+const MINOR_EVENT_TYPES = new Set(["Armory", "Skirmish", "Road to Nationals", "ProQuest"]);
+
+export function computeMinorEventFinishes(eventStats: EventStats[]): MinorEventFinish[] {
+  const finishes: MinorEventFinish[] = [];
+
+  for (const event of eventStats) {
+    const raw = refineEventType(event.eventType || "Other", event.eventName);
+    if (!MINOR_EVENT_TYPES.has(raw)) continue;
+
+    const hero = event.matches[0]?.heroPlayed;
+
+    // Armory: only "undefeated" (wins > 0, losses === 0)
+    if (raw === "Armory") {
+      if (event.wins > 0 && event.losses === 0) {
+        finishes.push({
+          type: "undefeated",
+          eventName: event.eventName,
+          eventDate: event.eventDate,
+          format: event.format,
+          eventType: raw,
+          hero,
+        });
+      }
+      continue;
+    }
+
+    // Skirmish, RTN, PQ: use playoff detection
+    const playoffMatches: MatchRecord[] = [];
+    for (const match of event.matches) {
+      const roundInfo = match.notes?.split(" | ")[1]?.trim() || "";
+      if (isPlayoffRound(roundInfo)) {
+        playoffMatches.push(match);
+      }
+    }
+
+    if (playoffMatches.length === 0) {
+      // Skirmish without top cut: undefeated = champion
+      if (raw === "Skirmish" && event.wins > 0 && event.losses === 0) {
+        finishes.push({ type: "champion", eventName: event.eventName, eventDate: event.eventDate, format: event.format, eventType: raw, hero });
+      }
+      continue;
+    }
+
+    const playoffWins = playoffMatches.filter((m) => m.result === MatchResult.Win).length;
+    const playoffLosses = playoffMatches.filter((m) => m.result === MatchResult.Loss).length;
+    const roundInfos = playoffMatches.map((m) => (m.notes?.split(" | ")[1]?.trim() || "").toLowerCase());
+    const playedFinals = roundInfos.some((r) => /finals?$/i.test(r) || /\bfinal\b/i.test(r));
+    const playedSemis = roundInfos.some((r) => /semi/i.test(r) || /top\s*4/i.test(r));
+
+    let finishType: MinorEventFinish["type"];
+    if (playoffLosses === 0 && playoffWins > 0) finishType = "champion";
+    else if (playedFinals) finishType = "finalist";
+    else if (playedSemis) finishType = "top4";
+    else if (playoffWins >= 3) finishType = "champion";
+    else if (playoffWins === 2) finishType = "finalist";
+    else if (playoffWins === 1) finishType = "top4";
+    else finishType = "top8";
+
+    finishes.push({ type: finishType, eventName: event.eventName, eventDate: event.eventDate, format: event.format, eventType: raw, hero });
+  }
+
+  return finishes.sort((a, b) => new Date(b.eventDate).getTime() - new Date(a.eventDate).getTime());
+}
+
 export function getEventName(match: MatchRecord): string {
   if (match.notes) {
     const parts = match.notes.split(" | ");

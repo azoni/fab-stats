@@ -9,16 +9,43 @@ export interface CardBorderConfig {
   placement: number;
 }
 
+export interface UnderlineConfig {
+  color: string;
+  rgb: string;
+  placement: number;
+}
+
 export type BorderStyleType = "beam" | "glow";
+
+function UnderlineBar({ underline }: { underline: UnderlineConfig | null | undefined }) {
+  if (!underline) return null;
+  const height = underline.placement >= 4 ? 4 : underline.placement >= 3 ? 3.5 : 3;
+  const glow = underline.placement >= 3
+    ? `0 0 8px rgba(${underline.rgb},0.5)`
+    : `0 0 5px rgba(${underline.rgb},0.3)`;
+  return (
+    <div
+      className="absolute bottom-0 left-0 right-0 z-20 pointer-events-none"
+      style={{
+        height,
+        background: underline.color,
+        boxShadow: glow,
+        borderRadius: "0 0 7px 7px",
+      }}
+    />
+  );
+}
 
 export function CardBorderWrapper({
   cardBorder,
   borderStyle = "beam",
+  underline,
   contentClassName = "",
   children,
 }: {
   cardBorder: CardBorderConfig | null;
   borderStyle?: BorderStyleType;
+  underline?: UnderlineConfig | null;
   contentClassName?: string;
   children: ReactNode;
 }) {
@@ -29,10 +56,11 @@ export function CardBorderWrapper({
   if (!cardBorder || p <= 1) {
     return (
       <div
-        className={`border border-fab-border rounded-lg ${contentClassName}`}
+        className={`relative border border-fab-border rounded-lg overflow-hidden ${contentClassName}`}
         style={cardBorder ? { borderColor: cardBorder.border, boxShadow: cardBorder.shadow } : undefined}
       >
         {children}
+        <UnderlineBar underline={underline} />
       </div>
     );
   }
@@ -66,7 +94,7 @@ export function CardBorderWrapper({
       <>
         <style>{glowKeyframes}</style>
         <div
-          className={`rounded-lg ${contentClassName}`}
+          className={`relative rounded-lg overflow-hidden ${contentClassName}`}
           style={{
             borderWidth,
             borderStyle: "solid",
@@ -76,6 +104,7 @@ export function CardBorderWrapper({
           }}
         >
           {children}
+          <UnderlineBar underline={underline} />
         </div>
       </>
     );
@@ -168,15 +197,18 @@ export function CardBorderWrapper({
 
         {/* Inner content */}
         <div
-          className={`rounded-[7px] ${contentClassName}`}
+          className={`relative rounded-[7px] overflow-hidden ${contentClassName}`}
           style={innerGlow ? { boxShadow: innerGlow } : undefined}
         >
           {children}
+          <UnderlineBar underline={underline} />
         </div>
       </div>
     </>
   );
 }
+
+// ── Major event border constants ──
 
 const TIER_STYLE: Record<string, { border: string; rgb: string }> = {
   "Battle Hardened": { border: "#cd7f32", rgb: "205,127,50" },
@@ -306,6 +338,110 @@ export function BorderPicker({
           </button>
         </div>
       )}
+    </div>
+  );
+}
+
+// ── Minor event underline constants ──
+
+const UNDERLINE_STYLE: Record<string, { color: string; rgb: string }> = {
+  Armory:              { color: "#d4975a", rgb: "212,151,90" },
+  Skirmish:            { color: "#93c5fd", rgb: "147,197,253" },
+  "Road to Nationals": { color: "#fca5a5", rgb: "252,165,165" },
+  ProQuest:            { color: "#c4b5fd", rgb: "196,181,253" },
+};
+
+const UNDERLINE_EVENT_ABBR: Record<string, string> = {
+  Armory: "ARM",
+  Skirmish: "SKR",
+  "Road to Nationals": "RTN",
+  ProQuest: "PQ",
+};
+
+const UNDERLINE_PLACEMENT_ABBR: Record<string, string> = {
+  undefeated: "UD",
+  top8: "T8",
+  top4: "T4",
+  finalist: "F",
+  champion: "W",
+};
+
+const UNDERLINE_PLACEMENT_RANK: Record<string, number> = {
+  undefeated: 1, top8: 1, top4: 2, finalist: 3, champion: 4,
+};
+
+const UNDERLINE_TIER_RANK: Record<string, number> = {
+  Armory: 1, Skirmish: 2, "Road to Nationals": 3, ProQuest: 4,
+};
+
+export interface UnderlineSelection {
+  eventType: string;
+  placement: string;
+}
+
+export function UnderlinePicker({
+  minorFinishes,
+  current,
+  onChange,
+}: {
+  minorFinishes: { type: string; eventType: string }[];
+  current: UnderlineSelection;
+  onChange: (sel: UnderlineSelection) => void;
+}) {
+  // Deduplicate by eventType + placement, keep highest tier first
+  const uniqueUnderlines: { eventType: string; placement: string }[] = [];
+  const seen = new Set<string>();
+  for (const f of minorFinishes) {
+    const key = `${f.eventType}|${f.type}`;
+    if (!seen.has(key) && UNDERLINE_STYLE[f.eventType]) {
+      seen.add(key);
+      uniqueUnderlines.push({ eventType: f.eventType, placement: f.type });
+    }
+  }
+  // Sort: highest tier first, then highest placement
+  uniqueUnderlines.sort((a, b) => {
+    const td = (UNDERLINE_TIER_RANK[b.eventType] || 0) - (UNDERLINE_TIER_RANK[a.eventType] || 0);
+    if (td !== 0) return td;
+    return (UNDERLINE_PLACEMENT_RANK[b.placement] || 0) - (UNDERLINE_PLACEMENT_RANK[a.placement] || 0);
+  });
+
+  if (uniqueUnderlines.length === 0) return null;
+
+  return (
+    <div className="flex items-center justify-center gap-1.5 mt-1.5 flex-wrap">
+      {/* "None" option */}
+      <button
+        onClick={() => onChange({ eventType: "", placement: "" })}
+        className={`px-1.5 py-0.5 rounded-md text-[10px] font-medium transition-colors border ${
+          !current.eventType
+            ? "border-fab-gold/50 bg-fab-surface text-fab-text shadow-sm"
+            : "border-fab-border text-fab-dim hover:text-fab-muted hover:border-fab-border"
+        }`}
+      >
+        None
+      </button>
+      {uniqueUnderlines.map(({ eventType, placement }) => {
+        const style = UNDERLINE_STYLE[eventType];
+        if (!style) return null;
+        const isSelected = current.eventType === eventType && current.placement === placement;
+        return (
+          <button
+            key={`${eventType}-${placement}`}
+            onClick={() => onChange({ eventType, placement })}
+            className={`flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-medium transition-colors border ${
+              isSelected
+                ? "border-fab-gold/50 bg-fab-surface text-fab-text shadow-sm"
+                : "border-fab-border text-fab-dim hover:text-fab-muted hover:border-fab-border"
+            }`}
+          >
+            <span
+              className="w-2 h-2 rounded-full shrink-0"
+              style={{ background: style.color }}
+            />
+            {UNDERLINE_EVENT_ABBR[eventType] || eventType.slice(0, 3)} {UNDERLINE_PLACEMENT_ABBR[placement] || placement}
+          </button>
+        );
+      })}
     </div>
   );
 }
