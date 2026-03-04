@@ -41,22 +41,26 @@ export async function saveResult(uid: string, result: CrosswordResult): Promise<
 }
 
 export async function loadStats(uid: string): Promise<CrosswordStats | null> {
+  let stats: CrosswordStats | null = null;
+
   try {
     const pubSnap = await getDoc(doc(db, STATS_PUBLIC_COL, uid));
-    if (pubSnap.exists()) return pubSnap.data() as CrosswordStats;
+    if (pubSnap.exists()) stats = pubSnap.data() as CrosswordStats;
   } catch {}
 
-  try {
-    const statsRef = doc(db, "users", uid, STATS_DOC, "data");
-    const snap = await getDoc(statsRef);
-    if (snap.exists()) {
-      const stats = snap.data() as CrosswordStats;
-      setDoc(doc(db, STATS_PUBLIC_COL, uid), stats).catch(() => {});
-      return stats;
-    }
-  } catch {}
+  // Fallback to subcollection if public doc is missing or incomplete (e.g. only hasShared)
+  if (!stats || !stats.gamesPlayed) {
+    try {
+      const statsRef = doc(db, "users", uid, STATS_DOC, "data");
+      const snap = await getDoc(statsRef);
+      if (snap.exists()) {
+        stats = snap.data() as CrosswordStats;
+        setDoc(doc(db, STATS_PUBLIC_COL, uid), stats).catch(() => {});
+      }
+    } catch {}
+  }
 
-  return null;
+  return stats;
 }
 
 export async function markShared(uid: string): Promise<void> {

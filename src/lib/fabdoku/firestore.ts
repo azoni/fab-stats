@@ -100,8 +100,8 @@ export async function loadStats(
     if (pubSnap.exists()) stats = pubSnap.data() as FaBdokuStats;
   } catch {}
 
-  // Fallback to subcollection (works for owner / admin)
-  if (!stats) {
+  // Fallback to subcollection if public doc is missing or incomplete (e.g. only hasShared)
+  if (!stats || !stats.gamesPlayed) {
     try {
       const statsRef = doc(db, "users", uid, STATS_DOC, "data");
       const snap = await getDoc(statsRef);
