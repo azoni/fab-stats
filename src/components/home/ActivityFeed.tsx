@@ -13,7 +13,7 @@ import type { FeedEventType } from "@/lib/feed";
 import type { FeedEvent } from "@/types";
 
 type ScopeTab = "community" | "friends";
-type TypeFilter = "all" | "import" | "placement" | "games" | "shares" | "engagement";
+type TypeFilter = "all" | "import" | "placement" | "games" | "engagement";
 
 const GAME_EVENT_TYPES = new Set(["fabdoku", "crossword", "heroguesser", "matchupmania", "trivia", "timeline", "connections"]);
 
@@ -22,7 +22,6 @@ const TYPE_FILTERS: { value: TypeFilter; label: string; adminOnly?: boolean }[] 
   { value: "import", label: "Imports" },
   { value: "placement", label: "Placements" },
   { value: "games", label: "Games" },
-  { value: "shares", label: "Shares" },
   { value: "engagement", label: "Engagement", adminOnly: true },
 ];
 
@@ -65,8 +64,8 @@ export function ActivityFeed({ rankMap, eventTierMap, underlineTierMap }: { rank
   const { friends } = useFriends();
   const { favorites } = useFavorites();
   const [scope, _setScope] = useState<ScopeTab>(() => readStored(SCOPE_KEY, ["community", "friends"], "community"));
-  const [typeFilter, _setTypeFilter] = useState<TypeFilter>(() => readStored(TYPE_KEY, ["all", "import", "placement", "games", "shares", "engagement"], "placement"));
-  const feedTypeFilter: FeedEventType = (typeFilter === "engagement" || typeFilter === "games" || typeFilter === "shares") ? "all" : typeFilter;
+  const [typeFilter, _setTypeFilter] = useState<TypeFilter>(() => readStored(TYPE_KEY, ["all", "import", "placement", "games", "engagement"], "placement"));
+  const feedTypeFilter: FeedEventType = (typeFilter === "engagement" || typeFilter === "games") ? "all" : typeFilter;
   const { events, loading } = useFeed(feedTypeFilter);
 
   const [page, setPage] = useState(0);
@@ -115,8 +114,6 @@ export function ActivityFeed({ rankMap, eventTierMap, underlineTierMap }: { rank
     // Type filter
     if (typeFilter === "games") {
       source = source.filter((e) => GAME_EVENT_TYPES.has(e.type) && (e as { subtype?: string }).subtype !== "shared");
-    } else if (typeFilter === "shares") {
-      source = source.filter((e) => GAME_EVENT_TYPES.has(e.type) && (e as { subtype?: string }).subtype === "shared");
     } else if (typeFilter !== "all") {
       source = source.filter((e) => e.type === typeFilter);
     }
