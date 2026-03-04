@@ -78,7 +78,8 @@ export default function SetupPage() {
         firstName: firstName.trim() || undefined,
         lastName: lastName.trim() || undefined,
         searchName: searchName || undefined,
-        photoUrl: user.photoURL || undefined,
+        // Don't auto-populate Google OAuth photo — let user upload their own in Settings
+        photoUrl: undefined,
         isPublic,
       });
       // Refresh profile so AuthContext picks up the new profile

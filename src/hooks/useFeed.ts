@@ -18,7 +18,7 @@ export function useFeed(typeFilter: FeedEventType = "all") {
     getFeedEvents(100, typeFilter).then((data) => {
       setEvents(data);
       setLoading(false);
-    });
+    }).catch(() => setLoading(false));
   }, [typeFilter]);
 
   return { events, loading };

@@ -329,6 +329,8 @@ export async function updateLeaderboardEntry(
 
 let cachedEntries: LeaderboardEntry[] | null = null;
 let cacheTimestamp = 0;
+let cachedEntriesGuest: LeaderboardEntry[] | null = null;
+let cacheTimestampGuest = 0;
 let cachedEntriesAll: LeaderboardEntry[] | null = null;
 let cacheTimestampAll = 0;
 const CACHE_TTL = 15 * 60_000; // 15 minutes
@@ -372,7 +374,7 @@ function sanitizeEntries(docs: LeaderboardEntry[]): LeaderboardEntry[] {
   });
 }
 
-export async function getLeaderboardEntries(includePrivate = false): Promise<LeaderboardEntry[]> {
+export async function getLeaderboardEntries(includePrivate = false, isAuthenticated = true): Promise<LeaderboardEntry[]> {
   const now = Date.now();
 
   if (includePrivate) {
@@ -383,6 +385,18 @@ export async function getLeaderboardEntries(includePrivate = false): Promise<Lea
     cachedEntriesAll = sanitizeEntries(snapshot.docs.map((d) => d.data() as LeaderboardEntry));
     cacheTimestampAll = now;
     return cachedEntriesAll;
+  }
+
+  // Guest queries must include hideFromGuests filter to satisfy Firestore rules
+  if (!isAuthenticated) {
+    if (cachedEntriesGuest && now - cacheTimestampGuest < CACHE_TTL) {
+      return cachedEntriesGuest;
+    }
+    const q = query(leaderboardCollection(), where("isPublic", "==", true), where("hideFromGuests", "==", false));
+    const snapshot = await getDocs(q);
+    cachedEntriesGuest = sanitizeEntries(snapshot.docs.map((d) => d.data() as LeaderboardEntry));
+    cacheTimestampGuest = now;
+    return cachedEntriesGuest;
   }
 
   if (cachedEntries && now - cacheTimestamp < CACHE_TTL) {
@@ -396,6 +410,8 @@ export async function getLeaderboardEntries(includePrivate = false): Promise<Lea
 }
 
 export function invalidateLeaderboardCache() {
+  cachedEntriesGuest = null;
+  cacheTimestampGuest = 0;
   cachedEntries = null;
   cacheTimestamp = 0;
   cachedEntriesAll = null;

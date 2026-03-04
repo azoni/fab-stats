@@ -167,8 +167,8 @@ service cloud.firestore {
 
     // ── Event comment walls ──
     match /eventWalls/{eventId}/comments/{commentId} {
-      // Public read (guest privacy handled client-side by masking names)
-      allow read: if true;
+      // Authenticated users only (protects commenter names from unauthenticated scraping)
+      allow read: if request.auth != null;
       // Create: auth required, authorUid must match, text max 500, not muted
       allow create: if request.auth != null
         && request.resource.data.authorUid == request.auth.uid
@@ -193,7 +193,9 @@ service cloud.firestore {
 
     // ── Leaderboard ──
     match /leaderboard/{userId} {
-      allow read: if true;
+      // Authenticated users can read all entries; guests only see non-hidden entries
+      allow read: if request.auth != null
+        || resource.data.get('hideFromGuests', false) == false;
       // Only allow owner to write their own entry, or admin
       allow write: if request.auth != null && (request.auth.uid == userId || isAdmin())
         // Validate the userId field matches the doc ID (prevent spoofing another user's entry)
@@ -206,7 +208,8 @@ service cloud.firestore {
 
     // ── Activity feed ──
     match /feedEvents/{eventId} {
-      allow read: if true;
+      // Authenticated users only (feed is already hidden from guests in the UI)
+      allow read: if request.auth != null;
       // Only public profiles can create feed events
       allow create: if request.auth != null
         && request.resource.data.userId == request.auth.uid
