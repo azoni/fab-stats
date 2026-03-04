@@ -13,9 +13,16 @@ export async function saveResult(uid: string, result: CrosswordResult): Promise<
   // Update stats — check lastPlayedDate to avoid double-counting
   const statsRef = doc(db, "users", uid, STATS_DOC, "data");
   const statsSnap = await getDoc(statsRef);
-  const prev: CrosswordStats = statsSnap.exists()
-    ? (statsSnap.data() as CrosswordStats)
-    : { gamesPlayed: 0, gamesWon: 0, currentStreak: 0, maxStreak: 0, lastPlayedDate: "" };
+  const raw = statsSnap.exists() ? statsSnap.data() : {};
+  const prev: CrosswordStats = {
+    gamesPlayed: raw.gamesPlayed ?? 0,
+    gamesWon: raw.gamesWon ?? 0,
+    currentStreak: raw.currentStreak ?? 0,
+    maxStreak: raw.maxStreak ?? 0,
+    lastPlayedDate: raw.lastPlayedDate ?? "",
+    ...(raw.bestSolveTime != null ? { bestSolveTime: raw.bestSolveTime as number } : {}),
+    ...(raw.hasShared ? { hasShared: true } : {}),
+  };
 
   // Skip stats update if this date was already counted
   if (prev.lastPlayedDate === result.date) return;
@@ -40,12 +47,25 @@ export async function saveResult(uid: string, result: CrosswordResult): Promise<
   await setDoc(doc(db, STATS_PUBLIC_COL, uid), updated).catch(() => {});
 }
 
+/** Sanitize stats to fix NaN values from corrupted docs. */
+function sanitizeStats(raw: Record<string, unknown>): CrosswordStats {
+  return {
+    gamesPlayed: Number(raw.gamesPlayed) || 0,
+    gamesWon: Number(raw.gamesWon) || 0,
+    currentStreak: Number(raw.currentStreak) || 0,
+    maxStreak: Number(raw.maxStreak) || 0,
+    lastPlayedDate: (raw.lastPlayedDate as string) ?? "",
+    ...(raw.bestSolveTime != null && !isNaN(Number(raw.bestSolveTime)) ? { bestSolveTime: Number(raw.bestSolveTime) } : {}),
+    ...(raw.hasShared ? { hasShared: true } : {}),
+  };
+}
+
 export async function loadStats(uid: string): Promise<CrosswordStats | null> {
   let stats: CrosswordStats | null = null;
 
   try {
     const pubSnap = await getDoc(doc(db, STATS_PUBLIC_COL, uid));
-    if (pubSnap.exists()) stats = pubSnap.data() as CrosswordStats;
+    if (pubSnap.exists()) stats = sanitizeStats(pubSnap.data());
   } catch {}
 
   // Fallback to subcollection if public doc is missing or incomplete (e.g. only hasShared)
@@ -54,7 +74,7 @@ export async function loadStats(uid: string): Promise<CrosswordStats | null> {
       const statsRef = doc(db, "users", uid, STATS_DOC, "data");
       const snap = await getDoc(statsRef);
       if (snap.exists()) {
-        stats = snap.data() as CrosswordStats;
+        stats = sanitizeStats(snap.data());
         setDoc(doc(db, STATS_PUBLIC_COL, uid), stats).catch(() => {});
       }
     } catch {}
