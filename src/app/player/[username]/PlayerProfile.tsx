@@ -43,7 +43,9 @@ import { MatchResult } from "@/types";
 import { allHeroes as knownHeroes } from "@/lib/heroes";
 import { localDate } from "@/lib/constants";
 import { loadUserResult, loadStats as loadFabdokuStats } from "@/lib/fabdoku/firestore";
+import { loadStats as loadCrosswordPlayerStats } from "@/lib/crossword/firestore";
 import type { FaBdokuStats } from "@/lib/fabdoku/types";
+import type { CrosswordStats } from "@/lib/crossword/types";
 import { getTodayDateStr } from "@/lib/fabdoku/puzzle-generator";
 import { useCreators } from "@/hooks/useCreators";
 import type { Creator } from "@/types";
@@ -86,6 +88,7 @@ export default function PlayerProfile() {
   const [adminKudosGiven, setAdminKudosGiven] = useState<Set<string>>(new Set());
   const [fabdokuScore, setFabdokuScore] = useState<number | null>(null);
   const [fabdokuFullStats, setFabdokuFullStats] = useState<FaBdokuStats | null>(null);
+  const [crosswordFullStats, setCrosswordFullStats] = useState<CrosswordStats | null>(null);
   const [previewAsVisitor, setPreviewAsVisitor] = useState(false);
   const [editingSocials, setEditingSocials] = useState(false);
   const [editingBorder, setEditingBorder] = useState(false);
@@ -285,11 +288,12 @@ export default function PlayerProfile() {
     }).catch(() => {});
   }, [profileUid, currentUser?.uid]);
 
-  // Load today's fabdoku score + stats for this profile
+  // Load today's fabdoku score + stats + crossword stats for this profile
   useEffect(() => {
     if (!profileUid) return;
     loadUserResult(profileUid, getTodayDateStr()).then((r) => setFabdokuScore(r?.score ?? null)).catch(() => {});
     loadFabdokuStats(profileUid).then((s) => setFabdokuFullStats(s ?? null)).catch(() => {});
+    loadCrosswordPlayerStats(profileUid).then((s) => setCrosswordFullStats(s ?? null)).catch(() => {});
   }, [profileUid]);
 
   // Admin: fetch friend count for the viewed profile
@@ -568,7 +572,7 @@ export default function PlayerProfile() {
                     Updated {new Date(lastUpdated).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                   </span>
                 )}
-                <BadgeStrip matchCount={matches.length} isCreator={!!creatorInfo} hasSharedFabdoku={fabdokuFullStats?.hasShared} />
+                <BadgeStrip matchCount={matches.length} isCreator={!!creatorInfo} playedFabdoku={(fabdokuFullStats?.gamesPlayed ?? 0) >= 1} playedCrossword={(crosswordFullStats?.gamesPlayed ?? 0) >= 1} />
               </div>
               {/* Social links */}
               {(profile.socialLinks?.twitter || profile.socialLinks?.discord || profile.socialLinks?.fabrary || isOwner) && !editingSocials && (
@@ -1039,7 +1043,8 @@ export default function PlayerProfile() {
             armoryUndefeated: eventStats.filter(e => e.eventType === "Armory" && e.losses === 0 && e.wins > 0).length,
             isSiteCreator: profile.username === "azoni",
             isCreator: !!creatorInfo,
-            hasSharedFabdoku: fabdokuFullStats?.hasShared,
+            playedFabdoku: (fabdokuFullStats?.gamesPlayed ?? 0) >= 1,
+            playedCrossword: (crosswordFullStats?.gamesPlayed ?? 0) >= 1,
           }}
           onClose={() => setProfileShareOpen(false)}
         />

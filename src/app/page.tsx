@@ -31,7 +31,9 @@ import { EventShowcase } from "@/components/home/EventShowcase";
 import { BadgeStrip } from "@/components/profile/BadgeStrip";
 import { getHeroByName } from "@/lib/heroes";
 import { loadUserResult, loadStats } from "@/lib/fabdoku/firestore";
+import { loadStats as loadCrosswordStats } from "@/lib/crossword/firestore";
 import type { FaBdokuStats } from "@/lib/fabdoku/types";
+import type { CrosswordStats } from "@/lib/crossword/types";
 import { getTodayDateStr } from "@/lib/fabdoku/puzzle-generator";
 import { loadKudosCounts } from "@/lib/kudos";
 import { CardBorderWrapper } from "@/components/profile/CardBorderWrapper";
@@ -204,14 +206,16 @@ export default function Dashboard() {
   const [showcaseConfig, setShowcaseConfig] = useState<EventShowcaseConfig | null>(null);
   const [fabdokuScore, setFabdokuScore] = useState<number | null>(null);
   const [fabdokuFullStats, setFabdokuFullStats] = useState<FaBdokuStats | null>(null);
+  const [crosswordFullStats, setCrosswordFullStats] = useState<CrosswordStats | null>(null);
   const [kudosTotal, setKudosTotal] = useState<number | null>(null);
   const leaderboardUpdated = useRef(false);
 
-  // Load today's fabdoku score, stats, and kudos total for the current user
+  // Load today's fabdoku score, stats, kudos total, and crossword stats for the current user
   useEffect(() => {
     if (!user) return;
     loadUserResult(user.uid, getTodayDateStr()).then((r) => setFabdokuScore(r?.score ?? null)).catch(() => {});
     loadStats(user.uid).then((s) => setFabdokuFullStats(s ?? null)).catch(() => {});
+    loadCrosswordStats(user.uid).then((s) => setCrosswordFullStats(s ?? null)).catch(() => {});
     loadKudosCounts(user.uid).then((c) => setKudosTotal(c.total > 0 ? c.total : null)).catch(() => {});
   }, [user]);
 
@@ -684,7 +688,7 @@ export default function Dashboard() {
                   )}
                 </div>
               </div>
-              <BadgeStrip matchCount={matches.length} isCreator={isCreator} hasSharedFabdoku={fabdokuFullStats?.hasShared} className="mt-2 ml-1" />
+              <BadgeStrip matchCount={matches.length} isCreator={isCreator} playedFabdoku={(fabdokuFullStats?.gamesPlayed ?? 0) >= 1} playedCrossword={(crosswordFullStats?.gamesPlayed ?? 0) >= 1} className="mt-2 ml-1" />
               {/* Score badges — bottom right */}
               <div className="absolute bottom-1.5 right-2.5 flex items-center gap-1.5 z-10">
                 {kudosTotal !== null && (
@@ -788,7 +792,8 @@ export default function Dashboard() {
             armoryUndefeated: eventStats.filter(e => e.eventType === "Armory" && e.losses === 0 && e.wins > 0).length,
             isSiteCreator: profile.username === "azoni",
             isCreator,
-            hasSharedFabdoku: fabdokuFullStats?.hasShared,
+            playedFabdoku: (fabdokuFullStats?.gamesPlayed ?? 0) >= 1,
+            playedCrossword: (crosswordFullStats?.gamesPlayed ?? 0) >= 1,
           }}
           onClose={() => setProfileShareOpen(false)}
         />
