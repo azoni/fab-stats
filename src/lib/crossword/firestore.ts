@@ -1,4 +1,4 @@
-import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import type { CrosswordResult, CrosswordStats } from "./types";
 
@@ -61,8 +61,8 @@ export async function loadStats(uid: string): Promise<CrosswordStats | null> {
 
 export async function markShared(uid: string): Promise<void> {
   const statsRef = doc(db, "users", uid, STATS_DOC, "data");
-  await updateDoc(statsRef, { hasShared: true }).catch(() => {});
-  await updateDoc(doc(db, STATS_PUBLIC_COL, uid), { hasShared: true }).catch(() => {});
+  await setDoc(statsRef, { hasShared: true }, { merge: true }).catch((e) => console.error("markShared subcol:", e));
+  await setDoc(doc(db, STATS_PUBLIC_COL, uid), { hasShared: true }, { merge: true }).catch((e) => console.error("markShared public:", e));
 }
 
 function getDateOffset(dateStr: string, days: number): string {

@@ -210,7 +210,7 @@ service cloud.firestore {
       // Only public profiles can create feed events
       allow create: if request.auth != null
         && request.resource.data.userId == request.auth.uid
-        && request.resource.data.type in ["import", "achievement", "placement", "fabdoku"]
+        && request.resource.data.type in ["import", "achievement", "placement", "fabdoku", "crossword"]
         && request.resource.data.isPublic == true;
       // Reactions: any authenticated user can toggle reactions
       allow update: if request.auth != null
@@ -429,6 +429,27 @@ service cloud.firestore {
     }
     // Public FaBdoku player stats (cross-user readable for profile cards)
     match /fabdokuPlayerStats/{uid} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.uid == uid;
+    }
+
+    // ── Crossword (daily word puzzle game) ──
+    // Results: one per user per day
+    match /crossword-results/{resultId} {
+      allow read: if true;
+      allow create: if request.auth != null
+        && request.resource.data.uid == request.auth.uid;
+      allow update: if request.auth != null
+        && resource.data.uid == request.auth.uid
+        && request.resource.data.uid == request.auth.uid;
+    }
+    // Per-user Crossword stats (streaks, games played)
+    match /users/{userId}/crossword-stats/{docId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+    // Public Crossword player stats (cross-user readable for profile cards)
+    match /crosswordPlayerStats/{uid} {
       allow read: if true;
       allow write: if request.auth != null && request.auth.uid == uid;
     }
