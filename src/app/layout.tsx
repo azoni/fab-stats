@@ -137,6 +137,8 @@ export default function RootLayout({
                 azoni
               </a>
               {" "}&middot;{" "}
+              <a href="https://discord.com/oauth2/authorize?client_id=1478583612537573479&permissions=0&scope=bot+applications.commands" target="_blank" rel="noopener noreferrer" className="hover:text-fab-text transition-colors">Discord Bot</a>
+              {" "}&middot;{" "}
               <a href="/terms" className="hover:text-fab-text transition-colors">Terms</a>
               {" "}&middot;{" "}
               <a href="/privacy" className="hover:text-fab-text transition-colors">Privacy</a>
