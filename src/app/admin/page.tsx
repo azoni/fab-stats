@@ -20,6 +20,7 @@ import { getMutedUserIds, muteUser, unmuteUser } from "@/lib/mute-service";
 import { getEventShowcase, saveEventShowcase } from "@/lib/event-showcase";
 import { getSeasons, saveSeasons, slugify } from "@/lib/seasons";
 import { getDefaultTheme, saveDefaultTheme, resetAllUserThemes, THEME_OPTIONS, type ThemeName } from "@/lib/theme-config";
+import { loadBotAnalytics, loadDailyUsage, loadCommandLog, type BotAnalytics, type DailyUsage, type CommandLogEntry } from "@/lib/discord-analytics";
 import { ADMIN_BADGES } from "@/lib/badges";
 import { GameFormat } from "@/types";
 import type { Season } from "@/types";
@@ -148,11 +149,16 @@ export default function AdminPage() {
   const [chatLogUid, setChatLogUid] = useState<string | null>(null);
   const [chatLogMessages, setChatLogMessages] = useState<any[]>([]);
   const [chatLogLoading, setChatLogLoading] = useState(false);
+  // Discord bot analytics
+  const [botAnalytics, setBotAnalytics] = useState<BotAnalytics | null>(null);
+  const [botDaily, setBotDaily] = useState<DailyUsage[]>([]);
+  const [botLog, setBotLog] = useState<CommandLogEntry[]>([]);
+  const [botLoading, setBotLoading] = useState(false);
   const anyToolRunning = fixingDates || backfilling || backfillingGemIds || linkingMatches || resyncingH2H || backfillingMatchups || backfillingPlacements;
-  const [activeTab, setActiveTab] = useState<"overview" | "users" | "feedback" | "content" | "poll" | "tools">(() => {
+  const [activeTab, setActiveTab] = useState<"overview" | "users" | "feedback" | "content" | "poll" | "tools" | "discord">(() => {
     if (typeof window !== "undefined") {
       const hash = window.location.hash.replace("#", "");
-      if (["overview", "users", "feedback", "content", "poll", "tools"].includes(hash)) return hash as any;
+      if (["overview", "users", "feedback", "content", "poll", "tools", "discord"].includes(hash)) return hash as any;
     }
     return "overview";
   });
@@ -217,6 +223,19 @@ export default function AdminPage() {
   useEffect(() => {
     if (isAdmin) fetchData();
   }, [isAdmin, fetchData]);
+
+  // Lazy-load Discord bot analytics when tab is opened
+  useEffect(() => {
+    if (activeTab !== "discord" || botAnalytics || botLoading) return;
+    setBotLoading(true);
+    Promise.all([loadBotAnalytics(), loadDailyUsage(30), loadCommandLog(50)])
+      .then(([analytics, daily, log]) => {
+        setBotAnalytics(analytics);
+        setBotDaily(daily);
+        setBotLog(log);
+      })
+      .finally(() => setBotLoading(false));
+  }, [activeTab, botAnalytics, botLoading]);
 
   if (loading || !isAdmin) {
     return (
@@ -297,6 +316,7 @@ export default function AdminPage() {
           { id: "feedback", label: "Feedback", badge: feedback.filter((f) => f.status === "new").length },
           { id: "content", label: "Content" },
           { id: "poll", label: "Poll" },
+          { id: "discord", label: "Discord Bot" },
           { id: "tools", label: "Tools" },
         ] as const).map((tab) => (
           <button
@@ -2345,6 +2365,165 @@ export default function AdminPage() {
 
           </>}
 
+          {/* ── Discord Bot Tab ── */}
+          {activeTab === "discord" && <>
+          {botLoading ? (
+            <div className="text-fab-muted text-sm animate-pulse py-8 text-center">Loading Discord bot data...</div>
+          ) : !botAnalytics ? (
+            <div className="bg-fab-surface border border-fab-border rounded-lg p-6 text-center">
+              <p className="text-fab-muted text-sm mb-3">No Discord bot data yet. The bot needs to write analytics to Firestore.</p>
+              <p className="text-xs text-fab-dim">Document path: <code className="text-fab-gold">admin/discord-bot</code></p>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {/* Invite Link */}
+              <div className="flex items-center gap-2 text-xs">
+                <span className="text-fab-muted">Invite link:</span>
+                <code className="text-fab-gold bg-fab-bg px-2 py-1 rounded select-all">https://discord.com/oauth2/authorize?client_id=1478583612537573479&amp;permissions=0&amp;scope=bot+applications.commands</code>
+                <button
+                  onClick={() => { navigator.clipboard.writeText("https://discord.com/oauth2/authorize?client_id=1478583612537573479&permissions=0&scope=bot+applications.commands"); }}
+                  className="px-2 py-1 rounded text-fab-muted hover:text-fab-text hover:bg-fab-surface transition-colors"
+                  title="Copy to clipboard"
+                >
+                  Copy
+                </button>
+              </div>
+              {/* Bot Status */}
+              {(() => {
+                const hb = botAnalytics.heartbeat;
+                const isOnline = hb && (Date.now() - hb.timestamp < 5 * 60_000);
+                const uptimeStr = hb ? formatUptime(hb.uptimeMs) : "—";
+                return (
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <MetricCard
+                      label="Bot Status"
+                      value={isOnline ? "Online" : "Offline"}
+                      subtext={hb ? `Ping: ${hb.ping}ms` : undefined}
+                      highlight={!!isOnline}
+                    />
+                    <MetricCard label="Servers" value={hb?.serverCount ?? 0} subtext={`${(hb?.totalMembers ?? 0).toLocaleString()} total members`} />
+                    <MetricCard label="Uptime" value={uptimeStr} />
+                    <MetricCard label="Commands Run" value={botAnalytics.totalCommandCount ?? 0} subtext={`${botAnalytics.totalUniqueUsers ?? 0} unique users`} />
+                  </div>
+                );
+              })()}
+
+              {/* Servers List */}
+              {botAnalytics.heartbeat?.servers?.length > 0 && (
+                <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden">
+                  <div className="px-4 py-3 border-b border-fab-border">
+                    <h2 className="text-sm font-semibold text-fab-text">Servers ({botAnalytics.heartbeat.servers.length})</h2>
+                  </div>
+                  <div className="divide-y divide-fab-border">
+                    {[...botAnalytics.heartbeat.servers]
+                      .sort((a, b) => b.memberCount - a.memberCount)
+                      .map((s) => (
+                        <div key={s.id} className="px-4 py-2.5 flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            {s.icon ? (
+                              <img src={`https://cdn.discordapp.com/icons/${s.id}/${s.icon}.webp?size=32`} alt="" className="w-6 h-6 rounded-full" />
+                            ) : (
+                              <div className="w-6 h-6 rounded-full bg-fab-dim/20 flex items-center justify-center text-[10px] text-fab-muted font-bold">
+                                {s.name.charAt(0)}
+                              </div>
+                            )}
+                            <span className="text-sm text-fab-text">{s.name}</span>
+                          </div>
+                          <div className="text-xs text-fab-muted">
+                            {s.memberCount.toLocaleString()} members
+                            <span className="text-fab-dim ml-2">joined {new Date(s.joinedAt).toLocaleDateString()}</span>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Command Usage Breakdown */}
+              {botAnalytics.totalCommands && Object.keys(botAnalytics.totalCommands).length > 0 && (
+                <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden">
+                  <div className="px-4 py-3 border-b border-fab-border">
+                    <h2 className="text-sm font-semibold text-fab-text">Command Usage (All Time)</h2>
+                  </div>
+                  <div className="p-4">
+                    <div className="space-y-2">
+                      {Object.entries(botAnalytics.totalCommands)
+                        .sort(([, a], [, b]) => b - a)
+                        .map(([cmd, count]) => {
+                          const maxCount = Math.max(...Object.values(botAnalytics!.totalCommands));
+                          const pct = maxCount > 0 ? (count / maxCount) * 100 : 0;
+                          return (
+                            <div key={cmd} className="flex items-center gap-3">
+                              <code className="text-xs text-fab-gold w-28 shrink-0">/{cmd}</code>
+                              <div className="flex-1 bg-fab-bg rounded-full h-4 overflow-hidden">
+                                <div className="h-full bg-fab-gold/25 rounded-full" style={{ width: `${pct}%` }} />
+                              </div>
+                              <span className="text-xs text-fab-muted w-12 text-right">{count.toLocaleString()}</span>
+                            </div>
+                          );
+                        })}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Daily Usage Chart (simple table) */}
+              {botDaily.length > 0 && (
+                <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden">
+                  <div className="px-4 py-3 border-b border-fab-border">
+                    <h2 className="text-sm font-semibold text-fab-text">Daily Usage (Last {botDaily.length} days)</h2>
+                  </div>
+                  <div className="p-4">
+                    {/* Mini bar chart */}
+                    <div className="flex items-end gap-1 h-24 mb-3">
+                      {botDaily.map((d) => {
+                        const maxCmds = Math.max(...botDaily.map((x) => x.totalCommands), 1);
+                        const h = (d.totalCommands / maxCmds) * 100;
+                        return (
+                          <div
+                            key={d.date}
+                            className="flex-1 bg-fab-gold/30 hover:bg-fab-gold/50 rounded-t transition-colors cursor-default group relative"
+                            style={{ height: `${Math.max(h, 2)}%` }}
+                            title={`${d.date}: ${d.totalCommands} commands, ${d.uniqueUsers} users`}
+                          />
+                        );
+                      })}
+                    </div>
+                    <div className="flex justify-between text-[10px] text-fab-dim">
+                      <span>{botDaily[0]?.date}</span>
+                      <span>{botDaily[botDaily.length - 1]?.date}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Recent Commands Log */}
+              {botLog.length > 0 && (
+                <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden">
+                  <div className="px-4 py-3 border-b border-fab-border">
+                    <h2 className="text-sm font-semibold text-fab-text">Recent Commands</h2>
+                  </div>
+                  <div className="max-h-80 overflow-y-auto divide-y divide-fab-border">
+                    {botLog.map((entry, i) => (
+                      <div key={i} className="px-4 py-2 flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-2">
+                          <code className="text-fab-gold">/{entry.command}</code>
+                          {entry.args && <span className="text-fab-dim">{entry.args}</span>}
+                        </div>
+                        <div className="flex items-center gap-3 text-fab-muted">
+                          <span>{entry.username}</span>
+                          <span className="text-fab-dim">{entry.serverName}</span>
+                          <span className="text-fab-dim">{formatTimeAgo(entry.timestamp)}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+          </>}
+
           {/* ── Tools Tab: Broadcast ── */}
           {activeTab === "tools" && <>
           {/* Broadcast Message */}
@@ -2571,6 +2750,27 @@ function UserExpandedStats({ user: u, assignedBadgeIds, isMuted, onAssignBadge, 
       </div>
     </div>
   );
+}
+
+function formatUptime(ms: number): string {
+  const s = Math.floor(ms / 1000);
+  const d = Math.floor(s / 86400);
+  const h = Math.floor((s % 86400) / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  if (d > 0) return `${d}d ${h}h`;
+  if (h > 0) return `${h}h ${m}m`;
+  return `${m}m`;
+}
+
+function formatTimeAgo(timestamp: number): string {
+  const diff = Date.now() - timestamp;
+  const mins = Math.floor(diff / 60_000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  return `${days}d ago`;
 }
 
 function MetricCard({ label, value, subtext, prefix, suffix, highlight }: { label: string; value: number | string; subtext?: string; prefix?: string; suffix?: string; highlight?: boolean }) {
