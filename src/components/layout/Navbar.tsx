@@ -843,7 +843,7 @@ function MoreDropdown({
               </svg>
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium text-fab-text group-hover:text-fab-gold transition-colors">Discord Bot</p>
-                <p className="text-xs text-fab-dim">Add FaB Stats to your server</p>
+                <p className="text-xs text-fab-dim">Add FaB Stats to your server &middot; <Link href="/docs#discord-bot" className="text-fab-gold/70 hover:text-fab-gold">View commands</Link></p>
               </div>
               <svg className="w-3.5 h-3.5 text-fab-dim shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />

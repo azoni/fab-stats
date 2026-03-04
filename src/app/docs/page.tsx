@@ -28,6 +28,7 @@ const TOC = [
   { id: "friends", label: "Friends" },
   { id: "kudos", label: "Kudos" },
   { id: "fabdoku", label: "FaBdoku" },
+  { id: "discord-bot", label: "Discord Bot" },
   { id: "showcase", label: "Showcase & Pinned" },
   { id: "on-this-day", label: "On This Day" },
   { id: "community-meta", label: "Community Meta" },
@@ -1030,6 +1031,59 @@ export default function DocsPage() {
                 you can see how common each of your picks was compared to other players. Lower percentages
                 mean more unique choices.
               </p>
+            </div>
+          </section>
+
+          {/* ─── Discord Bot ─── */}
+          <section id="discord-bot">
+            <h2 className="text-xl font-semibold text-fab-text mb-3 pb-2 border-b border-fab-border">Discord Bot</h2>
+            <p className="text-sm text-fab-muted mb-3">
+              The FaB Stats Discord bot lets you look up player stats, leaderboards, hero data, and more directly
+              from any Discord server.{" "}
+              <a
+                href="https://discord.com/oauth2/authorize?client_id=1478583612537573479&permissions=0&scope=bot+applications.commands"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-fab-gold hover:underline"
+              >
+                Add to your server
+              </a>
+            </p>
+
+            <h3 className="text-sm font-semibold text-fab-text mt-4 mb-2">Player Lookup</h3>
+            <div className="space-y-1.5 text-sm text-fab-muted">
+              <p><code className="text-fab-gold">/stats &lt;username&gt;</code> — Overall record, win rate, power level, streaks, top hero, and events played.</p>
+              <p><code className="text-fab-gold">/hero &lt;username&gt; &lt;hero&gt;</code> — Stats with a specific hero: W/L/D, win rate, and matchup breakdown.</p>
+              <p><code className="text-fab-gold">/recent &lt;username&gt;</code> — Last 10 matches with results, heroes, and opponents.</p>
+              <p><code className="text-fab-gold">/event &lt;username&gt; [name]</code> — Most recent event (or search by name): round-by-round results, format, and record.</p>
+              <p><code className="text-fab-gold">/opponents &lt;username&gt;</code> — Top 10 most-played opponents with W/L records.</p>
+            </div>
+
+            <h3 className="text-sm font-semibold text-fab-text mt-4 mb-2">Comparison</h3>
+            <div className="space-y-1.5 text-sm text-fab-muted">
+              <p><code className="text-fab-gold">/compare &lt;player1&gt; &lt;player2&gt;</code> — Side-by-side comparison of two players&apos; stats.</p>
+              <p><code className="text-fab-gold">/h2h &lt;opponent&gt;</code> — Your head-to-head record vs an opponent (requires <code>/link</code>).</p>
+              <p><code className="text-fab-gold">/matchup &lt;your_hero&gt; &lt;vs_hero&gt;</code> — Your personal record in a specific hero matchup (requires <code>/link</code>).</p>
+            </div>
+
+            <h3 className="text-sm font-semibold text-fab-text mt-4 mb-2">Community</h3>
+            <div className="space-y-1.5 text-sm text-fab-muted">
+              <p><code className="text-fab-gold">/leaderboard [category] [sort]</code> — Community leaderboard with 34+ ranking categories. Supports autocomplete search.</p>
+              <p><code className="text-fab-gold">/meta</code> — Current season&apos;s Top 8 hero breakdown across the community.</p>
+              <p><code className="text-fab-gold">/herolist [sort]</code> — Community hero tier list sorted by matches, win rate, or players.</p>
+            </div>
+
+            <h3 className="text-sm font-semibold text-fab-text mt-4 mb-2">Account</h3>
+            <div className="space-y-1.5 text-sm text-fab-muted">
+              <p><code className="text-fab-gold">/link &lt;username&gt;</code> — Link your Discord account to your FaB Stats profile. Required for <code>/h2h</code> and <code>/matchup</code>.</p>
+              <p><code className="text-fab-gold">/unlink</code> — Remove the link between your Discord and FaB Stats accounts.</p>
+            </div>
+
+            <h3 className="text-sm font-semibold text-fab-text mt-4 mb-2">Utility</h3>
+            <div className="space-y-1.5 text-sm text-fab-muted">
+              <p><code className="text-fab-gold">/help</code> — List all available commands.</p>
+              <p><code className="text-fab-gold">/invite</code> — Get the bot invite link to add it to another server.</p>
+              <p><code className="text-fab-gold">/botstats</code> — Bot info: server count, uptime, and ping.</p>
             </div>
           </section>
 
