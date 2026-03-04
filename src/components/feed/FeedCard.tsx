@@ -11,7 +11,9 @@ export interface FeedGroup {
   totalMatchCount: number;
 }
 
-/** Group consecutive import feed events from the same user into collapsible groups.
+const GAME_TYPES = new Set(["fabdoku", "crossword", "heroguesser", "matchupmania", "trivia", "timeline", "connections"]);
+
+/** Group consecutive import or game feed events from the same user into collapsible groups.
  *  Achievement/placement events are never grouped — they stay as single-item groups. */
 export function groupConsecutiveEvents(events: FeedEvent[]): FeedGroup[] {
   const groups: FeedGroup[] = [];
@@ -25,6 +27,13 @@ export function groupConsecutiveEvents(events: FeedEvent[]): FeedGroup[] {
     ) {
       last.events.push(event);
       last.totalMatchCount += event.matchCount;
+    } else if (
+      GAME_TYPES.has(event.type) &&
+      last &&
+      GAME_TYPES.has(last.events[0].type) &&
+      last.events[0].userId === event.userId
+    ) {
+      last.events.push(event);
     } else {
       groups.push({
         events: [event],
@@ -701,6 +710,69 @@ function HeroGuesserContent({ event, compact }: { event: HeroGuesserFeedEvent; c
   );
 }
 
+// ── Game name helper ──
+
+const GAME_LABELS: Record<string, string> = {
+  fabdoku: "FaBdoku",
+  crossword: "Crossword",
+  heroguesser: "Hero Guesser",
+  matchupmania: "Matchup Mania",
+  trivia: "FaB Trivia",
+  timeline: "Timeline",
+  connections: "Connections",
+};
+
+function GameResultSummary({ event }: { event: FeedEvent }) {
+  const name = GAME_LABELS[event.type] || event.type;
+  let detail = "";
+
+  switch (event.type) {
+    case "fabdoku": {
+      const e = event as FaBdokuFeedEvent;
+      detail = `${e.correctCount}/9${e.uniquenessScore !== undefined ? ` ${e.uniquenessScore}pts` : ""}`;
+      break;
+    }
+    case "crossword": {
+      const e = event as CrosswordFeedEvent;
+      detail = e.won ? `Solved in ${(() => { const m = Math.floor(e.elapsedSeconds / 60); const s = e.elapsedSeconds % 60; return `${m}:${String(s).padStart(2, "0")}`; })()}` : `${e.wordsFound}/${e.totalWords} words`;
+      break;
+    }
+    case "heroguesser": {
+      const e = event as HeroGuesserFeedEvent;
+      detail = e.won ? `Solved in ${e.guessCount}/${e.maxGuesses}` : `Failed ${e.guessCount}/${e.maxGuesses}`;
+      break;
+    }
+    case "matchupmania": {
+      const e = event as MatchupManiaFeedEvent;
+      detail = `${e.score}/${e.totalRounds}`;
+      break;
+    }
+    case "trivia": {
+      const e = event as TriviaFeedEvent;
+      detail = `${e.score}/${e.totalQuestions}`;
+      break;
+    }
+    case "timeline": {
+      const e = event as TimelineFeedEvent;
+      detail = e.won ? `Won with ${e.livesRemaining} lives left` : "Failed";
+      break;
+    }
+    case "connections": {
+      const e = event as ConnectionsFeedEvent;
+      detail = e.won ? `${e.groupsFound}/4 groups` : `${e.groupsFound}/4 groups`;
+      break;
+    }
+  }
+
+  const won = "won" in event ? (event as { won: boolean }).won : true;
+
+  return (
+    <p className="text-[11px] text-fab-muted">
+      {name} &middot; <span className={`font-semibold ${won ? "text-fab-win" : "text-fab-loss"}`}>{detail}</span>
+    </p>
+  );
+}
+
 /** A single import line inside an expanded group */
 function GroupedImportRow({ event }: { event: ImportFeedEvent }) {
   return (
@@ -732,9 +804,10 @@ export function GroupedFeedCard({ group, compact, rankMap, eventTierMap, underli
 
   if (isSingle) return <FeedCard event={first} compact={compact} rankMap={rankMap} eventTierMap={eventTierMap} underlineTierMap={underlineTierMap} userId={userId} isAdmin={isAdmin} onDelete={onDelete} />;
 
-  // Multi-event groups are only for imports
+  const isGameGroup = GAME_TYPES.has(first.type);
   const tierStyle = eventTierMap?.get(first.userId);
   const underlineStyle = underlineTierMap?.get(first.userId);
+
   return (
     <div
       className={`bg-fab-surface border border-fab-border rounded-lg ${compact ? "px-3 py-2" : "p-4"} relative overflow-hidden`}
@@ -751,7 +824,35 @@ export function GroupedFeedCard({ group, compact, rankMap, eventTierMap, underli
         <div className="flex-1 min-w-0">
           <NameAndTime event={first} compact={compact} />
 
-          {compact ? (
+          {isGameGroup ? (
+            /* ── Grouped game events ── */
+            compact ? (
+              <>
+                <p className="text-[11px] text-fab-muted">
+                  completed <span className="font-semibold text-fab-text">{group.events.length}</span> games
+                </p>
+                <div className="space-y-0.5 mt-1">
+                  {group.events.map((e) => (
+                    <GameResultSummary key={e.id} event={e} />
+                  ))}
+                </div>
+                <ReactionBar event={first} userId={userId} compact />
+              </>
+            ) : (
+              <>
+                <p className="text-sm text-fab-muted mt-1">
+                  completed <span className="font-semibold text-fab-text">{group.events.length}</span> games
+                </p>
+                <div className="space-y-0.5 mt-1.5">
+                  {group.events.map((e) => (
+                    <GameResultSummary key={e.id} event={e} />
+                  ))}
+                </div>
+                <ReactionBar event={first} userId={userId} />
+              </>
+            )
+          ) : compact ? (
+            /* ── Grouped imports (compact) ── */
             <>
               <p className="text-[11px] text-fab-muted">
                 <span className="font-semibold text-fab-text">{group.totalMatchCount}</span> match{group.totalMatchCount !== 1 ? "es" : ""}{" "}
@@ -767,6 +868,7 @@ export function GroupedFeedCard({ group, compact, rankMap, eventTierMap, underli
               <ReactionBar event={first} userId={userId} compact />
             </>
           ) : (
+            /* ── Grouped imports (full) ── */
             <>
               <p className="text-sm text-fab-muted mt-1">
                 imported{" "}

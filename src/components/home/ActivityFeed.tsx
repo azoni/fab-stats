@@ -312,8 +312,12 @@ export function ActivityFeed({ rankMap, eventTierMap, underlineTierMap }: { rank
                 key={group.events[0].id}
                 onClick={(e) => {
                   if ((e.target as HTMLElement).closest("a")) return;
+                  if (group.events.length > 1 && GAME_EVENT_TYPES.has(group.events[0].type)) {
+                    router.push("/games");
+                    return;
+                  }
                   const t = group.events[0].type;
-                  router.push(t === "fabdoku" ? "/fabdoku" : t === "crossword" ? "/crossword" : `/search?type=${t}`);
+                  router.push(GAME_EVENT_TYPES.has(t) ? `/${t}` : t === "import" ? `/search?type=${t}` : `/search?type=${t}`);
                 }}
                 className="cursor-pointer"
               >
