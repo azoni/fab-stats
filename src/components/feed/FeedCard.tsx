@@ -334,15 +334,22 @@ function HeroPill({ hero, compact }: { hero: string; compact?: boolean }) {
 
 // ── Content components ──
 
-export function FeedCard({ event, compact, rankMap, eventTierMap, userId, isAdmin, onDelete }: { event: FeedEvent; compact?: boolean; rankMap?: Map<string, 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8>; eventTierMap?: Map<string, { border: string; shadow: string }>; userId?: string; isAdmin?: boolean; onDelete?: (eventId: string) => void }) {
+export function FeedCard({ event, compact, rankMap, eventTierMap, underlineTierMap, userId, isAdmin, onDelete }: { event: FeedEvent; compact?: boolean; rankMap?: Map<string, 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8>; eventTierMap?: Map<string, { border: string; shadow: string }>; underlineTierMap?: Map<string, { color: string; rgb: string }>; userId?: string; isAdmin?: boolean; onDelete?: (eventId: string) => void }) {
   const tierStyle = eventTierMap?.get(event.userId);
+  const underlineStyle = underlineTierMap?.get(event.userId);
   const canDelete = isAdmin || (userId && userId === event.userId);
 
   return (
     <div
-      className={`bg-fab-surface border border-fab-border rounded-lg ${compact ? "px-3 py-2" : "p-4"} relative group/feed`}
+      className={`bg-fab-surface border border-fab-border rounded-lg ${compact ? "px-3 py-2" : "p-4"} relative group/feed overflow-hidden`}
       style={tierStyle ? { borderColor: tierStyle.border, boxShadow: tierStyle.shadow } : undefined}
     >
+      {underlineStyle && (
+        <div
+          className="absolute bottom-0 left-0 right-0 pointer-events-none"
+          style={{ height: 2.5, background: underlineStyle.color, boxShadow: `0 0 4px rgba(${underlineStyle.rgb},0.3)` }}
+        />
+      )}
       {canDelete && onDelete && (
         <DeleteFeedButton eventId={event.id} onDelete={onDelete} />
       )}
@@ -575,7 +582,7 @@ function GroupedImportRow({ event }: { event: ImportFeedEvent }) {
   );
 }
 
-export function GroupedFeedCard({ group, compact, rankMap, eventTierMap, userId, isAdmin, onDelete }: { group: FeedGroup; compact?: boolean; rankMap?: Map<string, 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8>; eventTierMap?: Map<string, { border: string; shadow: string }>; userId?: string; isAdmin?: boolean; onDelete?: (eventId: string) => void }) {
+export function GroupedFeedCard({ group, compact, rankMap, eventTierMap, underlineTierMap, userId, isAdmin, onDelete }: { group: FeedGroup; compact?: boolean; rankMap?: Map<string, 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8>; eventTierMap?: Map<string, { border: string; shadow: string }>; underlineTierMap?: Map<string, { color: string; rgb: string }>; userId?: string; isAdmin?: boolean; onDelete?: (eventId: string) => void }) {
   const [expanded, setExpanded] = useState(false);
   const first = group.events[0];
   const isSingle = group.events.length === 1;
@@ -585,15 +592,22 @@ export function GroupedFeedCard({ group, compact, rankMap, eventTierMap, userId,
     group.events.flatMap((e) => e.type === "import" ? (e.topHeroes || []) : []),
   )];
 
-  if (isSingle) return <FeedCard event={first} compact={compact} rankMap={rankMap} eventTierMap={eventTierMap} userId={userId} isAdmin={isAdmin} onDelete={onDelete} />;
+  if (isSingle) return <FeedCard event={first} compact={compact} rankMap={rankMap} eventTierMap={eventTierMap} underlineTierMap={underlineTierMap} userId={userId} isAdmin={isAdmin} onDelete={onDelete} />;
 
   // Multi-event groups are only for imports
   const tierStyle = eventTierMap?.get(first.userId);
+  const underlineStyle = underlineTierMap?.get(first.userId);
   return (
     <div
-      className={`bg-fab-surface border border-fab-border rounded-lg ${compact ? "px-3 py-2" : "p-4"}`}
+      className={`bg-fab-surface border border-fab-border rounded-lg ${compact ? "px-3 py-2" : "p-4"} relative overflow-hidden`}
       style={tierStyle ? { borderColor: tierStyle.border, boxShadow: tierStyle.shadow } : undefined}
     >
+      {underlineStyle && (
+        <div
+          className="absolute bottom-0 left-0 right-0 pointer-events-none"
+          style={{ height: 2.5, background: underlineStyle.color, boxShadow: `0 0 4px rgba(${underlineStyle.rgb},0.3)` }}
+        />
+      )}
       <div className={`flex items-center ${compact ? "gap-2" : "gap-3 items-start"}`}>
         <FeedCardHeader event={first} compact={compact} rankMap={rankMap} />
         <div className="flex-1 min-w-0">

@@ -10,7 +10,7 @@ import { useFriends } from "@/hooks/useFriends";
 import { useFavorites } from "@/hooks/useFavorites";
 import { useLeaderboard } from "@/hooks/useLeaderboard";
 import { selectFeaturedProfiles } from "@/lib/featured-profiles";
-import { computeRankMap, computeEventTierMap } from "@/lib/leaderboard-ranks";
+import { computeRankMap, computeEventTierMap, computeUnderlineTierMap } from "@/lib/leaderboard-ranks";
 import { groupConsecutiveEvents, GroupedFeedCard } from "@/components/feed/FeedCard";
 import { FeaturedProfiles } from "@/components/home/FeaturedProfiles";
 import { useCreators } from "@/hooks/useCreators";
@@ -85,6 +85,7 @@ function SearchContent() {
   const featuredProfiles = useMemo(() => selectFeaturedProfiles(lbEntries), [lbEntries]);
   const rankMap = useMemo(() => computeRankMap(lbEntries), [lbEntries]);
   const eventTierMap = useMemo(() => computeEventTierMap(lbEntries), [lbEntries]);
+  const underlineTierMap = useMemo(() => computeUnderlineTierMap(lbEntries), [lbEntries]);
 
   // Build set of friend/favorite user IDs
   const socialUserIds = useMemo(() => {
@@ -363,7 +364,7 @@ function SearchContent() {
               <>
                 <div className="space-y-3">
                   {groups.map((group) => (
-                    <GroupedFeedCard key={group.events[0].id} group={group} rankMap={rankMap} eventTierMap={eventTierMap} userId={user?.uid} isAdmin={isAdmin} onDelete={handleDeleteFeed} />
+                    <GroupedFeedCard key={group.events[0].id} group={group} rankMap={rankMap} eventTierMap={eventTierMap} underlineTierMap={underlineTierMap} userId={user?.uid} isAdmin={isAdmin} onDelete={handleDeleteFeed} />
                   ))}
                 </div>
 
@@ -395,12 +396,12 @@ function SearchContent() {
 
           {/* Spotlight sidebar */}
           <div className="hidden lg:block">
-            <FeaturedProfiles profiles={featuredProfiles} creators={creators} rankMap={rankMap} />
+            <FeaturedProfiles profiles={featuredProfiles} creators={creators} rankMap={rankMap} underlineTierMap={underlineTierMap} />
           </div>
 
           {/* Spotlight on mobile (below feed) */}
           <div className="lg:hidden">
-            <FeaturedProfiles profiles={featuredProfiles} creators={creators} rankMap={rankMap} />
+            <FeaturedProfiles profiles={featuredProfiles} creators={creators} rankMap={rankMap} underlineTierMap={underlineTierMap} />
           </div>
         </div>
       )}

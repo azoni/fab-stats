@@ -3,10 +3,10 @@ import { useMemo, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useMatches } from "@/hooks/useMatches";
 import { useAuth } from "@/contexts/AuthContext";
-import { computeOverallStats, computeHeroStats, computeEventStats, computeOpponentStats, computeBestFinish, computePlayoffFinishes, getRoundNumber } from "@/lib/stats";
+import { computeOverallStats, computeHeroStats, computeEventStats, computeOpponentStats, computeBestFinish, computePlayoffFinishes, computeMinorEventFinishes, getRoundNumber } from "@/lib/stats";
 import { updateLeaderboardEntry } from "@/lib/leaderboard";
 import { useLeaderboard } from "@/hooks/useLeaderboard";
-import { computeUserRanks, getBestRank, computeRankMap, computeEventTierMap, rankBorderClass } from "@/lib/leaderboard-ranks";
+import { computeUserRanks, getBestRank, computeRankMap, computeEventTierMap, computeUnderlineTierMap, rankBorderClass } from "@/lib/leaderboard-ranks";
 import { ShieldIcon, SwordsIcon, CalendarIcon, OpponentsIcon, TrendsIcon } from "@/components/icons/NavIcons";
 import { CommunityHighlights } from "@/components/home/CommunityHighlights";
 import { useFeaturedEvents } from "@/hooks/useFeaturedEvents";
@@ -35,6 +35,7 @@ import type { FaBdokuStats } from "@/lib/fabdoku/types";
 import { getTodayDateStr } from "@/lib/fabdoku/puzzle-generator";
 import { loadKudosCounts } from "@/lib/kudos";
 import { CardBorderWrapper } from "@/components/profile/CardBorderWrapper";
+import type { UnderlineConfig } from "@/components/profile/CardBorderWrapper";
 import type { Poll, EventShowcaseConfig } from "@/types";
 
 function ResourcesPopout() {
@@ -207,6 +208,40 @@ export default function Dashboard() {
     return { ...tierStyle[best], placement: bestPlacement };
   }, [playoffFinishes, profile?.borderEventType, profile?.borderPlacement]);
 
+  // Minor event finishes (Armory/Skirmish/RTN/PQ) for underline
+  const minorFinishes = useMemo(() => computeMinorEventFinishes(eventStats), [eventStats]);
+  const underlineConfig = useMemo((): UnderlineConfig | null => {
+    const underlineStyle: Record<string, { color: string; rgb: string }> = {
+      Armory:              { color: "#d4975a", rgb: "212,151,90" },
+      Skirmish:            { color: "#93c5fd", rgb: "147,197,253" },
+      "Road to Nationals": { color: "#fca5a5", rgb: "252,165,165" },
+      ProQuest:            { color: "#c4b5fd", rgb: "196,181,253" },
+    };
+    const placementRank: Record<string, number> = { undefeated: 1, top8: 1, top4: 2, finalist: 3, champion: 4 };
+    const tierRank: Record<string, number> = { Armory: 1, Skirmish: 2, "Road to Nationals": 3, ProQuest: 4 };
+
+    const selEvt = profile?.underlineEventType;
+    const selPl = profile?.underlinePlacement;
+    if (selEvt === "" && selPl === "") return null;
+
+    if (selEvt && selPl && underlineStyle[selEvt]) {
+      const hasFinish = minorFinishes.some(f => f.eventType === selEvt && f.type === selPl);
+      if (hasFinish) return { ...underlineStyle[selEvt], placement: placementRank[selPl] || 0 };
+    }
+
+    let best: string | null = null;
+    let bestScore = 0;
+    let bestPlacement = 0;
+    for (const f of minorFinishes) {
+      const score = tierRank[f.eventType] || 0;
+      if (score > bestScore) { best = f.eventType; bestScore = score; }
+      const pRank = placementRank[f.type] || 0;
+      if (pRank > bestPlacement) bestPlacement = pRank;
+    }
+    if (!best) return null;
+    return { ...underlineStyle[best], placement: bestPlacement };
+  }, [minorFinishes, profile?.underlineEventType, profile?.underlinePlacement]);
+
   // Community section data
   const { seasons } = useSeasons();
   const currentSeason = useMemo(() => getCurrentSeason(seasons), [seasons]);
@@ -244,6 +279,7 @@ export default function Dashboard() {
   const rankMap = useMemo(() => computeRankMap(lbEntries), [lbEntries]);
   const featuredProfiles = useMemo(() => selectFeaturedProfiles(lbEntries), [lbEntries]);
   const eventTierMap = useMemo(() => computeEventTierMap(lbEntries), [lbEntries]);
+  const underlineTierMap = useMemo(() => computeUnderlineTierMap(lbEntries), [lbEntries]);
   const isCreator = useMemo(() => {
     if (!profile) return false;
     return creators.some((c) => c.username === profile.username);
@@ -446,7 +482,7 @@ export default function Dashboard() {
                 ))}
               </div>
             </div>
-            {user && <ActivityFeed rankMap={rankMap} eventTierMap={eventTierMap} />}
+            {user && <ActivityFeed rankMap={rankMap} eventTierMap={eventTierMap} underlineTierMap={underlineTierMap} />}
           </div>
           <MetaSnapshot topHeroes={communityTopHeroes} top8Heroes={top8Heroes} activeEventType={activeEventType} seasonName={displaySeason?.name} seasonWeeks={seasonWeeks} selectedWeek={selectedWeek} onWeekChange={setSelectedWeek} backgroundImage={displaySeason?.backgroundImage} showResults={!!resultsSeason} />
         </div>
@@ -460,7 +496,7 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
           <div className="flex flex-col gap-6">
             {/* Profile card */}
-            <CardBorderWrapper cardBorder={cardBorder} borderStyle={profile?.borderStyle || "beam"} contentClassName="relative bg-fab-surface px-4 py-3 overflow-visible">
+            <CardBorderWrapper cardBorder={cardBorder} borderStyle={profile?.borderStyle || "beam"} underline={underlineConfig} contentClassName="relative bg-fab-surface px-4 py-3 overflow-visible">
               {/* FaB-inspired pitch strip — thin gold accent across the top */}
               <div className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-fab-gold/30 to-transparent" />
               {/* Subtle decorative accent + hero card art — clipped to card bounds */}
@@ -602,12 +638,12 @@ export default function Dashboard() {
             <QuickStats overall={overall} last30={last30} />
             <RecentEvents eventStats={eventStats} playerName={profile?.displayName} />
             {(featuredProfiles.length > 0 || creators.length > 0) && (
-              <FeaturedProfiles profiles={featuredProfiles} creators={creators} rankMap={rankMap} grid />
+              <FeaturedProfiles profiles={featuredProfiles} creators={creators} rankMap={rankMap} underlineTierMap={underlineTierMap} grid />
             )}
           </div>
           <div className="flex flex-col gap-6">
             <MetaSnapshot topHeroes={communityTopHeroes} top8Heroes={top8Heroes} activeEventType={activeEventType} seasonName={displaySeason?.name} seasonWeeks={seasonWeeks} selectedWeek={selectedWeek} onWeekChange={setSelectedWeek} backgroundImage={displaySeason?.backgroundImage} showResults={!!resultsSeason} />
-            {user && <ActivityFeed rankMap={rankMap} eventTierMap={eventTierMap} />}
+            {user && <ActivityFeed rankMap={rankMap} eventTierMap={eventTierMap} underlineTierMap={underlineTierMap} />}
           </div>
         </div>
       )}

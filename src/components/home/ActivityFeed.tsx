@@ -57,7 +57,7 @@ function readStored<T extends string>(key: string, valid: T[], fallback: T): T {
   return v && valid.includes(v) ? v : fallback;
 }
 
-export function ActivityFeed({ rankMap, eventTierMap }: { rankMap?: Map<string, 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8>; eventTierMap?: Map<string, { border: string; shadow: string }> }) {
+export function ActivityFeed({ rankMap, eventTierMap, underlineTierMap }: { rankMap?: Map<string, 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8>; eventTierMap?: Map<string, { border: string; shadow: string }>; underlineTierMap?: Map<string, { color: string; rgb: string }> }) {
   const router = useRouter();
   const { user, isAdmin } = useAuth();
   const { friends } = useFriends();
@@ -322,7 +322,7 @@ export function ActivityFeed({ rankMap, eventTierMap }: { rankMap?: Map<string, 
                 }}
                 className="cursor-pointer"
               >
-                <GroupedFeedCard group={group} compact rankMap={rankMap} eventTierMap={eventTierMap} userId={user?.uid} isAdmin={isAdmin} onDelete={handleDelete} />
+                <GroupedFeedCard group={group} compact rankMap={rankMap} eventTierMap={eventTierMap} underlineTierMap={underlineTierMap} userId={user?.uid} isAdmin={isAdmin} onDelete={handleDelete} />
               </div>
             ))}
           </div>

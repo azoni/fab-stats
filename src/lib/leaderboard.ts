@@ -7,7 +7,7 @@ import {
   where,
 } from "firebase/firestore";
 import { db } from "./firebase";
-import { computeOverallStats, computeEventStats, computeOpponentStats, computePlayoffFinishes, getEventType } from "./stats";
+import { computeOverallStats, computeEventStats, computeOpponentStats, computePlayoffFinishes, computeMinorEventFinishes, getEventType } from "./stats";
 import type { LeaderboardEntry, MatchRecord, UserProfile } from "@/types";
 import { MatchResult } from "@/types";
 
@@ -205,6 +205,13 @@ export async function updateLeaderboardEntry(
   }
   const totalFinalists = playoffFinishes.filter((f) => f.type === "finalist").length;
 
+  // Minor event finishes (Armory/Skirmish/RTN/PQ)
+  const minorEventFinishes = computeMinorEventFinishes(events);
+  const minorTop8sByEventType: Record<string, number> = {};
+  for (const f of minorEventFinishes) {
+    minorTop8sByEventType[f.eventType] = (minorTop8sByEventType[f.eventType] || 0) + 1;
+  }
+
   // Top 8 heroes — which hero was played at each playoff finish
   const top8Heroes = playoffFinishes
     .filter((f) => f.hero && isValidHeroName(f.hero))
@@ -298,6 +305,7 @@ export async function updateLeaderboardEntry(
     monthlyHeroBreakdown,
     totalTop8s,
     top8sByEventType,
+    minorTop8sByEventType,
     top8Heroes,
     totalFinalists,
     uniqueOpponents: opponentNames.size,

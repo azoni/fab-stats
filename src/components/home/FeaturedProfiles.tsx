@@ -270,11 +270,12 @@ interface FeaturedProfilesProps {
   profiles: FeaturedProfile[];
   creators?: Creator[];
   rankMap?: Map<string, 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8>;
+  underlineTierMap?: Map<string, { color: string; rgb: string }>;
   /** Use grid layout (for homepage) instead of vertical list (for sidebar) */
   grid?: boolean;
 }
 
-export function FeaturedProfiles({ profiles, creators, rankMap, grid }: FeaturedProfilesProps) {
+export function FeaturedProfiles({ profiles, creators, rankMap, underlineTierMap, grid }: FeaturedProfilesProps) {
   // Pick 2 random creators, stable per render
   const spotlightCreators = useMemo(() => {
     if (!creators || creators.length === 0) return [];
@@ -300,12 +301,19 @@ export function FeaturedProfiles({ profiles, creators, rankMap, grid }: Featured
       <div className={grid ? "space-y-2" : "space-y-2 flex-1"}>
         {profiles.map((fp) => {
           const config = SPOTLIGHT_CONFIG[fp.reason] || DEFAULT_CONFIG;
+          const underlineStyle = underlineTierMap?.get(fp.entry.userId);
           return (
             <Link
               key={fp.entry.userId}
               href={playerHref(fp.entry.username)}
               className={`spotlight-card ${config.css} relative flex items-center gap-3 bg-fab-surface border border-fab-border rounded-lg px-3 py-2.5 hover:bg-fab-surface-hover transition-all group overflow-hidden`}
             >
+              {underlineStyle && (
+                <div
+                  className="absolute bottom-0 left-0 right-0 pointer-events-none z-10"
+                  style={{ height: 2, background: underlineStyle.color, boxShadow: `0 0 4px rgba(${underlineStyle.rgb},0.3)` }}
+                />
+              )}
               {/* Subtle pitch strip accent */}
               <div className={`absolute top-0 inset-x-0 h-px opacity-40 bg-gradient-to-r from-transparent via-current to-transparent ${config.accent}`} />
               {fp.entry.photoUrl ? (

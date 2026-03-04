@@ -398,3 +398,39 @@ export function computeEventTierMap(entries: LeaderboardEntry[]): Map<string, { 
 
   return map;
 }
+
+// ── Minor event underline tier map ──
+
+const MINOR_EVENT_TIER_RANK: Record<string, number> = {
+  Armory: 1, Skirmish: 2, "Road to Nationals": 3, ProQuest: 4,
+};
+
+const MINOR_EVENT_TIER_STYLE: Record<string, { color: string; rgb: string }> = {
+  Armory:              { color: "#d4975a", rgb: "212,151,90" },
+  Skirmish:            { color: "#93c5fd", rgb: "147,197,253" },
+  "Road to Nationals": { color: "#fca5a5", rgb: "252,165,165" },
+  ProQuest:            { color: "#c4b5fd", rgb: "196,181,253" },
+};
+
+/** Bulk-compute the best minor event underline color for every user that has minor finishes. */
+export function computeUnderlineTierMap(entries: LeaderboardEntry[]): Map<string, { color: string; rgb: string }> {
+  const map = new Map<string, { color: string; rgb: string }>();
+
+  for (const entry of entries) {
+    if (!entry.minorTop8sByEventType) continue;
+    let bestTier: string | null = null;
+    let bestScore = 0;
+    for (const eventType of Object.keys(entry.minorTop8sByEventType)) {
+      const score = MINOR_EVENT_TIER_RANK[eventType] || 0;
+      if (score > bestScore) {
+        bestTier = eventType;
+        bestScore = score;
+      }
+    }
+    if (bestTier) {
+      map.set(entry.userId, MINOR_EVENT_TIER_STYLE[bestTier]);
+    }
+  }
+
+  return map;
+}

@@ -290,6 +290,7 @@ export interface LeaderboardEntry {
   monthlyHeroBreakdown?: { hero: string; format: string; eventType: string; matches: number; wins: number }[];
   totalTop8s?: number;
   top8sByEventType?: Record<string, number>;
+  minorTop8sByEventType?: Record<string, number>;
   top8Heroes?: { hero: string; eventType: string; placementType: string; eventDate: string; format: string; eventName: string }[];
   totalFinalists?: number;
   uniqueOpponents?: number;
