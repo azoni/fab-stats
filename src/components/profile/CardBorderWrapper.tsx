@@ -618,6 +618,17 @@ export function BorderPicker({
     <div className="flex items-center justify-center gap-2 mt-1.5 flex-wrap">
       {/* Event+placement options */}
       <div className="flex gap-1 flex-wrap">
+        {/* "None" option */}
+        <button
+          onClick={() => onChange({ eventType: "", placement: "", style: current.style })}
+          className={`px-1.5 py-0.5 rounded-md text-[10px] font-medium transition-colors border ${
+            !current.eventType
+              ? "border-fab-gold/50 bg-fab-surface text-fab-text shadow-sm"
+              : "border-fab-border text-fab-dim hover:text-fab-muted hover:border-fab-border"
+          }`}
+        >
+          None
+        </button>
         {uniqueBorders.map(({ eventType, placement }) => {
           const tier = TIER_STYLE[eventType];
           if (!tier) return null;
