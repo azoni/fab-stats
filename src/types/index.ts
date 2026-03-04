@@ -155,7 +155,7 @@ export interface UserProfile {
 }
 
 export interface ShowcaseCard {
-  type: "featuredMatch" | "heroSpotlight" | "bestFinish" | "rivalry" | "eventRecap" | "achievements" | "statHighlight" | "formatMastery" | "eventTypeMastery" | "streakShowcase" | "recentForm" | "leaderboardRank";
+  type: "featuredMatch" | "heroSpotlight" | "bestFinish" | "rivalry" | "eventRecap" | "achievements" | "statHighlight" | "formatMastery" | "eventTypeMastery" | "streakShowcase" | "recentForm" | "leaderboardRank" | "customImage";
   matchId?: string;
   heroName?: string;
   eventDate?: string;
@@ -167,6 +167,8 @@ export interface ShowcaseCard {
   filter?: string;
   sortBy?: "mostPlayed" | "bestWinRate";
   selectedItems?: string[];
+  imageUrl?: string;
+  caption?: string;
 }
 
 export interface EventStats {

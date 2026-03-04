@@ -14,6 +14,7 @@ import { EventTypeMasteryCard } from "./showcase/EventTypeMasteryCard";
 import { StreakShowcaseCard } from "./showcase/StreakShowcaseCard";
 import { RecentFormCard } from "./showcase/RecentFormCard";
 import { LeaderboardRankCard } from "./showcase/LeaderboardRankCard";
+import { CustomImageCard } from "./showcase/CustomImageCard";
 import type { LeaderboardRank } from "@/lib/leaderboard-ranks";
 import {
   CardPicker,
@@ -24,6 +25,7 @@ import {
   EventPicker,
   AchievementList,
   StatPicker,
+  ImageUploadPicker,
 } from "./showcase/CardPicker";
 import type { ShowcaseCard, UserProfile, MatchRecord, HeroStats, EventStats, OpponentStats, OverallStats, Achievement } from "@/types";
 import { MatchResult } from "@/types";
@@ -63,7 +65,7 @@ const MAX_POINTS = 12;
 // Card types that have editable selections
 const EDITABLE_TYPES = new Set<ShowcaseCard["type"]>([
   "featuredMatch", "heroSpotlight", "bestFinish", "rivalry", "eventRecap", "achievements", "statHighlight",
-  "formatMastery", "eventTypeMastery",
+  "formatMastery", "eventTypeMastery", "customImage",
 ]);
 
 const CARD_TYPE_LABELS: Record<string, string> = {
@@ -79,6 +81,7 @@ const CARD_TYPE_LABELS: Record<string, string> = {
   streakShowcase: "Streaks",
   recentForm: "Form",
   leaderboardRank: "Rankings",
+  customImage: "Image",
 };
 
 export function getCardSize(type: ShowcaseCard["type"], card?: ShowcaseCard): 1 | 2 {
@@ -389,6 +392,13 @@ function InlineCardEditor({ card, index, onReplace, onCancel, matches, heroStats
             onSave={(sortBy, selectedItems) => onReplace(index, { type: card.type, sortBy, selectedItems: selectedItems.length > 0 ? selectedItems : undefined })}
           />
         )}
+        {card.type === "customImage" && (
+          <ImageUploadPicker
+            initialImageUrl={card.imageUrl}
+            initialCaption={card.caption}
+            onSelect={(imageUrl, caption) => onReplace(index, { type: "customImage", imageUrl, caption })}
+          />
+        )}
       </div>
 
       {card.type === "achievements" && selectedAchievements.size > 0 && (
@@ -563,6 +573,8 @@ function ShowcaseCardRenderer({ card, matches, heroStats, masteries, eventStats,
       return leaderboardRanks && leaderboardRanks.length > 0
         ? <LeaderboardRankCard ranks={leaderboardRanks} />
         : <MissingCard label="No rankings yet" />;
+    case "customImage":
+      return <CustomImageCard imageUrl={card.imageUrl} caption={card.caption} />;
     default:
       return <MissingCard label="Unknown card type" />;
   }

@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { getHeroByName } from "@/lib/heroes";
 import { HeroClassIcon } from "@/components/heroes/HeroClassIcon";
 import { AchievementIcon } from "@/components/gamification/AchievementIcons";
@@ -45,6 +45,7 @@ const CARD_TYPES: { type: CardType; label: string; icon: string; desc: string }[
   { type: "streakShowcase", label: "Streaks", icon: "flame", desc: "Current & best streaks" },
   { type: "recentForm", label: "Recent Form", icon: "chart", desc: "Last 20 match performance" },
   { type: "leaderboardRank", label: "Rankings", icon: "crown", desc: "Your leaderboard positions" },
+  { type: "customImage", label: "Custom Image", icon: "camera", desc: "Upload your own image" },
 ];
 
 const STAT_OPTIONS: { key: string; label: string }[] = [
@@ -152,6 +153,7 @@ export function CardPicker({ onAdd, onCancel, matches, heroStats, eventStats, op
         {selectedType === "eventRecap" && <EventPicker events={eventStats} search={search} onSelect={(eventDate, eventName) => onAdd({ type: "eventRecap", eventDate, eventName })} />}
         {selectedType === "achievements" && <AchievementList achievements={achievements} selected={selectedAchievements} onToggle={toggleAchievement} />}
         {selectedType === "statHighlight" && <StatPicker onSelect={(stats) => onAdd({ type: "statHighlight", stats, stat: stats[0] })} />}
+        {selectedType === "customImage" && <ImageUploadPicker onSelect={(imageUrl, caption) => onAdd({ type: "customImage", imageUrl, caption })} />}
       </div>
 
       {/* Achievement confirm button — always visible outside scroll */}
@@ -296,6 +298,113 @@ export function AchievementList({ achievements, selected, onToggle }: { achievem
       })}
       {achievements.length === 0 && <p className="text-[10px] text-fab-dim text-center py-3">No achievements earned</p>}
     </>
+  );
+}
+
+// ── Image Upload Picker ──
+
+function resizeImage(file: File, maxSize: number): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        let w = img.width;
+        let h = img.height;
+        if (w > maxSize || h > maxSize) {
+          if (w > h) { h = Math.round(h * maxSize / w); w = maxSize; }
+          else { w = Math.round(w * maxSize / h); h = maxSize; }
+        }
+        canvas.width = w;
+        canvas.height = h;
+        canvas.getContext("2d")!.drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL("image/jpeg", 0.8));
+      };
+      img.onerror = () => reject(new Error("Failed to load image"));
+      img.src = reader.result as string;
+    };
+    reader.onerror = () => reject(new Error("Failed to read file"));
+    reader.readAsDataURL(file);
+  });
+}
+
+export function ImageUploadPicker({ onSelect, initialImageUrl, initialCaption }: {
+  onSelect: (imageUrl: string, caption?: string) => void;
+  initialImageUrl?: string;
+  initialCaption?: string;
+}) {
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [preview, setPreview] = useState<string | null>(initialImageUrl || null);
+  const [caption, setCaption] = useState(initialCaption || "");
+  const [loading, setLoading] = useState(false);
+
+  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setLoading(true);
+    try {
+      const dataUrl = await resizeImage(file, 600);
+      setPreview(dataUrl);
+    } catch {
+      console.error("Failed to process image");
+    }
+    setLoading(false);
+  }
+
+  return (
+    <div className="space-y-2">
+      <input ref={fileRef} type="file" accept="image/*" onChange={handleFile} className="hidden" />
+
+      {preview ? (
+        <div className="relative rounded-lg overflow-hidden border border-fab-border">
+          <img src={preview} alt="Preview" className="w-full max-h-40 object-cover" />
+          <button
+            onClick={() => { setPreview(null); if (fileRef.current) fileRef.current.value = ""; }}
+            className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/80"
+          >
+            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      ) : (
+        <button
+          onClick={() => fileRef.current?.click()}
+          disabled={loading}
+          className="w-full py-6 border border-dashed border-fab-border rounded-lg text-fab-dim hover:text-fab-muted hover:border-fab-muted transition-colors flex flex-col items-center gap-1"
+        >
+          {loading ? (
+            <span className="text-[10px]">Processing...</span>
+          ) : (
+            <>
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.41a2.25 2.25 0 013.182 0l2.909 2.91M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z" />
+              </svg>
+              <span className="text-[10px]">Tap to choose image</span>
+            </>
+          )}
+        </button>
+      )}
+
+      <input
+        type="text"
+        value={caption}
+        onChange={(e) => setCaption(e.target.value)}
+        placeholder="Caption (optional)"
+        maxLength={60}
+        className="w-full bg-fab-bg border border-fab-border text-fab-text text-xs rounded-lg px-3 py-1.5 focus:outline-none focus:border-fab-gold"
+      />
+
+      {preview && (
+        <button
+          onClick={() => onSelect(preview, caption || undefined)}
+          className="w-full px-3 py-1.5 bg-fab-gold/15 text-fab-gold text-xs font-medium rounded-lg hover:bg-fab-gold/25 transition-colors"
+        >
+          {initialImageUrl ? "Save" : "Add Image"}
+        </button>
+      )}
+    </div>
   );
 }
 
