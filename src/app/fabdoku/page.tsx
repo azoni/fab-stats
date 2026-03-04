@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
 
 function GridIcon({ className }: { className?: string }) {
@@ -307,9 +308,14 @@ export default function FaBdokuPage() {
             <GridIcon className="w-4 h-4 text-fab-gold" />
           </div>
           <div>
-            <h1 className="text-lg font-bold text-fab-text leading-tight">
-              FaBdoku
-            </h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-lg font-bold text-fab-text leading-tight">
+                FaBdoku
+              </h1>
+              <Link href="/crossword" className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold text-fab-dim hover:text-fab-text bg-fab-bg border border-fab-border hover:border-fab-gold/30 transition-colors">
+                Crossword &rarr;
+              </Link>
+            </div>
             <p className="text-xs text-fab-muted leading-tight">
               Daily hero puzzle
             </p>

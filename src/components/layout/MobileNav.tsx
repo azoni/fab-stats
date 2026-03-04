@@ -127,17 +127,22 @@ type MoreLink = { href: string; label: string; icon: ReactNode; authOnly?: boole
 
 const moreSections: { title: string; links: MoreLink[] }[] = [
   {
-    title: "Explore",
+    title: "Games",
     links: [
-      { href: "/meta", label: "Community Meta", icon: <MetaIcon /> },
-      { href: "/tournaments", label: "Tournaments", icon: <TrophyIcon /> },
-      { href: "/compare", label: "Versus", icon: <CompareIcon /> },
       { href: "/fabdoku", label: "FaBdoku", icon: <FaBdokuIcon /> },
       { href: "/crossword", label: "Crossword", icon: (
         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h3v4.5H4.5A.75.75 0 013.75 7.5V6zM9 3.75h6v4.5H9v-4.5zM15 3.75h3A2.25 2.25 0 0120.25 6v1.5a.75.75 0 01-.75.75H15v-4.5zM3.75 9h4.5v6h-4.5V9zM9 9h6v6H9V9zM15.75 9h4.5v6h-4.5V9zM3.75 15.75h4.5v4.5H6a2.25 2.25 0 01-2.25-2.25v-2.25zM9 15.75h6v4.5H9v-4.5zM15.75 15.75h4.5V18a2.25 2.25 0 01-2.25 2.25h-2.25v-4.5z" />
         </svg>
       ) },
+    ],
+  },
+  {
+    title: "Explore",
+    links: [
+      { href: "/meta", label: "Community Meta", icon: <MetaIcon /> },
+      { href: "/tournaments", label: "Tournaments", icon: <TrophyIcon /> },
+      { href: "/compare", label: "Versus", icon: <CompareIcon /> },
     ],
   },
   {
