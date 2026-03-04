@@ -17,42 +17,161 @@ export interface UnderlineConfig {
 
 export type BorderStyleType = "beam" | "glow";
 
+// ── Shared decoration helpers ──
+
+function CornerDecor({ rgb, p }: { rgb: string; p: number }) {
+  if (p < 3) return null;
+  const s = p >= 4 ? 24 : 16;
+  const t = p >= 4 ? 3 : 2;
+  const o = p >= 4 ? -10 : -6;
+  const c = `rgba(${rgb},${p >= 4 ? 0.9 : 0.6})`;
+
+  return (
+    <>
+      {[
+        { top: o, left: o, borderTop: `${t}px solid ${c}`, borderLeft: `${t}px solid ${c}` },
+        { top: o, right: o, borderTop: `${t}px solid ${c}`, borderRight: `${t}px solid ${c}` },
+        { bottom: o, left: o, borderBottom: `${t}px solid ${c}`, borderLeft: `${t}px solid ${c}` },
+        { bottom: o, right: o, borderBottom: `${t}px solid ${c}`, borderRight: `${t}px solid ${c}` },
+      ].map((style, i) => (
+        <div key={i} className="absolute pointer-events-none z-10" style={{ ...style, width: s, height: s }} />
+      ))}
+      {p >= 4 &&
+        [
+          { top: -5, left: -5 },
+          { top: -5, right: -5 },
+          { bottom: -5, left: -5 },
+          { bottom: -5, right: -5 },
+        ].map((pos, i) => (
+          <div
+            key={`sp-${i}`}
+            className="absolute w-2.5 h-2.5 rounded-full pointer-events-none z-10"
+            style={{
+              ...pos,
+              background: `rgba(${rgb},0.95)`,
+              boxShadow: `0 0 10px rgba(${rgb},0.8), 0 0 20px rgba(${rgb},0.3)`,
+              animation: `cb-sparkle-dot 1.8s ease-in-out ${i * 0.45}s infinite`,
+            }}
+          />
+        ))}
+      {p >= 4 &&
+        [
+          { top: -4, left: "50%" },
+          { bottom: -4, left: "50%" },
+          { top: "50%", left: -4 },
+          { top: "50%", right: -4 },
+        ].map((pos, i) => (
+          <div
+            key={`esp-${i}`}
+            className="absolute w-1.5 h-1.5 rounded-full pointer-events-none z-10"
+            style={{
+              ...pos,
+              background: `rgba(${rgb},0.75)`,
+              boxShadow: `0 0 6px rgba(${rgb},0.5)`,
+              animation: `cb-sparkle-dot 2.5s ease-in-out ${i * 0.7 + 0.3}s infinite`,
+            }}
+          />
+        ))}
+    </>
+  );
+}
+
+function InnerAccent({ p }: { p: number }) {
+  if (p < 3) return null;
+
+  if (p === 3) {
+    return (
+      <div className="absolute top-0 left-0 right-0 h-[2px] z-10 pointer-events-none overflow-hidden rounded-t-lg">
+        <div
+          style={{
+            position: "absolute",
+            top: 0,
+            width: "25%",
+            height: "100%",
+            background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent)",
+            animation: "accent-sweep 4s ease-in-out infinite",
+          }}
+        />
+      </div>
+    );
+  }
+
+  // Champion: bright sweep on top + gold sweep on bottom + inner aura
+  return (
+    <>
+      <div className="absolute top-0 left-0 right-0 h-[3px] z-10 pointer-events-none overflow-hidden rounded-t-lg">
+        <div
+          style={{
+            position: "absolute",
+            top: 0,
+            width: "30%",
+            height: "100%",
+            background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.7), rgba(255,215,0,0.4), transparent)",
+            animation: "accent-sweep 3s ease-in-out infinite",
+          }}
+        />
+      </div>
+      <div className="absolute bottom-0 left-0 right-0 h-[2px] z-10 pointer-events-none overflow-hidden rounded-b-lg">
+        <div
+          style={{
+            position: "absolute",
+            top: 0,
+            width: "20%",
+            height: "100%",
+            background: "linear-gradient(90deg, transparent, rgba(255,215,0,0.4), transparent)",
+            animation: "accent-sweep 3.5s ease-in-out 1.2s infinite",
+          }}
+        />
+      </div>
+      <div
+        className="absolute inset-0 z-10 pointer-events-none rounded-lg"
+        style={{
+          background: "radial-gradient(ellipse at 50% 30%, rgba(255,215,0,0.04), transparent 60%)",
+          animation: "accent-aura 3s ease-in-out infinite",
+        }}
+      />
+    </>
+  );
+}
+
+// ── Underline bar ──
+
 function UnderlineBar({ underline }: { underline: UnderlineConfig | null | undefined }) {
   if (!underline) return null;
   const p = underline.placement;
   const { color, rgb } = underline;
 
-  // ── Placement 1 (top8 / undefeated): Thin subtle bar, barely there ──
+  // ── T8 / Undefeated: Solid colored bar with subtle glow ──
   if (p <= 1) {
     return (
       <div
         className="absolute bottom-0 left-0 right-0 z-20 pointer-events-none"
         style={{
-          height: 1.5,
+          height: 2.5,
           background: color,
-          opacity: 0.7,
+          boxShadow: `0 0 4px rgba(${rgb},0.3)`,
           borderRadius: "0 0 7px 7px",
         }}
       />
     );
   }
 
-  // ── Placement 2 (top4): Solid bar with gentle pulse ──
+  // ── Top 4: Thicker bar with animated glow pulse ──
   if (p === 2) {
     return (
       <>
         <style>{`
           @keyframes ul-pulse-t4 {
-            0%, 100% { opacity: 0.7; box-shadow: 0 0 3px rgba(${rgb},0.2); }
-            50% { opacity: 1; box-shadow: 0 0 8px rgba(${rgb},0.4), 0 0 16px rgba(${rgb},0.15); }
+            0%, 100% { box-shadow: 0 0 4px rgba(${rgb},0.3); }
+            50% { box-shadow: 0 0 12px rgba(${rgb},0.55), 0 0 24px rgba(${rgb},0.25); }
           }
         `}</style>
         <div
           className="absolute bottom-0 left-0 right-0 z-20 pointer-events-none"
           style={{
-            height: 2.5,
+            height: 4,
             background: color,
-            animation: "ul-pulse-t4 4s ease-in-out infinite",
+            animation: "ul-pulse-t4 3.5s ease-in-out infinite",
             borderRadius: "0 0 7px 7px",
           }}
         />
@@ -60,7 +179,7 @@ function UnderlineBar({ underline }: { underline: UnderlineConfig | null | undef
     );
   }
 
-  // ── Placement 3 (finalist): Shimmer sweep + diamond accents + strong glow ──
+  // ── Finalist: Shimmer sweep + diamond accents + strong glow ──
   if (p === 3) {
     return (
       <>
@@ -71,31 +190,31 @@ function UnderlineBar({ underline }: { underline: UnderlineConfig | null | undef
           }
         `}</style>
         <div className="absolute bottom-0 left-0 right-0 z-20 pointer-events-none">
-          {/* Diamond accents along the top edge */}
-          {[8, 25, 50, 75, 92].map((pos) => (
+          {/* Diamond accents — 7 diamonds, bigger */}
+          {[6, 20, 38, 50, 62, 80, 94].map((pos) => (
             <div
               key={pos}
               style={{
                 position: "absolute",
                 left: `${pos}%`,
-                top: -4,
-                width: 6,
-                height: 6,
+                top: -5,
+                width: 7,
+                height: 7,
                 transform: "rotate(45deg)",
                 background: color,
-                boxShadow: `0 0 6px rgba(${rgb},0.7)`,
-                opacity: 0.8,
+                boxShadow: `0 0 8px rgba(${rgb},0.8)`,
+                opacity: 0.85,
               }}
             />
           ))}
           {/* Main bar with animated shimmer */}
           <div
             style={{
-              height: 4,
-              background: `linear-gradient(90deg, ${color} 0%, ${color} 30%, rgba(255,255,255,0.5) 50%, ${color} 70%, ${color} 100%)`,
+              height: 5.5,
+              background: `linear-gradient(90deg, ${color} 0%, ${color} 25%, rgba(255,255,255,0.55) 50%, ${color} 75%, ${color} 100%)`,
               backgroundSize: "200% 100%",
-              animation: "ul-shimmer 2.5s ease-in-out infinite",
-              boxShadow: `0 0 10px rgba(${rgb},0.55), 0 0 22px rgba(${rgb},0.25)`,
+              animation: "ul-shimmer 2s ease-in-out infinite",
+              boxShadow: `0 0 12px rgba(${rgb},0.6), 0 0 28px rgba(${rgb},0.3)`,
               borderRadius: "0 0 7px 7px",
             }}
           />
@@ -104,7 +223,7 @@ function UnderlineBar({ underline }: { underline: UnderlineConfig | null | undef
     );
   }
 
-  // ── Placement 4 (champion): Flame waves + flowing gradient + sparkles + intense glow ──
+  // ── Champion: Flames + sparkles + flowing gradient + white/gold accents ──
   return (
     <>
       <style>{`
@@ -113,62 +232,78 @@ function UnderlineBar({ underline }: { underline: UnderlineConfig | null | undef
           50% { background-position: 100% 50%; }
         }
         @keyframes ul-sparkle {
-          0%, 100% { opacity: 0.1; transform: scale(0.3); }
-          50% { opacity: 1; transform: scale(1.5); }
+          0%, 100% { opacity: 0.05; transform: scale(0.2); }
+          50% { opacity: 1; transform: scale(1.6); }
         }
         @keyframes ul-flame-flicker {
-          0%, 100% { opacity: 0.5; transform: scaleY(1); }
-          50% { opacity: 0.9; transform: scaleY(1.5); }
+          0%, 100% { opacity: 0.45; transform: scaleY(1); }
+          50% { opacity: 0.95; transform: scaleY(1.6); }
         }
       `}</style>
       <div className="absolute bottom-0 left-0 right-0 z-20 pointer-events-none">
-        {/* Flame-like waves above the bar */}
+        {/* Double flame layers — taller */}
         <svg
           className="absolute left-0 right-0"
-          style={{ bottom: 5, height: 12, width: "100%", animation: "ul-flame-flicker 1.8s ease-in-out infinite" }}
+          style={{ bottom: 7, height: 16, width: "100%", animation: "ul-flame-flicker 1.6s ease-in-out infinite" }}
           viewBox="0 0 200 8"
           preserveAspectRatio="none"
           fill={color}
-          opacity={0.5}
+          opacity={0.55}
         >
           <path d="M0,8 Q5,2 10,8 Q15,0 20,8 Q25,3 30,8 Q35,1 40,8 Q45,2 50,8 Q55,0 60,8 Q65,3 70,8 Q75,1 80,8 Q85,2 90,8 Q95,0 100,8 Q105,3 110,8 Q115,1 120,8 Q125,2 130,8 Q135,0 140,8 Q145,3 150,8 Q155,1 160,8 Q165,2 170,8 Q175,0 180,8 Q185,3 190,8 Q195,1 200,8 Z" />
         </svg>
-        {/* Second flame layer — offset for depth */}
         <svg
           className="absolute left-0 right-0"
-          style={{ bottom: 3, height: 10, width: "100%", animation: "ul-flame-flicker 2.4s ease-in-out 0.5s infinite" }}
+          style={{ bottom: 4, height: 12, width: "100%", animation: "ul-flame-flicker 2.2s ease-in-out 0.4s infinite" }}
           viewBox="0 0 200 8"
           preserveAspectRatio="none"
           fill={color}
-          opacity={0.3}
+          opacity={0.35}
         >
           <path d="M5,8 Q10,1 15,8 Q20,3 25,8 Q30,0 35,8 Q40,2 45,8 Q50,1 55,8 Q60,3 65,8 Q70,0 75,8 Q80,2 85,8 Q90,1 95,8 Q100,3 105,8 Q110,0 115,8 Q120,2 125,8 Q130,1 135,8 Q140,3 145,8 Q150,0 155,8 Q160,2 165,8 Q170,1 175,8 Q180,3 185,8 Q190,0 195,8 Z" />
         </svg>
-        {/* Sparkle dots — more and brighter */}
-        {[5, 17, 29, 41, 53, 65, 77, 89].map((pos, i) => (
+        {/* Colored sparkle dots — 10 */}
+        {[4, 14, 24, 34, 44, 54, 64, 74, 84, 94].map((pos, i) => (
           <div
             key={pos}
             style={{
               position: "absolute",
               left: `${pos}%`,
-              bottom: 10,
-              width: 3.5,
-              height: 3.5,
+              bottom: 14,
+              width: 4,
+              height: 4,
               borderRadius: "50%",
               background: `rgba(${rgb},0.95)`,
-              boxShadow: `0 0 6px rgba(${rgb},0.9), 0 0 12px rgba(${rgb},0.4)`,
-              animation: `ul-sparkle 1.8s ease-in-out ${i * 0.22}s infinite`,
+              boxShadow: `0 0 8px rgba(${rgb},0.9), 0 0 16px rgba(${rgb},0.4)`,
+              animation: `ul-sparkle 1.6s ease-in-out ${i * 0.16}s infinite`,
             }}
           />
         ))}
-        {/* Main bar with flowing animated gradient */}
+        {/* White/gold accent sparkles — interspersed */}
+        {[9, 29, 49, 69, 89].map((pos, i) => (
+          <div
+            key={`w-${pos}`}
+            style={{
+              position: "absolute",
+              left: `${pos}%`,
+              bottom: 16,
+              width: 3,
+              height: 3,
+              borderRadius: "50%",
+              background: "rgba(255,255,255,0.9)",
+              boxShadow: "0 0 6px rgba(255,255,255,0.7), 0 0 12px rgba(255,215,0,0.3)",
+              animation: `ul-sparkle 2s ease-in-out ${i * 0.35 + 0.2}s infinite`,
+            }}
+          />
+        ))}
+        {/* Main bar with flowing gradient + gold accent */}
         <div
           style={{
-            height: 6,
-            background: `linear-gradient(90deg, ${color}, rgba(255,255,255,0.4), ${color}, rgba(255,255,255,0.3), ${color}, rgba(255,255,255,0.4), ${color})`,
+            height: 8,
+            background: `linear-gradient(90deg, ${color}, rgba(255,255,255,0.45), ${color}, rgba(255,215,0,0.3), ${color}, rgba(255,255,255,0.4), ${color})`,
             backgroundSize: "400% 100%",
-            animation: "ul-flow 3s ease infinite",
-            boxShadow: `0 0 12px rgba(${rgb},0.7), 0 0 28px rgba(${rgb},0.35), 0 0 50px rgba(${rgb},0.15)`,
+            animation: "ul-flow 2.5s ease infinite",
+            boxShadow: `0 0 14px rgba(${rgb},0.75), 0 0 32px rgba(${rgb},0.4), 0 0 56px rgba(${rgb},0.18)`,
             borderRadius: "0 0 7px 7px",
           }}
         />
@@ -176,6 +311,8 @@ function UnderlineBar({ underline }: { underline: UnderlineConfig | null | undef
     </>
   );
 }
+
+// ── Main wrapper ──
 
 export function CardBorderWrapper({
   cardBorder,
@@ -193,28 +330,41 @@ export function CardBorderWrapper({
   const p = cardBorder?.placement ?? 0;
   const rgb = cardBorder?.rgb;
 
+  const keyframes = `
+    @keyframes cb-spin { to { transform: rotate(1turn); } }
+    @keyframes cb-sparkle-dot { 0%, 100% { opacity: 0.1; transform: scale(0.3); } 50% { opacity: 1; transform: scale(1.5); } }
+    @keyframes accent-sweep {
+      0% { left: -30%; opacity: 0; }
+      15% { opacity: 1; }
+      85% { opacity: 1; }
+      100% { left: 110%; opacity: 0; }
+    }
+    @keyframes accent-aura {
+      0%, 100% { opacity: 0; }
+      50% { opacity: 1; }
+    }
+  `;
+
   // No playoff finish: default border
   if (!cardBorder) {
     return (
-      <div
-        className={`relative border border-fab-border rounded-lg overflow-hidden ${contentClassName}`}
-      >
+      <div className={`relative border border-fab-border rounded-lg overflow-hidden ${contentClassName}`}>
         {children}
         <UnderlineBar underline={underline} />
       </div>
     );
   }
 
-  // --- Top 8 (p=1): Thin colored border, very subtle static glow ---
+  // --- T8 (p=1): Thin colored border, subtle static glow ---
   if (p <= 1) {
     return (
       <div
         className={`relative rounded-lg overflow-hidden ${contentClassName}`}
         style={{
-          borderWidth: 1,
+          borderWidth: 1.5,
           borderStyle: "solid",
           borderColor: cardBorder.border,
-          boxShadow: `0 0 4px rgba(${rgb},0.15)`,
+          boxShadow: `0 0 6px rgba(${rgb},0.2)`,
         }}
       >
         {children}
@@ -223,45 +373,45 @@ export function CardBorderWrapper({
     );
   }
 
-  // --- Top 4 (p=2): Gentle pulsing glow, no beam yet ---
-  if (p === 2 && borderStyle === "glow") {
-    const initialShadow = `0 0 6px rgba(${rgb},0.2), 0 0 12px rgba(${rgb},0.1)`;
-    const peakShadow = `0 0 10px rgba(${rgb},0.35), 0 0 20px rgba(${rgb},0.18)`;
-    return (
-      <>
-        <style>{`@keyframes cb-glow-t4 {
-          0%, 100% { box-shadow: ${initialShadow}; }
-          50% { box-shadow: ${peakShadow}; }
-        }`}</style>
-        <div
-          className={`relative rounded-lg overflow-hidden ${contentClassName}`}
-          style={{
-            borderWidth: 1.5,
-            borderStyle: "solid",
-            borderColor: cardBorder.border,
-            boxShadow: initialShadow,
-            animation: "cb-glow-t4 6s ease-in-out infinite",
-          }}
-        >
-          {children}
-          <UnderlineBar underline={underline} />
-        </div>
-      </>
-    );
-  }
-
-  if (p === 2 && borderStyle === "beam") {
+  // --- T4 (p=2): Animated glow/beam — same intensity both styles ---
+  if (p === 2) {
+    if (borderStyle === "glow") {
+      const initialShadow = `0 0 8px rgba(${rgb},0.25), 0 0 16px rgba(${rgb},0.12)`;
+      const peakShadow = `0 0 14px rgba(${rgb},0.45), 0 0 28px rgba(${rgb},0.22)`;
+      return (
+        <>
+          <style>{`@keyframes cb-glow-t4 {
+            0%, 100% { box-shadow: ${initialShadow}; }
+            50% { box-shadow: ${peakShadow}; }
+          }`}</style>
+          <div
+            className={`relative rounded-lg overflow-hidden ${contentClassName}`}
+            style={{
+              borderWidth: 2,
+              borderStyle: "solid",
+              borderColor: cardBorder.border,
+              boxShadow: initialShadow,
+              animation: "cb-glow-t4 5s ease-in-out infinite",
+            }}
+          >
+            {children}
+            <UnderlineBar underline={underline} />
+          </div>
+        </>
+      );
+    }
+    // Beam T4
     return (
       <>
         <style>{`@keyframes cb-spin { to { transform: rotate(1turn); } }`}</style>
-        <div className="relative rounded-lg" style={{ padding: 1.5, boxShadow: `0 0 6px rgba(${rgb},0.2), 0 0 14px rgba(${rgb},0.1)` }}>
+        <div className="relative rounded-lg" style={{ padding: 2, boxShadow: `0 0 8px rgba(${rgb},0.25), 0 0 16px rgba(${rgb},0.12)` }}>
           <div className="absolute inset-0 rounded-lg overflow-hidden">
             <div
               style={{
                 position: "absolute",
                 inset: "-200%",
-                background: `conic-gradient(from 0deg, transparent 43%, rgba(${rgb},0.4) 50%, transparent 57%)`,
-                animation: "cb-spin 8s linear infinite",
+                background: `conic-gradient(from 0deg, transparent 42%, rgba(${rgb},0.5) 50%, transparent 58%)`,
+                animation: "cb-spin 6s linear infinite",
               }}
             />
           </div>
@@ -274,87 +424,77 @@ export function CardBorderWrapper({
     );
   }
 
-  // --- Finalist (p=3): Prominent beam/glow + corner brackets ---
-  if (borderStyle === "glow" && p === 3) {
-    const initialShadow = `0 0 12px rgba(${rgb},0.4), 0 0 24px rgba(${rgb},0.2), inset 0 0 12px rgba(${rgb},0.03)`;
-    const peakShadow = `0 0 22px rgba(${rgb},0.6), 0 0 44px rgba(${rgb},0.3), inset 0 0 20px rgba(${rgb},0.05)`;
-    return (
-      <>
-        <style>{`@keyframes cb-glow-f {
-          0%, 100% { box-shadow: ${initialShadow}; }
-          50% { box-shadow: ${peakShadow}; }
-        }`}</style>
-        <div
-          className={`relative rounded-lg overflow-hidden ${contentClassName}`}
-          style={{
-            borderWidth: 2.5,
-            borderStyle: "solid",
-            borderColor: cardBorder.border,
-            boxShadow: initialShadow,
-            animation: "cb-glow-f 3.5s ease-in-out infinite",
-          }}
-        >
-          {children}
-          <UnderlineBar underline={underline} />
-        </div>
-      </>
-    );
-  }
+  // --- Finalist (p=3) and Champion (p=4) ---
+  // Both beam and glow share: corner brackets, inner accent, outer glow
 
-  // --- Champion (p=4) Glow style ---
   if (borderStyle === "glow") {
-    const initialShadow = `0 0 18px rgba(${rgb},0.55), 0 0 36px rgba(${rgb},0.3), 0 0 60px rgba(${rgb},0.12), inset 0 0 20px rgba(${rgb},0.05)`;
-    const peakShadow = `0 0 28px rgba(${rgb},0.8), 0 0 56px rgba(${rgb},0.4), 0 0 80px rgba(${rgb},0.18), inset 0 0 28px rgba(${rgb},0.08)`;
+    const bw = p >= 4 ? 3 : 2.5;
+    const speed = p >= 4 ? "2.5s" : "3.5s";
+    const initialShadow =
+      p >= 4
+        ? `0 0 20px rgba(${rgb},0.6), 0 0 40px rgba(${rgb},0.32), 0 0 64px rgba(${rgb},0.14), inset 0 0 22px rgba(${rgb},0.06)`
+        : `0 0 14px rgba(${rgb},0.45), 0 0 28px rgba(${rgb},0.22), inset 0 0 14px rgba(${rgb},0.04)`;
+    const peakShadow =
+      p >= 4
+        ? `0 0 32px rgba(${rgb},0.85), 0 0 64px rgba(${rgb},0.45), 0 0 90px rgba(${rgb},0.2), inset 0 0 32px rgba(${rgb},0.08)`
+        : `0 0 24px rgba(${rgb},0.65), 0 0 48px rgba(${rgb},0.32), inset 0 0 22px rgba(${rgb},0.06)`;
+    const glowName = p >= 4 ? "cb-glow-w" : "cb-glow-f";
+
     return (
       <>
-        <style>{`@keyframes cb-glow-w {
-          0%, 100% { box-shadow: ${initialShadow}; }
-          50% { box-shadow: ${peakShadow}; }
-        }`}</style>
-        <div
-          className={`relative rounded-lg overflow-hidden ${contentClassName}`}
-          style={{
-            borderWidth: 3,
-            borderStyle: "solid",
-            borderColor: cardBorder.border,
-            boxShadow: initialShadow,
-            animation: "cb-glow-w 2.5s ease-in-out infinite",
-          }}
-        >
-          {children}
-          <UnderlineBar underline={underline} />
+        <style>{`
+          ${keyframes}
+          @keyframes ${glowName} {
+            0%, 100% { box-shadow: ${initialShadow}; }
+            50% { box-shadow: ${peakShadow}; }
+          }
+        `}</style>
+        <div className="relative">
+          <CornerDecor rgb={rgb!} p={p} />
+          <div
+            className={`relative rounded-lg overflow-hidden ${contentClassName}`}
+            style={{
+              borderWidth: bw,
+              borderStyle: "solid",
+              borderColor: cardBorder.border,
+              boxShadow: initialShadow,
+              animation: `${glowName} ${speed} ease-in-out infinite`,
+            }}
+          >
+            {children}
+            <InnerAccent p={p} />
+            <UnderlineBar underline={underline} />
+          </div>
         </div>
       </>
     );
   }
 
-  // --- Beam style: Finalist (p=3) and Champion (p=4) ---
+  // Beam style: Finalist (p=3) and Champion (p=4)
   const speed = p >= 4 ? "2.5s" : "3.5s";
+  const pad = p >= 4 ? 3 : 2.5;
 
   const outerGlow =
     p >= 4
-      ? `0 0 22px rgba(${rgb},0.55), 0 0 44px rgba(${rgb},0.3), 0 0 70px rgba(${rgb},0.12)`
-      : `0 0 12px rgba(${rgb},0.35), 0 0 26px rgba(${rgb},0.18), 0 0 44px rgba(${rgb},0.07)`;
+      ? `0 0 24px rgba(${rgb},0.6), 0 0 48px rgba(${rgb},0.32), 0 0 80px rgba(${rgb},0.14)`
+      : `0 0 14px rgba(${rgb},0.4), 0 0 30px rgba(${rgb},0.2), 0 0 48px rgba(${rgb},0.08)`;
 
   const innerGlow =
     p >= 4
-      ? `inset 0 0 24px rgba(${rgb},0.05)`
-      : `inset 0 0 12px rgba(${rgb},0.03)`;
+      ? `inset 0 0 28px rgba(${rgb},0.06)`
+      : `inset 0 0 14px rgba(${rgb},0.03)`;
 
   return (
     <>
-      <style>{`
-        @keyframes cb-spin { to { transform: rotate(1turn); } }
-        @keyframes cb-sparkle-dot { 0%, 100% { opacity: 0.15; transform: scale(0.4); } 50% { opacity: 1; transform: scale(1.4); } }
-      `}</style>
-      <div className="relative rounded-lg" style={{ padding: p >= 4 ? 2.5 : 2, boxShadow: outerGlow }}>
+      <style>{keyframes}</style>
+      <div className="relative rounded-lg" style={{ padding: pad, boxShadow: outerGlow }}>
         {/* Spinning gradient beam(s) */}
         <div className="absolute inset-0 rounded-lg overflow-hidden">
           <div
             style={{
               position: "absolute",
               inset: "-200%",
-              background: `conic-gradient(from 0deg, transparent ${p >= 4 ? "28%" : "36%"}, rgba(${rgb},${p >= 4 ? 0.95 : 0.8}) 50%, transparent ${p >= 4 ? "72%" : "64%"})`,
+              background: `conic-gradient(from 0deg, transparent ${p >= 4 ? "26%" : "34%"}, rgba(${rgb},${p >= 4 ? 0.95 : 0.85}) 50%, transparent ${p >= 4 ? "74%" : "66%"})`,
               animation: `cb-spin ${speed} linear infinite`,
             }}
           />
@@ -364,81 +504,37 @@ export function CardBorderWrapper({
               style={{
                 position: "absolute",
                 inset: "-200%",
-                background: `conic-gradient(from 180deg, transparent 32%, rgba(${rgb},0.55) 50%, transparent 68%)`,
-                animation: "cb-spin 4s linear infinite reverse",
+                background: `conic-gradient(from 180deg, transparent 30%, rgba(${rgb},0.6) 50%, transparent 70%)`,
+                animation: "cb-spin 3.5s linear infinite reverse",
               }}
             />
           )}
-          {/* Third faint beam — champion only */}
+          {/* Third beam — champion only */}
           {p >= 4 && (
             <div
               style={{
                 position: "absolute",
                 inset: "-200%",
-                background: `conic-gradient(from 90deg, transparent 40%, rgba(${rgb},0.25) 50%, transparent 60%)`,
-                animation: "cb-spin 6s linear infinite",
+                background: `conic-gradient(from 90deg, transparent 38%, rgba(${rgb},0.3) 50%, transparent 62%)`,
+                animation: "cb-spin 5.5s linear infinite",
+              }}
+            />
+          )}
+          {/* White accent beam — champion only */}
+          {p >= 4 && (
+            <div
+              style={{
+                position: "absolute",
+                inset: "-200%",
+                background: "conic-gradient(from 270deg, transparent 42%, rgba(255,255,255,0.15) 50%, transparent 58%)",
+                animation: "cb-spin 7s linear infinite reverse",
               }}
             />
           )}
         </div>
 
-        {/* Corner brackets */}
-        {(() => {
-          const s = p >= 4 ? 22 : 14;
-          const t = p >= 4 ? 2.5 : 1.5;
-          const o = p >= 4 ? -9 : -5;
-          const c = `rgba(${rgb},${p >= 4 ? 0.85 : 0.5})`;
-          return (
-            <>
-              {[
-                { top: o, left: o, borderTop: `${t}px solid ${c}`, borderLeft: `${t}px solid ${c}` },
-                { top: o, right: o, borderTop: `${t}px solid ${c}`, borderRight: `${t}px solid ${c}` },
-                { bottom: o, left: o, borderBottom: `${t}px solid ${c}`, borderLeft: `${t}px solid ${c}` },
-                { bottom: o, right: o, borderBottom: `${t}px solid ${c}`, borderRight: `${t}px solid ${c}` },
-              ].map((style, i) => (
-                <div key={i} className="absolute pointer-events-none z-10" style={{ ...style, width: s, height: s }} />
-              ))}
-              {/* Corner sparkle dots — champion only */}
-              {p >= 4 &&
-                [
-                  { top: -4, left: -4 },
-                  { top: -4, right: -4 },
-                  { bottom: -4, left: -4 },
-                  { bottom: -4, right: -4 },
-                ].map((pos, i) => (
-                  <div
-                    key={`sp-${i}`}
-                    className="absolute w-2 h-2 rounded-full pointer-events-none z-10"
-                    style={{
-                      ...pos,
-                      background: `rgba(${rgb},0.9)`,
-                      boxShadow: `0 0 8px rgba(${rgb},0.7)`,
-                      animation: `cb-sparkle-dot 2s ease-in-out ${i * 0.5}s infinite`,
-                    }}
-                  />
-                ))}
-              {/* Edge sparkle dots — champion only */}
-              {p >= 4 &&
-                [
-                  { top: -3, left: "50%" },
-                  { bottom: -3, left: "50%" },
-                  { top: "50%", left: -3 },
-                  { top: "50%", right: -3 },
-                ].map((pos, i) => (
-                  <div
-                    key={`esp-${i}`}
-                    className="absolute w-1.5 h-1.5 rounded-full pointer-events-none z-10"
-                    style={{
-                      ...pos,
-                      background: `rgba(${rgb},0.7)`,
-                      boxShadow: `0 0 6px rgba(${rgb},0.5)`,
-                      animation: `cb-sparkle-dot 2.5s ease-in-out ${i * 0.7 + 0.3}s infinite`,
-                    }}
-                  />
-                ))}
-            </>
-          );
-        })()}
+        {/* Corner brackets + sparkles */}
+        <CornerDecor rgb={rgb!} p={p} />
 
         {/* Inner content */}
         <div
@@ -446,6 +542,7 @@ export function CardBorderWrapper({
           style={{ boxShadow: innerGlow }}
         >
           {children}
+          <InnerAccent p={p} />
           <UnderlineBar underline={underline} />
         </div>
       </div>
@@ -689,4 +786,27 @@ export function UnderlinePicker({
       })}
     </div>
   );
+}
+
+export function buildCardBorder(eventType: string, placement: string): CardBorderConfig | null {
+  const tier = TIER_STYLE[eventType];
+  if (!tier) return null;
+  const rank = PLACEMENT_RANK[placement] ?? 0;
+  return {
+    border: tier.border,
+    shadow: `0 0 8px rgba(${tier.rgb},0.3)`,
+    rgb: tier.rgb,
+    placement: rank,
+  };
+}
+
+export function buildUnderline(eventType: string, placement: string): UnderlineConfig | null {
+  const style = UNDERLINE_STYLE[eventType];
+  if (!style) return null;
+  const rank = UNDERLINE_PLACEMENT_RANK[placement] ?? 0;
+  return {
+    color: style.color,
+    rgb: style.rgb,
+    placement: rank,
+  };
 }
