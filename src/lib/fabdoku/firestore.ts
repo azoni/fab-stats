@@ -30,9 +30,7 @@ export function buildResult(gameState: GameState): FaBdokuResult {
     date: gameState.date,
     won: gameState.won,
     guessesUsed: gameState.guessesUsed,
-    cells: gameState.cells.map((row) =>
-      row.map((c) => ({ hero: c.heroName, correct: c.correct }))
-    ),
+    cells: gameState.cells.flat().map((c) => ({ hero: c.heroName, correct: c.correct })),
     score: correctCount,
     timestamp: Date.now(),
   };
@@ -258,13 +256,15 @@ export function buildPicksFromResults(results: FaBdokuResult[]): PickData {
     }
   }
   for (const result of results) {
-    for (let r = 0; r < result.cells.length; r++) {
-      for (let c = 0; c < result.cells[r].length; c++) {
-        const cell = result.cells[r][c];
-        if (cell.hero) {
-          const key = `${r}-${c}`;
-          cells[key][cell.hero] = (cells[key][cell.hero] ?? 0) + 1;
-        }
+    // Handle both flat (new) and nested (old) cell formats
+    const flat = Array.isArray(result.cells[0])
+      ? (result.cells as unknown as { hero: string | null; correct: boolean }[][]).flat()
+      : result.cells;
+    for (let i = 0; i < flat.length; i++) {
+      const cell = flat[i];
+      if (cell.hero) {
+        const key = `${Math.floor(i / 3)}-${i % 3}`;
+        cells[key][cell.hero] = (cells[key][cell.hero] ?? 0) + 1;
       }
     }
   }

@@ -538,12 +538,18 @@ function CrosswordContent({ event, compact }: { event: CrosswordFeedEvent; compa
   const statusText = event.won ? `Solved in ${formatCrosswordTime(event.elapsedSeconds)}` : `${event.wordsFound}/${event.totalWords} words`;
   const noHints = event.checksUsed + event.revealsUsed === 0;
 
+  const hintParts: string[] = [];
+  if (event.checksUsed > 0) hintParts.push(`${event.checksUsed} check${event.checksUsed !== 1 ? "s" : ""}`);
+  if (event.revealsUsed > 0) hintParts.push(`${event.revealsUsed} reveal${event.revealsUsed !== 1 ? "s" : ""}`);
+  const hintText = hintParts.length > 0 ? hintParts.join(", ") : null;
+
   if (compact) {
     return (
       <p className="text-[11px] text-fab-muted">
         {actionText} Crossword &middot;{" "}
         <span className="font-semibold text-fab-text">{statusText}</span>
-        {noHints && event.won && <span className="ml-1 text-fab-gold">No hints!</span>}
+        {noHints && event.won ? <span className="ml-1 text-fab-gold">No hints!</span>
+          : hintText && <span className="ml-1 text-fab-dim">({hintText})</span>}
       </p>
     );
   }
@@ -556,8 +562,10 @@ function CrosswordContent({ event, compact }: { event: CrosswordFeedEvent; compa
         {" "}&mdash;{" "}
         <span className="font-semibold text-fab-text">{statusText}</span>
       </p>
-      {noHints && event.won && (
+      {noHints && event.won ? (
         <p className="text-xs text-fab-gold mt-0.5">No hints used!</p>
+      ) : hintText && (
+        <p className="text-xs text-fab-dim mt-0.5">{hintText}</p>
       )}
     </div>
   );

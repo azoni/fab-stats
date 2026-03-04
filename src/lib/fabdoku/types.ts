@@ -34,7 +34,7 @@ export interface FaBdokuResult {
   date: string;
   won: boolean;
   guessesUsed: number;
-  cells: { hero: string | null; correct: boolean }[][];
+  cells: { hero: string | null; correct: boolean }[];
   score: number;
   timestamp: number;
 }
