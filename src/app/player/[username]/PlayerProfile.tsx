@@ -354,7 +354,7 @@ export default function PlayerProfile() {
     const selEvt = profileObj?.borderEventType;
     const selPl = profileObj?.borderPlacement;
     if (selEvt && selPl && tierStyle[selEvt]) {
-      const hasFinish = playoffFinishes.some(f => f.eventType === selEvt && f.type === selPl);
+      const hasFinish = isAdmin || playoffFinishes.some(f => f.eventType === selEvt && f.type === selPl);
       if (hasFinish) {
         return { ...tierStyle[selEvt], placement: placementRank[selPl] || 0 };
       }
@@ -372,7 +372,7 @@ export default function PlayerProfile() {
     }
     if (!best) return null;
     return { ...tierStyle[best], placement: bestPlacement };
-  }, [playoffFinishes, profileObj?.borderEventType, profileObj?.borderPlacement]);
+  }, [playoffFinishes, profileObj?.borderEventType, profileObj?.borderPlacement, isAdmin]);
 
 
   if (state.status === "loading") {
@@ -677,22 +677,27 @@ export default function PlayerProfile() {
               </Link>
             )}
           </div>
+          {/* Border picker — inside card for owner with playoff finishes (admin gets all) */}
+          {isOwner && (playoffFinishes.length > 0 || isAdmin) && (
+            <BorderPicker
+              playoffFinishes={isAdmin ? [
+                ...playoffFinishes,
+                ...["Battle Hardened", "The Calling", "Nationals", "Pro Tour", "Worlds"].flatMap(et =>
+                  (["top8", "top4", "finalist", "champion"] as const).map(pl => ({ type: pl, eventType: et, eventName: `${et} (test)`, eventDate: "", format: "" }))
+                ),
+              ] : playoffFinishes}
+              current={{
+                eventType: profile.borderEventType || (() => { const tierRank: Record<string, number> = { "Battle Hardened": 1, "The Calling": 2, Nationals: 3, "Pro Tour": 4, Worlds: 5 }; let best = ""; let bestScore = 0; for (const f of playoffFinishes) { const s = tierRank[f.eventType] || 0; if (s > bestScore) { best = f.eventType; bestScore = s; } } return best; })(),
+                placement: profile.borderPlacement || (() => { const pr: Record<string, number> = { top8: 1, top4: 2, finalist: 3, champion: 4 }; let best = "top8"; let bestR = 0; for (const f of playoffFinishes) { const r = pr[f.type] || 0; if (r > bestR) { best = f.type; bestR = r; } } return best; })(),
+                style: (profile.borderStyle || "beam") as BorderStyleType,
+              }}
+              onChange={async (sel: BorderSelection) => {
+                await updateProfile(profile.uid, { borderStyle: sel.style, borderEventType: sel.eventType, borderPlacement: sel.placement });
+                setState((prev) => prev.status === "loaded" ? { ...prev, profile: { ...prev.profile, borderStyle: sel.style, borderEventType: sel.eventType, borderPlacement: sel.placement } } : prev);
+              }}
+            />
+          )}
         </CardBorderWrapper>
-        {/* Border picker — only for owner with playoff finishes */}
-        {isOwner && playoffFinishes.length > 0 && (
-          <BorderPicker
-            playoffFinishes={playoffFinishes}
-            current={{
-              eventType: profile.borderEventType || (() => { const tierRank: Record<string, number> = { "Battle Hardened": 1, "The Calling": 2, Nationals: 3, "Pro Tour": 4, Worlds: 5 }; let best = ""; let bestScore = 0; for (const f of playoffFinishes) { const s = tierRank[f.eventType] || 0; if (s > bestScore) { best = f.eventType; bestScore = s; } } return best; })(),
-              placement: profile.borderPlacement || (() => { const pr: Record<string, number> = { top8: 1, top4: 2, finalist: 3, champion: 4 }; let best = "top8"; let bestR = 0; for (const f of playoffFinishes) { const r = pr[f.type] || 0; if (r > bestR) { best = f.type; bestR = r; } } return best; })(),
-              style: (profile.borderStyle || "beam") as BorderStyleType,
-            }}
-            onChange={async (sel: BorderSelection) => {
-              await updateProfile(profile.uid, { borderStyle: sel.style, borderEventType: sel.eventType, borderPlacement: sel.placement });
-              setState((prev) => prev.status === "loaded" ? { ...prev, profile: { ...prev.profile, borderStyle: sel.style, borderEventType: sel.eventType, borderPlacement: sel.placement } } : prev);
-            }}
-          />
-        )}
 
         {/* Creator spotlight card */}
         {creatorInfo && (
