@@ -6,9 +6,16 @@ const ROUNDS = 10;
 const MIN_GAMES = 20;
 const MIN_DIFF = 3; // minimum win rate difference (%)
 
+// Non-hero names that can appear in matchup data
+const EXCLUDED_NAMES = new Set(["not rated", "rated", "unrated", "competitive", "casual"]);
+function isRealHero(name: string): boolean {
+  return !EXCLUDED_NAMES.has(name.toLowerCase());
+}
+
 export function generateDailyMatchups(dateStr: string, matchupData: CommunityMatchupCell[]): MatchupRound[] {
   // Filter to pairs with enough games and meaningful difference
   const eligible = matchupData.filter((m) => {
+    if (!isRealHero(m.hero1) || !isRealHero(m.hero2)) return false;
     if (m.total < MIN_GAMES) return false;
     const h1WR = (m.hero1Wins / m.total) * 100;
     const h2WR = (m.hero2Wins / m.total) * 100;
@@ -17,8 +24,9 @@ export function generateDailyMatchups(dateStr: string, matchupData: CommunityMat
 
   if (eligible.length < ROUNDS) {
     // Fallback: use whatever we have, lower threshold
-    const fallback = matchupData.filter((m) => m.total >= 5);
-    return buildRounds(dateStr, fallback.length >= ROUNDS ? fallback : matchupData);
+    const fallback = matchupData.filter((m) => m.total >= 5 && isRealHero(m.hero1) && isRealHero(m.hero2));
+    const cleaned = matchupData.filter((m) => isRealHero(m.hero1) && isRealHero(m.hero2));
+    return buildRounds(dateStr, fallback.length >= ROUNDS ? fallback : cleaned);
   }
 
   return buildRounds(dateStr, eligible);
