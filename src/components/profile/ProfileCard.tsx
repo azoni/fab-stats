@@ -28,7 +28,7 @@ export interface ProfileCardData {
   bestFinish: string | null;
   bestFinishEvent?: string | null;
   recentResults: MatchResult[];
-  cardBorder?: { border: string; shadow: string; rgb?: string; animation?: string; borderWidth?: string; outline?: string; outlineOffset?: string } | null;
+  cardBorder?: { border: string; shadow: string; rgb?: string; placement?: number } | null;
   bestRank?: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | null;
   playoffFinishes?: PlayoffFinish[];
   armoryCount?: number;
@@ -196,17 +196,22 @@ export function ProfileCard({ data, theme }: { data: ProfileCardData; theme?: Ca
     }
   }
 
+  const cbPlacement = cardBorder?.placement ?? 0;
+  const cbRgb = cardBorder?.rgb;
+
   return (
     <div
       style={{
         backgroundColor: t.surface,
         borderColor: cardBorder?.border || t.border,
-        boxShadow: cardBorder?.shadow || undefined,
-        animation: cardBorder?.animation || undefined,
-        "--cb-rgb": cardBorder?.rgb,
-        borderWidth: cardBorder?.borderWidth || undefined,
-        outline: cardBorder?.outline || undefined,
-        outlineOffset: cardBorder?.outlineOffset || undefined,
+        boxShadow: cbPlacement >= 2 && cbRgb
+          ? (cbPlacement >= 4
+            ? `0 0 16px rgba(${cbRgb},0.5), 0 0 32px rgba(${cbRgb},0.25), 0 0 48px rgba(${cbRgb},0.1)`
+            : cbPlacement >= 3
+              ? `0 0 12px rgba(${cbRgb},0.4), 0 0 24px rgba(${cbRgb},0.2)`
+              : `0 0 8px rgba(${cbRgb},0.35), 0 0 16px rgba(${cbRgb},0.15)`)
+          : (cardBorder?.shadow || undefined),
+        borderWidth: cbPlacement >= 3 ? 3 : undefined,
         width: 440,
       } as React.CSSProperties}
       className="border-2 rounded-xl overflow-hidden"
@@ -446,26 +451,6 @@ export function ProfileShareModal({
             </svg>
           </button>
         </div>
-
-        {/* Card border animation keyframes */}
-        {data.cardBorder?.animation && (
-          <style>{`
-            @keyframes cb-top4 {
-              0%, 100% { box-shadow: 0 0 10px rgba(var(--cb-rgb),0.45), 0 0 20px rgba(var(--cb-rgb),0.2), inset 0 0 8px rgba(var(--cb-rgb),0.04); }
-              50% { box-shadow: 0 0 16px rgba(var(--cb-rgb),0.6), 0 0 32px rgba(var(--cb-rgb),0.3), inset 0 0 12px rgba(var(--cb-rgb),0.07); }
-            }
-            @keyframes cb-finalist {
-              0%, 100% { box-shadow: 0 0 14px rgba(var(--cb-rgb),0.55), 0 0 28px rgba(var(--cb-rgb),0.3), 0 0 50px rgba(var(--cb-rgb),0.12), inset 0 0 10px rgba(var(--cb-rgb),0.05); }
-              50% { box-shadow: 0 0 22px rgba(var(--cb-rgb),0.75), 0 0 42px rgba(var(--cb-rgb),0.4), 0 0 65px rgba(var(--cb-rgb),0.18), inset 0 0 18px rgba(var(--cb-rgb),0.1); }
-            }
-            @keyframes cb-champion {
-              0%, 100% { box-shadow: 0 -3px 20px rgba(var(--cb-rgb),0.7), 0 3px 12px rgba(var(--cb-rgb),0.25), -3px 0 12px rgba(var(--cb-rgb),0.25), 3px 0 12px rgba(var(--cb-rgb),0.25), 0 0 40px rgba(var(--cb-rgb),0.35), 0 0 70px rgba(var(--cb-rgb),0.12), inset 0 0 15px rgba(var(--cb-rgb),0.06); }
-              25% { box-shadow: 0 -3px 12px rgba(var(--cb-rgb),0.25), 0 3px 12px rgba(var(--cb-rgb),0.25), -3px 0 12px rgba(var(--cb-rgb),0.25), 3px 0 20px rgba(var(--cb-rgb),0.7), 0 0 45px rgba(var(--cb-rgb),0.4), 0 0 75px rgba(var(--cb-rgb),0.15), inset 0 0 18px rgba(var(--cb-rgb),0.08); }
-              50% { box-shadow: 0 -3px 12px rgba(var(--cb-rgb),0.25), 0 3px 20px rgba(var(--cb-rgb),0.7), -3px 0 12px rgba(var(--cb-rgb),0.25), 3px 0 12px rgba(var(--cb-rgb),0.25), 0 0 42px rgba(var(--cb-rgb),0.38), 0 0 72px rgba(var(--cb-rgb),0.13), inset 0 0 16px rgba(var(--cb-rgb),0.07); }
-              75% { box-shadow: 0 -3px 12px rgba(var(--cb-rgb),0.25), 0 3px 12px rgba(var(--cb-rgb),0.25), -3px 0 20px rgba(var(--cb-rgb),0.7), 3px 0 12px rgba(var(--cb-rgb),0.25), 0 0 48px rgba(var(--cb-rgb),0.42), 0 0 78px rgba(var(--cb-rgb),0.16), inset 0 0 20px rgba(var(--cb-rgb),0.09); }
-            }
-          `}</style>
-        )}
 
         {/* Card preview — scale down on mobile to fit viewport */}
         <div className="p-4 flex justify-center overflow-hidden">

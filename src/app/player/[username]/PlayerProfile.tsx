@@ -365,14 +365,7 @@ export default function PlayerProfile() {
     }
     if (!best) return null;
     const base = tierStyle[best];
-    // Top 8: static color border + base glow
-    if (bestPlacement <= 1) return base;
-    // Top 4: animated glow pulse + inner glow
-    if (bestPlacement === 2) return { ...base, animation: "cb-top4 3s ease-in-out infinite" };
-    // Finalist: dramatic breathing glow + thicker border
-    if (bestPlacement === 3) return { ...base, animation: "cb-finalist 2.5s ease-in-out infinite", borderWidth: "2px" };
-    // Champion: traveling light + massive glow + double border
-    return { ...base, animation: "cb-champion 5s linear infinite", borderWidth: "2px", outline: `1px solid rgba(${base.rgb},0.25)`, outlineOffset: "3px" };
+    return { ...base, placement: bestPlacement };
   }, [playoffFinishes]);
 
 
@@ -468,31 +461,75 @@ export default function PlayerProfile() {
 
   return (
     <div className="space-y-5">
-      {(cardBorder as { animation?: string } | null)?.animation && (
+      {(() => { const p = (cardBorder as { placement?: number } | null)?.placement ?? 0; return p >= 2; })() && (
         <style>{`
-          @keyframes cb-top4 {
-            0%, 100% { box-shadow: 0 0 10px rgba(var(--cb-rgb),0.45), 0 0 20px rgba(var(--cb-rgb),0.2), inset 0 0 8px rgba(var(--cb-rgb),0.04); }
-            50% { box-shadow: 0 0 16px rgba(var(--cb-rgb),0.6), 0 0 32px rgba(var(--cb-rgb),0.3), inset 0 0 12px rgba(var(--cb-rgb),0.07); }
-          }
-          @keyframes cb-finalist {
-            0%, 100% { box-shadow: 0 0 14px rgba(var(--cb-rgb),0.55), 0 0 28px rgba(var(--cb-rgb),0.3), 0 0 50px rgba(var(--cb-rgb),0.12), inset 0 0 10px rgba(var(--cb-rgb),0.05); }
-            50% { box-shadow: 0 0 22px rgba(var(--cb-rgb),0.75), 0 0 42px rgba(var(--cb-rgb),0.4), 0 0 65px rgba(var(--cb-rgb),0.18), inset 0 0 18px rgba(var(--cb-rgb),0.1); }
-          }
-          @keyframes cb-champion {
-            0%, 100% { box-shadow: 0 -3px 20px rgba(var(--cb-rgb),0.7), 0 3px 12px rgba(var(--cb-rgb),0.25), -3px 0 12px rgba(var(--cb-rgb),0.25), 3px 0 12px rgba(var(--cb-rgb),0.25), 0 0 40px rgba(var(--cb-rgb),0.35), 0 0 70px rgba(var(--cb-rgb),0.12), inset 0 0 15px rgba(var(--cb-rgb),0.06); }
-            25% { box-shadow: 0 -3px 12px rgba(var(--cb-rgb),0.25), 0 3px 12px rgba(var(--cb-rgb),0.25), -3px 0 12px rgba(var(--cb-rgb),0.25), 3px 0 20px rgba(var(--cb-rgb),0.7), 0 0 45px rgba(var(--cb-rgb),0.4), 0 0 75px rgba(var(--cb-rgb),0.15), inset 0 0 18px rgba(var(--cb-rgb),0.08); }
-            50% { box-shadow: 0 -3px 12px rgba(var(--cb-rgb),0.25), 0 3px 20px rgba(var(--cb-rgb),0.7), -3px 0 12px rgba(var(--cb-rgb),0.25), 3px 0 12px rgba(var(--cb-rgb),0.25), 0 0 42px rgba(var(--cb-rgb),0.38), 0 0 72px rgba(var(--cb-rgb),0.13), inset 0 0 16px rgba(var(--cb-rgb),0.07); }
-            75% { box-shadow: 0 -3px 12px rgba(var(--cb-rgb),0.25), 0 3px 12px rgba(var(--cb-rgb),0.25), -3px 0 20px rgba(var(--cb-rgb),0.7), 3px 0 12px rgba(var(--cb-rgb),0.25), 0 0 48px rgba(var(--cb-rgb),0.42), 0 0 78px rgba(var(--cb-rgb),0.16), inset 0 0 20px rgba(var(--cb-rgb),0.09); }
-          }
+          @keyframes cb-spin { to { transform: rotate(1turn); } }
+          @keyframes cb-sparkle-dot { 0%, 100% { opacity: 0.2; transform: scale(0.5); } 50% { opacity: 1; transform: scale(1.2); } }
         `}</style>
       )}
       {/* Profile + Filters (always on top) */}
       <div className="space-y-5">
-        {/* Profile Header */}
+        {/* Profile Header — beam border wrapper for Top 4+ */}
         <div
-          className="bg-fab-surface border border-fab-border rounded-lg p-5 relative"
-          style={cardBorder ? { borderColor: cardBorder.border, boxShadow: cardBorder.shadow, animation: (cardBorder as { animation?: string }).animation || undefined, "--cb-rgb": (cardBorder as { rgb?: string }).rgb, borderWidth: (cardBorder as { borderWidth?: string }).borderWidth, outline: (cardBorder as { outline?: string }).outline, outlineOffset: (cardBorder as { outlineOffset?: string }).outlineOffset } as React.CSSProperties : undefined}
+          className={((cardBorder as { placement?: number } | null)?.placement ?? 0) >= 2 ? "relative rounded-lg" : ""}
+          style={((cardBorder as { placement?: number } | null)?.placement ?? 0) >= 2 ? {
+            padding: 2,
+            boxShadow: (() => {
+              const p = (cardBorder as { placement?: number }).placement!;
+              const rgb = (cardBorder as { rgb: string }).rgb;
+              if (p >= 4) return `0 0 20px rgba(${rgb},0.5), 0 0 40px rgba(${rgb},0.25), 0 0 70px rgba(${rgb},0.1)`;
+              if (p >= 3) return `0 0 14px rgba(${rgb},0.4), 0 0 30px rgba(${rgb},0.2), 0 0 50px rgba(${rgb},0.08)`;
+              return `0 0 10px rgba(${rgb},0.3), 0 0 20px rgba(${rgb},0.15)`;
+            })(),
+          } : undefined}
         >
+          {/* Spinning gradient beam(s) */}
+          {((cardBorder as { placement?: number } | null)?.placement ?? 0) >= 2 && (() => {
+            const p = (cardBorder as { placement: number; rgb: string }).placement;
+            const rgb = (cardBorder as { rgb: string }).rgb;
+            const speed = p >= 4 ? '3s' : p >= 3 ? '4s' : '5s';
+            return (
+              <div className="absolute inset-0 rounded-lg overflow-hidden">
+                <div style={{ position: 'absolute', inset: '-200%', background: `conic-gradient(from 0deg, transparent ${p >= 4 ? '30%' : '40%'}, rgba(${rgb},${p >= 3 ? 0.9 : 0.7}) 50%, transparent ${p >= 4 ? '70%' : '60%'})`, animation: `cb-spin ${speed} linear infinite` }} />
+                {p >= 4 && <div style={{ position: 'absolute', inset: '-200%', background: `conic-gradient(from 180deg, transparent 35%, rgba(${rgb},0.5) 50%, transparent 65%)`, animation: 'cb-spin 4.5s linear infinite reverse' }} />}
+              </div>
+            );
+          })()}
+          {/* Corner brackets for finalist+ */}
+          {((cardBorder as { placement?: number } | null)?.placement ?? 0) >= 3 && (() => {
+            const p = (cardBorder as { placement: number; rgb: string }).placement;
+            const rgb = (cardBorder as { rgb: string }).rgb;
+            const s = p >= 4 ? 20 : 14;
+            const t = p >= 4 ? 2.5 : 1.5;
+            const o = p >= 4 ? -8 : -5;
+            const c = `rgba(${rgb},${p >= 4 ? 0.8 : 0.5})`;
+            return (
+              <>
+                {[
+                  { top: o, left: o, borderTop: `${t}px solid ${c}`, borderLeft: `${t}px solid ${c}` },
+                  { top: o, right: o, borderTop: `${t}px solid ${c}`, borderRight: `${t}px solid ${c}` },
+                  { bottom: o, left: o, borderBottom: `${t}px solid ${c}`, borderLeft: `${t}px solid ${c}` },
+                  { bottom: o, right: o, borderBottom: `${t}px solid ${c}`, borderRight: `${t}px solid ${c}` },
+                ].map((style, i) => <div key={i} className="absolute pointer-events-none z-10" style={{ ...style, width: s, height: s }} />)}
+                {p >= 4 && [
+                  { top: -3, left: -3 }, { top: -3, right: -3 }, { bottom: -3, left: -3 }, { bottom: -3, right: -3 },
+                ].map((pos, i) => (
+                  <div key={`sp-${i}`} className="absolute w-1.5 h-1.5 rounded-full pointer-events-none z-10" style={{ ...pos, background: `rgba(${rgb},0.9)`, boxShadow: `0 0 6px rgba(${rgb},0.6)`, animation: `cb-sparkle-dot 2.5s ease-in-out ${i * 0.6}s infinite` }} />
+                ))}
+              </>
+            );
+          })()}
+          {/* Card content */}
+          <div
+            className={`bg-fab-surface p-5 relative ${((cardBorder as { placement?: number } | null)?.placement ?? 0) >= 2 ? "rounded-[7px]" : "border border-fab-border rounded-lg"}`}
+            style={(() => {
+              const p = (cardBorder as { placement?: number } | null)?.placement ?? 0;
+              const rgb = (cardBorder as { rgb?: string } | null)?.rgb;
+              if (p >= 2 && rgb) return p >= 4 ? { boxShadow: `inset 0 0 20px rgba(${rgb},0.04)` } as React.CSSProperties : p >= 3 ? { boxShadow: `inset 0 0 12px rgba(${rgb},0.03)` } as React.CSSProperties : undefined;
+              if (cardBorder) return { borderColor: cardBorder.border, boxShadow: cardBorder.shadow } as React.CSSProperties;
+              return undefined;
+            })()}
+          >
           {/* Owner: private/friends-only profile banner */}
           {isOwner && (profile.profileVisibility === "private" || (!profile.profileVisibility && !profile.isPublic)) && (
             <div className="flex items-center gap-2 mb-4 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/25">
@@ -684,6 +721,7 @@ export default function PlayerProfile() {
               </Link>
             )}
           </div>
+        </div>
         </div>
 
         {/* Creator spotlight card */}
