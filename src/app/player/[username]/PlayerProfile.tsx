@@ -88,6 +88,7 @@ export default function PlayerProfile() {
   const [fabdokuFullStats, setFabdokuFullStats] = useState<FaBdokuStats | null>(null);
   const [previewAsVisitor, setPreviewAsVisitor] = useState(false);
   const [editingSocials, setEditingSocials] = useState(false);
+  const [editingBorder, setEditingBorder] = useState(false);
   const [socialDraft, setSocialDraft] = useState<{ twitter: string; discord: string; fabrary: string; fabraryName: string }>({ twitter: "", discord: "", fabrary: "", fabraryName: "" });
   const [discordCopied, setDiscordCopied] = useState(false);
 
@@ -564,10 +565,10 @@ export default function PlayerProfile() {
                         });
                         setEditingSocials(true);
                       }}
-                      className="text-[10px] text-fab-dim hover:text-fab-muted transition-colors"
+                      className="text-fab-muted hover:text-fab-gold transition-colors"
                       title="Edit social links"
                     >
-                      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
                       </svg>
                     </button>
@@ -677,25 +678,39 @@ export default function PlayerProfile() {
               </Link>
             )}
           </div>
-          {/* Border picker — inside card for owner with playoff finishes (admin gets all) */}
+          {/* Border picker toggle — inside card for owner with playoff finishes (admin gets all) */}
           {isOwner && (playoffFinishes.length > 0 || isAdmin) && (
-            <BorderPicker
-              playoffFinishes={isAdmin ? [
-                ...playoffFinishes,
-                ...["Battle Hardened", "The Calling", "Nationals", "Pro Tour", "Worlds"].flatMap(et =>
-                  (["top8", "top4", "finalist", "champion"] as const).map(pl => ({ type: pl, eventType: et, eventName: `${et} (test)`, eventDate: "", format: "" }))
-                ),
-              ] : playoffFinishes}
-              current={{
-                eventType: profile.borderEventType || (() => { const tierRank: Record<string, number> = { "Battle Hardened": 1, "The Calling": 2, Nationals: 3, "Pro Tour": 4, Worlds: 5 }; let best = ""; let bestScore = 0; for (const f of playoffFinishes) { const s = tierRank[f.eventType] || 0; if (s > bestScore) { best = f.eventType; bestScore = s; } } return best; })(),
-                placement: profile.borderPlacement || (() => { const pr: Record<string, number> = { top8: 1, top4: 2, finalist: 3, champion: 4 }; let best = "top8"; let bestR = 0; for (const f of playoffFinishes) { const r = pr[f.type] || 0; if (r > bestR) { best = f.type; bestR = r; } } return best; })(),
-                style: (profile.borderStyle || "beam") as BorderStyleType,
-              }}
-              onChange={async (sel: BorderSelection) => {
-                await updateProfile(profile.uid, { borderStyle: sel.style, borderEventType: sel.eventType, borderPlacement: sel.placement });
-                setState((prev) => prev.status === "loaded" ? { ...prev, profile: { ...prev.profile, borderStyle: sel.style, borderEventType: sel.eventType, borderPlacement: sel.placement } } : prev);
-              }}
-            />
+            <div className="flex flex-col items-center gap-1 mt-1">
+              <button
+                onClick={() => setEditingBorder((v) => !v)}
+                className="flex items-center gap-1 text-fab-muted hover:text-fab-gold transition-colors"
+                title="Edit border style"
+              >
+                <span className="text-[9px] uppercase tracking-wider font-medium">Border</span>
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
+                </svg>
+              </button>
+              {editingBorder && (
+                <BorderPicker
+                  playoffFinishes={isAdmin ? [
+                    ...playoffFinishes,
+                    ...["Battle Hardened", "The Calling", "Nationals", "Pro Tour", "Worlds"].flatMap(et =>
+                      (["top8", "top4", "finalist", "champion"] as const).map(pl => ({ type: pl, eventType: et, eventName: `${et} (test)`, eventDate: "", format: "" }))
+                    ),
+                  ] : playoffFinishes}
+                  current={{
+                    eventType: profile.borderEventType || (() => { const tierRank: Record<string, number> = { "Battle Hardened": 1, "The Calling": 2, Nationals: 3, "Pro Tour": 4, Worlds: 5 }; let best = ""; let bestScore = 0; for (const f of playoffFinishes) { const s = tierRank[f.eventType] || 0; if (s > bestScore) { best = f.eventType; bestScore = s; } } return best; })(),
+                    placement: profile.borderPlacement || (() => { const pr: Record<string, number> = { top8: 1, top4: 2, finalist: 3, champion: 4 }; let best = "top8"; let bestR = 0; for (const f of playoffFinishes) { const r = pr[f.type] || 0; if (r > bestR) { best = f.type; bestR = r; } } return best; })(),
+                    style: (profile.borderStyle || "beam") as BorderStyleType,
+                  }}
+                  onChange={async (sel: BorderSelection) => {
+                    await updateProfile(profile.uid, { borderStyle: sel.style, borderEventType: sel.eventType, borderPlacement: sel.placement });
+                    setState((prev) => prev.status === "loaded" ? { ...prev, profile: { ...prev.profile, borderStyle: sel.style, borderEventType: sel.eventType, borderPlacement: sel.placement } } : prev);
+                  }}
+                />
+              )}
+            </div>
           )}
         </CardBorderWrapper>
 

@@ -3,6 +3,7 @@ import { db, auth } from "@/lib/firebase";
 
 export type ActivityAction =
   | "showcase_edit"
+  | "profile_update"
   | "profile_share"
   | "placement_share"
   | "bestfinish_share"
@@ -65,6 +66,7 @@ export function logActivity(action: ActivityAction, meta?: string) {
 
 export const ACTIVITY_LABELS: Record<ActivityAction, string> = {
   showcase_edit: "edited their showcase",
+  profile_update: "updated their profile",
   profile_share: "shared their profile card",
   placement_share: "shared a placement card",
   bestfinish_share: "shared a best finish card",

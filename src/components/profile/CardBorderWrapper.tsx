@@ -242,7 +242,6 @@ export function BorderPicker({
 
   return (
     <div className="flex items-center justify-center gap-2 mt-1.5 flex-wrap">
-      <span className="text-[9px] text-fab-dim uppercase tracking-wider font-medium">Border</span>
       {/* Event+placement options */}
       <div className="flex gap-1 flex-wrap">
         {uniqueBorders.map(({ eventType, placement }) => {

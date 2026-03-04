@@ -17,6 +17,7 @@ import {
   type Unsubscribe,
 } from "firebase/firestore";
 import { db } from "./firebase";
+import { logActivity } from "./activity-log";
 import type { MatchRecord, UserProfile } from "@/types";
 
 /** Build a fingerprint to detect duplicate matches */
@@ -347,6 +348,8 @@ export async function updateProfile(
       await updateDoc(usernameRef, usernameUpdates);
     }
   }
+
+  logActivity("profile_update", Object.keys(updates).join(", "));
 }
 
 export async function uploadProfilePhoto(
