@@ -13,14 +13,15 @@ import type { FeedEventType } from "@/lib/feed";
 import type { FeedEvent } from "@/types";
 
 type ScopeTab = "community" | "friends";
-type TypeFilter = "all" | "import" | "placement" | "fabdoku" | "crossword" | "engagement";
+type TypeFilter = "all" | "import" | "placement" | "games" | "engagement";
+
+const GAME_EVENT_TYPES = new Set(["fabdoku", "crossword", "heroguesser", "matchupmania", "trivia", "timeline", "connections"]);
 
 const TYPE_FILTERS: { value: TypeFilter; label: string; adminOnly?: boolean }[] = [
   { value: "all", label: "All" },
   { value: "import", label: "Imports" },
   { value: "placement", label: "Placements" },
-  { value: "fabdoku", label: "FaBdoku" },
-  { value: "crossword", label: "Crossword" },
+  { value: "games", label: "Games" },
   { value: "engagement", label: "Engagement", adminOnly: true },
 ];
 
@@ -63,8 +64,8 @@ export function ActivityFeed({ rankMap, eventTierMap, underlineTierMap }: { rank
   const { friends } = useFriends();
   const { favorites } = useFavorites();
   const [scope, _setScope] = useState<ScopeTab>(() => readStored(SCOPE_KEY, ["community", "friends"], "community"));
-  const [typeFilter, _setTypeFilter] = useState<TypeFilter>(() => readStored(TYPE_KEY, ["all", "import", "placement", "fabdoku", "crossword", "engagement"], "placement"));
-  const feedTypeFilter: FeedEventType = typeFilter === "engagement" ? "all" : typeFilter;
+  const [typeFilter, _setTypeFilter] = useState<TypeFilter>(() => readStored(TYPE_KEY, ["all", "import", "placement", "games", "engagement"], "placement"));
+  const feedTypeFilter: FeedEventType = (typeFilter === "engagement" || typeFilter === "games") ? "all" : typeFilter;
   const { events, loading } = useFeed(feedTypeFilter);
 
   const [page, setPage] = useState(0);
@@ -111,16 +112,10 @@ export function ActivityFeed({ rankMap, eventTierMap, underlineTierMap }: { rank
     }
 
     // Type filter
-    if (typeFilter !== "all") {
+    if (typeFilter === "games") {
+      source = source.filter((e) => GAME_EVENT_TYPES.has(e.type) && (e as { subtype?: string }).subtype !== "shared");
+    } else if (typeFilter !== "all") {
       source = source.filter((e) => e.type === typeFilter);
-    }
-
-    // Hide "shared" events from public game tabs (admin sees them in Engagement)
-    if (typeFilter === "fabdoku") {
-      source = source.filter((e) => e.type !== "fabdoku" || (e as { subtype?: string }).subtype !== "shared");
-    }
-    if (typeFilter === "crossword") {
-      source = source.filter((e) => e.type !== "crossword" || (e as { subtype?: string }).subtype !== "shared");
     }
 
     // Filter out stale placements — only show events from the last 2 weeks

@@ -3,8 +3,8 @@ import { useState } from "react";
 import { getProfileBadges } from "@/lib/profile-badges";
 import { BADGE_ICON_MAP } from "./BadgeIcons";
 
-export function BadgeStrip({ matchCount, isCreator, playedFabdoku, playedCrossword, submittedFeedback, className }: { matchCount: number; isCreator?: boolean; playedFabdoku?: boolean; playedCrossword?: boolean; submittedFeedback?: boolean; className?: string }) {
-  const badges = getProfileBadges(matchCount, { isCreator, playedFabdoku, playedCrossword, submittedFeedback });
+export function BadgeStrip({ matchCount, isCreator, playedFabdoku, playedCrossword, playedHeroGuesser, playedMatchupMania, playedTrivia, playedTimeline, playedConnections, submittedFeedback, className }: { matchCount: number; isCreator?: boolean; playedFabdoku?: boolean; playedCrossword?: boolean; playedHeroGuesser?: boolean; playedMatchupMania?: boolean; playedTrivia?: boolean; playedTimeline?: boolean; playedConnections?: boolean; submittedFeedback?: boolean; className?: string }) {
+  const badges = getProfileBadges(matchCount, { isCreator, playedFabdoku, playedCrossword, playedHeroGuesser, playedMatchupMania, playedTrivia, playedTimeline, playedConnections, submittedFeedback });
   const [hoveredId, setHoveredId] = useState<string | null>(null);
 
   if (badges.length === 0) return null;

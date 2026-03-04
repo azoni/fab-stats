@@ -572,56 +572,31 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Games spotlight — visible to everyone */}
+      {/* Games spotlight — visible only to logged-out / no-match users */}
       {!hasMatches && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Link
-            href="/fabdoku"
-            className="group relative bg-fab-surface border border-fab-border rounded-lg p-5 overflow-hidden hover:border-fab-gold/30 transition-all"
-          >
-            <div className="absolute -top-10 -right-10 w-32 h-32 bg-teal-400/5 rounded-full blur-2xl pointer-events-none" />
-            <div className="relative flex items-start gap-4">
-              <div className="w-11 h-11 rounded-lg bg-teal-400/10 flex items-center justify-center shrink-0 ring-1 ring-teal-400/20">
-                <svg className="w-5 h-5 text-teal-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
-                </svg>
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <h3 className="text-sm font-bold text-fab-text group-hover:text-teal-400 transition-colors">FaBdoku</h3>
-                  <span className="text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-teal-400/15 text-teal-400 border border-teal-400/25">New</span>
-                </div>
-                <p className="text-xs text-fab-dim leading-relaxed">Fill the 3x3 grid with heroes matching each row and column category. A new puzzle every day!</p>
-              </div>
-              <svg className="w-4 h-4 text-fab-dim group-hover:text-teal-400 transition-colors shrink-0 mt-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+        <Link
+          href="/games"
+          className="group relative bg-fab-surface border border-fab-border rounded-lg p-5 overflow-hidden hover:border-emerald-400/30 transition-all"
+        >
+          <div className="absolute -top-10 -right-10 w-32 h-32 bg-emerald-400/5 rounded-full blur-2xl pointer-events-none" />
+          <div className="relative flex items-start gap-4">
+            <div className="w-11 h-11 rounded-lg bg-emerald-400/10 flex items-center justify-center shrink-0 ring-1 ring-emerald-400/20">
+              <svg className="w-5 h-5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M14.25 6.087c0-.355.186-.676.401-.959.221-.29.349-.634.349-1.003 0-1.036-1.007-1.875-2.25-1.875s-2.25.84-2.25 1.875c0 .369.128.713.349 1.003.215.283.401.604.401.959v0a.64.64 0 01-.657.643 48.491 48.491 0 01-4.163-.3c.186 1.613.293 3.25.315 4.907a.656.656 0 01-.658.663v0c-.355 0-.676-.186-.959-.401a1.647 1.647 0 00-1.003-.349c-1.036 0-1.875 1.007-1.875 2.25s.84 2.25 1.875 2.25c.369 0 .713-.128 1.003-.349.283-.215.604-.401.959-.401v0c.31 0 .555.26.532.57a48.039 48.039 0 01-.642 5.056c1.518.19 3.058.309 4.616.354a.64.64 0 00.657-.643v0c0-.355-.186-.676-.401-.959a1.647 1.647 0 01-.349-1.003c0-1.035 1.008-1.875 2.25-1.875 1.243 0 2.25.84 2.25 1.875 0 .369-.128.713-.349 1.003-.215.283-.4.604-.4.959v0c0 .333.277.599.61.58a48.1 48.1 0 005.427-.63 48.05 48.05 0 00.582-4.717.532.532 0 00-.533-.57v0c-.355 0-.676.186-.959.401-.29.221-.634.349-1.003.349-1.035 0-1.875-1.007-1.875-2.25s.84-2.25 1.875-2.25c.37 0 .713.128 1.003.349.283.215.604.401.96.401v0a.656.656 0 00.658-.663 48.422 48.422 0 00-.37-5.36c-1.886.342-3.81.574-5.766.689a.578.578 0 01-.61-.58v0z" />
               </svg>
             </div>
-          </Link>
-          <Link
-            href="/crossword"
-            className="group relative bg-fab-surface border border-fab-border rounded-lg p-5 overflow-hidden hover:border-fab-gold/30 transition-all"
-          >
-            <div className="absolute -top-10 -right-10 w-32 h-32 bg-amber-400/5 rounded-full blur-2xl pointer-events-none" />
-            <div className="relative flex items-start gap-4">
-              <div className="w-11 h-11 rounded-lg bg-amber-400/10 flex items-center justify-center shrink-0 ring-1 ring-amber-400/20">
-                <svg className="w-5 h-5 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h3v4.5H4.5A.75.75 0 013.75 7.5V6zM9 3.75h6v4.5H9v-4.5zM15 3.75h3A2.25 2.25 0 0120.25 6v1.5a.75.75 0 01-.75.75H15v-4.5zM3.75 9h4.5v6h-4.5V9zM9 9h6v6H9V9zM15.75 9h4.5v6h-4.5V9zM3.75 15.75h4.5v4.5H6a2.25 2.25 0 01-2.25-2.25v-2.25zM9 15.75h6v4.5H9v-4.5zM15.75 15.75h4.5V18a2.25 2.25 0 01-2.25 2.25h-2.25v-4.5z" />
-                </svg>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1">
+                <h3 className="text-sm font-bold text-fab-text group-hover:text-emerald-400 transition-colors">Daily Games</h3>
+                <span className="text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-emerald-400/15 text-emerald-400 border border-emerald-400/25">7 Games</span>
               </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <h3 className="text-sm font-bold text-fab-text group-hover:text-amber-400 transition-colors">Crossword</h3>
-                  <span className="text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-teal-400/15 text-teal-400 border border-teal-400/25">New</span>
-                </div>
-                <p className="text-xs text-fab-dim leading-relaxed">Test your FaB knowledge with a daily crossword puzzle. Heroes, cards, and lore!</p>
-              </div>
-              <svg className="w-4 h-4 text-fab-dim group-hover:text-amber-400 transition-colors shrink-0 mt-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-              </svg>
+              <p className="text-xs text-fab-dim leading-relaxed">FaBdoku, Crossword, Hero Guesser, Matchup Mania, Trivia, Timeline, Connections — new puzzles every day!</p>
             </div>
-          </Link>
-        </div>
+            <svg className="w-4 h-4 text-fab-dim group-hover:text-emerald-400 transition-colors shrink-0 mt-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+            </svg>
+          </div>
+        </Link>
       )}
 
       {/* On This Day — above profile card */}
@@ -770,37 +745,24 @@ export default function Dashboard() {
                 )}
               </div>
             </CardBorderWrapper>
-            {/* Games row — compact */}
-            <div className="grid grid-cols-2 gap-3">
-              <Link
-                href="/fabdoku"
-                className="group flex items-center gap-2.5 bg-fab-surface border border-fab-border rounded-lg px-3 py-2.5 hover:border-teal-400/30 transition-colors"
-              >
-                <div className="w-8 h-8 rounded-md bg-teal-400/10 flex items-center justify-center shrink-0 ring-1 ring-teal-400/20">
-                  <svg className="w-4 h-4 text-teal-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
-                  </svg>
-                </div>
-                <div className="min-w-0">
-                  <p className="text-xs font-semibold text-fab-text group-hover:text-teal-400 transition-colors">FaBdoku</p>
-                  <p className="text-[10px] text-fab-dim">Daily puzzle</p>
-                </div>
-              </Link>
-              <Link
-                href="/crossword"
-                className="group flex items-center gap-2.5 bg-fab-surface border border-fab-border rounded-lg px-3 py-2.5 hover:border-amber-400/30 transition-colors"
-              >
-                <div className="w-8 h-8 rounded-md bg-amber-400/10 flex items-center justify-center shrink-0 ring-1 ring-amber-400/20">
-                  <svg className="w-4 h-4 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h3v4.5H4.5A.75.75 0 013.75 7.5V6zM9 3.75h6v4.5H9v-4.5zM15 3.75h3A2.25 2.25 0 0120.25 6v1.5a.75.75 0 01-.75.75H15v-4.5zM3.75 9h4.5v6h-4.5V9zM9 9h6v6H9V9zM15.75 9h4.5v6h-4.5V9zM3.75 15.75h4.5v4.5H6a2.25 2.25 0 01-2.25-2.25v-2.25zM9 15.75h6v4.5H9v-4.5zM15.75 15.75h4.5V18a2.25 2.25 0 01-2.25 2.25h-2.25v-4.5z" />
-                  </svg>
-                </div>
-                <div className="min-w-0">
-                  <p className="text-xs font-semibold text-fab-text group-hover:text-amber-400 transition-colors">Crossword</p>
-                  <p className="text-[10px] text-fab-dim">Daily puzzle</p>
-                </div>
-              </Link>
-            </div>
+            {/* Games link — compact */}
+            <Link
+              href="/games"
+              className="group flex items-center gap-2.5 bg-fab-surface border border-fab-border rounded-lg px-3 py-2.5 hover:border-emerald-400/30 transition-colors"
+            >
+              <div className="w-8 h-8 rounded-md bg-emerald-400/10 flex items-center justify-center shrink-0 ring-1 ring-emerald-400/20">
+                <svg className="w-4 h-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M14.25 6.087c0-.355.186-.676.401-.959.221-.29.349-.634.349-1.003 0-1.036-1.007-1.875-2.25-1.875s-2.25.84-2.25 1.875c0 .369.128.713.349 1.003.215.283.401.604.401.959v0a.64.64 0 01-.657.643 48.491 48.491 0 01-4.163-.3c.186 1.613.293 3.25.315 4.907a.656.656 0 01-.658.663v0c-.355 0-.676-.186-.959-.401a1.647 1.647 0 00-1.003-.349c-1.036 0-1.875 1.007-1.875 2.25s.84 2.25 1.875 2.25c.369 0 .713-.128 1.003-.349.283-.215.604-.401.959-.401v0c.31 0 .555.26.532.57a48.039 48.039 0 01-.642 5.056c1.518.19 3.058.309 4.616.354a.64.64 0 00.657-.643v0c0-.355-.186-.676-.401-.959a1.647 1.647 0 01-.349-1.003c0-1.035 1.008-1.875 2.25-1.875 1.243 0 2.25.84 2.25 1.875 0 .369-.128.713-.349 1.003-.215.283-.4.604-.4.959v0c0 .333.277.599.61.58a48.1 48.1 0 005.427-.63 48.05 48.05 0 00.582-4.717.532.532 0 00-.533-.57v0c-.355 0-.676.186-.959.401-.29.221-.634.349-1.003.349-1.035 0-1.875-1.007-1.875-2.25s.84-2.25 1.875-2.25c.37 0 .713.128 1.003.349.283.215.604.401.96.401v0a.656.656 0 00.658-.663 48.422 48.422 0 00-.37-5.36c-1.886.342-3.81.574-5.766.689a.578.578 0 01-.61-.58v0z" />
+                </svg>
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-semibold text-fab-text group-hover:text-emerald-400 transition-colors">Daily Games</p>
+                <p className="text-[10px] text-fab-dim">7 puzzles · New daily</p>
+              </div>
+              <svg className="w-3.5 h-3.5 text-fab-dim group-hover:text-emerald-400 transition-colors shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+              </svg>
+            </Link>
             {/* Quick stats + recent events + player spotlight */}
             <QuickStats overall={overall} last30={last30} />
             <RecentEvents eventStats={eventStats} playerName={profile?.displayName} />
