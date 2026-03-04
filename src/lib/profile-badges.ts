@@ -14,9 +14,10 @@ const BADGES: ProfileBadge[] = [
   { id: "trivia-player", name: "Trivia Buff", description: "Completed a FaB Trivia quiz" },
   { id: "timeline-player", name: "Historian", description: "Completed a Timeline challenge" },
   { id: "connections-player", name: "Connector", description: "Completed a Connections puzzle" },
+  { id: "feedback-contributor", name: "Feedback Hero", description: "Submitted feedback to help improve the site" },
 ];
 
-export function getProfileBadges(matchCount: number, flags?: { isCreator?: boolean; playedFabdoku?: boolean; playedCrossword?: boolean; playedHeroGuesser?: boolean; playedMatchupMania?: boolean; playedTrivia?: boolean; playedTimeline?: boolean; playedConnections?: boolean }): ProfileBadge[] {
+export function getProfileBadges(matchCount: number, flags?: { isCreator?: boolean; playedFabdoku?: boolean; playedCrossword?: boolean; playedHeroGuesser?: boolean; playedMatchupMania?: boolean; playedTrivia?: boolean; playedTimeline?: boolean; playedConnections?: boolean; submittedFeedback?: boolean }): ProfileBadge[] {
   const earned: ProfileBadge[] = [];
   if (flags?.isCreator) {
     earned.push(BADGES.find((b) => b.id === "content-creator")!);
@@ -44,6 +45,9 @@ export function getProfileBadges(matchCount: number, flags?: { isCreator?: boole
   }
   if (flags?.playedConnections) {
     earned.push(BADGES.find((b) => b.id === "connections-player")!);
+  }
+  if (flags?.submittedFeedback) {
+    earned.push(BADGES.find((b) => b.id === "feedback-contributor")!);
   }
   return earned;
 }

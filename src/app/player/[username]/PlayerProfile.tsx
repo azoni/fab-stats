@@ -48,6 +48,7 @@ import type { FaBdokuStats } from "@/lib/fabdoku/types";
 import type { CrosswordStats } from "@/lib/crossword/types";
 import { getTodayDateStr } from "@/lib/fabdoku/puzzle-generator";
 import { useCreators } from "@/hooks/useCreators";
+import { hasUserSubmittedFeedback } from "@/lib/feedback";
 import type { Creator } from "@/types";
 
 const VALID_HERO_NAMES = new Set(knownHeroes.map((h) => h.name));
@@ -89,6 +90,7 @@ export default function PlayerProfile() {
   const [fabdokuScore, setFabdokuScore] = useState<number | null>(null);
   const [fabdokuFullStats, setFabdokuFullStats] = useState<FaBdokuStats | null>(null);
   const [crosswordFullStats, setCrosswordFullStats] = useState<CrosswordStats | null>(null);
+  const [gaveFeedback, setGaveFeedback] = useState(false);
   const [previewAsVisitor, setPreviewAsVisitor] = useState(false);
   const [editingSocials, setEditingSocials] = useState(false);
   const [editingBorder, setEditingBorder] = useState(false);
@@ -294,6 +296,7 @@ export default function PlayerProfile() {
     loadUserResult(profileUid, getTodayDateStr()).then((r) => setFabdokuScore(r?.score ?? null)).catch(() => {});
     loadFabdokuStats(profileUid).then((s) => setFabdokuFullStats(s ?? null)).catch(() => {});
     loadCrosswordPlayerStats(profileUid).then((s) => setCrosswordFullStats(s ?? null)).catch(() => {});
+    hasUserSubmittedFeedback(profileUid).then(setGaveFeedback).catch(() => {});
   }, [profileUid]);
 
   // Admin: fetch friend count for the viewed profile
@@ -574,7 +577,7 @@ export default function PlayerProfile() {
                     Updated {new Date(lastUpdated).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                   </span>
                 )}
-                <BadgeStrip matchCount={matches.length} isCreator={!!creatorInfo} playedFabdoku={(fabdokuFullStats?.gamesPlayed ?? 0) >= 1 || fabdokuScore !== null} playedCrossword={(crosswordFullStats?.gamesPlayed ?? 0) >= 1} />
+                <BadgeStrip matchCount={matches.length} isCreator={!!creatorInfo} playedFabdoku={(fabdokuFullStats?.gamesPlayed ?? 0) >= 1 || fabdokuScore !== null} playedCrossword={(crosswordFullStats?.gamesPlayed ?? 0) >= 1} submittedFeedback={gaveFeedback} />
               </div>
               {/* Social links */}
               {(profile.socialLinks?.twitter || profile.socialLinks?.discord || profile.socialLinks?.fabrary || isOwner) && !editingSocials && (
@@ -1047,6 +1050,7 @@ export default function PlayerProfile() {
             isCreator: !!creatorInfo,
             playedFabdoku: (fabdokuFullStats?.gamesPlayed ?? 0) >= 1 || fabdokuScore !== null,
             playedCrossword: (crosswordFullStats?.gamesPlayed ?? 0) >= 1,
+            submittedFeedback: gaveFeedback,
           }}
           onClose={() => setProfileShareOpen(false)}
         />

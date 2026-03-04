@@ -280,6 +280,35 @@ export function ConnectionsPlayerBadge({ className = "w-5 h-5" }: { className?: 
   );
 }
 
+export function FeedbackContributorBadge({ className = "w-5 h-5" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="none">
+      <defs>
+        <radialGradient id="fbGlow" cx="0.5" cy="0.5" r="0.5">
+          <stop offset="0%" stopColor="#ec4899" stopOpacity="0.25" />
+          <stop offset="100%" stopColor="#ec4899" stopOpacity="0" />
+        </radialGradient>
+      </defs>
+      <circle cx="12" cy="12" r="11" fill="url(#fbGlow)" />
+      <path
+        d="M12 2.5c5.2.1 9.3 4.3 9.5 9.5.1 5.2-4.1 9.5-9.3 9.5S2.6 17.3 2.5 12.1C2.4 6.9 6.8 2.4 12 2.5z"
+        stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"
+        fill="currentColor" fillOpacity="0.08"
+      />
+      {/* Speech bubble */}
+      <path
+        d="M6 7h12a1 1 0 011 1v6a1 1 0 01-1 1h-3l-3 3-3-3H6a1 1 0 01-1-1V8a1 1 0 011-1z"
+        fill="#ec4899" fillOpacity="0.2" stroke="#ec4899" strokeWidth="0.8" strokeLinejoin="round"
+      />
+      {/* Heart inside bubble */}
+      <path
+        d="M12 13.5l-2.5-2.3a1.5 1.5 0 012.5-1.2 1.5 1.5 0 012.5 1.2L12 13.5z"
+        fill="#ec4899" fillOpacity="0.7"
+      />
+    </svg>
+  );
+}
+
 export const BADGE_ICON_MAP: Record<string, React.FC<{ className?: string }>> = {
   "first-match": FirstMatchBadge,
   "content-creator": ContentCreatorBadge,
@@ -290,4 +319,5 @@ export const BADGE_ICON_MAP: Record<string, React.FC<{ className?: string }>> = 
   "trivia-player": TriviaPlayerBadge,
   "timeline-player": TimelinePlayerBadge,
   "connections-player": ConnectionsPlayerBadge,
+  "feedback-contributor": FeedbackContributorBadge,
 };

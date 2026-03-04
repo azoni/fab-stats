@@ -6,6 +6,8 @@ import {
   updateDoc,
   query,
   orderBy,
+  where,
+  limit,
 } from "firebase/firestore";
 import { db } from "./firebase";
 import type { FeedbackItem, UserProfile } from "@/types";
@@ -44,6 +46,16 @@ export async function getAllFeedback(): Promise<FeedbackItem[]> {
     id: d.id,
     ...d.data(),
   })) as FeedbackItem[];
+}
+
+export async function hasUserSubmittedFeedback(userId: string): Promise<boolean> {
+  try {
+    const q = query(feedbackCollection(), where("userId", "==", userId), limit(1));
+    const snap = await getDocs(q);
+    return !snap.empty;
+  } catch {
+    return false;
+  }
 }
 
 export async function updateFeedbackStatus(

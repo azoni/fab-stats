@@ -248,6 +248,8 @@ service cloud.firestore {
         && request.resource.data.userId == request.auth.uid
         && maxLen(request.resource.data.message, 2000)
         && request.resource.data.type in ["bug", "feature"];
+      // Users can read their own feedback; admins can read all + update status
+      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
       allow read, update: if isAdmin();
     }
 

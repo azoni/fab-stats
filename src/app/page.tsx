@@ -36,6 +36,7 @@ import type { FaBdokuStats } from "@/lib/fabdoku/types";
 import type { CrosswordStats } from "@/lib/crossword/types";
 import { getTodayDateStr } from "@/lib/fabdoku/puzzle-generator";
 import { loadKudosCounts } from "@/lib/kudos";
+import { hasUserSubmittedFeedback } from "@/lib/feedback";
 import { CardBorderWrapper } from "@/components/profile/CardBorderWrapper";
 import type { UnderlineConfig } from "@/components/profile/CardBorderWrapper";
 import { GAMES } from "@/lib/games";
@@ -207,6 +208,7 @@ export default function Dashboard() {
   const [fabdokuScore, setFabdokuScore] = useState<number | null>(null);
   const [fabdokuFullStats, setFabdokuFullStats] = useState<FaBdokuStats | null>(null);
   const [crosswordFullStats, setCrosswordFullStats] = useState<CrosswordStats | null>(null);
+  const [gaveFeedback, setGaveFeedback] = useState(false);
   const [kudosTotal, setKudosTotal] = useState<number | null>(null);
   const leaderboardUpdated = useRef(false);
 
@@ -217,6 +219,7 @@ export default function Dashboard() {
     loadStats(user.uid).then((s) => setFabdokuFullStats(s ?? null)).catch(() => {});
     loadCrosswordStats(user.uid).then((s) => setCrosswordFullStats(s ?? null)).catch(() => {});
     loadKudosCounts(user.uid).then((c) => setKudosTotal(c.total > 0 ? c.total : null)).catch(() => {});
+    hasUserSubmittedFeedback(user.uid).then(setGaveFeedback).catch(() => {});
   }, [user]);
 
   // Fetch active prediction + event showcase config
@@ -740,7 +743,7 @@ export default function Dashboard() {
                   )}
                 </div>
               </div>
-              <BadgeStrip matchCount={matches.length} isCreator={isCreator} playedFabdoku={(fabdokuFullStats?.gamesPlayed ?? 0) >= 1 || fabdokuScore !== null} playedCrossword={(crosswordFullStats?.gamesPlayed ?? 0) >= 1} className="mt-2 ml-1" />
+              <BadgeStrip matchCount={matches.length} isCreator={isCreator} playedFabdoku={(fabdokuFullStats?.gamesPlayed ?? 0) >= 1 || fabdokuScore !== null} playedCrossword={(crosswordFullStats?.gamesPlayed ?? 0) >= 1} submittedFeedback={gaveFeedback} className="mt-2 ml-1" />
               {/* Score badges — bottom right */}
               <div className="absolute bottom-1.5 right-2.5 flex items-center gap-1.5 z-10">
                 {kudosTotal !== null && (
@@ -877,6 +880,7 @@ export default function Dashboard() {
             isCreator,
             playedFabdoku: (fabdokuFullStats?.gamesPlayed ?? 0) >= 1,
             playedCrossword: (crosswordFullStats?.gamesPlayed ?? 0) >= 1,
+            submittedFeedback: gaveFeedback,
           }}
           onClose={() => setProfileShareOpen(false)}
         />
