@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
+import { GameNav } from "@/components/games/GameNav";
 import { CrosswordGrid } from "@/components/crossword/CrosswordGrid";
 import { CrosswordClues } from "@/components/crossword/CrosswordClues";
 import { CrosswordResult } from "@/components/crossword/CrosswordResult";
@@ -418,6 +418,8 @@ export default function CrosswordPage() {
 
   return (
     <div className="max-w-lg mx-auto px-3 sm:px-4 py-4 sm:py-6">
+      <GameNav current="crossword" />
+
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
@@ -425,9 +427,6 @@ export default function CrosswordPage() {
             <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
           </svg>
           <h1 className="text-lg font-bold text-fab-text">FaB Crossword</h1>
-          <Link href="/fabdoku" className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold text-fab-dim hover:text-fab-text bg-fab-bg border border-fab-border hover:border-fab-gold/30 transition-colors">
-            FaBdoku &rarr;
-          </Link>
           <span className="text-xs text-fab-dim">{dateStr}</span>
         </div>
         <div className="flex items-center gap-2">
