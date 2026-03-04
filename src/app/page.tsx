@@ -32,8 +32,18 @@ import { BadgeStrip } from "@/components/profile/BadgeStrip";
 import { getHeroByName } from "@/lib/heroes";
 import { loadUserResult, loadStats } from "@/lib/fabdoku/firestore";
 import { loadStats as loadCrosswordStats } from "@/lib/crossword/firestore";
+import { loadStats as loadHeroGuesserStats } from "@/lib/heroguesser/firestore";
+import { loadStats as loadMatchupManiaStats } from "@/lib/matchupmania/firestore";
+import { loadStats as loadTriviaStats } from "@/lib/trivia/firestore";
+import { loadStats as loadTimelineStats } from "@/lib/timeline/firestore";
+import { loadStats as loadConnectionsStats } from "@/lib/connections/firestore";
 import type { FaBdokuStats } from "@/lib/fabdoku/types";
 import type { CrosswordStats } from "@/lib/crossword/types";
+import type { HeroGuesserStats } from "@/lib/heroguesser/types";
+import type { MatchupManiaStats } from "@/lib/matchupmania/types";
+import type { TriviaStats } from "@/lib/trivia/types";
+import type { TimelineStats } from "@/lib/timeline/types";
+import type { ConnectionsStats } from "@/lib/connections/types";
 import { getTodayDateStr } from "@/lib/fabdoku/puzzle-generator";
 import { loadKudosCounts } from "@/lib/kudos";
 import { hasUserSubmittedFeedback } from "@/lib/feedback";
@@ -121,6 +131,13 @@ function ResourcesPopout() {
   );
 }
 
+function hasPlayedToday(slug: string): boolean {
+  if (typeof window === "undefined") return false;
+  const now = new Date();
+  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  try { return localStorage.getItem(`${slug}-${today}`) !== null; } catch { return false; }
+}
+
 function GamesPopout() {
   const [open, setOpen] = useState(false);
   const btnRef = useRef<HTMLButtonElement>(null);
@@ -171,22 +188,30 @@ function GamesPopout() {
           style={{ top: pos.top, left: pos.left }}
         >
           <div className="p-1.5">
-            {GAMES.map((game) => (
-              <Link
-                key={game.href}
-                href={game.href}
-                onClick={() => setOpen(false)}
-                className="flex items-center gap-2.5 px-3 py-2 rounded-md text-sm font-medium text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover transition-colors"
-              >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d={game.iconPath} />
-                </svg>
-                <div>
-                  <p className="text-sm font-medium leading-tight">{game.label}</p>
-                  <p className="text-[10px] text-fab-dim leading-tight">{game.subtitle}</p>
-                </div>
-              </Link>
-            ))}
+            {GAMES.map((game) => {
+              const played = hasPlayedToday(game.slug);
+              return (
+                <Link
+                  key={game.href}
+                  href={game.href}
+                  onClick={() => setOpen(false)}
+                  className="flex items-center gap-2.5 px-3 py-2 rounded-md text-sm font-medium text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover transition-colors"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d={game.iconPath} />
+                  </svg>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium leading-tight">{game.label}</p>
+                    <p className="text-[10px] text-fab-dim leading-tight">{game.subtitle}</p>
+                  </div>
+                  {played && (
+                    <svg className="w-4 h-4 text-fab-win shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  )}
+                </Link>
+              );
+            })}
           </div>
         </div>
       )}
@@ -208,6 +233,11 @@ export default function Dashboard() {
   const [fabdokuScore, setFabdokuScore] = useState<number | null>(null);
   const [fabdokuFullStats, setFabdokuFullStats] = useState<FaBdokuStats | null>(null);
   const [crosswordFullStats, setCrosswordFullStats] = useState<CrosswordStats | null>(null);
+  const [heroGuesserFullStats, setHeroGuesserFullStats] = useState<HeroGuesserStats | null>(null);
+  const [matchupManiaFullStats, setMatchupManiaFullStats] = useState<MatchupManiaStats | null>(null);
+  const [triviaFullStats, setTriviaFullStats] = useState<TriviaStats | null>(null);
+  const [timelineFullStats, setTimelineFullStats] = useState<TimelineStats | null>(null);
+  const [connectionsFullStats, setConnectionsFullStats] = useState<ConnectionsStats | null>(null);
   const [gaveFeedback, setGaveFeedback] = useState(false);
   const [kudosTotal, setKudosTotal] = useState<number | null>(null);
   const leaderboardUpdated = useRef(false);
@@ -218,6 +248,11 @@ export default function Dashboard() {
     loadUserResult(user.uid, getTodayDateStr()).then((r) => setFabdokuScore(r?.score ?? null)).catch(() => {});
     loadStats(user.uid).then((s) => setFabdokuFullStats(s ?? null)).catch(() => {});
     loadCrosswordStats(user.uid).then((s) => setCrosswordFullStats(s ?? null)).catch(() => {});
+    loadHeroGuesserStats(user.uid).then((s) => setHeroGuesserFullStats(s ?? null)).catch(() => {});
+    loadMatchupManiaStats(user.uid).then((s) => setMatchupManiaFullStats(s ?? null)).catch(() => {});
+    loadTriviaStats(user.uid).then((s) => setTriviaFullStats(s ?? null)).catch(() => {});
+    loadTimelineStats(user.uid).then((s) => setTimelineFullStats(s ?? null)).catch(() => {});
+    loadConnectionsStats(user.uid).then((s) => setConnectionsFullStats(s ?? null)).catch(() => {});
     loadKudosCounts(user.uid).then((c) => setKudosTotal(c.total > 0 ? c.total : null)).catch(() => {});
     hasUserSubmittedFeedback(user.uid).then(setGaveFeedback).catch(() => {});
   }, [user]);
@@ -718,7 +753,7 @@ export default function Dashboard() {
                   )}
                 </div>
               </div>
-              <BadgeStrip matchCount={matches.length} isCreator={isCreator} playedFabdoku={(fabdokuFullStats?.gamesPlayed ?? 0) >= 1 || fabdokuScore !== null} playedCrossword={(crosswordFullStats?.gamesPlayed ?? 0) >= 1} submittedFeedback={gaveFeedback} className="mt-2 ml-1" />
+              <BadgeStrip matchCount={matches.length} isCreator={isCreator} playedFabdoku={(fabdokuFullStats?.gamesPlayed ?? 0) >= 1 || fabdokuScore !== null} playedCrossword={(crosswordFullStats?.gamesPlayed ?? 0) >= 1} playedHeroGuesser={(heroGuesserFullStats?.gamesPlayed ?? 0) >= 1} playedMatchupMania={(matchupManiaFullStats?.gamesPlayed ?? 0) >= 1} playedTrivia={(triviaFullStats?.gamesPlayed ?? 0) >= 1} playedTimeline={(timelineFullStats?.gamesPlayed ?? 0) >= 1} playedConnections={(connectionsFullStats?.gamesPlayed ?? 0) >= 1} submittedFeedback={gaveFeedback} className="mt-2 ml-1" />
               {/* Score badges — bottom right */}
               <div className="absolute bottom-1.5 right-2.5 flex items-center gap-1.5 z-10">
                 {kudosTotal !== null && (
@@ -842,6 +877,11 @@ export default function Dashboard() {
             isCreator,
             playedFabdoku: (fabdokuFullStats?.gamesPlayed ?? 0) >= 1,
             playedCrossword: (crosswordFullStats?.gamesPlayed ?? 0) >= 1,
+            playedHeroGuesser: (heroGuesserFullStats?.gamesPlayed ?? 0) >= 1,
+            playedMatchupMania: (matchupManiaFullStats?.gamesPlayed ?? 0) >= 1,
+            playedTrivia: (triviaFullStats?.gamesPlayed ?? 0) >= 1,
+            playedTimeline: (timelineFullStats?.gamesPlayed ?? 0) >= 1,
+            playedConnections: (connectionsFullStats?.gamesPlayed ?? 0) >= 1,
             submittedFeedback: gaveFeedback,
           }}
           onClose={() => setProfileShareOpen(false)}
