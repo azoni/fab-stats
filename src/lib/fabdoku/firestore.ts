@@ -45,13 +45,10 @@ export async function saveResult(
 ): Promise<void> {
   // Save result (overwrites if played on another device)
   const resultRef = doc(db, RESULTS_COL, `${result.date}_${uid}`);
-  const existingResult = await getDoc(resultRef);
   await setDoc(resultRef, { uid, ...result });
 
-  // Skip stats update if this date was already counted (cross-device replay)
-  if (existingResult.exists()) return;
-
-  // Update stats
+  // Update stats — check lastPlayedDate to avoid double-counting
+  // (more robust than checking result doc, which could exist without stats)
   const statsRef = doc(db, "users", uid, STATS_DOC, "data");
   const statsSnap = await getDoc(statsRef);
   const prev: FaBdokuStats = statsSnap.exists()
@@ -63,6 +60,9 @@ export async function saveResult(
         maxStreak: 0,
         lastPlayedDate: "",
       };
+
+  // Skip stats update if this date was already counted
+  if (prev.lastPlayedDate === result.date) return;
 
   // Calculate streak
   const yesterday = getDateOffset(result.date, -1);

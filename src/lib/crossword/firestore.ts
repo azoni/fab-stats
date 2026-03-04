@@ -8,17 +8,17 @@ const STATS_PUBLIC_COL = "crosswordPlayerStats";
 
 export async function saveResult(uid: string, result: CrosswordResult): Promise<void> {
   const resultRef = doc(db, RESULTS_COL, `${result.date}_${uid}`);
-  const existing = await getDoc(resultRef);
   await setDoc(resultRef, { uid, ...result });
 
-  // Skip stats update if already counted (cross-device)
-  if (existing.exists()) return;
-
+  // Update stats — check lastPlayedDate to avoid double-counting
   const statsRef = doc(db, "users", uid, STATS_DOC, "data");
   const statsSnap = await getDoc(statsRef);
   const prev: CrosswordStats = statsSnap.exists()
     ? (statsSnap.data() as CrosswordStats)
     : { gamesPlayed: 0, gamesWon: 0, currentStreak: 0, maxStreak: 0, lastPlayedDate: "" };
+
+  // Skip stats update if this date was already counted
+  if (prev.lastPlayedDate === result.date) return;
 
   const yesterday = getDateOffset(result.date, -1);
   const streakContinues = prev.lastPlayedDate === yesterday && result.won;
