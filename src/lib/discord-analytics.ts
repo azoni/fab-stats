@@ -48,6 +48,8 @@ export interface BotAnalytics {
   totalCommandCount: number;
   /** Total unique users who have used commands */
   totalUniqueUsers: number;
+  /** Per-server total command counts (serverId → count) */
+  serverCommandCounts?: Record<string, number>;
   /** Last updated timestamp */
   updatedAt: number;
 }

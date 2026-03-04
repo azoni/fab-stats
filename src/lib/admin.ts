@@ -215,6 +215,17 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
   return result;
 }
 
+/** Fetch the number of deleted accounts from admin/stats */
+export async function getDeletedAccountCount(): Promise<number> {
+  try {
+    const snap = await getDoc(doc(db, "admin", "stats"));
+    if (!snap.exists()) return 0;
+    return (snap.data().deletedAccounts as number) || 0;
+  } catch {
+    return 0;
+  }
+}
+
 export interface ChatGlobalStats {
   totalMessages: number;
   totalCost: number;

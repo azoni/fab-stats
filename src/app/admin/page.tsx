@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
-import { getAdminDashboardData, getChatGlobalStats, getAdminChatMessages, backfillLeaderboard, backfillPlacementFeedEvents, broadcastMessage, fixMatchDates, backfillGemIds, backfillMatchLinking, backfillH2H, backfillHeroMatchups, type AdminDashboardData, type AdminUserStats, type ChatGlobalStats } from "@/lib/admin";
+import { getAdminDashboardData, getChatGlobalStats, getAdminChatMessages, getDeletedAccountCount, backfillLeaderboard, backfillPlacementFeedEvents, broadcastMessage, fixMatchDates, backfillGemIds, backfillMatchLinking, backfillH2H, backfillHeroMatchups, type AdminDashboardData, type AdminUserStats, type ChatGlobalStats } from "@/lib/admin";
 import { getAllFeedback, updateFeedbackStatus } from "@/lib/feedback";
 import { getCreators, saveCreators } from "@/lib/creators";
 import { getEvents, saveEvents } from "@/lib/featured-events";
@@ -149,6 +149,7 @@ export default function AdminPage() {
   const [chatLogUid, setChatLogUid] = useState<string | null>(null);
   const [chatLogMessages, setChatLogMessages] = useState<any[]>([]);
   const [chatLogLoading, setChatLogLoading] = useState(false);
+  const [deletedAccounts, setDeletedAccounts] = useState(0);
   // Discord bot analytics
   const [botAnalytics, setBotAnalytics] = useState<BotAnalytics | null>(null);
   const [botDaily, setBotDaily] = useState<DailyUsage[]>([]);
@@ -174,9 +175,10 @@ export default function AdminPage() {
     setFetching(true);
     setError("");
     try {
-      const [result, fb, cr, ev, analytics, polls, bannerData, badges, muted, showcaseData, themeDefault, chatStats, seasonsData] = await Promise.all([getAdminDashboardData(), getAllFeedback(), getCreators(), getEvents(), getAnalytics(), getAllPolls(), getBanner(), getAllBadgeAssignments(), getMutedUserIds(), getEventShowcase(), getDefaultTheme(), getChatGlobalStats(), getSeasons()]);
+      const [result, fb, cr, ev, analytics, polls, bannerData, badges, muted, showcaseData, themeDefault, chatStats, seasonsData, deletedCount] = await Promise.all([getAdminDashboardData(), getAllFeedback(), getCreators(), getEvents(), getAnalytics(), getAllPolls(), getBanner(), getAllBadgeAssignments(), getMutedUserIds(), getEventShowcase(), getDefaultTheme(), getChatGlobalStats(), getSeasons(), getDeletedAccountCount()]);
       setData(result);
       setAiCost(chatStats);
+      setDeletedAccounts(deletedCount);
       setFeedback(fb);
       setCreatorsList(cr);
       setEventsList(ev.map((e: any) => ({
@@ -529,6 +531,7 @@ export default function AdminPage() {
                 <button onClick={() => { setActiveTab("users"); setStatusFilter("chat"); }} className="text-left">
                   <MetricCard label="AI Chat Cost" value={aiCost.totalCost.toFixed(4)} prefix="$" subtext={`${aiCost.totalMessages} msgs · ${Object.keys(aiCost.users).length} users`} />
                 </button>
+                {deletedAccounts > 0 && <MetricCard label="Deleted Accounts" value={deletedAccounts} />}
               </div>
             );
           })()}
@@ -2411,13 +2414,15 @@ export default function AdminPage() {
 
               {/* Servers List */}
               {botAnalytics.heartbeat?.servers?.length > 0 && (() => {
-                // Build per-server command counts from the log (no extra reads)
+                // Build per-server command breakdown from the log
                 const serverCmds: Record<string, Record<string, number>> = {};
                 for (const entry of botLog) {
                   if (!entry.serverId) continue;
                   if (!serverCmds[entry.serverId]) serverCmds[entry.serverId] = {};
                   serverCmds[entry.serverId][entry.command] = (serverCmds[entry.serverId][entry.command] || 0) + 1;
                 }
+                // All-time per-server totals from analytics (more accurate than log-based)
+                const serverTotals = botAnalytics.serverCommandCounts || {};
                 return (
                   <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden">
                     <div className="px-4 py-3 border-b border-fab-border">
@@ -2425,11 +2430,11 @@ export default function AdminPage() {
                     </div>
                     <div className="divide-y divide-fab-border">
                       {[...botAnalytics.heartbeat.servers]
-                        .sort((a, b) => b.memberCount - a.memberCount)
+                        .sort((a, b) => (serverTotals[b.id] || 0) - (serverTotals[a.id] || 0) || b.memberCount - a.memberCount)
                         .map((s) => {
+                          const allTimeTotal = serverTotals[s.id] || 0;
                           const cmds = serverCmds[s.id];
                           const cmdEntries = cmds ? Object.entries(cmds).sort(([, a], [, b]) => b - a) : [];
-                          const cmdTotal = cmdEntries.reduce((sum, [, c]) => sum + c, 0);
                           return (
                             <div key={s.id} className="px-4 py-2.5">
                               <div className="flex items-center justify-between">
@@ -2442,6 +2447,11 @@ export default function AdminPage() {
                                     </div>
                                   )}
                                   <span className="text-sm text-fab-text">{s.name}</span>
+                                  {allTimeTotal > 0 && (
+                                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-fab-gold/10 text-fab-gold font-medium">
+                                      {allTimeTotal} commands
+                                    </span>
+                                  )}
                                 </div>
                                 <div className="text-xs text-fab-muted">
                                   {s.memberCount.toLocaleString()} members
@@ -2455,9 +2465,7 @@ export default function AdminPage() {
                                       /{cmd} <span className="text-fab-muted font-medium">{count}</span>
                                     </span>
                                   ))}
-                                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-fab-gold/10 text-fab-gold font-medium">
-                                    {cmdTotal} total
-                                  </span>
+                                  <span className="text-[10px] text-fab-dim">(recent)</span>
                                 </div>
                               )}
                             </div>

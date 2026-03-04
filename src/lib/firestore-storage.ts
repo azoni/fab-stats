@@ -14,6 +14,7 @@ import {
   limit,
   writeBatch,
   runTransaction,
+  increment,
   type Unsubscribe,
 } from "firebase/firestore";
 import { db } from "./firebase";
@@ -435,6 +436,11 @@ export async function deleteAccountData(userId: string): Promise<void> {
       await friendBatch.commit();
     }
   } catch { /* may not exist */ }
+
+  // Track deletion count for admin stats
+  try {
+    await setDoc(doc(db, "admin", "stats"), { deletedAccounts: increment(1) }, { merge: true });
+  } catch { /* non-critical */ }
 }
 
 /** Send a hero correction request notification to a linked opponent. */
