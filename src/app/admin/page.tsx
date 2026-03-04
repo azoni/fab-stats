@@ -155,10 +155,10 @@ export default function AdminPage() {
   const [botLog, setBotLog] = useState<CommandLogEntry[]>([]);
   const [botLoading, setBotLoading] = useState(false);
   const anyToolRunning = fixingDates || backfilling || backfillingGemIds || linkingMatches || resyncingH2H || backfillingMatchups || backfillingPlacements;
-  const [activeTab, setActiveTab] = useState<"overview" | "users" | "feedback" | "content" | "poll" | "tools" | "discord">(() => {
+  const [activeTab, setActiveTab] = useState<"overview" | "users" | "feedback" | "content" | "poll" | "tools" | "discord" | "games">(() => {
     if (typeof window !== "undefined") {
       const hash = window.location.hash.replace("#", "");
-      if (["overview", "users", "feedback", "content", "poll", "tools", "discord"].includes(hash)) return hash as any;
+      if (["overview", "users", "feedback", "content", "poll", "tools", "discord", "games"].includes(hash)) return hash as any;
     }
     return "overview";
   });
@@ -316,6 +316,7 @@ export default function AdminPage() {
           { id: "feedback", label: "Feedback", badge: feedback.filter((f) => f.status === "new").length },
           { id: "content", label: "Content" },
           { id: "poll", label: "Poll" },
+          { id: "games", label: "Games" },
           { id: "discord", label: "Discord Bot" },
           { id: "tools", label: "Tools" },
         ] as const).map((tab) => (
@@ -2553,6 +2554,8 @@ export default function AdminPage() {
           </>}
 
           {/* ── Tools Tab: Broadcast ── */}
+          {activeTab === "games" && <GameAnalytics />}
+
           {activeTab === "tools" && <>
           {/* Broadcast Message */}
           <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden">
@@ -2612,6 +2615,182 @@ export default function AdminPage() {
         </>
       ) : null}
     </div>
+  );
+}
+
+// ── Game Analytics Component ──
+const GAME_COLLECTIONS = [
+  { id: "fabdoku", label: "FaBdoku", collection: "fabdoku-results" },
+  { id: "crossword", label: "Crossword", collection: "crossword-results" },
+  { id: "heroguesser", label: "Hero Guesser", collection: "heroguesser-results" },
+  { id: "matchupmania", label: "Matchup Mania", collection: "matchupmania-results" },
+  { id: "trivia", label: "Trivia", collection: "trivia-results" },
+  { id: "timeline", label: "Timeline", collection: "timeline-results" },
+  { id: "connections", label: "Connections", collection: "connections-results" },
+] as const;
+
+interface GameStats {
+  id: string;
+  label: string;
+  today: number;
+  todayWins: number;
+  week: number;
+  weekWins: number;
+  total: number;
+  totalWins: number;
+  uniqueToday: number;
+  uniqueWeek: number;
+}
+
+function GameAnalytics() {
+  const [stats, setStats] = useState<GameStats[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadGameStats().then(setStats).finally(() => setLoading(false));
+  }, []);
+
+  if (loading) {
+    return <div className="text-fab-muted text-sm animate-pulse py-8 text-center">Loading game analytics...</div>;
+  }
+
+  const totals = stats.reduce(
+    (acc, g) => ({
+      today: acc.today + g.today,
+      todayWins: acc.todayWins + g.todayWins,
+      week: acc.week + g.week,
+      weekWins: acc.weekWins + g.weekWins,
+      total: acc.total + g.total,
+      totalWins: acc.totalWins + g.totalWins,
+      uniqueToday: acc.uniqueToday + g.uniqueToday,
+      uniqueWeek: acc.uniqueWeek + g.uniqueWeek,
+    }),
+    { today: 0, todayWins: 0, week: 0, weekWins: 0, total: 0, totalWins: 0, uniqueToday: 0, uniqueWeek: 0 }
+  );
+
+  return (
+    <div className="space-y-6">
+      {/* Summary cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {[
+          { label: "Today", value: totals.today, sub: `${totals.uniqueToday} players` },
+          { label: "This Week", value: totals.week, sub: `${totals.uniqueWeek} players` },
+          { label: "All Time", value: totals.total, sub: `${totals.totalWins} wins` },
+          { label: "Win Rate", value: totals.total ? `${((totals.totalWins / totals.total) * 100).toFixed(1)}%` : "–", sub: "all games" },
+        ].map((card) => (
+          <div key={card.label} className="bg-fab-surface border border-fab-border rounded-lg p-3">
+            <p className="text-xs text-fab-dim">{card.label}</p>
+            <p className="text-xl font-bold text-fab-text mt-0.5">{card.value}</p>
+            <p className="text-[10px] text-fab-dim mt-0.5">{card.sub}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Per-game table */}
+      <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden">
+        <div className="px-4 py-3 border-b border-fab-border">
+          <h2 className="text-sm font-semibold text-fab-text">Per-Game Breakdown</h2>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-fab-border text-fab-dim text-xs">
+                <th className="text-left px-4 py-2 font-medium">Game</th>
+                <th className="text-right px-4 py-2 font-medium">Today</th>
+                <th className="text-right px-4 py-2 font-medium">Players</th>
+                <th className="text-right px-4 py-2 font-medium">Win %</th>
+                <th className="text-right px-4 py-2 font-medium">Week</th>
+                <th className="text-right px-4 py-2 font-medium">Players</th>
+                <th className="text-right px-4 py-2 font-medium">Win %</th>
+                <th className="text-right px-4 py-2 font-medium">All Time</th>
+                <th className="text-right px-4 py-2 font-medium">Win %</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-fab-border">
+              {stats.map((g) => (
+                <tr key={g.id} className="text-fab-muted hover:bg-fab-surface-hover transition-colors">
+                  <td className="px-4 py-2 font-medium text-fab-text">{g.label}</td>
+                  <td className="px-4 py-2 text-right">{g.today || "–"}</td>
+                  <td className="px-4 py-2 text-right text-fab-dim">{g.uniqueToday || "–"}</td>
+                  <td className="px-4 py-2 text-right">{g.today ? `${((g.todayWins / g.today) * 100).toFixed(0)}%` : "–"}</td>
+                  <td className="px-4 py-2 text-right">{g.week || "–"}</td>
+                  <td className="px-4 py-2 text-right text-fab-dim">{g.uniqueWeek || "–"}</td>
+                  <td className="px-4 py-2 text-right">{g.week ? `${((g.weekWins / g.week) * 100).toFixed(0)}%` : "–"}</td>
+                  <td className="px-4 py-2 text-right">{g.total}</td>
+                  <td className="px-4 py-2 text-right">{g.total ? `${((g.totalWins / g.total) * 100).toFixed(0)}%` : "–"}</td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr className="border-t-2 border-fab-border text-fab-text font-medium">
+                <td className="px-4 py-2">Total</td>
+                <td className="px-4 py-2 text-right">{totals.today}</td>
+                <td className="px-4 py-2 text-right text-fab-dim">{totals.uniqueToday}</td>
+                <td className="px-4 py-2 text-right">{totals.today ? `${((totals.todayWins / totals.today) * 100).toFixed(0)}%` : "–"}</td>
+                <td className="px-4 py-2 text-right">{totals.week}</td>
+                <td className="px-4 py-2 text-right text-fab-dim">{totals.uniqueWeek}</td>
+                <td className="px-4 py-2 text-right">{totals.week ? `${((totals.weekWins / totals.week) * 100).toFixed(0)}%` : "–"}</td>
+                <td className="px-4 py-2 text-right">{totals.total}</td>
+                <td className="px-4 py-2 text-right">{totals.total ? `${((totals.totalWins / totals.total) * 100).toFixed(0)}%` : "–"}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+async function loadGameStats(): Promise<GameStats[]> {
+  const { collection, query, where, getDocs, getCountFromServer } = await import("firebase/firestore");
+  const { db } = await import("@/lib/firebase");
+
+  const today = new Date().toISOString().slice(0, 10);
+  const weekAgo = new Date(Date.now() - 7 * 86400_000).toISOString().slice(0, 10);
+
+  return Promise.all(
+    GAME_COLLECTIONS.map(async (game) => {
+      const col = collection(db, game.collection);
+
+      // Today's results
+      const todaySnap = await getDocs(query(col, where("date", "==", today)));
+      const todayDocs = todaySnap.docs.map((d) => d.data());
+      const todayWins = todayDocs.filter((d) => d.won).length;
+      const uniqueToday = new Set(todayDocs.map((d) => d.uid)).size;
+
+      // This week's results
+      const weekSnap = await getDocs(query(col, where("date", ">=", weekAgo)));
+      const weekDocs = weekSnap.docs.map((d) => d.data());
+      const weekWins = weekDocs.filter((d) => d.won).length;
+      const uniqueWeek = new Set(weekDocs.map((d) => d.uid)).size;
+
+      // All-time count
+      let total = 0;
+      let totalWins = 0;
+      try {
+        const countSnap = await getCountFromServer(col);
+        total = countSnap.data().count;
+        const winsSnap = await getCountFromServer(query(col, where("won", "==", true)));
+        totalWins = winsSnap.data().count;
+      } catch {
+        // Fallback: estimate from week data if count not supported
+        total = weekDocs.length;
+        totalWins = weekWins;
+      }
+
+      return {
+        id: game.id,
+        label: game.label,
+        today: todayDocs.length,
+        todayWins,
+        week: weekDocs.length,
+        weekWins,
+        total,
+        totalWins,
+        uniqueToday,
+        uniqueWeek,
+      };
+    })
   );
 }
 
