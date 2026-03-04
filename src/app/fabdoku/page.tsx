@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 
 function GridIcon({ className }: { className?: string }) {
@@ -88,6 +88,24 @@ export default function FaBdokuPage() {
   const [showRecap, setShowRecap] = useState(false);
   const [showYesterdayShare, setShowYesterdayShare] = useState(false);
   const [isReplay, setIsReplay] = useState(false);
+  const sharedDatesRef = useRef(new Set<string>());
+
+  // Fire markShared + feed event (deduped per date so multiple clicks don't spam)
+  const triggerShared = useCallback((gs: GameState, date: string, uq: UniquenessData | null) => {
+    if (sharedDatesRef.current.has(date)) return;
+    sharedDatesRef.current.add(date);
+    if (user?.uid) {
+      markShared(user.uid).catch(() => {});
+    }
+    if (profile) {
+      const cc = gs.cells.flat().filter((c) => c.correct).length;
+      createFaBdokuFeedEvent(
+        profile, "shared", date, gs.won, cc,
+        gs.guessesUsed, buildGrid(gs),
+        uq?.score,
+      ).catch((err) => console.error("FaBdoku feed event failed:", err));
+    }
+  }, [user?.uid, profile]);
 
   // Track which hero names have already been guessed (no reuse).
   // Excludes the hero in the currently selected cell so it can be replaced.
@@ -433,18 +451,9 @@ export default function FaBdokuPage() {
           uniqueness={uniqueness}
           onShare={() => {
             setShowShare(true);
-            if (profile) {
-              const cc = gameState.cells.flat().filter((c) => c.correct).length;
-              createFaBdokuFeedEvent(
-                profile, "shared", dateStr, gameState.won, cc,
-                gameState.guessesUsed, buildGrid(gameState),
-                uniqueness?.score,
-              ).catch((err) => console.error("FaBdoku feed event failed:", err));
-            }
-            if (user?.uid) {
-              markShared(user.uid).catch(() => {});
-            }
+            triggerShared(gameState, dateStr, uniqueness);
           }}
+          onCopy={() => triggerShared(gameState, dateStr, uniqueness)}
         />
       )}
 
@@ -567,6 +576,7 @@ export default function FaBdokuPage() {
           gameState={gameState}
           uniqueness={uniqueness}
           onClose={() => setShowShare(false)}
+          onShared={() => triggerShared(gameState, dateStr, uniqueness)}
         />
       )}
 
@@ -575,6 +585,7 @@ export default function FaBdokuPage() {
           gameState={yesterdayGameState}
           uniqueness={yesterdayScore}
           onClose={() => setShowYesterdayShare(false)}
+          onShared={() => triggerShared(yesterdayGameState, yesterdayStr, yesterdayScore)}
         />
       )}
     </div>

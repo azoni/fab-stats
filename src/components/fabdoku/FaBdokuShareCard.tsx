@@ -40,9 +40,10 @@ interface FaBdokuShareCardProps {
   gameState: GameState;
   uniqueness: UniquenessData | null;
   onClose: () => void;
+  onShared?: () => void;
 }
 
-export function FaBdokuShareCard({ gameState, uniqueness, onClose }: FaBdokuShareCardProps) {
+export function FaBdokuShareCard({ gameState, uniqueness, onClose, onShared }: FaBdokuShareCardProps) {
   const cardRef = useRef<HTMLDivElement>(null);
   const [status, setStatus] = useState<"idle" | "copying" | "copied" | "downloaded">("idle");
 
@@ -60,7 +61,10 @@ export function FaBdokuShareCard({ gameState, uniqueness, onClose }: FaBdokuShar
       fallbackText: `FaBdoku ${gameState.date}\n${correctCount}/9 in ${gameState.guessesUsed} guesses${uniqueness ? `\nScore: ${uniqueness.score} (${uniqueness.totalPlayers} players as of ${timeStr})` : ""}\nfabstats.net/fabdoku`,
     });
     setStatus(result === "failed" ? "idle" : "copied");
-    if (result !== "failed") setTimeout(() => setStatus("idle"), 2000);
+    if (result !== "failed") {
+      onShared?.();
+      setTimeout(() => setStatus("idle"), 2000);
+    }
   }
 
   async function handleDownload() {
@@ -68,6 +72,7 @@ export function FaBdokuShareCard({ gameState, uniqueness, onClose }: FaBdokuShar
       backgroundColor: "#0e0c08",
       fileName: `fabdoku-${gameState.date}.png`,
     });
+    onShared?.();
     setStatus("downloaded");
     setTimeout(() => setStatus("idle"), 2000);
   }

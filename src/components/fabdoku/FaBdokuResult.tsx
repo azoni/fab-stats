@@ -56,9 +56,10 @@ interface FaBdokuResultProps {
   stats: FaBdokuStats | null;
   uniqueness: UniquenessData | null;
   onShare: () => void;
+  onCopy?: () => void;
 }
 
-export function FaBdokuResult({ gameState, stats, uniqueness, onShare }: FaBdokuResultProps) {
+export function FaBdokuResult({ gameState, stats, uniqueness, onShare, onCopy }: FaBdokuResultProps) {
   const [copied, setCopied] = useState(false);
   const [countdown, setCountdown] = useState("");
 
@@ -106,6 +107,7 @@ export function FaBdokuResult({ gameState, stats, uniqueness, onShare }: FaBdoku
     try {
       await navigator.clipboard.writeText(generateShareText());
       setCopied(true);
+      onCopy?.();
       setTimeout(() => setCopied(false), 2000);
     } catch {
       // Fallback
