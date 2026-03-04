@@ -875,7 +875,7 @@ export default function Dashboard() {
             armoryUndefeated: eventStats.filter(e => e.eventType === "Armory" && e.losses === 0 && e.wins > 0).length,
             isSiteCreator: profile.username === "azoni",
             isCreator,
-            playedFabdoku: (fabdokuFullStats?.gamesPlayed ?? 0) >= 1,
+            playedFabdoku: (fabdokuFullStats?.gamesPlayed ?? 0) >= 1 || fabdokuScore !== null,
             playedCrossword: (crosswordFullStats?.gamesPlayed ?? 0) >= 1,
             playedHeroGuesser: (heroGuesserFullStats?.gamesPlayed ?? 0) >= 1,
             playedMatchupMania: (matchupManiaFullStats?.gamesPlayed ?? 0) >= 1,
