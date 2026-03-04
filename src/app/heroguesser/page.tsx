@@ -49,8 +49,7 @@ export default function HeroGuesserPage() {
     if (!guessHero) return;
 
     const clues = compareHeroes(guessHero, answer);
-    const won = clues.class === "correct" && clues.talent === "correct" && clues.age === "correct" &&
-                clues.life === "correct" && clues.intellect === "correct" && clues.formats === "correct";
+    const won = guessHero.name === answer.name;
     const isLast = gameState.guesses.length + 1 >= gameState.maxGuesses;
     const completed = won || isLast;
 
