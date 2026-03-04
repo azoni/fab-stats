@@ -1,0 +1,119 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="440" height="600" viewBox="0 0 440 600">
+  <defs>
+    <radialGradient id="dBg" cx="50%" cy="35%" r="70%">
+      <stop offset="0%" stop-color="#1a0808"/>
+      <stop offset="100%" stop-color="#0a0404"/>
+    </radialGradient>
+    <radialGradient id="dFire" cx="50%" cy="100%" r="80%">
+      <stop offset="0%" stop-color="rgba(239,68,68,0.1)"/>
+      <stop offset="100%" stop-color="rgba(239,68,68,0)"/>
+    </radialGradient>
+  </defs>
+  <rect width="440" height="600" fill="url(#dBg)"/>
+
+  <!-- Fire glow from bottom -->
+  <rect x="0" y="350" width="440" height="250" fill="url(#dFire)"/>
+
+  <!-- Dragon silhouette — large, centered -->
+  <g transform="translate(220,270)" opacity="0.12" fill="#ef4444" stroke="#ef4444" stroke-width="0.5">
+    <!-- Dragon body -->
+    <path d="
+      M0 -100
+      Q-10 -95 -15 -85
+      L-20 -70
+      Q-25 -55 -30 -50
+      L-50 -40
+      Q-65 -35 -70 -25
+      L-75 -10
+      Q-78 0 -75 15
+      L-70 35
+      Q-65 55 -55 70
+      L-40 90
+      Q-30 100 -15 105
+      L0 108
+      Q15 105 30 100
+      L40 90
+      Q55 70 65 55
+      L70 35
+      Q75 15 78 0
+      L75 -10
+      Q70 -25 65 -35
+      L50 -40
+      Q30 -50 25 -55
+      L20 -70
+      Q15 -85 10 -95
+      Z
+    "/>
+
+    <!-- Dragon head -->
+    <g transform="translate(0,-100)">
+      <!-- Head shape -->
+      <path d="M0 -25 Q-18 -20 -22 -5 Q-20 10 -10 15 L0 18 L10 15 Q20 10 22 -5 Q18 -20 0 -25"/>
+      <!-- Horns -->
+      <path d="M-15 -18 Q-25 -40 -18 -55" fill="none" stroke-width="3" stroke-linecap="round"/>
+      <path d="M15 -18 Q25 -40 18 -55" fill="none" stroke-width="3" stroke-linecap="round"/>
+      <!-- Eyes -->
+      <ellipse cx="-9" cy="-8" rx="4" ry="2.5" fill="#fbbf24" opacity="0.8"/>
+      <ellipse cx="9" cy="-8" rx="4" ry="2.5" fill="#fbbf24" opacity="0.8"/>
+      <!-- Eye slits -->
+      <ellipse cx="-9" cy="-8" rx="1.5" ry="2.5" fill="#0a0404"/>
+      <ellipse cx="9" cy="-8" rx="1.5" ry="2.5" fill="#0a0404"/>
+      <!-- Nostrils -->
+      <circle cx="-5" cy="4" r="1.5" fill="#0a0404" opacity="0.5"/>
+      <circle cx="5" cy="4" r="1.5" fill="#0a0404" opacity="0.5"/>
+      <!-- Jaw ridges -->
+      <path d="M-18 0 Q-22 5 -18 10" fill="none" stroke-width="1"/>
+      <path d="M18 0 Q22 5 18 10" fill="none" stroke-width="1"/>
+    </g>
+
+    <!-- Wings — left -->
+    <g transform="translate(-55,-20)">
+      <path d="M0 0 Q-30 -50 -80 -90 Q-70 -60 -55 -40 Q-50 -30 -60 -10 Q-40 -35 -30 -50 Q-20 -30 -15 -15 Z" opacity="0.8"/>
+      <!-- Wing membrane lines -->
+      <path d="M-5 -5 Q-40 -50 -70 -75" fill="none" stroke-width="0.8" opacity="0.5"/>
+      <path d="M-5 -5 Q-35 -35 -55 -45" fill="none" stroke-width="0.8" opacity="0.5"/>
+      <path d="M-5 -5 Q-25 -20 -45 -20" fill="none" stroke-width="0.8" opacity="0.5"/>
+    </g>
+    <!-- Wings — right -->
+    <g transform="translate(55,-20)">
+      <path d="M0 0 Q30 -50 80 -90 Q70 -60 55 -40 Q50 -30 60 -10 Q40 -35 30 -50 Q20 -30 15 -15 Z" opacity="0.8"/>
+      <path d="M5 -5 Q40 -50 70 -75" fill="none" stroke-width="0.8" opacity="0.5"/>
+      <path d="M5 -5 Q35 -35 55 -45" fill="none" stroke-width="0.8" opacity="0.5"/>
+      <path d="M5 -5 Q25 -20 45 -20" fill="none" stroke-width="0.8" opacity="0.5"/>
+    </g>
+
+    <!-- Tail curving down -->
+    <path d="M0 108 Q10 130 25 145 Q40 158 50 170 Q55 180 45 185 Q35 182 30 175" fill="none" stroke-width="4" stroke-linecap="round"/>
+    <!-- Tail spade -->
+    <path d="M30 175 Q20 185 30 195 Q40 185 30 175" fill="#ef4444"/>
+
+    <!-- Chest scales pattern -->
+    <g opacity="0.3">
+      <path d="M-10 -20 Q0 -25 10 -20 Q0 -15 -10 -20" fill="none" stroke-width="0.5"/>
+      <path d="M-12 -5 Q0 -10 12 -5 Q0 0 -12 -5" fill="none" stroke-width="0.5"/>
+      <path d="M-14 10 Q0 5 14 10 Q0 15 -14 10" fill="none" stroke-width="0.5"/>
+      <path d="M-15 25 Q0 20 15 25 Q0 30 -15 25" fill="none" stroke-width="0.5"/>
+      <path d="M-14 40 Q0 35 14 40 Q0 45 -14 40" fill="none" stroke-width="0.5"/>
+    </g>
+  </g>
+
+  <!-- Fire breath particles rising -->
+  <g opacity="0.18">
+    <circle cx="200" cy="450" r="3" fill="#ef4444"/>
+    <circle cx="240" cy="470" r="2.5" fill="#f97316"/>
+    <circle cx="210" cy="490" r="2" fill="#fbbf24"/>
+    <circle cx="250" cy="510" r="3.5" fill="#ef4444"/>
+    <circle cx="220" cy="530" r="2" fill="#f97316"/>
+    <circle cx="190" cy="520" r="1.5" fill="#fbbf24"/>
+    <circle cx="260" cy="545" r="2.5" fill="#ef4444"/>
+    <circle cx="230" cy="560" r="1.8" fill="#f97316"/>
+    <circle cx="175" cy="555" r="2" fill="#fbbf24"/>
+    <circle cx="270" cy="570" r="1.5" fill="#ef4444"/>
+  </g>
+
+  <!-- Smoke wisps at top -->
+  <g opacity="0.04" fill="none" stroke="#ef4444" stroke-width="1.5">
+    <path d="M150 30 Q170 10 190 30 Q210 50 230 30"/>
+    <path d="M230 50 Q250 30 270 50 Q290 70 310 50"/>
+  </g>
+</svg>

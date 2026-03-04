@@ -1,0 +1,90 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="440" height="600" viewBox="0 0 440 600">
+  <defs>
+    <radialGradient id="gBg" cx="50%" cy="40%" r="70%">
+      <stop offset="0%" stop-color="#0e1218"/>
+      <stop offset="100%" stop-color="#060810"/>
+    </radialGradient>
+    <radialGradient id="gShield" cx="50%" cy="40%" r="50%">
+      <stop offset="0%" stop-color="rgba(56,189,248,0.08)"/>
+      <stop offset="100%" stop-color="rgba(56,189,248,0)"/>
+    </radialGradient>
+  </defs>
+  <rect width="440" height="600" fill="url(#gBg)"/>
+
+  <!-- Shield glow -->
+  <ellipse cx="220" cy="280" rx="160" ry="180" fill="url(#gShield)"/>
+
+  <!-- Large ornate tower shield -->
+  <g transform="translate(220,290)" opacity="0.13" stroke="#38bdf8" fill="none">
+    <!-- Shield outline — kite shield shape -->
+    <path d="M0 -140 L80 -100 L90 -40 L85 30 Q75 110 0 160 Q-75 110 -85 30 L-90 -40 L-80 -100 Z" stroke-width="2.5"/>
+    <!-- Inner border -->
+    <path d="M0 -125 L68 -88 L76 -35 L72 25 Q64 95 0 140 Q-64 95 -72 25 L-76 -35 L-68 -88 Z" stroke-width="1"/>
+
+    <!-- Shield boss (center circle) -->
+    <circle r="30" stroke-width="2"/>
+    <circle r="22" stroke-width="1"/>
+    <circle r="8" fill="rgba(56,189,248,0.15)" stroke-width="1"/>
+
+    <!-- Decorative rivets around boss -->
+    <circle cx="0" cy="-30" r="3" fill="rgba(56,189,248,0.2)"/>
+    <circle cx="26" cy="-15" r="3" fill="rgba(56,189,248,0.2)"/>
+    <circle cx="26" cy="15" r="3" fill="rgba(56,189,248,0.2)"/>
+    <circle cx="0" cy="30" r="3" fill="rgba(56,189,248,0.2)"/>
+    <circle cx="-26" cy="15" r="3" fill="rgba(56,189,248,0.2)"/>
+    <circle cx="-26" cy="-15" r="3" fill="rgba(56,189,248,0.2)"/>
+
+    <!-- Vertical divider line -->
+    <line x1="0" y1="-125" x2="0" y2="140" stroke-width="1"/>
+    <!-- Horizontal divider -->
+    <line x1="-76" y1="-5" x2="76" y2="-5" stroke-width="1"/>
+
+    <!-- Top quadrant: wings -->
+    <g transform="translate(0,-65)">
+      <!-- Left wing -->
+      <path d="M-5 0 Q-20 -10 -40 -5 Q-30 -15 -15 -12" stroke-width="1"/>
+      <path d="M-5 3 Q-22 -3 -35 2 Q-25 -5 -12 -3" stroke-width="0.8"/>
+      <!-- Right wing -->
+      <path d="M5 0 Q20 -10 40 -5 Q30 -15 15 -12" stroke-width="1"/>
+      <path d="M5 3 Q22 -3 35 2 Q25 -5 12 -3" stroke-width="0.8"/>
+    </g>
+
+    <!-- Bottom quadrant: chevron pattern -->
+    <path d="M0 50 L25 65 L0 80 L-25 65 Z" stroke-width="1"/>
+    <path d="M0 70 L15 80 L0 90 L-15 80 Z" stroke-width="0.8"/>
+    <path d="M0 90 L10 98 L0 106 L-10 98 Z" stroke-width="0.6"/>
+
+    <!-- Shield edge rivets -->
+    <circle cx="0" cy="-135" r="3.5" fill="rgba(56,189,248,0.15)"/>
+    <circle cx="-45" cy="-100" r="3" fill="rgba(56,189,248,0.12)"/>
+    <circle cx="45" cy="-100" r="3" fill="rgba(56,189,248,0.12)"/>
+    <circle cx="-80" cy="-40" r="3" fill="rgba(56,189,248,0.12)"/>
+    <circle cx="80" cy="-40" r="3" fill="rgba(56,189,248,0.12)"/>
+    <circle cx="-75" cy="30" r="3" fill="rgba(56,189,248,0.12)"/>
+    <circle cx="75" cy="30" r="3" fill="rgba(56,189,248,0.12)"/>
+  </g>
+
+  <!-- Armor plate fragments in corners -->
+  <g opacity="0.06" stroke="#38bdf8" fill="none" stroke-width="1">
+    <!-- Top-left armor plate -->
+    <path d="M10 30 L50 20 Q60 25 55 40 L45 70 Q40 80 25 75 L10 65 Z"/>
+    <path d="M18 35 L45 27 Q50 30 48 40 L42 60 Q38 68 28 65 L18 58 Z" stroke-width="0.5"/>
+    <!-- Top-right armor plate -->
+    <path d="M430 30 L390 20 Q380 25 385 40 L395 70 Q400 80 415 75 L430 65 Z"/>
+    <path d="M422 35 L395 27 Q390 30 392 40 L398 60 Q402 68 412 65 L422 58 Z" stroke-width="0.5"/>
+    <!-- Bottom-left armor plate -->
+    <path d="M10 530 L50 520 Q60 525 55 540 L45 560 Q40 570 25 565 L10 555 Z"/>
+    <!-- Bottom-right armor plate -->
+    <path d="M430 530 L390 520 Q380 525 385 540 L395 560 Q400 570 415 565 L430 555 Z"/>
+  </g>
+
+  <!-- Frost/ice particles around shield -->
+  <g opacity="0.2">
+    <circle cx="80" cy="200" r="1.2" fill="#38bdf8"/>
+    <circle cx="360" cy="220" r="1" fill="#7dd3fc"/>
+    <circle cx="100" cy="380" r="1.5" fill="#38bdf8"/>
+    <circle cx="340" cy="400" r="0.8" fill="#7dd3fc"/>
+    <circle cx="130" cy="150" r="0.7" fill="#bae6fd"/>
+    <circle cx="310" cy="160" r="1.1" fill="#bae6fd"/>
+  </g>
+</svg>

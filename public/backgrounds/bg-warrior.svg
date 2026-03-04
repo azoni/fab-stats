@@ -1,0 +1,99 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="440" height="600" viewBox="0 0 440 600">
+  <defs>
+    <radialGradient id="wBg" cx="50%" cy="40%" r="70%">
+      <stop offset="0%" stop-color="#1a100a"/>
+      <stop offset="100%" stop-color="#0a0604"/>
+    </radialGradient>
+  </defs>
+  <rect width="440" height="600" fill="url(#wBg)"/>
+
+  <!-- Large crossed swords behind everything -->
+  <g transform="translate(220,300)" opacity="0.12">
+    <!-- Left sword -->
+    <g transform="rotate(-30)">
+      <!-- Blade -->
+      <rect x="-4" y="-180" width="8" height="240" rx="2" fill="#c47a2a"/>
+      <!-- Fuller (groove in blade) -->
+      <rect x="-1.5" y="-170" width="3" height="200" rx="1" fill="#a06020"/>
+      <!-- Cross guard -->
+      <rect x="-28" y="55" width="56" height="8" rx="3" fill="#d4922a"/>
+      <circle cx="-28" cy="59" r="5" fill="#c47a2a"/>
+      <circle cx="28" cy="59" r="5" fill="#c47a2a"/>
+      <!-- Grip -->
+      <rect x="-5" y="63" width="10" height="35" rx="2" fill="#8b5a2b"/>
+      <!-- Grip wrapping -->
+      <line x1="-5" y1="70" x2="5" y2="73" stroke="#6b4420" stroke-width="1.5"/>
+      <line x1="-5" y1="78" x2="5" y2="81" stroke="#6b4420" stroke-width="1.5"/>
+      <line x1="-5" y1="86" x2="5" y2="89" stroke="#6b4420" stroke-width="1.5"/>
+      <!-- Pommel -->
+      <circle cx="0" cy="102" r="8" fill="#d4922a"/>
+      <circle cx="0" cy="102" r="4" fill="#eab308"/>
+    </g>
+    <!-- Right sword -->
+    <g transform="rotate(30)">
+      <rect x="-4" y="-180" width="8" height="240" rx="2" fill="#c47a2a"/>
+      <rect x="-1.5" y="-170" width="3" height="200" rx="1" fill="#a06020"/>
+      <rect x="-28" y="55" width="56" height="8" rx="3" fill="#d4922a"/>
+      <circle cx="-28" cy="59" r="5" fill="#c47a2a"/>
+      <circle cx="28" cy="59" r="5" fill="#c47a2a"/>
+      <rect x="-5" y="63" width="10" height="35" rx="2" fill="#8b5a2b"/>
+      <line x1="-5" y1="70" x2="5" y2="73" stroke="#6b4420" stroke-width="1.5"/>
+      <line x1="-5" y1="78" x2="5" y2="81" stroke="#6b4420" stroke-width="1.5"/>
+      <line x1="-5" y1="86" x2="5" y2="89" stroke="#6b4420" stroke-width="1.5"/>
+      <circle cx="0" cy="102" r="8" fill="#d4922a"/>
+      <circle cx="0" cy="102" r="4" fill="#eab308"/>
+    </g>
+  </g>
+
+  <!-- Shield in center overlapping the swords -->
+  <g transform="translate(220,310)" opacity="0.1">
+    <!-- Shield body -->
+    <path d="M0 -70 L55 -45 L55 10 Q55 70 0 95 Q-55 70 -55 10 L-55 -45 Z" fill="#b8860b" stroke="#d4a220" stroke-width="2"/>
+    <!-- Shield inner border -->
+    <path d="M0 -58 L43 -37 L43 8 Q43 58 0 78 Q-43 58 -43 8 L-43 -37 Z" fill="none" stroke="#eab308" stroke-width="1"/>
+    <!-- Shield cross emblem -->
+    <line x1="0" y1="-45" x2="0" y2="65" stroke="#eab308" stroke-width="2.5"/>
+    <line x1="-35" y1="0" x2="35" y2="0" stroke="#eab308" stroke-width="2.5"/>
+    <!-- Shield rivets -->
+    <circle cx="0" cy="-55" r="3" fill="#eab308"/>
+    <circle cx="-40" cy="-35" r="3" fill="#eab308"/>
+    <circle cx="40" cy="-35" r="3" fill="#eab308"/>
+    <circle cx="0" cy="72" r="3" fill="#eab308"/>
+  </g>
+
+  <!-- Decorative chain links along sides -->
+  <g opacity="0.06" stroke="#c47a2a" fill="none" stroke-width="1">
+    <g transform="translate(20,0)">
+      <ellipse cx="0" cy="80" rx="6" ry="10"/>
+      <ellipse cx="0" cy="100" rx="6" ry="10"/>
+      <ellipse cx="0" cy="120" rx="6" ry="10"/>
+      <ellipse cx="0" cy="140" rx="6" ry="10"/>
+      <ellipse cx="0" cy="160" rx="6" ry="10"/>
+      <ellipse cx="0" cy="400" rx="6" ry="10"/>
+      <ellipse cx="0" cy="420" rx="6" ry="10"/>
+      <ellipse cx="0" cy="440" rx="6" ry="10"/>
+      <ellipse cx="0" cy="460" rx="6" ry="10"/>
+      <ellipse cx="0" cy="480" rx="6" ry="10"/>
+    </g>
+    <g transform="translate(420,0)">
+      <ellipse cx="0" cy="80" rx="6" ry="10"/>
+      <ellipse cx="0" cy="100" rx="6" ry="10"/>
+      <ellipse cx="0" cy="120" rx="6" ry="10"/>
+      <ellipse cx="0" cy="140" rx="6" ry="10"/>
+      <ellipse cx="0" cy="160" rx="6" ry="10"/>
+      <ellipse cx="0" cy="400" rx="6" ry="10"/>
+      <ellipse cx="0" cy="420" rx="6" ry="10"/>
+      <ellipse cx="0" cy="440" rx="6" ry="10"/>
+      <ellipse cx="0" cy="460" rx="6" ry="10"/>
+      <ellipse cx="0" cy="480" rx="6" ry="10"/>
+    </g>
+  </g>
+
+  <!-- Battle sparks -->
+  <g opacity="0.15">
+    <circle cx="180" cy="240" r="1.5" fill="#f59e0b"/>
+    <circle cx="260" cy="260" r="1" fill="#fbbf24"/>
+    <circle cx="200" cy="350" r="1.2" fill="#f59e0b"/>
+    <circle cx="240" cy="340" r="0.8" fill="#fbbf24"/>
+  </g>
+</svg>
