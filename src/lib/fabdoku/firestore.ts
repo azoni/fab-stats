@@ -51,11 +51,11 @@ export async function saveResult(
   const statsSnap = await getDoc(statsRef);
   const raw = statsSnap.exists() ? statsSnap.data() : {};
   const prev: FaBdokuStats = {
-    gamesPlayed: raw.gamesPlayed ?? 0,
-    gamesWon: raw.gamesWon ?? 0,
-    currentStreak: raw.currentStreak ?? 0,
-    maxStreak: raw.maxStreak ?? 0,
-    lastPlayedDate: raw.lastPlayedDate ?? "",
+    gamesPlayed: Number(raw.gamesPlayed) || 0,
+    gamesWon: Number(raw.gamesWon) || 0,
+    currentStreak: Number(raw.currentStreak) || 0,
+    maxStreak: Number(raw.maxStreak) || 0,
+    lastPlayedDate: (raw.lastPlayedDate as string) ?? "",
     ...(raw.hasShared ? { hasShared: true } : {}),
   };
 

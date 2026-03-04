@@ -359,6 +359,8 @@ export default function PlayerProfile() {
     // Check for user-selected border
     const selEvt = profileObj?.borderEventType;
     const selPl = profileObj?.borderPlacement;
+    // User explicitly chose "none"
+    if (selEvt === "" && selPl === "") return null;
     if (selEvt && selPl && tierStyle[selEvt]) {
       const hasFinish = isAdmin || playoffFinishes.some(f => f.eventType === selEvt && f.type === selPl);
       if (hasFinish) {
@@ -572,7 +574,7 @@ export default function PlayerProfile() {
                     Updated {new Date(lastUpdated).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                   </span>
                 )}
-                <BadgeStrip matchCount={matches.length} isCreator={!!creatorInfo} playedFabdoku={(fabdokuFullStats?.gamesPlayed ?? 0) >= 1} playedCrossword={(crosswordFullStats?.gamesPlayed ?? 0) >= 1} />
+                <BadgeStrip matchCount={matches.length} isCreator={!!creatorInfo} playedFabdoku={(fabdokuFullStats?.gamesPlayed ?? 0) >= 1 || fabdokuScore !== null} playedCrossword={(crosswordFullStats?.gamesPlayed ?? 0) >= 1} />
               </div>
               {/* Social links */}
               {(profile.socialLinks?.twitter || profile.socialLinks?.discord || profile.socialLinks?.fabrary || isOwner) && !editingSocials && (
@@ -1043,7 +1045,7 @@ export default function PlayerProfile() {
             armoryUndefeated: eventStats.filter(e => e.eventType === "Armory" && e.losses === 0 && e.wins > 0).length,
             isSiteCreator: profile.username === "azoni",
             isCreator: !!creatorInfo,
-            playedFabdoku: (fabdokuFullStats?.gamesPlayed ?? 0) >= 1,
+            playedFabdoku: (fabdokuFullStats?.gamesPlayed ?? 0) >= 1 || fabdokuScore !== null,
             playedCrossword: (crosswordFullStats?.gamesPlayed ?? 0) >= 1,
           }}
           onClose={() => setProfileShareOpen(false)}

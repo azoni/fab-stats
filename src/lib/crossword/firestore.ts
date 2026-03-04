@@ -15,12 +15,12 @@ export async function saveResult(uid: string, result: CrosswordResult): Promise<
   const statsSnap = await getDoc(statsRef);
   const raw = statsSnap.exists() ? statsSnap.data() : {};
   const prev: CrosswordStats = {
-    gamesPlayed: raw.gamesPlayed ?? 0,
-    gamesWon: raw.gamesWon ?? 0,
-    currentStreak: raw.currentStreak ?? 0,
-    maxStreak: raw.maxStreak ?? 0,
-    lastPlayedDate: raw.lastPlayedDate ?? "",
-    ...(raw.bestSolveTime != null ? { bestSolveTime: raw.bestSolveTime as number } : {}),
+    gamesPlayed: Number(raw.gamesPlayed) || 0,
+    gamesWon: Number(raw.gamesWon) || 0,
+    currentStreak: Number(raw.currentStreak) || 0,
+    maxStreak: Number(raw.maxStreak) || 0,
+    lastPlayedDate: (raw.lastPlayedDate as string) ?? "",
+    ...(raw.bestSolveTime != null && !isNaN(Number(raw.bestSolveTime)) ? { bestSolveTime: Number(raw.bestSolveTime) } : {}),
     ...(raw.hasShared ? { hasShared: true } : {}),
   };
 
