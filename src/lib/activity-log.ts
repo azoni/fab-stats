@@ -12,6 +12,7 @@ export type ActivityAction =
   | "compare_share"
   | "meta_share"
   | "kudos_given"
+  | "fabdoku_share"
   | "crossword_share"
   | "heroguesser_share"
   | "matchupmania_share"
@@ -81,6 +82,7 @@ export const ACTIVITY_LABELS: Record<ActivityAction, string> = {
   compare_share: "shared a comparison card",
   meta_share: "shared a meta breakdown",
   kudos_given: "gave kudos",
+  fabdoku_share: "shared a fabdoku result",
   crossword_share: "shared a crossword result",
   heroguesser_share: "shared a hero guesser result",
   matchupmania_share: "shared a matchup mania result",

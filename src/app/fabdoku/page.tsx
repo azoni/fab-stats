@@ -49,6 +49,7 @@ import {
   markShared,
 } from "@/lib/fabdoku/firestore";
 import { createFaBdokuFeedEvent, createGuestFaBdokuFeedEvent, deleteFaBdokuFeedEvents } from "@/lib/feed";
+import { logActivity } from "@/lib/activity-log";
 import type { GameState, FaBdokuStats, UniquenessData, PickData } from "@/lib/fabdoku/types";
 
 function getYesterdayDateStr(): string {
@@ -97,6 +98,7 @@ export default function FaBdokuPage() {
     sharedDatesRef.current.add(date);
     if (user?.uid) {
       markShared(user.uid).catch(() => {});
+      logActivity("fabdoku_share", date);
     }
     if (profile) {
       const cc = gs.cells.flat().filter((c) => c.correct).length;
