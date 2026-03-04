@@ -29,8 +29,10 @@ const AXIS_PAIRS: [CategoryGroup, CategoryGroup][] = [
   ["age", "talent"],
   ["stat", "class"],
   ["stat", "talent"],
+  ["stat", "format"],
   ["format", "class"],
   ["format", "talent"],
+  ["format", "stat"],
 ];
 
 const GROUP_MAP: Record<CategoryGroup, CategoryDef[]> = {
@@ -100,9 +102,32 @@ function tryBuildGrid(
 /** Cache: one puzzle per date string. */
 const puzzleCache = new Map<string, DailyPuzzle>();
 
+/** Get the previous day's date string. */
+function prevDateStr(dateStr: string): string {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  const prev = new Date(y, m - 1, d - 1);
+  const py = prev.getFullYear();
+  const pm = String(prev.getMonth() + 1).padStart(2, "0");
+  const pd = String(prev.getDate()).padStart(2, "0");
+  return `${py}-${pm}-${pd}`;
+}
+
+/** Determine the axis pair key (e.g. "class-talent") for a date's puzzle. */
+function getAxisPairKey(dateStr: string): string | null {
+  const seed = dateToSeed(dateStr);
+  const rng = mulberry32(seed);
+  const pairs = seededShuffle(AXIS_PAIRS, rng);
+  for (const [rowGroup, colGroup] of pairs) {
+    if (GROUP_MAP[rowGroup].length < 3 || GROUP_MAP[colGroup].length < 3) continue;
+    return `${rowGroup}-${colGroup}`;
+  }
+  return null;
+}
+
 /**
  * Generate the daily puzzle for a given date.
  * Deterministic: same date always produces the same puzzle.
+ * Avoids using the same axis pair type as yesterday for variety.
  */
 export function generateDailyPuzzle(dateStr: string): DailyPuzzle {
   const cached = puzzleCache.get(dateStr);
@@ -111,17 +136,35 @@ export function generateDailyPuzzle(dateStr: string): DailyPuzzle {
   const seed = dateToSeed(dateStr);
   const rng = mulberry32(seed);
 
+  // Determine yesterday's axis pair so we can avoid repeating it
+  const yesterdayKey = getAxisPairKey(prevDateStr(dateStr));
+
   // Shuffle axis pairs and try each until we find a valid grid
   const pairs = seededShuffle(AXIS_PAIRS, rng);
 
+  // First pass: skip yesterday's axis pair type
   for (const [rowGroup, colGroup] of pairs) {
     const rowPool = GROUP_MAP[rowGroup];
     const colPool = GROUP_MAP[colGroup];
-
-    // Need at least 3 categories in each pool
     if (rowPool.length < 3 || colPool.length < 3) continue;
+    if (`${rowGroup}-${colGroup}` === yesterdayKey) continue;
 
     const puzzle = tryBuildGrid(rowPool, colPool, rng, dateStr);
+    if (puzzle) {
+      puzzleCache.set(dateStr, puzzle);
+      return puzzle;
+    }
+  }
+
+  // Second pass: allow yesterday's axis pair if nothing else worked
+  const rng2 = mulberry32(seed + 7);
+  const pairs2 = seededShuffle(AXIS_PAIRS, rng2);
+  for (const [rowGroup, colGroup] of pairs2) {
+    const rowPool = GROUP_MAP[rowGroup];
+    const colPool = GROUP_MAP[colGroup];
+    if (rowPool.length < 3 || colPool.length < 3) continue;
+
+    const puzzle = tryBuildGrid(rowPool, colPool, rng2, dateStr);
     if (puzzle) {
       puzzleCache.set(dateStr, puzzle);
       return puzzle;

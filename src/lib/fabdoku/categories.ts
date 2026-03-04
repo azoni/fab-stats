@@ -76,6 +76,12 @@ export const STAT_CATEGORIES: CategoryDef[] = [
     test: (hero) => hero.life !== undefined && hero.life <= 20,
   },
   {
+    id: "stat-life-mid",
+    label: "Life 21–30",
+    group: "stat",
+    test: (hero) => hero.life !== undefined && hero.life >= 21 && hero.life <= 30,
+  },
+  {
     id: "stat-life-high",
     label: "Life ≥ 31",
     group: "stat",

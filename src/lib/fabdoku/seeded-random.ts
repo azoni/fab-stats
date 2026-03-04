@@ -9,14 +9,17 @@ export function mulberry32(seed: number): () => number {
   };
 }
 
-/** Convert a date string like "2026-03-02" to a numeric seed. */
+/**
+ * Convert a date string like "2026-03-02" to a numeric seed.
+ * Uses Fibonacci hashing to spread consecutive dates far apart,
+ * so back-to-back days produce very different puzzles.
+ */
 export function dateToSeed(dateStr: string): number {
-  let hash = 0;
-  for (let i = 0; i < dateStr.length; i++) {
-    const ch = dateStr.charCodeAt(i);
-    hash = ((hash << 5) - hash + ch) | 0;
-  }
-  return hash;
+  const [y, m, d] = dateStr.split("-").map(Number);
+  // Combine date parts with primes so sequential days are far apart
+  const raw = y * 367 + m * 31 + d;
+  // Fibonacci hashing (Knuth multiplicative) spreads sequential inputs
+  return Math.imul(raw, 2654435761) | 0;
 }
 
 /** Fisher-Yates shuffle using a seeded RNG. Returns a new array. */
