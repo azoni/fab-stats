@@ -12,11 +12,12 @@ import { computePowerLevel, getPowerTier } from "@/lib/power-level";
 import { TrophyIcon } from "@/components/icons/NavIcons";
 import { playerHref } from "@/lib/constants";
 import { loadAllKudosCounts, loadAllKudosGivenCounts, KUDOS_TYPES, type KudosCountsEntry } from "@/lib/kudos";
+import { loadAllGameStats, type GameLeaderboardEntry } from "@/lib/game-leaderboard";
 import type { LeaderboardEntry, OpponentStats } from "@/types";
 
 const SITE_CREATOR = "azoni";
 
-type Tab = "winrate" | "volume" | "mostwins" | "mostlosses" | "streaks" | "draws" | "drawrate" | "lowdrawrate" | "fewestdraws" | "byes" | "byerate" | "balanced" | "events" | "eventgrinder" | "rated" | "ratedstreak" | "heroes" | "dedication" | "loyaltyrate" | "hotstreak" | "coldstreak" | "weeklymatches" | "weeklywins" | "monthlymatches" | "monthlywins" | "monthlywinrate" | "earnings" | "armorywinrate" | "armoryattendance" | "armorymatches" | "top8s" | "top8s_skirmish" | "top8s_pq" | "top8s_bh" | "top8s_rtn" | "top8s_calling" | "top8s_nationals" | "powerlevel" | "uniqueopponents" | "silvermedals" | "lossstreak" | "globetrotter" | "leaderboardcount" | "kudos_total" | "kudos_props" | "kudos_good_sport" | "kudos_skilled" | "kudos_helpful" | "kudos_given_total" | "kudos_given_props" | "kudos_given_good_sport" | "kudos_given_skilled" | "kudos_given_helpful";
+type Tab = "winrate" | "volume" | "mostwins" | "mostlosses" | "streaks" | "draws" | "drawrate" | "lowdrawrate" | "fewestdraws" | "byes" | "byerate" | "balanced" | "events" | "eventgrinder" | "rated" | "ratedstreak" | "heroes" | "dedication" | "loyaltyrate" | "hotstreak" | "coldstreak" | "weeklymatches" | "weeklywins" | "monthlymatches" | "monthlywins" | "monthlywinrate" | "earnings" | "armorywinrate" | "armoryattendance" | "armorymatches" | "top8s" | "top8s_skirmish" | "top8s_pq" | "top8s_bh" | "top8s_rtn" | "top8s_calling" | "top8s_nationals" | "powerlevel" | "uniqueopponents" | "silvermedals" | "lossstreak" | "globetrotter" | "leaderboardcount" | "kudos_total" | "kudos_props" | "kudos_good_sport" | "kudos_skilled" | "kudos_helpful" | "kudos_given_total" | "kudos_given_props" | "kudos_given_good_sport" | "kudos_given_skilled" | "kudos_given_helpful" | "games_total" | "games_winrate" | "games_streak" | "games_variety" | "games_fabdoku" | "games_crossword" | "games_heroguesser" | "games_matchupmania" | "games_trivia" | "games_timeline" | "games_connections";
 
 function isKudosTab(tab: Tab): boolean {
   return tab.startsWith("kudos_") && !tab.startsWith("kudos_given_");
@@ -28,6 +29,10 @@ function isKudosGivenTab(tab: Tab): boolean {
 
 function kudosField(tab: Tab): "total" | "props" | "good_sport" | "skilled" | "helpful" {
   return tab.replace("kudos_given_", "").replace("kudos_", "") as "total" | "props" | "good_sport" | "skilled" | "helpful";
+}
+
+function isGameTab(tab: Tab): boolean {
+  return tab.startsWith("games_");
 }
 
 // ── Tab definitions ──
@@ -86,6 +91,17 @@ const tabs: { id: Tab; label: string; description: string }[] = [
   { id: "kudos_given_good_sport", label: "Good Sport", description: "Most 'Good Sport' kudos given to other players." },
   { id: "kudos_given_skilled", label: "Skilled", description: "Most 'Skilled' kudos given to other players." },
   { id: "kudos_given_helpful", label: "Helpful", description: "Most 'Helpful' kudos given to other players." },
+  { id: "games_total", label: "Total Played", description: "Most total daily games played across all game types." },
+  { id: "games_winrate", label: "Win Rate", description: "Highest overall win rate across all daily games. Requires 20+ games." },
+  { id: "games_streak", label: "Best Streak", description: "Longest win streak across any daily game." },
+  { id: "games_variety", label: "Variety", description: "Most different daily games played. Requires 2+ games." },
+  { id: "games_fabdoku", label: "FaBdoku", description: "Most FaBdoku games played." },
+  { id: "games_crossword", label: "Crossword", description: "Fastest crossword solve time. Requires at least 1 win." },
+  { id: "games_heroguesser", label: "Hero Guesser", description: "Highest Hero Guesser win rate. Requires 5+ games." },
+  { id: "games_matchupmania", label: "Matchup Mania", description: "Highest Matchup Mania best score." },
+  { id: "games_trivia", label: "Trivia", description: "Most total correct trivia answers." },
+  { id: "games_timeline", label: "Timeline", description: "Most total correct timeline placements." },
+  { id: "games_connections", label: "Connections", description: "Most perfect Connections games (zero mistakes)." },
 ];
 
 const tabMap = Object.fromEntries(tabs.map((t) => [t.id, t]));
@@ -108,6 +124,7 @@ const allCategories: Category[] = [
   { id: "armory", label: "Armory", tabs: ["armorywinrate", "armoryattendance", "armorymatches"] },
   { id: "rated", label: "Rated", tabs: ["rated", "ratedstreak"] },
   { id: "fun", label: "Fun", tabs: ["uniqueopponents", "silvermedals", "lossstreak", "globetrotter", "leaderboardcount", "draws", "drawrate", "lowdrawrate", "fewestdraws", "byes", "byerate", "balanced"] },
+  { id: "games", label: "Games", tabs: ["games_total", "games_winrate", "games_streak", "games_variety", "games_fabdoku", "games_crossword", "games_heroguesser", "games_matchupmania", "games_trivia", "games_timeline", "games_connections"] },
   { id: "kudos", label: "Kudos", tabs: ["kudos_total", "kudos_props", "kudos_good_sport", "kudos_skilled", "kudos_helpful"] },
   { id: "kudos_given", label: "Kudos Given", tabs: ["kudos_given_total", "kudos_given_props", "kudos_given_good_sport", "kudos_given_skilled", "kudos_given_helpful"] },
   { id: "power", label: "Power Level", tabs: ["powerlevel"], adminOnly: true },
@@ -256,9 +273,64 @@ function getKudosStat(entry: KudosCountsEntry, tab: Tab): { value: string; sub: 
   return { value: String(count), sub: `${entry.total} total${suffix}`, color: "text-fab-gold" };
 }
 
+// Game-specific stat extraction (uses GameLeaderboardEntry)
+function getGameStat(entry: GameLeaderboardEntry, tab: Tab): { value: string; sub: string; color: string; rate?: number } {
+  switch (tab) {
+    case "games_total":
+      return { value: String(entry.totalGamesPlayed), sub: `${entry.totalGamesWon} won (${entry.gamesWithActivity}/7 games)`, color: "text-fab-text" };
+    case "games_winrate":
+      return { value: formatRate(entry.overallWinRate), sub: `${entry.totalGamesWon}W / ${entry.totalGamesPlayed} games`, color: entry.overallWinRate >= 50 ? "text-fab-win" : "text-fab-loss", rate: entry.overallWinRate };
+    case "games_streak":
+      return { value: String(entry.bestMaxStreak), sub: "best win streak", color: "text-fab-win" };
+    case "games_variety":
+      return { value: `${entry.gamesWithActivity}/7`, sub: `${entry.totalGamesPlayed} total played`, color: "text-purple-400" };
+    case "games_fabdoku": {
+      const s = entry.fabdoku;
+      if (!s) return { value: "—", sub: "", color: "text-fab-dim" };
+      const wr = s.gamesPlayed > 0 ? (s.gamesWon / s.gamesPlayed) * 100 : 0;
+      return { value: String(s.gamesPlayed), sub: `${s.gamesWon}W (${formatRate(wr)})`, color: "text-emerald-400" };
+    }
+    case "games_crossword": {
+      const s = entry.crossword;
+      if (!s || !s.bestSolveTime) return { value: "—", sub: "", color: "text-fab-dim" };
+      const mins = Math.floor(s.bestSolveTime / 60);
+      const secs = s.bestSolveTime % 60;
+      return { value: `${mins}:${String(secs).padStart(2, "0")}`, sub: `${s.gamesPlayed} played · ${s.gamesWon} won`, color: "text-blue-400" };
+    }
+    case "games_heroguesser": {
+      const s = entry.heroguesser;
+      if (!s) return { value: "—", sub: "", color: "text-fab-dim" };
+      const wr = s.gamesPlayed > 0 ? (s.gamesWon / s.gamesPlayed) * 100 : 0;
+      return { value: formatRate(wr), sub: `${s.gamesWon}W / ${s.gamesPlayed} games`, color: wr >= 50 ? "text-fab-win" : "text-purple-400", rate: wr };
+    }
+    case "games_matchupmania": {
+      const s = entry.matchupmania;
+      if (!s) return { value: "—", sub: "", color: "text-fab-dim" };
+      return { value: `${s.bestScore}/10`, sub: `${s.totalCorrect} total correct · ${s.gamesPlayed} played`, color: "text-orange-400" };
+    }
+    case "games_trivia": {
+      const s = entry.trivia;
+      if (!s) return { value: "—", sub: "", color: "text-fab-dim" };
+      return { value: String(s.totalCorrect), sub: `correct answers · ${s.gamesPlayed} played`, color: "text-red-400" };
+    }
+    case "games_timeline": {
+      const s = entry.timeline;
+      if (!s) return { value: "—", sub: "", color: "text-fab-dim" };
+      return { value: String(s.totalCorrect), sub: `correct · ${s.gamesPlayed} played`, color: "text-cyan-400" };
+    }
+    case "games_connections": {
+      const s = entry.connections;
+      if (!s) return { value: "—", sub: "", color: "text-fab-dim" };
+      return { value: String(s.perfectGames), sub: `perfect · ${s.gamesWon}W / ${s.gamesPlayed} played`, color: "text-yellow-400" };
+    }
+    default:
+      return { value: "—", sub: "", color: "text-fab-dim" };
+  }
+}
+
 // Check if tab shows a rate (for progress bars)
 function isRateTab(tab: Tab): boolean {
-  return ["winrate", "monthlywinrate", "rated", "armorywinrate", "loyaltyrate", "drawrate", "lowdrawrate", "byerate", "balanced"].includes(tab);
+  return ["winrate", "monthlywinrate", "rated", "armorywinrate", "loyaltyrate", "drawrate", "lowdrawrate", "byerate", "balanced", "games_winrate", "games_heroguesser"].includes(tab);
 }
 
 // ── Empty state messages ──
@@ -296,6 +368,17 @@ function getEmptyMessage(tab: Tab): string {
     case "kudos_given_total": return "No players have given kudos yet. Give kudos from player profiles!";
     case "kudos_given_props": case "kudos_given_good_sport": case "kudos_given_skilled": case "kudos_given_helpful":
       return "No players have given this type of kudos yet.";
+    case "games_total": return "No players have played any daily games yet.";
+    case "games_winrate": return "Players need at least 20 daily games to appear here.";
+    case "games_streak": return "No players have a daily game win streak yet.";
+    case "games_variety": return "Players need to play at least 2 different daily games to appear here.";
+    case "games_fabdoku": return "No players have played FaBdoku yet.";
+    case "games_crossword": return "No players have solved a crossword yet.";
+    case "games_heroguesser": return "Players need at least 5 Hero Guesser games to appear here.";
+    case "games_matchupmania": return "No players have played Matchup Mania yet.";
+    case "games_trivia": return "No players have played Trivia yet.";
+    case "games_timeline": return "No players have played Timeline yet.";
+    case "games_connections": return "No players have any perfect Connections games yet.";
     default:
       if (tab.startsWith("top8s")) return "No players have Top 8 finishes in this category yet.";
       return "Import matches to appear on the leaderboard.";
@@ -344,6 +427,19 @@ export default function LeaderboardPage() {
     loadAllKudosGivenCounts().then(setKudosGivenData).catch(() => {}).finally(() => setKudosLoading(false));
   }, [activeCategory]);
 
+  // Game stats data (loaded from separate collections)
+  const [gameData, setGameData] = useState<GameLeaderboardEntry[]>([]);
+  const [gamesLoading, setGamesLoading] = useState(false);
+  const gamesLoaded = useRef(false);
+
+  // Load game stats when games category is first selected
+  useEffect(() => {
+    if (activeCategory !== "games" || gamesLoaded.current) return;
+    gamesLoaded.current = true;
+    setGamesLoading(true);
+    loadAllGameStats().then(setGameData).catch(() => {}).finally(() => setGamesLoading(false));
+  }, [activeCategory]);
+
   const kudosMap = useMemo(() => {
     const m = new Map<string, KudosCountsEntry>();
     for (const e of kudosData) m.set(e.uid, e);
@@ -355,6 +451,12 @@ export default function LeaderboardPage() {
     for (const e of kudosGivenData) m.set(e.uid, e);
     return m;
   }, [kudosGivenData]);
+
+  const gamesMap = useMemo(() => {
+    const m = new Map<string, GameLeaderboardEntry>();
+    for (const e of gameData) m.set(e.userId, e);
+    return m;
+  }, [gameData]);
 
   // Filter categories by admin access
   const categories = useMemo(() => isAdmin ? allCategories : allCategories.filter((c) => !c.adminOnly), [isAdmin]);
@@ -499,10 +601,63 @@ export default function LeaderboardPage() {
           .filter((e) => e.username !== SITE_CREATOR && (kudosGivenMap.get(e.userId)?.[field] ?? 0) > 0)
           .sort((a, b) => (kudosGivenMap.get(b.userId)?.[field] ?? 0) - (kudosGivenMap.get(a.userId)?.[field] ?? 0) || (kudosGivenMap.get(b.userId)?.total ?? 0) - (kudosGivenMap.get(a.userId)?.total ?? 0));
       }
+      case "games_total":
+        return [...visibleEntries]
+          .filter((e) => (gamesMap.get(e.userId)?.totalGamesPlayed ?? 0) > 0)
+          .sort((a, b) => (gamesMap.get(b.userId)?.totalGamesPlayed ?? 0) - (gamesMap.get(a.userId)?.totalGamesPlayed ?? 0) || (gamesMap.get(b.userId)?.totalGamesWon ?? 0) - (gamesMap.get(a.userId)?.totalGamesWon ?? 0));
+      case "games_winrate":
+        return [...visibleEntries]
+          .filter((e) => (gamesMap.get(e.userId)?.totalGamesPlayed ?? 0) >= 20)
+          .sort((a, b) => (gamesMap.get(b.userId)?.overallWinRate ?? 0) - (gamesMap.get(a.userId)?.overallWinRate ?? 0) || (gamesMap.get(b.userId)?.totalGamesPlayed ?? 0) - (gamesMap.get(a.userId)?.totalGamesPlayed ?? 0));
+      case "games_streak":
+        return [...visibleEntries]
+          .filter((e) => (gamesMap.get(e.userId)?.bestMaxStreak ?? 0) > 0)
+          .sort((a, b) => (gamesMap.get(b.userId)?.bestMaxStreak ?? 0) - (gamesMap.get(a.userId)?.bestMaxStreak ?? 0) || (gamesMap.get(b.userId)?.totalGamesPlayed ?? 0) - (gamesMap.get(a.userId)?.totalGamesPlayed ?? 0));
+      case "games_variety":
+        return [...visibleEntries]
+          .filter((e) => (gamesMap.get(e.userId)?.gamesWithActivity ?? 0) >= 2)
+          .sort((a, b) => (gamesMap.get(b.userId)?.gamesWithActivity ?? 0) - (gamesMap.get(a.userId)?.gamesWithActivity ?? 0) || (gamesMap.get(b.userId)?.totalGamesPlayed ?? 0) - (gamesMap.get(a.userId)?.totalGamesPlayed ?? 0));
+      case "games_fabdoku":
+        return [...visibleEntries]
+          .filter((e) => (gamesMap.get(e.userId)?.fabdoku?.gamesPlayed ?? 0) > 0)
+          .sort((a, b) => (gamesMap.get(b.userId)?.fabdoku?.gamesPlayed ?? 0) - (gamesMap.get(a.userId)?.fabdoku?.gamesPlayed ?? 0) || (gamesMap.get(b.userId)?.fabdoku?.gamesWon ?? 0) - (gamesMap.get(a.userId)?.fabdoku?.gamesWon ?? 0));
+      case "games_crossword":
+        return [...visibleEntries]
+          .filter((e) => {
+            const s = gamesMap.get(e.userId)?.crossword;
+            return s && s.bestSolveTime && s.bestSolveTime > 0 && s.gamesWon > 0;
+          })
+          .sort((a, b) => (gamesMap.get(a.userId)?.crossword?.bestSolveTime ?? Infinity) - (gamesMap.get(b.userId)?.crossword?.bestSolveTime ?? Infinity));
+      case "games_heroguesser":
+        return [...visibleEntries]
+          .filter((e) => (gamesMap.get(e.userId)?.heroguesser?.gamesPlayed ?? 0) >= 5)
+          .sort((a, b) => {
+            const aG = gamesMap.get(a.userId)?.heroguesser;
+            const bG = gamesMap.get(b.userId)?.heroguesser;
+            const aWR = aG && aG.gamesPlayed > 0 ? (aG.gamesWon / aG.gamesPlayed) * 100 : 0;
+            const bWR = bG && bG.gamesPlayed > 0 ? (bG.gamesWon / bG.gamesPlayed) * 100 : 0;
+            return bWR - aWR || (bG?.gamesPlayed ?? 0) - (aG?.gamesPlayed ?? 0);
+          });
+      case "games_matchupmania":
+        return [...visibleEntries]
+          .filter((e) => (gamesMap.get(e.userId)?.matchupmania?.gamesPlayed ?? 0) > 0)
+          .sort((a, b) => (gamesMap.get(b.userId)?.matchupmania?.bestScore ?? 0) - (gamesMap.get(a.userId)?.matchupmania?.bestScore ?? 0) || (gamesMap.get(b.userId)?.matchupmania?.totalCorrect ?? 0) - (gamesMap.get(a.userId)?.matchupmania?.totalCorrect ?? 0));
+      case "games_trivia":
+        return [...visibleEntries]
+          .filter((e) => (gamesMap.get(e.userId)?.trivia?.totalCorrect ?? 0) > 0)
+          .sort((a, b) => (gamesMap.get(b.userId)?.trivia?.totalCorrect ?? 0) - (gamesMap.get(a.userId)?.trivia?.totalCorrect ?? 0) || (gamesMap.get(b.userId)?.trivia?.gamesPlayed ?? 0) - (gamesMap.get(a.userId)?.trivia?.gamesPlayed ?? 0));
+      case "games_timeline":
+        return [...visibleEntries]
+          .filter((e) => (gamesMap.get(e.userId)?.timeline?.totalCorrect ?? 0) > 0)
+          .sort((a, b) => (gamesMap.get(b.userId)?.timeline?.totalCorrect ?? 0) - (gamesMap.get(a.userId)?.timeline?.totalCorrect ?? 0) || (gamesMap.get(b.userId)?.timeline?.gamesPlayed ?? 0) - (gamesMap.get(a.userId)?.timeline?.gamesPlayed ?? 0));
+      case "games_connections":
+        return [...visibleEntries]
+          .filter((e) => (gamesMap.get(e.userId)?.connections?.perfectGames ?? 0) > 0)
+          .sort((a, b) => (gamesMap.get(b.userId)?.connections?.perfectGames ?? 0) - (gamesMap.get(a.userId)?.connections?.perfectGames ?? 0) || (gamesMap.get(b.userId)?.connections?.gamesWon ?? 0) - (gamesMap.get(a.userId)?.connections?.gamesWon ?? 0));
       default:
         return visibleEntries;
     }
-  }, [visibleEntries, activeTab, currentWeekStart, currentMonthStart, kudosMap, kudosGivenMap]);
+  }, [visibleEntries, activeTab, currentWeekStart, currentMonthStart, kudosMap, kudosGivenMap, gamesMap]);
 
   // Search filter
   const filtered = useMemo(() => {
@@ -540,7 +695,6 @@ export default function LeaderboardPage() {
     if (!user) return new Map<string, number>();
     if (activeCategory === "kudos" || activeCategory === "kudos_given") {
       const data = activeCategory === "kudos_given" ? kudosGivenData : kudosData;
-      // Exclude admin from kudos given rankings
       const adminEntry = activeCategory === "kudos_given" ? visibleEntries.find((e) => e.username === SITE_CREATOR) : null;
       const adminUid = adminEntry?.userId;
       const map = new Map<string, number>();
@@ -552,8 +706,26 @@ export default function LeaderboardPage() {
       }
       return map;
     }
+    if (activeCategory === "games") {
+      // Game tabs use separate data; compute ranks inline
+      const map = new Map<string, number>();
+      for (const tabId of activeCategoryObj.tabs) {
+        // Re-use the ranked useMemo logic would be complex; instead do a quick inline rank
+        const userGame = gamesMap.get(user.uid);
+        if (!userGame) continue;
+        const stat = getGameStat(userGame, tabId as Tab);
+        if (stat.value === "—" || stat.value === "0" || stat.value === "0/7") continue;
+        // Count how many users rank above this user in the current ranked list for this tab
+        // Simple approach: find user's position in ranked (already computed for activeTab)
+        if (tabId === activeTab) {
+          const idx = ranked.findIndex((e) => e.userId === user.uid);
+          if (idx >= 0) map.set(tabId, idx + 1);
+        }
+      }
+      return map;
+    }
     return computeUserRanksByTab(visibleEntries, user.uid, activeCategoryObj.tabs);
-  }, [visibleEntries, user, activeCategoryObj.tabs, activeCategory, kudosData, kudosGivenData]);
+  }, [visibleEntries, user, activeCategoryObj.tabs, activeCategory, kudosData, kudosGivenData, gamesMap, activeTab, ranked]);
 
   function selectCategory(catId: string) {
     const cat = categories.find((c) => c.id === catId);
@@ -720,7 +892,7 @@ export default function LeaderboardPage() {
       )}
 
       {/* ── Loading ── */}
-      {(loading || kudosLoading) && (
+      {(loading || kudosLoading || gamesLoading) && (
         <div className="space-y-2">
           {[...Array(8)].map((_, i) => (
             <div key={i} className="bg-fab-surface border border-fab-border rounded-lg p-4 h-16 animate-pulse" />
@@ -729,7 +901,7 @@ export default function LeaderboardPage() {
       )}
 
       {/* ── Empty ── */}
-      {!loading && !kudosLoading && filtered.length === 0 && (
+      {!loading && !kudosLoading && !gamesLoading && filtered.length === 0 && (
         <div className="text-center py-16">
           <TrophyIcon className="w-14 h-14 text-fab-dim mb-4 mx-auto" />
           <h2 className="text-lg font-semibold text-fab-text mb-2">
@@ -741,7 +913,7 @@ export default function LeaderboardPage() {
         </div>
       )}
 
-      {!loading && !kudosLoading && filtered.length > 0 && (
+      {!loading && !kudosLoading && !gamesLoading && filtered.length > 0 && (
         <>
           {/* ── Your Rank ── */}
           {myRank && !isSearching && (
@@ -776,7 +948,8 @@ export default function LeaderboardPage() {
               {[podium[1], podium[0], podium[2]].map((entry, i) => {
                 const place = [2, 1, 3][i];
                 const kudosEntry = isKudosGivenTab(activeTab) ? kudosGivenMap.get(entry.userId) : kudosMap.get(entry.userId);
-                const stat = (isKudosTab(activeTab) || isKudosGivenTab(activeTab)) && kudosEntry ? getKudosStat(kudosEntry, activeTab) : getStat(entry, activeTab);
+                const gameEntry = gamesMap.get(entry.userId);
+                const stat = isGameTab(activeTab) && gameEntry ? getGameStat(gameEntry, activeTab) : (isKudosTab(activeTab) || isKudosGivenTab(activeTab)) && kudosEntry ? getKudosStat(kudosEntry, activeTab) : getStat(entry, activeTab);
                 const isCenter = place === 1;
                 return (
                   <Link
@@ -869,6 +1042,7 @@ export default function LeaderboardPage() {
                   h2h={h2hMap.get(entry.displayName.toLowerCase())}
                   isMe={entry.userId === user?.uid}
                   kudosEntry={isKudosGivenTab(activeTab) ? kudosGivenMap.get(entry.userId) : kudosMap.get(entry.userId)}
+                  gameEntry={gamesMap.get(entry.userId)}
                 />
               );
             })}
@@ -911,6 +1085,7 @@ function LeaderboardRow({
   h2h,
   isMe,
   kudosEntry,
+  gameEntry,
 }: {
   entry: LeaderboardEntry;
   rank: number;
@@ -918,6 +1093,7 @@ function LeaderboardRow({
   h2h?: OpponentStats;
   isMe?: boolean;
   kudosEntry?: KudosCountsEntry;
+  gameEntry?: GameLeaderboardEntry;
 }) {
   const initials = entry.displayName
     .split(" ")
@@ -926,7 +1102,7 @@ function LeaderboardRow({
     .toUpperCase()
     .slice(0, 2);
 
-  const stat = (isKudosTab(tab) || isKudosGivenTab(tab)) && kudosEntry ? getKudosStat(kudosEntry, tab) : getStat(entry, tab);
+  const stat = isGameTab(tab) && gameEntry ? getGameStat(gameEntry, tab) : (isKudosTab(tab) || isKudosGivenTab(tab)) && kudosEntry ? getKudosStat(kudosEntry, tab) : getStat(entry, tab);
   const showBar = isRateTab(tab) && stat.rate !== undefined;
   const isCreator = entry.username === SITE_CREATOR;
 
