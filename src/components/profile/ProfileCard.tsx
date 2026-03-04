@@ -7,6 +7,7 @@ import { copyCardImage, downloadCardImage } from "@/lib/share-image";
 import { EMBLEM_COMPONENTS, EMBLEM_COLORS } from "@/components/profile/EmblemIcons";
 import { BADGE_ICON_MAP } from "@/components/profile/BadgeIcons";
 import { getProfileBadges } from "@/lib/profile-badges";
+import { CornerFiligree, OrnamentalDivider, CardBackgroundPattern, AccentTopBar, InnerVignette } from "@/components/share/CardOrnaments";
 import type { CardTheme } from "@/components/opponents/RivalryCard";
 import type { PlayoffFinish } from "@/lib/stats";
 
@@ -223,6 +224,9 @@ export function ProfileCard({ data, theme }: { data: ProfileCardData; theme?: Ca
       } as React.CSSProperties}
       className="border-2 rounded-xl overflow-hidden relative"
     >
+      {/* Background pattern + vignette */}
+      <CardBackgroundPattern color={t.accent} id="profile" opacity={0.04} />
+      <InnerVignette opacity={0.25} />
       {/* Background image (optional per theme) */}
       {t.backgroundImage && (
         <>
@@ -235,8 +239,10 @@ export function ProfileCard({ data, theme }: { data: ProfileCardData; theme?: Ca
           <div className="absolute inset-0" style={{ backgroundColor: `${t.surface}B3` }} />
         </>
       )}
+      {/* Corner filigree */}
+      <CornerFiligree color={cardBorder?.border || t.accent} opacity={cbPlacement >= 3 ? 0.3 : 0.2} />
       {/* Accent bar */}
-      <div className="relative" style={{ height: 3, backgroundColor: cardBorder?.border || t.accent }} />
+      <AccentTopBar color={cardBorder?.border || t.accent} rgb={cbRgb} />
 
       {/* Identity + Hero Metric */}
       <div className="px-5 pt-4 pb-3 relative">
@@ -341,8 +347,8 @@ export function ProfileCard({ data, theme }: { data: ProfileCardData; theme?: Ca
         </div>
       </div>
 
-      {/* Divider */}
-      <div className="mx-5 relative" style={{ borderTop: `1px solid ${t.border}4D` }} />
+      {/* Ornamental divider */}
+      <OrnamentalDivider color={cardBorder?.border || t.accent} className="mx-3 relative" />
 
       {/* Context bar — 3 col */}
       <div className="grid grid-cols-3 gap-2 px-5 py-2.5 relative">
@@ -398,7 +404,8 @@ export function ProfileCard({ data, theme }: { data: ProfileCardData; theme?: Ca
 
       {/* Footer */}
       <div className="relative">
-        <div style={{ backgroundColor: t.backgroundImage ? `${t.bg}CC` : t.bg, borderTop: `1px solid ${t.border}` }} className="px-5 py-1.5 flex items-center gap-1.5">
+        <OrnamentalDivider color={cardBorder?.border || t.accent} className="mx-3" />
+        <div style={{ backgroundColor: t.backgroundImage ? `${t.bg}CC` : t.bg }} className="px-5 py-1.5 flex items-center gap-1.5">
           <svg width="14" height="14" viewBox="0 0 32 32" style={{ opacity: 0.5 }}>
             <rect width="32" height="32" rx="6" fill={t.accent} />
             <g transform="translate(4, 4)">

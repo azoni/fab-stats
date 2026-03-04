@@ -5,6 +5,7 @@ import type { Top8HeroMeta } from "@/lib/meta-stats";
 import { FINISH_THEMES, type FinishTheme } from "@/components/profile/BestFinishCard";
 import { copyCardImage, downloadCardImage } from "@/lib/share-image";
 import { logActivity } from "@/lib/activity-log";
+import { CornerFiligree, OrnamentalDivider, CardBackgroundPattern, AccentTopBar, InnerVignette } from "@/components/share/CardOrnaments";
 
 // ── Donut chart colors — distinct, vibrant palette for hero segments ──
 
@@ -117,12 +118,17 @@ export function MetaShareCard({ heroes, title, subtitle, theme }: MetaShareCardP
   const total = heroes.reduce((sum, h) => sum + h.count, 0);
 
   return (
-    <div style={{ backgroundColor: t.surface, borderColor: t.border, width: 440 }} className="border-2 rounded-xl overflow-hidden">
+    <div style={{ backgroundColor: t.surface, borderColor: t.border, width: 440 }} className="border-2 rounded-xl overflow-hidden relative">
+      {/* Background pattern + vignette */}
+      <CardBackgroundPattern color={t.accent} id="meta" opacity={0.04} />
+      <InnerVignette opacity={0.2} />
+      {/* Corner filigree */}
+      <CornerFiligree color={t.accent} opacity={0.18} />
       {/* Accent bar */}
-      <div style={{ height: 3, backgroundColor: t.accent }} />
+      <AccentTopBar color={t.accent} />
 
       {/* Header */}
-      <div className="px-5 pt-4 pb-2 text-center">
+      <div className="px-5 pt-4 pb-2 text-center relative">
         <p style={{ color: t.accent }} className="text-[11px] uppercase tracking-[0.25em] font-black">
           Community Meta
         </p>
@@ -181,7 +187,8 @@ export function MetaShareCard({ heroes, title, subtitle, theme }: MetaShareCardP
       })()}
 
       {/* Footer */}
-      <div style={{ backgroundColor: t.bg, borderTop: `1px solid ${t.border}` }} className="px-5 py-1.5">
+      <OrnamentalDivider color={t.accent} className="mx-3" />
+      <div style={{ backgroundColor: t.bg }} className="px-5 py-1.5 relative">
         <p style={{ color: t.accent, opacity: 0.5 }} className="text-[10px] tracking-wider font-semibold">fabstats.net</p>
       </div>
     </div>

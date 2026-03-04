@@ -16,6 +16,7 @@ import {
   TrophyIcon,
   MarbleIcon,
 } from "@/components/profile/TrophyCase";
+import { CornerFiligree, OrnamentalDivider, CardBackgroundPattern, AccentTopBar, InnerVignette } from "@/components/share/CardOrnaments";
 
 // ── Card ──
 
@@ -88,15 +89,23 @@ export function EventShareCardInner({ data, theme }: { data: EventShareData; the
   const isPositive = event.wins >= event.losses;
 
   return (
-    <div style={{ backgroundColor: t.surface, borderColor: t.border, width: 380 }} className="border rounded-xl overflow-hidden">
+    <div style={{ backgroundColor: t.surface, borderColor: t.border, width: 380 }} className="border rounded-xl overflow-hidden relative">
+      {/* Background pattern + vignette */}
+      <CardBackgroundPattern color={t.accent} id="event" opacity={0.04} />
+      <InnerVignette opacity={0.2} />
+      {/* Corner filigree */}
+      <CornerFiligree color={t.accent} opacity={0.18} />
+      {/* Accent top bar */}
+      <AccentTopBar color={t.accent} />
       {/* Header */}
-      <div style={{ backgroundColor: t.bg, borderColor: t.border }} className="px-5 py-3 border-b">
+      <div style={{ backgroundColor: t.bg, borderColor: t.border }} className="px-5 py-3 relative">
         <p style={{ color: t.accent }} className="text-[11px] uppercase tracking-[0.25em] text-center font-black">
           {event.eventType && event.eventType !== "Other" ? event.eventType : "Event"} Result
         </p>
       </div>
+      <OrnamentalDivider color={t.accent} className="mx-3" />
 
-      <div className="px-5 pt-5 pb-4">
+      <div className="px-5 pt-4 pb-4 relative">
         {/* Placement badge */}
         <PlacementBadge event={event} theme={t} />
 
@@ -158,7 +167,8 @@ export function EventShareCardInner({ data, theme }: { data: EventShareData; the
       </div>
 
       {/* Footer */}
-      <div style={{ backgroundColor: t.bg, borderColor: t.border }} className="px-5 py-2.5 border-t">
+      <OrnamentalDivider color={t.accent} className="mx-3" />
+      <div style={{ backgroundColor: t.bg }} className="px-5 py-2.5 relative">
         <p style={{ color: t.accent }} className="text-[11px] text-center tracking-wider font-semibold opacity-50">fabstats.net</p>
       </div>
     </div>
