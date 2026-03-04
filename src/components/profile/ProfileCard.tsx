@@ -118,6 +118,22 @@ export const PROFILE_THEMES: CardTheme[] = [
     draw: "#a1a1aa",
     barBg: "rgba(16,185,129,0.2)",
   },
+  {
+    id: "royal",
+    label: "Royal",
+    bg: "#0a0712",
+    surface: "#0e0b16",
+    border: "#3d2a1a",
+    accent: "#d4a853",
+    text: "#f5e6c8",
+    muted: "#a08b6a",
+    dim: "#6b5a3e",
+    win: "#6ee7b7",
+    loss: "#fca5a5",
+    draw: "#a1a1aa",
+    barBg: "rgba(212,168,83,0.2)",
+    backgroundImage: "/profile-card.jpg",
+  },
 ];
 
 const RANK_RING_COLORS: Record<number, { color: string; shadow: string }> = {
@@ -216,13 +232,25 @@ export function ProfileCard({ data, theme }: { data: ProfileCardData; theme?: Ca
         borderWidth: cbPlacement >= 3 ? 3 : undefined,
         width: 440,
       } as React.CSSProperties}
-      className="border-2 rounded-xl overflow-hidden"
+      className="border-2 rounded-xl overflow-hidden relative"
     >
+      {/* Background image (optional per theme) */}
+      {t.backgroundImage && (
+        <>
+          <img
+            src={t.backgroundImage}
+            alt=""
+            className="absolute inset-0 w-full h-full object-cover"
+            crossOrigin="anonymous"
+          />
+          <div className="absolute inset-0" style={{ backgroundColor: `${t.surface}B3` }} />
+        </>
+      )}
       {/* Accent bar */}
-      <div style={{ height: 3, backgroundColor: cardBorder?.border || t.accent }} />
+      <div className="relative" style={{ height: 3, backgroundColor: cardBorder?.border || t.accent }} />
 
       {/* Identity + Hero Metric */}
-      <div className="px-5 pt-4 pb-3">
+      <div className="px-5 pt-4 pb-3 relative">
         <div className="flex items-center justify-between">
           {/* Left: photo + name */}
           <div className="flex items-center gap-3 min-w-0">
@@ -325,19 +353,19 @@ export function ProfileCard({ data, theme }: { data: ProfileCardData; theme?: Ca
       </div>
 
       {/* Divider */}
-      <div className="mx-5" style={{ borderTop: `1px solid ${t.border}4D` }} />
+      <div className="mx-5 relative" style={{ borderTop: `1px solid ${t.border}4D` }} />
 
       {/* Context bar — 3 col */}
-      <div className="grid grid-cols-3 gap-2 px-5 py-2.5">
-        <div style={{ backgroundColor: t.bg }} className="rounded-lg p-2 text-center">
+      <div className="grid grid-cols-3 gap-2 px-5 py-2.5 relative">
+        <div style={{ backgroundColor: t.backgroundImage ? `${t.bg}CC` : t.bg }} className="rounded-lg p-2 text-center">
           <p style={{ color: t.muted }} className="text-[9px] uppercase tracking-wider font-semibold">Events</p>
           <p style={{ color: t.text }} className="text-sm font-black">{events}</p>
         </div>
-        <div style={{ backgroundColor: t.bg }} className="rounded-lg p-2 text-center">
+        <div style={{ backgroundColor: t.backgroundImage ? `${t.bg}CC` : t.bg }} className="rounded-lg p-2 text-center">
           <p style={{ color: t.muted }} className="text-[9px] uppercase tracking-wider font-semibold">Top Hero</p>
           <p style={{ color: t.text }} className="text-xs font-bold truncate mt-0.5">{topHero || "—"}</p>
         </div>
-        <div style={{ backgroundColor: t.bg }} className="rounded-lg p-2 text-center">
+        <div style={{ backgroundColor: t.backgroundImage ? `${t.bg}CC` : t.bg }} className="rounded-lg p-2 text-center">
           <p style={{ color: t.muted }} className="text-[9px] uppercase tracking-wider font-semibold">{slot3.label}</p>
           <p style={{ color: slot3.color }} className="text-sm font-black truncate">{slot3.value}</p>
         </div>
@@ -345,7 +373,7 @@ export function ProfileCard({ data, theme }: { data: ProfileCardData; theme?: Ca
 
       {/* Trophy Case — grouped by event tier */}
       {trophyByTier.length > 0 && (
-        <div className="px-5 py-1.5">
+        <div className="px-5 py-1.5 relative">
           <p style={{ color: t.dim }} className="text-[8px] uppercase tracking-wider font-semibold mb-1">Trophies</p>
           <div className="flex flex-wrap gap-x-3 gap-y-0.5">
             {trophyByTier.map((group) => (
@@ -365,7 +393,7 @@ export function ProfileCard({ data, theme }: { data: ProfileCardData; theme?: Ca
 
       {/* Armory — single line */}
       {hasArmory && (
-        <div className="flex items-center gap-1.5 px-5 py-1.5">
+        <div className="flex items-center gap-1.5 px-5 py-1.5 relative">
           <p style={{ color: t.dim }} className="text-[8px] uppercase tracking-wider font-semibold shrink-0">Armory</p>
           <p className="text-[10px]">
             <span style={{ color: t.text }}>{armoryCount} event{armoryCount !== 1 ? "s" : ""}</span>
@@ -381,7 +409,7 @@ export function ProfileCard({ data, theme }: { data: ProfileCardData; theme?: Ca
 
       {/* Footer */}
       <div className="relative">
-        <div style={{ backgroundColor: t.bg, borderTop: `1px solid ${t.border}` }} className="px-5 py-1.5 flex items-center gap-1.5">
+        <div style={{ backgroundColor: t.backgroundImage ? `${t.bg}CC` : t.bg, borderTop: `1px solid ${t.border}` }} className="px-5 py-1.5 flex items-center gap-1.5">
           <svg width="14" height="14" viewBox="0 0 32 32" style={{ opacity: 0.5 }}>
             <rect width="32" height="32" rx="6" fill={t.accent} />
             <g transform="translate(4, 4)">

@@ -569,6 +569,58 @@ export default function Dashboard() {
         </div>
       )}
 
+      {/* Games spotlight — visible to everyone */}
+      {!hasMatches && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Link
+            href="/fabdoku"
+            className="group relative bg-fab-surface border border-fab-border rounded-lg p-5 overflow-hidden hover:border-fab-gold/30 transition-all"
+          >
+            <div className="absolute -top-10 -right-10 w-32 h-32 bg-teal-400/5 rounded-full blur-2xl pointer-events-none" />
+            <div className="relative flex items-start gap-4">
+              <div className="w-11 h-11 rounded-lg bg-teal-400/10 flex items-center justify-center shrink-0 ring-1 ring-teal-400/20">
+                <svg className="w-5 h-5 text-teal-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
+                </svg>
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <h3 className="text-sm font-bold text-fab-text group-hover:text-teal-400 transition-colors">FaBdoku</h3>
+                  <span className="text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-teal-400/15 text-teal-400 border border-teal-400/25">New</span>
+                </div>
+                <p className="text-xs text-fab-dim leading-relaxed">Fill the 3x3 grid with heroes matching each row and column category. A new puzzle every day!</p>
+              </div>
+              <svg className="w-4 h-4 text-fab-dim group-hover:text-teal-400 transition-colors shrink-0 mt-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+              </svg>
+            </div>
+          </Link>
+          <Link
+            href="/crossword"
+            className="group relative bg-fab-surface border border-fab-border rounded-lg p-5 overflow-hidden hover:border-fab-gold/30 transition-all"
+          >
+            <div className="absolute -top-10 -right-10 w-32 h-32 bg-amber-400/5 rounded-full blur-2xl pointer-events-none" />
+            <div className="relative flex items-start gap-4">
+              <div className="w-11 h-11 rounded-lg bg-amber-400/10 flex items-center justify-center shrink-0 ring-1 ring-amber-400/20">
+                <svg className="w-5 h-5 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h3v4.5H4.5A.75.75 0 013.75 7.5V6zM9 3.75h6v4.5H9v-4.5zM15 3.75h3A2.25 2.25 0 0120.25 6v1.5a.75.75 0 01-.75.75H15v-4.5zM3.75 9h4.5v6h-4.5V9zM9 9h6v6H9V9zM15.75 9h4.5v6h-4.5V9zM3.75 15.75h4.5v4.5H6a2.25 2.25 0 01-2.25-2.25v-2.25zM9 15.75h6v4.5H9v-4.5zM15.75 15.75h4.5V18a2.25 2.25 0 01-2.25 2.25h-2.25v-4.5z" />
+                </svg>
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <h3 className="text-sm font-bold text-fab-text group-hover:text-amber-400 transition-colors">Crossword</h3>
+                  <span className="text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-teal-400/15 text-teal-400 border border-teal-400/25">New</span>
+                </div>
+                <p className="text-xs text-fab-dim leading-relaxed">Test your FaB knowledge with a daily crossword puzzle. Heroes, cards, and lore!</p>
+              </div>
+              <svg className="w-4 h-4 text-fab-dim group-hover:text-amber-400 transition-colors shrink-0 mt-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+              </svg>
+            </div>
+          </Link>
+        </div>
+      )}
+
       {/* On This Day — above profile card */}
       {hasMatches && <OnThisDay matches={matches} />}
 

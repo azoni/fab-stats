@@ -15,6 +15,7 @@ export interface CardTheme {
   loss: string;
   draw: string;
   barBg: string;
+  backgroundImage?: string;
 }
 
 export const CARD_THEMES: CardTheme[] = [
