@@ -11,7 +11,8 @@ export type ActivityAction =
   | "rivalry_share"
   | "compare_share"
   | "meta_share"
-  | "kudos_given";
+  | "kudos_given"
+  | "crossword_share";
 
 export interface ActivityEvent {
   id: string;
@@ -75,6 +76,7 @@ export const ACTIVITY_LABELS: Record<ActivityAction, string> = {
   compare_share: "shared a comparison card",
   meta_share: "shared a meta breakdown",
   kudos_given: "gave kudos",
+  crossword_share: "shared a crossword result",
 };
 
 /** Admin: read feature usage counters (single doc read). */

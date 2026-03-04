@@ -13,13 +13,14 @@ import type { FeedEventType } from "@/lib/feed";
 import type { FeedEvent } from "@/types";
 
 type ScopeTab = "community" | "friends";
-type TypeFilter = "all" | "import" | "placement" | "fabdoku" | "engagement";
+type TypeFilter = "all" | "import" | "placement" | "fabdoku" | "crossword" | "engagement";
 
 const TYPE_FILTERS: { value: TypeFilter; label: string; adminOnly?: boolean }[] = [
   { value: "all", label: "All" },
   { value: "import", label: "Imports" },
   { value: "placement", label: "Placements" },
   { value: "fabdoku", label: "FaBdoku" },
+  { value: "crossword", label: "Crossword" },
   { value: "engagement", label: "Engagement", adminOnly: true },
 ];
 
@@ -62,7 +63,7 @@ export function ActivityFeed({ rankMap, eventTierMap }: { rankMap?: Map<string, 
   const { friends } = useFriends();
   const { favorites } = useFavorites();
   const [scope, _setScope] = useState<ScopeTab>(() => readStored(SCOPE_KEY, ["community", "friends"], "community"));
-  const [typeFilter, _setTypeFilter] = useState<TypeFilter>(() => readStored(TYPE_KEY, ["all", "import", "placement", "fabdoku", "engagement"], "placement"));
+  const [typeFilter, _setTypeFilter] = useState<TypeFilter>(() => readStored(TYPE_KEY, ["all", "import", "placement", "fabdoku", "crossword", "engagement"], "placement"));
   const feedTypeFilter: FeedEventType = typeFilter === "engagement" ? "all" : typeFilter;
   const { events, loading } = useFeed(feedTypeFilter);
 
@@ -114,9 +115,12 @@ export function ActivityFeed({ rankMap, eventTierMap }: { rankMap?: Map<string, 
       source = source.filter((e) => e.type === typeFilter);
     }
 
-    // Hide "shared" fabdoku events from the public FaBdoku tab (admin sees them in Engagement)
+    // Hide "shared" events from public game tabs (admin sees them in Engagement)
     if (typeFilter === "fabdoku") {
       source = source.filter((e) => e.type !== "fabdoku" || (e as { subtype?: string }).subtype !== "shared");
+    }
+    if (typeFilter === "crossword") {
+      source = source.filter((e) => e.type !== "crossword" || (e as { subtype?: string }).subtype !== "shared");
     }
 
     // Filter out stale placements — only show events from the last 2 weeks
@@ -313,7 +317,8 @@ export function ActivityFeed({ rankMap, eventTierMap }: { rankMap?: Map<string, 
                 key={group.events[0].id}
                 onClick={(e) => {
                   if ((e.target as HTMLElement).closest("a")) return;
-                  router.push(group.events[0].type === "fabdoku" ? "/fabdoku" : `/search?type=${group.events[0].type}`);
+                  const t = group.events[0].type;
+                  router.push(t === "fabdoku" ? "/fabdoku" : t === "crossword" ? "/crossword" : `/search?type=${t}`);
                 }}
                 className="cursor-pointer"
               >

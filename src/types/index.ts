@@ -150,6 +150,8 @@ export interface UserProfile {
   borderStyle?: "beam" | "glow";
   borderEventType?: string;
   borderPlacement?: string;
+  underlineEventType?: string;
+  underlinePlacement?: string;
 }
 
 export interface ShowcaseCard {
@@ -342,7 +344,19 @@ export interface FaBdokuFeedEvent extends FeedEventBase {
   grid: ("correct" | "wrong" | "empty")[];
 }
 
-export type FeedEvent = ImportFeedEvent | AchievementFeedEvent | PlacementFeedEvent | FaBdokuFeedEvent;
+export interface CrosswordFeedEvent extends FeedEventBase {
+  type: "crossword";
+  subtype: "completed" | "shared";
+  date: string;
+  won: boolean;
+  wordsFound: number;
+  totalWords: number;
+  elapsedSeconds: number;
+  checksUsed: number;
+  revealsUsed: number;
+}
+
+export type FeedEvent = ImportFeedEvent | AchievementFeedEvent | PlacementFeedEvent | FaBdokuFeedEvent | CrosswordFeedEvent;
 
 export interface Creator {
   name: string;

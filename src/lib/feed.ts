@@ -16,7 +16,7 @@ import {
   type QueryConstraint,
 } from "firebase/firestore";
 import { db } from "./firebase";
-import type { FeedEvent, ImportFeedEvent, AchievementFeedEvent, PlacementFeedEvent, FaBdokuFeedEvent, UserProfile, ImportSource, Achievement, MatchRecord } from "@/types";
+import type { FeedEvent, ImportFeedEvent, AchievementFeedEvent, PlacementFeedEvent, FaBdokuFeedEvent, CrosswordFeedEvent, UserProfile, ImportSource, Achievement, MatchRecord } from "@/types";
 import type { PlayoffFinish } from "./stats";
 
 function feedCollection() {
@@ -179,6 +179,58 @@ export async function createFaBdokuFeedEvent(
   invalidateFeedCache();
 }
 
+export async function createCrosswordFeedEvent(
+  profile: UserProfile,
+  subtype: "completed" | "shared",
+  puzzleDate: string,
+  won: boolean,
+  wordsFound: number,
+  totalWords: number,
+  elapsedSeconds: number,
+  checksUsed: number,
+  revealsUsed: number,
+): Promise<void> {
+  if (!profile.isPublic || profile.hideFromFeed) return;
+
+  // Dedup: don't post multiple events for the same puzzle+subtype
+  const dupCheck = query(
+    feedCollection(),
+    where("userId", "==", profile.uid),
+    where("type", "==", "crossword"),
+    where("date", "==", puzzleDate),
+    where("subtype", "==", subtype),
+    limit(1),
+  );
+  const existing = await getDocs(dupCheck);
+  if (!existing.empty) return;
+
+  const data: Omit<CrosswordFeedEvent, "id"> = {
+    type: "crossword",
+    subtype,
+    userId: profile.uid,
+    username: profile.username,
+    displayName: profile.displayName,
+    isPublic: profile.isPublic,
+    date: puzzleDate,
+    won,
+    wordsFound,
+    totalWords,
+    elapsedSeconds,
+    checksUsed,
+    revealsUsed,
+    createdAt: new Date().toISOString(),
+  };
+
+  const clean: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(data)) {
+    if (v !== undefined) clean[k] = v;
+  }
+  if (profile.photoUrl) clean.photoUrl = profile.photoUrl;
+
+  await addDoc(feedCollection(), clean);
+  invalidateFeedCache();
+}
+
 /** Post a FaBdoku feed event for a guest (no profile required). */
 export async function createGuestFaBdokuFeedEvent(
   puzzleDate: string,
@@ -298,7 +350,7 @@ export function invalidateFeedCache() {
   feedCache.clear();
 }
 
-export type FeedEventType = "all" | "import" | "achievement" | "placement" | "fabdoku";
+export type FeedEventType = "all" | "import" | "achievement" | "placement" | "fabdoku" | "crossword";
 
 export interface PaginatedFeedResult {
   events: FeedEvent[];

@@ -1,7 +1,7 @@
 "use client";
 import { useState, useCallback } from "react";
 import Link from "next/link";
-import type { FeedEvent, ImportFeedEvent, FaBdokuFeedEvent } from "@/types";
+import type { FeedEvent, ImportFeedEvent, FaBdokuFeedEvent, CrosswordFeedEvent } from "@/types";
 import { rankBorderClass } from "@/lib/leaderboard-ranks";
 import { playerHref } from "@/lib/constants";
 import { FEED_REACTIONS, addFeedReaction, removeFeedReaction, deleteFeedEvent } from "@/lib/feed";
@@ -357,6 +357,7 @@ export function FeedCard({ event, compact, rankMap, eventTierMap, userId, isAdmi
           {event.type === "achievement" && <AchievementContent event={event} compact={compact} />}
           {event.type === "placement" && <PlacementContent event={event} compact={compact} />}
           {event.type === "fabdoku" && <FaBdokuContent event={event} compact={compact} />}
+          {event.type === "crossword" && <CrosswordContent event={event} compact={compact} />}
           <ReactionBar event={event} userId={userId} compact={compact} />
         </div>
       </div>
@@ -516,6 +517,42 @@ function FaBdokuContent({ event, compact }: { event: FaBdokuFeedEvent; compact?:
         </div>
       </div>
     </>
+  );
+}
+
+function formatCrosswordTime(seconds: number): string {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m}:${String(s).padStart(2, "0")}`;
+}
+
+function CrosswordContent({ event, compact }: { event: CrosswordFeedEvent; compact?: boolean }) {
+  const actionText = event.subtype === "shared" ? "shared" : "completed";
+  const statusText = event.won ? `Solved in ${formatCrosswordTime(event.elapsedSeconds)}` : `${event.wordsFound}/${event.totalWords} words`;
+  const noHints = event.checksUsed + event.revealsUsed === 0;
+
+  if (compact) {
+    return (
+      <p className="text-[11px] text-fab-muted">
+        {actionText} Crossword &middot;{" "}
+        <span className="font-semibold text-fab-text">{statusText}</span>
+        {noHints && event.won && <span className="ml-1 text-fab-gold">No hints!</span>}
+      </p>
+    );
+  }
+
+  return (
+    <div className="mt-1">
+      <p className="text-sm text-fab-muted">
+        {actionText}{" "}
+        <Link href="/crossword" className="font-semibold text-fab-gold hover:underline">FaB Crossword</Link>
+        {" "}&mdash;{" "}
+        <span className="font-semibold text-fab-text">{statusText}</span>
+      </p>
+      {noHints && event.won && (
+        <p className="text-xs text-fab-gold mt-0.5">No hints used!</p>
+      )}
+    </div>
   );
 }
 
