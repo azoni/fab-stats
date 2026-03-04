@@ -1048,6 +1048,15 @@ export default function DocsPage() {
               >
                 Add to your server
               </a>
+              {" · "}
+              <a
+                href="https://discord.gg/knDmm9s7"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-fab-gold hover:underline"
+              >
+                Join the Discord
+              </a>
             </p>
 
             <h3 className="text-sm font-semibold text-fab-text mt-4 mb-2">Player Lookup</h3>
@@ -1071,6 +1080,7 @@ export default function DocsPage() {
               <p><code className="text-fab-gold">/leaderboard [category] [sort]</code> — Community leaderboard with 34+ ranking categories. Supports autocomplete search.</p>
               <p><code className="text-fab-gold">/meta</code> — Current season&apos;s Top 8 hero breakdown across the community.</p>
               <p><code className="text-fab-gold">/herolist [sort]</code> — Community hero tier list sorted by matches, win rate, or players.</p>
+              <p><code className="text-fab-gold">/community-matchup &lt;hero1&gt; &lt;hero2&gt; [format]</code> — Community win rates for a hero matchup across all FaB Stats players. Supports autocomplete.</p>
             </div>
 
             <h3 className="text-sm font-semibold text-fab-text mt-4 mb-2">Weekly Armory Recaps</h3>
