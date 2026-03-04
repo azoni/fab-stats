@@ -826,31 +826,52 @@ export function GroupedFeedCard({ group, compact, rankMap, eventTierMap, underli
 
           {isGameGroup ? (
             /* ── Grouped game events ── */
-            compact ? (
-              <>
-                <p className="text-[11px] text-fab-muted">
-                  completed <span className="font-semibold text-fab-text">{group.events.length}</span> games
-                </p>
-                <div className="space-y-0.5 mt-1">
-                  {group.events.map((e) => (
-                    <GameResultSummary key={e.id} event={e} />
-                  ))}
-                </div>
-                <ReactionBar event={first} userId={userId} compact />
-              </>
-            ) : (
-              <>
-                <p className="text-sm text-fab-muted mt-1">
-                  completed <span className="font-semibold text-fab-text">{group.events.length}</span> games
-                </p>
-                <div className="space-y-0.5 mt-1.5">
-                  {group.events.map((e) => (
-                    <GameResultSummary key={e.id} event={e} />
-                  ))}
-                </div>
-                <ReactionBar event={first} userId={userId} />
-              </>
-            )
+            (() => {
+              const PREVIEW = 2;
+              const hasMore = group.events.length > PREVIEW;
+              const visible = expanded ? group.events : group.events.slice(0, PREVIEW);
+              return compact ? (
+                <>
+                  <p className="text-[11px] text-fab-muted">
+                    completed <span className="font-semibold text-fab-text">{group.events.length}</span> games
+                  </p>
+                  <div className="space-y-0.5 mt-1">
+                    {visible.map((e) => (
+                      <GameResultSummary key={e.id} event={e} />
+                    ))}
+                  </div>
+                  {hasMore && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}
+                      className="text-[10px] text-fab-dim hover:text-fab-muted transition-colors mt-0.5"
+                    >
+                      {expanded ? "Show less" : `+${group.events.length - PREVIEW} more`}
+                    </button>
+                  )}
+                  <ReactionBar event={first} userId={userId} compact />
+                </>
+              ) : (
+                <>
+                  <p className="text-sm text-fab-muted mt-1">
+                    completed <span className="font-semibold text-fab-text">{group.events.length}</span> games
+                  </p>
+                  <div className="space-y-0.5 mt-1.5">
+                    {visible.map((e) => (
+                      <GameResultSummary key={e.id} event={e} />
+                    ))}
+                  </div>
+                  {hasMore && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}
+                      className="text-xs text-fab-dim hover:text-fab-muted transition-colors mt-1"
+                    >
+                      {expanded ? "Show less" : `+${group.events.length - PREVIEW} more`}
+                    </button>
+                  )}
+                  <ReactionBar event={first} userId={userId} />
+                </>
+              );
+            })()
           ) : compact ? (
             /* ── Grouped imports (compact) ── */
             <>
