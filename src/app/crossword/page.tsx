@@ -207,7 +207,7 @@ export default function CrosswordPage() {
           gs.elapsedSeconds,
           gs.checksUsed,
           gs.revealsUsed,
-        ).catch(() => {});
+        ).catch((err) => console.error("Crossword feed event failed:", err));
       }
     },
     [user?.uid, profile, puzzle.words.length]
