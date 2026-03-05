@@ -170,7 +170,7 @@ export interface UserProfile {
 }
 
 export interface ShowcaseCard {
-  type: "featuredMatch" | "heroSpotlight" | "bestFinish" | "rivalry" | "eventRecap" | "achievements" | "statHighlight" | "formatMastery" | "eventTypeMastery" | "streakShowcase" | "recentForm" | "leaderboardRank" | "customImage";
+  type: "featuredMatch" | "heroSpotlight" | "bestFinish" | "rivalry" | "eventRecap" | "achievements" | "statHighlight" | "formatMastery" | "eventTypeMastery" | "venueMastery" | "streakShowcase" | "recentForm" | "leaderboardRank" | "customImage";
   matchId?: string;
   heroName?: string;
   eventDate?: string;

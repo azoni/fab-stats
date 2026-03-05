@@ -11,6 +11,7 @@ import { AchievementShowcaseCard } from "./showcase/AchievementShowcaseCard";
 import { StatHighlightCard, type StatType } from "./showcase/StatHighlightCard";
 import { FormatMasteryCard } from "./showcase/FormatMasteryCard";
 import { EventTypeMasteryCard } from "./showcase/EventTypeMasteryCard";
+import { VenueMasteryCard } from "./showcase/VenueMasteryCard";
 import { StreakShowcaseCard } from "./showcase/StreakShowcaseCard";
 import { RecentFormCard } from "./showcase/RecentFormCard";
 import { LeaderboardRankCard } from "./showcase/LeaderboardRankCard";
@@ -65,7 +66,7 @@ const MAX_POINTS = 12;
 // Card types that have editable selections
 const EDITABLE_TYPES = new Set<ShowcaseCard["type"]>([
   "featuredMatch", "heroSpotlight", "bestFinish", "rivalry", "eventRecap", "achievements", "statHighlight",
-  "formatMastery", "eventTypeMastery", "customImage",
+  "formatMastery", "eventTypeMastery", "venueMastery", "customImage",
 ]);
 
 const CARD_TYPE_LABELS: Record<string, string> = {
@@ -78,6 +79,7 @@ const CARD_TYPE_LABELS: Record<string, string> = {
   statHighlight: "Stat",
   formatMastery: "Formats",
   eventTypeMastery: "Event Types",
+  venueMastery: "Venues",
   streakShowcase: "Streaks",
   recentForm: "Form",
   leaderboardRank: "Rankings",
@@ -385,7 +387,7 @@ function InlineCardEditor({ card, index, onReplace, onCancel, matches, heroStats
         {card.type === "statHighlight" && (
           <StatPicker initialStats={card.stats || (card.stat ? [card.stat] : [])} onSelect={(stats) => onReplace(index, { type: "statHighlight", stats, stat: stats[0] })} />
         )}
-        {(card.type === "formatMastery" || card.type === "eventTypeMastery") && (
+        {(card.type === "formatMastery" || card.type === "eventTypeMastery" || card.type === "venueMastery") && (
           <MasteryEditor
             card={card}
             matches={matches}
@@ -428,7 +430,11 @@ function MasteryEditor({ card, matches, onSave }: {
     const map = new Map<string, { matches: number; wins: number }>();
     for (const m of matches) {
       if (m.result === MatchResult.Bye) continue;
-      const key = card.type === "formatMastery" ? m.format : getEditorEventType(m);
+      let key: string | null;
+      if (card.type === "formatMastery") key = m.format;
+      else if (card.type === "venueMastery") { const v = (m.venue || "").trim(); key = v && v !== "Unknown" ? v : null; }
+      else key = getEditorEventType(m);
+      if (!key) continue;
       const cur = map.get(key) || { matches: 0, wins: 0 };
       cur.matches++;
       if (m.result === MatchResult.Win) cur.wins++;
@@ -565,6 +571,8 @@ function ShowcaseCardRenderer({ card, matches, heroStats, masteries, eventStats,
       return <FormatMasteryCard matches={matches} sortBy={card.sortBy} selectedItems={card.selectedItems} />;
     case "eventTypeMastery":
       return <EventTypeMasteryCard matches={matches} sortBy={card.sortBy} selectedItems={card.selectedItems} />;
+    case "venueMastery":
+      return <VenueMasteryCard matches={matches} sortBy={card.sortBy} selectedItems={card.selectedItems} />;
     case "streakShowcase":
       return <StreakShowcaseCard overall={overall} matches={matches} />;
     case "recentForm":
