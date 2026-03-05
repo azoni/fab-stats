@@ -148,6 +148,13 @@ export default function ImportPage() {
     return [...new Set(pasteResult.events.map((e) => e.format))];
   }, [pasteResult]);
 
+  // Auto-select format when there's only one
+  useEffect(() => {
+    if (availableFormats.length === 1) {
+      setFilterFormat(availableFormats[0]);
+    }
+  }, [availableFormats]);
+
   const availableEventTypes = useMemo(() => {
     if (!pasteResult) return [];
     return [...new Set(pasteResult.events.map((e) => e.eventType))];
