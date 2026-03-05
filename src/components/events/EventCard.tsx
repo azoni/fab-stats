@@ -54,7 +54,7 @@ export function EventCard({ event, playerName, obfuscateOpponents = false, visib
     return h.size === 1 ? [...h][0]! : "";
   })();
   const [segments, setSegments] = useState<HeroSegment[]>([
-    { hero: initHero, format: "", fromRound: "1", toRound: String(event.matches.length) },
+    { hero: initHero, format: event.format || "", fromRound: "1", toRound: String(event.matches.length) },
   ]);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
