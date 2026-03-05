@@ -4,7 +4,7 @@ import { TOTAL_ROUNDS, WIN_THRESHOLD } from "@/lib/matchupmania/puzzle-generator
 
 function CountdownToMidnight() {
   const now = new Date();
-  const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+  const tomorrow = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1));
   const diff = tomorrow.getTime() - now.getTime();
   const h = Math.floor(diff / 3600000);
   const m = Math.floor((diff % 3600000) / 60000);

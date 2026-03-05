@@ -135,7 +135,7 @@ function ResourcesPopout() {
 function hasPlayedToday(slug: string): boolean {
   if (typeof window === "undefined") return false;
   const now = new Date();
-  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  const today = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}-${String(now.getUTCDate()).padStart(2, "0")}`;
   try { return localStorage.getItem(`${slug}-${today}`) !== null; } catch { return false; }
 }
 

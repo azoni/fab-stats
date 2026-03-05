@@ -30,6 +30,7 @@ import { AdminPicksViewer } from "@/components/fabdoku/AdminPicksViewer";
 import {
   generateDailyPuzzle,
   getTodayDateStr,
+  getYesterdayDateStr,
 } from "@/lib/fabdoku/puzzle-generator";
 import {
   loadGameState,
@@ -54,15 +55,6 @@ import {
 import { createFaBdokuFeedEvent, createGuestFaBdokuFeedEvent, deleteFaBdokuFeedEvents } from "@/lib/feed";
 import { logActivity } from "@/lib/activity-log";
 import type { GameState, FaBdokuStats, UniquenessData, PickData } from "@/lib/fabdoku/types";
-
-function getYesterdayDateStr(): string {
-  const d = new Date();
-  d.setDate(d.getDate() - 1);
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const dd = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${dd}`;
-}
 
 function buildGrid(state: GameState): ("correct" | "wrong" | "empty")[][] {
   return state.cells.map((row) =>

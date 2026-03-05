@@ -6,7 +6,7 @@ import { AllGamesShareCard } from "@/components/games/AllGamesShareCard";
 
 function getTodayDateStr(): string {
   const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  return `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}-${String(now.getUTCDate()).padStart(2, "0")}`;
 }
 
 function getCompletedCount(): number {

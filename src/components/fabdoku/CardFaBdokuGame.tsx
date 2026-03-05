@@ -13,7 +13,7 @@ import {
   generateDailyCardPuzzle,
   type CardDailyPuzzle,
 } from "@/lib/fabdoku/card-puzzle-generator";
-import { getTodayDateStr } from "@/lib/fabdoku/puzzle-generator";
+import { getTodayDateStr, getYesterdayDateStr } from "@/lib/fabdoku/puzzle-generator";
 import {
   loadCardGameState,
   saveCardGameState,
@@ -36,15 +36,6 @@ import {
 import { logActivity } from "@/lib/activity-log";
 import { createFaBdokuCardFeedEvent, createGuestFaBdokuCardFeedEvent } from "@/lib/feed";
 import type { FaBdokuStats, UniquenessData, PickData, GameState, CellState } from "@/lib/fabdoku/types";
-
-function getYesterdayDateStr(): string {
-  const d = new Date();
-  d.setDate(d.getDate() - 1);
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const dd = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${dd}`;
-}
 
 function buildGrid(state: CardGameState): ("correct" | "wrong" | "empty")[][] {
   return state.cells.map((row) =>

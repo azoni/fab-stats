@@ -66,13 +66,11 @@ export function FaBdokuResult({ gameState, stats, uniqueness, onShare, onCopy }:
   const correctCount = gameState.cells.flat().filter((c) => c.correct).length;
   const totalCells = 9;
 
-  // Countdown to next puzzle
+  // Countdown to next puzzle (UTC midnight, matching puzzle reset)
   useEffect(() => {
     function updateCountdown() {
       const now = new Date();
-      const tomorrow = new Date(now);
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      tomorrow.setHours(0, 0, 0, 0);
+      const tomorrow = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1));
       const diff = tomorrow.getTime() - now.getTime();
 
       const h = Math.floor(diff / (1000 * 60 * 60));

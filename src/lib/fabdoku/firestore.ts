@@ -285,12 +285,12 @@ export function buildPicksFromResults(results: FaBdokuResult[]): PickData {
   return { totalPlayers: results.length, cells };
 }
 
-/** Helper: offset a YYYY-MM-DD date string by N days. */
+/** Helper: offset a YYYY-MM-DD date string by N days (UTC). */
 function getDateOffset(dateStr: string, days: number): string {
-  const d = new Date(dateStr + "T00:00:00");
-  d.setDate(d.getDate() + days);
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const dd = String(d.getDate()).padStart(2, "0");
+  const d = new Date(dateStr + "T00:00:00Z");
+  d.setUTCDate(d.getUTCDate() + days);
+  const y = d.getUTCFullYear();
+  const m = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const dd = String(d.getUTCDate()).padStart(2, "0");
   return `${y}-${m}-${dd}`;
 }
