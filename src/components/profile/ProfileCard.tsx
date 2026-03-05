@@ -7,6 +7,8 @@ import { copyCardImage, downloadCardImage } from "@/lib/share-image";
 import { EMBLEM_COMPONENTS, EMBLEM_COLORS } from "@/components/profile/EmblemIcons";
 import { BADGE_ICON_MAP } from "@/components/profile/BadgeIcons";
 import { getProfileBadges } from "@/lib/profile-badges";
+import { BadgeTierWrapper } from "@/components/profile/BadgeTierWrapper";
+import { TIER_VISUALS } from "@/lib/badge-tiers";
 import { CornerFiligree, OrnamentalDivider, CardBackgroundPattern, AccentTopBar, InnerVignette } from "@/components/share/CardOrnaments";
 import type { CardTheme } from "@/components/opponents/RivalryCard";
 import type { PlayoffFinish } from "@/lib/stats";
@@ -37,14 +39,14 @@ export interface ProfileCardData {
   armoryUndefeated?: number;
   isSiteCreator?: boolean;
   isCreator?: boolean;
-  playedFabdoku?: boolean;
-  playedFabdokuCards?: boolean;
-  playedCrossword?: boolean;
-  playedHeroGuesser?: boolean;
-  playedMatchupMania?: boolean;
-  playedTrivia?: boolean;
-  playedTimeline?: boolean;
-  playedConnections?: boolean;
+  fabdokuGames?: number;
+  fabdokuCardGames?: number;
+  crosswordGames?: number;
+  heroGuesserGames?: number;
+  matchupManiaGames?: number;
+  triviaGames?: number;
+  timelineGames?: number;
+  connectionsGames?: number;
   submittedFeedback?: boolean;
 }
 
@@ -317,14 +319,20 @@ export function ProfileCard({ data, theme }: { data: ProfileCardData; theme?: Ca
               </div>
               {username && <p style={{ color: t.dim }} className="text-[11px]">@{username}</p>}
               {(() => {
-                const badges = getProfileBadges(totalMatches, { isCreator: data.isCreator, playedFabdoku: data.playedFabdoku, playedFabdokuCards: data.playedFabdokuCards, playedCrossword: data.playedCrossword, playedHeroGuesser: data.playedHeroGuesser, playedMatchupMania: data.playedMatchupMania, playedTrivia: data.playedTrivia, playedTimeline: data.playedTimeline, playedConnections: data.playedConnections, submittedFeedback: data.submittedFeedback });
+                const badges = getProfileBadges({ matchCount: totalMatches, isCreator: data.isCreator, fabdokuGames: data.fabdokuGames, fabdokuCardGames: data.fabdokuCardGames, crosswordGames: data.crosswordGames, heroGuesserGames: data.heroGuesserGames, matchupManiaGames: data.matchupManiaGames, triviaGames: data.triviaGames, timelineGames: data.timelineGames, connectionsGames: data.connectionsGames, submittedFeedback: data.submittedFeedback });
                 if (badges.length === 0) return null;
                 return (
                   <div className="flex items-center gap-1 mt-0.5">
                     {badges.map((badge) => {
                       const Icon = BADGE_ICON_MAP[badge.id];
                       if (!Icon) return null;
-                      return <span key={badge.id} style={{ color: t.accent, opacity: 0.8 }}><Icon className="w-4 h-4" /></span>;
+                      const visual = TIER_VISUALS[badge.tier.tier];
+                      const color = visual.ringColor !== "transparent" ? visual.ringColor : t.accent;
+                      return (
+                        <BadgeTierWrapper key={badge.id} tier={badge.tier.tier} size="sm">
+                          <span style={{ color, opacity: 0.8 }}><Icon className="w-4 h-4" /></span>
+                        </BadgeTierWrapper>
+                      );
                     })}
                   </div>
                 );

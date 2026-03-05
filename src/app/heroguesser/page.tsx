@@ -11,6 +11,8 @@ import { saveResult, loadStats, markShared } from "@/lib/heroguesser/firestore";
 import { createHeroGuesserFeedEvent } from "@/lib/feed";
 import { logActivity } from "@/lib/activity-log";
 import { getHeroByName } from "@/lib/heroes";
+import { detectTierUp } from "@/lib/badge-tiers";
+import { BadgeTierUpPopup } from "@/components/profile/BadgeTierUpPopup";
 import type { HeroGuesserGameState, HeroGuesserStats } from "@/lib/heroguesser/types";
 
 function getTodayDateStr(): string {
@@ -31,6 +33,7 @@ export default function HeroGuesserPage() {
   const [stats, setStats] = useState<HeroGuesserStats | null>(null);
   const [showResult, setShowResult] = useState(gameState.completed);
   const [showShare, setShowShare] = useState(false);
+  const [badgeTierUp, setBadgeTierUp] = useState<{ tier: import("@/lib/badge-tiers").BadgeTierInfo; count: number } | null>(null);
   const completionSaved = useRef(false);
   const sharedDatesRef = useRef(new Set<string>());
 
@@ -75,9 +78,16 @@ export default function HeroGuesserPage() {
           timestamp: Date.now(),
           uid: user.uid,
         };
+        const oldGamesPlayed = stats?.gamesPlayed ?? 0;
         saveResult(user.uid, result)
           .then(() => loadStats(user.uid))
-          .then((s) => { if (s) setStats(s); })
+          .then((s) => {
+            if (s) {
+              setStats(s);
+              const tierUp = detectTierUp("heroguesser-player", oldGamesPlayed, s.gamesPlayed);
+              if (tierUp) setBadgeTierUp({ tier: tierUp, count: s.gamesPlayed });
+            }
+          })
           .catch(console.error);
 
         // Post feed event
@@ -149,6 +159,15 @@ export default function HeroGuesserPage() {
           maxGuesses={gameState.maxGuesses}
           onClose={() => setShowShare(false)}
           onShared={triggerShared}
+        />
+      )}
+      {badgeTierUp && (
+        <BadgeTierUpPopup
+          badgeId="heroguesser-player"
+          badgeName="Hero Guesser"
+          tier={badgeTierUp.tier}
+          count={badgeTierUp.count}
+          onClose={() => setBadgeTierUp(null)}
         />
       )}
     </div>

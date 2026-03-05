@@ -3,9 +3,13 @@ import { useState, useEffect } from "react";
 import type { SessionRecap } from "@/lib/session-recap";
 import type { Achievement } from "@/types";
 import type { PlayoffFinish } from "@/lib/stats";
+import type { BadgeTierInfo } from "@/lib/badge-tiers";
+import { TIER_VISUALS } from "@/lib/badge-tiers";
 import { tierConfig } from "@/lib/mastery";
 import { rarityColors } from "@/lib/achievements";
 import { AchievementIcon } from "@/components/gamification/AchievementIcons";
+import { BADGE_ICON_MAP } from "@/components/profile/BadgeIcons";
+import { BadgeTierWrapper } from "@/components/profile/BadgeTierWrapper";
 import { PlacementShareModal } from "./PlacementShareCard";
 
 const placementConfig: Record<PlayoffFinish["type"], { label: string; icon: string; color: string; bg: string; border: string }> = {
@@ -28,9 +32,10 @@ interface Props {
   newAchievements?: Achievement[];
   newPlacements?: PlayoffFinish[];
   playerName?: string;
+  matchBadgeTierUp?: { tier: BadgeTierInfo; count: number } | null;
 }
 
-export function PostEventRecap({ recap, onViewOpponents, onDashboard, onImportMore, skippedCount, newAchievements, newPlacements, playerName }: Props) {
+export function PostEventRecap({ recap, onViewOpponents, onDashboard, onImportMore, skippedCount, newAchievements, newPlacements, playerName, matchBadgeTierUp }: Props) {
   const { wins, losses, draws, winRate, bestStreak, heroInsights, newOverallWinRate, newTotalMatches, currentStreak } = recap;
   const total = wins + losses + draws;
 
@@ -228,6 +233,31 @@ export function PostEventRecap({ recap, onViewOpponents, onDashboard, onImportMo
           )}
         </div>
       )}
+
+      {/* Badge Tier Up */}
+      {matchBadgeTierUp && (() => {
+        const Icon = BADGE_ICON_MAP["first-match"];
+        const visual = TIER_VISUALS[matchBadgeTierUp.tier.tier];
+        const isFirst = matchBadgeTierUp.tier.level === 1;
+        return (
+          <div className="flex items-center gap-3 rounded-lg p-4 bg-fab-gold/10 border border-fab-gold/30">
+            <BadgeTierWrapper tier={matchBadgeTierUp.tier.tier} size="md">
+              <div style={{ color: visual.ringColor !== "transparent" ? visual.ringColor : "#C9A84C" }}>
+                {Icon && <Icon className="w-6 h-6" />}
+              </div>
+            </BadgeTierWrapper>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold text-fab-gold">
+                {isFirst ? "Badge Earned: First Blood!" : `Badge Upgraded: ${matchBadgeTierUp.tier.label} Tier!`}
+              </p>
+              <p className="text-xs text-fab-muted">
+                {matchBadgeTierUp.count} matches logged
+                {matchBadgeTierUp.tier.nextThreshold && ` \u00b7 Next tier at ${matchBadgeTierUp.tier.nextThreshold}`}
+              </p>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* New Achievements */}
       {hasNewAchievements && (

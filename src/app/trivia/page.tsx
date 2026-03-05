@@ -10,6 +10,8 @@ import { createFreshGameState, loadGameState, saveGameState, cleanupOldStates } 
 import { saveResult, loadStats, markShared } from "@/lib/trivia/firestore";
 import { createTriviaFeedEvent } from "@/lib/feed";
 import { logActivity } from "@/lib/activity-log";
+import { detectTierUp } from "@/lib/badge-tiers";
+import { BadgeTierUpPopup } from "@/components/profile/BadgeTierUpPopup";
 import type { TriviaGameState, TriviaStats, TriviaAnswer } from "@/lib/trivia/types";
 import type { TriviaQuestion } from "@/lib/trivia/question-bank";
 
@@ -30,6 +32,7 @@ export default function TriviaPage() {
   const [stats, setStats] = useState<TriviaStats | null>(null);
   const [showResult, setShowResult] = useState(gameState.completed);
   const [showShare, setShowShare] = useState(false);
+  const [badgeTierUp, setBadgeTierUp] = useState<{ tier: import("@/lib/badge-tiers").BadgeTierInfo; count: number } | null>(null);
   const completionSaved = useRef(false);
   const sharedDatesRef = useRef(new Set<string>());
 
@@ -77,9 +80,16 @@ export default function TriviaPage() {
           timestamp: Date.now(),
           uid: user.uid,
         };
+        const oldGamesPlayed = stats?.gamesPlayed ?? 0;
         saveResult(user.uid, result)
           .then(() => loadStats(user.uid))
-          .then((s) => { if (s) setStats(s); })
+          .then((s) => {
+            if (s) {
+              setStats(s);
+              const tierUp = detectTierUp("trivia-player", oldGamesPlayed, s.gamesPlayed);
+              if (tierUp) setBadgeTierUp({ tier: tierUp, count: s.gamesPlayed });
+            }
+          })
           .catch(console.error);
 
         if (profile) {
@@ -141,6 +151,9 @@ export default function TriviaPage() {
           onClose={() => setShowShare(false)}
           onShared={triggerShared}
         />
+      )}
+      {badgeTierUp && (
+        <BadgeTierUpPopup badgeId="trivia-player" badgeName="Trivia Buff" tier={badgeTierUp.tier} count={badgeTierUp.count} onClose={() => setBadgeTierUp(null)} />
       )}
     </div>
   );

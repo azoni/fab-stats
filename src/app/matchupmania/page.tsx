@@ -10,6 +10,8 @@ import { createFreshGameState, loadGameState, saveGameState, cleanupOldStates } 
 import { saveResult, loadStats, markShared } from "@/lib/matchupmania/firestore";
 import { createMatchupManiaFeedEvent } from "@/lib/feed";
 import { logActivity } from "@/lib/activity-log";
+import { detectTierUp } from "@/lib/badge-tiers";
+import { BadgeTierUpPopup } from "@/components/profile/BadgeTierUpPopup";
 import { getCommunityHeroMatchups, getMonthsForPreset } from "@/lib/hero-matchups";
 import type { MatchupManiaGameState, MatchupManiaStats, MatchupRound } from "@/lib/matchupmania/types";
 import type { CommunityMatchupCell } from "@/lib/hero-matchups";
@@ -32,6 +34,7 @@ export default function MatchupManiaPage() {
   const [rounds, setRounds] = useState<MatchupRound[]>(gameState.rounds);
   const [showResult, setShowResult] = useState(gameState.completed);
   const [showShare, setShowShare] = useState(false);
+  const [badgeTierUp, setBadgeTierUp] = useState<{ tier: import("@/lib/badge-tiers").BadgeTierInfo; count: number } | null>(null);
   const [loading, setLoading] = useState(true);
   const completionSaved = useRef(false);
   const sharedDatesRef = useRef(new Set<string>());
@@ -106,9 +109,16 @@ export default function MatchupManiaPage() {
           timestamp: Date.now(),
           uid: user.uid,
         };
+        const oldGamesPlayed = stats?.gamesPlayed ?? 0;
         saveResult(user.uid, result)
           .then(() => loadStats(user.uid))
-          .then((s) => { if (s) setStats(s); })
+          .then((s) => {
+            if (s) {
+              setStats(s);
+              const tierUp = detectTierUp("matchupmania-player", oldGamesPlayed, s.gamesPlayed);
+              if (tierUp) setBadgeTierUp({ tier: tierUp, count: s.gamesPlayed });
+            }
+          })
           .catch(console.error);
 
         if (profile) {
@@ -189,6 +199,9 @@ export default function MatchupManiaPage() {
               onClose={() => setShowShare(false)}
               onShared={triggerShared}
             />
+          )}
+          {badgeTierUp && (
+            <BadgeTierUpPopup badgeId="matchupmania-player" badgeName="Matchup Maniac" tier={badgeTierUp.tier} count={badgeTierUp.count} onClose={() => setBadgeTierUp(null)} />
           )}
         </>
       )}

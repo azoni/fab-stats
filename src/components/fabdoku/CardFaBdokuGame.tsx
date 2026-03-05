@@ -34,6 +34,8 @@ import {
   markCardShared,
 } from "@/lib/fabdoku/card-firestore";
 import { logActivity } from "@/lib/activity-log";
+import { detectTierUp } from "@/lib/badge-tiers";
+import { BadgeTierUpPopup } from "@/components/profile/BadgeTierUpPopup";
 import { createFaBdokuCardFeedEvent, createGuestFaBdokuCardFeedEvent } from "@/lib/feed";
 import type { FaBdokuStats, UniquenessData, PickData, GameState, CellState } from "@/lib/fabdoku/types";
 
@@ -76,6 +78,7 @@ export function CardFaBdokuGame() {
   const [showYesterday, setShowYesterday] = useState(true);
   const [showRecap, setShowRecap] = useState(false);
   const [showYesterdayShare, setShowYesterdayShare] = useState(false);
+  const [badgeTierUp, setBadgeTierUp] = useState<{ tier: import("@/lib/badge-tiers").BadgeTierInfo; count: number } | null>(null);
   const sharedDatesRef = useRef(new Set<string>());
 
   const triggerShared = useCallback((gs: CardGameState, date: string, uq: UniquenessData | null) => {
@@ -204,13 +207,18 @@ export function CardFaBdokuGame() {
 
       if (isCompleted) {
         if (user?.uid) {
+          const oldGamesPlayed = stats?.gamesPlayed ?? 0;
           try {
             const result = buildCardResult(newState);
             await saveCardResult(user.uid, result);
           } catch {}
           try {
             const updatedStats = await loadCardStats(user.uid);
-            if (updatedStats) setStats(updatedStats);
+            if (updatedStats) {
+              setStats(updatedStats);
+              const tierUp = detectTierUp("fabdoku-card-player", oldGamesPlayed, updatedStats.gamesPlayed);
+              if (tierUp) setBadgeTierUp({ tier: tierUp, count: updatedStats.gamesPlayed });
+            }
           } catch {}
         }
         const shouldSavePicks = !hasCardPicksSaved(dateStr);
@@ -386,6 +394,9 @@ export function CardFaBdokuGame() {
             if (yesterdayGameState) triggerShared(yesterdayGameState, yesterdayStr, yesterdayScore);
           }}
         />
+      )}
+      {badgeTierUp && (
+        <BadgeTierUpPopup badgeId="fabdoku-card-player" badgeName="Card Puzzler" tier={badgeTierUp.tier} count={badgeTierUp.count} onClose={() => setBadgeTierUp(null)} />
       )}
     </>
   );

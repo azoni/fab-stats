@@ -1,7 +1,14 @@
+import { getBadgeTier, type BadgeTierInfo } from "./badge-tiers";
+
 export interface ProfileBadge {
   id: string;
   name: string;
   description: string;
+}
+
+export interface ProfileBadgeWithTier extends ProfileBadge {
+  tier: BadgeTierInfo;
+  count: number;
 }
 
 const BADGES: ProfileBadge[] = [
@@ -18,40 +25,52 @@ const BADGES: ProfileBadge[] = [
   { id: "feedback-contributor", name: "Feedback Hero", description: "Submitted feedback to help improve the site" },
 ];
 
-export function getProfileBadges(matchCount: number, flags?: { isCreator?: boolean; playedFabdoku?: boolean; playedFabdokuCards?: boolean; playedCrossword?: boolean; playedHeroGuesser?: boolean; playedMatchupMania?: boolean; playedTrivia?: boolean; playedTimeline?: boolean; playedConnections?: boolean; submittedFeedback?: boolean }): ProfileBadge[] {
-  const earned: ProfileBadge[] = [];
-  if (flags?.isCreator) {
-    earned.push(BADGES.find((b) => b.id === "content-creator")!);
+export interface BadgeCounts {
+  matchCount: number;
+  isCreator?: boolean;
+  fabdokuGames?: number;
+  fabdokuCardGames?: number;
+  crosswordGames?: number;
+  heroGuesserGames?: number;
+  matchupManiaGames?: number;
+  triviaGames?: number;
+  timelineGames?: number;
+  connectionsGames?: number;
+  submittedFeedback?: boolean;
+}
+
+const BADGE_COUNT_MAP: Record<string, keyof BadgeCounts> = {
+  "first-match": "matchCount",
+  "fabdoku-player": "fabdokuGames",
+  "fabdoku-card-player": "fabdokuCardGames",
+  "crossword-player": "crosswordGames",
+  "heroguesser-player": "heroGuesserGames",
+  "matchupmania-player": "matchupManiaGames",
+  "trivia-player": "triviaGames",
+  "timeline-player": "timelineGames",
+  "connections-player": "connectionsGames",
+};
+
+export function getProfileBadges(counts: BadgeCounts): ProfileBadgeWithTier[] {
+  const earned: ProfileBadgeWithTier[] = [];
+
+  if (counts.isCreator) {
+    const badge = BADGES.find((b) => b.id === "content-creator")!;
+    earned.push({ ...badge, tier: getBadgeTier("content-creator", 1), count: 1 });
   }
-  if (matchCount >= 1) {
-    earned.push(BADGES.find((b) => b.id === "first-match")!);
+
+  for (const [badgeId, countKey] of Object.entries(BADGE_COUNT_MAP)) {
+    const count = (counts[countKey] as number) ?? 0;
+    if (count >= 1) {
+      const badge = BADGES.find((b) => b.id === badgeId)!;
+      earned.push({ ...badge, tier: getBadgeTier(badgeId, count), count });
+    }
   }
-  if (flags?.playedFabdoku) {
-    earned.push(BADGES.find((b) => b.id === "fabdoku-player")!);
+
+  if (counts.submittedFeedback) {
+    const badge = BADGES.find((b) => b.id === "feedback-contributor")!;
+    earned.push({ ...badge, tier: getBadgeTier("feedback-contributor", 1), count: 1 });
   }
-  if (flags?.playedFabdokuCards) {
-    earned.push(BADGES.find((b) => b.id === "fabdoku-card-player")!);
-  }
-  if (flags?.playedCrossword) {
-    earned.push(BADGES.find((b) => b.id === "crossword-player")!);
-  }
-  if (flags?.playedHeroGuesser) {
-    earned.push(BADGES.find((b) => b.id === "heroguesser-player")!);
-  }
-  if (flags?.playedMatchupMania) {
-    earned.push(BADGES.find((b) => b.id === "matchupmania-player")!);
-  }
-  if (flags?.playedTrivia) {
-    earned.push(BADGES.find((b) => b.id === "trivia-player")!);
-  }
-  if (flags?.playedTimeline) {
-    earned.push(BADGES.find((b) => b.id === "timeline-player")!);
-  }
-  if (flags?.playedConnections) {
-    earned.push(BADGES.find((b) => b.id === "connections-player")!);
-  }
-  if (flags?.submittedFeedback) {
-    earned.push(BADGES.find((b) => b.id === "feedback-contributor")!);
-  }
+
   return earned;
 }

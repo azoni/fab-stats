@@ -756,7 +756,7 @@ export default function Dashboard() {
                   )}
                 </div>
               </div>
-              <BadgeStrip matchCount={matches.length} isCreator={isCreator} playedFabdoku={(fabdokuFullStats?.gamesPlayed ?? 0) >= 1 || fabdokuScore !== null} playedFabdokuCards={(fabdokuCardFullStats?.gamesPlayed ?? 0) >= 1} playedCrossword={(crosswordFullStats?.gamesPlayed ?? 0) >= 1} playedHeroGuesser={(heroGuesserFullStats?.gamesPlayed ?? 0) >= 1} playedMatchupMania={(matchupManiaFullStats?.gamesPlayed ?? 0) >= 1} playedTrivia={(triviaFullStats?.gamesPlayed ?? 0) >= 1} playedTimeline={(timelineFullStats?.gamesPlayed ?? 0) >= 1} playedConnections={(connectionsFullStats?.gamesPlayed ?? 0) >= 1} submittedFeedback={gaveFeedback} className="mt-2 ml-1" />
+              <BadgeStrip matchCount={matches.length} isCreator={isCreator} fabdokuGames={Math.max(fabdokuFullStats?.gamesPlayed ?? 0, fabdokuScore !== null ? 1 : 0)} fabdokuCardGames={fabdokuCardFullStats?.gamesPlayed ?? 0} crosswordGames={crosswordFullStats?.gamesPlayed ?? 0} heroGuesserGames={heroGuesserFullStats?.gamesPlayed ?? 0} matchupManiaGames={matchupManiaFullStats?.gamesPlayed ?? 0} triviaGames={triviaFullStats?.gamesPlayed ?? 0} timelineGames={timelineFullStats?.gamesPlayed ?? 0} connectionsGames={connectionsFullStats?.gamesPlayed ?? 0} submittedFeedback={gaveFeedback} className="mt-2 ml-1" />
               {/* Score badges — bottom right */}
               <div className="absolute bottom-1.5 right-2.5 flex items-center gap-1.5 z-10">
                 {kudosTotal !== null && (
@@ -864,14 +864,14 @@ export default function Dashboard() {
             armoryUndefeated: eventStats.filter(e => e.eventType === "Armory" && e.losses === 0 && e.wins > 0).length,
             isSiteCreator: profile.username === "azoni",
             isCreator,
-            playedFabdoku: (fabdokuFullStats?.gamesPlayed ?? 0) >= 1 || fabdokuScore !== null,
-            playedFabdokuCards: (fabdokuCardFullStats?.gamesPlayed ?? 0) >= 1,
-            playedCrossword: (crosswordFullStats?.gamesPlayed ?? 0) >= 1,
-            playedHeroGuesser: (heroGuesserFullStats?.gamesPlayed ?? 0) >= 1,
-            playedMatchupMania: (matchupManiaFullStats?.gamesPlayed ?? 0) >= 1,
-            playedTrivia: (triviaFullStats?.gamesPlayed ?? 0) >= 1,
-            playedTimeline: (timelineFullStats?.gamesPlayed ?? 0) >= 1,
-            playedConnections: (connectionsFullStats?.gamesPlayed ?? 0) >= 1,
+            fabdokuGames: Math.max(fabdokuFullStats?.gamesPlayed ?? 0, fabdokuScore !== null ? 1 : 0),
+            fabdokuCardGames: fabdokuCardFullStats?.gamesPlayed ?? 0,
+            crosswordGames: crosswordFullStats?.gamesPlayed ?? 0,
+            heroGuesserGames: heroGuesserFullStats?.gamesPlayed ?? 0,
+            matchupManiaGames: matchupManiaFullStats?.gamesPlayed ?? 0,
+            triviaGames: triviaFullStats?.gamesPlayed ?? 0,
+            timelineGames: timelineFullStats?.gamesPlayed ?? 0,
+            connectionsGames: connectionsFullStats?.gamesPlayed ?? 0,
             submittedFeedback: gaveFeedback,
           }}
           onClose={() => setProfileShareOpen(false)}

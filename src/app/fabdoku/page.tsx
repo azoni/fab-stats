@@ -54,6 +54,8 @@ import {
 } from "@/lib/fabdoku/firestore";
 import { createFaBdokuFeedEvent, createGuestFaBdokuFeedEvent, deleteFaBdokuFeedEvents } from "@/lib/feed";
 import { logActivity } from "@/lib/activity-log";
+import { detectTierUp } from "@/lib/badge-tiers";
+import { BadgeTierUpPopup } from "@/components/profile/BadgeTierUpPopup";
 import type { GameState, FaBdokuStats, UniquenessData, PickData } from "@/lib/fabdoku/types";
 
 function buildGrid(state: GameState): ("correct" | "wrong" | "empty")[][] {
@@ -87,6 +89,7 @@ export default function FaBdokuPage() {
   const [showRecap, setShowRecap] = useState(false);
   const [showYesterdayShare, setShowYesterdayShare] = useState(false);
   const [isReplay, setIsReplay] = useState(false);
+  const [badgeTierUp, setBadgeTierUp] = useState<{ tier: import("@/lib/badge-tiers").BadgeTierInfo; count: number } | null>(null);
   const sharedDatesRef = useRef(new Set<string>());
 
   // Fire markShared + feed event (deduped per date so multiple clicks don't spam)
@@ -244,6 +247,7 @@ export default function FaBdokuPage() {
       if (isCompleted) {
         // Save result and picks independently so one failure doesn't block the other
         if (user?.uid) {
+          const oldGamesPlayed = stats?.gamesPlayed ?? 0;
           try {
             const result = buildResult(newState);
             await saveResult(user.uid, result);
@@ -252,7 +256,11 @@ export default function FaBdokuPage() {
           }
           try {
             const updatedStats = await loadStats(user.uid);
-            if (updatedStats) setStats(updatedStats);
+            if (updatedStats) {
+              setStats(updatedStats);
+              const tierUp = detectTierUp("fabdoku-player", oldGamesPlayed, updatedStats.gamesPlayed);
+              if (tierUp) setBadgeTierUp({ tier: tierUp, count: updatedStats.gamesPlayed });
+            }
           } catch {}
         }
         // Save picks (independent of result save)
@@ -674,6 +682,9 @@ export default function FaBdokuPage() {
           onClose={() => setShowYesterdayShare(false)}
           onShared={() => triggerShared(yesterdayGameState, yesterdayStr, yesterdayScore)}
         />
+      )}
+      {badgeTierUp && (
+        <BadgeTierUpPopup badgeId="fabdoku-player" badgeName="Puzzle Player" tier={badgeTierUp.tier} count={badgeTierUp.count} onClose={() => setBadgeTierUp(null)} />
       )}
     </div>
   );

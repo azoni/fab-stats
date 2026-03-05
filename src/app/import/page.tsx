@@ -24,6 +24,7 @@ import { allHeroes } from "@/lib/heroes";
 import { computeSessionRecap, type SessionRecap } from "@/lib/session-recap";
 import { PostEventRecap } from "@/components/import/PostEventRecap";
 import { getAllMatches as getLocalMatches } from "@/lib/storage";
+import { detectTierUp, type BadgeTierInfo } from "@/lib/badge-tiers";
 
 const BOOKMARKLET_HREF = `javascript:void((async function(){var els=document.querySelectorAll('a,button,summary,span,div,[role=button]');var n=0;for(var i=0;i<els.length;i++){var t=(els[i].textContent||'').trim();if(t.match(/View Results/i)&&t.length<30){els[i].click();n++;await new Promise(function(r){setTimeout(r,600)})}}alert('Expanded '+n+' events. Press Ctrl+A, Ctrl+C to copy.')})())`;
 
@@ -58,6 +59,7 @@ export default function ImportPage() {
   const [sessionRecap, setSessionRecap] = useState<SessionRecap | null>(null);
   const [newAchievements, setNewAchievements] = useState<Achievement[]>([]);
   const [newPlacements, setNewPlacements] = useState<PlayoffFinish[]>([]);
+  const [matchBadgeTierUp, setMatchBadgeTierUp] = useState<{ tier: BadgeTierInfo; count: number } | null>(null);
   const [isMobile, setIsMobile] = useState(false);
   const [showPasteSteps, setShowPasteSteps] = useState(false);
   const [clearBeforeImport, setClearBeforeImport] = useState(false);
@@ -292,6 +294,10 @@ export default function ImportPage() {
         const newlyImported = afterMatches.filter((m) => !beforeIds.has(m.id));
         const recap = computeSessionRecap(beforeMatches, afterMatches, newlyImported);
         setSessionRecap(recap);
+
+        // Detect match badge tier-up
+        const tierUp = detectTierUp("first-match", beforeMatches.length, afterMatches.length);
+        if (tierUp) setMatchBadgeTierUp({ tier: tierUp, count: afterMatches.length });
       } catch {
         // Recap computation failed — will fall back to basic completion screen
       }
@@ -384,6 +390,7 @@ export default function ImportPage() {
     setSessionRecap(null);
     setNewAchievements([]);
     setNewPlacements([]);
+    setMatchBadgeTierUp(null);
   }
 
   async function handleClearAll() {
@@ -451,6 +458,7 @@ export default function ImportPage() {
           newAchievements={newAchievements}
           newPlacements={newPlacements}
           playerName={profile?.displayName || profile?.username}
+          matchBadgeTierUp={matchBadgeTierUp}
         />
       );
     }

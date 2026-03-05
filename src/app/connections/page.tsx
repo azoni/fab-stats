@@ -10,6 +10,8 @@ import { createFreshGameState, loadGameState, saveGameState, cleanupOldStates } 
 import { saveResult, loadStats, markShared } from "@/lib/connections/firestore";
 import { createConnectionsFeedEvent } from "@/lib/feed";
 import { logActivity } from "@/lib/activity-log";
+import { detectTierUp } from "@/lib/badge-tiers";
+import { BadgeTierUpPopup } from "@/components/profile/BadgeTierUpPopup";
 import type { ConnectionsGameState, ConnectionsStats, ConnectionsGuess } from "@/lib/connections/types";
 
 function getTodayDateStr(): string {
@@ -30,6 +32,7 @@ export default function ConnectionsPage() {
   const [stats, setStats] = useState<ConnectionsStats | null>(null);
   const [showResult, setShowResult] = useState(gameState.completed);
   const [showShare, setShowShare] = useState(false);
+  const [badgeTierUp, setBadgeTierUp] = useState<{ tier: import("@/lib/badge-tiers").BadgeTierInfo; count: number } | null>(null);
   const completionSaved = useRef(false);
   const sharedDatesRef = useRef(new Set<string>());
 
@@ -100,9 +103,16 @@ export default function ConnectionsPage() {
           timestamp: Date.now(),
           uid: user.uid,
         };
+        const oldGamesPlayed = stats?.gamesPlayed ?? 0;
         saveResult(user.uid, result)
           .then(() => loadStats(user.uid))
-          .then((s) => { if (s) setStats(s); })
+          .then((s) => {
+            if (s) {
+              setStats(s);
+              const tierUp = detectTierUp("connections-player", oldGamesPlayed, s.gamesPlayed);
+              if (tierUp) setBadgeTierUp({ tier: tierUp, count: s.gamesPlayed });
+            }
+          })
           .catch(console.error);
 
         if (profile) {
@@ -185,6 +195,9 @@ export default function ConnectionsPage() {
           onClose={() => setShowShare(false)}
           onShared={triggerShared}
         />
+      )}
+      {badgeTierUp && (
+        <BadgeTierUpPopup badgeId="connections-player" badgeName="Connector" tier={badgeTierUp.tier} count={badgeTierUp.count} onClose={() => setBadgeTierUp(null)} />
       )}
     </div>
   );

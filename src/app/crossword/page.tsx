@@ -17,6 +17,8 @@ import {
 import { saveResult, loadStats, markShared } from "@/lib/crossword/firestore";
 import { createCrosswordFeedEvent } from "@/lib/feed";
 import { logActivity } from "@/lib/activity-log";
+import { detectTierUp } from "@/lib/badge-tiers";
+import { BadgeTierUpPopup } from "@/components/profile/BadgeTierUpPopup";
 import type { CrosswordGameState, CrosswordStats, Direction, CrosswordPuzzle } from "@/lib/crossword/types";
 
 function formatTime(seconds: number): string {
@@ -69,6 +71,7 @@ export default function CrosswordPage() {
   const [showResult, setShowResult] = useState(false);
   const [showShare, setShowShare] = useState(false);
   const [stats, setStats] = useState<CrosswordStats | null>(null);
+  const [badgeTierUp, setBadgeTierUp] = useState<{ tier: import("@/lib/badge-tiers").BadgeTierInfo; count: number } | null>(null);
   const [isPaused, setIsPaused] = useState(false);
   const [checkedCells, setCheckedCells] = useState<Set<string>>(new Set());
   const completionSaved = useRef(false);
@@ -192,8 +195,17 @@ export default function CrosswordPage() {
           totalWords: puzzle.words.length,
           timestamp: Date.now(),
         };
-        saveResult(user.uid, result).catch(() => {});
-        loadStats(user.uid).then(setStats).catch(() => {});
+        const oldGamesPlayed = stats?.gamesPlayed ?? 0;
+        saveResult(user.uid, result)
+          .then(() => loadStats(user.uid))
+          .then((s) => {
+            if (s) {
+              setStats(s);
+              const tierUp = detectTierUp("crossword-player", oldGamesPlayed, s.gamesPlayed);
+              if (tierUp) setBadgeTierUp({ tier: tierUp, count: s.gamesPlayed });
+            }
+          })
+          .catch(() => {});
       }
 
       if (profile) {
@@ -512,6 +524,10 @@ export default function CrosswordPage() {
           onClose={() => setShowShare(false)}
           onShared={() => triggerShared(gameState)}
         />
+      )}
+
+      {badgeTierUp && (
+        <BadgeTierUpPopup badgeId="crossword-player" badgeName="Wordsmith" tier={badgeTierUp.tier} count={badgeTierUp.count} onClose={() => setBadgeTierUp(null)} />
       )}
 
       {/* Admin reset */}
