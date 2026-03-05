@@ -40,7 +40,7 @@ export function FaBdokuRecap({
   onCollapse,
   onShare,
 }: FaBdokuRecapProps) {
-  const [selectedCell, setSelectedCell] = useState<[number, number] | null>(null);
+  const [selectedCell, setSelectedCell] = useState<[number, number] | null>([0, 0]);
 
   const correctCount = gameState.cells.flat().filter((c) => c.correct).length;
 
