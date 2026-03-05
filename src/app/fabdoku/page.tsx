@@ -26,6 +26,7 @@ import { HeroSearchModal } from "@/components/fabdoku/HeroSearchModal";
 import { FaBdokuResult } from "@/components/fabdoku/FaBdokuResult";
 import { FaBdokuShareCard } from "@/components/fabdoku/FaBdokuShareCard";
 import { FaBdokuRecap } from "@/components/fabdoku/FaBdokuRecap";
+import { AdminPicksViewer } from "@/components/fabdoku/AdminPicksViewer";
 import {
   generateDailyPuzzle,
   getTodayDateStr,
@@ -644,6 +645,15 @@ export default function FaBdokuPage() {
             </button>
           )}
         </div>
+      )}
+
+      {isAdmin && (
+        <AdminPicksViewer
+          dateStr={dateStr}
+          loadPicks={loadPicks}
+          cellLabels={puzzle.rows.map((r) => puzzle.cols.map((c) => `${r.label} × ${c.label}`))}
+          mode="heroes"
+        />
       )}
 
       {/* Hero search modal */}

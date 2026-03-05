@@ -7,6 +7,7 @@ import { CardSearchModal } from "./CardSearchModal";
 import { FaBdokuResult } from "./FaBdokuResult";
 import { FaBdokuShareCard } from "./FaBdokuShareCard";
 import { FaBdokuRecap } from "./FaBdokuRecap";
+import { AdminPicksViewer } from "./AdminPicksViewer";
 import { getCardById } from "@/lib/cards";
 import {
   generateDailyCardPuzzle,
@@ -65,7 +66,7 @@ function toHeroGameState(state: CardGameState): GameState {
 }
 
 export function CardFaBdokuGame() {
-  const { user, profile } = useAuth();
+  const { user, profile, isAdmin } = useAuth();
   const dateStr = useMemo(() => getTodayDateStr(), []);
   const yesterdayStr = useMemo(() => getYesterdayDateStr(), []);
   const puzzle = useMemo(() => generateDailyCardPuzzle(dateStr), [dateStr]);
@@ -331,6 +332,15 @@ export function CardFaBdokuGame() {
             triggerShared(gameState, dateStr, uniqueness);
           }}
           onCopy={() => triggerShared(gameState, dateStr, uniqueness)}
+        />
+      )}
+
+      {isAdmin && (
+        <AdminPicksViewer
+          dateStr={dateStr}
+          loadPicks={loadCardPicks}
+          cellLabels={puzzle.rows.map((r) => puzzle.cols.map((c) => `${r.label} × ${c.label}`))}
+          mode="cards"
         />
       )}
 
