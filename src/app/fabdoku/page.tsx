@@ -1,8 +1,10 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useSearchParams } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { GameNav } from "@/components/games/GameNav";
+import { CardFaBdokuGame } from "@/components/fabdoku/CardFaBdokuGame";
 
 function GridIcon({ className }: { className?: string }) {
   return (
@@ -69,6 +71,8 @@ function buildGrid(state: GameState): ("correct" | "wrong" | "empty")[][] {
 
 export default function FaBdokuPage() {
   const { user, profile, isAdmin } = useAuth();
+  const searchParams = useSearchParams();
+  const mode = searchParams.get("mode") === "cards" ? "cards" : "heroes";
   const dateStr = useMemo(() => getTodayDateStr(), []);
   const yesterdayStr = useMemo(() => getYesterdayDateStr(), []);
   const puzzle = useMemo(() => generateDailyPuzzle(dateStr), [dateStr]);
@@ -293,6 +297,69 @@ export default function FaBdokuPage() {
     [gameState, selectedCell, puzzle, user?.uid, profile, dateStr, refreshUniqueness, isReplay]
   );
 
+  // Card mode renders a separate component entirely
+  if (mode === "cards") {
+    return (
+      <div className="max-w-lg mx-auto px-3 sm:px-4 py-4 sm:py-6">
+        <GameNav current="fabdoku" />
+
+        {/* Header */}
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-fab-gold/10 flex items-center justify-center ring-1 ring-inset ring-fab-gold/20">
+              <GridIcon className="w-4 h-4 text-fab-gold" />
+            </div>
+            <div>
+              <h1 className="text-lg font-bold text-fab-text leading-tight">
+                FaBdoku
+              </h1>
+              <p className="text-xs text-fab-muted leading-tight">
+                Daily card puzzle
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => setShowHelp((v) => !v)}
+            className="flex items-center gap-1 px-2 py-1 rounded-md text-fab-muted hover:text-fab-text bg-fab-surface border border-fab-border hover:border-fab-gold/40 transition-colors text-xs font-medium"
+          >
+            <HelpIcon className="w-4 h-4" />
+            How to Play
+          </button>
+        </div>
+
+        {/* Mode toggle */}
+        <div className="flex items-center gap-1 mb-4 bg-fab-surface border border-fab-border rounded-lg p-1">
+          <a
+            href="/fabdoku"
+            className="flex-1 text-center py-1.5 rounded-md text-xs font-medium transition-colors text-fab-muted hover:text-fab-text"
+          >
+            Heroes
+          </a>
+          <div className="flex-1 text-center py-1.5 rounded-md text-xs font-semibold bg-fab-gold/15 text-fab-gold border border-fab-gold/30">
+            Cards
+          </div>
+        </div>
+
+        {/* How to play (card mode) */}
+        {showHelp && (
+          <div className="bg-fab-surface border border-fab-border rounded-lg p-4 mb-4 text-sm text-fab-muted space-y-3">
+            <p className="font-semibold text-fab-text">How to Play</p>
+            <ul className="list-disc list-inside space-y-1.5 text-xs">
+              <li>Fill each cell with a Flesh and Blood card that matches <strong className="text-fab-text">both</strong> the row and column categories.</li>
+              <li>You have <strong className="text-fab-text">12 guesses</strong> to fill all 9 cells. That gives you <strong className="text-fab-text">3 extra</strong> to change your mind.</li>
+              <li>Tap a filled cell to <strong className="text-fab-text">replace</strong> your pick &mdash; this uses another guess.</li>
+              <li>Each card can only be used <strong className="text-fab-text">once</strong> across the entire grid.</li>
+              <li>Pitch variants (Red, Yellow, Blue) count as <strong className="text-fab-text">separate cards</strong>.</li>
+              <li>A new puzzle appears every day at midnight.</li>
+            </ul>
+          </div>
+        )}
+
+        <CardFaBdokuGame />
+      </div>
+    );
+  }
+
   if (!gameState) {
     return (
       <div className="max-w-lg mx-auto py-8">
@@ -306,7 +373,7 @@ export default function FaBdokuPage() {
       <GameNav current="fabdoku" />
 
       {/* Header */}
-      <div className="flex items-center justify-between mb-5">
+      <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-fab-gold/10 flex items-center justify-center ring-1 ring-inset ring-fab-gold/20">
             <GridIcon className="w-4 h-4 text-fab-gold" />
@@ -327,6 +394,19 @@ export default function FaBdokuPage() {
           <HelpIcon className="w-4 h-4" />
           How to Play
         </button>
+      </div>
+
+      {/* Mode toggle */}
+      <div className="flex items-center gap-1 mb-4 bg-fab-surface border border-fab-border rounded-lg p-1">
+        <div className="flex-1 text-center py-1.5 rounded-md text-xs font-semibold bg-fab-gold/15 text-fab-gold border border-fab-gold/30">
+          Heroes
+        </div>
+        <a
+          href="/fabdoku?mode=cards"
+          className="flex-1 text-center py-1.5 rounded-md text-xs font-medium transition-colors text-fab-muted hover:text-fab-text"
+        >
+          Cards
+        </a>
       </div>
 
       {/* How to play */}

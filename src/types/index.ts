@@ -123,6 +123,21 @@ export interface HeroInfo {
   imageUrl: string;
 }
 
+export interface CardInfo {
+  name: string;
+  cardIdentifier: string;
+  types: string[];
+  classes: string[];
+  talents: string[];
+  keywords: string[];
+  pitch?: number;
+  cost?: number;
+  power?: number;
+  defense?: number;
+  legalFormats: string[];
+  imageUrl: string;
+}
+
 export interface UserProfile {
   uid: string;
   username: string;
