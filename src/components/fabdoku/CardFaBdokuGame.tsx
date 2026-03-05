@@ -34,6 +34,7 @@ import {
   markCardShared,
 } from "@/lib/fabdoku/card-firestore";
 import { logActivity } from "@/lib/activity-log";
+import { createFaBdokuCardFeedEvent, createGuestFaBdokuCardFeedEvent } from "@/lib/feed";
 import type { FaBdokuStats, UniquenessData, PickData, GameState, CellState } from "@/lib/fabdoku/types";
 
 function getYesterdayDateStr(): string {
@@ -91,9 +92,17 @@ export function CardFaBdokuGame() {
     sharedDatesRef.current.add(date);
     if (user?.uid) {
       markCardShared(user.uid).catch(() => {});
-      logActivity("fabdoku_share", date);
+      logActivity("fabdoku_card_share", date);
     }
-  }, [user?.uid]);
+    const correctCount = gs.cells.flat().filter((c) => c.correct).length;
+    const grid = buildGrid(gs);
+    if (profile) {
+      createFaBdokuCardFeedEvent(
+        profile, "shared", date, gs.won,
+        correctCount, gs.guessesUsed, grid, uq?.score,
+      ).catch(() => {});
+    }
+  }, [user?.uid, profile]);
 
   const usedCards = useMemo(() => {
     if (!gameState) return new Set<string>();
@@ -221,7 +230,21 @@ export function CardFaBdokuGame() {
           } catch {}
         }
         setShowResult(true);
-        await refreshUniqueness(newState);
+        const uData = await refreshUniqueness(newState);
+
+        // Post feed event
+        const grid = buildGrid(newState);
+        if (profile) {
+          createFaBdokuCardFeedEvent(
+            profile, "completed", dateStr, isWon,
+            correctCount, newGuessesUsed, grid, uData?.score,
+          ).catch(() => {});
+        } else {
+          createGuestFaBdokuCardFeedEvent(
+            dateStr, isWon, correctCount, newGuessesUsed,
+            grid, uData?.score,
+          ).catch(() => {});
+        }
       }
     },
     [gameState, selectedCell, puzzle, user?.uid, dateStr, refreshUniqueness]

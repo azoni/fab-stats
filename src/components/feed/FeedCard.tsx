@@ -1,7 +1,7 @@
 "use client";
 import { useState, useCallback } from "react";
 import Link from "next/link";
-import type { FeedEvent, ImportFeedEvent, FaBdokuFeedEvent, CrosswordFeedEvent, HeroGuesserFeedEvent, MatchupManiaFeedEvent, TriviaFeedEvent, TimelineFeedEvent, ConnectionsFeedEvent } from "@/types";
+import type { FeedEvent, ImportFeedEvent, FaBdokuFeedEvent, FaBdokuCardFeedEvent, CrosswordFeedEvent, HeroGuesserFeedEvent, MatchupManiaFeedEvent, TriviaFeedEvent, TimelineFeedEvent, ConnectionsFeedEvent } from "@/types";
 import { rankBorderClass } from "@/lib/leaderboard-ranks";
 import { playerHref } from "@/lib/constants";
 import { FEED_REACTIONS, addFeedReaction, removeFeedReaction, deleteFeedEvent } from "@/lib/feed";
@@ -11,7 +11,7 @@ export interface FeedGroup {
   totalMatchCount: number;
 }
 
-const GAME_TYPES = new Set(["fabdoku", "crossword", "heroguesser", "matchupmania", "trivia", "timeline", "connections"]);
+const GAME_TYPES = new Set(["fabdoku", "fabdoku-cards", "crossword", "heroguesser", "matchupmania", "trivia", "timeline", "connections"]);
 
 /** Group consecutive import or game feed events from the same user into collapsible groups.
  *  Achievement/placement events are never grouped — they stay as single-item groups. */
@@ -373,6 +373,7 @@ export function FeedCard({ event, compact, rankMap, eventTierMap, underlineTierM
           {event.type === "achievement" && <AchievementContent event={event} compact={compact} />}
           {event.type === "placement" && <PlacementContent event={event} compact={compact} />}
           {event.type === "fabdoku" && <FaBdokuContent event={event} compact={compact} />}
+          {event.type === "fabdoku-cards" && <FaBdokuCardContent event={event} compact={compact} />}
           {event.type === "crossword" && <CrosswordContent event={event} compact={compact} />}
           {event.type === "heroguesser" && <HeroGuesserContent event={event} compact={compact} />}
           {event.type === "matchupmania" && <MatchupManiaContent event={event} compact={compact} />}
@@ -522,6 +523,54 @@ function FaBdokuContent({ event, compact }: { event: FaBdokuFeedEvent; compact?:
           <p className="text-sm text-fab-muted">
             {actionText}{" "}
             <Link href="/fabdoku" className="font-semibold text-fab-gold hover:underline">FaBdoku</Link>
+            {" "}&mdash;{" "}
+            <span className="font-semibold text-fab-text">{event.correctCount}/9</span> in {event.guessesUsed} guesses
+          </p>
+          {event.uniquenessScore !== undefined && (
+            <p className="text-xs text-fab-muted mt-0.5">
+              Uniqueness: <span className="font-semibold text-fab-gold">{event.uniquenessScore}</span>
+            </p>
+          )}
+        </div>
+        <div className="grid grid-cols-3 gap-0.5 shrink-0 ml-auto">
+          {(Array.isArray(event.grid[0]) ? event.grid.flat() : event.grid).map((cell, i) => (
+            <div key={i} className={`w-3.5 h-3.5 rounded-sm ${gridCellColor[cell]}`} />
+          ))}
+        </div>
+      </div>
+    </>
+  );
+}
+
+function FaBdokuCardContent({ event, compact }: { event: FaBdokuCardFeedEvent; compact?: boolean }) {
+  const actionText = event.subtype === "shared" ? "shared" : "completed";
+
+  if (compact) {
+    return (
+      <div className="flex items-center gap-2">
+        <p className="text-[11px] text-fab-muted">
+          {actionText} FaBdoku Cards &middot;{" "}
+          <span className="font-semibold text-fab-text">{event.correctCount}/9</span>
+          {event.uniquenessScore !== undefined && (
+            <span className="ml-1 text-fab-gold font-semibold">{event.uniquenessScore}pts</span>
+          )}
+        </p>
+        <div className="grid grid-cols-3 gap-px shrink-0">
+          {(Array.isArray(event.grid[0]) ? event.grid.flat() : event.grid).map((cell, i) => (
+            <div key={i} className={`w-2 h-2 rounded-[1px] ${gridCellColor[cell]}`} />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <div className="flex items-center gap-3 mt-1">
+        <div>
+          <p className="text-sm text-fab-muted">
+            {actionText}{" "}
+            <Link href="/fabdoku?mode=cards" className="font-semibold text-fab-gold hover:underline">FaBdoku Cards</Link>
             {" "}&mdash;{" "}
             <span className="font-semibold text-fab-text">{event.correctCount}/9</span> in {event.guessesUsed} guesses
           </p>
@@ -714,6 +763,7 @@ function HeroGuesserContent({ event, compact }: { event: HeroGuesserFeedEvent; c
 
 const GAME_LABELS: Record<string, string> = {
   fabdoku: "FaBdoku",
+  "fabdoku-cards": "FaBdoku Cards",
   crossword: "Crossword",
   heroguesser: "Hero Guesser",
   matchupmania: "Matchup Mania",
@@ -729,6 +779,11 @@ function GameResultSummary({ event }: { event: FeedEvent }) {
   switch (event.type) {
     case "fabdoku": {
       const e = event as FaBdokuFeedEvent;
+      detail = `${e.correctCount}/9${e.uniquenessScore !== undefined ? ` ${e.uniquenessScore}pts` : ""}`;
+      break;
+    }
+    case "fabdoku-cards": {
+      const e = event as FaBdokuCardFeedEvent;
       detail = `${e.correctCount}/9${e.uniquenessScore !== undefined ? ` ${e.uniquenessScore}pts` : ""}`;
       break;
     }

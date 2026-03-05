@@ -8,6 +8,7 @@ const BADGES: ProfileBadge[] = [
   { id: "first-match", name: "First Blood", description: "Logged a match!" },
   { id: "content-creator", name: "Content Creator", description: "Community content creator" },
   { id: "fabdoku-player", name: "Puzzle Player", description: "Completed a FaBdoku puzzle" },
+  { id: "fabdoku-card-player", name: "Card Puzzler", description: "Completed a FaBdoku Cards puzzle" },
   { id: "crossword-player", name: "Wordsmith", description: "Completed a Crossword puzzle" },
   { id: "heroguesser-player", name: "Hero Guesser", description: "Completed a Hero Guesser puzzle" },
   { id: "matchupmania-player", name: "Matchup Maniac", description: "Completed a Matchup Mania game" },
@@ -17,7 +18,7 @@ const BADGES: ProfileBadge[] = [
   { id: "feedback-contributor", name: "Feedback Hero", description: "Submitted feedback to help improve the site" },
 ];
 
-export function getProfileBadges(matchCount: number, flags?: { isCreator?: boolean; playedFabdoku?: boolean; playedCrossword?: boolean; playedHeroGuesser?: boolean; playedMatchupMania?: boolean; playedTrivia?: boolean; playedTimeline?: boolean; playedConnections?: boolean; submittedFeedback?: boolean }): ProfileBadge[] {
+export function getProfileBadges(matchCount: number, flags?: { isCreator?: boolean; playedFabdoku?: boolean; playedFabdokuCards?: boolean; playedCrossword?: boolean; playedHeroGuesser?: boolean; playedMatchupMania?: boolean; playedTrivia?: boolean; playedTimeline?: boolean; playedConnections?: boolean; submittedFeedback?: boolean }): ProfileBadge[] {
   const earned: ProfileBadge[] = [];
   if (flags?.isCreator) {
     earned.push(BADGES.find((b) => b.id === "content-creator")!);
@@ -27,6 +28,9 @@ export function getProfileBadges(matchCount: number, flags?: { isCreator?: boole
   }
   if (flags?.playedFabdoku) {
     earned.push(BADGES.find((b) => b.id === "fabdoku-player")!);
+  }
+  if (flags?.playedFabdokuCards) {
+    earned.push(BADGES.find((b) => b.id === "fabdoku-card-player")!);
   }
   if (flags?.playedCrossword) {
     earned.push(BADGES.find((b) => b.id === "crossword-player")!);

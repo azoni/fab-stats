@@ -362,6 +362,17 @@ export interface FaBdokuFeedEvent extends FeedEventBase {
   grid: ("correct" | "wrong" | "empty")[];
 }
 
+export interface FaBdokuCardFeedEvent extends FeedEventBase {
+  type: "fabdoku-cards";
+  subtype: "completed" | "shared";
+  date: string;
+  won: boolean;
+  correctCount: number;
+  guessesUsed: number;
+  uniquenessScore?: number;
+  grid: ("correct" | "wrong" | "empty")[];
+}
+
 export interface CrosswordFeedEvent extends FeedEventBase {
   type: "crossword";
   subtype: "completed" | "shared";
@@ -419,7 +430,7 @@ export interface ConnectionsFeedEvent extends FeedEventBase {
   mistakesUsed: number;
 }
 
-export type FeedEvent = ImportFeedEvent | AchievementFeedEvent | PlacementFeedEvent | FaBdokuFeedEvent | CrosswordFeedEvent | HeroGuesserFeedEvent | MatchupManiaFeedEvent | TriviaFeedEvent | TimelineFeedEvent | ConnectionsFeedEvent;
+export type FeedEvent = ImportFeedEvent | AchievementFeedEvent | PlacementFeedEvent | FaBdokuFeedEvent | FaBdokuCardFeedEvent | CrosswordFeedEvent | HeroGuesserFeedEvent | MatchupManiaFeedEvent | TriviaFeedEvent | TimelineFeedEvent | ConnectionsFeedEvent;
 
 export interface Creator {
   name: string;

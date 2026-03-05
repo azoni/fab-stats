@@ -18,7 +18,8 @@ export type ActivityAction =
   | "matchupmania_share"
   | "trivia_share"
   | "timeline_share"
-  | "connections_share";
+  | "connections_share"
+  | "fabdoku_card_share";
 
 export interface ActivityEvent {
   id: string;
@@ -89,6 +90,7 @@ export const ACTIVITY_LABELS: Record<ActivityAction, string> = {
   trivia_share: "shared a trivia result",
   timeline_share: "shared a timeline result",
   connections_share: "shared a connections result",
+  fabdoku_card_share: "shared a fabdoku cards result",
 };
 
 /** Admin: read feature usage counters (single doc read). */

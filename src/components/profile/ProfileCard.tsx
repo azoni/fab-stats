@@ -38,6 +38,7 @@ export interface ProfileCardData {
   isSiteCreator?: boolean;
   isCreator?: boolean;
   playedFabdoku?: boolean;
+  playedFabdokuCards?: boolean;
   playedCrossword?: boolean;
   playedHeroGuesser?: boolean;
   playedMatchupMania?: boolean;
@@ -316,7 +317,7 @@ export function ProfileCard({ data, theme }: { data: ProfileCardData; theme?: Ca
               </div>
               {username && <p style={{ color: t.dim }} className="text-[11px]">@{username}</p>}
               {(() => {
-                const badges = getProfileBadges(totalMatches, { isCreator: data.isCreator, playedFabdoku: data.playedFabdoku, playedCrossword: data.playedCrossword, playedHeroGuesser: data.playedHeroGuesser, playedMatchupMania: data.playedMatchupMania, playedTrivia: data.playedTrivia, playedTimeline: data.playedTimeline, playedConnections: data.playedConnections, submittedFeedback: data.submittedFeedback });
+                const badges = getProfileBadges(totalMatches, { isCreator: data.isCreator, playedFabdoku: data.playedFabdoku, playedFabdokuCards: data.playedFabdokuCards, playedCrossword: data.playedCrossword, playedHeroGuesser: data.playedHeroGuesser, playedMatchupMania: data.playedMatchupMania, playedTrivia: data.playedTrivia, playedTimeline: data.playedTimeline, playedConnections: data.playedConnections, submittedFeedback: data.submittedFeedback });
                 if (badges.length === 0) return null;
                 return (
                   <div className="flex items-center gap-1 mt-0.5">

@@ -31,6 +31,7 @@ import { EventShowcase } from "@/components/home/EventShowcase";
 import { BadgeStrip } from "@/components/profile/BadgeStrip";
 import { getHeroByName } from "@/lib/heroes";
 import { loadUserResult, loadStats } from "@/lib/fabdoku/firestore";
+import { loadCardStats as loadFabdokuCardStats } from "@/lib/fabdoku/card-firestore";
 import { loadStats as loadCrosswordStats } from "@/lib/crossword/firestore";
 import { loadStats as loadHeroGuesserStats } from "@/lib/heroguesser/firestore";
 import { loadStats as loadMatchupManiaStats } from "@/lib/matchupmania/firestore";
@@ -238,6 +239,7 @@ export default function Dashboard() {
   const [triviaFullStats, setTriviaFullStats] = useState<TriviaStats | null>(null);
   const [timelineFullStats, setTimelineFullStats] = useState<TimelineStats | null>(null);
   const [connectionsFullStats, setConnectionsFullStats] = useState<ConnectionsStats | null>(null);
+  const [fabdokuCardFullStats, setFabdokuCardFullStats] = useState<FaBdokuStats | null>(null);
   const [gaveFeedback, setGaveFeedback] = useState(false);
   const [kudosTotal, setKudosTotal] = useState<number | null>(null);
   const leaderboardUpdated = useRef(false);
@@ -253,6 +255,7 @@ export default function Dashboard() {
     loadTriviaStats(user.uid).then((s) => setTriviaFullStats(s ?? null)).catch(() => {});
     loadTimelineStats(user.uid).then((s) => setTimelineFullStats(s ?? null)).catch(() => {});
     loadConnectionsStats(user.uid).then((s) => setConnectionsFullStats(s ?? null)).catch(() => {});
+    loadFabdokuCardStats(user.uid).then((s) => setFabdokuCardFullStats(s ?? null)).catch(() => {});
     loadKudosCounts(user.uid).then((c) => setKudosTotal(c.total > 0 ? c.total : null)).catch(() => {});
     hasUserSubmittedFeedback(user.uid).then(setGaveFeedback).catch(() => {});
   }, [user]);
@@ -753,7 +756,7 @@ export default function Dashboard() {
                   )}
                 </div>
               </div>
-              <BadgeStrip matchCount={matches.length} isCreator={isCreator} playedFabdoku={(fabdokuFullStats?.gamesPlayed ?? 0) >= 1 || fabdokuScore !== null} playedCrossword={(crosswordFullStats?.gamesPlayed ?? 0) >= 1} playedHeroGuesser={(heroGuesserFullStats?.gamesPlayed ?? 0) >= 1} playedMatchupMania={(matchupManiaFullStats?.gamesPlayed ?? 0) >= 1} playedTrivia={(triviaFullStats?.gamesPlayed ?? 0) >= 1} playedTimeline={(timelineFullStats?.gamesPlayed ?? 0) >= 1} playedConnections={(connectionsFullStats?.gamesPlayed ?? 0) >= 1} submittedFeedback={gaveFeedback} className="mt-2 ml-1" />
+              <BadgeStrip matchCount={matches.length} isCreator={isCreator} playedFabdoku={(fabdokuFullStats?.gamesPlayed ?? 0) >= 1 || fabdokuScore !== null} playedFabdokuCards={(fabdokuCardFullStats?.gamesPlayed ?? 0) >= 1} playedCrossword={(crosswordFullStats?.gamesPlayed ?? 0) >= 1} playedHeroGuesser={(heroGuesserFullStats?.gamesPlayed ?? 0) >= 1} playedMatchupMania={(matchupManiaFullStats?.gamesPlayed ?? 0) >= 1} playedTrivia={(triviaFullStats?.gamesPlayed ?? 0) >= 1} playedTimeline={(timelineFullStats?.gamesPlayed ?? 0) >= 1} playedConnections={(connectionsFullStats?.gamesPlayed ?? 0) >= 1} submittedFeedback={gaveFeedback} className="mt-2 ml-1" />
               {/* Score badges — bottom right */}
               <div className="absolute bottom-1.5 right-2.5 flex items-center gap-1.5 z-10">
                 {kudosTotal !== null && (
@@ -862,6 +865,7 @@ export default function Dashboard() {
             isSiteCreator: profile.username === "azoni",
             isCreator,
             playedFabdoku: (fabdokuFullStats?.gamesPlayed ?? 0) >= 1 || fabdokuScore !== null,
+            playedFabdokuCards: (fabdokuCardFullStats?.gamesPlayed ?? 0) >= 1,
             playedCrossword: (crosswordFullStats?.gamesPlayed ?? 0) >= 1,
             playedHeroGuesser: (heroGuesserFullStats?.gamesPlayed ?? 0) >= 1,
             playedMatchupMania: (matchupManiaFullStats?.gamesPlayed ?? 0) >= 1,

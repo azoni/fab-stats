@@ -43,6 +43,7 @@ import { MatchResult } from "@/types";
 import { allHeroes as knownHeroes } from "@/lib/heroes";
 import { localDate } from "@/lib/constants";
 import { loadUserResult, loadStats as loadFabdokuStats } from "@/lib/fabdoku/firestore";
+import { loadCardStats as loadFabdokuCardStats } from "@/lib/fabdoku/card-firestore";
 import { loadStats as loadCrosswordPlayerStats } from "@/lib/crossword/firestore";
 import { loadStats as loadHeroGuesserStats } from "@/lib/heroguesser/firestore";
 import { loadStats as loadMatchupManiaStats } from "@/lib/matchupmania/firestore";
@@ -105,6 +106,7 @@ export default function PlayerProfile() {
   const [triviaFullStats, setTriviaFullStats] = useState<TriviaStats | null>(null);
   const [timelineFullStats, setTimelineFullStats] = useState<TimelineStats | null>(null);
   const [connectionsFullStats, setConnectionsFullStats] = useState<ConnectionsStats | null>(null);
+  const [fabdokuCardFullStats, setFabdokuCardFullStats] = useState<FaBdokuStats | null>(null);
   const [gaveFeedback, setGaveFeedback] = useState(false);
   const [previewAsVisitor, setPreviewAsVisitor] = useState(false);
   const [editingSocials, setEditingSocials] = useState(false);
@@ -316,6 +318,7 @@ export default function PlayerProfile() {
     loadTriviaStats(profileUid).then((s) => setTriviaFullStats(s ?? null)).catch(() => {});
     loadTimelineStats(profileUid).then((s) => setTimelineFullStats(s ?? null)).catch(() => {});
     loadConnectionsStats(profileUid).then((s) => setConnectionsFullStats(s ?? null)).catch(() => {});
+    loadFabdokuCardStats(profileUid).then((s) => setFabdokuCardFullStats(s ?? null)).catch(() => {});
     hasUserSubmittedFeedback(profileUid).then(setGaveFeedback).catch(() => {});
   }, [profileUid]);
 
@@ -337,9 +340,9 @@ export default function PlayerProfile() {
       || new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
     [fm]
   );
-  const computedAchievements = useMemo(() => evaluateAchievements(fm, overall, heroStats, opponentStats, kudosCounts, fabdokuFullStats ?? undefined, heroGuesserFullStats ?? undefined, matchupManiaFullStats ?? undefined, triviaFullStats ?? undefined, timelineFullStats ?? undefined, connectionsFullStats ?? undefined), [fm, overall, heroStats, opponentStats, kudosCounts, fabdokuFullStats, heroGuesserFullStats, matchupManiaFullStats, triviaFullStats, timelineFullStats, connectionsFullStats]);
+  const computedAchievements = useMemo(() => evaluateAchievements(fm, overall, heroStats, opponentStats, kudosCounts, fabdokuFullStats ?? undefined, heroGuesserFullStats ?? undefined, matchupManiaFullStats ?? undefined, triviaFullStats ?? undefined, timelineFullStats ?? undefined, connectionsFullStats ?? undefined, fabdokuCardFullStats ?? undefined), [fm, overall, heroStats, opponentStats, kudosCounts, fabdokuFullStats, heroGuesserFullStats, matchupManiaFullStats, triviaFullStats, timelineFullStats, connectionsFullStats, fabdokuCardFullStats]);
   const achievements = useMemo(() => [...userBadges, ...computedAchievements], [userBadges, computedAchievements]);
-  const achievementProgress = useMemo(() => getAchievementProgress(fm, overall, heroStats, opponentStats, kudosCounts, fabdokuFullStats ?? undefined, heroGuesserFullStats ?? undefined, matchupManiaFullStats ?? undefined, triviaFullStats ?? undefined, timelineFullStats ?? undefined, connectionsFullStats ?? undefined), [fm, overall, heroStats, opponentStats, kudosCounts, fabdokuFullStats, heroGuesserFullStats, matchupManiaFullStats, triviaFullStats, timelineFullStats, connectionsFullStats]);
+  const achievementProgress = useMemo(() => getAchievementProgress(fm, overall, heroStats, opponentStats, kudosCounts, fabdokuFullStats ?? undefined, heroGuesserFullStats ?? undefined, matchupManiaFullStats ?? undefined, triviaFullStats ?? undefined, timelineFullStats ?? undefined, connectionsFullStats ?? undefined, fabdokuCardFullStats ?? undefined), [fm, overall, heroStats, opponentStats, kudosCounts, fabdokuFullStats, heroGuesserFullStats, matchupManiaFullStats, triviaFullStats, timelineFullStats, connectionsFullStats, fabdokuCardFullStats]);
   const masteries = useMemo(() => computeHeroMastery(heroStats), [heroStats]);
   const bestFinish = useMemo(() => computeBestFinish(eventStats), [eventStats]);
   const playoffFinishes = useMemo(() => computePlayoffFinishes(eventStats), [eventStats]);
@@ -597,7 +600,7 @@ export default function PlayerProfile() {
                     Updated {new Date(lastUpdated).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                   </span>
                 )}
-                <BadgeStrip matchCount={matches.length} isCreator={!!creatorInfo} playedFabdoku={(fabdokuFullStats?.gamesPlayed ?? 0) >= 1 || fabdokuScore !== null} playedCrossword={(crosswordFullStats?.gamesPlayed ?? 0) >= 1} playedHeroGuesser={(heroGuesserFullStats?.gamesPlayed ?? 0) >= 1} playedMatchupMania={(matchupManiaFullStats?.gamesPlayed ?? 0) >= 1} playedTrivia={(triviaFullStats?.gamesPlayed ?? 0) >= 1} playedTimeline={(timelineFullStats?.gamesPlayed ?? 0) >= 1} playedConnections={(connectionsFullStats?.gamesPlayed ?? 0) >= 1} submittedFeedback={gaveFeedback} />
+                <BadgeStrip matchCount={matches.length} isCreator={!!creatorInfo} playedFabdoku={(fabdokuFullStats?.gamesPlayed ?? 0) >= 1 || fabdokuScore !== null} playedFabdokuCards={(fabdokuCardFullStats?.gamesPlayed ?? 0) >= 1} playedCrossword={(crosswordFullStats?.gamesPlayed ?? 0) >= 1} playedHeroGuesser={(heroGuesserFullStats?.gamesPlayed ?? 0) >= 1} playedMatchupMania={(matchupManiaFullStats?.gamesPlayed ?? 0) >= 1} playedTrivia={(triviaFullStats?.gamesPlayed ?? 0) >= 1} playedTimeline={(timelineFullStats?.gamesPlayed ?? 0) >= 1} playedConnections={(connectionsFullStats?.gamesPlayed ?? 0) >= 1} submittedFeedback={gaveFeedback} />
               </div>
               {/* Social links */}
               {(profile.socialLinks?.twitter || profile.socialLinks?.discord || profile.socialLinks?.fabrary || isOwner) && !editingSocials && (
@@ -1069,6 +1072,7 @@ export default function PlayerProfile() {
             isSiteCreator: profile.username === "azoni",
             isCreator: !!creatorInfo,
             playedFabdoku: (fabdokuFullStats?.gamesPlayed ?? 0) >= 1 || fabdokuScore !== null,
+            playedFabdokuCards: (fabdokuCardFullStats?.gamesPlayed ?? 0) >= 1,
             playedCrossword: (crosswordFullStats?.gamesPlayed ?? 0) >= 1,
             playedHeroGuesser: (heroGuesserFullStats?.gamesPlayed ?? 0) >= 1,
             playedMatchupMania: (matchupManiaFullStats?.gamesPlayed ?? 0) >= 1,

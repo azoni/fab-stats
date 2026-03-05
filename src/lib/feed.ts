@@ -16,7 +16,7 @@ import {
   type QueryConstraint,
 } from "firebase/firestore";
 import { db } from "./firebase";
-import type { FeedEvent, ImportFeedEvent, AchievementFeedEvent, PlacementFeedEvent, FaBdokuFeedEvent, CrosswordFeedEvent, HeroGuesserFeedEvent, MatchupManiaFeedEvent, TriviaFeedEvent, TimelineFeedEvent, ConnectionsFeedEvent, UserProfile, ImportSource, Achievement, MatchRecord } from "@/types";
+import type { FeedEvent, ImportFeedEvent, AchievementFeedEvent, PlacementFeedEvent, FaBdokuFeedEvent, FaBdokuCardFeedEvent, CrosswordFeedEvent, HeroGuesserFeedEvent, MatchupManiaFeedEvent, TriviaFeedEvent, TimelineFeedEvent, ConnectionsFeedEvent, UserProfile, ImportSource, Achievement, MatchRecord } from "@/types";
 import type { PlayoffFinish } from "./stats";
 
 function feedCollection() {
@@ -513,6 +513,93 @@ export async function deleteFaBdokuFeedEvents(
   const batch = writeBatch(db);
   snap.docs.forEach((d) => batch.delete(d.ref));
   await batch.commit();
+  invalidateFeedCache();
+}
+
+export async function createFaBdokuCardFeedEvent(
+  profile: UserProfile,
+  subtype: "completed" | "shared",
+  puzzleDate: string,
+  won: boolean,
+  correctCount: number,
+  guessesUsed: number,
+  grid: ("correct" | "wrong" | "empty")[][],
+  uniquenessScore?: number,
+): Promise<void> {
+  if (!profile.isPublic || profile.hideFromFeed) return;
+
+  const dupCheck = query(
+    feedCollection(),
+    where("userId", "==", profile.uid),
+    where("type", "==", "fabdoku-cards"),
+    where("date", "==", puzzleDate),
+    where("subtype", "==", subtype),
+    limit(1),
+  );
+  const existing = await getDocs(dupCheck);
+  if (!existing.empty) return;
+
+  const data: Omit<FaBdokuCardFeedEvent, "id"> = {
+    type: "fabdoku-cards",
+    subtype,
+    userId: profile.uid,
+    username: profile.username,
+    displayName: profile.displayName,
+    isPublic: profile.isPublic,
+    date: puzzleDate,
+    won,
+    correctCount,
+    guessesUsed,
+    grid: grid.flat(),
+    createdAt: new Date().toISOString(),
+  };
+
+  const clean: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(data)) {
+    if (v !== undefined) clean[k] = v;
+  }
+  if (profile.photoUrl) clean.photoUrl = profile.photoUrl;
+  if (uniquenessScore !== undefined) clean.uniquenessScore = uniquenessScore;
+
+  await addDoc(feedCollection(), clean);
+  invalidateFeedCache();
+}
+
+export async function createGuestFaBdokuCardFeedEvent(
+  puzzleDate: string,
+  won: boolean,
+  correctCount: number,
+  guessesUsed: number,
+  grid: ("correct" | "wrong" | "empty")[][],
+  uniquenessScore?: number,
+): Promise<void> {
+  const dupCheck = query(
+    feedCollection(),
+    where("userId", "==", "guest"),
+    where("type", "==", "fabdoku-cards"),
+    where("date", "==", puzzleDate),
+    limit(1),
+  );
+  const existing = await getDocs(dupCheck);
+  if (!existing.empty) return;
+
+  const data: Record<string, unknown> = {
+    type: "fabdoku-cards",
+    subtype: "completed",
+    userId: "guest",
+    username: "guest",
+    displayName: "Guest",
+    isPublic: true,
+    date: puzzleDate,
+    won,
+    correctCount,
+    guessesUsed,
+    grid: grid.flat(),
+    createdAt: new Date().toISOString(),
+  };
+  if (uniquenessScore !== undefined) data.uniquenessScore = uniquenessScore;
+
+  await addDoc(feedCollection(), data);
   invalidateFeedCache();
 }
 

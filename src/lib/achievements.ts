@@ -15,6 +15,7 @@ interface CheckContext {
   opponentStats: OpponentStats[];
   kudosCounts?: Record<string, number>;
   fabdokuStats?: FaBdokuStats;
+  fabdokuCardStats?: FaBdokuStats;
   heroGuesserStats?: HeroGuesserStats;
   matchupManiaStats?: MatchupManiaStats;
   triviaStats?: TriviaStats;
@@ -2107,6 +2108,62 @@ const ACHIEVEMENTS: AchievementDef[] = [
     progress: (ctx) => ({ current: ctx.fabdokuStats?.gamesPlayed ?? 0, target: 1000 }),
   },
 
+  // ── FaBdoku Cards completion achievements ──
+  {
+    id: "fabdoku_card_1", name: "Card Rookie", description: "Complete your first FaBdoku Cards puzzle",
+    category: "fun", icon: "grid", rarity: "common", group: "fabdoku_cards", tier: 1,
+    check: (ctx) => (ctx.fabdokuCardStats?.gamesPlayed ?? 0) >= 1,
+    progress: (ctx) => ({ current: ctx.fabdokuCardStats?.gamesPlayed ?? 0, target: 1 }),
+  },
+  {
+    id: "fabdoku_card_5", name: "Card Dabbler", description: "Complete 5 FaBdoku Cards puzzles",
+    category: "fun", icon: "grid", rarity: "common", group: "fabdoku_cards", tier: 2,
+    check: (ctx) => (ctx.fabdokuCardStats?.gamesPlayed ?? 0) >= 5,
+    progress: (ctx) => ({ current: ctx.fabdokuCardStats?.gamesPlayed ?? 0, target: 5 }),
+  },
+  {
+    id: "fabdoku_card_10", name: "Card Enthusiast", description: "Complete 10 FaBdoku Cards puzzles",
+    category: "fun", icon: "grid", rarity: "uncommon", group: "fabdoku_cards", tier: 3,
+    check: (ctx) => (ctx.fabdokuCardStats?.gamesPlayed ?? 0) >= 10,
+    progress: (ctx) => ({ current: ctx.fabdokuCardStats?.gamesPlayed ?? 0, target: 10 }),
+  },
+  {
+    id: "fabdoku_card_25", name: "Card Regular", description: "Complete 25 FaBdoku Cards puzzles",
+    category: "fun", icon: "grid", rarity: "uncommon", group: "fabdoku_cards", tier: 4,
+    check: (ctx) => (ctx.fabdokuCardStats?.gamesPlayed ?? 0) >= 25,
+    progress: (ctx) => ({ current: ctx.fabdokuCardStats?.gamesPlayed ?? 0, target: 25 }),
+  },
+  {
+    id: "fabdoku_card_50", name: "Card Veteran", description: "Complete 50 FaBdoku Cards puzzles",
+    category: "fun", icon: "grid", rarity: "rare", group: "fabdoku_cards", tier: 5,
+    check: (ctx) => (ctx.fabdokuCardStats?.gamesPlayed ?? 0) >= 50,
+    progress: (ctx) => ({ current: ctx.fabdokuCardStats?.gamesPlayed ?? 0, target: 50 }),
+  },
+  {
+    id: "fabdoku_card_100", name: "Card Addict", description: "Complete 100 FaBdoku Cards puzzles",
+    category: "fun", icon: "grid", rarity: "rare", group: "fabdoku_cards", tier: 6,
+    check: (ctx) => (ctx.fabdokuCardStats?.gamesPlayed ?? 0) >= 100,
+    progress: (ctx) => ({ current: ctx.fabdokuCardStats?.gamesPlayed ?? 0, target: 100 }),
+  },
+  {
+    id: "fabdoku_card_250", name: "Card Expert", description: "Complete 250 FaBdoku Cards puzzles",
+    category: "fun", icon: "grid", rarity: "epic", group: "fabdoku_cards", tier: 7,
+    check: (ctx) => (ctx.fabdokuCardStats?.gamesPlayed ?? 0) >= 250,
+    progress: (ctx) => ({ current: ctx.fabdokuCardStats?.gamesPlayed ?? 0, target: 250 }),
+  },
+  {
+    id: "fabdoku_card_500", name: "Card Master", description: "Complete 500 FaBdoku Cards puzzles",
+    category: "fun", icon: "grid", rarity: "legendary", group: "fabdoku_cards", tier: 8,
+    check: (ctx) => (ctx.fabdokuCardStats?.gamesPlayed ?? 0) >= 500,
+    progress: (ctx) => ({ current: ctx.fabdokuCardStats?.gamesPlayed ?? 0, target: 500 }),
+  },
+  {
+    id: "fabdoku_card_1000", name: "Card Legend", description: "Complete 1000 FaBdoku Cards puzzles",
+    category: "fun", icon: "grid", rarity: "legendary", group: "fabdoku_cards", tier: 9,
+    check: (ctx) => (ctx.fabdokuCardStats?.gamesPlayed ?? 0) >= 1000,
+    progress: (ctx) => ({ current: ctx.fabdokuCardStats?.gamesPlayed ?? 0, target: 1000 }),
+  },
+
   // ── Hero Guesser completion achievements ──
   {
     id: "heroguesser_1",
@@ -2515,8 +2572,9 @@ export function evaluateAchievements(
   triviaStats?: TriviaStats,
   timelineStats?: TimelineStats,
   connectionsStats?: ConnectionsStats,
+  fabdokuCardStats?: FaBdokuStats,
 ): Achievement[] {
-  const ctx: CheckContext = { matches, overall, heroStats, opponentStats, kudosCounts, fabdokuStats, heroGuesserStats, matchupManiaStats, triviaStats, timelineStats, connectionsStats };
+  const ctx: CheckContext = { matches, overall, heroStats, opponentStats, kudosCounts, fabdokuStats, fabdokuCardStats, heroGuesserStats, matchupManiaStats, triviaStats, timelineStats, connectionsStats };
   return ACHIEVEMENTS.filter((a) => a.check(ctx)).map(({ check: _, progress: _p, ...rest }) => rest);
 }
 
@@ -2538,8 +2596,9 @@ export function getAchievementProgress(
   triviaStats?: TriviaStats,
   timelineStats?: TimelineStats,
   connectionsStats?: ConnectionsStats,
+  fabdokuCardStats?: FaBdokuStats,
 ): Record<string, { current: number; target: number }> {
-  const ctx: CheckContext = { matches, overall, heroStats, opponentStats, kudosCounts, fabdokuStats, heroGuesserStats, matchupManiaStats, triviaStats, timelineStats, connectionsStats };
+  const ctx: CheckContext = { matches, overall, heroStats, opponentStats, kudosCounts, fabdokuStats, fabdokuCardStats, heroGuesserStats, matchupManiaStats, triviaStats, timelineStats, connectionsStats };
   const result: Record<string, { current: number; target: number }> = {};
   for (const a of ACHIEVEMENTS) {
     if (a.progress) {
