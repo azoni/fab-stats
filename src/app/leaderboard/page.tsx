@@ -17,7 +17,7 @@ import type { LeaderboardEntry, OpponentStats } from "@/types";
 
 const SITE_CREATOR = "azoni";
 
-type Tab = "winrate" | "volume" | "mostwins" | "mostlosses" | "streaks" | "draws" | "drawrate" | "lowdrawrate" | "fewestdraws" | "byes" | "byerate" | "balanced" | "events" | "eventgrinder" | "rated" | "ratedstreak" | "heroes" | "dedication" | "loyaltyrate" | "hotstreak" | "coldstreak" | "weeklymatches" | "weeklywins" | "monthlymatches" | "monthlywins" | "monthlywinrate" | "earnings" | "armorywinrate" | "armoryattendance" | "armorymatches" | "top8s" | "top8s_skirmish" | "top8s_pq" | "top8s_bh" | "top8s_rtn" | "top8s_calling" | "top8s_nationals" | "powerlevel" | "uniqueopponents" | "silvermedals" | "lossstreak" | "globetrotter" | "leaderboardcount" | "kudos_total" | "kudos_props" | "kudos_good_sport" | "kudos_skilled" | "kudos_helpful" | "kudos_given_total" | "kudos_given_props" | "kudos_given_good_sport" | "kudos_given_skilled" | "kudos_given_helpful" | "games_total" | "games_winrate" | "games_streak" | "games_variety" | "games_fabdoku" | "games_crossword" | "games_heroguesser" | "games_matchupmania" | "games_trivia" | "games_timeline" | "games_connections";
+type Tab = "winrate" | "volume" | "mostwins" | "mostlosses" | "streaks" | "draws" | "drawrate" | "lowdrawrate" | "fewestdraws" | "byes" | "byerate" | "balanced" | "events" | "eventgrinder" | "rated" | "ratedstreak" | "heroes" | "dedication" | "loyaltyrate" | "hotstreak" | "coldstreak" | "weeklymatches" | "weeklywins" | "monthlymatches" | "monthlywins" | "monthlywinrate" | "earnings" | "armorywinrate" | "armoryattendance" | "armorymatches" | "top8s" | "top8s_skirmish" | "top8s_pq" | "top8s_bh" | "top8s_rtn" | "top8s_calling" | "top8s_nationals" | "powerlevel" | "uniqueopponents" | "silvermedals" | "lossstreak" | "globetrotter" | "leaderboardcount" | "kudos_total" | "kudos_props" | "kudos_good_sport" | "kudos_skilled" | "kudos_helpful" | "kudos_given_total" | "kudos_given_props" | "kudos_given_good_sport" | "kudos_given_skilled" | "kudos_given_helpful" | "games_total" | "games_winrate" | "games_streak" | "games_variety" | "games_fabdoku" | "games_crossword" | "games_heroguesser" | "games_matchupmania" | "games_trivia" | "games_timeline" | "games_connections" | "games_rampage" | "games_knockout" | "games_brutebrawl" | "games_ninjacombo";
 
 function isKudosTab(tab: Tab): boolean {
   return tab.startsWith("kudos_") && !tab.startsWith("kudos_given_");
@@ -102,6 +102,10 @@ const tabs: { id: Tab; label: string; description: string }[] = [
   { id: "games_trivia", label: "Trivia", description: "Most total correct trivia answers." },
   { id: "games_timeline", label: "Timeline", description: "Most total correct timeline placements." },
   { id: "games_connections", label: "Connections", description: "Most perfect Connections games (zero mistakes)." },
+  { id: "games_rampage", label: "Rhinar's Rampage", description: "Highest best damage in Rhinar's Rampage." },
+  { id: "games_knockout", label: "Kayo's Knockout", description: "Highest best damage in Kayo's Knockout." },
+  { id: "games_brutebrawl", label: "Brute Brawl", description: "Highest best damage in Brute Brawl." },
+  { id: "games_ninjacombo", label: "Katsu's Combo", description: "Highest best damage in Katsu's Combo." },
 ];
 
 const tabMap = Object.fromEntries(tabs.map((t) => [t.id, t]));
@@ -124,7 +128,7 @@ const allCategories: Category[] = [
   { id: "armory", label: "Armory", tabs: ["armorywinrate", "armoryattendance", "armorymatches"] },
   { id: "rated", label: "Rated", tabs: ["rated", "ratedstreak"] },
   { id: "fun", label: "Fun", tabs: ["uniqueopponents", "silvermedals", "lossstreak", "globetrotter", "leaderboardcount", "draws", "drawrate", "lowdrawrate", "fewestdraws", "byes", "byerate", "balanced"] },
-  { id: "games", label: "Games", tabs: ["games_total", "games_winrate", "games_streak", "games_variety", "games_fabdoku", "games_crossword", "games_heroguesser", "games_matchupmania", "games_trivia", "games_timeline", "games_connections"] },
+  { id: "games", label: "Games", tabs: ["games_total", "games_winrate", "games_streak", "games_variety", "games_fabdoku", "games_crossword", "games_heroguesser", "games_matchupmania", "games_trivia", "games_timeline", "games_connections", "games_rampage", "games_knockout", "games_brutebrawl", "games_ninjacombo"] },
   { id: "kudos", label: "Kudos", tabs: ["kudos_total", "kudos_props", "kudos_good_sport", "kudos_skilled", "kudos_helpful"] },
   { id: "kudos_given", label: "Kudos Given", tabs: ["kudos_given_total", "kudos_given_props", "kudos_given_good_sport", "kudos_given_skilled", "kudos_given_helpful"] },
   { id: "power", label: "Power Level", tabs: ["powerlevel"], adminOnly: true },
@@ -277,13 +281,13 @@ function getKudosStat(entry: KudosCountsEntry, tab: Tab): { value: string; sub: 
 function getGameStat(entry: GameLeaderboardEntry, tab: Tab): { value: string; sub: string; color: string; rate?: number } {
   switch (tab) {
     case "games_total":
-      return { value: String(entry.totalGamesPlayed), sub: `${entry.totalGamesWon} won (${entry.gamesWithActivity}/7 games)`, color: "text-fab-text" };
+      return { value: String(entry.totalGamesPlayed), sub: `${entry.totalGamesWon} won (${entry.gamesWithActivity}/11 games)`, color: "text-fab-text" };
     case "games_winrate":
       return { value: formatRate(entry.overallWinRate), sub: `${entry.totalGamesWon}W / ${entry.totalGamesPlayed} games`, color: entry.overallWinRate >= 50 ? "text-fab-win" : "text-fab-loss", rate: entry.overallWinRate };
     case "games_streak":
       return { value: String(entry.bestMaxStreak), sub: "best win streak", color: "text-fab-win" };
     case "games_variety":
-      return { value: `${entry.gamesWithActivity}/7`, sub: `${entry.totalGamesPlayed} total played`, color: "text-purple-400" };
+      return { value: `${entry.gamesWithActivity}/11`, sub: `${entry.totalGamesPlayed} total played`, color: "text-purple-400" };
     case "games_fabdoku": {
       const s = entry.fabdoku;
       if (!s) return { value: "—", sub: "", color: "text-fab-dim" };
@@ -322,6 +326,26 @@ function getGameStat(entry: GameLeaderboardEntry, tab: Tab): { value: string; su
       const s = entry.connections;
       if (!s) return { value: "—", sub: "", color: "text-fab-dim" };
       return { value: String(s.perfectGames), sub: `perfect · ${s.gamesWon}W / ${s.gamesPlayed} played`, color: "text-yellow-400" };
+    }
+    case "games_rampage": {
+      const s = entry.rhinarsrampage;
+      if (!s) return { value: "—", sub: "", color: "text-fab-dim" };
+      return { value: String(s.bestDamage), sub: `best dmg · ${s.gamesWon}W / ${s.gamesPlayed} played`, color: "text-red-400" };
+    }
+    case "games_knockout": {
+      const s = entry.kayosknockout;
+      if (!s) return { value: "—", sub: "", color: "text-fab-dim" };
+      return { value: String(s.bestDamage), sub: `best dmg · ${s.gamesWon}W / ${s.gamesPlayed} played`, color: "text-red-400" };
+    }
+    case "games_brutebrawl": {
+      const s = entry.brutebrawl;
+      if (!s) return { value: "—", sub: "", color: "text-fab-dim" };
+      return { value: String(s.bestDamage), sub: `best dmg · ${s.gamesWon}W / ${s.gamesPlayed} played`, color: "text-red-400" };
+    }
+    case "games_ninjacombo": {
+      const s = entry.ninjacombo;
+      if (!s) return { value: "—", sub: "", color: "text-fab-dim" };
+      return { value: String(s.bestDamage), sub: `best dmg · ${s.gamesWon}W / ${s.gamesPlayed} played`, color: "text-cyan-400" };
     }
     default:
       return { value: "—", sub: "", color: "text-fab-dim" };
@@ -654,6 +678,22 @@ export default function LeaderboardPage() {
         return [...visibleEntries]
           .filter((e) => (gamesMap.get(e.userId)?.connections?.perfectGames ?? 0) > 0)
           .sort((a, b) => (gamesMap.get(b.userId)?.connections?.perfectGames ?? 0) - (gamesMap.get(a.userId)?.connections?.perfectGames ?? 0) || (gamesMap.get(b.userId)?.connections?.gamesWon ?? 0) - (gamesMap.get(a.userId)?.connections?.gamesWon ?? 0));
+      case "games_rampage":
+        return [...visibleEntries]
+          .filter((e) => (gamesMap.get(e.userId)?.rhinarsrampage?.gamesPlayed ?? 0) > 0)
+          .sort((a, b) => (gamesMap.get(b.userId)?.rhinarsrampage?.bestDamage ?? 0) - (gamesMap.get(a.userId)?.rhinarsrampage?.bestDamage ?? 0) || (gamesMap.get(b.userId)?.rhinarsrampage?.gamesPlayed ?? 0) - (gamesMap.get(a.userId)?.rhinarsrampage?.gamesPlayed ?? 0));
+      case "games_knockout":
+        return [...visibleEntries]
+          .filter((e) => (gamesMap.get(e.userId)?.kayosknockout?.gamesPlayed ?? 0) > 0)
+          .sort((a, b) => (gamesMap.get(b.userId)?.kayosknockout?.bestDamage ?? 0) - (gamesMap.get(a.userId)?.kayosknockout?.bestDamage ?? 0) || (gamesMap.get(b.userId)?.kayosknockout?.gamesPlayed ?? 0) - (gamesMap.get(a.userId)?.kayosknockout?.gamesPlayed ?? 0));
+      case "games_brutebrawl":
+        return [...visibleEntries]
+          .filter((e) => (gamesMap.get(e.userId)?.brutebrawl?.gamesPlayed ?? 0) > 0)
+          .sort((a, b) => (gamesMap.get(b.userId)?.brutebrawl?.bestDamage ?? 0) - (gamesMap.get(a.userId)?.brutebrawl?.bestDamage ?? 0) || (gamesMap.get(b.userId)?.brutebrawl?.gamesPlayed ?? 0) - (gamesMap.get(a.userId)?.brutebrawl?.gamesPlayed ?? 0));
+      case "games_ninjacombo":
+        return [...visibleEntries]
+          .filter((e) => (gamesMap.get(e.userId)?.ninjacombo?.gamesPlayed ?? 0) > 0)
+          .sort((a, b) => (gamesMap.get(b.userId)?.ninjacombo?.bestDamage ?? 0) - (gamesMap.get(a.userId)?.ninjacombo?.bestDamage ?? 0) || (gamesMap.get(b.userId)?.ninjacombo?.gamesPlayed ?? 0) - (gamesMap.get(a.userId)?.ninjacombo?.gamesPlayed ?? 0));
       default:
         return visibleEntries;
     }
@@ -714,7 +754,7 @@ export default function LeaderboardPage() {
         const userGame = gamesMap.get(user.uid);
         if (!userGame) continue;
         const stat = getGameStat(userGame, tabId as Tab);
-        if (stat.value === "—" || stat.value === "0" || stat.value === "0/7") continue;
+        if (stat.value === "—" || stat.value === "0" || stat.value === "0/11") continue;
         // Count how many users rank above this user in the current ranked list for this tab
         // Simple approach: find user's position in ranked (already computed for activeTab)
         if (tabId === activeTab) {
