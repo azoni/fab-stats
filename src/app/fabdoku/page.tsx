@@ -78,7 +78,6 @@ export default function FaBdokuPage() {
     null
   );
   const [showResult, setShowResult] = useState(false);
-  const [showShare, setShowShare] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
   const [stats, setStats] = useState<FaBdokuStats | null>(null);
   const [uniqueness, setUniqueness] = useState<UniquenessData | null>(null);
@@ -535,11 +534,7 @@ export default function FaBdokuPage() {
           gameState={gameState}
           stats={stats}
           uniqueness={uniqueness}
-          onShare={() => {
-            setShowShare(true);
-            triggerShared(gameState, dateStr, uniqueness);
-          }}
-          onCopy={() => triggerShared(gameState, dateStr, uniqueness)}
+          onShared={() => triggerShared(gameState, dateStr, uniqueness)}
         />
       )}
 
@@ -559,7 +554,6 @@ export default function FaBdokuPage() {
                 }
                 setGameState(createFreshGameState(dateStr));
                 setShowResult(false);
-                setShowShare(false);
                 setUniqueness(null);
                 setIsReplay(true);
               }}
@@ -662,16 +656,6 @@ export default function FaBdokuPage() {
           usedHeroes={usedHeroes}
           onSelect={handleHeroSelect}
           onClose={() => setSelectedCell(null)}
-        />
-      )}
-
-      {/* Share card modal */}
-      {showShare && (
-        <FaBdokuShareCard
-          gameState={gameState}
-          uniqueness={uniqueness}
-          onClose={() => setShowShare(false)}
-          onShared={() => triggerShared(gameState, dateStr, uniqueness)}
         />
       )}
 

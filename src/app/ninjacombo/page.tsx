@@ -4,7 +4,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { GameNav } from "@/components/games/GameNav";
 import { ComboBoard } from "@/components/ninjacombo/ComboBoard";
 import { ComboResult } from "@/components/ninjacombo/ComboResult";
-import { ComboShareCard } from "@/components/ninjacombo/ComboShareCard";
 import { generateDailyCombo } from "@/lib/ninjacombo/puzzle-generator";
 import { createFreshGameState, loadGameState, saveGameState, cleanupOldStates } from "@/lib/ninjacombo/game-state";
 import { saveResult, loadStats, markShared } from "@/lib/ninjacombo/firestore";
@@ -31,7 +30,6 @@ export default function NinjaComboPage() {
   });
   const [stats, setStats] = useState<NinjaComboStats | null>(null);
   const [showResult, setShowResult] = useState(gameState.completed);
-  const [showShare, setShowShare] = useState(false);
   const [badgeTierUp, setBadgeTierUp] = useState<{ tier: BadgeTierInfo; count: number } | null>(null);
   const completionSaved = useRef(false);
   const sharedDatesRef = useRef(new Set<string>());
@@ -152,19 +150,9 @@ export default function NinjaComboPage() {
             stats={stats}
             puzzle={puzzle}
             dateStr={dateStr}
-            onShare={() => { setShowShare(true); triggerShared(); }}
+            onShared={triggerShared}
           />
         </div>
-      )}
-
-      {showShare && (
-        <ComboShareCard
-          gameState={gameState}
-          dateStr={dateStr}
-          optimalScore={puzzle.optimalScore}
-          onClose={() => setShowShare(false)}
-          onShared={triggerShared}
-        />
       )}
 
       {badgeTierUp && (

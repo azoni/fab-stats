@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { GameNav } from "@/components/games/GameNav";
 import { ShadowStrikeBoard } from "@/components/shadowstrike/ShadowStrikeBoard";
 import { ShadowStrikeResult } from "@/components/shadowstrike/ShadowStrikeResult";
-import { ShadowStrikeShareCard } from "@/components/shadowstrike/ShadowStrikeShareCard";
+
 import { generateDailyPuzzle, TOTAL_PAIRS, HINT_FAIL_THRESHOLD } from "@/lib/shadowstrike/puzzle-generator";
 import { createFreshGameState, loadGameState, saveGameState, cleanupOldStates } from "@/lib/shadowstrike/game-state";
 import { saveResult, loadStats, markShared } from "@/lib/shadowstrike/firestore";
@@ -30,7 +30,7 @@ export default function ShadowStrikePage() {
   });
   const [stats, setStats] = useState<ShadowStrikeStats | null>(null);
   const [showResult, setShowResult] = useState(gameState.completed);
-  const [showShare, setShowShare] = useState(false);
+
   const [badgeTierUp, setBadgeTierUp] = useState<{ tier: BadgeTierInfo; count: number } | null>(null);
   const completionSaved = useRef(false);
   const sharedDatesRef = useRef(new Set<string>());
@@ -257,7 +257,8 @@ export default function ShadowStrikePage() {
             elapsedMs={gameState.elapsedMs}
             hintsUsed={gameState.hintsUsed}
             stats={stats}
-            onShare={() => setShowShare(true)}
+            onShared={triggerShared}
+            dateStr={dateStr}
           />
         </div>
       )}
@@ -266,17 +267,7 @@ export default function ShadowStrikePage() {
         <BadgeTierUpPopup badgeId="shadowstrike-player" badgeName="Shadow Striker" tier={badgeTierUp.tier} count={badgeTierUp.count} onClose={() => setBadgeTierUp(null)} />
       )}
 
-      {showShare && (
-        <ShadowStrikeShareCard
-          dateStr={dateStr}
-          won={gameState.won}
-          flips={gameState.flips}
-          elapsedMs={gameState.elapsedMs}
-          hintsUsed={gameState.hintsUsed}
-          onClose={() => setShowShare(false)}
-          onShared={triggerShared}
-        />
-      )}
+
     </div>
   );
 }

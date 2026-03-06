@@ -4,7 +4,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { GameNav } from "@/components/games/GameNav";
 import { TriviaBoard } from "@/components/trivia/TriviaBoard";
 import { TriviaResult } from "@/components/trivia/TriviaResult";
-import { TriviaShareCard } from "@/components/trivia/TriviaShareCard";
 import { generateDailyQuestions, QUESTIONS_PER_GAME, WIN_THRESHOLD } from "@/lib/trivia/puzzle-generator";
 import { createFreshGameState, loadGameState, saveGameState, cleanupOldStates } from "@/lib/trivia/game-state";
 import { saveResult, loadStats, markShared } from "@/lib/trivia/firestore";
@@ -31,7 +30,6 @@ export default function TriviaPage() {
   });
   const [stats, setStats] = useState<TriviaStats | null>(null);
   const [showResult, setShowResult] = useState(gameState.completed);
-  const [showShare, setShowShare] = useState(false);
   const [badgeTierUp, setBadgeTierUp] = useState<{ tier: import("@/lib/badge-tiers").BadgeTierInfo; count: number } | null>(null);
   const completionSaved = useRef(false);
   const sharedDatesRef = useRef(new Set<string>());
@@ -138,20 +136,12 @@ export default function TriviaPage() {
             score={gameState.score}
             stats={stats}
             dateStr={dateStr}
-            onShare={() => setShowShare(true)}
+            onShared={triggerShared}
+            answers={gameState.answers}
           />
         </div>
       )}
 
-      {showShare && (
-        <TriviaShareCard
-          dateStr={dateStr}
-          won={gameState.won}
-          answers={gameState.answers}
-          onClose={() => setShowShare(false)}
-          onShared={triggerShared}
-        />
-      )}
       {badgeTierUp && (
         <BadgeTierUpPopup badgeId="trivia-player" badgeName="Trivia Buff" tier={badgeTierUp.tier} count={badgeTierUp.count} onClose={() => setBadgeTierUp(null)} />
       )}

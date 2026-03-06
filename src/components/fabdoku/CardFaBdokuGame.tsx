@@ -69,7 +69,6 @@ export function CardFaBdokuGame() {
   const [gameState, setGameState] = useState<CardGameState | null>(null);
   const [selectedCell, setSelectedCell] = useState<[number, number] | null>(null);
   const [showResult, setShowResult] = useState(false);
-  const [showShare, setShowShare] = useState(false);
   const [stats, setStats] = useState<FaBdokuStats | null>(null);
   const [uniqueness, setUniqueness] = useState<UniquenessData | null>(null);
   const [yesterdayScore, setYesterdayScore] = useState<UniquenessData | null>(null);
@@ -349,11 +348,7 @@ export function CardFaBdokuGame() {
           gameState={heroGameState}
           stats={stats}
           uniqueness={uniqueness}
-          onShare={() => {
-            setShowShare(true);
-            triggerShared(gameState, dateStr, uniqueness);
-          }}
-          onCopy={() => triggerShared(gameState, dateStr, uniqueness)}
+          onShared={() => triggerShared(gameState, dateStr, uniqueness)}
         />
       )}
 
@@ -372,16 +367,6 @@ export function CardFaBdokuGame() {
           usedCards={usedCards}
           onSelect={handleCardSelect}
           onClose={() => setSelectedCell(null)}
-        />
-      )}
-
-      {/* Share card modal */}
-      {showShare && (
-        <FaBdokuShareCard
-          gameState={heroGameState}
-          uniqueness={uniqueness}
-          onClose={() => setShowShare(false)}
-          onShared={() => triggerShared(gameState, dateStr, uniqueness)}
         />
       )}
 

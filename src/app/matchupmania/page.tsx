@@ -4,7 +4,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { GameNav } from "@/components/games/GameNav";
 import { MatchupCard, RoundProgress } from "@/components/matchupmania/MatchupCard";
 import { MatchupManiaResult } from "@/components/matchupmania/MatchupManiaResult";
-import { MatchupManiaShareCard } from "@/components/matchupmania/MatchupManiaShareCard";
 import { generateDailyMatchups, TOTAL_ROUNDS, WIN_THRESHOLD } from "@/lib/matchupmania/puzzle-generator";
 import { createFreshGameState, loadGameState, saveGameState, cleanupOldStates } from "@/lib/matchupmania/game-state";
 import { saveResult, loadStats, markShared } from "@/lib/matchupmania/firestore";
@@ -33,7 +32,6 @@ export default function MatchupManiaPage() {
   const [matchupData, setMatchupData] = useState<CommunityMatchupCell[] | null>(null);
   const [rounds, setRounds] = useState<MatchupRound[]>(gameState.rounds);
   const [showResult, setShowResult] = useState(gameState.completed);
-  const [showShare, setShowShare] = useState(false);
   const [badgeTierUp, setBadgeTierUp] = useState<{ tier: import("@/lib/badge-tiers").BadgeTierInfo; count: number } | null>(null);
   const [loading, setLoading] = useState(true);
   const completionSaved = useRef(false);
@@ -186,20 +184,12 @@ export default function MatchupManiaPage() {
                 score={gameState.score}
                 stats={stats}
                 dateStr={dateStr}
-                onShare={() => setShowShare(true)}
+                onShared={triggerShared}
+                rounds={rounds}
               />
             </div>
           )}
 
-          {showShare && (
-            <MatchupManiaShareCard
-              dateStr={dateStr}
-              won={gameState.won}
-              rounds={rounds}
-              onClose={() => setShowShare(false)}
-              onShared={triggerShared}
-            />
-          )}
           {badgeTierUp && (
             <BadgeTierUpPopup badgeId="matchupmania-player" badgeName="Matchup Maniac" tier={badgeTierUp.tier} count={badgeTierUp.count} onClose={() => setBadgeTierUp(null)} />
           )}

@@ -4,7 +4,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { GameNav } from "@/components/games/GameNav";
 import { HeroGuesserBoard } from "@/components/heroguesser/HeroGuesserBoard";
 import { HeroGuesserResult } from "@/components/heroguesser/HeroGuesserResult";
-import { HeroGuesserShareCard } from "@/components/heroguesser/HeroGuesserShareCard";
 import { generateDailyHero, compareHeroes, getHeroPool } from "@/lib/heroguesser/puzzle-generator";
 import { createFreshGameState, loadGameState, saveGameState, cleanupOldStates } from "@/lib/heroguesser/game-state";
 import { saveResult, loadStats, markShared } from "@/lib/heroguesser/firestore";
@@ -32,7 +31,6 @@ export default function HeroGuesserPage() {
   });
   const [stats, setStats] = useState<HeroGuesserStats | null>(null);
   const [showResult, setShowResult] = useState(gameState.completed);
-  const [showShare, setShowShare] = useState(false);
   const [badgeTierUp, setBadgeTierUp] = useState<{ tier: import("@/lib/badge-tiers").BadgeTierInfo; count: number } | null>(null);
   const completionSaved = useRef(false);
   const sharedDatesRef = useRef(new Set<string>());
@@ -146,21 +144,12 @@ export default function HeroGuesserPage() {
             answer={answer}
             stats={stats}
             dateStr={dateStr}
-            onShare={() => setShowShare(true)}
+            onShared={triggerShared}
+            guesses={gameState.guesses}
           />
         </div>
       )}
 
-      {showShare && (
-        <HeroGuesserShareCard
-          dateStr={dateStr}
-          won={gameState.won}
-          guesses={gameState.guesses}
-          maxGuesses={gameState.maxGuesses}
-          onClose={() => setShowShare(false)}
-          onShared={triggerShared}
-        />
-      )}
       {badgeTierUp && (
         <BadgeTierUpPopup
           badgeId="heroguesser-player"

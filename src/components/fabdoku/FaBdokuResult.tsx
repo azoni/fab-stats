@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useRef, useState, useEffect } from "react";
+import { copyCardImage } from "@/lib/share-image";
 import type { GameState, FaBdokuStats, UniquenessData } from "@/lib/fabdoku/types";
 
 function TrophyIcon({ className }: { className?: string }) {
@@ -27,14 +28,6 @@ function XCircleIcon({ className }: { className?: string }) {
   );
 }
 
-function ShareIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0 0a2.25 2.25 0 103.935 2.186 2.25 2.25 0 00-3.935-2.186zm0-12.814a2.25 2.25 0 103.933-2.185 2.25 2.25 0 00-3.933 2.185z" />
-    </svg>
-  );
-}
-
 function CopyIcon({ className }: { className?: string }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -51,17 +44,26 @@ function CheckIcon({ className }: { className?: string }) {
   );
 }
 
+function ShareIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0 0a2.25 2.25 0 103.935 2.186 2.25 2.25 0 00-3.935-2.186zm0-12.814a2.25 2.25 0 103.933-2.185 2.25 2.25 0 00-3.933 2.185z" />
+    </svg>
+  );
+}
+
 interface FaBdokuResultProps {
   gameState: GameState;
   stats: FaBdokuStats | null;
   uniqueness: UniquenessData | null;
-  onShare: () => void;
-  onCopy?: () => void;
+  onShared?: () => void;
 }
 
-export function FaBdokuResult({ gameState, stats, uniqueness, onShare, onCopy }: FaBdokuResultProps) {
+export function FaBdokuResult({ gameState, stats, uniqueness, onShared }: FaBdokuResultProps) {
   const [copied, setCopied] = useState(false);
+  const [shareStatus, setShareStatus] = useState<"idle" | "sharing" | "shared">("idle");
   const [countdown, setCountdown] = useState("");
+  const cardRef = useRef<HTMLDivElement>(null);
 
   const correctCount = gameState.cells.flat().filter((c) => c.correct).length;
   const totalCells = 9;
@@ -105,15 +107,59 @@ export function FaBdokuResult({ gameState, stats, uniqueness, onShare, onCopy }:
     try {
       await navigator.clipboard.writeText(generateShareText());
       setCopied(true);
-      onCopy?.();
+      onShared?.();
       setTimeout(() => setCopied(false), 2000);
     } catch {
       // Fallback
     }
   }
 
+  async function handleShare() {
+    setShareStatus("sharing");
+    const uniqueLine = uniqueness ? ` \u00B7 Score: ${uniqueness.score} (${uniqueness.totalPlayers} players)` : "";
+    const result = await copyCardImage(cardRef.current, {
+      backgroundColor: "#0e0c08",
+      fileName: `fabdoku-${gameState.date}.png`,
+      shareTitle: `FaBdoku ${gameState.date}`,
+      shareText: `FaBdoku ${gameState.date} \u2014 ${correctCount}/9${uniqueLine}`,
+      fallbackText: generateShareText(),
+    });
+    if (result !== "failed") {
+      setShareStatus("shared");
+      onShared?.();
+      setTimeout(() => setShareStatus("idle"), 2000);
+    } else {
+      setShareStatus("idle");
+    }
+  }
+
   return (
     <div className="bg-fab-surface border border-fab-border rounded-xl p-5 mt-4 max-w-[400px] mx-auto">
+      {/* Hidden share card for image capture */}
+      <div style={{ position: 'fixed', left: '-9999px', top: '-9999px' }} aria-hidden="true">
+        <div ref={cardRef} className="bg-[#0e0c08] rounded-lg p-5 border border-fab-border" style={{ width: '320px' }}>
+          <div className="text-center mb-3">
+            <h4 className="text-lg font-bold text-fab-gold">FaBdoku</h4>
+            <p className="text-xs text-fab-muted">{gameState.date}</p>
+          </div>
+          <div className="grid grid-cols-3 gap-1.5 w-24 mx-auto mb-3">
+            {gameState.cells.flat().map((cell, i) => (
+              <div key={i} className={`w-7 h-7 rounded-sm ${cell.correct ? "bg-fab-win" : cell.locked ? "bg-fab-loss" : "bg-fab-border"}`} />
+            ))}
+          </div>
+          <div className="text-center">
+            <p className="text-sm font-bold text-fab-text">{correctCount}/9 correct</p>
+            {uniqueness && (
+              <>
+                <p className="text-lg text-fab-gold font-bold mt-1 font-mono">{uniqueness.score}</p>
+                <p className="text-[10px] text-fab-dim">uniqueness score &middot; {uniqueness.totalPlayers} player{uniqueness.totalPlayers !== 1 ? "s" : ""}</p>
+              </>
+            )}
+          </div>
+          <p className="text-[9px] text-fab-dim text-center mt-3">fabstats.net/fabdoku</p>
+        </div>
+      </div>
+
       {/* Header */}
       <div className="text-center mb-4">
         {gameState.won ? (
@@ -250,11 +296,20 @@ export function FaBdokuResult({ gameState, stats, uniqueness, onShare, onCopy }:
           )}
         </button>
         <button
-          onClick={onShare}
+          onClick={handleShare}
           className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-fab-gold text-fab-bg rounded-lg text-sm font-semibold hover:brightness-110 transition-all"
         >
-          <ShareIcon className="w-3.5 h-3.5" />
-          Share
+          {shareStatus === "shared" ? (
+            <>
+              <CheckIcon className="w-3.5 h-3.5" />
+              Shared!
+            </>
+          ) : (
+            <>
+              <ShareIcon className="w-3.5 h-3.5" />
+              Share
+            </>
+          )}
         </button>
       </div>
 

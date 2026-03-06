@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { GameNav } from "@/components/games/GameNav";
 import { BladeDashBoard } from "@/components/bladedash/BladeDashBoard";
 import { BladeDashResult } from "@/components/bladedash/BladeDashResult";
-import { BladeDashShareCard } from "@/components/bladedash/BladeDashShareCard";
+
 import { generateDailyWords, WORDS_PER_GAME, HINT_FAIL_THRESHOLD } from "@/lib/bladedash/puzzle-generator";
 import { createFreshGameState, loadGameState, saveGameState, cleanupOldStates } from "@/lib/bladedash/game-state";
 import { saveResult, loadStats, markShared } from "@/lib/bladedash/firestore";
@@ -32,7 +32,7 @@ export default function BladeDashPage() {
   });
   const [stats, setStats] = useState<BladeDashStats | null>(null);
   const [showResult, setShowResult] = useState(gameState.completed);
-  const [showShare, setShowShare] = useState(false);
+
   const [badgeTierUp, setBadgeTierUp] = useState<{ tier: BadgeTierInfo; count: number } | null>(null);
   const completionSaved = useRef(false);
   const sharedDatesRef = useRef(new Set<string>());
@@ -189,7 +189,8 @@ export default function BladeDashPage() {
             hintsUsed={gameState.totalHintsUsed}
             wordsSolved={wordsSolved}
             stats={stats}
-            onShare={() => setShowShare(true)}
+            onShared={triggerShared}
+            dateStr={dateStr}
           />
         </div>
       )}
@@ -198,17 +199,7 @@ export default function BladeDashPage() {
         <BadgeTierUpPopup badgeId="bladedash-player" badgeName="Blade Dasher" tier={badgeTierUp.tier} count={badgeTierUp.count} onClose={() => setBadgeTierUp(null)} />
       )}
 
-      {showShare && (
-        <BladeDashShareCard
-          dateStr={dateStr}
-          won={gameState.won}
-          wordsSolved={wordsSolved}
-          elapsedMs={gameState.elapsedMs}
-          hintsUsed={gameState.totalHintsUsed}
-          onClose={() => setShowShare(false)}
-          onShared={triggerShared}
-        />
-      )}
+
     </div>
   );
 }
