@@ -41,6 +41,7 @@ import { loadStats as loadConnectionsStats } from "@/lib/connections/firestore";
 import { loadStats as loadRampageStats } from "@/lib/rhinarsrampage/firestore";
 import { loadStats as loadKnockoutStats } from "@/lib/kayosknockout/firestore";
 import { loadStats as loadBrawlStats } from "@/lib/brutebrawl/firestore";
+import { loadStats as loadNinjaComboStats } from "@/lib/ninjacombo/firestore";
 import type { FaBdokuStats } from "@/lib/fabdoku/types";
 import type { CrosswordStats } from "@/lib/crossword/types";
 import type { HeroGuesserStats } from "@/lib/heroguesser/types";
@@ -51,6 +52,7 @@ import type { ConnectionsStats } from "@/lib/connections/types";
 import type { RampageStats } from "@/lib/rhinarsrampage/types";
 import type { KnockoutStats } from "@/lib/kayosknockout/types";
 import type { BrawlStats } from "@/lib/brutebrawl/types";
+import type { NinjaComboStats } from "@/lib/ninjacombo/types";
 import { getTodayDateStr } from "@/lib/fabdoku/puzzle-generator";
 import { loadKudosCounts } from "@/lib/kudos";
 import { hasUserSubmittedFeedback } from "@/lib/feedback";
@@ -258,6 +260,7 @@ export default function Dashboard() {
   const [rampageFullStats, setRampageFullStats] = useState<RampageStats | null>(null);
   const [knockoutFullStats, setKnockoutFullStats] = useState<KnockoutStats | null>(null);
   const [brawlFullStats, setBrawlFullStats] = useState<BrawlStats | null>(null);
+  const [ninjaComboFullStats, setNinjaComboFullStats] = useState<NinjaComboStats | null>(null);
   const [gaveFeedback, setGaveFeedback] = useState(false);
   const [kudosTotal, setKudosTotal] = useState<number | null>(null);
   const leaderboardUpdated = useRef(false);
@@ -277,6 +280,7 @@ export default function Dashboard() {
     loadRampageStats(user.uid).then((s) => setRampageFullStats(s ?? null)).catch(() => {});
     loadKnockoutStats(user.uid).then((s) => setKnockoutFullStats(s ?? null)).catch(() => {});
     loadBrawlStats(user.uid).then((s) => setBrawlFullStats(s ?? null)).catch(() => {});
+    loadNinjaComboStats(user.uid).then((s) => setNinjaComboFullStats(s ?? null)).catch(() => {});
     loadKudosCounts(user.uid).then((c) => setKudosTotal(c.total > 0 ? c.total : null)).catch(() => {});
     hasUserSubmittedFeedback(user.uid).then(setGaveFeedback).catch(() => {});
   }, [user]);
@@ -777,7 +781,7 @@ export default function Dashboard() {
                   )}
                 </div>
               </div>
-              <BadgeStrip matchCount={matches.length} isCreator={isCreator} fabdokuGames={Math.max(fabdokuFullStats?.gamesPlayed ?? 0, fabdokuScore !== null ? 1 : 0)} fabdokuCardGames={fabdokuCardFullStats?.gamesPlayed ?? 0} crosswordGames={crosswordFullStats?.gamesPlayed ?? 0} heroGuesserGames={heroGuesserFullStats?.gamesPlayed ?? 0} matchupManiaGames={matchupManiaFullStats?.gamesPlayed ?? 0} triviaGames={triviaFullStats?.gamesPlayed ?? 0} timelineGames={timelineFullStats?.gamesPlayed ?? 0} connectionsGames={connectionsFullStats?.gamesPlayed ?? 0} bruteBrawlerGames={(rampageFullStats?.gamesPlayed ?? 0) + (knockoutFullStats?.gamesPlayed ?? 0) + (brawlFullStats?.gamesPlayed ?? 0)} submittedFeedback={gaveFeedback} className="mt-2 ml-1" />
+              <BadgeStrip matchCount={matches.length} isCreator={isCreator} fabdokuGames={Math.max(fabdokuFullStats?.gamesPlayed ?? 0, fabdokuScore !== null ? 1 : 0)} fabdokuCardGames={fabdokuCardFullStats?.gamesPlayed ?? 0} crosswordGames={crosswordFullStats?.gamesPlayed ?? 0} heroGuesserGames={heroGuesserFullStats?.gamesPlayed ?? 0} matchupManiaGames={matchupManiaFullStats?.gamesPlayed ?? 0} triviaGames={triviaFullStats?.gamesPlayed ?? 0} timelineGames={timelineFullStats?.gamesPlayed ?? 0} connectionsGames={connectionsFullStats?.gamesPlayed ?? 0} bruteBrawlerGames={(rampageFullStats?.gamesPlayed ?? 0) >= 1 && (knockoutFullStats?.gamesPlayed ?? 0) >= 1 && (brawlFullStats?.gamesPlayed ?? 0) >= 1 ? (rampageFullStats?.gamesPlayed ?? 0) + (knockoutFullStats?.gamesPlayed ?? 0) + (brawlFullStats?.gamesPlayed ?? 0) : 0} ninjaComboGames={ninjaComboFullStats?.gamesPlayed ?? 0} submittedFeedback={gaveFeedback} className="mt-2 ml-1" />
               {/* Score badges — bottom right */}
               <div className="absolute bottom-1.5 right-2.5 flex items-center gap-1.5 z-10">
                 {kudosTotal !== null && (
@@ -896,6 +900,7 @@ export default function Dashboard() {
             bruteBrawlerGames: (rampageFullStats?.gamesPlayed ?? 0) >= 1 && (knockoutFullStats?.gamesPlayed ?? 0) >= 1 && (brawlFullStats?.gamesPlayed ?? 0) >= 1
               ? (rampageFullStats?.gamesPlayed ?? 0) + (knockoutFullStats?.gamesPlayed ?? 0) + (brawlFullStats?.gamesPlayed ?? 0)
               : 0,
+            ninjaComboGames: ninjaComboFullStats?.gamesPlayed ?? 0,
             submittedFeedback: gaveFeedback,
           }}
           onClose={() => setProfileShareOpen(false)}

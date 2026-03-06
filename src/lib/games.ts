@@ -1,11 +1,12 @@
 /** Central registry of daily games. Add new games here and all nav surfaces update automatically. */
 
-export type GameCategory = "puzzle" | "knowledge" | "dice";
+export type GameCategory = "puzzle" | "knowledge" | "dice" | "ninja";
 
 export const GAME_CATEGORIES: { id: GameCategory; label: string; description: string; color: string }[] = [
   { id: "puzzle", label: "Puzzles", description: "Logic and word puzzles", color: "text-emerald-400" },
   { id: "knowledge", label: "Knowledge", description: "Test your FaB knowledge", color: "text-purple-400" },
   { id: "dice", label: "Brute Dice", description: "Roll dice, deal damage", color: "text-red-400" },
+  { id: "ninja", label: "Ninja", description: "Speed, combos, and chains", color: "text-cyan-400" },
 ];
 
 export interface GameEntry {
@@ -119,5 +120,15 @@ export const GAMES: GameEntry[] = [
     color: "text-red-600",
     category: "dice",
     iconPath: "M15.362 5.214A8.252 8.252 0 0112 21 8.25 8.25 0 016.038 7.047 8.287 8.287 0 009 9.601a8.983 8.983 0 013.361-6.867 8.21 8.21 0 003 2.48z",
+  },
+  {
+    href: "/ninjacombo",
+    slug: "ninjacombo",
+    label: "Katsu's Combo",
+    subtitle: "Build the chain",
+    description: "Sequence 5 attack cards to maximize combo damage. Find the optimal chain!",
+    color: "text-cyan-400",
+    category: "ninja",
+    iconPath: "M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z",
   },
 ];

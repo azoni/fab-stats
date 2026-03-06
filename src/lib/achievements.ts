@@ -10,6 +10,7 @@ import type { ConnectionsStats } from "@/lib/connections/types";
 import type { RampageStats } from "@/lib/rhinarsrampage/types";
 import type { KnockoutStats } from "@/lib/kayosknockout/types";
 import type { BrawlStats } from "@/lib/brutebrawl/types";
+import type { NinjaComboStats } from "@/lib/ninjacombo/types";
 
 interface CheckContext {
   matches: MatchRecord[];
@@ -27,6 +28,7 @@ interface CheckContext {
   rampageStats?: RampageStats;
   knockoutStats?: KnockoutStats;
   brawlStats?: BrawlStats;
+  ninjaComboStats?: NinjaComboStats;
 }
 
 interface AchievementProgress {
@@ -2619,6 +2621,62 @@ const ACHIEVEMENTS: AchievementDef[] = [
     check: (ctx) => ((ctx.rampageStats?.gamesPlayed ?? 0) + (ctx.knockoutStats?.gamesPlayed ?? 0) + (ctx.brawlStats?.gamesPlayed ?? 0)) >= 1000,
     progress: (ctx) => ({ current: (ctx.rampageStats?.gamesPlayed ?? 0) + (ctx.knockoutStats?.gamesPlayed ?? 0) + (ctx.brawlStats?.gamesPlayed ?? 0), target: 1000 }),
   },
+
+  // ── Ninja Combo (Katsu's Combo) ──
+  {
+    id: "ninja_combo_1", name: "Shadow Apprentice", description: "Complete 1 Katsu's Combo",
+    category: "fun", icon: "zap", rarity: "common", group: "ninja_combo", tier: 1,
+    check: (ctx) => (ctx.ninjaComboStats?.gamesPlayed ?? 0) >= 1,
+    progress: (ctx) => ({ current: ctx.ninjaComboStats?.gamesPlayed ?? 0, target: 1 }),
+  },
+  {
+    id: "ninja_combo_5", name: "Swift Striker", description: "Complete 5 Katsu's Combo games",
+    category: "fun", icon: "zap", rarity: "common", group: "ninja_combo", tier: 2,
+    check: (ctx) => (ctx.ninjaComboStats?.gamesPlayed ?? 0) >= 5,
+    progress: (ctx) => ({ current: ctx.ninjaComboStats?.gamesPlayed ?? 0, target: 5 }),
+  },
+  {
+    id: "ninja_combo_10", name: "Combo Adept", description: "Complete 10 Katsu's Combo games",
+    category: "fun", icon: "zap", rarity: "uncommon", group: "ninja_combo", tier: 3,
+    check: (ctx) => (ctx.ninjaComboStats?.gamesPlayed ?? 0) >= 10,
+    progress: (ctx) => ({ current: ctx.ninjaComboStats?.gamesPlayed ?? 0, target: 10 }),
+  },
+  {
+    id: "ninja_combo_25", name: "Chain Weaver", description: "Complete 25 Katsu's Combo games",
+    category: "fun", icon: "zap", rarity: "uncommon", group: "ninja_combo", tier: 4,
+    check: (ctx) => (ctx.ninjaComboStats?.gamesPlayed ?? 0) >= 25,
+    progress: (ctx) => ({ current: ctx.ninjaComboStats?.gamesPlayed ?? 0, target: 25 }),
+  },
+  {
+    id: "ninja_combo_50", name: "Shadow Striker", description: "Complete 50 Katsu's Combo games",
+    category: "fun", icon: "zap", rarity: "rare", group: "ninja_combo", tier: 5,
+    check: (ctx) => (ctx.ninjaComboStats?.gamesPlayed ?? 0) >= 50,
+    progress: (ctx) => ({ current: ctx.ninjaComboStats?.gamesPlayed ?? 0, target: 50 }),
+  },
+  {
+    id: "ninja_combo_100", name: "Ninja Initiate", description: "Complete 100 Katsu's Combo games",
+    category: "fun", icon: "zap", rarity: "rare", group: "ninja_combo", tier: 6,
+    check: (ctx) => (ctx.ninjaComboStats?.gamesPlayed ?? 0) >= 100,
+    progress: (ctx) => ({ current: ctx.ninjaComboStats?.gamesPlayed ?? 0, target: 100 }),
+  },
+  {
+    id: "ninja_combo_250", name: "Combo Artisan", description: "Complete 250 Katsu's Combo games",
+    category: "fun", icon: "zap", rarity: "epic", group: "ninja_combo", tier: 7,
+    check: (ctx) => (ctx.ninjaComboStats?.gamesPlayed ?? 0) >= 250,
+    progress: (ctx) => ({ current: ctx.ninjaComboStats?.gamesPlayed ?? 0, target: 250 }),
+  },
+  {
+    id: "ninja_combo_500", name: "Phantom Striker", description: "Complete 500 Katsu's Combo games",
+    category: "fun", icon: "zap", rarity: "legendary", group: "ninja_combo", tier: 8,
+    check: (ctx) => (ctx.ninjaComboStats?.gamesPlayed ?? 0) >= 500,
+    progress: (ctx) => ({ current: ctx.ninjaComboStats?.gamesPlayed ?? 0, target: 500 }),
+  },
+  {
+    id: "ninja_combo_1000", name: "Katsu's Chosen", description: "Complete 1000 Katsu's Combo games",
+    category: "fun", icon: "zap", rarity: "legendary", group: "ninja_combo", tier: 9,
+    check: (ctx) => (ctx.ninjaComboStats?.gamesPlayed ?? 0) >= 1000,
+    progress: (ctx) => ({ current: ctx.ninjaComboStats?.gamesPlayed ?? 0, target: 1000 }),
+  },
 ];
 
 /** Evaluate which achievements a player has earned */
@@ -2638,8 +2696,9 @@ export function evaluateAchievements(
   rampageStats?: RampageStats,
   knockoutStats?: KnockoutStats,
   brawlStats?: BrawlStats,
+  ninjaComboStats?: NinjaComboStats,
 ): Achievement[] {
-  const ctx: CheckContext = { matches, overall, heroStats, opponentStats, kudosCounts, fabdokuStats, fabdokuCardStats, heroGuesserStats, matchupManiaStats, triviaStats, timelineStats, connectionsStats, rampageStats, knockoutStats, brawlStats };
+  const ctx: CheckContext = { matches, overall, heroStats, opponentStats, kudosCounts, fabdokuStats, fabdokuCardStats, heroGuesserStats, matchupManiaStats, triviaStats, timelineStats, connectionsStats, rampageStats, knockoutStats, brawlStats, ninjaComboStats };
   return ACHIEVEMENTS.filter((a) => a.check(ctx)).map(({ check: _, progress: _p, ...rest }) => rest);
 }
 
@@ -2665,8 +2724,9 @@ export function getAchievementProgress(
   rampageStats?: RampageStats,
   knockoutStats?: KnockoutStats,
   brawlStats?: BrawlStats,
+  ninjaComboStats?: NinjaComboStats,
 ): Record<string, { current: number; target: number }> {
-  const ctx: CheckContext = { matches, overall, heroStats, opponentStats, kudosCounts, fabdokuStats, fabdokuCardStats, heroGuesserStats, matchupManiaStats, triviaStats, timelineStats, connectionsStats, rampageStats, knockoutStats, brawlStats };
+  const ctx: CheckContext = { matches, overall, heroStats, opponentStats, kudosCounts, fabdokuStats, fabdokuCardStats, heroGuesserStats, matchupManiaStats, triviaStats, timelineStats, connectionsStats, rampageStats, knockoutStats, brawlStats, ninjaComboStats };
   const result: Record<string, { current: number; target: number }> = {};
   for (const a of ACHIEVEMENTS) {
     if (a.progress) {

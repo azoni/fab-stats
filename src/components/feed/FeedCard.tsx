@@ -1,7 +1,7 @@
 "use client";
 import { useState, useCallback } from "react";
 import Link from "next/link";
-import type { FeedEvent, ImportFeedEvent, FaBdokuFeedEvent, FaBdokuCardFeedEvent, CrosswordFeedEvent, HeroGuesserFeedEvent, MatchupManiaFeedEvent, TriviaFeedEvent, TimelineFeedEvent, ConnectionsFeedEvent, RampageFeedEvent, KnockoutFeedEvent, BrawlFeedEvent } from "@/types";
+import type { FeedEvent, ImportFeedEvent, FaBdokuFeedEvent, FaBdokuCardFeedEvent, CrosswordFeedEvent, HeroGuesserFeedEvent, MatchupManiaFeedEvent, TriviaFeedEvent, TimelineFeedEvent, ConnectionsFeedEvent, RampageFeedEvent, KnockoutFeedEvent, BrawlFeedEvent, NinjaComboFeedEvent } from "@/types";
 import { rankBorderClass } from "@/lib/leaderboard-ranks";
 import { playerHref } from "@/lib/constants";
 import { FEED_REACTIONS, addFeedReaction, removeFeedReaction, deleteFeedEvent } from "@/lib/feed";
@@ -11,7 +11,7 @@ export interface FeedGroup {
   totalMatchCount: number;
 }
 
-const GAME_TYPES = new Set(["fabdoku", "fabdoku-cards", "crossword", "heroguesser", "matchupmania", "trivia", "timeline", "connections", "rampage", "kayosknockout", "brutebrawl"]);
+const GAME_TYPES = new Set(["fabdoku", "fabdoku-cards", "crossword", "heroguesser", "matchupmania", "trivia", "timeline", "connections", "rampage", "kayosknockout", "brutebrawl", "ninjacombo"]);
 
 /** Group consecutive import or game feed events from the same user into collapsible groups.
  *  Achievement/placement events are never grouped — they stay as single-item groups. */
@@ -383,6 +383,7 @@ export function FeedCard({ event, compact, rankMap, eventTierMap, underlineTierM
           {event.type === "rampage" && <RampageContent event={event} compact={compact} />}
           {event.type === "kayosknockout" && <KnockoutContent event={event} compact={compact} />}
           {event.type === "brutebrawl" && <BrawlContent event={event} compact={compact} />}
+          {event.type === "ninjacombo" && <NinjaComboContent event={event} compact={compact} />}
           <ReactionBar event={event} userId={userId} compact={compact} />
         </div>
       </div>
@@ -1064,6 +1065,33 @@ function BrawlContent({ event, compact }: { event: BrawlFeedEvent; compact?: boo
         {actionText}{" "}
         <Link href="/brutebrawl" className="font-semibold text-red-400 hover:underline">Brute Brawl</Link>
         {" "}vs {event.defenderName} ({event.difficulty}) &mdash;{" "}
+        <span className={`font-semibold ${event.won ? "text-fab-win" : "text-fab-loss"}`}>{statusText}</span>
+      </p>
+    </div>
+  );
+}
+
+function NinjaComboContent({ event, compact }: { event: NinjaComboFeedEvent; compact?: boolean }) {
+  const actionText = event.subtype === "shared" ? "shared" : "completed";
+  const statusText = event.won
+    ? `${event.totalDamage}/${event.targetDamage} dmg (${event.comboCount} combos)`
+    : `${event.totalDamage}/${event.targetDamage}`;
+
+  if (compact) {
+    return (
+      <p className="text-[11px] text-fab-muted">
+        {actionText} Katsu&apos;s Combo &middot;{" "}
+        <span className={`font-semibold ${event.won ? "text-fab-win" : "text-fab-loss"}`}>{statusText}</span>
+      </p>
+    );
+  }
+
+  return (
+    <div className="mt-1">
+      <p className="text-sm text-fab-muted">
+        {actionText}{" "}
+        <Link href="/ninjacombo" className="font-semibold text-cyan-400 hover:underline">Katsu&apos;s Combo</Link>
+        {" "}&mdash;{" "}
         <span className={`font-semibold ${event.won ? "text-fab-win" : "text-fab-loss"}`}>{statusText}</span>
       </p>
     </div>

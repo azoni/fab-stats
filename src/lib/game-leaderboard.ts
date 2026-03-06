@@ -86,6 +86,17 @@ export interface BrawlGameStats {
   bestDamage: number;
 }
 
+export interface NinjaComboGameStats {
+  gamesPlayed: number;
+  gamesWon: number;
+  currentStreak: number;
+  maxStreak: number;
+  totalDamageDealt: number;
+  bestDamage: number;
+  totalCombos: number;
+  perfectGames: number;
+}
+
 // ── Merged entry (one per user) ──
 
 export interface GameLeaderboardEntry {
@@ -100,6 +111,7 @@ export interface GameLeaderboardEntry {
   rhinarsrampage: RampageGameStats | null;
   kayosknockout: KnockoutGameStats | null;
   brutebrawl: BrawlGameStats | null;
+  ninjacombo: NinjaComboGameStats | null;
   // Computed aggregates
   totalGamesPlayed: number;
   totalGamesWon: number;
@@ -121,6 +133,7 @@ const COLLECTIONS = {
   rhinarsrampage: "rhinarsrampagePlayerStats",
   kayosknockout: "kayosknockoutPlayerStats",
   brutebrawl: "brutebrawlPlayerStats",
+  ninjacombo: "ninjacomboPlayerStats",
 } as const;
 
 type GameKey = keyof typeof COLLECTIONS;
@@ -157,8 +170,9 @@ export async function loadAllGameStats(): Promise<GameLeaderboardEntry[]> {
     const rhinarsrampage = gameData.rhinarsrampage ? parseDiceGameStats(gameData.rhinarsrampage) : null;
     const kayosknockout = gameData.kayosknockout ? parseDiceGameStats(gameData.kayosknockout) : null;
     const brutebrawl = gameData.brutebrawl ? parseDiceGameStats(gameData.brutebrawl) : null;
+    const ninjacombo = gameData.ninjacombo ? parseNinjaComboStats(gameData.ninjacombo) : null;
 
-    const all = [fabdoku, crossword, heroguesser, matchupmania, trivia, timeline, connections, rhinarsrampage, kayosknockout, brutebrawl];
+    const all = [fabdoku, crossword, heroguesser, matchupmania, trivia, timeline, connections, rhinarsrampage, kayosknockout, brutebrawl, ninjacombo];
     const active = all.filter((s): s is NonNullable<typeof s> => s !== null && s.gamesPlayed > 0);
 
     const totalGamesPlayed = active.reduce((sum, s) => sum + s.gamesPlayed, 0);
@@ -181,6 +195,7 @@ export async function loadAllGameStats(): Promise<GameLeaderboardEntry[]> {
       rhinarsrampage,
       kayosknockout,
       brutebrawl,
+      ninjacombo,
       totalGamesPlayed,
       totalGamesWon,
       overallWinRate,
@@ -256,5 +271,15 @@ function parseDiceGameStats(d: Record<string, unknown>): RampageGameStats {
     ...parseBasicStats(d),
     totalDamageDealt: num(d.totalDamageDealt),
     bestDamage: num(d.bestDamage),
+  };
+}
+
+function parseNinjaComboStats(d: Record<string, unknown>): NinjaComboGameStats {
+  return {
+    ...parseBasicStats(d),
+    totalDamageDealt: num(d.totalDamageDealt),
+    bestDamage: num(d.bestDamage),
+    totalCombos: num(d.totalCombos),
+    perfectGames: num(d.perfectGames),
   };
 }

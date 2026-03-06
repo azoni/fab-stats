@@ -16,7 +16,7 @@ import {
   type QueryConstraint,
 } from "firebase/firestore";
 import { db } from "./firebase";
-import type { FeedEvent, ImportFeedEvent, AchievementFeedEvent, PlacementFeedEvent, FaBdokuFeedEvent, FaBdokuCardFeedEvent, CrosswordFeedEvent, HeroGuesserFeedEvent, MatchupManiaFeedEvent, TriviaFeedEvent, TimelineFeedEvent, ConnectionsFeedEvent, RampageFeedEvent, KnockoutFeedEvent, BrawlFeedEvent, UserProfile, ImportSource, Achievement, MatchRecord } from "@/types";
+import type { FeedEvent, ImportFeedEvent, AchievementFeedEvent, PlacementFeedEvent, FaBdokuFeedEvent, FaBdokuCardFeedEvent, CrosswordFeedEvent, HeroGuesserFeedEvent, MatchupManiaFeedEvent, TriviaFeedEvent, TimelineFeedEvent, ConnectionsFeedEvent, RampageFeedEvent, KnockoutFeedEvent, BrawlFeedEvent, NinjaComboFeedEvent, UserProfile, ImportSource, Achievement, MatchRecord } from "@/types";
 import type { PlayoffFinish } from "./stats";
 
 function feedCollection() {
@@ -663,7 +663,7 @@ export function invalidateFeedCache() {
   feedCache.clear();
 }
 
-export type FeedEventType = "all" | "import" | "achievement" | "placement" | "fabdoku" | "crossword" | "heroguesser" | "matchupmania" | "trivia" | "timeline" | "connections" | "rampage" | "kayosknockout" | "brutebrawl";
+export type FeedEventType = "all" | "import" | "achievement" | "placement" | "fabdoku" | "crossword" | "heroguesser" | "matchupmania" | "trivia" | "timeline" | "connections" | "rampage" | "kayosknockout" | "brutebrawl" | "ninjacombo";
 
 export interface PaginatedFeedResult {
   events: FeedEvent[];
@@ -891,6 +891,55 @@ export async function createBrawlFeedEvent(
     targetDamage,
     defenderName,
     difficulty,
+    createdAt: new Date().toISOString(),
+  };
+
+  const clean: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(data)) {
+    if (v !== undefined) clean[k] = v;
+  }
+  if (profile.photoUrl) clean.photoUrl = profile.photoUrl;
+
+  await addDoc(feedCollection(), clean);
+  invalidateFeedCache();
+}
+
+export async function createNinjaComboFeedEvent(
+  profile: UserProfile,
+  subtype: "completed" | "shared",
+  puzzleDate: string,
+  won: boolean,
+  totalDamage: number,
+  targetDamage: number,
+  comboCount: number,
+  maxStreak: number,
+): Promise<void> {
+  if (!profile.isPublic || profile.hideFromFeed) return;
+
+  const dupCheck = query(
+    feedCollection(),
+    where("userId", "==", profile.uid),
+    where("type", "==", "ninjacombo"),
+    where("date", "==", puzzleDate),
+    where("subtype", "==", subtype),
+    limit(1),
+  );
+  const existing = await getDocs(dupCheck);
+  if (!existing.empty) return;
+
+  const data: Omit<NinjaComboFeedEvent, "id"> = {
+    type: "ninjacombo",
+    subtype,
+    userId: profile.uid,
+    username: profile.username,
+    displayName: profile.displayName,
+    isPublic: profile.isPublic,
+    date: puzzleDate,
+    won,
+    totalDamage,
+    targetDamage,
+    comboCount,
+    maxStreak,
     createdAt: new Date().toISOString(),
   };
 

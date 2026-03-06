@@ -48,6 +48,7 @@ export interface ProfileCardData {
   timelineGames?: number;
   connectionsGames?: number;
   bruteBrawlerGames?: number;
+  ninjaComboGames?: number;
   submittedFeedback?: boolean;
 }
 
@@ -320,7 +321,7 @@ export function ProfileCard({ data, theme }: { data: ProfileCardData; theme?: Ca
               </div>
               {username && <p style={{ color: t.dim }} className="text-[11px]">@{username}</p>}
               {(() => {
-                const badges = getProfileBadges({ matchCount: totalMatches, isCreator: data.isCreator, fabdokuGames: data.fabdokuGames, fabdokuCardGames: data.fabdokuCardGames, crosswordGames: data.crosswordGames, heroGuesserGames: data.heroGuesserGames, matchupManiaGames: data.matchupManiaGames, triviaGames: data.triviaGames, timelineGames: data.timelineGames, connectionsGames: data.connectionsGames, bruteBrawlerGames: data.bruteBrawlerGames, submittedFeedback: data.submittedFeedback });
+                const badges = getProfileBadges({ matchCount: totalMatches, isCreator: data.isCreator, fabdokuGames: data.fabdokuGames, fabdokuCardGames: data.fabdokuCardGames, crosswordGames: data.crosswordGames, heroGuesserGames: data.heroGuesserGames, matchupManiaGames: data.matchupManiaGames, triviaGames: data.triviaGames, timelineGames: data.timelineGames, connectionsGames: data.connectionsGames, bruteBrawlerGames: data.bruteBrawlerGames, ninjaComboGames: data.ninjaComboGames, submittedFeedback: data.submittedFeedback });
                 if (badges.length === 0) return null;
                 return (
                   <div className="flex items-center gap-1 mt-0.5">

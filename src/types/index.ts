@@ -460,7 +460,18 @@ export interface BrawlFeedEvent extends FeedEventBase {
   difficulty: string;
 }
 
-export type FeedEvent = ImportFeedEvent | AchievementFeedEvent | PlacementFeedEvent | FaBdokuFeedEvent | FaBdokuCardFeedEvent | CrosswordFeedEvent | HeroGuesserFeedEvent | MatchupManiaFeedEvent | TriviaFeedEvent | TimelineFeedEvent | ConnectionsFeedEvent | RampageFeedEvent | KnockoutFeedEvent | BrawlFeedEvent;
+export interface NinjaComboFeedEvent extends FeedEventBase {
+  type: "ninjacombo";
+  subtype: "completed" | "shared";
+  date: string;
+  won: boolean;
+  totalDamage: number;
+  targetDamage: number;
+  comboCount: number;
+  maxStreak: number;
+}
+
+export type FeedEvent = ImportFeedEvent | AchievementFeedEvent | PlacementFeedEvent | FaBdokuFeedEvent | FaBdokuCardFeedEvent | CrosswordFeedEvent | HeroGuesserFeedEvent | MatchupManiaFeedEvent | TriviaFeedEvent | TimelineFeedEvent | ConnectionsFeedEvent | RampageFeedEvent | KnockoutFeedEvent | BrawlFeedEvent | NinjaComboFeedEvent;
 
 export interface Creator {
   name: string;
