@@ -418,7 +418,9 @@ export default function NotificationsPage() {
                           </p>
                         ) : n.type === "badge" ? (
                           <p className="text-sm text-fab-text">
-                            You earned the <span className="font-semibold text-violet-300">{n.badgeName}</span> badge!
+                            {n.grantedByAdmin
+                              ? <>An admin awarded you the <span className="font-semibold text-violet-300">{n.badgeName}</span> badge!</>
+                              : <>You earned the <span className="font-semibold text-violet-300">{n.badgeName}</span> badge!</>}
                           </p>
                         ) : n.type === "kudos" ? (
                           <p className="text-sm text-fab-text">

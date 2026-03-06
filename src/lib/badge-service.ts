@@ -24,6 +24,7 @@ export async function assignBadge(userId: string, badgeId: string, notify = fals
         badgeId: badge.id,
         badgeName: badge.name,
         badgeRarity: badge.rarity,
+        grantedByAdmin: true,
         createdAt: new Date().toISOString(),
         read: false,
       });

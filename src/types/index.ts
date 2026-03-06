@@ -249,6 +249,7 @@ export interface UserNotification {
   badgeId?: string;
   badgeName?: string;
   badgeRarity?: string;
+  grantedByAdmin?: boolean;
   // Kudos fields
   kudosType?: string;
   kudosGiverUid?: string;
