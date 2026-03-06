@@ -120,6 +120,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     getProfile(user.uid).then((p) => {
       setProfile(p);
       setActivityUsername(p?.username ?? null);
+    }).catch(() => {
+      setProfile(null);
+    }).finally(() => {
       setProfileLoading(false);
       setLoading(false);
     });

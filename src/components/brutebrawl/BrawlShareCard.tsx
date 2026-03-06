@@ -84,7 +84,7 @@ export function BrawlShareCard({
           >
             {copied ? "Copied!" : "Copy to Clipboard"}
           </button>
-          {typeof navigator !== "undefined" && typeof navigator.share === "function" && (
+          {typeof navigator !== "undefined" && typeof navigator.share === "function" && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) && (
             <button
               onClick={handleNativeShare}
               className="px-4 py-2 rounded-lg text-sm font-medium bg-red-800/60 hover:bg-red-700/60 text-red-200 transition-colors"

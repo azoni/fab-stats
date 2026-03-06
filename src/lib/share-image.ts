@@ -24,7 +24,7 @@ export async function captureCardBlob(
 ): Promise<Blob | null> {
   const { toBlob } = await import("html-to-image");
   // Use lower pixel ratio on mobile to keep image size manageable for share sheets
-  const isMobile = "ontouchstart" in window || navigator.maxTouchPoints > 0;
+  const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
   const defaultRatio = isMobile ? 1.5 : 2;
   const base = { pixelRatio: opts.pixelRatio ?? defaultRatio, backgroundColor: opts.backgroundColor, cacheBust: true };
   try {
@@ -61,9 +61,9 @@ export async function copyCardImage(
 
   const blob = await captureCardBlob(el, opts);
 
-  // Mobile: use native share sheet
-  const isMobile = "ontouchstart" in window || navigator.maxTouchPoints > 0;
-  if (isMobile && blob && navigator.share) {
+  // Mobile: use native share sheet (only on actual phones/tablets, not touch-enabled desktops)
+  const isMobileDevice = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  if (isMobileDevice && blob && navigator.share) {
     try {
       const file = new File([blob], opts.fileName, { type: "image/png" });
       if (navigator.canShare?.({ files: [file] })) {
@@ -77,7 +77,7 @@ export async function copyCardImage(
     }
   }
 
-  // Desktop: try copying image to clipboard
+  // Desktop (and mobile fallback): try copying image to clipboard
   if (blob && navigator.clipboard?.write) {
     try {
       await navigator.clipboard.write([
