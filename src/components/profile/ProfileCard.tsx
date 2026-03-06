@@ -326,7 +326,7 @@ export function ProfileCard({ data, theme }: { data: ProfileCardData; theme?: Ca
                     if (ra !== rb) return rb - ra;
                     return a.name.localeCompare(b.name);
                   })
-                  .slice(0, 8);
+                  .slice(0, 7);
                 return (
                   <div className="flex items-center gap-1 mt-0.5 flex-wrap">
                     {sorted.map((ach) => {

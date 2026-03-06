@@ -52,7 +52,7 @@ interface CopyOptions extends CaptureOptions {
   fallbackText: string;
 }
 
-/** Capture card → try native share (mobile) → try clipboard image → fall back to text. */
+/** Capture card → try clipboard image → try native share (mobile) → fall back to text. */
 export async function copyCardImage(
   el: HTMLElement | null,
   opts: CopyOptions,
@@ -61,7 +61,21 @@ export async function copyCardImage(
 
   const blob = await captureCardBlob(el, opts);
 
-  // Mobile: use native share sheet (only on actual phones/tablets, not touch-enabled desktops)
+  // 1. Try copying image to clipboard (works on desktop and modern mobile browsers)
+  if (blob && navigator.clipboard?.write) {
+    try {
+      // Safari requires ClipboardItem values to be Promises for async clipboard
+      const item = new ClipboardItem({
+        "image/png": Promise.resolve(blob),
+      });
+      await navigator.clipboard.write([item]);
+      return "image";
+    } catch {
+      // ClipboardItem with image/png not supported — fall through
+    }
+  }
+
+  // 2. Mobile fallback: use native share sheet
   const isMobileDevice = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
   if (isMobileDevice && blob && navigator.share) {
     try {
@@ -71,25 +85,11 @@ export async function copyCardImage(
         return "shared";
       }
     } catch (err) {
-      // User cancelled — don't fall through to clipboard
       if (err instanceof DOMException && err.name === "AbortError") return "failed";
-      // Share failed (e.g. file too large) — fall through to clipboard
     }
   }
 
-  // Desktop (and mobile fallback): try copying image to clipboard
-  if (blob && navigator.clipboard?.write) {
-    try {
-      await navigator.clipboard.write([
-        new ClipboardItem({ "image/png": blob }),
-      ]);
-      return "image";
-    } catch {
-      // ClipboardItem with image/png not supported — fall through to text
-    }
-  }
-
-  // Fallback: copy text
+  // 3. Fallback: copy text
   try {
     await navigator.clipboard.writeText(opts.fallbackText);
     return "text";
