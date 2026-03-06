@@ -223,7 +223,7 @@ export function KnockoutBoard({ gameState, onUpdate, heroImageUrl, dateStr }: Kn
 
         {/* Reroll indicator */}
         {phase === "pick_dice" && (
-          <p className="text-[10px] text-red-400/50">
+          <p className="text-xs text-red-400/50">
             {gs.selectedIndices.length > 0
               ? `${gs.selectedIndices.length} kept · Tap dice to toggle`
               : "Tap dice to keep, then reroll or score"}
@@ -264,7 +264,7 @@ export function KnockoutBoard({ gameState, onUpdate, heroImageUrl, dateStr }: Kn
 
       {/* Damage summary */}
       {gs.roundHistory.length > 0 && (
-        <div className="flex items-center gap-2 text-[11px] text-red-400/50">
+        <div className="flex items-center gap-2 text-xs text-red-400/50">
           <span>Damage: {gs.totalDamage} dmg</span>
           <span>|</span>
           <span>Need: {Math.max(0, gs.targetHP - gs.totalDamage)} more</span>

@@ -663,7 +663,7 @@ export function invalidateFeedCache() {
   feedCache.clear();
 }
 
-export type FeedEventType = "all" | "import" | "achievement" | "placement" | "fabdoku" | "crossword" | "heroguesser" | "matchupmania" | "trivia" | "timeline" | "connections";
+export type FeedEventType = "all" | "import" | "achievement" | "placement" | "fabdoku" | "crossword" | "heroguesser" | "matchupmania" | "trivia" | "timeline" | "connections" | "rampage" | "kayosknockout" | "brutebrawl";
 
 export interface PaginatedFeedResult {
   events: FeedEvent[];

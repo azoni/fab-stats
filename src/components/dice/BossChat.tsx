@@ -70,10 +70,10 @@ export function BossChat({
             mood === "angry" ? "animate-chat-shake" : ""
           }`}
         >
-          <p className="text-[10px] text-red-400/50 font-medium mb-0.5">
+          <p className="text-xs text-red-400/50 font-medium mb-0.5">
             {heroName}
           </p>
-          <p className="text-xs text-red-100 leading-relaxed italic">
+          <p className="text-sm text-red-100 leading-relaxed italic">
             &ldquo;{message}&rdquo;
           </p>
         </div>

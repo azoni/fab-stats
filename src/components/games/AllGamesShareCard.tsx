@@ -53,6 +53,15 @@ function loadTodayResults(): GameResult[] {
         case "connections":
           detail = state.won ? `${state.mistakesRemaining ?? 0}/4 left` : `${4 - (state.mistakesRemaining ?? 0)} mistakes`;
           break;
+        case "rhinarsrampage":
+          detail = `${state.score ?? 0}/${state.currentTargetHP ?? "?"} dmg`;
+          break;
+        case "kayosknockout":
+          detail = `${state.score ?? state.totalDamage ?? 0}/${state.targetHP ?? "?"} dmg`;
+          break;
+        case "brutebrawl":
+          detail = `${state.totalDamage ?? 0}/${state.targetDamage ?? "?"} dmg`;
+          break;
       }
 
       results.push({

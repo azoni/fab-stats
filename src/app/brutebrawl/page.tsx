@@ -12,6 +12,7 @@ import { createBrawlFeedEvent } from "@/lib/feed";
 import { logActivity } from "@/lib/activity-log";
 import { detectTierUp } from "@/lib/badge-tiers";
 import { BadgeTierUpPopup } from "@/components/profile/BadgeTierUpPopup";
+import { HowToPlay } from "@/components/dice/HowToPlay";
 import type { BrawlGameState, BrawlStats } from "@/lib/brutebrawl/types";
 
 function getTodayDateStr(): string {
@@ -118,13 +119,23 @@ export default function BruteBrawlPage() {
     <div className="max-w-lg mx-auto py-4 px-4">
       <GameNav current="brutebrawl" />
 
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-3">
         <div>
           <h1 className="text-lg font-bold text-red-100">Brute Brawl</h1>
-          <p className="text-[10px] text-red-400/60">Dice combat! Roll attack vs defense. Deal 20+ damage to win. &middot; 8 rounds</p>
+          <p className="text-xs text-red-400/60">Dice combat! Roll attack vs defense · 8 rounds</p>
         </div>
-        <p className="text-[10px] text-red-400/40">{dateStr}</p>
+        <p className="text-xs text-red-400/40">{dateStr}</p>
       </div>
+
+      <HowToPlay rules={[
+        "Roll 3 attack dice vs the defender's 2 dice each round.",
+        "Your total minus their total = damage dealt (minimum 0).",
+        "Roll triples for SMASH! — your dice total is doubled before subtracting defense.",
+        "If the defender rolls doubles, your attack is BLOCKED (no damage).",
+        "At 5 damage: Bloodrush Bellow — roll 4 attack dice next round.",
+        "At 12 damage: Barraging Beatdown — reroll one die (tap to use).",
+        "Deal 20+ total damage across 8 rounds to win!",
+      ]} />
 
       {!showResult && (
         <BrawlBoard

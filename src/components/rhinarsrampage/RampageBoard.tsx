@@ -184,9 +184,9 @@ export function RampageBoard({ gameState, puzzle, heroImageUrl, onStateChange }:
           />
           {phase === "decide" && (
             <div className="text-center">
-              <p className="text-xs text-red-400/60">Unbanked</p>
-              <p className="text-2xl font-bold text-amber-400">{gs.unbankedTotal}</p>
-              <p className={`text-[10px] ${gs.unbankedTotal > 15 ? "text-red-400" : "text-red-400/40"}`}>
+              <p className="text-sm text-red-400/60">Unbanked</p>
+              <p className="text-3xl font-bold text-amber-400">{gs.unbankedTotal}</p>
+              <p className={`text-xs ${gs.unbankedTotal > 15 ? "text-red-400" : "text-red-400/40"}`}>
                 Bust at 22+
               </p>
             </div>
@@ -235,14 +235,14 @@ export function RampageBoard({ gameState, puzzle, heroImageUrl, onStateChange }:
         </button>
       )}
       {gs.intimidateUsed && gs.intimidateValue > 0 && (
-        <p className="text-[10px] text-purple-400/50 text-center">
+        <p className="text-xs text-purple-400/50 text-center">
           Intimidate used: -{gs.intimidateValue} HP
         </p>
       )}
 
       {/* Banked damage summary */}
       {gs.roundHistory.length > 0 && (
-        <div className="flex items-center gap-2 text-[11px] text-red-400/50">
+        <div className="flex items-center gap-2 text-xs text-red-400/50">
           <span>Banked: {gs.score} dmg</span>
           <span>|</span>
           <span>Need: {Math.max(0, gs.currentTargetHP - gs.score)} more</span>

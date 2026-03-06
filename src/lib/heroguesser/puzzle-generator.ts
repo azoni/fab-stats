@@ -36,6 +36,13 @@ function compareNumeric(guess: number, answer: number, threshold: number): Numer
   return "wrong";
 }
 
+// Only compare the main constructed formats that are displayed to the user
+const MAIN_FORMATS = new Set(["classic constructed", "blitz", "living legend"]);
+function mainFormats(formats: string[]): string[] {
+  const f = formats.map((s) => s.toLowerCase()).filter((s) => MAIN_FORMATS.has(s));
+  return f.length > 0 ? f : ["none"];
+}
+
 export function compareHeroes(guess: HeroInfo, answer: HeroInfo): HeroGuessClues {
   return {
     class: compareArrays(guess.classes, answer.classes),
@@ -46,7 +53,7 @@ export function compareHeroes(guess: HeroInfo, answer: HeroInfo): HeroGuessClues
     age: guess.young === answer.young ? "correct" : "wrong",
     life: compareNumeric(guess.life ?? 0, answer.life ?? 0, 5),
     intellect: compareNumeric(guess.intellect ?? 0, answer.intellect ?? 0, 1),
-    formats: compareArrays(guess.legalFormats, answer.legalFormats),
+    formats: compareArrays(mainFormats(guess.legalFormats), mainFormats(answer.legalFormats)),
   };
 }
 

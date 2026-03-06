@@ -16,9 +16,9 @@ export function HealthBar({ current, max, label, invert }: HealthBarProps) {
   return (
     <div className="w-full">
       {label && (
-        <p className="text-[10px] text-red-400/60 mb-0.5">{label}</p>
+        <p className="text-xs text-red-400/60 mb-0.5">{label}</p>
       )}
-      <div className="relative h-5 bg-red-950 rounded-full overflow-hidden border border-red-900/40">
+      <div className="relative h-7 bg-red-950 rounded-full overflow-hidden border border-red-900/40">
         <div
           className={`h-full rounded-full ${
             isLow
@@ -27,7 +27,7 @@ export function HealthBar({ current, max, label, invert }: HealthBarProps) {
           }`}
           style={{ width: `${pct}%`, transition: "width 0.6s ease-out" }}
         />
-        <span className="absolute inset-0 flex items-center justify-center text-[11px] font-bold text-red-100">
+        <span className="absolute inset-0 flex items-center justify-center text-sm font-bold text-red-100">
           {invert ? `DMG: ${current}/${max}` : `HP: ${current}/${max}`}
         </span>
       </div>

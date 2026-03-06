@@ -56,7 +56,7 @@ import { loadKudosCounts } from "@/lib/kudos";
 import { hasUserSubmittedFeedback } from "@/lib/feedback";
 import { CardBorderWrapper } from "@/components/profile/CardBorderWrapper";
 import type { UnderlineConfig } from "@/components/profile/CardBorderWrapper";
-import { GAMES } from "@/lib/games";
+import { GAMES, GAME_CATEGORIES } from "@/lib/games";
 import type { Poll, EventShowcaseConfig } from "@/types";
 
 function ResourcesPopout() {
@@ -195,28 +195,37 @@ function GamesPopout() {
           style={{ top: pos.top, left: pos.left }}
         >
           <div className="p-1.5">
-            {GAMES.map((game) => {
-              const played = hasPlayedToday(game.slug);
+            {GAME_CATEGORIES.map((cat) => {
+              const games = GAMES.filter((g) => g.category === cat.id);
+              if (games.length === 0) return null;
               return (
-                <Link
-                  key={game.href}
-                  href={game.href}
-                  onClick={() => setOpen(false)}
-                  className="flex items-center gap-2.5 px-3 py-2 rounded-md text-sm font-medium text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover transition-colors"
-                >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d={game.iconPath} />
-                  </svg>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium leading-tight">{game.label}</p>
-                    <p className="text-[10px] text-fab-dim leading-tight">{game.subtitle}</p>
-                  </div>
-                  {played && (
-                    <svg className="w-4 h-4 text-fab-win shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  )}
-                </Link>
+                <div key={cat.id}>
+                  <p className="px-3 pt-2 pb-0.5 text-[10px] uppercase tracking-wider text-fab-dim font-semibold">{cat.label}</p>
+                  {games.map((game) => {
+                    const played = hasPlayedToday(game.slug);
+                    return (
+                      <Link
+                        key={game.href}
+                        href={game.href}
+                        onClick={() => setOpen(false)}
+                        className="flex items-center gap-2.5 px-3 py-2 rounded-md text-sm font-medium text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover transition-colors"
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d={game.iconPath} />
+                        </svg>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium leading-tight">{game.label}</p>
+                          <p className="text-[10px] text-fab-dim leading-tight">{game.subtitle}</p>
+                        </div>
+                        {played && (
+                          <svg className="w-4 h-4 text-fab-win shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                        )}
+                      </Link>
+                    );
+                  })}
+                </div>
               );
             })}
           </div>

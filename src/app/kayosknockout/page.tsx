@@ -12,6 +12,7 @@ import { BadgeTierUpPopup } from "@/components/profile/BadgeTierUpPopup";
 import { createKnockoutFeedEvent } from "@/lib/feed";
 import { logActivity } from "@/lib/activity-log";
 import { allHeroes } from "@/lib/heroes";
+import { HowToPlay } from "@/components/dice/HowToPlay";
 import type { KnockoutGameState, KnockoutStats } from "@/lib/kayosknockout/types";
 
 function getTodayDateStr(): string {
@@ -101,13 +102,20 @@ export default function KayosKnockoutPage() {
     <div className="max-w-lg mx-auto py-4 px-4">
       <GameNav current="kayosknockout" />
 
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-3">
         <div>
           <h1 className="text-lg font-bold text-red-100">Kayo's Knockout</h1>
-          <p className="text-[10px] text-red-400/60">Yahtzee-style dice combos to KO Kayo! · 3 rounds</p>
+          <p className="text-xs text-red-400/60">Yahtzee-style dice combos to KO Kayo! · 3 rounds</p>
         </div>
-        <p className="text-[10px] text-red-400/40">{dateStr}</p>
+        <p className="text-xs text-red-400/40">{dateStr}</p>
       </div>
+
+      <HowToPlay rules={[
+        "Roll 5 dice each round. Tap dice to keep them, then reroll the rest.",
+        "You get 2 rerolls per round to build the best combo.",
+        "Combos deal bonus damage: Straight (25), Five of a Kind (30), Four of a Kind (sum+12), Full House (sum+8), Three of a Kind (sum+5).",
+        "Score your dice to deal damage to Kayo. 3 rounds to KO him!",
+      ]} />
 
       {!showResult && (
         <KnockoutBoard

@@ -54,6 +54,7 @@ export function HeroGuesserBoard({
 }) {
   const [search, setSearch] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
+  const [highlightIndex, setHighlightIndex] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -61,6 +62,10 @@ export function HeroGuesserBoard({
   const filtered = search.length >= 1
     ? heroPool.filter((h) => h.name.toLowerCase().includes(search.toLowerCase()) && !guessedNames.has(h.name)).slice(0, 8)
     : [];
+
+  useEffect(() => {
+    setHighlightIndex(-1);
+  }, [search]);
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -77,6 +82,26 @@ export function HeroGuesserBoard({
     onGuess(name);
     setSearch("");
     setShowDropdown(false);
+    setHighlightIndex(-1);
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent) {
+    if (!showDropdown || filtered.length === 0) return;
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setHighlightIndex((i) => (i + 1) % filtered.length);
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setHighlightIndex((i) => (i <= 0 ? filtered.length - 1 : i - 1));
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      if (highlightIndex >= 0 && highlightIndex < filtered.length) {
+        selectHero(filtered[highlightIndex].name);
+      }
+    } else if (e.key === "Escape") {
+      setShowDropdown(false);
+      setHighlightIndex(-1);
+    }
   }
 
   return (
@@ -90,17 +115,18 @@ export function HeroGuesserBoard({
             value={search}
             onChange={(e) => { setSearch(e.target.value); setShowDropdown(true); }}
             onFocus={() => setShowDropdown(true)}
+            onKeyDown={handleKeyDown}
             placeholder="Type a hero name..."
             className="w-full bg-fab-bg border border-fab-border text-fab-text text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-fab-gold"
             autoComplete="off"
           />
           {showDropdown && filtered.length > 0 && (
             <div ref={dropdownRef} className="absolute top-full left-0 right-0 mt-1 bg-fab-surface border border-fab-border rounded-lg shadow-xl z-50 max-h-48 overflow-y-auto">
-              {filtered.map((h) => (
+              {filtered.map((h, idx) => (
                 <button
                   key={h.name}
                   onClick={() => selectHero(h.name)}
-                  className="w-full flex items-center gap-2 px-3 py-2 hover:bg-fab-surface-hover text-left transition-colors"
+                  className={`w-full flex items-center gap-2 px-3 py-2 text-left transition-colors ${idx === highlightIndex ? "bg-fab-gold/15 text-fab-gold" : "hover:bg-fab-surface-hover"}`}
                 >
                   <img src={h.imageUrl} alt="" className="w-6 h-6 rounded object-cover" />
                   <span className="text-xs text-fab-text">{h.name}</span>

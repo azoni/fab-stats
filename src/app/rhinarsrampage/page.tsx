@@ -13,6 +13,7 @@ import { logActivity } from "@/lib/activity-log";
 import { detectTierUp } from "@/lib/badge-tiers";
 import { BadgeTierUpPopup } from "@/components/profile/BadgeTierUpPopup";
 import { allHeroes } from "@/lib/heroes";
+import { HowToPlay } from "@/components/dice/HowToPlay";
 import type { RampageGameState, RampageStats } from "@/lib/rhinarsrampage/types";
 
 function getTodayDateStr(): string {
@@ -97,13 +98,21 @@ export default function RhinarsRampagePage() {
     <div className="max-w-lg mx-auto py-4 px-4">
       <GameNav current="rhinarsrampage" />
 
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-3">
         <div>
           <h1 className="text-lg font-bold text-red-100">Rhinar's Rampage</h1>
-          <p className="text-[10px] text-red-400/60">Push your luck · 5 rounds · Beat the target</p>
+          <p className="text-xs text-red-400/60">Push your luck · 5 rounds · Beat the target</p>
         </div>
-        <p className="text-[10px] text-red-400/60">{dateStr}</p>
+        <p className="text-xs text-red-400/60">{dateStr}</p>
       </div>
+
+      <HowToPlay rules={[
+        "Roll a die each turn to build unbanked damage.",
+        "Bank to lock in your damage, or keep rolling for more.",
+        "If your unbanked total exceeds 21, you BUST and lose it all!",
+        "You have 5 rounds to deal enough damage to beat Rhinar's HP.",
+        "Use Intimidate once per game to roll a die and reduce Rhinar's HP.",
+      ]} />
 
       {!gameState.completed ? (
         <RampageBoard

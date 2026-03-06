@@ -317,7 +317,7 @@ export function BrawlBoard({ gameState, puzzle, onStateChange }: BrawlBoardProps
 
       {/* Difficulty badge + Round counter */}
       <div className="flex items-center justify-between">
-        <p className="text-[10px] text-red-400/40">
+        <p className="text-xs text-red-400/40">
           Difficulty: <span className={
             gs.difficulty === "Hard" ? "text-red-400" :
             gs.difficulty === "Medium" ? "text-amber-400/70" :
@@ -330,7 +330,7 @@ export function BrawlBoard({ gameState, puzzle, onStateChange }: BrawlBoardProps
 
       {/* Power-up status */}
       {powerUpStatus && (
-        <div className={`text-[10px] px-3 py-1.5 rounded-md border ${
+        <div className={`text-xs px-3 py-1.5 rounded-md border ${
           (gs.bloodrushAvailable && !gs.bloodrushUsed) || (gs.barragingAvailable && !gs.barragingUsed)
             ? "border-amber-500/40 bg-amber-900/20 text-amber-300 animate-pulse"
             : "border-red-900/30 bg-red-950/30 text-red-400/50"
@@ -358,14 +358,14 @@ export function BrawlBoard({ gameState, puzzle, onStateChange }: BrawlBoardProps
         {/* Player attack dice */}
         {gs.currentAttackDice.length > 0 && (
           <div className="text-center space-y-1">
-            <p className="text-[10px] text-red-400/60 font-medium">YOUR ATTACK</p>
+            <p className="text-xs text-red-400/60 font-medium">YOUR ATTACK</p>
             <DiceRoll
               dice={gs.currentAttackDice}
               rolling={playerRolling}
               onRollComplete={handlePlayerRollComplete}
               onToggleSelect={gs.phase === "reroll" ? handleRerollDie : undefined}
               variant="attack"
-              size="md"
+              size="lg"
             />
             {!playerRolling && gs.currentAttackDice.length > 0 && (
               <p className="text-sm font-bold text-amber-400">
@@ -398,13 +398,13 @@ export function BrawlBoard({ gameState, puzzle, onStateChange }: BrawlBoardProps
         {/* Defender dice */}
         {gs.currentDefenseDice.length > 0 && (
           <div className="text-center space-y-1">
-            <p className="text-[10px] text-red-400/60 font-medium">DEFENSE</p>
+            <p className="text-xs text-red-400/60 font-medium">DEFENSE</p>
             <DiceRoll
               dice={gs.currentDefenseDice}
               rolling={defenderRolling}
               onRollComplete={handleDefenderRollComplete}
               variant="defend"
-              size="md"
+              size="lg"
             />
             {!defenderRolling && gs.currentDefenseDice.length > 0 && (
               <p className="text-sm font-bold text-zinc-400">
@@ -451,7 +451,7 @@ export function BrawlBoard({ gameState, puzzle, onStateChange }: BrawlBoardProps
 
       {/* Damage summary */}
       {gs.roundHistory.length > 0 && (
-        <div className="flex items-center gap-2 text-[11px] text-red-400/50">
+        <div className="flex items-center gap-2 text-xs text-red-400/50">
           <span>Dealt: {gs.totalDamage}/{gs.targetDamage} dmg</span>
           <span>|</span>
           <span>Need: {Math.max(0, gs.targetDamage - gs.totalDamage)} more</span>
@@ -462,7 +462,7 @@ export function BrawlBoard({ gameState, puzzle, onStateChange }: BrawlBoardProps
       {gs.roundHistory.length > 0 && (
         <div className="space-y-1 pt-1 border-t border-red-900/20">
           {gs.roundHistory.map((round, i) => (
-            <div key={i} className="flex items-center gap-2 text-[10px]">
+            <div key={i} className="flex items-center gap-2 text-xs">
               <span className="text-red-400/50 w-8">R{i + 1}:</span>
               <span className="text-red-200/60">[{round.attackDice.join("+")}]</span>
               <span className="text-red-400/30">vs</span>

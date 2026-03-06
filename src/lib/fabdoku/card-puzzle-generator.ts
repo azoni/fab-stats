@@ -68,10 +68,10 @@ const puzzleCache = new Map<string, CardDailyPuzzle>();
 
 function prevDateStr(dateStr: string): string {
   const [y, m, d] = dateStr.split("-").map(Number);
-  const prev = new Date(y, m - 1, d - 1);
-  const py = prev.getFullYear();
-  const pm = String(prev.getMonth() + 1).padStart(2, "0");
-  const pd = String(prev.getDate()).padStart(2, "0");
+  const prev = new Date(Date.UTC(y, m - 1, d - 1));
+  const py = prev.getUTCFullYear();
+  const pm = String(prev.getUTCMonth() + 1).padStart(2, "0");
+  const pd = String(prev.getUTCDate()).padStart(2, "0");
   return `${py}-${pm}-${pd}`;
 }
 

@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
-import { GAMES } from "@/lib/games";
+import { GAMES, GAME_CATEGORIES } from "@/lib/games";
 import { AllGamesShareCard } from "@/components/games/AllGamesShareCard";
 
 function getTodayDateStr(): string {
@@ -36,6 +36,12 @@ function hasPlayedToday(slug: string): boolean {
   }
 }
 
+const CATEGORY_BORDER_COLORS: Record<string, string> = {
+  puzzle: "border-l-emerald-500/50",
+  knowledge: "border-l-purple-500/50",
+  dice: "border-l-red-500/50",
+};
+
 export default function GamesPage() {
   const [showShare, setShowShare] = useState(false);
   const completed = getCompletedCount();
@@ -45,7 +51,7 @@ export default function GamesPage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-xl font-bold text-fab-text">Daily Games</h1>
-          <p className="text-xs text-fab-muted mt-1">New puzzles every day at midnight. Play, share, and track your streaks.</p>
+          <p className="text-xs text-fab-muted mt-1">{GAMES.length} games — new challenges every day at midnight.</p>
         </div>
         {completed >= 2 && (
           <button
@@ -60,36 +66,50 @@ export default function GamesPage() {
         )}
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        {GAMES.map((game) => {
-          const played = hasPlayedToday(game.slug);
+      <div className="space-y-6">
+        {GAME_CATEGORIES.map((cat) => {
+          const games = GAMES.filter((g) => g.category === cat.id);
+          if (games.length === 0) return null;
+
           return (
-            <Link
-              key={game.slug}
-              href={game.href}
-              className="group bg-fab-surface border border-fab-border rounded-lg p-4 hover:border-fab-muted transition-colors relative overflow-hidden"
-            >
-              {played && (
-                <div className="absolute top-2 right-2">
-                  <svg className="w-4 h-4 text-fab-win" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-              )}
-              <div className="flex items-start gap-3">
-                <div className={`w-10 h-10 rounded-lg bg-fab-bg flex items-center justify-center shrink-0 ${game.color}`}>
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d={game.iconPath} />
-                  </svg>
-                </div>
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <h2 className="text-sm font-semibold text-fab-text group-hover:text-fab-gold transition-colors">{game.label}</h2>
-                  </div>
-                  <p className="text-[10px] text-fab-muted mt-0.5">{game.description}</p>
-                </div>
+            <div key={cat.id}>
+              <div className={`border-l-2 ${CATEGORY_BORDER_COLORS[cat.id] || "border-l-fab-border"} pl-3 mb-3`}>
+                <h2 className={`text-sm font-semibold ${cat.color}`}>{cat.label}</h2>
+                <p className="text-[10px] text-fab-muted">{cat.description}</p>
               </div>
-            </Link>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {games.map((game) => {
+                  const played = hasPlayedToday(game.slug);
+                  return (
+                    <Link
+                      key={game.slug}
+                      href={game.href}
+                      className="group bg-fab-surface border border-fab-border rounded-lg p-4 hover:border-fab-muted transition-colors relative overflow-hidden"
+                    >
+                      {played && (
+                        <div className="absolute top-2 right-2">
+                          <svg className="w-4 h-4 text-fab-win" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                        </div>
+                      )}
+                      <div className="flex items-start gap-3">
+                        <div className={`w-10 h-10 rounded-lg bg-fab-bg flex items-center justify-center shrink-0 ${game.color}`}>
+                          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d={game.iconPath} />
+                          </svg>
+                        </div>
+                        <div className="min-w-0">
+                          <h3 className="text-sm font-semibold text-fab-text group-hover:text-fab-gold transition-colors">{game.label}</h3>
+                          <p className="text-[10px] text-fab-muted mt-0.5">{game.description}</p>
+                        </div>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
           );
         })}
       </div>
