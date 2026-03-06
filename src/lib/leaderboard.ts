@@ -250,12 +250,30 @@ export async function updateLeaderboardEntry(
     }
   }
 
-  // Unique venues
+  // Unique venues + venue breakdown
   const venueNames = new Set<string>();
+  const venueAgg = new Map<string, { matches: number; wins: number }>();
   for (const m of matches) {
     const v = m.venue?.trim();
-    if (v && v.toLowerCase() !== "unknown") venueNames.add(v.toLowerCase());
+    if (v && v.toLowerCase() !== "unknown") {
+      venueNames.add(v.toLowerCase());
+      if (m.result !== MatchResult.Bye) {
+        const cur = venueAgg.get(v) || { matches: 0, wins: 0 };
+        cur.matches++;
+        if (m.result === MatchResult.Win) cur.wins++;
+        venueAgg.set(v, cur);
+      }
+    }
   }
+  const venueBreakdown = [...venueAgg.entries()]
+    .sort((a, b) => b[1].matches - a[1].matches)
+    .slice(0, 10)
+    .map(([venue, data]) => ({
+      venue,
+      matches: data.matches,
+      wins: data.wins,
+      winRate: data.matches > 0 ? Math.round((data.wins / data.matches) * 1000) / 10 : 0,
+    }));
 
   const entry: Omit<LeaderboardEntry, never> = {
     userId: profile.uid,
@@ -311,6 +329,7 @@ export async function updateLeaderboardEntry(
     uniqueOpponents: opponentNames.size,
     longestLossStreak,
     uniqueVenues: venueNames.size,
+    venueBreakdown,
     createdAt: profile.createdAt,
     updatedAt: new Date().toISOString(),
   };

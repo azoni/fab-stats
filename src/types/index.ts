@@ -313,6 +313,7 @@ export interface LeaderboardEntry {
   uniqueOpponents?: number;
   longestLossStreak?: number;
   uniqueVenues?: number;
+  venueBreakdown?: { venue: string; matches: number; wins: number; winRate: number }[];
   createdAt?: string;
   updatedAt: string;
 }

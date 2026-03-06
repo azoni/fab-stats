@@ -22,6 +22,7 @@ import { getSeasons, saveSeasons, slugify } from "@/lib/seasons";
 import { getDefaultTheme, saveDefaultTheme, resetAllUserThemes, THEME_OPTIONS, type ThemeName } from "@/lib/theme-config";
 import { loadBotAnalytics, loadDailyUsage, loadCommandLog, type BotAnalytics, type DailyUsage, type CommandLogEntry } from "@/lib/discord-analytics";
 import { ADMIN_BADGES } from "@/lib/badges";
+import { SocialTab } from "@/components/admin/SocialTab";
 import { GameFormat } from "@/types";
 import type { Season } from "@/types";
 import type { EventShowcaseConfig, EventShowcaseImage } from "@/types";
@@ -156,10 +157,10 @@ export default function AdminPage() {
   const [botLog, setBotLog] = useState<CommandLogEntry[]>([]);
   const [botLoading, setBotLoading] = useState(false);
   const anyToolRunning = fixingDates || backfilling || backfillingGemIds || linkingMatches || resyncingH2H || backfillingMatchups || backfillingPlacements;
-  const [activeTab, setActiveTab] = useState<"overview" | "users" | "feedback" | "content" | "poll" | "tools" | "discord" | "games">(() => {
+  const [activeTab, setActiveTab] = useState<"overview" | "users" | "feedback" | "content" | "poll" | "tools" | "discord" | "games" | "social">(() => {
     if (typeof window !== "undefined") {
       const hash = window.location.hash.replace("#", "");
-      if (["overview", "users", "feedback", "content", "poll", "tools", "discord", "games"].includes(hash)) return hash as any;
+      if (["overview", "users", "feedback", "content", "poll", "tools", "discord", "games", "social"].includes(hash)) return hash as any;
     }
     return "overview";
   });
@@ -320,6 +321,7 @@ export default function AdminPage() {
           { id: "poll", label: "Poll" },
           { id: "games", label: "Games" },
           { id: "discord", label: "Discord Bot" },
+          { id: "social", label: "Social" },
           { id: "tools", label: "Tools" },
         ] as const).map((tab) => (
           <button
@@ -2563,6 +2565,8 @@ export default function AdminPage() {
 
           {/* ── Tools Tab: Broadcast ── */}
           {activeTab === "games" && <GameAnalytics />}
+
+          {activeTab === "social" && <SocialTab />}
 
           {activeTab === "tools" && <>
           {/* Broadcast Message */}
