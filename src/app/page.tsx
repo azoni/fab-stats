@@ -781,7 +781,7 @@ export default function Dashboard() {
                   )}
                 </div>
               </div>
-              <BadgeStrip matchCount={matches.length} isCreator={isCreator} fabdokuGames={Math.max(fabdokuFullStats?.gamesPlayed ?? 0, fabdokuScore !== null ? 1 : 0)} fabdokuCardGames={fabdokuCardFullStats?.gamesPlayed ?? 0} crosswordGames={crosswordFullStats?.gamesPlayed ?? 0} heroGuesserGames={heroGuesserFullStats?.gamesPlayed ?? 0} matchupManiaGames={matchupManiaFullStats?.gamesPlayed ?? 0} triviaGames={triviaFullStats?.gamesPlayed ?? 0} timelineGames={timelineFullStats?.gamesPlayed ?? 0} connectionsGames={connectionsFullStats?.gamesPlayed ?? 0} bruteBrawlerGames={(rampageFullStats?.gamesPlayed ?? 0) + (knockoutFullStats?.gamesPlayed ?? 0) + (brawlFullStats?.gamesPlayed ?? 0)} ninjaComboGames={ninjaComboFullStats?.gamesPlayed ?? 0} submittedFeedback={gaveFeedback} className="mt-2 ml-1" />
+              <BadgeStrip matchCount={matches.length} isCreator={isCreator} puzzleGames={Math.max(fabdokuFullStats?.gamesPlayed ?? 0, fabdokuScore !== null ? 1 : 0) + (fabdokuCardFullStats?.gamesPlayed ?? 0) + (crosswordFullStats?.gamesPlayed ?? 0) + (connectionsFullStats?.gamesPlayed ?? 0)} knowledgeGames={(heroGuesserFullStats?.gamesPlayed ?? 0) + (matchupManiaFullStats?.gamesPlayed ?? 0) + (triviaFullStats?.gamesPlayed ?? 0) + (timelineFullStats?.gamesPlayed ?? 0)} diceGames={(rampageFullStats?.gamesPlayed ?? 0) + (knockoutFullStats?.gamesPlayed ?? 0) + (brawlFullStats?.gamesPlayed ?? 0)} ninjaGames={ninjaComboFullStats?.gamesPlayed ?? 0} submittedFeedback={gaveFeedback} className="mt-2 ml-1" />
               {/* Score badges — bottom right */}
               <div className="absolute bottom-1.5 right-2.5 flex items-center gap-1.5 z-10">
                 {kudosTotal !== null && (
@@ -889,16 +889,10 @@ export default function Dashboard() {
             armoryUndefeated: eventStats.filter(e => e.eventType === "Armory" && e.losses === 0 && e.wins > 0).length,
             isSiteCreator: profile.username === "azoni",
             isCreator,
-            fabdokuGames: Math.max(fabdokuFullStats?.gamesPlayed ?? 0, fabdokuScore !== null ? 1 : 0),
-            fabdokuCardGames: fabdokuCardFullStats?.gamesPlayed ?? 0,
-            crosswordGames: crosswordFullStats?.gamesPlayed ?? 0,
-            heroGuesserGames: heroGuesserFullStats?.gamesPlayed ?? 0,
-            matchupManiaGames: matchupManiaFullStats?.gamesPlayed ?? 0,
-            triviaGames: triviaFullStats?.gamesPlayed ?? 0,
-            timelineGames: timelineFullStats?.gamesPlayed ?? 0,
-            connectionsGames: connectionsFullStats?.gamesPlayed ?? 0,
-            bruteBrawlerGames: (rampageFullStats?.gamesPlayed ?? 0) + (knockoutFullStats?.gamesPlayed ?? 0) + (brawlFullStats?.gamesPlayed ?? 0),
-            ninjaComboGames: ninjaComboFullStats?.gamesPlayed ?? 0,
+            puzzleGames: Math.max(fabdokuFullStats?.gamesPlayed ?? 0, fabdokuScore !== null ? 1 : 0) + (fabdokuCardFullStats?.gamesPlayed ?? 0) + (crosswordFullStats?.gamesPlayed ?? 0) + (connectionsFullStats?.gamesPlayed ?? 0),
+            knowledgeGames: (heroGuesserFullStats?.gamesPlayed ?? 0) + (matchupManiaFullStats?.gamesPlayed ?? 0) + (triviaFullStats?.gamesPlayed ?? 0) + (timelineFullStats?.gamesPlayed ?? 0),
+            diceGames: (rampageFullStats?.gamesPlayed ?? 0) + (knockoutFullStats?.gamesPlayed ?? 0) + (brawlFullStats?.gamesPlayed ?? 0),
+            ninjaGames: ninjaComboFullStats?.gamesPlayed ?? 0,
             submittedFeedback: gaveFeedback,
           }}
           onClose={() => setProfileShareOpen(false)}

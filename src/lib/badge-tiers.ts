@@ -16,11 +16,12 @@ interface TierDef {
 
 const GAME_TIERS: TierDef[] = [
   { tier: "base", label: "Base", threshold: 1 },
-  { tier: "bronze", label: "Bronze", threshold: 10 },
-  { tier: "silver", label: "Silver", threshold: 25 },
-  { tier: "gold", label: "Gold", threshold: 50 },
-  { tier: "diamond", label: "Diamond", threshold: 100 },
-  { tier: "champion", label: "Champion", threshold: 250 },
+  { tier: "bronze", label: "Bronze", threshold: 25 },
+  { tier: "silver", label: "Silver", threshold: 50 },
+  { tier: "gold", label: "Gold", threshold: 100 },
+  { tier: "diamond", label: "Diamond", threshold: 250 },
+  { tier: "master", label: "Master", threshold: 500 },
+  { tier: "champion", label: "Champion", threshold: 1000 },
 ];
 
 const MATCH_TIERS: TierDef[] = [

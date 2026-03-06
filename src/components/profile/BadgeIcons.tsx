@@ -393,18 +393,61 @@ export function NinjaComboPlayerBadge({ className = "w-5 h-5" }: { className?: s
   );
 }
 
+export function PuzzlePlayerBadge({ className = "w-5 h-5" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="none">
+      <defs>
+        <radialGradient id="pzGlow" cx="0.5" cy="0.5" r="0.5">
+          <stop offset="0%" stopColor="#22c55e" stopOpacity="0.25" />
+          <stop offset="100%" stopColor="#22c55e" stopOpacity="0" />
+        </radialGradient>
+      </defs>
+      <circle cx="12" cy="12" r="11" fill="url(#pzGlow)" />
+      <path
+        d="M12 2.5c5.2.1 9.3 4.3 9.5 9.5.1 5.2-4.1 9.5-9.3 9.5S2.6 17.3 2.5 12.1C2.4 6.9 6.8 2.4 12 2.5z"
+        stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"
+        fill="currentColor" fillOpacity="0.08"
+      />
+      {/* Puzzle piece */}
+      <path
+        d="M10 6h4v2.5a1.5 1.5 0 110 3V14h-2.5a1.5 1.5 0 100-3H10V6z"
+        fill="#22c55e" fillOpacity="0.35" stroke="#22c55e" strokeWidth="0.8" strokeLinejoin="round"
+      />
+      <rect x="6" y="14" width="5" height="4" rx="0.5" fill="#22c55e" fillOpacity="0.25" stroke="#22c55e" strokeWidth="0.6" />
+      <rect x="13" y="14" width="5" height="4" rx="0.5" fill="#22c55e" fillOpacity="0.25" stroke="#22c55e" strokeWidth="0.6" />
+    </svg>
+  );
+}
+
+export function KnowledgePlayerBadge({ className = "w-5 h-5" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="none">
+      <defs>
+        <radialGradient id="kwGlow" cx="0.5" cy="0.5" r="0.5">
+          <stop offset="0%" stopColor="#a855f7" stopOpacity="0.25" />
+          <stop offset="100%" stopColor="#a855f7" stopOpacity="0" />
+        </radialGradient>
+      </defs>
+      <circle cx="12" cy="12" r="11" fill="url(#kwGlow)" />
+      <path
+        d="M12 2.5c5.2.1 9.3 4.3 9.5 9.5.1 5.2-4.1 9.5-9.3 9.5S2.6 17.3 2.5 12.1C2.4 6.9 6.8 2.4 12 2.5z"
+        stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"
+        fill="currentColor" fillOpacity="0.08"
+      />
+      {/* Open book */}
+      <path d="M12 7v10M12 7C10.5 6 8 5.5 6 6v10c2 -.5 4.5 0 6 1M12 7c1.5-1 4-1.5 6-1v10c-2 .5-4.5 0-6 1" fill="#a855f7" fillOpacity="0.2" stroke="#a855f7" strokeWidth="0.8" strokeLinejoin="round" />
+      {/* Star accent */}
+      <circle cx="12" cy="4.5" r="1" fill="#a855f7" fillOpacity="0.6" />
+    </svg>
+  );
+}
+
 export const BADGE_ICON_MAP: Record<string, React.FC<{ className?: string }>> = {
   "first-match": FirstMatchBadge,
   "content-creator": ContentCreatorBadge,
-  "fabdoku-player": FaBdokuPlayerBadge,
-  "fabdoku-card-player": FaBdokuCardPlayerBadge,
-  "crossword-player": CrosswordPlayerBadge,
-  "heroguesser-player": HeroGuesserPlayerBadge,
-  "matchupmania-player": MatchupManiaPlayerBadge,
-  "trivia-player": TriviaPlayerBadge,
-  "timeline-player": TimelinePlayerBadge,
-  "connections-player": ConnectionsPlayerBadge,
-  "brute-brawler": BruteBrawlerBadge,
-  "ninjacombo-player": NinjaComboPlayerBadge,
+  "puzzle-player": PuzzlePlayerBadge,
+  "knowledge-player": KnowledgePlayerBadge,
+  "dice-player": BruteBrawlerBadge,
+  "ninja-player": NinjaComboPlayerBadge,
   "feedback-contributor": FeedbackContributorBadge,
 };

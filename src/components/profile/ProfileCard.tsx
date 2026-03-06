@@ -39,16 +39,10 @@ export interface ProfileCardData {
   armoryUndefeated?: number;
   isSiteCreator?: boolean;
   isCreator?: boolean;
-  fabdokuGames?: number;
-  fabdokuCardGames?: number;
-  crosswordGames?: number;
-  heroGuesserGames?: number;
-  matchupManiaGames?: number;
-  triviaGames?: number;
-  timelineGames?: number;
-  connectionsGames?: number;
-  bruteBrawlerGames?: number;
-  ninjaComboGames?: number;
+  puzzleGames?: number;
+  knowledgeGames?: number;
+  diceGames?: number;
+  ninjaGames?: number;
   submittedFeedback?: boolean;
 }
 
@@ -321,7 +315,7 @@ export function ProfileCard({ data, theme }: { data: ProfileCardData; theme?: Ca
               </div>
               {username && <p style={{ color: t.dim }} className="text-[11px]">@{username}</p>}
               {(() => {
-                const badges = getProfileBadges({ matchCount: totalMatches, isCreator: data.isCreator, fabdokuGames: data.fabdokuGames, fabdokuCardGames: data.fabdokuCardGames, crosswordGames: data.crosswordGames, heroGuesserGames: data.heroGuesserGames, matchupManiaGames: data.matchupManiaGames, triviaGames: data.triviaGames, timelineGames: data.timelineGames, connectionsGames: data.connectionsGames, bruteBrawlerGames: data.bruteBrawlerGames, ninjaComboGames: data.ninjaComboGames, submittedFeedback: data.submittedFeedback });
+                const badges = getProfileBadges({ matchCount: totalMatches, isCreator: data.isCreator, puzzleGames: data.puzzleGames, knowledgeGames: data.knowledgeGames, diceGames: data.diceGames, ninjaGames: data.ninjaGames, submittedFeedback: data.submittedFeedback });
                 if (badges.length === 0) return null;
                 return (
                   <div className="flex items-center gap-1 mt-0.5">

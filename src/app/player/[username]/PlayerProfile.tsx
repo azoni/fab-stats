@@ -356,9 +356,9 @@ export default function PlayerProfile() {
       || new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
     [fm]
   );
-  const computedAchievements = useMemo(() => evaluateAchievements(fm, overall, heroStats, opponentStats, kudosCounts, fabdokuFullStats ?? undefined, heroGuesserFullStats ?? undefined, matchupManiaFullStats ?? undefined, triviaFullStats ?? undefined, timelineFullStats ?? undefined, connectionsFullStats ?? undefined, fabdokuCardFullStats ?? undefined, rampageFullStats ?? undefined, knockoutFullStats ?? undefined, brawlFullStats ?? undefined, ninjaComboFullStats ?? undefined), [fm, overall, heroStats, opponentStats, kudosCounts, fabdokuFullStats, heroGuesserFullStats, matchupManiaFullStats, triviaFullStats, timelineFullStats, connectionsFullStats, fabdokuCardFullStats, rampageFullStats, knockoutFullStats, brawlFullStats, ninjaComboFullStats]);
+  const computedAchievements = useMemo(() => evaluateAchievements(fm, overall, heroStats, opponentStats, kudosCounts, fabdokuFullStats ?? undefined, heroGuesserFullStats ?? undefined, matchupManiaFullStats ?? undefined, triviaFullStats ?? undefined, timelineFullStats ?? undefined, connectionsFullStats ?? undefined, fabdokuCardFullStats ?? undefined, rampageFullStats ?? undefined, knockoutFullStats ?? undefined, brawlFullStats ?? undefined, ninjaComboFullStats ?? undefined, crosswordFullStats ?? undefined), [fm, overall, heroStats, opponentStats, kudosCounts, fabdokuFullStats, heroGuesserFullStats, matchupManiaFullStats, triviaFullStats, timelineFullStats, connectionsFullStats, fabdokuCardFullStats, rampageFullStats, knockoutFullStats, brawlFullStats, ninjaComboFullStats, crosswordFullStats]);
   const achievements = useMemo(() => [...userBadges, ...computedAchievements], [userBadges, computedAchievements]);
-  const achievementProgress = useMemo(() => getAchievementProgress(fm, overall, heroStats, opponentStats, kudosCounts, fabdokuFullStats ?? undefined, heroGuesserFullStats ?? undefined, matchupManiaFullStats ?? undefined, triviaFullStats ?? undefined, timelineFullStats ?? undefined, connectionsFullStats ?? undefined, fabdokuCardFullStats ?? undefined, rampageFullStats ?? undefined, knockoutFullStats ?? undefined, brawlFullStats ?? undefined, ninjaComboFullStats ?? undefined), [fm, overall, heroStats, opponentStats, kudosCounts, fabdokuFullStats, heroGuesserFullStats, matchupManiaFullStats, triviaFullStats, timelineFullStats, connectionsFullStats, fabdokuCardFullStats, rampageFullStats, knockoutFullStats, brawlFullStats, ninjaComboFullStats]);
+  const achievementProgress = useMemo(() => getAchievementProgress(fm, overall, heroStats, opponentStats, kudosCounts, fabdokuFullStats ?? undefined, heroGuesserFullStats ?? undefined, matchupManiaFullStats ?? undefined, triviaFullStats ?? undefined, timelineFullStats ?? undefined, connectionsFullStats ?? undefined, fabdokuCardFullStats ?? undefined, rampageFullStats ?? undefined, knockoutFullStats ?? undefined, brawlFullStats ?? undefined, ninjaComboFullStats ?? undefined, crosswordFullStats ?? undefined), [fm, overall, heroStats, opponentStats, kudosCounts, fabdokuFullStats, heroGuesserFullStats, matchupManiaFullStats, triviaFullStats, timelineFullStats, connectionsFullStats, fabdokuCardFullStats, rampageFullStats, knockoutFullStats, brawlFullStats, ninjaComboFullStats, crosswordFullStats]);
   const masteries = useMemo(() => computeHeroMastery(heroStats), [heroStats]);
   const bestFinish = useMemo(() => computeBestFinish(eventStats), [eventStats]);
   const playoffFinishes = useMemo(() => computePlayoffFinishes(eventStats), [eventStats]);
@@ -616,7 +616,7 @@ export default function PlayerProfile() {
                     Updated {new Date(lastUpdated).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                   </span>
                 )}
-                <BadgeStrip matchCount={matches.length} isCreator={!!creatorInfo} fabdokuGames={Math.max(fabdokuFullStats?.gamesPlayed ?? 0, fabdokuScore !== null ? 1 : 0)} fabdokuCardGames={fabdokuCardFullStats?.gamesPlayed ?? 0} crosswordGames={crosswordFullStats?.gamesPlayed ?? 0} heroGuesserGames={heroGuesserFullStats?.gamesPlayed ?? 0} matchupManiaGames={matchupManiaFullStats?.gamesPlayed ?? 0} triviaGames={triviaFullStats?.gamesPlayed ?? 0} timelineGames={timelineFullStats?.gamesPlayed ?? 0} connectionsGames={connectionsFullStats?.gamesPlayed ?? 0} bruteBrawlerGames={(rampageFullStats?.gamesPlayed ?? 0) + (knockoutFullStats?.gamesPlayed ?? 0) + (brawlFullStats?.gamesPlayed ?? 0)} ninjaComboGames={ninjaComboFullStats?.gamesPlayed ?? 0} submittedFeedback={gaveFeedback} />
+                <BadgeStrip matchCount={matches.length} isCreator={!!creatorInfo} puzzleGames={Math.max(fabdokuFullStats?.gamesPlayed ?? 0, fabdokuScore !== null ? 1 : 0) + (fabdokuCardFullStats?.gamesPlayed ?? 0) + (crosswordFullStats?.gamesPlayed ?? 0) + (connectionsFullStats?.gamesPlayed ?? 0)} knowledgeGames={(heroGuesserFullStats?.gamesPlayed ?? 0) + (matchupManiaFullStats?.gamesPlayed ?? 0) + (triviaFullStats?.gamesPlayed ?? 0) + (timelineFullStats?.gamesPlayed ?? 0)} diceGames={(rampageFullStats?.gamesPlayed ?? 0) + (knockoutFullStats?.gamesPlayed ?? 0) + (brawlFullStats?.gamesPlayed ?? 0)} ninjaGames={ninjaComboFullStats?.gamesPlayed ?? 0} submittedFeedback={gaveFeedback} />
               </div>
               {/* Social links */}
               {(profile.socialLinks?.twitter || profile.socialLinks?.discord || profile.socialLinks?.fabrary || isOwner) && !editingSocials && (
@@ -1087,16 +1087,10 @@ export default function PlayerProfile() {
             armoryUndefeated: eventStats.filter(e => e.eventType === "Armory" && e.losses === 0 && e.wins > 0).length,
             isSiteCreator: profile.username === "azoni",
             isCreator: !!creatorInfo,
-            fabdokuGames: Math.max(fabdokuFullStats?.gamesPlayed ?? 0, fabdokuScore !== null ? 1 : 0),
-            fabdokuCardGames: fabdokuCardFullStats?.gamesPlayed ?? 0,
-            crosswordGames: crosswordFullStats?.gamesPlayed ?? 0,
-            heroGuesserGames: heroGuesserFullStats?.gamesPlayed ?? 0,
-            matchupManiaGames: matchupManiaFullStats?.gamesPlayed ?? 0,
-            triviaGames: triviaFullStats?.gamesPlayed ?? 0,
-            timelineGames: timelineFullStats?.gamesPlayed ?? 0,
-            connectionsGames: connectionsFullStats?.gamesPlayed ?? 0,
-            bruteBrawlerGames: (rampageFullStats?.gamesPlayed ?? 0) + (knockoutFullStats?.gamesPlayed ?? 0) + (brawlFullStats?.gamesPlayed ?? 0),
-            ninjaComboGames: ninjaComboFullStats?.gamesPlayed ?? 0,
+            puzzleGames: Math.max(fabdokuFullStats?.gamesPlayed ?? 0, fabdokuScore !== null ? 1 : 0) + (fabdokuCardFullStats?.gamesPlayed ?? 0) + (crosswordFullStats?.gamesPlayed ?? 0) + (connectionsFullStats?.gamesPlayed ?? 0),
+            knowledgeGames: (heroGuesserFullStats?.gamesPlayed ?? 0) + (matchupManiaFullStats?.gamesPlayed ?? 0) + (triviaFullStats?.gamesPlayed ?? 0) + (timelineFullStats?.gamesPlayed ?? 0),
+            diceGames: (rampageFullStats?.gamesPlayed ?? 0) + (knockoutFullStats?.gamesPlayed ?? 0) + (brawlFullStats?.gamesPlayed ?? 0),
+            ninjaGames: ninjaComboFullStats?.gamesPlayed ?? 0,
             submittedFeedback: gaveFeedback,
           }}
           onClose={() => setProfileShareOpen(false)}

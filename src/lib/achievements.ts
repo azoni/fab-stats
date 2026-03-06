@@ -6,6 +6,7 @@ import type { HeroGuesserStats } from "@/lib/heroguesser/types";
 import type { MatchupManiaStats } from "@/lib/matchupmania/types";
 import type { TriviaStats } from "@/lib/trivia/types";
 import type { TimelineStats } from "@/lib/timeline/types";
+import type { CrosswordStats } from "@/lib/crossword/types";
 import type { ConnectionsStats } from "@/lib/connections/types";
 import type { RampageStats } from "@/lib/rhinarsrampage/types";
 import type { KnockoutStats } from "@/lib/kayosknockout/types";
@@ -20,6 +21,7 @@ interface CheckContext {
   kudosCounts?: Record<string, number>;
   fabdokuStats?: FaBdokuStats;
   fabdokuCardStats?: FaBdokuStats;
+  crosswordStats?: CrosswordStats;
   heroGuesserStats?: HeroGuesserStats;
   matchupManiaStats?: MatchupManiaStats;
   triviaStats?: TriviaStats;
@@ -39,6 +41,49 @@ interface AchievementProgress {
 interface AchievementDef extends Achievement {
   check: (ctx: CheckContext) => boolean;
   progress?: (ctx: CheckContext) => AchievementProgress;
+}
+
+// ── Category game count helpers ──
+function puzzleCount(ctx: CheckContext): number {
+  return (ctx.fabdokuStats?.gamesPlayed ?? 0) + (ctx.fabdokuCardStats?.gamesPlayed ?? 0) + (ctx.connectionsStats?.gamesPlayed ?? 0) + (ctx.crosswordStats?.gamesPlayed ?? 0);
+}
+function knowledgeCount(ctx: CheckContext): number {
+  return (ctx.heroGuesserStats?.gamesPlayed ?? 0) + (ctx.matchupManiaStats?.gamesPlayed ?? 0) + (ctx.triviaStats?.gamesPlayed ?? 0) + (ctx.timelineStats?.gamesPlayed ?? 0);
+}
+function diceCount(ctx: CheckContext): number {
+  return (ctx.rampageStats?.gamesPlayed ?? 0) + (ctx.knockoutStats?.gamesPlayed ?? 0) + (ctx.brawlStats?.gamesPlayed ?? 0);
+}
+function ninjaCount(ctx: CheckContext): number {
+  return (ctx.ninjaComboStats?.gamesPlayed ?? 0);
+}
+
+const TIER_THRESHOLDS = [1, 5, 10, 25, 50, 100, 250, 500, 1000] as const;
+const TIER_RARITIES: Achievement["rarity"][] = ["common", "common", "uncommon", "uncommon", "rare", "rare", "epic", "legendary", "legendary"];
+
+function tieredGameAchievements(
+  prefix: string,
+  label: string,
+  gameLabel: string,
+  icon: string,
+  group: string,
+  countFn: (ctx: CheckContext) => number,
+): AchievementDef[] {
+  const names = [
+    `${label} Rookie`, `${label} Dabbler`, `${label} Fan`, `${label} Regular`,
+    `${label} Veteran`, `${label} Addict`, `${label} Expert`, `${label} Master`, `${label} Legend`,
+  ];
+  return TIER_THRESHOLDS.map((n, i) => ({
+    id: `${prefix}_${n}`,
+    name: names[i],
+    description: `Complete ${n} ${gameLabel}${n > 1 ? "s" : ""}`,
+    category: "fun" as const,
+    icon,
+    rarity: TIER_RARITIES[i],
+    group,
+    tier: i + 1,
+    check: (ctx: CheckContext) => countFn(ctx) >= n,
+    progress: (ctx: CheckContext) => ({ current: countFn(ctx), target: n }),
+  }));
 }
 
 // Helper: count matches by event type (uses refined classification, not raw field)
@@ -2006,678 +2051,19 @@ const ACHIEVEMENTS: AchievementDef[] = [
     progress: (ctx) => ({ current: ctx.kudosCounts?.helpful ?? 0, target: 50 }),
   },
 
-  // ── FaBdoku completion achievements ──
-  {
-    id: "fabdoku_1",
-    name: "Puzzle Rookie",
-    description: "Complete your first FaBdoku puzzle",
-    category: "fun",
-    icon: "grid",
-    rarity: "common",
-    group: "fabdoku",
-    tier: 1,
-    check: (ctx) => (ctx.fabdokuStats?.gamesPlayed ?? 0) >= 1,
-    progress: (ctx) => ({ current: ctx.fabdokuStats?.gamesPlayed ?? 0, target: 1 }),
-  },
-  {
-    id: "fabdoku_5",
-    name: "Getting the Hang of It",
-    description: "Complete 5 FaBdoku puzzles",
-    category: "fun",
-    icon: "grid",
-    rarity: "common",
-    group: "fabdoku",
-    tier: 2,
-    check: (ctx) => (ctx.fabdokuStats?.gamesPlayed ?? 0) >= 5,
-    progress: (ctx) => ({ current: ctx.fabdokuStats?.gamesPlayed ?? 0, target: 5 }),
-  },
-  {
-    id: "fabdoku_10",
-    name: "Puzzle Enthusiast",
-    description: "Complete 10 FaBdoku puzzles",
-    category: "fun",
-    icon: "grid",
-    rarity: "uncommon",
-    group: "fabdoku",
-    tier: 3,
-    check: (ctx) => (ctx.fabdokuStats?.gamesPlayed ?? 0) >= 10,
-    progress: (ctx) => ({ current: ctx.fabdokuStats?.gamesPlayed ?? 0, target: 10 }),
-  },
-  {
-    id: "fabdoku_25",
-    name: "Puzzle Regular",
-    description: "Complete 25 FaBdoku puzzles",
-    category: "fun",
-    icon: "grid",
-    rarity: "uncommon",
-    group: "fabdoku",
-    tier: 4,
-    check: (ctx) => (ctx.fabdokuStats?.gamesPlayed ?? 0) >= 25,
-    progress: (ctx) => ({ current: ctx.fabdokuStats?.gamesPlayed ?? 0, target: 25 }),
-  },
-  {
-    id: "fabdoku_50",
-    name: "Puzzle Veteran",
-    description: "Complete 50 FaBdoku puzzles",
-    category: "fun",
-    icon: "grid",
-    rarity: "rare",
-    group: "fabdoku",
-    tier: 5,
-    check: (ctx) => (ctx.fabdokuStats?.gamesPlayed ?? 0) >= 50,
-    progress: (ctx) => ({ current: ctx.fabdokuStats?.gamesPlayed ?? 0, target: 50 }),
-  },
-  {
-    id: "fabdoku_100",
-    name: "Puzzle Addict",
-    description: "Complete 100 FaBdoku puzzles",
-    category: "fun",
-    icon: "grid",
-    rarity: "rare",
-    group: "fabdoku",
-    tier: 6,
-    check: (ctx) => (ctx.fabdokuStats?.gamesPlayed ?? 0) >= 100,
-    progress: (ctx) => ({ current: ctx.fabdokuStats?.gamesPlayed ?? 0, target: 100 }),
-  },
-  {
-    id: "fabdoku_250",
-    name: "Puzzle Expert",
-    description: "Complete 250 FaBdoku puzzles",
-    category: "fun",
-    icon: "grid",
-    rarity: "epic",
-    group: "fabdoku",
-    tier: 7,
-    check: (ctx) => (ctx.fabdokuStats?.gamesPlayed ?? 0) >= 250,
-    progress: (ctx) => ({ current: ctx.fabdokuStats?.gamesPlayed ?? 0, target: 250 }),
-  },
-  {
-    id: "fabdoku_500",
-    name: "Puzzle Master",
-    description: "Complete 500 FaBdoku puzzles",
-    category: "fun",
-    icon: "grid",
-    rarity: "legendary",
-    group: "fabdoku",
-    tier: 8,
-    check: (ctx) => (ctx.fabdokuStats?.gamesPlayed ?? 0) >= 500,
-    progress: (ctx) => ({ current: ctx.fabdokuStats?.gamesPlayed ?? 0, target: 500 }),
-  },
-  {
-    id: "fabdoku_1000",
-    name: "Puzzle Legend",
-    description: "Complete 1000 FaBdoku puzzles",
-    category: "fun",
-    icon: "grid",
-    rarity: "legendary",
-    group: "fabdoku",
-    tier: 9,
-    check: (ctx) => (ctx.fabdokuStats?.gamesPlayed ?? 0) >= 1000,
-    progress: (ctx) => ({ current: ctx.fabdokuStats?.gamesPlayed ?? 0, target: 1000 }),
-  },
+  // ── Category: Puzzle games (FaBdoku, FaBdoku Cards, Crossword, Connections) ──
+  ...tieredGameAchievements("puzzle", "Puzzle", "puzzle game", "grid", "puzzle_games", puzzleCount),
 
-  // ── FaBdoku Cards completion achievements ──
-  {
-    id: "fabdoku_card_1", name: "Card Rookie", description: "Complete your first FaBdoku Cards puzzle",
-    category: "fun", icon: "grid", rarity: "common", group: "fabdoku_cards", tier: 1,
-    check: (ctx) => (ctx.fabdokuCardStats?.gamesPlayed ?? 0) >= 1,
-    progress: (ctx) => ({ current: ctx.fabdokuCardStats?.gamesPlayed ?? 0, target: 1 }),
-  },
-  {
-    id: "fabdoku_card_5", name: "Card Dabbler", description: "Complete 5 FaBdoku Cards puzzles",
-    category: "fun", icon: "grid", rarity: "common", group: "fabdoku_cards", tier: 2,
-    check: (ctx) => (ctx.fabdokuCardStats?.gamesPlayed ?? 0) >= 5,
-    progress: (ctx) => ({ current: ctx.fabdokuCardStats?.gamesPlayed ?? 0, target: 5 }),
-  },
-  {
-    id: "fabdoku_card_10", name: "Card Enthusiast", description: "Complete 10 FaBdoku Cards puzzles",
-    category: "fun", icon: "grid", rarity: "uncommon", group: "fabdoku_cards", tier: 3,
-    check: (ctx) => (ctx.fabdokuCardStats?.gamesPlayed ?? 0) >= 10,
-    progress: (ctx) => ({ current: ctx.fabdokuCardStats?.gamesPlayed ?? 0, target: 10 }),
-  },
-  {
-    id: "fabdoku_card_25", name: "Card Regular", description: "Complete 25 FaBdoku Cards puzzles",
-    category: "fun", icon: "grid", rarity: "uncommon", group: "fabdoku_cards", tier: 4,
-    check: (ctx) => (ctx.fabdokuCardStats?.gamesPlayed ?? 0) >= 25,
-    progress: (ctx) => ({ current: ctx.fabdokuCardStats?.gamesPlayed ?? 0, target: 25 }),
-  },
-  {
-    id: "fabdoku_card_50", name: "Card Veteran", description: "Complete 50 FaBdoku Cards puzzles",
-    category: "fun", icon: "grid", rarity: "rare", group: "fabdoku_cards", tier: 5,
-    check: (ctx) => (ctx.fabdokuCardStats?.gamesPlayed ?? 0) >= 50,
-    progress: (ctx) => ({ current: ctx.fabdokuCardStats?.gamesPlayed ?? 0, target: 50 }),
-  },
-  {
-    id: "fabdoku_card_100", name: "Card Addict", description: "Complete 100 FaBdoku Cards puzzles",
-    category: "fun", icon: "grid", rarity: "rare", group: "fabdoku_cards", tier: 6,
-    check: (ctx) => (ctx.fabdokuCardStats?.gamesPlayed ?? 0) >= 100,
-    progress: (ctx) => ({ current: ctx.fabdokuCardStats?.gamesPlayed ?? 0, target: 100 }),
-  },
-  {
-    id: "fabdoku_card_250", name: "Card Expert", description: "Complete 250 FaBdoku Cards puzzles",
-    category: "fun", icon: "grid", rarity: "epic", group: "fabdoku_cards", tier: 7,
-    check: (ctx) => (ctx.fabdokuCardStats?.gamesPlayed ?? 0) >= 250,
-    progress: (ctx) => ({ current: ctx.fabdokuCardStats?.gamesPlayed ?? 0, target: 250 }),
-  },
-  {
-    id: "fabdoku_card_500", name: "Card Master", description: "Complete 500 FaBdoku Cards puzzles",
-    category: "fun", icon: "grid", rarity: "legendary", group: "fabdoku_cards", tier: 8,
-    check: (ctx) => (ctx.fabdokuCardStats?.gamesPlayed ?? 0) >= 500,
-    progress: (ctx) => ({ current: ctx.fabdokuCardStats?.gamesPlayed ?? 0, target: 500 }),
-  },
-  {
-    id: "fabdoku_card_1000", name: "Card Legend", description: "Complete 1000 FaBdoku Cards puzzles",
-    category: "fun", icon: "grid", rarity: "legendary", group: "fabdoku_cards", tier: 9,
-    check: (ctx) => (ctx.fabdokuCardStats?.gamesPlayed ?? 0) >= 1000,
-    progress: (ctx) => ({ current: ctx.fabdokuCardStats?.gamesPlayed ?? 0, target: 1000 }),
-  },
+  // ── Category: Knowledge games (Hero Guesser, Matchup Mania, Trivia, Timeline) ──
+  ...tieredGameAchievements("knowledge", "Knowledge", "knowledge game", "brain", "knowledge_games", knowledgeCount),
 
-  // ── Hero Guesser completion achievements ──
-  {
-    id: "heroguesser_1",
-    name: "Hero Spotter",
-    description: "Complete your first Hero Guesser puzzle",
-    category: "fun",
-    icon: "target",
-    rarity: "common",
-    group: "heroguesser",
-    tier: 1,
-    check: (ctx) => (ctx.heroGuesserStats?.gamesPlayed ?? 0) >= 1,
-    progress: (ctx) => ({ current: ctx.heroGuesserStats?.gamesPlayed ?? 0, target: 1 }),
-  },
-  {
-    id: "heroguesser_5",
-    name: "Hero Hunter",
-    description: "Complete 5 Hero Guesser puzzles",
-    category: "fun",
-    icon: "target",
-    rarity: "common",
-    group: "heroguesser",
-    tier: 2,
-    check: (ctx) => (ctx.heroGuesserStats?.gamesPlayed ?? 0) >= 5,
-    progress: (ctx) => ({ current: ctx.heroGuesserStats?.gamesPlayed ?? 0, target: 5 }),
-  },
-  {
-    id: "heroguesser_10",
-    name: "Hero Detective",
-    description: "Complete 10 Hero Guesser puzzles",
-    category: "fun",
-    icon: "target",
-    rarity: "uncommon",
-    group: "heroguesser",
-    tier: 3,
-    check: (ctx) => (ctx.heroGuesserStats?.gamesPlayed ?? 0) >= 10,
-    progress: (ctx) => ({ current: ctx.heroGuesserStats?.gamesPlayed ?? 0, target: 10 }),
-  },
-  {
-    id: "heroguesser_25",
-    name: "Hero Tracker",
-    description: "Complete 25 Hero Guesser puzzles",
-    category: "fun",
-    icon: "target",
-    rarity: "uncommon",
-    group: "heroguesser",
-    tier: 4,
-    check: (ctx) => (ctx.heroGuesserStats?.gamesPlayed ?? 0) >= 25,
-    progress: (ctx) => ({ current: ctx.heroGuesserStats?.gamesPlayed ?? 0, target: 25 }),
-  },
-  {
-    id: "heroguesser_50",
-    name: "Hero Sage",
-    description: "Complete 50 Hero Guesser puzzles",
-    category: "fun",
-    icon: "target",
-    rarity: "rare",
-    group: "heroguesser",
-    tier: 5,
-    check: (ctx) => (ctx.heroGuesserStats?.gamesPlayed ?? 0) >= 50,
-    progress: (ctx) => ({ current: ctx.heroGuesserStats?.gamesPlayed ?? 0, target: 50 }),
-  },
-  {
-    id: "heroguesser_100",
-    name: "Hero Oracle",
-    description: "Complete 100 Hero Guesser puzzles",
-    category: "fun",
-    icon: "target",
-    rarity: "rare",
-    group: "heroguesser",
-    tier: 6,
-    check: (ctx) => (ctx.heroGuesserStats?.gamesPlayed ?? 0) >= 100,
-    progress: (ctx) => ({ current: ctx.heroGuesserStats?.gamesPlayed ?? 0, target: 100 }),
-  },
-  {
-    id: "heroguesser_250",
-    name: "Hero Whisperer",
-    description: "Complete 250 Hero Guesser puzzles",
-    category: "fun",
-    icon: "target",
-    rarity: "epic",
-    group: "heroguesser",
-    tier: 7,
-    check: (ctx) => (ctx.heroGuesserStats?.gamesPlayed ?? 0) >= 250,
-    progress: (ctx) => ({ current: ctx.heroGuesserStats?.gamesPlayed ?? 0, target: 250 }),
-  },
-  {
-    id: "heroguesser_500",
-    name: "Hero Mastermind",
-    description: "Complete 500 Hero Guesser puzzles",
-    category: "fun",
-    icon: "target",
-    rarity: "legendary",
-    group: "heroguesser",
-    tier: 8,
-    check: (ctx) => (ctx.heroGuesserStats?.gamesPlayed ?? 0) >= 500,
-    progress: (ctx) => ({ current: ctx.heroGuesserStats?.gamesPlayed ?? 0, target: 500 }),
-  },
-  {
-    id: "heroguesser_1000",
-    name: "Hero Omniscient",
-    description: "Complete 1000 Hero Guesser puzzles",
-    category: "fun",
-    icon: "target",
-    rarity: "legendary",
-    group: "heroguesser",
-    tier: 9,
-    check: (ctx) => (ctx.heroGuesserStats?.gamesPlayed ?? 0) >= 1000,
-    progress: (ctx) => ({ current: ctx.heroGuesserStats?.gamesPlayed ?? 0, target: 1000 }),
-  },
+  // ── Category: Brute Dice games (Rhinar's Rampage, Kayo's Knockout, Brute Brawl) ──
+  ...tieredGameAchievements("dice", "Brute", "Brute Dice game", "dice", "dice_games", diceCount),
 
-  // ── Matchup Mania completion achievements ──
-  {
-    id: "matchupmania_1",
-    name: "Matchup Rookie",
-    description: "Complete your first Matchup Mania game",
-    category: "fun",
-    icon: "versus",
-    rarity: "common",
-    group: "matchupmania",
-    tier: 1,
-    check: (ctx) => (ctx.matchupManiaStats?.gamesPlayed ?? 0) >= 1,
-    progress: (ctx) => ({ current: ctx.matchupManiaStats?.gamesPlayed ?? 0, target: 1 }),
-  },
-  {
-    id: "matchupmania_5",
-    name: "Matchup Fan",
-    description: "Complete 5 Matchup Mania games",
-    category: "fun",
-    icon: "versus",
-    rarity: "common",
-    group: "matchupmania",
-    tier: 2,
-    check: (ctx) => (ctx.matchupManiaStats?.gamesPlayed ?? 0) >= 5,
-    progress: (ctx) => ({ current: ctx.matchupManiaStats?.gamesPlayed ?? 0, target: 5 }),
-  },
-  {
-    id: "matchupmania_10",
-    name: "Matchup Enthusiast",
-    description: "Complete 10 Matchup Mania games",
-    category: "fun",
-    icon: "versus",
-    rarity: "uncommon",
-    group: "matchupmania",
-    tier: 3,
-    check: (ctx) => (ctx.matchupManiaStats?.gamesPlayed ?? 0) >= 10,
-    progress: (ctx) => ({ current: ctx.matchupManiaStats?.gamesPlayed ?? 0, target: 10 }),
-  },
-  {
-    id: "matchupmania_25",
-    name: "Matchup Regular",
-    description: "Complete 25 Matchup Mania games",
-    category: "fun",
-    icon: "versus",
-    rarity: "uncommon",
-    group: "matchupmania",
-    tier: 4,
-    check: (ctx) => (ctx.matchupManiaStats?.gamesPlayed ?? 0) >= 25,
-    progress: (ctx) => ({ current: ctx.matchupManiaStats?.gamesPlayed ?? 0, target: 25 }),
-  },
-  {
-    id: "matchupmania_50",
-    name: "Matchup Veteran",
-    description: "Complete 50 Matchup Mania games",
-    category: "fun",
-    icon: "versus",
-    rarity: "rare",
-    group: "matchupmania",
-    tier: 5,
-    check: (ctx) => (ctx.matchupManiaStats?.gamesPlayed ?? 0) >= 50,
-    progress: (ctx) => ({ current: ctx.matchupManiaStats?.gamesPlayed ?? 0, target: 50 }),
-  },
-  {
-    id: "matchupmania_100",
-    name: "Matchup Expert",
-    description: "Complete 100 Matchup Mania games",
-    category: "fun",
-    icon: "versus",
-    rarity: "rare",
-    group: "matchupmania",
-    tier: 6,
-    check: (ctx) => (ctx.matchupManiaStats?.gamesPlayed ?? 0) >= 100,
-    progress: (ctx) => ({ current: ctx.matchupManiaStats?.gamesPlayed ?? 0, target: 100 }),
-  },
-  {
-    id: "matchupmania_250",
-    name: "Matchup Analyst",
-    description: "Complete 250 Matchup Mania games",
-    category: "fun",
-    icon: "versus",
-    rarity: "epic",
-    group: "matchupmania",
-    tier: 7,
-    check: (ctx) => (ctx.matchupManiaStats?.gamesPlayed ?? 0) >= 250,
-    progress: (ctx) => ({ current: ctx.matchupManiaStats?.gamesPlayed ?? 0, target: 250 }),
-  },
-  {
-    id: "matchupmania_500",
-    name: "Matchup Master",
-    description: "Complete 500 Matchup Mania games",
-    category: "fun",
-    icon: "versus",
-    rarity: "legendary",
-    group: "matchupmania",
-    tier: 8,
-    check: (ctx) => (ctx.matchupManiaStats?.gamesPlayed ?? 0) >= 500,
-    progress: (ctx) => ({ current: ctx.matchupManiaStats?.gamesPlayed ?? 0, target: 500 }),
-  },
-  {
-    id: "matchupmania_1000",
-    name: "Matchup Mania Legend",
-    description: "Complete 1000 Matchup Mania games",
-    category: "fun",
-    icon: "versus",
-    rarity: "legendary",
-    group: "matchupmania",
-    tier: 9,
-    check: (ctx) => (ctx.matchupManiaStats?.gamesPlayed ?? 0) >= 1000,
-    progress: (ctx) => ({ current: ctx.matchupManiaStats?.gamesPlayed ?? 0, target: 1000 }),
-  },
-
-  // ══════════════════════════════════════════
-  // TRIVIA (tiered)
-  // ══════════════════════════════════════════
-  {
-    id: "trivia_1", name: "First Answer", description: "Complete your first Trivia game",
-    category: "fun", icon: "lightbulb", rarity: "common", group: "trivia", tier: 1,
-    check: (ctx) => (ctx.triviaStats?.gamesPlayed ?? 0) >= 1,
-    progress: (ctx) => ({ current: ctx.triviaStats?.gamesPlayed ?? 0, target: 1 }),
-  },
-  {
-    id: "trivia_5", name: "Quick Learner", description: "Complete 5 Trivia games",
-    category: "fun", icon: "lightbulb", rarity: "common", group: "trivia", tier: 2,
-    check: (ctx) => (ctx.triviaStats?.gamesPlayed ?? 0) >= 5,
-    progress: (ctx) => ({ current: ctx.triviaStats?.gamesPlayed ?? 0, target: 5 }),
-  },
-  {
-    id: "trivia_10", name: "Trivia Fan", description: "Complete 10 Trivia games",
-    category: "fun", icon: "lightbulb", rarity: "uncommon", group: "trivia", tier: 3,
-    check: (ctx) => (ctx.triviaStats?.gamesPlayed ?? 0) >= 10,
-    progress: (ctx) => ({ current: ctx.triviaStats?.gamesPlayed ?? 0, target: 10 }),
-  },
-  {
-    id: "trivia_25", name: "Knowledge Seeker", description: "Complete 25 Trivia games",
-    category: "fun", icon: "lightbulb", rarity: "uncommon", group: "trivia", tier: 4,
-    check: (ctx) => (ctx.triviaStats?.gamesPlayed ?? 0) >= 25,
-    progress: (ctx) => ({ current: ctx.triviaStats?.gamesPlayed ?? 0, target: 25 }),
-  },
-  {
-    id: "trivia_50", name: "Trivia Regular", description: "Complete 50 Trivia games",
-    category: "fun", icon: "lightbulb", rarity: "rare", group: "trivia", tier: 5,
-    check: (ctx) => (ctx.triviaStats?.gamesPlayed ?? 0) >= 50,
-    progress: (ctx) => ({ current: ctx.triviaStats?.gamesPlayed ?? 0, target: 50 }),
-  },
-  {
-    id: "trivia_100", name: "Trivia Buff", description: "Complete 100 Trivia games",
-    category: "fun", icon: "lightbulb", rarity: "rare", group: "trivia", tier: 6,
-    check: (ctx) => (ctx.triviaStats?.gamesPlayed ?? 0) >= 100,
-    progress: (ctx) => ({ current: ctx.triviaStats?.gamesPlayed ?? 0, target: 100 }),
-  },
-  {
-    id: "trivia_250", name: "Trivia Scholar", description: "Complete 250 Trivia games",
-    category: "fun", icon: "lightbulb", rarity: "epic", group: "trivia", tier: 7,
-    check: (ctx) => (ctx.triviaStats?.gamesPlayed ?? 0) >= 250,
-    progress: (ctx) => ({ current: ctx.triviaStats?.gamesPlayed ?? 0, target: 250 }),
-  },
-  {
-    id: "trivia_500", name: "Trivia Master", description: "Complete 500 Trivia games",
-    category: "fun", icon: "lightbulb", rarity: "legendary", group: "trivia", tier: 8,
-    check: (ctx) => (ctx.triviaStats?.gamesPlayed ?? 0) >= 500,
-    progress: (ctx) => ({ current: ctx.triviaStats?.gamesPlayed ?? 0, target: 500 }),
-  },
-  {
-    id: "trivia_1000", name: "Trivia Legend", description: "Complete 1000 Trivia games",
-    category: "fun", icon: "lightbulb", rarity: "legendary", group: "trivia", tier: 9,
-    check: (ctx) => (ctx.triviaStats?.gamesPlayed ?? 0) >= 1000,
-    progress: (ctx) => ({ current: ctx.triviaStats?.gamesPlayed ?? 0, target: 1000 }),
-  },
-
-  // ══════════════════════════════════════════
-  // TIMELINE (tiered)
-  // ══════════════════════════════════════════
-  {
-    id: "timeline_1", name: "First Placement", description: "Complete your first Timeline game",
-    category: "fun", icon: "clock", rarity: "common", group: "timeline", tier: 1,
-    check: (ctx) => (ctx.timelineStats?.gamesPlayed ?? 0) >= 1,
-    progress: (ctx) => ({ current: ctx.timelineStats?.gamesPlayed ?? 0, target: 1 }),
-  },
-  {
-    id: "timeline_5", name: "Time Traveler", description: "Complete 5 Timeline games",
-    category: "fun", icon: "clock", rarity: "common", group: "timeline", tier: 2,
-    check: (ctx) => (ctx.timelineStats?.gamesPlayed ?? 0) >= 5,
-    progress: (ctx) => ({ current: ctx.timelineStats?.gamesPlayed ?? 0, target: 5 }),
-  },
-  {
-    id: "timeline_10", name: "Timeline Fan", description: "Complete 10 Timeline games",
-    category: "fun", icon: "clock", rarity: "uncommon", group: "timeline", tier: 3,
-    check: (ctx) => (ctx.timelineStats?.gamesPlayed ?? 0) >= 10,
-    progress: (ctx) => ({ current: ctx.timelineStats?.gamesPlayed ?? 0, target: 10 }),
-  },
-  {
-    id: "timeline_25", name: "Chronicler", description: "Complete 25 Timeline games",
-    category: "fun", icon: "clock", rarity: "uncommon", group: "timeline", tier: 4,
-    check: (ctx) => (ctx.timelineStats?.gamesPlayed ?? 0) >= 25,
-    progress: (ctx) => ({ current: ctx.timelineStats?.gamesPlayed ?? 0, target: 25 }),
-  },
-  {
-    id: "timeline_50", name: "Timeline Regular", description: "Complete 50 Timeline games",
-    category: "fun", icon: "clock", rarity: "rare", group: "timeline", tier: 5,
-    check: (ctx) => (ctx.timelineStats?.gamesPlayed ?? 0) >= 50,
-    progress: (ctx) => ({ current: ctx.timelineStats?.gamesPlayed ?? 0, target: 50 }),
-  },
-  {
-    id: "timeline_100", name: "History Buff", description: "Complete 100 Timeline games",
-    category: "fun", icon: "clock", rarity: "rare", group: "timeline", tier: 6,
-    check: (ctx) => (ctx.timelineStats?.gamesPlayed ?? 0) >= 100,
-    progress: (ctx) => ({ current: ctx.timelineStats?.gamesPlayed ?? 0, target: 100 }),
-  },
-  {
-    id: "timeline_250", name: "Timeline Scholar", description: "Complete 250 Timeline games",
-    category: "fun", icon: "clock", rarity: "epic", group: "timeline", tier: 7,
-    check: (ctx) => (ctx.timelineStats?.gamesPlayed ?? 0) >= 250,
-    progress: (ctx) => ({ current: ctx.timelineStats?.gamesPlayed ?? 0, target: 250 }),
-  },
-  {
-    id: "timeline_500", name: "Timeline Master", description: "Complete 500 Timeline games",
-    category: "fun", icon: "clock", rarity: "legendary", group: "timeline", tier: 8,
-    check: (ctx) => (ctx.timelineStats?.gamesPlayed ?? 0) >= 500,
-    progress: (ctx) => ({ current: ctx.timelineStats?.gamesPlayed ?? 0, target: 500 }),
-  },
-  {
-    id: "timeline_1000", name: "Timeline Legend", description: "Complete 1000 Timeline games",
-    category: "fun", icon: "clock", rarity: "legendary", group: "timeline", tier: 9,
-    check: (ctx) => (ctx.timelineStats?.gamesPlayed ?? 0) >= 1000,
-    progress: (ctx) => ({ current: ctx.timelineStats?.gamesPlayed ?? 0, target: 1000 }),
-  },
-
-  // ══════════════════════════════════════════
-  // CONNECTIONS (tiered)
-  // ══════════════════════════════════════════
-  {
-    id: "connections_1", name: "First Connection", description: "Complete your first Connections game",
-    category: "fun", icon: "grid", rarity: "common", group: "connections", tier: 1,
-    check: (ctx) => (ctx.connectionsStats?.gamesPlayed ?? 0) >= 1,
-    progress: (ctx) => ({ current: ctx.connectionsStats?.gamesPlayed ?? 0, target: 1 }),
-  },
-  {
-    id: "connections_5", name: "Pattern Spotter", description: "Complete 5 Connections games",
-    category: "fun", icon: "grid", rarity: "common", group: "connections", tier: 2,
-    check: (ctx) => (ctx.connectionsStats?.gamesPlayed ?? 0) >= 5,
-    progress: (ctx) => ({ current: ctx.connectionsStats?.gamesPlayed ?? 0, target: 5 }),
-  },
-  {
-    id: "connections_10", name: "Connections Fan", description: "Complete 10 Connections games",
-    category: "fun", icon: "grid", rarity: "uncommon", group: "connections", tier: 3,
-    check: (ctx) => (ctx.connectionsStats?.gamesPlayed ?? 0) >= 10,
-    progress: (ctx) => ({ current: ctx.connectionsStats?.gamesPlayed ?? 0, target: 10 }),
-  },
-  {
-    id: "connections_25", name: "Group Thinker", description: "Complete 25 Connections games",
-    category: "fun", icon: "grid", rarity: "uncommon", group: "connections", tier: 4,
-    check: (ctx) => (ctx.connectionsStats?.gamesPlayed ?? 0) >= 25,
-    progress: (ctx) => ({ current: ctx.connectionsStats?.gamesPlayed ?? 0, target: 25 }),
-  },
-  {
-    id: "connections_50", name: "Connections Regular", description: "Complete 50 Connections games",
-    category: "fun", icon: "grid", rarity: "rare", group: "connections", tier: 5,
-    check: (ctx) => (ctx.connectionsStats?.gamesPlayed ?? 0) >= 50,
-    progress: (ctx) => ({ current: ctx.connectionsStats?.gamesPlayed ?? 0, target: 50 }),
-  },
-  {
-    id: "connections_100", name: "Connections Expert", description: "Complete 100 Connections games",
-    category: "fun", icon: "grid", rarity: "rare", group: "connections", tier: 6,
-    check: (ctx) => (ctx.connectionsStats?.gamesPlayed ?? 0) >= 100,
-    progress: (ctx) => ({ current: ctx.connectionsStats?.gamesPlayed ?? 0, target: 100 }),
-  },
-  {
-    id: "connections_250", name: "Connections Guru", description: "Complete 250 Connections games",
-    category: "fun", icon: "grid", rarity: "epic", group: "connections", tier: 7,
-    check: (ctx) => (ctx.connectionsStats?.gamesPlayed ?? 0) >= 250,
-    progress: (ctx) => ({ current: ctx.connectionsStats?.gamesPlayed ?? 0, target: 250 }),
-  },
-  {
-    id: "connections_500", name: "Connections Master", description: "Complete 500 Connections games",
-    category: "fun", icon: "grid", rarity: "legendary", group: "connections", tier: 8,
-    check: (ctx) => (ctx.connectionsStats?.gamesPlayed ?? 0) >= 500,
-    progress: (ctx) => ({ current: ctx.connectionsStats?.gamesPlayed ?? 0, target: 500 }),
-  },
-  {
-    id: "connections_1000", name: "Connections Legend", description: "Complete 1000 Connections games",
-    category: "fun", icon: "grid", rarity: "legendary", group: "connections", tier: 9,
-    check: (ctx) => (ctx.connectionsStats?.gamesPlayed ?? 0) >= 1000,
-    progress: (ctx) => ({ current: ctx.connectionsStats?.gamesPlayed ?? 0, target: 1000 }),
-  },
-
-  // ── Brute Dice (combined: Rhinar's Rampage + Kayo's Knockout + Brute Brawl) ──
-  {
-    id: "brute_dice_1", name: "Brute Initiate", description: "Complete 1 Brute Dice game",
-    category: "fun", icon: "dice", rarity: "common", group: "brute_dice", tier: 1,
-    check: (ctx) => ((ctx.rampageStats?.gamesPlayed ?? 0) + (ctx.knockoutStats?.gamesPlayed ?? 0) + (ctx.brawlStats?.gamesPlayed ?? 0)) >= 1,
-    progress: (ctx) => ({ current: (ctx.rampageStats?.gamesPlayed ?? 0) + (ctx.knockoutStats?.gamesPlayed ?? 0) + (ctx.brawlStats?.gamesPlayed ?? 0), target: 1 }),
-  },
-  {
-    id: "brute_dice_5", name: "Brute Scrapper", description: "Complete 5 Brute Dice games",
-    category: "fun", icon: "dice", rarity: "common", group: "brute_dice", tier: 2,
-    check: (ctx) => ((ctx.rampageStats?.gamesPlayed ?? 0) + (ctx.knockoutStats?.gamesPlayed ?? 0) + (ctx.brawlStats?.gamesPlayed ?? 0)) >= 5,
-    progress: (ctx) => ({ current: (ctx.rampageStats?.gamesPlayed ?? 0) + (ctx.knockoutStats?.gamesPlayed ?? 0) + (ctx.brawlStats?.gamesPlayed ?? 0), target: 5 }),
-  },
-  {
-    id: "brute_dice_10", name: "Brute Fighter", description: "Complete 10 Brute Dice games",
-    category: "fun", icon: "dice", rarity: "uncommon", group: "brute_dice", tier: 3,
-    check: (ctx) => ((ctx.rampageStats?.gamesPlayed ?? 0) + (ctx.knockoutStats?.gamesPlayed ?? 0) + (ctx.brawlStats?.gamesPlayed ?? 0)) >= 10,
-    progress: (ctx) => ({ current: (ctx.rampageStats?.gamesPlayed ?? 0) + (ctx.knockoutStats?.gamesPlayed ?? 0) + (ctx.brawlStats?.gamesPlayed ?? 0), target: 10 }),
-  },
-  {
-    id: "brute_dice_25", name: "Brute Brawler", description: "Complete 25 Brute Dice games",
-    category: "fun", icon: "dice", rarity: "uncommon", group: "brute_dice", tier: 4,
-    check: (ctx) => ((ctx.rampageStats?.gamesPlayed ?? 0) + (ctx.knockoutStats?.gamesPlayed ?? 0) + (ctx.brawlStats?.gamesPlayed ?? 0)) >= 25,
-    progress: (ctx) => ({ current: (ctx.rampageStats?.gamesPlayed ?? 0) + (ctx.knockoutStats?.gamesPlayed ?? 0) + (ctx.brawlStats?.gamesPlayed ?? 0), target: 25 }),
-  },
-  {
-    id: "brute_dice_50", name: "Brute Warrior", description: "Complete 50 Brute Dice games",
-    category: "fun", icon: "dice", rarity: "rare", group: "brute_dice", tier: 5,
-    check: (ctx) => ((ctx.rampageStats?.gamesPlayed ?? 0) + (ctx.knockoutStats?.gamesPlayed ?? 0) + (ctx.brawlStats?.gamesPlayed ?? 0)) >= 50,
-    progress: (ctx) => ({ current: (ctx.rampageStats?.gamesPlayed ?? 0) + (ctx.knockoutStats?.gamesPlayed ?? 0) + (ctx.brawlStats?.gamesPlayed ?? 0), target: 50 }),
-  },
-  {
-    id: "brute_dice_100", name: "Brute Champion", description: "Complete 100 Brute Dice games",
-    category: "fun", icon: "dice", rarity: "rare", group: "brute_dice", tier: 6,
-    check: (ctx) => ((ctx.rampageStats?.gamesPlayed ?? 0) + (ctx.knockoutStats?.gamesPlayed ?? 0) + (ctx.brawlStats?.gamesPlayed ?? 0)) >= 100,
-    progress: (ctx) => ({ current: (ctx.rampageStats?.gamesPlayed ?? 0) + (ctx.knockoutStats?.gamesPlayed ?? 0) + (ctx.brawlStats?.gamesPlayed ?? 0), target: 100 }),
-  },
-  {
-    id: "brute_dice_250", name: "Brute Warlord", description: "Complete 250 Brute Dice games",
-    category: "fun", icon: "dice", rarity: "epic", group: "brute_dice", tier: 7,
-    check: (ctx) => ((ctx.rampageStats?.gamesPlayed ?? 0) + (ctx.knockoutStats?.gamesPlayed ?? 0) + (ctx.brawlStats?.gamesPlayed ?? 0)) >= 250,
-    progress: (ctx) => ({ current: (ctx.rampageStats?.gamesPlayed ?? 0) + (ctx.knockoutStats?.gamesPlayed ?? 0) + (ctx.brawlStats?.gamesPlayed ?? 0), target: 250 }),
-  },
-  {
-    id: "brute_dice_500", name: "Brute Overlord", description: "Complete 500 Brute Dice games",
-    category: "fun", icon: "dice", rarity: "legendary", group: "brute_dice", tier: 8,
-    check: (ctx) => ((ctx.rampageStats?.gamesPlayed ?? 0) + (ctx.knockoutStats?.gamesPlayed ?? 0) + (ctx.brawlStats?.gamesPlayed ?? 0)) >= 500,
-    progress: (ctx) => ({ current: (ctx.rampageStats?.gamesPlayed ?? 0) + (ctx.knockoutStats?.gamesPlayed ?? 0) + (ctx.brawlStats?.gamesPlayed ?? 0), target: 500 }),
-  },
-  {
-    id: "brute_dice_1000", name: "Brute Legend", description: "Complete 1000 Brute Dice games",
-    category: "fun", icon: "dice", rarity: "legendary", group: "brute_dice", tier: 9,
-    check: (ctx) => ((ctx.rampageStats?.gamesPlayed ?? 0) + (ctx.knockoutStats?.gamesPlayed ?? 0) + (ctx.brawlStats?.gamesPlayed ?? 0)) >= 1000,
-    progress: (ctx) => ({ current: (ctx.rampageStats?.gamesPlayed ?? 0) + (ctx.knockoutStats?.gamesPlayed ?? 0) + (ctx.brawlStats?.gamesPlayed ?? 0), target: 1000 }),
-  },
-
-  // ── Ninja Combo (Katsu's Combo) ──
-  {
-    id: "ninja_combo_1", name: "Shadow Apprentice", description: "Complete 1 Katsu's Combo",
-    category: "fun", icon: "zap", rarity: "common", group: "ninja_combo", tier: 1,
-    check: (ctx) => (ctx.ninjaComboStats?.gamesPlayed ?? 0) >= 1,
-    progress: (ctx) => ({ current: ctx.ninjaComboStats?.gamesPlayed ?? 0, target: 1 }),
-  },
-  {
-    id: "ninja_combo_5", name: "Swift Striker", description: "Complete 5 Katsu's Combo games",
-    category: "fun", icon: "zap", rarity: "common", group: "ninja_combo", tier: 2,
-    check: (ctx) => (ctx.ninjaComboStats?.gamesPlayed ?? 0) >= 5,
-    progress: (ctx) => ({ current: ctx.ninjaComboStats?.gamesPlayed ?? 0, target: 5 }),
-  },
-  {
-    id: "ninja_combo_10", name: "Combo Adept", description: "Complete 10 Katsu's Combo games",
-    category: "fun", icon: "zap", rarity: "uncommon", group: "ninja_combo", tier: 3,
-    check: (ctx) => (ctx.ninjaComboStats?.gamesPlayed ?? 0) >= 10,
-    progress: (ctx) => ({ current: ctx.ninjaComboStats?.gamesPlayed ?? 0, target: 10 }),
-  },
-  {
-    id: "ninja_combo_25", name: "Chain Weaver", description: "Complete 25 Katsu's Combo games",
-    category: "fun", icon: "zap", rarity: "uncommon", group: "ninja_combo", tier: 4,
-    check: (ctx) => (ctx.ninjaComboStats?.gamesPlayed ?? 0) >= 25,
-    progress: (ctx) => ({ current: ctx.ninjaComboStats?.gamesPlayed ?? 0, target: 25 }),
-  },
-  {
-    id: "ninja_combo_50", name: "Shadow Striker", description: "Complete 50 Katsu's Combo games",
-    category: "fun", icon: "zap", rarity: "rare", group: "ninja_combo", tier: 5,
-    check: (ctx) => (ctx.ninjaComboStats?.gamesPlayed ?? 0) >= 50,
-    progress: (ctx) => ({ current: ctx.ninjaComboStats?.gamesPlayed ?? 0, target: 50 }),
-  },
-  {
-    id: "ninja_combo_100", name: "Ninja Initiate", description: "Complete 100 Katsu's Combo games",
-    category: "fun", icon: "zap", rarity: "rare", group: "ninja_combo", tier: 6,
-    check: (ctx) => (ctx.ninjaComboStats?.gamesPlayed ?? 0) >= 100,
-    progress: (ctx) => ({ current: ctx.ninjaComboStats?.gamesPlayed ?? 0, target: 100 }),
-  },
-  {
-    id: "ninja_combo_250", name: "Combo Artisan", description: "Complete 250 Katsu's Combo games",
-    category: "fun", icon: "zap", rarity: "epic", group: "ninja_combo", tier: 7,
-    check: (ctx) => (ctx.ninjaComboStats?.gamesPlayed ?? 0) >= 250,
-    progress: (ctx) => ({ current: ctx.ninjaComboStats?.gamesPlayed ?? 0, target: 250 }),
-  },
-  {
-    id: "ninja_combo_500", name: "Phantom Striker", description: "Complete 500 Katsu's Combo games",
-    category: "fun", icon: "zap", rarity: "legendary", group: "ninja_combo", tier: 8,
-    check: (ctx) => (ctx.ninjaComboStats?.gamesPlayed ?? 0) >= 500,
-    progress: (ctx) => ({ current: ctx.ninjaComboStats?.gamesPlayed ?? 0, target: 500 }),
-  },
-  {
-    id: "ninja_combo_1000", name: "Katsu's Chosen", description: "Complete 1000 Katsu's Combo games",
-    category: "fun", icon: "zap", rarity: "legendary", group: "ninja_combo", tier: 9,
-    check: (ctx) => (ctx.ninjaComboStats?.gamesPlayed ?? 0) >= 1000,
-    progress: (ctx) => ({ current: ctx.ninjaComboStats?.gamesPlayed ?? 0, target: 1000 }),
-  },
+  // ── Category: Ninja games (Katsu's Combo) ──
+  ...tieredGameAchievements("ninja", "Ninja", "Ninja game", "zap", "ninja_games", ninjaCount),
 ];
+
 
 /** Evaluate which achievements a player has earned */
 export function evaluateAchievements(
@@ -2697,8 +2083,9 @@ export function evaluateAchievements(
   knockoutStats?: KnockoutStats,
   brawlStats?: BrawlStats,
   ninjaComboStats?: NinjaComboStats,
+  crosswordStats?: CrosswordStats,
 ): Achievement[] {
-  const ctx: CheckContext = { matches, overall, heroStats, opponentStats, kudosCounts, fabdokuStats, fabdokuCardStats, heroGuesserStats, matchupManiaStats, triviaStats, timelineStats, connectionsStats, rampageStats, knockoutStats, brawlStats, ninjaComboStats };
+  const ctx: CheckContext = { matches, overall, heroStats, opponentStats, kudosCounts, fabdokuStats, fabdokuCardStats, crosswordStats, heroGuesserStats, matchupManiaStats, triviaStats, timelineStats, connectionsStats, rampageStats, knockoutStats, brawlStats, ninjaComboStats };
   return ACHIEVEMENTS.filter((a) => a.check(ctx)).map(({ check: _, progress: _p, ...rest }) => rest);
 }
 
@@ -2725,8 +2112,9 @@ export function getAchievementProgress(
   knockoutStats?: KnockoutStats,
   brawlStats?: BrawlStats,
   ninjaComboStats?: NinjaComboStats,
+  crosswordStats?: CrosswordStats,
 ): Record<string, { current: number; target: number }> {
-  const ctx: CheckContext = { matches, overall, heroStats, opponentStats, kudosCounts, fabdokuStats, fabdokuCardStats, heroGuesserStats, matchupManiaStats, triviaStats, timelineStats, connectionsStats, rampageStats, knockoutStats, brawlStats, ninjaComboStats };
+  const ctx: CheckContext = { matches, overall, heroStats, opponentStats, kudosCounts, fabdokuStats, fabdokuCardStats, crosswordStats, heroGuesserStats, matchupManiaStats, triviaStats, timelineStats, connectionsStats, rampageStats, knockoutStats, brawlStats, ninjaComboStats };
   const result: Record<string, { current: number; target: number }> = {};
   for (const a of ACHIEVEMENTS) {
     if (a.progress) {
