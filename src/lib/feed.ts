@@ -23,6 +23,19 @@ function feedCollection() {
   return collection(db, "feedEvents");
 }
 
+/** Surface Firestore "missing index" errors so they're impossible to miss in the console. */
+function logFirestoreError(context: string, error: unknown): void {
+  const msg = error instanceof Error ? error.message : String(error);
+  if (msg.includes("index") || msg.includes("requires an index")) {
+    console.error(
+      `%c[MISSING INDEX] ${context}: ${msg}`,
+      "color: red; font-weight: bold; font-size: 14px",
+    );
+  } else {
+    console.error(`[Feed] ${context}:`, error);
+  }
+}
+
 export async function createImportFeedEvent(
   profile: UserProfile,
   matchCount: number,
@@ -654,7 +667,7 @@ export async function getFeedEvents(limitCount = 50, typeFilter: FeedEventType =
     feedCache.set(typeFilter, { events, timestamp: now });
     return events;
   } catch (error) {
-    console.error("Feed fetch error:", error);
+    logFirestoreError("getFeedEvents", error);
     return cached?.events || [];
   }
 }
@@ -867,16 +880,20 @@ export async function createBrawlFeedEvent(
 ): Promise<void> {
   if (!profile.isPublic || profile.hideFromFeed) return;
 
-  const dupCheck = query(
-    feedCollection(),
-    where("userId", "==", profile.uid),
-    where("type", "==", "brutebrawl"),
-    where("date", "==", puzzleDate),
-    where("subtype", "==", subtype),
-    limit(1),
-  );
-  const existing = await getDocs(dupCheck);
-  if (!existing.empty) return;
+  try {
+    const dupCheck = query(
+      feedCollection(),
+      where("userId", "==", profile.uid),
+      where("type", "==", "brutebrawl"),
+      where("date", "==", puzzleDate),
+      where("subtype", "==", subtype),
+      limit(1),
+    );
+    const existing = await getDocs(dupCheck);
+    if (!existing.empty) return;
+  } catch (error) {
+    logFirestoreError("createBrawlFeedEvent dupCheck", error);
+  }
 
   const data: Omit<BrawlFeedEvent, "id"> = {
     type: "brutebrawl",
@@ -916,16 +933,20 @@ export async function createNinjaComboFeedEvent(
 ): Promise<void> {
   if (!profile.isPublic || profile.hideFromFeed) return;
 
-  const dupCheck = query(
-    feedCollection(),
-    where("userId", "==", profile.uid),
-    where("type", "==", "ninjacombo"),
-    where("date", "==", puzzleDate),
-    where("subtype", "==", subtype),
-    limit(1),
-  );
-  const existing = await getDocs(dupCheck);
-  if (!existing.empty) return;
+  try {
+    const dupCheck = query(
+      feedCollection(),
+      where("userId", "==", profile.uid),
+      where("type", "==", "ninjacombo"),
+      where("date", "==", puzzleDate),
+      where("subtype", "==", subtype),
+      limit(1),
+    );
+    const existing = await getDocs(dupCheck);
+    if (!existing.empty) return;
+  } catch (error) {
+    logFirestoreError("createNinjaComboFeedEvent dupCheck", error);
+  }
 
   const data: Omit<NinjaComboFeedEvent, "id"> = {
     type: "ninjacombo",

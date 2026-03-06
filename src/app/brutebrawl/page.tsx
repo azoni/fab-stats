@@ -78,7 +78,7 @@ export default function BruteBrawlPage() {
             newState.targetDamage,
             newState.defenderName,
             newState.difficulty,
-          ).catch(() => {});
+          ).catch((e) => console.error("[BruteBrawl] feed event error:", e));
         }
       }
     }
@@ -88,7 +88,7 @@ export default function BruteBrawlPage() {
     if (sharedDatesRef.current.has(dateStr)) return;
     sharedDatesRef.current.add(dateStr);
     if (user) {
-      markShared(user.uid).catch(() => {});
+      markShared(user.uid).catch((e) => console.error("[BruteBrawl] feed event error:", e));
       logActivity("brutebrawl_share", dateStr);
       if (profile) {
         createBrawlFeedEvent(
@@ -100,7 +100,7 @@ export default function BruteBrawlPage() {
           gameState.targetDamage,
           gameState.defenderName,
           gameState.difficulty,
-        ).catch(() => {});
+        ).catch((e) => console.error("[BruteBrawl] feed event error:", e));
       }
     }
   }

@@ -76,7 +76,7 @@ export default function NinjaComboPage() {
             newState.targetDamage,
             comboCount,
             maxStreak,
-          ).catch(() => {});
+          ).catch((e) => console.error("[NinjaCombo] feed event error:", e));
         }
       }
     }
@@ -100,7 +100,7 @@ export default function NinjaComboPage() {
           gameState.targetDamage,
           comboCount,
           maxStreak,
-        ).catch(() => {});
+        ).catch((e) => console.error("[NinjaCombo] feed event error:", e));
       }
     }
   }
