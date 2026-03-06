@@ -114,7 +114,7 @@ const changelog: Entry[] = [
       { type: "new", text: "Bulk tournament import — admin tool to import tournament results with auto player-linking" },
       { type: "new", text: "Hide from Guests privacy toggle — opt-in to hide your profile from visitors who aren't logged in" },
       { type: "new", text: "Clear all match data — delete all your imported matches from Settings" },
-      { type: "new", text: "Beta GEM extension — structured CSS-selector parsing with Quick Sync button" },
+      { type: "new", text: "GEM extension v2 — structured CSS-selector parsing with Quick Sync button" },
       { type: "new", text: "Paginated Discover page — browse the full community activity feed with type filtering and infinite scroll" },
       { type: "improved", text: "Navbar redesigned — consolidated icon buttons into a user avatar dropdown with chevron indicator" },
       { type: "improved", text: "Byes excluded from match counts and win rate calculations for more accurate stats" },

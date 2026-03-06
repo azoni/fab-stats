@@ -1,7 +1,7 @@
 // Zips extension directories into public/*.zip
 // Works cross-platform (Node 18+ built-in zip support not available, so we use zlib manually)
 
-import { readdirSync, readFileSync, writeFileSync, statSync, existsSync } from "fs";
+import { readdirSync, readFileSync, writeFileSync, statSync } from "fs";
 import { join, relative } from "path";
 import { deflateRawSync } from "zlib";
 
@@ -116,10 +116,5 @@ function zipDirectory(extDir, outPath) {
   console.log(`Zipped ${files.length} files → ${outPath} (${zip.length} bytes)`);
 }
 
-// Zip stable extension
+// Zip extension
 zipDirectory("extension", join("public", "fab-stats-extension.zip"));
-
-// Zip beta extension (if it exists)
-if (existsSync("extension-beta")) {
-  zipDirectory("extension-beta", join("public", "fab-stats-extension-beta.zip"));
-}

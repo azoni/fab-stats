@@ -1,18 +1,17 @@
 (function () {
   "use strict";
 
-  // Only run on history pages
-  if (!location.pathname.startsWith("/profile/history")) return;
+  // Only run on history and profile pages
+  if (!location.pathname.startsWith("/profile/history") &&
+      !location.pathname.startsWith("/profile/player")) return;
 
   // Prevent double injection
   if (document.getElementById("fab-stats-exporter")) return;
 
-  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-  const SCRAPE_KEY = "fab-stats-scrape";
+  const VERSION = "2.1.0";
+  const FABSTATS_IMPORT_URL = "https://www.fabstats.net/import";
 
-  const FABSTATS_IMPORT_URL = "https://fabstats.netlify.app/import";
-
-  // ── Known FaB Hero Names (from @flesh-and-blood/cards) ──────
+  // ── Known FaB Hero Names ──────────────────────────────────────
   const KNOWN_HEROES = new Set([
     "Arakni","Arakni, Huntsman","Arakni, Marionette","Arakni, Solitary Confinement","Arakni, Web of Deceit",
     "Aurora","Aurora, Shooting Star","Azalea","Azalea, Ace in the Hole",
@@ -52,68 +51,987 @@
     "Zen","Zen, Tamer of Purpose",
   ]);
 
+  // ── Known Formats ─────────────────────────────────────────────
+  const KNOWN_FORMATS = [
+    "Classic Constructed",
+    "Silver Age",
+    "Blitz",
+    "Draft",
+    "Sealed",
+    "Clash",
+    "Ultimate Pit Fight",
+    "Living Legend",
+  ];
+
+  // Aliases for format meta items that don't exactly match
+  const FORMAT_ALIASES = {
+    "booster draft": "Draft",
+    "sealed deck": "Sealed",
+    "living legend": "Living Legend",
+  };
+
+  // ── Date Parsing ──────────────────────────────────────────────
+
+  function parseDate(text) {
+    if (!text) return "";
+    // Remove time portion (e.g. ", 11:00 AM")
+    const cleaned = text.replace(/,?\s*\d{1,2}:\d{2}\s*(AM|PM)?\s*$/i, "").trim();
+    // Remove period after month abbreviation
+    const normalized = cleaned.replace(/(\w{3})\.\s/, "$1 ");
+    const d = new Date(normalized);
+    if (!isNaN(d.getTime())) {
+      return d.toISOString().split("T")[0];
+    }
+    return "";
+  }
+
+  // ── Event Type Guessing from Meta Item ────────────────────────
+
+  function guessEventType(text) {
+    const lower = text.toLowerCase();
+    if (/armory/i.test(lower)) return "Armory";
+    if (/pre.?release/i.test(lower)) return "Pre-Release";
+    if (/on demand/i.test(lower)) return "On Demand";
+    if (/skirmish/i.test(lower)) return "Skirmish";
+    if (/road to nationals?|\brtn\b/i.test(lower)) return "Road to Nationals";
+    if (/pro\s*quest|\bpq\b/i.test(lower)) return "ProQuest";
+    if (/battle hardened|\bbh\b/i.test(lower)) return "Battle Hardened";
+    if (/\bcalling\b/i.test(lower)) return "The Calling";
+    if (/\bnationals?\b/i.test(lower)) return "Nationals";
+    if (/pro tour/i.test(lower)) return "Pro Tour";
+    if (/\bpti\b|professional tournament invit/i.test(lower)) return "PTI";
+    if (/worlds|world championship/i.test(lower)) return "Worlds";
+    return "";
+  }
+
+  // ── Event Tier Classification ───────────────────────────────
+
+  function getEventTier(eventType) {
+    switch (eventType) {
+      case "Armory":
+      case "On Demand":
+      case "Pre-Release":
+        return "casual";
+      case "Skirmish":
+      case "Road to Nationals":
+      case "ProQuest":
+      case "PTI":
+        return "competitive";
+      case "Battle Hardened":
+      case "The Calling":
+      case "Nationals":
+      case "Pro Tour":
+      case "Worlds":
+        return "professional";
+      default:
+        return "";
+    }
+  }
+
+  // ── Meta Item Classification ──────────────────────────────────
+
+  function classifyMetaItems(items, fallbackDate) {
+    const meta = {
+      date: "",
+      venue: "",
+      eventType: "",
+      format: "",
+      rated: false,
+      xpModifier: 0,
+    };
+
+    const dateRegex = /(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?\s+\d{4}/i;
+    const shortDateRegex = /(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\.?\s+\d{1,2},?\s+\d{4}/i;
+
+    const unmatched = [];
+
+    for (const text of items) {
+      // Date: contains full month name + day + year
+      if (dateRegex.test(text) || shortDateRegex.test(text)) {
+        if (!meta.date) meta.date = parseDate(text);
+        continue;
+      }
+
+      // Format: exact match, alias, or contains match
+      const trimmed = text.trim();
+      const trimmedLower = trimmed.toLowerCase();
+      if (KNOWN_FORMATS.some(f => f.toLowerCase() === trimmedLower)) {
+        meta.format = KNOWN_FORMATS.find(f => f.toLowerCase() === trimmedLower);
+        continue;
+      }
+      if (FORMAT_ALIASES[trimmedLower]) {
+        meta.format = FORMAT_ALIASES[trimmedLower];
+        continue;
+      }
+
+      // Rated / Not Rated
+      if (/^\s*Rated\s*$/i.test(text)) { meta.rated = true; continue; }
+      if (/^\s*Not Rated\s*$/i.test(text) || /^\s*Unrated\s*$/i.test(text)) { meta.rated = false; continue; }
+
+      // XP Modifier
+      const xpMatch = text.match(/XP Modifier:\s*(\d+)/i);
+      if (xpMatch) { meta.xpModifier = parseInt(xpMatch[1]); continue; }
+
+      // Event type: contains known event type keywords
+      const eventType = guessEventType(text);
+      if (eventType) {
+        meta.eventType = eventType;
+        continue;
+      }
+
+      // Unmatched — candidate for venue
+      unmatched.push(text);
+    }
+
+    // Venue: first unmatched item that looks like a venue (not a number, not too short)
+    for (const text of unmatched) {
+      const t = text.trim();
+      if (t.length >= 2 && t.length < 150 && !/^\d+$/.test(t)) {
+        meta.venue = t;
+        break;
+      }
+    }
+
+    // Fallback date from event__when element
+    if (!meta.date && fallbackDate) {
+      meta.date = parseDate(fallbackDate);
+    }
+
+    return meta;
+  }
+
+  // ── Playoff Round Classification ──────────────────────────────
+
+  function classifyPlayoffRound(roundText) {
+    const lower = roundText.toLowerCase();
+    if (/final/i.test(lower) && !/semi|quarter/i.test(lower)) return "Finals";
+    if (/semi/i.test(lower)) return "Top 4";
+    if (/quarter/i.test(lower)) return "Top 8";
+    if (/top\s*4/i.test(lower)) return "Top 4";
+    if (/top\s*8/i.test(lower)) return "Top 8";
+    return "Playoff";
+  }
+
+  // ── Match Table Parsing ───────────────────────────────────────
+
+  function parseMatchTable(detailsEl) {
+    const matches = [];
+    const tables = detailsEl.querySelectorAll("table");
+
+    for (const table of tables) {
+      const ths = [...table.querySelectorAll("th")];
+      const headers = ths.map(th => th.textContent.trim().toLowerCase());
+
+      // Skip summary tables (Total Wins, XP Gained, Net Rating Change)
+      if (headers.some(h =>
+        h.includes("total wins") ||
+        h.includes("xp gained") ||
+        h.includes("net rating")
+      )) continue;
+
+      // Identify match tables by required columns
+      const roundIdx = headers.findIndex(h =>
+        h.includes("round") || h.includes("playoff") || h === "rnd" || h === "#"
+      );
+      const oppIdx = headers.findIndex(h =>
+        h.includes("opponent") || h.includes("player") || h.includes("team") || h === "name"
+      );
+      const resultIdx = headers.findIndex(h =>
+        h.includes("result") || h.includes("outcome") || h === "w/l" || h === "win/loss"
+      );
+
+      // Need at least opponent + result columns
+      if (oppIdx === -1 || resultIdx === -1) continue;
+
+      const isPlayoff = headers.some(h => h.includes("playoff") || h.includes("top"));
+
+      // Parse rows — try tbody first, then all tr (skip header)
+      const tbodyRows = table.querySelectorAll("tbody tr");
+      const rows = tbodyRows.length > 0
+        ? tbodyRows
+        : [...table.querySelectorAll("tr")].slice(1);
+
+      for (const row of rows) {
+        const cells = [...row.querySelectorAll("td")];
+        if (cells.length <= Math.max(oppIdx, resultIdx)) continue;
+
+        const roundText = roundIdx >= 0 ? (cells[roundIdx]?.textContent || "").trim() : "0";
+        const oppRaw = (cells[oppIdx]?.textContent || "").trim();
+        const resultText = (cells[resultIdx]?.textContent || "").trim().toLowerCase();
+
+        // Handle byes
+        if (/^bye$/i.test(oppRaw) || /bye/i.test(resultText)) {
+          matches.push({
+            round: parseInt(roundText) || 0,
+            roundLabel: isPlayoff ? classifyPlayoffRound(roundText) : "",
+            opponent: "BYE",
+            opponentGemId: "",
+            result: "bye",
+          });
+          continue;
+        }
+
+        if (!oppRaw || oppRaw.length < 2) continue;
+
+        let result;
+        if (resultText === "win" || resultText === "w") result = "win";
+        else if (resultText === "loss" || resultText === "l") result = "loss";
+        else if (resultText === "draw" || resultText === "d") result = "draw";
+        else continue;
+
+        const gemIdMatch = oppRaw.match(/\((\d+)\)\s*$/);
+        matches.push({
+          round: parseInt(roundText) || 0,
+          roundLabel: isPlayoff ? classifyPlayoffRound(roundText) : "",
+          opponent: oppRaw.replace(/\s*\(\d+\)\s*$/, "").trim(),
+          opponentGemId: gemIdMatch ? gemIdMatch[1] : "",
+          result,
+        });
+      }
+    }
+
+    return matches;
+  }
+
+  // ── Hero Extraction from Decklists Section ────────────────────
+
+  function extractHeroFromDetails(detailsEl) {
+    // Look for "Decklists" heading
+    const headings = detailsEl.querySelectorAll("h5");
+    let decklistHeading = null;
+    for (const h of headings) {
+      if (h.textContent.trim() === "Decklists") {
+        decklistHeading = h;
+        break;
+      }
+    }
+    if (!decklistHeading) return "Unknown";
+
+    // Scan elements after the Decklists heading for known hero names
+    let el = decklistHeading.nextElementSibling;
+    while (el) {
+      // Check links, cells, spans, divs
+      for (const child of el.querySelectorAll("a, td, span, div, p")) {
+        const text = child.textContent.trim();
+        if (KNOWN_HEROES.has(text)) return text;
+      }
+      // Check the element's own text if it's a leaf
+      if (el.children.length <= 1) {
+        const text = el.textContent.trim();
+        if (KNOWN_HEROES.has(text)) return text;
+      }
+      el = el.nextElementSibling;
+    }
+
+    return "Unknown";
+  }
+
+  // ── Hero Extraction from Event Card (player page) ────────────
+
+  function extractHeroFromEventCard(eventEl) {
+    const decklistsEl = eventEl.querySelector(".event__decklists");
+    if (!decklistsEl) return "Unknown";
+    for (const link of decklistsEl.querySelectorAll("a")) {
+      const text = link.textContent.trim();
+      if (KNOWN_HEROES.has(text)) return text;
+    }
+    return "Unknown";
+  }
+
+  // ── Fetch Report Page for In-Progress Events ────────────────
+
+  async function fetchReportPage(reportUrl) {
+    try {
+      const resp = await fetch(reportUrl, { credentials: "same-origin" });
+      if (!resp.ok) return null;
+      const html = await resp.text();
+      return new DOMParser().parseFromString(html, "text/html");
+    } catch {
+      return null;
+    }
+  }
+
+  // ── Parse Single Event Container ──────────────────────────────
+
+  async function parseOneEvent(eventEl) {
+    const gemEventId = eventEl.id || "";
+    const titleEl = eventEl.querySelector("h4.event__title") || eventEl.querySelector(".event__title");
+    const title = titleEl ? titleEl.textContent.trim() : "";
+
+    const dateLabel = (eventEl.querySelector(".event__when") || {}).textContent || "";
+
+    // Parse structured meta items
+    const metaSpans = [...eventEl.querySelectorAll(".event__meta-item > span, .event__meta-item span")];
+    const metaTexts = metaSpans.map(s => s.textContent.trim()).filter(t => t.length > 0);
+    const meta = classifyMetaItems(metaTexts, dateLabel.trim());
+
+    // Parse match data from details section
+    const details = eventEl.querySelector("details.event__extra-details");
+
+    if (details) {
+      // Normal completed event — parse from inline details
+      const matches = parseMatchTable(details);
+      if (matches.length === 0) return null;
+
+      const hero = extractHeroFromDetails(details);
+
+      return {
+        gemEventId,
+        name: title,
+        date: meta.date,
+        venue: meta.venue,
+        eventType: meta.eventType,
+        format: meta.format,
+        rated: meta.rated,
+        xpModifier: meta.xpModifier,
+        hero,
+        matches,
+      };
+    }
+
+    // No details section — check if this is an in-progress event
+    const whenEl = eventEl.querySelector(".event__when");
+    const isInProgress = whenEl &&
+      (whenEl.classList.contains("event__when--active") ||
+       /in\s*progress/i.test(whenEl.textContent));
+
+    if (!isInProgress) return null;
+
+    // Find report page link
+    const reportLink = eventEl.querySelector('a[href*="/profile/report/"]');
+    if (!reportLink) return null;
+
+    const reportUrl = new URL(reportLink.getAttribute("href"), window.location.origin).href;
+    const reportDoc = await fetchReportPage(reportUrl);
+    if (!reportDoc) return null;
+
+    const matches = parseMatchTable(reportDoc.body);
+    if (matches.length === 0) return null;
+
+    // Extract hero: try event card decklists first, then report page
+    let hero = extractHeroFromEventCard(eventEl);
+    if (hero === "Unknown") {
+      hero = extractHeroFromDetails(reportDoc.body);
+    }
+
+    return {
+      gemEventId,
+      name: title,
+      date: meta.date || new Date().toISOString().split("T")[0],
+      venue: meta.venue,
+      eventType: meta.eventType,
+      format: meta.format,
+      rated: meta.rated,
+      xpModifier: meta.xpModifier,
+      hero,
+      matches,
+    };
+  }
+
+  // ── Parse All Events from a Document ──────────────────────────
+
+  async function parseEventsFromDoc(doc) {
+    const events = [];
+    for (const eventEl of doc.querySelectorAll("div.event")) {
+      const parsed = await parseOneEvent(eventEl);
+      if (parsed) events.push(parsed);
+    }
+    return events;
+  }
+
+  // ── Page Fetching ─────────────────────────────────────────────
+
+  async function fetchPage(pageNum) {
+    const url = new URL("/profile/history/", window.location.origin);
+    url.searchParams.set("page", String(pageNum));
+    const resp = await fetch(url.href, { credentials: "same-origin" });
+    if (!resp.ok) throw new Error("Page " + pageNum + ": HTTP " + resp.status);
+    const html = await resp.text();
+    return new DOMParser().parseFromString(html, "text/html");
+  }
+
+  function detectTotalPages(doc) {
+    let max = 1;
+    for (const link of doc.querySelectorAll("a[href*='page=']")) {
+      const href = link.getAttribute("href") || "";
+      const m = href.match(/[?&]page=(\d+)/);
+      if (m) {
+        const p = parseInt(m[1]);
+        if (p > max) max = p;
+      }
+    }
+    return max;
+  }
+
+  // opts: { maxPages?: number, maxEvents?: number }
+  async function fetchAllPages(onProgress, opts) {
+    const maxPages = opts.maxPages || 0;
+    const maxEvents = opts.maxEvents || 0;
+
+    // Fetch page 1 (use current page if already on history page 1, otherwise fetch)
+    const onHistoryPage = location.pathname.startsWith("/profile/history");
+    const currentPage = (() => {
+      const m = location.search.match(/page=(\d+)/);
+      return m ? parseInt(m[1]) : 1;
+    })();
+
+    let doc1;
+    if (onHistoryPage && currentPage === 1) {
+      doc1 = document;
+    } else {
+      doc1 = await fetchPage(1);
+    }
+
+    const detectedPages = detectTotalPages(doc1);
+    const totalPages = maxPages ? Math.min(detectedPages, maxPages) : detectedPages;
+    let allEvents = await parseEventsFromDoc(doc1);
+    onProgress(1, totalPages, allEvents.length);
+
+    // If maxEvents is set and we already have enough, stop early
+    if (maxEvents && allEvents.length >= maxEvents) {
+      allEvents = allEvents.slice(0, maxEvents);
+    } else {
+      // Fetch remaining pages in batches of 3
+      for (let batch = 2; batch <= totalPages; batch += 3) {
+        if (maxEvents && allEvents.length >= maxEvents) break;
+
+        const pageNums = [];
+        for (let p = batch; p < batch + 3 && p <= totalPages; p++) {
+          pageNums.push(p);
+        }
+
+        let docs;
+        try {
+          docs = await Promise.all(pageNums.map(fetchPage));
+        } catch {
+          docs = [];
+          for (const p of pageNums) {
+            try { docs.push(await fetchPage(p)); } catch { /* skip */ }
+          }
+        }
+
+        for (const doc of docs) {
+          allEvents = allEvents.concat(await parseEventsFromDoc(doc));
+          if (maxEvents && allEvents.length >= maxEvents) break;
+        }
+        onProgress(Math.min(batch + 2, totalPages), totalPages, allEvents.length);
+      }
+
+      if (maxEvents && allEvents.length > maxEvents) {
+        allEvents = allEvents.slice(0, maxEvents);
+      }
+    }
+
+    // Also check the player page for in-progress events
+    const existingIds = new Set(allEvents.map(e => e.gemEventId).filter(id => id));
+    let playerDoc;
+    if (location.pathname.startsWith("/profile/player")) {
+      playerDoc = document;
+    } else {
+      try {
+        const resp = await fetch("/profile/player/", { credentials: "same-origin" });
+        if (resp.ok) {
+          const html = await resp.text();
+          playerDoc = new DOMParser().parseFromString(html, "text/html");
+        }
+      } catch { /* ignore */ }
+    }
+
+    if (playerDoc) {
+      const playerEvents = await parseEventsFromDoc(playerDoc);
+      for (const evt of playerEvents) {
+        if (!existingIds.has(evt.gemEventId)) {
+          allEvents.push(evt);
+        }
+      }
+    }
+
+    return allEvents;
+  }
+
+  // ── Extract User's GEM ID ────────────────────────────────────
+
+  async function extractUserGemId() {
+    try {
+      // If already on the profile page, use current document
+      if (location.pathname.startsWith("/profile/player")) {
+        const match = document.body.innerText.match(/GEM\s*ID[:\s]*(\d+)/i);
+        return match ? match[1] : "";
+      }
+      // Otherwise fetch the profile page
+      const resp = await fetch("/profile/player/", { credentials: "same-origin" });
+      if (!resp.ok) return "";
+      const html = await resp.text();
+      const doc = new DOMParser().parseFromString(html, "text/html");
+      const match = doc.body.innerText.match(/GEM\s*ID[:\s]*(\d+)/i);
+      return match ? match[1] : "";
+    } catch {
+      return "";
+    }
+  }
+
+  // ── Build Export Payload ───────────────────────────────────────
+
+  function buildExportPayload(events, userGemId) {
+    const matches = [];
+    for (const event of events) {
+      for (const match of event.matches) {
+        matches.push({
+          event: event.name,
+          date: event.date,
+          venue: event.venue,
+          eventType: event.eventType,
+          eventTier: getEventTier(event.eventType),
+          format: event.format,
+          rated: event.rated,
+          hero: event.hero,
+          round: match.round,
+          roundLabel: match.roundLabel,
+          opponent: match.opponent,
+          opponentGemId: match.opponentGemId,
+          result: match.result,
+          gemEventId: event.gemEventId,
+          xpModifier: event.xpModifier,
+          extensionVersion: VERSION,
+        });
+      }
+    }
+    return { fabStatsVersion: 2, userGemId: userGemId || "", matches };
+  }
+
+  // ── Deliver to FaB Stats ──────────────────────────────────────
+
+  async function deliverToFabStats(payload, quickMode) {
+    if (payload.matches.length === 0) {
+      showError("No matches found. Make sure you're on your GEM History page with events listed.");
+      return;
+    }
+
+    const compact = JSON.stringify(payload);
+    const hashPrefix = quickMode ? "#quickext=" : "#ext=";
+
+    // Copy to clipboard
+    let clipboardOk = false;
+    try {
+      await navigator.clipboard.writeText(compact);
+      clipboardOk = true;
+    } catch { /* clipboard might not be available */ }
+
+    // Build import URL with data in hash
+    let importUrl = FABSTATS_IMPORT_URL;
+    try {
+      const encoded = btoa(
+        encodeURIComponent(compact).replace(/%([0-9A-F]{2})/g, function (_, p1) {
+          return String.fromCharCode(parseInt(p1, 16));
+        })
+      );
+      if (encoded.length < 1000000) {
+        importUrl = FABSTATS_IMPORT_URL + hashPrefix + encoded;
+      }
+    } catch { /* encoding failed, use base URL */ }
+
+    if (quickMode) {
+      // Quick Sync — auto-redirect, no completion overlay
+      window.open(importUrl, "_blank");
+      hideOverlay();
+      return;
+    }
+
+    const needsFileDownload = importUrl === FABSTATS_IMPORT_URL;
+    showCompletionOverlay(
+      payload.matches.length,
+      importUrl,
+      clipboardOk,
+      needsFileDownload ? compact : null
+    );
+  }
+
   // ── Styles ────────────────────────────────────────────────────
 
   const styleEl = document.createElement("style");
   styleEl.textContent = `
     @keyframes fab-stats-pulse {
-      0%, 100% { box-shadow: 0 4px 20px rgba(201,168,76,0.3), 0 2px 8px rgba(0,0,0,0.3); }
-      50% { box-shadow: 0 4px 28px rgba(201,168,76,0.6), 0 2px 12px rgba(0,0,0,0.4); }
+      0%, 100% { box-shadow: 0 4px 20px rgba(96,165,250,0.3), 0 2px 8px rgba(0,0,0,0.3); }
+      50% { box-shadow: 0 4px 28px rgba(96,165,250,0.6), 0 2px 12px rgba(0,0,0,0.4); }
     }
     @keyframes fab-stats-spin {
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
     }
-    #fab-stats-exporter { animation: fab-stats-pulse 2s ease-in-out infinite; }
-    #fab-stats-exporter:hover { animation: none; }
-    #fab-stats-exporter:disabled { animation: none; }
+    #fab-stats-exporter .fab-stats-export-btn { animation: fab-stats-pulse 2s ease-in-out infinite; }
+    #fab-stats-exporter .fab-stats-export-btn:hover { animation: none; }
+    #fab-stats-exporter .fab-stats-export-btn:disabled { animation: none; }
     #fab-stats-overlay { transition: opacity 0.3s ease; }
+    #fab-stats-exporter input[type=number]::-webkit-inner-spin-button,
+    #fab-stats-exporter input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+    #fab-stats-exporter input[type=number] { -moz-appearance: textfield; }
   `;
   document.head.appendChild(styleEl);
 
-  // ── Floating Export Button ──────────────────────────────────────
+  // ── Floating Buttons Container ───────────────────────────────
 
-  const btn = document.createElement("button");
-  btn.id = "fab-stats-exporter";
-  btn.textContent = "\u26A1 Export to FaB Stats";
-  Object.assign(btn.style, {
+  const btnContainer = document.createElement("div");
+  btnContainer.id = "fab-stats-exporter";
+  Object.assign(btnContainer.style, {
     position: "fixed",
     bottom: "24px",
-    right: "24px",
+    right: "80px",
     zIndex: "99999",
-    padding: "14px 28px",
-    background: "linear-gradient(135deg, #d4af37, #c9a84c, #b8963f)",
-    color: "#1a1a2e",
-    border: "2px solid #d4af37",
-    borderRadius: "12px",
-    fontWeight: "800",
-    fontSize: "16px",
-    cursor: "pointer",
-    boxShadow: "0 4px 20px rgba(201,168,76,0.3), 0 2px 8px rgba(0,0,0,0.3)",
-    transition: "transform 0.15s, box-shadow 0.15s",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "stretch",
+    gap: "6px",
     fontFamily: "system-ui, -apple-system, sans-serif",
+    width: "220px",
+  });
+
+  // ── Export Button ─────────────────────────────────────────────
+
+  const btn = document.createElement("button");
+  btn.className = "fab-stats-export-btn";
+  btn.textContent = "\uD83E\uDDEA Export to FaB Stats";
+  Object.assign(btn.style, {
+    padding: "12px 20px",
+    background: "linear-gradient(135deg, #60a5fa, #3b82f6, #2563eb)",
+    color: "#ffffff",
+    border: "2px solid #60a5fa",
+    borderRadius: "10px",
+    fontWeight: "800",
+    fontSize: "14px",
+    cursor: "pointer",
+    boxShadow: "0 4px 20px rgba(96,165,250,0.3), 0 2px 8px rgba(0,0,0,0.3)",
+    transition: "transform 0.15s, box-shadow 0.15s",
+    fontFamily: "inherit",
     letterSpacing: "0.02em",
   });
 
   btn.addEventListener("mouseenter", () => {
     btn.style.transform = "translateY(-2px) scale(1.03)";
-    btn.style.boxShadow =
-      "0 6px 24px rgba(201,168,76,0.6), 0 4px 12px rgba(0,0,0,0.4)";
+    btn.style.boxShadow = "0 6px 24px rgba(96,165,250,0.6), 0 4px 12px rgba(0,0,0,0.4)";
   });
   btn.addEventListener("mouseleave", () => {
     btn.style.transform = "";
     btn.style.boxShadow = "";
   });
 
-  document.body.appendChild(btn);
+  // ── Quick Sync Button ─────────────────────────────────────────
 
-  // ── Centered Progress Overlay ─────────────────────────────────
+  const quickBtn = document.createElement("button");
+  quickBtn.textContent = "\u26A1 Quick Sync";
+  Object.assign(quickBtn.style, {
+    padding: "8px 16px",
+    background: "rgba(30, 30, 50, 0.95)",
+    color: "#60a5fa",
+    border: "1px solid #60a5fa50",
+    borderRadius: "8px",
+    fontWeight: "700",
+    fontSize: "12px",
+    cursor: "pointer",
+    transition: "all 0.15s",
+    fontFamily: "inherit",
+    letterSpacing: "0.02em",
+  });
+
+  quickBtn.addEventListener("mouseenter", () => {
+    quickBtn.style.background = "rgba(96,165,250,0.15)";
+    quickBtn.style.borderColor = "#60a5fa";
+  });
+  quickBtn.addEventListener("mouseleave", () => {
+    quickBtn.style.background = "rgba(30, 30, 50, 0.95)";
+    quickBtn.style.borderColor = "#60a5fa50";
+  });
+
+  // ── Quick Sync Selector ─────────────────────────────────────
+
+  // Sync mode: "events" or "pages"
+  // Sync count: number of events or pages
+  const stored = JSON.parse(localStorage.getItem("fab-stats-quick-opts") || "null");
+  let syncMode = (stored && stored.mode) || "events";
+  let syncCount = (stored && stored.count) || 1;
+
+  function saveSyncOpts() {
+    localStorage.setItem("fab-stats-quick-opts", JSON.stringify({ mode: syncMode, count: syncCount }));
+  }
+
+  function getSyncOpts() {
+    if (syncMode === "events") return { maxEvents: syncCount };
+    if (syncMode === "pages" && syncCount === 0) return {}; // 0 = all
+    return { maxPages: syncCount };
+  }
+
+  const selectorWrap = document.createElement("div");
+  Object.assign(selectorWrap.style, {
+    background: "rgba(20, 20, 40, 0.95)",
+    borderRadius: "8px",
+    border: "1px solid #333",
+    padding: "6px",
+  });
+
+  function makePill(text, isActive, onClick) {
+    const b = document.createElement("button");
+    b.textContent = text;
+    Object.assign(b.style, {
+      padding: "3px 7px",
+      background: isActive ? "rgba(96,165,250,0.2)" : "transparent",
+      color: isActive ? "#60a5fa" : "#666",
+      border: isActive ? "1px solid #60a5fa" : "1px solid transparent",
+      borderRadius: "5px",
+      fontSize: "10px",
+      fontWeight: "600",
+      cursor: "pointer",
+      fontFamily: "inherit",
+      transition: "all 0.15s",
+      lineHeight: "1.3",
+    });
+    b.addEventListener("click", onClick);
+    return b;
+  }
+
+  function renderSelector() {
+    selectorWrap.innerHTML = "";
+
+    // ─ Mode tabs: Events | Pages ─
+    const modeRow = document.createElement("div");
+    Object.assign(modeRow.style, {
+      display: "flex",
+      gap: "2px",
+      marginBottom: "5px",
+      background: "rgba(0,0,0,0.3)",
+      borderRadius: "4px",
+      padding: "2px",
+    });
+
+    const evtTab = document.createElement("button");
+    evtTab.textContent = "Events";
+    const isEvt = syncMode === "events";
+    Object.assign(evtTab.style, {
+      flex: "1",
+      padding: "3px 0",
+      background: isEvt ? "rgba(96,165,250,0.2)" : "transparent",
+      color: isEvt ? "#60a5fa" : "#666",
+      border: "none",
+      borderRadius: "3px",
+      fontSize: "10px",
+      fontWeight: "700",
+      cursor: "pointer",
+      fontFamily: "inherit",
+      transition: "all 0.15s",
+    });
+    evtTab.addEventListener("click", () => {
+      syncMode = "events";
+      if (syncCount === 0) syncCount = 1; // no "All" for events
+      saveSyncOpts();
+      renderSelector();
+    });
+
+    const pgTab = document.createElement("button");
+    pgTab.textContent = "Pages";
+    const isPg = syncMode === "pages";
+    Object.assign(pgTab.style, {
+      flex: "1",
+      padding: "3px 0",
+      background: isPg ? "rgba(96,165,250,0.2)" : "transparent",
+      color: isPg ? "#60a5fa" : "#666",
+      border: "none",
+      borderRadius: "3px",
+      fontSize: "10px",
+      fontWeight: "700",
+      cursor: "pointer",
+      fontFamily: "inherit",
+      transition: "all 0.15s",
+    });
+    pgTab.addEventListener("click", () => {
+      syncMode = "pages";
+      saveSyncOpts();
+      renderSelector();
+    });
+
+    modeRow.appendChild(evtTab);
+    modeRow.appendChild(pgTab);
+    selectorWrap.appendChild(modeRow);
+
+    // ─ Presets + custom input ─
+    const presetRow = document.createElement("div");
+    Object.assign(presetRow.style, {
+      display: "flex",
+      gap: "3px",
+      alignItems: "center",
+    });
+
+    if (syncMode === "events") {
+      const presets = [1, 3, 5];
+      const isCustom = !presets.includes(syncCount);
+      presets.forEach((n) => {
+        presetRow.appendChild(makePill(String(n), syncCount === n && !isCustom, () => {
+          syncCount = n;
+          saveSyncOpts();
+          renderSelector();
+        }));
+      });
+
+      // Custom input
+      const customWrap = document.createElement("div");
+      Object.assign(customWrap.style, {
+        display: "flex",
+        alignItems: "center",
+        gap: "2px",
+        flex: "1",
+      });
+
+      const customInput = document.createElement("input");
+      customInput.type = "number";
+      customInput.min = "1";
+      customInput.max = "999";
+      customInput.placeholder = "#";
+      customInput.value = isCustom ? String(syncCount) : "";
+      Object.assign(customInput.style, {
+        width: "36px",
+        padding: "3px 4px",
+        background: isCustom ? "rgba(96,165,250,0.15)" : "rgba(0,0,0,0.3)",
+        color: isCustom ? "#60a5fa" : "#888",
+        border: isCustom ? "1px solid #60a5fa" : "1px solid #333",
+        borderRadius: "5px",
+        fontSize: "10px",
+        fontWeight: "600",
+        fontFamily: "inherit",
+        textAlign: "center",
+        outline: "none",
+      });
+
+      customInput.addEventListener("input", () => {
+        const v = parseInt(customInput.value);
+        if (v > 0) {
+          syncCount = v;
+          saveSyncOpts();
+          renderSelector();
+        }
+      });
+      customInput.addEventListener("focus", () => {
+        customInput.style.borderColor = "#60a5fa";
+      });
+      customInput.addEventListener("blur", () => {
+        if (!isCustom) customInput.style.borderColor = "#333";
+      });
+
+      customWrap.appendChild(customInput);
+      presetRow.appendChild(customWrap);
+    } else {
+      // Pages mode
+      const presets = [1, 3, 5];
+      const isAll = syncCount === 0;
+      const isCustom = !presets.includes(syncCount) && !isAll;
+
+      presets.forEach((n) => {
+        presetRow.appendChild(makePill(String(n), syncCount === n, () => {
+          syncCount = n;
+          saveSyncOpts();
+          renderSelector();
+        }));
+      });
+
+      presetRow.appendChild(makePill("All", isAll, () => {
+        syncCount = 0;
+        saveSyncOpts();
+        renderSelector();
+      }));
+
+      // Custom input for pages
+      const customInput = document.createElement("input");
+      customInput.type = "number";
+      customInput.min = "1";
+      customInput.max = "999";
+      customInput.placeholder = "#";
+      customInput.value = isCustom ? String(syncCount) : "";
+      Object.assign(customInput.style, {
+        width: "32px",
+        padding: "3px 4px",
+        background: isCustom ? "rgba(96,165,250,0.15)" : "rgba(0,0,0,0.3)",
+        color: isCustom ? "#60a5fa" : "#888",
+        border: isCustom ? "1px solid #60a5fa" : "1px solid #333",
+        borderRadius: "5px",
+        fontSize: "10px",
+        fontWeight: "600",
+        fontFamily: "inherit",
+        textAlign: "center",
+        outline: "none",
+      });
+
+      customInput.addEventListener("input", () => {
+        const v = parseInt(customInput.value);
+        if (v > 0) {
+          syncCount = v;
+          saveSyncOpts();
+          renderSelector();
+        }
+      });
+      customInput.addEventListener("focus", () => {
+        customInput.style.borderColor = "#60a5fa";
+      });
+      customInput.addEventListener("blur", () => {
+        if (!isCustom) customInput.style.borderColor = "#333";
+      });
+
+      presetRow.appendChild(customInput);
+    }
+
+    selectorWrap.appendChild(presetRow);
+  }
+  renderSelector();
+
+  // ── Help Button ─────────────────────────────────────────────
+
+  const helpRow = document.createElement("div");
+  Object.assign(helpRow.style, {
+    display: "flex",
+    justifyContent: "center",
+  });
+
+  const helpBtn = document.createElement("button");
+  helpBtn.textContent = "?";
+  Object.assign(helpBtn.style, {
+    width: "20px",
+    height: "20px",
+    borderRadius: "50%",
+    background: "rgba(30,30,50,0.9)",
+    color: "#666",
+    border: "1px solid #333",
+    fontSize: "11px",
+    fontWeight: "700",
+    cursor: "pointer",
+    fontFamily: "inherit",
+    transition: "all 0.15s",
+    lineHeight: "1",
+    padding: "0",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+  });
+
+  helpBtn.addEventListener("mouseenter", () => {
+    helpBtn.style.color = "#60a5fa";
+    helpBtn.style.borderColor = "#60a5fa";
+  });
+  helpBtn.addEventListener("mouseleave", () => {
+    helpBtn.style.color = "#666";
+    helpBtn.style.borderColor = "#333";
+  });
+  helpBtn.addEventListener("click", () => showHelpOverlay());
+
+  helpRow.appendChild(helpBtn);
+
+  // ── Assemble Container ─────────────────────────────────────
+
+  btnContainer.appendChild(btn);
+  btnContainer.appendChild(quickBtn);
+  btnContainer.appendChild(selectorWrap);
+  btnContainer.appendChild(helpRow);
+  document.body.appendChild(btnContainer);
+
+  // ── Progress Overlay ──────────────────────────────────────────
 
   let overlay = null;
 
-  function showOverlay(status, detail, matchCount, progress) {
-    btn.style.display = "none";
-
+  function createOverlayBase() {
     if (!overlay) {
       overlay = document.createElement("div");
       overlay.id = "fab-stats-overlay";
@@ -133,77 +1051,48 @@
       });
       document.body.appendChild(overlay);
     }
+    return overlay;
+  }
+
+  function showOverlay(status, detail, matchCount, progress) {
+    btnContainer.style.display = "none";
+    createOverlayBase();
 
     const spinner =
-      '<div style="width:40px;height:40px;border:3px solid #333;border-top:3px solid #d4af37;border-radius:50%;animation:fab-stats-spin 1s linear infinite;margin:0 auto 16px;"></div>';
+      '<div style="width:40px;height:40px;border:3px solid #333;border-top:3px solid #60a5fa;border-radius:50%;animation:fab-stats-spin 1s linear infinite;margin:0 auto 16px;"></div>';
 
-    const matchLine =
-      matchCount > 0
-        ? '<div style="font-size:28px;font-weight:800;color:#d4af37;margin-bottom:4px;">' +
-          matchCount +
-          " matches</div>" +
-          '<div style="font-size:13px;color:#888;margin-bottom:16px;">found so far</div>'
-        : "";
+    const matchLine = matchCount > 0
+      ? '<div style="font-size:28px;font-weight:800;color:#60a5fa;margin-bottom:4px;">' + matchCount + " matches</div>" +
+        '<div style="font-size:13px;color:#888;margin-bottom:16px;">found so far</div>'
+      : "";
 
-    // Progress bar + ETA
     let progressLine = "";
     if (progress && progress.total > 1) {
       const pct = Math.round((progress.current / progress.total) * 100);
-      const remaining = progress.total - progress.current;
-      const etaSeconds = remaining * progress.secPerPage;
-      const etaMin = Math.floor(etaSeconds / 60);
-      const etaSec = Math.round(etaSeconds % 60);
-      const etaText = etaMin > 0
-        ? "~" + etaMin + "m " + etaSec + "s remaining"
-        : "~" + etaSec + "s remaining";
       progressLine =
         '<div style="margin-bottom:16px;">' +
           '<div style="font-size:12px;color:#888;margin-bottom:6px;">Page ' +
-          progress.current + " of " + progress.total +
-          ' <span style="color:#555;">\u00b7 ' + etaText + "</span></div>" +
+          progress.current + " of " + progress.total + "</div>" +
           '<div style="width:100%;height:6px;background:#333;border-radius:3px;overflow:hidden;">' +
-            '<div style="width:' + pct + "%;height:100%;background:linear-gradient(90deg,#d4af37,#c9a84c);border-radius:3px;transition:width 0.3s;\"></div>" +
+            '<div style="width:' + pct + '%;height:100%;background:linear-gradient(90deg,#60a5fa,#3b82f6);border-radius:3px;transition:width 0.3s;"></div>' +
           "</div>" +
         "</div>";
     }
 
     overlay.innerHTML =
-      '<div style="background:#1a1a2e;border:2px solid #d4af37;border-radius:16px;padding:32px 40px;max-width:420px;width:90%;text-align:center;box-shadow:0 16px 48px rgba(0,0,0,0.6);">' +
+      '<div style="background:#1a1a2e;border:2px solid #60a5fa;border-radius:16px;padding:32px 40px;max-width:420px;width:90%;text-align:center;box-shadow:0 16px 48px rgba(0,0,0,0.6);">' +
       spinner +
-      '<div style="font-size:18px;font-weight:700;color:#e8e0cc;margin-bottom:8px;">' +
-      status +
-      "</div>" +
-      '<div style="font-size:13px;color:#aaa;margin-bottom:20px;line-height:1.5;">' +
-      detail +
-      "</div>" +
+      '<div style="font-size:18px;font-weight:700;color:#e8e0cc;margin-bottom:8px;">' + status + "</div>" +
+      '<div style="font-size:13px;color:#aaa;margin-bottom:20px;line-height:1.5;">' + detail + "</div>" +
       matchLine +
       progressLine +
-      '<div style="font-size:11px;color:#555;margin-top:8px;">Keep this tab open \u2014 do not navigate away</div>' +
+      '<div style="font-size:11px;color:#555;margin-top:8px;">Fetching pages in the background \u2014 no navigation needed</div>' +
       "</div>";
   }
 
-  function showCompletionOverlay(matchCount, pageCount, importUrl, clipboardOk, downloadJson) {
-    if (!overlay) {
-      overlay = document.createElement("div");
-      overlay.id = "fab-stats-overlay";
-      Object.assign(overlay.style, {
-        position: "fixed",
-        top: "0",
-        left: "0",
-        right: "0",
-        bottom: "0",
-        zIndex: "99999",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        background: "rgba(0,0,0,0.7)",
-        backdropFilter: "blur(4px)",
-        fontFamily: "system-ui, -apple-system, sans-serif",
-      });
-      document.body.appendChild(overlay);
-    }
+  function showCompletionOverlay(matchCount, importUrl, clipboardOk, downloadJson) {
+    createOverlayBase();
 
-    const pages = pageCount > 1 ? " across " + pageCount + " pages" : "";
     const hasAutoImport = importUrl !== FABSTATS_IMPORT_URL;
 
     let backup = "";
@@ -211,33 +1100,31 @@
       backup = '<div style="color:#666;font-size:11px;margin-top:12px;">Also copied to clipboard as backup</div>';
     }
 
-    // For large exports: show download button + instructions instead of auto-import link
     let actionHtml;
     if (hasAutoImport) {
       actionHtml =
-        '<a href="' + importUrl + '" target="_blank" style="display:block;padding:14px 24px;background:linear-gradient(135deg,#d4af37,#c9a84c);color:#1a1a2e;border-radius:12px;font-weight:800;font-size:16px;text-decoration:none;margin-bottom:8px;">' +
+        '<a href="' + importUrl + '" target="_blank" style="display:block;padding:14px 24px;background:linear-gradient(135deg,#60a5fa,#3b82f6);color:#fff;border-radius:12px;font-weight:800;font-size:16px;text-decoration:none;margin-bottom:8px;">' +
         "Open FaB Stats Import \u2192</a>" + backup;
     } else {
       actionHtml =
-        '<button id="fab-stats-download-json" style="display:block;width:100%;padding:14px 24px;background:linear-gradient(135deg,#d4af37,#c9a84c);color:#1a1a2e;border:none;border-radius:12px;font-weight:800;font-size:16px;cursor:pointer;margin-bottom:8px;">' +
+        '<button id="fab-stats-download-json" style="display:block;width:100%;padding:14px 24px;background:linear-gradient(135deg,#60a5fa,#3b82f6);color:#fff;border:none;border-radius:12px;font-weight:800;font-size:16px;cursor:pointer;margin-bottom:8px;">' +
         "\u2B07 Download Match Data</button>" +
         '<div style="color:#aaa;font-size:12px;margin-bottom:12px;line-height:1.5;">' +
         "Large export \u2014 save the file, then upload it on the " +
-        '<a href="' + FABSTATS_IMPORT_URL + '" target="_blank" style="color:#d4af37;text-decoration:underline;">FaB Stats Import</a> page' +
+        '<a href="' + FABSTATS_IMPORT_URL + '" target="_blank" style="color:#60a5fa;text-decoration:underline;">FaB Stats Import</a> page' +
         "</div>" + backup;
     }
 
     overlay.innerHTML =
-      '<div style="background:#1a1a2e;border:2px solid #d4af37;border-radius:16px;padding:32px 40px;max-width:420px;width:90%;text-align:center;box-shadow:0 16px 48px rgba(0,0,0,0.6);">' +
+      '<div style="background:#1a1a2e;border:2px solid #60a5fa;border-radius:16px;padding:32px 40px;max-width:420px;width:90%;text-align:center;box-shadow:0 16px 48px rgba(0,0,0,0.6);">' +
       '<div style="font-size:48px;margin-bottom:12px;">\u2705</div>' +
-      '<div style="font-size:22px;font-weight:800;color:#d4af37;margin-bottom:4px;">Export Complete!</div>' +
+      '<div style="font-size:22px;font-weight:800;color:#60a5fa;margin-bottom:4px;">Export Complete!</div>' +
       '<div style="font-size:15px;color:#e8e0cc;margin-bottom:20px;"><strong>' +
-      matchCount + " matches</strong>" + pages + " ready to import</div>" +
+      matchCount + " matches</strong> ready to import</div>" +
       actionHtml +
       '<button id="fab-stats-close-overlay" style="margin-top:16px;background:none;border:1px solid #333;color:#888;padding:8px 20px;border-radius:8px;cursor:pointer;font-size:12px;">Close</button>' +
       "</div>";
 
-    // Download JSON button handler
     const dlBtn = overlay.querySelector("#fab-stats-download-json");
     if (dlBtn && downloadJson) {
       dlBtn.addEventListener("click", () => {
@@ -258,7 +1145,7 @@
       closeBtn.addEventListener("click", () => {
         overlay.remove();
         overlay = null;
-        btn.style.display = "";
+        btnContainer.style.display = "";
       });
     }
   }
@@ -268,858 +1155,130 @@
       overlay.remove();
       overlay = null;
     }
-    btn.style.display = "";
+    btnContainer.style.display = "";
   }
 
   function showError(message) {
-    if (overlay) {
-      overlay.innerHTML =
-        '<div style="background:#1a1a2e;border:2px solid #dc2626;border-radius:16px;padding:32px 40px;max-width:420px;width:90%;text-align:center;box-shadow:0 16px 48px rgba(0,0,0,0.6);font-family:system-ui,-apple-system,sans-serif;">' +
-        '<div style="font-size:48px;margin-bottom:12px;">\u274C</div>' +
-        '<div style="font-size:18px;font-weight:700;color:#e8e0cc;margin-bottom:8px;">Export Failed</div>' +
-        '<div style="font-size:13px;color:#aaa;margin-bottom:20px;line-height:1.5;">' +
-        message +
-        "</div>" +
-        '<button id="fab-stats-close-overlay" style="background:none;border:1px solid #333;color:#888;padding:8px 20px;border-radius:8px;cursor:pointer;font-size:12px;">Close</button>' +
-        "</div>";
-      const closeBtn = overlay.querySelector("#fab-stats-close-overlay");
-      if (closeBtn) {
-        closeBtn.addEventListener("click", () => {
-          hideOverlay();
-          setBtnReady();
-        });
-      }
+    createOverlayBase();
+
+    overlay.innerHTML =
+      '<div style="background:#1a1a2e;border:2px solid #dc2626;border-radius:16px;padding:32px 40px;max-width:420px;width:90%;text-align:center;box-shadow:0 16px 48px rgba(0,0,0,0.6);">' +
+      '<div style="font-size:48px;margin-bottom:12px;">\u274C</div>' +
+      '<div style="font-size:18px;font-weight:700;color:#e8e0cc;margin-bottom:8px;">Export Failed</div>' +
+      '<div style="font-size:13px;color:#aaa;margin-bottom:20px;line-height:1.5;">' + message + "</div>" +
+      '<button id="fab-stats-close-overlay" style="background:none;border:1px solid #333;color:#888;padding:8px 20px;border-radius:8px;cursor:pointer;font-size:12px;">Close</button>' +
+      "</div>";
+
+    const closeBtn = overlay.querySelector("#fab-stats-close-overlay");
+    if (closeBtn) {
+      closeBtn.addEventListener("click", () => hideOverlay());
     }
   }
 
-  function setBtnReady() {
-    btn.textContent = "\u26A1 Export to FaB Stats";
+  function showHelpOverlay() {
+    btnContainer.style.display = "none";
+    createOverlayBase();
+
+    overlay.innerHTML =
+      '<div style="background:#1a1a2e;border:2px solid #60a5fa;border-radius:16px;padding:28px 32px;max-width:440px;width:90%;text-align:left;box-shadow:0 16px 48px rgba(0,0,0,0.6);">' +
+        '<div style="font-size:16px;font-weight:800;color:#60a5fa;margin-bottom:14px;text-align:center;">FaB Stats Extension</div>' +
+
+        '<div style="font-size:12px;color:#e8e0cc;font-weight:700;margin-bottom:4px;">\uD83E\uDDEA Export to FaB Stats</div>' +
+        '<div style="font-size:11px;color:#aaa;margin-bottom:12px;line-height:1.6;">' +
+          'Full export of your entire GEM history. Scrapes all pages, then opens FaB Stats with a preview where you can review before importing.' +
+        '</div>' +
+
+        '<div style="font-size:12px;color:#e8e0cc;font-weight:700;margin-bottom:4px;">\u26A1 Quick Sync</div>' +
+        '<div style="font-size:11px;color:#aaa;margin-bottom:12px;line-height:1.6;">' +
+          'Fast sync of recent events. Sends data directly to FaB Stats and auto-imports \u2014 no preview step. Use after each tournament to stay up to date.' +
+        '</div>' +
+
+        '<div style="font-size:12px;color:#e8e0cc;font-weight:700;margin-bottom:4px;">Sync Options</div>' +
+        '<div style="font-size:11px;color:#aaa;margin-bottom:12px;line-height:1.6;">' +
+          '<span style="color:#60a5fa;">Events</span> \u2014 Sync a specific number of recent events (tournaments). "1" = just your last event.<br>' +
+          '<span style="color:#60a5fa;">Pages</span> \u2014 Sync by GEM history pages. Each page has ~10 events. "All" = full history.<br>' +
+          'Type a custom number in the input box for any amount.' +
+        '</div>' +
+
+        '<div style="font-size:12px;color:#e8e0cc;font-weight:700;margin-bottom:4px;">Duplicates</div>' +
+        '<div style="font-size:11px;color:#aaa;margin-bottom:12px;line-height:1.6;">' +
+          'Already-imported matches are automatically skipped \u2014 you can safely re-sync without creating duplicates.' +
+        '</div>' +
+
+        '<div style="font-size:12px;color:#e8e0cc;font-weight:700;margin-bottom:4px;">Works on both pages</div>' +
+        '<div style="font-size:11px;color:#aaa;margin-bottom:10px;line-height:1.6;">' +
+          'Use from your GEM <b>History</b> or <b>Player</b> page. In-progress events are detected automatically.' +
+        '</div>' +
+
+        '<div style="text-align:center;margin-top:14px;">' +
+          '<button id="fab-stats-close-overlay" style="background:none;border:1px solid #333;color:#888;padding:8px 24px;border-radius:8px;cursor:pointer;font-size:12px;">Got it</button>' +
+        '</div>' +
+      '</div>';
+
+    overlay.addEventListener("click", (e) => {
+      if (e.target === overlay) hideOverlay();
+    });
+
+    const closeBtn = overlay.querySelector("#fab-stats-close-overlay");
+    if (closeBtn) {
+      closeBtn.addEventListener("click", () => hideOverlay());
+    }
+  }
+
+  // ── Button Click Handlers ─────────────────────────────────────
+
+  function disableButtons() {
+    btn.disabled = true;
+    quickBtn.disabled = true;
+    btn.style.opacity = "0.7";
+    btn.style.cursor = "wait";
+    quickBtn.style.opacity = "0.5";
+    quickBtn.style.cursor = "wait";
+  }
+
+  function enableButtons() {
     btn.disabled = false;
+    quickBtn.disabled = false;
     btn.style.opacity = "1";
     btn.style.cursor = "pointer";
-    btn.style.display = "";
+    quickBtn.style.opacity = "1";
+    quickBtn.style.cursor = "pointer";
   }
 
-  // ── Expand All Collapsed Sections ─────────────────────────────
-
-  async function expandAllSections() {
-    let expanded = 0;
-
-    const candidates = document.querySelectorAll(
-      "a, button, summary, span, div, [role='button']"
-    );
-    for (const el of candidates) {
-      const text = (el.textContent || "").trim();
-      if (/View Results/i.test(text) && text.length < 50) {
-        el.click();
-        expanded++;
-        await sleep(700);
-      }
-    }
-
-    for (const detail of document.querySelectorAll("details:not([open])")) {
-      const summary = detail.querySelector("summary");
-      if (summary) {
-        summary.click();
-        expanded++;
-        await sleep(600);
-      }
-    }
-
-    if (expanded === 0) {
-      for (const el of candidates) {
-        const text = (el.textContent || "").trim();
-        if (
-          (text.includes("View") || text.includes("Show")) &&
-          text.length < 50
-        ) {
-          el.click();
-          expanded++;
-          await sleep(700);
-        }
-      }
-    }
-
-    if (expanded > 0) await sleep(800);
-    console.log("[FaB Stats] Expanded " + expanded + " sections");
-    return expanded;
-  }
-
-  // ── Event Name Abbreviation Mapping ──────────────────────────
-
-  // Common GEM abbreviations → expanded names (case-insensitive keys)
-  const EVENT_ABBREVIATIONS = {
-    "rtn": "Road to Nationals",
-    "pq": "ProQuest",
-    "bh": "Battle Hardened",
-    "upf": "Ultimate Pit Fight",
-    "cc": "Classic Constructed",
-    "sa": "Silver Age",
-  };
-
-  /**
-   * Expand known abbreviations in event names.
-   * "RtN" → "Road to Nationals"
-   * "DapperGames RTN" → "DapperGames Road to Nationals"
-   * "PQ Las Vegas" → "ProQuest Las Vegas"
-   * Only replaces when the abbreviation appears as a whole word.
-   */
-  function expandEventName(name) {
-    // Check if the ENTIRE name (trimmed, lowered) is an abbreviation
-    const lowerFull = name.trim().toLowerCase();
-    if (EVENT_ABBREVIATIONS[lowerFull]) {
-      return EVENT_ABBREVIATIONS[lowerFull];
-    }
-
-    // Replace abbreviations that appear as whole words in the name
-    let result = name;
-    for (const [abbr, expanded] of Object.entries(EVENT_ABBREVIATIONS)) {
-      // Word-boundary match, case-insensitive
-      const regex = new RegExp("\\b" + abbr + "\\b", "gi");
-      result = result.replace(regex, expanded);
-    }
-    return result;
-  }
-
-  // ── Extract Event Info ────────────────────────────────────────
-
-  function extractEventInfo(matchTable) {
-    const info = {
-      name: "Unknown Event",
-      date: new Date().toISOString().split("T")[0],
-      venue: "",
-      eventType: "",
-      format: "",
-      rated: false,
-    };
-
-    const isGenericHeading = (text) =>
-      /^(Results|Matches|Decklists|Event History|History|Dashboard|Profile|Prizes?|Prize Structure|Standings|Team Standings|Tournament (Structure|Information)|Participation Prize|View Results|Round \d+)$/i.test(text);
-
-    // ── Step 1: Find the closest non-generic heading ──
-    // Walk up from the match table, checking preceding siblings at each level.
-    // Track both the heading's sibling element and the match table's ancestor
-    // at that same level, so we can scope context to just this event.
-    let current = matchTable;
-    let headingSib = null; // the sibling element that is (or contains) the heading
-    let tableAncestor = null; // matchTable's ancestor at the same sibling level
-
-    for (let depth = 0; depth < 10 && current; depth++) {
-      let sib = current.previousElementSibling;
-      while (sib) {
-        let found = false;
-        if (/^H[1-5]$/i.test(sib.tagName)) {
-          const text = sib.textContent.trim();
-          if (!isGenericHeading(text) && text.length > 2 && text.length < 250) {
-            info.name = text;
-            found = true;
-          }
-        }
-        if (!found) {
-          const headings = sib.querySelectorAll("h1, h2, h3, h4, h5");
-          for (let hi = headings.length - 1; hi >= 0; hi--) {
-            const text = headings[hi].textContent.trim();
-            if (!isGenericHeading(text) && text.length > 2 && text.length < 250) {
-              info.name = text;
-              found = true;
-              break;
-            }
-          }
-        }
-        if (found) {
-          headingSib = sib;
-          tableAncestor = current;
-          break;
-        }
-        sib = sib.previousElementSibling;
-      }
-      if (headingSib) break;
-      current = current.parentElement;
-    }
-
-    if (!headingSib) return info;
-
-    // Expand abbreviations in the event name (e.g. "RtN" → "Road to Nationals")
-    info.name = expandEventName(info.name);
-
-    // ── Step 2: Collect scoped context text ──
-    // Only gather text from elements between the heading and the match table.
-    // This prevents picking up metadata from neighboring events.
-
-    // Include up to 3 elements before the heading (for date labels like "Feb. 22, 2026")
-    // but stop at other event headings or tables.
-    const preTexts = [];
-    let prev = headingSib.previousElementSibling;
-    for (let i = 0; i < 3 && prev; i++) {
-      const t = (prev.textContent || "").trim();
-      if (/^H[1-5]$/i.test(prev.tagName) && !isGenericHeading(t)) break;
-      if (prev.querySelector && prev.querySelector("table")) break;
-      preTexts.unshift(t);
-      prev = prev.previousElementSibling;
-    }
-
-    // Collect elements from heading through to the table ancestor
-    const scopeEls = [];
-    let el = headingSib;
-    while (el) {
-      scopeEls.push(el);
-      if (el === tableAncestor || el.contains(matchTable)) break;
-      el = el.nextElementSibling;
-    }
-
-    const fullText =
-      preTexts.join(" ") + " " + scopeEls.map((e) => e.textContent || "").join(" ");
-
-    // ── Step 3: Extract metadata from scoped text ──
-
-    // Date (try full month names first, then abbreviated)
-    let dateMatch = fullText.match(
-      /(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?\s+\d{4}/i
-    );
-    if (!dateMatch) {
-      dateMatch = fullText.match(
-        /(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\.?\s+\d{1,2},?\s+\d{4}/i
-      );
-    }
-    if (dateMatch) {
-      const d = new Date(dateMatch[0].replace(/(\w{3})\./, "$1"));
-      if (!isNaN(d.getTime())) {
-        info.date = d.toISOString().split("T")[0];
-      }
-    }
-
-    // Format
-    if (/Classic Constructed/i.test(fullText))
-      info.format = "Classic Constructed";
-    else if (/\bSilver Age\b/i.test(fullText)) info.format = "Silver Age";
-    else if (/\bBlitz\b/i.test(fullText)) info.format = "Blitz";
-    else if (/\bDraft\b/i.test(fullText)) info.format = "Draft";
-    else if (/\bSealed\b/i.test(fullText)) info.format = "Sealed";
-    else if (/\bClash\b/i.test(fullText)) info.format = "Clash";
-    else if (/Ultimate Pit Fight|UPF/i.test(fullText))
-      info.format = "Ultimate Pit Fight";
-
-    // Fallback: check event name for format keywords
-    if (!info.format) {
-      const name = info.name;
-      if (/Classic Constructed/i.test(name))
-        info.format = "Classic Constructed";
-      else if (/\bSilver Age\b/i.test(name)) info.format = "Silver Age";
-      else if (/\bBlitz\b/i.test(name)) info.format = "Blitz";
-      else if (/\bDraft\b/i.test(name)) info.format = "Draft";
-      else if (/\bSealed\b/i.test(name)) info.format = "Sealed";
-      else if (/\bClash\b/i.test(name)) info.format = "Clash";
-      else if (/Ultimate Pit Fight|UPF/i.test(name))
-        info.format = "Ultimate Pit Fight";
-    }
-
-    // Rated
-    if (/\bRated\b/.test(fullText) && !/Not Rated|Unrated/i.test(fullText))
-      info.rated = true;
-
-    // Event type — when multiple keywords match, pick the lowest prestige tier
-    // (side events at major tournaments carry the parent tournament's name)
-    const lowerFull = fullText.toLowerCase();
-    if (/armory/i.test(lowerFull)) info.eventType = "Armory";
-    else if (/pre.?release/i.test(lowerFull)) info.eventType = "Pre-Release";
-    else if (/on demand/i.test(lowerFull)) info.eventType = "On Demand";
-    else {
-      // Competitive types ordered by prestige (lowest first) — first match wins
-      const competitiveTypes = [
-        [/skirmish/i, "Skirmish"],
-        [/road to nationals?|\brtn\b/i, "Road to Nationals"],
-        [/proquest|pro quest|\bpq\b/i, "ProQuest"],
-        [/battle hardened|\bbh\b/i, "Battle Hardened"],
-        [/\bcalling\b/i, "The Calling"],
-        [/\bnationals?\b/i, "Nationals"],
-        [/pro tour/i, "Pro Tour"],
-        [/worlds|world championship/i, "Worlds"],
-      ];
-      for (const [pattern, type] of competitiveTypes) {
-        if (pattern.test(lowerFull)) { info.eventType = type; break; }
-      }
-    }
-
-    // ── Step 4: Venue extraction (scoped to event elements) ──
-
-    // Build list of DOM elements to search — only from between heading and table
-    const venueEls = [];
-    for (const scopeEl of scopeEls) {
-      for (const child of scopeEl.querySelectorAll("span, a, p, div, small")) {
-        venueEls.push(child);
-      }
-    }
-
-    // Tier 1: Elements with venue/location/store attributes
-    for (const vel of venueEls) {
-      const t = vel.textContent.trim();
-      if (t.length < 3 || t.length > 100 || vel.children.length > 2) continue;
-      const title = vel.getAttribute("title") || "";
-      const ariaLabel = vel.getAttribute("aria-label") || "";
-      if (
-        /venue|location|store|shop/i.test(title) ||
-        /venue|location|store|shop/i.test(ariaLabel)
-      ) {
-        info.venue = t;
-        break;
-      }
-    }
-
-    // Tier 2: Look for elements with "(closed)" — strong venue indicator
-    if (!info.venue) {
-      for (const vel of venueEls) {
-        if (vel.closest("table")) continue;
-        const t = vel.textContent.trim();
-        if (t.length > 5 && t.length < 120 && vel.children.length <= 2) {
-          if (/\(closed\)|\(temporarily closed\)/i.test(t)) {
-            info.venue = t
-              .replace(/\s*\((?:temporarily\s+)?closed\)\s*/i, "")
-              .trim();
-            break;
-          }
-        }
-      }
-    }
-
-    // Tier 3: Look for leaf elements that match store-like names
-    if (!info.venue) {
-      for (const vel of venueEls) {
-        if (vel.closest("table")) continue;
-        const t = vel.textContent.trim();
-        if (t.length < 5 || t.length > 100) continue;
-        if (vel.children.length > 1) continue;
-        if (t === info.name) continue;
-        if (t.includes("\n")) continue;
-        if (/January|February|March|April|May|June|July|August|September|October|November|December/i.test(t)) continue;
-        if (/^\d{1,2}[/\-]\d{1,2}[/\-]\d{2,4}/.test(t)) continue;
-        if (/Classic Constructed|Blitz|Draft|Sealed|Clash|Ultimate Pit Fight|Silver Age/i.test(t)) continue;
-        if (/Armory|ProQuest|Calling|Battle Hardened|Road to Nationals|Nationals|Skirmish|Pre.?Release/i.test(t)) continue;
-        if (/XP Modifier|Not rated|^Rated$/i.test(t)) continue;
-        if (/View Results|Results|Matches|Decklists/i.test(t)) continue;
-        if (/^\d+[WLD]|\b(Win|Loss|Draw)\b/i.test(t)) continue;
-        if (/^(Round|Playoff|Opponent|Result|Hero|Total)/i.test(t)) continue;
-        if (/^\d+$/.test(t)) continue;
-        if (/Event$|Event Type|Event description/i.test(t)) continue;
-        if (/Rating Change|Pending/i.test(t)) continue;
-
-        if (
-          /game|games|hobby|card|comics|shop|store|castle|kastle|mox|channel|fireball|face.to.face|good.games|guf/i.test(t) ||
-          /\(closed\)/i.test(t)
-        ) {
-          info.venue = t
-            .replace(/\s*\((?:temporarily\s+)?closed\)\s*/i, "")
-            .trim();
-          break;
-        }
-      }
-    }
-
-    // Tier 4: Extract venue from event name (pattern: "Venue - EventType Format")
-    if (!info.venue && info.name.includes(" - ")) {
-      const dashParts = info.name.split(/\s+[-\u2013\u2014]\s+/);
-      if (dashParts.length >= 2) {
-        const afterDash = dashParts.slice(1).join(" ");
-        if (
-          /armory|proquest|calling|battle hardened|skirmish|nationals|pre.?release|weekly|classic constructed|blitz|draft|sealed|clash|upf|ultimate pit fight/i.test(
-            afterDash
-          )
-        ) {
-          info.venue = dashParts[0].trim();
-        }
-      }
-    }
-
-    return info;
-  }
-
-  // ── Extract Hero from Decklists Section ───────────────────────
-
-  // GEM player names look like "Bosco, Drew (78366571)" — filter these out
-  function isPlayerName(text) {
-    // Pattern: "LastName, FirstName (digits)" or just "Name (digits)"
-    if (/\(\d{4,}\)/.test(text)) return true;
-    // Pattern: pure "LastName, FirstName" without FaB hero keywords
-    if (/^[A-Z][a-z]+,\s+[A-Z][a-z]+$/.test(text) && text.length < 40) return true;
-    return false;
-  }
-
-  function isValidHeroName(text) {
-    if (!text || text.length < 3 || text.length > 80) return false;
-    if (isPlayerName(text)) return false;
-    if (/^(Classic Constructed|Blitz|Draft|Sealed|Clash|Ultimate Pit Fight)$/i.test(text)) return false;
-    // Filter out scores, ratings, numbers
-    if (/^\d+$/.test(text)) return false;
-    if (/^\d+-\d+/.test(text)) return false;
-    return true;
-  }
-
-  function isKnownHero(text) {
-    return KNOWN_HEROES.has(text);
-  }
-
-  function extractHero(matchTable) {
-    let container = matchTable.parentElement;
-
-    for (let i = 0; i < 8 && container; i++) {
-      const text = container.textContent || "";
-      if (!text.includes("Decklists")) {
-        container = container.parentElement;
-        continue;
-      }
-
-      const tables = container.querySelectorAll("table");
-      for (const table of tables) {
-        if (table === matchTable) continue;
-
-        const ths = [...table.querySelectorAll("th")];
-        const headerText = ths
-          .map((th) => th.textContent.trim().toLowerCase())
-          .join(" ");
-        if (
-          headerText.includes("round") ||
-          headerText.includes("playoff") ||
-          headerText.includes("total wins") ||
-          headerText.includes("xp")
-        )
-          continue;
-
-        const cells = table.querySelectorAll("td");
-        for (const cell of cells) {
-          const t = cell.textContent.trim();
-          if (isValidHeroName(t)) {
-            const link = cell.querySelector("a");
-            const heroText = link ? link.textContent.trim() : t;
-            if (isKnownHero(heroText)) return heroText;
-            if (isValidHeroName(heroText)) return heroText;
-          }
-        }
-      }
-
-      const allElements = container.querySelectorAll("*");
-      let foundDecklists = false;
-      let foundFormat = false;
-
-      for (const el of allElements) {
-        const t = el.textContent.trim();
-        if (el.children.length > 1) continue;
-
-        if (t === "Decklists") {
-          foundDecklists = true;
-          continue;
-        }
-        if (foundDecklists) {
-          if (
-            /^(Classic Constructed|Blitz|Draft|Sealed|Clash|Ultimate Pit Fight)$/i.test(
-              t
-            )
-          ) {
-            foundFormat = true;
-            continue;
-          }
-          if (foundFormat && isValidHeroName(t) && !t.includes("\n")) {
-            return t;
-          }
-        }
-      }
-
-      break;
-    }
-
-    // Fallback: scan text near the match table for known hero names.
-    // Limited to 2 levels up and stops at event boundaries to avoid
-    // picking up heroes from neighboring events on the page.
-    let scanContainer = matchTable.parentElement;
-    for (let i = 0; i < 2 && scanContainer; i++) {
-      // Stop if this container spans multiple events (has other match tables)
-      const tables = scanContainer.querySelectorAll("table");
-      let otherMatchTables = 0;
-      for (const t of tables) {
-        if (t === matchTable) continue;
-        const h = [...t.querySelectorAll("th")].map((th) => th.textContent.trim().toLowerCase()).join(" ");
-        if (h.includes("opponent") || h.includes("player") || h.includes("result")) otherMatchTables++;
-        if (otherMatchTables > 0) break;
-      }
-      if (otherMatchTables > 0) break;
-
-      const links = scanContainer.querySelectorAll("a");
-      for (const link of links) {
-        const t = link.textContent.trim();
-        if (isKnownHero(t)) return t;
-      }
-      // Also check text nodes in cells/spans that aren't inside the match table
-      const spans = scanContainer.querySelectorAll("td, span, div, p");
-      for (const el of spans) {
-        if (matchTable.contains(el)) continue;
-        if (el.children.length > 1) continue;
-        const t = el.textContent.trim();
-        if (isKnownHero(t)) return t;
-      }
-      scanContainer = scanContainer.parentElement;
-    }
-
-    return "Unknown";
-  }
-
-  // ── Wait for Tables to Appear After Expansion ────────────────
-
-  async function waitForTables(prevCount) {
-    // Poll up to 3 seconds for new tables to appear (AJAX-loaded content)
-    for (let i = 0; i < 6; i++) {
-      await sleep(500);
-      const current = document.querySelectorAll("table").length;
-      if (current > prevCount) return current;
-    }
-    return document.querySelectorAll("table").length;
-  }
-
-  // ── Scrape All Events on Current Page ─────────────────────────
-
-  function scrapeAllEvents() {
-    const results = [];
-    const tables = document.querySelectorAll("table");
-    console.log("[FaB Stats] Found " + tables.length + " tables on page");
-
-    for (const table of tables) {
-      const ths = [...table.querySelectorAll("th")];
-      const headers = ths.map((th) => th.textContent.trim().toLowerCase());
-
-      // Match "round", "rnd", "playoff", "#" as round column
-      const roundIdx = headers.findIndex(
-        (h) =>
-          h.includes("round") ||
-          h.includes("playoff") ||
-          h === "rnd" ||
-          h === "#"
-      );
-      const oppIdx = headers.findIndex(
-        (h) =>
-          h.includes("opponent") ||
-          h.includes("player") ||
-          h.includes("team") ||
-          h === "name"
-      );
-      const resultIdx = headers.findIndex(
-        (h) =>
-          h.includes("result") ||
-          h.includes("outcome") ||
-          h === "w/l" ||
-          h === "win/loss" ||
-          h === "record" ||
-          h === "status"
-      );
-
-      // Need at least opponent + result columns
-      if (oppIdx === -1 || resultIdx === -1) {
-        if (headers.length > 0) {
-          console.log("[FaB Stats] Skipping table — headers: [" + headers.join(", ") + "]");
-        }
-        continue;
-      }
-
-      const eventInfo = extractEventInfo(table);
-      const hero = extractHero(table);
-      console.log("[FaB Stats] Match table: \"" + eventInfo.name + "\" (" + eventInfo.date + ") — headers: [" + headers.join(", ") + "]");
-
-      // Detect if this is a playoff table from the headers
-      const isPlayoffTable = headers.some(
-        (h) => h.includes("playoff") || h.includes("top")
-      );
-
-      const rows = table.querySelectorAll("tbody tr");
-      if (rows.length === 0) {
-        const allRows = table.querySelectorAll("tr");
-        for (let r = 1; r < allRows.length; r++) {
-          processRow(allRows[r]);
-        }
-      } else {
-        for (const row of rows) {
-          processRow(row);
-        }
-      }
-
-      function processRow(row) {
-        const cells = [...row.querySelectorAll("td")];
-        if (cells.length <= Math.max(oppIdx, resultIdx)) return;
-
-        const roundText =
-          roundIdx >= 0 ? (cells[roundIdx]?.textContent || "").trim() : "0";
-        const oppRaw = (cells[oppIdx]?.textContent || "").trim();
-        const resultText = (cells[resultIdx]?.textContent || "")
-          .trim()
-          .toLowerCase();
-
-        if (/bye/i.test(oppRaw)) return;
-        if (!oppRaw || oppRaw.length < 2) return;
-
-        let result;
-        if (resultText === "win" || resultText === "w") result = "win";
-        else if (resultText === "loss" || resultText === "l") result = "loss";
-        else if (resultText === "draw" || resultText === "d") result = "draw";
-        else return;
-
-        const gemIdMatch = oppRaw.match(/\((\d+)\)\s*$/);
-        const opponentGemId = gemIdMatch ? gemIdMatch[1] : "";
-        const opponent = oppRaw.replace(/\s*\(\d+\)\s*$/, "").trim();
-
-        // Determine round label for playoffs
-        let roundLabel = "";
-        if (isPlayoffTable) {
-          const rl = roundText.toLowerCase();
-          if (/final/i.test(rl) && !/semi|quarter/i.test(rl))
-            roundLabel = "Finals";
-          else if (/semi/i.test(rl)) roundLabel = "Top 4";
-          else if (/quarter/i.test(rl)) roundLabel = "Top 8";
-          else if (/top\s*4/i.test(rl)) roundLabel = "Top 4";
-          else if (/top\s*8/i.test(rl)) roundLabel = "Top 8";
-          else roundLabel = "Playoff";
-        }
-
-        results.push({
-          event: eventInfo.name,
-          date: eventInfo.date,
-          venue: eventInfo.venue,
-          eventType: eventInfo.eventType,
-          format: eventInfo.format,
-          rated: eventInfo.rated,
-          hero: hero,
-          round: parseInt(roundText) || 0,
-          roundLabel: roundLabel,
-          opponent,
-          opponentGemId,
-          result,
-        });
-      }
-    }
-
-    console.log("[FaB Stats] Scraped " + results.length + " matches from " + tables.length + " tables");
-    return results;
-  }
-
-  // ── Pagination ────────────────────────────────────────────────
-
-  function getCurrentPage() {
-    const match = location.search.match(/page=(\d+)/);
-    return match ? parseInt(match[1]) : 1;
-  }
-
-  function findNextPageUrl() {
-    const currentPage = getCurrentPage();
-    const nextPage = currentPage + 1;
-
-    const links = document.querySelectorAll("a[href]");
-    for (const link of links) {
-      const href = link.getAttribute("href") || "";
-      const pageMatch = href.match(/[?&]page=(\d+)/);
-      if (pageMatch && parseInt(pageMatch[1]) === nextPage) {
-        return link.href;
-      }
-    }
-
-    for (const link of links) {
-      const text = (link.textContent || "").trim();
-      if (text === ">>" || text === ">" || /^next$/i.test(text)) {
-        const href = link.getAttribute("href") || "";
-        if (href.includes("page=")) return link.href;
-      }
-    }
-
-    return null;
-  }
-
-  // ── Total Page Count ─────────────────────────────────────────
-
-  function getTotalPages() {
-    let max = getCurrentPage();
-    const links = document.querySelectorAll("a[href]");
-    for (const link of links) {
-      const href = link.getAttribute("href") || "";
-      const m = href.match(/[?&]page=(\d+)/);
-      if (m) {
-        const p = parseInt(m[1]);
-        if (p > max) max = p;
-      }
-    }
-    return max;
-  }
-
-  // ── Navigate to Page 1 ───────────────────────────────────────
-
-  function getPage1Url() {
-    const url = new URL(window.location.href);
-    url.searchParams.set("page", "1");
-    return url.href;
-  }
-
-  // ── Multi-Page Scrape ─────────────────────────────────────────
-
-  async function scrapePage(state) {
-    const page = getCurrentPage();
-
-    // Detect total pages on first visit (or update if higher found)
-    const detectedTotal = getTotalPages();
-    if (!state.totalPages || detectedTotal > state.totalPages) {
-      state.totalPages = detectedTotal;
-    }
-
-    // Track timing for ETA — measure seconds per page from previous pages
-    const pageStartTime = Date.now();
-    const secPerPage = state.pagesScraped > 0 && state.startTime
-      ? ((pageStartTime - state.startTime) / 1000) / state.pagesScraped
-      : 15; // default estimate: ~15s per page
-
-    const progress = state.totalPages > 1
-      ? { current: page, total: state.totalPages, secPerPage: secPerPage }
-      : null;
+  async function handleExport(quickMode) {
+    hideOverlay();
+    disableButtons();
 
     try {
-      showOverlay(
-        "Expanding events...",
-        "Page " + page + " \u2014 Opening all collapsed sections",
-        state.matches.length,
-        progress
-      );
-      const tablesBefore = document.querySelectorAll("table").length;
-      await expandAllSections();
-      // Second pass — lazy-loaded content may reveal more expandable sections
-      await sleep(600);
-      await expandAllSections();
+      const label = quickMode ? "Quick Syncing..." : "Fetching match history...";
+      showOverlay(label, "Reading page 1", 0);
 
-      // Wait for AJAX-loaded tables to appear after expansion
-      await waitForTables(tablesBefore);
+      const fetchOpts = quickMode ? getSyncOpts() : {};
 
-      showOverlay(
-        "Reading matches...",
-        "Page " + page + " \u2014 Scraping match tables",
-        state.matches.length,
-        progress
-      );
-      const pageMatches = scrapeAllEvents();
-      console.log("[FaB Stats] Page " + page + "/" + (state.totalPages || "?") + ": " + pageMatches.length + " matches — events: " +
-        [...new Set(pageMatches.map((m) => m.event))].join(", "));
-      state.matches = state.matches.concat(pageMatches);
-      state.pagesScraped++;
+      const [allEvents, userGemId] = await Promise.all([
+        fetchAllPages((current, total, matchCount) => {
+          showOverlay(label, "Page " + current + " of " + total, matchCount, { current, total });
+        }, fetchOpts),
+        extractUserGemId(),
+      ]);
 
-      const nextUrl = findNextPageUrl();
-
-      // Stop only if there's no next page link
-      if (!nextUrl) {
-        sessionStorage.removeItem(SCRAPE_KEY);
-        await finishExport(state);
+      if (allEvents.length === 0) {
+        showError("No events with match results found on your history page.");
         return;
       }
 
-      showOverlay(
-        "Moving to page " + (page + 1) + " of " + state.totalPages + "...",
-        "Found " +
-          pageMatches.length +
-          " matches on this page (" +
-          state.matches.length +
-          " total)",
-        state.matches.length,
-        progress
-      );
-      state.nextUrl = nextUrl;
-      sessionStorage.setItem(SCRAPE_KEY, JSON.stringify(state));
-      await sleep(800);
-      window.location.href = nextUrl;
-    } catch (err) {
-      sessionStorage.removeItem(SCRAPE_KEY);
-      if (state.matches.length > 0) {
-        await finishExport(state);
-      } else {
-        showError(err.message || String(err));
-      }
-    }
-  }
+      const totalMatches = allEvents.reduce((sum, e) => sum + e.matches.length, 0);
+      showOverlay("Building export...", allEvents.length + " events, " + totalMatches + " matches", totalMatches);
 
-  async function finishExport(state) {
-    if (state.matches.length === 0) {
-      showError(
-        "No matches found. Make sure you're on your GEM History page with events listed."
-      );
-      return;
-    }
-
-    const compact = JSON.stringify(state.matches);
-
-    // Copy to clipboard (compact JSON to handle large datasets)
-    let clipboardOk = false;
-    try {
-      await navigator.clipboard.writeText(compact);
-      clipboardOk = true;
-    } catch {
-      // Clipboard might not be available or data too large
-    }
-
-    // Build import URL — include data in hash for auto-import
-    let importUrl = FABSTATS_IMPORT_URL;
-    try {
-      const encoded = btoa(
-        encodeURIComponent(compact).replace(/%([0-9A-F]{2})/g, function (
-          _,
-          p1
-        ) {
-          return String.fromCharCode(parseInt(p1, 16));
-        })
-      );
-      if (encoded.length < 1000000) {
-        importUrl = FABSTATS_IMPORT_URL + "#ext=" + encoded;
-      }
-    } catch {
-      // If encoding fails, just use base URL
-    }
-
-    // For large exports, prepare a downloadable JSON file
-    const needsFileDownload = importUrl === FABSTATS_IMPORT_URL;
-
-    showCompletionOverlay(
-      state.matches.length,
-      state.pagesScraped,
-      importUrl,
-      clipboardOk,
-      needsFileDownload ? compact : null
-    );
-  }
-
-  // ── Auto-Continue from Previous Page ──────────────────────────
-
-  const savedState = sessionStorage.getItem(SCRAPE_KEY);
-  if (savedState) {
-    try {
-      const state = JSON.parse(savedState);
-      showOverlay(
-        "Resuming export...",
-        "Loading page " + getCurrentPage(),
-        state.matches.length
-      );
-      setTimeout(() => scrapePage(state), 2000);
-    } catch {
-      sessionStorage.removeItem(SCRAPE_KEY);
-    }
-  }
-
-  // ── Button Click Handler ──────────────────────────────────────
-
-  btn.addEventListener("click", async () => {
-    sessionStorage.removeItem(SCRAPE_KEY);
-    hideOverlay();
-
-    // Always start from page 1 to ensure we get all matches
-    const currentPage = getCurrentPage();
-    if (currentPage !== 1) {
-      showOverlay("Starting export...", "Navigating to page 1", 0);
-      const state = { matches: [], pagesScraped: 0, startTime: Date.now(), totalPages: 0 };
-      sessionStorage.setItem(SCRAPE_KEY, JSON.stringify(state));
-      await sleep(500);
-      window.location.href = getPage1Url();
-      return;
-    }
-
-    try {
-      const state = { matches: [], pagesScraped: 0, startTime: Date.now(), totalPages: 0 };
-      await scrapePage(state);
+      const payload = buildExportPayload(allEvents, userGemId);
+      await deliverToFabStats(payload, quickMode);
     } catch (err) {
       showError(err.message || String(err));
+    } finally {
+      enableButtons();
     }
-  });
+  }
+
+  btn.addEventListener("click", () => handleExport(false));
+  quickBtn.addEventListener("click", () => handleExport(true));
 })();

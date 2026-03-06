@@ -33,9 +33,10 @@ interface Props {
   newPlacements?: PlayoffFinish[];
   playerName?: string;
   matchBadgeTierUp?: { tier: BadgeTierInfo; count: number } | null;
+  quickMode?: boolean;
 }
 
-export function PostEventRecap({ recap, onViewOpponents, onDashboard, onImportMore, skippedCount, newAchievements, newPlacements, playerName, matchBadgeTierUp }: Props) {
+export function PostEventRecap({ recap, onViewOpponents, onDashboard, onImportMore, skippedCount, newAchievements, newPlacements, playerName, matchBadgeTierUp, quickMode }: Props) {
   const { wins, losses, draws, winRate, bestStreak, heroInsights, newOverallWinRate, newTotalMatches, currentStreak } = recap;
   const total = wins + losses + draws;
 
@@ -73,7 +74,7 @@ export function PostEventRecap({ recap, onViewOpponents, onDashboard, onImportMo
           />
         </div>
         <h1 className="text-2xl font-bold text-fab-gold mb-1">
-          {hasPlacement ? "What a Finish!" : hasNewAchievements ? "Nice Session!" : "Import Complete!"}
+          {hasPlacement ? "What a Finish!" : hasNewAchievements ? "Nice Session!" : quickMode ? "Sync Complete!" : "Import Complete!"}
         </h1>
         <p className="text-fab-muted text-sm">
           {total} match{total === 1 ? "" : "es"} imported
@@ -120,44 +121,46 @@ export function PostEventRecap({ recap, onViewOpponents, onDashboard, onImportMo
         </div>
       )}
 
-      {/* Session Record Card */}
-      <div className="bg-fab-surface border border-fab-border rounded-lg p-5">
-        <h2 className="text-xs font-semibold text-fab-dim uppercase tracking-wider mb-3">Session Record</h2>
-        <div className="flex items-center justify-center gap-6 mb-4">
-          <div className="text-center">
-            <p className="text-3xl font-bold text-fab-win">{wins}</p>
-            <p className="text-xs text-fab-muted">Wins</p>
+      {/* Session Record Card — hidden in quick mode */}
+      {!quickMode && (
+        <div className="bg-fab-surface border border-fab-border rounded-lg p-5">
+          <h2 className="text-xs font-semibold text-fab-dim uppercase tracking-wider mb-3">Session Record</h2>
+          <div className="flex items-center justify-center gap-6 mb-4">
+            <div className="text-center">
+              <p className="text-3xl font-bold text-fab-win">{wins}</p>
+              <p className="text-xs text-fab-muted">Wins</p>
+            </div>
+            <div className="text-4xl font-light text-fab-border">-</div>
+            <div className="text-center">
+              <p className="text-3xl font-bold text-fab-loss">{losses}</p>
+              <p className="text-xs text-fab-muted">Losses</p>
+            </div>
+            {draws > 0 && (
+              <>
+                <div className="text-4xl font-light text-fab-border">-</div>
+                <div className="text-center">
+                  <p className="text-3xl font-bold text-fab-draw">{draws}</p>
+                  <p className="text-xs text-fab-muted">Draws</p>
+                </div>
+              </>
+            )}
           </div>
-          <div className="text-4xl font-light text-fab-border">-</div>
-          <div className="text-center">
-            <p className="text-3xl font-bold text-fab-loss">{losses}</p>
-            <p className="text-xs text-fab-muted">Losses</p>
-          </div>
-          {draws > 0 && (
-            <>
-              <div className="text-4xl font-light text-fab-border">-</div>
-              <div className="text-center">
-                <p className="text-3xl font-bold text-fab-draw">{draws}</p>
-                <p className="text-xs text-fab-muted">Draws</p>
-              </div>
-            </>
-          )}
-        </div>
-        <div className="flex justify-center gap-4 text-sm">
-          <span className={`font-semibold ${winRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>
-            {winRate.toFixed(0)}% Win Rate
-          </span>
-          {bestStreak >= 3 && (
-            <span className="text-fab-gold flex items-center gap-1">
-              <AchievementIcon icon="flame" className="w-4 h-4" />
-              {bestStreak} Win Streak
+          <div className="flex justify-center gap-4 text-sm">
+            <span className={`font-semibold ${winRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>
+              {winRate.toFixed(0)}% Win Rate
             </span>
-          )}
+            {bestStreak >= 3 && (
+              <span className="text-fab-gold flex items-center gap-1">
+                <AchievementIcon icon="flame" className="w-4 h-4" />
+                {bestStreak} Win Streak
+              </span>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* Insight Pills */}
-      {(heroInsights.length > 0 || currentStreak) && (
+      {/* Insight Pills — hidden in quick mode */}
+      {!quickMode && (heroInsights.length > 0 || currentStreak) && (
         <div className="space-y-2">
           {/* Tier-ups */}
           {heroInsights.filter((h) => h.tierUp).map((h) => {
@@ -292,34 +295,40 @@ export function PostEventRecap({ recap, onViewOpponents, onDashboard, onImportMo
         </div>
       )}
 
-      {/* Overall Stats */}
-      <div className="bg-fab-surface border border-fab-border rounded-lg p-4">
-        <h2 className="text-xs font-semibold text-fab-dim uppercase tracking-wider mb-3">Your Overall Stats</h2>
-        <div className="grid grid-cols-2 gap-4 text-center">
-          <div>
-            <p className="text-2xl font-bold text-fab-text">{newTotalMatches}</p>
-            <p className="text-xs text-fab-muted">Total Matches</p>
-          </div>
-          <div>
-            <p className={`text-2xl font-bold ${newOverallWinRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>
-              {newOverallWinRate.toFixed(1)}%
-            </p>
-            <p className="text-xs text-fab-muted">Overall Win Rate</p>
+      {/* Overall Stats — hidden in quick mode */}
+      {!quickMode && (
+        <div className="bg-fab-surface border border-fab-border rounded-lg p-4">
+          <h2 className="text-xs font-semibold text-fab-dim uppercase tracking-wider mb-3">Your Overall Stats</h2>
+          <div className="grid grid-cols-2 gap-4 text-center">
+            <div>
+              <p className="text-2xl font-bold text-fab-text">{newTotalMatches}</p>
+              <p className="text-xs text-fab-muted">Total Matches</p>
+            </div>
+            <div>
+              <p className={`text-2xl font-bold ${newOverallWinRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>
+                {newOverallWinRate.toFixed(1)}%
+              </p>
+              <p className="text-xs text-fab-muted">Overall Win Rate</p>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Action Buttons */}
       <div className="flex gap-3 justify-center flex-wrap">
-        <button onClick={onViewOpponents} className="px-6 min-h-[48px] py-3 rounded-md font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light active:bg-fab-gold-light transition-colors">
-          View Opponent Stats
-        </button>
-        <button onClick={onDashboard} className="px-6 min-h-[48px] py-3 rounded-md font-semibold bg-fab-surface border border-fab-border text-fab-text hover:bg-fab-surface-hover active:bg-fab-surface-hover transition-colors">
+        {!quickMode && (
+          <button onClick={onViewOpponents} className="px-6 min-h-[48px] py-3 rounded-md font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light active:bg-fab-gold-light transition-colors">
+            View Opponent Stats
+          </button>
+        )}
+        <button onClick={onDashboard} className={`px-6 min-h-[48px] py-3 rounded-md font-semibold transition-colors ${quickMode ? "bg-fab-gold text-fab-bg hover:bg-fab-gold-light active:bg-fab-gold-light" : "bg-fab-surface border border-fab-border text-fab-text hover:bg-fab-surface-hover active:bg-fab-surface-hover"}`}>
           Dashboard
         </button>
-        <button onClick={onImportMore} className="px-6 min-h-[48px] py-3 rounded-md font-semibold bg-fab-surface border border-fab-border text-fab-muted hover:text-fab-text active:bg-fab-surface-hover transition-colors">
-          Import More
-        </button>
+        {!quickMode && (
+          <button onClick={onImportMore} className="px-6 min-h-[48px] py-3 rounded-md font-semibold bg-fab-surface border border-fab-border text-fab-muted hover:text-fab-text active:bg-fab-surface-hover transition-colors">
+            Import More
+          </button>
+        )}
       </div>
 
       {/* Placement Share Modal */}
