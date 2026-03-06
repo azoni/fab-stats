@@ -14,6 +14,7 @@ import { allHeroes } from "@/lib/heroes";
 import { HowToPlay } from "@/components/dice/HowToPlay";
 import { detectTierUp, type BadgeTierInfo } from "@/lib/badge-tiers";
 import { BadgeTierUpPopup } from "@/components/profile/BadgeTierUpPopup";
+import { syncAchievementsAfterGame } from "@/lib/achievement-tracking";
 import type { RampageGameState, RampageStats } from "@/lib/rhinarsrampage/types";
 
 function getTodayDateStr(): string {
@@ -72,6 +73,7 @@ export default function RhinarsRampagePage() {
             setStats(s);
             const tierUp = detectTierUp("rhinarsrampage-player", oldGamesPlayed, s.gamesPlayed);
             if (tierUp) setBadgeTierUp({ tier: tierUp, count: s.gamesPlayed });
+            syncAchievementsAfterGame(user.uid).catch(() => {});
           }
         })
         .catch(console.error);

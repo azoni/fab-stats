@@ -11,6 +11,7 @@ import { createTriviaFeedEvent } from "@/lib/feed";
 import { logActivity } from "@/lib/activity-log";
 import { detectTierUp } from "@/lib/badge-tiers";
 import { BadgeTierUpPopup } from "@/components/profile/BadgeTierUpPopup";
+import { syncAchievementsAfterGame } from "@/lib/achievement-tracking";
 import type { TriviaGameState, TriviaStats, TriviaAnswer } from "@/lib/trivia/types";
 import type { TriviaQuestion } from "@/lib/trivia/question-bank";
 
@@ -86,6 +87,7 @@ export default function TriviaPage() {
               setStats(s);
               const tierUp = detectTierUp("trivia-player", oldGamesPlayed, s.gamesPlayed);
               if (tierUp) setBadgeTierUp({ tier: tierUp, count: s.gamesPlayed });
+              syncAchievementsAfterGame(user.uid).catch(() => {});
             }
           })
           .catch(console.error);

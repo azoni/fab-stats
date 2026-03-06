@@ -481,16 +481,20 @@ export async function createShadowStrikeFeedEvent(
 ): Promise<void> {
   if (!profile.isPublic || profile.hideFromFeed) return;
 
-  const dupCheck = query(
-    feedCollection(),
-    where("userId", "==", profile.uid),
-    where("type", "==", "shadowstrike"),
-    where("date", "==", puzzleDate),
-    where("subtype", "==", subtype),
-    limit(1),
-  );
-  const existing = await getDocs(dupCheck);
-  if (!existing.empty) return;
+  try {
+    const dupCheck = query(
+      feedCollection(),
+      where("userId", "==", profile.uid),
+      where("type", "==", "shadowstrike"),
+      where("date", "==", puzzleDate),
+      where("subtype", "==", subtype),
+      limit(1),
+    );
+    const existing = await getDocs(dupCheck);
+    if (!existing.empty) return;
+  } catch (error) {
+    logFirestoreError("createShadowStrikeFeedEvent dupCheck", error);
+  }
 
   const data: Omit<ShadowStrikeFeedEvent, "id"> = {
     type: "shadowstrike",
@@ -528,16 +532,20 @@ export async function createBladeDashFeedEvent(
 ): Promise<void> {
   if (!profile.isPublic || profile.hideFromFeed) return;
 
-  const dupCheck = query(
-    feedCollection(),
-    where("userId", "==", profile.uid),
-    where("type", "==", "bladedash"),
-    where("date", "==", puzzleDate),
-    where("subtype", "==", subtype),
-    limit(1),
-  );
-  const existing = await getDocs(dupCheck);
-  if (!existing.empty) return;
+  try {
+    const dupCheck = query(
+      feedCollection(),
+      where("userId", "==", profile.uid),
+      where("type", "==", "bladedash"),
+      where("date", "==", puzzleDate),
+      where("subtype", "==", subtype),
+      limit(1),
+    );
+    const existing = await getDocs(dupCheck);
+    if (!existing.empty) return;
+  } catch (error) {
+    logFirestoreError("createBladeDashFeedEvent dupCheck", error);
+  }
 
   const data: Omit<BladeDashFeedEvent, "id"> = {
     type: "bladedash",
@@ -882,16 +890,20 @@ export async function createRampageFeedEvent(
 ): Promise<void> {
   if (!profile.isPublic || profile.hideFromFeed) return;
 
-  const dupCheck = query(
-    feedCollection(),
-    where("userId", "==", profile.uid),
-    where("type", "==", "rampage"),
-    where("date", "==", puzzleDate),
-    where("subtype", "==", subtype),
-    limit(1),
-  );
-  const existing = await getDocs(dupCheck);
-  if (!existing.empty) return;
+  try {
+    const dupCheck = query(
+      feedCollection(),
+      where("userId", "==", profile.uid),
+      where("type", "==", "rampage"),
+      where("date", "==", puzzleDate),
+      where("subtype", "==", subtype),
+      limit(1),
+    );
+    const existing = await getDocs(dupCheck);
+    if (!existing.empty) return;
+  } catch (error) {
+    logFirestoreError("createRampageFeedEvent dupCheck", error);
+  }
 
   const data: Omit<RampageFeedEvent, "id"> = {
     type: "rampage",
@@ -927,16 +939,20 @@ export async function createKnockoutFeedEvent(
 ): Promise<void> {
   if (!profile.isPublic || profile.hideFromFeed) return;
 
-  const dupCheck = query(
-    feedCollection(),
-    where("userId", "==", profile.uid),
-    where("type", "==", "kayosknockout"),
-    where("date", "==", puzzleDate),
-    where("subtype", "==", subtype),
-    limit(1),
-  );
-  const existing = await getDocs(dupCheck);
-  if (!existing.empty) return;
+  try {
+    const dupCheck = query(
+      feedCollection(),
+      where("userId", "==", profile.uid),
+      where("type", "==", "kayosknockout"),
+      where("date", "==", puzzleDate),
+      where("subtype", "==", subtype),
+      limit(1),
+    );
+    const existing = await getDocs(dupCheck);
+    if (!existing.empty) return;
+  } catch (error) {
+    logFirestoreError("createKnockoutFeedEvent dupCheck", error);
+  }
 
   const data: Omit<KnockoutFeedEvent, "id"> = {
     type: "kayosknockout",

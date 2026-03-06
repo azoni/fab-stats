@@ -56,6 +56,7 @@ import { createFaBdokuFeedEvent, createGuestFaBdokuFeedEvent, deleteFaBdokuFeedE
 import { logActivity } from "@/lib/activity-log";
 import { detectTierUp } from "@/lib/badge-tiers";
 import { BadgeTierUpPopup } from "@/components/profile/BadgeTierUpPopup";
+import { syncAchievementsAfterGame } from "@/lib/achievement-tracking";
 import type { GameState, FaBdokuStats, UniquenessData, PickData } from "@/lib/fabdoku/types";
 
 function buildGrid(state: GameState): ("correct" | "wrong" | "empty")[][] {
@@ -259,6 +260,7 @@ export default function FaBdokuPage() {
               setStats(updatedStats);
               const tierUp = detectTierUp("fabdoku-player", oldGamesPlayed, updatedStats.gamesPlayed);
               if (tierUp) setBadgeTierUp({ tier: tierUp, count: updatedStats.gamesPlayed });
+              syncAchievementsAfterGame(user.uid).catch(() => {});
             }
           } catch {}
         }

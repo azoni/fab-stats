@@ -12,6 +12,7 @@ import { logActivity } from "@/lib/activity-log";
 import { getHeroByName } from "@/lib/heroes";
 import { detectTierUp } from "@/lib/badge-tiers";
 import { BadgeTierUpPopup } from "@/components/profile/BadgeTierUpPopup";
+import { syncAchievementsAfterGame } from "@/lib/achievement-tracking";
 import type { HeroGuesserGameState, HeroGuesserStats } from "@/lib/heroguesser/types";
 
 function getTodayDateStr(): string {
@@ -84,6 +85,7 @@ export default function HeroGuesserPage() {
               setStats(s);
               const tierUp = detectTierUp("heroguesser-player", oldGamesPlayed, s.gamesPlayed);
               if (tierUp) setBadgeTierUp({ tier: tierUp, count: s.gamesPlayed });
+              syncAchievementsAfterGame(user.uid).catch(() => {});
             }
           })
           .catch(console.error);

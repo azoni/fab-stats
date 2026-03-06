@@ -19,6 +19,7 @@ import { createCrosswordFeedEvent } from "@/lib/feed";
 import { logActivity } from "@/lib/activity-log";
 import { detectTierUp } from "@/lib/badge-tiers";
 import { BadgeTierUpPopup } from "@/components/profile/BadgeTierUpPopup";
+import { syncAchievementsAfterGame } from "@/lib/achievement-tracking";
 import type { CrosswordGameState, CrosswordStats, Direction, CrosswordPuzzle } from "@/lib/crossword/types";
 
 function formatTime(seconds: number): string {
@@ -203,6 +204,7 @@ export default function CrosswordPage() {
               setStats(s);
               const tierUp = detectTierUp("crossword-player", oldGamesPlayed, s.gamesPlayed);
               if (tierUp) setBadgeTierUp({ tier: tierUp, count: s.gamesPlayed });
+              syncAchievementsAfterGame(user.uid).catch(() => {});
             }
           })
           .catch(() => {});

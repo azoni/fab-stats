@@ -12,6 +12,7 @@ import { createConnectionsFeedEvent } from "@/lib/feed";
 import { logActivity } from "@/lib/activity-log";
 import { detectTierUp } from "@/lib/badge-tiers";
 import { BadgeTierUpPopup } from "@/components/profile/BadgeTierUpPopup";
+import { syncAchievementsAfterGame } from "@/lib/achievement-tracking";
 import type { ConnectionsGameState, ConnectionsStats, ConnectionsGuess } from "@/lib/connections/types";
 
 function getTodayDateStr(): string {
@@ -111,6 +112,7 @@ export default function ConnectionsPage() {
               setStats(s);
               const tierUp = detectTierUp("connections-player", oldGamesPlayed, s.gamesPlayed);
               if (tierUp) setBadgeTierUp({ tier: tierUp, count: s.gamesPlayed });
+              syncAchievementsAfterGame(user.uid).catch(() => {});
             }
           })
           .catch(console.error);

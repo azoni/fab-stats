@@ -12,6 +12,7 @@ import { createBladeDashFeedEvent } from "@/lib/feed";
 import { logActivity } from "@/lib/activity-log";
 import { detectTierUp, type BadgeTierInfo } from "@/lib/badge-tiers";
 import { BadgeTierUpPopup } from "@/components/profile/BadgeTierUpPopup";
+import { syncAchievementsAfterGame } from "@/lib/achievement-tracking";
 import type { BladeDashGameState, BladeDashStats } from "@/lib/bladedash/types";
 
 function getTodayDateStr(): string {
@@ -97,6 +98,7 @@ export default function BladeDashPage() {
               setStats(s);
               const tierUp = detectTierUp("bladedash-player", oldGamesPlayed, s.gamesPlayed);
               if (tierUp) setBadgeTierUp({ tier: tierUp, count: s.gamesPlayed });
+              syncAchievementsAfterGame(user.uid).catch(() => {});
             }
           })
           .catch(console.error);

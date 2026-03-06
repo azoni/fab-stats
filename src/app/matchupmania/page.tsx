@@ -11,6 +11,7 @@ import { createMatchupManiaFeedEvent } from "@/lib/feed";
 import { logActivity } from "@/lib/activity-log";
 import { detectTierUp } from "@/lib/badge-tiers";
 import { BadgeTierUpPopup } from "@/components/profile/BadgeTierUpPopup";
+import { syncAchievementsAfterGame } from "@/lib/achievement-tracking";
 import { getCommunityHeroMatchups, getMonthsForPreset } from "@/lib/hero-matchups";
 import type { MatchupManiaGameState, MatchupManiaStats, MatchupRound } from "@/lib/matchupmania/types";
 import type { CommunityMatchupCell } from "@/lib/hero-matchups";
@@ -115,6 +116,7 @@ export default function MatchupManiaPage() {
               setStats(s);
               const tierUp = detectTierUp("matchupmania-player", oldGamesPlayed, s.gamesPlayed);
               if (tierUp) setBadgeTierUp({ tier: tierUp, count: s.gamesPlayed });
+              syncAchievementsAfterGame(user.uid).catch(() => {});
             }
           })
           .catch(console.error);

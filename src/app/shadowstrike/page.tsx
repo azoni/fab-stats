@@ -12,6 +12,7 @@ import { createShadowStrikeFeedEvent } from "@/lib/feed";
 import { logActivity } from "@/lib/activity-log";
 import { detectTierUp, type BadgeTierInfo } from "@/lib/badge-tiers";
 import { BadgeTierUpPopup } from "@/components/profile/BadgeTierUpPopup";
+import { syncAchievementsAfterGame } from "@/lib/achievement-tracking";
 import type { ShadowStrikeGameState, ShadowStrikeStats } from "@/lib/shadowstrike/types";
 
 function getTodayDateStr(): string {
@@ -119,6 +120,7 @@ export default function ShadowStrikePage() {
                   setStats(s);
                   const tierUp = detectTierUp("shadowstrike-player", oldGamesPlayed, s.gamesPlayed);
                   if (tierUp) setBadgeTierUp({ tier: tierUp, count: s.gamesPlayed });
+                  syncAchievementsAfterGame(user.uid).catch(() => {});
                 }
               })
               .catch(console.error);
@@ -207,6 +209,7 @@ export default function ShadowStrikePage() {
               setStats(s);
               const tierUp = detectTierUp("shadowstrike-player", oldGamesPlayed, s.gamesPlayed);
               if (tierUp) setBadgeTierUp({ tier: tierUp, count: s.gamesPlayed });
+              syncAchievementsAfterGame(user.uid).catch(() => {});
             }
           })
           .catch(console.error);

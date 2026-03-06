@@ -55,6 +55,8 @@ import { loadStats as loadRampageStats } from "@/lib/rhinarsrampage/firestore";
 import { loadStats as loadKnockoutStats } from "@/lib/kayosknockout/firestore";
 import { loadStats as loadBrawlStats } from "@/lib/brutebrawl/firestore";
 import { loadStats as loadNinjaComboStats } from "@/lib/ninjacombo/firestore";
+import { loadStats as loadShadowStrikeStats } from "@/lib/shadowstrike/firestore";
+import { loadStats as loadBladeDashStats } from "@/lib/bladedash/firestore";
 import type { FaBdokuStats } from "@/lib/fabdoku/types";
 import type { CrosswordStats } from "@/lib/crossword/types";
 import type { HeroGuesserStats } from "@/lib/heroguesser/types";
@@ -66,6 +68,8 @@ import type { RampageStats } from "@/lib/rhinarsrampage/types";
 import type { KnockoutStats } from "@/lib/kayosknockout/types";
 import type { BrawlStats } from "@/lib/brutebrawl/types";
 import type { NinjaComboStats } from "@/lib/ninjacombo/types";
+import type { ShadowStrikeStats } from "@/lib/shadowstrike/types";
+import type { BladeDashStats } from "@/lib/bladedash/types";
 import { getTodayDateStr } from "@/lib/fabdoku/puzzle-generator";
 import { useCreators } from "@/hooks/useCreators";
 import { hasUserSubmittedFeedback } from "@/lib/feedback";
@@ -121,6 +125,8 @@ export default function PlayerProfile() {
   const [knockoutFullStats, setKnockoutFullStats] = useState<KnockoutStats | null>(null);
   const [brawlFullStats, setBrawlFullStats] = useState<BrawlStats | null>(null);
   const [ninjaComboFullStats, setNinjaComboFullStats] = useState<NinjaComboStats | null>(null);
+  const [shadowStrikeFullStats, setShadowStrikeFullStats] = useState<ShadowStrikeStats | null>(null);
+  const [bladeDashFullStats, setBladeDashFullStats] = useState<BladeDashStats | null>(null);
   const [gaveFeedback, setGaveFeedback] = useState(false);
   const [previewAsVisitor, setPreviewAsVisitor] = useState(false);
   const [editingSocials, setEditingSocials] = useState(false);
@@ -337,6 +343,8 @@ export default function PlayerProfile() {
     loadKnockoutStats(profileUid).then((s) => setKnockoutFullStats(s ?? null)).catch(() => {});
     loadBrawlStats(profileUid).then((s) => setBrawlFullStats(s ?? null)).catch(() => {});
     loadNinjaComboStats(profileUid).then((s) => setNinjaComboFullStats(s ?? null)).catch(() => {});
+    loadShadowStrikeStats(profileUid).then((s) => setShadowStrikeFullStats(s ?? null)).catch(() => {});
+    loadBladeDashStats(profileUid).then((s) => setBladeDashFullStats(s ?? null)).catch(() => {});
     hasUserSubmittedFeedback(profileUid).then(setGaveFeedback).catch(() => {});
   }, [profileUid]);
 
@@ -358,9 +366,9 @@ export default function PlayerProfile() {
       || new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
     [fm]
   );
-  const computedAchievements = useMemo(() => evaluateAchievements(fm, overall, heroStats, opponentStats, kudosCounts, fabdokuFullStats ?? undefined, heroGuesserFullStats ?? undefined, matchupManiaFullStats ?? undefined, triviaFullStats ?? undefined, timelineFullStats ?? undefined, connectionsFullStats ?? undefined, fabdokuCardFullStats ?? undefined, rampageFullStats ?? undefined, knockoutFullStats ?? undefined, brawlFullStats ?? undefined, ninjaComboFullStats ?? undefined, crosswordFullStats ?? undefined), [fm, overall, heroStats, opponentStats, kudosCounts, fabdokuFullStats, heroGuesserFullStats, matchupManiaFullStats, triviaFullStats, timelineFullStats, connectionsFullStats, fabdokuCardFullStats, rampageFullStats, knockoutFullStats, brawlFullStats, ninjaComboFullStats, crosswordFullStats]);
+  const computedAchievements = useMemo(() => evaluateAchievements(fm, overall, heroStats, opponentStats, kudosCounts, fabdokuFullStats ?? undefined, heroGuesserFullStats ?? undefined, matchupManiaFullStats ?? undefined, triviaFullStats ?? undefined, timelineFullStats ?? undefined, connectionsFullStats ?? undefined, fabdokuCardFullStats ?? undefined, rampageFullStats ?? undefined, knockoutFullStats ?? undefined, brawlFullStats ?? undefined, ninjaComboFullStats ?? undefined, crosswordFullStats ?? undefined, shadowStrikeFullStats ?? undefined, bladeDashFullStats ?? undefined), [fm, overall, heroStats, opponentStats, kudosCounts, fabdokuFullStats, heroGuesserFullStats, matchupManiaFullStats, triviaFullStats, timelineFullStats, connectionsFullStats, fabdokuCardFullStats, rampageFullStats, knockoutFullStats, brawlFullStats, ninjaComboFullStats, crosswordFullStats, shadowStrikeFullStats, bladeDashFullStats]);
   const achievements = useMemo(() => [...userBadges, ...computedAchievements], [userBadges, computedAchievements]);
-  const achievementProgress = useMemo(() => getAchievementProgress(fm, overall, heroStats, opponentStats, kudosCounts, fabdokuFullStats ?? undefined, heroGuesserFullStats ?? undefined, matchupManiaFullStats ?? undefined, triviaFullStats ?? undefined, timelineFullStats ?? undefined, connectionsFullStats ?? undefined, fabdokuCardFullStats ?? undefined, rampageFullStats ?? undefined, knockoutFullStats ?? undefined, brawlFullStats ?? undefined, ninjaComboFullStats ?? undefined, crosswordFullStats ?? undefined), [fm, overall, heroStats, opponentStats, kudosCounts, fabdokuFullStats, heroGuesserFullStats, matchupManiaFullStats, triviaFullStats, timelineFullStats, connectionsFullStats, fabdokuCardFullStats, rampageFullStats, knockoutFullStats, brawlFullStats, ninjaComboFullStats, crosswordFullStats]);
+  const achievementProgress = useMemo(() => getAchievementProgress(fm, overall, heroStats, opponentStats, kudosCounts, fabdokuFullStats ?? undefined, heroGuesserFullStats ?? undefined, matchupManiaFullStats ?? undefined, triviaFullStats ?? undefined, timelineFullStats ?? undefined, connectionsFullStats ?? undefined, fabdokuCardFullStats ?? undefined, rampageFullStats ?? undefined, knockoutFullStats ?? undefined, brawlFullStats ?? undefined, ninjaComboFullStats ?? undefined, crosswordFullStats ?? undefined, shadowStrikeFullStats ?? undefined, bladeDashFullStats ?? undefined), [fm, overall, heroStats, opponentStats, kudosCounts, fabdokuFullStats, heroGuesserFullStats, matchupManiaFullStats, triviaFullStats, timelineFullStats, connectionsFullStats, fabdokuCardFullStats, rampageFullStats, knockoutFullStats, brawlFullStats, ninjaComboFullStats, crosswordFullStats, shadowStrikeFullStats, bladeDashFullStats]);
   const masteries = useMemo(() => computeHeroMastery(heroStats), [heroStats]);
   const bestFinish = useMemo(() => computeBestFinish(eventStats), [eventStats]);
   const playoffFinishes = useMemo(() => computePlayoffFinishes(eventStats), [eventStats]);

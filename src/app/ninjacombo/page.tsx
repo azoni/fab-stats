@@ -12,6 +12,7 @@ import { logActivity } from "@/lib/activity-log";
 import { HowToPlay } from "@/components/dice/HowToPlay";
 import { detectTierUp, type BadgeTierInfo } from "@/lib/badge-tiers";
 import { BadgeTierUpPopup } from "@/components/profile/BadgeTierUpPopup";
+import { syncAchievementsAfterGame } from "@/lib/achievement-tracking";
 import type { NinjaComboGameState, NinjaComboStats } from "@/lib/ninjacombo/types";
 
 function getTodayDateStr(): string {
@@ -70,6 +71,7 @@ export default function NinjaComboPage() {
               setStats(s);
               const tierUp = detectTierUp("ninjacombo-player", oldGamesPlayed, s.gamesPlayed);
               if (tierUp) setBadgeTierUp({ tier: tierUp, count: s.gamesPlayed });
+              syncAchievementsAfterGame(user.uid).catch(() => {});
             }
           })
           .catch(console.error);

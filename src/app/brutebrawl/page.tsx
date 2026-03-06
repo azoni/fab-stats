@@ -13,6 +13,7 @@ import { logActivity } from "@/lib/activity-log";
 import { HowToPlay } from "@/components/dice/HowToPlay";
 import { detectTierUp, type BadgeTierInfo } from "@/lib/badge-tiers";
 import { BadgeTierUpPopup } from "@/components/profile/BadgeTierUpPopup";
+import { syncAchievementsAfterGame } from "@/lib/achievement-tracking";
 import type { BrawlGameState, BrawlStats } from "@/lib/brutebrawl/types";
 
 function getTodayDateStr(): string {
@@ -74,6 +75,7 @@ export default function BruteBrawlPage() {
               setStats(s);
               const tierUp = detectTierUp("brutebrawl-player", oldGamesPlayed, s.gamesPlayed);
               if (tierUp) setBadgeTierUp({ tier: tierUp, count: s.gamesPlayed });
+              syncAchievementsAfterGame(user.uid).catch(() => {});
             }
           })
           .catch(console.error);

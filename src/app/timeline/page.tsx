@@ -12,6 +12,7 @@ import { createTimelineFeedEvent } from "@/lib/feed";
 import { logActivity } from "@/lib/activity-log";
 import { detectTierUp } from "@/lib/badge-tiers";
 import { BadgeTierUpPopup } from "@/components/profile/BadgeTierUpPopup";
+import { syncAchievementsAfterGame } from "@/lib/achievement-tracking";
 import type { TimelineGameState, TimelineStats, TimelinePlacement } from "@/lib/timeline/types";
 import type { TimelineItem } from "@/lib/timeline/types";
 
@@ -116,6 +117,7 @@ export default function TimelinePage() {
               setStats(s);
               const tierUp = detectTierUp("timeline-player", oldGamesPlayed, s.gamesPlayed);
               if (tierUp) setBadgeTierUp({ tier: tierUp, count: s.gamesPlayed });
+              syncAchievementsAfterGame(user.uid).catch(() => {});
             }
           })
           .catch(console.error);

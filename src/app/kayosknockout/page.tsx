@@ -13,6 +13,7 @@ import { allHeroes } from "@/lib/heroes";
 import { HowToPlay } from "@/components/dice/HowToPlay";
 import { detectTierUp, type BadgeTierInfo } from "@/lib/badge-tiers";
 import { BadgeTierUpPopup } from "@/components/profile/BadgeTierUpPopup";
+import { syncAchievementsAfterGame } from "@/lib/achievement-tracking";
 import type { KnockoutGameState, KnockoutStats } from "@/lib/kayosknockout/types";
 
 function getTodayDateStr(): string {
@@ -75,6 +76,7 @@ export default function KayosKnockoutPage() {
               setStats(s);
               const tierUp = detectTierUp("kayosknockout-player", oldGamesPlayed, s.gamesPlayed);
               if (tierUp) setBadgeTierUp({ tier: tierUp, count: s.gamesPlayed });
+              syncAchievementsAfterGame(user.uid).catch(() => {});
             }
           })
           .catch(console.error);
