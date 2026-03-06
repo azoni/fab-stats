@@ -475,10 +475,11 @@ export default async function handler(req: Request) {
   }
 
   // Auth
-  const userId = await verifyFirebaseToken(req);
-  if (!userId) {
+  const auth = await verifyFirebaseToken(req);
+  if (!auth) {
     return jsonResponse({ error: "Authentication required" }, 401);
   }
+  const userId = auth.uid;
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {

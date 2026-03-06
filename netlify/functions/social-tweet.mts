@@ -31,18 +31,13 @@ function jsonResponse(body: any, status: number) {
 
 // ── Admin Check ──
 
-async function checkIsAdmin(userId: string): Promise<boolean> {
+async function checkIsAdmin(email: string | null): Promise<boolean> {
+  if (!email) return false;
   const db = getAdminDb();
   const snap = await db.doc("admin/config").get();
   const data = snap.data();
   if (!data?.adminEmails?.length) return false;
-
-  // Look up user's email from their profile
-  const profileSnap = await db.doc(`users/${userId}/profile/main`).get();
-  const profile = profileSnap.data();
-  if (!profile?.email) return false;
-
-  return data.adminEmails.includes(profile.email);
+  return data.adminEmails.includes(email);
 }
 
 // ── Data Fetching ──
@@ -349,13 +344,13 @@ export default async function handler(req: Request) {
     return jsonResponse({ error: "Method not allowed" }, 405);
   }
 
-  const userId = await verifyFirebaseToken(req);
-  if (!userId) {
+  const auth = await verifyFirebaseToken(req);
+  if (!auth) {
     return jsonResponse({ error: "Authentication required" }, 401);
   }
 
   // Admin only
-  const isAdmin = await checkIsAdmin(userId);
+  const isAdmin = await checkIsAdmin(auth.email);
   if (!isAdmin) {
     return jsonResponse({ error: "Admin access required" }, 403);
   }

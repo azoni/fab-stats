@@ -1,12 +1,18 @@
 /**
  * Verify a Firebase ID token by calling the Google Identity Toolkit REST API.
- * Returns the user's UID if valid, or null if invalid/missing.
+ * Returns the user's UID and email if valid, or null if invalid/missing.
  *
  * Usage in Netlify functions:
- *   const uid = await verifyFirebaseToken(req);
- *   if (!uid) return new Response("Unauthorized", { status: 401 });
+ *   const auth = await verifyFirebaseToken(req);
+ *   if (!auth) return new Response("Unauthorized", { status: 401 });
+ *   // auth.uid, auth.email
  */
-export async function verifyFirebaseToken(req: Request): Promise<string | null> {
+export interface FirebaseAuthResult {
+  uid: string;
+  email: string | null;
+}
+
+export async function verifyFirebaseToken(req: Request): Promise<FirebaseAuthResult | null> {
   const authHeader = req.headers.get("Authorization");
   if (!authHeader?.startsWith("Bearer ")) return null;
 
@@ -29,8 +35,10 @@ export async function verifyFirebaseToken(req: Request): Promise<string | null> 
     if (!res.ok) return null;
 
     const data = await res.json();
-    const uid = data?.users?.[0]?.localId;
-    return uid || null;
+    const user = data?.users?.[0];
+    const uid = user?.localId;
+    if (!uid) return null;
+    return { uid, email: user?.email || null };
   } catch {
     return null;
   }

@@ -25,13 +25,14 @@ export default async function handler(req: Request) {
   }
 
   // Verify Firebase authentication
-  const uid = await verifyFirebaseToken(req);
-  if (!uid) {
+  const auth = await verifyFirebaseToken(req);
+  if (!auth) {
     return new Response(
       JSON.stringify({ error: "Authentication required" }),
       { status: 401, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }
     );
   }
+  const uid = auth.uid;
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
