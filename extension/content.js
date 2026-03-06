@@ -691,6 +691,8 @@
   btn.className = "fab-stats-export-btn";
   btn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;margin-right:6px;"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>Export All';
   Object.assign(btn.style, {
+    width: "100%",
+    boxSizing: "border-box",
     padding: "12px 20px",
     background: "linear-gradient(135deg, #60a5fa, #3b82f6, #2563eb)",
     color: "#ffffff",
@@ -719,6 +721,8 @@
   const quickBtn = document.createElement("button");
   quickBtn.innerHTML = '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-1px;margin-right:5px;"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>Quick Sync';
   Object.assign(quickBtn.style, {
+    width: "100%",
+    boxSizing: "border-box",
     padding: "8px 16px",
     background: "rgba(30, 30, 50, 0.95)",
     color: "#60a5fa",
@@ -847,13 +851,15 @@
     });
 
     pagesInput.addEventListener("focus", () => {
-      syncMode = "pages";
-      saveSyncOpts();
-      renderSelector();
-      setTimeout(() => {
-        const inp = selectorWrap.querySelector("input");
-        if (inp) inp.focus();
-      }, 0);
+      if (syncMode !== "pages") {
+        syncMode = "pages";
+        saveSyncOpts();
+        renderSelector();
+        setTimeout(() => {
+          const inp = selectorWrap.querySelector("input");
+          if (inp) inp.focus();
+        }, 0);
+      }
     });
 
     pagesInput.addEventListener("input", () => {
@@ -867,9 +873,13 @@
 
     pagesWrap.addEventListener("click", (e) => {
       if (e.target === pagesInput) return;
-      syncMode = "pages";
-      saveSyncOpts();
-      renderSelector();
+      if (syncMode !== "pages") {
+        syncMode = "pages";
+        saveSyncOpts();
+        renderSelector();
+      }
+      // Focus the input so user can type immediately
+      pagesInput.focus();
     });
 
     pagesWrap.appendChild(pagesLabel);
