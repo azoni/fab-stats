@@ -30,114 +30,11 @@ import { getEventShowcase } from "@/lib/event-showcase";
 import { EventShowcase } from "@/components/home/EventShowcase";
 import { BadgeStrip } from "@/components/profile/BadgeStrip";
 import { getHeroByName } from "@/lib/heroes";
-import { loadUserResult, loadStats } from "@/lib/fabdoku/firestore";
-import { loadCardStats as loadFabdokuCardStats } from "@/lib/fabdoku/card-firestore";
-import { loadStats as loadCrosswordStats } from "@/lib/crossword/firestore";
-import { loadStats as loadHeroGuesserStats } from "@/lib/heroguesser/firestore";
-import { loadStats as loadMatchupManiaStats } from "@/lib/matchupmania/firestore";
-import { loadStats as loadTriviaStats } from "@/lib/trivia/firestore";
-import { loadStats as loadTimelineStats } from "@/lib/timeline/firestore";
-import { loadStats as loadConnectionsStats } from "@/lib/connections/firestore";
-import { loadStats as loadRampageStats } from "@/lib/rhinarsrampage/firestore";
-import { loadStats as loadKnockoutStats } from "@/lib/kayosknockout/firestore";
-import { loadStats as loadBrawlStats } from "@/lib/brutebrawl/firestore";
-import { loadStats as loadNinjaComboStats } from "@/lib/ninjacombo/firestore";
-import type { FaBdokuStats } from "@/lib/fabdoku/types";
-import type { CrosswordStats } from "@/lib/crossword/types";
-import type { HeroGuesserStats } from "@/lib/heroguesser/types";
-import type { MatchupManiaStats } from "@/lib/matchupmania/types";
-import type { TriviaStats } from "@/lib/trivia/types";
-import type { TimelineStats } from "@/lib/timeline/types";
-import type { ConnectionsStats } from "@/lib/connections/types";
-import type { RampageStats } from "@/lib/rhinarsrampage/types";
-import type { KnockoutStats } from "@/lib/kayosknockout/types";
-import type { BrawlStats } from "@/lib/brutebrawl/types";
-import type { NinjaComboStats } from "@/lib/ninjacombo/types";
-import { getTodayDateStr } from "@/lib/fabdoku/puzzle-generator";
 import { loadKudosCounts } from "@/lib/kudos";
 import { hasUserSubmittedFeedback } from "@/lib/feedback";
 import { CardBorderWrapper } from "@/components/profile/CardBorderWrapper";
 import type { UnderlineConfig } from "@/components/profile/CardBorderWrapper";
 import type { Poll, EventShowcaseConfig } from "@/types";
-
-function ResourcesPopout() {
-  const [open, setOpen] = useState(false);
-  const btnRef = useRef<HTMLButtonElement>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
-  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
-
-  useEffect(() => {
-    function handleClick(e: MouseEvent) {
-      if (
-        btnRef.current && !btnRef.current.contains(e.target as Node) &&
-        menuRef.current && !menuRef.current.contains(e.target as Node)
-      ) setOpen(false);
-    }
-    if (open) document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, [open]);
-
-  useEffect(() => {
-    if (open && btnRef.current) {
-      const r = btnRef.current.getBoundingClientRect();
-      setPos({ top: r.bottom + 4, left: r.left });
-    }
-  }, [open]);
-
-  const links = [
-    { href: "/docs", label: "Docs", icon: "M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" },
-    { href: "/changelog", label: "Changelog", icon: "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" },
-    { href: "/roadmap", label: "Roadmap", badge: "New" as const, icon: "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" },
-  ];
-
-  return (
-    <>
-      <button
-        ref={btnRef}
-        onClick={() => setOpen(!open)}
-        className="group relative flex items-center gap-3 pl-3 pr-5 py-3 rounded-2xl shrink-0 overflow-hidden bg-gradient-to-br from-zinc-500/10 via-zinc-900/20 to-transparent border border-zinc-500/20 hover:border-zinc-400/40 hover:shadow-[0_0_24px_rgba(161,161,170,0.08)] hover:-translate-y-0.5 transition-all duration-300"
-      >
-        <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-zinc-400/40 to-transparent" />
-        <div className="w-10 h-10 rounded-xl bg-zinc-500/15 flex items-center justify-center shrink-0 ring-1 ring-inset ring-zinc-500/20 group-hover:bg-zinc-500/20 group-hover:ring-zinc-400/30 transition-all">
-          <svg className="w-5 h-5 text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-          </svg>
-        </div>
-        <div>
-          <p className="text-sm font-bold text-fab-text leading-tight">Read</p>
-          <p className="text-[11px] text-zinc-400/70 font-semibold leading-tight">Resources</p>
-        </div>
-      </button>
-
-      {open && pos && (
-        <div
-          ref={menuRef}
-          className="fixed w-48 bg-fab-surface border border-fab-border rounded-lg shadow-xl overflow-hidden z-50"
-          style={{ top: pos.top, left: pos.left }}
-        >
-          <div className="p-1.5">
-            {links.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                onClick={() => setOpen(false)}
-                className="flex items-center gap-2.5 px-3 py-2 rounded-md text-sm font-medium text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover transition-colors"
-              >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d={link.icon} />
-                </svg>
-                {link.label}
-                {"badge" in link && link.badge && (
-                  <span className="ml-auto text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-teal-400/15 text-teal-400 border border-teal-400/25">{link.badge}</span>
-                )}
-              </Link>
-            ))}
-          </div>
-        </div>
-      )}
-    </>
-  );
-}
 
 export default function Dashboard() {
   const { matches, isLoaded } = useMatches();
@@ -150,39 +47,13 @@ export default function Dashboard() {
   const [profileShareOpen, setProfileShareOpen] = useState(false);
   const [activePrediction, setActivePrediction] = useState<Poll | null>(null);
   const [showcaseConfig, setShowcaseConfig] = useState<EventShowcaseConfig | null>(null);
-  const [fabdokuScore, setFabdokuScore] = useState<number | null>(null);
-  const [fabdokuFullStats, setFabdokuFullStats] = useState<FaBdokuStats | null>(null);
-  const [crosswordFullStats, setCrosswordFullStats] = useState<CrosswordStats | null>(null);
-  const [heroGuesserFullStats, setHeroGuesserFullStats] = useState<HeroGuesserStats | null>(null);
-  const [matchupManiaFullStats, setMatchupManiaFullStats] = useState<MatchupManiaStats | null>(null);
-  const [triviaFullStats, setTriviaFullStats] = useState<TriviaStats | null>(null);
-  const [timelineFullStats, setTimelineFullStats] = useState<TimelineStats | null>(null);
-  const [connectionsFullStats, setConnectionsFullStats] = useState<ConnectionsStats | null>(null);
-  const [fabdokuCardFullStats, setFabdokuCardFullStats] = useState<FaBdokuStats | null>(null);
-  const [rampageFullStats, setRampageFullStats] = useState<RampageStats | null>(null);
-  const [knockoutFullStats, setKnockoutFullStats] = useState<KnockoutStats | null>(null);
-  const [brawlFullStats, setBrawlFullStats] = useState<BrawlStats | null>(null);
-  const [ninjaComboFullStats, setNinjaComboFullStats] = useState<NinjaComboStats | null>(null);
   const [gaveFeedback, setGaveFeedback] = useState(false);
   const [kudosTotal, setKudosTotal] = useState<number | null>(null);
   const leaderboardUpdated = useRef(false);
 
-  // Load today's fabdoku score, stats, kudos total, and crossword stats for the current user
+  // Load kudos total and feedback status for the current user
   useEffect(() => {
     if (!user) return;
-    loadUserResult(user.uid, getTodayDateStr()).then((r) => setFabdokuScore(r?.score ?? null)).catch(() => {});
-    loadStats(user.uid).then((s) => setFabdokuFullStats(s ?? null)).catch(() => {});
-    loadCrosswordStats(user.uid).then((s) => setCrosswordFullStats(s ?? null)).catch(() => {});
-    loadHeroGuesserStats(user.uid).then((s) => setHeroGuesserFullStats(s ?? null)).catch(() => {});
-    loadMatchupManiaStats(user.uid).then((s) => setMatchupManiaFullStats(s ?? null)).catch(() => {});
-    loadTriviaStats(user.uid).then((s) => setTriviaFullStats(s ?? null)).catch(() => {});
-    loadTimelineStats(user.uid).then((s) => setTimelineFullStats(s ?? null)).catch(() => {});
-    loadConnectionsStats(user.uid).then((s) => setConnectionsFullStats(s ?? null)).catch(() => {});
-    loadFabdokuCardStats(user.uid).then((s) => setFabdokuCardFullStats(s ?? null)).catch(() => {});
-    loadRampageStats(user.uid).then((s) => setRampageFullStats(s ?? null)).catch(() => {});
-    loadKnockoutStats(user.uid).then((s) => setKnockoutFullStats(s ?? null)).catch(() => {});
-    loadBrawlStats(user.uid).then((s) => setBrawlFullStats(s ?? null)).catch(() => {});
-    loadNinjaComboStats(user.uid).then((s) => setNinjaComboFullStats(s ?? null)).catch(() => {});
     loadKudosCounts(user.uid).then((c) => setKudosTotal(c.total > 0 ? c.total : null)).catch(() => {});
     hasUserSubmittedFeedback(user.uid).then(setGaveFeedback).catch(() => {});
   }, [user]);
@@ -438,39 +309,6 @@ export default function Dashboard() {
             </div>
           </Link>
 
-          {/* Tools — teal beta */}
-          <Link href="/tools" className="group relative flex items-center gap-3 pl-3 pr-5 py-3 rounded-2xl shrink-0 overflow-hidden bg-gradient-to-br from-teal-500/10 via-teal-950/20 to-transparent border border-dashed border-teal-500/20 hover:border-teal-400/40 hover:shadow-[0_0_24px_rgba(20,184,166,0.08)] hover:-translate-y-0.5 transition-all duration-300">
-            <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-teal-400/40 to-transparent" />
-            <div className="w-10 h-10 rounded-xl bg-teal-500/15 flex items-center justify-center shrink-0 ring-1 ring-inset ring-teal-500/20 group-hover:bg-teal-500/20 group-hover:ring-teal-400/30 transition-all">
-              <svg className="w-5 h-5 text-teal-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M11.42 15.17L17.25 21A2.652 2.652 0 0021 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 11-3.586-3.586l6.837-5.63m5.108-.233c.55-.164 1.163-.188 1.743-.14a4.5 4.5 0 004.486-6.336l-3.276 3.277a3.004 3.004 0 01-2.25-2.25l3.276-3.276a4.5 4.5 0 00-6.336 4.486c.091 1.076-.071 2.264-.904 2.95l-.102.085m-1.745 1.437L5.909 7.5H4.5L2.25 3.75l1.5-1.5L7.5 4.5v1.409l4.26 4.26m-1.745 1.437l1.745-1.437m6.615 8.206L15.75 15.75M4.867 19.125h.008v.008h-.008v-.008z" />
-              </svg>
-            </div>
-            <div>
-              <div className="flex items-center gap-1.5">
-                <p className="text-sm font-bold text-fab-text leading-tight">Tools</p>
-                <span className="text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-teal-400/15 text-teal-400 border border-teal-400/25">Beta</span>
-              </div>
-              <p className="text-[11px] text-teal-400/70 font-semibold leading-tight">Player tools</p>
-            </div>
-          </Link>
-
-          {/* Resources — popout with docs/changelog/roadmap */}
-          <ResourcesPopout />
-
-          {/* Log — gold action */}
-          <Link href="/events?import=1" className="group relative flex items-center gap-3 pl-3 pr-5 py-3 rounded-2xl shrink-0 overflow-hidden bg-gradient-to-br from-fab-gold/10 via-amber-950/20 to-transparent border border-dashed border-fab-gold/25 hover:border-fab-gold/45 hover:shadow-[0_0_24px_rgba(201,168,76,0.08)] hover:-translate-y-0.5 transition-all duration-300">
-            <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-fab-gold/40 to-transparent" />
-            <div className="w-10 h-10 rounded-xl bg-fab-gold/15 flex items-center justify-center shrink-0 ring-1 ring-inset ring-fab-gold/20 group-hover:bg-fab-gold/20 group-hover:ring-fab-gold/30 transition-all">
-              <svg className="w-5 h-5 text-fab-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-              </svg>
-            </div>
-            <div>
-              <p className="text-sm font-bold text-fab-text leading-tight">Log</p>
-              <p className="text-[11px] text-fab-gold/70 font-semibold leading-tight">Quick add</p>
-            </div>
-          </Link>
         </div>
       )}
 

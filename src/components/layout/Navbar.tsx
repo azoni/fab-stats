@@ -63,18 +63,18 @@ function SearchIcon({ className = "w-4 h-4" }: { className?: string }) {
   );
 }
 
-const navLinks: { href: string; label: string; icon: ReactNode; color: string; bg: string }[] = [
+const navLinks: { href: string; label: string; icon: ReactNode; color: string; bg: string; authOnly?: boolean }[] = [
   { href: "/leaderboard", label: "Rankings", icon: <TrophyIcon className="w-4 h-4" />, color: "text-amber-400", bg: "bg-amber-400/10" },
+  { href: "/trends", label: "My Stats", icon: <TrendsIcon className="w-4 h-4" />, color: "text-fab-gold", bg: "bg-fab-gold/10", authOnly: true },
+  { href: "/matches", label: "Matches", icon: <SwordsIcon className="w-4 h-4" />, color: "text-red-400", bg: "bg-red-400/10" },
   { href: "/meta", label: "Meta", icon: <MetaIcon className="w-4 h-4" />, color: "text-teal-400", bg: "bg-teal-400/10" },
-  { href: "/tournaments", label: "Tournaments", icon: <CalendarIcon className="w-4 h-4" />, color: "text-orange-400", bg: "bg-orange-400/10" },
 ];
 
 const moreLinks: { href: string; label: string; icon: ReactNode; authOnly?: boolean; adminOnly?: boolean; badge?: string; divider?: boolean; sectionLabel?: string }[] = [
-  { href: "/matches", label: "Matches", icon: <SwordsIcon className="w-4 h-4" /> },
   { href: "/events", label: "Events", icon: <CalendarIcon className="w-4 h-4" /> },
   { href: "/opponents", label: "Opponents", icon: <OpponentsIcon className="w-4 h-4" /> },
   { href: "/compare", label: "Versus", icon: <CompareIcon className="w-4 h-4" /> },
-  { href: "/trends", label: "My Stats", icon: <TrendsIcon className="w-4 h-4" />, authOnly: true },
+  { href: "/tournaments", label: "Tournaments", icon: <CalendarIcon className="w-4 h-4" /> },
   { href: "/tools", label: "Player Tools", badge: "Beta", icon: (
     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M11.42 15.17L17.25 21A2.652 2.652 0 0021 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 11-3.586-3.586l6.837-5.63m5.108-.233c.55-.164 1.163-.188 1.743-.14a4.5 4.5 0 004.486-6.336l-3.276 3.277a3.004 3.004 0 01-2.25-2.25l3.276-3.276a4.5 4.5 0 00-6.336 4.486c.091 1.076-.071 2.264-.904 2.95l-.102.085m-1.745 1.437L5.909 7.5H4.5L2.25 3.75l1.5-1.5L7.5 4.5v1.409l4.26 4.26m-1.745 1.437l1.745-1.437m6.615 8.206L15.75 15.75M4.867 19.125h.008v.008h-.008v-.008z" />
@@ -185,7 +185,7 @@ export function Navbar() {
               <>
                 {/* Main nav links — hidden on mobile */}
                 <div className="hidden md:flex items-center gap-0.5">
-                  {navLinks.map((link) => (
+                  {navLinks.filter((link) => !link.authOnly || isAuthenticated).map((link) => (
                     <Link
                       key={link.href}
                       href={link.href}

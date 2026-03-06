@@ -213,7 +213,7 @@ service cloud.firestore {
       // Only public profiles can create feed events
       allow create: if request.auth != null
         && request.resource.data.userId == request.auth.uid
-        && request.resource.data.type in ["import", "achievement", "placement", "fabdoku", "fabdoku-cards", "crossword", "heroguesser", "matchupmania", "trivia", "timeline", "connections", "rhinarsrampage", "kayosknockout", "brutebrawl", "ninjacombo", "shadowstrike", "bladedash"]
+        && request.resource.data.type in ["import", "achievement", "placement", "fabdoku", "fabdoku-cards", "crossword", "heroguesser", "matchupmania", "trivia", "timeline", "connections", "rampage", "kayosknockout", "brutebrawl", "ninjacombo", "shadowstrike", "bladedash"]
         && request.resource.data.isPublic == true;
       // Reactions: any authenticated user can toggle reactions
       allow update: if request.auth != null

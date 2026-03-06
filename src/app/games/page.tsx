@@ -40,6 +40,7 @@ const CATEGORY_BORDER_COLORS: Record<string, string> = {
   puzzle: "border-l-emerald-500/50",
   knowledge: "border-l-purple-500/50",
   dice: "border-l-red-500/50",
+  ninja: "border-l-cyan-500/50",
 };
 
 export default function GamesPage() {
