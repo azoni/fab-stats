@@ -352,9 +352,9 @@ export default function PlayerProfile() {
       || new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
     [fm]
   );
-  const computedAchievements = useMemo(() => evaluateAchievements(fm, overall, heroStats, opponentStats, kudosCounts, fabdokuFullStats ?? undefined, heroGuesserFullStats ?? undefined, matchupManiaFullStats ?? undefined, triviaFullStats ?? undefined, timelineFullStats ?? undefined, connectionsFullStats ?? undefined, fabdokuCardFullStats ?? undefined), [fm, overall, heroStats, opponentStats, kudosCounts, fabdokuFullStats, heroGuesserFullStats, matchupManiaFullStats, triviaFullStats, timelineFullStats, connectionsFullStats, fabdokuCardFullStats]);
+  const computedAchievements = useMemo(() => evaluateAchievements(fm, overall, heroStats, opponentStats, kudosCounts, fabdokuFullStats ?? undefined, heroGuesserFullStats ?? undefined, matchupManiaFullStats ?? undefined, triviaFullStats ?? undefined, timelineFullStats ?? undefined, connectionsFullStats ?? undefined, fabdokuCardFullStats ?? undefined, rampageFullStats ?? undefined, knockoutFullStats ?? undefined, brawlFullStats ?? undefined), [fm, overall, heroStats, opponentStats, kudosCounts, fabdokuFullStats, heroGuesserFullStats, matchupManiaFullStats, triviaFullStats, timelineFullStats, connectionsFullStats, fabdokuCardFullStats, rampageFullStats, knockoutFullStats, brawlFullStats]);
   const achievements = useMemo(() => [...userBadges, ...computedAchievements], [userBadges, computedAchievements]);
-  const achievementProgress = useMemo(() => getAchievementProgress(fm, overall, heroStats, opponentStats, kudosCounts, fabdokuFullStats ?? undefined, heroGuesserFullStats ?? undefined, matchupManiaFullStats ?? undefined, triviaFullStats ?? undefined, timelineFullStats ?? undefined, connectionsFullStats ?? undefined, fabdokuCardFullStats ?? undefined), [fm, overall, heroStats, opponentStats, kudosCounts, fabdokuFullStats, heroGuesserFullStats, matchupManiaFullStats, triviaFullStats, timelineFullStats, connectionsFullStats, fabdokuCardFullStats]);
+  const achievementProgress = useMemo(() => getAchievementProgress(fm, overall, heroStats, opponentStats, kudosCounts, fabdokuFullStats ?? undefined, heroGuesserFullStats ?? undefined, matchupManiaFullStats ?? undefined, triviaFullStats ?? undefined, timelineFullStats ?? undefined, connectionsFullStats ?? undefined, fabdokuCardFullStats ?? undefined, rampageFullStats ?? undefined, knockoutFullStats ?? undefined, brawlFullStats ?? undefined), [fm, overall, heroStats, opponentStats, kudosCounts, fabdokuFullStats, heroGuesserFullStats, matchupManiaFullStats, triviaFullStats, timelineFullStats, connectionsFullStats, fabdokuCardFullStats, rampageFullStats, knockoutFullStats, brawlFullStats]);
   const masteries = useMemo(() => computeHeroMastery(heroStats), [heroStats]);
   const bestFinish = useMemo(() => computeBestFinish(eventStats), [eventStats]);
   const playoffFinishes = useMemo(() => computePlayoffFinishes(eventStats), [eventStats]);
@@ -1091,7 +1091,9 @@ export default function PlayerProfile() {
             triviaGames: triviaFullStats?.gamesPlayed ?? 0,
             timelineGames: timelineFullStats?.gamesPlayed ?? 0,
             connectionsGames: connectionsFullStats?.gamesPlayed ?? 0,
-            bruteBrawlerGames: (rampageFullStats?.gamesPlayed ?? 0) + (knockoutFullStats?.gamesPlayed ?? 0) + (brawlFullStats?.gamesPlayed ?? 0),
+            bruteBrawlerGames: (rampageFullStats?.gamesPlayed ?? 0) >= 1 && (knockoutFullStats?.gamesPlayed ?? 0) >= 1 && (brawlFullStats?.gamesPlayed ?? 0) >= 1
+              ? (rampageFullStats?.gamesPlayed ?? 0) + (knockoutFullStats?.gamesPlayed ?? 0) + (brawlFullStats?.gamesPlayed ?? 0)
+              : 0,
             submittedFeedback: gaveFeedback,
           }}
           onClose={() => setProfileShareOpen(false)}

@@ -7,6 +7,9 @@ import type { MatchupManiaStats } from "@/lib/matchupmania/types";
 import type { TriviaStats } from "@/lib/trivia/types";
 import type { TimelineStats } from "@/lib/timeline/types";
 import type { ConnectionsStats } from "@/lib/connections/types";
+import type { RampageStats } from "@/lib/rhinarsrampage/types";
+import type { KnockoutStats } from "@/lib/kayosknockout/types";
+import type { BrawlStats } from "@/lib/brutebrawl/types";
 
 interface CheckContext {
   matches: MatchRecord[];
@@ -21,6 +24,9 @@ interface CheckContext {
   triviaStats?: TriviaStats;
   timelineStats?: TimelineStats;
   connectionsStats?: ConnectionsStats;
+  rampageStats?: RampageStats;
+  knockoutStats?: KnockoutStats;
+  brawlStats?: BrawlStats;
 }
 
 interface AchievementProgress {
@@ -2557,6 +2563,62 @@ const ACHIEVEMENTS: AchievementDef[] = [
     check: (ctx) => (ctx.connectionsStats?.gamesPlayed ?? 0) >= 1000,
     progress: (ctx) => ({ current: ctx.connectionsStats?.gamesPlayed ?? 0, target: 1000 }),
   },
+
+  // ── Brute Dice (combined: Rhinar's Rampage + Kayo's Knockout + Brute Brawl) ──
+  {
+    id: "brute_dice_1", name: "Brute Initiate", description: "Complete 1 Brute Dice game",
+    category: "fun", icon: "dice", rarity: "common", group: "brute_dice", tier: 1,
+    check: (ctx) => ((ctx.rampageStats?.gamesPlayed ?? 0) + (ctx.knockoutStats?.gamesPlayed ?? 0) + (ctx.brawlStats?.gamesPlayed ?? 0)) >= 1,
+    progress: (ctx) => ({ current: (ctx.rampageStats?.gamesPlayed ?? 0) + (ctx.knockoutStats?.gamesPlayed ?? 0) + (ctx.brawlStats?.gamesPlayed ?? 0), target: 1 }),
+  },
+  {
+    id: "brute_dice_5", name: "Brute Scrapper", description: "Complete 5 Brute Dice games",
+    category: "fun", icon: "dice", rarity: "common", group: "brute_dice", tier: 2,
+    check: (ctx) => ((ctx.rampageStats?.gamesPlayed ?? 0) + (ctx.knockoutStats?.gamesPlayed ?? 0) + (ctx.brawlStats?.gamesPlayed ?? 0)) >= 5,
+    progress: (ctx) => ({ current: (ctx.rampageStats?.gamesPlayed ?? 0) + (ctx.knockoutStats?.gamesPlayed ?? 0) + (ctx.brawlStats?.gamesPlayed ?? 0), target: 5 }),
+  },
+  {
+    id: "brute_dice_10", name: "Brute Fighter", description: "Complete 10 Brute Dice games",
+    category: "fun", icon: "dice", rarity: "uncommon", group: "brute_dice", tier: 3,
+    check: (ctx) => ((ctx.rampageStats?.gamesPlayed ?? 0) + (ctx.knockoutStats?.gamesPlayed ?? 0) + (ctx.brawlStats?.gamesPlayed ?? 0)) >= 10,
+    progress: (ctx) => ({ current: (ctx.rampageStats?.gamesPlayed ?? 0) + (ctx.knockoutStats?.gamesPlayed ?? 0) + (ctx.brawlStats?.gamesPlayed ?? 0), target: 10 }),
+  },
+  {
+    id: "brute_dice_25", name: "Brute Brawler", description: "Complete 25 Brute Dice games",
+    category: "fun", icon: "dice", rarity: "uncommon", group: "brute_dice", tier: 4,
+    check: (ctx) => ((ctx.rampageStats?.gamesPlayed ?? 0) + (ctx.knockoutStats?.gamesPlayed ?? 0) + (ctx.brawlStats?.gamesPlayed ?? 0)) >= 25,
+    progress: (ctx) => ({ current: (ctx.rampageStats?.gamesPlayed ?? 0) + (ctx.knockoutStats?.gamesPlayed ?? 0) + (ctx.brawlStats?.gamesPlayed ?? 0), target: 25 }),
+  },
+  {
+    id: "brute_dice_50", name: "Brute Warrior", description: "Complete 50 Brute Dice games",
+    category: "fun", icon: "dice", rarity: "rare", group: "brute_dice", tier: 5,
+    check: (ctx) => ((ctx.rampageStats?.gamesPlayed ?? 0) + (ctx.knockoutStats?.gamesPlayed ?? 0) + (ctx.brawlStats?.gamesPlayed ?? 0)) >= 50,
+    progress: (ctx) => ({ current: (ctx.rampageStats?.gamesPlayed ?? 0) + (ctx.knockoutStats?.gamesPlayed ?? 0) + (ctx.brawlStats?.gamesPlayed ?? 0), target: 50 }),
+  },
+  {
+    id: "brute_dice_100", name: "Brute Champion", description: "Complete 100 Brute Dice games",
+    category: "fun", icon: "dice", rarity: "rare", group: "brute_dice", tier: 6,
+    check: (ctx) => ((ctx.rampageStats?.gamesPlayed ?? 0) + (ctx.knockoutStats?.gamesPlayed ?? 0) + (ctx.brawlStats?.gamesPlayed ?? 0)) >= 100,
+    progress: (ctx) => ({ current: (ctx.rampageStats?.gamesPlayed ?? 0) + (ctx.knockoutStats?.gamesPlayed ?? 0) + (ctx.brawlStats?.gamesPlayed ?? 0), target: 100 }),
+  },
+  {
+    id: "brute_dice_250", name: "Brute Warlord", description: "Complete 250 Brute Dice games",
+    category: "fun", icon: "dice", rarity: "epic", group: "brute_dice", tier: 7,
+    check: (ctx) => ((ctx.rampageStats?.gamesPlayed ?? 0) + (ctx.knockoutStats?.gamesPlayed ?? 0) + (ctx.brawlStats?.gamesPlayed ?? 0)) >= 250,
+    progress: (ctx) => ({ current: (ctx.rampageStats?.gamesPlayed ?? 0) + (ctx.knockoutStats?.gamesPlayed ?? 0) + (ctx.brawlStats?.gamesPlayed ?? 0), target: 250 }),
+  },
+  {
+    id: "brute_dice_500", name: "Brute Overlord", description: "Complete 500 Brute Dice games",
+    category: "fun", icon: "dice", rarity: "legendary", group: "brute_dice", tier: 8,
+    check: (ctx) => ((ctx.rampageStats?.gamesPlayed ?? 0) + (ctx.knockoutStats?.gamesPlayed ?? 0) + (ctx.brawlStats?.gamesPlayed ?? 0)) >= 500,
+    progress: (ctx) => ({ current: (ctx.rampageStats?.gamesPlayed ?? 0) + (ctx.knockoutStats?.gamesPlayed ?? 0) + (ctx.brawlStats?.gamesPlayed ?? 0), target: 500 }),
+  },
+  {
+    id: "brute_dice_1000", name: "Brute Legend", description: "Complete 1000 Brute Dice games",
+    category: "fun", icon: "dice", rarity: "legendary", group: "brute_dice", tier: 9,
+    check: (ctx) => ((ctx.rampageStats?.gamesPlayed ?? 0) + (ctx.knockoutStats?.gamesPlayed ?? 0) + (ctx.brawlStats?.gamesPlayed ?? 0)) >= 1000,
+    progress: (ctx) => ({ current: (ctx.rampageStats?.gamesPlayed ?? 0) + (ctx.knockoutStats?.gamesPlayed ?? 0) + (ctx.brawlStats?.gamesPlayed ?? 0), target: 1000 }),
+  },
 ];
 
 /** Evaluate which achievements a player has earned */
@@ -2573,8 +2635,11 @@ export function evaluateAchievements(
   timelineStats?: TimelineStats,
   connectionsStats?: ConnectionsStats,
   fabdokuCardStats?: FaBdokuStats,
+  rampageStats?: RampageStats,
+  knockoutStats?: KnockoutStats,
+  brawlStats?: BrawlStats,
 ): Achievement[] {
-  const ctx: CheckContext = { matches, overall, heroStats, opponentStats, kudosCounts, fabdokuStats, fabdokuCardStats, heroGuesserStats, matchupManiaStats, triviaStats, timelineStats, connectionsStats };
+  const ctx: CheckContext = { matches, overall, heroStats, opponentStats, kudosCounts, fabdokuStats, fabdokuCardStats, heroGuesserStats, matchupManiaStats, triviaStats, timelineStats, connectionsStats, rampageStats, knockoutStats, brawlStats };
   return ACHIEVEMENTS.filter((a) => a.check(ctx)).map(({ check: _, progress: _p, ...rest }) => rest);
 }
 
@@ -2597,8 +2662,11 @@ export function getAchievementProgress(
   timelineStats?: TimelineStats,
   connectionsStats?: ConnectionsStats,
   fabdokuCardStats?: FaBdokuStats,
+  rampageStats?: RampageStats,
+  knockoutStats?: KnockoutStats,
+  brawlStats?: BrawlStats,
 ): Record<string, { current: number; target: number }> {
-  const ctx: CheckContext = { matches, overall, heroStats, opponentStats, kudosCounts, fabdokuStats, fabdokuCardStats, heroGuesserStats, matchupManiaStats, triviaStats, timelineStats, connectionsStats };
+  const ctx: CheckContext = { matches, overall, heroStats, opponentStats, kudosCounts, fabdokuStats, fabdokuCardStats, heroGuesserStats, matchupManiaStats, triviaStats, timelineStats, connectionsStats, rampageStats, knockoutStats, brawlStats };
   const result: Record<string, { current: number; target: number }> = {};
   for (const a of ACHIEVEMENTS) {
     if (a.progress) {
