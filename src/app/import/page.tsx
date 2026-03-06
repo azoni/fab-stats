@@ -280,6 +280,7 @@ export default function ImportPage() {
 
     // Compute session recap + achievements + placements before showing results
     let afterMatches: MatchRecord[] = [];
+    let newlyImported: MatchRecord[] = [];
     let detectedNew: Achievement[] = [];
     let freshFinishes: PlayoffFinish[] = [];
 
@@ -291,7 +292,7 @@ export default function ImportPage() {
           afterMatches = getLocalMatches();
         }
         const beforeIds = new Set(beforeMatches.map((m) => m.id));
-        const newlyImported = afterMatches.filter((m) => !beforeIds.has(m.id));
+        newlyImported = afterMatches.filter((m) => !beforeIds.has(m.id));
         const recap = computeSessionRecap(beforeMatches, afterMatches, newlyImported);
         setSessionRecap(recap);
 
@@ -330,7 +331,8 @@ export default function ImportPage() {
     // Post to activity feed + update leaderboard (non-blocking, only for signed-in users with a profile)
     if (user && profile && count > 0) {
       const heroCounts: Record<string, number> = {};
-      for (const m of matches) {
+      const heroSource = newlyImported.length > 0 ? newlyImported : matches;
+      for (const m of heroSource) {
         if (m.heroPlayed && m.heroPlayed !== "Unknown") {
           heroCounts[m.heroPlayed] = (heroCounts[m.heroPlayed] || 0) + 1;
         }

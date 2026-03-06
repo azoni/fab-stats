@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { useConversations } from "@/hooks/useConversations";
 import { getAdminUid } from "@/lib/admin";
+import { InboxIcon as InboxHeaderIcon } from "@/components/icons/NavIcons";
 
 function formatTime(iso: string): string {
   const d = new Date(iso);
@@ -31,18 +32,25 @@ export default function InboxPage() {
 
   if (!user || isGuest) {
     return (
-      <div className="text-center py-24">
-        <InboxIcon className="w-14 h-14 text-fab-muted mb-4 mx-auto" />
-        <h1 className="text-2xl font-bold text-fab-text mb-2">Inbox</h1>
-        <p className="text-fab-muted">Sign in to view your messages.</p>
+      <div className="text-center py-16 text-fab-dim">
+        <p className="text-lg mb-1">Inbox</p>
+        <p className="text-sm">Sign in to view your messages.</p>
       </div>
     );
   }
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-2">
-        <h1 className="text-2xl font-bold text-fab-gold">Inbox</h1>
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-sky-500/10 flex items-center justify-center ring-1 ring-inset ring-sky-500/20">
+            <InboxHeaderIcon className="w-4 h-4 text-sky-400" />
+          </div>
+          <div>
+            <h1 className="text-lg font-bold text-fab-text leading-tight">Inbox</h1>
+            <p className="text-xs text-fab-muted leading-tight">Your conversations</p>
+          </div>
+        </div>
         {adminUid && !isAdmin && (
           <button
             onClick={() => router.push(`/inbox/${adminUid}`)}
@@ -55,7 +63,6 @@ export default function InboxPage() {
           </button>
         )}
       </div>
-      <p className="text-fab-muted text-sm mb-6">Your conversations</p>
 
       {!loaded && (
         <div className="space-y-2">

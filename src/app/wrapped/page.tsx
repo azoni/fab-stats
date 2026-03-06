@@ -109,25 +109,22 @@ export default function WrappedPage() {
 
   if (!isLoaded) {
     return (
-      <div className="flex items-center justify-center py-24">
-        <div className="w-8 h-8 border-2 border-fab-gold/30 border-t-fab-gold rounded-full animate-spin" />
+      <div className="space-y-4">
+        <div className="h-8 w-48 bg-fab-surface rounded animate-pulse" />
+        {[...Array(3)].map((_, i) => (
+          <div key={i} className="h-24 bg-fab-surface rounded-lg animate-pulse" />
+        ))}
       </div>
     );
   }
 
   if (!stats || yearMatches.length < 5) {
     return (
-      <div className="text-center py-24">
-        <p className="text-5xl mb-4">&#9876;</p>
-        <h1 className="text-2xl font-bold text-fab-gold mb-2">
-          {year} Wrapped
-        </h1>
-        <p className="text-fab-muted max-w-md mx-auto">
-          Not enough {year} data yet. Import at least 5 matches from {year} to
-          unlock your year in review.
-        </p>
-        <p className="text-fab-dim text-sm mt-2">
-          {yearMatches.length} match{yearMatches.length !== 1 ? "es" : ""} found
+      <div className="text-center py-16 text-fab-dim">
+        <p className="text-lg mb-1">{year} Wrapped</p>
+        <p className="text-sm">
+          Not enough {year} data yet. Import at least 5 matches from {year} to unlock your year in review.
+          ({yearMatches.length} match{yearMatches.length !== 1 ? "es" : ""} found)
         </p>
       </div>
     );

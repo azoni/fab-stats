@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { LockIcon } from "@/components/icons/NavIcons";
 
 export const metadata: Metadata = {
   title: "Privacy Policy",
@@ -9,8 +10,13 @@ export const metadata: Metadata = {
 
 export default function PrivacyPage() {
   return (
-    <div className="max-w-2xl mx-auto py-12 px-4">
-      <h1 className="text-2xl font-bold text-fab-gold mb-6">Privacy Policy</h1>
+    <div className="max-w-2xl mx-auto">
+      <div className="flex items-center gap-3 mb-6">
+        <div className="w-8 h-8 rounded-lg bg-fab-gold/10 flex items-center justify-center ring-1 ring-inset ring-fab-gold/20">
+          <LockIcon className="w-4 h-4 text-fab-gold" />
+        </div>
+        <h1 className="text-lg font-bold text-fab-text leading-tight">Privacy Policy</h1>
+      </div>
       <div className="space-y-6 text-sm text-fab-muted leading-relaxed">
         <p className="text-fab-text">Last updated: February 2026</p>
 

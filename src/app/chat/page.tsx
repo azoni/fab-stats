@@ -43,7 +43,7 @@ export default function ChatPage() {
 
   if (loading) {
     return (
-      <div className="max-w-3xl mx-auto py-12 px-4">
+      <div className="max-w-3xl mx-auto">
         <div className="h-8 w-48 bg-fab-surface rounded animate-pulse mb-4" />
         <div className="h-[500px] bg-fab-surface border border-fab-border rounded-lg animate-pulse" />
       </div>
@@ -52,12 +52,9 @@ export default function ChatPage() {
 
   if (!user || isGuest) {
     return (
-      <div className="max-w-lg mx-auto py-12 px-4 text-center">
-        <div className="text-4xl mb-4">⚔️</div>
-        <h1 className="text-2xl font-bold text-fab-gold mb-2">AI Chat Assistant</h1>
-        <p className="text-sm text-fab-muted mb-6">
-          Sign in to chat with the FaB Stats AI about your match history, hero performance, and the community meta.
-        </p>
+      <div className="text-center py-16 text-fab-dim">
+        <p className="text-lg mb-1">AI Chat Assistant</p>
+        <p className="text-sm mb-6">Sign in to chat about your match history, hero performance, and the community meta.</p>
         <Link
           href="/login"
           className="inline-block px-6 py-2.5 rounded-lg font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors"
@@ -69,7 +66,7 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto py-6 px-4">
+    <div className="max-w-3xl mx-auto">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">

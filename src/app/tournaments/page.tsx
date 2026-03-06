@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import { useFeaturedEvents } from "@/hooks/useFeaturedEvents";
 import { useLeaderboard } from "@/hooks/useLeaderboard";
 import { TournamentCard } from "@/components/home/TournamentCard";
+import { TrophyIcon } from "@/components/icons/NavIcons";
 
 export default function TournamentsPage() {
   const events = useFeaturedEvents();
@@ -64,9 +65,14 @@ export default function TournamentsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-fab-gold">Tournaments</h1>
-        <p className="text-fab-muted text-sm mt-1">Community tournaments and results</p>
+      <div className="flex items-center gap-3">
+        <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center ring-1 ring-inset ring-amber-500/20">
+          <TrophyIcon className="w-4 h-4 text-amber-400" />
+        </div>
+        <div>
+          <h1 className="text-lg font-bold text-fab-text leading-tight">Tournaments</h1>
+          <p className="text-xs text-fab-muted leading-tight">Community tournaments and results</p>
+        </div>
       </div>
 
       {/* Search + Filters */}

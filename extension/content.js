@@ -689,7 +689,7 @@
 
   const btn = document.createElement("button");
   btn.className = "fab-stats-export-btn";
-  btn.textContent = "\uD83E\uDDEA Export to FaB Stats";
+  btn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;margin-right:6px;"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>Export All';
   Object.assign(btn.style, {
     padding: "12px 20px",
     background: "linear-gradient(135deg, #60a5fa, #3b82f6, #2563eb)",
@@ -717,7 +717,7 @@
   // ── Quick Sync Button ─────────────────────────────────────────
 
   const quickBtn = document.createElement("button");
-  quickBtn.textContent = "\u26A1 Quick Sync";
+  quickBtn.innerHTML = '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-1px;margin-right:5px;"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>Quick Sync';
   Object.assign(quickBtn.style, {
     padding: "8px 16px",
     background: "rgba(30, 30, 50, 0.95)",
@@ -743,19 +743,19 @@
 
   // ── Quick Sync Selector ─────────────────────────────────────
 
-  // Sync mode: "events" or "pages"
-  // Sync count: number of events or pages
+  // Sync mode: "latest" (last 4 events) or "pages" (N pages)
   const stored = JSON.parse(localStorage.getItem("fab-stats-quick-opts") || "null");
-  let syncMode = (stored && stored.mode) || "events";
+  let syncMode = (stored && stored.mode) || "latest";
   let syncCount = (stored && stored.count) || 1;
+  // Migrate old "events" mode to "latest"
+  if (syncMode === "events") { syncMode = "latest"; syncCount = 4; }
 
   function saveSyncOpts() {
     localStorage.setItem("fab-stats-quick-opts", JSON.stringify({ mode: syncMode, count: syncCount }));
   }
 
   function getSyncOpts() {
-    if (syncMode === "events") return { maxEvents: syncCount };
-    if (syncMode === "pages" && syncCount === 0) return {}; // 0 = all
+    if (syncMode === "latest") return { maxEvents: 4 };
     return { maxPages: syncCount };
   }
 
@@ -767,214 +767,117 @@
     padding: "6px",
   });
 
-  function makePill(text, isActive, onClick) {
-    const b = document.createElement("button");
-    b.textContent = text;
-    Object.assign(b.style, {
-      padding: "3px 7px",
-      background: isActive ? "rgba(96,165,250,0.2)" : "transparent",
-      color: isActive ? "#60a5fa" : "#666",
-      border: isActive ? "1px solid #60a5fa" : "1px solid transparent",
-      borderRadius: "5px",
-      fontSize: "10px",
-      fontWeight: "600",
-      cursor: "pointer",
-      fontFamily: "inherit",
-      transition: "all 0.15s",
-      lineHeight: "1.3",
-    });
-    b.addEventListener("click", onClick);
-    return b;
-  }
-
   function renderSelector() {
     selectorWrap.innerHTML = "";
 
-    // ─ Mode tabs: Events | Pages ─
-    const modeRow = document.createElement("div");
-    Object.assign(modeRow.style, {
+    const row = document.createElement("div");
+    Object.assign(row.style, {
       display: "flex",
-      gap: "2px",
-      marginBottom: "5px",
-      background: "rgba(0,0,0,0.3)",
-      borderRadius: "4px",
-      padding: "2px",
+      gap: "4px",
+      alignItems: "center",
     });
 
-    const evtTab = document.createElement("button");
-    evtTab.textContent = "Events";
-    const isEvt = syncMode === "events";
-    Object.assign(evtTab.style, {
+    // ─ Latest button ─
+    const latestBtn = document.createElement("button");
+    latestBtn.textContent = "Latest";
+    const isLatest = syncMode === "latest";
+    Object.assign(latestBtn.style, {
       flex: "1",
-      padding: "3px 0",
-      background: isEvt ? "rgba(96,165,250,0.2)" : "transparent",
-      color: isEvt ? "#60a5fa" : "#666",
-      border: "none",
-      borderRadius: "3px",
-      fontSize: "10px",
+      padding: "5px 0",
+      background: isLatest ? "rgba(96,165,250,0.2)" : "transparent",
+      color: isLatest ? "#60a5fa" : "#666",
+      border: isLatest ? "1px solid #60a5fa" : "1px solid #444",
+      borderRadius: "6px",
+      fontSize: "11px",
       fontWeight: "700",
       cursor: "pointer",
       fontFamily: "inherit",
       transition: "all 0.15s",
     });
-    evtTab.addEventListener("click", () => {
-      syncMode = "events";
-      if (syncCount === 0) syncCount = 1; // no "All" for events
+    latestBtn.addEventListener("click", () => {
+      syncMode = "latest";
       saveSyncOpts();
       renderSelector();
     });
 
-    const pgTab = document.createElement("button");
-    pgTab.textContent = "Pages";
-    const isPg = syncMode === "pages";
-    Object.assign(pgTab.style, {
+    // ─ Pages button + input ─
+    const pagesWrap = document.createElement("div");
+    const isPages = syncMode === "pages";
+    Object.assign(pagesWrap.style, {
       flex: "1",
-      padding: "3px 0",
-      background: isPg ? "rgba(96,165,250,0.2)" : "transparent",
-      color: isPg ? "#60a5fa" : "#666",
-      border: "none",
-      borderRadius: "3px",
-      fontSize: "10px",
-      fontWeight: "700",
+      display: "flex",
+      gap: "3px",
+      alignItems: "center",
+      justifyContent: "center",
+      padding: "3px 6px",
+      background: isPages ? "rgba(96,165,250,0.2)" : "transparent",
+      border: isPages ? "1px solid #60a5fa" : "1px solid #444",
+      borderRadius: "6px",
       cursor: "pointer",
-      fontFamily: "inherit",
       transition: "all 0.15s",
     });
-    pgTab.addEventListener("click", () => {
+
+    const pagesLabel = document.createElement("span");
+    pagesLabel.textContent = "Pages";
+    Object.assign(pagesLabel.style, {
+      color: isPages ? "#60a5fa" : "#666",
+      fontSize: "11px",
+      fontWeight: "700",
+      fontFamily: "inherit",
+      whiteSpace: "nowrap",
+    });
+
+    const pagesInput = document.createElement("input");
+    pagesInput.type = "number";
+    pagesInput.min = "1";
+    pagesInput.max = "999";
+    pagesInput.value = isPages ? String(syncCount) : "1";
+    Object.assign(pagesInput.style, {
+      width: "32px",
+      padding: "2px 3px",
+      background: isPages ? "rgba(0,0,0,0.3)" : "rgba(0,0,0,0.2)",
+      color: isPages ? "#60a5fa" : "#888",
+      border: "1px solid " + (isPages ? "rgba(96,165,250,0.5)" : "#333"),
+      borderRadius: "4px",
+      fontSize: "11px",
+      fontWeight: "600",
+      fontFamily: "inherit",
+      textAlign: "center",
+      outline: "none",
+    });
+
+    pagesInput.addEventListener("focus", () => {
+      syncMode = "pages";
+      saveSyncOpts();
+      renderSelector();
+      setTimeout(() => {
+        const inp = selectorWrap.querySelector("input");
+        if (inp) inp.focus();
+      }, 0);
+    });
+
+    pagesInput.addEventListener("input", () => {
+      const v = parseInt(pagesInput.value);
+      if (v > 0) {
+        syncMode = "pages";
+        syncCount = v;
+        saveSyncOpts();
+      }
+    });
+
+    pagesWrap.addEventListener("click", (e) => {
+      if (e.target === pagesInput) return;
       syncMode = "pages";
       saveSyncOpts();
       renderSelector();
     });
 
-    modeRow.appendChild(evtTab);
-    modeRow.appendChild(pgTab);
-    selectorWrap.appendChild(modeRow);
+    pagesWrap.appendChild(pagesLabel);
+    pagesWrap.appendChild(pagesInput);
 
-    // ─ Presets + custom input ─
-    const presetRow = document.createElement("div");
-    Object.assign(presetRow.style, {
-      display: "flex",
-      gap: "3px",
-      alignItems: "center",
-    });
-
-    if (syncMode === "events") {
-      const presets = [1, 3, 5];
-      const isCustom = !presets.includes(syncCount);
-      presets.forEach((n) => {
-        presetRow.appendChild(makePill(String(n), syncCount === n && !isCustom, () => {
-          syncCount = n;
-          saveSyncOpts();
-          renderSelector();
-        }));
-      });
-
-      // Custom input
-      const customWrap = document.createElement("div");
-      Object.assign(customWrap.style, {
-        display: "flex",
-        alignItems: "center",
-        gap: "2px",
-        flex: "1",
-      });
-
-      const customInput = document.createElement("input");
-      customInput.type = "number";
-      customInput.min = "1";
-      customInput.max = "999";
-      customInput.placeholder = "#";
-      customInput.value = isCustom ? String(syncCount) : "";
-      Object.assign(customInput.style, {
-        width: "36px",
-        padding: "3px 4px",
-        background: isCustom ? "rgba(96,165,250,0.15)" : "rgba(0,0,0,0.3)",
-        color: isCustom ? "#60a5fa" : "#888",
-        border: isCustom ? "1px solid #60a5fa" : "1px solid #333",
-        borderRadius: "5px",
-        fontSize: "10px",
-        fontWeight: "600",
-        fontFamily: "inherit",
-        textAlign: "center",
-        outline: "none",
-      });
-
-      customInput.addEventListener("input", () => {
-        const v = parseInt(customInput.value);
-        if (v > 0) {
-          syncCount = v;
-          saveSyncOpts();
-          renderSelector();
-        }
-      });
-      customInput.addEventListener("focus", () => {
-        customInput.style.borderColor = "#60a5fa";
-      });
-      customInput.addEventListener("blur", () => {
-        if (!isCustom) customInput.style.borderColor = "#333";
-      });
-
-      customWrap.appendChild(customInput);
-      presetRow.appendChild(customWrap);
-    } else {
-      // Pages mode
-      const presets = [1, 3, 5];
-      const isAll = syncCount === 0;
-      const isCustom = !presets.includes(syncCount) && !isAll;
-
-      presets.forEach((n) => {
-        presetRow.appendChild(makePill(String(n), syncCount === n, () => {
-          syncCount = n;
-          saveSyncOpts();
-          renderSelector();
-        }));
-      });
-
-      presetRow.appendChild(makePill("All", isAll, () => {
-        syncCount = 0;
-        saveSyncOpts();
-        renderSelector();
-      }));
-
-      // Custom input for pages
-      const customInput = document.createElement("input");
-      customInput.type = "number";
-      customInput.min = "1";
-      customInput.max = "999";
-      customInput.placeholder = "#";
-      customInput.value = isCustom ? String(syncCount) : "";
-      Object.assign(customInput.style, {
-        width: "32px",
-        padding: "3px 4px",
-        background: isCustom ? "rgba(96,165,250,0.15)" : "rgba(0,0,0,0.3)",
-        color: isCustom ? "#60a5fa" : "#888",
-        border: isCustom ? "1px solid #60a5fa" : "1px solid #333",
-        borderRadius: "5px",
-        fontSize: "10px",
-        fontWeight: "600",
-        fontFamily: "inherit",
-        textAlign: "center",
-        outline: "none",
-      });
-
-      customInput.addEventListener("input", () => {
-        const v = parseInt(customInput.value);
-        if (v > 0) {
-          syncCount = v;
-          saveSyncOpts();
-          renderSelector();
-        }
-      });
-      customInput.addEventListener("focus", () => {
-        customInput.style.borderColor = "#60a5fa";
-      });
-      customInput.addEventListener("blur", () => {
-        if (!isCustom) customInput.style.borderColor = "#333";
-      });
-
-      presetRow.appendChild(customInput);
-    }
-
-    selectorWrap.appendChild(presetRow);
+    row.appendChild(latestBtn);
+    row.appendChild(pagesWrap);
+    selectorWrap.appendChild(row);
   }
   renderSelector();
 
@@ -1183,21 +1086,20 @@
       '<div style="background:#1a1a2e;border:2px solid #60a5fa;border-radius:16px;padding:28px 32px;max-width:440px;width:90%;text-align:left;box-shadow:0 16px 48px rgba(0,0,0,0.6);">' +
         '<div style="font-size:16px;font-weight:800;color:#60a5fa;margin-bottom:14px;text-align:center;">FaB Stats Extension</div>' +
 
-        '<div style="font-size:12px;color:#e8e0cc;font-weight:700;margin-bottom:4px;">\uD83E\uDDEA Export to FaB Stats</div>' +
+        '<div style="font-size:12px;color:#e8e0cc;font-weight:700;margin-bottom:4px;">Export All</div>' +
         '<div style="font-size:11px;color:#aaa;margin-bottom:12px;line-height:1.6;">' +
           'Full export of your entire GEM history. Scrapes all pages, then opens FaB Stats with a preview where you can review before importing.' +
         '</div>' +
 
-        '<div style="font-size:12px;color:#e8e0cc;font-weight:700;margin-bottom:4px;">\u26A1 Quick Sync</div>' +
+        '<div style="font-size:12px;color:#e8e0cc;font-weight:700;margin-bottom:4px;">Quick Sync</div>' +
         '<div style="font-size:11px;color:#aaa;margin-bottom:12px;line-height:1.6;">' +
           'Fast sync of recent events. Sends data directly to FaB Stats and auto-imports \u2014 no preview step. Use after each tournament to stay up to date.' +
         '</div>' +
 
         '<div style="font-size:12px;color:#e8e0cc;font-weight:700;margin-bottom:4px;">Sync Options</div>' +
         '<div style="font-size:11px;color:#aaa;margin-bottom:12px;line-height:1.6;">' +
-          '<span style="color:#60a5fa;">Events</span> \u2014 Sync a specific number of recent events (tournaments). "1" = just your last event.<br>' +
-          '<span style="color:#60a5fa;">Pages</span> \u2014 Sync by GEM history pages. Each page has ~10 events. "All" = full history.<br>' +
-          'Type a custom number in the input box for any amount.' +
+          '<span style="color:#60a5fa;">Latest</span> \u2014 Syncs your 4 most recent events. Best for staying up to date after a tournament.<br>' +
+          '<span style="color:#60a5fa;">Pages</span> \u2014 Sync by GEM history pages (~10 events per page). Enter how many pages to fetch.' +
         '</div>' +
 
         '<div style="font-size:12px;color:#e8e0cc;font-weight:700;margin-bottom:4px;">Duplicates</div>' +

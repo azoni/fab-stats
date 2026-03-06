@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { MapIcon } from "@/components/icons/NavIcons";
 
 export const metadata: Metadata = {
   title: "Roadmap",
@@ -29,11 +30,16 @@ const statusConfig: Record<Status, { label: string; color: string; bg: string }>
 
 export default function RoadmapPage() {
   return (
-    <div className="max-w-3xl mx-auto py-12 px-4">
-      <h1 className="text-3xl font-bold text-fab-gold mb-2">Roadmap</h1>
-      <p className="text-sm text-fab-muted mb-10">
-        Planned features, improvements, and fixes. Items are added and removed as development progresses.
-      </p>
+    <div className="max-w-3xl mx-auto">
+      <div className="flex items-center gap-3 mb-6">
+        <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center ring-1 ring-inset ring-blue-500/20">
+          <MapIcon className="w-4 h-4 text-blue-400" />
+        </div>
+        <div>
+          <h1 className="text-lg font-bold text-fab-text leading-tight">Roadmap</h1>
+          <p className="text-xs text-fab-muted leading-tight">Planned features, improvements, and fixes</p>
+        </div>
+      </div>
 
       <div className="space-y-3">
         {items.map((item) => {

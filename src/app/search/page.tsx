@@ -45,7 +45,7 @@ export default function SearchPage() {
 function SearchSkeleton() {
   return (
     <div>
-      <h1 className="text-2xl font-bold text-fab-gold mb-6">Search</h1>
+      <div className="h-8 w-48 bg-fab-surface rounded animate-pulse mb-6" />
       <div className="flex gap-3 mb-8">
         <div className="flex-1 h-11 bg-fab-surface border border-fab-border rounded-lg animate-pulse" />
         <div className="w-24 h-11 bg-fab-surface rounded-lg animate-pulse" />
@@ -247,8 +247,9 @@ function SearchContent() {
       )}
 
       {!loading && searched && results.length === 0 && (
-        <div className="text-center py-16">
-          <p className="text-fab-muted">No players found matching &quot;{query}&quot;.</p>
+        <div className="text-center py-16 text-fab-dim">
+          <p className="text-lg mb-1">No players found</p>
+          <p className="text-sm">No results matching &quot;{query}&quot; — try a different name or username.</p>
         </div>
       )}
 

@@ -355,14 +355,9 @@ export default function NotificationsPage() {
       {notificationsEnabled && (
         <>
           {groups.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-fab-surface flex items-center justify-center">
-                <svg className="w-8 h-8 text-fab-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
-                </svg>
-              </div>
-              <p className="text-fab-text font-medium mb-1">No notifications yet</p>
-              <p className="text-sm text-fab-muted max-w-xs mx-auto">
+            <div className="text-center py-16 text-fab-dim">
+              <p className="text-lg mb-1">No notifications yet</p>
+              <p className="text-sm">
                 When someone messages you, sends a friend request, or interacts with your matches, you&apos;ll see it here.
               </p>
             </div>

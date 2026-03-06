@@ -942,12 +942,11 @@ export default function LeaderboardPage() {
 
       {/* ── Empty ── */}
       {!loading && !kudosLoading && !gamesLoading && filtered.length === 0 && (
-        <div className="text-center py-16">
-          <TrophyIcon className="w-14 h-14 text-fab-dim mb-4 mx-auto" />
-          <h2 className="text-lg font-semibold text-fab-text mb-2">
+        <div className="text-center py-16 text-fab-dim">
+          <p className="text-lg mb-1">
             {isSearching ? "No matches" : "No entries yet"}
-          </h2>
-          <p className="text-fab-muted text-sm">
+          </p>
+          <p className="text-sm">
             {isSearching ? `No players matching "${search}" in this category.` : getEmptyMessage(activeTab)}
           </p>
         </div>

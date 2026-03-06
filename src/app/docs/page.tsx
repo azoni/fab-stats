@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { DocsSearch } from "./DocsSearch";
+import { BookIcon } from "@/components/icons/NavIcons";
 
 export const metadata: Metadata = {
   title: "Docs",
@@ -39,7 +40,21 @@ const TOC = [
 
 export default function DocsPage() {
   return (
-    <div className="max-w-5xl mx-auto py-12 px-4 flex gap-10">
+    <div>
+      <div className="flex items-center justify-between gap-4 mb-6">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-violet-500/10 flex items-center justify-center ring-1 ring-inset ring-violet-500/20">
+            <BookIcon className="w-4 h-4 text-violet-400" />
+          </div>
+          <div>
+            <h1 className="text-lg font-bold text-fab-text leading-tight">Documentation</h1>
+            <p className="text-xs text-fab-muted leading-tight">Everything you need to know about FaB Stats</p>
+          </div>
+        </div>
+        <DocsSearch toc={TOC} />
+      </div>
+
+      <div className="max-w-5xl mx-auto flex gap-10">
       {/* Sidebar TOC */}
       <nav className="hidden lg:block shrink-0 w-48 sticky top-20 self-start max-h-[calc(100vh-6rem)] overflow-y-auto">
         <p className="text-xs font-semibold text-fab-muted uppercase tracking-wider mb-3">On this page</p>
@@ -59,14 +74,6 @@ export default function DocsPage() {
 
       {/* Main content */}
       <div className="flex-1 min-w-0">
-        <div className="flex items-center justify-between gap-4 mb-2">
-          <h1 className="text-3xl font-bold text-fab-gold">Documentation</h1>
-          <DocsSearch toc={TOC} />
-        </div>
-        <p className="text-sm text-fab-muted mb-12">
-          Everything you need to know about how FaB Stats works.
-        </p>
-
         <div className="space-y-14">
           {/* ─── About ─── */}
           <section id="about">
@@ -1227,6 +1234,7 @@ export default function DocsPage() {
             Back to top
           </a>
         </div>
+      </div>
       </div>
     </div>
   );

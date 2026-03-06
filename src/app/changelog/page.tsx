@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { SparklesIcon } from "@/components/icons/NavIcons";
 
 export const metadata: Metadata = {
   title: "Changelog",
@@ -225,7 +226,18 @@ function countByType(changes: Change[], type: ChangeType): number {
 
 export default function ChangelogPage() {
   return (
-    <div className="max-w-5xl mx-auto py-12 px-4 flex gap-10">
+    <div>
+      <div className="flex items-center gap-3 mb-6">
+        <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center ring-1 ring-inset ring-amber-500/20">
+          <SparklesIcon className="w-4 h-4 text-amber-400" />
+        </div>
+        <div>
+          <h1 className="text-lg font-bold text-fab-text leading-tight">Changelog</h1>
+          <p className="text-xs text-fab-muted leading-tight">See what&apos;s new, improved, and fixed in FaB Stats</p>
+        </div>
+      </div>
+
+      <div className="max-w-5xl mx-auto flex gap-10">
       {/* Sidebar TOC */}
       <nav className="hidden lg:block shrink-0 w-48 sticky top-20 self-start max-h-[calc(100vh-6rem)] overflow-y-auto">
         <p className="text-xs font-semibold text-fab-muted uppercase tracking-wider mb-3">Releases</p>
@@ -258,11 +270,6 @@ export default function ChangelogPage() {
 
       {/* Main content */}
       <div className="flex-1 min-w-0">
-        <h1 className="text-3xl font-bold text-fab-gold mb-2">Changelog</h1>
-        <p className="text-sm text-fab-muted mb-12">
-          See what&apos;s new, improved, and fixed in FaB Stats.
-        </p>
-
         <div className="space-y-0">
           {changelog.map((entry, entryIdx) => {
             const newCount = countByType(entry.changes, "new");
@@ -332,6 +339,7 @@ export default function ChangelogPage() {
             Back to top
           </a>
         </div>
+      </div>
       </div>
     </div>
   );
