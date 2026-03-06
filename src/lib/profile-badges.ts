@@ -22,6 +22,7 @@ const BADGES: ProfileBadge[] = [
   { id: "trivia-player", name: "Trivia Buff", description: "Completed a FaB Trivia quiz" },
   { id: "timeline-player", name: "Historian", description: "Completed a Timeline challenge" },
   { id: "connections-player", name: "Connector", description: "Completed a Connections puzzle" },
+  { id: "brute-brawler", name: "Brute Brawler", description: "Completed Brute dice games" },
   { id: "feedback-contributor", name: "Feedback Hero", description: "Submitted feedback to help improve the site" },
 ];
 
@@ -36,6 +37,7 @@ export interface BadgeCounts {
   triviaGames?: number;
   timelineGames?: number;
   connectionsGames?: number;
+  bruteBrawlerGames?: number;
   submittedFeedback?: boolean;
 }
 
@@ -49,6 +51,7 @@ const BADGE_COUNT_MAP: Record<string, keyof BadgeCounts> = {
   "trivia-player": "triviaGames",
   "timeline-player": "timelineGames",
   "connections-player": "connectionsGames",
+  "brute-brawler": "bruteBrawlerGames",
 };
 
 export function getProfileBadges(counts: BadgeCounts): ProfileBadgeWithTier[] {

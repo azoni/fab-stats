@@ -431,7 +431,36 @@ export interface ConnectionsFeedEvent extends FeedEventBase {
   mistakesUsed: number;
 }
 
-export type FeedEvent = ImportFeedEvent | AchievementFeedEvent | PlacementFeedEvent | FaBdokuFeedEvent | FaBdokuCardFeedEvent | CrosswordFeedEvent | HeroGuesserFeedEvent | MatchupManiaFeedEvent | TriviaFeedEvent | TimelineFeedEvent | ConnectionsFeedEvent;
+export interface RampageFeedEvent extends FeedEventBase {
+  type: "rampage";
+  subtype: "completed" | "shared";
+  date: string;
+  won: boolean;
+  score: number;
+  targetHP: number;
+}
+
+export interface KnockoutFeedEvent extends FeedEventBase {
+  type: "kayosknockout";
+  subtype: "completed" | "shared";
+  date: string;
+  won: boolean;
+  score: number;
+  targetHP: number;
+}
+
+export interface BrawlFeedEvent extends FeedEventBase {
+  type: "brutebrawl";
+  subtype: "completed" | "shared";
+  date: string;
+  won: boolean;
+  totalDamage: number;
+  targetDamage: number;
+  defenderName: string;
+  difficulty: string;
+}
+
+export type FeedEvent = ImportFeedEvent | AchievementFeedEvent | PlacementFeedEvent | FaBdokuFeedEvent | FaBdokuCardFeedEvent | CrosswordFeedEvent | HeroGuesserFeedEvent | MatchupManiaFeedEvent | TriviaFeedEvent | TimelineFeedEvent | ConnectionsFeedEvent | RampageFeedEvent | KnockoutFeedEvent | BrawlFeedEvent;
 
 export interface Creator {
   name: string;

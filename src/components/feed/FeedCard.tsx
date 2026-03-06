@@ -1,7 +1,7 @@
 "use client";
 import { useState, useCallback } from "react";
 import Link from "next/link";
-import type { FeedEvent, ImportFeedEvent, FaBdokuFeedEvent, FaBdokuCardFeedEvent, CrosswordFeedEvent, HeroGuesserFeedEvent, MatchupManiaFeedEvent, TriviaFeedEvent, TimelineFeedEvent, ConnectionsFeedEvent } from "@/types";
+import type { FeedEvent, ImportFeedEvent, FaBdokuFeedEvent, FaBdokuCardFeedEvent, CrosswordFeedEvent, HeroGuesserFeedEvent, MatchupManiaFeedEvent, TriviaFeedEvent, TimelineFeedEvent, ConnectionsFeedEvent, RampageFeedEvent, KnockoutFeedEvent, BrawlFeedEvent } from "@/types";
 import { rankBorderClass } from "@/lib/leaderboard-ranks";
 import { playerHref } from "@/lib/constants";
 import { FEED_REACTIONS, addFeedReaction, removeFeedReaction, deleteFeedEvent } from "@/lib/feed";
@@ -11,7 +11,7 @@ export interface FeedGroup {
   totalMatchCount: number;
 }
 
-const GAME_TYPES = new Set(["fabdoku", "fabdoku-cards", "crossword", "heroguesser", "matchupmania", "trivia", "timeline", "connections"]);
+const GAME_TYPES = new Set(["fabdoku", "fabdoku-cards", "crossword", "heroguesser", "matchupmania", "trivia", "timeline", "connections", "rampage", "kayosknockout", "brutebrawl"]);
 
 /** Group consecutive import or game feed events from the same user into collapsible groups.
  *  Achievement/placement events are never grouped — they stay as single-item groups. */
@@ -380,6 +380,9 @@ export function FeedCard({ event, compact, rankMap, eventTierMap, underlineTierM
           {event.type === "trivia" && <TriviaContent event={event} compact={compact} />}
           {event.type === "timeline" && <TimelineContent event={event} compact={compact} />}
           {event.type === "connections" && <ConnectionsContent event={event} compact={compact} />}
+          {event.type === "rampage" && <RampageContent event={event} compact={compact} />}
+          {event.type === "kayosknockout" && <KnockoutContent event={event} compact={compact} />}
+          {event.type === "brutebrawl" && <BrawlContent event={event} compact={compact} />}
           <ReactionBar event={event} userId={userId} compact={compact} />
         </div>
       </div>
@@ -988,6 +991,81 @@ export function GroupedFeedCard({ group, compact, rankMap, eventTierMap, underli
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+function RampageContent({ event, compact }: { event: RampageFeedEvent; compact?: boolean }) {
+  const actionText = event.subtype === "shared" ? "shared" : "completed";
+  const statusText = `${event.score}/${event.targetHP} dmg`;
+
+  if (compact) {
+    return (
+      <p className="text-[11px] text-fab-muted">
+        {actionText} Rhinar&apos;s Rampage &middot;{" "}
+        <span className={`font-semibold ${event.won ? "text-fab-win" : "text-fab-loss"}`}>{statusText}</span>
+      </p>
+    );
+  }
+
+  return (
+    <div className="mt-1">
+      <p className="text-sm text-fab-muted">
+        {actionText}{" "}
+        <Link href="/rhinarsrampage" className="font-semibold text-red-400 hover:underline">Rhinar&apos;s Rampage</Link>
+        {" "}&mdash;{" "}
+        <span className={`font-semibold ${event.won ? "text-fab-win" : "text-fab-loss"}`}>{statusText}</span>
+      </p>
+    </div>
+  );
+}
+
+function KnockoutContent({ event, compact }: { event: KnockoutFeedEvent; compact?: boolean }) {
+  const actionText = event.subtype === "shared" ? "shared" : "completed";
+  const statusText = `${event.score}/${event.targetHP} dmg`;
+
+  if (compact) {
+    return (
+      <p className="text-[11px] text-fab-muted">
+        {actionText} Kayo&apos;s Knockout &middot;{" "}
+        <span className={`font-semibold ${event.won ? "text-fab-win" : "text-fab-loss"}`}>{statusText}</span>
+      </p>
+    );
+  }
+
+  return (
+    <div className="mt-1">
+      <p className="text-sm text-fab-muted">
+        {actionText}{" "}
+        <Link href="/kayosknockout" className="font-semibold text-red-400 hover:underline">Kayo&apos;s Knockout</Link>
+        {" "}&mdash;{" "}
+        <span className={`font-semibold ${event.won ? "text-fab-win" : "text-fab-loss"}`}>{statusText}</span>
+      </p>
+    </div>
+  );
+}
+
+function BrawlContent({ event, compact }: { event: BrawlFeedEvent; compact?: boolean }) {
+  const actionText = event.subtype === "shared" ? "shared" : "completed";
+  const statusText = event.won ? `${event.totalDamage}/${event.targetDamage} dmg` : `${event.totalDamage}/${event.targetDamage}`;
+
+  if (compact) {
+    return (
+      <p className="text-[11px] text-fab-muted">
+        {actionText} Brute Brawl vs {event.defenderName} &middot;{" "}
+        <span className={`font-semibold ${event.won ? "text-fab-win" : "text-fab-loss"}`}>{statusText}</span>
+      </p>
+    );
+  }
+
+  return (
+    <div className="mt-1">
+      <p className="text-sm text-fab-muted">
+        {actionText}{" "}
+        <Link href="/brutebrawl" className="font-semibold text-red-400 hover:underline">Brute Brawl</Link>
+        {" "}vs {event.defenderName} ({event.difficulty}) &mdash;{" "}
+        <span className={`font-semibold ${event.won ? "text-fab-win" : "text-fab-loss"}`}>{statusText}</span>
+      </p>
     </div>
   );
 }

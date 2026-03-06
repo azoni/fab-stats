@@ -338,6 +338,34 @@ export function FeedbackContributorBadge({ className = "w-5 h-5" }: { className?
   );
 }
 
+export function BruteBrawlerBadge({ className = "w-5 h-5" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="none">
+      <defs>
+        <radialGradient id="bbGlow" cx="0.5" cy="0.5" r="0.5">
+          <stop offset="0%" stopColor="#ef4444" stopOpacity="0.3" />
+          <stop offset="100%" stopColor="#ef4444" stopOpacity="0" />
+        </radialGradient>
+      </defs>
+      <circle cx="12" cy="12" r="11" fill="url(#bbGlow)" />
+      <path
+        d="M12 2.5c5.2.1 9.3 4.3 9.5 9.5.1 5.2-4.1 9.5-9.3 9.5S2.6 17.3 2.5 12.1C2.4 6.9 6.8 2.4 12 2.5z"
+        stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"
+        fill="currentColor" fillOpacity="0.08"
+      />
+      {/* Dice face with dots */}
+      <rect x="6.5" y="6.5" width="11" height="11" rx="2" fill="#ef4444" fillOpacity="0.25" stroke="#ef4444" strokeWidth="0.8" />
+      <circle cx="9" cy="9" r="1" fill="#fbbf24" />
+      <circle cx="15" cy="9" r="1" fill="#fbbf24" />
+      <circle cx="12" cy="12" r="1" fill="#fbbf24" />
+      <circle cx="9" cy="15" r="1" fill="#fbbf24" />
+      <circle cx="15" cy="15" r="1" fill="#fbbf24" />
+      {/* Fist/impact lines */}
+      <path d="M4 5l1.5 1.5M20 5l-1.5 1.5M4 19l1.5-1.5M20 19l-1.5-1.5" stroke="#ef4444" strokeWidth="0.8" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 export const BADGE_ICON_MAP: Record<string, React.FC<{ className?: string }>> = {
   "first-match": FirstMatchBadge,
   "content-creator": ContentCreatorBadge,
@@ -349,5 +377,6 @@ export const BADGE_ICON_MAP: Record<string, React.FC<{ className?: string }>> = 
   "trivia-player": TriviaPlayerBadge,
   "timeline-player": TimelinePlayerBadge,
   "connections-player": ConnectionsPlayerBadge,
+  "brute-brawler": BruteBrawlerBadge,
   "feedback-contributor": FeedbackContributorBadge,
 };

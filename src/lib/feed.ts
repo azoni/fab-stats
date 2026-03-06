@@ -16,7 +16,7 @@ import {
   type QueryConstraint,
 } from "firebase/firestore";
 import { db } from "./firebase";
-import type { FeedEvent, ImportFeedEvent, AchievementFeedEvent, PlacementFeedEvent, FaBdokuFeedEvent, FaBdokuCardFeedEvent, CrosswordFeedEvent, HeroGuesserFeedEvent, MatchupManiaFeedEvent, TriviaFeedEvent, TimelineFeedEvent, ConnectionsFeedEvent, UserProfile, ImportSource, Achievement, MatchRecord } from "@/types";
+import type { FeedEvent, ImportFeedEvent, AchievementFeedEvent, PlacementFeedEvent, FaBdokuFeedEvent, FaBdokuCardFeedEvent, CrosswordFeedEvent, HeroGuesserFeedEvent, MatchupManiaFeedEvent, TriviaFeedEvent, TimelineFeedEvent, ConnectionsFeedEvent, RampageFeedEvent, KnockoutFeedEvent, BrawlFeedEvent, UserProfile, ImportSource, Achievement, MatchRecord } from "@/types";
 import type { PlayoffFinish } from "./stats";
 
 function feedCollection() {
@@ -764,6 +764,145 @@ export async function deleteAllFeedEventsForUser(userId: string): Promise<void> 
 }
 
 // ── Reactions ──
+
+export async function createRampageFeedEvent(
+  profile: UserProfile,
+  subtype: "completed" | "shared",
+  puzzleDate: string,
+  won: boolean,
+  score: number,
+  targetHP: number,
+): Promise<void> {
+  if (!profile.isPublic || profile.hideFromFeed) return;
+
+  const dupCheck = query(
+    feedCollection(),
+    where("userId", "==", profile.uid),
+    where("type", "==", "rampage"),
+    where("date", "==", puzzleDate),
+    where("subtype", "==", subtype),
+    limit(1),
+  );
+  const existing = await getDocs(dupCheck);
+  if (!existing.empty) return;
+
+  const data: Omit<RampageFeedEvent, "id"> = {
+    type: "rampage",
+    subtype,
+    userId: profile.uid,
+    username: profile.username,
+    displayName: profile.displayName,
+    isPublic: profile.isPublic,
+    date: puzzleDate,
+    won,
+    score,
+    targetHP,
+    createdAt: new Date().toISOString(),
+  };
+
+  const clean: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(data)) {
+    if (v !== undefined) clean[k] = v;
+  }
+  if (profile.photoUrl) clean.photoUrl = profile.photoUrl;
+
+  await addDoc(feedCollection(), clean);
+  invalidateFeedCache();
+}
+
+export async function createKnockoutFeedEvent(
+  profile: UserProfile,
+  subtype: "completed" | "shared",
+  puzzleDate: string,
+  won: boolean,
+  score: number,
+  targetHP: number,
+): Promise<void> {
+  if (!profile.isPublic || profile.hideFromFeed) return;
+
+  const dupCheck = query(
+    feedCollection(),
+    where("userId", "==", profile.uid),
+    where("type", "==", "kayosknockout"),
+    where("date", "==", puzzleDate),
+    where("subtype", "==", subtype),
+    limit(1),
+  );
+  const existing = await getDocs(dupCheck);
+  if (!existing.empty) return;
+
+  const data: Omit<KnockoutFeedEvent, "id"> = {
+    type: "kayosknockout",
+    subtype,
+    userId: profile.uid,
+    username: profile.username,
+    displayName: profile.displayName,
+    isPublic: profile.isPublic,
+    date: puzzleDate,
+    won,
+    score,
+    targetHP,
+    createdAt: new Date().toISOString(),
+  };
+
+  const clean: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(data)) {
+    if (v !== undefined) clean[k] = v;
+  }
+  if (profile.photoUrl) clean.photoUrl = profile.photoUrl;
+
+  await addDoc(feedCollection(), clean);
+  invalidateFeedCache();
+}
+
+export async function createBrawlFeedEvent(
+  profile: UserProfile,
+  subtype: "completed" | "shared",
+  puzzleDate: string,
+  won: boolean,
+  totalDamage: number,
+  targetDamage: number,
+  defenderName: string,
+  difficulty: string,
+): Promise<void> {
+  if (!profile.isPublic || profile.hideFromFeed) return;
+
+  const dupCheck = query(
+    feedCollection(),
+    where("userId", "==", profile.uid),
+    where("type", "==", "brutebrawl"),
+    where("date", "==", puzzleDate),
+    where("subtype", "==", subtype),
+    limit(1),
+  );
+  const existing = await getDocs(dupCheck);
+  if (!existing.empty) return;
+
+  const data: Omit<BrawlFeedEvent, "id"> = {
+    type: "brutebrawl",
+    subtype,
+    userId: profile.uid,
+    username: profile.username,
+    displayName: profile.displayName,
+    isPublic: profile.isPublic,
+    date: puzzleDate,
+    won,
+    totalDamage,
+    targetDamage,
+    defenderName,
+    difficulty,
+    createdAt: new Date().toISOString(),
+  };
+
+  const clean: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(data)) {
+    if (v !== undefined) clean[k] = v;
+  }
+  if (profile.photoUrl) clean.photoUrl = profile.photoUrl;
+
+  await addDoc(feedCollection(), clean);
+  invalidateFeedCache();
+}
 
 export const FEED_REACTIONS = [
   { key: "gg", label: "GG" },

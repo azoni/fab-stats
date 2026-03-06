@@ -19,7 +19,10 @@ export type ActivityAction =
   | "trivia_share"
   | "timeline_share"
   | "connections_share"
-  | "fabdoku_card_share";
+  | "fabdoku_card_share"
+  | "brutebrawl_share"
+  | "rhinarsrampage_share"
+  | "kayosknockout_share";
 
 export interface ActivityEvent {
   id: string;
@@ -91,6 +94,9 @@ export const ACTIVITY_LABELS: Record<ActivityAction, string> = {
   timeline_share: "shared a timeline result",
   connections_share: "shared a connections result",
   fabdoku_card_share: "shared a fabdoku cards result",
+  brutebrawl_share: "shared a brute brawl result",
+  rhinarsrampage_share: "shared a rhinars rampage result",
+  kayosknockout_share: "shared a kayos knockout result",
 };
 
 /** Admin: read feature usage counters (single doc read). */

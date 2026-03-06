@@ -59,6 +59,33 @@ export interface ConnectionsGameStats {
   perfectGames: number;
 }
 
+export interface RampageGameStats {
+  gamesPlayed: number;
+  gamesWon: number;
+  currentStreak: number;
+  maxStreak: number;
+  totalDamageDealt: number;
+  bestDamage: number;
+}
+
+export interface KnockoutGameStats {
+  gamesPlayed: number;
+  gamesWon: number;
+  currentStreak: number;
+  maxStreak: number;
+  totalDamageDealt: number;
+  bestDamage: number;
+}
+
+export interface BrawlGameStats {
+  gamesPlayed: number;
+  gamesWon: number;
+  currentStreak: number;
+  maxStreak: number;
+  totalDamageDealt: number;
+  bestDamage: number;
+}
+
 // ── Merged entry (one per user) ──
 
 export interface GameLeaderboardEntry {
@@ -70,12 +97,15 @@ export interface GameLeaderboardEntry {
   trivia: TriviaGameStats | null;
   timeline: TimelineGameStats | null;
   connections: ConnectionsGameStats | null;
+  rhinarsrampage: RampageGameStats | null;
+  kayosknockout: KnockoutGameStats | null;
+  brutebrawl: BrawlGameStats | null;
   // Computed aggregates
   totalGamesPlayed: number;
   totalGamesWon: number;
   overallWinRate: number;
   bestMaxStreak: number;
-  gamesWithActivity: number; // how many of the 7 games they've played
+  gamesWithActivity: number;
 }
 
 // ── Collection names ──
@@ -88,6 +118,9 @@ const COLLECTIONS = {
   trivia: "triviaPlayerStats",
   timeline: "timelinePlayerStats",
   connections: "connectionsPlayerStats",
+  rhinarsrampage: "rhinarsrampagePlayerStats",
+  kayosknockout: "kayosknockoutPlayerStats",
+  brutebrawl: "brutebrawlPlayerStats",
 } as const;
 
 type GameKey = keyof typeof COLLECTIONS;
@@ -121,8 +154,11 @@ export async function loadAllGameStats(): Promise<GameLeaderboardEntry[]> {
     const trivia = gameData.trivia ? parseTriviaStats(gameData.trivia) : null;
     const timeline = gameData.timeline ? parseTimelineStats(gameData.timeline) : null;
     const connections = gameData.connections ? parseConnectionsStats(gameData.connections) : null;
+    const rhinarsrampage = gameData.rhinarsrampage ? parseDiceGameStats(gameData.rhinarsrampage) : null;
+    const kayosknockout = gameData.kayosknockout ? parseDiceGameStats(gameData.kayosknockout) : null;
+    const brutebrawl = gameData.brutebrawl ? parseDiceGameStats(gameData.brutebrawl) : null;
 
-    const all = [fabdoku, crossword, heroguesser, matchupmania, trivia, timeline, connections];
+    const all = [fabdoku, crossword, heroguesser, matchupmania, trivia, timeline, connections, rhinarsrampage, kayosknockout, brutebrawl];
     const active = all.filter((s): s is NonNullable<typeof s> => s !== null && s.gamesPlayed > 0);
 
     const totalGamesPlayed = active.reduce((sum, s) => sum + s.gamesPlayed, 0);
@@ -142,6 +178,9 @@ export async function loadAllGameStats(): Promise<GameLeaderboardEntry[]> {
       trivia,
       timeline,
       connections,
+      rhinarsrampage,
+      kayosknockout,
+      brutebrawl,
       totalGamesPlayed,
       totalGamesWon,
       overallWinRate,
@@ -209,5 +248,13 @@ function parseConnectionsStats(d: Record<string, unknown>): ConnectionsGameStats
   return {
     ...parseBasicStats(d),
     perfectGames: num(d.perfectGames),
+  };
+}
+
+function parseDiceGameStats(d: Record<string, unknown>): RampageGameStats {
+  return {
+    ...parseBasicStats(d),
+    totalDamageDealt: num(d.totalDamageDealt),
+    bestDamage: num(d.bestDamage),
   };
 }
