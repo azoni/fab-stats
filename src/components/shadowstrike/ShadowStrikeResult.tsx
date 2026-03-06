@@ -25,12 +25,14 @@ export function ShadowStrikeResult({
   won,
   flips,
   elapsedMs,
+  hintsUsed,
   stats,
   onShare,
 }: {
   won: boolean;
   flips: number;
   elapsedMs: number;
+  hintsUsed: number;
   stats: ShadowStrikeStats | null;
   onShare: () => void;
 }) {
@@ -41,7 +43,7 @@ export function ShadowStrikeResult({
           {won ? "Shadow Master!" : "Keep Training"}
         </p>
         <p className="text-sm text-fab-muted">
-          {flips} flips · {formatTime(elapsedMs)}
+          {flips} flips · {formatTime(elapsedMs)}{hintsUsed > 0 && ` · ${hintsUsed} hint${hintsUsed !== 1 ? "s" : ""}`}
         </p>
       </div>
 

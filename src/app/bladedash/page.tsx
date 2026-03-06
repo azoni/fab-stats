@@ -5,11 +5,13 @@ import { GameNav } from "@/components/games/GameNav";
 import { BladeDashBoard } from "@/components/bladedash/BladeDashBoard";
 import { BladeDashResult } from "@/components/bladedash/BladeDashResult";
 import { BladeDashShareCard } from "@/components/bladedash/BladeDashShareCard";
-import { generateDailyWords, WORDS_PER_GAME, MAX_HINTS } from "@/lib/bladedash/puzzle-generator";
+import { generateDailyWords, WORDS_PER_GAME, HINT_FAIL_THRESHOLD } from "@/lib/bladedash/puzzle-generator";
 import { createFreshGameState, loadGameState, saveGameState, cleanupOldStates } from "@/lib/bladedash/game-state";
 import { saveResult, loadStats, markShared } from "@/lib/bladedash/firestore";
 import { createBladeDashFeedEvent } from "@/lib/feed";
 import { logActivity } from "@/lib/activity-log";
+import { detectTierUp, type BadgeTierInfo } from "@/lib/badge-tiers";
+import { BadgeTierUpPopup } from "@/components/profile/BadgeTierUpPopup";
 import type { BladeDashGameState, BladeDashStats } from "@/lib/bladedash/types";
 
 function getTodayDateStr(): string {
@@ -31,6 +33,7 @@ export default function BladeDashPage() {
   const [stats, setStats] = useState<BladeDashStats | null>(null);
   const [showResult, setShowResult] = useState(gameState.completed);
   const [showShare, setShowShare] = useState(false);
+  const [badgeTierUp, setBadgeTierUp] = useState<{ tier: BadgeTierInfo; count: number } | null>(null);
   const completionSaved = useRef(false);
   const sharedDatesRef = useRef(new Set<string>());
 
@@ -63,7 +66,7 @@ export default function BladeDashPage() {
       words: newWords,
       currentWord: nextWord,
       completed,
-      won: completed,
+      won: completed && gameState.totalHintsUsed < HINT_FAIL_THRESHOLD,
       elapsedMs: completed ? currentElapsed : gameState.elapsedMs,
       startedAt: completed ? null : startedAt,
     };
@@ -76,22 +79,30 @@ export default function BladeDashPage() {
 
       if (user && !completionSaved.current) {
         completionSaved.current = true;
+        const didWin = gameState.totalHintsUsed < HINT_FAIL_THRESHOLD;
         const result = {
           date: dateStr,
-          won: true,
+          won: didWin,
           elapsedMs: currentElapsed,
           hintsUsed: gameState.totalHintsUsed,
           wordsSolved: WORDS_PER_GAME,
           timestamp: Date.now(),
           uid: user.uid,
         };
+        const oldGamesPlayed = stats?.gamesPlayed ?? 0;
         saveResult(user.uid, result)
           .then(() => loadStats(user.uid))
-          .then((s) => { if (s) setStats(s); })
+          .then((s) => {
+            if (s) {
+              setStats(s);
+              const tierUp = detectTierUp("bladedash-player", oldGamesPlayed, s.gamesPlayed);
+              if (tierUp) setBadgeTierUp({ tier: tierUp, count: s.gamesPlayed });
+            }
+          })
           .catch(console.error);
 
         if (profile) {
-          createBladeDashFeedEvent(profile, "completed", dateStr, true, currentElapsed, gameState.totalHintsUsed, WORDS_PER_GAME).catch(() => {});
+          createBladeDashFeedEvent(profile, "completed", dateStr, didWin, currentElapsed, gameState.totalHintsUsed, WORDS_PER_GAME).catch(() => {});
         }
       }
     }
@@ -101,7 +112,6 @@ export default function BladeDashPage() {
 
   const handleHint = useCallback(() => {
     if (gameState.completed) return;
-    if (gameState.totalHintsUsed >= MAX_HINTS) return;
 
     const currentWord = daily.words[gameState.currentWord];
     if (!currentWord) return;
@@ -159,7 +169,7 @@ export default function BladeDashPage() {
       <div className="flex items-center justify-between mb-4">
         <div>
           <h1 className="text-lg font-bold text-fab-text">Blade Dash</h1>
-          <p className="text-[10px] text-fab-dim">Unscramble {WORDS_PER_GAME} ninja words · {MAX_HINTS} hints</p>
+          <p className="text-[10px] text-fab-dim">Unscramble {WORDS_PER_GAME} ninja words · {HINT_FAIL_THRESHOLD}+ hints = fail</p>
         </div>
         <p className="text-[10px] text-fab-dim">{dateStr}</p>
       </div>
@@ -182,6 +192,10 @@ export default function BladeDashPage() {
             onShare={() => setShowShare(true)}
           />
         </div>
+      )}
+
+      {badgeTierUp && (
+        <BadgeTierUpPopup badgeId="bladedash-player" badgeName="Blade Dasher" tier={badgeTierUp.tier} count={badgeTierUp.count} onClose={() => setBadgeTierUp(null)} />
       )}
 
       {showShare && (

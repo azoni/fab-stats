@@ -11,6 +11,8 @@ import { saveResult, loadStats, markShared } from "@/lib/ninjacombo/firestore";
 import { createNinjaComboFeedEvent } from "@/lib/feed";
 import { logActivity } from "@/lib/activity-log";
 import { HowToPlay } from "@/components/dice/HowToPlay";
+import { detectTierUp, type BadgeTierInfo } from "@/lib/badge-tiers";
+import { BadgeTierUpPopup } from "@/components/profile/BadgeTierUpPopup";
 import type { NinjaComboGameState, NinjaComboStats } from "@/lib/ninjacombo/types";
 
 function getTodayDateStr(): string {
@@ -30,6 +32,7 @@ export default function NinjaComboPage() {
   const [stats, setStats] = useState<NinjaComboStats | null>(null);
   const [showResult, setShowResult] = useState(gameState.completed);
   const [showShare, setShowShare] = useState(false);
+  const [badgeTierUp, setBadgeTierUp] = useState<{ tier: BadgeTierInfo; count: number } | null>(null);
   const completionSaved = useRef(false);
   const sharedDatesRef = useRef(new Set<string>());
 
@@ -61,9 +64,16 @@ export default function NinjaComboPage() {
           timestamp: Date.now(),
           uid: user.uid,
         };
+        const oldGamesPlayed = stats?.gamesPlayed ?? 0;
         saveResult(user.uid, result)
           .then(() => loadStats(user.uid))
-          .then((s) => { if (s) setStats(s); })
+          .then((s) => {
+            if (s) {
+              setStats(s);
+              const tierUp = detectTierUp("ninjacombo-player", oldGamesPlayed, s.gamesPlayed);
+              if (tierUp) setBadgeTierUp({ tier: tierUp, count: s.gamesPlayed });
+            }
+          })
           .catch(console.error);
 
         if (profile) {
@@ -155,6 +165,10 @@ export default function NinjaComboPage() {
           onClose={() => setShowShare(false)}
           onShared={triggerShared}
         />
+      )}
+
+      {badgeTierUp && (
+        <BadgeTierUpPopup badgeId="ninjacombo-player" badgeName="Ninja" tier={badgeTierUp.tier} count={badgeTierUp.count} onClose={() => setBadgeTierUp(null)} />
       )}
     </div>
   );

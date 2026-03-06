@@ -6,14 +6,8 @@ import { scoreChain } from "@/lib/ninjacombo/puzzle-generator";
 import { playCard, undoLastCard } from "@/lib/ninjacombo/game-state";
 import { HealthBar } from "@/components/dice/HealthBar";
 import { DamagePopup } from "@/components/dice/DamagePopup";
+import { CardTypeIcon } from "./CardTypeIcon";
 import "@/components/dice/dice.css";
-
-const TYPE_EMOJI: Record<string, string> = {
-  kick: "\uD83E\uDDB6",
-  punch: "\uD83D\uDC4A",
-  kunai: "\uD83D\uDDE1\uFE0F",
-  special: "\u26A1",
-};
 
 const CONDITION_LABEL: Record<string, string> = {
   after_kick: "after Kick",
@@ -118,7 +112,7 @@ export function ComboBoard({
                       : "bg-[#0a1a1a] border-cyan-900/30"
                   }`}
                 >
-                  <div className="text-sm">{TYPE_EMOJI[slot.card.type]}</div>
+                  <div className="flex justify-center"><CardTypeIcon type={slot.card.type} className="w-4 h-4 text-cyan-300" /></div>
                   <div className="text-[9px] text-cyan-200 font-medium truncate">{slot.card.name}</div>
                   <div className={`text-xs font-bold ${slot.comboed ? "text-amber-400" : "text-cyan-300"}`}>
                     {slot.totalDamage}
@@ -177,7 +171,7 @@ export function ComboBoard({
                 } disabled:opacity-40 disabled:cursor-not-allowed`}
               >
                 <div className="flex items-center gap-1.5">
-                  <span className="text-base">{TYPE_EMOJI[card.type]}</span>
+                  <CardTypeIcon type={card.type} className="w-5 h-5 text-cyan-300 shrink-0" />
                   <span className="text-xs font-semibold text-cyan-100 truncate">{card.name}</span>
                 </div>
                 <div className="flex items-center justify-between mt-1">

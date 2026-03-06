@@ -12,6 +12,7 @@ export function createFreshGameState(dateStr: string): ShadowStrikeGameState {
     won: false,
     elapsedMs: 0,
     startedAt: null,
+    hintsUsed: 0,
   };
 }
 

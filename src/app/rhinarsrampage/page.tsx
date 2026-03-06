@@ -12,6 +12,8 @@ import { createRampageFeedEvent } from "@/lib/feed";
 import { logActivity } from "@/lib/activity-log";
 import { allHeroes } from "@/lib/heroes";
 import { HowToPlay } from "@/components/dice/HowToPlay";
+import { detectTierUp, type BadgeTierInfo } from "@/lib/badge-tiers";
+import { BadgeTierUpPopup } from "@/components/profile/BadgeTierUpPopup";
 import type { RampageGameState, RampageStats } from "@/lib/rhinarsrampage/types";
 
 function getTodayDateStr(): string {
@@ -34,6 +36,7 @@ export default function RhinarsRampagePage() {
   });
   const [stats, setStats] = useState<RampageStats | null>(null);
   const [showShare, setShowShare] = useState(false);
+  const [badgeTierUp, setBadgeTierUp] = useState<{ tier: BadgeTierInfo; count: number } | null>(null);
   const completionSaved = useRef(false);
   const sharedDatesRef = useRef(new Set<string>());
 
@@ -61,9 +64,16 @@ export default function RhinarsRampagePage() {
         timestamp: Date.now(),
         uid: user.uid,
       };
+      const oldGamesPlayed = stats?.gamesPlayed ?? 0;
       saveResult(user.uid, result)
         .then(() => loadStats(user.uid))
-        .then((s) => { if (s) setStats(s); })
+        .then((s) => {
+          if (s) {
+            setStats(s);
+            const tierUp = detectTierUp("rhinarsrampage-player", oldGamesPlayed, s.gamesPlayed);
+            if (tierUp) setBadgeTierUp({ tier: tierUp, count: s.gamesPlayed });
+          }
+        })
         .catch(console.error);
 
       if (profile) {
@@ -131,6 +141,10 @@ export default function RhinarsRampagePage() {
             triggerShared();
           }}
         />
+      )}
+
+      {badgeTierUp && (
+        <BadgeTierUpPopup badgeId="rhinarsrampage-player" badgeName="Rampager" tier={badgeTierUp.tier} count={badgeTierUp.count} onClose={() => setBadgeTierUp(null)} />
       )}
     </div>
   );

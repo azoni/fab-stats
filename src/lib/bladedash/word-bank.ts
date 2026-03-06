@@ -13,9 +13,9 @@ export const WORD_BANK: BladeDashWord[] = [
   { id: 4,  word: "NUU",    category: "hero",      difficulty: 1 },
   { id: 5,  word: "CLAW",   category: "weapon",    difficulty: 1 },
   { id: 6,  word: "KICK",   category: "attack",    difficulty: 1 },
-  { id: 7,  word: "DASH",   category: "hero",      difficulty: 1 },
+  { id: 7,  word: "BOLT",   category: "attack",    difficulty: 1 },
   { id: 8,  word: "OPT",    category: "mechanic",  difficulty: 1 },
-  { id: 9,  word: "SAI",    category: "weapon",    difficulty: 1 },
+  { id: 9,  word: "ARC",    category: "mechanic",  difficulty: 1 },
   { id: 10, word: "MASK",   category: "equipment", difficulty: 1 },
   { id: 11, word: "JAB",    category: "attack",    difficulty: 1 },
 

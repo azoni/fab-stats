@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from "react";
 import type { BladeDashGameState } from "@/lib/bladedash/types";
 import type { BladeDashWord } from "@/lib/bladedash/word-bank";
-import { WORDS_PER_GAME, MAX_HINTS } from "@/lib/bladedash/puzzle-generator";
+import { WORDS_PER_GAME, HINT_FAIL_THRESHOLD } from "@/lib/bladedash/puzzle-generator";
 
 function formatTime(ms: number): string {
   const totalSecs = Math.floor(ms / 1000);
@@ -109,8 +109,8 @@ export function BladeDashBoard({
       {/* Timer */}
       <div className="text-center mb-3">
         <span className="font-mono text-sm text-fab-text">{formatTime(displayTime)}</span>
-        <span className="ml-3 text-[10px] text-fab-dim">
-          Hints: {gameState.totalHintsUsed}/{MAX_HINTS}
+        <span className={`ml-3 text-[10px] ${gameState.totalHintsUsed >= HINT_FAIL_THRESHOLD ? "text-fab-loss font-medium" : "text-fab-dim"}`}>
+          Hints: {gameState.totalHintsUsed}{gameState.totalHintsUsed >= HINT_FAIL_THRESHOLD ? " (fail)" : ""}
         </span>
       </div>
 
@@ -163,10 +163,13 @@ export function BladeDashBoard({
           <button
             type="button"
             onClick={onHint}
-            disabled={gameState.totalHintsUsed >= MAX_HINTS}
-            className="px-3 py-2 bg-fab-surface border border-fab-border text-fab-muted text-xs font-medium rounded-lg hover:text-fab-text transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            className={`px-3 py-2 border text-xs font-medium rounded-lg transition-colors ${
+              gameState.totalHintsUsed >= HINT_FAIL_THRESHOLD
+                ? "bg-fab-loss/10 border-fab-loss/30 text-fab-loss/70 hover:text-fab-loss"
+                : "bg-fab-surface border-fab-border text-fab-muted hover:text-fab-text"
+            }`}
           >
-            Hint ({MAX_HINTS - gameState.totalHintsUsed})
+            Hint ({gameState.totalHintsUsed})
           </button>
         </div>
       </form>

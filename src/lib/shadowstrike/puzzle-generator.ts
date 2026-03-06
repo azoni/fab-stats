@@ -3,6 +3,7 @@ import { CARD_BANK, type ShadowStrikeCard } from "./card-bank";
 
 export const GRID_SIZE = 4;
 export const TOTAL_PAIRS = 8;
+export const HINT_FAIL_THRESHOLD = 3;
 
 export interface DailyPuzzle {
   cards: ShadowStrikeCard[];

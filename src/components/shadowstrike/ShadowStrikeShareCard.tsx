@@ -10,10 +10,11 @@ function formatTime(ms: number): string {
   return `${m}:${String(s).padStart(2, "0")}`;
 }
 
-function buildShareText(dateStr: string, won: boolean, flips: number, elapsedMs: number): string {
+function buildShareText(dateStr: string, won: boolean, flips: number, elapsedMs: number, hintsUsed: number): string {
   const time = formatTime(elapsedMs);
   const grid = won ? "🟢🟢🟢🟢\n🟢🟢🟢🟢" : "⬛⬛⬛⬛\n⬛⬛⬛⬛";
-  return `Shadow Strike ${dateStr}\n${TOTAL_PAIRS}/${TOTAL_PAIRS} pairs ${won ? "🏆" : ""}\n${flips} flips · ${time}\n\n${grid}\n\nfabstats.net/shadowstrike`;
+  const hintStr = hintsUsed > 0 ? ` · ${hintsUsed} hint${hintsUsed !== 1 ? "s" : ""}` : "";
+  return `Shadow Strike ${dateStr}\n${TOTAL_PAIRS}/${TOTAL_PAIRS} pairs ${won ? "🏆" : ""}\n${flips} flips · ${time}${hintStr}\n\n${grid}\n\nfabstats.net/shadowstrike`;
 }
 
 export function ShadowStrikeShareCard({
@@ -21,6 +22,7 @@ export function ShadowStrikeShareCard({
   won,
   flips,
   elapsedMs,
+  hintsUsed,
   onClose,
   onShared,
 }: {
@@ -28,6 +30,7 @@ export function ShadowStrikeShareCard({
   won: boolean;
   flips: number;
   elapsedMs: number;
+  hintsUsed: number;
   onClose: () => void;
   onShared: () => void;
 }) {
@@ -35,7 +38,7 @@ export function ShadowStrikeShareCard({
   const [status, setStatus] = useState<"idle" | "copied" | "downloaded">("idle");
 
   async function handleCopy() {
-    const text = buildShareText(dateStr, won, flips, elapsedMs);
+    const text = buildShareText(dateStr, won, flips, elapsedMs, hintsUsed);
     const result = await copyCardImage(cardRef.current, {
       backgroundColor: "#0e0c08",
       fileName: `shadowstrike-${dateStr}.png`,
@@ -72,7 +75,7 @@ export function ShadowStrikeShareCard({
             <p className={`text-lg font-bold mt-1 ${won ? "text-fab-win" : "text-fab-loss"}`}>
               {TOTAL_PAIRS}/{TOTAL_PAIRS} pairs
             </p>
-            <p className="text-xs text-fab-muted">{flips} flips · {formatTime(elapsedMs)}</p>
+            <p className="text-xs text-fab-muted">{flips} flips · {formatTime(elapsedMs)}{hintsUsed > 0 && ` · ${hintsUsed} hint${hintsUsed !== 1 ? "s" : ""}`}</p>
           </div>
 
           <div className="grid grid-cols-4 gap-1 justify-items-center">

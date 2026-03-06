@@ -7,6 +7,7 @@ export interface ShadowStrikeGameState {
   won: boolean;
   elapsedMs: number;
   startedAt: number | null;
+  hintsUsed: number;
 }
 
 export interface ShadowStrikeResult {
@@ -15,6 +16,7 @@ export interface ShadowStrikeResult {
   flips: number;
   elapsedMs: number;
   pairsFound: number;
+  hintsUsed: number;
   timestamp: number;
   uid: string;
 }

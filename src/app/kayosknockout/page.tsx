@@ -11,6 +11,8 @@ import { createKnockoutFeedEvent } from "@/lib/feed";
 import { logActivity } from "@/lib/activity-log";
 import { allHeroes } from "@/lib/heroes";
 import { HowToPlay } from "@/components/dice/HowToPlay";
+import { detectTierUp, type BadgeTierInfo } from "@/lib/badge-tiers";
+import { BadgeTierUpPopup } from "@/components/profile/BadgeTierUpPopup";
 import type { KnockoutGameState, KnockoutStats } from "@/lib/kayosknockout/types";
 
 function getTodayDateStr(): string {
@@ -35,6 +37,7 @@ export default function KayosKnockoutPage() {
   const [stats, setStats] = useState<KnockoutStats | null>(null);
   const [showResult, setShowResult] = useState(gameState.completed);
   const [showShare, setShowShare] = useState(false);
+  const [badgeTierUp, setBadgeTierUp] = useState<{ tier: BadgeTierInfo; count: number } | null>(null);
   const completionSaved = useRef(false);
   const sharedDatesRef = useRef(new Set<string>());
 
@@ -64,9 +67,16 @@ export default function KayosKnockoutPage() {
           timestamp: Date.now(),
           uid: user.uid,
         };
+        const oldGamesPlayed = stats?.gamesPlayed ?? 0;
         saveResult(user.uid, result)
           .then(() => loadStats(user.uid))
-          .then((s) => { if (s) setStats(s); })
+          .then((s) => {
+            if (s) {
+              setStats(s);
+              const tierUp = detectTierUp("kayosknockout-player", oldGamesPlayed, s.gamesPlayed);
+              if (tierUp) setBadgeTierUp({ tier: tierUp, count: s.gamesPlayed });
+            }
+          })
           .catch(console.error);
 
         if (profile) {
@@ -136,6 +146,9 @@ export default function KayosKnockoutPage() {
         />
       )}
 
+      {badgeTierUp && (
+        <BadgeTierUpPopup badgeId="kayosknockout-player" badgeName="Knockout Artist" tier={badgeTierUp.tier} count={badgeTierUp.count} onClose={() => setBadgeTierUp(null)} />
+      )}
     </div>
   );
 }

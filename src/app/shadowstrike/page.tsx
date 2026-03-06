@@ -5,11 +5,13 @@ import { GameNav } from "@/components/games/GameNav";
 import { ShadowStrikeBoard } from "@/components/shadowstrike/ShadowStrikeBoard";
 import { ShadowStrikeResult } from "@/components/shadowstrike/ShadowStrikeResult";
 import { ShadowStrikeShareCard } from "@/components/shadowstrike/ShadowStrikeShareCard";
-import { generateDailyPuzzle, TOTAL_PAIRS } from "@/lib/shadowstrike/puzzle-generator";
+import { generateDailyPuzzle, TOTAL_PAIRS, HINT_FAIL_THRESHOLD } from "@/lib/shadowstrike/puzzle-generator";
 import { createFreshGameState, loadGameState, saveGameState, cleanupOldStates } from "@/lib/shadowstrike/game-state";
 import { saveResult, loadStats, markShared } from "@/lib/shadowstrike/firestore";
 import { createShadowStrikeFeedEvent } from "@/lib/feed";
 import { logActivity } from "@/lib/activity-log";
+import { detectTierUp, type BadgeTierInfo } from "@/lib/badge-tiers";
+import { BadgeTierUpPopup } from "@/components/profile/BadgeTierUpPopup";
 import type { ShadowStrikeGameState, ShadowStrikeStats } from "@/lib/shadowstrike/types";
 
 function getTodayDateStr(): string {
@@ -29,6 +31,7 @@ export default function ShadowStrikePage() {
   const [stats, setStats] = useState<ShadowStrikeStats | null>(null);
   const [showResult, setShowResult] = useState(gameState.completed);
   const [showShare, setShowShare] = useState(false);
+  const [badgeTierUp, setBadgeTierUp] = useState<{ tier: BadgeTierInfo; count: number } | null>(null);
   const completionSaved = useRef(false);
   const sharedDatesRef = useRef(new Set<string>());
   const flipLockRef = useRef(false);
@@ -84,7 +87,7 @@ export default function ShadowStrikePage() {
           matchedCardIds: newMatchedCardIds,
           revealedPositions: [],
           completed,
-          won: completed,
+          won: completed && (gameState.hintsUsed ?? 0) < HINT_FAIL_THRESHOLD,
           elapsedMs: finalElapsed ?? gameState.elapsedMs,
           startedAt: completed ? null : startedAt,
         };
@@ -97,22 +100,31 @@ export default function ShadowStrikePage() {
 
           if (user && !completionSaved.current) {
             completionSaved.current = true;
+            const didWin = (gameState.hintsUsed ?? 0) < HINT_FAIL_THRESHOLD;
             const result = {
               date: dateStr,
-              won: true,
+              won: didWin,
               flips: newFlips,
               elapsedMs: currentElapsed,
               pairsFound: TOTAL_PAIRS,
+              hintsUsed: gameState.hintsUsed ?? 0,
               timestamp: Date.now(),
               uid: user.uid,
             };
+            const oldGamesPlayed = stats?.gamesPlayed ?? 0;
             saveResult(user.uid, result)
               .then(() => loadStats(user.uid))
-              .then((s) => { if (s) setStats(s); })
+              .then((s) => {
+                if (s) {
+                  setStats(s);
+                  const tierUp = detectTierUp("shadowstrike-player", oldGamesPlayed, s.gamesPlayed);
+                  if (tierUp) setBadgeTierUp({ tier: tierUp, count: s.gamesPlayed });
+                }
+              })
               .catch(console.error);
 
             if (profile) {
-              createShadowStrikeFeedEvent(profile, "completed", dateStr, true, newFlips, currentElapsed, TOTAL_PAIRS).catch(() => {});
+              createShadowStrikeFeedEvent(profile, "completed", dateStr, didWin, newFlips, currentElapsed, TOTAL_PAIRS).catch(() => {});
             }
           }
         }
@@ -136,6 +148,72 @@ export default function ShadowStrikePage() {
           saveGameState(resetState);
           flipLockRef.current = false;
         }, 800);
+      }
+    }
+  }, [gameState, puzzle, dateStr, user, profile]);
+
+  const handleHint = useCallback(() => {
+    if (gameState.completed || flipLockRef.current) return;
+
+    // Find the first unmatched card ID
+    const unmatchedCardId = puzzle.cards.find((c) => !gameState.matchedCardIds.includes(c.id))?.id;
+    if (unmatchedCardId === undefined) return;
+
+    const now = Date.now();
+    const startedAt = gameState.startedAt ?? now;
+    const currentElapsed = gameState.startedAt
+      ? gameState.elapsedMs + (now - gameState.startedAt)
+      : 0;
+
+    const newMatchedCardIds = [...gameState.matchedCardIds, unmatchedCardId];
+    const newHintsUsed = (gameState.hintsUsed ?? 0) + 1;
+    const completed = newMatchedCardIds.length >= TOTAL_PAIRS;
+
+    const newState: ShadowStrikeGameState = {
+      ...gameState,
+      matchedCardIds: newMatchedCardIds,
+      revealedPositions: [],
+      hintsUsed: newHintsUsed,
+      completed,
+      won: completed && newHintsUsed < HINT_FAIL_THRESHOLD,
+      elapsedMs: completed ? currentElapsed : gameState.elapsedMs,
+      startedAt: completed ? null : startedAt,
+    };
+
+    setGameState(newState);
+    saveGameState(newState);
+
+    if (completed) {
+      setTimeout(() => setShowResult(true), 500);
+
+      if (user && !completionSaved.current) {
+        completionSaved.current = true;
+        const didWin = newHintsUsed < HINT_FAIL_THRESHOLD;
+        const result = {
+          date: dateStr,
+          won: didWin,
+          flips: gameState.flips,
+          elapsedMs: currentElapsed,
+          pairsFound: TOTAL_PAIRS,
+          hintsUsed: newHintsUsed,
+          timestamp: Date.now(),
+          uid: user.uid,
+        };
+        const oldGamesPlayed = stats?.gamesPlayed ?? 0;
+        saveResult(user.uid, result)
+          .then(() => loadStats(user.uid))
+          .then((s) => {
+            if (s) {
+              setStats(s);
+              const tierUp = detectTierUp("shadowstrike-player", oldGamesPlayed, s.gamesPlayed);
+              if (tierUp) setBadgeTierUp({ tier: tierUp, count: s.gamesPlayed });
+            }
+          })
+          .catch(console.error);
+
+        if (profile) {
+          createShadowStrikeFeedEvent(profile, "completed", dateStr, didWin, gameState.flips, currentElapsed, TOTAL_PAIRS).catch(() => {});
+        }
       }
     }
   }, [gameState, puzzle, dateStr, user, profile]);
@@ -168,6 +246,7 @@ export default function ShadowStrikePage() {
         puzzle={puzzle}
         gameState={gameState}
         onFlip={handleFlip}
+        onHint={handleHint}
       />
 
       {showResult && (
@@ -176,10 +255,15 @@ export default function ShadowStrikePage() {
             won={gameState.won}
             flips={gameState.flips}
             elapsedMs={gameState.elapsedMs}
+            hintsUsed={gameState.hintsUsed}
             stats={stats}
             onShare={() => setShowShare(true)}
           />
         </div>
+      )}
+
+      {badgeTierUp && (
+        <BadgeTierUpPopup badgeId="shadowstrike-player" badgeName="Shadow Striker" tier={badgeTierUp.tier} count={badgeTierUp.count} onClose={() => setBadgeTierUp(null)} />
       )}
 
       {showShare && (
@@ -188,6 +272,7 @@ export default function ShadowStrikePage() {
           won={gameState.won}
           flips={gameState.flips}
           elapsedMs={gameState.elapsedMs}
+          hintsUsed={gameState.hintsUsed}
           onClose={() => setShowShare(false)}
           onShared={triggerShared}
         />

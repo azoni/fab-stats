@@ -11,6 +11,8 @@ import { saveResult, loadStats, markShared } from "@/lib/brutebrawl/firestore";
 import { createBrawlFeedEvent } from "@/lib/feed";
 import { logActivity } from "@/lib/activity-log";
 import { HowToPlay } from "@/components/dice/HowToPlay";
+import { detectTierUp, type BadgeTierInfo } from "@/lib/badge-tiers";
+import { BadgeTierUpPopup } from "@/components/profile/BadgeTierUpPopup";
 import type { BrawlGameState, BrawlStats } from "@/lib/brutebrawl/types";
 
 function getTodayDateStr(): string {
@@ -30,6 +32,7 @@ export default function BruteBrawlPage() {
   const [stats, setStats] = useState<BrawlStats | null>(null);
   const [showResult, setShowResult] = useState(gameState.completed);
   const [showShare, setShowShare] = useState(false);
+  const [badgeTierUp, setBadgeTierUp] = useState<{ tier: BadgeTierInfo; count: number } | null>(null);
   const completionSaved = useRef(false);
   const sharedDatesRef = useRef(new Set<string>());
 
@@ -63,9 +66,16 @@ export default function BruteBrawlPage() {
           timestamp: Date.now(),
           uid: user.uid,
         };
+        const oldGamesPlayed = stats?.gamesPlayed ?? 0;
         saveResult(user.uid, result)
           .then(() => loadStats(user.uid))
-          .then((s) => { if (s) setStats(s); })
+          .then((s) => {
+            if (s) {
+              setStats(s);
+              const tierUp = detectTierUp("brutebrawl-player", oldGamesPlayed, s.gamesPlayed);
+              if (tierUp) setBadgeTierUp({ tier: tierUp, count: s.gamesPlayed });
+            }
+          })
           .catch(console.error);
 
         if (profile) {
@@ -156,6 +166,9 @@ export default function BruteBrawlPage() {
         />
       )}
 
+      {badgeTierUp && (
+        <BadgeTierUpPopup badgeId="brutebrawl-player" badgeName="Brawler" tier={badgeTierUp.tier} count={badgeTierUp.count} onClose={() => setBadgeTierUp(null)} />
+      )}
     </div>
   );
 }

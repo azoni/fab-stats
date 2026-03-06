@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import type { ShadowStrikeGameState } from "@/lib/shadowstrike/types";
 import type { DailyPuzzle } from "@/lib/shadowstrike/puzzle-generator";
 import { CARD_BANK } from "@/lib/shadowstrike/card-bank";
-import { TOTAL_PAIRS } from "@/lib/shadowstrike/puzzle-generator";
+import { TOTAL_PAIRS, HINT_FAIL_THRESHOLD } from "@/lib/shadowstrike/puzzle-generator";
 
 function formatTime(ms: number): string {
   const totalSecs = Math.floor(ms / 1000);
@@ -18,10 +18,12 @@ export function ShadowStrikeBoard({
   puzzle,
   gameState,
   onFlip,
+  onHint,
 }: {
   puzzle: DailyPuzzle;
   gameState: ShadowStrikeGameState;
   onFlip: (position: number) => void;
+  onHint: () => void;
 }) {
   const [displayTime, setDisplayTime] = useState(gameState.elapsedMs);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -96,6 +98,25 @@ export function ShadowStrikeBoard({
           );
         })}
       </div>
+
+      {/* Hint button */}
+      {!gameState.completed && (
+        <div className="flex items-center justify-between mt-3">
+          <span className={`text-xs ${gameState.hintsUsed >= HINT_FAIL_THRESHOLD ? "text-red-400" : "text-fab-muted"}`}>
+            Hints: {gameState.hintsUsed}{gameState.hintsUsed >= HINT_FAIL_THRESHOLD && " (fail)"}
+          </span>
+          <button
+            onClick={onHint}
+            className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
+              gameState.hintsUsed >= HINT_FAIL_THRESHOLD
+                ? "bg-red-900/30 text-red-400 hover:bg-red-900/50 border border-red-800/40"
+                : "bg-indigo-900/30 text-indigo-300 hover:bg-indigo-900/50 border border-indigo-700/40"
+            }`}
+          >
+            Hint ({gameState.hintsUsed})
+          </button>
+        </div>
+      )}
     </div>
   );
 }

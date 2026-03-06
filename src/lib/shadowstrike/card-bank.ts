@@ -17,16 +17,16 @@ export const CARD_BANK: ShadowStrikeCard[] = [
   { id: 8,  label: "Uzuri",   emoji: "🗡️", category: "hero" },
   { id: 9,  label: "Arakni",  emoji: "🕸️", category: "hero" },
   { id: 10, label: "Enigma",  emoji: "🔮", category: "hero" },
-  { id: 11, label: "Dash",    emoji: "⚙️", category: "hero" },
-  { id: 12, label: "Viserai", emoji: "💀", category: "hero" },
+  { id: 11, label: "Taipanis", emoji: "🐍", category: "hero" },
+  { id: 12, label: "Verdance", emoji: "🌿", category: "hero" },
 
   // Weapons
   { id: 13, label: "Kodachi",          emoji: "⚔️", category: "weapon" },
   { id: 14, label: "Harmonized Kodachi", emoji: "🎵", category: "weapon" },
   { id: 15, label: "Zephyr Needle",    emoji: "🪡", category: "weapon" },
   { id: 16, label: "Tiger Stripe Shuko", emoji: "🐅", category: "weapon" },
-  { id: 17, label: "Claw",             emoji: "🦅", category: "weapon" },
-  { id: 18, label: "Sai",              emoji: "🔱", category: "weapon" },
+  { id: 17, label: "Edge of Beyond",   emoji: "🌀", category: "weapon" },
+  { id: 18, label: "Beckoning Mistblade", emoji: "🔱", category: "weapon" },
   { id: 19, label: "Waning Moon",      emoji: "🌙", category: "weapon" },
   { id: 20, label: "Spider's Bite",    emoji: "🕷️", category: "weapon" },
 

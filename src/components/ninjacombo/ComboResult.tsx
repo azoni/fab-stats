@@ -2,14 +2,8 @@
 import { useState, useEffect } from "react";
 import type { NinjaComboStats, NinjaComboGameState } from "@/lib/ninjacombo/types";
 import type { DailyCombo } from "@/lib/ninjacombo/puzzle-generator";
+import { CardTypeIcon } from "./CardTypeIcon";
 import "@/components/dice/dice.css";
-
-const TYPE_EMOJI: Record<string, string> = {
-  kick: "\uD83E\uDDB6",
-  punch: "\uD83D\uDC4A",
-  kunai: "\uD83D\uDDE1\uFE0F",
-  special: "\u26A1",
-};
 
 function CountdownToMidnight() {
   const [timeStr, setTimeStr] = useState("");
@@ -87,7 +81,7 @@ export function ComboResult({
                     : "bg-[#0a1a1a] border-cyan-900/30"
                 }`}
               >
-                <div className="text-sm">{TYPE_EMOJI[slot.card.type]}</div>
+                <div className="flex justify-center"><CardTypeIcon type={slot.card.type} className="w-4 h-4 text-cyan-300" /></div>
                 <div className="text-[8px] text-cyan-200 truncate">{slot.card.name}</div>
                 <div className={`text-xs font-bold ${slot.comboed ? "text-amber-400" : "text-cyan-300"}`}>
                   {slot.totalDamage}

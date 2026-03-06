@@ -2,7 +2,7 @@ import { dateToSeed, mulberry32, seededPick, seededShuffle } from "@/lib/games/s
 import { WORD_BANK, type BladeDashWord } from "./word-bank";
 
 export const WORDS_PER_GAME = 8;
-export const MAX_HINTS = 3;
+export const HINT_FAIL_THRESHOLD = 3;
 
 export interface DailyWords {
   words: BladeDashWord[];
