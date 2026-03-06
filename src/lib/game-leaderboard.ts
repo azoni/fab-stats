@@ -141,7 +141,8 @@ type GameKey = keyof typeof COLLECTIONS;
 // ── Bulk fetch ──
 
 export async function loadAllGameStats(): Promise<GameLeaderboardEntry[]> {
-  const snaps = await Promise.all(
+  // Use allSettled so one failing collection doesn't break the entire fetch
+  const results = await Promise.allSettled(
     Object.values(COLLECTIONS).map((col) => getDocs(collection(db, col)))
   );
 
@@ -149,8 +150,10 @@ export async function loadAllGameStats(): Promise<GameLeaderboardEntry[]> {
   const byUser = new Map<string, Partial<Record<GameKey, Record<string, unknown>>>>();
 
   for (let i = 0; i < keys.length; i++) {
+    const result = results[i];
+    if (result.status !== "fulfilled") continue;
     const key = keys[i];
-    for (const doc of snaps[i].docs) {
+    for (const doc of result.value.docs) {
       const uid = doc.id;
       if (!byUser.has(uid)) byUser.set(uid, {});
       byUser.get(uid)![key] = doc.data() as Record<string, unknown>;
