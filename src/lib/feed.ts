@@ -16,7 +16,7 @@ import {
   type QueryConstraint,
 } from "firebase/firestore";
 import { db } from "./firebase";
-import type { FeedEvent, ImportFeedEvent, AchievementFeedEvent, PlacementFeedEvent, FaBdokuFeedEvent, FaBdokuCardFeedEvent, CrosswordFeedEvent, HeroGuesserFeedEvent, MatchupManiaFeedEvent, TriviaFeedEvent, TimelineFeedEvent, ConnectionsFeedEvent, RampageFeedEvent, KnockoutFeedEvent, BrawlFeedEvent, NinjaComboFeedEvent, UserProfile, ImportSource, Achievement, MatchRecord } from "@/types";
+import type { FeedEvent, ImportFeedEvent, AchievementFeedEvent, PlacementFeedEvent, FaBdokuFeedEvent, FaBdokuCardFeedEvent, CrosswordFeedEvent, HeroGuesserFeedEvent, MatchupManiaFeedEvent, TriviaFeedEvent, TimelineFeedEvent, ConnectionsFeedEvent, RampageFeedEvent, KnockoutFeedEvent, BrawlFeedEvent, NinjaComboFeedEvent, ShadowStrikeFeedEvent, BladeDashFeedEvent, UserProfile, ImportSource, Achievement, MatchRecord } from "@/types";
 import type { PlayoffFinish } from "./stats";
 
 function feedCollection() {
@@ -470,6 +470,100 @@ export async function createConnectionsFeedEvent(
   invalidateFeedCache();
 }
 
+export async function createShadowStrikeFeedEvent(
+  profile: UserProfile,
+  subtype: "completed" | "shared",
+  puzzleDate: string,
+  won: boolean,
+  flips: number,
+  elapsedMs: number,
+  pairsFound: number,
+): Promise<void> {
+  if (!profile.isPublic || profile.hideFromFeed) return;
+
+  const dupCheck = query(
+    feedCollection(),
+    where("userId", "==", profile.uid),
+    where("type", "==", "shadowstrike"),
+    where("date", "==", puzzleDate),
+    where("subtype", "==", subtype),
+    limit(1),
+  );
+  const existing = await getDocs(dupCheck);
+  if (!existing.empty) return;
+
+  const data: Omit<ShadowStrikeFeedEvent, "id"> = {
+    type: "shadowstrike",
+    subtype,
+    userId: profile.uid,
+    username: profile.username,
+    displayName: profile.displayName,
+    isPublic: profile.isPublic,
+    date: puzzleDate,
+    won,
+    flips,
+    elapsedMs,
+    pairsFound,
+    createdAt: new Date().toISOString(),
+  };
+
+  const clean: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(data)) {
+    if (v !== undefined) clean[k] = v;
+  }
+  if (profile.photoUrl) clean.photoUrl = profile.photoUrl;
+
+  await addDoc(feedCollection(), clean);
+  invalidateFeedCache();
+}
+
+export async function createBladeDashFeedEvent(
+  profile: UserProfile,
+  subtype: "completed" | "shared",
+  puzzleDate: string,
+  won: boolean,
+  elapsedMs: number,
+  hintsUsed: number,
+  wordsSolved: number,
+): Promise<void> {
+  if (!profile.isPublic || profile.hideFromFeed) return;
+
+  const dupCheck = query(
+    feedCollection(),
+    where("userId", "==", profile.uid),
+    where("type", "==", "bladedash"),
+    where("date", "==", puzzleDate),
+    where("subtype", "==", subtype),
+    limit(1),
+  );
+  const existing = await getDocs(dupCheck);
+  if (!existing.empty) return;
+
+  const data: Omit<BladeDashFeedEvent, "id"> = {
+    type: "bladedash",
+    subtype,
+    userId: profile.uid,
+    username: profile.username,
+    displayName: profile.displayName,
+    isPublic: profile.isPublic,
+    date: puzzleDate,
+    won,
+    elapsedMs,
+    hintsUsed,
+    wordsSolved,
+    createdAt: new Date().toISOString(),
+  };
+
+  const clean: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(data)) {
+    if (v !== undefined) clean[k] = v;
+  }
+  if (profile.photoUrl) clean.photoUrl = profile.photoUrl;
+
+  await addDoc(feedCollection(), clean);
+  invalidateFeedCache();
+}
+
 /** Post a FaBdoku feed event for a guest (no profile required). */
 export async function createGuestFaBdokuFeedEvent(
   puzzleDate: string,
@@ -676,7 +770,7 @@ export function invalidateFeedCache() {
   feedCache.clear();
 }
 
-export type FeedEventType = "all" | "import" | "achievement" | "placement" | "fabdoku" | "crossword" | "heroguesser" | "matchupmania" | "trivia" | "timeline" | "connections" | "rampage" | "kayosknockout" | "brutebrawl" | "ninjacombo";
+export type FeedEventType = "all" | "import" | "achievement" | "placement" | "fabdoku" | "crossword" | "heroguesser" | "matchupmania" | "trivia" | "timeline" | "connections" | "rampage" | "kayosknockout" | "brutebrawl" | "ninjacombo" | "shadowstrike" | "bladedash";
 
 export interface PaginatedFeedResult {
   events: FeedEvent[];

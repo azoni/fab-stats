@@ -472,7 +472,27 @@ export interface NinjaComboFeedEvent extends FeedEventBase {
   maxStreak: number;
 }
 
-export type FeedEvent = ImportFeedEvent | AchievementFeedEvent | PlacementFeedEvent | FaBdokuFeedEvent | FaBdokuCardFeedEvent | CrosswordFeedEvent | HeroGuesserFeedEvent | MatchupManiaFeedEvent | TriviaFeedEvent | TimelineFeedEvent | ConnectionsFeedEvent | RampageFeedEvent | KnockoutFeedEvent | BrawlFeedEvent | NinjaComboFeedEvent;
+export interface ShadowStrikeFeedEvent extends FeedEventBase {
+  type: "shadowstrike";
+  subtype: "completed" | "shared";
+  date: string;
+  won: boolean;
+  flips: number;
+  elapsedMs: number;
+  pairsFound: number;
+}
+
+export interface BladeDashFeedEvent extends FeedEventBase {
+  type: "bladedash";
+  subtype: "completed" | "shared";
+  date: string;
+  won: boolean;
+  elapsedMs: number;
+  hintsUsed: number;
+  wordsSolved: number;
+}
+
+export type FeedEvent = ImportFeedEvent | AchievementFeedEvent | PlacementFeedEvent | FaBdokuFeedEvent | FaBdokuCardFeedEvent | CrosswordFeedEvent | HeroGuesserFeedEvent | MatchupManiaFeedEvent | TriviaFeedEvent | TimelineFeedEvent | ConnectionsFeedEvent | RampageFeedEvent | KnockoutFeedEvent | BrawlFeedEvent | NinjaComboFeedEvent | ShadowStrikeFeedEvent | BladeDashFeedEvent;
 
 export interface Creator {
   name: string;

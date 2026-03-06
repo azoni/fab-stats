@@ -23,7 +23,9 @@ export type ActivityAction =
   | "brutebrawl_share"
   | "rhinarsrampage_share"
   | "kayosknockout_share"
-  | "ninjacombo_share";
+  | "ninjacombo_share"
+  | "shadowstrike_share"
+  | "bladedash_share";
 
 export interface ActivityEvent {
   id: string;
@@ -99,6 +101,8 @@ export const ACTIVITY_LABELS: Record<ActivityAction, string> = {
   rhinarsrampage_share: "shared a rhinars rampage result",
   kayosknockout_share: "shared a kayos knockout result",
   ninjacombo_share: "shared a Katsu's Combo result",
+  shadowstrike_share: "shared a shadow strike result",
+  bladedash_share: "shared a blade dash result",
 };
 
 /** Admin: read feature usage counters (single doc read). */

@@ -213,7 +213,7 @@ service cloud.firestore {
       // Only public profiles can create feed events
       allow create: if request.auth != null
         && request.resource.data.userId == request.auth.uid
-        && request.resource.data.type in ["import", "achievement", "placement", "fabdoku", "crossword", "heroguesser", "matchupmania", "trivia", "timeline", "connections"]
+        && request.resource.data.type in ["import", "achievement", "placement", "fabdoku", "crossword", "heroguesser", "matchupmania", "trivia", "timeline", "connections", "shadowstrike", "bladedash"]
         && request.resource.data.isPublic == true;
       // Reactions: any authenticated user can toggle reactions
       allow update: if request.auth != null
@@ -545,6 +545,42 @@ service cloud.firestore {
       allow write: if request.auth != null && request.auth.uid == userId;
     }
     match /connectionsPlayerStats/{uid} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.uid == uid;
+    }
+
+    // ── Shadow Strike ──
+    match /shadowstrike-results/{resultId} {
+      allow read: if true;
+      allow create: if request.auth != null
+        && request.resource.data.uid == request.auth.uid;
+      allow update: if request.auth != null
+        && resource.data.uid == request.auth.uid
+        && request.resource.data.uid == request.auth.uid;
+    }
+    match /users/{userId}/shadowstrike-stats/{docId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+    match /shadowstrikePlayerStats/{uid} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.uid == uid;
+    }
+
+    // ── Blade Dash ──
+    match /bladedash-results/{resultId} {
+      allow read: if true;
+      allow create: if request.auth != null
+        && request.resource.data.uid == request.auth.uid;
+      allow update: if request.auth != null
+        && resource.data.uid == request.auth.uid
+        && request.resource.data.uid == request.auth.uid;
+    }
+    match /users/{userId}/bladedash-stats/{docId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+    match /bladedashPlayerStats/{uid} {
       allow read: if true;
       allow write: if request.auth != null && request.auth.uid == uid;
     }

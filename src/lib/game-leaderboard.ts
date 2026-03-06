@@ -94,6 +94,23 @@ export interface NinjaComboGameStats {
   totalDamageDealt: number;
   bestDamage: number;
   totalCombos: number;
+}
+
+export interface ShadowStrikeGameStats {
+  gamesPlayed: number;
+  gamesWon: number;
+  currentStreak: number;
+  maxStreak: number;
+  bestFlips: number;
+  bestTimeMs: number;
+}
+
+export interface BladeDashGameStats {
+  gamesPlayed: number;
+  gamesWon: number;
+  currentStreak: number;
+  maxStreak: number;
+  bestTimeMs: number;
   perfectGames: number;
 }
 
@@ -112,6 +129,8 @@ export interface GameLeaderboardEntry {
   kayosknockout: KnockoutGameStats | null;
   brutebrawl: BrawlGameStats | null;
   ninjacombo: NinjaComboGameStats | null;
+  shadowstrike: ShadowStrikeGameStats | null;
+  bladedash: BladeDashGameStats | null;
   // Computed aggregates
   totalGamesPlayed: number;
   totalGamesWon: number;
@@ -134,6 +153,8 @@ const COLLECTIONS = {
   kayosknockout: "kayosknockoutPlayerStats",
   brutebrawl: "brutebrawlPlayerStats",
   ninjacombo: "ninjacomboPlayerStats",
+  shadowstrike: "shadowstrikePlayerStats",
+  bladedash: "bladedashPlayerStats",
 } as const;
 
 type GameKey = keyof typeof COLLECTIONS;
@@ -174,8 +195,10 @@ export async function loadAllGameStats(): Promise<GameLeaderboardEntry[]> {
     const kayosknockout = gameData.kayosknockout ? parseDiceGameStats(gameData.kayosknockout) : null;
     const brutebrawl = gameData.brutebrawl ? parseDiceGameStats(gameData.brutebrawl) : null;
     const ninjacombo = gameData.ninjacombo ? parseNinjaComboStats(gameData.ninjacombo) : null;
+    const shadowstrike = gameData.shadowstrike ? parseShadowStrikeStats(gameData.shadowstrike) : null;
+    const bladedash = gameData.bladedash ? parseBladeDashStats(gameData.bladedash) : null;
 
-    const all = [fabdoku, crossword, heroguesser, matchupmania, trivia, timeline, connections, rhinarsrampage, kayosknockout, brutebrawl, ninjacombo];
+    const all = [fabdoku, crossword, heroguesser, matchupmania, trivia, timeline, connections, rhinarsrampage, kayosknockout, brutebrawl, ninjacombo, shadowstrike, bladedash];
     const active = all.filter((s): s is NonNullable<typeof s> => s !== null && s.gamesPlayed > 0);
 
     const totalGamesPlayed = active.reduce((sum, s) => sum + s.gamesPlayed, 0);
@@ -199,6 +222,8 @@ export async function loadAllGameStats(): Promise<GameLeaderboardEntry[]> {
       kayosknockout,
       brutebrawl,
       ninjacombo,
+      shadowstrike,
+      bladedash,
       totalGamesPlayed,
       totalGamesWon,
       overallWinRate,
@@ -283,6 +308,21 @@ function parseNinjaComboStats(d: Record<string, unknown>): NinjaComboGameStats {
     totalDamageDealt: num(d.totalDamageDealt),
     bestDamage: num(d.bestDamage),
     totalCombos: num(d.totalCombos),
+  };
+}
+
+function parseShadowStrikeStats(d: Record<string, unknown>): ShadowStrikeGameStats {
+  return {
+    ...parseBasicStats(d),
+    bestFlips: num(d.bestFlips),
+    bestTimeMs: num(d.bestTimeMs),
+  };
+}
+
+function parseBladeDashStats(d: Record<string, unknown>): BladeDashGameStats {
+  return {
+    ...parseBasicStats(d),
+    bestTimeMs: num(d.bestTimeMs),
     perfectGames: num(d.perfectGames),
   };
 }

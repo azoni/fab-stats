@@ -1,0 +1,101 @@
+"use client";
+import { useState, useEffect, useCallback, useRef } from "react";
+import type { ShadowStrikeGameState } from "@/lib/shadowstrike/types";
+import type { DailyPuzzle } from "@/lib/shadowstrike/puzzle-generator";
+import { CARD_BANK } from "@/lib/shadowstrike/card-bank";
+import { TOTAL_PAIRS } from "@/lib/shadowstrike/puzzle-generator";
+
+function formatTime(ms: number): string {
+  const totalSecs = Math.floor(ms / 1000);
+  const m = Math.floor(totalSecs / 60);
+  const s = totalSecs % 60;
+  return `${m}:${String(s).padStart(2, "0")}`;
+}
+
+const cardMap = new Map(CARD_BANK.map((c) => [c.id, c]));
+
+export function ShadowStrikeBoard({
+  puzzle,
+  gameState,
+  onFlip,
+}: {
+  puzzle: DailyPuzzle;
+  gameState: ShadowStrikeGameState;
+  onFlip: (position: number) => void;
+}) {
+  const [displayTime, setDisplayTime] = useState(gameState.elapsedMs);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Live timer
+  useEffect(() => {
+    if (gameState.completed) {
+      setDisplayTime(gameState.elapsedMs);
+      if (timerRef.current) clearInterval(timerRef.current);
+      return;
+    }
+    if (gameState.startedAt) {
+      timerRef.current = setInterval(() => {
+        setDisplayTime(gameState.elapsedMs + (Date.now() - gameState.startedAt!));
+      }, 100);
+      return () => { if (timerRef.current) clearInterval(timerRef.current); };
+    }
+    setDisplayTime(gameState.elapsedMs);
+  }, [gameState.startedAt, gameState.elapsedMs, gameState.completed]);
+
+  return (
+    <div>
+      {/* Stats bar */}
+      <div className="flex items-center justify-between mb-3 text-xs text-fab-muted">
+        <span>Flips: <span className="font-bold text-fab-text">{gameState.flips}</span></span>
+        <span className="font-mono text-fab-text">{formatTime(displayTime)}</span>
+        <span>Pairs: <span className="font-bold text-fab-text">{gameState.matchedCardIds.length}/{TOTAL_PAIRS}</span></span>
+      </div>
+
+      {/* 4x4 Grid */}
+      <div className="grid grid-cols-4 gap-2">
+        {puzzle.grid.map((cardId, pos) => {
+          const card = cardMap.get(cardId);
+          const isRevealed = gameState.revealedPositions.includes(pos);
+          const isMatched = gameState.matchedCardIds.includes(cardId) && !isRevealed;
+          // Count how many of this cardId are matched — need both positions matched
+          const matchedPositions = puzzle.grid
+            .map((id, i) => ({ id, i }))
+            .filter((x) => x.id === cardId && gameState.matchedCardIds.includes(x.id));
+          const isPairMatched = gameState.matchedCardIds.includes(cardId);
+          const isFaceUp = isRevealed || isPairMatched;
+
+          return (
+            <button
+              key={pos}
+              onClick={() => onFlip(pos)}
+              disabled={isFaceUp || gameState.completed}
+              className={`aspect-square rounded-lg border-2 transition-all duration-200 flex flex-col items-center justify-center gap-0.5 ${
+                isPairMatched
+                  ? "border-fab-win/50 bg-fab-win/10 opacity-70"
+                  : isRevealed
+                    ? "border-indigo-400/50 bg-indigo-900/30"
+                    : "border-fab-border bg-indigo-900/20 hover:border-indigo-400/30 hover:bg-indigo-900/30 cursor-pointer"
+              }`}
+            >
+              {isFaceUp && card ? (
+                <>
+                  <span className="text-2xl leading-none">{card.emoji}</span>
+                  <span className="text-[8px] text-fab-muted leading-tight text-center px-1 truncate w-full">{card.label}</span>
+                </>
+              ) : (
+                /* Shuriken icon for face-down */
+                <svg viewBox="0 0 24 24" className="w-6 h-6 text-indigo-400/40" fill="currentColor">
+                  <circle cx="12" cy="12" r="2" />
+                  <path d="M12 2c0 4-2 6.5-2 8.5L12 12l2-1.5C14 8.5 12 6 12 2z" />
+                  <path d="M22 12c-4 0-6.5 2-8.5 2L12 12l1.5-2C15.5 10 18 12 22 12z" />
+                  <path d="M12 22c0-4 2-6.5 2-8.5L12 12l-2 1.5C10 15.5 12 18 12 22z" />
+                  <path d="M2 12c4 0 6.5-2 8.5-2L12 12l-1.5 2C8.5 14 6 12 2 12z" />
+                </svg>
+              )}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}

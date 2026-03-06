@@ -1,7 +1,7 @@
 "use client";
 import { useState, useCallback } from "react";
 import Link from "next/link";
-import type { FeedEvent, ImportFeedEvent, FaBdokuFeedEvent, FaBdokuCardFeedEvent, CrosswordFeedEvent, HeroGuesserFeedEvent, MatchupManiaFeedEvent, TriviaFeedEvent, TimelineFeedEvent, ConnectionsFeedEvent, RampageFeedEvent, KnockoutFeedEvent, BrawlFeedEvent, NinjaComboFeedEvent } from "@/types";
+import type { FeedEvent, ImportFeedEvent, FaBdokuFeedEvent, FaBdokuCardFeedEvent, CrosswordFeedEvent, HeroGuesserFeedEvent, MatchupManiaFeedEvent, TriviaFeedEvent, TimelineFeedEvent, ConnectionsFeedEvent, RampageFeedEvent, KnockoutFeedEvent, BrawlFeedEvent, NinjaComboFeedEvent, ShadowStrikeFeedEvent, BladeDashFeedEvent } from "@/types";
 import { rankBorderClass } from "@/lib/leaderboard-ranks";
 import { playerHref } from "@/lib/constants";
 import { FEED_REACTIONS, addFeedReaction, removeFeedReaction, deleteFeedEvent } from "@/lib/feed";
@@ -11,7 +11,7 @@ export interface FeedGroup {
   totalMatchCount: number;
 }
 
-const GAME_TYPES = new Set(["fabdoku", "fabdoku-cards", "crossword", "heroguesser", "matchupmania", "trivia", "timeline", "connections", "rampage", "kayosknockout", "brutebrawl", "ninjacombo"]);
+const GAME_TYPES = new Set(["fabdoku", "fabdoku-cards", "crossword", "heroguesser", "matchupmania", "trivia", "timeline", "connections", "rampage", "kayosknockout", "brutebrawl", "ninjacombo", "shadowstrike", "bladedash"]);
 
 /** Group consecutive import or game feed events from the same user into collapsible groups.
  *  Achievement/placement events are never grouped — they stay as single-item groups. */
@@ -384,6 +384,8 @@ export function FeedCard({ event, compact, rankMap, eventTierMap, underlineTierM
           {event.type === "kayosknockout" && <KnockoutContent event={event} compact={compact} />}
           {event.type === "brutebrawl" && <BrawlContent event={event} compact={compact} />}
           {event.type === "ninjacombo" && <NinjaComboContent event={event} compact={compact} />}
+          {event.type === "shadowstrike" && <ShadowStrikeContent event={event} compact={compact} />}
+          {event.type === "bladedash" && <BladeDashContent event={event} compact={compact} />}
           <ReactionBar event={event} userId={userId} compact={compact} />
         </div>
       </div>
@@ -738,6 +740,70 @@ function MatchupManiaContent({ event, compact }: { event: MatchupManiaFeedEvent;
   );
 }
 
+function ShadowStrikeContent({ event, compact }: { event: ShadowStrikeFeedEvent; compact?: boolean }) {
+  const actionText = event.subtype === "shared" ? "shared" : "completed";
+  const secs = Math.floor(event.elapsedMs / 1000);
+  const m = Math.floor(secs / 60);
+  const s = secs % 60;
+  const timeStr = `${m}:${String(s).padStart(2, "0")}`;
+
+  if (compact) {
+    return (
+      <p className="text-[11px] text-fab-muted">
+        {actionText} Shadow Strike &middot;{" "}
+        <span className="font-semibold text-fab-text">{event.pairsFound}/8 pairs</span>
+        <span className="ml-1 text-fab-dim">{event.flips} flips · {timeStr}</span>
+      </p>
+    );
+  }
+
+  return (
+    <div className="mt-1">
+      <p className="text-sm text-fab-muted">
+        {actionText}{" "}
+        <Link href="/shadowstrike" className="font-semibold text-indigo-400 hover:underline">Shadow Strike</Link>
+        {" "}&mdash;{" "}
+        <span className="font-semibold text-fab-text">{event.pairsFound}/8 pairs</span>
+        {" "}in {event.flips} flips · {timeStr}
+      </p>
+    </div>
+  );
+}
+
+function BladeDashContent({ event, compact }: { event: BladeDashFeedEvent; compact?: boolean }) {
+  const actionText = event.subtype === "shared" ? "shared" : "completed";
+  const secs = Math.floor(event.elapsedMs / 1000);
+  const m = Math.floor(secs / 60);
+  const s = secs % 60;
+  const timeStr = `${m}:${String(s).padStart(2, "0")}`;
+  const noHints = event.hintsUsed === 0;
+
+  if (compact) {
+    return (
+      <p className="text-[11px] text-fab-muted">
+        {actionText} Blade Dash &middot;{" "}
+        <span className="font-semibold text-fab-text">{event.wordsSolved}/8 words</span>
+        <span className="ml-1 text-fab-dim">{timeStr}</span>
+        {noHints && <span className="ml-1 text-fab-gold">No hints!</span>}
+      </p>
+    );
+  }
+
+  return (
+    <div className="mt-1">
+      <p className="text-sm text-fab-muted">
+        {actionText}{" "}
+        <Link href="/bladedash" className="font-semibold text-pink-400 hover:underline">Blade Dash</Link>
+        {" "}&mdash;{" "}
+        <span className="font-semibold text-fab-text">{event.wordsSolved}/8 words</span>
+        {" "}in {timeStr}
+        {event.hintsUsed > 0 && <span className="text-fab-dim"> ({event.hintsUsed} hints)</span>}
+      </p>
+      {noHints && <p className="text-xs text-fab-gold mt-0.5">No hints used!</p>}
+    </div>
+  );
+}
+
 function HeroGuesserContent({ event, compact }: { event: HeroGuesserFeedEvent; compact?: boolean }) {
   const actionText = event.subtype === "shared" ? "shared" : "completed";
   const statusText = event.won ? `Solved in ${event.guessCount}/${event.maxGuesses}` : `Failed ${event.guessCount}/${event.maxGuesses}`;
@@ -774,6 +840,12 @@ const GAME_LABELS: Record<string, string> = {
   trivia: "FaB Trivia",
   timeline: "Timeline",
   connections: "Connections",
+  rampage: "Rhinar's Rampage",
+  kayosknockout: "Kayo's Knockout",
+  brutebrawl: "Brute Brawl",
+  ninjacombo: "Katsu's Combo",
+  shadowstrike: "Shadow Strike",
+  bladedash: "Blade Dash",
 };
 
 function GameResultSummary({ event }: { event: FeedEvent }) {
@@ -819,6 +891,42 @@ function GameResultSummary({ event }: { event: FeedEvent }) {
     case "connections": {
       const e = event as ConnectionsFeedEvent;
       detail = e.won ? `${e.groupsFound}/4 groups` : `${e.groupsFound}/4 groups`;
+      break;
+    }
+    case "rampage": {
+      const e = event as RampageFeedEvent;
+      detail = `${e.score}/${e.targetHP} dmg`;
+      break;
+    }
+    case "kayosknockout": {
+      const e = event as KnockoutFeedEvent;
+      detail = `${e.score}/${e.targetHP} dmg`;
+      break;
+    }
+    case "brutebrawl": {
+      const e = event as BrawlFeedEvent;
+      detail = `${e.totalDamage}/${e.targetDamage} dmg`;
+      break;
+    }
+    case "ninjacombo": {
+      const e = event as NinjaComboFeedEvent;
+      detail = e.won ? `${e.totalDamage}/${e.targetDamage} dmg (${e.comboCount} combos)` : `${e.totalDamage}/${e.targetDamage}`;
+      break;
+    }
+    case "shadowstrike": {
+      const e = event as ShadowStrikeFeedEvent;
+      const secs = Math.floor(e.elapsedMs / 1000);
+      const m = Math.floor(secs / 60);
+      const s = secs % 60;
+      detail = `${e.pairsFound}/8 pairs in ${m}:${String(s).padStart(2, "0")}`;
+      break;
+    }
+    case "bladedash": {
+      const e = event as BladeDashFeedEvent;
+      const secs = Math.floor(e.elapsedMs / 1000);
+      const m = Math.floor(secs / 60);
+      const s = secs % 60;
+      detail = `${e.wordsSolved}/8 words in ${m}:${String(s).padStart(2, "0")}${e.hintsUsed > 0 ? ` (${e.hintsUsed} hints)` : ""}`;
       break;
     }
   }
