@@ -6,6 +6,7 @@ import { getProfileByUsername, getMatchesByUserId, updateProfile, searchUsername
 import { BadgeStrip } from "@/components/profile/BadgeStrip";
 import { EmblemDisplay } from "@/components/profile/EmblemDisplay";
 import { EmblemPicker } from "@/components/profile/EmblemPicker";
+import { BadgeStripPicker } from "@/components/profile/BadgeStripPicker";
 import { updateLeaderboardEntry, findUserIdByStaleUsername } from "@/lib/leaderboard";
 import { computeOverallStats, computeHeroStats, computeEventStats, computeOpponentStats, computeBestFinish, computePlayoffFinishes, computeMinorEventFinishes, getEventType, getRoundNumber } from "@/lib/stats";
 import { evaluateAchievements, getAchievementProgress } from "@/lib/achievements";
@@ -96,6 +97,7 @@ export default function PlayerProfile() {
   const [bestFinishShareOpen, setBestFinishShareOpen] = useState(false);
   const [profileShareOpen, setProfileShareOpen] = useState(false);
   const [emblemPickerMode, setEmblemPickerMode] = useState<"talent" | "class" | null>(null);
+  const [showBadgePicker, setShowBadgePicker] = useState(false);
   const [achievementsExpanded, setAchievementsExpanded] = useState(false);
   const [showRecentEvents, setShowRecentEvents] = useState(false);
   const [showMajorEvents, setShowMajorEvents] = useState(true);
@@ -616,7 +618,7 @@ export default function PlayerProfile() {
                     Updated {new Date(lastUpdated).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                   </span>
                 )}
-                <BadgeStrip matchCount={matches.length} isCreator={!!creatorInfo} puzzleGames={Math.max(fabdokuFullStats?.gamesPlayed ?? 0, fabdokuScore !== null ? 1 : 0) + (fabdokuCardFullStats?.gamesPlayed ?? 0) + (crosswordFullStats?.gamesPlayed ?? 0) + (connectionsFullStats?.gamesPlayed ?? 0)} knowledgeGames={(heroGuesserFullStats?.gamesPlayed ?? 0) + (matchupManiaFullStats?.gamesPlayed ?? 0) + (triviaFullStats?.gamesPlayed ?? 0) + (timelineFullStats?.gamesPlayed ?? 0)} diceGames={(rampageFullStats?.gamesPlayed ?? 0) + (knockoutFullStats?.gamesPlayed ?? 0) + (brawlFullStats?.gamesPlayed ?? 0)} ninjaGames={ninjaComboFullStats?.gamesPlayed ?? 0} submittedFeedback={gaveFeedback} />
+                <BadgeStrip selectedBadgeIds={profile.selectedBadgeIds} earnedAchievementIds={achievements.map((a) => a.id)} isOwner={isOwner && !previewAsVisitor} onEdit={() => setShowBadgePicker(true)} />
               </div>
               {/* Social links */}
               {(profile.socialLinks?.twitter || profile.socialLinks?.discord || profile.socialLinks?.fabrary || isOwner) && !editingSocials && (
@@ -1045,6 +1047,18 @@ export default function PlayerProfile() {
       )}
 
       {/* Profile share card modal */}
+      {showBadgePicker && isOwner && (
+        <BadgeStripPicker
+          earnedAchievements={achievements}
+          currentSelectedIds={profile.selectedBadgeIds || []}
+          onSave={async (ids) => {
+            await updateProfile(profile.uid, { selectedBadgeIds: ids });
+            setState((prev) => prev.status === "loaded" ? { ...prev, profile: { ...prev.profile, selectedBadgeIds: ids } } : prev);
+          }}
+          onClose={() => setShowBadgePicker(false)}
+        />
+      )}
+
       {emblemPickerMode && isOwner && (
         <EmblemPicker
           mode={emblemPickerMode}
@@ -1086,12 +1100,7 @@ export default function PlayerProfile() {
             armoryCount: eventStats.filter(e => e.eventType === "Armory").length,
             armoryUndefeated: eventStats.filter(e => e.eventType === "Armory" && e.losses === 0 && e.wins > 0).length,
             isSiteCreator: profile.username === "azoni",
-            isCreator: !!creatorInfo,
-            puzzleGames: Math.max(fabdokuFullStats?.gamesPlayed ?? 0, fabdokuScore !== null ? 1 : 0) + (fabdokuCardFullStats?.gamesPlayed ?? 0) + (crosswordFullStats?.gamesPlayed ?? 0) + (connectionsFullStats?.gamesPlayed ?? 0),
-            knowledgeGames: (heroGuesserFullStats?.gamesPlayed ?? 0) + (matchupManiaFullStats?.gamesPlayed ?? 0) + (triviaFullStats?.gamesPlayed ?? 0) + (timelineFullStats?.gamesPlayed ?? 0),
-            diceGames: (rampageFullStats?.gamesPlayed ?? 0) + (knockoutFullStats?.gamesPlayed ?? 0) + (brawlFullStats?.gamesPlayed ?? 0),
-            ninjaGames: ninjaComboFullStats?.gamesPlayed ?? 0,
-            submittedFeedback: gaveFeedback,
+            selectedBadgeIds: profile.selectedBadgeIds,
           }}
           onClose={() => setProfileShareOpen(false)}
         />

@@ -1,0 +1,144 @@
+"use client";
+import { useState, useMemo } from "react";
+import { AchievementIcon } from "@/components/gamification/AchievementIcons";
+import { rarityColors } from "@/lib/achievements";
+import { RARITY_VISUALS } from "@/lib/badge-tiers";
+import { BadgeTierWrapper } from "./BadgeTierWrapper";
+import type { Achievement } from "@/types";
+
+interface BadgeStripPickerProps {
+  earnedAchievements: Achievement[];
+  currentSelectedIds: string[];
+  onSave: (ids: string[]) => Promise<void>;
+  onClose: () => void;
+}
+
+const RARITY_ORDER: Record<string, number> = {
+  legendary: 5,
+  epic: 4,
+  rare: 3,
+  uncommon: 2,
+  common: 1,
+};
+
+export function BadgeStripPicker({ earnedAchievements, currentSelectedIds, onSave, onClose }: BadgeStripPickerProps) {
+  const [selected, setSelected] = useState<Set<string>>(new Set(currentSelectedIds));
+  const [saving, setSaving] = useState(false);
+
+  const sorted = useMemo(() => {
+    return [...earnedAchievements].sort((a, b) => {
+      const ra = RARITY_ORDER[a.rarity] ?? 0;
+      const rb = RARITY_ORDER[b.rarity] ?? 0;
+      if (ra !== rb) return rb - ra;
+      return a.name.localeCompare(b.name);
+    });
+  }, [earnedAchievements]);
+
+  function toggle(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  }
+
+  function clearAll() {
+    setSelected(new Set());
+  }
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
+      <div className="bg-fab-surface border border-fab-border rounded-lg p-5 w-full max-w-lg mx-4" onClick={(e) => e.stopPropagation()}>
+        {/* Header */}
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="text-base font-bold text-fab-gold">Select Badges</h2>
+            <p className="text-[10px] text-fab-dim mt-0.5">
+              {selected.size} badge{selected.size !== 1 ? "s" : ""} selected
+            </p>
+          </div>
+          <button onClick={onClose} className="text-fab-dim hover:text-fab-text transition-colors">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Grid */}
+        <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-[55vh] overflow-y-auto pr-1">
+          {/* Clear all option */}
+          <button
+            onClick={clearAll}
+            className={`p-2 rounded-lg border text-center transition-all ${
+              selected.size === 0
+                ? "border-fab-gold bg-fab-gold/10"
+                : "border-fab-border hover:border-fab-muted"
+            }`}
+          >
+            <div className="flex justify-center mb-1 text-fab-dim">
+              <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+              </svg>
+            </div>
+            <p className="text-[10px] font-semibold text-fab-dim leading-tight">Clear All</p>
+          </button>
+
+          {sorted.map((ach) => {
+            const isSelected = selected.has(ach.id);
+            const colors = rarityColors[ach.rarity];
+            const visual = RARITY_VISUALS[ach.rarity] || RARITY_VISUALS.common;
+
+            return (
+              <button
+                key={ach.id}
+                onClick={() => toggle(ach.id)}
+                className={`p-2 rounded-lg border text-center transition-all ${
+                  isSelected
+                    ? "border-fab-gold bg-fab-gold/10 shadow-[0_0_12px_rgba(201,168,76,0.15)]"
+                    : `${colors.border} hover:border-fab-muted`
+                }`}
+              >
+                <div className="flex justify-center mb-1">
+                  <BadgeTierWrapper visual={visual} size="md">
+                    <div style={{ color: visual.ringColor }}>
+                      <AchievementIcon icon={ach.icon} className="w-6 h-6" />
+                    </div>
+                  </BadgeTierWrapper>
+                </div>
+                <p className={`text-[10px] font-semibold leading-tight truncate ${isSelected ? "text-fab-gold" : colors.text}`}>
+                  {ach.name}
+                </p>
+                <p className="text-[8px] text-fab-dim truncate">{ach.description}</p>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-between mt-4">
+          <button
+            onClick={onClose}
+            className="px-3 py-1.5 rounded-lg text-sm text-fab-dim hover:text-fab-text transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={async () => {
+              setSaving(true);
+              await onSave(Array.from(selected));
+              onClose();
+            }}
+            disabled={saving}
+            className="px-4 py-1.5 rounded-lg text-sm font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors disabled:opacity-50"
+          >
+            {saving ? "Saving..." : "Save"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}

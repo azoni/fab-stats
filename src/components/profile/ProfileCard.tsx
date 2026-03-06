@@ -5,10 +5,11 @@ import { MatchResult } from "@/types";
 import { logActivity } from "@/lib/activity-log";
 import { copyCardImage, downloadCardImage } from "@/lib/share-image";
 import { EMBLEM_COMPONENTS, EMBLEM_COLORS } from "@/components/profile/EmblemIcons";
-import { BADGE_ICON_MAP } from "@/components/profile/BadgeIcons";
-import { getProfileBadges } from "@/lib/profile-badges";
+import { AchievementIcon } from "@/components/gamification/AchievementIcons";
 import { BadgeTierWrapper } from "@/components/profile/BadgeTierWrapper";
-import { TIER_VISUALS } from "@/lib/badge-tiers";
+import { RARITY_VISUALS } from "@/lib/badge-tiers";
+import { getAllAchievements } from "@/lib/achievements";
+import { getAllBadges } from "@/lib/badges";
 import { CornerFiligree, OrnamentalDivider, CardBackgroundPattern, AccentTopBar, InnerVignette } from "@/components/share/CardOrnaments";
 import type { CardTheme } from "@/components/opponents/RivalryCard";
 import type { PlayoffFinish } from "@/lib/stats";
@@ -38,12 +39,7 @@ export interface ProfileCardData {
   armoryCount?: number;
   armoryUndefeated?: number;
   isSiteCreator?: boolean;
-  isCreator?: boolean;
-  puzzleGames?: number;
-  knowledgeGames?: number;
-  diceGames?: number;
-  ninjaGames?: number;
-  submittedFeedback?: boolean;
+  selectedBadgeIds?: string[];
 }
 
 // ── Fantasy-themed profile card themes ──
@@ -315,18 +311,18 @@ export function ProfileCard({ data, theme }: { data: ProfileCardData; theme?: Ca
               </div>
               {username && <p style={{ color: t.dim }} className="text-[11px]">@{username}</p>}
               {(() => {
-                const badges = getProfileBadges({ matchCount: totalMatches, isCreator: data.isCreator, puzzleGames: data.puzzleGames, knowledgeGames: data.knowledgeGames, diceGames: data.diceGames, ninjaGames: data.ninjaGames, submittedFeedback: data.submittedFeedback });
-                if (badges.length === 0) return null;
+                if (!data.selectedBadgeIds?.length) return null;
+                const allAch = [...getAllAchievements(), ...getAllBadges()];
+                const achMap = new Map(allAch.map((a) => [a.id, a]));
                 return (
                   <div className="flex items-center gap-1 mt-0.5">
-                    {badges.map((badge) => {
-                      const Icon = BADGE_ICON_MAP[badge.id];
-                      if (!Icon) return null;
-                      const visual = TIER_VISUALS[badge.tier.tier];
-                      const color = visual.ringColor !== "transparent" ? visual.ringColor : t.accent;
+                    {data.selectedBadgeIds.map((id) => {
+                      const ach = achMap.get(id);
+                      if (!ach) return null;
+                      const visual = RARITY_VISUALS[ach.rarity] || RARITY_VISUALS.common;
                       return (
-                        <BadgeTierWrapper key={badge.id} tier={badge.tier.tier} size="sm">
-                          <span style={{ color, opacity: 0.8 }}><Icon className="w-4 h-4" /></span>
+                        <BadgeTierWrapper key={id} visual={visual} size="sm">
+                          <span style={{ color: visual.ringColor, opacity: 0.8 }}><AchievementIcon icon={ach.icon} className="w-4 h-4" /></span>
                         </BadgeTierWrapper>
                       );
                     })}

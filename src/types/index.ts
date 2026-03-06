@@ -167,6 +167,7 @@ export interface UserProfile {
   borderPlacement?: string;
   underlineEventType?: string;
   underlinePlacement?: string;
+  selectedBadgeIds?: string[];
 }
 
 export interface ShowcaseCard {

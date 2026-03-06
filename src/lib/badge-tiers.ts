@@ -101,3 +101,12 @@ export const TIER_VISUALS: Record<BadgeTier, TierVisual> = {
   champion: { ringColor: "#FF6D00", glowColor: "#FF6D00", glowOpacity: 0.5, animate: true, cornerAccents: true },
   special: { ringColor: "#ec4899", glowColor: "#ec4899", glowOpacity: 0.25, animate: false, cornerAccents: false },
 };
+
+/** Map achievement rarity to visual styling for badge strip */
+export const RARITY_VISUALS: Record<string, TierVisual> = {
+  common:    { ringColor: "#fde68a", glowColor: "#fde68a", glowOpacity: 0.1,  animate: false, cornerAccents: false },
+  uncommon:  { ringColor: "#4ade80", glowColor: "#4ade80", glowOpacity: 0.2,  animate: false, cornerAccents: false },
+  rare:      { ringColor: "#60a5fa", glowColor: "#60a5fa", glowOpacity: 0.3,  animate: false, cornerAccents: false },
+  epic:      { ringColor: "#c084fc", glowColor: "#c084fc", glowOpacity: 0.4,  animate: true,  cornerAccents: false },
+  legendary: { ringColor: "#C9A84C", glowColor: "#C9A84C", glowOpacity: 0.5,  animate: true,  cornerAccents: true  },
+};

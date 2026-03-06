@@ -1,9 +1,10 @@
 "use client";
-import type { BadgeTier } from "@/lib/badge-tiers";
+import type { BadgeTier, TierVisual } from "@/lib/badge-tiers";
 import { TIER_VISUALS } from "@/lib/badge-tiers";
 
 interface Props {
-  tier: BadgeTier;
+  tier?: BadgeTier;
+  visual?: TierVisual;
   children: React.ReactNode;
   size?: "sm" | "md" | "lg";
 }
@@ -14,11 +15,11 @@ const SIZE_MAP = {
   lg: { outer: "w-14 h-14", ring: 30, r: 27, sw: 2 },
 };
 
-export function BadgeTierWrapper({ tier, children, size = "sm" }: Props) {
-  const visual = TIER_VISUALS[tier];
+export function BadgeTierWrapper({ tier, visual: visualOverride, children, size = "sm" }: Props) {
+  const visual = visualOverride || TIER_VISUALS[tier || "base"];
   const s = SIZE_MAP[size];
 
-  if (tier === "base") {
+  if (!visualOverride && tier === "base") {
     return <div className={`relative ${s.outer} flex items-center justify-center`}>{children}</div>;
   }
 
@@ -48,7 +49,7 @@ export function BadgeTierWrapper({ tier, children, size = "sm" }: Props) {
           stroke={visual.ringColor}
           strokeWidth={s.sw}
           fill="none"
-          opacity={tier === "special" ? 0.6 : 0.8}
+          opacity={(tier === "special" || visual === TIER_VISUALS.special) ? 0.6 : 0.8}
         />
       </svg>
       {/* Corner accents for champion tier */}
