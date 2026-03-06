@@ -7,8 +7,6 @@ import { KnockoutResult } from "@/components/kayosknockout/KnockoutResult";
 import { KnockoutShareCard } from "@/components/kayosknockout/KnockoutShareCard";
 import { createFreshGameState, loadGameState, saveGameState, cleanupOldStates } from "@/lib/kayosknockout/game-state";
 import { saveResult, loadStats, markShared } from "@/lib/kayosknockout/firestore";
-import { detectTierUp } from "@/lib/badge-tiers";
-import { BadgeTierUpPopup } from "@/components/profile/BadgeTierUpPopup";
 import { createKnockoutFeedEvent } from "@/lib/feed";
 import { logActivity } from "@/lib/activity-log";
 import { allHeroes } from "@/lib/heroes";
@@ -37,7 +35,6 @@ export default function KayosKnockoutPage() {
   const [stats, setStats] = useState<KnockoutStats | null>(null);
   const [showResult, setShowResult] = useState(gameState.completed);
   const [showShare, setShowShare] = useState(false);
-  const [badgeTierUp, setBadgeTierUp] = useState<{ tier: import("@/lib/badge-tiers").BadgeTierInfo; count: number } | null>(null);
   const completionSaved = useRef(false);
   const sharedDatesRef = useRef(new Set<string>());
 
@@ -67,16 +64,9 @@ export default function KayosKnockoutPage() {
           timestamp: Date.now(),
           uid: user.uid,
         };
-        const oldGamesPlayed = stats?.gamesPlayed ?? 0;
         saveResult(user.uid, result)
           .then(() => loadStats(user.uid))
-          .then((s) => {
-            if (s) {
-              setStats(s);
-              const tierUp = detectTierUp("brute-brawler", oldGamesPlayed, s.gamesPlayed);
-              if (tierUp) setBadgeTierUp({ tier: tierUp, count: s.gamesPlayed });
-            }
-          })
+          .then((s) => { if (s) setStats(s); })
           .catch(console.error);
 
         if (profile) {
@@ -146,15 +136,6 @@ export default function KayosKnockoutPage() {
         />
       )}
 
-      {badgeTierUp && (
-        <BadgeTierUpPopup
-          badgeId="brute-brawler"
-          badgeName="Brute Brawler"
-          tier={badgeTierUp.tier}
-          count={badgeTierUp.count}
-          onClose={() => setBadgeTierUp(null)}
-        />
-      )}
     </div>
   );
 }

@@ -10,8 +10,6 @@ import { createFreshGameState, loadGameState, saveGameState, cleanupOldStates } 
 import { saveResult, loadStats, markShared } from "@/lib/rhinarsrampage/firestore";
 import { createRampageFeedEvent } from "@/lib/feed";
 import { logActivity } from "@/lib/activity-log";
-import { detectTierUp } from "@/lib/badge-tiers";
-import { BadgeTierUpPopup } from "@/components/profile/BadgeTierUpPopup";
 import { allHeroes } from "@/lib/heroes";
 import { HowToPlay } from "@/components/dice/HowToPlay";
 import type { RampageGameState, RampageStats } from "@/lib/rhinarsrampage/types";
@@ -36,7 +34,6 @@ export default function RhinarsRampagePage() {
   });
   const [stats, setStats] = useState<RampageStats | null>(null);
   const [showShare, setShowShare] = useState(false);
-  const [badgeTierUp, setBadgeTierUp] = useState<{ tier: import("@/lib/badge-tiers").BadgeTierInfo; count: number } | null>(null);
   const completionSaved = useRef(false);
   const sharedDatesRef = useRef(new Set<string>());
 
@@ -64,16 +61,9 @@ export default function RhinarsRampagePage() {
         timestamp: Date.now(),
         uid: user.uid,
       };
-      const oldGamesPlayed = stats?.gamesPlayed ?? 0;
       saveResult(user.uid, result)
         .then(() => loadStats(user.uid))
-        .then((s) => {
-          if (s) {
-            setStats(s);
-            const tierUp = detectTierUp("brute-brawler", oldGamesPlayed, s.gamesPlayed);
-            if (tierUp) setBadgeTierUp({ tier: tierUp, count: s.gamesPlayed });
-          }
-        })
+        .then((s) => { if (s) setStats(s); })
         .catch(console.error);
 
       if (profile) {
@@ -141,9 +131,6 @@ export default function RhinarsRampagePage() {
             triggerShared();
           }}
         />
-      )}
-      {badgeTierUp && (
-        <BadgeTierUpPopup badgeId="brute-brawler" badgeName="Brute Brawler" tier={badgeTierUp.tier} count={badgeTierUp.count} onClose={() => setBadgeTierUp(null)} />
       )}
     </div>
   );

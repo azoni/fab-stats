@@ -893,7 +893,9 @@ export default function Dashboard() {
             triviaGames: triviaFullStats?.gamesPlayed ?? 0,
             timelineGames: timelineFullStats?.gamesPlayed ?? 0,
             connectionsGames: connectionsFullStats?.gamesPlayed ?? 0,
-            bruteBrawlerGames: (rampageFullStats?.gamesPlayed ?? 0) + (knockoutFullStats?.gamesPlayed ?? 0) + (brawlFullStats?.gamesPlayed ?? 0),
+            bruteBrawlerGames: (rampageFullStats?.gamesPlayed ?? 0) >= 1 && (knockoutFullStats?.gamesPlayed ?? 0) >= 1 && (brawlFullStats?.gamesPlayed ?? 0) >= 1
+              ? (rampageFullStats?.gamesPlayed ?? 0) + (knockoutFullStats?.gamesPlayed ?? 0) + (brawlFullStats?.gamesPlayed ?? 0)
+              : 0,
             submittedFeedback: gaveFeedback,
           }}
           onClose={() => setProfileShareOpen(false)}
