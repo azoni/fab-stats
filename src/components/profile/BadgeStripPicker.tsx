@@ -22,7 +22,7 @@ const RARITY_ORDER: Record<string, number> = {
 };
 
 export function BadgeStripPicker({ earnedAchievements, currentSelectedIds, onSave, onClose }: BadgeStripPickerProps) {
-  const [selected, setSelected] = useState<Set<string>>(new Set(currentSelectedIds));
+  const [selected, setSelected] = useState<string[]>([...currentSelectedIds]);
   const [saving, setSaving] = useState(false);
 
   const sorted = useMemo(() => {
@@ -35,19 +35,13 @@ export function BadgeStripPicker({ earnedAchievements, currentSelectedIds, onSav
   }, [earnedAchievements]);
 
   function toggle(id: string) {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
-      return next;
-    });
+    setSelected((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
   }
 
   function clearAll() {
-    setSelected(new Set());
+    setSelected([]);
   }
 
   return (
@@ -58,7 +52,7 @@ export function BadgeStripPicker({ earnedAchievements, currentSelectedIds, onSav
           <div>
             <h2 className="text-base font-bold text-fab-gold">Select Badges</h2>
             <p className="text-[10px] text-fab-dim mt-0.5">
-              {selected.size} badge{selected.size !== 1 ? "s" : ""} selected
+              {selected.length} badge{selected.length !== 1 ? "s" : ""} selected
             </p>
           </div>
           <button onClick={onClose} className="text-fab-dim hover:text-fab-text transition-colors">
@@ -74,7 +68,7 @@ export function BadgeStripPicker({ earnedAchievements, currentSelectedIds, onSav
           <button
             onClick={clearAll}
             className={`p-2 rounded-lg border text-center transition-all ${
-              selected.size === 0
+              selected.length === 0
                 ? "border-fab-gold bg-fab-gold/10"
                 : "border-fab-border hover:border-fab-muted"
             }`}
@@ -88,7 +82,7 @@ export function BadgeStripPicker({ earnedAchievements, currentSelectedIds, onSav
           </button>
 
           {sorted.map((ach) => {
-            const isSelected = selected.has(ach.id);
+            const isSelected = selected.includes(ach.id);
             const colors = rarityColors[ach.rarity];
             const visual = RARITY_VISUALS[ach.rarity] || RARITY_VISUALS.common;
 
@@ -129,7 +123,7 @@ export function BadgeStripPicker({ earnedAchievements, currentSelectedIds, onSav
           <button
             onClick={async () => {
               setSaving(true);
-              await onSave(Array.from(selected));
+              await onSave(selected);
               onClose();
             }}
             disabled={saving}

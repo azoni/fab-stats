@@ -38,9 +38,16 @@ export function BadgeStrip({ selectedBadgeIds, earnedAchievementIds, className, 
 
   const badges = useMemo(() => {
     if (!selectedBadgeIds?.length) return [];
+    const RARITY_ORDER: Record<string, number> = { legendary: 5, epic: 4, rare: 3, uncommon: 2, common: 1 };
     return selectedBadgeIds
       .map((id) => achMap.get(id))
-      .filter((a): a is Achievement => !!a && (earnedSet === null || earnedSet.has(a.id)));
+      .filter((a): a is Achievement => !!a && (earnedSet === null || earnedSet.has(a.id)))
+      .sort((a, b) => {
+        const ra = RARITY_ORDER[a.rarity] ?? 0;
+        const rb = RARITY_ORDER[b.rarity] ?? 0;
+        if (ra !== rb) return rb - ra;
+        return a.name.localeCompare(b.name);
+      });
   }, [selectedBadgeIds, achMap, earnedSet]);
 
   // Owner with no badges: show prompt

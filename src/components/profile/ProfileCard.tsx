@@ -2,6 +2,8 @@
 import { useRef, useState } from "react";
 
 import { MatchResult } from "@/types";
+import type { Achievement } from "@/types";
+
 import { logActivity } from "@/lib/activity-log";
 import { copyCardImage, downloadCardImage } from "@/lib/share-image";
 import { EMBLEM_COMPONENTS, EMBLEM_COLORS } from "@/components/profile/EmblemIcons";
@@ -312,16 +314,25 @@ export function ProfileCard({ data, theme }: { data: ProfileCardData; theme?: Ca
               {username && <p style={{ color: t.dim }} className="text-[11px]">@{username}</p>}
               {(() => {
                 if (!data.selectedBadgeIds?.length) return null;
+                const RARITY_ORDER: Record<string, number> = { legendary: 5, epic: 4, rare: 3, uncommon: 2, common: 1 };
                 const allAch = [...getAllAchievements(), ...getAllBadges()];
                 const achMap = new Map(allAch.map((a) => [a.id, a]));
+                const sorted = data.selectedBadgeIds
+                  .map((id) => achMap.get(id))
+                  .filter((a): a is Achievement => !!a)
+                  .sort((a, b) => {
+                    const ra = RARITY_ORDER[a.rarity] ?? 0;
+                    const rb = RARITY_ORDER[b.rarity] ?? 0;
+                    if (ra !== rb) return rb - ra;
+                    return a.name.localeCompare(b.name);
+                  })
+                  .slice(0, 8);
                 return (
-                  <div className="flex items-center gap-1 mt-0.5">
-                    {data.selectedBadgeIds.map((id) => {
-                      const ach = achMap.get(id);
-                      if (!ach) return null;
+                  <div className="flex items-center gap-1 mt-0.5 flex-wrap">
+                    {sorted.map((ach) => {
                       const visual = RARITY_VISUALS[ach.rarity] || RARITY_VISUALS.common;
                       return (
-                        <BadgeTierWrapper key={id} visual={visual} size="sm">
+                        <BadgeTierWrapper key={ach.id} visual={visual} size="sm">
                           <span style={{ color: visual.ringColor, opacity: 0.8 }}><AchievementIcon icon={ach.icon} className="w-4 h-4" /></span>
                         </BadgeTierWrapper>
                       );
