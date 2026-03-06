@@ -28,14 +28,6 @@ function XCircleIcon({ className }: { className?: string }) {
   );
 }
 
-function CopyIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M15.666 3.888A2.25 2.25 0 0013.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 01-.75.75H9.75a.75.75 0 01-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 01-2.25 2.25H6.75A2.25 2.25 0 014.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 011.927-.184" />
-    </svg>
-  );
-}
-
 function CheckIcon({ className }: { className?: string }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -60,7 +52,6 @@ interface FaBdokuResultProps {
 }
 
 export function FaBdokuResult({ gameState, stats, uniqueness, onShared }: FaBdokuResultProps) {
-  const [copied, setCopied] = useState(false);
   const [shareStatus, setShareStatus] = useState<"idle" | "sharing" | "shared">("idle");
   const [countdown, setCountdown] = useState("");
   const cardRef = useRef<HTMLDivElement>(null);
@@ -103,17 +94,6 @@ export function FaBdokuResult({ gameState, stats, uniqueness, onShared }: FaBdok
     return `FaBdoku ${gameState.date}\n${correctCount}/${totalCells}${uniquenessLine}\n\n${grid}\n\nfabstats.net/fabdoku`;
   }
 
-  async function handleCopy() {
-    try {
-      await navigator.clipboard.writeText(generateShareText());
-      setCopied(true);
-      onShared?.();
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      // Fallback
-    }
-  }
-
   async function handleShare() {
     setShareStatus("sharing");
     const uniqueLine = uniqueness ? ` \u00B7 Score: ${uniqueness.score} (${uniqueness.totalPlayers} players)` : "";
@@ -135,31 +115,6 @@ export function FaBdokuResult({ gameState, stats, uniqueness, onShared }: FaBdok
 
   return (
     <div className="bg-fab-surface border border-fab-border rounded-xl p-5 mt-4 max-w-[400px] mx-auto">
-      {/* Hidden share card for image capture */}
-      <div style={{ position: 'fixed', left: '-9999px', top: '-9999px' }} aria-hidden="true">
-        <div ref={cardRef} className="bg-[#0e0c08] rounded-lg p-5 border border-fab-border" style={{ width: '320px' }}>
-          <div className="text-center mb-3">
-            <h4 className="text-lg font-bold text-fab-gold">FaBdoku</h4>
-            <p className="text-xs text-fab-muted">{gameState.date}</p>
-          </div>
-          <div className="grid grid-cols-3 gap-1.5 w-24 mx-auto mb-3">
-            {gameState.cells.flat().map((cell, i) => (
-              <div key={i} className={`w-7 h-7 rounded-sm ${cell.correct ? "bg-fab-win" : cell.locked ? "bg-fab-loss" : "bg-fab-border"}`} />
-            ))}
-          </div>
-          <div className="text-center">
-            <p className="text-sm font-bold text-fab-text">{correctCount}/9 correct</p>
-            {uniqueness && (
-              <>
-                <p className="text-lg text-fab-gold font-bold mt-1 font-mono">{uniqueness.score}</p>
-                <p className="text-[10px] text-fab-dim">uniqueness score &middot; {uniqueness.totalPlayers} player{uniqueness.totalPlayers !== 1 ? "s" : ""}</p>
-              </>
-            )}
-          </div>
-          <p className="text-[9px] text-fab-dim text-center mt-3">fabstats.net/fabdoku</p>
-        </div>
-      </div>
-
       {/* Header */}
       <div className="text-center mb-4">
         {gameState.won ? (
@@ -277,41 +232,48 @@ export function FaBdokuResult({ gameState, stats, uniqueness, onShared }: FaBdok
         </div>
       )}
 
-      {/* Actions */}
-      <div className="flex gap-2">
-        <button
-          onClick={handleCopy}
-          className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-fab-surface-hover border border-fab-border rounded-lg text-sm font-medium text-fab-text hover:text-fab-gold transition-colors"
-        >
-          {copied ? (
-            <>
-              <CheckIcon className="w-3.5 h-3.5" />
-              Copied!
-            </>
-          ) : (
-            <>
-              <CopyIcon className="w-3.5 h-3.5" />
-              Copy
-            </>
-          )}
-        </button>
-        <button
-          onClick={handleShare}
-          className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-fab-gold text-fab-bg rounded-lg text-sm font-semibold hover:brightness-110 transition-all"
-        >
-          {shareStatus === "shared" ? (
-            <>
-              <CheckIcon className="w-3.5 h-3.5" />
-              Shared!
-            </>
-          ) : (
-            <>
-              <ShareIcon className="w-3.5 h-3.5" />
-              Share
-            </>
-          )}
-        </button>
+      {/* Share card preview */}
+      <div className="flex justify-center">
+        <div ref={cardRef} className="bg-[#0e0c08] rounded-lg p-5 border border-fab-border" style={{ width: '320px' }}>
+          <div className="text-center mb-3">
+            <h4 className="text-lg font-bold text-fab-gold">FaBdoku</h4>
+            <p className="text-xs text-fab-muted">{gameState.date}</p>
+          </div>
+          <div className="grid grid-cols-3 gap-1.5 w-24 mx-auto mb-3">
+            {gameState.cells.flat().map((cell, i) => (
+              <div key={i} className={`w-7 h-7 rounded-sm ${cell.correct ? "bg-fab-win" : cell.locked ? "bg-fab-loss" : "bg-fab-border"}`} />
+            ))}
+          </div>
+          <div className="text-center">
+            <p className="text-sm font-bold text-fab-text">{correctCount}/9 correct</p>
+            {uniqueness && (
+              <>
+                <p className="text-lg text-fab-gold font-bold mt-1 font-mono">{uniqueness.score}</p>
+                <p className="text-[10px] text-fab-dim">uniqueness score &middot; {uniqueness.totalPlayers} player{uniqueness.totalPlayers !== 1 ? "s" : ""}</p>
+              </>
+            )}
+          </div>
+          <p className="text-[9px] text-fab-dim text-center mt-3">fabstats.net/fabdoku</p>
+        </div>
       </div>
+
+      {/* Actions */}
+      <button
+        onClick={handleShare}
+        className="w-full flex items-center justify-center gap-1.5 px-3 py-2 bg-fab-gold text-fab-bg rounded-lg text-sm font-semibold hover:brightness-110 transition-all"
+      >
+        {shareStatus === "shared" ? (
+          <>
+            <CheckIcon className="w-3.5 h-3.5" />
+            Shared!
+          </>
+        ) : (
+          <>
+            <ShareIcon className="w-3.5 h-3.5" />
+            Share
+          </>
+        )}
+      </button>
 
       {/* Next puzzle countdown */}
       <div className="mt-4 pt-3 border-t border-fab-border text-center">

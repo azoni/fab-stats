@@ -2644,6 +2644,8 @@ const GAME_COLLECTIONS = [
   { id: "kayosknockout", label: "Kayo's Knockout", collection: "kayosknockout-results" },
   { id: "brutebrawl", label: "Brute Brawl", collection: "brutebrawl-results" },
   { id: "ninjacombo", label: "Katsu's Combo", collection: "ninjacombo-results" },
+  { id: "shadowstrike", label: "Shadow Strike", collection: "shadowstrike-results" },
+  { id: "bladedash", label: "Blade Dash", collection: "bladedash-results" },
 ] as const;
 
 interface GameStats {
@@ -2766,47 +2768,51 @@ async function loadGameStats(): Promise<GameStats[]> {
   const weekAgo = new Date(Date.now() - 7 * 86400_000).toISOString().slice(0, 10);
 
   return Promise.all(
-    GAME_COLLECTIONS.map(async (game) => {
-      const col = collection(db, game.collection);
-
-      // Today's results
-      const todaySnap = await getDocs(query(col, where("date", "==", today)));
-      const todayDocs = todaySnap.docs.map((d) => d.data());
-      const todayWins = todayDocs.filter((d) => d.won).length;
-      const uniqueToday = new Set(todayDocs.map((d) => d.uid)).size;
-
-      // This week's results
-      const weekSnap = await getDocs(query(col, where("date", ">=", weekAgo)));
-      const weekDocs = weekSnap.docs.map((d) => d.data());
-      const weekWins = weekDocs.filter((d) => d.won).length;
-      const uniqueWeek = new Set(weekDocs.map((d) => d.uid)).size;
-
-      // All-time count
-      let total = 0;
-      let totalWins = 0;
+    GAME_COLLECTIONS.map(async (game): Promise<GameStats> => {
       try {
-        const countSnap = await getCountFromServer(col);
-        total = countSnap.data().count;
-        const winsSnap = await getCountFromServer(query(col, where("won", "==", true)));
-        totalWins = winsSnap.data().count;
-      } catch {
-        // Fallback: estimate from week data if count not supported
-        total = weekDocs.length;
-        totalWins = weekWins;
-      }
+        const col = collection(db, game.collection);
 
-      return {
-        id: game.id,
-        label: game.label,
-        today: todayDocs.length,
-        todayWins,
-        week: weekDocs.length,
-        weekWins,
-        total,
-        totalWins,
-        uniqueToday,
-        uniqueWeek,
-      };
+        // Today's results
+        const todaySnap = await getDocs(query(col, where("date", "==", today)));
+        const todayDocs = todaySnap.docs.map((d) => d.data());
+        const todayWins = todayDocs.filter((d) => d.won).length;
+        const uniqueToday = new Set(todayDocs.map((d) => d.uid)).size;
+
+        // This week's results
+        const weekSnap = await getDocs(query(col, where("date", ">=", weekAgo)));
+        const weekDocs = weekSnap.docs.map((d) => d.data());
+        const weekWins = weekDocs.filter((d) => d.won).length;
+        const uniqueWeek = new Set(weekDocs.map((d) => d.uid)).size;
+
+        // All-time count
+        let total = 0;
+        let totalWins = 0;
+        try {
+          const countSnap = await getCountFromServer(col);
+          total = countSnap.data().count;
+          const winsSnap = await getCountFromServer(query(col, where("won", "==", true)));
+          totalWins = winsSnap.data().count;
+        } catch {
+          total = weekDocs.length;
+          totalWins = weekWins;
+        }
+
+        return {
+          id: game.id,
+          label: game.label,
+          today: todayDocs.length,
+          todayWins,
+          week: weekDocs.length,
+          weekWins,
+          total,
+          totalWins,
+          uniqueToday,
+          uniqueWeek,
+        };
+      } catch (err) {
+        console.warn(`Failed to load stats for ${game.label}:`, err);
+        return { id: game.id, label: game.label, today: 0, todayWins: 0, week: 0, weekWins: 0, total: 0, totalWins: 0, uniqueToday: 0, uniqueWeek: 0 };
+      }
     })
   );
 }

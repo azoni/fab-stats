@@ -12,6 +12,8 @@ import type { RampageStats } from "@/lib/rhinarsrampage/types";
 import type { KnockoutStats } from "@/lib/kayosknockout/types";
 import type { BrawlStats } from "@/lib/brutebrawl/types";
 import type { NinjaComboStats } from "@/lib/ninjacombo/types";
+import type { ShadowStrikeStats } from "@/lib/shadowstrike/types";
+import type { BladeDashStats } from "@/lib/bladedash/types";
 
 interface CheckContext {
   matches: MatchRecord[];
@@ -31,6 +33,8 @@ interface CheckContext {
   knockoutStats?: KnockoutStats;
   brawlStats?: BrawlStats;
   ninjaComboStats?: NinjaComboStats;
+  shadowStrikeStats?: ShadowStrikeStats;
+  bladeDashStats?: BladeDashStats;
 }
 
 interface AchievementProgress {
@@ -54,7 +58,7 @@ function diceCount(ctx: CheckContext): number {
   return (ctx.rampageStats?.gamesPlayed ?? 0) + (ctx.knockoutStats?.gamesPlayed ?? 0) + (ctx.brawlStats?.gamesPlayed ?? 0);
 }
 function ninjaCount(ctx: CheckContext): number {
-  return (ctx.ninjaComboStats?.gamesPlayed ?? 0);
+  return (ctx.ninjaComboStats?.gamesPlayed ?? 0) + (ctx.shadowStrikeStats?.gamesPlayed ?? 0) + (ctx.bladeDashStats?.gamesPlayed ?? 0);
 }
 
 const TIER_THRESHOLDS = [1, 5, 10, 25, 50, 100, 250, 500, 1000] as const;
@@ -133,7 +137,7 @@ function realHeroStats(ctx: CheckContext): HeroStats[] {
   return ctx.heroStats.filter((h) => h.heroName !== "Unknown");
 }
 
-const ACHIEVEMENTS: AchievementDef[] = [
+const CORE_ACHIEVEMENTS: AchievementDef[] = [
   // ══════════════════════════════════════════
   // MATCH MILESTONES (tiered)
   // ══════════════════════════════════════════
@@ -2064,6 +2068,29 @@ const ACHIEVEMENTS: AchievementDef[] = [
   ...tieredGameAchievements("ninja", "Ninja", "Ninja game", "zap", "ninja_games", ninjaCount),
 ];
 
+const TOTAL_TIERS: [number, Achievement["rarity"], string][] = [
+  [10, "common", "Collector I"],
+  [25, "uncommon", "Collector II"],
+  [50, "rare", "Collector III"],
+  [75, "rare", "Collector IV"],
+  [100, "epic", "Collector V"],
+  [125, "legendary", "Collector VI"],
+];
+
+const META_ACHIEVEMENTS: AchievementDef[] = TOTAL_TIERS.map(([threshold, rarity, name], i) => ({
+  id: `total_achievements_${threshold}`,
+  name,
+  description: `Earn ${threshold} achievements`,
+  category: "mastery" as const,
+  icon: "trophy",
+  rarity,
+  group: "total_achievements",
+  tier: i + 1,
+  check: (ctx: CheckContext) => CORE_ACHIEVEMENTS.filter((a) => a.check(ctx)).length >= threshold,
+  progress: (ctx: CheckContext) => ({ current: CORE_ACHIEVEMENTS.filter((a) => a.check(ctx)).length, target: threshold }),
+}));
+
+const ACHIEVEMENTS: AchievementDef[] = [...CORE_ACHIEVEMENTS, ...META_ACHIEVEMENTS];
 
 /** Evaluate which achievements a player has earned */
 export function evaluateAchievements(
@@ -2084,8 +2111,10 @@ export function evaluateAchievements(
   brawlStats?: BrawlStats,
   ninjaComboStats?: NinjaComboStats,
   crosswordStats?: CrosswordStats,
+  shadowStrikeStats?: ShadowStrikeStats,
+  bladeDashStats?: BladeDashStats,
 ): Achievement[] {
-  const ctx: CheckContext = { matches, overall, heroStats, opponentStats, kudosCounts, fabdokuStats, fabdokuCardStats, crosswordStats, heroGuesserStats, matchupManiaStats, triviaStats, timelineStats, connectionsStats, rampageStats, knockoutStats, brawlStats, ninjaComboStats };
+  const ctx: CheckContext = { matches, overall, heroStats, opponentStats, kudosCounts, fabdokuStats, fabdokuCardStats, crosswordStats, heroGuesserStats, matchupManiaStats, triviaStats, timelineStats, connectionsStats, rampageStats, knockoutStats, brawlStats, ninjaComboStats, shadowStrikeStats, bladeDashStats };
   return ACHIEVEMENTS.filter((a) => a.check(ctx)).map(({ check: _, progress: _p, ...rest }) => rest);
 }
 
@@ -2113,8 +2142,10 @@ export function getAchievementProgress(
   brawlStats?: BrawlStats,
   ninjaComboStats?: NinjaComboStats,
   crosswordStats?: CrosswordStats,
+  shadowStrikeStats?: ShadowStrikeStats,
+  bladeDashStats?: BladeDashStats,
 ): Record<string, { current: number; target: number }> {
-  const ctx: CheckContext = { matches, overall, heroStats, opponentStats, kudosCounts, fabdokuStats, fabdokuCardStats, crosswordStats, heroGuesserStats, matchupManiaStats, triviaStats, timelineStats, connectionsStats, rampageStats, knockoutStats, brawlStats, ninjaComboStats };
+  const ctx: CheckContext = { matches, overall, heroStats, opponentStats, kudosCounts, fabdokuStats, fabdokuCardStats, crosswordStats, heroGuesserStats, matchupManiaStats, triviaStats, timelineStats, connectionsStats, rampageStats, knockoutStats, brawlStats, ninjaComboStats, shadowStrikeStats, bladeDashStats };
   const result: Record<string, { current: number; target: number }> = {};
   for (const a of ACHIEVEMENTS) {
     if (a.progress) {

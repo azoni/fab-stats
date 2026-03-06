@@ -36,14 +36,6 @@ function getRating(score: number, optimal: number): { label: string; color: stri
   return { label: "Off Rhythm", color: "text-cyan-400/50" };
 }
 
-function CopyIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M15.666 3.888A2.25 2.25 0 0013.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 01-.75.75H9.75a.75.75 0 01-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 01-2.25 2.25H6.75A2.25 2.25 0 014.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 011.927-.184" />
-    </svg>
-  );
-}
-
 function CheckIcon({ className }: { className?: string }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -98,19 +90,7 @@ export function ComboResult({
   const pct = Math.round((totalDamage / puzzle.optimalScore) * 100);
 
   const cardRef = useRef<HTMLDivElement>(null);
-  const [copied, setCopied] = useState(false);
   const [shareStatus, setShareStatus] = useState<"idle" | "sharing" | "shared">("idle");
-
-  async function handleCopy() {
-    try {
-      await navigator.clipboard.writeText(buildShareText(gameState, dateStr, puzzle.optimalScore));
-      setCopied(true);
-      onShared?.();
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      // Fallback
-    }
-  }
 
   async function handleShare() {
     setShareStatus("sharing");
@@ -141,23 +121,6 @@ export function ComboResult({
 
   return (
     <div className={`space-y-4 ${won ? "animate-victory" : ""}`}>
-      {/* Hidden share card for image capture */}
-      <div style={{ position: 'fixed', left: '-9999px', top: '-9999px' }} aria-hidden="true">
-        <div ref={cardRef} className="bg-[#0e0c08] rounded-lg p-4 space-y-3" style={{ width: '280px' }}>
-          <div className="text-center">
-            <h4 className="text-lg font-bold text-cyan-200">Katsu&apos;s Combo</h4>
-            <p className="text-xs text-cyan-400/60">{dateStr}</p>
-          </div>
-          <div className="text-center text-lg tracking-wider">{chainEmoji}</div>
-          <div className="text-center">
-            <p className="text-sm font-bold text-cyan-100">
-              DMG: {totalDamage}/{targetDamage} ({pct}% optimal) {resultEmoji}
-            </p>
-          </div>
-          <p className="text-[9px] text-cyan-400/40 text-center">fabstats.net/ninjacombo</p>
-        </div>
-      </div>
-
       {/* Result header */}
       <div className="bg-[#081a1a]/80 border border-cyan-900/40 rounded-lg p-4 space-y-3">
         <div className="text-center">
@@ -253,15 +216,27 @@ export function ComboResult({
           </div>
         )}
 
-        {/* Copy + Share buttons */}
-        <div className="flex gap-2">
-          <button onClick={handleCopy} className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg font-semibold text-sm bg-[#0a1a1a] border border-cyan-900/40 text-cyan-300 hover:text-cyan-100 transition-colors">
-            {copied ? (<><CheckIcon className="w-3.5 h-3.5" /> Copied!</>) : (<><CopyIcon className="w-3.5 h-3.5" /> Copy</>)}
-          </button>
-          <button onClick={handleShare} className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg font-semibold text-sm bg-cyan-700 hover:bg-cyan-600 text-cyan-50 transition-colors">
-            {shareStatus === "shared" ? (<><CheckIcon className="w-3.5 h-3.5" /> Shared!</>) : (<><ShareIcon className="w-3.5 h-3.5" /> Share</>)}
-          </button>
+        {/* Share card preview */}
+        <div className="flex justify-center">
+          <div ref={cardRef} className="bg-[#0e0c08] rounded-lg p-4 space-y-3" style={{ width: '280px' }}>
+            <div className="text-center">
+              <h4 className="text-lg font-bold text-cyan-200">Katsu&apos;s Combo</h4>
+              <p className="text-xs text-cyan-400/60">{dateStr}</p>
+            </div>
+            <div className="text-center text-lg tracking-wider">{chainEmoji}</div>
+            <div className="text-center">
+              <p className="text-sm font-bold text-cyan-100">
+                DMG: {totalDamage}/{targetDamage} ({pct}% optimal) {resultEmoji}
+              </p>
+            </div>
+            <p className="text-[9px] text-cyan-400/40 text-center">fabstats.net/ninjacombo</p>
+          </div>
         </div>
+
+        {/* Share button */}
+        <button onClick={handleShare} className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-lg font-semibold text-sm bg-cyan-700 hover:bg-cyan-600 text-cyan-50 transition-colors">
+          {shareStatus === "shared" ? (<><CheckIcon className="w-3.5 h-3.5" /> Shared!</>) : (<><ShareIcon className="w-3.5 h-3.5" /> Share</>)}
+        </button>
 
         <CountdownToMidnight />
       </div>
