@@ -66,6 +66,7 @@ export default function ImportPage() {
   const [quickMode, setQuickMode] = useState(false);
   const [showHeroWarning, setShowHeroWarning] = useState(false);
   const [confirmSkipHero, setConfirmSkipHero] = useState(false);
+  const [showOtherBrowsers, setShowOtherBrowsers] = useState(false);
 
   // Detect mobile viewport
   useEffect(() => {
@@ -76,7 +77,7 @@ export default function ImportPage() {
     return () => mq.removeEventListener("change", handler);
   }, []);
 
-  // Auto-expand paste method on mobile (Chrome Extension not available on phones)
+  // Auto-expand paste method on mobile (Browser Extension not available on phones)
   useEffect(() => {
     if (isMobile && method === null && !pasteResult && !csvMatches && !autoDetected) {
       setMethod("paste");
@@ -524,7 +525,7 @@ export default function ImportPage() {
       {!hasResults && (
         <div className="space-y-3 mb-6">
 
-          {/* ── Method 1: Chrome Extension ── */}
+          {/* ── Method 1: Browser Extension ── */}
           <div
             onClick={() => setMethod(method === "extension" ? null : "extension")}
             className={`bg-fab-surface border rounded-lg cursor-pointer transition-all ${method === "extension" ? "border-fab-gold ring-1 ring-fab-gold/30" : "border-fab-border hover:border-fab-muted"}`}
@@ -538,10 +539,10 @@ export default function ImportPage() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <h3 className="font-semibold text-fab-text">Chrome Extension</h3>
+                    <h3 className="font-semibold text-fab-text">Browser Extension</h3>
                     <span className="px-1.5 py-0.5 rounded bg-fab-gold/15 text-fab-gold text-xs font-semibold">Recommended</span>
                   </div>
-                  <p className="text-sm text-fab-muted mt-0.5">One-click export with automatic hero detection. Scrapes all pages for you.</p>
+                  <p className="text-sm text-fab-muted mt-0.5">One-click export with automatic hero detection. Works on Chrome, Firefox, Edge &amp; more.</p>
                 </div>
                 <svg className={`w-5 h-5 text-fab-dim shrink-0 mt-1 transition-transform ${method === "extension" ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
@@ -567,11 +568,11 @@ export default function ImportPage() {
                   </div>
 
                   <div className="bg-fab-bg rounded-lg p-4">
-                    <h4 className="text-sm font-semibold text-fab-text mb-3">Setup (one time only):</h4>
+                    <h4 className="text-sm font-semibold text-fab-text mb-3">Setup for Chrome / Edge / Brave / Arc (one time only):</h4>
                     <ol className="text-sm text-fab-muted space-y-2.5 list-decimal list-inside">
                       <li>Download and <strong className="text-fab-text">unzip</strong> the file above</li>
                       <li>
-                        In Chrome, type{" "}
+                        In your browser, type{" "}
                         <code className="px-1.5 py-0.5 rounded bg-fab-surface text-fab-gold text-xs font-mono select-all">chrome://extensions</code>{" "}
                         in the address bar and press Enter
                       </li>
@@ -583,6 +584,68 @@ export default function ImportPage() {
                       </li>
                     </ol>
                   </div>
+
+                  {/* Other browsers collapsible */}
+                  <button
+                    onClick={() => setShowOtherBrowsers(!showOtherBrowsers)}
+                    className="w-full flex items-center justify-between bg-fab-bg rounded-lg p-4 text-left hover:bg-fab-bg/80 transition-colors"
+                  >
+                    <span className="text-sm font-semibold text-fab-text">Using Firefox or mobile?</span>
+                    <svg className={`w-4 h-4 text-fab-dim transition-transform ${showOtherBrowsers ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                  {showOtherBrowsers && (
+                    <div className="space-y-3">
+                      <div className="bg-fab-bg rounded-lg p-4">
+                        <h4 className="text-sm font-semibold text-fab-text mb-3">Firefox (Desktop)</h4>
+                        <ol className="text-sm text-fab-muted space-y-2.5 list-decimal list-inside">
+                          <li>Download and <strong className="text-fab-text">unzip</strong> the file above</li>
+                          <li>
+                            Type{" "}
+                            <code className="px-1.5 py-0.5 rounded bg-fab-surface text-fab-gold text-xs font-mono select-all">about:debugging#/runtime/this-firefox</code>{" "}
+                            in the address bar
+                          </li>
+                          <li>
+                            Click{" "}
+                            <strong className="text-fab-text">&quot;Load Temporary Add-on&quot;</strong>{" "}
+                            and select <strong className="text-fab-text">manifest.json</strong> from the unzipped folder
+                          </li>
+                        </ol>
+                        <p className="text-xs text-fab-dim mt-2">Temporary add-ons reset when Firefox restarts — you&apos;ll need to reload each session.</p>
+                      </div>
+                      <div className="bg-fab-bg rounded-lg p-4">
+                        <h4 className="text-sm font-semibold text-fab-text mb-3">Firefox (Android)</h4>
+                        <ol className="text-sm text-fab-muted space-y-2.5 list-decimal list-inside">
+                          <li>
+                            Open Firefox on your phone and go to{" "}
+                            <strong className="text-fab-text">Settings → Add-ons</strong>
+                          </li>
+                          <li>
+                            Tap the gear icon and enable{" "}
+                            <strong className="text-fab-text">&quot;Custom Add-on Collection&quot;</strong>
+                          </li>
+                          <li>
+                            Follow{" "}
+                            <a href="https://support.mozilla.org/en-US/kb/find-and-install-add-ons-firefox-android" target="_blank" rel="noopener noreferrer" className="text-fab-gold hover:underline">
+                              Mozilla&apos;s guide
+                            </a>{" "}
+                            to sideload extensions on Android
+                          </li>
+                        </ol>
+                        <p className="text-xs text-fab-dim mt-2">Firefox is the only mobile browser that supports extensions.</p>
+                      </div>
+                      <div className="bg-fab-bg rounded-lg p-4">
+                        <p className="text-sm text-fab-muted">
+                          <strong className="text-fab-text">Other mobile browsers</strong> (Chrome, Safari, Edge) don&apos;t support extensions. Use the{" "}
+                          <button onClick={() => { setMethod("paste"); setShowOtherBrowsers(false); }} className="text-fab-gold hover:underline font-semibold">
+                            Copy &amp; Paste
+                          </button>{" "}
+                          method instead — open GEM in your phone&apos;s browser, select all the text, and paste it here.
+                        </p>
+                      </div>
+                    </div>
+                  )}
 
                   <div className="bg-fab-bg rounded-lg p-4">
                     <h4 className="text-sm font-semibold text-fab-text mb-3">To export your matches:</h4>
@@ -714,7 +777,7 @@ export default function ImportPage() {
                   </div>
 
                   <div className="bg-fab-draw/10 border border-fab-draw/20 rounded-lg px-3 py-2 text-xs text-fab-dim">
-                    <strong className="text-fab-draw">Note:</strong> If GEM shows multiple pages of history, import each page separately — we&apos;ll skip any duplicates automatically. This method can&apos;t detect which hero you played (use the Chrome Extension for that).
+                    <strong className="text-fab-draw">Note:</strong> If GEM shows multiple pages of history, import each page separately — we&apos;ll skip any duplicates automatically. This method can&apos;t detect which hero you played (use the Browser Extension for that).
                   </div>
 
                   {/* Paste from Clipboard button (mobile-friendly) */}
@@ -850,7 +913,7 @@ export default function ImportPage() {
       {cleared && !hasResults && (
         <div className="bg-fab-win/10 border border-fab-win/30 rounded-lg p-4 mb-6">
           <p className="text-fab-win font-semibold mb-1">All matches cleared!</p>
-          <p className="text-fab-muted text-sm">Now re-import your matches using the Chrome Extension above for the best results.</p>
+          <p className="text-fab-muted text-sm">Now re-import your matches using the Browser Extension above for the best results.</p>
         </div>
       )}
 
@@ -860,7 +923,7 @@ export default function ImportPage() {
           {/* Auto-detected from extension */}
           {autoDetected && (
             <div className="bg-fab-gold/10 border border-fab-gold/30 rounded-lg p-4 text-sm">
-              <p className="text-fab-gold font-semibold mb-1">Data received from Chrome Extension</p>
+              <p className="text-fab-gold font-semibold mb-1">Data received from Browser Extension</p>
               <p className="text-fab-muted">Review your matches below and click Import when ready.</p>
             </div>
           )}
@@ -1034,7 +1097,7 @@ export default function ImportPage() {
           {allMatches.every((m) => m.heroPlayed === "Unknown") ? (
             <div className="bg-fab-draw/10 border border-fab-draw/30 rounded-lg p-4 text-sm">
               <p className="text-fab-draw font-medium mb-1">Hero info not included</p>
-              <p className="text-fab-muted">This import method can&apos;t tell which hero you played. You can use the Chrome Extension to import with hero detection, or edit individual matches later.</p>
+              <p className="text-fab-muted">This import method can&apos;t tell which hero you played. You can use the Browser Extension to import with hero detection, or edit individual matches later.</p>
             </div>
           ) : allMatches.some((m) => m.heroPlayed === "Unknown") ? (
             <div className="bg-fab-draw/10 border border-fab-draw/30 rounded-lg p-4 text-sm">
@@ -1098,7 +1161,7 @@ export default function ImportPage() {
               Without heroes, your stats will be incomplete and your placements will show without a hero on the feed.
             </p>
             <p className="text-sm text-fab-muted mb-5">
-              Set heroes per event in the preview above, or use the Chrome Extension for automatic detection.
+              Set heroes per event in the preview above, or use the Browser Extension for automatic detection.
             </p>
             <div className="flex flex-col gap-2">
               <button
