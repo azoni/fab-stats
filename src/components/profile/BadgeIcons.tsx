@@ -366,6 +366,33 @@ export function BruteBrawlerBadge({ className = "w-5 h-5" }: { className?: strin
   );
 }
 
+export function NinjaComboPlayerBadge({ className = "w-5 h-5" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="none">
+      <defs>
+        <radialGradient id="ncGlow" cx="0.5" cy="0.5" r="0.5">
+          <stop offset="0%" stopColor="#22d3ee" stopOpacity="0.3" />
+          <stop offset="100%" stopColor="#22d3ee" stopOpacity="0" />
+        </radialGradient>
+      </defs>
+      <circle cx="12" cy="12" r="11" fill="url(#ncGlow)" />
+      <path
+        d="M12 2.5c5.2.1 9.3 4.3 9.5 9.5.1 5.2-4.1 9.5-9.3 9.5S2.6 17.3 2.5 12.1C2.4 6.9 6.8 2.4 12 2.5z"
+        stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"
+        fill="currentColor" fillOpacity="0.08"
+      />
+      {/* Lightning bolt — combo chain */}
+      <path
+        d="M13.5 5L9 12.5h3L10.5 19l5.5-8h-3.5L13.5 5z"
+        fill="#22d3ee" fillOpacity="0.35" stroke="#22d3ee" strokeWidth="0.8" strokeLinejoin="round"
+      />
+      {/* Small shuriken accent */}
+      <path d="M6 7l1.5.5L7 6l.5 1.5L6 7z" fill="#22d3ee" fillOpacity="0.6" />
+      <path d="M17 17l1.5.5L18 16l.5 1.5L17 17z" fill="#22d3ee" fillOpacity="0.6" />
+    </svg>
+  );
+}
+
 export const BADGE_ICON_MAP: Record<string, React.FC<{ className?: string }>> = {
   "first-match": FirstMatchBadge,
   "content-creator": ContentCreatorBadge,
@@ -378,5 +405,6 @@ export const BADGE_ICON_MAP: Record<string, React.FC<{ className?: string }>> = 
   "timeline-player": TimelinePlayerBadge,
   "connections-player": ConnectionsPlayerBadge,
   "brute-brawler": BruteBrawlerBadge,
+  "ninjacombo-player": NinjaComboPlayerBadge,
   "feedback-contributor": FeedbackContributorBadge,
 };

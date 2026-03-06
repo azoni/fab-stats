@@ -15,7 +15,7 @@ import type { FeedEvent } from "@/types";
 type ScopeTab = "community" | "friends";
 type TypeFilter = "all" | "import" | "placement" | "games" | "engagement";
 
-const GAME_EVENT_TYPES = new Set(["fabdoku", "crossword", "heroguesser", "matchupmania", "trivia", "timeline", "connections", "rampage", "kayosknockout", "brutebrawl"]);
+const GAME_EVENT_TYPES = new Set(["fabdoku", "crossword", "heroguesser", "matchupmania", "trivia", "timeline", "connections", "rampage", "kayosknockout", "brutebrawl", "ninjacombo"]);
 
 const TYPE_FILTERS: { value: TypeFilter; label: string; adminOnly?: boolean }[] = [
   { value: "all", label: "All" },

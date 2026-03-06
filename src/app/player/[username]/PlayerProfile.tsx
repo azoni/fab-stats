@@ -616,7 +616,7 @@ export default function PlayerProfile() {
                     Updated {new Date(lastUpdated).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                   </span>
                 )}
-                <BadgeStrip matchCount={matches.length} isCreator={!!creatorInfo} fabdokuGames={Math.max(fabdokuFullStats?.gamesPlayed ?? 0, fabdokuScore !== null ? 1 : 0)} fabdokuCardGames={fabdokuCardFullStats?.gamesPlayed ?? 0} crosswordGames={crosswordFullStats?.gamesPlayed ?? 0} heroGuesserGames={heroGuesserFullStats?.gamesPlayed ?? 0} matchupManiaGames={matchupManiaFullStats?.gamesPlayed ?? 0} triviaGames={triviaFullStats?.gamesPlayed ?? 0} timelineGames={timelineFullStats?.gamesPlayed ?? 0} connectionsGames={connectionsFullStats?.gamesPlayed ?? 0} bruteBrawlerGames={(rampageFullStats?.gamesPlayed ?? 0) >= 1 && (knockoutFullStats?.gamesPlayed ?? 0) >= 1 && (brawlFullStats?.gamesPlayed ?? 0) >= 1 ? (rampageFullStats?.gamesPlayed ?? 0) + (knockoutFullStats?.gamesPlayed ?? 0) + (brawlFullStats?.gamesPlayed ?? 0) : 0} ninjaComboGames={ninjaComboFullStats?.gamesPlayed ?? 0} submittedFeedback={gaveFeedback} />
+                <BadgeStrip matchCount={matches.length} isCreator={!!creatorInfo} fabdokuGames={Math.max(fabdokuFullStats?.gamesPlayed ?? 0, fabdokuScore !== null ? 1 : 0)} fabdokuCardGames={fabdokuCardFullStats?.gamesPlayed ?? 0} crosswordGames={crosswordFullStats?.gamesPlayed ?? 0} heroGuesserGames={heroGuesserFullStats?.gamesPlayed ?? 0} matchupManiaGames={matchupManiaFullStats?.gamesPlayed ?? 0} triviaGames={triviaFullStats?.gamesPlayed ?? 0} timelineGames={timelineFullStats?.gamesPlayed ?? 0} connectionsGames={connectionsFullStats?.gamesPlayed ?? 0} bruteBrawlerGames={(rampageFullStats?.gamesPlayed ?? 0) + (knockoutFullStats?.gamesPlayed ?? 0) + (brawlFullStats?.gamesPlayed ?? 0)} ninjaComboGames={ninjaComboFullStats?.gamesPlayed ?? 0} submittedFeedback={gaveFeedback} />
               </div>
               {/* Social links */}
               {(profile.socialLinks?.twitter || profile.socialLinks?.discord || profile.socialLinks?.fabrary || isOwner) && !editingSocials && (
@@ -1095,9 +1095,7 @@ export default function PlayerProfile() {
             triviaGames: triviaFullStats?.gamesPlayed ?? 0,
             timelineGames: timelineFullStats?.gamesPlayed ?? 0,
             connectionsGames: connectionsFullStats?.gamesPlayed ?? 0,
-            bruteBrawlerGames: (rampageFullStats?.gamesPlayed ?? 0) >= 1 && (knockoutFullStats?.gamesPlayed ?? 0) >= 1 && (brawlFullStats?.gamesPlayed ?? 0) >= 1
-              ? (rampageFullStats?.gamesPlayed ?? 0) + (knockoutFullStats?.gamesPlayed ?? 0) + (brawlFullStats?.gamesPlayed ?? 0)
-              : 0,
+            bruteBrawlerGames: (rampageFullStats?.gamesPlayed ?? 0) + (knockoutFullStats?.gamesPlayed ?? 0) + (brawlFullStats?.gamesPlayed ?? 0),
             ninjaComboGames: ninjaComboFullStats?.gamesPlayed ?? 0,
             submittedFeedback: gaveFeedback,
           }}

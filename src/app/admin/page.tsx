@@ -516,9 +516,10 @@ export default function AdminPage() {
             const now = Date.now();
             const onlineNow = data.users.filter((u) => u.lastSiteVisit && (now - new Date(u.lastSiteVisit).getTime()) < 15 * 60_000).length;
             const activeToday = data.users.filter((u) => u.lastSiteVisit && (now - new Date(u.lastSiteVisit).getTime()) < 24 * 60 * 60_000).length;
+            const activeThisWeek = data.users.filter((u) => u.lastSiteVisit && (now - new Date(u.lastSiteVisit).getTime()) < 7 * 24 * 60 * 60_000).length;
             return (
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-                <MetricCard label="Online Now" value={onlineNow} subtext={`${activeToday} active today`} highlight />
+                <MetricCard label="Online Now" value={onlineNow} subtext={`${activeToday} today · ${activeThisWeek} this week`} highlight />
                 <MetricCard label="Total Users" value={data.totalUsers} />
                 <MetricCard label="Active Players" value={activePlayers} subtext={`${data.totalUsers - activePlayers} with 0 matches`} />
                 <MetricCard label="Public" value={publicUsers} subtext={`${privateUsers} private`} />
@@ -2639,6 +2640,10 @@ const GAME_COLLECTIONS = [
   { id: "trivia", label: "Trivia", collection: "trivia-results" },
   { id: "timeline", label: "Timeline", collection: "timeline-results" },
   { id: "connections", label: "Connections", collection: "connections-results" },
+  { id: "rampage", label: "Rhinar's Rampage", collection: "rhinarsrampage-results" },
+  { id: "kayosknockout", label: "Kayo's Knockout", collection: "kayosknockout-results" },
+  { id: "brutebrawl", label: "Brute Brawl", collection: "brutebrawl-results" },
+  { id: "ninjacombo", label: "Katsu's Combo", collection: "ninjacombo-results" },
 ] as const;
 
 interface GameStats {
