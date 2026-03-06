@@ -44,18 +44,6 @@ export function ComboShareCard({
     setTimeout(() => setCopied(false), 2000);
   }
 
-  async function handleNativeShare() {
-    const text = buildShareText();
-    if (navigator.share) {
-      try {
-        await navigator.share({ text });
-        onShared?.();
-      } catch {}
-    } else {
-      handleCopy();
-    }
-  }
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={onClose}>
       <div
@@ -75,14 +63,6 @@ export function ComboShareCard({
           >
             {copied ? "Copied!" : "Copy to Clipboard"}
           </button>
-          {typeof navigator !== "undefined" && typeof navigator.share === "function" && (
-            <button
-              onClick={handleNativeShare}
-              className="px-4 py-2 rounded-lg text-sm font-medium bg-cyan-800/60 hover:bg-cyan-700/60 text-cyan-200 transition-colors"
-            >
-              Share
-            </button>
-          )}
           <button
             onClick={onClose}
             className="px-4 py-2 rounded-lg text-sm text-cyan-400/60 hover:text-cyan-300 transition-colors"
