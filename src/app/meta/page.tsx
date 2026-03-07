@@ -96,8 +96,16 @@ export default function MetaPage() {
   const basePeriod: MetaPeriod = periodSelection === "weekly" ? "weekly" : periodSelection === "monthly" ? "monthly" : "all";
 
   // Derive date range for Top 8 filtering
+  // Season dates are padded ±1 day to account for timezone differences in GEM event dates
   const { sinceDate, untilDate } = useMemo(() => {
-    if (activeSeason) return { sinceDate: activeSeason.startDate, untilDate: activeSeason.endDate };
+    if (activeSeason) {
+      const pad = (d: string, days: number) => {
+        const dt = new Date(d + "T00:00:00");
+        dt.setDate(dt.getDate() + days);
+        return dt.toISOString().slice(0, 10);
+      };
+      return { sinceDate: pad(activeSeason.startDate, -1), untilDate: pad(activeSeason.endDate, 1) };
+    }
     if (periodSelection === "custom" && customStart && customEnd) return { sinceDate: customStart, untilDate: customEnd };
     if (periodSelection === "weekly") return { sinceDate: getWeekStart(), untilDate: undefined };
     if (periodSelection === "monthly") return { sinceDate: getMonthStart(), untilDate: undefined };
