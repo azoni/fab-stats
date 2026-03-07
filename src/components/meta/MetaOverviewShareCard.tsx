@@ -146,8 +146,7 @@ function MetaOverviewCard({ overview, heroStats, title, subtitle, theme }: MetaO
               <div key={seg.hero} className="flex items-center gap-1.5">
                 <div className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ backgroundColor: seg.color }} />
                 <span style={{ color: t.text }} className="text-[11px] font-medium truncate flex-1">{seg.hero}</span>
-                <span style={{ color: t.muted }} className="text-[10px] font-bold shrink-0 tabular-nums">{seg.matches}</span>
-                <span style={{ color: t.dim }} className="text-[9px] shrink-0 tabular-nums w-10 text-right">{seg.events} evt{seg.events !== 1 ? "s" : ""}</span>
+                <span style={{ color: t.muted }} className="text-[10px] font-bold shrink-0 tabular-nums">{seg.events}</span>
               </div>
             ))}
           </div>
