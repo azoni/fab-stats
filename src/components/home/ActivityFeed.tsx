@@ -15,7 +15,7 @@ import type { FeedEvent } from "@/types";
 type ScopeTab = "community" | "friends";
 type TypeFilter = "all" | "import" | "placement" | "games" | "engagement";
 
-const GAME_EVENT_TYPES = new Set(["fabdoku", "crossword", "heroguesser", "matchupmania", "trivia", "timeline", "connections", "rampage", "kayosknockout", "brutebrawl", "ninjacombo", "shadowstrike", "bladedash"]);
+const GAME_EVENT_TYPES = new Set(["fabdoku", "fabdoku-cards", "crossword", "heroguesser", "matchupmania", "trivia", "timeline", "connections", "rampage", "kayosknockout", "brutebrawl", "ninjacombo", "shadowstrike", "bladedash"]);
 
 const TYPE_FILTERS: { value: TypeFilter; label: string; adminOnly?: boolean }[] = [
   { value: "all", label: "All" },
@@ -46,7 +46,7 @@ function groupConsecutiveActivity(events: ActivityEvent[]): ActivityGroup[] {
   return groups;
 }
 const TYPE_CAPS: Record<string, number> = {
-  import: 10,
+  import: 20,
   placement: 20,
 };
 const SCOPE_KEY = "fab-feed-scope";
@@ -104,7 +104,7 @@ export function ActivityFeed({ rankMap, eventTierMap, underlineTierMap }: { rank
   }, [friends, favorites, user?.uid]);
 
   const filteredEvents: FeedEvent[] = useMemo(() => {
-    let source = events.filter((e) => !deletedIds.has(e.id) && e.type !== "achievement");
+    let source = events.filter((e) => !deletedIds.has(e.id));
 
     // Scope filter
     if (scope === "friends") {
@@ -119,8 +119,8 @@ export function ActivityFeed({ rankMap, eventTierMap, underlineTierMap }: { rank
     }
 
     // Filter out stale placements — only show events from the last 2 weeks
-    const TWO_WEEKS = 14 * 24 * 60 * 60 * 1000;
-    const placementCutoff = Date.now() - TWO_WEEKS;
+    const THIRTY_DAYS = 30 * 24 * 60 * 60 * 1000;
+    const placementCutoff = Date.now() - THIRTY_DAYS;
     source = source.filter((e) => {
       if (e.type === "placement") {
         return new Date(e.eventDate).getTime() >= placementCutoff;

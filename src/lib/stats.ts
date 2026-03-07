@@ -697,11 +697,10 @@ export function getRoundNumber(match: MatchRecord): number {
     if (playoffMatch) return 1000 + parseInt(playoffMatch[1], 10);
     const roundMatch = match.notes.match(/Round\s+(\d+)/i);
     if (roundMatch) return parseInt(roundMatch[1], 10);
-    // Descriptive playoff labels sort after swiss
-    const roundInfo = match.notes.split(" | ")[1]?.trim() || "";
-    if (/Quarter|Top\s*8/i.test(roundInfo)) return 1001;
-    if (/Semi|Top\s*4/i.test(roundInfo)) return 1002;
-    if (/Finals?$/i.test(roundInfo)) return 1003;
+    // Descriptive playoff labels sort after swiss — check full notes string
+    if (/Quarter|Top\s*8/i.test(match.notes)) return 1001;
+    if (/Semi|Top\s*4/i.test(match.notes)) return 1002;
+    if (/Finals?(?:\s|$|\|)/i.test(match.notes)) return 1003;
   }
   return 0;
 }

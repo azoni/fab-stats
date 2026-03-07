@@ -86,7 +86,7 @@ const moreLinks: { href: string; label: string; icon: ReactNode; authOnly?: bool
     </svg>
   ) },
   { divider: true, sectionLabel: "Resources", href: "", label: "", icon: null },
-  { href: "/roadmap", label: "Roadmap", badge: "New", icon: <RoadmapIcon className="w-4 h-4" /> },
+  { href: "/roadmap", label: "Roadmap", icon: <RoadmapIcon className="w-4 h-4" /> },
   { href: "/changelog", label: "Changelog", icon: <ChangelogIcon className="w-4 h-4" /> },
   { href: "/docs", label: "Docs", icon: <DocsIcon className="w-4 h-4" /> },
 ];
