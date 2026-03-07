@@ -79,15 +79,16 @@ export function computeMetaStats(
         if (!validHeroNames.has(hb.hero)) continue;
         if (filterFormat && hb.format !== filterFormat) continue;
         if (filterEventType && hb.eventType !== filterEventType) continue;
-        // Date range filtering: count only matches whose dates fall within the range
+        // Date range filtering: skip entries without dates, proportionally scale matches
         let effectiveMatches = hb.matches;
         let effectiveWins = hb.wins;
-        if (isDateRange && hb.dates && hb.dates.length > 0) {
+        if (isDateRange) {
+          if (!hb.dates || hb.dates.length === 0) continue; // Can't verify dates — skip
           const datesInRange = hb.dates.filter(d => d >= sinceDateStr! && (!untilDateStr || d <= untilDateStr));
           if (datesInRange.length === 0) continue;
-          // Proportionally estimate wins based on fraction of matches in range
+          // dates is unique dates (Set), so use proportional scaling for match/win counts
           const fraction = datesInRange.length / hb.dates.length;
-          effectiveMatches = datesInRange.length;
+          effectiveMatches = Math.round(hb.matches * fraction);
           effectiveWins = Math.round(hb.wins * fraction);
         }
 
