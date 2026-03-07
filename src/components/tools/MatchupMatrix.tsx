@@ -8,12 +8,33 @@ import type { MatchRecord, LeaderboardEntry, HeroStats } from "@/types";
 
 type Mode = "personal" | "community";
 type Period = "all" | "30d" | "90d" | "custom";
+type AgeFilter = "adult" | "young" | "all";
 
 const PERIOD_PRESETS: { id: Period; label: string }[] = [
   { id: "all", label: "All Time" },
   { id: "30d", label: "30 Days" },
   { id: "90d", label: "90 Days" },
 ];
+
+function isLivingLegendHero(name: string): boolean {
+  const hero = getHeroByName(name);
+  if (!hero) return false;
+  return hero.legalFormats.includes("Living Legend") &&
+    !hero.legalFormats.includes("Classic Constructed") &&
+    !hero.legalFormats.includes("Blitz");
+}
+
+function isYoungHero(name: string): boolean {
+  const hero = getHeroByName(name);
+  return hero?.young === true;
+}
+
+function passesHeroFilter(name: string, ageFilter: AgeFilter, includeLivingLegend: boolean): boolean {
+  if (!includeLivingLegend && isLivingLegendHero(name)) return false;
+  if (ageFilter === "adult" && isYoungHero(name)) return false;
+  if (ageFilter === "young" && !isYoungHero(name)) return false;
+  return true;
+}
 
 function HeroIcon({ name }: { name: string }) {
   const hero = getHeroByName(name);
@@ -35,11 +56,15 @@ export function MatchupMatrix({ matches, entries, isLoaded }: MatchupMatrixProps
   const [mode, setMode] = useState<Mode>("personal");
   const [format, setFormat] = useState<string>("");
   const [selectedCell, setSelectedCell] = useState<{ hero: string; opp: string } | null>(null);
+  const [ageFilter, setAgeFilter] = useState<AgeFilter>("adult");
+  const [includeLivingLegend, setIncludeLivingLegend] = useState(false);
 
-  // Community state
+  // Shared time filter state
   const [period, setPeriod] = useState<Period>("all");
   const [customStart, setCustomStart] = useState("");
   const [customEnd, setCustomEnd] = useState("");
+
+  // Community state
   const [communityData, setCommunityData] = useState<CommunityMatchupCell[]>([]);
   const [communityLoading, setCommunityLoading] = useState(false);
 
@@ -54,12 +79,25 @@ export function MatchupMatrix({ matches, entries, isLoaded }: MatchupMatrixProps
 
   const formats = mode === "personal" ? personalFormats : communityFormats;
 
-  // Filter matches by format
+  // Filter matches by format and date
   const filteredMatches = useMemo(() => {
     let m = matches;
     if (format) m = m.filter((match) => match.format === format);
+    if (period === "30d") {
+      const since = new Date();
+      since.setDate(since.getDate() - 30);
+      const sinceStr = since.toISOString().slice(0, 10);
+      m = m.filter((match) => match.date >= sinceStr);
+    } else if (period === "90d") {
+      const since = new Date();
+      since.setDate(since.getDate() - 90);
+      const sinceStr = since.toISOString().slice(0, 10);
+      m = m.filter((match) => match.date >= sinceStr);
+    } else if (period === "custom" && customStart && customEnd) {
+      m = m.filter((match) => match.date >= customStart && match.date <= customEnd);
+    }
     return m;
-  }, [matches, format]);
+  }, [matches, format, period, customStart, customEnd]);
 
   // Personal hero stats
   const heroStats = useMemo(
@@ -147,34 +185,32 @@ export function MatchupMatrix({ matches, entries, isLoaded }: MatchupMatrixProps
           ))}
         </div>
 
-        {/* Timeframe presets (community only) */}
-        {mode === "community" && (
-          <div className="flex flex-wrap gap-1.5">
-            {PERIOD_PRESETS.map((p) => (
-              <button
-                key={p.id}
-                onClick={() => setPeriod(p.id)}
-                className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
-                  period === p.id ? "bg-teal-500/15 text-teal-400" : "bg-fab-surface text-fab-muted hover:text-fab-text border border-fab-border"
-                }`}
-              >
-                {p.label}
-              </button>
-            ))}
+        {/* Timeframe presets */}
+        <div className="flex flex-wrap gap-1.5">
+          {PERIOD_PRESETS.map((p) => (
             <button
-              onClick={() => setPeriod("custom")}
+              key={p.id}
+              onClick={() => setPeriod(p.id)}
               className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
-                period === "custom" ? "bg-teal-500/15 text-teal-400" : "bg-fab-surface text-fab-muted hover:text-fab-text border border-fab-border"
+                period === p.id ? "bg-teal-500/15 text-teal-400" : "bg-fab-surface text-fab-muted hover:text-fab-text border border-fab-border"
               }`}
             >
-              Custom
+              {p.label}
             </button>
-          </div>
-        )}
+          ))}
+          <button
+            onClick={() => setPeriod("custom")}
+            className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
+              period === "custom" ? "bg-teal-500/15 text-teal-400" : "bg-fab-surface text-fab-muted hover:text-fab-text border border-fab-border"
+            }`}
+          >
+            Custom
+          </button>
+        </div>
       </div>
 
       {/* Custom date range inputs */}
-      {mode === "community" && period === "custom" && (
+      {period === "custom" && (
         <div className="flex items-center gap-2 mb-4">
           <input
             type="date"
@@ -192,12 +228,55 @@ export function MatchupMatrix({ matches, entries, isLoaded }: MatchupMatrixProps
         </div>
       )}
 
+      {/* Hero filtering row: age + Living Legend toggle */}
+      <div className="flex flex-wrap items-center gap-2 mb-4">
+        {/* Age filter */}
+        <div className="flex rounded-lg border border-fab-border overflow-hidden">
+          {([
+            { id: "adult" as const, label: "Adult" },
+            { id: "young" as const, label: "Young" },
+            { id: "all" as const, label: "All Ages" },
+          ]).map((opt) => (
+            <button
+              key={opt.id}
+              onClick={() => setAgeFilter(opt.id)}
+              className={`px-2.5 py-1 text-xs font-medium transition-colors ${
+                opt.id !== "adult" ? "border-l border-fab-border" : ""
+              } ${
+                ageFilter === opt.id
+                  ? "bg-fab-gold/15 text-fab-gold"
+                  : "text-fab-muted hover:text-fab-text"
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Living Legend toggle */}
+        <button
+          onClick={() => setIncludeLivingLegend(!includeLivingLegend)}
+          className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors flex items-center gap-1.5 ${
+            includeLivingLegend
+              ? "bg-purple-500/15 text-purple-400"
+              : "bg-fab-surface text-fab-muted hover:text-fab-text border border-fab-border"
+          }`}
+        >
+          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+          </svg>
+          Living Legend
+        </button>
+      </div>
+
       {mode === "personal" ? (
         <PersonalGrid
           heroStats={heroStats}
           allOpponents={allOpponents}
           selectedCell={selectedCell}
           onCellClick={setSelectedCell}
+          ageFilter={ageFilter}
+          includeLivingLegend={includeLivingLegend}
         />
       ) : (
         <CommunityMatchupGrid
@@ -205,6 +284,8 @@ export function MatchupMatrix({ matches, entries, isLoaded }: MatchupMatrixProps
           loading={communityLoading}
           selectedCell={selectedCell}
           onCellClick={setSelectedCell}
+          ageFilter={ageFilter}
+          includeLivingLegend={includeLivingLegend}
         />
       )}
     </div>
@@ -216,13 +297,27 @@ function PersonalGrid({
   allOpponents,
   selectedCell,
   onCellClick,
+  ageFilter,
+  includeLivingLegend,
 }: {
   heroStats: HeroStats[];
   allOpponents: string[];
   selectedCell: { hero: string; opp: string } | null;
   onCellClick: (cell: { hero: string; opp: string } | null) => void;
+  ageFilter: AgeFilter;
+  includeLivingLegend: boolean;
 }) {
-  if (heroStats.length === 0 || allOpponents.length === 0) {
+  // Filter heroes and opponents by age + LL
+  const filteredStats = useMemo(
+    () => heroStats.filter((h) => passesHeroFilter(h.heroName, ageFilter, includeLivingLegend)),
+    [heroStats, ageFilter, includeLivingLegend]
+  );
+  const filteredOpponents = useMemo(
+    () => allOpponents.filter((o) => passesHeroFilter(o, ageFilter, includeLivingLegend)),
+    [allOpponents, ageFilter, includeLivingLegend]
+  );
+
+  if (filteredStats.length === 0 || filteredOpponents.length === 0) {
     return (
       <div className="text-center py-12 text-fab-dim">
         <p className="text-lg mb-1">No matchup data yet</p>
@@ -232,7 +327,7 @@ function PersonalGrid({
   }
 
   const selectedMu = selectedCell
-    ? heroStats
+    ? filteredStats
         .find((h) => h.heroName === selectedCell.hero)
         ?.matchups.find((m) => m.opponentHero === selectedCell.opp)
     : null;
@@ -246,7 +341,7 @@ function PersonalGrid({
               <th className="text-left p-2 text-fab-muted font-medium border-b border-fab-border sticky left-0 bg-fab-bg z-10">
                 Your Hero / Opp
               </th>
-              {allOpponents.map((opp) => (
+              {filteredOpponents.map((opp) => (
                 <th
                   key={opp}
                   className="p-2 text-fab-muted font-medium border-b border-fab-border text-center min-w-[90px]"
@@ -257,13 +352,13 @@ function PersonalGrid({
             </tr>
           </thead>
           <tbody>
-            {heroStats.map((hero) => (
+            {filteredStats.map((hero) => (
               <tr key={hero.heroName}>
                 <td className="p-2 font-semibold text-fab-text border-b border-fab-border/50 sticky left-0 bg-fab-bg whitespace-nowrap z-10">
                   {hero.heroName}
                   <span className="ml-1.5 text-xs text-fab-dim">({hero.totalMatches})</span>
                 </td>
-                {allOpponents.map((opp) => {
+                {filteredOpponents.map((opp) => {
                   const mu = hero.matchups.find((m) => m.opponentHero === opp);
                   const isSelected = selectedCell?.hero === hero.heroName && selectedCell?.opp === opp;
                   if (!mu) {
@@ -351,20 +446,28 @@ function CommunityMatchupGrid({
   loading,
   selectedCell,
   onCellClick,
+  ageFilter,
+  includeLivingLegend,
 }: {
   data: CommunityMatchupCell[];
   loading: boolean;
   selectedCell: { hero: string; opp: string } | null;
   onCellClick: (cell: { hero: string; opp: string } | null) => void;
+  ageFilter: AgeFilter;
+  includeLivingLegend: boolean;
 }) {
   const [showAll, setShowAll] = useState(false);
 
-  // Build per-hero rows from the pair data
+  // Build per-hero rows from the pair data, applying hero filters
   const { heroRows, allHeroes, totalMatches } = useMemo(() => {
     const heroMap = new Map<string, Map<string, { wins: number; losses: number; draws: number; total: number }>>();
     let total = 0;
 
     for (const cell of data) {
+      const h1Pass = passesHeroFilter(cell.hero1, ageFilter, includeLivingLegend);
+      const h2Pass = passesHeroFilter(cell.hero2, ageFilter, includeLivingLegend);
+      if (!h1Pass || !h2Pass) continue;
+
       total += cell.total;
 
       // hero1's perspective
@@ -407,7 +510,7 @@ function CommunityMatchupGrid({
     const heroes = rows.map((r) => r.hero);
 
     return { heroRows: rows, allHeroes: heroes, totalMatches: total };
-  }, [data]);
+  }, [data, ageFilter, includeLivingLegend]);
 
   if (loading) {
     return (

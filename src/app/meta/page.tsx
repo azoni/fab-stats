@@ -33,17 +33,14 @@ export default function MetaPage() {
   const [playoffPage, setPlayoffPage] = useState(1);
   const [metaShareOpen, setMetaShareOpen] = useState(false);
 
-  // Build dynamic period tabs: base tabs + active seasons + "Custom"
+  const [seasonDropdownOpen, setSeasonDropdownOpen] = useState(false);
+
+  // Build dynamic period tabs: base tabs + "Seasons" (if any exist) + "Custom"
   const periodTabs = useMemo(() => {
     const tabs = [...BASE_PERIOD_TABS];
-    for (const s of seasons) {
-      if (s.active) {
-        tabs.push({ id: `season:${s.id}`, label: s.name });
-      }
-    }
     tabs.push({ id: "custom", label: "Custom" });
     return tabs;
-  }, [seasons]);
+  }, []);
 
   // Resolve the currently selected season (if any)
   const activeSeason = useMemo(() => {
@@ -161,11 +158,11 @@ export default function MetaPage() {
       </div>
 
       {/* Period tabs */}
-      <div className="flex gap-1 mb-4 flex-wrap">
+      <div className="flex gap-1 mb-4 flex-wrap items-center">
         {periodTabs.map((tab) => (
           <button
             key={tab.id}
-            onClick={() => setPeriodSelection(tab.id)}
+            onClick={() => { setPeriodSelection(tab.id); setSeasonDropdownOpen(false); }}
             className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${
               periodSelection === tab.id
                 ? "bg-fab-gold text-fab-bg"
@@ -175,6 +172,48 @@ export default function MetaPage() {
             {tab.label}
           </button>
         ))}
+
+        {/* Seasons dropdown */}
+        {seasons.length > 0 && (
+          <div className="relative">
+            <button
+              onClick={() => setSeasonDropdownOpen(!seasonDropdownOpen)}
+              className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 ${
+                periodSelection.startsWith("season:")
+                  ? "bg-fab-gold text-fab-bg"
+                  : "bg-fab-surface text-fab-muted hover:text-fab-text border border-fab-border"
+              }`}
+            >
+              {activeSeason ? activeSeason.name : "Seasons"}
+              <svg className={`w-3 h-3 transition-transform ${seasonDropdownOpen ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            {seasonDropdownOpen && (
+              <>
+                <div className="fixed inset-0 z-20" onClick={() => setSeasonDropdownOpen(false)} />
+                <div className="absolute left-0 top-full mt-1 z-30 bg-fab-surface border border-fab-border rounded-lg shadow-xl py-1 min-w-[220px] max-h-[300px] overflow-y-auto">
+                  {seasons.map((s) => (
+                    <button
+                      key={s.id}
+                      onClick={() => { setPeriodSelection(`season:${s.id}`); setSeasonDropdownOpen(false); }}
+                      className={`w-full text-left px-3 py-2 text-xs transition-colors flex items-center gap-2 ${
+                        periodSelection === `season:${s.id}`
+                          ? "bg-fab-gold/15 text-fab-gold font-semibold"
+                          : "text-fab-text hover:bg-fab-bg"
+                      }`}
+                    >
+                      <span className="flex-1 truncate">{s.name}</span>
+                      {s.active && (
+                        <span className="text-[9px] font-bold uppercase tracking-wider px-1 py-0.5 rounded bg-fab-win/15 text-fab-win shrink-0">Live</span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Custom date range picker */}
