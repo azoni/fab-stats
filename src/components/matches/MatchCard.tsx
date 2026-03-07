@@ -52,6 +52,8 @@ export function MatchCard({ match, matchOwnerUid, enableComments = false, obfusc
   const [editing, setEditing] = useState(false);
   const [editHero, setEditHero] = useState(match.heroPlayed || "");
   const [editOppHero, setEditOppHero] = useState(match.opponentHero || "");
+  const [editWinCondition, setEditWinCondition] = useState<MatchRecord["winCondition"]>(match.winCondition);
+  const [editGoingFirst, setEditGoingFirst] = useState<boolean | undefined>(match.goingFirst);
   const [saving, setSaving] = useState(false);
   const [showGemNudge, setShowGemNudge] = useState(false);
   const [suggestingHero, setSuggestingHero] = useState(false);
@@ -88,6 +90,8 @@ export function MatchCard({ match, matchOwnerUid, enableComments = false, obfusc
       const updates: Partial<MatchRecord> = {};
       if (editHero !== (match.heroPlayed || "")) updates.heroPlayed = editHero || "Unknown";
       if (editOppHero !== (match.opponentHero || "")) updates.opponentHero = editOppHero || undefined;
+      if (editWinCondition !== match.winCondition) updates.winCondition = editWinCondition || undefined;
+      if (editGoingFirst !== match.goingFirst) updates.goingFirst = editGoingFirst;
       if (Object.keys(updates).length > 0) {
         await onUpdateMatch(match.id, updates);
         if (missingGemId) setShowGemNudge(true);
@@ -101,6 +105,8 @@ export function MatchCard({ match, matchOwnerUid, enableComments = false, obfusc
   function startEditing() {
     setEditHero(match.heroPlayed || "");
     setEditOppHero(match.opponentHero || "");
+    setEditWinCondition(match.winCondition);
+    setEditGoingFirst(match.goingFirst);
     setEditing(true);
   }
 
@@ -266,6 +272,22 @@ export function MatchCard({ match, matchOwnerUid, enableComments = false, obfusc
           </div>
         </div>
 
+        {/* Win condition + going first pills */}
+        {(match.winCondition || match.goingFirst !== undefined) && !editing && (
+          <div className="flex items-center gap-1.5 mt-1.5">
+            {match.goingFirst !== undefined && (
+              <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${match.goingFirst ? "bg-blue-500/15 text-blue-400" : "bg-purple-500/15 text-purple-400"}`}>
+                {match.goingFirst ? "On the Play" : "On the Draw"}
+              </span>
+            )}
+            {match.winCondition && (
+              <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium bg-fab-muted/10 text-fab-muted capitalize">
+                {match.winCondition === "other" ? "Other" : match.winCondition}
+              </span>
+            )}
+          </div>
+        )}
+
         {/* Notes toggle + inline preview */}
         {matchOwnerUid && (
           <div className="mt-1.5">
@@ -298,6 +320,49 @@ export function MatchCard({ match, matchOwnerUid, enableComments = false, obfusc
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <HeroSelect value={editHero} onChange={setEditHero} label="Your Hero" format={match.format} />
             <HeroSelect value={editOppHero} onChange={setEditOppHero} label="Opponent's Hero" format={match.format} />
+          </div>
+          {/* Win condition + going first */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div>
+              <label className="text-[11px] text-fab-dim mb-1 block">Going First?</label>
+              <div className="flex gap-1">
+                {([
+                  { value: true, label: "On the Play" },
+                  { value: false, label: "On the Draw" },
+                  { value: undefined, label: "N/A" },
+                ] as const).map((opt) => (
+                  <button
+                    key={String(opt.value)}
+                    type="button"
+                    onClick={() => setEditGoingFirst(opt.value as boolean | undefined)}
+                    className={`flex-1 px-2 py-1 rounded text-[11px] font-medium transition-colors ${
+                      editGoingFirst === opt.value
+                        ? opt.value === true ? "bg-blue-500/20 text-blue-400 ring-1 ring-blue-500/40"
+                          : opt.value === false ? "bg-purple-500/20 text-purple-400 ring-1 ring-purple-500/40"
+                          : "bg-fab-surface text-fab-text ring-1 ring-fab-border"
+                        : "bg-fab-bg text-fab-dim border border-fab-border/50 hover:text-fab-text"
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <label className="text-[11px] text-fab-dim mb-1 block">Win Condition</label>
+              <select
+                value={editWinCondition || ""}
+                onChange={(e) => setEditWinCondition((e.target.value || undefined) as MatchRecord["winCondition"])}
+                className="w-full bg-fab-bg border border-fab-border/50 rounded px-2 py-1 text-xs text-fab-text focus:outline-none focus:border-fab-gold"
+              >
+                <option value="">Not set</option>
+                <option value="damage">Damage</option>
+                <option value="fatigue">Fatigue</option>
+                <option value="concession">Concession</option>
+                <option value="time">Time</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <button

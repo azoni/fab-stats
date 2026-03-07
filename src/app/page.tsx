@@ -33,6 +33,7 @@ import { getHeroByName } from "@/lib/heroes";
 import { loadKudosCounts } from "@/lib/kudos";
 import { hasUserSubmittedFeedback } from "@/lib/feedback";
 import { CardBorderWrapper } from "@/components/profile/CardBorderWrapper";
+import { GoalWidget } from "@/components/goals/GoalWidget";
 import type { UnderlineConfig } from "@/components/profile/CardBorderWrapper";
 import type { Poll, EventShowcaseConfig } from "@/types";
 
@@ -506,6 +507,7 @@ export default function Dashboard() {
             </CardBorderWrapper>
             {/* Quick stats + recent events + player spotlight */}
             <QuickStats overall={overall} last30={last30} />
+            {user && <GoalWidget matches={matches} eventStats={eventStats} />}
             <RecentEvents eventStats={eventStats} playerName={profile?.displayName} />
             {(featuredProfiles.length > 0 || creators.length > 0) && (
               <FeaturedProfiles profiles={featuredProfiles} creators={creators} rankMap={rankMap} underlineTierMap={underlineTierMap} grid />

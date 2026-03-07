@@ -11,6 +11,8 @@ export interface MatchRecord {
   venue?: string;
   eventType?: string;
   rated?: boolean;
+  winCondition?: "damage" | "fatigue" | "concession" | "time" | "other";
+  goingFirst?: boolean;
   matchNotes?: string;
   commentCount?: number;
   source?: "extension" | "csv" | "paste" | "manual";
@@ -317,6 +319,7 @@ export interface LeaderboardEntry {
   longestLossStreak?: number;
   uniqueVenues?: number;
   venueBreakdown?: { venue: string; matches: number; wins: number; winRate: number }[];
+  eloRating?: number;
   createdAt?: string;
   updatedAt: string;
 }

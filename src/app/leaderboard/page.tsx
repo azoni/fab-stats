@@ -17,7 +17,7 @@ import type { LeaderboardEntry, OpponentStats } from "@/types";
 
 const SITE_CREATOR = "azoni";
 
-type Tab = "winrate" | "volume" | "mostwins" | "mostlosses" | "streaks" | "draws" | "drawrate" | "lowdrawrate" | "fewestdraws" | "byes" | "byerate" | "balanced" | "events" | "eventgrinder" | "rated" | "ratedstreak" | "heroes" | "dedication" | "loyaltyrate" | "hotstreak" | "coldstreak" | "weeklymatches" | "weeklywins" | "monthlymatches" | "monthlywins" | "monthlywinrate" | "earnings" | "armorywinrate" | "armoryattendance" | "armorymatches" | "top8s" | "top8s_skirmish" | "top8s_pq" | "top8s_bh" | "top8s_rtn" | "top8s_calling" | "top8s_nationals" | "powerlevel" | "uniqueopponents" | "silvermedals" | "lossstreak" | "globetrotter" | "leaderboardcount" | "kudos_total" | "kudos_props" | "kudos_good_sport" | "kudos_skilled" | "kudos_helpful" | "kudos_given_total" | "kudos_given_props" | "kudos_given_good_sport" | "kudos_given_skilled" | "kudos_given_helpful" | "games_total" | "games_winrate" | "games_streak" | "games_variety" | "games_fabdoku" | "games_crossword" | "games_heroguesser" | "games_matchupmania" | "games_trivia" | "games_timeline" | "games_connections" | "games_rampage" | "games_knockout" | "games_brutebrawl" | "games_ninjacombo";
+type Tab = "elo" | "winrate" | "volume" | "mostwins" | "mostlosses" | "streaks" | "draws" | "drawrate" | "lowdrawrate" | "fewestdraws" | "byes" | "byerate" | "balanced" | "events" | "eventgrinder" | "rated" | "ratedstreak" | "heroes" | "dedication" | "loyaltyrate" | "hotstreak" | "coldstreak" | "weeklymatches" | "weeklywins" | "monthlymatches" | "monthlywins" | "monthlywinrate" | "earnings" | "armorywinrate" | "armoryattendance" | "armorymatches" | "top8s" | "top8s_skirmish" | "top8s_pq" | "top8s_bh" | "top8s_rtn" | "top8s_calling" | "top8s_nationals" | "powerlevel" | "uniqueopponents" | "silvermedals" | "lossstreak" | "globetrotter" | "leaderboardcount" | "kudos_total" | "kudos_props" | "kudos_good_sport" | "kudos_skilled" | "kudos_helpful" | "kudos_given_total" | "kudos_given_props" | "kudos_given_good_sport" | "kudos_given_skilled" | "kudos_given_helpful" | "games_total" | "games_winrate" | "games_streak" | "games_variety" | "games_fabdoku" | "games_crossword" | "games_heroguesser" | "games_matchupmania" | "games_trivia" | "games_timeline" | "games_connections" | "games_rampage" | "games_knockout" | "games_brutebrawl" | "games_ninjacombo";
 
 function isKudosTab(tab: Tab): boolean {
   return tab.startsWith("kudos_") && !tab.startsWith("kudos_given_");
@@ -38,6 +38,7 @@ function isGameTab(tab: Tab): boolean {
 // ── Tab definitions ──
 
 const tabs: { id: Tab; label: string; description: string }[] = [
+  { id: "elo", label: "ELO Rating", description: "ELO rating computed from match history. Higher-stakes wins count more. Requires 10+ matches." },
   { id: "winrate", label: "Win Rate", description: "Highest overall win percentage. Requires 100+ matches." },
   { id: "volume", label: "Most Matches", description: "Players who have logged the most matches." },
   { id: "mostwins", label: "Most Wins", description: "Players with the most total wins." },
@@ -120,7 +121,7 @@ interface Category {
 }
 
 const allCategories: Category[] = [
-  { id: "overall", label: "Overall", tabs: ["winrate", "volume", "mostwins", "mostlosses"] },
+  { id: "overall", label: "Overall", tabs: ["elo", "winrate", "volume", "mostwins", "mostlosses"] },
   { id: "time", label: "Weekly & Monthly", tabs: ["weeklymatches", "weeklywins", "monthlymatches", "monthlywins", "monthlywinrate"] },
   { id: "events", label: "Events & Top 8s", tabs: ["events", "eventgrinder", "top8s", "top8s_skirmish", "top8s_pq", "top8s_bh", "top8s_rtn", "top8s_calling", "top8s_nationals", "earnings"] },
   { id: "streaks", label: "Streaks", tabs: ["streaks", "hotstreak", "coldstreak"] },
@@ -161,6 +162,11 @@ function formatRate(rate: number): string {
 // Unified stat extraction for any entry + tab
 function getStat(entry: LeaderboardEntry, tab: Tab): { value: string; sub: string; color: string; rate?: number } {
   switch (tab) {
+    case "elo": {
+      const elo = entry.eloRating ?? 0;
+      const tierLabel = elo >= 1600 ? "Master" : elo >= 1500 ? "Diamond" : elo >= 1400 ? "Platinum" : elo >= 1300 ? "Gold" : elo >= 1200 ? "Silver" : elo >= 1100 ? "Bronze" : "Iron";
+      return { value: String(elo), sub: `${tierLabel} · ${formatRate(entry.winRate)} WR`, color: elo >= 1400 ? "text-purple-400" : elo >= 1200 ? "text-fab-gold" : "text-fab-dim" };
+    }
     case "winrate":
       return { value: formatRate(entry.winRate), sub: `${entry.totalWins}W-${entry.totalLosses}L${entry.totalDraws > 0 ? `-${entry.totalDraws}D` : ""}`, color: entry.winRate >= 50 ? "text-fab-win" : "text-fab-loss", rate: entry.winRate };
     case "volume":
@@ -506,6 +512,8 @@ export default function LeaderboardPage() {
 
   const ranked = useMemo(() => {
     switch (activeTab) {
+      case "elo":
+        return [...visibleEntries].filter((e) => (e.eloRating ?? 0) > 0 && e.totalMatches >= 10).sort((a, b) => (b.eloRating ?? 0) - (a.eloRating ?? 0) || b.totalMatches - a.totalMatches);
       case "winrate":
         return [...visibleEntries].filter((e) => e.totalMatches >= 100).sort((a, b) => b.winRate - a.winRate || b.totalMatches - a.totalMatches);
       case "volume":

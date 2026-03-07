@@ -9,6 +9,7 @@ import { MatchResult, GameFormat } from "@/types";
 import { localDate } from "@/lib/constants";
 import type { EventStats, MatchRecord } from "@/types";
 import { EventShareModal } from "@/components/events/EventShareCard";
+import { BracketView } from "@/components/events/BracketView";
 
 interface EventCardProps {
   event: EventStats;
@@ -64,6 +65,7 @@ export function EventCard({ event, playerName, obfuscateOpponents = false, visib
   const [deleting, setDeleting] = useState(false);
   const [editingOppHeroId, setEditingOppHeroId] = useState<string | null>(null);
   const [savingOppHeroId, setSavingOppHeroId] = useState<string | null>(null);
+  const [showBracket, setShowBracket] = useState(false);
 
   // Determine best playoff placement from match rounds
   let bestPlayoff: string | null = null;
@@ -197,6 +199,17 @@ export function EventCard({ event, playerName, obfuscateOpponents = false, visib
             ))}
             {event.eventType && event.eventType !== "Other" && (
               <span className="hidden sm:inline px-2 py-0.5 rounded bg-fab-bg text-fab-dim text-xs">{event.eventType}</span>
+            )}
+            {bestPlayoff && (
+              <button
+                onClick={(e) => { e.stopPropagation(); setShowBracket(!showBracket); }}
+                className={`p-1 rounded transition-colors ${showBracket ? "text-fab-gold" : "text-fab-dim hover:text-fab-gold"}`}
+                title="View bracket"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6h16.5M3.75 12h16.5m-16.5 5.25H12" />
+                </svg>
+              </button>
             )}
             {playerName && (
               <button
@@ -457,6 +470,14 @@ export function EventCard({ event, playerName, obfuscateOpponents = false, visib
               })}
             </tbody>
           </table>
+
+          {/* Bracket view */}
+          {showBracket && bestPlayoff && (
+            <div className="px-4 py-3 border-t border-fab-border/50 bg-fab-bg/30">
+              <h4 className="text-xs font-bold text-fab-text mb-2">Playoff Bracket</h4>
+              <BracketView matches={event.matches} playerName={playerName} />
+            </div>
+          )}
 
           {/* Delete event */}
           {editable && onDeleteEvent && (

@@ -36,13 +36,17 @@ service cloud.firestore {
         && (!("matchNotes" in request.resource.data) || maxLen(request.resource.data.matchNotes, 2000))
         && (!("opponentName" in request.resource.data) || maxLen(request.resource.data.opponentName, 100))
         && (!("venue" in request.resource.data) || maxLen(request.resource.data.venue, 200))
-        && (!("eventType" in request.resource.data) || maxLen(request.resource.data.eventType, 50));
+        && (!("eventType" in request.resource.data) || maxLen(request.resource.data.eventType, 50))
+        && (!("winCondition" in request.resource.data) || maxLen(request.resource.data.winCondition, 20))
+        && (!("goingFirst" in request.resource.data) || request.resource.data.goingFirst is bool);
       allow update: if request.auth != null && request.auth.uid == userId
         && (!("notes" in request.resource.data) || maxLen(request.resource.data.notes, 2000))
         && (!("matchNotes" in request.resource.data) || maxLen(request.resource.data.matchNotes, 2000))
         && (!("opponentName" in request.resource.data) || maxLen(request.resource.data.opponentName, 100))
         && (!("venue" in request.resource.data) || maxLen(request.resource.data.venue, 200))
-        && (!("eventType" in request.resource.data) || maxLen(request.resource.data.eventType, 50));
+        && (!("eventType" in request.resource.data) || maxLen(request.resource.data.eventType, 50))
+        && (!("winCondition" in request.resource.data) || maxLen(request.resource.data.winCondition, 20))
+        && (!("goingFirst" in request.resource.data) || request.resource.data.goingFirst is bool);
       allow delete: if request.auth != null && request.auth.uid == userId;
       // Admin can update/delete any user's matches (for data fixes)
       allow update, delete: if isAdmin();
@@ -104,6 +108,11 @@ service cloud.firestore {
 
     // ── Matchup Notes (private per-hero notes) ──
     match /users/{userId}/matchupNotes/{heroName} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // ── Goals (private per-user goal tracking) ──
+    match /users/{userId}/goals/{goalId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 

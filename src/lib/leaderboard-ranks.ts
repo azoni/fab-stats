@@ -14,6 +14,12 @@ const currentMonthStart = getMonthStart();
 
 const RANK_TABS: RankTab[] = [
   {
+    id: "elo",
+    label: "ELO Rating",
+    filter: (e) => (e.eloRating ?? 0) > 0 && e.totalMatches >= 10,
+    sort: (a, b) => (b.eloRating ?? 0) - (a.eloRating ?? 0) || b.totalMatches - a.totalMatches,
+  },
+  {
     id: "winrate",
     label: "Win Rate",
     filter: (e) => e.totalMatches >= 100,

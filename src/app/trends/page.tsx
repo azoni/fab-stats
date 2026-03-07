@@ -234,6 +234,40 @@ export default function TrendsPage() {
     return { ratedCount: rated.length, unratedCount: unrated.length, ratedWR: wr(rated), unratedWR: wr(unrated) };
   }, [filteredMatches]);
 
+  // Win Conditions breakdown
+  const winConditionData = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const m of filteredMatches) {
+      if (m.winCondition) {
+        counts[m.winCondition] = (counts[m.winCondition] || 0) + 1;
+      }
+    }
+    const total = Object.values(counts).reduce((s, v) => s + v, 0);
+    if (total < 5) return null;
+    return Object.entries(counts)
+      .map(([name, value]) => ({ name: name.charAt(0).toUpperCase() + name.slice(1), value }))
+      .sort((a, b) => b.value - a.value);
+  }, [filteredMatches]);
+
+  // Going First analysis
+  const goingFirstData = useMemo(() => {
+    const first = { w: 0, l: 0, d: 0, total: 0 };
+    const second = { w: 0, l: 0, d: 0, total: 0 };
+    for (const m of filteredMatches) {
+      if (m.goingFirst === undefined) continue;
+      const bucket = m.goingFirst ? first : second;
+      bucket.total++;
+      if (m.result === MatchResult.Win) bucket.w++;
+      else if (m.result === MatchResult.Loss) bucket.l++;
+      else bucket.d++;
+    }
+    if (first.total + second.total < 5) return null;
+    return {
+      first: { ...first, winRate: first.total > 0 ? Math.round((first.w / first.total) * 100) : 0 },
+      second: { ...second, winRate: second.total > 0 ? Math.round((second.w / second.total) * 100) : 0 },
+    };
+  }, [filteredMatches]);
+
   // Streaks
   const streakInfo = useMemo(() => {
     const sorted = [...filteredMatches].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
@@ -871,6 +905,70 @@ export default function TrendsPage() {
             </div>
           </div>
         </CollapsibleSection>
+      )}
+
+      {/* Win Conditions + Going First side by side */}
+      {(winConditionData || goingFirstData) && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {winConditionData && (
+            <CollapsibleSection id="winConditions" title="Win Conditions" subtitle="How your matches are decided" collapsed={collapsed} toggle={toggle}>
+              <ResponsiveContainer width="100%" height={220}>
+                <PieChart>
+                  <Pie
+                    data={winConditionData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={50}
+                    outerRadius={85}
+                    dataKey="value"
+                    label={({ name, value }) => `${name}: ${value}`}
+                  >
+                    {winConditionData.map((_, i) => (
+                      <Cell key={i} fill={["#ef4444", "#8b5cf6", "#f59e0b", "#3b82f6", "#64748b"][i % 5]} />
+                    ))}
+                  </Pie>
+                  <Tooltip contentStyle={tooltipStyle} />
+                </PieChart>
+              </ResponsiveContainer>
+            </CollapsibleSection>
+          )}
+
+          {goingFirstData && (
+            <CollapsibleSection id="goingFirst" title="Going First Analysis" subtitle="Win rate on the play vs on the draw" collapsed={collapsed} toggle={toggle}>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="text-center">
+                  <p className="text-xs text-blue-400 uppercase tracking-wider mb-1">On the Play</p>
+                  <p className={`text-2xl font-bold ${goingFirstData.first.winRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>
+                    {goingFirstData.first.winRate}%
+                  </p>
+                  <p className="text-xs text-fab-dim mt-0.5">
+                    {goingFirstData.first.w}W-{goingFirstData.first.l}L{goingFirstData.first.d > 0 ? `-${goingFirstData.first.d}D` : ""} ({goingFirstData.first.total})
+                  </p>
+                </div>
+                <div className="text-center">
+                  <p className="text-xs text-purple-400 uppercase tracking-wider mb-1">On the Draw</p>
+                  <p className={`text-2xl font-bold ${goingFirstData.second.winRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>
+                    {goingFirstData.second.winRate}%
+                  </p>
+                  <p className="text-xs text-fab-dim mt-0.5">
+                    {goingFirstData.second.w}W-{goingFirstData.second.l}L{goingFirstData.second.d > 0 ? `-${goingFirstData.second.d}D` : ""} ({goingFirstData.second.total})
+                  </p>
+                </div>
+              </div>
+              {goingFirstData.first.total > 0 && goingFirstData.second.total > 0 && (
+                <div className="mt-4 pt-3 border-t border-fab-border/30 text-center">
+                  <p className="text-xs text-fab-muted">
+                    Advantage:{" "}
+                    <span className={goingFirstData.first.winRate >= goingFirstData.second.winRate ? "text-blue-400 font-medium" : "text-purple-400 font-medium"}>
+                      {goingFirstData.first.winRate >= goingFirstData.second.winRate ? "On the Play" : "On the Draw"}
+                      {" "}(+{Math.abs(goingFirstData.first.winRate - goingFirstData.second.winRate)}%)
+                    </span>
+                  </p>
+                </div>
+              )}
+            </CollapsibleSection>
+          )}
+        </div>
       )}
 
       {/* Format Breakdown (pie) */}

@@ -8,6 +8,7 @@ import {
 } from "firebase/firestore";
 import { db } from "./firebase";
 import { computeOverallStats, computeEventStats, computeOpponentStats, computePlayoffFinishes, computeMinorEventFinishes, getEventType } from "./stats";
+import { computeEloRating } from "./elo";
 import type { LeaderboardEntry, MatchRecord, UserProfile } from "@/types";
 import { MatchResult } from "@/types";
 
@@ -330,6 +331,7 @@ export async function updateLeaderboardEntry(
     longestLossStreak,
     uniqueVenues: venueNames.size,
     venueBreakdown,
+    eloRating: computeEloRating(matches),
     createdAt: profile.createdAt,
     updatedAt: new Date().toISOString(),
   };

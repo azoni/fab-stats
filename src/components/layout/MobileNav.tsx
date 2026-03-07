@@ -140,6 +140,11 @@ const moreSections: { title: string; links: MoreLink[] }[] = [
     title: "Explore",
     links: [
       { href: "/meta", label: "Community Meta", icon: <MetaIcon /> },
+      { href: "/tier-list", label: "Tier List", icon: (
+        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M3 4h18M3 8h14M3 12h10M3 16h6" />
+        </svg>
+      ) },
       { href: "/tournaments", label: "Tournaments", icon: <TrophyIcon /> },
       { href: "/compare", label: "Versus", icon: <CompareIcon /> },
     ],
@@ -150,6 +155,16 @@ const moreSections: { title: string; links: MoreLink[] }[] = [
       { href: "/import", label: "Import Matches", icon: <ImportIcon />, authOnly: true },
       { href: "/trends", label: "My Stats", icon: <TrendsIcon />, authOnly: true },
       { href: "/tools", label: "Player Tools", icon: <SwordsIcon />, authOnly: true },
+      { href: "/goals", label: "Goals", icon: (
+        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
+        </svg>
+      ), authOnly: true },
+      { href: "/share-stats", label: "Stats Package", icon: (
+        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 14.25v2.25m3-4.5v4.5m3-6.75v6.75m3-9v9M6 20.25h12A2.25 2.25 0 0020.25 18V6A2.25 2.25 0 0018 3.75H6A2.25 2.25 0 003.75 6v12A2.25 2.25 0 006 20.25z" />
+        </svg>
+      ), authOnly: true },
     ],
   },
   {

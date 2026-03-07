@@ -22,6 +22,7 @@ import { LeaderboardCrowns } from "@/components/profile/LeaderboardCrowns";
 import { TrophyCase } from "@/components/profile/TrophyCase";
 import { ArmoryGarden } from "@/components/profile/ArmoryGarden";
 import { computeEventBadges } from "@/lib/events";
+import { computeEloRating, getEloTier } from "@/lib/elo";
 import { checkIsAdmin, getAdminUid } from "@/lib/admin";
 import { useLeaderboard } from "@/hooks/useLeaderboard";
 import { computeUserRanks, getBestRank, rankBorderClass } from "@/lib/leaderboard-ranks";
@@ -373,6 +374,8 @@ export default function PlayerProfile() {
   const bestFinish = useMemo(() => computeBestFinish(eventStats), [eventStats]);
   const playoffFinishes = useMemo(() => computePlayoffFinishes(eventStats), [eventStats]);
   const eventBadges = useMemo(() => computeEventBadges(eventStats, playoffFinishes), [eventStats, playoffFinishes]);
+  const eloRating = useMemo(() => fm.length >= 10 ? computeEloRating(fm) : null, [fm]);
+  const eloTier = useMemo(() => eloRating !== null ? getEloTier(eloRating) : null, [eloRating]);
   const userRanks = useMemo(() => profileUid ? computeUserRanks(lbEntries, profileUid) : [], [lbEntries, profileUid]);
   const bestRank = useMemo(() => getBestRank(userRanks), [userRanks]);
   const lastUpdated = useMemo(() => {
@@ -1041,6 +1044,22 @@ export default function PlayerProfile() {
       <>
       {/* Leaderboard Rankings */}
       <LeaderboardCrowns ranks={userRanks} />
+
+      {/* ELO Rating Badge */}
+      {eloRating !== null && eloTier !== null && (
+        <div className="flex items-center gap-3">
+          <Link
+            href="/leaderboard?tab=elo"
+            className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-fab-surface border border-fab-border hover:border-fab-gold/30 transition-colors"
+          >
+            <div className="flex items-center gap-1.5">
+              <span className="text-lg font-bold" style={{ color: eloTier.color }}>{eloRating}</span>
+              <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: eloTier.color }}>{eloTier.label}</span>
+            </div>
+            <span className="text-[10px] text-fab-dim">ELO</span>
+          </Link>
+        </div>
+      )}
 
       {/* Best finish share modal */}
       {bestFinishShareOpen && bestFinish && (
