@@ -16,6 +16,26 @@ interface RoadmapItem {
 
 const items: RoadmapItem[] = [
   {
+    title: "Visual data overhaul — charts across all pages",
+    description: "WinRateRing, MiniDonut, SegmentedBar, SparkLine, and RadarChart components added to Dashboard, Meta, Matches, Leaderboard, Tier List, Versus, Goals, and Share Stats pages.",
+    status: "done",
+  },
+  {
+    title: "Player profile visual upgrade",
+    description: "Add win rate ring, hero distribution donut, and W/L/D segmented bar to public player profiles.",
+    status: "planned",
+  },
+  {
+    title: "Import page visual summary",
+    description: "Pre-import W/L/D donut and post-import session win rate ring for import batches.",
+    status: "planned",
+  },
+  {
+    title: "Tournaments page hero distribution",
+    description: "MiniDonut showing hero distribution in each tournament's top 8 results.",
+    status: "planned",
+  },
+  {
     title: "Improve hero detection for non-extension imports",
     description: "Better hero matching when importing via paste or CSV without the Chrome Extension.",
     status: "planned",

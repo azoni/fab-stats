@@ -33,6 +33,29 @@ const badgeLabels: Record<ChangeType, string> = {
 
 const changelog: Entry[] = [
   {
+    date: "March 7, 2026",
+    id: "mar-7",
+    changes: [
+      { type: "new", text: "WinRateRing component — circular progress gauge for win rates, goal progress, and stat visualization across all pages" },
+      { type: "new", text: "MiniDonut component — multi-segment donut charts for W/L/D splits, meta shares, goal completion, and tier distributions" },
+      { type: "new", text: "SegmentedBar component — enhanced proportional bars replacing thin progress indicators throughout the app" },
+      { type: "new", text: "SparkLine component — inline trend lines for recent form and rolling stats" },
+      { type: "new", text: "RadarChart component — multi-axis comparison chart on the Versus page (Win Rate, Volume, Streaks, Events, Heroes, Top 8s)" },
+      { type: "new", text: "Tier List score composition bars — see how Win Rate, Play Rate, and Top 8 Rate contribute to each hero's tier score" },
+      { type: "new", text: "Tier distribution donut — visual breakdown of hero counts per tier (S/A/B/C/D) at the top of the Tier List" },
+      { type: "new", text: "Goals completion summary — donut chart showing completed vs active goals with progress tracking" },
+      { type: "improved", text: "Dashboard QuickStats — win rate ring, W/L/D donut, and segmented bar replace raw numbers" },
+      { type: "improved", text: "Dashboard MetaSnapshot — hero meta share donut and per-hero win rate rings" },
+      { type: "improved", text: "Meta page — hero distribution donut (top 10), win rate rings on hero rows, and enhanced overview stat cards" },
+      { type: "improved", text: "Matches page — visual summary strip with win rate ring and W/L/D segmented bar" },
+      { type: "improved", text: "Leaderboard — win rate rings on rate-based tabs, proportional bars on count-based tabs" },
+      { type: "improved", text: "Versus page — radar chart, H2H donut, and win rate rings on common opponents and hero rosters" },
+      { type: "improved", text: "Goals page — progress rings on each goal card, segmented progress bars, completion donut" },
+      { type: "improved", text: "Share Stats page — win rate ring, W/L/D donut, segmented bars, and visual recent form section" },
+      { type: "fixed", text: "Goals page 'insufficient permissions' error — deployed missing Firestore security rules for goals subcollection" },
+    ],
+  },
+  {
     date: "March 4, 2026",
     id: "mar-4",
     changes: [
