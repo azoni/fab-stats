@@ -317,7 +317,7 @@ export default function MetaPage() {
         <StatCard
           label="Most Played"
           value={topHero?.hero || "—"}
-          sub={topHero ? `${topHero.metaShare.toFixed(1)}% of matches` : undefined}
+          sub={topHero ? `${topHero.uniqueEvents} events` : undefined}
           icon={<Trophy className="w-3.5 h-3.5" />}
           chart={topHero ? (
             <MiniDonut
@@ -667,15 +667,15 @@ function HeroMetaRow({ hero, index }: { hero: HeroMetaStats; index: number }) {
           className="mt-1"
         />
         <span className="text-[10px] text-fab-dim mt-0.5 block">
-          {hero.metaShare.toFixed(1)}% meta share
+          {hero.uniqueEvents} event{hero.uniqueEvents !== 1 ? "s" : ""} · {hero.metaShare.toFixed(1)}% of meta
         </span>
       </div>
 
       {/* Stats */}
       <div className="flex items-center gap-3 sm:gap-4 shrink-0">
         <div className="hidden sm:block text-right">
-          <p className="text-sm font-semibold text-fab-text">{hero.totalMatches.toLocaleString()}</p>
-          <p className="text-[10px] text-fab-dim">matches</p>
+          <p className="text-sm font-semibold text-fab-text">{hero.uniqueEvents}</p>
+          <p className="text-[10px] text-fab-dim">events</p>
         </div>
         <div className="text-right">
           <p className="text-sm font-semibold text-fab-text">{hero.playerCount}</p>

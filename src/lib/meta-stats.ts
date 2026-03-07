@@ -14,7 +14,7 @@ export interface HeroMetaStats {
   totalWins: number;
   /** Community win rate (totalWins / totalMatches) */
   avgWinRate: number;
-  /** % of all community matches that are this hero */
+  /** % of all community events that featured this hero */
   metaShare: number;
   /** Rank by usage (1 = most played) */
   popularityRank: number;
@@ -154,6 +154,7 @@ export function computeMetaStats(
     }
   }
 
+  const totalEvents = [...heroAgg.values()].reduce((sum, d) => sum + d.dates.size, 0);
   const heroStatsList: HeroMetaStats[] = [...heroAgg.entries()]
     .map(([hero, data]) => ({
       hero,
@@ -161,11 +162,11 @@ export function computeMetaStats(
       totalMatches: data.matches,
       totalWins: data.wins,
       avgWinRate: data.matches > 0 ? (data.wins / data.matches) * 100 : 0,
-      metaShare: totalMatches > 0 ? (data.matches / totalMatches) * 100 : 0,
+      metaShare: totalEvents > 0 ? (data.dates.size / totalEvents) * 100 : 0,
       popularityRank: 0,
       uniqueEvents: data.dates.size,
     }))
-    .sort((a, b) => b.totalMatches - a.totalMatches);
+    .sort((a, b) => b.uniqueEvents - a.uniqueEvents || b.totalMatches - a.totalMatches);
 
   // Assign popularity ranks
   heroStatsList.forEach((h, i) => { h.popularityRank = i + 1; });
