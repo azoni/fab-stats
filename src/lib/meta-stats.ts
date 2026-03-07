@@ -26,6 +26,7 @@ export interface CommunityOverview {
   totalPlayers: number;
   totalMatches: number;
   totalHeroes: number;
+  totalEvents: number;
   avgWinRate: number;
 }
 
@@ -171,11 +172,18 @@ export function computeMetaStats(
   // Assign popularity ranks
   heroStatsList.forEach((h, i) => { h.popularityRank = i + 1; });
 
+  // Unique event dates across all heroes
+  const allDates = new Set<string>();
+  for (const data of heroAgg.values()) {
+    for (const d of data.dates) allDates.add(d);
+  }
+
   return {
     overview: {
       totalPlayers: playersWithData.size,
       totalMatches,
       totalHeroes: heroAgg.size,
+      totalEvents: allDates.size,
       avgWinRate: totalMatches > 0 ? (totalWins / totalMatches) * 100 : 0,
     },
     heroStats: heroStatsList,

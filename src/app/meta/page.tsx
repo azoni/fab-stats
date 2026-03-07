@@ -15,7 +15,7 @@ import { MiniDonut, DONUT_COLORS } from "@/components/charts/MiniDonut";
 import { WinRateRing } from "@/components/charts/WinRateRing";
 import { SegmentedBar } from "@/components/charts/SegmentedBar";
 import { StatCard } from "@/components/ui/StatCard";
-import { Users, Swords, Shield, Trophy, Grid3X3 } from "lucide-react";
+import { Users, Swords, Shield, Trophy, Grid3X3, CalendarDays } from "lucide-react";
 
 type SortKey = "usage" | "winrate";
 type PeriodSelection = MetaPeriod | `season:${string}` | "custom";
@@ -310,9 +310,10 @@ export default function MetaPage() {
       })()}
 
       {/* Community Overview */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
         <StatCard label="Players" value={overview.totalPlayers} icon={<Users className="w-3.5 h-3.5" />} />
         <StatCard label="Total Matches" value={overview.totalMatches.toLocaleString()} icon={<Swords className="w-3.5 h-3.5" />} />
+        <StatCard label="Total Events" value={overview.totalEvents} icon={<CalendarDays className="w-3.5 h-3.5" />} />
         <StatCard label="Heroes Played" value={overview.totalHeroes} icon={<Shield className="w-3.5 h-3.5" />} />
         <StatCard
           label="Most Played"
