@@ -1,5 +1,9 @@
 "use client";
 import { useMemo, useState } from "react";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { AnimatePresence, motion } from "framer-motion";
+import { AlignLeft } from "lucide-react";
 import { useLeaderboard } from "@/hooks/useLeaderboard";
 import { computeMetaStats, getAvailableFormats, computeTop8HeroMeta, type HeroMetaStats, type MetaPeriod, type Top8HeroMeta } from "@/lib/meta-stats";
 import { getHeroByName } from "@/lib/heroes";
@@ -68,11 +72,24 @@ function computeTierList(heroStats: HeroMetaStats[], top8Heroes: Top8HeroMeta[])
   }).sort((a, b) => b.score - a.score);
 }
 
+function updateTierUrl(params: Record<string, string>) {
+  const url = new URL(window.location.href);
+  for (const [k, v] of Object.entries(params)) {
+    if (v && v !== "all") url.searchParams.set(k, v);
+    else url.searchParams.delete(k);
+  }
+  window.history.replaceState({}, "", url.toString());
+}
+
 export default function TierListPage() {
   const { entries, loading } = useLeaderboard(true);
-  const [filterFormat, setFilterFormat] = useState("all");
-  const [period, setPeriod] = useState<MetaPeriod>("all");
+  const searchParams = useSearchParams();
+  const [filterFormat, setFilterFormat] = useState(searchParams.get("format") || "all");
+  const [period, setPeriod] = useState<MetaPeriod>((searchParams.get("period") as MetaPeriod) || "all");
   const [expandedHero, setExpandedHero] = useState<string | null>(null);
+
+  const setFormatWithUrl = (v: string) => { setFilterFormat(v); updateTierUrl({ format: v, period }); };
+  const setPeriodWithUrl = (v: MetaPeriod) => { setPeriod(v); updateTierUrl({ format: filterFormat, period: v }); };
 
   const allFormats = useMemo(() => getAvailableFormats(entries), [entries]);
 
@@ -115,9 +132,7 @@ export default function TierListPage() {
       {/* Header */}
       <div className="flex items-center gap-3 mb-6">
         <div className="w-8 h-8 rounded-lg bg-fuchsia-500/10 flex items-center justify-center ring-1 ring-inset ring-fuchsia-500/20">
-          <svg className="w-4 h-4 text-fuchsia-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M3 4h18M3 8h14M3 12h10M3 16h6" />
-          </svg>
+          <AlignLeft className="w-4 h-4 text-fuchsia-400" />
         </div>
         <div>
           <div className="flex items-center gap-2">
@@ -141,7 +156,7 @@ export default function TierListPage() {
           ]).map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setPeriod(tab.id)}
+              onClick={() => setPeriodWithUrl(tab.id)}
               className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${
                 period === tab.id
                   ? "bg-fab-gold text-fab-bg"
@@ -157,7 +172,7 @@ export default function TierListPage() {
         {allFormats.length > 1 && (
           <div className="flex gap-0.5 bg-fab-bg rounded-lg p-0.5 border border-fab-border">
             <button
-              onClick={() => setFilterFormat("all")}
+              onClick={() => setFormatWithUrl("all")}
               className={`px-2 py-0.5 rounded-md text-[11px] font-medium transition-colors ${
                 filterFormat === "all" ? "bg-fab-surface text-fab-text shadow-sm" : "text-fab-dim hover:text-fab-muted"
               }`}
@@ -167,7 +182,7 @@ export default function TierListPage() {
             {allFormats.map((f) => (
               <button
                 key={f}
-                onClick={() => setFilterFormat(f)}
+                onClick={() => setFormatWithUrl(f)}
                 className={`px-2 py-0.5 rounded-md text-[11px] font-medium transition-colors whitespace-nowrap ${
                   filterFormat === f ? "bg-fab-surface text-fab-text shadow-sm" : "text-fab-dim hover:text-fab-muted"
                 }`}
@@ -180,9 +195,14 @@ export default function TierListPage() {
       </div>
 
       {/* Scoring info */}
-      <p className="text-[10px] text-fab-dim mb-4">
-        Score = Win Rate (40%) + Play Rate (30%) + Top 8 Rate (30%). Minimum data from community imports.
-      </p>
+      <div className="flex items-center justify-between mb-4">
+        <p className="text-[10px] text-fab-dim">
+          Score = Win Rate (40%) + Play Rate (30%) + Top 8 Rate (30%)
+        </p>
+        <Link href="/meta" className="text-[10px] text-fab-dim hover:text-fab-text transition-colors">
+          Full meta stats →
+        </Link>
+      </div>
 
       {/* Tier rows */}
       {scoredHeroes.length === 0 ? (
@@ -233,51 +253,75 @@ export default function TierListPage() {
                 </div>
 
                 {/* Expanded hero detail */}
-                {heroes.some((h) => h.hero === expandedHero) && (() => {
-                  const h = heroes.find((h) => h.hero === expandedHero)!;
-                  return (
-                    <div className={`border-t ${config.border} px-4 py-3 ${config.bg}`}>
-                      <div className="flex items-center gap-3 mb-2">
-                        <HeroClassIcon heroClass={h.heroClass} size="md" />
-                        <div>
-                          <p className="font-semibold text-fab-text">{h.hero}</p>
-                          <p className="text-[10px] text-fab-dim">
-                            Composite Score: <span className={`font-bold ${config.color}`}>{h.score.toFixed(1)}</span>
-                          </p>
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-center">
-                        <div className="bg-fab-bg/50 rounded-lg p-2">
-                          <p className={`text-sm font-bold ${h.winRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>
-                            {h.winRate.toFixed(1)}%
-                          </p>
-                          <p className="text-[10px] text-fab-dim">Win Rate</p>
-                        </div>
-                        <div className="bg-fab-bg/50 rounded-lg p-2">
-                          <p className="text-sm font-bold text-fab-text">{h.metaShare.toFixed(1)}%</p>
-                          <p className="text-[10px] text-fab-dim">Meta Share</p>
-                        </div>
-                        <div className="bg-fab-bg/50 rounded-lg p-2">
-                          <p className="text-sm font-bold text-fab-text">{h.top8Count}</p>
-                          <p className="text-[10px] text-fab-dim">Top 8s</p>
-                        </div>
-                        <div className="bg-fab-bg/50 rounded-lg p-2">
-                          <p className="text-sm font-bold text-fab-text">{h.totalMatches.toLocaleString()}</p>
-                          <p className="text-[10px] text-fab-dim">Matches</p>
-                        </div>
-                        <div className="bg-fab-bg/50 rounded-lg p-2">
-                          <p className="text-sm font-bold text-fab-text">{h.playerCount}</p>
-                          <p className="text-[10px] text-fab-dim">Players</p>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })()}
+                <AnimatePresence initial={false}>
+                  {heroes.some((h) => h.hero === expandedHero) && (
+                    <motion.div
+                      key={expandedHero}
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.2, ease: "easeInOut" }}
+                      style={{ overflow: "hidden" }}
+                    >
+                      <HeroDetail
+                        hero={heroes.find((h) => h.hero === expandedHero)!}
+                        borderClass={config.border}
+                        bgClass={config.bg}
+                        colorClass={config.color}
+                      />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             );
           })}
         </div>
       )}
+    </div>
+  );
+}
+
+function HeroDetail({ hero: h, borderClass, bgClass, colorClass }: {
+  hero: ScoredHero;
+  borderClass: string;
+  bgClass: string;
+  colorClass: string;
+}) {
+  return (
+    <div className={`border-t ${borderClass} px-4 py-3 ${bgClass}`}>
+      <div className="flex items-center gap-3 mb-2">
+        <HeroClassIcon heroClass={h.heroClass} size="md" />
+        <div>
+          <p className="font-semibold text-fab-text">{h.hero}</p>
+          <p className="text-[10px] text-fab-dim">
+            Composite Score: <span className={`font-bold ${colorClass}`}>{h.score.toFixed(1)}</span>
+          </p>
+        </div>
+      </div>
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-center">
+        <div className="bg-fab-bg/50 rounded-lg p-2">
+          <p className={`text-sm font-bold ${h.winRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>
+            {h.winRate.toFixed(1)}%
+          </p>
+          <p className="text-[10px] text-fab-dim">Win Rate</p>
+        </div>
+        <div className="bg-fab-bg/50 rounded-lg p-2">
+          <p className="text-sm font-bold text-fab-text">{h.metaShare.toFixed(1)}%</p>
+          <p className="text-[10px] text-fab-dim">Meta Share</p>
+        </div>
+        <div className="bg-fab-bg/50 rounded-lg p-2">
+          <p className="text-sm font-bold text-fab-text">{h.top8Count}</p>
+          <p className="text-[10px] text-fab-dim">Top 8s</p>
+        </div>
+        <div className="bg-fab-bg/50 rounded-lg p-2">
+          <p className="text-sm font-bold text-fab-text">{h.totalMatches.toLocaleString()}</p>
+          <p className="text-[10px] text-fab-dim">Matches</p>
+        </div>
+        <div className="bg-fab-bg/50 rounded-lg p-2">
+          <p className="text-sm font-bold text-fab-text">{h.playerCount}</p>
+          <p className="text-[10px] text-fab-dim">Players</p>
+        </div>
+      </div>
     </div>
   );
 }

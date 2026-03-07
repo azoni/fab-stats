@@ -428,8 +428,15 @@ export default function LeaderboardPage() {
   const initialTab = (searchParams.get("tab") as Tab) || "winrate";
   const validInitialTab = tabs.some((t) => t.id === initialTab) ? initialTab : "winrate";
 
-  const [activeTab, setActiveTab] = useState<Tab>(validInitialTab);
+  const [activeTab, setActiveTabRaw] = useState<Tab>(validInitialTab);
   const [activeCategory, setActiveCategory] = useState(categoryForTab(validInitialTab));
+
+  const setActiveTab = (tab: Tab) => {
+    setActiveTabRaw(tab);
+    const url = new URL(window.location.href);
+    url.searchParams.set("tab", tab);
+    window.history.replaceState({}, "", url.toString());
+  };
   const [page, setPage] = useState(0);
   const [search, setSearch] = useState("");
   const listRef = useRef<HTMLDivElement>(null);

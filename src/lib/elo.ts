@@ -65,15 +65,28 @@ export function computeEloRating(matches: MatchRecord[]): number {
   return Math.round(rating);
 }
 
+export interface EloTierDef {
+  label: string;
+  color: string;
+  min: number;
+}
+
+export const ELO_TIERS: EloTierDef[] = [
+  { label: "Master", color: "#a78bfa", min: 1600 },
+  { label: "Diamond", color: "#38bdf8", min: 1500 },
+  { label: "Platinum", color: "#22d3ee", min: 1400 },
+  { label: "Gold", color: "#c9a84c", min: 1300 },
+  { label: "Silver", color: "#94a3b8", min: 1200 },
+  { label: "Bronze", color: "#cd7f32", min: 1100 },
+  { label: "Iron", color: "#64748b", min: 0 },
+];
+
 /**
  * Get ELO tier label and color based on rating.
  */
 export function getEloTier(rating: number): { label: string; color: string } {
-  if (rating >= 1600) return { label: "Master", color: "#a78bfa" };
-  if (rating >= 1500) return { label: "Diamond", color: "#38bdf8" };
-  if (rating >= 1400) return { label: "Platinum", color: "#22d3ee" };
-  if (rating >= 1300) return { label: "Gold", color: "#c9a84c" };
-  if (rating >= 1200) return { label: "Silver", color: "#94a3b8" };
-  if (rating >= 1100) return { label: "Bronze", color: "#cd7f32" };
+  for (const tier of ELO_TIERS) {
+    if (rating >= tier.min) return { label: tier.label, color: tier.color };
+  }
   return { label: "Iron", color: "#64748b" };
 }

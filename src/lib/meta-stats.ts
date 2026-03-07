@@ -121,13 +121,10 @@ export function computeMetaStats(
           cur.wins += hb.wins;
           heroAgg.set(hb.hero, cur);
         }
-      } else if (entry.topHero && entry.topHero !== "Unknown" && validHeroNames.has(entry.topHero)) {
-        const cur = heroAgg.get(entry.topHero) || { players: new Set<string>(), matches: 0, wins: 0 };
-        cur.players.add(entry.userId);
-        cur.matches += entry.topHeroMatches;
-        cur.wins += Math.round(entry.topHeroMatches * (entry.winRate / 100));
-        heroAgg.set(entry.topHero, cur);
       }
+      // Legacy entries with only topHero (no hero breakdown) are skipped for
+      // hero aggregation — using overall winRate as a proxy would systematically
+      // bias the hero's community win rate.
     }
   }
 

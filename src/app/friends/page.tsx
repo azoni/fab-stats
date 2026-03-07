@@ -142,7 +142,7 @@ export default function FriendsPage() {
                       className="flex items-center gap-3 flex-1 min-w-0 hover:opacity-80 transition-opacity"
                     >
                       {other.photoUrl ? (
-                        <img src={other.photoUrl} alt="" className="w-10 h-10 rounded-full" />
+                        <img src={other.photoUrl} alt={`${other.displayName}'s photo`} className="w-10 h-10 rounded-full" />
                       ) : (
                         <div className="w-10 h-10 rounded-full bg-fab-gold/20 flex items-center justify-center text-fab-gold font-bold">
                           {other.displayName.charAt(0).toUpperCase()}
@@ -259,7 +259,7 @@ export default function FriendsPage() {
                           className="flex items-center gap-3 flex-1 min-w-0 hover:opacity-80 transition-opacity"
                         >
                           {other.photoUrl ? (
-                            <img src={other.photoUrl} alt="" className="w-10 h-10 rounded-full" />
+                            <img src={other.photoUrl} alt={`${other.displayName}'s photo`} className="w-10 h-10 rounded-full" />
                           ) : (
                             <div className="w-10 h-10 rounded-full bg-fab-gold/20 flex items-center justify-center text-fab-gold font-bold">
                               {other.displayName.charAt(0).toUpperCase()}

@@ -38,7 +38,7 @@ export function ChatInput({ onSend, disabled, rateLimits, error, onClearError, m
         <div className="flex items-start gap-2 text-xs text-fab-loss bg-fab-loss/10 rounded px-2 py-1.5 mb-2">
           <span className="flex-1">{error}</span>
           {onClearError && (
-            <button onClick={onClearError} className="shrink-0 text-fab-loss/60 hover:text-fab-loss transition-colors" title="Dismiss">
+            <button onClick={onClearError} className="shrink-0 text-fab-loss/60 hover:text-fab-loss transition-colors" title="Dismiss" aria-label="Dismiss error">
               &times;
             </button>
           )}

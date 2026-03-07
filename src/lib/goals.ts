@@ -1,7 +1,15 @@
 import { collection, doc, getDocs, setDoc, deleteDoc } from "firebase/firestore";
 import { db } from "./firebase";
+import { computePlayoffFinishes } from "./stats";
 import type { MatchRecord, EventStats } from "@/types";
 import { MatchResult } from "@/types";
+
+const PLACEMENT_VALUE: Record<string, number> = {
+  champion: 1,
+  finalist: 2,
+  top4: 4,
+  top8: 8,
+};
 
 export interface Goal {
   id: string;
@@ -64,10 +72,10 @@ export function evaluateGoalProgress(
       // target: 1 = champion, 2 = finalist, 4 = top4, 8 = top8
       let es = eventStats;
       if (goal.eventType) es = es.filter((e) => e.eventType === goal.eventType);
-      // Count events where placement is <= target
-      current = es.filter((e) => {
-        const placement = getPlacement(e);
-        return placement > 0 && placement <= goal.target;
+      const finishes = computePlayoffFinishes(es);
+      current = finishes.filter((f) => {
+        const placement = PLACEMENT_VALUE[f.type] ?? 99;
+        return placement <= goal.target;
       }).length;
       break;
     }
@@ -90,14 +98,6 @@ export function evaluateGoalProgress(
   return { current, target: goal.target, percent, completed };
 }
 
-function getPlacement(event: EventStats): number {
-  // Simple heuristic: look at match count and win rate to estimate placement
-  // Events with all wins and >=3 matches = champion territory
-  if (event.totalMatches >= 3 && event.winRate === 100) return 1;
-  if (event.totalMatches >= 3 && event.winRate >= 75) return 4;
-  if (event.totalMatches >= 3 && event.winRate >= 60) return 8;
-  return 0;
-}
 
 export function getGoalTypeLabel(type: Goal["type"]): string {
   switch (type) {

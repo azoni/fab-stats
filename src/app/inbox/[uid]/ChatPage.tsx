@@ -71,7 +71,10 @@ export default function ChatPage() {
   if (!user) {
     return (
       <div className="text-center py-24">
-        <p className="text-fab-muted">Sign in to view messages.</p>
+        <p className="text-fab-muted mb-6">Sign in to view messages.</p>
+        <Link href="/login" className="inline-block px-6 py-2.5 rounded-lg font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors">
+          Sign In
+        </Link>
       </div>
     );
   }

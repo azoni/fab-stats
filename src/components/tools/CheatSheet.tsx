@@ -28,9 +28,12 @@ interface CheatRow {
   note: string;
 }
 
+type SortKey = "danger" | "meta" | "winrate";
+
 export function CheatSheet({ matches, entries, isLoaded, isAuthenticated }: CheatSheetProps) {
   const [hero, setHero] = useState("");
   const [format, setFormat] = useState("");
+  const [sortBy, setSortBy] = useState<SortKey>("danger");
 
   const formats = useMemo(() => getAvailableFormats(entries), [entries]);
   const { matchups: notes } = useMatchupNotes(hero || null);
@@ -56,7 +59,8 @@ export function CheatSheet({ matches, entries, isLoaded, isAuthenticated }: Chea
     return top10.map((mh) => {
       const mu = yourHeroStats?.matchups.find((m) => m.opponentHero === mh.hero);
       const yourWinRate = mu ? mu.winRate : null;
-      const effectiveWR = yourWinRate ?? 50;
+      // Use community WR (inverted, since high community WR = harder opponent) when no personal data
+      const effectiveWR = yourWinRate ?? (100 - mh.avgWinRate);
       const dangerScore = mh.metaShare * ((100 - effectiveWR) / 100);
       const heroInfo = getHeroByName(mh.hero);
       return {
@@ -71,8 +75,12 @@ export function CheatSheet({ matches, entries, isLoaded, isAuthenticated }: Chea
         dangerScore,
         note: notes[mh.hero] || "",
       };
-    }).sort((a, b) => b.dangerScore - a.dangerScore);
-  }, [metaHeroes, yourHeroStats, notes]);
+    }).sort((a, b) => {
+      if (sortBy === "meta") return b.metaShare - a.metaShare;
+      if (sortBy === "winrate") return (a.yourWinRate ?? 999) - (b.yourWinRate ?? 999);
+      return b.dangerScore - a.dangerScore;
+    });
+  }, [metaHeroes, yourHeroStats, notes, sortBy]);
 
   if (!isLoaded) {
     return <div className="h-8 w-48 bg-fab-surface rounded animate-pulse" />;
@@ -119,17 +127,24 @@ export function CheatSheet({ matches, entries, isLoaded, isAuthenticated }: Chea
           <p className="text-xs text-fab-dim mt-1">Compact scouting report for tournament day</p>
         </div>
       ) : rows.length === 0 ? (
-        <div className="text-center py-10 text-fab-dim">
-          <p>No community meta data available.</p>
+        <div className="text-center py-16">
+          <p className="text-fab-muted">No community meta data available.</p>
+          <p className="text-fab-dim text-sm mt-1">Try adjusting the format filter.</p>
         </div>
       ) : (
         <div className="space-y-1.5">
           {/* Column header */}
           <div className="flex items-center gap-2 px-3 py-1 text-[10px] text-fab-dim font-medium uppercase tracking-wider">
             <span className="flex-1">Opponent</span>
-            <span className="w-12 text-right">Meta</span>
-            <span className="w-16 text-right">Record</span>
-            <span className="w-12 text-right">Danger</span>
+            <button onClick={() => setSortBy("meta")} className={`w-12 text-right transition-colors ${sortBy === "meta" ? "text-fab-gold" : "hover:text-fab-text"}`}>
+              Meta{sortBy === "meta" ? " ↓" : ""}
+            </button>
+            <button onClick={() => setSortBy("winrate")} className={`w-16 text-right transition-colors ${sortBy === "winrate" ? "text-fab-gold" : "hover:text-fab-text"}`}>
+              Record{sortBy === "winrate" ? " ↑" : ""}
+            </button>
+            <button onClick={() => setSortBy("danger")} className={`w-12 text-right transition-colors ${sortBy === "danger" ? "text-fab-gold" : "hover:text-fab-text"}`}>
+              Danger{sortBy === "danger" ? " ↓" : ""}
+            </button>
           </div>
 
           {rows.map((r) => {
@@ -169,7 +184,7 @@ export function CheatSheet({ matches, entries, isLoaded, isAuthenticated }: Chea
                   <span className={`w-16 text-right text-xs font-semibold ${wrColor}`}>
                     {r.yourMatches > 0
                       ? `${r.yourWins}-${r.yourLosses}`
-                      : "—"}
+                      : "no data"}
                   </span>
                   <span className={`w-12 text-right text-xs font-bold ${dangerColor}`}>
                     {r.dangerScore.toFixed(1)}

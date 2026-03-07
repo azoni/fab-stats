@@ -21,29 +21,54 @@ interface BracketViewProps {
 const ROUND_ORDER: Record<string, number> = {
   "Top 8": 1,
   "Playoff": 1,
+  "Quarterfinal": 1,
+  "Quarterfinals": 1,
   "Top 4": 2,
+  "Semifinal": 2,
+  "Semifinals": 2,
   "Finals": 3,
+  "Final": 3,
+  "Grand Final": 3,
   "Skirmish": 0,
 };
 
+const ROUND_LABELS: Record<string, string> = {
+  "Playoff": "Top 8",
+  "Quarterfinal": "Top 8",
+  "Quarterfinals": "Top 8",
+  "Semifinal": "Top 4",
+  "Semifinals": "Top 4",
+  "Final": "Finals",
+  "Grand Final": "Finals",
+};
+
 function getRoundLabel(round: string): string {
-  if (round === "Playoff" || /^Round P/i.test(round)) return "Top 8";
-  return round;
+  if (/^Round P/i.test(round)) return "Top 8";
+  return ROUND_LABELS[round] ?? round;
 }
 
 function getRoundOrder(round: string): number {
   if (/^Round P/i.test(round)) return 1;
-  return ROUND_ORDER[round] ?? 0;
+  return ROUND_ORDER[round] ?? -1;
+}
+
+/** Extract round info from match notes, trying multiple formats. */
+function extractRoundInfo(notes: string | undefined): string | null {
+  if (!notes) return null;
+  // Format: "Event Name | Round Info" or "Event Name | Round Info | extra"
+  const parts = notes.split(" | ");
+  if (parts.length >= 2 && parts[1].trim()) return parts[1].trim();
+  return null;
 }
 
 export function BracketView({ matches, playerName }: BracketViewProps) {
   const nodes = useMemo(() => {
     const playoff: BracketNode[] = [];
     for (const m of matches) {
-      const roundInfo = m.notes?.split(" | ")[1];
+      const roundInfo = extractRoundInfo(m.notes);
       if (!roundInfo) continue;
       const order = getRoundOrder(roundInfo);
-      if (order === 0 && roundInfo !== "Skirmish") continue;
+      if (order < 0) continue; // Unknown round type, skip
 
       playoff.push({
         round: getRoundLabel(roundInfo),

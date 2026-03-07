@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNotifications } from "@/hooks/useNotifications";
@@ -210,9 +211,12 @@ export default function NotificationsPage() {
 
   if (!user || isGuest) {
     return (
-      <div className="text-center py-16 text-fab-dim">
-        <p className="text-lg mb-1">Sign in to view notifications</p>
-        <p className="text-sm">You need an account to receive notifications.</p>
+      <div className="text-center py-16">
+        <p className="text-fab-muted mb-1">Sign in to view notifications</p>
+        <p className="text-fab-dim text-sm mb-6">You need an account to receive notifications.</p>
+        <Link href="/login" className="inline-block px-6 py-2.5 rounded-lg font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors">
+          Sign In
+        </Link>
       </div>
     );
   }

@@ -35,6 +35,7 @@ export function useMatches() {
   const [isLoaded, setIsLoaded] = useState(
     () => (user && cachedForUid === user.uid && cachedMatches != null)
   );
+  const [error, setError] = useState<string | null>(null);
 
   // One-time Firestore fetch for authenticated users (with shared cache)
   useEffect(() => {
@@ -59,12 +60,19 @@ export function useMatches() {
     }
 
     setIsLoaded(false);
-    fetchPromise.then((data) => {
-      updateCache(user.uid, data);
-      fetchPromise = null;
-      setMatches(data);
-      setIsLoaded(true);
-    });
+    fetchPromise
+      .then((data) => {
+        updateCache(user.uid, data);
+        fetchPromise = null;
+        setMatches(data);
+        setIsLoaded(true);
+      })
+      .catch((e) => {
+        console.error("Failed to load matches:", e);
+        fetchPromise = null;
+        setError(e instanceof Error ? e.message : "Failed to load matches");
+        setIsLoaded(true);
+      });
   }, [user, isGuest]);
 
   // localStorage read for guest users
@@ -82,10 +90,18 @@ export function useMatches() {
         return;
       }
       if (!user) return;
-      const saved = await addMatchFirestore(user.uid, match);
-      const updated = [saved, ...(cachedMatches || [])];
-      updateCache(user.uid, updated);
-      setMatches(updated);
+      try {
+        setError(null);
+        const saved = await addMatchFirestore(user.uid, match);
+        const updated = [saved, ...(cachedMatches || [])];
+        updateCache(user.uid, updated);
+        setMatches(updated);
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : "Failed to save match";
+        console.error("addMatch failed:", e);
+        setError(msg);
+        throw e;
+      }
     },
     [user, isGuest]
   );
@@ -98,10 +114,18 @@ export function useMatches() {
         return;
       }
       if (!user) return;
-      await deleteMatchFirestore(user.uid, id);
-      const updated = (cachedMatches || []).filter((m) => m.id !== id);
-      updateCache(user.uid, updated);
-      setMatches(updated);
+      try {
+        setError(null);
+        await deleteMatchFirestore(user.uid, id);
+        const updated = (cachedMatches || []).filter((m) => m.id !== id);
+        updateCache(user.uid, updated);
+        setMatches(updated);
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : "Failed to delete match";
+        console.error("deleteMatch failed:", e);
+        setError(msg);
+        throw e;
+      }
     },
     [user, isGuest]
   );
@@ -114,10 +138,18 @@ export function useMatches() {
         return;
       }
       if (!user) return;
-      await updateMatchFirestore(user.uid, id, updates);
-      const updated = (cachedMatches || []).map((m) => (m.id === id ? { ...m, ...updates } : m));
-      updateCache(user.uid, updated);
-      setMatches(updated);
+      try {
+        setError(null);
+        await updateMatchFirestore(user.uid, id, updates);
+        const updated = (cachedMatches || []).map((m) => (m.id === id ? { ...m, ...updates } : m));
+        updateCache(user.uid, updated);
+        setMatches(updated);
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : "Failed to update match";
+        console.error("updateMatch failed:", e);
+        setError(msg);
+        throw e;
+      }
     },
     [user, isGuest]
   );
@@ -132,11 +164,19 @@ export function useMatches() {
         return;
       }
       if (!user) return;
-      await batchUpdateMatchesFirestore(user.uid, matchIds, { heroPlayed });
-      const idSet = new Set(matchIds);
-      const updated = (cachedMatches || []).map((m) => (idSet.has(m.id) ? { ...m, heroPlayed } : m));
-      updateCache(user.uid, updated);
-      setMatches(updated);
+      try {
+        setError(null);
+        await batchUpdateMatchesFirestore(user.uid, matchIds, { heroPlayed });
+        const idSet = new Set(matchIds);
+        const updated = (cachedMatches || []).map((m) => (idSet.has(m.id) ? { ...m, heroPlayed } : m));
+        updateCache(user.uid, updated);
+        setMatches(updated);
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : "Failed to update hero";
+        console.error("batchUpdateHero failed:", e);
+        setError(msg);
+        throw e;
+      }
     },
     [user, isGuest]
   );
@@ -151,11 +191,19 @@ export function useMatches() {
         return;
       }
       if (!user) return;
-      await batchUpdateMatchesFirestore(user.uid, matchIds, { format });
-      const idSet = new Set(matchIds);
-      const updated = (cachedMatches || []).map((m) => (idSet.has(m.id) ? { ...m, format } : m));
-      updateCache(user.uid, updated);
-      setMatches(updated);
+      try {
+        setError(null);
+        await batchUpdateMatchesFirestore(user.uid, matchIds, { format });
+        const idSet = new Set(matchIds);
+        const updated = (cachedMatches || []).map((m) => (idSet.has(m.id) ? { ...m, format } : m));
+        updateCache(user.uid, updated);
+        setMatches(updated);
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : "Failed to update format";
+        console.error("batchUpdateFormat failed:", e);
+        setError(msg);
+        throw e;
+      }
     },
     [user, isGuest]
   );
@@ -168,11 +216,19 @@ export function useMatches() {
         return;
       }
       if (!user) return;
-      await batchDeleteMatchesFirestore(user.uid, matchIds);
-      const idSet = new Set(matchIds);
-      const updated = (cachedMatches || []).filter((m) => !idSet.has(m.id));
-      updateCache(user.uid, updated);
-      setMatches(updated);
+      try {
+        setError(null);
+        await batchDeleteMatchesFirestore(user.uid, matchIds);
+        const idSet = new Set(matchIds);
+        const updated = (cachedMatches || []).filter((m) => !idSet.has(m.id));
+        updateCache(user.uid, updated);
+        setMatches(updated);
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : "Failed to delete matches";
+        console.error("batchDeleteMatches failed:", e);
+        setError(msg);
+        throw e;
+      }
     },
     [user, isGuest]
   );
@@ -188,5 +244,7 @@ export function useMatches() {
     setMatches(data);
   }, [user, isGuest]);
 
-  return { matches, isLoaded, addMatch, deleteMatch, updateMatch, batchUpdateHero, batchUpdateFormat, batchDeleteMatches, refreshMatches };
+  const clearError = useCallback(() => setError(null), []);
+
+  return { matches, isLoaded, error, clearError, addMatch, deleteMatch, updateMatch, batchUpdateHero, batchUpdateFormat, batchDeleteMatches, refreshMatches };
 }

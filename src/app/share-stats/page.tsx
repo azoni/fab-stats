@@ -57,7 +57,10 @@ export default function ShareStatsPage() {
   if (!user || isGuest) {
     return (
       <div className="text-center py-16">
-        <p className="text-fab-muted">Sign in to view your stats package.</p>
+        <p className="text-fab-muted mb-6">Sign in to view your stats package.</p>
+        <Link href="/login" className="inline-block px-6 py-2.5 rounded-lg font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors">
+          Sign In
+        </Link>
       </div>
     );
   }
@@ -126,7 +129,10 @@ export default function ShareStatsPage() {
           {/* Top Heroes */}
           {topHeroes.length > 0 && (
             <section className="bg-fab-surface border border-fab-border rounded-lg p-4">
-              <h2 className="text-sm font-bold text-fab-text mb-3">Top Heroes</h2>
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-sm font-bold text-fab-text">Top Heroes</h2>
+                <Link href="/heroes" className="text-[10px] text-fab-dim hover:text-fab-text transition-colors">View all</Link>
+              </div>
               <div className="space-y-2">
                 {topHeroes.map((hero, i) => {
                   const heroInfo = getHeroByName(hero.heroName);
@@ -149,7 +155,10 @@ export default function ShareStatsPage() {
           {/* Weakest Matchups */}
           {weakestMatchups.length > 0 && (
             <section className="bg-fab-surface border border-fab-border rounded-lg p-4">
-              <h2 className="text-sm font-bold text-fab-text mb-1">Areas to Improve</h2>
+              <div className="flex items-center justify-between mb-1">
+                <h2 className="text-sm font-bold text-fab-text">Areas to Improve</h2>
+                <Link href="/matchups" className="text-[10px] text-fab-dim hover:text-fab-text transition-colors">View all</Link>
+              </div>
               <p className="text-[10px] text-fab-dim mb-3">Your toughest matchups (min 3 games)</p>
               <div className="space-y-2">
                 {weakestMatchups.map((m, i) => {
@@ -222,7 +231,7 @@ export default function ShareStatsPage() {
           )}
 
           {/* Share link */}
-          {profile?.isPublic && (
+          {profile?.isPublic ? (
             <div className="text-center pt-2">
               <p className="text-xs text-fab-dim mb-2">Share your profile</p>
               <Link
@@ -230,6 +239,16 @@ export default function ShareStatsPage() {
                 className="text-sm font-medium text-fab-gold hover:underline"
               >
                 fabstats.net/player/{profile.username}
+              </Link>
+            </div>
+          ) : (
+            <div className="text-center pt-2">
+              <p className="text-xs text-fab-dim mb-1">Your profile is currently private.</p>
+              <Link
+                href="/settings"
+                className="text-xs font-medium text-fab-gold hover:underline"
+              >
+                Make it public in Settings to share your stats
               </Link>
             </div>
           )}

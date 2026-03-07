@@ -117,9 +117,9 @@ export function EventScout({ matches, entries, isLoaded }: EventScoutProps) {
       </div>
 
       {topMeta.length === 0 ? (
-        <div className="text-center py-12 text-fab-dim">
-          <p className="text-lg mb-1">No community data for these filters</p>
-          <p className="text-sm">Try adjusting the format or event type.</p>
+        <div className="text-center py-16">
+          <p className="text-fab-muted">No community data for these filters.</p>
+          <p className="text-fab-dim text-sm mt-1">Try adjusting the format or event type.</p>
         </div>
       ) : (
         <div className="space-y-6">

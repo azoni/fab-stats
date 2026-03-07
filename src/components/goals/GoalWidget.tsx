@@ -18,21 +18,27 @@ export function GoalWidget({ matches, eventStats }: GoalWidgetProps) {
     [goals],
   );
 
-  if (loading || activeGoals.length === 0) return null;
+  if (loading) return null;
 
   return (
     <div className="bg-fab-surface border border-fab-border rounded-lg p-4">
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-sm font-bold text-fab-text">Goals</h3>
         <Link href="/goals" className="text-[10px] text-fab-dim hover:text-fab-text transition-colors">
-          View all
+          {activeGoals.length > 0 ? "View all" : "Set goals"}
         </Link>
       </div>
-      <div className="space-y-2.5">
-        {activeGoals.map((goal) => (
-          <GoalProgressRow key={goal.id} goal={goal} matches={matches} eventStats={eventStats} />
-        ))}
-      </div>
+      {activeGoals.length > 0 ? (
+        <div className="space-y-2.5">
+          {activeGoals.map((goal) => (
+            <GoalProgressRow key={goal.id} goal={goal} matches={matches} eventStats={eventStats} />
+          ))}
+        </div>
+      ) : (
+        <p className="text-xs text-fab-dim">
+          No active goals. <Link href="/goals" className="text-fab-gold hover:underline">Create one</Link> to track your progress.
+        </p>
+      )}
     </div>
   );
 }

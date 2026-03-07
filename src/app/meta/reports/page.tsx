@@ -1,5 +1,6 @@
 "use client";
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { useLeaderboard } from "@/hooks/useLeaderboard";
 import { getAvailableFormats } from "@/lib/meta-stats";
 import { computeMetaReport, type MetaMover } from "@/lib/meta-reports";
@@ -45,12 +46,15 @@ export default function MetaReportsPage() {
             <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
           </svg>
         </div>
-        <div>
+        <div className="flex-1">
           <h1 className="text-lg font-bold text-fab-text leading-tight">Meta Report</h1>
           <p className="text-xs text-fab-muted leading-tight">
             {compareMode === "week_vs_month" ? "This Week vs Last 30 Days" : "This Month vs All Time"}
           </p>
         </div>
+        <Link href="/meta" className="text-xs text-fab-dim hover:text-fab-text transition-colors">
+          Full meta →
+        </Link>
       </div>
 
       {/* Filters */}
@@ -102,7 +106,7 @@ export default function MetaReportsPage() {
       {report.current.length === 0 ? (
         <div className="text-center py-16">
           <p className="text-fab-muted">No meta data for this period.</p>
-          <p className="text-fab-dim text-sm mt-1">Players need to re-import matches for recent data.</p>
+          <p className="text-fab-dim text-sm mt-1">Try a different time range or wait for more players to import matches.</p>
         </div>
       ) : (
         <div className="space-y-6">

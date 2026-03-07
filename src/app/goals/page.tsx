@@ -1,5 +1,6 @@
 "use client";
 import { useState, useMemo } from "react";
+import Link from "next/link";
 import { useGoals } from "@/hooks/useGoals";
 import { useMatches } from "@/hooks/useMatches";
 import { useAuth } from "@/contexts/AuthContext";
@@ -7,12 +8,15 @@ import { computeEventStats } from "@/lib/stats";
 import { evaluateGoalProgress, getGoalDescription, getGoalTypeLabel, type Goal } from "@/lib/goals";
 import { HeroSelect } from "@/components/heroes/HeroSelect";
 import { GameFormat } from "@/types";
+import { BarChart3, CheckCircle, X } from "lucide-react";
+import { toast } from "sonner";
 
 export default function GoalsPage() {
   const { user, isGuest } = useAuth();
   const { goals, loading, addGoal, removeGoal } = useGoals();
   const { matches, isLoaded } = useMatches();
   const [showForm, setShowForm] = useState(false);
+  const [showAllCompleted, setShowAllCompleted] = useState(false);
 
   const eventStats = useMemo(() => computeEventStats(matches), [matches]);
 
@@ -22,7 +26,10 @@ export default function GoalsPage() {
   if (!user || isGuest) {
     return (
       <div className="text-center py-16">
-        <p className="text-fab-muted">Sign in to set and track goals.</p>
+        <p className="text-fab-muted mb-6">Sign in to set and track goals.</p>
+        <Link href="/login" className="inline-block px-6 py-2.5 rounded-lg font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors">
+          Sign In
+        </Link>
       </div>
     );
   }
@@ -32,9 +39,7 @@ export default function GoalsPage() {
       {/* Header */}
       <div className="flex items-center gap-3 mb-6">
         <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center ring-1 ring-inset ring-emerald-500/20">
-          <svg className="w-4 h-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
-          </svg>
+          <BarChart3 className="w-4 h-4 text-emerald-400" />
         </div>
         <div className="flex-1">
           <h1 className="text-lg font-bold text-fab-text leading-tight">Goals</h1>
@@ -52,8 +57,13 @@ export default function GoalsPage() {
       {showForm && (
         <AddGoalForm
           onAdd={async (goal) => {
-            await addGoal(goal);
-            setShowForm(false);
+            try {
+              await addGoal(goal);
+              setShowForm(false);
+              toast.success("Goal added");
+            } catch {
+              toast.error("Failed to add goal.");
+            }
           }}
           onCancel={() => setShowForm(false)}
         />
@@ -68,9 +78,7 @@ export default function GoalsPage() {
         </div>
       ) : activeGoals.length === 0 && completedGoals.length === 0 ? (
         <div className="text-center py-16 border border-dashed border-fab-border rounded-lg">
-          <svg className="w-10 h-10 mx-auto mb-3 text-fab-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
-          </svg>
+          <BarChart3 className="w-10 h-10 mx-auto mb-3 text-fab-muted" />
           <p className="text-fab-muted">No goals yet</p>
           <p className="text-fab-dim text-sm mt-1">Click &quot;+ New Goal&quot; to get started</p>
         </div>
@@ -86,7 +94,9 @@ export default function GoalsPage() {
                     goal={goal}
                     matches={matches}
                     eventStats={eventStats}
-                    onDelete={() => removeGoal(goal.id)}
+                    onDelete={async () => {
+                      try { await removeGoal(goal.id); } catch { toast.error("Failed to remove goal."); }
+                    }}
                   />
                 ))}
               </div>
@@ -97,16 +107,26 @@ export default function GoalsPage() {
             <div>
               <h2 className="text-sm font-semibold text-fab-text mb-3">Completed ({completedGoals.length})</h2>
               <div className="space-y-2">
-                {completedGoals.map((goal) => (
+                {(showAllCompleted ? completedGoals : completedGoals.slice(0, 5)).map((goal) => (
                   <GoalCard
                     key={goal.id}
                     goal={goal}
                     matches={matches}
                     eventStats={eventStats}
-                    onDelete={() => removeGoal(goal.id)}
+                    onDelete={async () => {
+                      try { await removeGoal(goal.id); } catch { toast.error("Failed to remove goal."); }
+                    }}
                   />
                 ))}
               </div>
+              {completedGoals.length > 5 && !showAllCompleted && (
+                <button
+                  onClick={() => setShowAllCompleted(true)}
+                  className="w-full mt-2 py-2 text-xs text-fab-dim hover:text-fab-text transition-colors"
+                >
+                  Show {completedGoals.length - 5} more
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -143,9 +163,7 @@ function GoalCard({
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
             {progress.completed && (
-              <svg className="w-4 h-4 text-fab-win shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" />
-              </svg>
+              <CheckCircle className="w-4 h-4 text-fab-win shrink-0" />
             )}
             <p className="text-sm font-medium text-fab-text truncate">
               {goal.title || getGoalDescription(goal)}
@@ -176,10 +194,9 @@ function GoalCard({
           onClick={onDelete}
           className="text-fab-dim hover:text-fab-loss transition-colors p-1"
           title="Delete goal"
+          aria-label="Delete goal"
         >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-          </svg>
+          <X className="w-4 h-4" />
         </button>
       </div>
     </div>
@@ -193,11 +210,13 @@ function AddGoalForm({ onAdd, onCancel }: { onAdd: (goal: Goal) => Promise<void>
   const [hero, setHero] = useState("");
   const [format, setFormat] = useState("");
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
 
   const handleSubmit = async () => {
     const t = Number(target);
-    if (!t || t <= 0) return;
+    if (!t || isNaN(t) || t <= 0) return;
     setSaving(true);
+    setError("");
     try {
       await onAdd({
         id: `goal_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
@@ -208,7 +227,8 @@ function AddGoalForm({ onAdd, onCancel }: { onAdd: (goal: Goal) => Promise<void>
         format: format || undefined,
         createdAt: new Date().toISOString(),
       });
-    } finally {
+    } catch {
+      setError("Failed to save goal. Please try again.");
       setSaving(false);
     }
   };
@@ -275,6 +295,9 @@ function AddGoalForm({ onAdd, onCancel }: { onAdd: (goal: Goal) => Promise<void>
         </div>
 
         {/* Actions */}
+        {error && (
+          <p className="text-xs text-fab-loss">{error}</p>
+        )}
         <div className="flex gap-2 pt-1">
           <button
             onClick={handleSubmit}

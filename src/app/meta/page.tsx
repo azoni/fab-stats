@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useLeaderboard } from "@/hooks/useLeaderboard";
 import { useSeasons } from "@/hooks/useSeasons";
 import { computeMetaStats, getAvailableFormats, getAvailableEventTypes, computeTop8HeroMeta, type HeroMetaStats, type MetaPeriod, type Top8HeroMeta } from "@/lib/meta-stats";
@@ -19,21 +20,51 @@ const BASE_PERIOD_TABS: { id: PeriodSelection; label: string }[] = [
   { id: "weekly", label: "Last 7 Days" },
 ];
 
+function updateMetaUrl(params: Record<string, string>) {
+  const url = new URL(window.location.href);
+  for (const [k, v] of Object.entries(params)) {
+    if (v && v !== "all") url.searchParams.set(k, v);
+    else url.searchParams.delete(k);
+  }
+  window.history.replaceState({}, "", url.toString());
+}
+
 export default function MetaPage() {
   const { entries, loading } = useLeaderboard(true);
   const { seasons } = useSeasons();
+  const searchParams = useSearchParams();
+
   const [sortBy, setSortBy] = useState<SortKey>("usage");
   const [search, setSearch] = useState("");
-  const [filterFormat, setFilterFormat] = useState("all");
-  const [filterEventType, setFilterEventType] = useState("all");
-  const [periodSelection, setPeriodSelection] = useState<PeriodSelection>("all");
-  const [customStart, setCustomStart] = useState("");
-  const [customEnd, setCustomEnd] = useState("");
+  const [filterFormat, setFilterFormat] = useState(searchParams.get("format") || "all");
+  const [filterEventType, setFilterEventType] = useState(searchParams.get("eventType") || "all");
+  const [periodSelection, setPeriodSelection] = useState<PeriodSelection>(
+    (searchParams.get("period") as PeriodSelection) || "all"
+  );
+  const [customStart, setCustomStart] = useState(searchParams.get("from") || "");
+  const [customEnd, setCustomEnd] = useState(searchParams.get("to") || "");
   const [heroPage, setHeroPage] = useState(1);
   const [playoffPage, setPlayoffPage] = useState(1);
   const [metaShareOpen, setMetaShareOpen] = useState(false);
 
   const [seasonDropdownOpen, setSeasonDropdownOpen] = useState(false);
+
+  // URL-synced filter setters
+  const setFormatWithUrl = (v: string) => { setFilterFormat(v); updateMetaUrl({ format: v, period: periodSelection, eventType: filterEventType }); };
+  const setEventTypeWithUrl = (v: string) => { setFilterEventType(v); updateMetaUrl({ format: filterFormat, period: periodSelection, eventType: v }); };
+  const setPeriodWithUrl = (v: PeriodSelection) => { setPeriodSelection(v); updateMetaUrl({ format: filterFormat, period: v, eventType: filterEventType }); };
+
+  // Default to most recent season when seasons load (only if no URL period param)
+  useEffect(() => {
+    if (seasons.length > 0 && periodSelection === "all" && !searchParams.get("period")) {
+      const sorted = [...seasons].sort(
+        (a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime()
+      );
+      const seasonId = `season:${sorted[0].id}` as PeriodSelection;
+      setPeriodSelection(seasonId);
+      updateMetaUrl({ period: seasonId });
+    }
+  }, [seasons]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Build dynamic period tabs: base tabs + "Seasons" (if any exist) + "Custom"
   const periodTabs = useMemo(() => {
@@ -162,7 +193,7 @@ export default function MetaPage() {
         {periodTabs.map((tab) => (
           <button
             key={tab.id}
-            onClick={() => { setPeriodSelection(tab.id); setSeasonDropdownOpen(false); }}
+            onClick={() => { setPeriodWithUrl(tab.id); setSeasonDropdownOpen(false); }}
             className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${
               periodSelection === tab.id
                 ? "bg-fab-gold text-fab-bg"
@@ -196,7 +227,7 @@ export default function MetaPage() {
                   {seasons.map((s) => (
                     <button
                       key={s.id}
-                      onClick={() => { setPeriodSelection(`season:${s.id}`); setSeasonDropdownOpen(false); }}
+                      onClick={() => { setPeriodWithUrl(`season:${s.id}`); setSeasonDropdownOpen(false); }}
                       className={`w-full text-left px-3 py-2 text-xs transition-colors flex items-center gap-2 ${
                         periodSelection === `season:${s.id}`
                           ? "bg-fab-gold/15 text-fab-gold font-semibold"
@@ -308,7 +339,7 @@ export default function MetaPage() {
               <button
                 onClick={() => setMetaShareOpen(true)}
                 className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-fab-surface border border-fab-border text-fab-dim hover:text-fab-text hover:border-fab-muted transition-colors"
-                title="Share meta breakdown"
+                title="Share meta breakdown" aria-label="Share meta breakdown"
               >
                 <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z" />
@@ -397,7 +428,7 @@ export default function MetaPage() {
         {allFormats.length > 1 && !activeSeason && (
           <div className="flex gap-0.5 bg-fab-bg rounded-lg p-0.5 border border-fab-border">
             <button
-              onClick={() => setFilterFormat("all")}
+              onClick={() => setFormatWithUrl("all")}
               className={`px-2 py-0.5 rounded-md text-[11px] font-medium transition-colors ${
                 filterFormat === "all" ? "bg-fab-surface text-fab-text shadow-sm" : "text-fab-dim hover:text-fab-muted"
               }`}
@@ -407,7 +438,7 @@ export default function MetaPage() {
             {allFormats.map((f) => (
               <button
                 key={f}
-                onClick={() => setFilterFormat(f)}
+                onClick={() => setFormatWithUrl(f)}
                 className={`px-2 py-0.5 rounded-md text-[11px] font-medium transition-colors whitespace-nowrap ${
                   filterFormat === f ? "bg-fab-surface text-fab-text shadow-sm" : "text-fab-dim hover:text-fab-muted"
                 }`}
@@ -422,7 +453,7 @@ export default function MetaPage() {
         {allEventTypes.length > 1 && !activeSeason && (
           <div className="flex gap-0.5 bg-fab-bg rounded-lg p-0.5 border border-fab-border overflow-x-auto scrollbar-hide">
             <button
-              onClick={() => setFilterEventType("all")}
+              onClick={() => setEventTypeWithUrl("all")}
               className={`px-2 py-0.5 rounded-md text-[11px] font-medium transition-colors ${
                 filterEventType === "all" ? "bg-fab-surface text-fab-text shadow-sm" : "text-fab-dim hover:text-fab-muted"
               }`}
@@ -432,7 +463,7 @@ export default function MetaPage() {
             {allEventTypes.map((t) => (
               <button
                 key={t}
-                onClick={() => setFilterEventType(t)}
+                onClick={() => setEventTypeWithUrl(t)}
                 className={`px-2 py-0.5 rounded-md text-[11px] font-medium transition-colors whitespace-nowrap ${
                   filterEventType === t ? "bg-fab-surface text-fab-text shadow-sm" : "text-fab-dim hover:text-fab-muted"
                 }`}

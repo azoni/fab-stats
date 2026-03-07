@@ -39,12 +39,10 @@ export async function saveGeneralNotes(
   heroName: string,
   general: string
 ): Promise<void> {
-  const existing = await getMatchupNotes(userId, heroName);
   await setDoc(noteDoc(userId, heroName), {
     general,
-    matchups: existing?.matchups || {},
     updatedAt: new Date().toISOString(),
-  });
+  }, { merge: true });
 }
 
 export async function saveMatchupNote(
@@ -53,10 +51,8 @@ export async function saveMatchupNote(
   opponentHero: string,
   note: string
 ): Promise<void> {
-  const existing = await getMatchupNotes(userId, heroName);
   await setDoc(noteDoc(userId, heroName), {
-    general: existing?.general || "",
-    matchups: { ...(existing?.matchups || {}), [opponentHero]: note },
+    matchups: { [opponentHero]: note },
     updatedAt: new Date().toISOString(),
-  });
+  }, { merge: true });
 }

@@ -14,123 +14,40 @@ import { playerHref } from "@/lib/constants";
 import type { ReactNode } from "react";
 import type { Creator, UserProfile } from "@/types";
 import { GAMES } from "@/lib/games";
-
-function MetaIcon({ className = "w-4 h-4" }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-    </svg>
-  );
-}
-
-function ChangelogIcon({ className = "w-4 h-4" }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-    </svg>
-  );
-}
-
-function DocsIcon({ className = "w-4 h-4" }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-    </svg>
-  );
-}
-
-function RoadmapIcon({ className = "w-4 h-4" }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-    </svg>
-  );
-}
-
-function CompareIcon({ className = "w-4 h-4" }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
-    </svg>
-  );
-}
-
-function SearchIcon({ className = "w-4 h-4" }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-    </svg>
-  );
-}
+import {
+  Globe, ClipboardList, BookOpen, ClipboardCheck, Zap, Search,
+  AlignLeft, Wrench, BarChart3, Puzzle, Target, ChevronDown,
+  Mail, Star, Users, Settings, ShieldCheck, ExternalLink,
+  MoreVertical, X, ArrowRight, Loader2,
+} from "lucide-react";
 
 const navLinks: { href: string; label: string; icon: ReactNode; color: string; bg: string; authOnly?: boolean }[] = [
   { href: "/leaderboard", label: "Rankings", icon: <TrophyIcon className="w-4 h-4" />, color: "text-amber-400", bg: "bg-amber-400/10" },
   { href: "/trends", label: "My Stats", icon: <TrendsIcon className="w-4 h-4" />, color: "text-fab-gold", bg: "bg-fab-gold/10", authOnly: true },
   { href: "/matches", label: "Matches", icon: <SwordsIcon className="w-4 h-4" />, color: "text-red-400", bg: "bg-red-400/10" },
-  { href: "/meta", label: "Meta", icon: <MetaIcon className="w-4 h-4" />, color: "text-teal-400", bg: "bg-teal-400/10" },
+  { href: "/meta", label: "Meta", icon: <Globe className="w-4 h-4" />, color: "text-teal-400", bg: "bg-teal-400/10" },
 ];
 
 const moreLinks: { href: string; label: string; icon: ReactNode; authOnly?: boolean; adminOnly?: boolean; badge?: string; divider?: boolean; sectionLabel?: string }[] = [
-  { href: "/compare", label: "Versus", icon: <CompareIcon className="w-4 h-4" /> },
-  { href: "/tier-list", label: "Tier List", badge: "New", icon: (
-    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M3 4h18M3 8h14M3 12h10M3 16h6" />
-    </svg>
-  ) },
+  { href: "/compare", label: "Versus", icon: <Zap className="w-4 h-4" /> },
+  { href: "/tier-list", label: "Tier List", badge: "New", icon: <AlignLeft className="w-4 h-4" /> },
   { href: "/tournaments", label: "Tournaments", icon: <CalendarIcon className="w-4 h-4" /> },
-  { href: "/tools", label: "Player Tools", badge: "Beta", icon: (
-    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M11.42 15.17L17.25 21A2.652 2.652 0 0021 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 11-3.586-3.586l6.837-5.63m5.108-.233c.55-.164 1.163-.188 1.743-.14a4.5 4.5 0 004.486-6.336l-3.276 3.277a3.004 3.004 0 01-2.25-2.25l3.276-3.276a4.5 4.5 0 00-6.336 4.486c.091 1.076-.071 2.264-.904 2.95l-.102.085m-1.745 1.437L5.909 7.5H4.5L2.25 3.75l1.5-1.5L7.5 4.5v1.409l4.26 4.26m-1.745 1.437l1.745-1.437m6.615 8.206L15.75 15.75M4.867 19.125h.008v.008h-.008v-.008z" />
-    </svg>
-  ), authOnly: true },
-  { href: "/goals", label: "Goals", icon: (
-    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
-    </svg>
-  ), authOnly: true },
-  { href: "/share-stats", label: "Stats Package", icon: (
-    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 14.25v2.25m3-4.5v4.5m3-6.75v6.75m3-9v9M6 20.25h12A2.25 2.25 0 0020.25 18V6A2.25 2.25 0 0018 3.75H6A2.25 2.25 0 003.75 6v12A2.25 2.25 0 006 20.25z" />
-    </svg>
-  ), authOnly: true },
-  { href: "/games", label: "Games", badge: String(GAMES.length), icon: (
-    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M14.25 6.087c0-.355.186-.676.401-.959.221-.29.349-.634.349-1.003 0-1.036-1.007-1.875-2.25-1.875s-2.25.84-2.25 1.875c0 .369.128.713.349 1.003.215.283.401.604.401.959v0a.64.64 0 01-.657.643 48.39 48.39 0 01-4.163-.3c.186 1.613.293 3.25.315 4.907a.656.656 0 01-.658.663v0c-.355 0-.676-.186-.959-.401a1.647 1.647 0 00-1.003-.349c-1.036 0-1.875 1.007-1.875 2.25s.84 2.25 1.875 2.25c.369 0 .713-.128 1.003-.349.283-.215.604-.401.959-.401v0c.31 0 .555.26.532.57a48.039 48.039 0 01-.642 5.056c1.518.19 3.058.309 4.616.354a.64.64 0 00.657-.643v0c0-.355-.186-.676-.401-.959a1.647 1.647 0 01-.349-1.003c0-1.035 1.008-1.875 2.25-1.875 1.243 0 2.25.84 2.25 1.875 0 .369-.128.713-.349 1.003-.215.283-.4.604-.4.959v0c0 .333.277.599.61.58a48.1 48.1 0 005.427-.63 48.05 48.05 0 00.582-4.717.532.532 0 00-.533-.57v0c-.355 0-.676.186-.959.401-.29.221-.634.349-1.003.349-1.035 0-1.875-1.007-1.875-2.25s.84-2.25 1.875-2.25c.37 0 .713.128 1.003.349.283.215.604.401.96.401v0a.656.656 0 00.658-.663 48.422 48.422 0 00-.37-5.36c-1.886.342-3.81.574-5.766.689a.578.578 0 01-.61-.58v0z" />
-    </svg>
-  ) },
+  { href: "/tools", label: "Player Tools", badge: "Beta", icon: <Wrench className="w-4 h-4" />, authOnly: true },
+  { href: "/goals", label: "Goals", icon: <Target className="w-4 h-4" />, authOnly: true },
+  { href: "/share-stats", label: "Stats Package", icon: <BarChart3 className="w-4 h-4" />, authOnly: true },
+  { href: "/games", label: "Games", badge: String(GAMES.length), icon: <Puzzle className="w-4 h-4" /> },
   { divider: true, sectionLabel: "Resources", href: "", label: "", icon: null },
-  { href: "/roadmap", label: "Roadmap", icon: <RoadmapIcon className="w-4 h-4" /> },
-  { href: "/changelog", label: "Changelog", icon: <ChangelogIcon className="w-4 h-4" /> },
-  { href: "/docs", label: "Docs", icon: <DocsIcon className="w-4 h-4" /> },
+  { href: "/roadmap", label: "Roadmap", icon: <ClipboardCheck className="w-4 h-4" /> },
+  { href: "/changelog", label: "Changelog", icon: <ClipboardList className="w-4 h-4" /> },
+  { href: "/docs", label: "Docs", icon: <BookOpen className="w-4 h-4" /> },
 ];
 
 const userMenuLinks: { href: string; label: string; icon: ReactNode; adminOnly?: boolean }[] = [
-  { href: "/inbox", label: "Inbox", icon: (
-    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
-    </svg>
-  )},
-  { href: "/favorites", label: "Favorites", icon: (
-    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
-    </svg>
-  )},
-  { href: "/friends", label: "Friends", icon: (
-    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
-    </svg>
-  )},
-  { href: "/settings", label: "Settings", icon: (
-    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-      <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-    </svg>
-  )},
-  { href: "/admin", label: "Admin", adminOnly: true, icon: (
-    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-    </svg>
-  )},
+  { href: "/inbox", label: "Inbox", icon: <Mail className="w-4 h-4" /> },
+  { href: "/favorites", label: "Favorites", icon: <Star className="w-4 h-4" /> },
+  { href: "/friends", label: "Friends", icon: <Users className="w-4 h-4" /> },
+  { href: "/settings", label: "Settings", icon: <Settings className="w-4 h-4" /> },
+  { href: "/admin", label: "Admin", adminOnly: true, icon: <ShieldCheck className="w-4 h-4" /> },
 ];
 
 export function Navbar() {
@@ -398,7 +315,7 @@ function NavbarSearch() {
         className="flex items-center gap-1.5 px-2.5 py-2 rounded-md text-sm font-medium transition-colors text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover"
         title="Search players"
       >
-        <SearchIcon className="w-4 h-4" />
+        <Search className="w-4 h-4" />
         <span className="hidden xl:inline">Search</span>
       </button>
     );
@@ -407,7 +324,7 @@ function NavbarSearch() {
   return (
     <div className="relative" ref={ref}>
       <div className="flex items-center gap-1.5 bg-fab-bg border border-fab-gold/40 rounded-lg px-2.5 py-1.5">
-        <SearchIcon className="w-4 h-4 text-fab-gold shrink-0" />
+        <Search className="w-4 h-4 text-fab-gold shrink-0" />
         <input
           ref={inputRef}
           type="text"
@@ -418,15 +335,10 @@ function NavbarSearch() {
           className="bg-transparent text-sm text-fab-text placeholder:text-fab-dim outline-none w-40 xl:w-52"
         />
         {loading && (
-          <svg className="w-3.5 h-3.5 text-fab-dim animate-spin shrink-0" viewBox="0 0 24 24" fill="none">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth={4} />
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-          </svg>
+          <Loader2 className="w-3.5 h-3.5 text-fab-dim animate-spin shrink-0" />
         )}
         <button onClick={handleClose} className="text-fab-dim hover:text-fab-text transition-colors shrink-0">
-          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-          </svg>
+          <X className="w-3.5 h-3.5" />
         </button>
       </div>
 
@@ -446,7 +358,7 @@ function NavbarSearch() {
               }`}
             >
               {r.profile?.photoUrl ? (
-                <img src={r.profile.photoUrl} alt="" className="w-8 h-8 rounded-full object-cover shrink-0" />
+                <img src={r.profile.photoUrl} alt="Player photo" className="w-8 h-8 rounded-full object-cover shrink-0" />
               ) : (
                 <div className="w-8 h-8 rounded-full bg-fab-gold/20 flex items-center justify-center text-fab-gold text-xs font-bold shrink-0">
                   {(r.profile?.displayName || r.username).charAt(0).toUpperCase()}
@@ -463,11 +375,9 @@ function NavbarSearch() {
               onMouseDown={() => navigateTo(`/search?q=${encodeURIComponent(query.trim())}`)}
               className="flex items-center gap-2 w-full px-3 py-2.5 border-t border-fab-border text-left hover:bg-fab-surface-hover transition-colors"
             >
-              <SearchIcon className="w-3.5 h-3.5 text-fab-dim" />
+              <Search className="w-3.5 h-3.5 text-fab-dim" />
               <span className="text-xs text-fab-muted">Search all for &quot;{query.trim()}&quot;</span>
-              <svg className="w-3 h-3 text-fab-dim ml-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-              </svg>
+              <ArrowRight className="w-3 h-3 text-fab-dim ml-auto" />
             </button>
           )}
         </div>
@@ -527,7 +437,7 @@ function UserMenu({
         title="View profile"
       >
         {profile?.photoUrl ? (
-          <img src={profile.photoUrl} alt="" className="w-7 h-7 rounded-full object-cover shrink-0" />
+          <img src={profile.photoUrl} alt="Your profile photo" className="w-7 h-7 rounded-full object-cover shrink-0" />
         ) : (
           <span className="w-7 h-7 rounded-full bg-fab-gold/20 flex items-center justify-center text-fab-gold text-xs font-bold shrink-0">{initial}</span>
         )}
@@ -545,9 +455,7 @@ function UserMenu({
         }`}
         title="Account menu"
       >
-        <svg className={`w-3 h-3 transition-transform ${open ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-        </svg>
+        <ChevronDown className={`w-3 h-3 transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
 
       {open && (
@@ -559,7 +467,7 @@ function UserMenu({
             className="flex items-center gap-3 px-4 py-3 hover:bg-fab-surface-hover transition-colors border-b border-fab-border"
           >
             {profile?.photoUrl ? (
-              <img src={profile.photoUrl} alt="" className="w-9 h-9 rounded-full object-cover shrink-0" />
+              <img src={profile.photoUrl} alt="Your profile photo" className="w-9 h-9 rounded-full object-cover shrink-0" />
             ) : (
               <div className="w-9 h-9 rounded-full bg-fab-gold/20 flex items-center justify-center text-fab-gold font-bold text-sm shrink-0">
                 {initial}
@@ -648,9 +556,7 @@ function CollapsibleSection({
         className="flex items-center justify-between w-full px-4 py-2 hover:bg-fab-surface-hover transition-colors"
       >
         <span className="text-xs text-fab-dim font-medium uppercase tracking-wider">{label}</span>
-        <svg className={`w-3 h-3 text-fab-dim transition-transform ${expanded ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-        </svg>
+        <ChevronDown className={`w-3 h-3 text-fab-dim transition-transform ${expanded ? "rotate-180" : ""}`} />
       </button>
       {expanded && <div className="px-1.5 pb-1.5">{children}</div>}
     </>
@@ -716,15 +622,9 @@ function MoreDropdown({
             : "text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover"
         }`}
       >
-        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <circle cx="12" cy="5" r="1" fill="currentColor" />
-          <circle cx="12" cy="12" r="1" fill="currentColor" />
-          <circle cx="12" cy="19" r="1" fill="currentColor" />
-        </svg>
+        <MoreVertical className="w-4 h-4" />
         <span className="hidden lg:inline">More</span>
-        <svg className={`w-3 h-3 transition-transform ${open ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-        </svg>
+        <ChevronDown className={`w-3 h-3 transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
 
       {open && (
@@ -782,9 +682,7 @@ function MoreDropdown({
                     </p>
                     <p className="text-xs text-fab-dim truncate">{creator.description}</p>
                   </div>
-                  <svg className="w-3.5 h-3.5 text-fab-dim shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
-                  </svg>
+                  <ExternalLink className="w-3.5 h-3.5 text-fab-dim shrink-0" />
                 </a>
               ))}
             </CollapsibleSection>
@@ -803,9 +701,7 @@ function MoreDropdown({
                 <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
               </svg>
               <span className="text-sm font-medium text-fab-muted group-hover:text-fab-text transition-colors">GitHub Sponsors</span>
-              <svg className="w-3.5 h-3.5 text-fab-dim shrink-0 ml-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
-              </svg>
+              <ExternalLink className="w-3.5 h-3.5 text-fab-dim shrink-0 ml-auto" />
             </a>
             <a
               href="https://ko-fi.com/azoni"
@@ -818,9 +714,7 @@ function MoreDropdown({
                 <path d="M23.881 8.948c-.773-4.085-4.859-4.593-4.859-4.593H.723c-.604 0-.679.798-.679.798s-.082 7.324-.022 11.822c.164 2.424 2.586 2.672 2.586 2.672s8.267-.023 11.966-.049c2.438-.426 2.683-2.566 2.658-3.734 4.352.24 7.422-2.831 6.649-6.916zm-11.062 3.511c-1.246 1.453-4.011 3.976-4.011 3.976s-.121.119-.31.023c-.076-.057-.108-.09-.108-.09-.443-.441-3.368-3.049-4.034-3.954-.709-.965-1.041-2.7-.091-3.71.951-1.01 3.005-1.086 4.363.407 0 0 1.565-1.782 3.468-.963 1.904.82 1.832 3.011.723 4.311zm6.173.478c-.928.116-1.682.028-1.682.028V7.284h1.493s1.535-.199 2.089 1.024c.603 1.332-.084 4.39-1.9 4.629z" />
               </svg>
               <span className="text-sm font-medium text-fab-muted group-hover:text-fab-text transition-colors">Ko-fi</span>
-              <svg className="w-3.5 h-3.5 text-fab-dim shrink-0 ml-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
-              </svg>
+              <ExternalLink className="w-3.5 h-3.5 text-fab-dim shrink-0 ml-auto" />
             </a>
           </CollapsibleSection>
 

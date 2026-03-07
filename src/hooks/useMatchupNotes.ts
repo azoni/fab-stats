@@ -31,12 +31,18 @@ export function useMatchupNotes(heroName: string | null) {
       return;
     }
     setLoading(true);
-    getMatchupNotes(user.uid, heroName).then((doc) => {
-      if (currentHero.current !== heroName) return;
-      setGeneral(doc?.general || "");
-      setMatchups(doc?.matchups || {});
-      setLoading(false);
-    });
+    getMatchupNotes(user.uid, heroName)
+      .then((doc) => {
+        if (currentHero.current !== heroName) return;
+        setGeneral(doc?.general || "");
+        setMatchups(doc?.matchups || {});
+      })
+      .catch((e) => {
+        console.error("Failed to load matchup notes:", e);
+      })
+      .finally(() => {
+        if (currentHero.current === heroName) setLoading(false);
+      });
   }, [user, heroName]);
 
   const flushGeneral = useCallback(async () => {

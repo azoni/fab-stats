@@ -32,9 +32,12 @@ export default function InboxPage() {
 
   if (!user || isGuest) {
     return (
-      <div className="text-center py-16 text-fab-dim">
-        <p className="text-lg mb-1">Inbox</p>
-        <p className="text-sm">Sign in to view your messages.</p>
+      <div className="text-center py-16">
+        <p className="text-fab-muted mb-1">Inbox</p>
+        <p className="text-fab-dim text-sm mb-6">Sign in to view your messages.</p>
+        <Link href="/login" className="inline-block px-6 py-2.5 rounded-lg font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors">
+          Sign In
+        </Link>
       </div>
     );
   }

@@ -18,6 +18,10 @@ import { useCreators } from "@/hooks/useCreators";
 import { platformIcons } from "@/components/layout/Navbar";
 import { useTheme } from "@/contexts/ThemeContext";
 import { THEME_OPTIONS, type ThemeName } from "@/lib/theme-config";
+import { Switch } from "@/components/ui/switch";
+import { Collapsible } from "@/components/ui/collapsible";
+import { Settings, CheckCircle, Camera, ChevronRight, ExternalLink } from "lucide-react";
+import { toast } from "sonner";
 
 function resizeImage(file: File, maxSize: number): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -34,7 +38,9 @@ function resizeImage(file: File, maxSize: number): Promise<string> {
         }
         canvas.width = w;
         canvas.height = h;
-        canvas.getContext("2d")!.drawImage(img, 0, 0, w, h);
+        const ctx = canvas.getContext("2d");
+        if (!ctx) { reject(new Error("Canvas 2D context not available")); return; }
+        ctx.drawImage(img, 0, 0, w, h);
         resolve(canvas.toDataURL("image/jpeg", 0.8));
       };
       img.onerror = () => reject(new Error("Failed to load image"));
@@ -43,14 +49,6 @@ function resizeImage(file: File, maxSize: number): Promise<string> {
     reader.onerror = () => reject(new Error("Failed to read file"));
     reader.readAsDataURL(file);
   });
-}
-
-function ChevronIcon({ open }: { open: boolean }) {
-  return (
-    <svg className={`w-4 h-4 text-fab-dim transition-transform ${open ? "rotate-180" : ""}`} viewBox="0 0 20 20" fill="currentColor">
-      <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clipRule="evenodd" />
-    </svg>
-  );
 }
 
 const THEME_PREVIEWS: Record<ThemeName, { bg: string; surface: string; border: string; accent: string; text: string; muted: string; radius: string }> = {
@@ -116,9 +114,7 @@ function ThemePicker() {
               <p className="text-[10px] text-fab-dim leading-tight mt-0.5">{opt.description}</p>
               {selected && (
                 <div className="absolute top-2 right-2">
-                  <svg className="w-4 h-4 text-fab-gold" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" />
-                  </svg>
+                  <CheckCircle className="w-4 h-4 text-fab-gold" />
                 </div>
               )}
             </button>
@@ -131,7 +127,6 @@ function ThemePicker() {
 
 function YearInReview() {
   const { matches } = useMatches();
-  const [open, setOpen] = useState(false);
 
   const years = useMemo(() => {
     const currentYear = new Date().getFullYear().toString();
@@ -147,14 +142,14 @@ function YearInReview() {
 
   return (
     <div className="bg-fab-surface border border-fab-border rounded-lg p-6 mb-4">
-      <button onClick={() => setOpen(!open)} className="flex items-center justify-between w-full text-left">
-        <h2 className="text-sm font-semibold text-fab-text flex items-center gap-2">
-          <SparklesIcon className="w-4 h-4 text-fab-gold" />
-          Year in Review
-        </h2>
-        <ChevronIcon open={open} />
-      </button>
-      {open && (
+      <Collapsible
+        title={
+          <h2 className="text-sm font-semibold text-fab-text flex items-center gap-2">
+            <SparklesIcon className="w-4 h-4 text-fab-gold" />
+            Year in Review
+          </h2>
+        }
+      >
         <div className="space-y-2 mt-4">
           {years.map((year) => {
             const count = matches.filter((m) => m.date.startsWith(year)).length;
@@ -170,15 +165,13 @@ function YearInReview() {
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-fab-dim">{count} matches</span>
-                  <svg className="w-4 h-4 text-fab-dim group-hover:text-fab-gold transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                  </svg>
+                  <ChevronRight className="w-4 h-4 text-fab-dim group-hover:text-fab-gold transition-colors" />
                 </div>
               </Link>
             );
           })}
         </div>
-      )}
+      </Collapsible>
     </div>
   );
 }
@@ -196,7 +189,6 @@ export default function SettingsPage() {
   const [gemId, setGemId] = useState(profile?.gemId || "");
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -218,8 +210,6 @@ export default function SettingsPage() {
   const [togglingFeed, setTogglingFeed] = useState(false);
   const [hideFromGuests, setHideFromGuests] = useState(profile?.hideFromGuests ?? false);
   const [togglingGuests, setTogglingGuests] = useState(false);
-  const [privacyOpen, setPrivacyOpen] = useState(true);
-  const [creatorsOpen, setCreatorsOpen] = useState(false);
   const [confirmClear, setConfirmClear] = useState(false);
   const [clearing, setClearing] = useState(false);
   const [clearConfirmText, setClearConfirmText] = useState("");
@@ -229,7 +219,6 @@ export default function SettingsPage() {
     if (!user || !displayName.trim()) return;
     setError("");
     setSaving(true);
-    setSaved(false);
     try {
       const searchName = [firstName, lastName, displayName].filter(Boolean).join(" ").toLowerCase();
       const trimmedGemId = gemId.trim();
@@ -250,10 +239,9 @@ export default function SettingsPage() {
         if (trimmedGemId) registerGemId(user.uid, trimmedGemId).catch(() => {});
       }
       await refreshProfile();
-      setSaved(true);
-      setTimeout(() => setSaved(false), 2000);
+      toast.success("Profile saved");
     } catch {
-      setError("Failed to save. Please try again.");
+      toast.error("Failed to save. Please try again.");
     } finally {
       setSaving(false);
     }
@@ -262,17 +250,16 @@ export default function SettingsPage() {
   async function handlePhotoUpload(file: File) {
     if (!user) return;
     if (!file.type.startsWith("image/")) {
-      setError("Please upload an image file.");
+      toast.error("Please upload an image file.");
       return;
     }
-    setError("");
     setUploading(true);
     try {
       const dataUrl = await resizeImage(file, 200);
       await uploadProfilePhoto(user.uid, dataUrl);
     } catch (err) {
       console.error("Photo upload failed:", err);
-      setError("Failed to upload photo. Please try again.");
+      toast.error("Failed to upload photo. Please try again.");
       setUploading(false);
       return;
     }
@@ -282,6 +269,7 @@ export default function SettingsPage() {
       // Photo was saved, refresh just didn't pick it up yet
     }
     setUploading(false);
+    toast.success("Photo updated");
   }
 
   if (isGuest) {
@@ -289,10 +277,7 @@ export default function SettingsPage() {
       <div className="max-w-lg mx-auto">
         <div className="flex items-center gap-3 mb-4">
           <div className="w-8 h-8 rounded-lg bg-slate-500/10 flex items-center justify-center ring-1 ring-inset ring-slate-500/20">
-            <svg className="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281z" />
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
+            <Settings className="w-4 h-4 text-slate-400" />
           </div>
           <h1 className="text-lg font-bold text-fab-text leading-tight">Settings</h1>
         </div>
@@ -352,10 +337,7 @@ export default function SettingsPage() {
               </span>
             )}
             <span className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-              <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
+              <Camera className="w-5 h-5 text-white" />
             </span>
             {uploading && (
               <span className="absolute inset-0 bg-black/60 flex items-center justify-center">
@@ -501,17 +483,13 @@ export default function SettingsPage() {
           disabled={saving || !displayName.trim()}
           className="px-6 py-2 rounded-lg font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors disabled:opacity-50"
         >
-          {saving ? "Saving..." : saved ? "Saved!" : "Save Changes"}
+          {saving ? "Saving..." : "Save Changes"}
         </button>
       </form>
 
       {/* Privacy */}
       <div className="bg-fab-surface border border-fab-border rounded-lg p-6 mb-4">
-        <button onClick={() => setPrivacyOpen(!privacyOpen)} className="flex items-center justify-between w-full text-left">
-          <h2 className="text-sm font-semibold text-fab-text">Privacy</h2>
-          <ChevronIcon open={privacyOpen} />
-        </button>
-        {privacyOpen && (
+        <Collapsible title={<h2 className="text-sm font-semibold text-fab-text">Privacy</h2>} defaultOpen>
           <div className="mt-4">
             <div>
               <p className="text-sm text-fab-text mb-1">Profile Visibility</p>
@@ -542,7 +520,7 @@ export default function SettingsPage() {
                             .catch(() => {});
                         }
                       } catch {
-                        setError("Failed to update privacy setting.");
+                        toast.error("Failed to update privacy setting.");
                       } finally {
                         setTogglingPublic(false);
                       }
@@ -572,31 +550,23 @@ export default function SettingsPage() {
                     : "Your name is hidden when you appear as an opponent on other players' profiles."}
                 </p>
               </div>
-              <button
-                onClick={async () => {
+              <Switch
+                checked={showNameOnProfiles}
+                onCheckedChange={async (next) => {
                   if (!user) return;
                   setTogglingName(true);
                   try {
-                    const next = !showNameOnProfiles;
                     await updateProfile(user.uid, { showNameOnProfiles: next });
                     setShowNameOnProfiles(next);
                   } catch {
-                    setError("Failed to update name visibility setting.");
+                    toast.error("Failed to update setting.");
                   } finally {
                     setTogglingName(false);
                   }
                 }}
                 disabled={togglingName}
-                className={`relative w-11 h-6 rounded-full transition-colors shrink-0 ${
-                  showNameOnProfiles ? "bg-fab-win" : "bg-fab-border"
-                } ${togglingName ? "opacity-50" : ""}`}
-              >
-                <span
-                  className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${
-                    showNameOnProfiles ? "translate-x-5" : ""
-                  }`}
-                />
-              </button>
+                label="Show Name on Opponent Profiles"
+              />
             </div>
 
             <div className="flex items-center justify-between mt-4 pt-4 border-t border-fab-border">
@@ -608,31 +578,23 @@ export default function SettingsPage() {
                     : "You may be featured in the Player Spotlight on the homepage based on your activity."}
                 </p>
               </div>
-              <button
-                onClick={async () => {
+              <Switch
+                checked={hideFromSpotlight}
+                onCheckedChange={async (next) => {
                   if (!user) return;
                   setTogglingSpotlight(true);
                   try {
-                    const next = !hideFromSpotlight;
                     await updateProfile(user.uid, { hideFromSpotlight: next });
                     setHideFromSpotlight(next);
                   } catch {
-                    setError("Failed to update spotlight setting.");
+                    toast.error("Failed to update setting.");
                   } finally {
                     setTogglingSpotlight(false);
                   }
                 }}
                 disabled={togglingSpotlight}
-                className={`relative w-11 h-6 rounded-full transition-colors shrink-0 ${
-                  hideFromSpotlight ? "bg-fab-win" : "bg-fab-border"
-                } ${togglingSpotlight ? "opacity-50" : ""}`}
-              >
-                <span
-                  className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${
-                    hideFromSpotlight ? "translate-x-5" : ""
-                  }`}
-                />
-              </button>
+                label="Hide from Player Spotlight"
+              />
             </div>
 
             <div className="flex items-center justify-between mt-4 pt-4 border-t border-fab-border">
@@ -644,31 +606,23 @@ export default function SettingsPage() {
                     : "Your activity (imports, achievements, placements) is shown in the community feed."}
                 </p>
               </div>
-              <button
-                onClick={async () => {
+              <Switch
+                checked={hideFromFeed}
+                onCheckedChange={async (next) => {
                   if (!user) return;
                   setTogglingFeed(true);
                   try {
-                    const next = !hideFromFeed;
                     await updateProfile(user.uid, { hideFromFeed: next });
                     setHideFromFeed(next);
                   } catch {
-                    setError("Failed to update activity feed setting.");
+                    toast.error("Failed to update setting.");
                   } finally {
                     setTogglingFeed(false);
                   }
                 }}
                 disabled={togglingFeed}
-                className={`relative w-11 h-6 rounded-full transition-colors shrink-0 ${
-                  hideFromFeed ? "bg-fab-win" : "bg-fab-border"
-                } ${togglingFeed ? "opacity-50" : ""}`}
-              >
-                <span
-                  className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${
-                    hideFromFeed ? "translate-x-5" : ""
-                  }`}
-                />
-              </button>
+                label="Hide from Activity Feed"
+              />
             </div>
 
             <div className="flex items-center justify-between mt-4 pt-4 border-t border-fab-border">
@@ -680,34 +634,26 @@ export default function SettingsPage() {
                     : "Anyone — even without an account — can view your profile and stats."}
                 </p>
               </div>
-              <button
-                onClick={async () => {
+              <Switch
+                checked={hideFromGuests}
+                onCheckedChange={async (next) => {
                   if (!user) return;
                   setTogglingGuests(true);
                   try {
-                    const next = !hideFromGuests;
                     await updateProfile(user.uid, { hideFromGuests: next });
                     setHideFromGuests(next);
                   } catch {
-                    setError("Failed to update guest visibility setting.");
+                    toast.error("Failed to update setting.");
                   } finally {
                     setTogglingGuests(false);
                   }
                 }}
                 disabled={togglingGuests}
-                className={`relative w-11 h-6 rounded-full transition-colors shrink-0 ${
-                  hideFromGuests ? "bg-fab-win" : "bg-fab-border"
-                } ${togglingGuests ? "opacity-50" : ""}`}
-              >
-                <span
-                  className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${
-                    hideFromGuests ? "translate-x-5" : ""
-                  }`}
-                />
-              </button>
+                label="Hide from Guests"
+              />
             </div>
           </div>
-        )}
+        </Collapsible>
       </div>
 
       <YearInReview />
@@ -727,11 +673,7 @@ export default function SettingsPage() {
       {/* Creators */}
       {creators.length > 0 && (
         <div className="bg-fab-surface border border-fab-border rounded-lg p-6 mb-4">
-          <button onClick={() => setCreatorsOpen(!creatorsOpen)} className="flex items-center justify-between w-full text-left">
-            <h2 className="text-sm font-semibold text-fab-text">Featured Creators</h2>
-            <ChevronIcon open={creatorsOpen} />
-          </button>
-          {creatorsOpen && (
+          <Collapsible title={<h2 className="text-sm font-semibold text-fab-text">Featured Creators</h2>}>
             <div className="mt-4">
               <p className="text-xs text-fab-dim mb-3">Check out these FaB content creators.</p>
               <div className="space-y-2">
@@ -752,14 +694,12 @@ export default function SettingsPage() {
                       <p className="text-sm font-medium text-fab-text group-hover:text-fab-gold transition-colors truncate">{c.name}</p>
                       <p className="text-xs text-fab-dim truncate">{c.description}</p>
                     </div>
-                    <svg className="w-3.5 h-3.5 text-fab-dim shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
-                    </svg>
+                    <ExternalLink className="w-3.5 h-3.5 text-fab-dim shrink-0" />
                   </a>
                 ))}
               </div>
             </div>
-          )}
+          </Collapsible>
         </div>
       )}
 
@@ -772,9 +712,7 @@ export default function SettingsPage() {
           className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold bg-fab-surface border border-fab-border text-fab-muted hover:text-fab-text hover:border-fab-gold/30 transition-colors"
         >
           View Changelog
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-          </svg>
+          <ChevronRight className="w-4 h-4" />
         </Link>
       </div>
 

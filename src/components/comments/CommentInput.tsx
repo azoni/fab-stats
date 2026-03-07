@@ -35,7 +35,7 @@ export function CommentInput({ onSubmit }: CommentInputProps) {
   return (
     <form onSubmit={handleSubmit} className="flex gap-3">
       {profile?.photoUrl ? (
-        <img src={profile.photoUrl} alt="" className="w-8 h-8 rounded-full shrink-0" />
+        <img src={profile.photoUrl} alt="Your photo" className="w-8 h-8 rounded-full shrink-0" />
       ) : (
         <div className="w-8 h-8 rounded-full bg-fab-gold/20 flex items-center justify-center text-fab-gold text-xs font-bold shrink-0">
           {initials}

@@ -70,9 +70,10 @@ function computeMatchups(heroMatches: MatchRecord[]): MatchupRecord[] {
   const oppMap = new Map<string, MatchRecord[]>();
 
   for (const match of heroMatches) {
-    const existing = oppMap.get(match.opponentHero) ?? [];
+    const opp = match.opponentHero || "Unknown";
+    const existing = oppMap.get(opp) ?? [];
     existing.push(match);
-    oppMap.set(match.opponentHero, existing);
+    oppMap.set(opp, existing);
   }
 
   return Array.from(oppMap.entries())
@@ -268,6 +269,8 @@ export function computeRollingWinRate(
   matches: MatchRecord[],
   windowSize: number = 10
 ): { index: number; winRate: number; date: string }[] {
+  if (windowSize <= 0) return [];
+
   const sorted = [...matches]
     .filter((m) => m.result !== MatchResult.Bye)
     .sort(

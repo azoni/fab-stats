@@ -12,6 +12,8 @@ import { SiteBanner } from "@/components/layout/SiteBanner";
 import { FeedbackFab } from "@/components/feedback/FeedbackFab";
 import { ChatProvider } from "@/contexts/ChatContext";
 import { ChatFab } from "@/components/chat/ChatFab";
+import { SonnerProvider } from "@/components/ui/sonner-provider";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -118,6 +120,7 @@ export default function RootLayout({
         <ThemeProvider>
         <AuthProvider>
         <ChatProvider>
+        <TooltipProvider>
           <Navbar />
           <main className="min-h-screen pb-20 md:pb-8 md:pt-16">
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6">
@@ -150,6 +153,8 @@ export default function RootLayout({
           <FeedbackFab />
           <ChatFab />
           <MobileNav />
+          <SonnerProvider />
+        </TooltipProvider>
         </ChatProvider>
         </AuthProvider>
         </ThemeProvider>
