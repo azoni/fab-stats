@@ -11,7 +11,6 @@ import { EventCard } from "@/components/events/EventCard";
 import { localDate } from "@/lib/constants";
 import { type GameFormat, type MatchRecord, type UserProfile } from "@/types";
 import { QuickEventImportModal } from "@/components/events/QuickEventImportModal";
-import { CalendarIcon } from "@/components/icons/NavIcons";
 import type { User } from "firebase/auth";
 
 type View = "timeline" | "standings";
@@ -221,18 +220,8 @@ export function EventsTab({ matches, user, profile, updateMatch, refreshMatches,
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center ring-1 ring-inset ring-blue-500/20">
-            <CalendarIcon className="w-4 h-4 text-blue-400" />
-          </div>
-          <div>
-            <h1 className="text-lg font-bold text-fab-text leading-tight">Events</h1>
-            <p className="text-xs text-fab-muted leading-tight">Your tournaments and their results, grouped by event</p>
-          </div>
-        </div>
-        <div className="flex gap-3 flex-wrap items-center">
+      {/* Action bar */}
+      <div className="flex items-center justify-end gap-3 flex-wrap">
           <div className="flex bg-fab-surface border border-fab-border rounded-lg overflow-hidden">
             <button
               onClick={() => setView("timeline")}
@@ -260,7 +249,6 @@ export function EventsTab({ matches, user, profile, updateMatch, refreshMatches,
             </svg>
             Import Event
           </button>
-        </div>
       </div>
 
       {/* Summary Stats */}
@@ -318,13 +306,18 @@ export function EventsTab({ matches, user, profile, updateMatch, refreshMatches,
 
       {/* Search + Filters + Sort */}
       <div className="flex flex-wrap items-center gap-2">
-        <input
-          type="text"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search events..."
-          className="bg-fab-surface border border-fab-border rounded-md px-3 py-1.5 text-fab-text text-sm placeholder:text-fab-dim focus:outline-none focus:border-fab-gold w-36 sm:w-44"
-        />
+        <div className="relative">
+          <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-fab-dim pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search events..."
+            className="bg-fab-surface border border-fab-border rounded-md pl-8 pr-3 py-1.5 text-fab-text text-sm placeholder:text-fab-dim focus:outline-none focus:border-fab-gold w-36 sm:w-44"
+          />
+        </div>
 
         {allFormats.length > 1 && (
           <div className="flex gap-0.5 bg-fab-bg rounded-lg p-0.5 border border-fab-border">

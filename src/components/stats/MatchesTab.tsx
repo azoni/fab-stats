@@ -5,7 +5,6 @@ import { MatchList } from "@/components/matches/MatchList";
 import { updateLeaderboardEntry } from "@/lib/leaderboard";
 import { propagateHeroToOpponent } from "@/lib/match-linking";
 import { adjustHeroMatchupOnEdit } from "@/lib/hero-matchups";
-import { SwordsIcon } from "@/components/icons/NavIcons";
 import type { MatchRecord, UserProfile } from "@/types";
 import type { User } from "firebase/auth";
 
@@ -38,28 +37,16 @@ export function MatchesTab({ matches, user, profile, updateMatch }: MatchesTabPr
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6 relative overflow-hidden">
-        <img src="/assets/icons/swords.png" alt="" className="absolute right-0 top-1/2 -translate-y-1/2 w-20 h-20 object-contain opacity-[0.12] pointer-events-none" />
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-red-500/10 flex items-center justify-center ring-1 ring-inset ring-red-500/20">
-            <SwordsIcon className="w-4 h-4 text-red-400" />
-          </div>
-          <div>
-            <h1 className="text-lg font-bold text-fab-text leading-tight">Match History</h1>
-            {matches.length > 0 && (
-              <p className="text-xs text-fab-muted leading-tight">All your individual game results — tap any match to edit it</p>
-            )}
-          </div>
-        </div>
-        {user && (
+      {user && matches.length > 0 && (
+        <div className="flex justify-end mb-4">
           <Link
             href="/matches/new"
             className="px-4 py-2 rounded-md text-sm font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors shrink-0"
           >
             + Log Match
           </Link>
-        )}
-      </div>
+        </div>
+      )}
 
       {matches.length === 0 ? (
         <div className="text-center py-16 text-fab-dim">

@@ -6,7 +6,7 @@ import { logActivity } from "@/lib/activity-log";
 import { copyCardImage, downloadCardImage } from "@/lib/share-image";
 import { computeOpponentStats } from "@/lib/stats";
 import { MatchCard } from "@/components/matches/MatchCard";
-import { ChevronUpIcon, ChevronDownIcon, OpponentsIcon } from "@/components/icons/NavIcons";
+import { ChevronUpIcon, ChevronDownIcon } from "@/components/icons/NavIcons";
 import { MatchResult, type MatchRecord, type OpponentStats, type UserProfile } from "@/types";
 import { localDate } from "@/lib/constants";
 import { allHeroes as knownHeroes } from "@/lib/heroes";
@@ -41,7 +41,7 @@ interface OpponentsTabProps {
 export function OpponentsTab({ matches, user, profile }: OpponentsTabProps) {
   const searchParams = useSearchParams();
   const [expanded, setExpanded] = useState<string | null>(null);
-  const [sortBy, setSortBy] = useState<"matches" | "winRate" | "lossRate" | "name" | "recent">("matches");
+  const [sortBy, setSortBy] = useState<"matches" | "winRate" | "name" | "recent">("matches");
   const [filterFormat, setFilterFormat] = useState("all");
   const [filterEventType, setFilterEventType] = useState("all");
   const [filterHero, setFilterHero] = useState("all");
@@ -111,11 +111,6 @@ export function OpponentsTab({ matches, user, profile }: OpponentsTabProps) {
 
     list.sort((a, b) => {
       if (sortBy === "winRate") return b.winRate - a.winRate;
-      if (sortBy === "lossRate") {
-        const aLossRate = a.totalMatches > 0 ? (a.losses / a.totalMatches) * 100 : 0;
-        const bLossRate = b.totalMatches > 0 ? (b.losses / b.totalMatches) * 100 : 0;
-        return bLossRate - aLossRate;
-      }
       if (sortBy === "name") return a.opponentName.localeCompare(b.opponentName);
       if (sortBy === "recent") {
         const aDate = Math.max(...a.matches.map((m) => new Date(m.date).getTime()));
@@ -207,20 +202,9 @@ export function OpponentsTab({ matches, user, profile }: OpponentsTabProps) {
   })();
 
   return (
-    <div>
-      {/* Page Header */}
-      <div className="flex items-center gap-3 mb-6">
-        <div className="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center ring-1 ring-inset ring-purple-500/20">
-          <OpponentsIcon className="w-4 h-4 text-purple-400" />
-        </div>
-        <div>
-          <h1 className="text-lg font-bold text-fab-text leading-tight">Opponents</h1>
-          <p className="text-xs text-fab-muted leading-tight">{totalOpponents} opponents across {totalMatchCount} matches</p>
-        </div>
-      </div>
-
+    <div className="space-y-6">
       {/* Aggregate Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div className="bg-fab-surface border border-fab-border rounded-lg p-3">
           <p className="text-[10px] text-fab-dim uppercase tracking-wider">Opponents</p>
           <p className="text-xl font-bold text-fab-text">{totalOpponents}</p>
@@ -241,7 +225,7 @@ export function OpponentsTab({ matches, user, profile }: OpponentsTabProps) {
 
       {/* Rivalry Highlights */}
       {highlights && (
-        <div className="flex flex-wrap gap-2 mb-5">
+        <div className="flex flex-wrap gap-2">
           {highlights.nemesis && (
             <button
               onClick={() => { setSearch(highlights.nemesis!.opponentName); setExpanded(highlights.nemesis!.opponentName); }}
@@ -280,7 +264,7 @@ export function OpponentsTab({ matches, user, profile }: OpponentsTabProps) {
 
       {/* New Opponents */}
       {newOpponents.length > 0 && (
-        <div className="mb-6">
+        <div>
           <div className="flex items-center gap-2 mb-3">
             <div className="w-6 h-6 rounded-md bg-cyan-500/10 flex items-center justify-center ring-1 ring-inset ring-cyan-500/20">
               <svg className="w-3.5 h-3.5 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -329,11 +313,8 @@ export function OpponentsTab({ matches, user, profile }: OpponentsTabProps) {
         </div>
       )}
 
-      {/* All Opponents */}
-      <p className="text-xs uppercase tracking-wider font-semibold text-fab-muted mb-2">All Opponents</p>
-
-      {/* Search + Filters */}
-      <div className="flex flex-wrap items-center gap-2 mb-4">
+      {/* Search + Filters + Sort */}
+      <div className="flex flex-wrap items-center gap-2">
         <div className="relative">
           <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-fab-dim pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -342,58 +323,95 @@ export function OpponentsTab({ matches, user, profile }: OpponentsTabProps) {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search..."
+            placeholder="Search opponents..."
             className="bg-fab-surface border border-fab-border rounded-md pl-8 pr-3 py-1.5 text-fab-text text-sm placeholder:text-fab-dim focus:outline-none focus:border-fab-gold w-36 sm:w-44"
           />
         </div>
-        <div className="flex flex-wrap items-center gap-2 ml-auto">
+
+        {/* Format pills */}
+        {allFormats.length > 1 && (
+          <div className="flex gap-0.5 bg-fab-bg rounded-lg p-0.5 border border-fab-border">
+            <button
+              onClick={() => setFilterFormat("all")}
+              className={`px-2 py-0.5 rounded-md text-[11px] font-medium transition-colors ${
+                filterFormat === "all" ? "bg-fab-surface text-fab-text shadow-sm" : "text-fab-dim hover:text-fab-muted"
+              }`}
+            >
+              All
+            </button>
+            {allFormats.map((f) => (
+              <button
+                key={f}
+                onClick={() => setFilterFormat(f)}
+                className={`px-2 py-0.5 rounded-md text-[11px] font-medium transition-colors whitespace-nowrap ${
+                  filterFormat === f ? "bg-fab-surface text-fab-text shadow-sm" : "text-fab-dim hover:text-fab-muted"
+                }`}
+              >
+                {f === "Classic Constructed" ? "CC" : f}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Event type pills */}
+        {allEventTypes.length > 1 && (
+          <div className="flex gap-0.5 bg-fab-bg rounded-lg p-0.5 border border-fab-border overflow-x-auto scrollbar-hide">
+            <button
+              onClick={() => setFilterEventType("all")}
+              className={`px-2 py-0.5 rounded-md text-[11px] font-medium transition-colors ${
+                filterEventType === "all" ? "bg-fab-surface text-fab-text shadow-sm" : "text-fab-dim hover:text-fab-muted"
+              }`}
+            >
+              All
+            </button>
+            {allEventTypes.map((t) => (
+              <button
+                key={t}
+                onClick={() => setFilterEventType(t)}
+                className={`px-2 py-0.5 rounded-md text-[11px] font-medium transition-colors whitespace-nowrap ${
+                  filterEventType === t ? "bg-fab-surface text-fab-text shadow-sm" : "text-fab-dim hover:text-fab-muted"
+                }`}
+              >
+                {t}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Hero dropdown */}
+        {allHeroes.length > 1 && (
           <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
+            value={filterHero}
+            onChange={(e) => setFilterHero(e.target.value)}
             className="bg-fab-surface border border-fab-border rounded-md px-3 py-1.5 text-fab-text text-sm outline-none"
           >
-            <option value="matches">Most Played</option>
-            <option value="winRate">Win Rate</option>
-            <option value="lossRate">Loss Rate</option>
-            <option value="recent">Most Recent</option>
-            <option value="name">Name</option>
+            <option value="all">All Heroes</option>
+            {allHeroes.map((h) => (
+              <option key={h} value={h}>{h}</option>
+            ))}
           </select>
-          {allFormats.length > 1 && (
-            <select
-              value={filterFormat}
-              onChange={(e) => setFilterFormat(e.target.value)}
-              className="bg-fab-surface border border-fab-border rounded-md px-3 py-1.5 text-fab-text text-sm outline-none"
+        )}
+
+        {/* Sort pills */}
+        <div className="flex gap-1 ml-auto">
+          {([
+            { id: "matches", label: "Most Played" },
+            { id: "winRate", label: "Win Rate" },
+            { id: "recent", label: "Recent" },
+            { id: "name", label: "Name" },
+          ] as const).map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setSortBy(tab.id)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                sortBy === tab.id
+                  ? "bg-fab-gold/15 text-fab-gold"
+                  : "bg-fab-surface text-fab-muted hover:text-fab-text"
+              }`}
             >
-              <option value="all">All Formats</option>
-              {allFormats.map((f) => (
-                <option key={f} value={f}>{f}</option>
-              ))}
-            </select>
-          )}
-          {allEventTypes.length > 1 && (
-            <select
-              value={filterEventType}
-              onChange={(e) => setFilterEventType(e.target.value)}
-              className="bg-fab-surface border border-fab-border rounded-md px-3 py-1.5 text-fab-text text-sm outline-none"
-            >
-              <option value="all">All Event Types</option>
-              {allEventTypes.map((t) => (
-                <option key={t} value={t}>{t}</option>
-              ))}
-            </select>
-          )}
-          {allHeroes.length > 1 && (
-            <select
-              value={filterHero}
-              onChange={(e) => setFilterHero(e.target.value)}
-              className="bg-fab-surface border border-fab-border rounded-md px-3 py-1.5 text-fab-text text-sm outline-none"
-            >
-              <option value="all">All Heroes</option>
-              {allHeroes.map((h) => (
-                <option key={h} value={h}>{h}</option>
-              ))}
-            </select>
-          )}
+              {tab.label}
+            </button>
+          ))}
         </div>
       </div>
 
