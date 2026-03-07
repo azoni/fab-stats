@@ -395,7 +395,7 @@ export function FeedCard({ event, compact, rankMap, eventTierMap, underlineTierM
   if (event.type === "placement") {
     majorStyle = MAJOR_EVENT_CARD_STYLE[event.eventType];
     isChampion = event.placementType === "champion";
-    showCornerAccents = !!majorStyle && isChampion && (event.eventType === "Pro Tour" || event.eventType === "Worlds");
+    showCornerAccents = !!majorStyle;
   }
 
   // Major event styling takes priority over user-level tier styling
@@ -410,7 +410,7 @@ export function FeedCard({ event, compact, rankMap, eventTierMap, underlineTierM
 
   return (
     <div
-      className={`bg-fab-surface border border-fab-border rounded-lg ${compact ? "px-3 py-2" : "p-4"} relative group/feed overflow-hidden`}
+      className={`bg-fab-surface border border-fab-border rounded-lg ${compact ? "px-3 py-2" : "p-4"} relative group/feed overflow-hidden ${majorStyle && isChampion && !compact ? "feed-shimmer" : ""}`}
       style={cardStyle}
     >
       {/* Major event accent top bar */}
@@ -423,16 +423,26 @@ export function FeedCard({ event, compact, rankMap, eventTierMap, underlineTierM
           }}
         />
       )}
+      {/* Major event left accent strip */}
+      {majorStyle && !compact && (
+        <div
+          className="absolute top-0 left-0 bottom-0 pointer-events-none"
+          style={{
+            width: isChampion ? 3.5 : 3,
+            background: `linear-gradient(180deg, rgba(${majorStyle.rgb},${isChampion ? 0.8 : 0.5}), rgba(${majorStyle.rgb},0.15))`,
+          }}
+        />
+      )}
       {/* Major event radial gradient overlay */}
       {majorStyle && !compact && (
         <div
           className="absolute inset-0 pointer-events-none rounded-lg"
           style={{
-            backgroundImage: `radial-gradient(ellipse at top, rgba(${majorStyle.rgb},${isChampion ? 0.08 : 0.04}) 0%, transparent 70%)`,
+            backgroundImage: `radial-gradient(ellipse at top left, rgba(${majorStyle.rgb},${isChampion ? 0.1 : 0.05}) 0%, transparent 60%), radial-gradient(ellipse at bottom right, rgba(${majorStyle.rgb},0.03) 0%, transparent 50%)`,
           }}
         />
       )}
-      {/* Corner filigrees for Champion at Pro Tour / Worlds */}
+      {/* Corner filigrees for major event placements */}
       {showCornerAccents && !compact && majorStyle && (
         <>
           <svg className="absolute top-0 left-0 w-8 h-8 pointer-events-none" viewBox="0 0 32 32" fill="none">
@@ -450,6 +460,17 @@ export function FeedCard({ event, compact, rankMap, eventTierMap, underlineTierM
           <svg className="absolute bottom-0 right-0 w-8 h-8 pointer-events-none" viewBox="0 0 32 32" fill="none">
             <path d="M32 32 L32 18 Q29 22 25 25 Q22 29 18 32 Z" fill={`rgba(${majorStyle.rgb},0.1)`} />
             <path d="M32 32 L32 22 Q29 25 27 27 Q25 29 22 32" stroke={majorStyle.border} strokeWidth="0.75" fill="none" opacity="0.5" />
+          </svg>
+        </>
+      )}
+      {/* Decorative side diamonds for champion placements */}
+      {majorStyle && isChampion && !compact && (
+        <>
+          <svg className="absolute left-1 top-1/2 -translate-y-1/2 w-2 h-4 pointer-events-none" viewBox="0 0 8 16" fill="none">
+            <path d="M4 0 L8 8 L4 16 L0 8 Z" fill={`rgba(${majorStyle.rgb},0.2)`} />
+          </svg>
+          <svg className="absolute right-1 top-1/2 -translate-y-1/2 w-2 h-4 pointer-events-none" viewBox="0 0 8 16" fill="none">
+            <path d="M4 0 L8 8 L4 16 L0 8 Z" fill={`rgba(${majorStyle.rgb},0.2)`} />
           </svg>
         </>
       )}

@@ -79,21 +79,27 @@ export function computeMetaStats(
         if (!validHeroNames.has(hb.hero)) continue;
         if (filterFormat && hb.format !== filterFormat) continue;
         if (filterEventType && hb.eventType !== filterEventType) continue;
-        // Date range filtering: skip entries outside the range
+        // Date range filtering: count only matches whose dates fall within the range
+        let effectiveMatches = hb.matches;
+        let effectiveWins = hb.wins;
         if (isDateRange && hb.dates && hb.dates.length > 0) {
-          const hasDateInRange = hb.dates.some(d => d >= sinceDateStr! && (!untilDateStr || d <= untilDateStr));
-          if (!hasDateInRange) continue;
+          const datesInRange = hb.dates.filter(d => d >= sinceDateStr! && (!untilDateStr || d <= untilDateStr));
+          if (datesInRange.length === 0) continue;
+          // Proportionally estimate wins based on fraction of matches in range
+          const fraction = datesInRange.length / hb.dates.length;
+          effectiveMatches = datesInRange.length;
+          effectiveWins = Math.round(hb.wins * fraction);
         }
 
         hasMatchingData = true;
         const cur = heroAgg.get(hb.hero) || { players: new Set<string>(), matches: 0, wins: 0 };
         cur.players.add(entry.userId);
-        cur.matches += hb.matches;
-        cur.wins += hb.wins;
+        cur.matches += effectiveMatches;
+        cur.wins += effectiveWins;
         heroAgg.set(hb.hero, cur);
 
-        totalMatches += hb.matches;
-        totalWins += hb.wins;
+        totalMatches += effectiveMatches;
+        totalWins += effectiveWins;
       }
       if (hasMatchingData) playersWithData.add(entry.userId);
     } else if (!isFiltered) {

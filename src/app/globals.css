@@ -441,6 +441,30 @@ body::after {
   box-shadow: 0 0 6px 1px rgba(168, 130, 255, 0.2);
 }
 
+/* ── Major event feed card shimmer ── */
+
+@keyframes feed-shimmer {
+  0% { transform: translateX(-100%) rotate(-15deg); }
+  100% { transform: translateX(200%) rotate(-15deg); }
+}
+
+.feed-shimmer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    105deg,
+    transparent 40%,
+    rgba(255, 255, 255, 0.04) 45%,
+    rgba(255, 255, 255, 0.08) 50%,
+    rgba(255, 255, 255, 0.04) 55%,
+    transparent 60%
+  );
+  animation: feed-shimmer 4s ease-in-out infinite;
+  pointer-events: none;
+}
+
 /* ── Bold card borders (icon art outline style) ── */
 
 [class*="bg-fab-surface"][class*="border-fab-border"]:not(nav):not(td):not(tr) {

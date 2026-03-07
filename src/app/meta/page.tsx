@@ -9,11 +9,13 @@ import { getSeasonWeeks } from "@/lib/seasons";
 import { getHeroByName } from "@/lib/heroes";
 import { HeroClassIcon } from "@/components/heroes/HeroClassIcon";
 import { MetaShareModal } from "@/components/meta/MetaShareCard";
+import { MetaOverviewShareModal } from "@/components/meta/MetaOverviewShareCard";
+import { MetaMatchupMatrix } from "@/components/meta/MetaMatchupMatrix";
 import { MiniDonut, DONUT_COLORS } from "@/components/charts/MiniDonut";
 import { WinRateRing } from "@/components/charts/WinRateRing";
 import { SegmentedBar } from "@/components/charts/SegmentedBar";
 import { StatCard } from "@/components/ui/StatCard";
-import { Users, Swords, Shield, Trophy } from "lucide-react";
+import { Users, Swords, Shield, Trophy, Grid3X3 } from "lucide-react";
 
 type SortKey = "usage" | "winrate";
 type PeriodSelection = MetaPeriod | `season:${string}` | "custom";
@@ -51,6 +53,7 @@ export default function MetaPage() {
   const [heroPage, setHeroPage] = useState(1);
   const [playoffPage, setPlayoffPage] = useState(1);
   const [metaShareOpen, setMetaShareOpen] = useState(false);
+  const [overviewShareOpen, setOverviewShareOpen] = useState(false);
 
   const [seasonDropdownOpen, setSeasonDropdownOpen] = useState(false);
 
@@ -321,10 +324,33 @@ export default function MetaPage() {
         />
       </div>
 
+      {/* Overview share modal */}
+      {overviewShareOpen && heroStats.length > 0 && (
+        <MetaOverviewShareModal
+          overview={overview}
+          heroStats={heroStats}
+          title={activeSeason ? activeSeason.name : periodSelection === "weekly" ? "This Week's Meta" : periodSelection === "monthly" ? "This Month's Meta" : "Community Meta — All Time"}
+          subtitle={activeSeason ? `${activeSeason.format} · ${activeSeason.eventType}` : effectiveFormat || effectiveEventType ? [effectiveFormat, effectiveEventType].filter(Boolean).join(" · ") : undefined}
+          onClose={() => setOverviewShareOpen(false)}
+        />
+      )}
+
       {/* Hero Distribution Donut */}
       {heroStats.length >= 3 && (
         <div className="bg-fab-surface border border-fab-border rounded-lg p-5 mb-6">
-          <h2 className="text-sm font-semibold text-fab-text mb-4">Hero Meta Distribution</h2>
+          <div className="flex items-center gap-2 mb-4">
+            <h2 className="text-sm font-semibold text-fab-text">Hero Meta Distribution</h2>
+            <button
+              onClick={() => setOverviewShareOpen(true)}
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-fab-bg border border-fab-border text-fab-dim hover:text-fab-text hover:border-fab-muted transition-colors"
+              title="Share meta overview" aria-label="Share meta overview"
+            >
+              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z" />
+              </svg>
+              <span className="text-[10px] font-semibold">Share</span>
+            </button>
+          </div>
           <div className="flex flex-col sm:flex-row items-center gap-6">
             <MiniDonut
               segments={heroStats.slice(0, 10).map((h, i) => ({
@@ -580,6 +606,24 @@ export default function MetaPage() {
           )}
         </>
       )}
+
+      {/* Community Matchup Matrix */}
+      <div className="mt-8">
+        <div className="flex items-center gap-2 mb-1">
+          <Grid3X3 className="w-4 h-4 text-fab-muted" />
+          <h2 className="text-sm font-semibold text-fab-text">Community Matchup Matrix</h2>
+        </div>
+        <p className="text-[10px] text-fab-dim mb-3">
+          Win rates from linked matches across the community
+          {activeSeason ? ` · ${activeSeason.name}` : ""}
+          {effectiveFormat ? ` · ${effectiveFormat === "Classic Constructed" ? "CC" : effectiveFormat}` : ""}
+        </p>
+        <MetaMatchupMatrix
+          format={effectiveFormat}
+          sinceDate={sinceDate}
+          untilDate={untilDate}
+        />
+      </div>
     </div>
   );
 }
