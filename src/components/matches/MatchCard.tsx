@@ -277,7 +277,7 @@ export function MatchCard({ match, matchOwnerUid, enableComments = false, obfusc
           <div className="flex items-center gap-1.5 mt-1.5">
             {match.goingFirst !== undefined && (
               <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${match.goingFirst ? "bg-blue-500/15 text-blue-400" : "bg-purple-500/15 text-purple-400"}`}>
-                {match.goingFirst ? "On the Play" : "On the Draw"}
+                {match.goingFirst ? "First" : "Second"}
               </span>
             )}
             {match.winCondition && (
@@ -324,11 +324,11 @@ export function MatchCard({ match, matchOwnerUid, enableComments = false, obfusc
           {/* Win condition + going first */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <div>
-              <label className="text-[11px] text-fab-dim mb-1 block">Going First?</label>
+              <label className="text-[11px] text-fab-dim mb-1 block">Turn Order</label>
               <div className="flex gap-1">
                 {([
-                  { value: true, label: "On the Play" },
-                  { value: false, label: "On the Draw" },
+                  { value: true, label: "First" },
+                  { value: false, label: "Second" },
                   { value: undefined, label: "N/A" },
                 ] as const).map((opt) => (
                   <button

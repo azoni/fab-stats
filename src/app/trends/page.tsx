@@ -934,10 +934,10 @@ export default function TrendsPage() {
           )}
 
           {goingFirstData && (
-            <CollapsibleSection id="goingFirst" title="Going First Analysis" subtitle="Win rate on the play vs on the draw" collapsed={collapsed} toggle={toggle}>
+            <CollapsibleSection id="goingFirst" title="Turn Order Analysis" subtitle="Win rate going first vs second" collapsed={collapsed} toggle={toggle}>
               <div className="grid grid-cols-2 gap-4">
                 <div className="text-center">
-                  <p className="text-xs text-blue-400 uppercase tracking-wider mb-1">On the Play</p>
+                  <p className="text-xs text-blue-400 uppercase tracking-wider mb-1">First</p>
                   <p className={`text-2xl font-bold ${goingFirstData.first.winRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>
                     {goingFirstData.first.winRate}%
                   </p>
@@ -946,7 +946,7 @@ export default function TrendsPage() {
                   </p>
                 </div>
                 <div className="text-center">
-                  <p className="text-xs text-purple-400 uppercase tracking-wider mb-1">On the Draw</p>
+                  <p className="text-xs text-purple-400 uppercase tracking-wider mb-1">Second</p>
                   <p className={`text-2xl font-bold ${goingFirstData.second.winRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>
                     {goingFirstData.second.winRate}%
                   </p>
@@ -960,7 +960,7 @@ export default function TrendsPage() {
                   <p className="text-xs text-fab-muted">
                     Advantage:{" "}
                     <span className={goingFirstData.first.winRate >= goingFirstData.second.winRate ? "text-blue-400 font-medium" : "text-purple-400 font-medium"}>
-                      {goingFirstData.first.winRate >= goingFirstData.second.winRate ? "On the Play" : "On the Draw"}
+                      {goingFirstData.first.winRate >= goingFirstData.second.winRate ? "Going First" : "Going Second"}
                       {" "}(+{Math.abs(goingFirstData.first.winRate - goingFirstData.second.winRate)}%)
                     </span>
                   </p>
