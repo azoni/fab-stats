@@ -33,11 +33,13 @@ service cloud.firestore {
       // Owner can create/update/delete with field length limits
       allow create: if request.auth != null && request.auth.uid == userId
         && (!("notes" in request.resource.data) || maxLen(request.resource.data.notes, 2000))
+        && (!("matchNotes" in request.resource.data) || maxLen(request.resource.data.matchNotes, 2000))
         && (!("opponentName" in request.resource.data) || maxLen(request.resource.data.opponentName, 100))
         && (!("venue" in request.resource.data) || maxLen(request.resource.data.venue, 200))
         && (!("eventType" in request.resource.data) || maxLen(request.resource.data.eventType, 50));
       allow update: if request.auth != null && request.auth.uid == userId
         && (!("notes" in request.resource.data) || maxLen(request.resource.data.notes, 2000))
+        && (!("matchNotes" in request.resource.data) || maxLen(request.resource.data.matchNotes, 2000))
         && (!("opponentName" in request.resource.data) || maxLen(request.resource.data.opponentName, 100))
         && (!("venue" in request.resource.data) || maxLen(request.resource.data.venue, 200))
         && (!("eventType" in request.resource.data) || maxLen(request.resource.data.eventType, 50));

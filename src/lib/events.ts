@@ -95,6 +95,8 @@ export function computeEventBadges(eventStats: EventStats[], playoffFinishes?: P
     const eventType = event.eventType || "Other";
     const tierInfo = EVENT_TYPE_TO_TIER[eventType];
     if (!tierInfo) continue;
+    // Unrated events should not count as major events
+    if (!event.rated) continue;
 
     const city = extractCity(event.eventName, tierInfo.label);
 

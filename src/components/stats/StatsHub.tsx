@@ -86,7 +86,7 @@ export function StatsHub({ defaultTab }: StatsHubProps) {
         />
       )}
       {activeTab === "opponents" && (
-        <OpponentsTab matches={matches} user={user} profile={profile} />
+        <OpponentsTab matches={matches} user={user} profile={profile} updateMatch={updateMatch} />
       )}
     </div>
   );

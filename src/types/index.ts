@@ -11,6 +11,7 @@ export interface MatchRecord {
   venue?: string;
   eventType?: string;
   rated?: boolean;
+  matchNotes?: string;
   commentCount?: number;
   source?: "extension" | "csv" | "paste" | "manual";
   extensionVersion?: string;

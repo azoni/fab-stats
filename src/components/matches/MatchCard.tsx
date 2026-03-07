@@ -1,11 +1,9 @@
 "use client";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
-import { CommentSection } from "@/components/comments/CommentSection";
 import { HeroSelect } from "@/components/heroes/HeroSelect";
 import { getHeroByName } from "@/lib/heroes";
-import { HeroClassIcon } from "@/components/heroes/HeroClassIcon";
 import { HeroAvatar } from "@/components/heroes/HeroAvatar";
 import { MatchResult, type MatchRecord } from "@/types";
 import { localDate } from "@/lib/constants";
@@ -47,7 +45,10 @@ function getPlayoffBadge(roundInfo: string | undefined): { label: string; bg: st
 
 export function MatchCard({ match, matchOwnerUid, enableComments = false, obfuscateOpponents = false, visibleOpponents, editable = false, onUpdateMatch, missingGemId }: MatchCardProps) {
   const { user, profile } = useAuth();
-  const [showComments, setShowComments] = useState(false);
+  const [showNotes, setShowNotes] = useState(false);
+  const [noteText, setNoteText] = useState(match.matchNotes || "");
+  const [savingNote, setSavingNote] = useState(false);
+  const noteRef = useRef<HTMLTextAreaElement>(null);
   const [editing, setEditing] = useState(false);
   const [editHero, setEditHero] = useState(match.heroPlayed || "");
   const [editOppHero, setEditOppHero] = useState(match.opponentHero || "");
@@ -64,7 +65,6 @@ export function MatchCard({ match, matchOwnerUid, enableComments = false, obfusc
   const eventName = match.notes?.split(" | ")[0];
   const roundInfo = match.notes?.split(" | ")[1];
   const playoffBadge = getPlayoffBadge(roundInfo);
-  const commentCount = match.commentCount || 0;
 
   const hasHero = match.heroPlayed && match.heroPlayed !== "Unknown";
   const hasOppHero = match.opponentHero && match.opponentHero !== "Unknown";
@@ -266,21 +266,29 @@ export function MatchCard({ match, matchOwnerUid, enableComments = false, obfusc
           </div>
         </div>
 
-        {/* Comment toggle */}
-        {enableComments && matchOwnerUid && (
-          <button
-            onClick={() => setShowComments(!showComments)}
-            className="flex items-center gap-1 mt-1.5 text-xs text-fab-dim hover:text-fab-gold transition-colors"
-          >
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-            </svg>
-            {commentCount > 0 ? (
-              <span>{commentCount} comment{commentCount !== 1 ? "s" : ""}</span>
-            ) : (
-              <span>Comment</span>
+        {/* Notes toggle + inline preview */}
+        {matchOwnerUid && (
+          <div className="mt-1.5">
+            {match.matchNotes && !showNotes && (
+              <button
+                onClick={() => setShowNotes(true)}
+                className="text-xs text-fab-muted italic truncate max-w-full text-left hover:text-fab-text transition-colors"
+              >
+                {match.matchNotes.length > 80 ? match.matchNotes.slice(0, 80) + "..." : match.matchNotes}
+              </button>
             )}
-          </button>
+            {!match.matchNotes && !showNotes && onUpdateMatch && (
+              <button
+                onClick={() => setShowNotes(true)}
+                className="flex items-center gap-1 text-xs text-fab-dim hover:text-fab-gold transition-colors"
+              >
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+                Add note
+              </button>
+            )}
+          </div>
         )}
       </div>
 
@@ -336,10 +344,64 @@ export function MatchCard({ match, matchOwnerUid, enableComments = false, obfusc
         </div>
       )}
 
-      {/* Comment section */}
-      {showComments && enableComments && matchOwnerUid && (
-        <div className="px-3 pb-3">
-          <CommentSection match={match} matchOwnerUid={matchOwnerUid} />
+      {/* Notes editor */}
+      {showNotes && matchOwnerUid && (
+        <div className="px-3 pb-3 pt-1 border-t border-fab-border/20">
+          {onUpdateMatch ? (
+            <div className="space-y-1.5">
+              <textarea
+                ref={noteRef}
+                value={noteText}
+                onChange={(e) => setNoteText(e.target.value)}
+                placeholder="Add a note about this match..."
+                rows={2}
+                maxLength={2000}
+                className="w-full bg-fab-bg border border-fab-border rounded-md px-2.5 py-1.5 text-xs text-fab-text placeholder:text-fab-dim focus:outline-none focus:border-fab-gold resize-none"
+              />
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={async () => {
+                    const trimmed = noteText.trim();
+                    if (trimmed === (match.matchNotes || "")) { setShowNotes(false); return; }
+                    setSavingNote(true);
+                    await onUpdateMatch(match.id, { matchNotes: trimmed || undefined });
+                    setSavingNote(false);
+                    setShowNotes(false);
+                  }}
+                  disabled={savingNote}
+                  className="px-2.5 py-1 rounded text-[11px] font-medium bg-fab-gold text-fab-bg hover:bg-fab-gold-light disabled:opacity-50 transition-colors"
+                >
+                  {savingNote ? "Saving..." : "Save"}
+                </button>
+                <button
+                  onClick={() => { setNoteText(match.matchNotes || ""); setShowNotes(false); }}
+                  disabled={savingNote}
+                  className="px-2.5 py-1 rounded text-[11px] font-medium text-fab-muted hover:text-fab-text transition-colors"
+                >
+                  Cancel
+                </button>
+                {match.matchNotes && (
+                  <button
+                    onClick={async () => {
+                      setSavingNote(true);
+                      await onUpdateMatch(match.id, { matchNotes: undefined });
+                      setNoteText("");
+                      setSavingNote(false);
+                      setShowNotes(false);
+                    }}
+                    disabled={savingNote}
+                    className="ml-auto px-2.5 py-1 rounded text-[11px] font-medium text-fab-loss/70 hover:text-fab-loss transition-colors"
+                  >
+                    Delete
+                  </button>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="text-xs text-fab-muted italic">
+              {match.matchNotes || "No notes"}
+            </div>
+          )}
         </div>
       )}
     </div>

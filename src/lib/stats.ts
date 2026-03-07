@@ -521,7 +521,9 @@ export function computePlayoffFinishes(
   for (const event of eventStats) {
     const raw = refineEventType(event.eventType || "Other", event.eventName);
     // Non-competitive event types with a Top 8 get shown as "Other" (marble icons)
-    const refinedEventType = (raw === "Armory" || raw === "Pre-Release" || raw === "On Demand") ? "Other" : raw;
+    // Unrated events with major event types get downgraded to "Other" too
+    const isMajorType = ["Battle Hardened", "The Calling", "Nationals", "Pro Tour", "Worlds"].includes(raw);
+    const refinedEventType = (raw === "Armory" || raw === "Pre-Release" || raw === "On Demand" || (isMajorType && !event.rated)) ? "Other" : raw;
 
     // Check for manual override first
     const overrideKey = `${event.eventName}::${event.eventDate}`;

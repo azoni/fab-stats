@@ -36,9 +36,10 @@ interface OpponentsTabProps {
   matches: MatchRecord[];
   user: User | null;
   profile: UserProfile | null;
+  updateMatch?: (id: string, updates: Partial<Omit<MatchRecord, "id" | "createdAt">>) => Promise<void>;
 }
 
-export function OpponentsTab({ matches, user, profile }: OpponentsTabProps) {
+export function OpponentsTab({ matches, user, profile, updateMatch }: OpponentsTabProps) {
   const searchParams = useSearchParams();
   const [expanded, setExpanded] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<"matches" | "winRate" | "name" | "recent">("matches");
@@ -435,6 +436,7 @@ export function OpponentsTab({ matches, user, profile }: OpponentsTabProps) {
                 onToggle={() => setExpanded(expanded === opp.opponentName ? null : opp.opponentName)}
                 matchOwnerUid={user?.uid}
                 playerName={profile?.displayName}
+                updateMatch={updateMatch}
               />
             ))}
           </div>
@@ -467,7 +469,7 @@ export function OpponentsTab({ matches, user, profile }: OpponentsTabProps) {
   );
 }
 
-function OpponentRow({ opp, isExpanded, onToggle, matchOwnerUid, playerName }: { opp: OpponentStats; isExpanded: boolean; onToggle: () => void; matchOwnerUid?: string; playerName?: string }) {
+function OpponentRow({ opp, isExpanded, onToggle, matchOwnerUid, playerName, updateMatch }: { opp: OpponentStats; isExpanded: boolean; onToggle: () => void; matchOwnerUid?: string; playerName?: string; updateMatch?: (id: string, updates: Partial<Omit<MatchRecord, "id" | "createdAt">>) => Promise<void> }) {
   const [shareStatus, setShareStatus] = useState<"idle" | "copied" | "text-copied" | "sharing">("idle");
   const [showShareModal, setShowShareModal] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
@@ -636,7 +638,7 @@ function OpponentRow({ opp, isExpanded, onToggle, matchOwnerUid, playerName }: {
             <p className="text-xs text-fab-muted mb-2">Match History ({sortedMatches.length})</p>
             <div className="space-y-2">
               {sortedMatches.map((match) => (
-                <MatchCard key={match.id} match={match} matchOwnerUid={matchOwnerUid} enableComments />
+                <MatchCard key={match.id} match={match} matchOwnerUid={matchOwnerUid} onUpdateMatch={updateMatch} />
               ))}
             </div>
           </div>
