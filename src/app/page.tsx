@@ -182,11 +182,17 @@ export default function Dashboard() {
   const top8Heroes = useMemo(() => {
     if (displaySeason) {
       // Season mode: filter by season's date range, optionally narrowed to a week
-      let sinceDate = displaySeason.startDate;
-      let untilDate = displaySeason.endDate;
+      // Pad season dates ±1 day for timezone differences in GEM event dates
+      const pad = (d: string, days: number) => {
+        const dt = new Date(d + "T00:00:00");
+        dt.setDate(dt.getDate() + days);
+        return dt.toISOString().slice(0, 10);
+      };
+      let sinceDate = pad(displaySeason.startDate, -1);
+      let untilDate = pad(displaySeason.endDate, 1);
       if (selectedWeek !== null && seasonWeeks[selectedWeek]) {
-        sinceDate = seasonWeeks[selectedWeek].start;
-        untilDate = seasonWeeks[selectedWeek].end;
+        sinceDate = pad(seasonWeeks[selectedWeek].start, -1);
+        untilDate = pad(seasonWeeks[selectedWeek].end, 1);
       }
       return computeTop8HeroMeta(lbEntries, displaySeason.eventType, displaySeason.format, sinceDate, untilDate);
     }
