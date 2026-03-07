@@ -17,6 +17,7 @@ interface DonutSegment {
   percent: number;
   color: string;
   matches: number;
+  events: number;
 }
 
 function buildOverviewSegments(heroes: HeroMetaStats[], maxSegments = 10): DonutSegment[] {
@@ -25,12 +26,14 @@ function buildOverviewSegments(heroes: HeroMetaStats[], maxSegments = 10): Donut
 
   const top = heroes.slice(0, maxSegments);
   const otherMatches = heroes.slice(maxSegments).reduce((sum, h) => sum + h.totalMatches, 0);
+  const otherEvents = heroes.slice(maxSegments).reduce((sum, h) => sum + h.uniqueEvents, 0);
 
   const segments: DonutSegment[] = top.map((h, i) => ({
     hero: h.hero,
     percent: h.metaShare,
     color: SEGMENT_COLORS[i % SEGMENT_COLORS.length],
     matches: h.totalMatches,
+    events: h.uniqueEvents,
   }));
 
   if (otherMatches > 0) {
@@ -39,6 +42,7 @@ function buildOverviewSegments(heroes: HeroMetaStats[], maxSegments = 10): Donut
       percent: totalMatches > 0 ? (otherMatches / totalMatches) * 100 : 0,
       color: "#4b5563",
       matches: otherMatches,
+      events: otherEvents,
     });
   }
 
@@ -111,7 +115,7 @@ function MetaOverviewCard({ overview, heroStats, title, subtitle, theme }: MetaO
       </div>
 
       {/* Overview stats */}
-      <div className="flex justify-center gap-6 px-5 pb-3 relative">
+      <div className="flex justify-center gap-8 px-5 pb-3 relative">
         <div className="text-center">
           <p style={{ color: t.text }} className="text-xl font-black leading-none">{overview.totalPlayers}</p>
           <p style={{ color: t.dim }} className="text-[9px] uppercase tracking-wider font-semibold mt-0.5">Players</p>
@@ -123,10 +127,6 @@ function MetaOverviewCard({ overview, heroStats, title, subtitle, theme }: MetaO
         <div className="text-center">
           <p style={{ color: t.text }} className="text-xl font-black leading-none">{overview.totalHeroes}</p>
           <p style={{ color: t.dim }} className="text-[9px] uppercase tracking-wider font-semibold mt-0.5">Heroes</p>
-        </div>
-        <div className="text-center">
-          <p style={{ color: t.text }} className="text-xl font-black leading-none">{overview.avgWinRate.toFixed(1)}%</p>
-          <p style={{ color: t.dim }} className="text-[9px] uppercase tracking-wider font-semibold mt-0.5">Avg WR</p>
         </div>
       </div>
 
@@ -147,7 +147,7 @@ function MetaOverviewCard({ overview, heroStats, title, subtitle, theme }: MetaO
                 <div className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ backgroundColor: seg.color }} />
                 <span style={{ color: t.text }} className="text-[11px] font-medium truncate flex-1">{seg.hero}</span>
                 <span style={{ color: t.muted }} className="text-[10px] font-bold shrink-0 tabular-nums">{seg.matches}</span>
-                <span style={{ color: t.dim }} className="text-[9px] shrink-0 tabular-nums w-10 text-right">{seg.percent.toFixed(1)}%</span>
+                <span style={{ color: t.dim }} className="text-[9px] shrink-0 tabular-nums w-10 text-right">{seg.events} evt{seg.events !== 1 ? "s" : ""}</span>
               </div>
             ))}
           </div>

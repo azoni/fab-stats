@@ -18,6 +18,8 @@ export interface HeroMetaStats {
   metaShare: number;
   /** Rank by usage (1 = most played) */
   popularityRank: number;
+  /** Number of unique event dates this hero was played on */
+  uniqueEvents: number;
 }
 
 export interface CommunityOverview {
@@ -43,7 +45,7 @@ export function computeMetaStats(
   const isFiltered = !!filterFormat || !!filterEventType;
   const isDateRange = !!sinceDateStr;
   const usePeriodBreakdown = period !== "all";
-  const heroAgg = new Map<string, { players: Set<string>; matches: number; wins: number }>();
+  const heroAgg = new Map<string, { players: Set<string>; matches: number; wins: number; dates: Set<string> }>();
 
   let totalMatches = 0;
   let totalWins = 0;
@@ -62,7 +64,7 @@ export function computeMetaStats(
         if (filterEventType && hb.eventType !== filterEventType) continue;
 
         hasMatchingData = true;
-        const cur = heroAgg.get(hb.hero) || { players: new Set<string>(), matches: 0, wins: 0 };
+        const cur = heroAgg.get(hb.hero) || { players: new Set<string>(), matches: 0, wins: 0, dates: new Set<string>() };
         cur.players.add(entry.userId);
         cur.matches += hb.matches;
         cur.wins += hb.wins;
@@ -93,10 +95,17 @@ export function computeMetaStats(
         }
 
         hasMatchingData = true;
-        const cur = heroAgg.get(hb.hero) || { players: new Set<string>(), matches: 0, wins: 0 };
+        const cur = heroAgg.get(hb.hero) || { players: new Set<string>(), matches: 0, wins: 0, dates: new Set<string>() };
         cur.players.add(entry.userId);
         cur.matches += effectiveMatches;
         cur.wins += effectiveWins;
+        // Track unique event dates for this hero
+        if (hb.dates) {
+          const datesToAdd = isDateRange
+            ? hb.dates.filter(d => d >= sinceDateStr! && (!untilDateStr || d <= untilDateStr))
+            : hb.dates;
+          for (const d of datesToAdd) cur.dates.add(d);
+        }
         heroAgg.set(hb.hero, cur);
 
         totalMatches += effectiveMatches;
@@ -112,25 +121,27 @@ export function computeMetaStats(
       // Prefer heroBreakdownDetailed for hero data (heroBreakdown is top-5 only)
       if (entry.heroBreakdownDetailed && entry.heroBreakdownDetailed.length > 0) {
         // Aggregate across all formats/eventTypes per hero
-        const heroTotals = new Map<string, { matches: number; wins: number }>();
+        const heroTotals = new Map<string, { matches: number; wins: number; dates: Set<string> }>();
         for (const hb of entry.heroBreakdownDetailed) {
           if (!validHeroNames.has(hb.hero)) continue;
-          const cur = heroTotals.get(hb.hero) || { matches: 0, wins: 0 };
+          const cur = heroTotals.get(hb.hero) || { matches: 0, wins: 0, dates: new Set<string>() };
           cur.matches += hb.matches;
           cur.wins += hb.wins;
+          if (hb.dates) for (const d of hb.dates) cur.dates.add(d);
           heroTotals.set(hb.hero, cur);
         }
         for (const [hero, data] of heroTotals) {
-          const cur = heroAgg.get(hero) || { players: new Set<string>(), matches: 0, wins: 0 };
+          const cur = heroAgg.get(hero) || { players: new Set<string>(), matches: 0, wins: 0, dates: new Set<string>() };
           cur.players.add(entry.userId);
           cur.matches += data.matches;
           cur.wins += data.wins;
+          for (const d of data.dates) cur.dates.add(d);
           heroAgg.set(hero, cur);
         }
       } else if (entry.heroBreakdown) {
         for (const hb of entry.heroBreakdown) {
           if (!validHeroNames.has(hb.hero)) continue;
-          const cur = heroAgg.get(hb.hero) || { players: new Set<string>(), matches: 0, wins: 0 };
+          const cur = heroAgg.get(hb.hero) || { players: new Set<string>(), matches: 0, wins: 0, dates: new Set<string>() };
           cur.players.add(entry.userId);
           cur.matches += hb.matches;
           cur.wins += hb.wins;
@@ -152,6 +163,7 @@ export function computeMetaStats(
       avgWinRate: data.matches > 0 ? (data.wins / data.matches) * 100 : 0,
       metaShare: totalMatches > 0 ? (data.matches / totalMatches) * 100 : 0,
       popularityRank: 0,
+      uniqueEvents: data.dates.size,
     }))
     .sort((a, b) => b.totalMatches - a.totalMatches);
 
