@@ -3,11 +3,11 @@ import { useMemo, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useMatches } from "@/hooks/useMatches";
 import { useAuth } from "@/contexts/AuthContext";
-import { computeOverallStats, computeHeroStats, computeEventStats, computeOpponentStats, computeBestFinish, computePlayoffFinishes, computeMinorEventFinishes, getRoundNumber } from "@/lib/stats";
+import { computeOverallStats, computeHeroStats, computeEventStats, computeBestFinish, computePlayoffFinishes, computeMinorEventFinishes, getRoundNumber } from "@/lib/stats";
 import { updateLeaderboardEntry } from "@/lib/leaderboard";
 import { useLeaderboard } from "@/hooks/useLeaderboard";
 import { computeUserRanks, getBestRank, computeRankMap, computeEventTierMap, computeUnderlineTierMap, rankBorderClass } from "@/lib/leaderboard-ranks";
-import { ShieldIcon, SwordsIcon, CalendarIcon, OpponentsIcon, TrendsIcon } from "@/components/icons/NavIcons";
+import { ShieldIcon, SwordsIcon, TrendsIcon } from "@/components/icons/NavIcons";
 import { CommunityHighlights } from "@/components/home/CommunityHighlights";
 import { useFeaturedEvents } from "@/hooks/useFeaturedEvents";
 import { computeMetaStats, computeTop8HeroMeta, detectActiveEventType } from "@/lib/meta-stats";
@@ -75,7 +75,6 @@ export default function Dashboard() {
   const overall = useMemo(() => computeOverallStats(matches), [matches]);
   const heroStats = useMemo(() => computeHeroStats(matches), [matches]);
   const eventStats = useMemo(() => computeEventStats(matches), [matches]);
-  const allOpponentStats = useMemo(() => computeOpponentStats(matches), [matches]);
   const bestFinish = useMemo(() => computeBestFinish(eventStats), [eventStats]);
   const userRanks = useMemo(() => user ? computeUserRanks(lbEntries, user.uid) : [], [user, lbEntries]);
   const bestRank = useMemo(() => getBestRank(userRanks), [userRanks]);
@@ -277,34 +276,6 @@ export default function Dashboard() {
               <p className="text-sm font-bold text-fab-text leading-tight">Matches</p>
               {(overall.totalMatches + overall.totalByes) > 0 && (
                 <p className="text-[11px] text-red-400/70 font-semibold leading-tight">{overall.totalMatches + overall.totalByes}</p>
-              )}
-            </div>
-          </Link>
-
-          {/* Events — sapphire strategy */}
-          <Link href="/events" className="group relative flex items-center gap-3 pl-3 pr-5 py-3 rounded-2xl shrink-0 overflow-hidden bg-gradient-to-br from-blue-500/10 via-blue-950/20 to-transparent border border-blue-500/20 hover:border-blue-400/40 hover:shadow-[0_0_24px_rgba(59,130,246,0.08)] hover:-translate-y-0.5 transition-all duration-300">
-            <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-blue-400/40 to-transparent" />
-            <div className="w-10 h-10 rounded-xl bg-blue-500/15 flex items-center justify-center shrink-0 ring-1 ring-inset ring-blue-500/20 group-hover:bg-blue-500/20 group-hover:ring-blue-400/30 transition-all">
-              <CalendarIcon className="w-5 h-5 text-blue-400" />
-            </div>
-            <div>
-              <p className="text-sm font-bold text-fab-text leading-tight">Events</p>
-              {eventStats.length > 0 && (
-                <p className="text-[11px] text-blue-400/70 font-semibold leading-tight">{eventStats.length}</p>
-              )}
-            </div>
-          </Link>
-
-          {/* Opponents — amethyst rivalry */}
-          <Link href="/opponents" className="group relative flex items-center gap-3 pl-3 pr-5 py-3 rounded-2xl shrink-0 overflow-hidden bg-gradient-to-br from-purple-500/10 via-purple-950/20 to-transparent border border-purple-500/20 hover:border-purple-400/40 hover:shadow-[0_0_24px_rgba(168,85,247,0.08)] hover:-translate-y-0.5 transition-all duration-300">
-            <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-purple-400/40 to-transparent" />
-            <div className="w-10 h-10 rounded-xl bg-purple-500/15 flex items-center justify-center shrink-0 ring-1 ring-inset ring-purple-500/20 group-hover:bg-purple-500/20 group-hover:ring-purple-400/30 transition-all">
-              <OpponentsIcon className="w-5 h-5 text-purple-400" />
-            </div>
-            <div>
-              <p className="text-sm font-bold text-fab-text leading-tight">Opponents</p>
-              {allOpponentStats.length > 0 && (
-                <p className="text-[11px] text-purple-400/70 font-semibold leading-tight">{allOpponentStats.length}</p>
               )}
             </div>
           </Link>

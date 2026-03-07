@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { SwordsIcon, OpponentsIcon, TrendsIcon, ImportIcon, CalendarIcon, TrophyIcon } from "@/components/icons/NavIcons";
+import { SwordsIcon, TrendsIcon, ImportIcon, CalendarIcon, TrophyIcon } from "@/components/icons/NavIcons";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCreators } from "@/hooks/useCreators";
@@ -71,8 +71,6 @@ const navLinks: { href: string; label: string; icon: ReactNode; color: string; b
 ];
 
 const moreLinks: { href: string; label: string; icon: ReactNode; authOnly?: boolean; adminOnly?: boolean; badge?: string; divider?: boolean; sectionLabel?: string }[] = [
-  { href: "/events", label: "Events", icon: <CalendarIcon className="w-4 h-4" /> },
-  { href: "/opponents", label: "Opponents", icon: <OpponentsIcon className="w-4 h-4" /> },
   { href: "/compare", label: "Versus", icon: <CompareIcon className="w-4 h-4" /> },
   { href: "/tournaments", label: "Tournaments", icon: <CalendarIcon className="w-4 h-4" /> },
   { href: "/tools", label: "Player Tools", badge: "Beta", icon: (
@@ -709,7 +707,6 @@ function MoreDropdown({
           <circle cx="12" cy="19" r="1" fill="currentColor" />
         </svg>
         <span className="hidden lg:inline">More</span>
-        <span className="text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-teal-400/15 text-teal-400 border border-teal-400/25">New</span>
         <svg className={`w-3 h-3 transition-transform ${open ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
         </svg>

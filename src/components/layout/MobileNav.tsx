@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { DashboardIcon, SwordsIcon, CalendarIcon, TrophyIcon, OpponentsIcon, TrendsIcon, ImportIcon } from "@/components/icons/NavIcons";
+import { DashboardIcon, SwordsIcon, TrophyIcon, TrendsIcon, ImportIcon } from "@/components/icons/NavIcons";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNotifications } from "@/hooks/useNotifications";
 import { useFriends } from "@/hooks/useFriends";
@@ -87,7 +87,7 @@ const tabs: { href: string; label: string; icon: ReactNode; color: string }[] = 
   { href: "/", label: "Home", icon: <HomeIcon />, color: "text-fab-gold" },
   { href: "/matches", label: "Matches", icon: <SwordsIcon />, color: "text-red-400" },
   { href: "/leaderboard", label: "Rankings", icon: <TrophyIcon />, color: "text-amber-400" },
-  { href: "/opponents", label: "Opponents", icon: <OpponentsIcon />, color: "text-purple-400" },
+  { href: "/trends", label: "My Stats", icon: <TrendsIcon />, color: "text-fab-gold" },
   { href: "/search", label: "Search", icon: <SearchIcon />, color: "text-cyan-400" },
 ];
 
@@ -148,7 +148,6 @@ const moreSections: { title: string; links: MoreLink[] }[] = [
     title: "Your Data",
     links: [
       { href: "/import", label: "Import Matches", icon: <ImportIcon />, authOnly: true },
-      { href: "/events", label: "Events", icon: <CalendarIcon /> },
       { href: "/trends", label: "My Stats", icon: <TrendsIcon />, authOnly: true },
       { href: "/tools", label: "Player Tools", icon: <SwordsIcon />, authOnly: true },
     ],

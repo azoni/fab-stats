@@ -104,7 +104,8 @@ export function ActivityFeed({ rankMap, eventTierMap, underlineTierMap }: { rank
   }, [friends, favorites, user?.uid]);
 
   const filteredEvents: FeedEvent[] = useMemo(() => {
-    let source = events.filter((e) => !deletedIds.has(e.id));
+    // Exclude shared game events globally — they duplicate the completion event
+    let source = events.filter((e) => !deletedIds.has(e.id) && !((e as { subtype?: string }).subtype === "shared" && GAME_EVENT_TYPES.has(e.type)));
 
     // Scope filter
     if (scope === "friends") {
@@ -113,7 +114,7 @@ export function ActivityFeed({ rankMap, eventTierMap, underlineTierMap }: { rank
 
     // Type filter
     if (typeFilter === "games") {
-      source = source.filter((e) => GAME_EVENT_TYPES.has(e.type) && (e as { subtype?: string }).subtype !== "shared");
+      source = source.filter((e) => GAME_EVENT_TYPES.has(e.type));
     } else if (typeFilter !== "all") {
       source = source.filter((e) => e.type === typeFilter);
     }
