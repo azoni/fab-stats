@@ -4,7 +4,7 @@ import { Toaster } from "sonner";
 export function SonnerProvider() {
   return (
     <Toaster
-      position="bottom-right"
+      position="top-center"
       toastOptions={{
         className:
           "!bg-fab-surface !border !border-fab-border !text-fab-text !shadow-xl",

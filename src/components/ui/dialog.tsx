@@ -36,7 +36,7 @@ export function Dialog({
             </RadixDialog.Overlay>
             <RadixDialog.Content asChild>
               <motion.div
-                className={`fixed left-1/2 top-1/2 z-50 w-[calc(100%-2rem)] ${className} -translate-x-1/2 -translate-y-1/2 bg-fab-surface border border-fab-border rounded-lg p-6 shadow-2xl focus:outline-none`}
+                className={`fixed left-1/2 top-1/2 z-50 w-[calc(100%-1.5rem)] sm:w-[calc(100%-2rem)] ${className} -translate-x-1/2 -translate-y-1/2 bg-fab-surface border border-fab-border rounded-lg p-4 sm:p-6 shadow-2xl max-h-[85vh] overflow-y-auto focus:outline-none`}
                 initial={{ opacity: 0, scale: 0.95, y: 10 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: 10 }}

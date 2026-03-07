@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Nunito } from "next/font/google";
 import "./globals.css";
 import { Navbar } from "@/components/layout/Navbar";
@@ -30,6 +30,13 @@ const nunito = Nunito({
   subsets: ["latin"],
   weight: ["700", "800", "900"],
 });
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#c9a84c",
+};
 
 const SITE_URL = "https://www.fabstats.net";
 const SITE_NAME = "FaB Stats";
@@ -94,7 +101,6 @@ export const metadata: Metadata = {
   },
   manifest: "/manifest.json",
   other: {
-    "theme-color": "#c9a84c",
     "mobile-web-app-capable": "yes",
   },
 };
@@ -122,7 +128,7 @@ export default function RootLayout({
         <ChatProvider>
         <TooltipProvider>
           <Navbar />
-          <main className="min-h-screen pb-20 md:pb-8 md:pt-16">
+          <main className="min-h-screen pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-8 md:pt-16">
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6">
               <SiteBanner />
               <GuestBanner />
