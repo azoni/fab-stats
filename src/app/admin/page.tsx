@@ -120,6 +120,7 @@ export default function AdminPage() {
   const [bannerScope, setBannerScope] = useState<BannerConfig["scope"]>("all");
   const [bannerLink, setBannerLink] = useState("");
   const [bannerLinkText, setBannerLinkText] = useState("");
+  const [bannerLinkNewTab, setBannerLinkNewTab] = useState(false);
   const [savingBanner, setSavingBanner] = useState(false);
   const [bannerSaved, setBannerSaved] = useState(false);
   // Event Showcase
@@ -203,6 +204,7 @@ export default function AdminPage() {
         setBannerScope(bannerData.scope || "all");
         setBannerLink(bannerData.link || "");
         setBannerLinkText(bannerData.linkText || "");
+        setBannerLinkNewTab(bannerData.linkNewTab ?? false);
       }
       if (showcaseData) {
         setShowcaseActive(showcaseData.active);
@@ -1102,7 +1104,7 @@ export default function AdminPage() {
                     setSavingBanner(true);
                     setBannerSaved(false);
                     try {
-                      await saveBanner({ text: bannerText, active: next, type: bannerType, scope: bannerScope, link: bannerLink || undefined, linkText: bannerLinkText || undefined });
+                      await saveBanner({ text: bannerText, active: next, type: bannerType, scope: bannerScope, link: bannerLink || undefined, linkText: bannerLinkText || undefined, linkNewTab: bannerLinkNewTab });
                       setBannerSaved(true);
                       setTimeout(() => setBannerSaved(false), 2000);
                     } catch {
@@ -1124,7 +1126,7 @@ export default function AdminPage() {
                     setSavingBanner(true);
                     setBannerSaved(false);
                     try {
-                      await saveBanner({ text: bannerText, active: bannerActive, type: bannerType, scope: bannerScope, link: bannerLink || undefined, linkText: bannerLinkText || undefined });
+                      await saveBanner({ text: bannerText, active: bannerActive, type: bannerType, scope: bannerScope, link: bannerLink || undefined, linkText: bannerLinkText || undefined, linkNewTab: bannerLinkNewTab });
                       setBannerSaved(true);
                       setTimeout(() => setBannerSaved(false), 2000);
                     } catch {
@@ -1180,6 +1182,15 @@ export default function AdminPage() {
                   onChange={(e) => setBannerLinkText(e.target.value)}
                   className="w-32 bg-fab-bg border border-fab-border text-fab-text text-xs rounded px-2 py-1.5 focus:outline-none focus:border-fab-gold"
                 />
+                <label className="flex items-center gap-1 text-xs text-fab-muted cursor-pointer shrink-0">
+                  <input
+                    type="checkbox"
+                    checked={bannerLinkNewTab}
+                    onChange={(e) => setBannerLinkNewTab(e.target.checked)}
+                    className="accent-fab-gold"
+                  />
+                  New tab
+                </label>
               </div>
               {bannerText.trim() && (
                 <div className="mt-2">

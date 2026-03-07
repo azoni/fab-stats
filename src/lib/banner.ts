@@ -8,6 +8,7 @@ export interface BannerConfig {
   scope: "all" | "home";
   link?: string;
   linkText?: string;
+  linkNewTab?: boolean;
 }
 
 const BANNER_DOC = doc(db, "admin", "banner");
@@ -29,6 +30,7 @@ export async function saveBanner(config: BannerConfig): Promise<void> {
   };
   if (config.link) data.link = config.link;
   if (config.linkText) data.linkText = config.linkText;
+  if (config.linkNewTab !== undefined) data.linkNewTab = config.linkNewTab;
   await setDoc(BANNER_DOC, data);
 }
 

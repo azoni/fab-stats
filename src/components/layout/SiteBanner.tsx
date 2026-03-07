@@ -47,8 +47,8 @@ export function SiteBanner() {
             {" "}
             <a
               href={banner.link}
-              target={banner.link.startsWith("http") ? "_blank" : undefined}
-              rel={banner.link.startsWith("http") ? "noopener noreferrer" : undefined}
+              target={banner.linkNewTab ? "_blank" : undefined}
+              rel={banner.linkNewTab ? "noopener noreferrer" : undefined}
               className="underline font-medium hover:opacity-80 transition-opacity"
             >
               {banner.linkText || "Learn more"}
