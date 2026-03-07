@@ -13,6 +13,10 @@ import { CompareCard } from "@/components/compare/CompareCard";
 import { SwordsIcon } from "@/components/icons/NavIcons";
 import { computeUserRanks, getBestRank, rankBorderClass } from "@/lib/leaderboard-ranks";
 import { computePowerLevel, getPowerTier } from "@/lib/power-level";
+import { FabRadarChart } from "@/components/charts/RadarChart";
+import { MiniDonut } from "@/components/charts/MiniDonut";
+import { WinRateRing } from "@/components/charts/WinRateRing";
+import { SegmentedBar } from "@/components/charts/SegmentedBar";
 
 import { getMatchesByUserId, getProfile } from "@/lib/firestore-storage";
 import { normalizeOpponentName, computeOpponentStats } from "@/lib/stats";
@@ -749,6 +753,36 @@ function ComparisonView({ p1, p2, allEntries }: { p1: LeaderboardEntry; p2: Lead
         </div>
       </div>
 
+      {/* ── Radar Chart ── */}
+      <div className="bg-fab-surface border border-fab-border rounded-lg p-4 mb-4" style={{ animation: "fade-in-up 0.4s ease-out 0.15s both" }}>
+        <p className="text-[10px] text-fab-gold uppercase tracking-wider font-semibold mb-2 text-center">Comparison Radar</p>
+        <div className="flex justify-center">
+          <FabRadarChart
+            data={[
+              { axis: "Win Rate", v1: p1.winRate, v2: p2.winRate, max: 100 },
+              { axis: "Volume", v1: p1.totalMatches + p1.totalByes, v2: p2.totalMatches + p2.totalByes, max: Math.max(p1.totalMatches + p1.totalByes, p2.totalMatches + p2.totalByes, 1) },
+              { axis: "Streaks", v1: p1.longestWinStreak, v2: p2.longestWinStreak, max: Math.max(p1.longestWinStreak, p2.longestWinStreak, 1) },
+              { axis: "Events", v1: p1.eventsPlayed, v2: p2.eventsPlayed, max: Math.max(p1.eventsPlayed, p2.eventsPlayed, 1) },
+              { axis: "Heroes", v1: p1.uniqueHeroes, v2: p2.uniqueHeroes, max: Math.max(p1.uniqueHeroes, p2.uniqueHeroes, 1) },
+              { axis: "Top 8s", v1: p1.totalTop8s ?? 0, v2: p2.totalTop8s ?? 0, max: Math.max(p1.totalTop8s ?? 0, p2.totalTop8s ?? 0, 1) },
+            ]}
+            p1Label={p1.displayName}
+            p2Label={p2.displayName}
+            size={260}
+          />
+        </div>
+        <div className="flex justify-center gap-6 mt-2">
+          <div className="flex items-center gap-1.5">
+            <div className="w-2.5 h-2.5 rounded-full bg-fab-gold" />
+            <span className="text-[10px] text-fab-muted">{p1.displayName}</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-2.5 h-2.5 rounded-full bg-fab-loss" />
+            <span className="text-[10px] text-fab-muted">{p2.displayName}</span>
+          </div>
+        </div>
+      </div>
+
       {/* ── Stats Table with Sections ── */}
       <div className="space-y-3">
         {sections.map((section, si) => (
@@ -895,22 +929,32 @@ function H2HArena({ p1, p2, h2h, h2hLoading }: {
                 <p className={`text-4xl font-black ${h2h.p1Wins > h2h.p2Wins ? "text-blue-400" : "text-fab-text"}`}>{h2h.p1Wins}</p>
                 <p className="text-[10px] text-fab-dim mt-1">wins</p>
               </div>
-              {h2h.draws > 0 && (
-                <div className="text-center">
-                  <p className="text-2xl font-bold text-fab-dim">{h2h.draws}</p>
-                  <p className="text-[10px] text-fab-dim mt-1">draws</p>
-                </div>
-              )}
+              <MiniDonut
+                size={72}
+                strokeWidth={10}
+                segments={[
+                  { value: h2h.p1Wins, color: "#60a5fa", label: `${p1.displayName}` },
+                  ...(h2h.draws > 0 ? [{ value: h2h.draws, color: "var(--color-fab-dim)", label: "Draws" }] : []),
+                  { value: h2h.p2Wins, color: "#f87171", label: `${p2.displayName}` },
+                ]}
+                centerLabel={<span className="text-[10px] font-bold text-fab-dim">{h2h.total}</span>}
+              />
               <div className="text-center">
                 <p className={`text-4xl font-black ${h2h.p2Wins > h2h.p1Wins ? "text-red-400" : "text-fab-text"}`}>{h2h.p2Wins}</p>
                 <p className="text-[10px] text-fab-dim mt-1">wins</p>
               </div>
             </div>
 
-            <div className="mt-3 h-2.5 rounded-full overflow-hidden flex bg-fab-bg">
-              <div className="bg-blue-500 transition-all duration-700" style={{ width: `${(h2h.p1Wins / h2h.total) * 100}%` }} />
-              {h2h.draws > 0 && <div className="bg-fab-dim transition-all duration-700" style={{ width: `${(h2h.draws / h2h.total) * 100}%` }} />}
-              <div className="bg-red-500 transition-all duration-700" style={{ width: `${(h2h.p2Wins / h2h.total) * 100}%` }} />
+            <div className="mt-3">
+              <SegmentedBar
+                segments={[
+                  { value: h2h.p1Wins, color: "#60a5fa", label: `${h2h.p1Wins}W` },
+                  ...(h2h.draws > 0 ? [{ value: h2h.draws, color: "var(--color-fab-dim)", label: `${h2h.draws}D` }] : []),
+                  { value: h2h.p2Wins, color: "#f87171", label: `${h2h.p2Wins}W` },
+                ]}
+                height="md"
+                showLabels
+              />
             </div>
 
             <p className="text-center text-xs text-fab-muted mt-2">
@@ -957,8 +1001,9 @@ function HeroRoster({ p1, p2 }: { p1: LeaderboardEntry; p2: LeaderboardEntry }) 
                 {heroData && <HeroClassIcon heroClass={heroData.classes[0]} size="sm" />}
                 <div className="min-w-0 flex-1">
                   <p className="text-xs font-medium text-fab-text truncate">{h.hero}</p>
-                  <p className="text-[10px] text-fab-dim">{h.matches}m &middot; {h.winRate.toFixed(0)}%</p>
+                  <p className="text-[10px] text-fab-dim">{h.matches}m</p>
                 </div>
+                <WinRateRing value={h.winRate} size={24} strokeWidth={2.5} />
               </div>
             );
           })}
@@ -972,8 +1017,9 @@ function HeroRoster({ p1, p2 }: { p1: LeaderboardEntry; p2: LeaderboardEntry }) 
                 {heroData && <HeroClassIcon heroClass={heroData.classes[0]} size="sm" />}
                 <div className="min-w-0 flex-1">
                   <p className="text-xs font-medium text-fab-text truncate">{h.hero}</p>
-                  <p className="text-[10px] text-fab-dim">{h.matches}m &middot; {h.winRate.toFixed(0)}%</p>
+                  <p className="text-[10px] text-fab-dim">{h.matches}m</p>
                 </div>
+                <WinRateRing value={h.winRate} size={24} strokeWidth={2.5} />
               </div>
             );
           })}
@@ -1096,11 +1142,13 @@ function CommonOpponentsSection({ p1, p2, opponents, loading }: {
                 <p className="text-xs font-medium text-fab-text truncate">{opp.name}</p>
                 <p className="text-[10px] text-fab-dim">{opp.p1Total + opp.p2Total} total games</p>
               </div>
-              <div className="text-center">
-                <p className={`text-xs font-semibold ${opp.p1WinRate >= 50 ? "text-blue-400" : "text-fab-text"}`}>
-                  {opp.p1Wins}W-{opp.p1Losses}L
-                </p>
-                <p className="text-[10px] text-fab-dim">{opp.p1WinRate.toFixed(0)}%</p>
+              <div className="flex items-center justify-center gap-1.5">
+                <WinRateRing value={opp.p1WinRate} size={24} strokeWidth={2.5} />
+                <div className="text-center">
+                  <p className={`text-xs font-semibold ${opp.p1WinRate >= 50 ? "text-blue-400" : "text-fab-text"}`}>
+                    {opp.p1Wins}W-{opp.p1Losses}L
+                  </p>
+                </div>
               </div>
               <div className="text-center">
                 {isEdge && (
@@ -1109,11 +1157,13 @@ function CommonOpponentsSection({ p1, p2, opponents, loading }: {
                   </span>
                 )}
               </div>
-              <div className="text-center">
-                <p className={`text-xs font-semibold ${opp.p2WinRate >= 50 ? "text-red-400" : "text-fab-text"}`}>
-                  {opp.p2Wins}W-{opp.p2Losses}L
-                </p>
-                <p className="text-[10px] text-fab-dim">{opp.p2WinRate.toFixed(0)}%</p>
+              <div className="flex items-center justify-center gap-1.5">
+                <div className="text-center">
+                  <p className={`text-xs font-semibold ${opp.p2WinRate >= 50 ? "text-red-400" : "text-fab-text"}`}>
+                    {opp.p2Wins}W-{opp.p2Losses}L
+                  </p>
+                </div>
+                <WinRateRing value={opp.p2WinRate} size={24} strokeWidth={2.5} />
               </div>
             </div>
           );

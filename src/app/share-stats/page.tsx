@@ -8,6 +8,9 @@ import { computeEloRating, getEloTier } from "@/lib/elo";
 import { getHeroByName } from "@/lib/heroes";
 import { HeroClassIcon } from "@/components/heroes/HeroClassIcon";
 import { MatchResult } from "@/types";
+import { WinRateRing } from "@/components/charts/WinRateRing";
+import { MiniDonut } from "@/components/charts/MiniDonut";
+import { SegmentedBar } from "@/components/charts/SegmentedBar";
 
 export default function ShareStatsPage() {
   const { user, profile, isGuest } = useAuth();
@@ -101,26 +104,51 @@ export default function ShareStatsPage() {
           {/* Overall Record */}
           <section className="bg-fab-surface border border-fab-border rounded-lg p-4">
             <h2 className="text-sm font-bold text-fab-text mb-3">Overall Record</h2>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <div className="text-center">
-                <p className="text-2xl font-bold text-fab-text">
-                  {overall.totalWins}-{overall.totalLosses}
-                  {overall.totalDraws > 0 && <span className="text-lg">-{overall.totalDraws}</span>}
-                </p>
-                <p className="text-[10px] text-fab-dim">Record</p>
+            <div className="flex items-center gap-4 mb-4">
+              <WinRateRing value={overall.overallWinRate} size={56} strokeWidth={5} />
+              <div className="h-10 w-px bg-fab-border" />
+              <MiniDonut
+                size={48}
+                strokeWidth={7}
+                segments={[
+                  { value: overall.totalWins, color: "var(--color-fab-win)", label: "W" },
+                  { value: overall.totalLosses, color: "var(--color-fab-loss)", label: "L" },
+                  ...(overall.totalDraws > 0 ? [{ value: overall.totalDraws, color: "var(--color-fab-draw)", label: "D" }] : []),
+                ]}
+                centerLabel={<span className="text-[9px] font-bold text-fab-dim">{overall.totalMatches}</span>}
+              />
+              <div className="flex items-center gap-2.5 text-[11px] tabular-nums">
+                <div className="text-center">
+                  <p className="font-bold text-fab-win">{overall.totalWins}</p>
+                  <p className="text-[9px] text-fab-dim">W</p>
+                </div>
+                <div className="text-center">
+                  <p className="font-bold text-fab-loss">{overall.totalLosses}</p>
+                  <p className="text-[9px] text-fab-dim">L</p>
+                </div>
+                <div className="text-center">
+                  <p className="font-bold text-fab-draw">{overall.totalDraws}</p>
+                  <p className="text-[9px] text-fab-dim">D</p>
+                </div>
               </div>
-              <div className="text-center">
-                <p className={`text-2xl font-bold ${overall.overallWinRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>
-                  {overall.overallWinRate.toFixed(1)}%
-                </p>
-                <p className="text-[10px] text-fab-dim">Win Rate</p>
-              </div>
-              <div className="text-center">
-                <p className="text-2xl font-bold" style={{ color: eloTier.color }}>{elo}</p>
+            </div>
+            <SegmentedBar
+              segments={[
+                { value: overall.totalWins, color: "var(--color-fab-win)", label: `${overall.totalWins}W` },
+                { value: overall.totalLosses, color: "var(--color-fab-loss)", label: `${overall.totalLosses}L` },
+                ...(overall.totalDraws > 0 ? [{ value: overall.totalDraws, color: "var(--color-fab-draw)", label: `${overall.totalDraws}D` }] : []),
+              ]}
+              height="md"
+              showLabels
+              className="mb-3"
+            />
+            <div className="grid grid-cols-2 gap-3">
+              <div className="bg-fab-bg/50 rounded-lg p-2 text-center">
+                <p className="text-lg font-bold" style={{ color: eloTier.color }}>{elo}</p>
                 <p className="text-[10px] text-fab-dim">ELO ({eloTier.label})</p>
               </div>
-              <div className="text-center">
-                <p className="text-2xl font-bold text-fab-text">{overall.totalMatches}</p>
+              <div className="bg-fab-bg/50 rounded-lg p-2 text-center">
+                <p className="text-lg font-bold text-fab-text">{overall.totalMatches}</p>
                 <p className="text-[10px] text-fab-dim">Total Matches</p>
               </div>
             </div>
@@ -142,9 +170,7 @@ export default function ShareStatsPage() {
                       <HeroClassIcon heroClass={heroInfo?.classes[0]} size="sm" />
                       <span className="text-sm font-medium text-fab-text flex-1 truncate">{hero.heroName}</span>
                       <span className="text-xs text-fab-dim">{hero.totalMatches} matches</span>
-                      <span className={`text-xs font-semibold ${hero.winRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>
-                        {hero.winRate.toFixed(0)}%
-                      </span>
+                      <WinRateRing value={hero.winRate} size={24} strokeWidth={2.5} />
                     </div>
                   );
                 })}
@@ -185,25 +211,22 @@ export default function ShareStatsPage() {
             <section className="bg-fab-surface border border-fab-border rounded-lg p-4">
               <h2 className="text-sm font-bold text-fab-text mb-3">Recent Form (Last 20)</h2>
               <div className="flex items-center gap-4">
+                <WinRateRing value={recentForm.winRate} size={48} strokeWidth={4} />
                 <div>
                   <p className="text-lg font-bold text-fab-text">
                     {recentForm.wins}-{recentForm.losses}
                   </p>
                   <p className="text-[10px] text-fab-dim">Record</p>
                 </div>
-                <div>
-                  <p className={`text-lg font-bold ${recentForm.winRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>
-                    {recentForm.winRate.toFixed(0)}%
-                  </p>
-                  <p className="text-[10px] text-fab-dim">Win Rate</p>
-                </div>
                 <div className="flex-1">
-                  <div className="h-2 bg-fab-bg rounded-full overflow-hidden">
-                    <div
-                      className={`h-full rounded-full ${recentForm.winRate >= 50 ? "bg-fab-win/60" : "bg-fab-loss/60"}`}
-                      style={{ width: `${recentForm.winRate}%` }}
-                    />
-                  </div>
+                  <SegmentedBar
+                    segments={[
+                      { value: recentForm.wins, color: "var(--color-fab-win)", label: `${recentForm.wins}W` },
+                      { value: recentForm.losses, color: "var(--color-fab-loss)", label: `${recentForm.losses}L` },
+                    ]}
+                    height="md"
+                    showLabels
+                  />
                 </div>
               </div>
             </section>

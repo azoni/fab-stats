@@ -9,6 +9,11 @@ import { getSeasonWeeks } from "@/lib/seasons";
 import { getHeroByName } from "@/lib/heroes";
 import { HeroClassIcon } from "@/components/heroes/HeroClassIcon";
 import { MetaShareModal } from "@/components/meta/MetaShareCard";
+import { MiniDonut, DONUT_COLORS } from "@/components/charts/MiniDonut";
+import { WinRateRing } from "@/components/charts/WinRateRing";
+import { SegmentedBar } from "@/components/charts/SegmentedBar";
+import { StatCard } from "@/components/ui/StatCard";
+import { Users, Swords, Shield, Trophy } from "lucide-react";
 
 type SortKey = "usage" | "winrate";
 type PeriodSelection = MetaPeriod | `season:${string}` | "custom";
@@ -292,27 +297,60 @@ export default function MetaPage() {
       })()}
 
       {/* Community Overview */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-fab-surface border border-fab-border rounded-lg p-4">
-          <p className="text-xs text-fab-muted mb-1">Players</p>
-          <p className="text-2xl font-bold text-fab-text">{overview.totalPlayers}</p>
-        </div>
-        <div className="bg-fab-surface border border-fab-border rounded-lg p-4">
-          <p className="text-xs text-fab-muted mb-1">Total Matches</p>
-          <p className="text-2xl font-bold text-fab-text">{overview.totalMatches.toLocaleString()}</p>
-        </div>
-        <div className="bg-fab-surface border border-fab-border rounded-lg p-4">
-          <p className="text-xs text-fab-muted mb-1">Heroes Played</p>
-          <p className="text-2xl font-bold text-fab-text">{overview.totalHeroes}</p>
-        </div>
-        <div className="bg-fab-surface border border-fab-border rounded-lg p-4">
-          <p className="text-xs text-fab-muted mb-1">Most Played</p>
-          <p className="text-lg font-bold text-fab-text truncate">{topHero?.hero || "—"}</p>
-          {topHero && (
-            <p className="text-[10px] text-fab-dim">{topHero.metaShare.toFixed(1)}% of matches</p>
-          )}
-        </div>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+        <StatCard label="Players" value={overview.totalPlayers} icon={<Users className="w-3.5 h-3.5" />} />
+        <StatCard label="Total Matches" value={overview.totalMatches.toLocaleString()} icon={<Swords className="w-3.5 h-3.5" />} />
+        <StatCard label="Heroes Played" value={overview.totalHeroes} icon={<Shield className="w-3.5 h-3.5" />} />
+        <StatCard
+          label="Most Played"
+          value={topHero?.hero || "—"}
+          sub={topHero ? `${topHero.metaShare.toFixed(1)}% of matches` : undefined}
+          icon={<Trophy className="w-3.5 h-3.5" />}
+          chart={topHero ? (
+            <MiniDonut
+              segments={[
+                { value: topHero.metaShare, color: "var(--color-fab-gold)" },
+                { value: 100 - topHero.metaShare, color: "var(--color-fab-border)" },
+              ]}
+              size={36}
+              strokeWidth={5}
+            />
+          ) : undefined}
+        />
       </div>
+
+      {/* Hero Distribution Donut */}
+      {heroStats.length >= 3 && (
+        <div className="bg-fab-surface border border-fab-border rounded-lg p-5 mb-6">
+          <h2 className="text-sm font-semibold text-fab-text mb-4">Hero Meta Distribution</h2>
+          <div className="flex flex-col sm:flex-row items-center gap-6">
+            <MiniDonut
+              segments={heroStats.slice(0, 10).map((h, i) => ({
+                value: h.metaShare,
+                color: DONUT_COLORS[i % DONUT_COLORS.length],
+                label: h.hero,
+              }))}
+              size={160}
+              strokeWidth={22}
+              centerLabel={
+                <span className="flex flex-col items-center">
+                  <span className="text-xl font-bold text-fab-text">{overview.totalPlayers}</span>
+                  <span className="text-[9px] text-fab-dim uppercase tracking-wider">Players</span>
+                </span>
+              }
+            />
+            <div className="flex-1 grid grid-cols-2 gap-x-4 gap-y-1.5 w-full">
+              {heroStats.slice(0, 10).map((h, i) => (
+                <div key={h.hero} className="flex items-center gap-1.5 min-w-0">
+                  <div className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ backgroundColor: DONUT_COLORS[i % DONUT_COLORS.length] }} />
+                  <span className="text-xs text-fab-text truncate flex-1">{h.hero}</span>
+                  <span className="text-[10px] text-fab-muted tabular-nums shrink-0">{h.metaShare.toFixed(1)}%</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Meta share modal */}
       {metaShareOpen && top8Heroes.length > 0 && (
@@ -566,35 +604,30 @@ function HeroMetaRow({ hero, index }: { hero: HeroMetaStats; index: number }) {
             <span className="text-[10px] text-fab-dim shrink-0">{heroClass}</span>
           )}
         </div>
-        <div className="flex items-center gap-2 mt-1">
-          <div className="flex-1 h-1.5 bg-fab-bg rounded-full overflow-hidden">
-            <div
-              className="h-full bg-fab-gold/40 rounded-full transition-all"
-              style={{ width: `${Math.max(hero.metaShare, 0.5)}%` }}
-            />
-          </div>
-          <span className="text-[10px] text-fab-dim shrink-0 w-10 text-right">
-            {hero.metaShare.toFixed(1)}%
-          </span>
-        </div>
+        <SegmentedBar
+          segments={[
+            { value: hero.metaShare, color: "var(--color-fab-gold)" },
+            { value: Math.max(100 - hero.metaShare, 0), color: "var(--color-fab-bg)" },
+          ]}
+          height="md"
+          className="mt-1"
+        />
+        <span className="text-[10px] text-fab-dim mt-0.5 block">
+          {hero.metaShare.toFixed(1)}% meta share
+        </span>
       </div>
 
-      {/* Stats — all visible always */}
-      <div className="flex items-center gap-3 sm:gap-5 shrink-0 text-right">
-        <div className="hidden sm:block">
+      {/* Stats */}
+      <div className="flex items-center gap-3 sm:gap-4 shrink-0">
+        <div className="hidden sm:block text-right">
           <p className="text-sm font-semibold text-fab-text">{hero.totalMatches.toLocaleString()}</p>
           <p className="text-[10px] text-fab-dim">matches</p>
         </div>
-        <div>
+        <div className="text-right">
           <p className="text-sm font-semibold text-fab-text">{hero.playerCount}</p>
           <p className="text-[10px] text-fab-dim">players</p>
         </div>
-        <div>
-          <p className={`text-sm font-semibold ${hero.avgWinRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>
-            {hero.avgWinRate.toFixed(1)}%
-          </p>
-          <p className="text-[10px] text-fab-dim">win rate</p>
-        </div>
+        <WinRateRing value={hero.avgWinRate} size={36} strokeWidth={3.5} />
       </div>
     </div>
   );

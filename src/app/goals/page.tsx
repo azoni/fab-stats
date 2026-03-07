@@ -10,6 +10,9 @@ import { HeroSelect } from "@/components/heroes/HeroSelect";
 import { GameFormat } from "@/types";
 import { BarChart3, CheckCircle, X } from "lucide-react";
 import { toast } from "sonner";
+import { WinRateRing } from "@/components/charts/WinRateRing";
+import { MiniDonut } from "@/components/charts/MiniDonut";
+import { SegmentedBar } from "@/components/charts/SegmentedBar";
 
 export default function GoalsPage() {
   const { user, isGuest } = useAuth();
@@ -67,6 +70,40 @@ export default function GoalsPage() {
           }}
           onCancel={() => setShowForm(false)}
         />
+      )}
+
+      {/* Completion summary */}
+      {!loading && isLoaded && goals.length > 0 && (
+        <div className="flex items-center gap-4 mb-6 bg-fab-surface border border-fab-border rounded-lg p-4">
+          <MiniDonut
+            size={80}
+            strokeWidth={12}
+            segments={[
+              { value: completedGoals.length, color: "var(--color-fab-win)", label: "Done" },
+              { value: activeGoals.length, color: "var(--color-fab-muted)", label: "Active" },
+            ]}
+            centerLabel={
+              <span className="text-xs font-bold text-fab-text">
+                {completedGoals.length}/{goals.length}
+              </span>
+            }
+          />
+          <div className="flex-1">
+            <p className="text-sm font-semibold text-fab-text mb-1">
+              {completedGoals.length === goals.length
+                ? "All goals completed!"
+                : `${completedGoals.length} of ${goals.length} goals completed`}
+            </p>
+            <SegmentedBar
+              segments={[
+                { value: completedGoals.length, color: "var(--color-fab-win)", label: `${completedGoals.length} done` },
+                { value: activeGoals.length, color: "var(--color-fab-muted)", label: `${activeGoals.length} active` },
+              ]}
+              height="sm"
+              showLabels
+            />
+          </div>
+        </div>
       )}
 
       {/* Active goals */}
@@ -159,7 +196,13 @@ function GoalCard({
 
   return (
     <div className={`bg-fab-surface border rounded-lg p-4 ${progress.completed ? "border-fab-win/30" : "border-fab-border"}`}>
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex items-start gap-3">
+        <WinRateRing
+          value={Math.min(progress.percent, 100)}
+          size={36}
+          strokeWidth={3}
+          color={progress.completed ? "var(--color-fab-win)" : progress.percent >= 50 ? "var(--color-fab-gold)" : undefined}
+        />
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
             {progress.completed && (
@@ -175,10 +218,13 @@ function GoalCard({
             {goal.format && ` · ${goal.format}`}
           </p>
           <div className="flex items-center gap-2">
-            <div className="flex-1 h-2 bg-fab-bg rounded-full overflow-hidden">
-              <div
-                className={`h-full rounded-full transition-all ${barColor}`}
-                style={{ width: `${Math.max(progress.percent, 1)}%` }}
+            <div className="flex-1">
+              <SegmentedBar
+                segments={[
+                  { value: Math.min(progress.current, progress.target), color: progress.completed ? "var(--color-fab-win)" : progress.percent >= 50 ? "var(--color-fab-gold)" : "var(--color-fab-muted)" },
+                  { value: Math.max(progress.target - progress.current, 0), color: "var(--color-fab-bg)" },
+                ]}
+                height="sm"
               />
             </div>
             <span className="text-xs text-fab-dim shrink-0">
@@ -192,7 +238,7 @@ function GoalCard({
         </div>
         <button
           onClick={onDelete}
-          className="text-fab-dim hover:text-fab-loss transition-colors p-1"
+          className="text-fab-dim hover:text-fab-loss transition-colors p-1 shrink-0"
           title="Delete goal"
           aria-label="Delete goal"
         >

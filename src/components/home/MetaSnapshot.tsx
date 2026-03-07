@@ -4,6 +4,8 @@ import Link from "next/link";
 import { getHeroByName } from "@/lib/heroes";
 import { HeroClassIcon } from "@/components/heroes/HeroClassIcon";
 import { MetaShareModal, DonutChart, buildSegments } from "@/components/meta/MetaShareCard";
+import { MiniDonut, DONUT_COLORS } from "@/components/charts/MiniDonut";
+import { WinRateRing } from "@/components/charts/WinRateRing";
 import type { HeroMetaStats } from "@/lib/meta-stats";
 import type { Top8HeroMeta } from "@/lib/meta-stats";
 
@@ -316,30 +318,41 @@ export const MetaSnapshot = memo(function MetaSnapshot({ topHeroes, top8Heroes, 
             </div>
           </div>
         ) : (
-          // Default: show hero meta stats (weekly armory CC or all-time fallback)
-          topHeroes.slice(0, 5).map((hero, i) => {
-            const heroInfo = getHeroByName(hero.hero);
-            const heroClass = heroInfo?.classes[0];
-            return (
-              <div key={hero.hero} className={`relative flex items-center gap-3 px-4 py-2.5 ${i > 0 ? "border-t border-fab-border" : ""}`}>
-                {/* Win rate background bar */}
-                <div
-                  className="absolute inset-0 pointer-events-none"
-                  style={{
-                    background: `linear-gradient(90deg, ${hero.avgWinRate >= 50 ? "rgba(74,222,128,0.06)" : "rgba(248,113,113,0.06)"} 0%, transparent 100%)`,
-                    width: `${Math.min(hero.avgWinRate, 100)}%`,
-                  }}
+          // Default: show hero meta stats with donut + enhanced rows
+          <div className="relative z-[1] p-4">
+            {/* Meta donut chart */}
+            {topHeroes.length >= 3 && (
+              <div className="flex flex-col items-center gap-3 mb-4">
+                <MiniDonut
+                  segments={topHeroes.slice(0, 5).map((h, i) => ({
+                    value: h.metaShare,
+                    color: DONUT_COLORS[i % DONUT_COLORS.length],
+                    label: h.hero,
+                  }))}
+                  size={120}
+                  strokeWidth={16}
+                  centerLabel={
+                    <span className="text-[10px] font-bold text-fab-dim uppercase tracking-wider">Meta</span>
+                  }
                 />
-                <span className={`text-sm w-5 text-center relative ${RANK_CLASS[i] || "text-fab-muted font-bold"}`}>{i + 1}</span>
-                <HeroClassIcon heroClass={heroClass} size="sm" />
-                <span className={`font-medium text-fab-text flex-1 truncate text-sm relative ${i === 0 ? "text-fab-gold" : ""}`}>{hero.hero}</span>
-                <span className="text-xs text-fab-muted shrink-0 relative">{hero.metaShare.toFixed(1)}%</span>
-                <span className={`text-xs font-semibold shrink-0 w-14 text-right relative ${hero.avgWinRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>
-                  {hero.avgWinRate.toFixed(1)}%
-                </span>
               </div>
-            );
-          })
+            )}
+            {/* Hero rows */}
+            {topHeroes.slice(0, 5).map((hero, i) => {
+              const heroInfo = getHeroByName(hero.hero);
+              const heroClass = heroInfo?.classes[0];
+              return (
+                <div key={hero.hero} className={`flex items-center gap-3 py-2.5 ${i > 0 ? "border-t border-fab-border" : ""}`}>
+                  <span className={`text-sm w-5 text-center ${RANK_CLASS[i] || "text-fab-muted font-bold"}`}>{i + 1}</span>
+                  <div className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ backgroundColor: DONUT_COLORS[i % DONUT_COLORS.length] }} />
+                  <HeroClassIcon heroClass={heroClass} size="sm" />
+                  <span className={`font-medium text-fab-text flex-1 truncate text-sm ${i === 0 ? "text-fab-gold" : ""}`}>{hero.hero}</span>
+                  <span className="text-xs text-fab-muted shrink-0 tabular-nums">{hero.metaShare.toFixed(1)}%</span>
+                  <WinRateRing value={hero.avgWinRate} size={28} strokeWidth={3} />
+                </div>
+              );
+            })}
+          </div>
         )}
       </div>
     </div>

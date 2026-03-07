@@ -14,6 +14,7 @@ import { playerHref } from "@/lib/constants";
 import { loadAllKudosCounts, loadAllKudosGivenCounts, KUDOS_TYPES, type KudosCountsEntry } from "@/lib/kudos";
 import { loadAllGameStats, type GameLeaderboardEntry } from "@/lib/game-leaderboard";
 import type { LeaderboardEntry, OpponentStats } from "@/types";
+import { WinRateRing } from "@/components/charts/WinRateRing";
 
 const SITE_CREATOR = "azoni";
 
@@ -1241,24 +1242,14 @@ function LeaderboardRow({
       </div>
 
       {/* Stat */}
-      <div className="text-right shrink-0 min-w-[80px]">
-        {showBar ? (
-          <div className="flex flex-col items-end gap-1">
-            <p className={`text-sm font-bold ${stat.color}`}>{stat.value}</p>
-            <div className="w-16 h-1 bg-fab-bg rounded-full overflow-hidden">
-              <div
-                className={`h-full rounded-full transition-all ${(stat.rate ?? 0) >= 50 ? "bg-fab-win/50" : "bg-fab-loss/50"}`}
-                style={{ width: `${Math.max(stat.rate ?? 0, 2)}%` }}
-              />
-            </div>
-            <p className="text-[10px] text-fab-dim truncate max-w-[120px]">{stat.sub}</p>
-          </div>
-        ) : (
-          <>
-            <p className={`text-sm font-bold ${stat.color}`}>{stat.value}</p>
-            <p className="text-[10px] text-fab-dim truncate max-w-[120px]">{stat.sub}</p>
-          </>
+      <div className="flex items-center gap-2.5 shrink-0">
+        {showBar && stat.rate != null && (
+          <WinRateRing value={stat.rate} size={32} strokeWidth={3} />
         )}
+        <div className={`text-right ${showBar ? "" : "min-w-[80px]"}`}>
+          <p className={`text-sm font-bold ${stat.color}`}>{stat.value}</p>
+          <p className="text-[10px] text-fab-dim truncate max-w-[120px]">{stat.sub}</p>
+        </div>
       </div>
     </Link>
   );

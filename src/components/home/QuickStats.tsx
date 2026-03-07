@@ -1,6 +1,11 @@
 "use client";
 import { MatchResult } from "@/types";
 import type { OverallStats, MatchRecord } from "@/types";
+import { WinRateRing } from "@/components/charts/WinRateRing";
+import { MiniDonut } from "@/components/charts/MiniDonut";
+import { SegmentedBar } from "@/components/charts/SegmentedBar";
+import { SparkLine } from "@/components/charts/SparkLine";
+import { BarChart3 } from "lucide-react";
 
 interface QuickStatsProps {
   overall: OverallStats;
@@ -9,49 +14,62 @@ interface QuickStatsProps {
 
 export function QuickStats({ overall, last30 }: QuickStatsProps) {
   const { streaks } = overall;
-  // Last 15 non-bye matches for form dots
   const formMatches = last30.filter((m) => m.result !== MatchResult.Bye).slice(-15);
+
+  // Build rolling win rate for sparkline
+  const sparkData: number[] = [];
+  let runWins = 0;
+  formMatches.forEach((m, i) => {
+    if (m.result === MatchResult.Win) runWins++;
+    sparkData.push(Math.round((runWins / (i + 1)) * 100));
+  });
+
+  const total = overall.totalWins + overall.totalLosses + overall.totalDraws;
 
   return (
     <div className="bg-fab-surface border border-fab-border rounded-lg p-4 overflow-hidden relative" style={{ backgroundImage: "url(/quick-stats-bg.jpg)", backgroundSize: "cover", backgroundPosition: "center" }}>
-      {/* Dark overlay so text stays readable */}
       <div className="absolute inset-0 bg-fab-surface/80" />
       <div className="relative z-10">
         {/* Header */}
         <div className="flex items-center gap-2 mb-3">
           <div className="w-7 h-7 rounded-lg bg-fab-gold/10 flex items-center justify-center ring-1 ring-inset ring-fab-gold/20">
-            <svg className="w-4 h-4 text-fab-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
-            </svg>
+            <BarChart3 className="w-4 h-4 text-fab-gold" />
           </div>
           <h2 className="text-sm font-semibold text-fab-text leading-tight">Quick Stats</h2>
         </div>
 
-        {/* Record + Streak */}
+        {/* Win Rate Ring + W/L/D Donut + Record */}
         <div className="flex items-center gap-4 mb-4">
-          <div>
-            <p className={`text-2xl font-black tabular-nums leading-none ${overall.overallWinRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>
-              {overall.overallWinRate.toFixed(1)}%
-            </p>
-            <p className="text-[10px] text-fab-dim mt-0.5">Win Rate</p>
+          <WinRateRing value={overall.overallWinRate} size={56} strokeWidth={5} />
+          <div className="h-10 w-px bg-fab-border" />
+          <div className="flex items-center gap-3">
+            <MiniDonut
+              segments={[
+                { value: overall.totalWins, color: "var(--color-fab-win)", label: "W" },
+                { value: overall.totalLosses, color: "var(--color-fab-loss)", label: "L" },
+                ...(overall.totalDraws > 0 ? [{ value: overall.totalDraws, color: "var(--color-fab-draw)", label: "D" }] : []),
+              ]}
+              size={44}
+              strokeWidth={6}
+              centerLabel={<span className="text-[9px] font-bold text-fab-dim">{total}</span>}
+            />
+            <div className="flex items-center gap-2.5 text-[11px] tabular-nums">
+              <div className="text-center">
+                <p className="font-bold text-fab-win">{overall.totalWins}</p>
+                <p className="text-[9px] text-fab-dim">W</p>
+              </div>
+              <div className="text-center">
+                <p className="font-bold text-fab-loss">{overall.totalLosses}</p>
+                <p className="text-[9px] text-fab-dim">L</p>
+              </div>
+              <div className="text-center">
+                <p className="font-bold text-fab-draw">{overall.totalDraws}</p>
+                <p className="text-[9px] text-fab-dim">D</p>
+              </div>
+            </div>
           </div>
-          <div className="h-8 w-px bg-fab-border" />
-          <div className="flex items-center gap-3 text-[11px] tabular-nums">
-            <div className="text-center">
-              <p className="font-bold text-fab-win">{overall.totalWins}</p>
-              <p className="text-[9px] text-fab-dim">W</p>
-            </div>
-            <div className="text-center">
-              <p className="font-bold text-fab-loss">{overall.totalLosses}</p>
-              <p className="text-[9px] text-fab-dim">L</p>
-            </div>
-            <div className="text-center">
-              <p className="font-bold text-fab-draw">{overall.totalDraws}</p>
-              <p className="text-[9px] text-fab-dim">D</p>
-            </div>
-          </div>
-          <div className="h-8 w-px bg-fab-border" />
-          <div className="flex flex-col gap-0.5">
+          <div className="h-10 w-px bg-fab-border hidden sm:block" />
+          <div className="hidden sm:flex flex-col gap-0.5">
             {streaks.currentStreak && streaks.currentStreak.count > 0 && (
               <span className={`text-[11px] font-bold ${streaks.currentStreak.type === MatchResult.Win ? "text-fab-win" : "text-fab-loss"}`}>
                 {streaks.currentStreak.type === MatchResult.Win ? "W" : "L"}{streaks.currentStreak.count}
@@ -66,15 +84,32 @@ export function QuickStats({ overall, last30 }: QuickStatsProps) {
           </div>
         </div>
 
-        {/* Recent Form */}
+        {/* W/L/D Segmented Bar */}
+        <SegmentedBar
+          segments={[
+            { value: overall.totalWins, color: "var(--color-fab-win)", label: `${overall.totalWins}W` },
+            { value: overall.totalLosses, color: "var(--color-fab-loss)", label: `${overall.totalLosses}L` },
+            ...(overall.totalDraws > 0 ? [{ value: overall.totalDraws, color: "var(--color-fab-draw)", label: `${overall.totalDraws}D` }] : []),
+          ]}
+          height="md"
+          showLabels
+          className="mb-3"
+        />
+
+        {/* Recent Form: Sparkline + Dots */}
         {formMatches.length > 0 && (
           <div>
-            <p className="text-[10px] text-fab-dim mb-1.5">Recent Form</p>
+            <div className="flex items-center justify-between mb-1.5">
+              <p className="text-[10px] text-fab-dim">Recent Form</p>
+              {sparkData.length >= 2 && (
+                <SparkLine data={sparkData} width={80} height={20} showDot />
+              )}
+            </div>
             <div className="flex items-center gap-1">
               {formMatches.map((m, i) => (
                 <div
                   key={i}
-                  className={`w-2.5 h-2.5 rounded-full ${
+                  className={`w-3 h-3 rounded-full ${
                     m.result === MatchResult.Win
                       ? "bg-fab-win"
                       : m.result === MatchResult.Loss
@@ -85,6 +120,22 @@ export function QuickStats({ overall, last30 }: QuickStatsProps) {
                 />
               ))}
             </div>
+          </div>
+        )}
+
+        {/* Streaks on mobile (hidden on sm+) */}
+        {(streaks.currentStreak?.count ?? 0) > 0 && (
+          <div className="flex sm:hidden items-center gap-3 mt-3 pt-3 border-t border-fab-border/50">
+            {streaks.currentStreak && streaks.currentStreak.count > 0 && (
+              <span className={`text-[11px] font-bold ${streaks.currentStreak.type === MatchResult.Win ? "text-fab-win" : "text-fab-loss"}`}>
+                {streaks.currentStreak.type === MatchResult.Win ? "W" : "L"}{streaks.currentStreak.count} streak
+              </span>
+            )}
+            {streaks.longestWinStreak > 0 && (
+              <span className="text-[10px] text-fab-dim">
+                Best: <span className="text-fab-win font-semibold">W{streaks.longestWinStreak}</span>
+              </span>
+            )}
           </div>
         )}
       </div>

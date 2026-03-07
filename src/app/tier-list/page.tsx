@@ -4,6 +4,9 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { AlignLeft } from "lucide-react";
+import { SegmentedBar } from "@/components/charts/SegmentedBar";
+import { WinRateRing } from "@/components/charts/WinRateRing";
+import { MiniDonut } from "@/components/charts/MiniDonut";
 import { useLeaderboard } from "@/hooks/useLeaderboard";
 import { computeMetaStats, getAvailableFormats, computeTop8HeroMeta, type HeroMetaStats, type MetaPeriod, type Top8HeroMeta } from "@/lib/meta-stats";
 import { getHeroByName } from "@/lib/heroes";
@@ -116,6 +119,9 @@ export default function TierListPage() {
     return groups;
   }, [scoredHeroes]);
 
+  const maxMetaShare = useMemo(() => Math.max(...heroStats.map((h) => h.metaShare), 1), [heroStats]);
+  const maxTop8Count = useMemo(() => Math.max(...top8Heroes.map((h) => h.count), 1), [top8Heroes]);
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -204,6 +210,33 @@ export default function TierListPage() {
         </Link>
       </div>
 
+      {/* Tier distribution donut */}
+      {scoredHeroes.length > 0 && (
+        <div className="flex items-center gap-4 mb-6 bg-fab-surface border border-fab-border rounded-lg p-4">
+          <MiniDonut
+            size={100}
+            strokeWidth={14}
+            segments={TIERS.filter((t) => tierGroups[t].length > 0).map((t) => ({
+              value: tierGroups[t].length,
+              color: { S: "#e879f9", A: "#38bdf8", B: "#4ade80", C: "#facc15", D: "#9ca3af" }[t],
+              label: t,
+            }))}
+            centerLabel={<span className="text-xs font-bold text-fab-text">{scoredHeroes.length}</span>}
+          />
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-x-4 gap-y-1.5 flex-1">
+            {TIERS.filter((t) => tierGroups[t].length > 0).map((t) => {
+              const config = TIER_CONFIG[t];
+              return (
+                <div key={t} className="flex items-center gap-2">
+                  <span className={`text-sm font-black ${config.color}`}>{t}</span>
+                  <span className="text-xs text-fab-muted">{tierGroups[t].length} heroes</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Tier rows */}
       {scoredHeroes.length === 0 ? (
         <div className="text-center py-16">
@@ -268,6 +301,8 @@ export default function TierListPage() {
                         borderClass={config.border}
                         bgClass={config.bg}
                         colorClass={config.color}
+                        maxMetaShare={maxMetaShare}
+                        maxTop8Count={maxTop8Count}
                       />
                     </motion.div>
                   )}
@@ -281,30 +316,47 @@ export default function TierListPage() {
   );
 }
 
-function HeroDetail({ hero: h, borderClass, bgClass, colorClass }: {
+function HeroDetail({ hero: h, borderClass, bgClass, colorClass, maxMetaShare, maxTop8Count }: {
   hero: ScoredHero;
   borderClass: string;
   bgClass: string;
   colorClass: string;
+  maxMetaShare: number;
+  maxTop8Count: number;
 }) {
+  // Recompute score components for the breakdown bar
+  const wrComponent = (h.winRate / 100) * 40;
+  const playComponent = maxMetaShare > 0 ? (h.metaShare / maxMetaShare) * 30 : 0;
+  const t8Component = maxTop8Count > 0 ? (h.top8Count / maxTop8Count) * 30 : 0;
+
   return (
     <div className={`border-t ${borderClass} px-4 py-3 ${bgClass}`}>
-      <div className="flex items-center gap-3 mb-2">
+      <div className="flex items-center gap-3 mb-3">
         <HeroClassIcon heroClass={h.heroClass} size="md" />
-        <div>
+        <div className="flex-1 min-w-0">
           <p className="font-semibold text-fab-text">{h.hero}</p>
           <p className="text-[10px] text-fab-dim">
             Composite Score: <span className={`font-bold ${colorClass}`}>{h.score.toFixed(1)}</span>
           </p>
         </div>
+        <WinRateRing value={h.winRate} size={40} strokeWidth={3.5} />
       </div>
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-center">
-        <div className="bg-fab-bg/50 rounded-lg p-2">
-          <p className={`text-sm font-bold ${h.winRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>
-            {h.winRate.toFixed(1)}%
-          </p>
-          <p className="text-[10px] text-fab-dim">Win Rate</p>
-        </div>
+
+      {/* Score composition bar */}
+      <div className="mb-3">
+        <p className="text-[10px] text-fab-dim mb-1">Score Breakdown</p>
+        <SegmentedBar
+          segments={[
+            { value: wrComponent, color: "var(--color-fab-win)", label: `WR ${wrComponent.toFixed(0)}` },
+            { value: playComponent, color: "var(--color-fab-gold)", label: `Play ${playComponent.toFixed(0)}` },
+            { value: t8Component, color: "#60a5fa", label: `T8 ${t8Component.toFixed(0)}` },
+          ]}
+          height="md"
+          showLabels
+        />
+      </div>
+
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
         <div className="bg-fab-bg/50 rounded-lg p-2">
           <p className="text-sm font-bold text-fab-text">{h.metaShare.toFixed(1)}%</p>
           <p className="text-[10px] text-fab-dim">Meta Share</p>

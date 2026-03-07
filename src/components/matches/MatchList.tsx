@@ -5,6 +5,8 @@ import { MatchResult, GameFormat, type MatchRecord } from "@/types";
 import { allHeroes as knownHeroes } from "@/lib/heroes";
 import { getEventType, getRoundNumber } from "@/lib/stats";
 import { localDate } from "@/lib/constants";
+import { WinRateRing } from "@/components/charts/WinRateRing";
+import { SegmentedBar } from "@/components/charts/SegmentedBar";
 
 const VALID_HERO_NAMES = new Set(knownHeroes.map((h) => h.name));
 const PAGE_SIZE = 25;
@@ -218,35 +220,29 @@ export function MatchList({ matches, matchOwnerUid, enableComments, editable, on
       ) : (
         <>
           {/* Stats Summary Strip */}
-          <div className="flex items-center gap-3 mb-3 px-3 py-2.5 bg-fab-surface/50 rounded-lg border border-fab-border/50">
-            {/* Record counts */}
-            <div className="flex items-center gap-2 text-sm font-semibold shrink-0">
-              <span className="text-fab-win">{stats.wins}W</span>
-              <span className="text-fab-dim">&middot;</span>
-              <span className="text-fab-loss">{stats.losses}L</span>
-              {stats.draws > 0 && (
-                <>
-                  <span className="text-fab-dim">&middot;</span>
-                  <span className="text-fab-draw">{stats.draws}D</span>
-                </>
-              )}
+          <div className="flex items-center gap-3 mb-3 px-3 py-3 bg-fab-surface/50 rounded-lg border border-fab-border/50">
+            <WinRateRing value={stats.winRate} size={44} strokeWidth={4} />
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 text-sm font-semibold mb-1.5">
+                <span className="text-fab-win">{stats.wins}W</span>
+                <span className="text-fab-dim">&middot;</span>
+                <span className="text-fab-loss">{stats.losses}L</span>
+                {stats.draws > 0 && (
+                  <>
+                    <span className="text-fab-dim">&middot;</span>
+                    <span className="text-fab-draw">{stats.draws}D</span>
+                  </>
+                )}
+              </div>
+              <SegmentedBar
+                segments={[
+                  { value: stats.wins, color: "var(--color-fab-win)" },
+                  { value: stats.draws, color: "var(--color-fab-draw)" },
+                  { value: stats.losses, color: "var(--color-fab-loss)" },
+                ]}
+                height="md"
+              />
             </div>
-
-            {/* Segmented win rate bar */}
-            <div className="flex-1 h-1.5 bg-fab-bg rounded-full overflow-hidden flex min-w-[80px]">
-              {stats.nonBye > 0 && (
-                <>
-                  <div className="h-full bg-fab-win transition-all" style={{ width: `${(stats.wins / stats.nonBye) * 100}%` }} />
-                  <div className="h-full bg-fab-draw transition-all" style={{ width: `${(stats.draws / stats.nonBye) * 100}%` }} />
-                  <div className="h-full bg-fab-loss transition-all" style={{ width: `${(stats.losses / stats.nonBye) * 100}%` }} />
-                </>
-              )}
-            </div>
-
-            {/* Win rate percentage */}
-            <span className={`text-sm font-bold shrink-0 ${stats.winRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>
-              {stats.winRate.toFixed(1)}%
-            </span>
           </div>
 
           {/* Match count */}
