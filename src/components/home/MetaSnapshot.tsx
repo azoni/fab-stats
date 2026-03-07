@@ -203,19 +203,22 @@ export const MetaSnapshot = memo(function MetaSnapshot({ topHeroes, top8Heroes, 
                 >
                   All
                 </button>
-                {seasonWeeks.map((w, wi) => (
-                  <button
-                    key={wi}
-                    onClick={() => { onWeekChange(wi); setTop8Page(0); }}
-                    className={`px-2.5 py-1 rounded-full text-[11px] font-semibold whitespace-nowrap transition-all ${
-                      selectedWeek === wi
-                        ? "bg-teal-500/15 text-teal-400"
-                        : "text-fab-muted hover:text-fab-text"
-                    }`}
-                  >
-                    {w.label}
-                  </button>
-                ))}
+                {(() => { const today = new Date().toISOString().slice(0, 10); return seasonWeeks.map((w, wi) => {
+                  if (w.start > today) return null;
+                  return (
+                    <button
+                      key={wi}
+                      onClick={() => { onWeekChange(wi); setTop8Page(0); }}
+                      className={`px-2.5 py-1 rounded-full text-[11px] font-semibold whitespace-nowrap transition-all ${
+                        selectedWeek === wi
+                          ? "bg-teal-500/15 text-teal-400"
+                          : "text-fab-muted hover:text-fab-text"
+                      }`}
+                    >
+                      {w.label}
+                    </button>
+                  );
+                }); })()}
               </div>
             )}
             <div className="flex items-center justify-between px-4 py-2 border-b border-fab-border">

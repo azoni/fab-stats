@@ -34,11 +34,14 @@ export function computeMetaStats(
   filterFormat?: string,
   filterEventType?: string,
   period: MetaPeriod = "all",
+  sinceDateStr?: string,
+  untilDateStr?: string,
 ): {
   overview: CommunityOverview;
   heroStats: HeroMetaStats[];
 } {
   const isFiltered = !!filterFormat || !!filterEventType;
+  const isDateRange = !!sinceDateStr;
   const usePeriodBreakdown = period !== "all";
   const heroAgg = new Map<string, { players: Set<string>; matches: number; wins: number }>();
 
@@ -69,13 +72,18 @@ export function computeMetaStats(
         totalWins += hb.wins;
       }
       if (hasMatchingData) playersWithData.add(entry.userId);
-    } else if (isFiltered && entry.heroBreakdownDetailed) {
-      // When filtering by format/eventType, use heroBreakdownDetailed
+    } else if ((isFiltered || isDateRange) && entry.heroBreakdownDetailed) {
+      // When filtering by format/eventType/date range, use heroBreakdownDetailed
       let hasMatchingData = false;
       for (const hb of entry.heroBreakdownDetailed) {
         if (!validHeroNames.has(hb.hero)) continue;
         if (filterFormat && hb.format !== filterFormat) continue;
         if (filterEventType && hb.eventType !== filterEventType) continue;
+        // Date range filtering: skip entries outside the range
+        if (isDateRange && hb.dates && hb.dates.length > 0) {
+          const hasDateInRange = hb.dates.some(d => d >= sinceDateStr! && (!untilDateStr || d <= untilDateStr));
+          if (!hasDateInRange) continue;
+        }
 
         hasMatchingData = true;
         const cur = heroAgg.get(hb.hero) || { players: new Set<string>(), matches: 0, wins: 0 };

@@ -110,8 +110,10 @@ export default function MetaPage() {
       effectiveFormat,
       effectiveEventType,
       basePeriod,
+      sinceDate,
+      untilDate,
     ),
-    [entries, effectiveFormat, effectiveEventType, basePeriod],
+    [entries, effectiveFormat, effectiveEventType, basePeriod, sinceDate, untilDate],
   );
 
   // Top 8 heroes — filtered by period/season/custom, format, and event type

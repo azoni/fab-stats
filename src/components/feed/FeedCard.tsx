@@ -93,6 +93,46 @@ const placementLabels: Record<string, { label: string; color: string; icon: stri
   top8: { label: "Top 8", color: "text-fab-gold", icon: "M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 21 12 17.77 5.82 21 7 14.14l-5-4.87 6.91-1.01L12 2z" },
 };
 
+// ── Major event placement card styles (Battle Hardened and up) ──
+
+const MAJOR_EVENT_CARD_STYLE: Record<string, {
+  border: string;
+  rgb: string;
+  shadow: string;
+  championShadow: string;
+}> = {
+  "Battle Hardened": {
+    border: "#cd7f32",
+    rgb: "205,127,50",
+    shadow: "0 0 12px rgba(205,127,50,0.3)",
+    championShadow: "0 0 16px rgba(205,127,50,0.45), 0 0 32px rgba(205,127,50,0.15)",
+  },
+  "The Calling": {
+    border: "#60a5fa",
+    rgb: "96,165,250",
+    shadow: "0 0 14px rgba(96,165,250,0.35)",
+    championShadow: "0 0 18px rgba(96,165,250,0.5), 0 0 36px rgba(96,165,250,0.15)",
+  },
+  Nationals: {
+    border: "#f87171",
+    rgb: "248,113,113",
+    shadow: "0 0 14px rgba(248,113,113,0.35)",
+    championShadow: "0 0 18px rgba(248,113,113,0.5), 0 0 36px rgba(248,113,113,0.15)",
+  },
+  "Pro Tour": {
+    border: "#a78bfa",
+    rgb: "167,139,250",
+    shadow: "0 0 18px rgba(167,139,250,0.4)",
+    championShadow: "0 0 22px rgba(167,139,250,0.55), 0 0 44px rgba(167,139,250,0.2)",
+  },
+  Worlds: {
+    border: "#fbbf24",
+    rgb: "251,191,36",
+    shadow: "0 0 20px rgba(251,191,36,0.45), 0 0 40px rgba(251,191,36,0.15)",
+    championShadow: "0 0 24px rgba(251,191,36,0.6), 0 0 48px rgba(251,191,36,0.25), 0 0 64px rgba(251,191,36,0.1)",
+  },
+};
+
 /** Shared avatar + header row — clickable link to player profile */
 function FeedCardHeader({ event, compact, rankMap }: { event: FeedEvent; compact?: boolean; rankMap?: Map<string, 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8> }) {
   const initials = event.displayName
@@ -348,12 +388,83 @@ export function FeedCard({ event, compact, rankMap, eventTierMap, underlineTierM
   const underlineStyle = underlineTierMap?.get(event.userId);
   const canDelete = isAdmin || (userId && userId === event.userId);
 
+  // Per-card major event placement styling
+  let majorStyle: (typeof MAJOR_EVENT_CARD_STYLE)[string] | undefined;
+  let isChampion = false;
+  let showCornerAccents = false;
+  if (event.type === "placement") {
+    majorStyle = MAJOR_EVENT_CARD_STYLE[event.eventType];
+    isChampion = event.placementType === "champion";
+    showCornerAccents = !!majorStyle && isChampion && (event.eventType === "Pro Tour" || event.eventType === "Worlds");
+  }
+
+  // Major event styling takes priority over user-level tier styling
+  const cardStyle = majorStyle
+    ? {
+        borderColor: majorStyle.border,
+        boxShadow: isChampion ? majorStyle.championShadow : majorStyle.shadow,
+      }
+    : tierStyle
+      ? { borderColor: tierStyle.border, boxShadow: tierStyle.shadow }
+      : undefined;
+
   return (
     <div
       className={`bg-fab-surface border border-fab-border rounded-lg ${compact ? "px-3 py-2" : "p-4"} relative group/feed overflow-hidden`}
-      style={tierStyle ? { borderColor: tierStyle.border, boxShadow: tierStyle.shadow } : undefined}
+      style={cardStyle}
     >
-      {underlineStyle && (
+      {/* Major event accent top bar */}
+      {majorStyle && !compact && (
+        <div
+          className="absolute top-0 left-0 right-0 pointer-events-none"
+          style={{
+            height: isChampion ? 3 : 2.5,
+            background: `linear-gradient(90deg, transparent, rgba(${majorStyle.rgb},${isChampion ? 0.9 : 0.7}), transparent)`,
+          }}
+        />
+      )}
+      {/* Major event radial gradient overlay */}
+      {majorStyle && !compact && (
+        <div
+          className="absolute inset-0 pointer-events-none rounded-lg"
+          style={{
+            backgroundImage: `radial-gradient(ellipse at top, rgba(${majorStyle.rgb},${isChampion ? 0.08 : 0.04}) 0%, transparent 70%)`,
+          }}
+        />
+      )}
+      {/* Corner filigrees for Champion at Pro Tour / Worlds */}
+      {showCornerAccents && !compact && majorStyle && (
+        <>
+          <svg className="absolute top-0 left-0 w-8 h-8 pointer-events-none" viewBox="0 0 32 32" fill="none">
+            <path d="M0 0 L14 0 Q10 3 7 7 Q3 10 0 14 Z" fill={`rgba(${majorStyle.rgb},0.1)`} />
+            <path d="M0 0 L10 0 Q7 3 5 5 Q3 7 0 10" stroke={majorStyle.border} strokeWidth="0.75" fill="none" opacity="0.5" />
+          </svg>
+          <svg className="absolute top-0 right-0 w-8 h-8 pointer-events-none" viewBox="0 0 32 32" fill="none">
+            <path d="M32 0 L18 0 Q22 3 25 7 Q29 10 32 14 Z" fill={`rgba(${majorStyle.rgb},0.1)`} />
+            <path d="M32 0 L22 0 Q25 3 27 5 Q29 7 32 10" stroke={majorStyle.border} strokeWidth="0.75" fill="none" opacity="0.5" />
+          </svg>
+          <svg className="absolute bottom-0 left-0 w-8 h-8 pointer-events-none" viewBox="0 0 32 32" fill="none">
+            <path d="M0 32 L0 18 Q3 22 7 25 Q10 29 14 32 Z" fill={`rgba(${majorStyle.rgb},0.1)`} />
+            <path d="M0 32 L0 22 Q3 25 5 27 Q7 29 10 32" stroke={majorStyle.border} strokeWidth="0.75" fill="none" opacity="0.5" />
+          </svg>
+          <svg className="absolute bottom-0 right-0 w-8 h-8 pointer-events-none" viewBox="0 0 32 32" fill="none">
+            <path d="M32 32 L32 18 Q29 22 25 25 Q22 29 18 32 Z" fill={`rgba(${majorStyle.rgb},0.1)`} />
+            <path d="M32 32 L32 22 Q29 25 27 27 Q25 29 22 32" stroke={majorStyle.border} strokeWidth="0.75" fill="none" opacity="0.5" />
+          </svg>
+        </>
+      )}
+      {/* Bottom accent bar for major events */}
+      {majorStyle && (
+        <div
+          className="absolute bottom-0 left-0 right-0 pointer-events-none"
+          style={{
+            height: isChampion ? 3 : 2.5,
+            background: `linear-gradient(90deg, transparent, rgba(${majorStyle.rgb},${isChampion ? 0.8 : 0.5}), transparent)`,
+          }}
+        />
+      )}
+      {/* Underline for non-major event cards */}
+      {!majorStyle && underlineStyle && (
         <div
           className="absolute bottom-0 left-0 right-0 pointer-events-none"
           style={{ height: 2.5, background: underlineStyle.color, boxShadow: `0 0 4px rgba(${underlineStyle.rgb},0.3)` }}
@@ -463,16 +574,77 @@ function formatEventDate(isoDate: string): string {
 
 function PlacementContent({ event, compact }: { event: FeedEvent & { type: "placement" }; compact?: boolean }) {
   const info = placementLabels[event.placementType] || placementLabels.top8;
+  const majorStyle = MAJOR_EVENT_CARD_STYLE[event.eventType];
+  const isChampion = event.placementType === "champion";
 
   if (compact) {
     return (
       <p className="text-[11px] text-fab-muted">
-        <span className={`font-semibold ${info.color}`}>{info.label}</span> at {event.eventName}
+        <span
+          className={`font-semibold ${majorStyle ? "" : info.color}`}
+          style={majorStyle ? { color: majorStyle.border } : undefined}
+        >
+          {info.label}
+        </span>{" "}
+        at {event.eventName}
         {event.hero && <span className="ml-1"><HeroPill hero={event.hero} compact /></span>}
       </p>
     );
   }
 
+  // Enhanced layout for major event placements
+  if (majorStyle) {
+    return (
+      <>
+        <div className="flex items-center gap-2.5 mt-1">
+          {/* Medal icon with colored circle background */}
+          <div
+            className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
+            style={{
+              backgroundColor: `rgba(${majorStyle.rgb},0.15)`,
+              boxShadow: isChampion ? `0 0 10px rgba(${majorStyle.rgb},0.3)` : undefined,
+            }}
+          >
+            <svg className="w-5 h-5" style={{ color: majorStyle.border }} viewBox="0 0 24 24" fill="currentColor">
+              <path d={info.icon} />
+            </svg>
+          </div>
+          <div className="min-w-0">
+            <p className="text-sm text-fab-muted">
+              {isChampion ? (
+                <span className="font-bold tracking-wide" style={{ color: majorStyle.border }}>
+                  Champion
+                </span>
+              ) : (
+                <>
+                  placed{" "}
+                  <span className="font-semibold" style={{ color: majorStyle.border }}>
+                    {info.label}
+                  </span>
+                </>
+              )}{" "}
+              at{" "}
+              <span className="font-semibold text-fab-text">{event.eventName}</span>
+            </p>
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-1.5 mt-2">
+          {event.hero && <HeroPill hero={event.hero} />}
+          <span
+            className="px-2 py-0.5 rounded-full text-xs font-medium"
+            style={{
+              backgroundColor: `rgba(${majorStyle.rgb},0.12)`,
+              color: majorStyle.border,
+            }}
+          >
+            {event.eventType}
+          </span>
+        </div>
+      </>
+    );
+  }
+
+  // Default non-major event placement
   return (
     <>
       <div className="flex items-center gap-2 mt-1">
