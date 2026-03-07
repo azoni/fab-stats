@@ -372,7 +372,7 @@ export default function MetaPage() {
                 <div key={h.hero} className="flex items-center gap-1.5 min-w-0">
                   <div className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ backgroundColor: DONUT_COLORS[i % DONUT_COLORS.length] }} />
                   <span className="text-xs text-fab-text truncate flex-1">{h.hero}</span>
-                  <span className="text-[10px] text-fab-muted tabular-nums shrink-0">{h.metaShare.toFixed(1)}%</span>
+                  <span className="text-[10px] text-fab-muted tabular-nums shrink-0">{h.uniqueEvents}</span>
                 </div>
               ))}
             </div>

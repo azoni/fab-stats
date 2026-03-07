@@ -11,8 +11,13 @@ function notesCollection(userId: string) {
   return collection(db, "users", userId, "matchupNotes");
 }
 
+/** Encode hero name for use as a Firestore document ID (e.g. "Dash I/O" contains "/"). */
+function safeHeroId(heroName: string): string {
+  return heroName.replaceAll("/", "___");
+}
+
 function noteDoc(userId: string, heroName: string) {
-  return doc(db, "users", userId, "matchupNotes", heroName);
+  return doc(db, "users", userId, "matchupNotes", safeHeroId(heroName));
 }
 
 export async function getMatchupNotes(
