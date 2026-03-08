@@ -33,7 +33,6 @@ import { getHeroByName } from "@/lib/heroes";
 import { loadKudosCounts } from "@/lib/kudos";
 import { hasUserSubmittedFeedback } from "@/lib/feedback";
 import { CardBorderWrapper } from "@/components/profile/CardBorderWrapper";
-import { GoalWidget } from "@/components/goals/GoalWidget";
 import type { UnderlineConfig } from "@/components/profile/CardBorderWrapper";
 import type { Poll, EventShowcaseConfig } from "@/types";
 
@@ -373,8 +372,14 @@ export default function Dashboard() {
               </div>
             </div>
             {user && <ActivityFeed rankMap={rankMap} eventTierMap={eventTierMap} underlineTierMap={underlineTierMap} />}
+            {/* Meta snapshot: shows here on mobile, hidden on lg */}
+            <div className="lg:hidden">
+              <MetaSnapshot topHeroes={communityTopHeroes} top8Heroes={top8Heroes} activeEventType={activeEventType} seasonName={displaySeason?.name} seasonWeeks={seasonWeeks} selectedWeek={selectedWeek} onWeekChange={setSelectedWeek} backgroundImage={displaySeason?.backgroundImage} showResults={!!resultsSeason} />
+            </div>
           </div>
-          <MetaSnapshot topHeroes={communityTopHeroes} top8Heroes={top8Heroes} activeEventType={activeEventType} seasonName={displaySeason?.name} seasonWeeks={seasonWeeks} selectedWeek={selectedWeek} onWeekChange={setSelectedWeek} backgroundImage={displaySeason?.backgroundImage} showResults={!!resultsSeason} />
+          <div className="hidden lg:block">
+            <MetaSnapshot topHeroes={communityTopHeroes} top8Heroes={top8Heroes} activeEventType={activeEventType} seasonName={displaySeason?.name} seasonWeeks={seasonWeeks} selectedWeek={selectedWeek} onWeekChange={setSelectedWeek} backgroundImage={displaySeason?.backgroundImage} showResults={!!resultsSeason} />
+          </div>
         </div>
       )}
 
@@ -513,13 +518,18 @@ export default function Dashboard() {
             </CardBorderWrapper>
             {/* Quick stats + recent events + player spotlight */}
             <QuickStats overall={overall} last30={last30} />
-            {user && <GoalWidget matches={matches} eventStats={eventStats} />}
+            {/* Activity feed: shows here on mobile (order-1), hidden on lg */}
+            {user && <div className="lg:hidden"><ActivityFeed rankMap={rankMap} eventTierMap={eventTierMap} underlineTierMap={underlineTierMap} /></div>}
+            {/* Meta snapshot: shows here on mobile, hidden on lg */}
+            <div className="lg:hidden">
+              <MetaSnapshot topHeroes={communityTopHeroes} top8Heroes={top8Heroes} activeEventType={activeEventType} seasonName={displaySeason?.name} seasonWeeks={seasonWeeks} selectedWeek={selectedWeek} onWeekChange={setSelectedWeek} backgroundImage={displaySeason?.backgroundImage} showResults={!!resultsSeason} />
+            </div>
             <RecentEvents eventStats={eventStats} playerName={profile?.displayName} />
             {(featuredProfiles.length > 0 || creators.length > 0) && (
               <FeaturedProfiles profiles={featuredProfiles} creators={creators} rankMap={rankMap} underlineTierMap={underlineTierMap} grid />
             )}
           </div>
-          <div className="flex flex-col gap-6">
+          <div className="hidden lg:flex flex-col gap-6">
             <MetaSnapshot topHeroes={communityTopHeroes} top8Heroes={top8Heroes} activeEventType={activeEventType} seasonName={displaySeason?.name} seasonWeeks={seasonWeeks} selectedWeek={selectedWeek} onWeekChange={setSelectedWeek} backgroundImage={displaySeason?.backgroundImage} showResults={!!resultsSeason} />
             {user && <ActivityFeed rankMap={rankMap} eventTierMap={eventTierMap} underlineTierMap={underlineTierMap} />}
           </div>
