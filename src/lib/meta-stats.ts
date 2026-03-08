@@ -51,6 +51,7 @@ export function computeMetaStats(
   let totalMatches = 0;
   let totalWins = 0;
   const playersWithData = new Set<string>();
+  const communityEventKeys = new Set<string>(); // unique events across all players
 
   for (const entry of entries) {
     // When using weekly/monthly period, use the period-specific breakdown
@@ -107,6 +108,21 @@ export function computeMetaStats(
             : hb.dates;
           for (const d of datesToAdd) cur.playerDates.add(`${entry.userId}|${d}`);
         }
+        // Track unique events by event name + date for community total
+        if (hb.eventKeys) {
+          for (const ek of hb.eventKeys) {
+            const ekDate = ek.split("|").pop() || "";
+            if (!isDateRange || (ekDate >= sinceDateStr! && (!untilDateStr || ekDate <= untilDateStr))) {
+              communityEventKeys.add(ek);
+            }
+          }
+        } else if (hb.dates) {
+          // Fallback for old data without eventKeys: use player-date pairs
+          const datesToAdd = isDateRange
+            ? hb.dates.filter(d => d >= sinceDateStr! && (!untilDateStr || d <= untilDateStr))
+            : hb.dates;
+          for (const d of datesToAdd) communityEventKeys.add(`${entry.userId}|${d}`);
+        }
         heroAgg.set(hb.hero, cur);
 
         totalMatches += effectiveMatches;
@@ -129,6 +145,12 @@ export function computeMetaStats(
           cur.matches += hb.matches;
           cur.wins += hb.wins;
           if (hb.dates) for (const d of hb.dates) cur.dates.add(d);
+          // Collect event keys for community total
+          if (hb.eventKeys) {
+            for (const ek of hb.eventKeys) communityEventKeys.add(ek);
+          } else if (hb.dates) {
+            for (const d of hb.dates) communityEventKeys.add(`${entry.userId}|${d}`);
+          }
           heroTotals.set(hb.hero, cur);
         }
         for (const [hero, data] of heroTotals) {
@@ -172,18 +194,13 @@ export function computeMetaStats(
   // Assign popularity ranks
   heroStatsList.forEach((h, i) => { h.popularityRank = i + 1; });
 
-  // Total unique player-date pairs across all heroes (dedup since a player plays 1 hero per event)
-  const allPlayerDates = new Set<string>();
-  for (const data of heroAgg.values()) {
-    for (const pd of data.playerDates) allPlayerDates.add(pd);
-  }
 
   return {
     overview: {
       totalPlayers: playersWithData.size,
       totalMatches,
       totalHeroes: heroAgg.size,
-      totalEvents: allPlayerDates.size,
+      totalEvents: communityEventKeys.size,
       avgWinRate: totalMatches > 0 ? (totalWins / totalMatches) * 100 : 0,
     },
     heroStats: heroStatsList,
