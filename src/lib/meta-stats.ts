@@ -46,7 +46,7 @@ export function computeMetaStats(
   const isFiltered = !!filterFormat || !!filterEventType;
   const isDateRange = !!sinceDateStr;
   const usePeriodBreakdown = period !== "all";
-  const heroAgg = new Map<string, { players: Set<string>; matches: number; wins: number; dates: Set<string> }>();
+  const heroAgg = new Map<string, { players: Set<string>; matches: number; wins: number; playerDates: Set<string> }>();
 
   let totalMatches = 0;
   let totalWins = 0;
@@ -65,7 +65,7 @@ export function computeMetaStats(
         if (filterEventType && hb.eventType !== filterEventType) continue;
 
         hasMatchingData = true;
-        const cur = heroAgg.get(hb.hero) || { players: new Set<string>(), matches: 0, wins: 0, dates: new Set<string>() };
+        const cur = heroAgg.get(hb.hero) || { players: new Set<string>(), matches: 0, wins: 0, playerDates: new Set<string>() };
         cur.players.add(entry.userId);
         cur.matches += hb.matches;
         cur.wins += hb.wins;
@@ -96,16 +96,16 @@ export function computeMetaStats(
         }
 
         hasMatchingData = true;
-        const cur = heroAgg.get(hb.hero) || { players: new Set<string>(), matches: 0, wins: 0, dates: new Set<string>() };
+        const cur = heroAgg.get(hb.hero) || { players: new Set<string>(), matches: 0, wins: 0, playerDates: new Set<string>() };
         cur.players.add(entry.userId);
         cur.matches += effectiveMatches;
         cur.wins += effectiveWins;
-        // Track unique event dates for this hero
+        // Track unique player-date pairs for this hero (each player's date = 1 event)
         if (hb.dates) {
           const datesToAdd = isDateRange
             ? hb.dates.filter(d => d >= sinceDateStr! && (!untilDateStr || d <= untilDateStr))
             : hb.dates;
-          for (const d of datesToAdd) cur.dates.add(d);
+          for (const d of datesToAdd) cur.playerDates.add(`${entry.userId}|${d}`);
         }
         heroAgg.set(hb.hero, cur);
 
@@ -132,17 +132,17 @@ export function computeMetaStats(
           heroTotals.set(hb.hero, cur);
         }
         for (const [hero, data] of heroTotals) {
-          const cur = heroAgg.get(hero) || { players: new Set<string>(), matches: 0, wins: 0, dates: new Set<string>() };
+          const cur = heroAgg.get(hero) || { players: new Set<string>(), matches: 0, wins: 0, playerDates: new Set<string>() };
           cur.players.add(entry.userId);
           cur.matches += data.matches;
           cur.wins += data.wins;
-          for (const d of data.dates) cur.dates.add(d);
+          for (const d of data.dates) cur.playerDates.add(`${entry.userId}|${d}`);
           heroAgg.set(hero, cur);
         }
       } else if (entry.heroBreakdown) {
         for (const hb of entry.heroBreakdown) {
           if (!validHeroNames.has(hb.hero)) continue;
-          const cur = heroAgg.get(hb.hero) || { players: new Set<string>(), matches: 0, wins: 0, dates: new Set<string>() };
+          const cur = heroAgg.get(hb.hero) || { players: new Set<string>(), matches: 0, wins: 0, playerDates: new Set<string>() };
           cur.players.add(entry.userId);
           cur.matches += hb.matches;
           cur.wins += hb.wins;
@@ -155,7 +155,7 @@ export function computeMetaStats(
     }
   }
 
-  const totalEvents = [...heroAgg.values()].reduce((sum, d) => sum + d.dates.size, 0);
+  const totalEventParticipations = [...heroAgg.values()].reduce((sum, d) => sum + d.playerDates.size, 0);
   const heroStatsList: HeroMetaStats[] = [...heroAgg.entries()]
     .map(([hero, data]) => ({
       hero,
@@ -163,19 +163,19 @@ export function computeMetaStats(
       totalMatches: data.matches,
       totalWins: data.wins,
       avgWinRate: data.matches > 0 ? (data.wins / data.matches) * 100 : 0,
-      metaShare: totalEvents > 0 ? (data.dates.size / totalEvents) * 100 : 0,
+      metaShare: totalEventParticipations > 0 ? (data.playerDates.size / totalEventParticipations) * 100 : 0,
       popularityRank: 0,
-      uniqueEvents: data.dates.size,
+      uniqueEvents: data.playerDates.size,
     }))
     .sort((a, b) => b.uniqueEvents - a.uniqueEvents || b.totalMatches - a.totalMatches);
 
   // Assign popularity ranks
   heroStatsList.forEach((h, i) => { h.popularityRank = i + 1; });
 
-  // Unique event dates across all heroes
-  const allDates = new Set<string>();
+  // Total unique player-date pairs across all heroes (dedup since a player plays 1 hero per event)
+  const allPlayerDates = new Set<string>();
   for (const data of heroAgg.values()) {
-    for (const d of data.dates) allDates.add(d);
+    for (const pd of data.playerDates) allPlayerDates.add(pd);
   }
 
   return {
@@ -183,7 +183,7 @@ export function computeMetaStats(
       totalPlayers: playersWithData.size,
       totalMatches,
       totalHeroes: heroAgg.size,
-      totalEvents: allDates.size,
+      totalEvents: allPlayerDates.size,
       avgWinRate: totalMatches > 0 ? (totalWins / totalMatches) * 100 : 0,
     },
     heroStats: heroStatsList,

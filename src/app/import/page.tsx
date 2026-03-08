@@ -1023,6 +1023,19 @@ export default function ImportPage() {
                   const heroValue = heroOverrides[origIdx] || event.matches[0]?.heroPlayed || "";
                   const needsHero = !heroOverrides[origIdx] && event.matches.every((m) => m.heroPlayed === "Unknown");
 
+                  // Detect playoff placement from match round labels
+                  const playoffRanks: Record<string, number> = { "Finals": 4, "Top 4": 3, "Top 8": 2, "Playoff": 2 };
+                  let bestPlayoff: string | null = null;
+                  let bestRank = 0;
+                  for (const m of event.matches) {
+                    const roundInfo = m.notes?.split(" | ")[1]?.trim() || "";
+                    const rank = playoffRanks[roundInfo] ?? (/^Round P/i.test(roundInfo) ? 2 : 0);
+                    if (rank > bestRank) {
+                      bestRank = rank;
+                      bestPlayoff = roundInfo === "Playoff" || /^Round P/i.test(roundInfo) ? "Top 8" : roundInfo;
+                    }
+                  }
+
                   return (
                     <div key={i} className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden">
                       <button
@@ -1034,6 +1047,14 @@ export default function ImportPage() {
                             <div className="flex items-center gap-2 flex-wrap">
                               <span className="font-semibold text-fab-text">{event.eventName}</span>
                               {event.rated && <span className="px-1.5 py-0.5 rounded bg-fab-gold/15 text-fab-gold text-xs">Rated</span>}
+                              {bestPlayoff && (
+                                <span className={`px-1.5 py-0.5 rounded text-xs font-bold ${
+                                  bestPlayoff === "Finals" ? "bg-yellow-500/20 text-yellow-400" :
+                                  bestPlayoff === "Top 4" ? "bg-amber-500/15 text-amber-400" :
+                                  bestPlayoff === "Top 8" ? "bg-orange-500/15 text-orange-400" :
+                                  "bg-blue-500/15 text-blue-400"
+                                }`}>{bestPlayoff}</span>
+                              )}
                             </div>
                             <div className="flex items-center gap-2 mt-1 text-xs text-fab-dim">
                               <span>{event.eventDate}</span>
