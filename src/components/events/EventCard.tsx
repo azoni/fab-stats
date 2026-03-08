@@ -400,6 +400,53 @@ export function EventCard({ event, playerName, obfuscateOpponents = false, visib
                       ) : (
                         <span className="text-fab-dim">Unknown</span>
                       )}
+                      {/* Mobile-only opponent hero */}
+                      {(() => {
+                        const oppHero = match.opponentHero && match.opponentHero !== "Unknown" ? match.opponentHero : null;
+                        const oppHeroInfo = oppHero ? getHeroByName(oppHero) : null;
+                        const isEditable = editable && onUpdateMatch;
+                        return (
+                          <div className="sm:hidden mt-0.5">
+                            {editingOppHeroId === match.id ? (
+                              <div className="w-full">
+                                <HeroSelect
+                                  value={match.opponentHero || ""}
+                                  onChange={async (hero) => {
+                                    setEditingOppHeroId(null);
+                                    if (!onUpdateMatch) return;
+                                    setSavingOppHeroId(match.id);
+                                    try {
+                                      await onUpdateMatch(match.id, { opponentHero: hero || undefined });
+                                    } catch { /* ignore */ }
+                                    setSavingOppHeroId(null);
+                                  }}
+                                  label="Opponent hero"
+                                  format={match.format}
+                                  allowClear
+                                />
+                              </div>
+                            ) : savingOppHeroId === match.id ? (
+                              <span className="text-fab-dim text-xs">Saving...</span>
+                            ) : oppHeroInfo ? (
+                              <div
+                                className={`flex items-center gap-1 ${isEditable ? "cursor-pointer" : ""}`}
+                                onClick={isEditable ? (e) => { e.stopPropagation(); setEditingOppHeroId(match.id); } : undefined}
+                              >
+                                <span className="text-fab-dim text-xs">vs</span>
+                                <HeroClassIcon heroClass={oppHeroInfo.classes[0]} size="sm" />
+                                <span className="text-xs text-fab-muted">{oppHero}</span>
+                              </div>
+                            ) : isEditable ? (
+                              <span
+                                className="text-fab-dim text-xs cursor-pointer"
+                                onClick={(e) => { e.stopPropagation(); setEditingOppHeroId(match.id); }}
+                              >
+                                + vs hero
+                              </span>
+                            ) : null}
+                          </div>
+                        );
+                      })()}
                     </td>
                     {showHeroColumn && (
                       <td className="px-4 py-2.5 hidden sm:table-cell">
