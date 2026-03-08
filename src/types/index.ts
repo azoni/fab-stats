@@ -18,6 +18,7 @@ export interface MatchRecord {
   source?: "extension" | "csv" | "paste" | "manual";
   extensionVersion?: string;
   gemEventId?: string;
+  heroSuggestionSent?: string;
   createdAt: string;
 }
 

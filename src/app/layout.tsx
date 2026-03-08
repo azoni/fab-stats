@@ -7,7 +7,6 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { LayoutShell } from "@/components/auth/LayoutShell";
 import { GuestBanner } from "@/components/auth/GuestBanner";
-import { FeatureBanner } from "@/components/auth/FeatureBanner";
 import { SiteBanner } from "@/components/layout/SiteBanner";
 import { FeedbackFab } from "@/components/feedback/FeedbackFab";
 import { ChatProvider } from "@/contexts/ChatContext";
@@ -132,7 +131,6 @@ export default function RootLayout({
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6">
               <SiteBanner />
               <GuestBanner />
-              <FeatureBanner />
               <LayoutShell>{children}</LayoutShell>
             </div>
           </main>

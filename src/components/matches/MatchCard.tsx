@@ -8,6 +8,7 @@ import { HeroAvatar } from "@/components/heroes/HeroAvatar";
 import { MatchResult, type MatchRecord } from "@/types";
 import { localDate } from "@/lib/constants";
 import { lookupGemId, sendHeroCorrectionNotification, getMatchesByUserId } from "@/lib/firestore-storage";
+import { toast } from "sonner";
 
 interface MatchCardProps {
   match: MatchRecord;
@@ -59,7 +60,7 @@ export function MatchCard({ match, matchOwnerUid, enableComments = false, obfusc
   const [suggestingHero, setSuggestingHero] = useState(false);
   const [suggestedHeroValue, setSuggestedHeroValue] = useState("");
   const [sendingCorrection, setSendingCorrection] = useState(false);
-  const [correctionSent, setCorrectionSent] = useState(false);
+  const [correctionSent, setCorrectionSent] = useState(!!match.heroSuggestionSent);
 
   const canSuggestCorrection = !!(match.opponentGemId && user && matchOwnerUid === user.uid);
 
@@ -143,9 +144,13 @@ export function MatchCard({ match, matchOwnerUid, enableComments = false, obfusc
         suggestedHeroValue,
         summary,
       );
+      if (onUpdateMatch) {
+        await onUpdateMatch(match.id, { heroSuggestionSent: suggestedHeroValue });
+      }
       setCorrectionSent(true);
       setSuggestingHero(false);
       setSuggestedHeroValue("");
+      toast.success(`Suggestion sent to ${match.opponentName || "opponent"}`);
     } finally {
       setSendingCorrection(false);
     }
@@ -255,7 +260,7 @@ export function MatchCard({ match, matchOwnerUid, enableComments = false, obfusc
           </button>
         )}
         {correctionSent && (
-          <p className="text-xs text-fab-win mt-1">Correction suggestion sent to {match.opponentName || "opponent"}!</p>
+          <p className="text-xs text-fab-dim mt-1">Suggested: {match.heroSuggestionSent || "hero correction sent"}</p>
         )}
 
         {/* Meta row: event, venue, date, format */}
@@ -388,6 +393,9 @@ export function MatchCard({ match, matchOwnerUid, enableComments = false, obfusc
         <div className="px-3 pb-3 pt-2 border-t border-fab-border/30 space-y-2">
           <p className="text-xs text-fab-muted">
             What hero did <span className="text-fab-text font-medium">{match.opponentName || "your opponent"}</span> play?
+          </p>
+          <p className="text-[11px] text-fab-dim">
+            This will send {match.opponentName || "them"} a notification suggesting what hero they played.
           </p>
           <HeroSelect value={suggestedHeroValue} onChange={setSuggestedHeroValue} label="Suggested hero" format={match.format} />
           <div className="flex items-center gap-2">
