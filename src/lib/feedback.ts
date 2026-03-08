@@ -60,8 +60,21 @@ export async function hasUserSubmittedFeedback(userId: string): Promise<boolean>
 
 export async function updateFeedbackStatus(
   feedbackId: string,
-  status: "new" | "reviewed" | "done"
+  status: "new" | "reviewed" | "done",
+  feedback?: FeedbackItem
 ): Promise<void> {
   const ref = doc(db, "feedback", feedbackId);
   await updateDoc(ref, { status });
+
+  // Notify the submitter when moved to reviewed or done
+  if (feedback && (status === "reviewed" || status === "done")) {
+    await addDoc(collection(db, "users", feedback.userId, "notifications"), {
+      type: "feedbackStatus",
+      feedbackType: feedback.type,
+      newStatus: status,
+      feedbackMessage: feedback.message.slice(0, 100),
+      createdAt: new Date().toISOString(),
+      read: false,
+    });
+  }
 }

@@ -97,6 +97,16 @@ function getNotifIcon(type: string): { bg: string; iconColor: string; icon: Reac
           </svg>
         ),
       };
+    case "feedbackStatus":
+      return {
+        bg: "bg-teal-500/15",
+        iconColor: "text-teal-400",
+        icon: (
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 0 1-2.555-.337A5.972 5.972 0 0 1 5.41 20.97a5.969 5.969 0 0 1-.474-.065 4.48 4.48 0 0 0 .978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25Z" />
+          </svg>
+        ),
+      };
     case "heroCorrection":
       return {
         bg: "bg-amber-500/15",
@@ -145,7 +155,7 @@ function getNotifIcon(type: string): { bg: string; iconColor: string; icon: Reac
 function NotifAvatar({ n }: { n: UserNotification }) {
   const { bg, iconColor, icon } = getNotifIcon(n.type);
 
-  if (n.type === "badge" || n.type === "kudos" || n.type === "heroCorrection") {
+  if (n.type === "badge" || n.type === "kudos" || n.type === "heroCorrection" || n.type === "feedbackStatus") {
     return (
       <div className={`w-9 h-9 rounded-full ${bg} flex items-center justify-center ${iconColor}`}>
         {icon}
@@ -265,6 +275,8 @@ export default function NotificationsPage() {
       if (username) router.push(`/player/${username}`);
     } else if (n.type === "heroCorrection") {
       // Don't navigate — handled by inline Accept/Dismiss buttons
+      await markAsRead(n.id);
+    } else if (n.type === "feedbackStatus") {
       await markAsRead(n.id);
     }
   }
@@ -431,6 +443,20 @@ export default function NotificationsPage() {
                             <span className="font-semibold">{n.kudosGiverName}</span>{" "}
                             gave you <span className="font-semibold text-fab-gold">{n.kudosType === "good_sport" ? "Good Sport" : n.kudosType === "props" ? "Props" : n.kudosType === "skilled" ? "Skilled" : n.kudosType === "helpful" ? "Helpful" : n.kudosType}</span> kudos
                           </p>
+                        ) : n.type === "feedbackStatus" ? (
+                          <>
+                            <p className="text-sm text-fab-text">
+                              Your {n.feedbackType === "feature" ? "feature request" : "bug report"} has been{" "}
+                              <span className={`font-semibold ${n.newStatus === "done" ? "text-fab-win" : "text-blue-400"}`}>
+                                {n.newStatus === "done" ? "completed" : "reviewed"}
+                              </span>
+                            </p>
+                            {n.feedbackMessage && (
+                              <p className="text-xs text-fab-dim mt-0.5 truncate">
+                                &quot;{n.feedbackMessage}&quot;
+                              </p>
+                            )}
+                          </>
                         ) : n.type === "heroCorrection" ? (
                           <>
                             <p className="text-sm text-fab-text">

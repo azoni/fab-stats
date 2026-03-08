@@ -920,7 +920,7 @@ export default function AdminPage() {
                                       setTimeout(() => setReplySent(null), 2000);
                                       // Auto-mark as reviewed if new
                                       if (f.status === "new") {
-                                        await updateFeedbackStatus(f.id, "reviewed");
+                                        await updateFeedbackStatus(f.id, "reviewed", f);
                                         setFeedback((prev) => prev.map((item) => item.id === f.id ? { ...item, status: "reviewed" } : item));
                                       }
                                     } catch (err) {
@@ -949,7 +949,7 @@ export default function AdminPage() {
                           onChange={async (e) => {
                             const newStatus = e.target.value as "new" | "reviewed" | "done";
                             try {
-                              await updateFeedbackStatus(f.id, newStatus);
+                              await updateFeedbackStatus(f.id, newStatus, f);
                               setFeedback((prev) =>
                                 prev.map((item) =>
                                   item.id === f.id ? { ...item, status: newStatus } : item

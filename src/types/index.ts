@@ -224,7 +224,7 @@ export interface MatchComment {
 
 export interface UserNotification {
   id: string;
-  type: "comment" | "message" | "friendRequest" | "friendAccepted" | "badge" | "kudos" | "heroCorrection";
+  type: "comment" | "message" | "friendRequest" | "friendAccepted" | "badge" | "kudos" | "heroCorrection" | "feedbackStatus";
   // Comment fields
   matchId?: string;
   matchOwnerUid?: string;
@@ -259,6 +259,10 @@ export interface UserNotification {
   kudosType?: string;
   kudosGiverUid?: string;
   kudosGiverName?: string;
+  // Feedback status fields
+  feedbackType?: "bug" | "feature";
+  newStatus?: "reviewed" | "done";
+  feedbackMessage?: string;
   // Common
   createdAt: string;
   read: boolean;
