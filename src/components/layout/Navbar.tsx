@@ -115,20 +115,24 @@ export function Navbar() {
               <>
                 {/* Main nav links — hidden on mobile */}
                 <div className="hidden md:flex items-center gap-0.5">
-                  {navLinks.filter((link) => !link.authOnly || isAuthenticated).map((link) => (
-                    <Link
-                      key={link.href}
-                      href={link.href}
-                      className={`flex items-center gap-1.5 px-2.5 py-2 rounded-md text-sm font-medium transition-colors ${
-                        pathname === link.href
-                          ? `${link.color} ${link.bg}`
-                          : "text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover"
-                      }`}
-                    >
-                      {link.icon}
-                      <span className="hidden xl:inline">{link.label}</span>
-                    </Link>
-                  ))}
+                  {navLinks.filter((link) => !link.authOnly || isAuthenticated).map((link) =>
+                    link.href === "/matches" ? (
+                      <MatchesDropdown key={link.href} link={link} pathname={pathname} />
+                    ) : (
+                      <Link
+                        key={link.href}
+                        href={link.href}
+                        className={`flex items-center gap-1.5 px-2.5 py-2 rounded-md text-sm font-medium transition-colors ${
+                          pathname === link.href
+                            ? `${link.color} ${link.bg}`
+                            : "text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover"
+                        }`}
+                      >
+                        {link.icon}
+                        <span className="hidden xl:inline">{link.label}</span>
+                      </Link>
+                    )
+                  )}
                   <NavbarSearch />
                   {isAuthenticated && (
                     <Link
@@ -204,6 +208,68 @@ export function Navbar() {
 interface SearchResult {
   username: string;
   profile: UserProfile | null;
+}
+
+const matchesSubLinks = [
+  { href: "/events", label: "Events", icon: <CalendarIcon className="w-4 h-4" /> },
+  { href: "/opponents", label: "Opponents", icon: <Users className="w-4 h-4" /> },
+];
+
+function MatchesDropdown({ link, pathname }: { link: typeof navLinks[number]; pathname: string }) {
+  const [open, setOpen] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isActive = pathname === "/matches" || pathname === "/events" || pathname === "/opponents";
+
+  function enter() {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    setOpen(true);
+  }
+  function leave() {
+    timerRef.current = setTimeout(() => setOpen(false), 150);
+  }
+
+  useEffect(() => {
+    setOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    return () => { if (timerRef.current) clearTimeout(timerRef.current); };
+  }, []);
+
+  return (
+    <div className="relative" onMouseEnter={enter} onMouseLeave={leave}>
+      <Link
+        href={link.href}
+        className={`flex items-center gap-1.5 px-2.5 py-2 rounded-md text-sm font-medium transition-colors ${
+          isActive
+            ? `${link.color} ${link.bg}`
+            : "text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover"
+        }`}
+      >
+        {link.icon}
+        <span className="hidden xl:inline">{link.label}</span>
+        <ChevronDown className={`w-3 h-3 transition-transform ${open ? "rotate-180" : ""}`} />
+      </Link>
+      {open && (
+        <div className="absolute top-full left-0 mt-1 w-40 bg-fab-surface border border-fab-border rounded-lg shadow-xl py-1 z-50">
+          {matchesSubLinks.map((sub) => (
+            <Link
+              key={sub.href}
+              href={sub.href}
+              className={`flex items-center gap-2 px-3 py-2 text-sm transition-colors ${
+                pathname === sub.href
+                  ? "text-red-400 bg-red-400/10"
+                  : "text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover"
+              }`}
+            >
+              {sub.icon}
+              {sub.label}
+            </Link>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 
 function NavbarSearch() {
