@@ -176,14 +176,25 @@ export function computeOpponentStats(matches: MatchRecord[]): OpponentStats[] {
     }
   }
 
-  // Group matches by key (gemId or normalized name)
+  // Cross-reference: normalized name → gemId (so name-only matches merge with gemId matches)
+  const nameToGemId = new Map<string, string>();
+  for (const match of matches) {
+    if (match.opponentGemId && match.opponentName) {
+      const norm = normalizeOpponentName(match.opponentName.trim());
+      nameToGemId.set(norm, match.opponentGemId);
+    }
+  }
+
+  // Group matches by key (gemId or normalized name, with cross-reference)
   const oppMap = new Map<string, MatchRecord[]>();
   for (const match of matches) {
     let key: string;
     if (match.opponentGemId) {
       key = `gemid:${match.opponentGemId}`;
     } else {
-      key = `name:${normalizeOpponentName(match.opponentName?.trim() || "Unknown")}`;
+      const norm = normalizeOpponentName(match.opponentName?.trim() || "Unknown");
+      const linkedGemId = nameToGemId.get(norm);
+      key = linkedGemId ? `gemid:${linkedGemId}` : `name:${norm}`;
     }
     const existing = oppMap.get(key) ?? [];
     existing.push(match);
