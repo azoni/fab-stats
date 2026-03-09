@@ -19,6 +19,7 @@ import {
 } from "firebase/firestore";
 import { db } from "./firebase";
 import { logActivity } from "./activity-log";
+import { logToEcosystem } from "./mcp-webhook";
 import type { MatchRecord, UserProfile } from "@/types";
 
 /** Build a fingerprint to detect duplicate matches */
@@ -55,6 +56,7 @@ export async function addMatchFirestore(
     if (v !== undefined) clean[k] = v;
   }
   const docRef = await addDoc(matchesCollection(userId), clean);
+  logToEcosystem("match_logged", `Match logged: ${match.heroPlayed || "hero"}`, `vs ${match.opponentHero || "opponent"} — ${match.result}`);
   return { ...match, id: docRef.id, createdAt: now };
 }
 

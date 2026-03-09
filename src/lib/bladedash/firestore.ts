@@ -1,5 +1,6 @@
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { logToEcosystem } from "../mcp-webhook";
 import type { BladeDashResult, BladeDashStats } from "./types";
 
 const RESULTS_COL = "bladedash-results";
@@ -68,6 +69,8 @@ export async function saveResult(uid: string, result: BladeDashResult): Promise<
 
   await setDoc(statsRef, updated);
   await setDoc(doc(db, STATS_PUBLIC_COL, uid), updated).catch(() => {});
+
+  logToEcosystem("minigame_completed", "Blade Dash completed");
 }
 
 export async function loadStats(uid: string): Promise<BladeDashStats | null> {

@@ -10,6 +10,7 @@ import {
   where,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { logToEcosystem } from "../mcp-webhook";
 import type {
   FaBdokuResult,
   FaBdokuStats,
@@ -84,6 +85,8 @@ export async function saveResult(
 
   // Also write to top-level public collection for cross-user reads
   await setDoc(doc(db, STATS_PUBLIC_COL, uid), updated).catch(() => {});
+
+  logToEcosystem("minigame_completed", "FaBdoku completed");
 }
 
 /** Sanitize stats to fix NaN values from corrupted docs. */

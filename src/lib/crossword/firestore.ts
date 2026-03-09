@@ -1,5 +1,6 @@
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { logToEcosystem } from "../mcp-webhook";
 import type { CrosswordResult, CrosswordStats } from "./types";
 
 const RESULTS_COL = "crossword-results";
@@ -45,6 +46,8 @@ export async function saveResult(uid: string, result: CrosswordResult): Promise<
 
   await setDoc(statsRef, updated);
   await setDoc(doc(db, STATS_PUBLIC_COL, uid), updated).catch(() => {});
+
+  logToEcosystem("minigame_completed", "Crossword completed");
 }
 
 /** Sanitize stats to fix NaN values from corrupted docs. */

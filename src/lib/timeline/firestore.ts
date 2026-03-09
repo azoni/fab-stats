@@ -1,5 +1,6 @@
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { logToEcosystem } from "../mcp-webhook";
 import type { TimelineResult, TimelineStats } from "./types";
 
 const RESULTS_COL = "timeline-results";
@@ -61,6 +62,8 @@ export async function saveResult(uid: string, result: TimelineResult): Promise<v
 
   await setDoc(statsRef, updated);
   await setDoc(doc(db, STATS_PUBLIC_COL, uid), updated).catch(() => {});
+
+  logToEcosystem("minigame_completed", "Timeline completed");
 }
 
 export async function loadStats(uid: string): Promise<TimelineStats | null> {

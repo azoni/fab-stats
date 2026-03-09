@@ -1,5 +1,6 @@
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { logToEcosystem } from "../mcp-webhook";
 import type { ConnectionsResult, ConnectionsStats } from "./types";
 
 const RESULTS_COL = "connections-results";
@@ -61,6 +62,8 @@ export async function saveResult(uid: string, result: ConnectionsResult): Promis
 
   await setDoc(statsRef, updated);
   await setDoc(doc(db, STATS_PUBLIC_COL, uid), updated).catch(() => {});
+
+  logToEcosystem("minigame_completed", "Connections completed");
 }
 
 export async function loadStats(uid: string): Promise<ConnectionsStats | null> {

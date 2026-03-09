@@ -1,5 +1,6 @@
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { logToEcosystem } from "../mcp-webhook";
 import type { NinjaComboResult, NinjaComboStats } from "./types";
 
 const RESULTS_COL = "ninjacombo-results";
@@ -70,6 +71,8 @@ export async function saveResult(uid: string, result: NinjaComboResult): Promise
 
   await setDoc(statsRef, updated);
   await setDoc(doc(db, STATS_PUBLIC_COL, uid), updated).catch(() => {});
+
+  logToEcosystem("minigame_completed", "Ninja Combo completed");
 }
 
 export async function loadStats(uid: string): Promise<NinjaComboStats | null> {

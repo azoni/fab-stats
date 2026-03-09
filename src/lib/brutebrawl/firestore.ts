@@ -1,5 +1,6 @@
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { logToEcosystem } from "../mcp-webhook";
 import type { BrawlResult, BrawlStats } from "./types";
 
 const RESULTS_COL = "brutebrawl-results";
@@ -70,6 +71,8 @@ export async function saveResult(uid: string, result: BrawlResult): Promise<void
 
   await setDoc(statsRef, updated);
   await setDoc(doc(db, STATS_PUBLIC_COL, uid), updated).catch(() => {});
+
+  logToEcosystem("minigame_completed", "Brute Brawl completed");
 }
 
 export async function loadStats(uid: string): Promise<BrawlStats | null> {

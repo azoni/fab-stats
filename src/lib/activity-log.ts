@@ -1,5 +1,6 @@
 import { doc, setDoc, addDoc, collection, getDocs, query, orderBy, limit, where, startAfter, getDoc, increment } from "firebase/firestore";
 import { db, auth } from "@/lib/firebase";
+import { logToEcosystem } from "./mcp-webhook";
 
 export type ActivityAction =
   | "showcase_edit"
@@ -73,6 +74,10 @@ export function logActivity(action: ActivityAction, meta?: string) {
     };
     if (meta) data.meta = meta;
     addDoc(collection(db, "adminActivity"), data).catch(() => {});
+
+    // Forward to ecosystem activity map
+    const label = ACTIVITY_LABELS[action] || action;
+    logToEcosystem("fabstats_activity", `${username} ${label}`, meta);
   } catch {
     // Fire and forget
   }

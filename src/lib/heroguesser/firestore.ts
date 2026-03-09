@@ -1,5 +1,6 @@
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { logToEcosystem } from "../mcp-webhook";
 import type { HeroGuesserResult, HeroGuesserStats } from "./types";
 
 const RESULTS_COL = "heroguesser-results";
@@ -66,6 +67,8 @@ export async function saveResult(uid: string, result: HeroGuesserResult): Promis
 
   await setDoc(statsRef, updated);
   await setDoc(doc(db, STATS_PUBLIC_COL, uid), updated).catch(() => {});
+
+  logToEcosystem("minigame_completed", "Hero Guesser completed");
 }
 
 export async function loadStats(uid: string): Promise<HeroGuesserStats | null> {

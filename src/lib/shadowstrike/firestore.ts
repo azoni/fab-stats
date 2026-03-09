@@ -1,5 +1,6 @@
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { logToEcosystem } from "../mcp-webhook";
 import type { ShadowStrikeResult, ShadowStrikeStats } from "./types";
 
 const RESULTS_COL = "shadowstrike-results";
@@ -67,6 +68,8 @@ export async function saveResult(uid: string, result: ShadowStrikeResult): Promi
 
   await setDoc(statsRef, updated);
   await setDoc(doc(db, STATS_PUBLIC_COL, uid), updated).catch(() => {});
+
+  logToEcosystem("minigame_completed", "Shadow Strike completed");
 }
 
 export async function loadStats(uid: string): Promise<ShadowStrikeStats | null> {

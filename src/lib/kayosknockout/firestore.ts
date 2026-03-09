@@ -1,5 +1,6 @@
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { logToEcosystem } from "../mcp-webhook";
 import type { KnockoutResult, KnockoutStats } from "./types";
 
 const RESULTS_COL = "kayosknockout-results";
@@ -92,6 +93,8 @@ export async function saveResult(uid: string, result: KnockoutResult): Promise<v
 
   await setDoc(statsRef, updated);
   await setDoc(doc(db, STATS_PUBLIC_COL, uid), updated).catch(() => {});
+
+  logToEcosystem("minigame_completed", "Kayos Knockout completed");
 }
 
 export async function loadStats(uid: string): Promise<KnockoutStats | null> {

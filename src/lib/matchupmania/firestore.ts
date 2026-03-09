@@ -1,5 +1,6 @@
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { logToEcosystem } from "../mcp-webhook";
 import type { MatchupManiaResult, MatchupManiaStats } from "./types";
 
 const RESULTS_COL = "matchupmania-results";
@@ -64,6 +65,8 @@ export async function saveResult(uid: string, result: MatchupManiaResult): Promi
 
   await setDoc(statsRef, updated);
   await setDoc(doc(db, STATS_PUBLIC_COL, uid), updated).catch(() => {});
+
+  logToEcosystem("minigame_completed", "Matchup Mania completed");
 }
 
 export async function loadStats(uid: string): Promise<MatchupManiaStats | null> {
