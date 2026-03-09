@@ -238,7 +238,7 @@ export interface Top8HeroMeta {
   finalists: number;
   top4: number;
   top8: number;
-  /** Number of tracked players who played this hero at the event type this week */
+  /** Number of event entries where this hero was played */
   totalPlayers: number;
 }
 
@@ -253,8 +253,8 @@ export function computeTop8HeroMeta(
   const heroAgg = new Map<string, { count: number; champions: number; finalists: number; top4: number; top8: number }>();
   const isDateRange = !!sinceDateStr && !!untilDateStr;
 
-  // Count unique players per hero (for the "Played" column)
-  const heroPlayers = new Map<string, Set<string>>();
+  // Count event entries per hero (for the "Played" column)
+  const heroEventCount = new Map<string, number>();
   if (!isDateRange) {
     // Use weekly breakdown for conversion rate (rolling-window mode)
     for (const entry of entries) {
@@ -263,26 +263,26 @@ export function computeTop8HeroMeta(
         if (!validHeroNames.has(hb.hero)) continue;
         if (filterEventType && hb.eventType !== filterEventType) continue;
         if (filterFormat && hb.format !== filterFormat) continue;
-        const players = heroPlayers.get(hb.hero) || new Set<string>();
-        players.add(entry.userId);
-        heroPlayers.set(hb.hero, players);
+        heroEventCount.set(hb.hero, (heroEventCount.get(hb.hero) || 0) + 1);
       }
     }
   } else {
-    // Date-range mode: count players whose heroBreakdownDetailed dates overlap the range
+    // Date-range mode: count event entries whose dates overlap the range
     for (const entry of entries) {
       if (!entry.heroBreakdownDetailed) continue;
       for (const hb of entry.heroBreakdownDetailed) {
         if (!validHeroNames.has(hb.hero)) continue;
         if (filterEventType && hb.eventType !== filterEventType) continue;
         if (filterFormat && hb.format !== filterFormat) continue;
-        // If dates[] exists, check if any fall within the range; if not backfilled yet, include player
-        const hasDateInRange = !hb.dates || hb.dates.length === 0
-          || hb.dates.some(d => d >= sinceDateStr! && d <= untilDateStr!);
-        if (!hasDateInRange) continue;
-        const players = heroPlayers.get(hb.hero) || new Set<string>();
-        players.add(entry.userId);
-        heroPlayers.set(hb.hero, players);
+        // Count dates that fall within the range; if no dates backfilled, count as 1 entry
+        if (hb.dates && hb.dates.length > 0) {
+          const datesInRange = hb.dates.filter(d => d >= sinceDateStr! && d <= untilDateStr!).length;
+          if (datesInRange > 0) {
+            heroEventCount.set(hb.hero, (heroEventCount.get(hb.hero) || 0) + datesInRange);
+          }
+        } else {
+          heroEventCount.set(hb.hero, (heroEventCount.get(hb.hero) || 0) + 1);
+        }
       }
     }
   }
@@ -304,16 +304,14 @@ export function computeTop8HeroMeta(
       else cur.top8++;
       heroAgg.set(t8.hero, cur);
 
-      // Also count top 8 finishers as players of that hero (supplements heroBreakdownDetailed
+      // Also count top 8 finishers as event entries (supplements heroBreakdownDetailed
       // which may have truncated this hero/format/eventType combo due to its entry limit)
-      const players = heroPlayers.get(t8.hero) || new Set<string>();
-      players.add(entry.userId);
-      heroPlayers.set(t8.hero, players);
+      heroEventCount.set(t8.hero, (heroEventCount.get(t8.hero) || 0) + 1);
     }
   }
 
   return [...heroAgg.entries()]
-    .map(([hero, data]) => ({ hero, ...data, totalPlayers: heroPlayers.get(hero)?.size ?? 0 }))
+    .map(([hero, data]) => ({ hero, ...data, totalPlayers: heroEventCount.get(hero) ?? 0 }))
     .sort((a, b) => b.count - a.count);
 }
 
