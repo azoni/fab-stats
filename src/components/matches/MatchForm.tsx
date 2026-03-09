@@ -1,8 +1,9 @@
 "use client";
-import { useState } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { HeroSelect } from "@/components/heroes/HeroSelect";
 import { useMatches } from "@/hooks/useMatches";
+import { normalizeOpponentName } from "@/lib/stats";
 import { MatchResult, GameFormat } from "@/types";
 
 const EVENT_TYPES = [
@@ -22,16 +23,47 @@ const EVENT_TYPES = [
 
 export function MatchForm() {
   const router = useRouter();
-  const { addMatch } = useMatches();
+  const { addMatch, matches } = useMatches();
   const [heroPlayed, setHeroPlayed] = useState("");
   const [opponentHero, setOpponentHero] = useState("");
   const [opponentName, setOpponentName] = useState("");
+  const [heroAutoFilled, setHeroAutoFilled] = useState(false);
   const [result, setResult] = useState<MatchResult>(MatchResult.Win);
   const [format, setFormat] = useState<GameFormat>(GameFormat.Blitz);
   const [eventType, setEventType] = useState("");
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [notes, setNotes] = useState("");
   const [error, setError] = useState("");
+
+  // Map normalized opponent names to their most recently played hero
+  const opponentHeroMap = useMemo(() => {
+    const map = new Map<string, string>();
+    const sorted = [...matches].sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
+    for (const m of sorted) {
+      const name = m.opponentName ? normalizeOpponentName(m.opponentName) : "";
+      if (name && !map.has(name) && m.opponentHero && m.opponentHero !== "Unknown") {
+        map.set(name, m.opponentHero);
+      }
+    }
+    return map;
+  }, [matches]);
+
+  // Track whether the user has manually picked a hero
+  const userPickedHero = useRef(false);
+
+  // Auto-fill opponent hero when name matches a previous opponent
+  useEffect(() => {
+    if (userPickedHero.current) return;
+    const name = opponentName.trim() ? normalizeOpponentName(opponentName) : "";
+    if (!name) return;
+    const previousHero = opponentHeroMap.get(name);
+    if (previousHero) {
+      setOpponentHero(previousHero);
+      setHeroAutoFilled(true);
+    }
+  }, [opponentName, opponentHeroMap]);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -88,7 +120,11 @@ export function MatchForm() {
       <HeroSelect
         label="Opponent's Hero"
         value={opponentHero}
-        onChange={setOpponentHero}
+        onChange={(hero) => {
+          setOpponentHero(hero);
+          userPickedHero.current = true;
+          setHeroAutoFilled(false);
+        }}
         format={format}
       />
 
@@ -103,6 +139,18 @@ export function MatchForm() {
           placeholder="e.g. John, Player123"
           className="w-full bg-fab-surface border border-fab-border rounded-md px-3 py-2 text-fab-text text-sm outline-none focus:border-fab-gold/50 placeholder:text-fab-dim"
         />
+        {heroAutoFilled && opponentHero && (
+          <p className="text-xs text-fab-dim mt-1">
+            Auto-filled hero: {opponentHero}
+            <button
+              type="button"
+              onClick={() => { setOpponentHero(""); setHeroAutoFilled(false); userPickedHero.current = false; }}
+              className="ml-2 text-fab-gold hover:underline"
+            >
+              Clear
+            </button>
+          </p>
+        )}
       </div>
 
       <div>
