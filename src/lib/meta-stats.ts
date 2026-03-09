@@ -303,15 +303,16 @@ export function computeTop8HeroMeta(
       else if (t8.placementType === "top4") cur.top4++;
       else cur.top8++;
       heroAgg.set(t8.hero, cur);
-
-      // Also count top 8 finishers as event entries (supplements heroBreakdownDetailed
-      // which may have truncated this hero/format/eventType combo due to its entry limit)
-      heroEventCount.set(t8.hero, (heroEventCount.get(t8.hero) || 0) + 1);
     }
   }
 
   return [...heroAgg.entries()]
-    .map(([hero, data]) => ({ hero, ...data, totalPlayers: heroEventCount.get(hero) ?? 0 }))
+    .map(([hero, data]) => ({
+      hero,
+      ...data,
+      // Played = max(event entries from breakdown, top8 count) so Played >= Top 8
+      totalPlayers: Math.max(heroEventCount.get(hero) ?? 0, data.count),
+    }))
     .sort((a, b) => b.count - a.count);
 }
 
