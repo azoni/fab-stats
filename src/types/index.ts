@@ -55,6 +55,7 @@ export enum GameFormat {
   Sealed = "Sealed",
   Clash = "Clash",
   UltimatePitFight = "Ultimate Pit Fight",
+  LivingLegend = "Living Legend",
   Other = "Other",
 }
 

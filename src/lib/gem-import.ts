@@ -59,6 +59,7 @@ function guessFormat(eventName: string): GameFormat {
   if (lower.includes("sealed")) return GameFormat.Sealed;
   if (lower.includes("clash")) return GameFormat.Clash;
   if (lower.includes("ultimate pit fight") || lower.includes("upf")) return GameFormat.UltimatePitFight;
+  if (lower.includes("living legend")) return GameFormat.LivingLegend;
   return GameFormat.Other;
 }
 
