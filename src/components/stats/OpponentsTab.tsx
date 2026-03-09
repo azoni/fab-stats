@@ -47,6 +47,7 @@ export function OpponentsTab({ matches, user, profile, updateMatch }: OpponentsT
   const [filterEventType, setFilterEventType] = useState("all");
   const [filterHero, setFilterHero] = useState("all");
   const [search, setSearch] = useState("");
+  const [minMatches, setMinMatches] = useState(1);
   const [page, setPage] = useState(1);
 
   // Pre-fill search from URL query param (e.g. /opponents?q=PlayerName)
@@ -61,7 +62,7 @@ export function OpponentsTab({ matches, user, profile, updateMatch }: OpponentsT
   // Reset to page 1 when filters/search/sort change
   useEffect(() => {
     setPage(1);
-  }, [filterFormat, filterEventType, filterHero, sortBy, search]);
+  }, [filterFormat, filterEventType, filterHero, sortBy, search, minMatches]);
 
   const allFormats = useMemo(() => {
     return [...new Set(matches.map((m) => m.format))];
@@ -105,6 +106,10 @@ export function OpponentsTab({ matches, user, profile, updateMatch }: OpponentsT
     let list = opponentStats.filter((o) => o.opponentName !== "Unknown");
     const unknown = opponentStats.find((o) => o.opponentName === "Unknown");
 
+    if (minMatches > 1) {
+      list = list.filter((o) => o.totalMatches >= minMatches);
+    }
+
     if (search.trim()) {
       const q = search.toLowerCase();
       list = list.filter((o) => o.opponentName.toLowerCase().includes(q));
@@ -123,7 +128,7 @@ export function OpponentsTab({ matches, user, profile, updateMatch }: OpponentsT
 
     if (unknown && !search.trim()) list.push(unknown);
     return list;
-  }, [opponentStats, sortBy, search]);
+  }, [opponentStats, sortBy, search, minMatches]);
 
   const highlights = useMemo(() => {
     const qualified = opponentStats.filter(o => o.totalMatches >= 3 && o.opponentName !== "Unknown");
@@ -392,6 +397,19 @@ export function OpponentsTab({ matches, user, profile, updateMatch }: OpponentsT
             ))}
           </select>
         )}
+
+        {/* Min matches filter */}
+        <select
+          value={minMatches}
+          onChange={(e) => setMinMatches(Number(e.target.value))}
+          className="bg-fab-surface border border-fab-border rounded-md px-3 py-1.5 text-fab-text text-sm outline-none"
+        >
+          <option value={1}>1+ matches</option>
+          <option value={2}>2+ matches</option>
+          <option value={3}>3+ matches</option>
+          <option value={5}>5+ matches</option>
+          <option value={10}>10+ matches</option>
+        </select>
 
         {/* Sort pills */}
         <div className="flex gap-1 ml-auto">
