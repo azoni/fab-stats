@@ -19,6 +19,7 @@ import {
   sendPasswordResetEmail,
   sendEmailVerification,
   type User,
+  type ActionCodeSettings,
 } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { getProfile, importMatchesFirestore } from "@/lib/firestore-storage";
@@ -29,6 +30,11 @@ import type { UserProfile } from "@/types";
 
 const googleProvider = new GoogleAuthProvider();
 const GUEST_KEY = "fab-stats-guest-mode";
+
+const emailActionSettings: ActionCodeSettings = {
+  url: "https://www.fabstats.net/login",
+  handleCodeInApp: false,
+};
 
 interface AuthContextType {
   user: User | null;
@@ -143,7 +149,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signUp = useCallback(async (email: string, password: string) => {
     const cred = await createUserWithEmailAndPassword(auth, email, password);
-    sendEmailVerification(cred.user).catch(() => {});
+    sendEmailVerification(cred.user, emailActionSettings).catch(() => {});
   }, []);
 
   const signInWithGoogle = useCallback(async () => {
@@ -151,7 +157,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const resetPassword = useCallback(async (email: string) => {
-    await sendPasswordResetEmail(auth, email);
+    await sendPasswordResetEmail(auth, email, emailActionSettings);
   }, []);
 
   const signOut = useCallback(async () => {
