@@ -71,3 +71,10 @@ Games have their own: Firestore collections, localStorage prefixes, feed event t
 - Achievements defined in `src/lib/achievements.ts`, profile badges in `src/lib/profile-badges.ts`
 - Feed events defined in `src/types/index.ts`, created in `src/lib/feed.ts`, rendered in `src/components/feed/FeedCard.tsx`
 - Activity logging in `src/lib/activity-log.ts`
+
+## Git Workflow
+
+- NEVER commit directly to main
+- Create feature branches (`feature/description`) or fix branches (`fix/description`)
+- Commit to the branch, push, and open a PR to merge into main
+- Keep PRs focused — one feature or fix per branch
