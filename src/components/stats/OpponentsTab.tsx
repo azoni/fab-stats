@@ -71,7 +71,7 @@ export function OpponentsTab({ matches, user, profile, updateMatch }: OpponentsT
   const allEventTypes = useMemo(() => {
     const types = new Set<string>();
     for (const m of matches) {
-      const et = m.eventType || getEventType(m);
+      const et = getEventType(m);
       if (et && et !== "Other") types.add(et);
     }
     if (types.size < matches.length) types.add("Other");
@@ -90,7 +90,7 @@ export function OpponentsTab({ matches, user, profile, updateMatch }: OpponentsT
     }
     if (filterEventType !== "all") {
       filtered = filtered.filter((m) => {
-        const et = m.eventType || getEventType(m);
+        const et = getEventType(m);
         return et === filterEventType;
       });
     }

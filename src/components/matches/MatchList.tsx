@@ -95,7 +95,7 @@ export function MatchList({ matches, matchOwnerUid, enableComments, editable, on
           eventName,
           m.venue,
           m.format,
-          m.eventType,
+          getEventType(m),
           m.date,
           m.result,
         ]
