@@ -585,6 +585,48 @@ export function EventCard({ event, playerName, obfuscateOpponents = false, visib
             </div>
           )}
 
+          {/* Edit event type */}
+          {editable && onBatchUpdateEventType && (
+            <div className="px-4 py-3 border-t border-fab-border/50">
+              <div className="flex items-center gap-3">
+                <label className="text-xs font-medium text-fab-muted whitespace-nowrap">Event Type</label>
+                <select
+                  value={(() => {
+                    const originalType = getOriginalEventType(event.matches[0]);
+                    const hasOverride = event.matches[0]?.eventTypeOverride;
+                    return hasOverride ? event.eventType || originalType : originalType;
+                  })()}
+                  onChange={async (e) => {
+                    const newType = e.target.value;
+                    setSavingEventType(true);
+                    try {
+                      const matchIds = event.matches.map((m) => m.id);
+                      const originalType = getOriginalEventType(event.matches[0]);
+                      await onBatchUpdateEventType(matchIds, newType === originalType ? "" : newType);
+                    } catch { /* error handled by parent */ }
+                    setSavingEventType(false);
+                  }}
+                  disabled={savingEventType}
+                  className="flex-1 bg-fab-surface border border-fab-border rounded-md px-2 py-1.5 text-fab-text text-xs outline-none focus:border-fab-gold/50 disabled:opacity-50"
+                >
+                  {(() => {
+                    const originalType = getOriginalEventType(event.matches[0]);
+                    const allowed = getAllowedEventTypes(originalType);
+                    return (
+                      <>
+                        <option value={originalType}>Auto ({originalType})</option>
+                        {allowed.map((t) => (
+                          <option key={t} value={t}>{t}</option>
+                        ))}
+                      </>
+                    );
+                  })()}
+                </select>
+                {savingEventType && <span className="text-xs text-fab-dim">Saving...</span>}
+              </div>
+            </div>
+          )}
+
           {/* Delete event */}
           {editable && onDeleteEvent && (
             <div className="px-4 py-3 border-t border-fab-border/50 flex items-center justify-end gap-2">
