@@ -208,6 +208,33 @@ export function useMatches() {
     [user, isGuest]
   );
 
+  const batchUpdateEventType = useCallback(
+    async (matchIds: string[], eventTypeOverride: string) => {
+      if (isGuest) {
+        for (const id of matchIds) {
+          storageUpdateMatch(id, { eventTypeOverride: eventTypeOverride || undefined });
+        }
+        setMatches(getAllMatches());
+        return;
+      }
+      if (!user) return;
+      try {
+        setError(null);
+        await batchUpdateMatchesFirestore(user.uid, matchIds, { eventTypeOverride: eventTypeOverride || undefined });
+        const idSet = new Set(matchIds);
+        const updated = (cachedMatches || []).map((m) => (idSet.has(m.id) ? { ...m, eventTypeOverride: eventTypeOverride || undefined } : m));
+        updateCache(user.uid, updated);
+        setMatches(updated);
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : "Failed to update event type";
+        console.error("batchUpdateEventType failed:", e);
+        setError(msg);
+        throw e;
+      }
+    },
+    [user, isGuest]
+  );
+
   const batchDeleteMatches = useCallback(
     async (matchIds: string[]) => {
       if (isGuest) {
@@ -246,5 +273,5 @@ export function useMatches() {
 
   const clearError = useCallback(() => setError(null), []);
 
-  return { matches, isLoaded, error, clearError, addMatch, deleteMatch, updateMatch, batchUpdateHero, batchUpdateFormat, batchDeleteMatches, refreshMatches };
+  return { matches, isLoaded, error, clearError, addMatch, deleteMatch, updateMatch, batchUpdateHero, batchUpdateFormat, batchUpdateEventType, batchDeleteMatches, refreshMatches };
 }

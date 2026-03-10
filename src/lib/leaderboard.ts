@@ -197,7 +197,7 @@ export async function updateLeaderboardEntry(
     });
 
   // Armory stats
-  const armoryMatchList = matches.filter((m) => m.eventType === "Armory" && m.result !== MatchResult.Bye);
+  const armoryMatchList = matches.filter((m) => getEventType(m) === "Armory" && m.result !== MatchResult.Bye);
   const armoryWins = armoryMatchList.filter((m) => m.result === MatchResult.Win).length;
   const armoryEvents = events.filter((e) => e.eventType === "Armory").length;
 

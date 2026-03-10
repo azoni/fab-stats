@@ -20,7 +20,7 @@ interface StatsHubProps {
 export function StatsHub({ defaultTab }: StatsHubProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const { matches, isLoaded, updateMatch, refreshMatches, batchUpdateHero, batchUpdateFormat, batchDeleteMatches } = useMatches();
+  const { matches, isLoaded, updateMatch, refreshMatches, batchUpdateHero, batchUpdateFormat, batchUpdateEventType, batchDeleteMatches } = useMatches();
   const { user, profile } = useAuth();
 
   // Determine active tab from current pathname (handles direct navigation)
@@ -82,6 +82,7 @@ export function StatsHub({ defaultTab }: StatsHubProps) {
           refreshMatches={refreshMatches}
           batchUpdateHero={batchUpdateHero}
           batchUpdateFormat={batchUpdateFormat}
+          batchUpdateEventType={batchUpdateEventType}
           batchDeleteMatches={batchDeleteMatches}
         />
       )}

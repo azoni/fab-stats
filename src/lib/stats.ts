@@ -328,7 +328,7 @@ function classifyCompetitiveEvent(text: string): string | null {
   return null;
 }
 
-function guessEventTypeFromNotes(notes: string): string {
+export function guessEventTypeFromNotes(notes: string): string {
   const lower = notes.toLowerCase();
   // Local/casual events — always win
   if (lower.includes("world premiere")) return "Pre-Release";
@@ -361,6 +361,7 @@ export function refineEventType(eventType: string, eventName: string): string {
 }
 
 export function getEventType(match: MatchRecord): string {
+  if (match.eventTypeOverride) return match.eventTypeOverride;
   const eventName = match.notes?.split(" | ")[0] || "";
   if (match.eventType) return refineEventType(match.eventType, eventName);
   if (match.notes) return guessEventTypeFromNotes(match.notes);

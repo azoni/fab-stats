@@ -10,6 +10,7 @@ import { localDate } from "@/lib/constants";
 import type { EventStats, MatchRecord } from "@/types";
 import { EventShareModal } from "@/components/events/EventShareCard";
 import { BracketView } from "@/components/events/BracketView";
+import { getAllowedEventTypes, getOriginalEventType } from "@/lib/event-types";
 
 interface EventCardProps {
   event: EventStats;
@@ -19,6 +20,7 @@ interface EventCardProps {
   editable?: boolean;
   onBatchUpdateHero?: (matchIds: string[], hero: string) => Promise<void>;
   onBatchUpdateFormat?: (matchIds: string[], format: GameFormat) => Promise<void>;
+  onBatchUpdateEventType?: (matchIds: string[], eventTypeOverride: string) => Promise<void>;
   onDeleteEvent?: (matchIds: string[], eventName: string, eventDate: string) => Promise<void>;
   onUpdateMatch?: (id: string, updates: Partial<Omit<MatchRecord, "id" | "createdAt">>) => Promise<void>;
   missingGemId?: boolean;
@@ -47,9 +49,11 @@ interface HeroSegment {
   toRound: string;
 }
 
-export function EventCard({ event, playerName, obfuscateOpponents = false, visibleOpponents, editable = false, onBatchUpdateHero, onBatchUpdateFormat, onDeleteEvent, onUpdateMatch, missingGemId }: EventCardProps) {
+export function EventCard({ event, playerName, obfuscateOpponents = false, visibleOpponents, editable = false, onBatchUpdateHero, onBatchUpdateFormat, onBatchUpdateEventType, onDeleteEvent, onUpdateMatch, missingGemId }: EventCardProps) {
   const [expanded, setExpanded] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
+  const [editingEventType, setEditingEventType] = useState(false);
+  const [savingEventType, setSavingEventType] = useState(false);
   const initHero = (() => {
     const h = new Set(event.matches.map((m) => m.heroPlayed).filter((h) => h && h !== "Unknown"));
     return h.size === 1 ? [...h][0]! : "";
@@ -197,9 +201,64 @@ export function EventCard({ event, playerName, obfuscateOpponents = false, visib
             {event.formats.map((f) => (
               <span key={f} className="hidden sm:inline px-2 py-0.5 rounded bg-fab-bg text-fab-dim text-xs">{f}</span>
             ))}
-            {event.eventType && event.eventType !== "Other" && (
-              <span className="hidden sm:inline px-2 py-0.5 rounded bg-fab-bg text-fab-dim text-xs">{event.eventType}</span>
-            )}
+            {editable && onBatchUpdateEventType && editingEventType ? (
+              <select
+                value={event.eventType || "Other"}
+                onChange={async (e) => {
+                  e.stopPropagation();
+                  if (!onBatchUpdateEventType) return;
+                  const newType = e.target.value;
+                  setSavingEventType(true);
+                  setEditingEventType(false);
+                  try {
+                    const matchIds = event.matches.map((m) => m.id);
+                    const originalType = getOriginalEventType(event.matches[0]);
+                    // Empty string clears the override (reverts to auto)
+                    await onBatchUpdateEventType(matchIds, newType === originalType ? "" : newType);
+                  } catch { /* error handled by parent */ }
+                  setSavingEventType(false);
+                }}
+                onClick={(e) => e.stopPropagation()}
+                onBlur={() => setEditingEventType(false)}
+                className="hidden sm:inline bg-fab-surface border border-fab-border rounded px-1.5 py-0.5 text-fab-text text-xs outline-none focus:border-fab-gold/50"
+                autoFocus
+              >
+                {(() => {
+                  const originalType = getOriginalEventType(event.matches[0]);
+                  const allowed = getAllowedEventTypes(originalType);
+                  return (
+                    <>
+                      <option value={originalType}>Auto ({originalType})</option>
+                      {allowed.map((t) => (
+                        <option key={t} value={t}>{t}</option>
+                      ))}
+                    </>
+                  );
+                })()}
+              </select>
+            ) : savingEventType ? (
+              <span className="hidden sm:inline px-2 py-0.5 rounded bg-fab-bg text-fab-dim text-xs">Saving...</span>
+            ) : event.eventType && event.eventType !== "Other" ? (
+              <span
+                className={`hidden sm:inline px-2 py-0.5 rounded bg-fab-bg text-fab-dim text-xs ${editable && onBatchUpdateEventType ? "group/et cursor-pointer hover:text-fab-muted" : ""}`}
+                onClick={editable && onBatchUpdateEventType ? (e) => { e.stopPropagation(); setEditingEventType(true); } : undefined}
+              >
+                {event.eventType}
+                {editable && onBatchUpdateEventType && (
+                  <svg className="w-2.5 h-2.5 inline ml-1 opacity-0 group-hover/et:opacity-100 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                  </svg>
+                )}
+              </span>
+            ) : editable && onBatchUpdateEventType ? (
+              <button
+                onClick={(e) => { e.stopPropagation(); setEditingEventType(true); }}
+                className="hidden sm:inline px-2 py-0.5 rounded bg-fab-bg text-fab-dim text-xs hover:text-fab-muted transition-colors"
+                title="Set event type"
+              >
+                + type
+              </button>
+            ) : null}
             {bestPlayoff && (
               <button
                 onClick={(e) => { e.stopPropagation(); setShowBracket(!showBracket); }}

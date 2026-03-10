@@ -30,6 +30,7 @@ import {
 } from "./showcase/CardPicker";
 import type { ShowcaseCard, UserProfile, MatchRecord, HeroStats, EventStats, OpponentStats, OverallStats, Achievement } from "@/types";
 import { MatchResult } from "@/types";
+import { getEventType } from "@/lib/stats";
 import type { HeroMastery } from "@/types";
 
 interface PlayoffFinishData {
@@ -433,7 +434,7 @@ function MasteryEditor({ card, matches, onSave }: {
       let key: string | null;
       if (card.type === "formatMastery") key = m.format;
       else if (card.type === "venueMastery") { const v = (m.venue || "").trim(); key = v && v !== "Unknown" ? v : null; }
-      else key = getEditorEventType(m);
+      else key = getEventType(m);
       if (!key) continue;
       const cur = map.get(key) || { matches: 0, wins: 0 };
       cur.matches++;
@@ -510,21 +511,6 @@ function MasteryEditor({ card, matches, onSave }: {
       </button>
     </div>
   );
-}
-
-// Helper to get event type for editor (mirrors EventTypeMasteryCard logic)
-function getEditorEventType(match: MatchRecord): string {
-  if (match.eventType) return match.eventType;
-  const notes = match.notes?.split("|")[0]?.trim().toLowerCase() || "";
-  if (notes.includes("armory")) return "Armory";
-  if (notes.includes("skirmish")) return "Skirmish";
-  if (notes.includes("proquest")) return "ProQuest";
-  if (notes.includes("battle hardened")) return "Battle Hardened";
-  if (notes.includes("calling")) return "The Calling";
-  if (notes.includes("national")) return "Nationals";
-  if (notes.includes("pro tour")) return "Pro Tour";
-  if (notes.includes("rtn") || notes.includes("road to nationals")) return "RTN";
-  return "Other";
 }
 
 // ── Card Renderer ──

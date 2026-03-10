@@ -5,21 +5,7 @@ import { HeroSelect } from "@/components/heroes/HeroSelect";
 import { useMatches } from "@/hooks/useMatches";
 import { normalizeOpponentName } from "@/lib/stats";
 import { MatchResult, GameFormat } from "@/types";
-
-const EVENT_TYPES = [
-  "Armory",
-  "Skirmish",
-  "ProQuest",
-  "Road to Nationals",
-  "Battle Hardened",
-  "The Calling",
-  "Nationals",
-  "Pro Tour",
-  "Worlds",
-  "Pre-Release",
-  "On Demand",
-  "Other",
-] as const;
+import { EVENT_TYPES } from "@/lib/event-types";
 
 export function MatchForm() {
   const router = useRouter();
