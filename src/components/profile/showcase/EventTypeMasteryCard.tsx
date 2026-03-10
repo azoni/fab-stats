@@ -1,6 +1,7 @@
 "use client";
 import type { MatchRecord } from "@/types";
 import { MatchResult } from "@/types";
+import { getEventType } from "@/lib/stats";
 
 interface EventTypeMasteryCardProps {
   matches: MatchRecord[];
@@ -13,20 +14,6 @@ interface EventTypeData {
   matches: number;
   wins: number;
   winRate: number;
-}
-
-function getEventType(match: MatchRecord): string {
-  if (match.eventType) return match.eventType;
-  const notes = match.notes?.split("|")[0]?.trim().toLowerCase() || "";
-  if (notes.includes("armory")) return "Armory";
-  if (notes.includes("skirmish")) return "Skirmish";
-  if (notes.includes("proquest")) return "ProQuest";
-  if (notes.includes("battle hardened")) return "Battle Hardened";
-  if (notes.includes("calling")) return "The Calling";
-  if (notes.includes("national")) return "Nationals";
-  if (notes.includes("pro tour")) return "Pro Tour";
-  if (notes.includes("rtn") || notes.includes("road to nationals")) return "RTN";
-  return "Other";
 }
 
 export function EventTypeMasteryCard({ matches, sortBy = "mostPlayed", selectedItems }: EventTypeMasteryCardProps) {

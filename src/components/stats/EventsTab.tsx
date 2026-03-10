@@ -25,10 +25,11 @@ interface EventsTabProps {
   refreshMatches: () => Promise<void>;
   batchUpdateHero: (matchIds: string[], hero: string) => Promise<void>;
   batchUpdateFormat: (matchIds: string[], format: GameFormat) => Promise<void>;
+  batchUpdateEventType: (matchIds: string[], eventTypeOverride: string) => Promise<void>;
   batchDeleteMatches: (matchIds: string[]) => Promise<void>;
 }
 
-export function EventsTab({ matches, user, profile, updateMatch, refreshMatches, batchUpdateHero, batchUpdateFormat, batchDeleteMatches }: EventsTabProps) {
+export function EventsTab({ matches, user, profile, updateMatch, refreshMatches, batchUpdateHero, batchUpdateFormat, batchUpdateEventType, batchDeleteMatches }: EventsTabProps) {
   const searchParams = useSearchParams();
   const [filterFormat, setFilterFormat] = useState("all");
   const [filterEventType, setFilterEventType] = useState("all");
@@ -73,6 +74,19 @@ export function EventsTab({ matches, user, profile, updateMatch, refreshMatches,
       }
     },
     [batchUpdateFormat, profile, matches]
+  );
+
+  const handleBatchUpdateEventType = useCallback(
+    async (matchIds: string[], eventTypeOverride: string) => {
+      await batchUpdateEventType(matchIds, eventTypeOverride);
+      if (profile && matches.length > 0) {
+        const updated = matches.map((m) =>
+          matchIds.includes(m.id) ? { ...m, eventTypeOverride: eventTypeOverride || undefined } : m
+        );
+        updateLeaderboardEntry(profile, updated).catch(() => {});
+      }
+    },
+    [batchUpdateEventType, profile, matches]
   );
 
   const handleDeleteEvent = useCallback(
@@ -442,7 +456,7 @@ export function EventsTab({ matches, user, profile, updateMatch, refreshMatches,
           </p>
           <div className="space-y-2">
             {pageEvents.map((event) => (
-              <EventCard key={`${event.eventName}-${event.eventDate}`} event={event} playerName={profile?.displayName || profile?.username} editable={!!user} onBatchUpdateHero={handleBatchUpdateHero} onBatchUpdateFormat={handleBatchUpdateFormat} onDeleteEvent={handleDeleteEvent} onUpdateMatch={handleUpdateMatch} missingGemId={!!user && !profile?.gemId} />
+              <EventCard key={`${event.eventName}-${event.eventDate}`} event={event} playerName={profile?.displayName || profile?.username} editable={!!user} onBatchUpdateHero={handleBatchUpdateHero} onBatchUpdateFormat={handleBatchUpdateFormat} onBatchUpdateEventType={handleBatchUpdateEventType} onDeleteEvent={handleDeleteEvent} onUpdateMatch={handleUpdateMatch} missingGemId={!!user && !profile?.gemId} />
             ))}
           </div>
         </>

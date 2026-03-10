@@ -1,8 +1,9 @@
 import type { MatchRecord } from "@/types";
 import { MatchResult } from "@/types";
+import { getEventType } from "./stats";
+import { isMajorEventType } from "./event-types";
 
 const DEFAULT_RATING = 1200;
-const MAJOR_EVENT_TYPES = new Set(["Battle Hardened", "The Calling", "Nationals", "Pro Tour", "Worlds"]);
 
 /**
  * Get the K-factor based on total matches played so far.
@@ -19,7 +20,7 @@ function getKFactor(matchCount: number): number {
  * Major rated events weight more heavily.
  */
 function getEventWeight(match: MatchRecord): number {
-  const isMajor = match.eventType && MAJOR_EVENT_TYPES.has(match.eventType);
+  const isMajor = isMajorEventType(getEventType(match));
   if (isMajor && match.rated) return 1.5;
   if (match.rated) return 1.2;
   return 1.0;

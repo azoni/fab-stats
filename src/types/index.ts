@@ -10,6 +10,7 @@ export interface MatchRecord {
   notes?: string;
   venue?: string;
   eventType?: string;
+  eventTypeOverride?: string;
   rated?: boolean;
   winCondition?: "damage" | "fatigue" | "concession" | "time" | "other";
   goingFirst?: boolean;
