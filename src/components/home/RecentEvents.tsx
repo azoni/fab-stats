@@ -68,8 +68,8 @@ export function RecentEvents({ eventStats, playerName }: { eventStats: EventStat
           </svg>
         </div>
         <h2 className="text-sm font-semibold text-fab-text leading-tight">Recent Events</h2>
-        <Link href="/events" className="ml-auto text-[10px] text-fab-dim hover:text-fab-gold transition-colors font-medium">
-          View all
+        <Link href="/events" className="ml-auto text-xs font-semibold text-fab-gold border border-fab-gold/30 hover:bg-fab-gold/10 hover:border-fab-gold/50 px-2.5 py-1 rounded-md transition-colors">
+          View all events &rarr;
         </Link>
       </div>
 

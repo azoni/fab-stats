@@ -129,6 +129,10 @@ export async function importMatchesFirestore(
     imported += chunk.length;
   }
 
+  if (imported > 0) {
+    logToEcosystem("matches_imported", `${imported} matches imported`, `Batch import of ${imported} match records`);
+  }
+
   return imported;
 }
 

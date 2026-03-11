@@ -12,11 +12,9 @@ import { ShieldIcon } from "@/components/icons/NavIcons";
 import { computeMetaStats } from "@/lib/meta-stats";
 import { RecentEvents } from "@/components/home/RecentEvents";
 import { StatCards } from "@/components/home/StatCards";
-import { RecentForm } from "@/components/home/RecentForm";
 import { LatestMatches } from "@/components/home/LatestMatches";
 import { DashboardInsights } from "@/components/home/DashboardInsights";
 import { DashboardFilters } from "@/components/home/DashboardFilters";
-import { EventTypeBreakdown } from "@/components/home/EventTypeBreakdown";
 import { BestFinishShareModal } from "@/components/profile/BestFinishCard";
 import { ProfileShareModal } from "@/components/profile/ProfileCard";
 import { OnThisDay } from "@/components/home/OnThisDay";
@@ -77,7 +75,7 @@ export default function Dashboard() {
   // Event stats (unfiltered — used for profile card borders, best finish)
   const eventStats = useMemo(() => computeEventStats(matches), [matches]);
   const filteredEventStats = useMemo(() => computeEventStats(filteredMatches), [filteredMatches]);
-  const bestFinish = useMemo(() => computeBestFinish(eventStats), [eventStats]);
+  const bestFinish = useMemo(() => computeBestFinish(filteredEventStats), [filteredEventStats]);
   const userRanks = useMemo(() => user ? computeUserRanks(lbEntries, user.uid) : [], [user, lbEntries]);
   const bestRank = useMemo(() => getBestRank(userRanks), [userRanks]);
   const topHero = useMemo(() => {
@@ -479,29 +477,25 @@ export default function Dashboard() {
           </div>
           </div>
 
-          {/* Filters */}
-          <DashboardFilters
-            formats={allFormats}
-            eventTypes={allEventTypes}
-            heroes={allHeroes}
-            filterFormat={filterFormat}
-            filterEventType={filterEventType}
-            filterHero={filterHero}
-            filterRated={filterRated}
-            onFormatChange={setFilterFormat}
-            onEventTypeChange={setFilterEventType}
-            onHeroChange={setFilterHero}
-            onRatedChange={setFilterRated}
-          />
+          {/* Filters — under profile card, left-aligned */}
+          <div className="grid grid-cols-1 md:grid-cols-[1fr_280px] gap-4">
+            <DashboardFilters
+              formats={allFormats}
+              eventTypes={allEventTypes}
+              heroes={allHeroes}
+              filterFormat={filterFormat}
+              filterEventType={filterEventType}
+              filterHero={filterHero}
+              filterRated={filterRated}
+              onFormatChange={setFilterFormat}
+              onEventTypeChange={setFilterEventType}
+              onHeroChange={setFilterHero}
+              onRatedChange={setFilterRated}
+            />
+          </div>
 
           {/* Dashboard stats */}
-          <StatCards overall={overall} eventCount={filteredEventStats.length} bestFinishLabel={bestFinish?.label ?? null} />
-
-          {/* RecentForm + Event Type Breakdown */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <RecentForm recentMatches={last30} overallWinRate={overall.overallWinRate} />
-            <EventTypeBreakdown matches={filteredMatches} />
-          </div>
+          <StatCards overall={overall} eventCount={filteredEventStats.length} bestFinishLabel={bestFinish?.label ?? null} recentMatches={last30} />
 
           {/* LatestMatches + RecentEvents */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
