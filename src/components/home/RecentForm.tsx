@@ -23,22 +23,27 @@ export function RecentForm({ recentMatches, overallWinRate }: RecentFormProps) {
     sparkData.push(Math.round((runWins / (i + 1)) * 100));
   });
 
-  // Recent win rate vs overall
-  const recentWinRate = formMatches.length > 0
-    ? (formMatches.filter((m) => m.result === MatchResult.Win).length / formMatches.length) * 100
-    : 0;
-  const trending = recentWinRate - overallWinRate;
+  // W/L/D counts
+  const wins = formMatches.filter((m) => m.result === MatchResult.Win).length;
+  const losses = formMatches.filter((m) => m.result === MatchResult.Loss).length;
+  const draws = formMatches.filter((m) => m.result === MatchResult.Draw).length;
 
   return (
     <div className="bg-fab-surface border border-fab-border rounded-lg px-4 py-3">
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           <p className="text-xs font-medium text-fab-muted">Recent Form</p>
-          {Math.abs(trending) >= 3 && (
-            <span className={`text-[10px] font-semibold ${trending > 0 ? "text-fab-win" : "text-fab-loss"}`}>
-              {trending > 0 ? "+" : ""}{trending.toFixed(0)}%
-            </span>
-          )}
+          <span className="text-[10px] tabular-nums">
+            <span className="font-semibold text-fab-win">{wins}W</span>
+            <span className="text-fab-dim">-</span>
+            <span className="font-semibold text-fab-loss">{losses}L</span>
+            {draws > 0 && (
+              <>
+                <span className="text-fab-dim">-</span>
+                <span className="font-semibold text-fab-draw">{draws}D</span>
+              </>
+            )}
+          </span>
         </div>
         {sparkData.length >= 2 && (
           <SparkLine data={sparkData} width={100} height={24} showDot />

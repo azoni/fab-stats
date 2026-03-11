@@ -1,6 +1,7 @@
 "use client";
 import { useMemo, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useMatches } from "@/hooks/useMatches";
 import { useAuth } from "@/contexts/AuthContext";
 import { computeOverallStats, computeHeroStats, computeEventStats, computeOpponentStats, computeBestFinish, computePlayoffFinishes, computeMinorEventFinishes, getRoundNumber } from "@/lib/stats";
@@ -24,6 +25,7 @@ import { CardBorderWrapper } from "@/components/profile/CardBorderWrapper";
 import type { UnderlineConfig } from "@/components/profile/CardBorderWrapper";
 
 export default function Dashboard() {
+  const router = useRouter();
   const { matches, isLoaded } = useMatches();
   const { user, profile } = useAuth();
   const { entries: lbEntries } = useLeaderboard(true);
@@ -249,6 +251,13 @@ export default function Dashboard() {
       {hasMatches && (
         <div className="flex flex-col gap-6">
           {/* Profile card */}
+          <div
+            className="cursor-pointer"
+            onClick={() => {
+              const href = profile?.username ? `/player/${profile.username}` : "#";
+              if (href !== "#") router.push(href);
+            }}
+          >
           <CardBorderWrapper cardBorder={cardBorder} borderStyle={profile?.borderStyle || "beam"} underline={underlineConfig} contentClassName="relative bg-fab-surface px-4 py-3 overflow-visible">
               {/* FaB-inspired pitch strip — thin gold accent across the top */}
               <div className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-fab-gold/30 to-transparent" />
@@ -305,7 +314,7 @@ export default function Dashboard() {
                     )}
                   </div>
                 </div>
-                <div className="flex items-center gap-1.5 shrink-0">
+                <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
                   {profile?.username && (
                     <button
                       onClick={async () => {
@@ -362,7 +371,7 @@ export default function Dashboard() {
               </div>
               <BadgeStrip selectedBadgeIds={profile?.selectedBadgeIds} className="mt-2 ml-1" />
               {/* Score badges — bottom right */}
-              <div className="absolute bottom-1.5 right-2.5 flex items-center gap-1.5 z-10">
+              <div className="absolute bottom-1.5 right-2.5 flex items-center gap-1.5 z-10" onClick={(e) => e.stopPropagation()}>
                 {kudosTotal !== null && (
                   <Link href="/leaderboard?tab=kudos_total" className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-fab-bg/80 border border-fab-border hover:border-fab-gold/40 transition-colors group" title="Total kudos received">
                     <svg className="w-3 h-3 text-fab-dim group-hover:text-fab-gold transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -373,6 +382,7 @@ export default function Dashboard() {
                 )}
               </div>
             </CardBorderWrapper>
+          </div>
           {/* Dashboard stats */}
           <StatCards overall={overall} eventCount={eventStats.length} bestFinishLabel={bestFinish?.label ?? null} />
           <RecentForm recentMatches={last30} overallWinRate={overall.overallWinRate} />
