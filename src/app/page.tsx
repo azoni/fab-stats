@@ -53,11 +53,6 @@ export default function Dashboard() {
     updateLeaderboardEntry(profile, matches).catch(() => {});
   }, [isLoaded, profile, matches]);
 
-  // Filter options (derived from all matches)
-  const allFormats = useMemo(() => [...new Set(matches.map((m) => m.format))].filter(Boolean).sort(), [matches]);
-  const allEventTypes = useMemo(() => [...new Set(matches.map((m) => getEventType(m)))].filter((t) => t !== "Unknown").sort(), [matches]);
-  const allHeroes = useMemo(() => [...new Set(matches.map((m) => m.heroPlayed))].filter((h) => h && h !== "Unknown").sort(), [matches]);
-
   // Filtered matches
   const filteredMatches = useMemo(() => {
     let filtered = matches;
@@ -67,6 +62,38 @@ export default function Dashboard() {
     if (filterRated !== "all") filtered = filtered.filter((m) => filterRated === "rated" ? m.rated === true : m.rated !== true);
     return filtered;
   }, [matches, filterFormat, filterEventType, filterHero, filterRated]);
+
+  // Filter options — each derived from matches filtered by the OTHER active filters
+  const allFormats = useMemo(() => {
+    let pool = matches;
+    if (filterEventType !== "all") pool = pool.filter((m) => getEventType(m) === filterEventType);
+    if (filterHero !== "all") pool = pool.filter((m) => m.heroPlayed === filterHero);
+    if (filterRated !== "all") pool = pool.filter((m) => filterRated === "rated" ? m.rated === true : m.rated !== true);
+    return [...new Set(pool.map((m) => m.format))].filter(Boolean).sort();
+  }, [matches, filterEventType, filterHero, filterRated]);
+
+  const allEventTypes = useMemo(() => {
+    let pool = matches;
+    if (filterFormat !== "all") pool = pool.filter((m) => m.format === filterFormat);
+    if (filterHero !== "all") pool = pool.filter((m) => m.heroPlayed === filterHero);
+    if (filterRated !== "all") pool = pool.filter((m) => filterRated === "rated" ? m.rated === true : m.rated !== true);
+    return [...new Set(pool.map((m) => getEventType(m)))].filter((t) => t !== "Unknown").sort();
+  }, [matches, filterFormat, filterHero, filterRated]);
+
+  const allHeroes = useMemo(() => {
+    let pool = matches;
+    if (filterFormat !== "all") pool = pool.filter((m) => m.format === filterFormat);
+    if (filterEventType !== "all") pool = pool.filter((m) => getEventType(m) === filterEventType);
+    if (filterRated !== "all") pool = pool.filter((m) => filterRated === "rated" ? m.rated === true : m.rated !== true);
+    return [...new Set(pool.map((m) => m.heroPlayed))].filter((h) => h && h !== "Unknown").sort();
+  }, [matches, filterFormat, filterEventType, filterRated]);
+
+  // Reset filters whose selected value is no longer available
+  useEffect(() => {
+    if (filterFormat !== "all" && !(allFormats as string[]).includes(filterFormat)) setFilterFormat("all");
+    if (filterEventType !== "all" && !allEventTypes.includes(filterEventType)) setFilterEventType("all");
+    if (filterHero !== "all" && !allHeroes.includes(filterHero)) setFilterHero("all");
+  }, [allFormats, allEventTypes, allHeroes, filterFormat, filterEventType, filterHero]);
 
   // Stats (filtered)
   const overall = useMemo(() => computeOverallStats(filteredMatches), [filteredMatches]);
@@ -468,6 +495,20 @@ export default function Dashboard() {
               </div>
             )}
 
+            {/* Community Meta */}
+            <Link href="/meta" className="block rounded-lg bg-fab-surface border border-fab-border px-4 py-3 hover:border-teal-500/30 transition-colors">
+              <div className="flex items-center gap-2.5">
+                <div className="w-6 h-6 rounded-md bg-teal-500/10 flex items-center justify-center ring-1 ring-inset ring-teal-500/20 shrink-0">
+                  <svg className="w-3.5 h-3.5 text-teal-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <span className="text-sm font-medium text-fab-text">Community Meta</span>
+                <svg className="w-3.5 h-3.5 text-fab-dim ml-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                </svg>
+              </div>
+            </Link>
           </div>
           </div>
 

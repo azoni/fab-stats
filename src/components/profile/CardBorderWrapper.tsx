@@ -267,15 +267,6 @@ function UnderlineBar({ underline }: { underline: UnderlineConfig | null | undef
             <circle cx="48" cy="16" r="1.5" fill={color} opacity="0.4" />
             <circle cx="112" cy="16" r="1.5" fill={color} opacity="0.4" />
           </svg>
-          {/* Shimmer sweep */}
-          <div
-            className="absolute top-0 h-full pointer-events-none"
-            style={{
-              width: "15%",
-              background: `linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent)`,
-              animation: "ul-shimmer-f 5s ease-in-out infinite",
-            }}
-          />
         </div>
       </>
     );
@@ -382,15 +373,6 @@ function UnderlineBar({ underline }: { underline: UnderlineConfig | null | undef
           <circle cx="104" cy="4" r="1" fill="rgba(255,215,0,0.7)" />
           <circle cx="120" cy="4" r="1" fill="rgba(255,215,0,0.7)" />
         </svg>
-        {/* Shimmer sweep */}
-        <div
-          className="absolute top-0 h-full pointer-events-none"
-          style={{
-            width: "12%",
-            background: `linear-gradient(90deg, transparent, rgba(255,255,255,0.2), rgba(255,215,0,0.1), transparent)`,
-            animation: "ul-shimmer-w 6s ease-in-out infinite",
-          }}
-        />
       </div>
     </>
   );
