@@ -8,18 +8,17 @@ import { useNotifications } from "@/hooks/useNotifications";
 import { useFriends } from "@/hooks/useFriends";
 import type { ReactNode } from "react";
 import {
-  Search, Settings, ClipboardList, BookOpen, Bell,
+  Settings, ClipboardList, BookOpen, Bell,
   MessageCircle, ShieldCheck, Home, MoreHorizontal,
-  Globe, AlignLeft, Wrench, Target, BarChart3,
+  Globe, AlignLeft, Wrench,
   Puzzle, Users, LogIn,
 } from "lucide-react";
 
 const tabs: { href: string; label: string; icon: ReactNode; color: string }[] = [
   { href: "/", label: "Home", icon: <Home className="w-5 h-5" />, color: "text-fab-gold" },
-  { href: "/matches", label: "Matches", icon: <SwordsIcon />, color: "text-red-400" },
+  { href: "/community", label: "Community", icon: <Users className="w-5 h-5" />, color: "text-indigo-400" },
+  { href: "/meta", label: "Meta", icon: <Globe className="w-5 h-5" />, color: "text-teal-400" },
   { href: "/leaderboard", label: "Rankings", icon: <TrophyIcon />, color: "text-amber-400" },
-  { href: "/trends", label: "My Stats", icon: <TrendsIcon />, color: "text-fab-gold" },
-  { href: "/search", label: "Search", icon: <Search className="w-5 h-5" />, color: "text-cyan-400" },
 ];
 
 // Local icon function definitions removed — using Lucide imports above
@@ -28,9 +27,12 @@ type MoreLink = { href: string; label: string; icon: ReactNode; authOnly?: boole
 
 const moreSections: { title: string; links: MoreLink[] }[] = [
   {
-    title: "Games",
+    title: "Your Stats",
     links: [
-      { href: "/games", label: "Games", icon: <Puzzle className="w-5 h-5" /> },
+      { href: "/matches", label: "Matches", icon: <SwordsIcon /> },
+      { href: "/trends", label: "My Stats", icon: <TrendsIcon />, authOnly: true },
+      { href: "/import", label: "Import Matches", icon: <ImportIcon />, authOnly: true },
+      { href: "/tools", label: "Player Tools", icon: <Wrench className="w-5 h-5" />, authOnly: true },
     ],
   },
   {
@@ -40,22 +42,12 @@ const moreSections: { title: string; links: MoreLink[] }[] = [
       { href: "/tier-list", label: "Tier List", icon: <AlignLeft className="w-5 h-5" /> },
       { href: "/tournaments", label: "Tournaments", icon: <TrophyIcon /> },
       { href: "/compare", label: "Versus", icon: <AlignLeft className="w-5 h-5" /> },
-    ],
-  },
-  {
-    title: "Your Data",
-    links: [
-      { href: "/import", label: "Import Matches", icon: <ImportIcon />, authOnly: true },
-      { href: "/trends", label: "My Stats", icon: <TrendsIcon />, authOnly: true },
-      { href: "/tools", label: "Player Tools", icon: <Wrench className="w-5 h-5" />, authOnly: true },
-      { href: "/goals", label: "Goals", icon: <Target className="w-5 h-5" />, authOnly: true },
-      { href: "/share-stats", label: "Stats Package", icon: <BarChart3 className="w-5 h-5" />, authOnly: true },
+      { href: "/games", label: "Games", icon: <Puzzle className="w-5 h-5" /> },
     ],
   },
   {
     title: "Social",
     links: [
-      { href: "/community", label: "Community", icon: <Users className="w-5 h-5" /> },
       { href: "/friends", label: "Friends", icon: <Users className="w-5 h-5" />, authOnly: true },
       { href: "/inbox", label: "Inbox", icon: <MessageCircle className="w-5 h-5" />, authOnly: true },
       { href: "/notifications", label: "Notifications", icon: <Bell className="w-5 h-5" />, authOnly: true },
