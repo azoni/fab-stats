@@ -19,7 +19,7 @@ import { Users, Swords, Shield, Trophy, Grid3X3, CalendarDays } from "lucide-rea
 
 type SortKey = "usage" | "winrate";
 type PeriodSelection = MetaPeriod | `season:${string}` | "custom";
-const HERO_PAGE_SIZE = 20;
+const HERO_PAGE_SIZE = 10;
 
 const BASE_PERIOD_TABS: { id: PeriodSelection; label: string }[] = [
   { id: "all", label: "All Time" },
@@ -344,143 +344,140 @@ export default function MetaPage() {
         />
       )}
 
-      {/* Hero Distribution Donut */}
-      {heroStats.length >= 3 && (
-        <div className="bg-fab-surface border border-fab-border rounded-lg p-5 mb-6">
-          <div className="flex items-center gap-2 mb-4">
-            <h2 className="text-sm font-semibold text-fab-text">Hero Meta Distribution</h2>
-            <button
-              onClick={() => setOverviewShareOpen(true)}
-              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-fab-bg border border-fab-border text-fab-dim hover:text-fab-text hover:border-fab-muted transition-colors"
-              title="Share meta overview" aria-label="Share meta overview"
-            >
-              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z" />
-              </svg>
-              <span className="text-[10px] font-semibold">Share</span>
-            </button>
-          </div>
-          <div className="flex flex-col sm:flex-row items-center gap-6">
-            <MiniDonut
-              segments={heroStats.slice(0, 10).map((h, i) => ({
-                value: h.metaShare,
-                color: DONUT_COLORS[i % DONUT_COLORS.length],
-                label: h.hero,
-              }))}
-              size={160}
-              strokeWidth={22}
-              centerLabel={
-                <span className="flex flex-col items-center">
-                  <span className="text-xl font-bold text-fab-text">{overview.totalPlayers}</span>
-                  <span className="text-[9px] text-fab-dim uppercase tracking-wider">Players</span>
-                </span>
-              }
-            />
-            <div className="flex-1 grid grid-cols-2 gap-x-4 gap-y-1.5 w-full">
-              {heroStats.slice(0, 10).map((h, i) => (
-                <div key={h.hero} className="flex items-center gap-1.5 min-w-0">
-                  <div className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ backgroundColor: DONUT_COLORS[i % DONUT_COLORS.length] }} />
-                  <span className="text-xs text-fab-text truncate flex-1">{h.hero}</span>
-                  <span className="text-[10px] text-fab-muted tabular-nums shrink-0">{h.uniqueEvents}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Meta share modal */}
       {metaShareOpen && top8Heroes.length > 0 && (
         <MetaShareModal
           heroes={top8Heroes}
-          title={activeSeason ? `${activeSeason.name} Top 8s` : periodSelection === "weekly" ? "This Week's Top 8s" : periodSelection === "monthly" ? "This Month's Top 8s" : "Playoff Heroes — All Time"}
+          title={activeSeason ? `${activeSeason.name} Top 8s` : periodSelection === "weekly" ? "This Week's Top 8s" : periodSelection === "monthly" ? "This Month's Top 8s" : "Top 8 Heroes — All Time"}
           subtitle={activeSeason ? `${activeSeason.format} · ${activeSeason.eventType}` : effectiveFormat || effectiveEventType ? [effectiveFormat, effectiveEventType].filter(Boolean).join(" · ") : undefined}
           onClose={() => setMetaShareOpen(false)}
         />
       )}
 
-      {/* Playoff Heroes — which heroes are making top 8s */}
-      {top8Heroes.length > 0 && (() => {
-        const pTotalPages = Math.max(1, Math.ceil(top8Heroes.length / 10));
-        const pSafePage = Math.min(playoffPage, pTotalPages);
-        const pStart = (pSafePage - 1) * 10;
-        const pSlice = top8Heroes.slice(pStart, pStart + 10);
-        return (
-          <div className="mb-6">
-            <div className="flex items-center gap-2 mb-1">
-              <h2 className="text-sm font-semibold text-fab-text">
-                Playoff Heroes
-              </h2>
-              <button
-                onClick={() => setMetaShareOpen(true)}
-                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-fab-surface border border-fab-border text-fab-dim hover:text-fab-text hover:border-fab-muted transition-colors"
-                title="Share meta breakdown" aria-label="Share meta breakdown"
-              >
-                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z" />
-                </svg>
-                <span className="text-[10px] font-semibold">Share</span>
-              </button>
-            </div>
-            <p className="text-[10px] text-fab-dim mb-3">
-              Heroes making top 8s{periodSelection === "weekly" ? " (last 7 days)" : periodSelection === "monthly" ? " (last 30 days)" : activeSeason ? ` (${activeSeason.name})` : periodSelection === "custom" && sinceDate && untilDate ? ` (${sinceDate} — ${untilDate})` : ""}
-              {top8Heroes.length > 10 && ` \u00b7 ${top8Heroes.length} heroes`}
-            </p>
-            <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden">
-              {pSlice.map((t8, i) => {
-                const globalIdx = pStart + i;
-                const heroInfo = getHeroByName(t8.hero);
-                const heroClass = heroInfo?.classes[0];
-                return (
-                  <div key={t8.hero} className={`flex items-center gap-3 px-4 py-2.5 ${i > 0 ? "border-t border-fab-border" : ""}`}>
-                    <span className={`text-xs font-bold w-5 text-center shrink-0 ${globalIdx === 0 ? "text-amber-400" : globalIdx < 3 ? "text-fab-text" : "text-fab-dim"}`}>
-                      {globalIdx + 1}
-                    </span>
-                    <HeroClassIcon heroClass={heroClass} size="sm" />
-                    <span className={`text-sm font-medium flex-1 truncate ${globalIdx === 0 ? "text-amber-400" : "text-fab-text"}`}>
-                      {t8.hero}
-                    </span>
-                    <span className="text-xs text-fab-dim shrink-0">
-                      {t8.count} top 8{t8.count !== 1 ? "s" : ""}
-                    </span>
-                    {t8.champions > 0 && (
-                      <span className="text-xs font-semibold text-fab-gold shrink-0">
-                        {t8.champions} win{t8.champions !== 1 ? "s" : ""}
-                      </span>
-                    )}
-                    {t8.finalists > 0 && (
-                      <span className="text-[10px] text-gray-400 shrink-0">
-                        {t8.finalists} final{t8.finalists !== 1 ? "s" : ""}
-                      </span>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-            {pTotalPages > 1 && (
-              <div className="flex items-center justify-center gap-3 mt-3">
+      {/* Hero Distribution + Top 8 Heroes — side by side on desktop */}
+      {(heroStats.length >= 3 || top8Heroes.length > 0) && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          {/* Hero Distribution Donut */}
+          {heroStats.length >= 3 && (
+            <div className="bg-fab-surface border border-fab-border rounded-lg p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <h2 className="text-sm font-semibold text-fab-text">Hero Meta Distribution</h2>
                 <button
-                  onClick={() => setPlayoffPage((p) => Math.max(1, p - 1))}
-                  disabled={pSafePage <= 1}
-                  className="px-3 py-1.5 rounded-md text-sm font-medium bg-fab-surface border border-fab-border text-fab-muted hover:text-fab-text disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                  onClick={() => setOverviewShareOpen(true)}
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-fab-bg border border-fab-border text-fab-dim hover:text-fab-text hover:border-fab-muted transition-colors"
+                  title="Share meta overview" aria-label="Share meta overview"
                 >
-                  Previous
-                </button>
-                <span className="text-sm text-fab-dim">
-                  Page {pSafePage} of {pTotalPages}
-                </span>
-                <button
-                  onClick={() => setPlayoffPage((p) => Math.min(pTotalPages, p + 1))}
-                  disabled={pSafePage >= pTotalPages}
-                  className="px-3 py-1.5 rounded-md text-sm font-medium bg-fab-surface border border-fab-border text-fab-muted hover:text-fab-text disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                >
-                  Next
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z" />
+                  </svg>
+                  <span className="text-[10px] font-semibold">Share</span>
                 </button>
               </div>
-            )}
-          </div>
-        );
-      })()}
+              <div className="flex flex-col items-center gap-4">
+                <MiniDonut
+                  segments={heroStats.slice(0, 10).map((h, i) => ({
+                    value: h.metaShare,
+                    color: DONUT_COLORS[i % DONUT_COLORS.length],
+                    label: h.hero,
+                  }))}
+                  size={140}
+                  strokeWidth={20}
+                  centerLabel={
+                    <span className="flex flex-col items-center">
+                      <span className="text-lg font-bold text-fab-text">{overview.totalPlayers}</span>
+                      <span className="text-[9px] text-fab-dim uppercase tracking-wider">Players</span>
+                    </span>
+                  }
+                />
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1 w-full">
+                  {heroStats.slice(0, 10).map((h, i) => (
+                    <div key={h.hero} className="flex items-center gap-1.5 min-w-0">
+                      <div className="w-2 h-2 rounded-sm shrink-0" style={{ backgroundColor: DONUT_COLORS[i % DONUT_COLORS.length] }} />
+                      <span className="text-xs text-fab-text truncate flex-1">{h.hero}</span>
+                      <span className="text-[10px] text-fab-muted tabular-nums shrink-0">{h.metaShare.toFixed(0)}%</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Top 8 Heroes */}
+          {top8Heroes.length > 0 && (() => {
+            const pTotalPages = Math.max(1, Math.ceil(top8Heroes.length / 10));
+            const pSafePage = Math.min(playoffPage, pTotalPages);
+            const pStart = (pSafePage - 1) * 10;
+            const pSlice = top8Heroes.slice(pStart, pStart + 10);
+            return (
+              <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden flex flex-col">
+                <div className="flex items-center gap-2 px-4 py-2.5 border-b border-fab-border/50">
+                  <h2 className="text-sm font-semibold text-fab-text">Top 8 Heroes</h2>
+                  <button
+                    onClick={() => setMetaShareOpen(true)}
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-fab-bg border border-fab-border text-fab-dim hover:text-fab-text hover:border-fab-muted transition-colors"
+                    title="Share meta breakdown" aria-label="Share meta breakdown"
+                  >
+                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z" />
+                    </svg>
+                    <span className="text-[10px] font-semibold">Share</span>
+                  </button>
+                  {top8Heroes.length > 10 && (
+                    <span className="text-[10px] text-fab-dim ml-auto">{top8Heroes.length} heroes</span>
+                  )}
+                </div>
+                <div className="flex-1">
+                  {pSlice.map((t8, i) => {
+                    const globalIdx = pStart + i;
+                    const heroInfo = getHeroByName(t8.hero);
+                    const heroClass = heroInfo?.classes[0];
+                    return (
+                      <div key={t8.hero} className={`flex items-center gap-2.5 px-4 py-2 ${i > 0 ? "border-t border-fab-border/50" : ""}`}>
+                        <span className={`text-xs font-bold w-4 text-center shrink-0 ${globalIdx === 0 ? "text-amber-400" : globalIdx < 3 ? "text-fab-text" : "text-fab-dim"}`}>
+                          {globalIdx + 1}
+                        </span>
+                        <HeroClassIcon heroClass={heroClass} size="sm" />
+                        <span className={`text-sm font-medium flex-1 truncate ${globalIdx === 0 ? "text-amber-400" : "text-fab-text"}`}>
+                          {t8.hero}
+                        </span>
+                        <span className="text-[10px] text-fab-dim shrink-0">
+                          {t8.count} top 8{t8.count !== 1 ? "s" : ""}
+                        </span>
+                        {t8.champions > 0 && (
+                          <span className="text-[10px] font-semibold text-fab-gold shrink-0">
+                            {t8.champions}W
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+                {pTotalPages > 1 && (
+                  <div className="flex items-center justify-center gap-3 px-4 py-2 border-t border-fab-border/50">
+                    <button
+                      onClick={() => setPlayoffPage((p) => Math.max(1, p - 1))}
+                      disabled={pSafePage <= 1}
+                      className="px-2.5 py-1 rounded-md text-xs font-medium bg-fab-bg border border-fab-border text-fab-muted hover:text-fab-text disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                    >
+                      Prev
+                    </button>
+                    <span className="text-xs text-fab-dim">
+                      {pSafePage}/{pTotalPages}
+                    </span>
+                    <button
+                      onClick={() => setPlayoffPage((p) => Math.min(pTotalPages, p + 1))}
+                      disabled={pSafePage >= pTotalPages}
+                      className="px-2.5 py-1 rounded-md text-xs font-medium bg-fab-bg border border-fab-border text-fab-muted hover:text-fab-text disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                    >
+                      Next
+                    </button>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+        </div>
+      )}
 
       {/* Season/custom disclaimer for hero win-rate data */}
       {(activeSeason || (periodSelection === "custom" && customStart && customEnd)) && (
