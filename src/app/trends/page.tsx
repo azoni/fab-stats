@@ -103,6 +103,7 @@ export default function TrendsPage() {
   // Filter state
   const [filterFormat, setFilterFormat] = useState("all");
   const [filterEventType, setFilterEventType] = useState("all");
+  const [filterHero, setFilterHero] = useState("all");
   const [filterTimeRange, setFilterTimeRange] = useState("all");
 
   // Collapsible section state
@@ -124,6 +125,10 @@ export default function TrendsPage() {
     return Array.from(set).sort();
   }, [matches]);
 
+  const allHeroes = useMemo(() => {
+    return [...new Set(matches.map((m) => m.heroPlayed))].filter((h) => h && h !== "Unknown").sort();
+  }, [matches]);
+
   // Filtered matches
   const filteredMatches = useMemo(() => {
     let fm = matches;
@@ -132,6 +137,9 @@ export default function TrendsPage() {
     }
     if (filterEventType !== "all") {
       fm = fm.filter((m) => getEventType(m) === filterEventType);
+    }
+    if (filterHero !== "all") {
+      fm = fm.filter((m) => m.heroPlayed === filterHero);
     }
     if (filterTimeRange !== "all") {
       const now = new Date();
@@ -142,9 +150,9 @@ export default function TrendsPage() {
       fm = fm.filter((m) => new Date(m.date) >= cutoff);
     }
     return fm;
-  }, [matches, filterFormat, filterEventType, filterTimeRange]);
+  }, [matches, filterFormat, filterEventType, filterHero, filterTimeRange]);
 
-  const isFiltered = filterFormat !== "all" || filterEventType !== "all" || filterTimeRange !== "all";
+  const isFiltered = filterFormat !== "all" || filterEventType !== "all" || filterHero !== "all" || filterTimeRange !== "all";
 
   // Win Rate by Format
   const formatWinRate = useMemo(() => {
@@ -469,6 +477,18 @@ export default function TrendsPage() {
             <option key={t} value={t}>{t}</option>
           ))}
         </select>
+        {allHeroes.length > 1 && (
+          <select
+            value={filterHero}
+            onChange={(e) => setFilterHero(e.target.value)}
+            className="bg-fab-surface border border-fab-border text-fab-text text-xs rounded-lg px-2 py-1.5 focus:outline-none focus:border-fab-gold"
+          >
+            <option value="all">All Heroes</option>
+            {allHeroes.map((h) => (
+              <option key={h} value={h}>{h}</option>
+            ))}
+          </select>
+        )}
         <div className="flex gap-0.5 bg-fab-surface border border-fab-border rounded-lg p-0.5">
           {([["all", "All Time"], ["6m", "6 Months"], ["3m", "3 Months"], ["30d", "30 Days"]] as const).map(([val, label]) => (
             <button
@@ -490,7 +510,7 @@ export default function TrendsPage() {
               {filteredMatches.length} of {matches.length} matches
             </span>
             <button
-              onClick={() => { setFilterFormat("all"); setFilterEventType("all"); setFilterTimeRange("all"); }}
+              onClick={() => { setFilterFormat("all"); setFilterEventType("all"); setFilterHero("all"); setFilterTimeRange("all"); }}
               className="text-xs text-fab-gold hover:underline"
             >
               Clear
@@ -503,7 +523,7 @@ export default function TrendsPage() {
         <div className="text-center py-12">
           <p className="text-fab-muted">Not enough matches for these filters.</p>
           <button
-            onClick={() => { setFilterFormat("all"); setFilterEventType("all"); setFilterTimeRange("all"); }}
+            onClick={() => { setFilterFormat("all"); setFilterEventType("all"); setFilterHero("all"); setFilterTimeRange("all"); }}
             className="mt-3 text-fab-gold hover:underline text-sm"
           >
             Clear Filters
