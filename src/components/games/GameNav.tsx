@@ -34,10 +34,10 @@ export function GameNav({ current }: { current: string }) {
   const currentGame = GAMES.find((g) => g.slug === current);
 
   return (
-    <div ref={navRef} className="flex items-center gap-1 mb-4 flex-wrap">
+    <div ref={navRef} className="flex items-center gap-1.5 mb-4 flex-wrap">
       <Link
         href="/games"
-        className="text-xs font-medium text-fab-dim hover:text-fab-text px-2.5 py-1.5 rounded-lg hover:bg-fab-surface transition-colors shrink-0"
+        className="text-sm font-medium text-fab-dim hover:text-fab-text px-3 py-2 rounded-lg hover:bg-fab-surface transition-colors shrink-0"
       >
         &larr; All Games
       </Link>
@@ -52,7 +52,7 @@ export function GameNav({ current }: { current: string }) {
           <div key={cat.id} className="relative">
             <button
               onClick={() => setOpenCat(isOpen ? null : cat.id)}
-              className={`text-xs font-medium px-2.5 py-1.5 rounded-lg shrink-0 transition-colors flex items-center gap-1 ${
+              className={`text-sm font-medium px-3 py-2 rounded-lg shrink-0 transition-colors flex items-center gap-1.5 ${
                 isCurrentCat
                   ? `${cat.color} bg-fab-surface/60`
                   : "text-fab-dim hover:text-fab-text hover:bg-fab-surface/50"
@@ -71,8 +71,8 @@ export function GameNav({ current }: { current: string }) {
             </button>
 
             {isOpen && (
-              <div className="absolute top-full left-0 mt-1 w-48 bg-fab-surface border border-fab-border rounded-lg shadow-xl z-50 overflow-hidden">
-                <div className="p-1">
+              <div className="absolute top-full left-0 mt-1 w-52 bg-fab-surface border border-fab-border rounded-lg shadow-xl z-50 overflow-hidden">
+                <div className="p-1.5">
                   {games.map((g) => {
                     const isCurrent = g.slug === current;
                     const played = hasPlayedToday(g.slug);
@@ -81,13 +81,13 @@ export function GameNav({ current }: { current: string }) {
                         key={g.slug}
                         href={g.href}
                         onClick={() => setOpenCat(null)}
-                        className={`flex items-center gap-2 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                        className={`flex items-center gap-2.5 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                           isCurrent
                             ? "text-fab-gold bg-fab-gold/10"
                             : `${g.color} hover:bg-fab-surface-hover`
                         }`}
                       >
-                        <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                        <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                           <path strokeLinecap="round" strokeLinejoin="round" d={g.iconPath} />
                         </svg>
                         <span className="truncate">{g.label}</span>
