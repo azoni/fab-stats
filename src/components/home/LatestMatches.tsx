@@ -33,7 +33,7 @@ function formatDate(dateStr: string): string {
 }
 
 export function LatestMatches({ matches }: LatestMatchesProps) {
-  const latest = matches.slice(0, 5);
+  const latest = matches.slice(0, 6);
 
   if (latest.length === 0) return null;
 

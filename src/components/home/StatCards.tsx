@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { MatchResult } from "@/types";
 import type { OverallStats, MatchRecord } from "@/types";
 import { WinRateRing } from "@/components/charts/WinRateRing";
@@ -29,13 +30,13 @@ export function StatCards({ overall, eventCount, bestFinishLabel, recentMatches 
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
       {/* Win Rate + Events */}
-      <div className="bg-fab-surface border border-fab-border rounded-lg p-3 flex items-center gap-3">
-        <WinRateRing value={overall.overallWinRate} size={44} strokeWidth={4} />
+      <Link href="/trends" className="bg-fab-surface border border-fab-border rounded-lg p-3 flex items-center gap-3 hover:border-fab-gold/30 transition-colors">
+        <WinRateRing value={overall.overallWinRate} size={48} strokeWidth={4} />
         <div className="min-w-0">
-          <p className={`text-lg font-bold tabular-nums leading-tight ${overall.overallWinRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>
+          <p className={`text-xl font-bold tabular-nums leading-tight ${overall.overallWinRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>
             {overall.overallWinRate.toFixed(1)}%
           </p>
-          <div className="flex items-center gap-1.5 text-[10px] text-fab-dim mt-0.5">
+          <div className="flex items-center gap-1.5 text-xs text-fab-dim mt-0.5">
             <span>{overall.totalMatches + overall.totalByes} matches</span>
             {eventCount > 0 && (
               <>
@@ -45,34 +46,34 @@ export function StatCards({ overall, eventCount, bestFinishLabel, recentMatches 
             )}
           </div>
           {bestFinishLabel && (
-            <p className="text-[10px] text-fab-gold mt-0.5 font-medium truncate">{bestFinishLabel}</p>
+            <p className="text-xs text-fab-gold mt-0.5 font-medium truncate">{bestFinishLabel}</p>
           )}
         </div>
-      </div>
+      </Link>
 
       {/* Record */}
-      <div className="bg-fab-surface border border-fab-border rounded-lg p-3">
-        <p className="text-[10px] text-fab-dim uppercase tracking-wider mb-1">Record</p>
+      <Link href="/matches" className="bg-fab-surface border border-fab-border rounded-lg p-3 hover:border-fab-gold/30 transition-colors">
+        <p className="text-xs text-fab-dim uppercase tracking-wider mb-1">Record</p>
         <div className="flex items-baseline gap-1.5 tabular-nums">
-          <span className="text-lg font-bold text-fab-win">{overall.totalWins}</span>
-          <span className="text-fab-dim text-xs">-</span>
-          <span className="text-lg font-bold text-fab-loss">{overall.totalLosses}</span>
+          <span className="text-xl font-bold text-fab-win">{overall.totalWins}</span>
+          <span className="text-fab-dim text-sm">-</span>
+          <span className="text-xl font-bold text-fab-loss">{overall.totalLosses}</span>
           {overall.totalDraws > 0 && (
             <>
-              <span className="text-fab-dim text-xs">-</span>
-              <span className="text-lg font-bold text-fab-draw">{overall.totalDraws}</span>
+              <span className="text-fab-dim text-sm">-</span>
+              <span className="text-xl font-bold text-fab-draw">{overall.totalDraws}</span>
             </>
           )}
         </div>
-        <p className="text-[10px] text-fab-dim mt-0.5">{overall.totalMatches + overall.totalByes} total</p>
-      </div>
+        <p className="text-xs text-fab-dim mt-0.5">{overall.totalMatches + overall.totalByes} total</p>
+      </Link>
 
       {/* Recent Form (mini) */}
-      <div className="bg-fab-surface border border-fab-border rounded-lg p-3 col-span-2 md:col-span-1">
+      <Link href="/matches" className="bg-fab-surface border border-fab-border rounded-lg p-3 col-span-2 md:col-span-1 hover:border-fab-gold/30 transition-colors">
         <div className="flex items-center justify-between mb-1.5">
-          <p className="text-[10px] text-fab-dim uppercase tracking-wider">Recent Form</p>
+          <p className="text-xs text-fab-dim uppercase tracking-wider">Recent Form</p>
           {formMatches.length > 0 && (
-            <span className="text-[10px] tabular-nums">
+            <span className="text-xs tabular-nums">
               <span className="font-semibold text-fab-win">{recentWins}W</span>
               <span className="text-fab-dim">-</span>
               <span className="font-semibold text-fab-loss">{recentLosses}L</span>
@@ -106,7 +107,7 @@ export function StatCards({ overall, eventCount, bestFinishLabel, recentMatches 
             ))}
           </div>
         )}
-      </div>
+      </Link>
     </div>
   );
 }

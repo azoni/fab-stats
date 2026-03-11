@@ -90,7 +90,7 @@ export default function Dashboard() {
     [filteredMatches]
   );
   const last30 = useMemo(() => sortedByDateDesc.slice(0, 30).reverse(), [sortedByDateDesc]);
-  const latestMatches = useMemo(() => sortedByDateDesc.slice(0, 5), [sortedByDateDesc]);
+  const latestMatches = useMemo(() => sortedByDateDesc.slice(0, 6), [sortedByDateDesc]);
   const playoffFinishes = useMemo(() => computePlayoffFinishes(eventStats), [eventStats]);
   const cardBorder = useMemo(() => {
     const tierRank: Record<string, number> = { "Battle Hardened": 1, "The Calling": 2, Nationals: 3, "Pro Tour": 4, Worlds: 5 };
@@ -274,7 +274,8 @@ export default function Dashboard() {
         <div className="flex flex-col gap-6">
           {/* Profile + sidebar grid */}
           <div className="grid grid-cols-1 md:grid-cols-[1fr_280px] gap-4 items-start">
-          {/* Profile card */}
+          {/* Left column: Profile card + Filters */}
+          <div className="flex flex-col gap-3">
           <div
             className="cursor-pointer"
             onClick={() => {
@@ -320,7 +321,7 @@ export default function Dashboard() {
                       {profile?.displayName || "My Profile"}
                     </h1>
                   </Link>
-                  <div className="flex items-center gap-2 mt-0.5 text-[11px] text-fab-muted">
+                  <div className="flex items-center gap-2 mt-0.5 text-xs text-fab-muted">
                     <span>{overall.totalMatches + overall.totalByes} matches</span>
                     <span className="text-fab-dim">·</span>
                     <span className={overall.overallWinRate >= 50 ? "text-fab-win" : "text-fab-loss"}>{overall.overallWinRate.toFixed(1)}%</span>
@@ -407,6 +408,20 @@ export default function Dashboard() {
               </div>
             </CardBorderWrapper>
           </div>
+          <DashboardFilters
+            formats={allFormats}
+            eventTypes={allEventTypes}
+            heroes={allHeroes}
+            filterFormat={filterFormat}
+            filterEventType={filterEventType}
+            filterHero={filterHero}
+            filterRated={filterRated}
+            onFormatChange={setFilterFormat}
+            onEventTypeChange={setFilterEventType}
+            onHeroChange={setFilterHero}
+            onRatedChange={setFilterRated}
+          />
+          </div>
 
           {/* Sidebar: Tools + Meta */}
           <div className="flex flex-col gap-3">
@@ -455,43 +470,38 @@ export default function Dashboard() {
             {/* Meta snapshot */}
             {communityTopHeroes.length > 0 && (
               <Link href="/meta" className="block rounded-lg bg-fab-surface border border-fab-border px-4 py-3 hover:border-teal-500/30 transition-colors group">
-                <div className="flex items-center gap-2.5 mb-2">
+                <div className="flex items-center gap-2.5 mb-2.5">
                   <div className="w-6 h-6 rounded-md bg-teal-500/10 flex items-center justify-center ring-1 ring-inset ring-teal-500/20 shrink-0">
                     <svg className="w-3.5 h-3.5 text-teal-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                   </div>
-                  <span className="text-sm font-medium text-fab-text">Meta</span>
+                  <span className="text-sm font-medium text-fab-text">Community Meta</span>
                   <span className="text-xs text-fab-gold group-hover:text-fab-gold-light transition-colors font-semibold ml-auto">View &rarr;</span>
                 </div>
-                <div className="space-y-1.5 pl-[34px]">
-                  {communityTopHeroes.slice(0, 3).map((hero, i) => (
-                    <div key={hero.hero} className="flex items-center justify-between text-xs">
-                      <span className={`font-medium ${i === 0 ? "text-fab-gold" : "text-fab-text"}`}>{hero.hero}</span>
-                      <span className="text-fab-muted tabular-nums">{hero.metaShare.toFixed(0)}%</span>
-                    </div>
-                  ))}
+                <div className="space-y-2">
+                  {communityTopHeroes.slice(0, 3).map((hero, i) => {
+                    const maxShare = communityTopHeroes[0]?.metaShare || 1;
+                    const barWidth = (hero.metaShare / maxShare) * 100;
+                    return (
+                      <div key={hero.hero}>
+                        <div className="flex items-center justify-between text-xs mb-0.5">
+                          <span className={`font-medium truncate ${i === 0 ? "text-fab-gold" : "text-fab-text"}`}>{hero.hero}</span>
+                          <span className="text-fab-muted tabular-nums shrink-0 ml-2">{hero.metaShare.toFixed(1)}%</span>
+                        </div>
+                        <div className="w-full h-1 rounded-full bg-fab-border overflow-hidden">
+                          <div
+                            className={`h-full rounded-full ${i === 0 ? "bg-teal-400" : "bg-teal-400/50"}`}
+                            style={{ width: `${barWidth}%` }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </Link>
             )}
           </div>
-          </div>
-
-          {/* Filters — under profile card, left-aligned */}
-          <div className="grid grid-cols-1 md:grid-cols-[1fr_280px] gap-4">
-            <DashboardFilters
-              formats={allFormats}
-              eventTypes={allEventTypes}
-              heroes={allHeroes}
-              filterFormat={filterFormat}
-              filterEventType={filterEventType}
-              filterHero={filterHero}
-              filterRated={filterRated}
-              onFormatChange={setFilterFormat}
-              onEventTypeChange={setFilterEventType}
-              onHeroChange={setFilterHero}
-              onRatedChange={setFilterRated}
-            />
           </div>
 
           {/* Dashboard stats */}
