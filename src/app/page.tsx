@@ -3,14 +3,17 @@ import { useMemo, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useMatches } from "@/hooks/useMatches";
 import { useAuth } from "@/contexts/AuthContext";
-import { computeOverallStats, computeHeroStats, computeEventStats, computeBestFinish, computePlayoffFinishes, computeMinorEventFinishes, getRoundNumber } from "@/lib/stats";
+import { computeOverallStats, computeHeroStats, computeEventStats, computeOpponentStats, computeBestFinish, computePlayoffFinishes, computeMinorEventFinishes, getRoundNumber } from "@/lib/stats";
 import { updateLeaderboardEntry } from "@/lib/leaderboard";
 import { useLeaderboard } from "@/hooks/useLeaderboard";
 import { computeUserRanks, getBestRank, rankBorderClass } from "@/lib/leaderboard-ranks";
 import { ShieldIcon } from "@/components/icons/NavIcons";
 import { computeMetaStats } from "@/lib/meta-stats";
 import { RecentEvents } from "@/components/home/RecentEvents";
-import { QuickStats } from "@/components/home/QuickStats";
+import { StatCards } from "@/components/home/StatCards";
+import { RecentForm } from "@/components/home/RecentForm";
+import { LatestMatches } from "@/components/home/LatestMatches";
+import { DashboardInsights } from "@/components/home/DashboardInsights";
 import { BestFinishShareModal } from "@/components/profile/BestFinishCard";
 import { ProfileShareModal } from "@/components/profile/ProfileCard";
 import { OnThisDay } from "@/components/home/OnThisDay";
@@ -62,6 +65,8 @@ export default function Dashboard() {
     [matches]
   );
   const last30 = useMemo(() => sortedByDateDesc.slice(0, 30).reverse(), [sortedByDateDesc]);
+  const opponentStats = useMemo(() => computeOpponentStats(matches), [matches]);
+  const latestMatches = useMemo(() => sortedByDateDesc.slice(0, 5), [sortedByDateDesc]);
   const playoffFinishes = useMemo(() => computePlayoffFinishes(eventStats), [eventStats]);
   const cardBorder = useMemo(() => {
     const tierRank: Record<string, number> = { "Battle Hardened": 1, "The Calling": 2, Nationals: 3, "Pro Tour": 4, Worlds: 5 };
@@ -368,8 +373,26 @@ export default function Dashboard() {
                 )}
               </div>
             </CardBorderWrapper>
-          {/* Quick stats */}
-          <QuickStats overall={overall} last30={last30} />
+          {/* Dashboard stats */}
+          <StatCards overall={overall} eventCount={eventStats.length} bestFinishLabel={bestFinish?.label ?? null} />
+          <RecentForm recentMatches={last30} overallWinRate={overall.overallWinRate} />
+          <LatestMatches matches={latestMatches} />
+          <DashboardInsights heroStats={heroStats} opponentStats={opponentStats} />
+          {/* Player Tools shortcut */}
+          {user && (
+            <Link href="/tools" className="flex items-center gap-4 rounded-lg bg-fab-surface border border-fab-border px-4 py-3 hover:border-amber-500/30 transition-colors group">
+              <div className="w-7 h-7 rounded-lg bg-amber-500/10 flex items-center justify-center ring-1 ring-inset ring-amber-500/20 shrink-0">
+                <svg className="w-4 h-4 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M11.42 15.17L17.25 21A2.652 2.652 0 0021 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 11-3.586-3.586l6.837-5.63m5.108-.233c.55-.164 1.163-.188 1.743-.14a4.5 4.5 0 004.486-6.336l-3.276 3.277a3.004 3.004 0 01-2.25-2.25l3.276-3.276a4.5 4.5 0 00-6.336 4.486c.091 1.076-.071 2.264-.904 2.95l-.102.085" />
+                </svg>
+              </div>
+              <div className="flex-1 min-w-0">
+                <span className="text-sm font-medium text-fab-text">Player Tools</span>
+                <span className="text-[10px] text-fab-dim ml-2 hidden sm:inline">Matchup Matrix, Prep, Scout</span>
+              </div>
+              <span className="text-xs text-fab-gold group-hover:text-fab-gold-light transition-colors font-semibold shrink-0">&rarr;</span>
+            </Link>
+          )}
           {/* Compact meta snapshot */}
           {communityTopHeroes.length > 0 && (
             <Link href="/meta" className="flex items-center gap-4 rounded-lg bg-fab-surface border border-fab-border px-4 py-3 hover:border-teal-500/30 transition-colors group">

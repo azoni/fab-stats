@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { SwordsIcon, TrendsIcon, ImportIcon, CalendarIcon, TrophyIcon } from "@/components/icons/NavIcons";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { useAuth } from "@/contexts/AuthContext";
@@ -9,33 +9,31 @@ import { useCreators } from "@/hooks/useCreators";
 import { trackPageView, trackCreatorClick, trackVisit, trackPresence, getOnlineStats } from "@/lib/analytics";
 import { useCommunityStats } from "@/hooks/useCommunityStats";
 import { useFriends } from "@/hooks/useFriends";
-import { searchUsernames, getProfile } from "@/lib/firestore-storage";
-import { playerHref } from "@/lib/constants";
 import type { ReactNode } from "react";
-import type { Creator, UserProfile } from "@/types";
+import type { Creator } from "@/types";
 import { GAMES } from "@/lib/games";
 import {
-  Globe, ClipboardList, BookOpen, ClipboardCheck, Zap, Search,
-  AlignLeft, Wrench, BarChart3, Puzzle, Target, ChevronDown,
+  Globe, ClipboardList, BookOpen, ClipboardCheck, Zap,
+  AlignLeft, Wrench, Puzzle, ChevronDown,
   Mail, Star, Users, Settings, ShieldCheck, ExternalLink,
-  MoreVertical, X, ArrowRight, Loader2,
+  MoreVertical,
 } from "lucide-react";
 
 const navLinks: { href: string; label: string; icon: ReactNode; color: string; bg: string; authOnly?: boolean }[] = [
-  { href: "/leaderboard", label: "Rankings", icon: <TrophyIcon className="w-4 h-4" />, color: "text-amber-400", bg: "bg-amber-400/10" },
-  { href: "/trends", label: "My Stats", icon: <TrendsIcon className="w-4 h-4" />, color: "text-fab-gold", bg: "bg-fab-gold/10", authOnly: true },
-  { href: "/matches", label: "Matches", icon: <SwordsIcon className="w-4 h-4" />, color: "text-red-400", bg: "bg-red-400/10" },
+  { href: "/community", label: "Community", icon: <Users className="w-4 h-4" />, color: "text-indigo-400", bg: "bg-indigo-400/10" },
   { href: "/meta", label: "Meta", icon: <Globe className="w-4 h-4" />, color: "text-teal-400", bg: "bg-teal-400/10" },
+  { href: "/leaderboard", label: "Rankings", icon: <TrophyIcon className="w-4 h-4" />, color: "text-amber-400", bg: "bg-amber-400/10" },
 ];
 
 const moreLinks: { href: string; label: string; icon: ReactNode; authOnly?: boolean; adminOnly?: boolean; badge?: string; divider?: boolean; sectionLabel?: string }[] = [
+  { divider: true, sectionLabel: "Your Stats", href: "", label: "", icon: null },
+  { href: "/matches", label: "Matches", icon: <SwordsIcon className="w-4 h-4" /> },
+  { href: "/trends", label: "My Stats", icon: <TrendsIcon className="w-4 h-4" />, authOnly: true },
+  { href: "/tools", label: "Player Tools", badge: "Beta", icon: <Wrench className="w-4 h-4" />, authOnly: true },
+  { divider: true, sectionLabel: "Explore", href: "", label: "", icon: null },
   { href: "/compare", label: "Versus", icon: <Zap className="w-4 h-4" /> },
   { href: "/tier-list", label: "Tier List", badge: "New", icon: <AlignLeft className="w-4 h-4" /> },
   { href: "/tournaments", label: "Tournaments", icon: <CalendarIcon className="w-4 h-4" /> },
-  { href: "/community", label: "Community", icon: <Users className="w-4 h-4" /> },
-  { href: "/tools", label: "Player Tools", badge: "Beta", icon: <Wrench className="w-4 h-4" />, authOnly: true },
-  { href: "/goals", label: "Goals", icon: <Target className="w-4 h-4" />, authOnly: true },
-  { href: "/share-stats", label: "Stats Package", icon: <BarChart3 className="w-4 h-4" />, authOnly: true },
   { href: "/games", label: "Games", badge: String(GAMES.length), icon: <Puzzle className="w-4 h-4" /> },
   { divider: true, sectionLabel: "Resources", href: "", label: "", icon: null },
   { href: "/roadmap", label: "Roadmap", icon: <ClipboardCheck className="w-4 h-4" /> },
@@ -116,10 +114,7 @@ export function Navbar() {
               <>
                 {/* Main nav links — hidden on mobile */}
                 <div className="hidden md:flex items-center gap-0.5">
-                  {navLinks.filter((link) => !link.authOnly || isAuthenticated).map((link) =>
-                    link.href === "/matches" ? (
-                      <MatchesDropdown key={link.href} link={link} pathname={pathname} />
-                    ) : (
+                  {navLinks.filter((link) => !link.authOnly || isAuthenticated).map((link) => (
                       <Link
                         key={link.href}
                         href={link.href}
@@ -132,9 +127,7 @@ export function Navbar() {
                         {link.icon}
                         <span className="hidden xl:inline">{link.label}</span>
                       </Link>
-                    )
-                  )}
-                  <NavbarSearch />
+                  ))}
                   {isAuthenticated && (
                     <Link
                       href="/import"
@@ -203,253 +196,6 @@ export function Navbar() {
         </div>
       </div>
     </nav>
-  );
-}
-
-interface SearchResult {
-  username: string;
-  profile: UserProfile | null;
-}
-
-const matchesSubLinks = [
-  { href: "/events", label: "Events", icon: <CalendarIcon className="w-4 h-4" /> },
-  { href: "/opponents", label: "Opponents", icon: <Users className="w-4 h-4" /> },
-];
-
-function MatchesDropdown({ link, pathname }: { link: typeof navLinks[number]; pathname: string }) {
-  const [open, setOpen] = useState(false);
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const isActive = pathname === "/matches" || pathname === "/events" || pathname === "/opponents";
-
-  function enter() {
-    if (timerRef.current) clearTimeout(timerRef.current);
-    setOpen(true);
-  }
-  function leave() {
-    timerRef.current = setTimeout(() => setOpen(false), 150);
-  }
-
-  useEffect(() => {
-    setOpen(false);
-  }, [pathname]);
-
-  useEffect(() => {
-    return () => { if (timerRef.current) clearTimeout(timerRef.current); };
-  }, []);
-
-  return (
-    <div className="relative" onMouseEnter={enter} onMouseLeave={leave}>
-      <Link
-        href={link.href}
-        className={`flex items-center gap-1.5 px-2.5 py-2 rounded-md text-sm font-medium transition-colors ${
-          isActive
-            ? `${link.color} ${link.bg}`
-            : "text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover"
-        }`}
-      >
-        {link.icon}
-        <span className="hidden xl:inline">{link.label}</span>
-        <ChevronDown className={`w-3 h-3 transition-transform ${open ? "rotate-180" : ""}`} />
-      </Link>
-      {open && (
-        <div className="absolute top-full left-0 mt-1 w-40 bg-fab-surface border border-fab-border rounded-lg shadow-xl py-1 z-50">
-          {matchesSubLinks.map((sub) => (
-            <Link
-              key={sub.href}
-              href={sub.href}
-              className={`flex items-center gap-2 px-3 py-2 text-sm transition-colors ${
-                pathname === sub.href
-                  ? "text-red-400 bg-red-400/10"
-                  : "text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover"
-              }`}
-            >
-              {sub.icon}
-              {sub.label}
-            </Link>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function NavbarSearch() {
-  const router = useRouter();
-  const [open, setOpen] = useState(false);
-  const [query, setQuery] = useState("");
-  const [results, setResults] = useState<SearchResult[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [highlighted, setHighlighted] = useState(-1);
-  const ref = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const { user, isAdmin } = useAuth();
-
-  // Click outside to close
-  useEffect(() => {
-    function handleClick(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    }
-    if (open) document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, [open]);
-
-  // Focus input when opened
-  useEffect(() => {
-    if (open) inputRef.current?.focus();
-  }, [open]);
-
-  // Debounced search
-  useEffect(() => {
-    if (!query.trim()) {
-      setResults([]);
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    setHighlighted(-1);
-    const timer = setTimeout(async () => {
-      try {
-        const usernames = await searchUsernames(query.trim(), 5);
-        const withProfiles = await Promise.all(
-          usernames.map(async (u) => ({
-            username: u.username,
-            profile: await getProfile(u.userId),
-          }))
-        );
-        const filtered = withProfiles.filter((r) => {
-          if (!r.profile?.isPublic && !isAdmin) return false;
-          if (r.profile?.hideFromGuests && !user && !isAdmin) return false;
-          return true;
-        });
-        setResults(filtered.slice(0, 5));
-      } catch {
-        setResults([]);
-      }
-      setLoading(false);
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [query, user, isAdmin]);
-
-  const handleOpen = useCallback(() => {
-    setOpen(true);
-    setQuery("");
-    setResults([]);
-    setHighlighted(-1);
-  }, []);
-
-  const handleClose = useCallback(() => {
-    setOpen(false);
-    setQuery("");
-    setResults([]);
-  }, []);
-
-  const navigateTo = useCallback((href: string) => {
-    handleClose();
-    router.push(href);
-  }, [handleClose, router]);
-
-  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === "Escape") {
-      handleClose();
-      return;
-    }
-    if (e.key === "ArrowDown") {
-      e.preventDefault();
-      setHighlighted((h) => Math.min(h + 1, results.length - 1));
-      return;
-    }
-    if (e.key === "ArrowUp") {
-      e.preventDefault();
-      setHighlighted((h) => Math.max(h - 1, -1));
-      return;
-    }
-    if (e.key === "Enter") {
-      e.preventDefault();
-      if (highlighted >= 0 && highlighted < results.length) {
-        navigateTo(playerHref(results[highlighted].username));
-      } else if (query.trim()) {
-        navigateTo(`/search?q=${encodeURIComponent(query.trim())}`);
-      }
-    }
-  }, [handleClose, highlighted, results, query, navigateTo]);
-
-  if (!open) {
-    return (
-      <button
-        onClick={handleOpen}
-        className="flex items-center gap-1.5 px-2.5 py-2 rounded-md text-sm font-medium transition-colors text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover"
-        title="Search players"
-      >
-        <Search className="w-4 h-4" />
-        <span className="hidden xl:inline">Search</span>
-      </button>
-    );
-  }
-
-  return (
-    <div className="relative" ref={ref}>
-      <div className="flex items-center gap-1.5 bg-fab-bg border border-fab-gold/40 rounded-lg px-2.5 py-1.5">
-        <Search className="w-4 h-4 text-fab-gold shrink-0" />
-        <input
-          ref={inputRef}
-          type="text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder="Search players..."
-          className="bg-transparent text-sm text-fab-text placeholder:text-fab-dim outline-none w-40 xl:w-52"
-        />
-        {loading && (
-          <Loader2 className="w-3.5 h-3.5 text-fab-dim animate-spin shrink-0" />
-        )}
-        <button onClick={handleClose} className="text-fab-dim hover:text-fab-text transition-colors shrink-0">
-          <X className="w-3.5 h-3.5" />
-        </button>
-      </div>
-
-      {/* Dropdown */}
-      {query.trim() && (
-        <div className="absolute top-full left-0 mt-1.5 w-72 bg-fab-surface border border-fab-border rounded-lg shadow-xl overflow-hidden z-50">
-          {!loading && results.length === 0 && (
-            <div className="px-4 py-3 text-sm text-fab-muted">No players found</div>
-          )}
-          {results.map((r, i) => (
-            <button
-              key={r.username}
-              onMouseDown={() => navigateTo(playerHref(r.username))}
-              onMouseEnter={() => setHighlighted(i)}
-              className={`flex items-center gap-3 w-full px-3 py-2.5 text-left transition-colors ${
-                highlighted === i ? "bg-fab-surface-hover" : ""
-              }`}
-            >
-              {r.profile?.photoUrl ? (
-                <img src={r.profile.photoUrl} alt="Player photo" className="w-8 h-8 rounded-full object-cover shrink-0" />
-              ) : (
-                <div className="w-8 h-8 rounded-full bg-fab-gold/20 flex items-center justify-center text-fab-gold text-xs font-bold shrink-0">
-                  {(r.profile?.displayName || r.username).charAt(0).toUpperCase()}
-                </div>
-              )}
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium text-fab-text truncate">{r.profile?.displayName || r.username}</p>
-                <p className="text-xs text-fab-dim truncate">@{r.username}</p>
-              </div>
-            </button>
-          ))}
-          {query.trim() && (
-            <button
-              onMouseDown={() => navigateTo(`/search?q=${encodeURIComponent(query.trim())}`)}
-              className="flex items-center gap-2 w-full px-3 py-2.5 border-t border-fab-border text-left hover:bg-fab-surface-hover transition-colors"
-            >
-              <Search className="w-3.5 h-3.5 text-fab-dim" />
-              <span className="text-xs text-fab-muted">Search all for &quot;{query.trim()}&quot;</span>
-              <ArrowRight className="w-3 h-3 text-fab-dim ml-auto" />
-            </button>
-          )}
-        </div>
-      )}
-    </div>
   );
 }
 
