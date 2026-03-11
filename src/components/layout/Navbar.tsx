@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { SwordsIcon, TrendsIcon, ImportIcon, CalendarIcon, TrophyIcon } from "@/components/icons/NavIcons";
@@ -410,13 +410,20 @@ function MoreDropdown({
     });
   }, []);
 
-  // Split moreLinks into main links (before first divider) and sections
-  const mainLinks = moreLinks.filter((l) => !l.divider && !l.sectionLabel && moreLinks.indexOf(l) < moreLinks.findIndex((x) => x.divider));
-  const visibleMainLinks = mainLinks.filter((l) => (!l.authOnly || isAuthenticated) && (!l.adminOnly || isAdmin));
-
-  // Extract Resources links
-  const resourcesStart = moreLinks.findIndex((l) => l.sectionLabel === "Resources");
-  const resourcesLinks = moreLinks.slice(resourcesStart + 1);
+  // Parse moreLinks into sections by divider markers
+  const sections = useMemo(() => {
+    const result: { label: string; links: typeof moreLinks }[] = [];
+    let current: { label: string; links: typeof moreLinks } | null = null;
+    for (const item of moreLinks) {
+      if (item.divider) {
+        current = { label: item.sectionLabel || "", links: [] };
+        result.push(current);
+      } else if (current) {
+        current.links.push(item);
+      }
+    }
+    return result;
+  }, []);
 
   const linkClass = (href: string) =>
     `flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
@@ -442,32 +449,36 @@ function MoreDropdown({
 
       {open && (
         <div className="absolute top-full right-0 mt-1 w-64 bg-fab-surface border border-fab-border rounded-lg shadow-xl overflow-hidden z-50 max-h-[calc(100vh-4rem)] overflow-y-auto">
-          {/* Main links — always visible */}
-          <div className="p-1.5">
-            {visibleMainLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                onClick={() => setOpen(false)}
-                className={linkClass(link.href)}
-              >
-                {link.icon}
-                {link.label}
-                {link.badge && <span className="text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-teal-400/15 text-teal-400 border border-teal-400/25 ml-auto">{link.badge}</span>}
-              </Link>
-            ))}
-          </div>
-
-          {/* Resources — collapsible */}
-          <CollapsibleSection label="Resources" expanded={expanded.has("resources")} onToggle={() => toggle("resources")}>
-            {resourcesLinks.map((link) => (
-              <Link key={link.href} href={link.href} onClick={() => setOpen(false)} className={linkClass(link.href)}>
-                {link.icon}
-                {link.label}
-                {link.badge && <span className="text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-teal-400/15 text-teal-400 border border-teal-400/25 ml-auto">{link.badge}</span>}
-              </Link>
-            ))}
-          </CollapsibleSection>
+          {/* Sections */}
+          {sections.map((section, sIdx) => {
+            const visible = section.links.filter((l) => (!l.authOnly || isAuthenticated) && (!l.adminOnly || isAdmin));
+            if (visible.length === 0) return null;
+            // First section renders flat, rest are collapsible
+            if (sIdx === 0) {
+              return (
+                <div key={section.label} className="p-1.5">
+                  {visible.map((link) => (
+                    <Link key={link.href} href={link.href} onClick={() => setOpen(false)} className={linkClass(link.href)}>
+                      {link.icon}
+                      {link.label}
+                      {link.badge && <span className="text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-teal-400/15 text-teal-400 border border-teal-400/25 ml-auto">{link.badge}</span>}
+                    </Link>
+                  ))}
+                </div>
+              );
+            }
+            return (
+              <CollapsibleSection key={section.label} label={section.label} expanded={expanded.has(section.label.toLowerCase())} onToggle={() => toggle(section.label.toLowerCase())}>
+                {visible.map((link) => (
+                  <Link key={link.href} href={link.href} onClick={() => setOpen(false)} className={linkClass(link.href)}>
+                    {link.icon}
+                    {link.label}
+                    {link.badge && <span className="text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-teal-400/15 text-teal-400 border border-teal-400/25 ml-auto">{link.badge}</span>}
+                  </Link>
+                ))}
+              </CollapsibleSection>
+            );
+          })}
 
           {/* Featured Creators — collapsible */}
           {creators.length > 0 && (
