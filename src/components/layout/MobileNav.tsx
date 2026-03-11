@@ -55,6 +55,7 @@ const moreSections: { title: string; links: MoreLink[] }[] = [
   {
     title: "Social",
     links: [
+      { href: "/community", label: "Community", icon: <Users className="w-5 h-5" /> },
       { href: "/friends", label: "Friends", icon: <Users className="w-5 h-5" />, authOnly: true },
       { href: "/inbox", label: "Inbox", icon: <MessageCircle className="w-5 h-5" />, authOnly: true },
       { href: "/notifications", label: "Notifications", icon: <Bell className="w-5 h-5" />, authOnly: true },

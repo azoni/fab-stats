@@ -32,6 +32,7 @@ const moreLinks: { href: string; label: string; icon: ReactNode; authOnly?: bool
   { href: "/compare", label: "Versus", icon: <Zap className="w-4 h-4" /> },
   { href: "/tier-list", label: "Tier List", badge: "New", icon: <AlignLeft className="w-4 h-4" /> },
   { href: "/tournaments", label: "Tournaments", icon: <CalendarIcon className="w-4 h-4" /> },
+  { href: "/community", label: "Community", icon: <Users className="w-4 h-4" /> },
   { href: "/tools", label: "Player Tools", badge: "Beta", icon: <Wrench className="w-4 h-4" />, authOnly: true },
   { href: "/goals", label: "Goals", icon: <Target className="w-4 h-4" />, authOnly: true },
   { href: "/share-stats", label: "Stats Package", icon: <BarChart3 className="w-4 h-4" />, authOnly: true },
