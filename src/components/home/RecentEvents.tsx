@@ -62,7 +62,7 @@ export function RecentEvents({ eventStats, playerName }: { eventStats: EventStat
     <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden relative">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-2.5 border-b border-fab-border/50">
-        <p className="text-xs font-medium text-fab-muted">Recent Events</p>
+        <p className="text-sm font-semibold text-fab-text">Recent Events</p>
         <Link href="/events" className="text-xs font-semibold text-fab-gold border border-fab-gold/30 hover:bg-fab-gold/10 hover:border-fab-gold/50 px-2.5 py-1 rounded-md transition-colors">
           View all events &rarr;
         </Link>

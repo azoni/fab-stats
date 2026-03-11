@@ -14,7 +14,7 @@ interface DashboardFiltersProps {
   onRatedChange: (v: string) => void;
 }
 
-const selectClass = "bg-fab-surface border border-fab-border rounded-md px-2.5 py-1.5 text-[11px] text-fab-text outline-none focus:border-fab-gold/40 transition-colors min-w-0";
+const selectClass = "bg-fab-surface border border-fab-border rounded-md px-3 py-2 text-sm text-fab-text outline-none focus:border-fab-gold/40 transition-colors min-w-0";
 
 export function DashboardFilters({
   formats,

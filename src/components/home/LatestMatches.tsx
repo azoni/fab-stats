@@ -40,14 +40,14 @@ export function LatestMatches({ matches }: LatestMatchesProps) {
   return (
     <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden">
       <div className="flex items-center justify-between px-4 py-2.5 border-b border-fab-border/50">
-        <p className="text-xs font-medium text-fab-muted">Latest Matches</p>
+        <p className="text-sm font-semibold text-fab-text">Latest Matches</p>
         <Link href="/matches" className="text-xs font-semibold text-fab-gold border border-fab-gold/30 hover:bg-fab-gold/10 hover:border-fab-gold/50 px-2.5 py-1 rounded-md transition-colors">
           View all matches &rarr;
         </Link>
       </div>
       <div className="divide-y divide-fab-border/30">
         {latest.map((m, i) => (
-          <div key={m.id || i} className="flex items-center gap-3 px-4 py-2.5 text-sm">
+          <Link key={m.id || i} href="/matches" className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-fab-bg/50 transition-colors">
             {/* Result */}
             <span className={`w-6 h-6 rounded-md flex items-center justify-center text-[10px] font-bold shrink-0 ${resultStyle[m.result] || resultStyle[MatchResult.Draw]}`}>
               {resultLabel[m.result] || "?"}
@@ -71,7 +71,7 @@ export function LatestMatches({ matches }: LatestMatchesProps) {
             <span className="text-[10px] text-fab-dim shrink-0 tabular-nums">
               {formatDate(m.date)}
             </span>
-          </div>
+          </Link>
         ))}
       </div>
     </div>

@@ -526,6 +526,7 @@ export default function AdminPage() {
                 <MetricCard label="Active Players" value={activePlayers} subtext={`${data.totalUsers - activePlayers} with 0 matches`} />
                 <MetricCard label="Public" value={publicUsers} subtext={`${privateUsers} private`} />
                 <MetricCard label="Total Matches" value={data.totalMatches} subtext={`${avgMatches} avg per player`} />
+                <MetricCard label="New (24h)" value={data.newUsersToday} />
                 <MetricCard label="New (7d)" value={data.newUsersThisWeek} />
                 <MetricCard label="New (30d)" value={data.newUsersThisMonth} />
                 <MetricCard label="Avg Win Rate" value={(() => {

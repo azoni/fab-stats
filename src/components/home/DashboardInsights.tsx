@@ -55,14 +55,14 @@ export function DashboardInsights({ heroStats, opponentStats }: DashboardInsight
       {hasHeroes && (
         <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden">
           <div className="flex items-center justify-between px-4 py-2.5 border-b border-fab-border/50">
-            <p className="text-xs font-medium text-fab-muted">Top Heroes</p>
+            <p className="text-sm font-semibold text-fab-text">Top Heroes</p>
             <Link href="/trends" className="text-xs font-semibold text-fab-gold border border-fab-gold/30 hover:bg-fab-gold/10 hover:border-fab-gold/50 px-2.5 py-1 rounded-md transition-colors">
               Full stats &rarr;
             </Link>
           </div>
           <div className="p-3 space-y-2.5">
             {topHeroes.map((hero) => (
-              <div key={hero.heroName} className="flex items-center gap-3">
+              <Link key={hero.heroName} href="/trends" className="flex items-center gap-3 hover:bg-fab-bg/50 rounded-md px-1 -mx-1 py-0.5 transition-colors">
                 <span className="text-sm font-medium text-fab-text truncate min-w-0 flex-1">
                   {hero.heroName}
                 </span>
@@ -78,7 +78,7 @@ export function DashboardInsights({ heroStats, opponentStats }: DashboardInsight
                 <span className={`text-xs font-bold tabular-nums shrink-0 w-10 text-right ${hero.winRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>
                   {hero.winRate.toFixed(0)}%
                 </span>
-              </div>
+              </Link>
             ))}
           </div>
         </div>
@@ -88,7 +88,7 @@ export function DashboardInsights({ heroStats, opponentStats }: DashboardInsight
       {hasRivalries && highlights && (
         <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden">
           <div className="flex items-center justify-between px-4 py-2.5 border-b border-fab-border/50">
-            <p className="text-xs font-medium text-fab-muted">Rivalries</p>
+            <p className="text-sm font-semibold text-fab-text">Rivalries</p>
             <Link href="/opponents" className="text-xs font-semibold text-fab-gold border border-fab-gold/30 hover:bg-fab-gold/10 hover:border-fab-gold/50 px-2.5 py-1 rounded-md transition-colors">
               All opponents &rarr;
             </Link>
@@ -132,7 +132,7 @@ function RivalryRow({
   opponent: OpponentStats;
 }) {
   return (
-    <div className="flex items-center gap-2.5 py-1">
+    <Link href={`/opponents?q=${encodeURIComponent(opponent.opponentName)}`} className="flex items-center gap-2.5 py-1 hover:bg-fab-bg/50 rounded-md px-1 -mx-1 transition-colors">
       <span className={`text-[9px] uppercase tracking-wider font-bold shrink-0 w-12 ${labelColor}`}>
         {label}
       </span>
@@ -145,6 +145,6 @@ function RivalryRow({
       <span className={`text-xs font-bold tabular-nums shrink-0 ${opponent.winRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>
         {opponent.winRate.toFixed(0)}%
       </span>
-    </div>
+    </Link>
   );
 }

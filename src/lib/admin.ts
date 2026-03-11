@@ -54,6 +54,7 @@ export interface AdminUserStats {
 export interface AdminDashboardData {
   totalUsers: number;
   totalMatches: number;
+  newUsersToday: number;
   newUsersThisWeek: number;
   newUsersThisMonth: number;
   users: AdminUserStats[];
@@ -194,9 +195,13 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
 
   // Step 4: Compute time-based stats
   const now = Date.now();
+  const dayAgo = now - 24 * 60 * 60 * 1000;
   const weekAgo = now - 7 * 24 * 60 * 60 * 1000;
   const monthAgo = now - 30 * 24 * 60 * 60 * 1000;
 
+  const newUsersToday = users.filter(
+    (u) => new Date(u.createdAt).getTime() >= dayAgo
+  ).length;
   const newUsersThisWeek = users.filter(
     (u) => new Date(u.createdAt).getTime() >= weekAgo
   ).length;
@@ -207,6 +212,7 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
   const result = {
     totalUsers: users.length,
     totalMatches,
+    newUsersToday,
     newUsersThisWeek,
     newUsersThisMonth,
     users,
