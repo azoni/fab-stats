@@ -41,7 +41,7 @@ export function LatestMatches({ matches }: LatestMatchesProps) {
     <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden">
       <div className="flex items-center justify-between px-4 py-2.5 border-b border-fab-border/50">
         <p className="text-xs font-medium text-fab-muted">Latest Matches</p>
-        <Link href="/matches" className="text-xs font-semibold text-fab-gold hover:bg-fab-gold/10 px-2 py-0.5 rounded-md transition-colors">
+        <Link href="/matches" className="text-xs font-semibold text-fab-gold border border-fab-gold/30 hover:bg-fab-gold/10 hover:border-fab-gold/50 px-2.5 py-1 rounded-md transition-colors">
           View all &rarr;
         </Link>
       </div>

@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useMatches } from "@/hooks/useMatches";
 import { useLeaderboard } from "@/hooks/useLeaderboard";
 import { useAuth } from "@/contexts/AuthContext";
@@ -60,8 +61,12 @@ const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
   },
 ];
 
+const VALID_TABS = new Set<Tab>(["matrix", "notes", "prep", "scout", "cheatsheet"]);
+
 export default function ToolsPage() {
-  const [activeTab, setActiveTab] = useState<Tab>("matrix");
+  const searchParams = useSearchParams();
+  const initialTab = searchParams.get("tab") as Tab | null;
+  const [activeTab, setActiveTab] = useState<Tab>(initialTab && VALID_TABS.has(initialTab) ? initialTab : "matrix");
   const { matches, isLoaded } = useMatches();
   const { entries, loading: lbLoading } = useLeaderboard(true);
   const { user, isGuest } = useAuth();
