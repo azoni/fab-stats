@@ -542,7 +542,7 @@ function MoreDropdown({
             </a>
           </CollapsibleSection>
 
-          {/* Discord — always visible at bottom */}
+          {/* Social — always visible at bottom */}
           <div className="border-t border-fab-border">
             <a
               href="https://discord.gg/knDmm9s7"
@@ -557,6 +557,24 @@ function MoreDropdown({
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium text-fab-text group-hover:text-fab-gold transition-colors">Join the Discord</p>
                 <p className="text-xs text-fab-dim">Community server &middot; <Link href="/docs#discord-bot" className="text-fab-gold/70 hover:text-fab-gold">Add Bot</Link></p>
+              </div>
+              <svg className="w-3.5 h-3.5 text-fab-dim shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+              </svg>
+            </a>
+            <a
+              href="https://x.com/FabStats"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-3 px-4 py-2.5 hover:bg-fab-surface-hover transition-colors group"
+              onClick={() => setOpen(false)}
+            >
+              <svg className="w-4 h-4 text-fab-dim shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+              </svg>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium text-fab-text group-hover:text-fab-gold transition-colors">Follow on X</p>
+                <p className="text-xs text-fab-dim">@FabStats</p>
               </div>
               <svg className="w-3.5 h-3.5 text-fab-dim shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
