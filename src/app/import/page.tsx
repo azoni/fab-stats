@@ -554,97 +554,50 @@ export default function ImportPage() {
             {method === "extension" && (
               <div className="border-t border-fab-border px-4 pb-4 pt-3" onClick={(e) => e.stopPropagation()}>
                 <div className="space-y-4">
-                  <div className="flex items-center gap-3 flex-wrap">
-                    <a
-                      href="/fab-stats-extension.zip"
-                      download
-                      className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-fab-gold text-fab-bg font-semibold hover:bg-fab-gold-light transition-colors text-sm"
-                    >
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                      </svg>
-                      Download Extension
-                    </a>
-                    <span className="text-xs text-fab-dim">~5 KB zip file</span>
-                  </div>
+                  <a
+                    href="https://chromewebstore.google.com/detail/fab-stats-gem-exporter/kcaaaibikofempdbphoeeljdbjakhmjh"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-fab-gold text-fab-bg font-semibold hover:bg-fab-gold-light transition-colors text-sm"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                    </svg>
+                    Add to Chrome
+                  </a>
+                  <p className="text-xs text-fab-muted">
+                    Install from the Chrome Web Store. Also works on Edge, Brave, and Arc.
+                  </p>
 
-                  <div className="bg-fab-bg rounded-lg p-4">
-                    <h4 className="text-sm font-semibold text-fab-text mb-3">Setup for Chrome / Edge / Brave / Arc (one time only):</h4>
-                    <ol className="text-sm text-fab-muted space-y-2.5 list-decimal list-inside">
-                      <li>Download and <strong className="text-fab-text">unzip</strong> the file above</li>
-                      <li>
-                        In your browser, type{" "}
-                        <code className="px-1.5 py-0.5 rounded bg-fab-surface text-fab-gold text-xs font-mono select-all">chrome://extensions</code>{" "}
-                        in the address bar and press Enter
-                      </li>
-                      <li>Turn on <strong className="text-fab-text">Developer mode</strong> (top-right toggle)</li>
-                      <li>
-                        Click{" "}
-                        <strong className="text-fab-text">&quot;Load unpacked&quot;</strong>{" "}
-                        and select the unzipped folder
-                      </li>
-                    </ol>
-                  </div>
-
-                  {/* Other browsers collapsible */}
+                  {/* Firefox fallback */}
                   <button
                     onClick={() => setShowOtherBrowsers(!showOtherBrowsers)}
                     className="w-full flex items-center justify-between bg-fab-bg rounded-lg p-4 text-left hover:bg-fab-bg/80 transition-colors"
                   >
-                    <span className="text-sm font-semibold text-fab-text">Using Firefox or mobile?</span>
+                    <span className="text-sm font-semibold text-fab-text">Using Firefox?</span>
                     <svg className={`w-4 h-4 text-fab-dim transition-transform ${showOtherBrowsers ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
                     </svg>
                   </button>
                   {showOtherBrowsers && (
-                    <div className="space-y-3">
-                      <div className="bg-fab-bg rounded-lg p-4">
-                        <h4 className="text-sm font-semibold text-fab-text mb-3">Firefox (Desktop)</h4>
-                        <ol className="text-sm text-fab-muted space-y-2.5 list-decimal list-inside">
-                          <li>Download and <strong className="text-fab-text">unzip</strong> the file above</li>
-                          <li>
-                            Type{" "}
-                            <code className="px-1.5 py-0.5 rounded bg-fab-surface text-fab-gold text-xs font-mono select-all">about:debugging#/runtime/this-firefox</code>{" "}
-                            in the address bar
-                          </li>
-                          <li>
-                            Click{" "}
-                            <strong className="text-fab-text">&quot;Load Temporary Add-on&quot;</strong>{" "}
-                            and select <strong className="text-fab-text">manifest.json</strong> from the unzipped folder
-                          </li>
-                        </ol>
-                        <p className="text-xs text-fab-dim mt-2">Temporary add-ons reset when Firefox restarts — you&apos;ll need to reload each session.</p>
-                      </div>
-                      <div className="bg-fab-bg rounded-lg p-4">
-                        <h4 className="text-sm font-semibold text-fab-text mb-3">Firefox (Android)</h4>
-                        <ol className="text-sm text-fab-muted space-y-2.5 list-decimal list-inside">
-                          <li>
-                            Open Firefox on your phone and go to{" "}
-                            <strong className="text-fab-text">Settings → Add-ons</strong>
-                          </li>
-                          <li>
-                            Tap the gear icon and enable{" "}
-                            <strong className="text-fab-text">&quot;Custom Add-on Collection&quot;</strong>
-                          </li>
-                          <li>
-                            Follow{" "}
-                            <a href="https://support.mozilla.org/en-US/kb/find-and-install-add-ons-firefox-android" target="_blank" rel="noopener noreferrer" className="text-fab-gold hover:underline">
-                              Mozilla&apos;s guide
-                            </a>{" "}
-                            to sideload extensions on Android
-                          </li>
-                        </ol>
-                        <p className="text-xs text-fab-dim mt-2">Firefox is the only mobile browser that supports extensions.</p>
-                      </div>
-                      <div className="bg-fab-bg rounded-lg p-4">
-                        <p className="text-sm text-fab-muted">
-                          <strong className="text-fab-text">Other mobile browsers</strong> (Chrome, Safari, Edge) don&apos;t support extensions. Use the{" "}
-                          <button onClick={() => { setMethod("paste"); setShowOtherBrowsers(false); }} className="text-fab-gold hover:underline font-semibold">
-                            Copy &amp; Paste
-                          </button>{" "}
-                          method instead — open GEM in your phone&apos;s browser, select all the text, and paste it here.
-                        </p>
-                      </div>
+                    <div className="bg-fab-bg rounded-lg p-4 space-y-3">
+                      <ol className="text-sm text-fab-muted space-y-2.5 list-decimal list-inside">
+                        <li>
+                          <a href="/fab-stats-extension.zip" download className="text-fab-gold hover:underline font-semibold">Download the extension zip</a>{" "}
+                          and <strong className="text-fab-text">unzip</strong> it
+                        </li>
+                        <li>
+                          Type{" "}
+                          <code className="px-1.5 py-0.5 rounded bg-fab-surface text-fab-gold text-xs font-mono select-all">about:debugging#/runtime/this-firefox</code>{" "}
+                          in the address bar
+                        </li>
+                        <li>
+                          Click{" "}
+                          <strong className="text-fab-text">&quot;Load Temporary Add-on&quot;</strong>{" "}
+                          and select <strong className="text-fab-text">manifest.json</strong> from the unzipped folder
+                        </li>
+                      </ol>
+                      <p className="text-xs text-fab-dim">Temporary add-ons reset when Firefox restarts — you&apos;ll need to reload each session.</p>
                     </div>
                   )}
 

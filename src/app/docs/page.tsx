@@ -424,7 +424,9 @@ export default function DocsPage() {
               It automatically detects heroes played in each event using the card data on the page.
             </p>
             <div className="space-y-1.5 text-sm text-fab-muted">
-              <p>1. Install the extension from your browser</p>
+              <p>1. Install from the{" "}
+                <a href="https://chromewebstore.google.com/detail/fab-stats-gem-exporter/kcaaaibikofempdbphoeeljdbjakhmjh" target="_blank" rel="noopener noreferrer" className="text-fab-gold hover:underline">Chrome Web Store</a>
+              </p>
               <p>2. Go to your GEM match history at gem.fabtcg.com</p>
               <p>3. Click the &quot;Export to FaB Stats&quot; button that appears</p>
               <p>4. Your matches are copied to clipboard — paste them on the Import page</p>
