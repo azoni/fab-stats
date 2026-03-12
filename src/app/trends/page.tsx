@@ -1,5 +1,5 @@
 "use client";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { useMatches } from "@/hooks/useMatches";
 import { useAuth } from "@/contexts/AuthContext";
@@ -34,6 +34,7 @@ import {
 } from "recharts";
 import { localDate } from "@/lib/constants";
 import { TrendsIcon } from "@/components/icons/NavIcons";
+import { TrendsShareModal } from "@/components/trends/TrendsShareCard";
 
 const COLORS = {
   gold: "#c9a84c",
@@ -96,9 +97,10 @@ const tooltipStyle = {
 
 export default function TrendsPage() {
   const { matches, isLoaded } = useMatches();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [granularity, setGranularity] = useState<"weekly" | "monthly">("weekly");
   const [windowSize, setWindowSize] = useState(10);
+  const [showShare, setShowShare] = useState(false);
 
   // Filter state
   const [filterFormat, setFilterFormat] = useState("all");
@@ -114,20 +116,34 @@ export default function TrendsPage() {
     return next;
   });
 
-  // Available filter options
+  // Cross-filtered options: each filter's options derived from matches filtered by OTHER active filters
   const allFormats = useMemo(() => {
-    const set = new Set(matches.map((m) => m.format));
-    return Array.from(set).sort();
-  }, [matches]);
+    let pool = matches;
+    if (filterEventType !== "all") pool = pool.filter((m) => getEventType(m) === filterEventType);
+    if (filterHero !== "all") pool = pool.filter((m) => m.heroPlayed === filterHero);
+    return [...new Set(pool.map((m) => m.format))].filter(Boolean).sort();
+  }, [matches, filterEventType, filterHero]);
 
   const allEventTypes = useMemo(() => {
-    const set = new Set(matches.map((m) => getEventType(m)).filter((t) => t !== "Other"));
-    return Array.from(set).sort();
-  }, [matches]);
+    let pool = matches;
+    if (filterFormat !== "all") pool = pool.filter((m) => m.format === filterFormat);
+    if (filterHero !== "all") pool = pool.filter((m) => m.heroPlayed === filterHero);
+    return [...new Set(pool.map((m) => getEventType(m)))].filter((t) => t !== "Other").sort();
+  }, [matches, filterFormat, filterHero]);
 
   const allHeroes = useMemo(() => {
-    return [...new Set(matches.map((m) => m.heroPlayed))].filter((h) => h && h !== "Unknown").sort();
-  }, [matches]);
+    let pool = matches;
+    if (filterFormat !== "all") pool = pool.filter((m) => m.format === filterFormat);
+    if (filterEventType !== "all") pool = pool.filter((m) => getEventType(m) === filterEventType);
+    return [...new Set(pool.map((m) => m.heroPlayed))].filter((h) => h && h !== "Unknown").sort();
+  }, [matches, filterFormat, filterEventType]);
+
+  // Auto-reset filters whose value is no longer available
+  useEffect(() => {
+    if (filterFormat !== "all" && !(allFormats as string[]).includes(filterFormat)) setFilterFormat("all");
+    if (filterEventType !== "all" && !allEventTypes.includes(filterEventType)) setFilterEventType("all");
+    if (filterHero !== "all" && !allHeroes.includes(filterHero)) setFilterHero("all");
+  }, [allFormats, allEventTypes, allHeroes, filterFormat, filterEventType, filterHero]);
 
   // Filtered matches
   const filteredMatches = useMemo(() => {
@@ -406,6 +422,134 @@ export default function TrendsPage() {
   // Tournament finishes
   const playoffFinishes = useMemo(() => computePlayoffFinishes(eventStats), [eventStats]);
 
+  // Recent vs All-time comparison
+  const recentVsAllTime = useMemo(() => {
+    if (matches.length < 10) return null;
+    const sorted = [...matches].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    const cutoff30 = new Date();
+    cutoff30.setDate(cutoff30.getDate() - 30);
+    const cutoffTime = cutoff30.getTime();
+    const recent30 = sorted.filter((m) => new Date(m.date).getTime() >= cutoffTime);
+    if (recent30.length < 3) return null;
+    const wr = (arr: typeof matches) => {
+      const w = arr.filter((m) => m.result === MatchResult.Win).length;
+      return arr.length > 0 ? Math.round((w / arr.length) * 100) : 0;
+    };
+    const allTimeWR = wr(matches);
+    const recentWR = wr(recent30);
+    return { recentCount: recent30.length, allTimeCount: matches.length, recentWR, allTimeWR, diff: recentWR - allTimeWR };
+  }, [matches]);
+
+  // Personal records
+  const personalRecords = useMemo(() => {
+    if (filteredMatches.length < 5) return null;
+    const sorted = [...filteredMatches].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+    // Most matches in a single day
+    const dayCounts = new Map<string, number>();
+    for (const m of sorted) {
+      const d = m.date.split("T")[0];
+      dayCounts.set(d, (dayCounts.get(d) ?? 0) + 1);
+    }
+    let busiestDay = { date: "", count: 0 };
+    for (const [date, count] of dayCounts) {
+      if (count > busiestDay.count) busiestDay = { date, count };
+    }
+
+    // Longest loss streak
+    const streaks = computeStreaks(sorted);
+
+    // Total unique opponents
+    const uniqueOpponents = new Set(filteredMatches.map((m) => m.opponentName).filter(Boolean)).size;
+
+    // Total events
+    const totalEvents = eventStats.length;
+
+    return {
+      longestWinStreak: streaks.longestWinStreak,
+      longestLossStreak: streaks.longestLossStreak,
+      busiestDay,
+      uniqueOpponents,
+      totalEvents,
+    };
+  }, [filteredMatches, eventStats]);
+
+  // Hero vs Opponent Hero heatmap data
+  const heatmapData = useMemo(() => {
+    const map = new Map<string, Map<string, { w: number; l: number; d: number }>>();
+    for (const m of filteredMatches) {
+      const hero = m.heroPlayed;
+      const opp = m.opponentHero;
+      if (!hero || hero === "Unknown" || !opp || opp === "Unknown") continue;
+      if (!map.has(hero)) map.set(hero, new Map());
+      const oppMap = map.get(hero)!;
+      const cur = oppMap.get(opp) ?? { w: 0, l: 0, d: 0 };
+      if (m.result === MatchResult.Win) cur.w++;
+      else if (m.result === MatchResult.Loss) cur.l++;
+      else cur.d++;
+      oppMap.set(opp, cur);
+    }
+
+    // Get heroes and opponents sorted by total matches
+    const heroTotals = new Map<string, number>();
+    const oppTotals = new Map<string, number>();
+    for (const [hero, oppMap] of map) {
+      for (const [opp, stats] of oppMap) {
+        const total = stats.w + stats.l + stats.d;
+        heroTotals.set(hero, (heroTotals.get(hero) ?? 0) + total);
+        oppTotals.set(opp, (oppTotals.get(opp) ?? 0) + total);
+      }
+    }
+
+    const heroes = [...heroTotals.entries()].sort((a, b) => b[1] - a[1]).map(([h]) => h).slice(0, 8);
+    const opponents = [...oppTotals.entries()].sort((a, b) => b[1] - a[1]).map(([o]) => o).slice(0, 10);
+
+    if (heroes.length === 0 || opponents.length === 0) return null;
+
+    const cells: { hero: string; opp: string; w: number; l: number; total: number; winRate: number }[] = [];
+    for (const hero of heroes) {
+      for (const opp of opponents) {
+        const stats = map.get(hero)?.get(opp);
+        if (stats) {
+          const total = stats.w + stats.l + stats.d;
+          cells.push({ hero, opp, w: stats.w, l: stats.l, total, winRate: total > 0 ? Math.round((stats.w / total) * 100) : 0 });
+        } else {
+          cells.push({ hero, opp, w: 0, l: 0, total: 0, winRate: 0 });
+        }
+      }
+    }
+
+    return { heroes, opponents, cells };
+  }, [filteredMatches]);
+
+  // Going first/second win rate per hero
+  const goingFirstPerHero = useMemo(() => {
+    const map = new Map<string, { firstW: number; firstT: number; secondW: number; secondT: number }>();
+    for (const m of filteredMatches) {
+      if (m.goingFirst === undefined || !m.heroPlayed || m.heroPlayed === "Unknown") continue;
+      const cur = map.get(m.heroPlayed) ?? { firstW: 0, firstT: 0, secondW: 0, secondT: 0 };
+      if (m.goingFirst) {
+        cur.firstT++;
+        if (m.result === MatchResult.Win) cur.firstW++;
+      } else {
+        cur.secondT++;
+        if (m.result === MatchResult.Win) cur.secondW++;
+      }
+      map.set(m.heroPlayed, cur);
+    }
+    return [...map.entries()]
+      .filter(([, s]) => s.firstT + s.secondT >= 5)
+      .map(([hero, s]) => ({
+        hero,
+        firstWR: s.firstT > 0 ? Math.round((s.firstW / s.firstT) * 100) : 0,
+        firstCount: s.firstT,
+        secondWR: s.secondT > 0 ? Math.round((s.secondW / s.secondT) * 100) : 0,
+        secondCount: s.secondT,
+        diff: (s.firstT > 0 ? Math.round((s.firstW / s.firstT) * 100) : 0) - (s.secondT > 0 ? Math.round((s.secondW / s.secondT) * 100) : 0),
+      }))
+      .sort((a, b) => (b.firstCount + b.secondCount) - (a.firstCount + a.secondCount));
+  }, [filteredMatches]);
+
   if (!isLoaded) {
     return <div className="h-8 w-48 bg-fab-surface rounded animate-pulse" />;
   }
@@ -445,17 +589,31 @@ export default function TrendsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-3">
-        <div className="w-8 h-8 rounded-lg bg-fab-gold/10 flex items-center justify-center ring-1 ring-inset ring-fab-gold/20">
-          <TrendsIcon className="w-4 h-4 text-fab-gold" />
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-fab-gold/10 flex items-center justify-center ring-1 ring-inset ring-fab-gold/20">
+            <TrendsIcon className="w-4 h-4 text-fab-gold" />
+          </div>
+          <div>
+            <h1 className="text-lg font-bold text-fab-text leading-tight">My Stats</h1>
+            <p className="text-xs text-fab-muted leading-tight">All your numbers in one place</p>
+          </div>
         </div>
-        <div>
-          <h1 className="text-lg font-bold text-fab-text leading-tight">My Stats</h1>
-          <p className="text-xs text-fab-muted leading-tight">All your numbers in one place</p>
-        </div>
+        {profile && matches.length >= 5 && (
+          <button
+            onClick={() => setShowShare(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-fab-gold/15 text-fab-gold text-xs font-medium rounded-lg hover:bg-fab-gold/25 transition-colors shrink-0"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0 0a2.25 2.25 0 103.935 2.186 2.25 2.25 0 00-3.935-2.186zm0-12.814a2.25 2.25 0 103.933-2.185 2.25 2.25 0 00-3.933 2.185z" />
+            </svg>
+            Share
+          </button>
+        )}
       </div>
 
-      {/* Filter Bar */}
+      {/* Filter Bar — sticky */}
+      <div className="sticky top-0 z-30 -mx-4 px-4 py-2 bg-fab-bg/95 backdrop-blur-sm border-b border-transparent [&:not(:first-child)]:border-fab-border/30">
       <div className="flex gap-2 flex-wrap items-center">
         <select
           value={filterFormat}
@@ -519,6 +677,30 @@ export default function TrendsPage() {
         )}
       </div>
 
+      {/* Section Quick Nav */}
+      <div className="flex gap-1.5 flex-wrap mt-2">
+        {[
+          ["stats", "Overview"],
+          ["rolling", "Win Rate"],
+          ["heroes", "Heroes"],
+          ["matchups", "Matchups"],
+          ["heatmap", "Heatmap"],
+          ["records", "Records"],
+          ["cumulative", "Cumulative"],
+          ["venue", "Venues"],
+          ["finishes", "Finishes"],
+        ].map(([id, label]) => (
+          <button
+            key={id}
+            onClick={() => document.getElementById(`section-${id}`)?.scrollIntoView({ behavior: "smooth", block: "start" })}
+            className="px-2 py-0.5 rounded text-[10px] font-medium text-fab-dim hover:text-fab-text hover:bg-fab-surface transition-colors"
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      </div>
+
       {filteredMatches.length < 2 && isFiltered ? (
         <div className="text-center py-12">
           <p className="text-fab-muted">Not enough matches for these filters.</p>
@@ -532,7 +714,7 @@ export default function TrendsPage() {
       ) : (
       <>
       {/* Stat Cards — Row 1 */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div id="section-stats" className="grid grid-cols-2 sm:grid-cols-4 gap-3 scroll-mt-24">
         <StatCard label="Total Matches" value={filteredMatches.length.toString()} />
         <StatCard
           label="Overall Win Rate"
@@ -573,6 +755,37 @@ export default function TrendsPage() {
           />
         )}
       </div>
+
+      {/* Recent vs All-time */}
+      {recentVsAllTime && (
+        <div className="bg-fab-surface border border-fab-border rounded-lg p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <h2 className="text-sm font-semibold text-fab-text">Recent Form vs All-Time</h2>
+            <span className="text-[10px] text-fab-dim bg-fab-bg px-1.5 py-0.5 rounded">Last 30 days</span>
+          </div>
+          <div className="grid grid-cols-3 gap-4 text-center">
+            <div>
+              <p className="text-xs text-fab-dim mb-1">Recent</p>
+              <p className={`text-2xl font-bold ${recentVsAllTime.recentWR >= 50 ? "text-fab-win" : "text-fab-loss"}`}>{recentVsAllTime.recentWR}%</p>
+              <p className="text-[10px] text-fab-dim mt-0.5">{recentVsAllTime.recentCount} matches</p>
+            </div>
+            <div>
+              <p className="text-xs text-fab-dim mb-1">All-Time</p>
+              <p className={`text-2xl font-bold ${recentVsAllTime.allTimeWR >= 50 ? "text-fab-win" : "text-fab-loss"}`}>{recentVsAllTime.allTimeWR}%</p>
+              <p className="text-[10px] text-fab-dim mt-0.5">{recentVsAllTime.allTimeCount} matches</p>
+            </div>
+            <div>
+              <p className="text-xs text-fab-dim mb-1">Trend</p>
+              <p className={`text-2xl font-bold ${recentVsAllTime.diff >= 0 ? "text-fab-win" : "text-fab-loss"}`}>
+                {recentVsAllTime.diff >= 0 ? "+" : ""}{recentVsAllTime.diff}%
+              </p>
+              <p className="text-[10px] text-fab-dim mt-0.5">
+                {recentVsAllTime.diff > 0 ? "Improving" : recentVsAllTime.diff < 0 ? "Declining" : "Steady"}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Rolling Win Rate */}
       {rollingData.length > 0 && (
@@ -689,7 +902,7 @@ export default function TrendsPage() {
 
       {/* Best & Worst Opponent Matchups */}
       {(opponentMatchups.best.length > 0 || opponentMatchups.worst.length > 0) && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div id="section-matchups" className="grid grid-cols-1 lg:grid-cols-2 gap-6 scroll-mt-24">
           {opponentMatchups.best.length > 0 && (
             <CollapsibleSection id="bestMU" title="Best Matchups" subtitle="Opponent heroes you dominate (min 3 matches)" collapsed={collapsed} toggle={toggle}>
               <div className="space-y-2.5">
@@ -732,6 +945,112 @@ export default function TrendsPage() {
             </CollapsibleSection>
           )}
         </div>
+      )}
+
+      {/* Hero vs Opponent Hero Heatmap */}
+      {heatmapData && heatmapData.cells.some((c) => c.total >= 2) && (
+        <CollapsibleSection id="heatmap" title="Matchup Heatmap" subtitle="Your hero vs opponent hero win rates" collapsed={collapsed} toggle={toggle}>
+          <div className="overflow-x-auto -mx-4 px-4">
+            <table className="w-full text-[10px] border-collapse min-w-[400px]">
+              <thead>
+                <tr>
+                  <th className="text-left text-fab-dim font-medium p-1.5 sticky left-0 bg-fab-surface z-10">You ↓ / Opp →</th>
+                  {heatmapData.opponents.map((opp) => (
+                    <th key={opp} className="text-center text-fab-dim font-medium p-1.5 whitespace-nowrap max-w-[80px] truncate" title={opp}>
+                      {opp.length > 10 ? opp.slice(0, 9) + "…" : opp}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {heatmapData.heroes.map((hero) => (
+                  <tr key={hero}>
+                    <td className="text-fab-text font-medium p-1.5 whitespace-nowrap sticky left-0 bg-fab-surface z-10">{hero}</td>
+                    {heatmapData.opponents.map((opp) => {
+                      const cell = heatmapData.cells.find((c) => c.hero === hero && c.opp === opp);
+                      if (!cell || cell.total < 2) {
+                        return <td key={opp} className="text-center p-1.5 text-fab-dim/30">—</td>;
+                      }
+                      const bg = cell.winRate >= 60 ? "bg-fab-win/20 text-fab-win"
+                        : cell.winRate >= 50 ? "bg-fab-win/10 text-fab-win/80"
+                        : cell.winRate >= 40 ? "bg-fab-loss/10 text-fab-loss/80"
+                        : "bg-fab-loss/20 text-fab-loss";
+                      return (
+                        <td key={opp} className={`text-center p-1.5 font-bold rounded ${bg}`} title={`${cell.w}W-${cell.l}L (${cell.total})`}>
+                          {cell.winRate}%
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </CollapsibleSection>
+      )}
+
+      {/* Going First/Second per Hero */}
+      {goingFirstPerHero.length > 0 && (
+        <CollapsibleSection id="goingFirstHero" title="Turn Order by Hero" subtitle="Going first vs second win rate per hero (min 5 matches)" collapsed={collapsed} toggle={toggle}>
+          <div className="space-y-3">
+            {goingFirstPerHero.slice(0, 8).map((h) => (
+              <div key={h.hero} className="flex items-center gap-3">
+                <span className="text-sm text-fab-text font-medium w-36 truncate shrink-0">{h.hero}</span>
+                <div className="flex-1 flex items-center gap-2">
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between text-[10px] mb-0.5">
+                      <span className="text-blue-400">1st: {h.firstWR}%</span>
+                      <span className="text-fab-dim">({h.firstCount})</span>
+                    </div>
+                    <div className="h-1.5 bg-fab-bg rounded-full overflow-hidden">
+                      <div className="h-full rounded-full bg-blue-400/70" style={{ width: `${h.firstWR}%` }} />
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between text-[10px] mb-0.5">
+                      <span className="text-purple-400">2nd: {h.secondWR}%</span>
+                      <span className="text-fab-dim">({h.secondCount})</span>
+                    </div>
+                    <div className="h-1.5 bg-fab-bg rounded-full overflow-hidden">
+                      <div className="h-full rounded-full bg-purple-400/70" style={{ width: `${h.secondWR}%` }} />
+                    </div>
+                  </div>
+                  <span className={`text-[10px] font-bold w-10 text-right shrink-0 ${h.diff > 0 ? "text-blue-400" : h.diff < 0 ? "text-purple-400" : "text-fab-dim"}`}>
+                    {h.diff > 0 ? "+" : ""}{h.diff}%
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </CollapsibleSection>
+      )}
+
+      {/* Personal Records */}
+      {personalRecords && (
+        <CollapsibleSection id="records" title="Personal Records" collapsed={collapsed} toggle={toggle}>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="bg-fab-bg rounded-lg p-3 text-center">
+              <p className="text-[10px] text-fab-dim uppercase tracking-wider mb-1">Win Streak</p>
+              <p className="text-xl font-bold text-fab-win">{personalRecords.longestWinStreak}</p>
+              <p className="text-[10px] text-fab-dim">Best ever</p>
+            </div>
+            <div className="bg-fab-bg rounded-lg p-3 text-center">
+              <p className="text-[10px] text-fab-dim uppercase tracking-wider mb-1">Loss Streak</p>
+              <p className="text-xl font-bold text-fab-loss">{personalRecords.longestLossStreak}</p>
+              <p className="text-[10px] text-fab-dim">Worst ever</p>
+            </div>
+            <div className="bg-fab-bg rounded-lg p-3 text-center">
+              <p className="text-[10px] text-fab-dim uppercase tracking-wider mb-1">Busiest Day</p>
+              <p className="text-xl font-bold text-fab-gold">{personalRecords.busiestDay.count}</p>
+              <p className="text-[10px] text-fab-dim">matches in one day</p>
+            </div>
+            <div className="bg-fab-bg rounded-lg p-3 text-center">
+              <p className="text-[10px] text-fab-dim uppercase tracking-wider mb-1">Opponents</p>
+              <p className="text-xl font-bold text-fab-gold">{personalRecords.uniqueOpponents}</p>
+              <p className="text-[10px] text-fab-dim">unique players faced</p>
+            </div>
+          </div>
+        </CollapsibleSection>
       )}
 
       {/* Cumulative Record */}
@@ -1014,6 +1333,32 @@ export default function TrendsPage() {
       </CollapsibleSection>
       </>
       )}
+
+      {/* Share Modal */}
+      {showShare && profile && (() => {
+        const totalWins = filteredMatches.filter((m) => m.result === MatchResult.Win).length;
+        const totalLosses = filteredMatches.filter((m) => m.result === MatchResult.Loss).length;
+        const totalDraws = filteredMatches.length - totalWins - totalLosses;
+        const topHero = heroStats.length > 0 ? heroStats[0] : null;
+        return (
+          <TrendsShareModal
+            data={{
+              playerName: profile.displayName || "Player",
+              totalMatches: filteredMatches.length,
+              winRate: filteredMatches.length > 0 ? Math.round((totalWins / filteredMatches.length) * 100) : 0,
+              wins: totalWins,
+              losses: totalLosses,
+              draws: totalDraws,
+              longestWinStreak: streakInfo.longestWinStreak,
+              eventsPlayed: eventStats.length,
+              uniqueHeroes,
+              topHero: topHero ? { name: topHero.heroName, winRate: Math.round(topHero.winRate), matches: topHero.totalMatches } : undefined,
+              recentTrend: recentVsAllTime?.diff,
+            }}
+            onClose={() => setShowShare(false)}
+          />
+        );
+      })()}
     </div>
   );
 }
@@ -1030,7 +1375,7 @@ function CollapsibleSection({ id, title, subtitle, collapsed, toggle, children }
 }) {
   const isCollapsed = collapsed.has(id);
   return (
-    <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden">
+    <div id={`section-${id}`} className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden scroll-mt-24">
       <button
         onClick={() => toggle(id)}
         className="w-full flex items-center justify-between px-4 py-3 group hover:bg-fab-surface-hover/50 transition-colors"
