@@ -715,6 +715,7 @@ export function getRoundNumber(match: MatchRecord): number {
     const roundMatch = match.notes.match(/Round\s+(\d+)/i);
     if (roundMatch) return parseInt(roundMatch[1], 10);
     // Descriptive playoff labels sort after swiss — check full notes string
+    if (/Playoff|Skirmish/i.test(match.notes)) return 1000;
     if (/Quarter|Top\s*8/i.test(match.notes)) return 1001;
     if (/Semi|Top\s*4/i.test(match.notes)) return 1002;
     if (/Finals?(?:\s|$|\|)/i.test(match.notes)) return 1003;

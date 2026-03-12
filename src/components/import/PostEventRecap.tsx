@@ -46,6 +46,7 @@ export function PostEventRecap({ recap, onViewOpponents, onDashboard, onImportMo
   // Share modal state — auto-open for the best placement
   const [shareFinish, setShareFinish] = useState<PlayoffFinish | null>(null);
   const [autoOpened, setAutoOpened] = useState(false);
+  const [visiblePlacements, setVisiblePlacements] = useState(3);
 
   useEffect(() => {
     if (hasPlacement && !autoOpened && playerName) {
@@ -85,7 +86,7 @@ export function PostEventRecap({ recap, onViewOpponents, onDashboard, onImportMo
       {/* Placement Celebrations */}
       {hasPlacement && (
         <div className="space-y-3">
-          {newPlacements.map((finish, i) => {
+          {newPlacements.slice(0, visiblePlacements).map((finish, i) => {
             const config = placementConfig[finish.type];
             return (
               <div
@@ -118,6 +119,25 @@ export function PostEventRecap({ recap, onViewOpponents, onDashboard, onImportMo
               </div>
             );
           })}
+          {newPlacements.length > 3 && (
+            <div className="flex justify-center">
+              {visiblePlacements < newPlacements.length ? (
+                <button
+                  onClick={() => setVisiblePlacements((c) => Math.min(c + 5, newPlacements.length))}
+                  className="px-4 py-2 rounded-lg bg-fab-surface border border-fab-border text-fab-text text-sm font-medium hover:bg-fab-surface-hover transition-colors"
+                >
+                  Show more finishes ({newPlacements.length - visiblePlacements} remaining)
+                </button>
+              ) : (
+                <button
+                  onClick={() => setVisiblePlacements(3)}
+                  className="px-4 py-2 rounded-lg bg-fab-surface border border-fab-border text-fab-dim text-sm font-medium hover:bg-fab-surface-hover transition-colors"
+                >
+                  Show less
+                </button>
+              )}
+            </div>
+          )}
         </div>
       )}
 

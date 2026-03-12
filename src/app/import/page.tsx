@@ -67,6 +67,7 @@ export default function ImportPage() {
   const [showHeroWarning, setShowHeroWarning] = useState(false);
   const [confirmSkipHero, setConfirmSkipHero] = useState(false);
   const [showOtherBrowsers, setShowOtherBrowsers] = useState(false);
+  const [visibleEventCount, setVisibleEventCount] = useState(10);
 
   // Detect mobile viewport
   useEffect(() => {
@@ -987,7 +988,7 @@ export default function ImportPage() {
               {availableFormats.length > 1 && (
                 <select
                   value={filterFormat}
-                  onChange={(e) => setFilterFormat(e.target.value)}
+                  onChange={(e) => { setFilterFormat(e.target.value); setVisibleEventCount(10); }}
                   className="bg-fab-surface border border-fab-border rounded-md px-3 py-1.5 text-fab-text text-sm outline-none"
                 >
                   <option value="all">All Formats ({pasteResult.events.length})</option>
@@ -999,7 +1000,7 @@ export default function ImportPage() {
               {availableEventTypes.length > 1 && (
                 <select
                   value={filterEventType}
-                  onChange={(e) => setFilterEventType(e.target.value)}
+                  onChange={(e) => { setFilterEventType(e.target.value); setVisibleEventCount(10); }}
                   className="bg-fab-surface border border-fab-border rounded-md px-3 py-1.5 text-fab-text text-sm outline-none"
                 >
                   <option value="all">All Event Types</option>
@@ -1016,7 +1017,7 @@ export default function ImportPage() {
             <div>
               <h2 className="text-sm font-semibold text-fab-text mb-3">Events ({filteredEvents.length})</h2>
               <div className="space-y-2">
-                {filteredEvents.map(({ event, origIdx }, i) => {
+                {filteredEvents.slice(0, visibleEventCount).map(({ event, origIdx }, i) => {
                   const wins = event.matches.filter((m) => m.result === MatchResult.Win).length;
                   const losses = event.matches.filter((m) => m.result === MatchResult.Loss).length;
                   const isExpanded = expandedEvent === i;
@@ -1101,6 +1102,25 @@ export default function ImportPage() {
                   );
                 })}
               </div>
+              {filteredEvents.length > 10 && (
+                <div className="flex justify-center pt-2">
+                  {visibleEventCount < filteredEvents.length ? (
+                    <button
+                      onClick={() => setVisibleEventCount((c) => Math.min(c + 10, filteredEvents.length))}
+                      className="px-4 py-2 rounded-lg bg-fab-surface border border-fab-border text-fab-text text-sm font-medium hover:bg-fab-surface-hover transition-colors"
+                    >
+                      Show more ({filteredEvents.length - visibleEventCount} remaining)
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => { setVisibleEventCount(10); setExpandedEvent(null); }}
+                      className="px-4 py-2 rounded-lg bg-fab-surface border border-fab-border text-fab-dim text-sm font-medium hover:bg-fab-surface-hover transition-colors"
+                    >
+                      Show less
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
