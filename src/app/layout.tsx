@@ -13,6 +13,7 @@ import { ChatProvider } from "@/contexts/ChatContext";
 import { ChatFab } from "@/components/chat/ChatFab";
 import { SonnerProvider } from "@/components/ui/sonner-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { PageVisitTracker } from "@/components/PageVisitTracker";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -157,6 +158,7 @@ export default function RootLayout({
           <FeedbackFab />
           <ChatFab />
           <MobileNav />
+          <PageVisitTracker />
           <SonnerProvider />
         </TooltipProvider>
         </ChatProvider>
