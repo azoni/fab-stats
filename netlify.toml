@@ -49,6 +49,12 @@
   to = "/inbox/_.html"
   status = 200
 
+# Let Netlify functions pass through (not caught by SPA fallback)
+[[redirects]]
+  from = "/.netlify/functions/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
+
 # SPA fallback for all other routes
 [[redirects]]
   from = "/*"
