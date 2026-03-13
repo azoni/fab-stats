@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
@@ -9,7 +9,7 @@ import { getCreators, saveCreators } from "@/lib/creators";
 import { getEvents, saveEvents } from "@/lib/featured-events";
 import { lookupEvents, type LookupEvent } from "@/lib/event-lookup";
 import { getOrCreateConversation, sendMessage, sendMessageNotification } from "@/lib/messages";
-import { getAnalytics, type AnalyticsTimeRange } from "@/lib/analytics";
+import { getAnalytics, getDailyPageViewTrend, type AnalyticsTimeRange } from "@/lib/analytics";
 import { getBanner, saveBanner, type BannerConfig } from "@/lib/banner";
 import { getAllPolls, getPollResults, getPollVoters, savePoll, removePoll, clearVotes, mergeOptions, closePredictionVoting, reopenPredictionVoting, resolvePrediction } from "@/lib/polls";
 import { grantPredictionAchievements } from "@/lib/prediction-service";
@@ -541,6 +541,9 @@ export default function AdminPage() {
               </div>
             );
           })()}
+
+          {/* Growth Charts */}
+          <GrowthCharts users={data.users} />
 
           {/* Page Activity */}
           {analyticsData && <ActivitySection analytics={analyticsData} />}
@@ -3013,6 +3016,95 @@ function formatTimeAgo(timestamp: number): string {
   if (hrs < 24) return `${hrs}h ago`;
   const days = Math.floor(hrs / 24);
   return `${days}d ago`;
+}
+
+function GrowthCharts({ users }: { users: AdminUserStats[] }) {
+  const [pvTrend, setPvTrend] = useState<{ date: string; total: number }[] | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    getDailyPageViewTrend(30).then((data) => { setPvTrend(data); setLoading(false); }).catch(() => setLoading(false));
+  }, []);
+
+  // Build daily new user counts from createdAt
+  const usersByDay = useMemo(() => {
+    const counts = new Map<string, number>();
+    const now = new Date();
+    for (let i = 29; i >= 0; i--) {
+      const d = new Date(now.getTime() - i * 86400000);
+      counts.set(d.toISOString().slice(0, 10), 0);
+    }
+    for (const u of users) {
+      if (!u.createdAt) continue;
+      const day = u.createdAt.slice(0, 10);
+      if (counts.has(day)) counts.set(day, (counts.get(day) || 0) + 1);
+    }
+    return [...counts.entries()].map(([date, count]) => ({ date, count }));
+  }, [users]);
+
+  if (loading) return <div className="text-xs text-fab-dim animate-pulse mb-6">Loading trends...</div>;
+
+  const maxPv = pvTrend ? Math.max(...pvTrend.map((d: { date: string; total: number }) => d.total), 1) : 1;
+  const maxUsers = Math.max(...usersByDay.map((d: { date: string; count: number }) => d.count), 1);
+
+  function formatDay(dateStr: string) {
+    const d = new Date(dateStr + "T00:00:00");
+    return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  }
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+      {/* Daily Page Views */}
+      {pvTrend && (
+        <div className="bg-fab-surface border border-fab-border rounded-lg p-4">
+          <h3 className="text-xs text-fab-muted uppercase tracking-wider font-medium mb-3">
+            Daily Page Views <span className="text-fab-dim font-normal">(30 days)</span>
+          </h3>
+          <div className="flex items-end gap-[2px] h-24">
+            {pvTrend.map((d) => (
+              <div key={d.date} className="flex-1 flex flex-col items-center justify-end h-full group relative">
+                <div
+                  className="w-full bg-fab-gold/40 rounded-t-sm min-h-[2px] transition-all hover:bg-fab-gold/70"
+                  style={{ height: `${Math.max((d.total / maxPv) * 100, 2)}%` }}
+                />
+                <div className="absolute bottom-full mb-1 hidden group-hover:block bg-fab-bg border border-fab-border rounded px-1.5 py-0.5 text-[10px] text-fab-text whitespace-nowrap z-10">
+                  {formatDay(d.date)}: {d.total.toLocaleString()}
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="flex justify-between mt-1 text-[9px] text-fab-dim">
+            <span>{formatDay(pvTrend[0].date)}</span>
+            <span>{formatDay(pvTrend[pvTrend.length - 1].date)}</span>
+          </div>
+        </div>
+      )}
+
+      {/* Daily New Users */}
+      <div className="bg-fab-surface border border-fab-border rounded-lg p-4">
+        <h3 className="text-xs text-fab-muted uppercase tracking-wider font-medium mb-3">
+          New Users <span className="text-fab-dim font-normal">(30 days &middot; {usersByDay.reduce((s: number, d: { count: number }) => s + d.count, 0)} total)</span>
+        </h3>
+        <div className="flex items-end gap-[2px] h-24">
+          {usersByDay.map((d) => (
+            <div key={d.date} className="flex-1 flex flex-col items-center justify-end h-full group relative">
+              <div
+                className="w-full bg-fab-win/40 rounded-t-sm min-h-[2px] transition-all hover:bg-fab-win/70"
+                style={{ height: `${d.count > 0 ? Math.max((d.count / maxUsers) * 100, 4) : 0}%` }}
+              />
+              <div className="absolute bottom-full mb-1 hidden group-hover:block bg-fab-bg border border-fab-border rounded px-1.5 py-0.5 text-[10px] text-fab-text whitespace-nowrap z-10">
+                {formatDay(d.date)}: {d.count}
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="flex justify-between mt-1 text-[9px] text-fab-dim">
+          <span>{formatDay(usersByDay[0].date)}</span>
+          <span>{formatDay(usersByDay[usersByDay.length - 1].date)}</span>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function MetricCard({ label, value, subtext, prefix, suffix, highlight }: { label: string; value: number | string; subtext?: string; prefix?: string; suffix?: string; highlight?: boolean }) {

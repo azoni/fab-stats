@@ -112,6 +112,22 @@ export async function getOnlineStats(): Promise<{ onlineNow: number; activeToday
   return { onlineNow, activeToday };
 }
 
+/** Fetch daily page view totals for the last N days (admin only) */
+export async function getDailyPageViewTrend(days = 30): Promise<{ date: string; total: number }[]> {
+  const now = new Date();
+  const docIds = Array.from({ length: days }, (_, i) => {
+    const d = new Date(now.getTime() - i * 86400000);
+    return `pv_d_${dayKey(d)}`;
+  });
+  const snaps = await Promise.all(docIds.map((id) => getDoc(doc(db, "analytics", id))));
+  return snaps.map((snap, i) => {
+    const d = new Date(now.getTime() - i * 86400000);
+    const data = snap.data() as Record<string, number> | undefined;
+    const total = data ? Object.values(data).reduce((sum, v) => sum + v, 0) : 0;
+    return { date: dayKey(d), total };
+  }).reverse();
+}
+
 export type AnalyticsTimeRange = "1h" | "12h" | "24h" | "7d" | "all";
 
 /** Read analytics data, optionally filtered by time range (admin only) */
