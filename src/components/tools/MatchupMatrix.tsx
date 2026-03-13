@@ -1,11 +1,66 @@
 "use client";
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef, type MouseEvent as ReactMouseEvent } from "react";
 import { computeHeroStats } from "@/lib/stats";
 import { getAvailableFormats } from "@/lib/meta-stats";
 import { getHeroByName } from "@/lib/heroes";
 import { HeroClassIcon } from "@/components/heroes/HeroClassIcon";
 import { getCommunityHeroMatchups, getMonthsForPreset, type CommunityMatchupCell } from "@/lib/hero-matchups";
 import type { MatchRecord, LeaderboardEntry, HeroStats } from "@/types";
+
+// ── Drag-to-scroll hook ──
+
+function useDragScroll() {
+  const ref = useRef<HTMLDivElement>(null);
+  const dragging = useRef(false);
+  const startX = useRef(0);
+  const startY = useRef(0);
+  const scrollLeftStart = useRef(0);
+  const scrollTopStart = useRef(0);
+  const moved = useRef(false);
+
+  const onMouseDown = useCallback((e: ReactMouseEvent) => {
+    const el = ref.current;
+    if (!el) return;
+    dragging.current = true;
+    moved.current = false;
+    startX.current = e.clientX;
+    startY.current = e.clientY;
+    scrollLeftStart.current = el.scrollLeft;
+    scrollTopStart.current = el.scrollTop;
+    el.style.cursor = "grabbing";
+    el.style.userSelect = "none";
+  }, []);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+
+    const onMouseMove = (e: globalThis.MouseEvent) => {
+      if (!dragging.current) return;
+      const dx = e.clientX - startX.current;
+      const dy = e.clientY - startY.current;
+      if (Math.abs(dx) > 3 || Math.abs(dy) > 3) moved.current = true;
+      el.scrollLeft = scrollLeftStart.current - dx;
+      el.scrollTop = scrollTopStart.current - dy;
+    };
+
+    const onMouseUp = () => {
+      if (!dragging.current) return;
+      dragging.current = false;
+      el.style.cursor = "grab";
+      el.style.userSelect = "";
+    };
+
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("mouseup", onMouseUp);
+    return () => {
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("mouseup", onMouseUp);
+    };
+  }, []);
+
+  return { ref, onMouseDown, movedRef: moved };
+}
 
 type Mode = "personal" | "community";
 type Period = "all" | "30d" | "90d" | "custom";
@@ -548,6 +603,8 @@ function PersonalGrid({
   ageFilter: AgeFilter;
   includeLivingLegend: boolean;
 }) {
+  const { ref: scrollRef, onMouseDown, movedRef } = useDragScroll();
+
   // Filter heroes and opponents by age + LL + hero filter
   const filteredStats = useMemo(
     () => heroStats.filter((h) =>
@@ -578,7 +635,7 @@ function PersonalGrid({
 
   return (
     <div>
-      <div className="overflow-x-auto">
+      <div ref={scrollRef} onMouseDown={onMouseDown} className="overflow-x-auto cursor-grab">
         <table className="w-full text-sm border-collapse">
           <thead>
             <tr>
@@ -628,8 +685,8 @@ function PersonalGrid({
                   return (
                     <td
                       key={opp}
-                      onClick={() => onCellClick(isSelected ? null : { hero: hero.heroName, opp })}
-                      className={`p-2 text-center border-b border-fab-border/50 cursor-pointer transition-all ${bgColor} ${
+                      onClick={() => { if (!movedRef.current) onCellClick(isSelected ? null : { hero: hero.heroName, opp }); }}
+                      className={`p-2 text-center border-b border-fab-border/50 transition-all ${bgColor} ${
                         isSelected ? "ring-2 ring-fab-gold ring-inset" : "hover:brightness-125"
                       }`}
                     >
@@ -701,6 +758,7 @@ function CommunityMatchupGrid({
   includeLivingLegend: boolean;
 }) {
   const [showAll, setShowAll] = useState(false);
+  const { ref: scrollRef, onMouseDown, movedRef } = useDragScroll();
 
   // Build per-hero rows from the pair data, applying hero filters
   const { heroRows, allHeroes, totalMatches } = useMemo(() => {
@@ -790,7 +848,7 @@ function CommunityMatchupGrid({
         <span>{heroRows.length} heroes</span>
       </div>
 
-      <div className="overflow-x-auto">
+      <div ref={scrollRef} onMouseDown={onMouseDown} className="overflow-x-auto cursor-grab">
         <table className="w-full text-sm border-collapse">
           <thead>
             <tr>
@@ -854,8 +912,8 @@ function CommunityMatchupGrid({
                   return (
                     <td
                       key={opp}
-                      onClick={() => onCellClick(isSelected ? null : { hero: row.hero, opp })}
-                      className={`p-2 text-center border-b border-fab-border/50 cursor-pointer transition-all ${bgColor} ${
+                      onClick={() => { if (!movedRef.current) onCellClick(isSelected ? null : { hero: row.hero, opp }); }}
+                      className={`p-2 text-center border-b border-fab-border/50 transition-all ${bgColor} ${
                         isSelected ? "ring-2 ring-fab-gold ring-inset" : "hover:brightness-125"
                       }`}
                       title={lowSample ? `Low sample (${mu.total} matches)` : undefined}
