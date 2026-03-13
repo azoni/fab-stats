@@ -25,11 +25,19 @@ const navLinks: { href: string; label: string; icon: ReactNode; color: string; b
   { href: "/leaderboard", label: "Rankings", icon: <TrophyIcon className="w-4 h-4" />, color: "text-amber-400", bg: "bg-amber-400/10" },
 ];
 
-const moreLinks: { href: string; label: string; icon: ReactNode; authOnly?: boolean; adminOnly?: boolean; badge?: string; divider?: boolean; sectionLabel?: string }[] = [
+const moreLinks: { href: string; label: string; icon: ReactNode; authOnly?: boolean; adminOnly?: boolean; badge?: string; divider?: boolean; sectionLabel?: string; subItems?: { href: string; label: string }[] }[] = [
   { divider: true, sectionLabel: "Your Stats", href: "", label: "", icon: null },
-  { href: "/matches", label: "Matches", icon: <SwordsIcon className="w-4 h-4" /> },
+  { href: "/matches", label: "Matches", icon: <SwordsIcon className="w-4 h-4" />, subItems: [
+    { href: "/matches", label: "Matches" },
+    { href: "/events", label: "Events" },
+    { href: "/opponents", label: "Opponents" },
+  ] },
   { href: "/trends", label: "My Stats", icon: <TrendsIcon className="w-4 h-4" />, authOnly: true },
-  { href: "/tools", label: "Player Tools", icon: <Wrench className="w-4 h-4" />, authOnly: true },
+  { href: "/tools", label: "Player Tools", icon: <Wrench className="w-4 h-4" />, authOnly: true, subItems: [
+    { href: "/tools?tab=matrix", label: "Matchup Matrix" },
+    { href: "/tools?tab=prep", label: "Tournament Prep" },
+    { href: "/tools?tab=notes", label: "Matchup Notes" },
+  ] },
   { divider: true, sectionLabel: "Explore", href: "", label: "", icon: null },
   { href: "/compare", label: "Versus", icon: <Zap className="w-4 h-4" /> },
   { href: "/tier-list", label: "Tier List", badge: "New", icon: <AlignLeft className="w-4 h-4" /> },
@@ -458,11 +466,38 @@ function MoreDropdown({
               return (
                 <div key={section.label} className="p-1.5">
                   {visible.map((link) => (
-                    <Link key={link.href} href={link.href} onClick={() => setOpen(false)} className={linkClass(link.href)}>
-                      {link.icon}
-                      {link.label}
-                      {link.badge && <span className="text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-teal-400/15 text-teal-400 border border-teal-400/25 ml-auto">{link.badge}</span>}
-                    </Link>
+                    <div key={link.href} className="group/sub relative">
+                      <Link href={link.href} onClick={() => setOpen(false)} className={`${linkClass(link.href)} justify-between`}>
+                        <span className="flex items-center gap-3">
+                          {link.icon}
+                          {link.label}
+                        </span>
+                        {link.badge && <span className="text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-teal-400/15 text-teal-400 border border-teal-400/25">{link.badge}</span>}
+                        {link.subItems && (
+                          <ChevronDown className="w-3 h-3 text-fab-dim -rotate-90" />
+                        )}
+                      </Link>
+                      {link.subItems && (
+                        <div className="absolute right-full top-0 pr-1 hidden group-hover/sub:block z-50">
+                          <div className="w-48 bg-fab-surface border border-fab-border rounded-lg shadow-xl overflow-hidden">
+                            {link.subItems.map((sub) => (
+                              <Link
+                                key={sub.href}
+                                href={sub.href}
+                                onClick={() => setOpen(false)}
+                                className={`block px-3 py-2 text-sm transition-colors ${
+                                  pathname === sub.href || (sub.href.includes("?") && pathname === sub.href.split("?")[0])
+                                    ? "text-fab-gold bg-fab-gold/10"
+                                    : "text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover"
+                                }`}
+                              >
+                                {sub.label}
+                              </Link>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   ))}
                 </div>
               );
