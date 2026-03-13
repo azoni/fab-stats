@@ -12,6 +12,7 @@ import { BadgeTierWrapper } from "@/components/profile/BadgeTierWrapper";
 import { RARITY_VISUALS } from "@/lib/badge-tiers";
 import { getAllAchievements } from "@/lib/achievements";
 import { getAllBadges } from "@/lib/badges";
+import { buildOptimizedImageUrl } from "@/lib/profile-backgrounds";
 import { CornerFiligree, OrnamentalDivider, CardBackgroundPattern, AccentTopBar, InnerVignette } from "@/components/share/CardOrnaments";
 import type { CardTheme } from "@/components/opponents/RivalryCard";
 import type { PlayoffFinish } from "@/lib/stats";
@@ -282,9 +283,11 @@ export function ProfileCard({ data, theme }: { data: ProfileCardData; theme?: Ca
       {t.backgroundImage && (
         <>
           <img
-            src={t.backgroundImage}
+            src={buildOptimizedImageUrl(t.backgroundImage, 1200, 62)}
             alt=""
             className="absolute inset-0 w-full h-full object-cover"
+            loading="eager"
+            decoding="async"
             crossOrigin="anonymous"
           />
           <div className="absolute inset-0" style={{ backgroundColor: `${t.surface}B3` }} />
@@ -586,9 +589,12 @@ export function ProfileShareModal({
                   {theme.backgroundImage ? (
                     <>
                       <img
-                        src={theme.backgroundImage}
+                        src={buildOptimizedImageUrl(theme.backgroundImage, 260, 46)}
                         alt=""
                         className="absolute inset-0 w-full h-full object-cover"
+                        loading="lazy"
+                        decoding="async"
+                        fetchPriority="low"
                         crossOrigin="anonymous"
                       />
                       <div className="absolute inset-0" style={{ backgroundColor: `${theme.surface}99` }} />

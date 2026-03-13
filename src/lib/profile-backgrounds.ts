@@ -36,3 +36,13 @@ export function resolveProfileBackgroundImage(backgroundId?: string | null): str
   if (!backgroundId || backgroundId === NONE_BACKGROUND_ID) return undefined;
   return PROFILE_BACKGROUND_OPTIONS.find((opt) => opt.id === backgroundId)?.imageUrl;
 }
+
+export function buildOptimizedImageUrl(imageUrl: string, width: number, quality = 68): string {
+  if (!imageUrl) return imageUrl;
+  // Non-local images should pass through unchanged.
+  if (!imageUrl.startsWith("/")) return imageUrl;
+
+  const safeWidth = Math.max(64, Math.min(3840, Math.round(width)));
+  const safeQuality = Math.max(35, Math.min(100, Math.round(quality)));
+  return `/_next/image?url=${encodeURIComponent(imageUrl)}&w=${safeWidth}&q=${safeQuality}`;
+}

@@ -1,5 +1,5 @@
 "use client";
-import { getProfileBackgroundOptions, NONE_BACKGROUND_ID } from "@/lib/profile-backgrounds";
+import { buildOptimizedImageUrl, getProfileBackgroundOptions, NONE_BACKGROUND_ID } from "@/lib/profile-backgrounds";
 
 interface BackgroundChooserProps {
   selectedId?: string;
@@ -46,9 +46,12 @@ export function BackgroundChooser({ selectedId, isAdmin, onSelect, disabled }: B
         >
           <div className="h-14 rounded-md overflow-hidden border border-white/10 mb-1.5 relative">
             <img
-              src={opt.imageUrl}
+              src={buildOptimizedImageUrl(opt.imageUrl, 320, 46)}
               alt=""
               className="absolute inset-0 w-full h-full object-cover"
+              loading="lazy"
+              decoding="async"
+              fetchPriority="low"
               crossOrigin="anonymous"
             />
             <div className="absolute inset-0 bg-black/35" />

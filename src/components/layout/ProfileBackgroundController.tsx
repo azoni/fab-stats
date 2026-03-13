@@ -3,7 +3,7 @@ import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { getProfileByUsername } from "@/lib/firestore-storage";
-import { resolveProfileBackgroundImage } from "@/lib/profile-backgrounds";
+import { buildOptimizedImageUrl, resolveProfileBackgroundImage } from "@/lib/profile-backgrounds";
 
 function applyProfileBackground(imageUrl?: string) {
   const root = document.documentElement;
@@ -14,7 +14,10 @@ function applyProfileBackground(imageUrl?: string) {
     return;
   }
 
-  const safeUrl = imageUrl.replace(/'/g, "\\'");
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const viewportWidth = Math.max(1024, Math.min(2560, Math.round(window.innerWidth * dpr)));
+  const optimizedUrl = buildOptimizedImageUrl(imageUrl, viewportWidth, 66);
+  const safeUrl = optimizedUrl.replace(/'/g, "\\'");
   root.style.setProperty("--fab-user-bg-image", `url('${safeUrl}')`);
   root.style.setProperty("--fab-user-bg-overlay", "rgba(6, 8, 10, 0.72)");
   root.dataset.profileBg = "on";
