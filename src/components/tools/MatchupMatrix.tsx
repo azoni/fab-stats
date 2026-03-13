@@ -116,7 +116,7 @@ export function MatchupMatrix({ matches, entries, isLoaded }: MatchupMatrixProps
   const [ageFilter, setAgeFilter] = useState<AgeFilter>("adult");
   const [includeLivingLegend, setIncludeLivingLegend] = useState(false);
   const [heroFilter, setHeroFilter] = useState<string>("");
-  const [personalView, setPersonalView] = useState<PersonalView>("list");
+  const [personalView, setPersonalView] = useState<PersonalView>("grid");
 
   // Shared time filter state
   const [period, setPeriod] = useState<Period>("all");
