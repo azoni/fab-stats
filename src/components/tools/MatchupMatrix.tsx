@@ -3,7 +3,7 @@ import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { computeHeroStats } from "@/lib/stats";
 import { getAvailableFormats } from "@/lib/meta-stats";
 import { getHeroByName } from "@/lib/heroes";
-import { HeroClassIcon } from "@/components/heroes/HeroClassIcon";
+
 import { getCommunityHeroMatchups, getMonthsForPreset, type CommunityMatchupCell } from "@/lib/hero-matchups";
 import type { MatchRecord, LeaderboardEntry, HeroStats } from "@/types";
 
@@ -82,13 +82,24 @@ function passesHeroFilter(name: string, ageFilter: AgeFilter, includeLivingLegen
   return true;
 }
 
-function HeroIcon({ name }: { name: string }) {
+function HeroImg({ name, size = "sm" }: { name: string; size?: "sm" | "md" }) {
   const hero = getHeroByName(name);
-  const cls = hero?.classes[0] || "";
+  const dim = size === "md" ? "w-7 h-7" : "w-5 h-5";
+  if (!hero?.imageUrl) {
+    const cls = hero?.classes[0] || "";
+    return (
+      <span className={`inline-flex items-center justify-center ${dim} rounded-full bg-fab-surface text-fab-muted text-[9px] font-bold shrink-0 border border-fab-border`} title={cls}>
+        {cls.charAt(0) || "?"}
+      </span>
+    );
+  }
   return (
-    <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-fab-surface text-fab-muted text-[9px] font-bold shrink-0 border border-fab-border" title={cls}>
-      {cls.charAt(0) || "?"}
-    </span>
+    <img
+      src={hero.imageUrl}
+      alt={name}
+      className={`${dim} rounded-full object-cover object-top shrink-0 border border-fab-border`}
+      loading="lazy"
+    />
   );
 }
 
@@ -464,7 +475,7 @@ function PersonalList({
           <div key={hero.heroName}>
             {/* Hero header */}
             <div className="flex items-center gap-2 mb-3">
-              <HeroClassIcon heroClass={getHeroByName(hero.heroName)?.classes[0]} size="sm" />
+              <HeroImg name={hero.heroName} size="md" />
               <h3 className="text-sm font-bold text-fab-text">{hero.heroName}</h3>
               <span className="text-xs text-fab-dim">{hero.totalMatches} matches</span>
 
@@ -512,7 +523,7 @@ function PersonalList({
                     onClick={() => onCellClick(isSelected ? null : { hero: hero.heroName, opp: mu.opponentHero })}
                     className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg transition-all cursor-pointer ${rowBg}`}
                   >
-                    <HeroClassIcon heroClass={getHeroByName(mu.opponentHero)?.classes[0]} size="sm" />
+                    <HeroImg name={mu.opponentHero} />
                     <span className="text-sm font-medium text-fab-text w-36 min-w-[90px] truncate text-left">
                       {mu.opponentHero.split(",")[0]}
                     </span>
@@ -636,11 +647,14 @@ function PersonalGrid({
                 <th
                   key={opp}
                   onClick={() => setHighlightCol(highlightCol === opp ? null : opp)}
-                  className={`p-2 text-fab-muted font-medium border-b border-fab-border text-center min-w-[90px] sticky top-0 bg-fab-bg z-10 cursor-pointer select-none transition-colors ${
+                  className={`p-2 text-fab-muted font-medium border-b border-fab-border text-center min-w-[80px] sticky top-0 bg-fab-bg z-10 cursor-pointer select-none transition-colors ${
                     highlightCol === opp ? "!bg-fab-gold/10 text-fab-gold" : "hover:text-fab-text"
                   }`}
                 >
-                  <span className="text-xs">{opp}</span>
+                  <div className="flex flex-col items-center gap-1">
+                    <HeroImg name={opp} />
+                    <span className="text-[10px] leading-tight">{opp.split(",")[0]}</span>
+                  </div>
                 </th>
               ))}
             </tr>
@@ -656,8 +670,11 @@ function PersonalGrid({
                       isRowHL ? "bg-fab-gold/10 text-fab-gold" : "bg-fab-bg hover:text-fab-gold"
                     }`}
                   >
-                    {hero.heroName}
-                    <span className="ml-1.5 text-xs text-fab-dim">({hero.totalMatches})</span>
+                    <div className="flex items-center gap-1.5">
+                      <HeroImg name={hero.heroName} />
+                      <span className="truncate max-w-[120px]">{hero.heroName.split(",")[0]}</span>
+                    </div>
+                    <span className="text-[10px] text-fab-dim ml-6">({hero.totalMatches})</span>
                   </td>
                   {filteredOpponents.map((opp) => {
                     const mu = hero.matchups.find((m) => m.opponentHero === opp);
@@ -863,11 +880,14 @@ function CommunityMatchupGrid({
                 <th
                   key={hero}
                   onClick={() => setHighlightCol(highlightCol === hero ? null : hero)}
-                  className={`p-2 text-fab-muted font-medium border-b border-fab-border text-center min-w-[90px] sticky top-0 bg-fab-bg z-10 cursor-pointer select-none transition-colors ${
+                  className={`p-2 text-fab-muted font-medium border-b border-fab-border text-center min-w-[80px] sticky top-0 bg-fab-bg z-10 cursor-pointer select-none transition-colors ${
                     highlightCol === hero ? "!bg-fab-gold/10 text-fab-gold" : "hover:text-fab-text"
                   }`}
                 >
-                  <span className="text-xs">{hero}</span>
+                  <div className="flex flex-col items-center gap-1">
+                    <HeroImg name={hero} />
+                    <span className="text-[10px] leading-tight">{hero.split(",")[0]}</span>
+                  </div>
                 </th>
               ))}
             </tr>
@@ -884,7 +904,7 @@ function CommunityMatchupGrid({
                     }`}
                   >
                     <div className="flex items-center gap-1.5">
-                      <HeroIcon name={row.hero} />
+                      <HeroImg name={row.hero} />
                       <span className="truncate max-w-[140px]">{row.hero}</span>
                     </div>
                     <span className="text-[10px] text-fab-dim">({row.totalMatches})</span>
