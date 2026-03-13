@@ -620,7 +620,7 @@ export default function PlayerProfile() {
               </button>
             </div>
           )}
-          {actualIsOwner && (
+          {isOwner && (
             <div className="flex justify-end mb-3">
               <button
                 onClick={() => setShowBackgroundPicker(true)}
@@ -1079,7 +1079,7 @@ export default function PlayerProfile() {
       )}
 
       {/* Profile background picker modal */}
-      {showBackgroundPicker && actualIsOwner && (
+      {showBackgroundPicker && isOwner && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setShowBackgroundPicker(false)}>
           <div className="bg-fab-surface border border-fab-border rounded-xl max-w-3xl w-full mx-4 overflow-hidden" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between px-4 py-3 border-b border-fab-border">
