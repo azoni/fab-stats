@@ -29,7 +29,7 @@ const moreLinks: { href: string; label: string; icon: ReactNode; authOnly?: bool
   { divider: true, sectionLabel: "Your Stats", href: "", label: "", icon: null },
   { href: "/matches", label: "Matches", icon: <SwordsIcon className="w-4 h-4" /> },
   { href: "/trends", label: "My Stats", icon: <TrendsIcon className="w-4 h-4" />, authOnly: true },
-  { href: "/tools", label: "Player Tools", badge: "Beta", icon: <Wrench className="w-4 h-4" />, authOnly: true },
+  { href: "/tools", label: "Player Tools", icon: <Wrench className="w-4 h-4" />, authOnly: true },
   { divider: true, sectionLabel: "Explore", href: "", label: "", icon: null },
   { href: "/compare", label: "Versus", icon: <Zap className="w-4 h-4" /> },
   { href: "/tier-list", label: "Tier List", badge: "New", icon: <AlignLeft className="w-4 h-4" /> },

@@ -474,54 +474,6 @@ export default function TrendsPage() {
     };
   }, [filteredMatches, eventStats]);
 
-  // Hero vs Opponent Hero heatmap data
-  const heatmapData = useMemo(() => {
-    const map = new Map<string, Map<string, { w: number; l: number; d: number }>>();
-    for (const m of filteredMatches) {
-      const hero = m.heroPlayed;
-      const opp = m.opponentHero;
-      if (!hero || hero === "Unknown" || !opp || opp === "Unknown") continue;
-      if (!map.has(hero)) map.set(hero, new Map());
-      const oppMap = map.get(hero)!;
-      const cur = oppMap.get(opp) ?? { w: 0, l: 0, d: 0 };
-      if (m.result === MatchResult.Win) cur.w++;
-      else if (m.result === MatchResult.Loss) cur.l++;
-      else cur.d++;
-      oppMap.set(opp, cur);
-    }
-
-    // Get heroes and opponents sorted by total matches
-    const heroTotals = new Map<string, number>();
-    const oppTotals = new Map<string, number>();
-    for (const [hero, oppMap] of map) {
-      for (const [opp, stats] of oppMap) {
-        const total = stats.w + stats.l + stats.d;
-        heroTotals.set(hero, (heroTotals.get(hero) ?? 0) + total);
-        oppTotals.set(opp, (oppTotals.get(opp) ?? 0) + total);
-      }
-    }
-
-    const heroes = [...heroTotals.entries()].sort((a, b) => b[1] - a[1]).map(([h]) => h).slice(0, 8);
-    const opponents = [...oppTotals.entries()].sort((a, b) => b[1] - a[1]).map(([o]) => o).slice(0, 10);
-
-    if (heroes.length === 0 || opponents.length === 0) return null;
-
-    const cells: { hero: string; opp: string; w: number; l: number; total: number; winRate: number }[] = [];
-    for (const hero of heroes) {
-      for (const opp of opponents) {
-        const stats = map.get(hero)?.get(opp);
-        if (stats) {
-          const total = stats.w + stats.l + stats.d;
-          cells.push({ hero, opp, w: stats.w, l: stats.l, total, winRate: total > 0 ? Math.round((stats.w / total) * 100) : 0 });
-        } else {
-          cells.push({ hero, opp, w: 0, l: 0, total: 0, winRate: 0 });
-        }
-      }
-    }
-
-    return { heroes, opponents, cells };
-  }, [filteredMatches]);
-
   // Going first/second win rate per hero
   const goingFirstPerHero = useMemo(() => {
     const map = new Map<string, { firstW: number; firstT: number; secondW: number; secondT: number }>();
@@ -684,7 +636,6 @@ export default function TrendsPage() {
           ["rolling", "Win Rate"],
           ["heroes", "Heroes"],
           ["matchups", "Matchups"],
-          ["heatmap", "Heatmap"],
           ["records", "Records"],
           ["cumulative", "Cumulative"],
           ["venue", "Venues"],
@@ -947,46 +898,13 @@ export default function TrendsPage() {
         </div>
       )}
 
-      {/* Hero vs Opponent Hero Heatmap */}
-      {heatmapData && heatmapData.cells.some((c) => c.total >= 2) && (
-        <CollapsibleSection id="heatmap" title="Matchup Heatmap" subtitle="Your hero vs opponent hero win rates" collapsed={collapsed} toggle={toggle}>
-          <div className="overflow-x-auto -mx-4 px-4">
-            <table className="w-full text-[10px] border-collapse min-w-[400px]">
-              <thead>
-                <tr>
-                  <th className="text-left text-fab-dim font-medium p-1.5 sticky left-0 bg-fab-surface z-10">You ↓ / Opp →</th>
-                  {heatmapData.opponents.map((opp) => (
-                    <th key={opp} className="text-center text-fab-dim font-medium p-1.5 whitespace-nowrap max-w-[80px] truncate" title={opp}>
-                      {opp.length > 10 ? opp.slice(0, 9) + "…" : opp}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {heatmapData.heroes.map((hero) => (
-                  <tr key={hero}>
-                    <td className="text-fab-text font-medium p-1.5 whitespace-nowrap sticky left-0 bg-fab-surface z-10">{hero}</td>
-                    {heatmapData.opponents.map((opp) => {
-                      const cell = heatmapData.cells.find((c) => c.hero === hero && c.opp === opp);
-                      if (!cell || cell.total < 2) {
-                        return <td key={opp} className="text-center p-1.5 text-fab-dim/30">—</td>;
-                      }
-                      const bg = cell.winRate >= 60 ? "bg-fab-win/20 text-fab-win"
-                        : cell.winRate >= 50 ? "bg-fab-win/10 text-fab-win/80"
-                        : cell.winRate >= 40 ? "bg-fab-loss/10 text-fab-loss/80"
-                        : "bg-fab-loss/20 text-fab-loss";
-                      return (
-                        <td key={opp} className={`text-center p-1.5 font-bold rounded ${bg}`} title={`${cell.w}W-${cell.l}L (${cell.total})`}>
-                          {cell.winRate}%
-                        </td>
-                      );
-                    })}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </CollapsibleSection>
+      {/* Link to full matchup matrix */}
+      {(opponentMatchups.best.length > 0 || opponentMatchups.worst.length > 0) && (
+        <div className="flex justify-end -mt-3">
+          <Link href="/tools?tab=matrix" className="text-xs text-fab-gold hover:text-fab-gold-light transition-colors">
+            See full matchup matrix →
+          </Link>
+        </div>
       )}
 
       {/* Going First/Second per Hero */}
