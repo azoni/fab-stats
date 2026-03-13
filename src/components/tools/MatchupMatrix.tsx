@@ -21,6 +21,7 @@ function useDragScroll() {
   const onMouseDown = useCallback((e: ReactMouseEvent) => {
     const el = ref.current;
     if (!el) return;
+    e.preventDefault(); // prevent browser text-selection / native drag
     dragging.current = true;
     moved.current = false;
     startX.current = e.clientX;
