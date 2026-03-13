@@ -112,7 +112,13 @@ export async function getOnlineStats(): Promise<{ onlineNow: number; activeToday
   return { onlineNow, activeToday };
 }
 
-/** Fetch daily page view totals for the last N days (admin only) */
+// Local-timezone day key: "2026-03-12"
+function localDayKey(date: Date = new Date()): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+/** Fetch daily page view totals for the last N days (admin only).
+ *  Data is stored in UTC-keyed docs, but labels use local dates for display. */
 export async function getDailyPageViewTrend(days = 30): Promise<{ date: string; total: number }[]> {
   const now = new Date();
   const docIds = Array.from({ length: days }, (_, i) => {
@@ -124,7 +130,7 @@ export async function getDailyPageViewTrend(days = 30): Promise<{ date: string; 
     const d = new Date(now.getTime() - i * 86400000);
     const data = snap.data() as Record<string, number> | undefined;
     const total = data ? Object.values(data).reduce((sum, v) => sum + v, 0) : 0;
-    return { date: dayKey(d), total };
+    return { date: localDayKey(d), total };
   }).reverse();
 }
 

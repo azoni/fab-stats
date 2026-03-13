@@ -3026,17 +3026,20 @@ function GrowthCharts({ users }: { users: AdminUserStats[] }) {
     getDailyPageViewTrend(30).then((data) => { setPvTrend(data); setLoading(false); }).catch(() => setLoading(false));
   }, []);
 
-  // Build daily new user counts from createdAt
+  // Build daily new user counts from createdAt (local timezone)
   const usersByDay = useMemo(() => {
+    function localDay(d: Date) {
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    }
     const counts = new Map<string, number>();
     const now = new Date();
     for (let i = 29; i >= 0; i--) {
       const d = new Date(now.getTime() - i * 86400000);
-      counts.set(d.toISOString().slice(0, 10), 0);
+      counts.set(localDay(d), 0);
     }
     for (const u of users) {
       if (!u.createdAt) continue;
-      const day = u.createdAt.slice(0, 10);
+      const day = localDay(new Date(u.createdAt));
       if (counts.has(day)) counts.set(day, (counts.get(day) || 0) + 1);
     }
     return [...counts.entries()].map(([date, count]) => ({ date, count }));
