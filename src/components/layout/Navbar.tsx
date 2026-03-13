@@ -456,7 +456,7 @@ function MoreDropdown({
       </button>
 
       {open && (
-        <div className="absolute top-full right-0 mt-1 w-64 bg-fab-surface border border-fab-border rounded-lg shadow-xl z-50 max-h-[calc(100vh-4rem)] overflow-y-auto">
+        <div className="absolute top-full right-0 mt-1 w-64 bg-fab-surface border border-fab-border rounded-lg shadow-xl z-50">
           {/* Sections */}
           {sections.map((section, sIdx) => {
             const visible = section.links.filter((l) => (!l.authOnly || isAuthenticated) && (!l.adminOnly || isAdmin));
