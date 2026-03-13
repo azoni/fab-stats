@@ -53,7 +53,10 @@ export function buildOptimizedImageUrl(imageUrl: string, width: number, quality 
   // Non-local images should pass through unchanged.
   if (!imageUrl.startsWith("/")) return imageUrl;
 
-  const safeWidth = Math.max(64, Math.min(3840, Math.round(width)));
+  // Must match Next image optimizer allowed widths.
+  const allowedWidths = [16, 32, 48, 64, 96, 128, 256, 384, 640, 750, 828, 1080, 1200, 1920, 2048, 3840];
+  const requestedWidth = Math.max(16, Math.min(3840, Math.round(width)));
+  const safeWidth = allowedWidths.find((w) => w >= requestedWidth) ?? allowedWidths[allowedWidths.length - 1];
   const safeQuality = Math.max(35, Math.min(100, Math.round(quality)));
   return `/_next/image?url=${encodeURIComponent(imageUrl)}&w=${safeWidth}&q=${safeQuality}`;
 }
