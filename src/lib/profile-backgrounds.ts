@@ -53,6 +53,14 @@ export function buildOptimizedImageUrl(imageUrl: string, width: number, quality 
   // Non-local images should pass through unchanged.
   if (!imageUrl.startsWith("/")) return imageUrl;
 
+  // This app deploys as static export on Netlify (`publish = "out"`),
+  // where `/_next/image` is not available. Keep direct local URLs by default.
+  // If you move to a serverful Next runtime later, set:
+  // NEXT_PUBLIC_USE_NEXT_IMAGE_ENDPOINT=1
+  if (process.env.NEXT_PUBLIC_USE_NEXT_IMAGE_ENDPOINT !== "1") {
+    return imageUrl;
+  }
+
   // Must match Next image optimizer allowed widths.
   const allowedWidths = [16, 32, 48, 64, 96, 128, 256, 384, 640, 750, 828, 1080, 1200, 1920, 2048, 3840];
   const requestedWidth = Math.max(16, Math.min(3840, Math.round(width)));
