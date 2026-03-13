@@ -466,7 +466,7 @@ function MoreDropdown({
               return (
                 <div key={section.label} className="p-1.5">
                   {visible.map((link) => (
-                    <div key={link.href} className="group/sub relative">
+                    <div key={link.href} className="group/sub">
                       <Link href={link.href} onClick={() => setOpen(false)} className={`${linkClass(link.href)} justify-between`}>
                         <span className="flex items-center gap-3">
                           {link.icon}
@@ -474,27 +474,25 @@ function MoreDropdown({
                         </span>
                         {link.badge && <span className="text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-teal-400/15 text-teal-400 border border-teal-400/25">{link.badge}</span>}
                         {link.subItems && (
-                          <ChevronDown className="w-3 h-3 text-fab-dim -rotate-90" />
+                          <ChevronDown className="w-3 h-3 text-fab-dim transition-transform group-hover/sub:rotate-180" />
                         )}
                       </Link>
                       {link.subItems && (
-                        <div className="absolute right-full top-0 pr-1 hidden group-hover/sub:block z-50">
-                          <div className="w-48 bg-fab-surface border border-fab-border rounded-lg shadow-xl overflow-hidden">
-                            {link.subItems.map((sub) => (
-                              <Link
-                                key={sub.href}
-                                href={sub.href}
-                                onClick={() => setOpen(false)}
-                                className={`block px-3 py-2 text-sm transition-colors ${
-                                  pathname === sub.href || (sub.href.includes("?") && pathname === sub.href.split("?")[0])
-                                    ? "text-fab-gold bg-fab-gold/10"
-                                    : "text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover"
-                                }`}
-                              >
-                                {sub.label}
-                              </Link>
-                            ))}
-                          </div>
+                        <div className="hidden group-hover/sub:block pl-7 pb-1">
+                          {link.subItems.map((sub) => (
+                            <Link
+                              key={sub.href}
+                              href={sub.href}
+                              onClick={() => setOpen(false)}
+                              className={`block px-3 py-1.5 rounded-md text-[13px] transition-colors ${
+                                pathname === sub.href || (sub.href.includes("?") && pathname === sub.href.split("?")[0])
+                                  ? "text-fab-gold"
+                                  : "text-fab-dim hover:text-fab-text"
+                              }`}
+                            >
+                              {sub.label}
+                            </Link>
+                          ))}
                         </div>
                       )}
                     </div>
