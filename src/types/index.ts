@@ -174,6 +174,7 @@ export interface UserProfile {
   underlineEventType?: string;
   underlinePlacement?: string;
   selectedBadgeIds?: string[];
+  siteBackgroundId?: string;
 }
 
 export interface ShowcaseCard {

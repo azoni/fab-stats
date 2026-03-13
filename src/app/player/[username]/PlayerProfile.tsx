@@ -35,6 +35,7 @@ import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { BestFinishShareModal } from "@/components/profile/BestFinishCard";
 import { ProfileShareModal } from "@/components/profile/ProfileCard";
+import { BackgroundChooser } from "@/components/profile/BackgroundChooser";
 import { ShowcaseSection } from "@/components/profile/ShowcaseSection";
 import { KudosSection } from "@/components/profile/KudosSection";
 import { CardBorderWrapper, BorderPicker, UnderlinePicker } from "@/components/profile/CardBorderWrapper";
@@ -90,7 +91,7 @@ export default function PlayerProfile() {
   const router = useRouter();
   const username = decodeURIComponent(pathname.split("/").pop() || "");
   const [state, setState] = useState<PageState>({ status: "loading" });
-  const { isAdmin, user: currentUser, isGuest, profile: myProfile } = useAuth();
+  const { isAdmin, user: currentUser, isGuest, profile: myProfile, refreshProfile } = useAuth();
   const { entries: lbEntries } = useLeaderboard();
   const { isFavorited, toggleFavorite } = useFavorites();
   const { isFriend, hasSentRequest, hasReceivedRequest, getFriendshipForUser, sendRequest, acceptRequest } = useFriends();
@@ -108,6 +109,8 @@ export default function PlayerProfile() {
   const [showMajorEvents, setShowMajorEvents] = useState(true);
   const [userBadges, setUserBadges] = useState<Achievement[]>([]);
   const [assignedBadgeIds, setAssignedBadgeIds] = useState<string[]>([]);
+  const [showBackgroundPicker, setShowBackgroundPicker] = useState(false);
+  const [savingBackground, setSavingBackground] = useState(false);
   const [friendCount, setFriendCount] = useState<number | null>(null);
   const [kudosCounts, setKudosCounts] = useState<Record<string, number>>({});
   const [kudosGivenCounts, setKudosGivenCounts] = useState<Record<string, number>>({});
@@ -617,6 +620,20 @@ export default function PlayerProfile() {
               </button>
             </div>
           )}
+          {actualIsOwner && (
+            <div className="flex justify-end mb-3">
+              <button
+                onClick={() => setShowBackgroundPicker(true)}
+                className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-md border border-fab-border text-fab-dim hover:text-fab-text hover:border-fab-muted transition-colors"
+                title="Change profile background"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="m2.25 15 5.159-5.159a2.25 2.25 0 0 1 3.182 0L15 14.25m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0L21.75 15m-10.5-6h.008v.008h-.008V9Zm-8.25 9h18a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5h-18A1.5 1.5 0 0 0 1.5 6v10.5A1.5 1.5 0 0 0 3 18Z" />
+                </svg>
+                Change Background
+              </button>
+            </div>
+          )}
           {/* Profile row + emblem */}
           <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
             <div className="flex-1 min-w-0">
@@ -1058,6 +1075,44 @@ export default function PlayerProfile() {
             </div>
             <span className="text-[10px] text-fab-dim">ELO</span>
           </Link>
+        </div>
+      )}
+
+      {/* Profile background picker modal */}
+      {showBackgroundPicker && actualIsOwner && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setShowBackgroundPicker(false)}>
+          <div className="bg-fab-surface border border-fab-border rounded-xl max-w-3xl w-full mx-4 overflow-hidden" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-4 py-3 border-b border-fab-border">
+              <h3 className="text-sm font-semibold text-fab-text">Change Profile Background</h3>
+              <button onClick={() => setShowBackgroundPicker(false)} className="text-fab-muted hover:text-fab-text transition-colors">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="p-4">
+              <p className="text-xs text-fab-dim mb-3">
+                Your selection applies site-wide for your account and appears when others view your profile.
+              </p>
+              <BackgroundChooser
+                selectedId={profile.siteBackgroundId || "none"}
+                isAdmin={isAdmin}
+                disabled={savingBackground}
+                onSelect={async (id) => {
+                  if (savingBackground) return;
+                  setSavingBackground(true);
+                  try {
+                    await updateProfile(profile.uid, { siteBackgroundId: id === "none" ? undefined : id });
+                    setState((prev) => prev.status === "loaded" ? { ...prev, profile: { ...prev.profile, siteBackgroundId: id === "none" ? undefined : id } } : prev);
+                    await refreshProfile().catch(() => {});
+                  } finally {
+                    setSavingBackground(false);
+                  }
+                }}
+              />
+              <p className="text-[10px] text-fab-dim mt-2">{savingBackground ? "Saving background..." : "Tip: more controls are available in Settings."}</p>
+            </div>
+          </div>
         </div>
       )}
 

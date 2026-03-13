@@ -16,6 +16,7 @@ export interface FinishTheme {
   muted: string;
   dim: string;
   trophy: string;
+  backgroundImage?: string;
 }
 
 export const FINISH_THEMES: FinishTheme[] = [
@@ -30,6 +31,7 @@ export const FINISH_THEMES: FinishTheme[] = [
     muted: "#9a8a5a",
     dim: "#6b5f3a",
     trophy: "#fbbf24",
+    backgroundImage: "/backgrounds/fab-official/monarch-key-art.jpg",
   },
   {
     id: "platinum",
@@ -42,6 +44,7 @@ export const FINISH_THEMES: FinishTheme[] = [
     muted: "#7a80b0",
     dim: "#4a4e78",
     trophy: "#c7d2fe",
+    backgroundImage: "/backgrounds/fab-official/hunted-key-art.jpg",
   },
   {
     id: "emerald",
@@ -54,6 +57,7 @@ export const FINISH_THEMES: FinishTheme[] = [
     muted: "#5a9a78",
     dim: "#3a6b50",
     trophy: "#6ee7b7",
+    backgroundImage: "/backgrounds/fab-official/tales-of-aria-key-art.jpg",
   },
   {
     id: "flame",
@@ -66,6 +70,7 @@ export const FINISH_THEMES: FinishTheme[] = [
     muted: "#9a7050",
     dim: "#6b4a30",
     trophy: "#fb923c",
+    backgroundImage: "/backgrounds/fab-official/hunted-fang-adult.jpg",
   },
   {
     id: "diamond",
@@ -78,6 +83,46 @@ export const FINISH_THEMES: FinishTheme[] = [
     muted: "#5a8a98",
     dim: "#3a5a68",
     trophy: "#67e8f9",
+    backgroundImage: "/backgrounds/fab-official/high-seas-puffin.jpg",
+  },
+  {
+    id: "playmat-aria",
+    label: "Aria Playmat",
+    bg: "#0d1712",
+    surface: "#14231c",
+    border: "#2e4e3d",
+    accent: "#7ee0bb",
+    text: "#eafdf4",
+    muted: "#8bb9a6",
+    dim: "#557764",
+    trophy: "#6ee7b7",
+    backgroundImage: "/backgrounds/fab-official/lore-aria-matte.jpg",
+  },
+  {
+    id: "playmat-solana",
+    label: "Solana Playmat",
+    bg: "#1b1509",
+    surface: "#241b0c",
+    border: "#5b4520",
+    accent: "#f5d26c",
+    text: "#fff6dc",
+    muted: "#b9a678",
+    dim: "#8a7750",
+    trophy: "#facc15",
+    backgroundImage: "/backgrounds/fab-official/lore-solana-matte.jpg",
+  },
+  {
+    id: "playmat-volcor",
+    label: "Volcor Playmat",
+    bg: "#1b0d09",
+    surface: "#26130f",
+    border: "#5b2f20",
+    accent: "#fb923c",
+    text: "#fff2eb",
+    muted: "#c08d78",
+    dim: "#875c4d",
+    trophy: "#fb923c",
+    backgroundImage: "/backgrounds/fab-official/lore-volcor-matte.jpg",
   },
 ];
 
@@ -122,6 +167,17 @@ export function BestFinishCard({ data, theme }: { data: BestFinishData; theme?: 
 
   return (
     <div style={{ backgroundColor: t.surface, borderColor: t.border, width: 380 }} className="border rounded-xl overflow-hidden relative">
+      {t.backgroundImage && (
+        <>
+          <img
+            src={t.backgroundImage}
+            alt=""
+            className="absolute inset-0 w-full h-full object-cover"
+            crossOrigin="anonymous"
+          />
+          <div className="absolute inset-0" style={{ backgroundColor: `${t.surface}B8` }} />
+        </>
+      )}
       {/* Background pattern + vignette */}
       <CardBackgroundPattern color={t.accent} id="bestfinish" opacity={0.04} />
       <InnerVignette opacity={0.2} />
@@ -284,21 +340,38 @@ export function BestFinishShareModal({
         {/* Theme picker */}
         <div className="px-4 pb-3">
           <p className="text-[10px] text-fab-muted uppercase tracking-wider font-medium mb-2">Theme</p>
-          <div className="flex gap-2">
+          <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
             {FINISH_THEMES.map((theme) => (
               <button
                 key={theme.id}
                 onClick={() => setSelectedTheme(theme)}
-                className={`flex-1 rounded-lg p-2 text-center transition-all border ${
+                className={`rounded-lg p-2 text-center transition-all border ${
                   selectedTheme.id === theme.id
                     ? "border-fab-gold ring-1 ring-fab-gold/30"
                     : "border-fab-border hover:border-fab-muted"
                 }`}
               >
-                <div className="flex gap-0.5 justify-center mb-1">
-                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: theme.bg }} />
-                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: theme.accent }} />
-                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: theme.trophy }} />
+                <div className="h-8 rounded-md overflow-hidden border border-white/10 mb-1.5 relative">
+                  {theme.backgroundImage ? (
+                    <>
+                      <img
+                        src={theme.backgroundImage}
+                        alt=""
+                        className="absolute inset-0 w-full h-full object-cover"
+                        crossOrigin="anonymous"
+                      />
+                      <div className="absolute inset-0" style={{ backgroundColor: `${theme.surface}99` }} />
+                    </>
+                  ) : (
+                    <div
+                      className="absolute inset-0"
+                      style={{ background: `linear-gradient(135deg, ${theme.bg}, ${theme.surface})` }}
+                    />
+                  )}
+                  <div
+                    className="absolute top-0 left-0 right-0 h-0.5"
+                    style={{ backgroundColor: theme.accent }}
+                  />
                 </div>
                 <p className="text-[10px] text-fab-muted">{theme.label}</p>
               </button>

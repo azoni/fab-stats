@@ -334,7 +334,7 @@ export async function searchUsernames(
 
 export async function updateProfile(
   userId: string,
-  updates: Partial<Pick<UserProfile, "displayName" | "photoUrl" | "isPublic" | "profileVisibility" | "firstName" | "lastName" | "searchName" | "earnings" | "showNameOnProfiles" | "hideFromSpotlight" | "hideFromFeed" | "hideFromGuests" | "gemId" | "unlockedCans" | "showcase" | "showcaseSecondary" | "selectedEmblem" | "selectedClassEmblem" | "notificationsEnabled" | "socialLinks" | "borderStyle" | "borderEventType" | "borderPlacement" | "underlineEventType" | "underlinePlacement" | "selectedBadgeIds">>
+  updates: Partial<Pick<UserProfile, "displayName" | "photoUrl" | "isPublic" | "profileVisibility" | "firstName" | "lastName" | "searchName" | "earnings" | "showNameOnProfiles" | "hideFromSpotlight" | "hideFromFeed" | "hideFromGuests" | "gemId" | "unlockedCans" | "showcase" | "showcaseSecondary" | "selectedEmblem" | "selectedClassEmblem" | "notificationsEnabled" | "socialLinks" | "borderStyle" | "borderEventType" | "borderPlacement" | "underlineEventType" | "underlinePlacement" | "selectedBadgeIds" | "siteBackgroundId">>
 ): Promise<void> {
   const profileRef = doc(db, "users", userId, "profile", "main");
   // Strip undefined values — Firestore rejects them

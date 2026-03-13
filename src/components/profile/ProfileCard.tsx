@@ -61,7 +61,7 @@ export const PROFILE_THEMES: CardTheme[] = [
     loss: "#fca5a5",
     draw: "#a1a1aa",
     barBg: "rgba(245,158,11,0.2)",
-    backgroundImage: "/backgrounds/bg-warrior.svg",
+    backgroundImage: "/backgrounds/fab-official/wtr-key-art-v1.jpg",
   },
   {
     id: "arcane",
@@ -77,7 +77,7 @@ export const PROFILE_THEMES: CardTheme[] = [
     loss: "#fb7185",
     draw: "#a1a1aa",
     barBg: "rgba(139,92,246,0.2)",
-    backgroundImage: "/backgrounds/bg-arcane.svg",
+    backgroundImage: "/backgrounds/fab-official/arcane-rising-key-art.jpg",
   },
   {
     id: "dragon",
@@ -93,7 +93,7 @@ export const PROFILE_THEMES: CardTheme[] = [
     loss: "#fda4af",
     draw: "#a1a1aa",
     barBg: "rgba(239,68,68,0.2)",
-    backgroundImage: "/backgrounds/bg-dragon.svg",
+    backgroundImage: "/backgrounds/fab-official/hunted-cindra-adult.jpg",
   },
   {
     id: "guardian",
@@ -109,7 +109,7 @@ export const PROFILE_THEMES: CardTheme[] = [
     loss: "#fca5a5",
     draw: "#94a3b8",
     barBg: "rgba(56,189,248,0.2)",
-    backgroundImage: "/backgrounds/bg-guardian.svg",
+    backgroundImage: "/backgrounds/fab-official/high-seas-gravybones.jpg",
   },
   {
     id: "nature",
@@ -125,7 +125,55 @@ export const PROFILE_THEMES: CardTheme[] = [
     loss: "#fca5a5",
     draw: "#a1a1aa",
     barBg: "rgba(16,185,129,0.2)",
-    backgroundImage: "/backgrounds/bg-nature.svg",
+    backgroundImage: "/backgrounds/fab-official/tales-of-aria-key-art.jpg",
+  },
+  {
+    id: "playmat-aria",
+    label: "Aria Playmat",
+    bg: "#0a1410",
+    surface: "#102018",
+    border: "#2e4e3d",
+    accent: "#7ee0bb",
+    text: "#eafdf4",
+    muted: "#8bb9a6",
+    dim: "#557764",
+    win: "#6ee7b7",
+    loss: "#fca5a5",
+    draw: "#a1a1aa",
+    barBg: "rgba(126,224,187,0.2)",
+    backgroundImage: "/backgrounds/fab-official/lore-aria-matte.jpg",
+  },
+  {
+    id: "playmat-solana",
+    label: "Solana Playmat",
+    bg: "#1a1408",
+    surface: "#241b0c",
+    border: "#5b4520",
+    accent: "#f5d26c",
+    text: "#fff6dc",
+    muted: "#b9a678",
+    dim: "#8a7750",
+    win: "#86efac",
+    loss: "#fda4af",
+    draw: "#c4b5fd",
+    barBg: "rgba(245,210,108,0.2)",
+    backgroundImage: "/backgrounds/fab-official/lore-solana-matte.jpg",
+  },
+  {
+    id: "playmat-volcor",
+    label: "Volcor Playmat",
+    bg: "#1a0c08",
+    surface: "#24120f",
+    border: "#5b2f20",
+    accent: "#fb923c",
+    text: "#fff2eb",
+    muted: "#c08d78",
+    dim: "#875c4d",
+    win: "#86efac",
+    loss: "#fda4af",
+    draw: "#a1a1aa",
+    barBg: "rgba(251,146,60,0.22)",
+    backgroundImage: "/backgrounds/fab-official/lore-volcor-matte.jpg",
   },
 ];
 
@@ -523,21 +571,38 @@ export function ProfileShareModal({
         {/* Theme picker */}
         <div className="px-4 pb-3">
           <p className="text-[10px] text-fab-muted uppercase tracking-wider font-medium mb-2">Theme</p>
-          <div className="flex gap-2">
+          <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
             {PROFILE_THEMES.map((theme) => (
               <button
                 key={theme.id}
                 onClick={() => setSelectedTheme(theme)}
-                className={`flex-1 rounded-lg p-2 text-center transition-all border ${
+                className={`rounded-lg p-2 text-center transition-all border ${
                   selectedTheme.id === theme.id
                     ? "border-fab-gold ring-1 ring-fab-gold/30"
                     : "border-fab-border hover:border-fab-muted"
                 }`}
               >
-                <div className="flex gap-0.5 justify-center mb-1">
-                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: theme.bg }} />
-                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: theme.accent }} />
-                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: theme.win }} />
+                <div className="h-8 rounded-md overflow-hidden border border-white/10 mb-1.5 relative">
+                  {theme.backgroundImage ? (
+                    <>
+                      <img
+                        src={theme.backgroundImage}
+                        alt=""
+                        className="absolute inset-0 w-full h-full object-cover"
+                        crossOrigin="anonymous"
+                      />
+                      <div className="absolute inset-0" style={{ backgroundColor: `${theme.surface}99` }} />
+                    </>
+                  ) : (
+                    <div
+                      className="absolute inset-0"
+                      style={{ background: `linear-gradient(135deg, ${theme.bg}, ${theme.surface})` }}
+                    />
+                  )}
+                  <div
+                    className="absolute top-0 left-0 right-0 h-0.5"
+                    style={{ backgroundColor: theme.accent }}
+                  />
                 </div>
                 <p className="text-[10px] text-fab-muted">{theme.label}</p>
               </button>

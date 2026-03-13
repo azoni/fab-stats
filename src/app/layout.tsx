@@ -8,6 +8,7 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
 import { LayoutShell } from "@/components/auth/LayoutShell";
 import { GuestBanner } from "@/components/auth/GuestBanner";
 import { SiteBanner } from "@/components/layout/SiteBanner";
+import { ProfileBackgroundController } from "@/components/layout/ProfileBackgroundController";
 import { FeedbackFab } from "@/components/feedback/FeedbackFab";
 import { ChatProvider } from "@/contexts/ChatContext";
 import { ChatFab } from "@/components/chat/ChatFab";
@@ -127,6 +128,7 @@ export default function RootLayout({
         <AuthProvider>
         <ChatProvider>
         <TooltipProvider>
+          <ProfileBackgroundController />
           <Navbar />
           <main className="min-h-screen pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-8 md:pt-16">
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6">

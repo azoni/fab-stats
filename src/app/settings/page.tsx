@@ -1,5 +1,5 @@
 "use client";
-import { useState, useRef, useMemo } from "react";
+import { useState, useRef, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
 import { useMatches } from "@/hooks/useMatches";
@@ -20,6 +20,7 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { THEME_OPTIONS, type ThemeName } from "@/lib/theme-config";
 import { Switch } from "@/components/ui/switch";
 import { Collapsible } from "@/components/ui/collapsible";
+import { BackgroundChooser } from "@/components/profile/BackgroundChooser";
 import { Settings, CheckCircle, Camera, ChevronRight, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 
@@ -177,7 +178,7 @@ function YearInReview() {
 }
 
 export default function SettingsPage() {
-  const { user, profile, signOut, isGuest, refreshProfile } = useAuth();
+  const { user, profile, signOut, isGuest, isAdmin, refreshProfile } = useAuth();
   const { refreshMatches } = useMatches();
   const creators = useCreators();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -197,7 +198,6 @@ export default function SettingsPage() {
   const [needsPassword, setNeedsPassword] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
-  const [isPublic, setIsPublic] = useState(profile?.isPublic ?? false);
   const [profileVisibility, setProfileVisibility] = useState<"public" | "friends" | "private">(
     profile?.profileVisibility ?? (profile?.isPublic ? "public" : "private")
   );
@@ -210,9 +210,15 @@ export default function SettingsPage() {
   const [togglingFeed, setTogglingFeed] = useState(false);
   const [hideFromGuests, setHideFromGuests] = useState(profile?.hideFromGuests ?? false);
   const [togglingGuests, setTogglingGuests] = useState(false);
+  const [siteBackgroundId, setSiteBackgroundId] = useState(profile?.siteBackgroundId || "none");
+  const [savingBackground, setSavingBackground] = useState(false);
   const [confirmClear, setConfirmClear] = useState(false);
   const [clearing, setClearing] = useState(false);
   const [clearConfirmText, setClearConfirmText] = useState("");
+
+  useEffect(() => {
+    setSiteBackgroundId(profile?.siteBackgroundId || "none");
+  }, [profile?.siteBackgroundId]);
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
@@ -270,6 +276,23 @@ export default function SettingsPage() {
     }
     setUploading(false);
     toast.success("Photo updated");
+  }
+
+  async function handleBackgroundChange(nextId: string) {
+    if (!user || savingBackground) return;
+    const previousId = siteBackgroundId;
+    setSiteBackgroundId(nextId);
+    setSavingBackground(true);
+    try {
+      await updateProfile(user.uid, { siteBackgroundId: nextId === "none" ? undefined : nextId });
+      await refreshProfile();
+      toast.success("Background updated");
+    } catch {
+      setSiteBackgroundId(previousId);
+      toast.error("Failed to update background.");
+    } finally {
+      setSavingBackground(false);
+    }
   }
 
   if (isGuest) {
@@ -371,6 +394,26 @@ export default function SettingsPage() {
 
       {/* Appearance */}
       <ThemePicker />
+
+      {/* Profile background */}
+      <div id="background" className="bg-fab-surface border border-fab-border rounded-lg p-6 mb-4">
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="text-sm font-semibold text-fab-text">Profile Background</h2>
+          {isAdmin && (
+            <span className="text-[10px] px-2 py-0.5 rounded bg-fab-gold/15 text-fab-gold">Admin: full FaB art library</span>
+          )}
+        </div>
+        <p className="text-xs text-fab-dim mb-3">
+          This background is shown across your site view and on your public profile. When viewing another player&apos;s profile, their selected background is used.
+        </p>
+        <BackgroundChooser
+          selectedId={siteBackgroundId}
+          isAdmin={isAdmin}
+          onSelect={handleBackgroundChange}
+          disabled={savingBackground}
+        />
+        <p className="text-[10px] text-fab-dim mt-2">{savingBackground ? "Saving background..." : "Tip: You can also change this directly from your profile page."}</p>
+      </div>
 
       {/* Profile info */}
       <form onSubmit={handleSave} className="bg-fab-surface border border-fab-border rounded-lg p-6 mb-4">
@@ -510,7 +553,6 @@ export default function SettingsPage() {
                       try {
                         const nextPublic = opt === "public";
                         await updateProfile(user.uid, { isPublic: nextPublic, profileVisibility: opt });
-                        setIsPublic(nextPublic);
                         setProfileVisibility(opt);
                         // Sync feed events visibility in background
                         if (profile) {
@@ -728,15 +770,16 @@ export default function SettingsPage() {
               const allMatches = await getMatchesByUserId(user.uid);
               const exportData = {
                 exportedAt: new Date().toISOString(),
-                profile: {
-                  uid: profile.uid,
-                  username: profile.username,
-                  displayName: profile.displayName,
-                  firstName: profile.firstName,
-                  lastName: profile.lastName,
-                  isPublic: profile.isPublic,
-                  createdAt: profile.createdAt,
-                },
+                  profile: {
+                    uid: profile.uid,
+                    username: profile.username,
+                    displayName: profile.displayName,
+                    firstName: profile.firstName,
+                    lastName: profile.lastName,
+                    isPublic: profile.isPublic,
+                    createdAt: profile.createdAt,
+                    siteBackgroundId: profile.siteBackgroundId,
+                  },
                 matches: allMatches.map(({ id, ...m }) => ({ id, ...m })),
                 totalMatches: allMatches.length,
               };
