@@ -26,6 +26,7 @@
   --font-display: var(--font-nunito), var(--font-geist-sans), sans-serif;
   --fab-user-bg-image: none;
   --fab-user-bg-overlay: rgba(0, 0, 0, 0);
+  --fab-user-bg-position: center top;
 }
 
 body {
@@ -34,7 +35,7 @@ body {
     linear-gradient(180deg, var(--fab-user-bg-overlay), var(--fab-user-bg-overlay)),
     var(--fab-user-bg-image);
   background-size: cover, cover;
-  background-position: center, center;
+  background-position: center, var(--fab-user-bg-position);
   background-repeat: no-repeat, no-repeat;
   background-attachment: fixed, fixed;
   color: var(--color-fab-text);

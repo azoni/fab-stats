@@ -6,6 +6,7 @@ import { copyCardImage, downloadCardImage } from "@/lib/share-image";
 import { getHeroByName } from "@/lib/heroes";
 import { HeroClassIcon } from "@/components/heroes/HeroClassIcon";
 import { FINISH_THEMES, type FinishTheme } from "@/components/profile/BestFinishCard";
+import { buildOptimizedImageUrl, resolveBackgroundPositionForImage } from "@/lib/profile-backgrounds";
 import type { PlayoffFinish } from "@/lib/stats";
 import {
   TIER_MAP,
@@ -90,6 +91,20 @@ export function EventShareCardInner({ data, theme }: { data: EventShareData; the
 
   return (
     <div style={{ backgroundColor: t.surface, borderColor: t.border, width: 380 }} className="border rounded-xl overflow-hidden relative">
+      {t.backgroundImage && (
+        <>
+          <img
+            src={buildOptimizedImageUrl(t.backgroundImage, 1080, 62)}
+            alt=""
+            className="absolute inset-0 w-full h-full object-cover"
+            style={{ objectPosition: resolveBackgroundPositionForImage(t.backgroundImage) }}
+            loading="eager"
+            decoding="async"
+            crossOrigin="anonymous"
+          />
+          <div className="absolute inset-0" style={{ backgroundColor: `${t.surface}B8` }} />
+        </>
+      )}
       {/* Background pattern + vignette */}
       <CardBackgroundPattern color={t.accent} id="event" opacity={0.04} />
       <InnerVignette opacity={0.2} />
@@ -98,7 +113,7 @@ export function EventShareCardInner({ data, theme }: { data: EventShareData; the
       {/* Accent top bar */}
       <AccentTopBar color={t.accent} />
       {/* Header */}
-      <div style={{ backgroundColor: t.bg, borderColor: t.border }} className="px-5 py-3 relative">
+      <div style={{ backgroundColor: t.backgroundImage ? `${t.bg}CC` : t.bg, borderColor: t.border }} className="px-5 py-3 relative">
         <p style={{ color: t.accent }} className="text-[11px] uppercase tracking-[0.25em] text-center font-black">
           {event.eventType && event.eventType !== "Other" ? event.eventType : "Event"} Result
         </p>
@@ -142,7 +157,7 @@ export function EventShareCardInner({ data, theme }: { data: EventShareData; the
         </div>
 
         {/* Player */}
-        <div style={{ backgroundColor: t.bg }} className="rounded-lg p-3 mt-4 text-center">
+        <div style={{ backgroundColor: t.backgroundImage ? `${t.bg}CC` : t.bg }} className="rounded-lg p-3 mt-4 text-center">
           <p style={{ color: t.muted }} className="text-[10px] uppercase tracking-widest mb-1">Player</p>
           <p style={{ color: t.accent }} className="text-lg font-black">{playerName}</p>
           {sharedHero && (
@@ -168,7 +183,7 @@ export function EventShareCardInner({ data, theme }: { data: EventShareData; the
 
       {/* Footer */}
       <OrnamentalDivider color={t.accent} className="mx-3" />
-      <div style={{ backgroundColor: t.bg }} className="px-5 py-2.5 relative">
+      <div style={{ backgroundColor: t.backgroundImage ? `${t.bg}CC` : t.bg }} className="px-5 py-2.5 relative">
         <p style={{ color: t.accent }} className="text-[11px] text-center tracking-wider font-semibold opacity-50">fabstats.net</p>
       </div>
     </div>
@@ -240,23 +255,38 @@ export function EventShareModal({ event, playerName, onClose }: EventShareModalP
         {/* Theme picker */}
         <div className="px-4 pb-3">
           <p className="text-[10px] text-fab-muted uppercase tracking-wider font-medium mb-2">Theme</p>
-          <div className="flex gap-2">
+          <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
             {FINISH_THEMES.map((theme) => (
               <button
                 key={theme.id}
                 onClick={() => setSelectedTheme(theme)}
-                className={`flex-1 rounded-lg p-2 text-center transition-all border ${
+                className={`rounded-lg p-2 text-center transition-all border ${
                   selectedTheme.id === theme.id
                     ? "border-fab-gold ring-1 ring-fab-gold/30"
                     : "border-fab-border hover:border-fab-muted"
                 }`}
               >
-                <div className="flex gap-0.5 justify-center mb-1">
-                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: theme.bg }} />
-                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: theme.accent }} />
-                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: theme.trophy }} />
+                <div className="h-8 rounded-md overflow-hidden border border-white/10 mb-1.5 relative">
+                  {theme.backgroundImage ? (
+                    <>
+                      <img
+                        src={buildOptimizedImageUrl(theme.backgroundImage, 260, 46)}
+                        alt=""
+                        className="absolute inset-0 w-full h-full object-cover"
+                        style={{ objectPosition: resolveBackgroundPositionForImage(theme.backgroundImage) }}
+                        loading="lazy"
+                        decoding="async"
+                        fetchPriority="low"
+                        crossOrigin="anonymous"
+                      />
+                      <div className="absolute inset-0" style={{ backgroundColor: `${theme.surface}99` }} />
+                    </>
+                  ) : (
+                    <div className="absolute inset-0" style={{ background: `linear-gradient(135deg, ${theme.bg}, ${theme.surface})` }} />
+                  )}
+                  <div className="absolute top-0 left-0 right-0 h-0.5" style={{ backgroundColor: theme.accent }} />
                 </div>
-                <p className="text-[10px] text-fab-muted">{theme.label}</p>
+                <p className="text-[10px] text-fab-muted leading-tight">{theme.label}</p>
               </button>
             ))}
           </div>

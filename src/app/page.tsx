@@ -23,16 +23,20 @@ import { BadgeStrip } from "@/components/profile/BadgeStrip";
 import { getHeroByName } from "@/lib/heroes";
 import { loadKudosCounts } from "@/lib/kudos";
 import { CardBorderWrapper } from "@/components/profile/CardBorderWrapper";
+import { BackgroundChooser } from "@/components/profile/BackgroundChooser";
 import type { UnderlineConfig } from "@/components/profile/CardBorderWrapper";
+import { updateProfile } from "@/lib/firestore-storage";
 
 export default function Dashboard() {
   const router = useRouter();
   const { matches, isLoaded } = useMatches();
-  const { user, profile } = useAuth();
+  const { user, profile, isAdmin, refreshProfile } = useAuth();
   const { entries: lbEntries } = useLeaderboard(true);
   const [shareCopied, setShareCopied] = useState(false);
   const [bestFinishShareOpen, setBestFinishShareOpen] = useState(false);
   const [profileShareOpen, setProfileShareOpen] = useState(false);
+  const [showBackgroundPicker, setShowBackgroundPicker] = useState(false);
+  const [savingBackground, setSavingBackground] = useState(false);
   const [kudosTotal, setKudosTotal] = useState<number | null>(null);
   const [filterFormat, setFilterFormat] = useState("all");
   const [filterEventType, setFilterEventType] = useState("all");
@@ -420,9 +424,26 @@ export default function Dashboard() {
                       <span className="text-[10px] font-semibold">Card</span>
                     </button>
                   )}
+                  {profile?.username && (
+                    <button
+                      onClick={() => setShowBackgroundPicker(true)}
+                      className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-fab-bg border border-fab-border text-fab-dim hover:text-fab-text hover:border-fab-muted transition-colors"
+                      title="Change profile background"
+                    >
+                      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="m2.25 15 5.159-5.159a2.25 2.25 0 0 1 3.182 0L15 14.25m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0L21.75 15m-10.5-6h.008v.008h-.008V9Zm-8.25 9h18a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5h-18A1.5 1.5 0 0 0 1.5 6v10.5A1.5 1.5 0 0 0 3 18Z" />
+                      </svg>
+                      <span className="text-[10px] font-semibold">Background</span>
+                    </button>
+                  )}
                 </div>
               </div>
               <BadgeStrip selectedBadgeIds={profile?.selectedBadgeIds} className="mt-2 ml-1" />
+              {profile?.username && (
+                <p className="mt-1 ml-1 text-[10px] text-fab-dim">
+                  Background sets what visitors see on your public profile.
+                </p>
+              )}
               {/* Score badges — bottom right */}
               <div className="absolute bottom-1.5 right-2.5 flex items-center gap-1.5 z-10" onClick={(e) => e.stopPropagation()}>
                 {kudosTotal !== null && (
@@ -568,6 +589,42 @@ export default function Dashboard() {
           }}
           onClose={() => setProfileShareOpen(false)}
         />
+      )}
+
+      {showBackgroundPicker && user && profile && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setShowBackgroundPicker(false)}>
+          <div className="bg-fab-surface border border-fab-border rounded-xl max-w-3xl w-full mx-4 overflow-hidden" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-4 py-3 border-b border-fab-border">
+              <h3 className="text-sm font-semibold text-fab-text">Change Profile Background</h3>
+              <button onClick={() => setShowBackgroundPicker(false)} className="text-fab-muted hover:text-fab-text transition-colors">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="p-4">
+              <p className="text-xs text-fab-dim mb-3">
+                This is the background others will see when they visit your profile.
+              </p>
+              <BackgroundChooser
+                selectedId={profile.siteBackgroundId || "none"}
+                isAdmin={isAdmin}
+                disabled={savingBackground}
+                onSelect={async (id) => {
+                  if (savingBackground) return;
+                  setSavingBackground(true);
+                  try {
+                    await updateProfile(user.uid, { siteBackgroundId: id === "none" ? undefined : id });
+                    await refreshProfile().catch(() => {});
+                  } finally {
+                    setSavingBackground(false);
+                  }
+                }}
+              />
+              <p className="text-[10px] text-fab-dim mt-2">{savingBackground ? "Saving background..." : "Tip: this applies site-wide for your own account view too."}</p>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

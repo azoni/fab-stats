@@ -17,6 +17,7 @@ import { FabRadarChart } from "@/components/charts/RadarChart";
 import { MiniDonut } from "@/components/charts/MiniDonut";
 import { WinRateRing } from "@/components/charts/WinRateRing";
 import { SegmentedBar } from "@/components/charts/SegmentedBar";
+import { buildOptimizedImageUrl, resolveBackgroundPositionForImage } from "@/lib/profile-backgrounds";
 
 import { getMatchesByUserId, getProfile } from "@/lib/firestore-storage";
 import { normalizeOpponentName, computeOpponentStats } from "@/lib/stats";
@@ -1411,23 +1412,38 @@ function CompareShareModal({
 
         <div className="px-4 pb-3">
           <p className="text-[10px] text-fab-muted uppercase tracking-wider font-medium mb-2">Theme</p>
-          <div className="flex gap-2">
+          <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
             {CARD_THEMES.map((theme) => (
               <button
                 key={theme.id}
                 onClick={() => setSelectedTheme(theme)}
-                className={`flex-1 rounded-lg p-2 text-center transition-all border ${
+                className={`rounded-lg p-2 text-center transition-all border ${
                   selectedTheme.id === theme.id
                     ? "border-fab-gold ring-1 ring-fab-gold/30"
                     : "border-fab-border hover:border-fab-muted"
                 }`}
               >
-                <div className="flex gap-0.5 justify-center mb-1">
-                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: theme.bg }} />
-                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: theme.accent }} />
-                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: theme.win }} />
+                <div className="h-8 rounded-md overflow-hidden border border-white/10 mb-1.5 relative">
+                  {theme.backgroundImage ? (
+                    <>
+                      <img
+                        src={buildOptimizedImageUrl(theme.backgroundImage, 260, 46)}
+                        alt=""
+                        className="absolute inset-0 w-full h-full object-cover"
+                        style={{ objectPosition: resolveBackgroundPositionForImage(theme.backgroundImage) }}
+                        loading="lazy"
+                        decoding="async"
+                        fetchPriority="low"
+                        crossOrigin="anonymous"
+                      />
+                      <div className="absolute inset-0" style={{ backgroundColor: `${theme.surface}99` }} />
+                    </>
+                  ) : (
+                    <div className="absolute inset-0" style={{ background: `linear-gradient(135deg, ${theme.bg}, ${theme.surface})` }} />
+                  )}
+                  <div className="absolute top-0 left-0 right-0 h-0.5" style={{ backgroundColor: theme.accent }} />
                 </div>
-                <p className="text-[10px] text-fab-muted">{theme.label}</p>
+                <p className="text-[10px] text-fab-muted leading-tight">{theme.label}</p>
               </button>
             ))}
           </div>

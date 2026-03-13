@@ -3,13 +3,14 @@ import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { getProfileByUsername } from "@/lib/firestore-storage";
-import { buildOptimizedImageUrl, resolveProfileBackgroundImage } from "@/lib/profile-backgrounds";
+import { buildOptimizedImageUrl, resolveProfileBackgroundImage, resolveProfileBackgroundPosition } from "@/lib/profile-backgrounds";
 
-function applyProfileBackground(imageUrl?: string) {
+function applyProfileBackground(imageUrl?: string, focusPosition = "center top") {
   const root = document.documentElement;
   if (!imageUrl) {
     root.style.removeProperty("--fab-user-bg-image");
     root.style.removeProperty("--fab-user-bg-overlay");
+    root.style.removeProperty("--fab-user-bg-position");
     delete root.dataset.profileBg;
     return;
   }
@@ -20,6 +21,7 @@ function applyProfileBackground(imageUrl?: string) {
   const safeUrl = optimizedUrl.replace(/'/g, "\\'");
   root.style.setProperty("--fab-user-bg-image", `url('${safeUrl}')`);
   root.style.setProperty("--fab-user-bg-overlay", "rgba(6, 8, 10, 0.72)");
+  root.style.setProperty("--fab-user-bg-position", focusPosition);
   root.dataset.profileBg = "on";
 }
 
@@ -42,17 +44,18 @@ export function ProfileBackgroundController() {
   useEffect(() => {
     const requestId = ++requestIdRef.current;
     const ownImage = resolveProfileBackgroundImage(profile?.siteBackgroundId);
+    const ownPosition = resolveProfileBackgroundPosition(profile?.siteBackgroundId) || "center top";
     const viewedUsername = getViewedUsername(pathname);
 
     // Everywhere except /player/:username uses the viewer's own site background.
     if (!viewedUsername) {
-      applyProfileBackground(ownImage);
+      applyProfileBackground(ownImage, ownPosition);
       return;
     }
 
     // Viewing your own profile.
     if (profile?.username && profile.username.toLowerCase() === viewedUsername.toLowerCase()) {
-      applyProfileBackground(ownImage);
+      applyProfileBackground(ownImage, ownPosition);
       return;
     }
 
@@ -62,13 +65,16 @@ export function ProfileBackgroundController() {
         const viewedProfile = await getProfileByUsername(viewedUsername);
         if (requestIdRef.current !== requestId) return;
         if (!viewedProfile) {
-          applyProfileBackground(ownImage);
+          applyProfileBackground(ownImage, ownPosition);
           return;
         }
-        applyProfileBackground(resolveProfileBackgroundImage(viewedProfile.siteBackgroundId));
+        applyProfileBackground(
+          resolveProfileBackgroundImage(viewedProfile.siteBackgroundId),
+          resolveProfileBackgroundPosition(viewedProfile.siteBackgroundId) || "center top",
+        );
       } catch {
         if (requestIdRef.current === requestId) {
-          applyProfileBackground(ownImage);
+          applyProfileBackground(ownImage, ownPosition);
         }
       }
     })();

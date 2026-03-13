@@ -12,7 +12,7 @@ import { BadgeTierWrapper } from "@/components/profile/BadgeTierWrapper";
 import { RARITY_VISUALS } from "@/lib/badge-tiers";
 import { getAllAchievements } from "@/lib/achievements";
 import { getAllBadges } from "@/lib/badges";
-import { buildOptimizedImageUrl } from "@/lib/profile-backgrounds";
+import { buildOptimizedImageUrl, resolveBackgroundPositionForImage } from "@/lib/profile-backgrounds";
 import { CornerFiligree, OrnamentalDivider, CardBackgroundPattern, AccentTopBar, InnerVignette } from "@/components/share/CardOrnaments";
 import type { CardTheme } from "@/components/opponents/RivalryCard";
 import type { PlayoffFinish } from "@/lib/stats";
@@ -98,7 +98,7 @@ export const PROFILE_THEMES: CardTheme[] = [
   },
   {
     id: "guardian",
-    label: "Guardian",
+    label: "Gravy Bones",
     bg: "#060810",
     surface: "#0e1218",
     border: "#1a2e42",
@@ -286,6 +286,7 @@ export function ProfileCard({ data, theme }: { data: ProfileCardData; theme?: Ca
             src={buildOptimizedImageUrl(t.backgroundImage, 1200, 62)}
             alt=""
             className="absolute inset-0 w-full h-full object-cover"
+            style={{ objectPosition: resolveBackgroundPositionForImage(t.backgroundImage) }}
             loading="eager"
             decoding="async"
             crossOrigin="anonymous"
@@ -592,6 +593,7 @@ export function ProfileShareModal({
                         src={buildOptimizedImageUrl(theme.backgroundImage, 260, 46)}
                         alt=""
                         className="absolute inset-0 w-full h-full object-cover"
+                        style={{ objectPosition: resolveBackgroundPositionForImage(theme.backgroundImage) }}
                         loading="lazy"
                         decoding="async"
                         fetchPriority="low"

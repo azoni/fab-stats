@@ -1,6 +1,7 @@
 "use client";
 import { MatchResult } from "@/types";
 import type { CardTheme } from "@/components/opponents/RivalryCard";
+import { buildOptimizedImageUrl, resolveBackgroundPositionForImage } from "@/lib/profile-backgrounds";
 
 const PLACEMENT_STYLE: Record<string, { bg: string; color: string; icon: string }> = {
   Champion:  { bg: "#fbbf2433", color: "#fbbf24", icon: "M2.5 19h19v3h-19zM22.5 7l-5 4-5.5-7-5.5 7-5-4 2 12h17z" },
@@ -41,9 +42,23 @@ export function OnThisDayCard({ data, theme }: { data: OnThisDayData; theme: Car
   const { dateLabel, memories } = data;
 
   return (
-    <div style={{ backgroundColor: t.surface, borderColor: t.border, width: 420 }} className="border rounded-xl overflow-hidden">
+    <div style={{ backgroundColor: t.surface, borderColor: t.border, width: 420 }} className="border rounded-xl overflow-hidden relative">
+      {t.backgroundImage && (
+        <>
+          <img
+            src={buildOptimizedImageUrl(t.backgroundImage, 1080, 60)}
+            alt=""
+            className="absolute inset-0 w-full h-full object-cover"
+            style={{ objectPosition: resolveBackgroundPositionForImage(t.backgroundImage) }}
+            loading="eager"
+            decoding="async"
+            crossOrigin="anonymous"
+          />
+          <div className="absolute inset-0" style={{ backgroundColor: `${t.surface}B8` }} />
+        </>
+      )}
       {/* Header */}
-      <div style={{ backgroundColor: t.bg, borderColor: t.border }} className="px-5 py-3 border-b flex items-center justify-center gap-2">
+      <div style={{ backgroundColor: t.backgroundImage ? `${t.bg}CC` : t.bg, borderColor: t.border }} className="px-5 py-3 border-b flex items-center justify-center gap-2 relative">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
           <circle cx="12" cy="12" r="10" />
           <polyline points="12 6 12 12 16 14" />
@@ -52,7 +67,7 @@ export function OnThisDayCard({ data, theme }: { data: OnThisDayData; theme: Car
         <span style={{ color: t.muted }} className="text-[11px]">— {dateLabel}</span>
       </div>
 
-      <div className="px-5 pt-4 pb-4 space-y-4">
+      <div className="px-5 pt-4 pb-4 space-y-4 relative">
         {memories.slice(0, 4).map((mem) => {
           const record = `${mem.wins}W-${mem.losses}L${mem.draws > 0 ? `-${mem.draws}D` : ""}`;
           const wasGoodDay = mem.wins > mem.losses;
@@ -150,7 +165,7 @@ export function OnThisDayCard({ data, theme }: { data: OnThisDayData; theme: Car
       </div>
 
       {/* Footer */}
-      <div style={{ backgroundColor: t.bg, borderColor: t.border }} className="px-5 py-2.5 border-t">
+      <div style={{ backgroundColor: t.backgroundImage ? `${t.bg}CC` : t.bg, borderColor: t.border }} className="px-5 py-2.5 border-t relative">
         <p style={{ color: t.accent }} className="text-[11px] text-center tracking-wider font-semibold opacity-70">fabstats.net</p>
       </div>
     </div>

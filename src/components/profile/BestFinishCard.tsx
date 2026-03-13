@@ -2,6 +2,7 @@
 import { useRef, useState } from "react";
 import { logActivity } from "@/lib/activity-log";
 import { copyCardImage, downloadCardImage } from "@/lib/share-image";
+import { buildOptimizedImageUrl, resolveBackgroundPositionForImage } from "@/lib/profile-backgrounds";
 import { CornerFiligree, OrnamentalDivider, CardBackgroundPattern, AccentTopBar, InnerVignette } from "@/components/share/CardOrnaments";
 
 
@@ -170,9 +171,12 @@ export function BestFinishCard({ data, theme }: { data: BestFinishData; theme?: 
       {t.backgroundImage && (
         <>
           <img
-            src={t.backgroundImage}
+            src={buildOptimizedImageUrl(t.backgroundImage, 1080, 62)}
             alt=""
             className="absolute inset-0 w-full h-full object-cover"
+            style={{ objectPosition: resolveBackgroundPositionForImage(t.backgroundImage) }}
+            loading="eager"
+            decoding="async"
             crossOrigin="anonymous"
           />
           <div className="absolute inset-0" style={{ backgroundColor: `${t.surface}B8` }} />
@@ -355,9 +359,13 @@ export function BestFinishShareModal({
                   {theme.backgroundImage ? (
                     <>
                       <img
-                        src={theme.backgroundImage}
+                        src={buildOptimizedImageUrl(theme.backgroundImage, 260, 46)}
                         alt=""
                         className="absolute inset-0 w-full h-full object-cover"
+                        style={{ objectPosition: resolveBackgroundPositionForImage(theme.backgroundImage) }}
+                        loading="lazy"
+                        decoding="async"
+                        fetchPriority="low"
                         crossOrigin="anonymous"
                       />
                       <div className="absolute inset-0" style={{ backgroundColor: `${theme.surface}99` }} />

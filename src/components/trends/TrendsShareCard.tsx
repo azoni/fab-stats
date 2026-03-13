@@ -2,6 +2,7 @@
 import { useRef, useState } from "react";
 import { copyCardImage, downloadCardImage } from "@/lib/share-image";
 import { logActivity } from "@/lib/activity-log";
+import { buildOptimizedImageUrl, resolveBackgroundPositionForImage } from "@/lib/profile-backgrounds";
 import { OrnamentalDivider, CornerFiligree, CardBackgroundPattern, InnerVignette } from "@/components/share/CardOrnaments";
 
 export interface TrendsShareData {
@@ -18,73 +19,222 @@ export interface TrendsShareData {
   recentTrend?: number;
 }
 
-const GOLD = "#c9a84c";
+interface TrendsTheme {
+  id: string;
+  label: string;
+  bg: string;
+  surface: string;
+  border: string;
+  accent: string;
+  text: string;
+  muted: string;
+  dim: string;
+  win: string;
+  loss: string;
+  draw: string;
+  backgroundImage?: string;
+}
 
-function ShareCardInner({ data }: { data: TrendsShareData }) {
+const TRENDS_THEMES: TrendsTheme[] = [
+  {
+    id: "classic",
+    label: "Classic",
+    bg: "#0e0c08",
+    surface: "#15120b",
+    border: "#3e3528",
+    accent: "#c9a84c",
+    text: "#e5e5e5",
+    muted: "#888899",
+    dim: "#6b6050",
+    win: "#22c55e",
+    loss: "#ef4444",
+    draw: "#eab308",
+  },
+  {
+    id: "wtr",
+    label: "Rathe",
+    bg: "#0a0604",
+    surface: "#1a100a",
+    border: "#3d2510",
+    accent: "#f59e0b",
+    text: "#fff3da",
+    muted: "#a8845a",
+    dim: "#6b5330",
+    win: "#4ade80",
+    loss: "#f87171",
+    draw: "#facc15",
+    backgroundImage: "/backgrounds/fab-official/wtr-key-art-v1.jpg",
+  },
+  {
+    id: "arcane",
+    label: "Arcane",
+    bg: "#06030c",
+    surface: "#120e1c",
+    border: "#2a1f4a",
+    accent: "#8b5cf6",
+    text: "#ede9fe",
+    muted: "#7c6b9b",
+    dim: "#4c3d6e",
+    win: "#34d399",
+    loss: "#fb7185",
+    draw: "#a1a1aa",
+    backgroundImage: "/backgrounds/fab-official/arcane-rising-key-art.jpg",
+  },
+  {
+    id: "cindra",
+    label: "Cindra",
+    bg: "#0a0404",
+    surface: "#1a0808",
+    border: "#3a1015",
+    accent: "#ef4444",
+    text: "#fef2f2",
+    muted: "#9b6060",
+    dim: "#5c2525",
+    win: "#4ade80",
+    loss: "#fda4af",
+    draw: "#facc15",
+    backgroundImage: "/backgrounds/fab-official/hunted-cindra-adult.jpg",
+  },
+  {
+    id: "gravybones",
+    label: "Gravy Bones",
+    bg: "#060810",
+    surface: "#0e1218",
+    border: "#1a2e42",
+    accent: "#38bdf8",
+    text: "#e0f2fe",
+    muted: "#5a8aaa",
+    dim: "#2e5570",
+    win: "#4ade80",
+    loss: "#fca5a5",
+    draw: "#facc15",
+    backgroundImage: "/backgrounds/fab-official/high-seas-gravybones.jpg",
+  },
+  {
+    id: "aria",
+    label: "Aria",
+    bg: "#040a08",
+    surface: "#081210",
+    border: "#1a3520",
+    accent: "#10b981",
+    text: "#ecfdf5",
+    muted: "#5f8a6e",
+    dim: "#3b5c44",
+    win: "#6ee7b7",
+    loss: "#fca5a5",
+    draw: "#a1a1aa",
+    backgroundImage: "/backgrounds/fab-official/tales-of-aria-key-art.jpg",
+  },
+  {
+    id: "playmat-solana",
+    label: "Solana Playmat",
+    bg: "#1a1408",
+    surface: "#241b0c",
+    border: "#5b4520",
+    accent: "#f5d26c",
+    text: "#fff6dc",
+    muted: "#b9a678",
+    dim: "#8a7750",
+    win: "#86efac",
+    loss: "#fda4af",
+    draw: "#c4b5fd",
+    backgroundImage: "/backgrounds/fab-official/lore-solana-matte.jpg",
+  },
+  {
+    id: "playmat-volcor",
+    label: "Volcor Playmat",
+    bg: "#1a0c08",
+    surface: "#24120f",
+    border: "#5b2f20",
+    accent: "#fb923c",
+    text: "#fff2eb",
+    muted: "#c08d78",
+    dim: "#875c4d",
+    win: "#86efac",
+    loss: "#fda4af",
+    draw: "#a1a1aa",
+    backgroundImage: "/backgrounds/fab-official/lore-volcor-matte.jpg",
+  },
+];
+
+function ShareCardInner({ data, theme }: { data: TrendsShareData; theme: TrendsTheme }) {
+  const t = theme;
   return (
-    <div className="relative bg-[#0e0c08] rounded-lg p-5 border border-fab-border overflow-hidden" style={{ width: 380 }}>
-      <CardBackgroundPattern color={GOLD} id="trends-share" />
+    <div
+      className="relative rounded-lg p-5 border overflow-hidden"
+      style={{ width: 380, backgroundColor: t.surface, borderColor: t.border }}
+    >
+      {t.backgroundImage && (
+        <>
+          <img
+            src={buildOptimizedImageUrl(t.backgroundImage, 960, 60)}
+            alt=""
+            className="absolute inset-0 w-full h-full object-cover"
+            style={{ objectPosition: resolveBackgroundPositionForImage(t.backgroundImage) }}
+            loading="eager"
+            decoding="async"
+            crossOrigin="anonymous"
+          />
+          <div className="absolute inset-0" style={{ backgroundColor: `${t.surface}B8` }} />
+        </>
+      )}
+
+      <CardBackgroundPattern color={t.accent} id="trends-share" />
       <InnerVignette />
-      <CornerFiligree color={GOLD} />
+      <CornerFiligree color={t.accent} />
 
       <div className="relative z-10">
-        {/* Header */}
         <div className="text-center mb-3">
-          <p className="text-[10px] uppercase tracking-[0.2em] text-[#c9a84c]/60 mb-1">My Stats</p>
-          <p className="text-lg font-bold text-[#e5e5e5]">{data.playerName}</p>
+          <p className="text-[10px] uppercase tracking-[0.2em] mb-1" style={{ color: `${t.accent}99` }}>My Stats</p>
+          <p className="text-lg font-bold" style={{ color: t.text }}>{data.playerName}</p>
         </div>
 
-        <OrnamentalDivider color={GOLD} />
+        <OrnamentalDivider color={t.accent} />
 
-        {/* Main Stats */}
         <div className="grid grid-cols-3 gap-3 my-4 text-center">
           <div>
-            <p className="text-2xl font-black text-[#c9a84c]">{data.totalMatches}</p>
-            <p className="text-[9px] uppercase tracking-wider text-[#888899]">Matches</p>
+            <p className="text-2xl font-black" style={{ color: t.accent }}>{data.totalMatches}</p>
+            <p className="text-[9px] uppercase tracking-wider" style={{ color: t.muted }}>Matches</p>
           </div>
           <div>
-            <p className={`text-2xl font-black ${data.winRate >= 50 ? "text-[#22c55e]" : "text-[#ef4444]"}`}>{data.winRate}%</p>
-            <p className="text-[9px] uppercase tracking-wider text-[#888899]">Win Rate</p>
+            <p className="text-2xl font-black" style={{ color: data.winRate >= 50 ? t.win : t.loss }}>{data.winRate}%</p>
+            <p className="text-[9px] uppercase tracking-wider" style={{ color: t.muted }}>Win Rate</p>
           </div>
           <div>
-            <p className="text-2xl font-black text-[#c9a84c]">{data.eventsPlayed}</p>
-            <p className="text-[9px] uppercase tracking-wider text-[#888899]">Events</p>
+            <p className="text-2xl font-black" style={{ color: t.accent }}>{data.eventsPlayed}</p>
+            <p className="text-[9px] uppercase tracking-wider" style={{ color: t.muted }}>Events</p>
           </div>
         </div>
 
-        {/* Record */}
-        <div className="text-center mb-3">
-          <p className="text-sm tabular-nums">
-            <span className="text-[#22c55e] font-bold">{data.wins}W</span>
-            <span className="text-[#888899]"> - </span>
-            <span className="text-[#ef4444] font-bold">{data.losses}L</span>
-            {data.draws > 0 && (
-              <>
-                <span className="text-[#888899]"> - </span>
-                <span className="text-[#eab308] font-bold">{data.draws}D</span>
-              </>
-            )}
-          </p>
+        <div className="text-center mb-3 text-sm tabular-nums">
+          <span className="font-bold" style={{ color: t.win }}>{data.wins}W</span>
+          <span style={{ color: t.muted }}> - </span>
+          <span className="font-bold" style={{ color: t.loss }}>{data.losses}L</span>
+          {data.draws > 0 && (
+            <>
+              <span style={{ color: t.muted }}> - </span>
+              <span className="font-bold" style={{ color: t.draw }}>{data.draws}D</span>
+            </>
+          )}
         </div>
 
-        <OrnamentalDivider color={GOLD} />
+        <OrnamentalDivider color={t.accent} />
 
-        {/* Details */}
         <div className="grid grid-cols-2 gap-x-4 gap-y-2 my-4 text-[11px]">
           <div className="flex justify-between">
-            <span className="text-[#888899]">Win Streak</span>
-            <span className="text-[#22c55e] font-bold">{data.longestWinStreak}</span>
+            <span style={{ color: t.muted }}>Win Streak</span>
+            <span className="font-bold" style={{ color: t.win }}>{data.longestWinStreak}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-[#888899]">Heroes Played</span>
-            <span className="text-[#e5e5e5] font-bold">{data.uniqueHeroes}</span>
+            <span style={{ color: t.muted }}>Heroes Played</span>
+            <span className="font-bold" style={{ color: t.text }}>{data.uniqueHeroes}</span>
           </div>
           {data.topHero && (
             <div className="flex justify-between col-span-2">
-              <span className="text-[#888899]">Top Hero</span>
-              <span className="text-[#e5e5e5] font-bold">
+              <span style={{ color: t.muted }}>Top Hero</span>
+              <span className="font-bold" style={{ color: t.text }}>
                 {data.topHero.name}{" "}
-                <span className={data.topHero.winRate >= 50 ? "text-[#22c55e]" : "text-[#ef4444]"}>
+                <span style={{ color: data.topHero.winRate >= 50 ? t.win : t.loss }}>
                   ({data.topHero.winRate}% in {data.topHero.matches})
                 </span>
               </span>
@@ -92,17 +242,16 @@ function ShareCardInner({ data }: { data: TrendsShareData }) {
           )}
           {data.recentTrend !== undefined && data.recentTrend !== 0 && (
             <div className="flex justify-between col-span-2">
-              <span className="text-[#888899]">Recent Trend</span>
-              <span className={`font-bold ${data.recentTrend > 0 ? "text-[#22c55e]" : "text-[#ef4444]"}`}>
+              <span style={{ color: t.muted }}>Recent Trend</span>
+              <span className="font-bold" style={{ color: data.recentTrend > 0 ? t.win : t.loss }}>
                 {data.recentTrend > 0 ? "+" : ""}{data.recentTrend}% vs all-time
               </span>
             </div>
           )}
         </div>
 
-        {/* Footer */}
         <div className="text-center mt-3">
-          <p className="text-[8px] uppercase tracking-[0.15em] text-[#888899]/50">fabstats.com</p>
+          <p className="text-[8px] uppercase tracking-[0.15em]" style={{ color: `${t.muted}88` }}>fabstats.com</p>
         </div>
       </div>
     </div>
@@ -111,13 +260,14 @@ function ShareCardInner({ data }: { data: TrendsShareData }) {
 
 export function TrendsShareModal({ data, onClose }: { data: TrendsShareData; onClose: () => void }) {
   const cardRef = useRef<HTMLDivElement>(null);
+  const [selectedTheme, setSelectedTheme] = useState(TRENDS_THEMES[0]);
   const [status, setStatus] = useState<"idle" | "copying" | "copied" | "downloaded">("idle");
 
   async function handleCopy() {
     if (!cardRef.current) return;
     setStatus("copying");
     const result = await copyCardImage(cardRef.current, {
-      backgroundColor: "#0e0c08",
+      backgroundColor: selectedTheme.bg,
       fileName: `my-stats-${data.playerName}.png`,
       shareTitle: "My FaB Stats",
       shareText: `${data.playerName} — ${data.totalMatches} matches, ${data.winRate}% win rate | fabstats.com`,
@@ -133,7 +283,7 @@ export function TrendsShareModal({ data, onClose }: { data: TrendsShareData; onC
   async function handleDownload() {
     if (!cardRef.current) return;
     await downloadCardImage(cardRef.current, {
-      backgroundColor: "#0e0c08",
+      backgroundColor: selectedTheme.bg,
       fileName: `my-stats-${data.playerName}.png`,
     });
     logActivity("trends_share");
@@ -143,7 +293,7 @@ export function TrendsShareModal({ data, onClose }: { data: TrendsShareData; onC
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={onClose}>
-      <div className="bg-fab-surface border border-fab-border rounded-xl max-w-md w-full p-4 space-y-4" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-fab-surface border border-fab-border rounded-xl max-w-lg w-full p-4 space-y-4 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-semibold text-fab-text">Share My Stats</h3>
           <button onClick={onClose} className="text-fab-dim hover:text-fab-text transition-colors">
@@ -154,7 +304,46 @@ export function TrendsShareModal({ data, onClose }: { data: TrendsShareData; onC
         </div>
 
         <div ref={cardRef} className="flex justify-center">
-          <ShareCardInner data={data} />
+          <ShareCardInner data={data} theme={selectedTheme} />
+        </div>
+
+        <div>
+          <p className="text-[10px] text-fab-muted uppercase tracking-wider font-medium mb-2">Theme</p>
+          <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+            {TRENDS_THEMES.map((theme) => (
+              <button
+                key={theme.id}
+                onClick={() => setSelectedTheme(theme)}
+                className={`rounded-lg p-2 text-center transition-all border ${
+                  selectedTheme.id === theme.id
+                    ? "border-fab-gold ring-1 ring-fab-gold/30"
+                    : "border-fab-border hover:border-fab-muted"
+                }`}
+              >
+                <div className="h-8 rounded-md overflow-hidden border border-white/10 mb-1.5 relative">
+                  {theme.backgroundImage ? (
+                    <>
+                      <img
+                        src={buildOptimizedImageUrl(theme.backgroundImage, 260, 46)}
+                        alt=""
+                        className="absolute inset-0 w-full h-full object-cover"
+                        style={{ objectPosition: resolveBackgroundPositionForImage(theme.backgroundImage) }}
+                        loading="lazy"
+                        decoding="async"
+                        fetchPriority="low"
+                        crossOrigin="anonymous"
+                      />
+                      <div className="absolute inset-0" style={{ backgroundColor: `${theme.surface}99` }} />
+                    </>
+                  ) : (
+                    <div className="absolute inset-0" style={{ background: `linear-gradient(135deg, ${theme.bg}, ${theme.surface})` }} />
+                  )}
+                  <div className="absolute top-0 left-0 right-0 h-0.5" style={{ backgroundColor: theme.accent }} />
+                </div>
+                <p className="text-[10px] text-fab-muted leading-tight">{theme.label}</p>
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className="flex gap-2">

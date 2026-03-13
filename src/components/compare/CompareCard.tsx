@@ -1,5 +1,6 @@
 "use client";
 import type { CardTheme } from "@/components/opponents/RivalryCard";
+import { buildOptimizedImageUrl, resolveBackgroundPositionForImage } from "@/lib/profile-backgrounds";
 
 interface CompareData {
   p1Name: string;
@@ -77,16 +78,30 @@ export function CompareCard({ data, theme }: { data: CompareData; theme: CardThe
   const displayStats = stats.filter(s => !(String(s.v1) === "---" && String(s.v2) === "---"));
 
   return (
-    <div style={{ backgroundColor: t.surface, borderColor: t.border, width: 420 }} className="border rounded-xl overflow-hidden">
+    <div style={{ backgroundColor: t.surface, borderColor: t.border, width: 420 }} className="border rounded-xl overflow-hidden relative">
+      {t.backgroundImage && (
+        <>
+          <img
+            src={buildOptimizedImageUrl(t.backgroundImage, 1080, 60)}
+            alt=""
+            className="absolute inset-0 w-full h-full object-cover"
+            style={{ objectPosition: resolveBackgroundPositionForImage(t.backgroundImage) }}
+            loading="eager"
+            decoding="async"
+            crossOrigin="anonymous"
+          />
+          <div className="absolute inset-0" style={{ backgroundColor: `${t.surface}B8` }} />
+        </>
+      )}
       {/* Header */}
-      <div style={{ backgroundColor: t.bg, borderColor: t.border }} className="border-b">
+      <div style={{ backgroundColor: t.backgroundImage ? `${t.bg}CC` : t.bg, borderColor: t.border }} className="border-b relative">
         <div style={{ height: 2, background: `linear-gradient(90deg, ${t.win}, ${t.accent}, #ef4444)` }} />
         <div className="px-4 py-1.5">
           <p style={{ color: t.accent }} className="text-[11px] uppercase tracking-[0.2em] text-center font-bold">Versus</p>
         </div>
       </div>
 
-      <div className="px-4 pt-3 pb-2.5">
+      <div className="px-4 pt-3 pb-2.5 relative">
         {/* Players + Power Levels */}
         <div className="flex items-start justify-between gap-2">
           <div className="text-center flex-1 min-w-0">
@@ -103,7 +118,7 @@ export function CompareCard({ data, theme }: { data: CompareData; theme: CardThe
             )}
           </div>
           <div className="shrink-0 pt-1">
-            <div style={{ width: 30, height: 30, borderRadius: "50%", border: `1px solid ${t.border}`, backgroundColor: t.bg, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <div style={{ width: 30, height: 30, borderRadius: "50%", border: `1px solid ${t.border}`, backgroundColor: t.backgroundImage ? `${t.bg}CC` : t.bg, display: "flex", alignItems: "center", justifyContent: "center" }}>
               <span style={{ color: t.accent, fontSize: 9, fontWeight: 700 }}>VS</span>
             </div>
           </div>
@@ -123,7 +138,7 @@ export function CompareCard({ data, theme }: { data: CompareData; theme: CardThe
         </div>
 
         {/* Dominance Score */}
-        <div className="mt-2.5 rounded-lg py-1.5 px-3 text-center" style={{ backgroundColor: t.bg }}>
+        <div className="mt-2.5 rounded-lg py-1.5 px-3 text-center" style={{ backgroundColor: t.backgroundImage ? `${t.bg}CC` : t.bg }}>
           <div className="flex items-baseline justify-center gap-2">
             <span style={{ color: p1Leading ? t.win : tied ? t.draw : t.text }} className="text-2xl font-black">{p1Dominance}</span>
             <span style={{ color: t.border }} className="text-sm font-light">&mdash;</span>
@@ -173,7 +188,7 @@ export function CompareCard({ data, theme }: { data: CompareData; theme: CardThe
 
         {/* Common Opponents Edge */}
         {commonOpponents && commonOpponents.shared > 0 && (
-          <div className="mt-2 rounded-lg py-1.5 px-2.5" style={{ backgroundColor: t.bg }}>
+          <div className="mt-2 rounded-lg py-1.5 px-2.5" style={{ backgroundColor: t.backgroundImage ? `${t.bg}CC` : t.bg }}>
             <div className="flex items-center gap-1.5">
               <p style={{ color: t.accent }} className="text-[9px] uppercase tracking-wider font-semibold">Opponent Network</p>
               <p style={{ color: t.muted }} className="text-[9px]">&middot; {commonOpponents.shared} shared</p>
@@ -197,7 +212,7 @@ export function CompareCard({ data, theme }: { data: CompareData; theme: CardThe
 
         {/* Verdict */}
         {verdict && (
-          <div className="mt-2 rounded-lg py-1.5 px-2.5" style={{ backgroundColor: t.bg }}>
+          <div className="mt-2 rounded-lg py-1.5 px-2.5" style={{ backgroundColor: t.backgroundImage ? `${t.bg}CC` : t.bg }}>
             <p style={{ color: t.accent }} className="text-[9px] uppercase tracking-wider font-semibold mb-0.5">Verdict</p>
             <p style={{ color: t.text }} className="text-[11px] font-bold leading-snug">{verdict}</p>
             {verdictBullets && verdictBullets.length > 0 && (
@@ -215,7 +230,7 @@ export function CompareCard({ data, theme }: { data: CompareData; theme: CardThe
       </div>
 
       {/* Footer */}
-      <div style={{ backgroundColor: t.bg, borderColor: t.border }} className="px-4 py-1.5 border-t">
+      <div style={{ backgroundColor: t.backgroundImage ? `${t.bg}CC` : t.bg, borderColor: t.border }} className="px-4 py-1.5 border-t relative">
         <p style={{ color: t.accent }} className="text-[10px] text-center tracking-wider font-semibold opacity-70">fabstats.net</p>
       </div>
     </div>

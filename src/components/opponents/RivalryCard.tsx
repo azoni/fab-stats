@@ -1,5 +1,6 @@
 "use client";
 import { MatchResult } from "@/types";
+import { buildOptimizedImageUrl, resolveBackgroundPositionForImage } from "@/lib/profile-backgrounds";
 
 export interface CardTheme {
   id: string;
@@ -21,7 +22,7 @@ export interface CardTheme {
 export const CARD_THEMES: CardTheme[] = [
   {
     id: "dark",
-    label: "Dark",
+    label: "Rathe",
     bg: "#0c0a0e",
     surface: "#16131a",
     border: "#2a2533",
@@ -33,10 +34,11 @@ export const CARD_THEMES: CardTheme[] = [
     loss: "#f87171",
     draw: "#a1a1aa",
     barBg: "rgba(248,113,113,0.25)",
+    backgroundImage: "/backgrounds/fab-official/wtr-key-art-v1.jpg",
   },
   {
     id: "midnight",
-    label: "Midnight",
+    label: "Arcane",
     bg: "#0a0f1a",
     surface: "#111827",
     border: "#1e3a5f",
@@ -48,10 +50,11 @@ export const CARD_THEMES: CardTheme[] = [
     loss: "#fb7185",
     draw: "#94a3b8",
     barBg: "rgba(251,113,133,0.25)",
+    backgroundImage: "/backgrounds/fab-official/arcane-rising-key-art.jpg",
   },
   {
     id: "crimson",
-    label: "Crimson",
+    label: "Cindra",
     bg: "#120a0a",
     surface: "#1c1010",
     border: "#3b1a1a",
@@ -63,10 +66,11 @@ export const CARD_THEMES: CardTheme[] = [
     loss: "#f87171",
     draw: "#a1a1aa",
     barBg: "rgba(248,113,113,0.25)",
+    backgroundImage: "/backgrounds/fab-official/hunted-cindra-adult.jpg",
   },
   {
     id: "forest",
-    label: "Forest",
+    label: "Aria",
     bg: "#0a110e",
     surface: "#0f1a14",
     border: "#1a3527",
@@ -78,10 +82,11 @@ export const CARD_THEMES: CardTheme[] = [
     loss: "#fca5a5",
     draw: "#a1a1aa",
     barBg: "rgba(252,165,165,0.25)",
+    backgroundImage: "/backgrounds/fab-official/tales-of-aria-key-art.jpg",
   },
   {
     id: "royal",
-    label: "Royal",
+    label: "Gravy Bones",
     bg: "#0e0a14",
     surface: "#16101e",
     border: "#2d1f4e",
@@ -93,6 +98,7 @@ export const CARD_THEMES: CardTheme[] = [
     loss: "#fb7185",
     draw: "#a1a1aa",
     barBg: "rgba(251,113,133,0.25)",
+    backgroundImage: "/backgrounds/fab-official/high-seas-gravybones.jpg",
   },
 ];
 
@@ -125,20 +131,34 @@ export function RivalryCard({ data, theme }: { data: RivalryData; theme?: CardTh
   const casualTotal = casualWins + casualLosses + casualDraws;
 
   return (
-    <div style={{ backgroundColor: t.surface, borderColor: t.border, width: 420 }} className="border rounded-xl overflow-hidden">
+    <div style={{ backgroundColor: t.surface, borderColor: t.border, width: 420 }} className="border rounded-xl overflow-hidden relative">
+      {t.backgroundImage && (
+        <>
+          <img
+            src={buildOptimizedImageUrl(t.backgroundImage, 1080, 60)}
+            alt=""
+            className="absolute inset-0 w-full h-full object-cover"
+            style={{ objectPosition: resolveBackgroundPositionForImage(t.backgroundImage) }}
+            loading="eager"
+            decoding="async"
+            crossOrigin="anonymous"
+          />
+          <div className="absolute inset-0" style={{ backgroundColor: `${t.surface}B8` }} />
+        </>
+      )}
       {/* Header */}
-      <div style={{ backgroundColor: t.bg, borderColor: t.border }} className="px-5 py-3 border-b">
+      <div style={{ backgroundColor: t.backgroundImage ? `${t.bg}CC` : t.bg, borderColor: t.border }} className="px-5 py-3 border-b relative">
         <p style={{ color: t.accent }} className="text-[11px] uppercase tracking-[0.2em] text-center font-bold">Head to Head</p>
       </div>
 
       {/* VS Section */}
-      <div className="px-5 pt-5 pb-4">
+      <div className="px-5 pt-5 pb-4 relative">
         <div className="flex items-center justify-between gap-3">
           <div className="text-center flex-1 min-w-0">
             <p style={{ color: t.text }} className="text-xl font-black truncate">{playerName}</p>
           </div>
           <div className="shrink-0 px-2">
-            <div style={{ backgroundColor: t.bg, borderColor: t.border }} className="w-10 h-10 rounded-full border flex items-center justify-center">
+            <div style={{ backgroundColor: t.backgroundImage ? `${t.bg}CC` : t.bg, borderColor: t.border }} className="w-10 h-10 rounded-full border flex items-center justify-center">
               <p style={{ color: t.accent }} className="text-[10px] font-bold">VS</p>
             </div>
           </div>
@@ -181,7 +201,7 @@ export function RivalryCard({ data, theme }: { data: RivalryData; theme?: CardTh
         {/* Rated / Casual split */}
         {ratedTotal > 0 && casualTotal > 0 && (
           <div className="mt-4 grid grid-cols-2 gap-2">
-            <div style={{ backgroundColor: t.bg }} className="rounded-lg p-2.5 text-center">
+            <div style={{ backgroundColor: t.backgroundImage ? `${t.bg}CC` : t.bg }} className="rounded-lg p-2.5 text-center">
               <p style={{ color: t.accent }} className="text-[10px] uppercase tracking-wider font-semibold mb-1">Rated</p>
               <p style={{ color: t.text }} className="text-sm font-bold">
                 <span style={{ color: t.win }}>{ratedWins}W</span>
@@ -190,7 +210,7 @@ export function RivalryCard({ data, theme }: { data: RivalryData; theme?: CardTh
                 {ratedDraws > 0 && <><span style={{ color: t.border }} className="mx-1">-</span><span style={{ color: t.draw }}>{ratedDraws}D</span></>}
               </p>
             </div>
-            <div style={{ backgroundColor: t.bg }} className="rounded-lg p-2.5 text-center">
+            <div style={{ backgroundColor: t.backgroundImage ? `${t.bg}CC` : t.bg }} className="rounded-lg p-2.5 text-center">
               <p style={{ color: t.muted }} className="text-[10px] uppercase tracking-wider font-semibold mb-1">Casual</p>
               <p style={{ color: t.text }} className="text-sm font-bold">
                 <span style={{ color: t.win }}>{casualWins}W</span>
@@ -203,7 +223,7 @@ export function RivalryCard({ data, theme }: { data: RivalryData; theme?: CardTh
         )}
         {ratedTotal > 0 && casualTotal === 0 && (
           <div className="mt-4">
-            <div style={{ backgroundColor: t.bg }} className="rounded-lg p-2.5 text-center">
+            <div style={{ backgroundColor: t.backgroundImage ? `${t.bg}CC` : t.bg }} className="rounded-lg p-2.5 text-center">
               <p style={{ color: t.accent }} className="text-[10px] uppercase tracking-wider font-semibold mb-1">All Rated</p>
               <p style={{ color: t.text }} className="text-sm font-bold">
                 <span style={{ color: t.win }}>{ratedWins}W</span>
@@ -233,7 +253,7 @@ export function RivalryCard({ data, theme }: { data: RivalryData; theme?: CardTh
       </div>
 
       {/* Footer */}
-      <div style={{ backgroundColor: t.bg, borderColor: t.border }} className="px-5 py-2.5 border-t">
+      <div style={{ backgroundColor: t.backgroundImage ? `${t.bg}CC` : t.bg, borderColor: t.border }} className="px-5 py-2.5 border-t relative">
         <p style={{ color: t.accent }} className="text-[11px] text-center tracking-wider font-semibold opacity-70">fabstats.net</p>
       </div>
     </div>
