@@ -1,5 +1,5 @@
 "use client";
-import { useState, useMemo, useEffect, useCallback, useRef, type MouseEvent as ReactMouseEvent } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { computeHeroStats } from "@/lib/stats";
 import { getAvailableFormats } from "@/lib/meta-stats";
 import { getHeroByName } from "@/lib/heroes";
@@ -8,56 +8,43 @@ import { getCommunityHeroMatchups, getMonthsForPreset, type CommunityMatchupCell
 import type { MatchRecord, LeaderboardEntry, HeroStats } from "@/types";
 
 // ── Drag-to-scroll hook ──
+// Listeners are attached on mousedown and cleaned up on mouseup so
+// there is no stale-ref problem when the scrollable element mounts late.
 
 function useDragScroll() {
   const ref = useRef<HTMLDivElement>(null);
-  const dragging = useRef(false);
-  const startX = useRef(0);
-  const startY = useRef(0);
-  const scrollLeftStart = useRef(0);
-  const scrollTopStart = useRef(0);
   const moved = useRef(false);
 
-  const onMouseDown = useCallback((e: ReactMouseEvent) => {
+  const onMouseDown = useCallback((e: React.MouseEvent) => {
     const el = ref.current;
     if (!el) return;
-    e.preventDefault(); // prevent browser text-selection / native drag
-    dragging.current = true;
+    e.preventDefault();
     moved.current = false;
-    startX.current = e.clientX;
-    startY.current = e.clientY;
-    scrollLeftStart.current = el.scrollLeft;
-    scrollTopStart.current = el.scrollTop;
+
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const scrollL = el.scrollLeft;
+    const scrollT = el.scrollTop;
     el.style.cursor = "grabbing";
     el.style.userSelect = "none";
-  }, []);
 
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-
-    const onMouseMove = (e: globalThis.MouseEvent) => {
-      if (!dragging.current) return;
-      const dx = e.clientX - startX.current;
-      const dy = e.clientY - startY.current;
+    const onMouseMove = (ev: MouseEvent) => {
+      const dx = ev.clientX - startX;
+      const dy = ev.clientY - startY;
       if (Math.abs(dx) > 3 || Math.abs(dy) > 3) moved.current = true;
-      el.scrollLeft = scrollLeftStart.current - dx;
-      el.scrollTop = scrollTopStart.current - dy;
+      el.scrollLeft = scrollL - dx;
+      el.scrollTop = scrollT - dy;
     };
 
     const onMouseUp = () => {
-      if (!dragging.current) return;
-      dragging.current = false;
       el.style.cursor = "grab";
       el.style.userSelect = "";
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("mouseup", onMouseUp);
     };
 
     window.addEventListener("mousemove", onMouseMove);
     window.addEventListener("mouseup", onMouseUp);
-    return () => {
-      window.removeEventListener("mousemove", onMouseMove);
-      window.removeEventListener("mouseup", onMouseUp);
-    };
   }, []);
 
   return { ref, onMouseDown, movedRef: moved };
@@ -605,6 +592,8 @@ function PersonalGrid({
   includeLivingLegend: boolean;
 }) {
   const { ref: scrollRef, onMouseDown, movedRef } = useDragScroll();
+  const [highlightRow, setHighlightRow] = useState<string | null>(null);
+  const [highlightCol, setHighlightCol] = useState<string | null>(null);
 
   // Filter heroes and opponents by age + LL + hero filter
   const filteredStats = useMemo(
@@ -636,17 +625,20 @@ function PersonalGrid({
 
   return (
     <div>
-      <div ref={scrollRef} onMouseDown={onMouseDown} className="overflow-x-auto cursor-grab">
+      <div ref={scrollRef} onMouseDown={onMouseDown} className="overflow-auto max-h-[70vh] cursor-grab rounded-lg border border-fab-border">
         <table className="w-full text-sm border-collapse">
           <thead>
             <tr>
-              <th className="text-left p-2 text-fab-muted font-medium border-b border-fab-border sticky left-0 bg-fab-bg z-10">
+              <th className="text-left p-2 text-fab-muted font-medium border-b border-fab-border sticky left-0 top-0 bg-fab-bg z-20">
                 Your Hero / Opp
               </th>
               {filteredOpponents.map((opp) => (
                 <th
                   key={opp}
-                  className="p-2 text-fab-muted font-medium border-b border-fab-border text-center min-w-[90px]"
+                  onClick={() => setHighlightCol(highlightCol === opp ? null : opp)}
+                  className={`p-2 text-fab-muted font-medium border-b border-fab-border text-center min-w-[90px] sticky top-0 bg-fab-bg z-10 cursor-pointer select-none transition-colors ${
+                    highlightCol === opp ? "!bg-fab-gold/10 text-fab-gold" : "hover:text-fab-text"
+                  }`}
                 >
                   <span className="text-xs">{opp}</span>
                 </th>
@@ -654,53 +646,62 @@ function PersonalGrid({
             </tr>
           </thead>
           <tbody>
-            {filteredStats.map((hero) => (
-              <tr key={hero.heroName}>
-                <td className="p-2 font-semibold text-fab-text border-b border-fab-border/50 sticky left-0 bg-fab-bg whitespace-nowrap z-10">
-                  {hero.heroName}
-                  <span className="ml-1.5 text-xs text-fab-dim">({hero.totalMatches})</span>
-                </td>
-                {filteredOpponents.map((opp) => {
-                  const mu = hero.matchups.find((m) => m.opponentHero === opp);
-                  const isSelected = selectedCell?.hero === hero.heroName && selectedCell?.opp === opp;
-                  if (!mu) {
+            {filteredStats.map((hero) => {
+              const isRowHL = highlightRow === hero.heroName;
+              return (
+                <tr key={hero.heroName}>
+                  <td
+                    onClick={() => setHighlightRow(isRowHL ? null : hero.heroName)}
+                    className={`p-2 font-semibold text-fab-text border-b border-fab-border/50 sticky left-0 whitespace-nowrap z-10 cursor-pointer select-none transition-colors ${
+                      isRowHL ? "bg-fab-gold/10 text-fab-gold" : "bg-fab-bg hover:text-fab-gold"
+                    }`}
+                  >
+                    {hero.heroName}
+                    <span className="ml-1.5 text-xs text-fab-dim">({hero.totalMatches})</span>
+                  </td>
+                  {filteredOpponents.map((opp) => {
+                    const mu = hero.matchups.find((m) => m.opponentHero === opp);
+                    const isSelected = selectedCell?.hero === hero.heroName && selectedCell?.opp === opp;
+                    const isHL = isRowHL || highlightCol === opp;
+                    if (!mu) {
+                      return (
+                        <td key={opp} className={`p-2 text-center border-b border-fab-border/50 text-fab-dim ${isHL ? "bg-fab-gold/5" : ""}`}>
+                          -
+                        </td>
+                      );
+                    }
+                    const bgColor =
+                      mu.winRate >= 60
+                        ? "bg-fab-win/20"
+                        : mu.winRate >= 45
+                          ? "bg-fab-draw/10"
+                          : "bg-fab-loss/20";
+                    const textColor =
+                      mu.winRate >= 60
+                        ? "text-fab-win"
+                        : mu.winRate >= 45
+                          ? "text-fab-draw"
+                          : "text-fab-loss";
+
                     return (
-                      <td key={opp} className="p-2 text-center border-b border-fab-border/50 text-fab-dim">
-                        -
+                      <td
+                        key={opp}
+                        onClick={() => { if (!movedRef.current) onCellClick(isSelected ? null : { hero: hero.heroName, opp }); }}
+                        className={`p-2 text-center border-b border-fab-border/50 transition-all ${bgColor} ${
+                          isSelected ? "ring-2 ring-fab-gold ring-inset" : "hover:brightness-125"
+                        } ${isHL ? "!bg-fab-gold/10" : ""}`}
+                      >
+                        <div className={`font-bold ${textColor}`}>{mu.winRate.toFixed(0)}%</div>
+                        <div className="text-xs text-fab-dim">
+                          {mu.wins}-{mu.losses}
+                          {mu.draws > 0 ? `-${mu.draws}` : ""}
+                        </div>
                       </td>
                     );
-                  }
-                  const bgColor =
-                    mu.winRate >= 60
-                      ? "bg-fab-win/20"
-                      : mu.winRate >= 45
-                        ? "bg-fab-draw/10"
-                        : "bg-fab-loss/20";
-                  const textColor =
-                    mu.winRate >= 60
-                      ? "text-fab-win"
-                      : mu.winRate >= 45
-                        ? "text-fab-draw"
-                        : "text-fab-loss";
-
-                  return (
-                    <td
-                      key={opp}
-                      onClick={() => { if (!movedRef.current) onCellClick(isSelected ? null : { hero: hero.heroName, opp }); }}
-                      className={`p-2 text-center border-b border-fab-border/50 transition-all ${bgColor} ${
-                        isSelected ? "ring-2 ring-fab-gold ring-inset" : "hover:brightness-125"
-                      }`}
-                    >
-                      <div className={`font-bold ${textColor}`}>{mu.winRate.toFixed(0)}%</div>
-                      <div className="text-xs text-fab-dim">
-                        {mu.wins}-{mu.losses}
-                        {mu.draws > 0 ? `-${mu.draws}` : ""}
-                      </div>
-                    </td>
-                  );
-                })}
-              </tr>
-            ))}
+                  })}
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
@@ -760,6 +761,8 @@ function CommunityMatchupGrid({
 }) {
   const [showAll, setShowAll] = useState(false);
   const { ref: scrollRef, onMouseDown, movedRef } = useDragScroll();
+  const [highlightRow, setHighlightRow] = useState<string | null>(null);
+  const [highlightCol, setHighlightCol] = useState<string | null>(null);
 
   // Build per-hero rows from the pair data, applying hero filters
   const { heroRows, allHeroes, totalMatches } = useMemo(() => {
@@ -849,17 +852,20 @@ function CommunityMatchupGrid({
         <span>{heroRows.length} heroes</span>
       </div>
 
-      <div ref={scrollRef} onMouseDown={onMouseDown} className="overflow-x-auto cursor-grab">
+      <div ref={scrollRef} onMouseDown={onMouseDown} className="overflow-auto max-h-[70vh] cursor-grab rounded-lg border border-fab-border">
         <table className="w-full text-sm border-collapse">
           <thead>
             <tr>
-              <th className="text-left p-2 text-fab-muted font-medium border-b border-fab-border sticky left-0 bg-fab-bg z-10">
+              <th className="text-left p-2 text-fab-muted font-medium border-b border-fab-border sticky left-0 top-0 bg-fab-bg z-20">
                 Hero / vs
               </th>
               {displayCols.map((hero) => (
                 <th
                   key={hero}
-                  className="p-2 text-fab-muted font-medium border-b border-fab-border text-center min-w-[90px]"
+                  onClick={() => setHighlightCol(highlightCol === hero ? null : hero)}
+                  className={`p-2 text-fab-muted font-medium border-b border-fab-border text-center min-w-[90px] sticky top-0 bg-fab-bg z-10 cursor-pointer select-none transition-colors ${
+                    highlightCol === hero ? "!bg-fab-gold/10 text-fab-gold" : "hover:text-fab-text"
+                  }`}
                 >
                   <span className="text-xs">{hero}</span>
                 </th>
@@ -867,68 +873,77 @@ function CommunityMatchupGrid({
             </tr>
           </thead>
           <tbody>
-            {displayRows.map((row) => (
-              <tr key={row.hero}>
-                <td className="p-2 font-semibold text-fab-text border-b border-fab-border/50 sticky left-0 bg-fab-bg whitespace-nowrap z-10">
-                  <div className="flex items-center gap-1.5">
-                    <HeroIcon name={row.hero} />
-                    <span className="truncate max-w-[140px]">{row.hero}</span>
-                  </div>
-                  <span className="text-[10px] text-fab-dim">({row.totalMatches})</span>
-                </td>
-                {displayCols.map((opp) => {
-                  if (opp === row.hero) {
+            {displayRows.map((row) => {
+              const isRowHL = highlightRow === row.hero;
+              return (
+                <tr key={row.hero}>
+                  <td
+                    onClick={() => setHighlightRow(isRowHL ? null : row.hero)}
+                    className={`p-2 font-semibold text-fab-text border-b border-fab-border/50 sticky left-0 whitespace-nowrap z-10 cursor-pointer select-none transition-colors ${
+                      isRowHL ? "bg-fab-gold/10 text-fab-gold" : "bg-fab-bg hover:text-fab-gold"
+                    }`}
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <HeroIcon name={row.hero} />
+                      <span className="truncate max-w-[140px]">{row.hero}</span>
+                    </div>
+                    <span className="text-[10px] text-fab-dim">({row.totalMatches})</span>
+                  </td>
+                  {displayCols.map((opp) => {
+                    const isHL = isRowHL || highlightCol === opp;
+                    if (opp === row.hero) {
+                      return (
+                        <td key={opp} className={`p-2 text-center border-b border-fab-border/50 ${isHL ? "bg-fab-gold/5" : "bg-fab-surface/30"}`}>
+                          <span className="text-fab-dim text-xs">-</span>
+                        </td>
+                      );
+                    }
+                    const mu = row.matchups.get(opp);
+                    const isSelected = selectedCell?.hero === row.hero && selectedCell?.opp === opp;
+                    if (!mu || mu.total === 0) {
+                      return (
+                        <td key={opp} className={`p-2 text-center border-b border-fab-border/50 text-fab-dim ${isHL ? "bg-fab-gold/5" : ""}`}>
+                          -
+                        </td>
+                      );
+                    }
+
+                    const lowSample = mu.total < 5;
+                    const bgColor = lowSample
+                      ? "bg-fab-surface/20"
+                      : mu.winRate >= 60
+                        ? "bg-fab-win/20"
+                        : mu.winRate >= 45
+                          ? "bg-fab-draw/10"
+                          : "bg-fab-loss/20";
+                    const textColor = lowSample
+                      ? "text-fab-dim"
+                      : mu.winRate >= 60
+                        ? "text-fab-win"
+                        : mu.winRate >= 45
+                          ? "text-fab-draw"
+                          : "text-fab-loss";
+
                     return (
-                      <td key={opp} className="p-2 text-center border-b border-fab-border/50 bg-fab-surface/30">
-                        <span className="text-fab-dim text-xs">-</span>
+                      <td
+                        key={opp}
+                        onClick={() => { if (!movedRef.current) onCellClick(isSelected ? null : { hero: row.hero, opp }); }}
+                        className={`p-2 text-center border-b border-fab-border/50 transition-all ${bgColor} ${
+                          isSelected ? "ring-2 ring-fab-gold ring-inset" : "hover:brightness-125"
+                        } ${isHL ? "!bg-fab-gold/10" : ""}`}
+                        title={lowSample ? `Low sample (${mu.total} matches)` : undefined}
+                      >
+                        <div className={`font-bold ${textColor}`}>{mu.winRate.toFixed(0)}%</div>
+                        <div className="text-xs text-fab-dim">
+                          {mu.wins}-{mu.losses}
+                          {mu.draws > 0 ? `-${mu.draws}` : ""}
+                        </div>
                       </td>
                     );
-                  }
-                  const mu = row.matchups.get(opp);
-                  const isSelected = selectedCell?.hero === row.hero && selectedCell?.opp === opp;
-                  if (!mu || mu.total === 0) {
-                    return (
-                      <td key={opp} className="p-2 text-center border-b border-fab-border/50 text-fab-dim">
-                        -
-                      </td>
-                    );
-                  }
-
-                  const lowSample = mu.total < 5;
-                  const bgColor = lowSample
-                    ? "bg-fab-surface/20"
-                    : mu.winRate >= 60
-                      ? "bg-fab-win/20"
-                      : mu.winRate >= 45
-                        ? "bg-fab-draw/10"
-                        : "bg-fab-loss/20";
-                  const textColor = lowSample
-                    ? "text-fab-dim"
-                    : mu.winRate >= 60
-                      ? "text-fab-win"
-                      : mu.winRate >= 45
-                        ? "text-fab-draw"
-                        : "text-fab-loss";
-
-                  return (
-                    <td
-                      key={opp}
-                      onClick={() => { if (!movedRef.current) onCellClick(isSelected ? null : { hero: row.hero, opp }); }}
-                      className={`p-2 text-center border-b border-fab-border/50 transition-all ${bgColor} ${
-                        isSelected ? "ring-2 ring-fab-gold ring-inset" : "hover:brightness-125"
-                      }`}
-                      title={lowSample ? `Low sample (${mu.total} matches)` : undefined}
-                    >
-                      <div className={`font-bold ${textColor}`}>{mu.winRate.toFixed(0)}%</div>
-                      <div className="text-xs text-fab-dim">
-                        {mu.wins}-{mu.losses}
-                        {mu.draws > 0 ? `-${mu.draws}` : ""}
-                      </div>
-                    </td>
-                  );
-                })}
-              </tr>
-            ))}
+                  })}
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
