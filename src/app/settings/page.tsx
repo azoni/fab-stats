@@ -13,6 +13,7 @@ import {
 } from "firebase/auth";
 import { deleteAllFeedEventsForUser, syncFeedEventsVisibility } from "@/lib/feed";
 import { SparklesIcon } from "@/components/icons/NavIcons";
+import { logActivity } from "@/lib/activity-log";
 import { FeedbackModal } from "@/components/feedback/FeedbackModal";
 import { useCreators } from "@/hooks/useCreators";
 import { platformIcons } from "@/components/layout/Navbar";
@@ -286,6 +287,7 @@ export default function SettingsPage() {
     try {
       await updateProfile(user.uid, { siteBackgroundId: nextId === "none" ? undefined : nextId });
       await refreshProfile();
+      logActivity("background_change", nextId);
       toast.success("Background updated");
     } catch {
       setSiteBackgroundId(previousId);

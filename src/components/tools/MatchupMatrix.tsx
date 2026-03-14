@@ -1,54 +1,13 @@
 "use client";
-import { useState, useMemo, useEffect, useCallback, useRef } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { computeHeroStats } from "@/lib/stats";
 import { getAvailableFormats } from "@/lib/meta-stats";
 import { getHeroByName } from "@/lib/heroes";
 
 import { getCommunityHeroMatchups, getMonthsForPreset, type CommunityMatchupCell } from "@/lib/hero-matchups";
 import type { MatchRecord, LeaderboardEntry, HeroStats } from "@/types";
-
-// ── Drag-to-scroll hook ──
-// Listeners are attached on mousedown and cleaned up on mouseup so
-// there is no stale-ref problem when the scrollable element mounts late.
-
-function useDragScroll() {
-  const ref = useRef<HTMLDivElement>(null);
-  const moved = useRef(false);
-
-  const onMouseDown = useCallback((e: React.MouseEvent) => {
-    const el = ref.current;
-    if (!el) return;
-    e.preventDefault();
-    moved.current = false;
-
-    const startX = e.clientX;
-    const startY = e.clientY;
-    const scrollL = el.scrollLeft;
-    const scrollT = el.scrollTop;
-    el.style.cursor = "grabbing";
-    el.style.userSelect = "none";
-
-    const onMouseMove = (ev: MouseEvent) => {
-      const dx = ev.clientX - startX;
-      const dy = ev.clientY - startY;
-      if (Math.abs(dx) > 3 || Math.abs(dy) > 3) moved.current = true;
-      el.scrollLeft = scrollL - dx;
-      el.scrollTop = scrollT - dy;
-    };
-
-    const onMouseUp = () => {
-      el.style.cursor = "grab";
-      el.style.userSelect = "";
-      window.removeEventListener("mousemove", onMouseMove);
-      window.removeEventListener("mouseup", onMouseUp);
-    };
-
-    window.addEventListener("mousemove", onMouseMove);
-    window.addEventListener("mouseup", onMouseUp);
-  }, []);
-
-  return { ref, onMouseDown, movedRef: moved };
-}
+import { useDragScroll } from "@/hooks/useDragScroll";
+import { HeroImg } from "@/components/heroes/HeroImg";
 
 type Mode = "personal" | "community";
 type Period = "all" | "30d" | "90d" | "custom";
@@ -80,27 +39,6 @@ function passesHeroFilter(name: string, ageFilter: AgeFilter, includeLivingLegen
   if (ageFilter === "adult" && isYoungHero(name)) return false;
   if (ageFilter === "young" && !isYoungHero(name)) return false;
   return true;
-}
-
-function HeroImg({ name, size = "sm" }: { name: string; size?: "sm" | "md" }) {
-  const hero = getHeroByName(name);
-  const dim = size === "md" ? "w-7 h-7" : "w-5 h-5";
-  if (!hero?.imageUrl) {
-    const cls = hero?.classes[0] || "";
-    return (
-      <span className={`inline-flex items-center justify-center ${dim} rounded-full bg-fab-surface text-fab-muted text-[9px] font-bold shrink-0 border border-fab-border`} title={cls}>
-        {cls.charAt(0) || "?"}
-      </span>
-    );
-  }
-  return (
-    <img
-      src={hero.imageUrl}
-      alt={name}
-      className={`${dim} rounded-full object-cover object-top shrink-0 border border-fab-border`}
-      loading="lazy"
-    />
-  );
 }
 
 interface MatchupMatrixProps {
@@ -640,14 +578,14 @@ function PersonalGrid({
         <table className="w-full text-sm border-collapse">
           <thead>
             <tr>
-              <th className="text-left p-2 text-fab-muted font-medium border-b border-fab-border sticky left-0 top-0 bg-fab-bg z-20">
+              <th className="text-left p-2 text-fab-muted font-medium border-b border-fab-border sticky left-0 top-0 bg-fab-surface z-20">
                 Your Hero / Opp
               </th>
               {filteredOpponents.map((opp) => (
                 <th
                   key={opp}
                   onClick={() => setHighlightCol(highlightCol === opp ? null : opp)}
-                  className={`p-2 text-fab-muted font-medium border-b border-fab-border text-center min-w-[80px] sticky top-0 bg-fab-bg z-10 cursor-pointer select-none transition-colors ${
+                  className={`p-2 text-fab-muted font-medium border-b border-fab-border text-center min-w-[80px] sticky top-0 bg-fab-surface z-10 cursor-pointer select-none transition-colors ${
                     highlightCol === opp ? "!bg-fab-gold/10 text-fab-gold" : "hover:text-fab-text"
                   }`}
                 >
@@ -667,7 +605,7 @@ function PersonalGrid({
                   <td
                     onClick={() => setHighlightRow(isRowHL ? null : hero.heroName)}
                     className={`p-2 font-semibold text-fab-text border-b border-fab-border/50 sticky left-0 whitespace-nowrap z-10 cursor-pointer select-none transition-colors ${
-                      isRowHL ? "bg-fab-gold/10 text-fab-gold" : "bg-fab-bg hover:text-fab-gold"
+                      isRowHL ? "bg-fab-gold/10 text-fab-gold" : "bg-fab-surface hover:text-fab-gold"
                     }`}
                   >
                     <div className="flex items-center gap-1.5">
@@ -689,10 +627,10 @@ function PersonalGrid({
                     }
                     const bgColor =
                       mu.winRate >= 60
-                        ? "bg-fab-win/20"
+                        ? "bg-fab-win/30"
                         : mu.winRate >= 45
-                          ? "bg-fab-draw/10"
-                          : "bg-fab-loss/20";
+                          ? "bg-fab-draw/20"
+                          : "bg-fab-loss/30";
                     const textColor =
                       mu.winRate >= 60
                         ? "text-fab-win"
@@ -873,14 +811,14 @@ function CommunityMatchupGrid({
         <table className="w-full text-sm border-collapse">
           <thead>
             <tr>
-              <th className="text-left p-2 text-fab-muted font-medium border-b border-fab-border sticky left-0 top-0 bg-fab-bg z-20">
+              <th className="text-left p-2 text-fab-muted font-medium border-b border-fab-border sticky left-0 top-0 bg-fab-surface z-20">
                 Hero / vs
               </th>
               {displayCols.map((hero) => (
                 <th
                   key={hero}
                   onClick={() => setHighlightCol(highlightCol === hero ? null : hero)}
-                  className={`p-2 text-fab-muted font-medium border-b border-fab-border text-center min-w-[80px] sticky top-0 bg-fab-bg z-10 cursor-pointer select-none transition-colors ${
+                  className={`p-2 text-fab-muted font-medium border-b border-fab-border text-center min-w-[80px] sticky top-0 bg-fab-surface z-10 cursor-pointer select-none transition-colors ${
                     highlightCol === hero ? "!bg-fab-gold/10 text-fab-gold" : "hover:text-fab-text"
                   }`}
                 >
@@ -900,7 +838,7 @@ function CommunityMatchupGrid({
                   <td
                     onClick={() => setHighlightRow(isRowHL ? null : row.hero)}
                     className={`p-2 font-semibold text-fab-text border-b border-fab-border/50 sticky left-0 whitespace-nowrap z-10 cursor-pointer select-none transition-colors ${
-                      isRowHL ? "bg-fab-gold/10 text-fab-gold" : "bg-fab-bg hover:text-fab-gold"
+                      isRowHL ? "bg-fab-gold/10 text-fab-gold" : "bg-fab-surface hover:text-fab-gold"
                     }`}
                   >
                     <div className="flex items-center gap-1.5">
@@ -930,12 +868,12 @@ function CommunityMatchupGrid({
 
                     const lowSample = mu.total < 5;
                     const bgColor = lowSample
-                      ? "bg-fab-surface/20"
+                      ? "bg-fab-surface/40"
                       : mu.winRate >= 60
-                        ? "bg-fab-win/20"
+                        ? "bg-fab-win/30"
                         : mu.winRate >= 45
-                          ? "bg-fab-draw/10"
-                          : "bg-fab-loss/20";
+                          ? "bg-fab-draw/20"
+                          : "bg-fab-loss/30";
                     const textColor = lowSample
                       ? "text-fab-dim"
                       : mu.winRate >= 60

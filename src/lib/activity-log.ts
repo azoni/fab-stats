@@ -27,7 +27,8 @@ export type ActivityAction =
   | "ninjacombo_share"
   | "shadowstrike_share"
   | "bladedash_share"
-  | "trends_share";
+  | "trends_share"
+  | "background_change";
 
 export interface ActivityEvent {
   id: string;
@@ -110,6 +111,7 @@ export const ACTIVITY_LABELS: Record<ActivityAction, string> = {
   shadowstrike_share: "shared a shadow strike result",
   bladedash_share: "shared a blade dash result",
   trends_share: "shared their stats summary",
+  background_change: "changed their background",
 };
 
 /** Admin: read feature usage counters (single doc read). */

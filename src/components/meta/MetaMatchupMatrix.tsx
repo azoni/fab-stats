@@ -2,8 +2,8 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { getCommunityHeroMatchups, getMonthsForPreset, type CommunityMatchupCell } from "@/lib/hero-matchups";
 import { getHeroByName } from "@/lib/heroes";
-import { HeroClassIcon } from "@/components/heroes/HeroClassIcon";
-import { WinRateRing } from "@/components/charts/WinRateRing";
+import { HeroImg } from "@/components/heroes/HeroImg";
+import { useDragScroll } from "@/hooks/useDragScroll";
 
 interface ProcessedHeroRow {
   hero: string;
@@ -37,6 +37,9 @@ export function MetaMatchupMatrix({ format, sinceDate, untilDate }: MetaMatchupM
   const [showAll, setShowAll] = useState(false);
   const [ageFilter, setAgeFilter] = useState<"adult" | "young" | "all">("adult");
   const [excludeLL, setExcludeLL] = useState(true);
+  const [highlightRow, setHighlightRow] = useState<string | null>(null);
+  const [highlightCol, setHighlightCol] = useState<string | null>(null);
+  const { ref: scrollRef, onMouseDown, movedRef } = useDragScroll();
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -64,20 +67,17 @@ export function MetaMatchupMatrix({ format, sinceDate, untilDate }: MetaMatchupM
     let total = 0;
 
     for (const cell of data) {
-      // Apply hero filters
       if (excludeLL && (isLivingLegendHero(cell.hero1) || isLivingLegendHero(cell.hero2))) continue;
       if (ageFilter === "adult" && (isYoungHero(cell.hero1) || isYoungHero(cell.hero2))) continue;
       if (ageFilter === "young" && (!isYoungHero(cell.hero1) || !isYoungHero(cell.hero2))) continue;
 
       total += cell.total;
 
-      // hero1's perspective
       if (!heroMap.has(cell.hero1)) heroMap.set(cell.hero1, new Map());
       heroMap.get(cell.hero1)!.set(cell.hero2, {
         wins: cell.hero1Wins, losses: cell.hero2Wins, draws: cell.draws, total: cell.total,
       });
 
-      // hero2's perspective (mirror)
       if (!heroMap.has(cell.hero2)) heroMap.set(cell.hero2, new Map());
       heroMap.get(cell.hero2)!.set(cell.hero1, {
         wins: cell.hero2Wins, losses: cell.hero1Wins, draws: cell.draws, total: cell.total,
@@ -162,45 +162,52 @@ export function MetaMatchupMatrix({ format, sinceDate, untilDate }: MetaMatchupM
       </div>
 
       {/* Matrix grid */}
-      <div className="overflow-x-auto -mx-4 px-4">
+      <div ref={scrollRef} onMouseDown={onMouseDown} className="overflow-auto max-h-[70vh] cursor-grab rounded-lg border border-fab-border">
         <table className="w-full text-sm border-collapse">
           <thead>
             <tr>
-              <th className="text-left p-1.5 text-fab-muted font-medium border-b border-fab-border sticky left-0 bg-fab-bg z-10 text-xs">
+              <th className="text-left p-2 text-fab-muted font-medium border-b border-fab-border sticky left-0 top-0 bg-fab-surface z-20">
                 Hero / vs
               </th>
-              {displayCols.map((hero) => {
-                const heroInfo = getHeroByName(hero);
-                const heroClass = heroInfo?.classes[0];
-                return (
-                  <th key={hero} className="p-1 text-fab-muted font-medium border-b border-fab-border text-center min-w-[72px]">
-                    <div className="flex flex-col items-center gap-0.5">
-                      <HeroClassIcon heroClass={heroClass} size="sm" />
-                      <span className="text-[9px] leading-tight max-w-[70px] truncate">{hero}</span>
-                    </div>
-                  </th>
-                );
-              })}
+              {displayCols.map((hero) => (
+                <th
+                  key={hero}
+                  onClick={() => setHighlightCol(highlightCol === hero ? null : hero)}
+                  className={`p-2 text-fab-muted font-medium border-b border-fab-border text-center min-w-[80px] sticky top-0 bg-fab-surface z-10 cursor-pointer select-none transition-colors ${
+                    highlightCol === hero ? "!bg-fab-gold/10 text-fab-gold" : "hover:text-fab-text"
+                  }`}
+                >
+                  <div className="flex flex-col items-center gap-1">
+                    <HeroImg name={hero} />
+                    <span className="text-[10px] leading-tight">{hero.split(",")[0]}</span>
+                  </div>
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody>
             {displayRows.map((row) => {
-              const heroInfo = getHeroByName(row.hero);
-              const heroClass = heroInfo?.classes[0];
+              const isRowHL = highlightRow === row.hero;
               return (
                 <tr key={row.hero}>
-                  <td className="p-1.5 font-semibold text-fab-text border-b border-fab-border/50 sticky left-0 bg-fab-bg whitespace-nowrap z-10">
+                  <td
+                    onClick={() => setHighlightRow(isRowHL ? null : row.hero)}
+                    className={`p-2 font-semibold text-fab-text border-b border-fab-border/50 sticky left-0 whitespace-nowrap z-10 cursor-pointer select-none transition-colors ${
+                      isRowHL ? "bg-fab-gold/10 text-fab-gold" : "bg-fab-surface hover:text-fab-gold"
+                    }`}
+                  >
                     <div className="flex items-center gap-1.5">
-                      <HeroClassIcon heroClass={heroClass} size="sm" />
-                      <span className="text-xs truncate max-w-[120px]">{row.hero}</span>
+                      <HeroImg name={row.hero} />
+                      <span className="truncate max-w-[140px]">{row.hero}</span>
                     </div>
-                    <span className="text-[9px] text-fab-dim ml-5">({row.totalMatches})</span>
+                    <span className="text-[10px] text-fab-dim">({row.totalMatches})</span>
                   </td>
                   {displayCols.map((opp) => {
+                    const isHL = isRowHL || highlightCol === opp;
                     if (opp === row.hero) {
                       return (
-                        <td key={opp} className="p-1 text-center border-b border-fab-border/50 bg-fab-surface/30">
-                          <span className="text-fab-dim text-[10px]">—</span>
+                        <td key={opp} className={`p-2 text-center border-b border-fab-border/50 ${isHL ? "bg-fab-gold/5" : "bg-fab-surface/30"}`}>
+                          <span className="text-fab-dim text-xs">-</span>
                         </td>
                       );
                     }
@@ -208,16 +215,18 @@ export function MetaMatchupMatrix({ format, sinceDate, untilDate }: MetaMatchupM
                     const isSelected = selectedCell?.hero === row.hero && selectedCell?.opp === opp;
                     if (!mu || mu.total === 0) {
                       return (
-                        <td key={opp} className="p-1 text-center border-b border-fab-border/50 text-fab-dim text-[10px]">—</td>
+                        <td key={opp} className={`p-2 text-center border-b border-fab-border/50 text-fab-dim ${isHL ? "bg-fab-gold/5" : ""}`}>
+                          -
+                        </td>
                       );
                     }
 
                     const lowSample = mu.total < 5;
                     const bgColor = lowSample
-                      ? "bg-fab-surface/20"
-                      : mu.winRate >= 60 ? "bg-fab-win/20"
-                      : mu.winRate >= 45 ? "bg-fab-draw/10"
-                      : "bg-fab-loss/20";
+                      ? "bg-fab-surface/40"
+                      : mu.winRate >= 60 ? "bg-fab-win/30"
+                      : mu.winRate >= 45 ? "bg-fab-draw/20"
+                      : "bg-fab-loss/30";
                     const textColor = lowSample
                       ? "text-fab-dim"
                       : mu.winRate >= 60 ? "text-fab-win"
@@ -227,14 +236,17 @@ export function MetaMatchupMatrix({ format, sinceDate, untilDate }: MetaMatchupM
                     return (
                       <td
                         key={opp}
-                        onClick={() => setSelectedCell(isSelected ? null : { hero: row.hero, opp })}
-                        className={`p-1 text-center border-b border-fab-border/50 cursor-pointer transition-all ${bgColor} ${
+                        onClick={() => { if (!movedRef.current) setSelectedCell(isSelected ? null : { hero: row.hero, opp }); }}
+                        className={`p-2 text-center border-b border-fab-border/50 cursor-pointer transition-all ${bgColor} ${
                           isSelected ? "ring-2 ring-fab-gold ring-inset" : "hover:brightness-125"
-                        }`}
-                        title={lowSample ? `Low sample (${mu.total} matches)` : `${mu.wins}W-${mu.losses}L${mu.draws > 0 ? `-${mu.draws}D` : ""}`}
+                        } ${isHL ? "!bg-fab-gold/10" : ""}`}
+                        title={lowSample ? `Low sample (${mu.total} matches)` : undefined}
                       >
-                        <div className={`text-xs font-bold ${textColor}`}>{mu.winRate.toFixed(0)}%</div>
-                        <div className="text-[9px] text-fab-dim">{mu.total}</div>
+                        <div className={`font-bold ${textColor}`}>{mu.winRate.toFixed(0)}%</div>
+                        <div className="text-xs text-fab-dim">
+                          {mu.wins}-{mu.losses}
+                          {mu.draws > 0 ? `-${mu.draws}` : ""}
+                        </div>
                       </td>
                     );
                   })}
@@ -269,12 +281,14 @@ export function MetaMatchupMatrix({ format, sinceDate, untilDate }: MetaMatchupM
             </button>
           </div>
           <div className="flex items-center gap-4 text-sm">
-            <WinRateRing value={selectedMu.winRate} size={36} strokeWidth={3.5} />
             <span className="text-fab-win font-semibold">{selectedMu.wins}W</span>
             <span className="text-fab-loss font-semibold">{selectedMu.losses}L</span>
             {selectedMu.draws > 0 && <span className="text-fab-draw font-semibold">{selectedMu.draws}D</span>}
             <span className="text-fab-muted">
               {selectedMu.total} match{selectedMu.total !== 1 ? "es" : ""}
+            </span>
+            <span className={`font-bold ${selectedMu.winRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>
+              {selectedMu.winRate.toFixed(1)}%
             </span>
           </div>
         </div>

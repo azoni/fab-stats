@@ -157,7 +157,8 @@ export function MatchCard({ match, matchOwnerUid, enableComments = false, obfusc
   }
 
   return (
-    <div className={`rounded-lg border border-fab-border/20 border-l-[3px] ${style.border} ${style.bg}`}>
+    <div className={`rounded-lg border border-fab-border/40 border-l-[3px] ${style.border} bg-fab-surface/80`}>
+      <div className={`${style.bg} rounded-lg`}>
       <div className="px-3 py-2.5">
         {/* Row 1: Result pill + Opponent + Playoff badge + Hero icons (desktop) */}
         <div className="flex items-center gap-2">
@@ -477,6 +478,7 @@ export function MatchCard({ match, matchOwnerUid, enableComments = false, obfusc
           )}
         </div>
       )}
+    </div>
     </div>
   );
 }

@@ -119,6 +119,7 @@ export default function RootLayout({
             __html: `try{var t=localStorage.getItem('fab-theme');if(t){var m={arcana:'grimoire',ironheart:'grimoire',chromatic:'rosetta'};if(m[t]){t=m[t];localStorage.setItem('fab-theme',t)}document.documentElement.setAttribute('data-theme',t)}}catch(e){}`,
           }}
         />
+        <link rel="preload" as="image" href="/backgrounds/fab-official/lore-solana-matte.jpg" type="image/jpeg" />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${nunito.variable} antialiased`}
@@ -156,7 +157,7 @@ export default function RootLayout({
               <a href="/privacy" className="hover:text-fab-text transition-colors">Privacy</a>
             </p>
             <p>
-              Flesh and Blood is a trademark of Legend Story Studios. Not affiliated with or endorsed by LSS.
+              Flesh and Blood is a trademark of Legend Story Studios. &copy; Legend Story Studios. Not affiliated with or endorsed by LSS.
             </p>
           </footer>
           <FeedbackFab />
