@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { computeEventStats, computeOverallStats, computePlayoffFinishes, computeBestFinish } from "@/lib/stats";
 import { updateLeaderboardEntry } from "@/lib/leaderboard";
 import { propagateHeroToOpponent } from "@/lib/match-linking";
-import { adjustHeroMatchupOnEdit } from "@/lib/hero-matchups";
+import { adjustHeroMatchupOnEdit, adjustOpponentHeroMatchupOnEdit } from "@/lib/hero-matchups";
 import { deleteFeedEventsForEvent } from "@/lib/feed";
 import { EventCard } from "@/components/events/EventCard";
 import { localDate } from "@/lib/constants";
@@ -117,6 +117,12 @@ export function EventsTab({ matches, user, profile, updateMatch, refreshMatches,
         if (match) {
           propagateHeroToOpponent(user.uid, match, updates.heroPlayed).catch(() => {});
           adjustHeroMatchupOnEdit(user.uid, match, match.heroPlayed, updates.heroPlayed).catch(() => {});
+        }
+      }
+      if (updates.opponentHero && user) {
+        const match = matches.find((m) => m.id === id);
+        if (match && match.opponentHero) {
+          adjustOpponentHeroMatchupOnEdit(user.uid, match, match.opponentHero, updates.opponentHero).catch(() => {});
         }
       }
     },

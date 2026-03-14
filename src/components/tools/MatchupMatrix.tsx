@@ -574,7 +574,7 @@ function PersonalGrid({
 
   return (
     <div>
-      <div ref={scrollRef} onMouseDown={onMouseDown} className="overflow-auto max-h-[70vh] cursor-grab rounded-lg border border-fab-border">
+      <div ref={scrollRef} onMouseDown={onMouseDown} className="overflow-auto max-h-[70vh] cursor-grab rounded-lg border border-fab-border bg-fab-bg">
         <table className="w-full text-sm border-collapse">
           <thead>
             <tr>
@@ -786,7 +786,7 @@ function CommunityMatchupGrid({
     return (
       <div className="text-center py-12 text-fab-dim">
         <p className="text-lg mb-1">No community matchup data yet</p>
-        <p className="text-sm">Matchup data is generated when players import linked matches.</p>
+        <p className="text-sm">Matchup data is generated when players log matches with hero and opponent hero data.</p>
       </div>
     );
   }
@@ -803,11 +803,11 @@ function CommunityMatchupGrid({
     <div>
       {/* Data coverage */}
       <div className="flex items-center gap-4 mb-3 text-xs text-fab-dim">
-        <span>{totalMatches.toLocaleString()} linked matches</span>
+        <span>{totalMatches.toLocaleString()} matches</span>
         <span>{heroRows.length} heroes</span>
       </div>
 
-      <div ref={scrollRef} onMouseDown={onMouseDown} className="overflow-auto max-h-[70vh] cursor-grab rounded-lg border border-fab-border">
+      <div ref={scrollRef} onMouseDown={onMouseDown} className="overflow-auto max-h-[70vh] cursor-grab rounded-lg border border-fab-border bg-fab-bg">
         <table className="w-full text-sm border-collapse">
           <thead>
             <tr>

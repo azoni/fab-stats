@@ -375,6 +375,72 @@ export async function adjustHeroMatchupOnEdit(
   cachedData = null;
 }
 
+/**
+ * When a user edits opponentHero on a match, adjust the community hero matchup
+ * counters: decrement the old pairing and increment the new one.
+ */
+export async function adjustOpponentHeroMatchupOnEdit(
+  userId: string,
+  match: MatchRecord,
+  oldOpponentHero: string,
+  newOpponentHero: string,
+): Promise<void> {
+  if (!match.heroPlayed || match.heroPlayed === "Unknown") return;
+  if (match.result === MatchResult.Bye) return;
+  if (oldOpponentHero === newOpponentHero) return;
+
+  const heroPlayed = match.heroPlayed;
+  const month = getMonth(match.date);
+  const fmt = match.format || "Unknown";
+
+  // Decrement old pairing (only if old opponent was a real hero)
+  if (oldOpponentHero && oldOpponentHero !== "Unknown") {
+    const oldIsMirror = heroPlayed === oldOpponentHero;
+    const shouldCountOld = oldIsMirror ? (!!match.opponentGemId && userId < match.opponentGemId) : true;
+    if (shouldCountOld) {
+      const oldSorted = [heroPlayed, oldOpponentHero].sort();
+      const oldIsHero1 = heroPlayed === oldSorted[0];
+      const ref = doc(db, "heroMatchups", getHeroMatchupDocId(heroPlayed, oldOpponentHero, month));
+      const [h1Win, h2Win, draw] = resultDeltas(match.result, -1, oldIsHero1);
+      await updateDoc(ref, {
+        hero1Wins: increment(h1Win), hero2Wins: increment(h2Win),
+        draws: increment(draw), total: increment(-1),
+        updatedAt: new Date().toISOString(),
+        [`byFormat.${fmt}.hero1Wins`]: increment(h1Win),
+        [`byFormat.${fmt}.hero2Wins`]: increment(h2Win),
+        [`byFormat.${fmt}.draws`]: increment(draw),
+        [`byFormat.${fmt}.total`]: increment(-1),
+      }).catch(() => {});
+    }
+  }
+
+  // Increment new pairing (only if new opponent is a real hero)
+  if (newOpponentHero && newOpponentHero !== "Unknown") {
+    const newIsMirror = heroPlayed === newOpponentHero;
+    const shouldCountNew = newIsMirror ? (!!match.opponentGemId && userId < match.opponentGemId) : true;
+    if (shouldCountNew) {
+      const newSorted = [heroPlayed, newOpponentHero].sort();
+      const newIsHero1 = heroPlayed === newSorted[0];
+      const ref = doc(db, "heroMatchups", getHeroMatchupDocId(heroPlayed, newOpponentHero, month));
+      const [h1Win, h2Win, draw] = resultDeltas(match.result, 1, newIsHero1);
+      await setDoc(ref, {
+        hero1: newSorted[0], hero2: newSorted[1], month,
+        hero1Wins: increment(h1Win), hero2Wins: increment(h2Win),
+        draws: increment(draw), total: increment(1),
+        updatedAt: new Date().toISOString(),
+      }, { merge: true });
+      await updateDoc(ref, {
+        [`byFormat.${fmt}.hero1Wins`]: increment(h1Win),
+        [`byFormat.${fmt}.hero2Wins`]: increment(h2Win),
+        [`byFormat.${fmt}.draws`]: increment(draw),
+        [`byFormat.${fmt}.total`]: increment(1),
+      }).catch(() => {});
+    }
+  }
+
+  cachedData = null;
+}
+
 /** Map a match result to [hero1WinsDelta, hero2WinsDelta, drawsDelta].
  *  isHero1 = whether the current user's hero is hero1 (alphabetically first) in the doc. */
 function resultDeltas(result: string, sign: 1 | -1, isHero1: boolean): [number, number, number] {

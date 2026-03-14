@@ -4,7 +4,7 @@ import Link from "next/link";
 import { MatchList } from "@/components/matches/MatchList";
 import { updateLeaderboardEntry } from "@/lib/leaderboard";
 import { propagateHeroToOpponent } from "@/lib/match-linking";
-import { adjustHeroMatchupOnEdit } from "@/lib/hero-matchups";
+import { adjustHeroMatchupOnEdit, adjustOpponentHeroMatchupOnEdit } from "@/lib/hero-matchups";
 import type { MatchRecord, UserProfile } from "@/types";
 import type { User } from "firebase/auth";
 
@@ -29,6 +29,12 @@ export function MatchesTab({ matches, user, profile, updateMatch }: MatchesTabPr
         if (match) {
           propagateHeroToOpponent(user.uid, match, updates.heroPlayed).catch(() => {});
           adjustHeroMatchupOnEdit(user.uid, match, match.heroPlayed, updates.heroPlayed).catch(() => {});
+        }
+      }
+      if (updates.opponentHero && user) {
+        const match = matches.find((m) => m.id === id);
+        if (match && match.opponentHero) {
+          adjustOpponentHeroMatchupOnEdit(user.uid, match, match.opponentHero, updates.opponentHero).catch(() => {});
         }
       }
     },

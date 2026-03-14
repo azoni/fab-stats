@@ -57,6 +57,7 @@ export function QuickEventImportModal({ open, onClose, onImportComplete }: Quick
   const [dragActive, setDragActive] = useState(false);
   const [showHeroWarning, setShowHeroWarning] = useState(false);
   const [confirmSkipHero, setConfirmSkipHero] = useState(false);
+  const [opponentHeroOverrides, setOpponentHeroOverrides] = useState<Record<number, string>>({});
 
   function handleReset() {
     setPhase("input");
@@ -70,6 +71,7 @@ export function QuickEventImportModal({ open, onClose, onImportComplete }: Quick
     setDragActive(false);
     setShowHeroWarning(false);
     setConfirmSkipHero(false);
+    setOpponentHeroOverrides({});
   }
 
   function handleClose() {
@@ -160,10 +162,11 @@ export function QuickEventImportModal({ open, onClose, onImportComplete }: Quick
 
     setPhase("importing");
 
-    // Apply hero override
-    const matches = parsedEvent.matches.map((m) => ({
+    // Apply hero + opponent hero overrides
+    const matches = parsedEvent.matches.map((m, i) => ({
       ...m,
       heroPlayed: heroPlayed !== "Unknown" ? heroPlayed : m.heroPlayed,
+      opponentHero: opponentHeroOverrides[i] || m.opponentHero,
     }));
 
     let count: number;
@@ -388,6 +391,7 @@ export function QuickEventImportModal({ open, onClose, onImportComplete }: Quick
                     <tr className="text-xs text-fab-muted">
                       <th className="text-left px-3 py-2 font-medium w-14">Round</th>
                       <th className="text-left px-3 py-2 font-medium">Opponent</th>
+                      <th className="text-left px-3 py-2 font-medium">Opp. Hero</th>
                       <th className="text-right px-3 py-2 font-medium w-14">Result</th>
                     </tr>
                   </thead>
@@ -396,6 +400,8 @@ export function QuickEventImportModal({ open, onClose, onImportComplete }: Quick
                       const roundInfo = match.notes?.split(" | ")[1] ?? "";
                       const isPlayoffRound = /^Round P/i.test(roundInfo);
                       const roundNum = roundInfo.replace(/^Round P?/i, "") || `${i + 1}`;
+                      const isBye = match.result === MatchResult.Bye;
+                      const hasLinkedHero = !!match.opponentHero && match.opponentHero !== "Unknown";
                       return (
                         <tr key={i} className="border-t border-fab-border/50">
                           <td className="px-3 py-2">
@@ -406,6 +412,24 @@ export function QuickEventImportModal({ open, onClose, onImportComplete }: Quick
                             )}
                           </td>
                           <td className="px-3 py-2 text-fab-text">{match.opponentName || "Unknown"}</td>
+                          <td className="px-3 py-1">
+                            {isBye ? (
+                              <span className="text-fab-dim text-xs">—</span>
+                            ) : hasLinkedHero ? (
+                              <span className="text-fab-text text-xs">{match.opponentHero}</span>
+                            ) : (
+                              <select
+                                value={opponentHeroOverrides[i] || ""}
+                                onChange={(e) => setOpponentHeroOverrides((prev) => ({ ...prev, [i]: e.target.value }))}
+                                className="w-full bg-fab-bg border border-fab-border text-fab-text text-xs rounded px-1.5 py-1 focus:outline-none focus:border-fab-gold"
+                              >
+                                <option value="">—</option>
+                                {VALID_HERO_NAMES.map((h) => (
+                                  <option key={h} value={h}>{h}</option>
+                                ))}
+                              </select>
+                            )}
+                          </td>
                           <td className={`px-3 py-2 text-right font-bold ${resultColors[match.result]}`}>
                             {resultLabels[match.result]}
                           </td>
@@ -443,7 +467,7 @@ export function QuickEventImportModal({ open, onClose, onImportComplete }: Quick
                 <p className="text-sm font-semibold text-fab-loss">No hero selected!</p>
               </div>
               <p className="text-sm text-fab-muted mb-3">
-                Without a hero, your stats will be incomplete and placements will show without a hero on the feed. Select a hero above.
+                Without a hero, your stats will be incomplete and placements will show without a hero on the feed. Select a hero above. Setting opponent heroes helps build community matchup data — fill them in now or edit later from the Events tab.
               </p>
               <div className="flex flex-col gap-2">
                 <button

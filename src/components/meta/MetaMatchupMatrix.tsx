@@ -113,7 +113,7 @@ export function MetaMatchupMatrix({ format, sinceDate, untilDate }: MetaMatchupM
     return (
       <div className="text-center py-10 text-fab-dim">
         <p className="text-sm">No community matchup data available for this filter.</p>
-        <p className="text-xs mt-1">Matchup data is generated when players import linked matches.</p>
+        <p className="text-xs mt-1">Matchup data is generated when players log matches with hero and opponent hero data.</p>
       </div>
     );
   }
@@ -157,12 +157,12 @@ export function MetaMatchupMatrix({ format, sinceDate, untilDate }: MetaMatchupM
           Living Legend
         </button>
         <span className="text-xs text-fab-dim ml-auto">
-          {totalMatches.toLocaleString()} linked matches · {heroRows.length} heroes
+          {totalMatches.toLocaleString()} matches · {heroRows.length} heroes
         </span>
       </div>
 
       {/* Matrix grid */}
-      <div ref={scrollRef} onMouseDown={onMouseDown} className="overflow-auto max-h-[70vh] cursor-grab rounded-lg border border-fab-border">
+      <div ref={scrollRef} onMouseDown={onMouseDown} className="overflow-auto max-h-[70vh] cursor-grab rounded-lg border border-fab-border bg-fab-bg">
         <table className="w-full text-sm border-collapse">
           <thead>
             <tr>
