@@ -68,9 +68,8 @@ export function getMonthsForPreset(preset: string): string[] {
 
 /**
  * Update community hero matchup counters for linked matches.
- * Only counts matches where heroPlayed < opponentHero alphabetically
- * (or equal hero names, userId < opponentUserId via match.opponentGemId)
- * to prevent double-counting when both players import.
+ * Counts all non-mirror matches from the importer's side.
+ * Mirror matches (same hero) use userId dedup to prevent double-counting.
  */
 export async function updateCommunityHeroMatchups(
   userId: string,
@@ -86,7 +85,7 @@ export async function updateCommunityHeroMatchups(
 
   if (linked.length === 0) return;
 
-  // Group by (hero pair, month) — only aggregate from the "owner" side
+  // Group by (hero pair, month) — count from all sides
   const groups = new Map<
     string,
     { hero1: string; hero2: string; month: string; hero1Wins: number; hero2Wins: number; draws: number; total: number; byFormat: Map<string, { hero1Wins: number; hero2Wins: number; draws: number; total: number }> }
@@ -96,13 +95,10 @@ export async function updateCommunityHeroMatchups(
     const sorted = [m.heroPlayed, m.opponentHero].sort();
     const isHero1 = m.heroPlayed === sorted[0];
 
-    // Dedup: only count from the side where heroPlayed is alphabetically first.
-    // For mirror matches (same hero), only count if we have an opponentGemId
-    // and our userId is lexicographically smaller.
+    // Mirror matches (same hero): only count if we have an opponentGemId
+    // and our userId is lexicographically smaller, to prevent double-counting.
     if (m.heroPlayed === m.opponentHero) {
       if (!m.opponentGemId || userId >= m.opponentGemId) continue;
-    } else if (!isHero1) {
-      continue;
     }
 
     const month = getMonth(m.date);
@@ -123,12 +119,13 @@ export async function updateCommunityHeroMatchups(
       groups.set(key, group);
     }
 
-    // Tally from hero1's perspective
+    // Tally: attribute win/loss based on whether this user's hero is hero1 or hero2
     if (m.result === MatchResult.Win) {
-      // Current user is hero1 (alphabetically first) and won
-      group.hero1Wins++;
+      if (isHero1) group.hero1Wins++;
+      else group.hero2Wins++;
     } else if (m.result === MatchResult.Loss) {
-      group.hero2Wins++;
+      if (isHero1) group.hero2Wins++;
+      else group.hero1Wins++;
     } else if (m.result === MatchResult.Draw) {
       group.draws++;
     }
@@ -141,9 +138,13 @@ export async function updateCommunityHeroMatchups(
       fmtGroup = { hero1Wins: 0, hero2Wins: 0, draws: 0, total: 0 };
       group.byFormat.set(fmt, fmtGroup);
     }
-    if (m.result === MatchResult.Win) fmtGroup.hero1Wins++;
-    else if (m.result === MatchResult.Loss) fmtGroup.hero2Wins++;
-    else if (m.result === MatchResult.Draw) fmtGroup.draws++;
+    if (m.result === MatchResult.Win) {
+      if (isHero1) fmtGroup.hero1Wins++;
+      else fmtGroup.hero2Wins++;
+    } else if (m.result === MatchResult.Loss) {
+      if (isHero1) fmtGroup.hero2Wins++;
+      else fmtGroup.hero1Wins++;
+    } else if (m.result === MatchResult.Draw) fmtGroup.draws++;
     fmtGroup.total++;
   }
 
@@ -205,7 +206,6 @@ export async function updateCommunityHeroMatchups(
 /**
  * When a user edits their heroPlayed, adjust the community hero matchup
  * counters: decrement the old pairing and increment the new one.
- * Applies the same dedup rules as updateCommunityHeroMatchups.
  */
 export async function adjustHeroMatchupOnEdit(
   userId: string,
@@ -221,18 +221,18 @@ export async function adjustHeroMatchupOnEdit(
   const month = getMonth(match.date);
   const fmt = match.format || "Unknown";
 
-  // Check if old pairing was counted from this user's side
-  const oldCountedFromThisSide = shouldCountFromThisSide(userId, oldHero, opponentHero, match.opponentGemId);
-  // Check if new pairing should be counted from this user's side
-  const newCountedFromThisSide = shouldCountFromThisSide(userId, newHero, opponentHero, match.opponentGemId);
+  // Skip mirror match adjustments when no opponentGemId or userId is not the counting side
+  const oldIsMirror = oldHero === opponentHero;
+  const newIsMirror = newHero === opponentHero;
+  const shouldCountOld = oldIsMirror ? (!!match.opponentGemId && userId < match.opponentGemId) : true;
+  const shouldCountNew = newIsMirror ? (!!match.opponentGemId && userId < match.opponentGemId) : true;
 
-  if (!oldCountedFromThisSide && !newCountedFromThisSide) return;
-
-  // Decrement old pairing (doc should exist since it was previously counted)
-  if (oldCountedFromThisSide) {
+  // Decrement old pairing
+  if (shouldCountOld) {
+    const oldSorted = [oldHero, opponentHero].sort();
+    const oldIsHero1 = oldHero === oldSorted[0];
     const ref = doc(db, "heroMatchups", getHeroMatchupDocId(oldHero, opponentHero, month));
-    const [h1Win, h2Win, draw] = resultDeltas(match.result, -1);
-    // updateDoc handles dot-notation as nested field paths
+    const [h1Win, h2Win, draw] = resultDeltas(match.result, -1, oldIsHero1);
     await updateDoc(ref, {
       hero1Wins: increment(h1Win), hero2Wins: increment(h2Win),
       draws: increment(draw), total: increment(-1),
@@ -244,13 +244,14 @@ export async function adjustHeroMatchupOnEdit(
     }).catch(() => {}); // doc might not exist if data was never aggregated
   }
 
-  // Increment new pairing (doc might not exist yet — create via set, then update byFormat)
-  if (newCountedFromThisSide) {
-    const sorted = [newHero, opponentHero].sort();
+  // Increment new pairing
+  if (shouldCountNew) {
+    const newSorted = [newHero, opponentHero].sort();
+    const newIsHero1 = newHero === newSorted[0];
     const ref = doc(db, "heroMatchups", getHeroMatchupDocId(newHero, opponentHero, month));
-    const [h1Win, h2Win, draw] = resultDeltas(match.result, 1);
+    const [h1Win, h2Win, draw] = resultDeltas(match.result, 1, newIsHero1);
     await setDoc(ref, {
-      hero1: sorted[0], hero2: sorted[1], month,
+      hero1: newSorted[0], hero2: newSorted[1], month,
       hero1Wins: increment(h1Win), hero2Wins: increment(h2Win),
       draws: increment(draw), total: increment(1),
       updatedAt: new Date().toISOString(),
@@ -267,18 +268,11 @@ export async function adjustHeroMatchupOnEdit(
   cachedData = null;
 }
 
-/** Should this match be counted from the current user's side? */
-function shouldCountFromThisSide(userId: string, heroPlayed: string, opponentHero: string, opponentGemId?: string): boolean {
-  if (heroPlayed === opponentHero) {
-    return !!opponentGemId && userId < opponentGemId;
-  }
-  return heroPlayed < opponentHero;
-}
-
-/** Map a match result to [hero1WinsDelta, hero2WinsDelta, drawsDelta] scaled by sign (+1 or -1). */
-function resultDeltas(result: string, sign: 1 | -1): [number, number, number] {
-  if (result === MatchResult.Win) return [sign, 0, 0];
-  if (result === MatchResult.Loss) return [0, sign, 0];
+/** Map a match result to [hero1WinsDelta, hero2WinsDelta, drawsDelta].
+ *  isHero1 = whether the current user's hero is hero1 (alphabetically first) in the doc. */
+function resultDeltas(result: string, sign: 1 | -1, isHero1: boolean): [number, number, number] {
+  if (result === MatchResult.Win) return isHero1 ? [sign, 0, 0] : [0, sign, 0];
+  if (result === MatchResult.Loss) return isHero1 ? [0, sign, 0] : [sign, 0, 0];
   if (result === MatchResult.Draw) return [0, 0, sign];
   return [0, 0, 0];
 }
