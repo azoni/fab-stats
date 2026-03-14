@@ -201,6 +201,113 @@ export async function updateCommunityHeroMatchups(
   }
 }
 
+// ── Decrement: When matches are deleted ──
+
+/**
+ * Decrement community hero matchup counters for deleted matches.
+ * Mirrors the logic of updateCommunityHeroMatchups but with negative increments.
+ */
+export async function decrementCommunityHeroMatchups(
+  userId: string,
+  matches: MatchRecord[],
+): Promise<void> {
+  const linked = matches.filter(
+    (m) =>
+      m.opponentHero &&
+      m.opponentHero !== "Unknown" &&
+      m.result !== MatchResult.Bye,
+  );
+
+  if (linked.length === 0) return;
+
+  // Group by (hero pair, month) — same grouping logic as update
+  const groups = new Map<
+    string,
+    { hero1: string; hero2: string; month: string; hero1Wins: number; hero2Wins: number; draws: number; total: number; byFormat: Map<string, { hero1Wins: number; hero2Wins: number; draws: number; total: number }> }
+  >();
+
+  for (const m of linked) {
+    const sorted = [m.heroPlayed, m.opponentHero].sort();
+    const isHero1 = m.heroPlayed === sorted[0];
+
+    if (m.heroPlayed === m.opponentHero) {
+      if (!m.opponentGemId || userId >= m.opponentGemId) continue;
+    }
+
+    const month = getMonth(m.date);
+    const key = `${sorted[0]}_${sorted[1]}_${month}`;
+
+    let group = groups.get(key);
+    if (!group) {
+      group = { hero1: sorted[0], hero2: sorted[1], month, hero1Wins: 0, hero2Wins: 0, draws: 0, total: 0, byFormat: new Map() };
+      groups.set(key, group);
+    }
+
+    if (m.result === MatchResult.Win) {
+      if (isHero1) group.hero1Wins++;
+      else group.hero2Wins++;
+    } else if (m.result === MatchResult.Loss) {
+      if (isHero1) group.hero2Wins++;
+      else group.hero1Wins++;
+    } else if (m.result === MatchResult.Draw) {
+      group.draws++;
+    }
+    group.total++;
+
+    const fmt = m.format || "Unknown";
+    let fmtGroup = group.byFormat.get(fmt);
+    if (!fmtGroup) {
+      fmtGroup = { hero1Wins: 0, hero2Wins: 0, draws: 0, total: 0 };
+      group.byFormat.set(fmt, fmtGroup);
+    }
+    if (m.result === MatchResult.Win) {
+      if (isHero1) fmtGroup.hero1Wins++;
+      else fmtGroup.hero2Wins++;
+    } else if (m.result === MatchResult.Loss) {
+      if (isHero1) fmtGroup.hero2Wins++;
+      else fmtGroup.hero1Wins++;
+    } else if (m.result === MatchResult.Draw) fmtGroup.draws++;
+    fmtGroup.total++;
+  }
+
+  if (groups.size === 0) return;
+
+  // Batch decrement (negative increments)
+  const batch = writeBatch(db);
+  let count = 0;
+
+  for (const [, g] of groups) {
+    const docId = getHeroMatchupDocId(g.hero1, g.hero2, g.month);
+    const ref = doc(db, "heroMatchups", docId);
+
+    const data: Record<string, unknown> = {
+      hero1Wins: increment(-g.hero1Wins),
+      hero2Wins: increment(-g.hero2Wins),
+      draws: increment(-g.draws),
+      total: increment(-g.total),
+      updatedAt: new Date().toISOString(),
+    };
+
+    for (const [fmt, fData] of g.byFormat) {
+      const prefix = `byFormat.${fmt}`;
+      data[`${prefix}.hero1Wins`] = increment(-fData.hero1Wins);
+      data[`${prefix}.hero2Wins`] = increment(-fData.hero2Wins);
+      data[`${prefix}.draws`] = increment(-fData.draws);
+      data[`${prefix}.total`] = increment(-fData.total);
+    }
+
+    batch.update(ref, data);
+    count++;
+    if (count >= 400) break;
+  }
+
+  if (count > 0) {
+    await batch.commit().catch(() => {});
+  }
+
+  cachedData = null;
+}
+
 // ── Adjust: Hero edit on a single match ──
 
 /**

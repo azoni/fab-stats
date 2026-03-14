@@ -16,6 +16,7 @@ import {
   deleteMatch as storageDeleteMatch,
 } from "@/lib/storage";
 import type { MatchRecord, GameFormat } from "@/types";
+import { decrementCommunityHeroMatchups } from "@/lib/hero-matchups";
 
 // Module-level cache shared across all hook instances
 let cachedMatches: MatchRecord[] | null = null;
@@ -116,7 +117,11 @@ export function useMatches() {
       if (!user) return;
       try {
         setError(null);
+        const match = (cachedMatches || []).find((m) => m.id === id);
         await deleteMatchFirestore(user.uid, id);
+        if (match) {
+          decrementCommunityHeroMatchups(user.uid, [match]).catch(() => {});
+        }
         const updated = (cachedMatches || []).filter((m) => m.id !== id);
         updateCache(user.uid, updated);
         setMatches(updated);
@@ -245,8 +250,12 @@ export function useMatches() {
       if (!user) return;
       try {
         setError(null);
-        await batchDeleteMatchesFirestore(user.uid, matchIds);
         const idSet = new Set(matchIds);
+        const deletedMatches = (cachedMatches || []).filter((m) => idSet.has(m.id));
+        await batchDeleteMatchesFirestore(user.uid, matchIds);
+        if (deletedMatches.length > 0) {
+          decrementCommunityHeroMatchups(user.uid, deletedMatches).catch(() => {});
+        }
         const updated = (cachedMatches || []).filter((m) => !idSet.has(m.id));
         updateCache(user.uid, updated);
         setMatches(updated);
