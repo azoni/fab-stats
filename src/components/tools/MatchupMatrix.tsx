@@ -726,6 +726,7 @@ function CommunityMatchupGrid({
     let total = 0;
 
     for (const cell of data) {
+      if (!getHeroByName(cell.hero1) || !getHeroByName(cell.hero2)) continue;
       const h1Pass = passesHeroFilter(cell.hero1, ageFilter, includeLivingLegend);
       const h2Pass = passesHeroFilter(cell.hero2, ageFilter, includeLivingLegend);
       if (!h1Pass || !h2Pass) continue;

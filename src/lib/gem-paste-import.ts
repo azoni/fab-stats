@@ -1,5 +1,6 @@
 import type { MatchRecord } from "@/types";
 import { MatchResult, GameFormat } from "@/types";
+import { getHeroByName } from "@/lib/heroes";
 
 export interface PasteImportEvent {
   eventName: string;
@@ -309,7 +310,7 @@ export function parseGemPaste(text: string): PasteImportResult {
       // Handle hero name on line after a format-only line
       if (pendingDeckFormat) {
         const hero = line.trim();
-        if (hero && !/^(Round|Playoff|Matches)\s/i.test(hero)) {
+        if (hero && !/^(Round|Playoff|Matches)\s/i.test(hero) && getHeroByName(hero)) {
           for (const m of currentMatches) {
             if (m.heroPlayed === "Unknown" && m.format === pendingDeckFormat) {
               m.heroPlayed = hero;
@@ -328,12 +329,14 @@ export function parseGemPaste(text: string): PasteImportResult {
           const fmt = guessFormat(deckMatch[1]);
           if (fmt !== GameFormat.Other) {
             const hero = deckMatch[2].trim();
-            for (const m of currentMatches) {
-              if (m.heroPlayed === "Unknown" && m.format === fmt) {
-                m.heroPlayed = hero;
+            if (getHeroByName(hero)) {
+              for (const m of currentMatches) {
+                if (m.heroPlayed === "Unknown" && m.format === fmt) {
+                  m.heroPlayed = hero;
+                }
               }
+              continue;
             }
-            continue;
           }
         }
         // Format name alone (hero on next line)

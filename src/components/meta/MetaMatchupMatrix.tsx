@@ -68,6 +68,7 @@ export function MetaMatchupMatrix({ format, sinceDate, untilDate }: MetaMatchupM
     let total = 0;
 
     for (const cell of data) {
+      if (!getHeroByName(cell.hero1) || !getHeroByName(cell.hero2)) continue;
       if (excludeLL && (isLivingLegendHero(cell.hero1) || isLivingLegendHero(cell.hero2))) continue;
       if (ageFilter === "adult" && (isYoungHero(cell.hero1) || isYoungHero(cell.hero2))) continue;
       if (ageFilter === "young" && (!isYoungHero(cell.hero1) || !isYoungHero(cell.hero2))) continue;
