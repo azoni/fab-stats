@@ -322,7 +322,7 @@ export function BestFinishShareModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
       <div className="bg-fab-surface border border-fab-border rounded-xl max-w-lg w-full mx-4 overflow-hidden max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
         {/* Modal header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-fab-border">
@@ -335,15 +335,15 @@ export function BestFinishShareModal({
         </div>
 
         {/* Card preview */}
-        <div className="p-4 flex justify-center overflow-x-auto">
+        <div className="px-4 pt-3 pb-2 sm:p-4 flex justify-center overflow-x-auto">
           <div ref={cardRef}>
             <BestFinishCard data={finishData} theme={selectedTheme} />
           </div>
         </div>
 
         {/* Theme picker */}
-        <div className="px-4 pb-3">
-          <p className="text-[10px] text-fab-muted uppercase tracking-wider font-medium mb-2">Theme</p>
+        <div className="px-4 pb-2 sm:pb-3">
+          <p className="text-[10px] text-fab-muted uppercase tracking-wider font-medium mb-1.5 sm:mb-2">Theme</p>
           <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
             {FINISH_THEMES.map((theme) => (
               <button
@@ -388,7 +388,7 @@ export function BestFinishShareModal({
         </div>
 
         {/* Copy + Download buttons */}
-        <div className="px-4 pb-4 flex gap-2">
+        <div className="px-4 pb-3 sm:pb-4 flex gap-2">
           <button onClick={handleCopy} disabled={shareStatus === "sharing"} className="flex-1 py-2.5 rounded-lg text-sm font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors disabled:opacity-50">
             {shareStatus === "sharing" ? "Capturing..." : shareStatus === "copied" ? "Image Copied!" : shareStatus === "text-copied" ? "Link Copied" : "Copy Image"}
           </button>

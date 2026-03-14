@@ -223,7 +223,7 @@ export function QuickEventImportModal({ open, onClose, onImportComplete }: Quick
   const hasPlayoff = parsedEvent?.matches.some((m) => /Round P/i.test(m.notes?.split(" | ")[1] ?? "")) ?? false;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={handleClose} />
       <div className="relative bg-fab-bg border border-fab-border rounded-xl shadow-2xl w-full max-w-lg max-h-[85vh] overflow-y-auto">
         <div className="p-5">

@@ -1026,7 +1026,7 @@ export default function PlayerProfile() {
 
       {/* Admin Raw Data Modal */}
       {showRawData && isAdmin && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setShowRawData(false)}>
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60" onClick={() => setShowRawData(false)}>
           <div className="bg-fab-surface border border-fab-border rounded-lg w-[90vw] max-w-4xl max-h-[80vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between px-4 py-3 border-b border-fab-border">
               <h3 className="text-sm font-semibold text-fab-text">{profile.displayName} — {matches.length} matches</h3>
@@ -1080,7 +1080,7 @@ export default function PlayerProfile() {
 
       {/* Profile background picker modal */}
       {showBackgroundPicker && isOwner && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setShowBackgroundPicker(false)}>
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setShowBackgroundPicker(false)}>
           <div className="bg-fab-surface border border-fab-border rounded-xl max-w-3xl w-full mx-4 overflow-hidden max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between px-4 py-3 border-b border-fab-border">
               <h3 className="text-sm font-semibold text-fab-text">Change Profile Background</h3>

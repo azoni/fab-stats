@@ -33,7 +33,7 @@ export function BadgeTierUpPopup({ badgeId, badgeName, tier, count, onClose }: P
 
   return (
     <div
-      className={`fixed inset-0 z-50 flex items-center justify-center p-4 transition-opacity duration-200 ${visible ? "opacity-100" : "opacity-0"}`}
+      className={`fixed inset-0 z-[60] flex items-center justify-center p-4 transition-opacity duration-200 ${visible ? "opacity-100" : "opacity-0"}`}
       onClick={handleClose}
     >
       <div className="absolute inset-0 bg-black/60" />

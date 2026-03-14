@@ -123,7 +123,7 @@ export function AllGamesShareCard({ onClose }: { onClose: () => void }) {
   if (results.length === 0) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
       <div className="bg-fab-surface border border-fab-border rounded-xl p-4 max-w-sm w-full space-y-3 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
         <div ref={cardRef} className="bg-[#0e0c08] rounded-lg p-5 space-y-4">
           {/* Header */}

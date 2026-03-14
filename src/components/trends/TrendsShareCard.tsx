@@ -292,8 +292,8 @@ export function TrendsShareModal({ data, onClose }: { data: TrendsShareData; onC
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={onClose}>
-      <div className="bg-fab-surface border border-fab-border rounded-xl max-w-lg w-full p-4 space-y-4 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={onClose}>
+      <div className="bg-fab-surface border border-fab-border rounded-xl max-w-lg w-full p-3 sm:p-4 space-y-2 sm:space-y-4 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-semibold text-fab-text">Share My Stats</h3>
           <button onClick={onClose} className="text-fab-dim hover:text-fab-text transition-colors">

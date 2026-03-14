@@ -1129,7 +1129,7 @@ export default function ImportPage() {
 
       {/* Hero Warning Dialog */}
       {showHeroWarning && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => { setShowHeroWarning(false); setConfirmSkipHero(false); }} />
           <div className="relative bg-fab-bg border border-fab-border rounded-xl shadow-2xl w-full max-w-md p-6">
             <div className="flex items-center gap-3 mb-3">

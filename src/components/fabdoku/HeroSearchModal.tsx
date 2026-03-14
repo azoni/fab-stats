@@ -67,7 +67,7 @@ export function HeroSearchModal({
         <RadixDialog.Portal forceMount>
           <RadixDialog.Overlay asChild>
             <motion.div
-              className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
+              className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -76,7 +76,7 @@ export function HeroSearchModal({
           </RadixDialog.Overlay>
           <RadixDialog.Content asChild onOpenAutoFocus={(e) => e.preventDefault()}>
             <motion.div
-              className="fixed inset-0 z-50 flex items-start justify-center pt-[10vh] sm:pt-[15vh] px-3 sm:px-4 focus:outline-none"
+              className="fixed inset-0 z-[60] flex items-start justify-center pt-[10vh] sm:pt-[15vh] px-3 sm:px-4 focus:outline-none"
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
