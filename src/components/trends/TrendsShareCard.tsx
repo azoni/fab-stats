@@ -303,7 +303,7 @@ export function TrendsShareModal({ data, onClose }: { data: TrendsShareData; onC
           </button>
         </div>
 
-        <div ref={cardRef} className="flex justify-center">
+        <div ref={cardRef} className="flex justify-center overflow-x-auto">
           <ShareCardInner data={data} theme={selectedTheme} />
         </div>
 

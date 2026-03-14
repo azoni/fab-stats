@@ -68,7 +68,7 @@ export function BrawlShareCard({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={onClose}>
       <div
-        className="bg-[#1a0808] border border-red-900/40 rounded-lg p-5 max-w-sm w-full mx-4 space-y-4"
+        className="bg-[#1a0808] border border-red-900/40 rounded-lg p-5 max-w-sm w-full mx-4 space-y-4 max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <h3 className="text-sm font-bold text-red-100 text-center">Share Your Brawl</h3>

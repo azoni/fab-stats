@@ -11,6 +11,7 @@ import type { EventStats, MatchRecord } from "@/types";
 import { EventShareModal } from "@/components/events/EventShareCard";
 import { BracketView } from "@/components/events/BracketView";
 import { getAllowedEventTypes, getOriginalEventType } from "@/lib/event-types";
+import { toast } from "sonner";
 
 interface EventCardProps {
   event: EventStats;
@@ -215,7 +216,9 @@ export function EventCard({ event, playerName, obfuscateOpponents = false, visib
                     const originalType = getOriginalEventType(event.matches[0]);
                     // Empty string clears the override (reverts to auto)
                     await onBatchUpdateEventType(matchIds, newType === originalType ? "" : newType);
-                  } catch { /* error handled by parent */ }
+                  } catch {
+                    toast.error("Failed to update event type.");
+                  }
                   setSavingEventType(false);
                 }}
                 onClick={(e) => e.stopPropagation()}
@@ -603,7 +606,9 @@ export function EventCard({ event, playerName, obfuscateOpponents = false, visib
                       const matchIds = event.matches.map((m) => m.id);
                       const originalType = getOriginalEventType(event.matches[0]);
                       await onBatchUpdateEventType(matchIds, newType === originalType ? "" : newType);
-                    } catch { /* error handled by parent */ }
+                    } catch {
+                      toast.error("Failed to update event type.");
+                    }
                     setSavingEventType(false);
                   }}
                   disabled={savingEventType}

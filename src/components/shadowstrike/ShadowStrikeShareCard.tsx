@@ -67,7 +67,7 @@ export function ShadowStrikeShareCard({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
-      <div className="bg-fab-surface border border-fab-border rounded-xl p-4 max-w-xs w-full space-y-3" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-fab-surface border border-fab-border rounded-xl p-4 max-w-xs w-full space-y-3 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
         <div ref={cardRef} className="bg-[#0e0c08] rounded-lg p-4 space-y-3">
           <div className="text-center">
             <p className="text-sm font-bold text-fab-text">Shadow Strike</p>

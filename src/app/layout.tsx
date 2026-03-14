@@ -129,6 +129,7 @@ export default function RootLayout({
         <AuthProvider>
         <ChatProvider>
         <TooltipProvider>
+          <div id="fab-bg-layer" aria-hidden="true" />
           <ProfileBackgroundController />
           <Navbar />
           <main className="min-h-screen pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-8 md:pt-16">

@@ -83,7 +83,7 @@ export function FaBdokuShareCard({ gameState, uniqueness, onClose, onShared }: F
       onClick={onClose}
     >
       <div
-        className="bg-fab-surface border border-fab-border rounded-xl max-w-sm w-full overflow-hidden"
+        className="bg-fab-surface border border-fab-border rounded-xl max-w-sm w-full overflow-hidden max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
