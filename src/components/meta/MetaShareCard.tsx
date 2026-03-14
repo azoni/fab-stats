@@ -154,7 +154,7 @@ export function MetaShareCard({ heroes, title, subtitle, theme }: MetaShareCardP
       </div>
 
       {/* Donut + Legend */}
-      <div className="px-5 pb-3">
+      <div className="px-5 pb-3 relative">
         <div className="flex items-center gap-4">
           {/* Donut chart */}
           <div className="shrink-0 relative">
@@ -187,7 +187,7 @@ export function MetaShareCard({ heroes, title, subtitle, theme }: MetaShareCardP
           .sort((a, b) => b.champions - a.champions)
           .slice(0, 5);
         return topWinners.length > 0 ? (
-          <div style={{ borderColor: t.border }} className="border-t mx-5 py-2">
+          <div style={{ borderColor: t.border }} className="border-t mx-5 py-2 relative">
             <p style={{ color: t.dim }} className="text-[9px] uppercase tracking-wider font-semibold mb-1">Most Wins</p>
             <div className="space-y-0.5">
               {topWinners.map((h, i) => (

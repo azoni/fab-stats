@@ -146,7 +146,7 @@ function MetaOverviewCard({ overview, heroStats, title, subtitle, theme }: MetaO
       </div>
 
       {/* Donut + Legend */}
-      <div style={{ borderColor: t.border }} className="border-t mx-5 pt-3 pb-3">
+      <div style={{ borderColor: t.border }} className="border-t mx-5 pt-3 pb-3 relative">
         <p style={{ color: t.dim }} className="text-[9px] uppercase tracking-wider font-semibold mb-2">Hero Distribution</p>
         <div className="flex items-center gap-4">
           <div className="shrink-0 relative">

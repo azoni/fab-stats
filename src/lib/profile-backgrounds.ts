@@ -10,6 +10,7 @@ export interface ProfileBackgroundOption {
 }
 
 export const NONE_BACKGROUND_ID = "none";
+export const DEFAULT_BACKGROUND_ID = "playmat-solana";
 
 export const PROFILE_BACKGROUND_OPTIONS: ProfileBackgroundOption[] = [
   { id: "wtr-key-art-v1", label: "Welcome to Rathe", imageUrl: "/backgrounds/fab-official/wtr-key-art-v1.jpg", kind: "key-art", focusPosition: "center top" },
@@ -34,13 +35,15 @@ export function getProfileBackgroundOptions(isAdmin: boolean): ProfileBackground
 }
 
 export function resolveProfileBackgroundImage(backgroundId?: string | null): string | undefined {
-  if (!backgroundId || backgroundId === NONE_BACKGROUND_ID) return undefined;
-  return PROFILE_BACKGROUND_OPTIONS.find((opt) => opt.id === backgroundId)?.imageUrl;
+  if (backgroundId === NONE_BACKGROUND_ID) return undefined;
+  const effectiveId = backgroundId || DEFAULT_BACKGROUND_ID;
+  return PROFILE_BACKGROUND_OPTIONS.find((opt) => opt.id === effectiveId)?.imageUrl;
 }
 
 export function resolveProfileBackgroundPosition(backgroundId?: string | null): string | undefined {
-  if (!backgroundId || backgroundId === NONE_BACKGROUND_ID) return undefined;
-  return PROFILE_BACKGROUND_OPTIONS.find((opt) => opt.id === backgroundId)?.focusPosition;
+  if (backgroundId === NONE_BACKGROUND_ID) return undefined;
+  const effectiveId = backgroundId || DEFAULT_BACKGROUND_ID;
+  return PROFILE_BACKGROUND_OPTIONS.find((opt) => opt.id === effectiveId)?.focusPosition;
 }
 
 export function resolveBackgroundPositionForImage(imageUrl?: string | null): string {
