@@ -30,9 +30,10 @@ export function StatCards({ overall, eventCount, bestFinishLabel, recentMatches 
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
       {/* Win Rate + Events */}
-      <Link href="/trends" className="bg-fab-surface border border-fab-border rounded-lg p-3 flex items-center gap-3 hover:border-fab-gold/30 transition-colors">
+      <Link href="/trends" className="bg-fab-surface border border-fab-border rounded-lg p-3 flex items-center gap-3 hover:border-fab-gold/30 transition-colors card-shimmer">
+        <div className="absolute inset-0 bg-gradient-to-b from-white/[0.02] to-transparent pointer-events-none rounded-lg" />
         <WinRateRing value={overall.overallWinRate} size={48} strokeWidth={4} />
-        <div className="min-w-0">
+        <div className="min-w-0 relative">
           <p className={`text-xl font-bold tabular-nums leading-tight ${overall.overallWinRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>
             {overall.overallWinRate.toFixed(1)}%
           </p>
@@ -52,8 +53,9 @@ export function StatCards({ overall, eventCount, bestFinishLabel, recentMatches 
       </Link>
 
       {/* Record */}
-      <Link href="/matches" className="bg-fab-surface border border-fab-border rounded-lg p-3 hover:border-fab-gold/30 transition-colors">
-        <p className="text-xs text-fab-dim uppercase tracking-wider mb-1">Record</p>
+      <Link href="/matches" className="bg-fab-surface border border-fab-border rounded-lg p-3 hover:border-fab-gold/30 transition-colors card-shimmer">
+        <div className="absolute inset-0 bg-gradient-to-b from-white/[0.02] to-transparent pointer-events-none rounded-lg" />
+        <p className="text-xs text-fab-dim uppercase tracking-wider mb-1 relative">Record</p>
         <div className="flex items-baseline gap-1.5 tabular-nums">
           <span className="text-xl font-bold text-fab-win">{overall.totalWins}</span>
           <span className="text-fab-dim text-sm">-</span>
@@ -69,7 +71,7 @@ export function StatCards({ overall, eventCount, bestFinishLabel, recentMatches 
       </Link>
 
       {/* Recent Form (mini) */}
-      <Link href="/matches" className="bg-fab-surface border border-fab-border rounded-lg p-3 col-span-2 md:col-span-1 hover:border-fab-gold/30 transition-colors">
+      <Link href="/matches" className="bg-fab-surface border border-fab-border rounded-lg p-3 col-span-2 md:col-span-1 hover:border-fab-gold/30 transition-colors card-shimmer">
         <div className="flex items-center justify-between mb-1.5">
           <p className="text-xs text-fab-dim uppercase tracking-wider">Recent Form</p>
           {formMatches.length > 0 && (

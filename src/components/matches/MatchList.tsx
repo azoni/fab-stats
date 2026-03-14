@@ -7,6 +7,7 @@ import { getEventType, getRoundNumber } from "@/lib/stats";
 import { localDate } from "@/lib/constants";
 import { WinRateRing } from "@/components/charts/WinRateRing";
 import { SegmentedBar } from "@/components/charts/SegmentedBar";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 const VALID_HERO_NAMES = new Set(knownHeroes.map((h) => h.name));
 const PAGE_SIZE = 25;
@@ -252,10 +253,10 @@ export function MatchList({ matches, matchOwnerUid, enableComments, editable, on
       </div>
 
       {filtered.length === 0 ? (
-        <div className="text-center py-12 text-fab-dim">
-          <p className="text-lg mb-1">No matches found</p>
-          <p className="text-sm">Try adjusting your filters{search ? " or search" : ""}</p>
-        </div>
+        <EmptyState
+          title="No matches found"
+          subtitle={`Try adjusting your filters${search ? " or search" : ""}`}
+        />
       ) : (
         <>
           {/* Stats Summary Strip */}

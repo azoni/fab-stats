@@ -220,7 +220,7 @@ export default function Dashboard() {
       {hasMatches && (
         <div className="flex flex-col gap-6">
           {/* Profile + sidebar grid */}
-          <div className="grid grid-cols-1 md:grid-cols-[1fr_280px] gap-4 items-start">
+          <div className="grid grid-cols-1 md:grid-cols-[1fr_280px] gap-4 items-start section-reveal" style={{ '--stagger': 0 } as React.CSSProperties}>
           {/* Left column: Profile card + Filters */}
           <div className="flex flex-col gap-3">
           <div
@@ -392,7 +392,7 @@ export default function Dashboard() {
             {/* Player Tools */}
             {user && (
               <div className="relative group/tools">
-                <Link href="/tools" className="block rounded-lg bg-fab-surface border border-fab-border px-4 py-3 hover:border-amber-500/30 transition-colors">
+                <Link href="/tools" className="block rounded-lg bg-fab-surface border border-fab-border px-4 py-3 hover:border-amber-500/30 transition-colors card-shimmer">
                   <div className="flex items-center gap-2.5">
                     <div className="w-6 h-6 rounded-md bg-amber-500/10 flex items-center justify-center ring-1 ring-inset ring-amber-500/20 shrink-0">
                       <svg className="w-3.5 h-3.5 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -430,7 +430,7 @@ export default function Dashboard() {
             )}
 
             {/* Community */}
-            <Link href="/community" className="block rounded-lg bg-fab-surface border border-fab-border px-4 py-3 hover:border-teal-500/30 transition-colors">
+            <Link href="/community" className="block rounded-lg bg-fab-surface border border-fab-border px-4 py-3 hover:border-teal-500/30 transition-colors card-shimmer">
               <div className="flex items-center gap-2.5">
                 <div className="w-6 h-6 rounded-md bg-teal-500/10 flex items-center justify-center ring-1 ring-inset ring-teal-500/20 shrink-0">
                   <svg className="w-3.5 h-3.5 text-teal-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -447,17 +447,23 @@ export default function Dashboard() {
           </div>
 
           {/* Dashboard stats */}
-          <StatCards overall={overall} eventCount={filteredEventStats.length} bestFinishLabel={bestFinish?.label ?? null} recentMatches={last30} />
+          <div className="section-reveal" style={{ '--stagger': 1 } as React.CSSProperties}>
+            <StatCards overall={overall} eventCount={filteredEventStats.length} bestFinishLabel={bestFinish?.label ?? null} recentMatches={last30} />
+          </div>
 
           {/* LatestMatches + RecentEvents */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 section-reveal" style={{ '--stagger': 2 } as React.CSSProperties}>
             <LatestMatches matches={latestMatches} />
             <RecentEvents eventStats={filteredEventStats} playerName={profile?.displayName} />
           </div>
 
-          <DashboardInsights heroStats={heroStats} opponentStats={opponentStats} />
+          <div className="section-reveal" style={{ '--stagger': 3 } as React.CSSProperties}>
+            <DashboardInsights heroStats={heroStats} opponentStats={opponentStats} />
+          </div>
 
-          <ExploreCTA />
+          <div className="section-reveal" style={{ '--stagger': 4 } as React.CSSProperties}>
+            <ExploreCTA />
+          </div>
         </div>
       )}
 

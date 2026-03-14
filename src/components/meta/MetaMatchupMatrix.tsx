@@ -3,6 +3,7 @@ import { useState, useMemo, useEffect, useCallback } from "react";
 import { getCommunityHeroMatchups, getMonthsForPreset, type CommunityMatchupCell } from "@/lib/hero-matchups";
 import { getHeroByName } from "@/lib/heroes";
 import { HeroImg } from "@/components/heroes/HeroImg";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { useDragScroll } from "@/hooks/useDragScroll";
 
 interface ProcessedHeroRow {
@@ -111,10 +112,10 @@ export function MetaMatchupMatrix({ format, sinceDate, untilDate }: MetaMatchupM
 
   if (heroRows.length === 0) {
     return (
-      <div className="text-center py-10 text-fab-dim">
-        <p className="text-sm">No community matchup data available for this filter.</p>
-        <p className="text-xs mt-1">Matchup data is generated when players log matches with hero and opponent hero data.</p>
-      </div>
+      <EmptyState
+        title="No community matchup data available"
+        subtitle="Matchup data is generated when players log matches with hero and opponent hero data."
+      />
     );
   }
 
@@ -238,7 +239,7 @@ export function MetaMatchupMatrix({ format, sinceDate, untilDate }: MetaMatchupM
                         key={opp}
                         onClick={() => { if (!movedRef.current) setSelectedCell(isSelected ? null : { hero: row.hero, opp }); }}
                         className={`p-2 text-center border-b border-fab-border/50 cursor-pointer transition-all ${bgColor} ${
-                          isSelected ? "ring-2 ring-fab-gold ring-inset" : "hover:brightness-125"
+                          isSelected ? "ring-2 ring-fab-gold ring-inset" : "hover:ring-1 hover:ring-fab-gold/30 hover:shadow-[0_0_8px_rgba(212,165,74,0.1)]"
                         } ${isHL ? "!bg-fab-gold/10" : ""}`}
                         title={lowSample ? `Low sample (${mu.total} matches)` : undefined}
                       >

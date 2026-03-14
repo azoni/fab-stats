@@ -512,9 +512,23 @@ textarea[class*="border-fab-border"] {
   border-width: 1.5px;
 }
 
-/* Card inner edge highlight */
-[class*="bg-fab-surface"][class*="border-fab-border"]:not(nav) {
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+/* Card depth — universal shadow + inner highlight */
+[class*="bg-fab-surface"][class*="border-fab-border"]:not(nav):not(td):not(tr) {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04),
+              0 2px 8px rgba(0, 0, 0, 0.25),
+              0 1px 2px rgba(0, 0, 0, 0.15);
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 0.25s, border-color 0.25s;
+}
+
+/* Hover lift for interactive cards */
+a[class*="bg-fab-surface"][class*="border-fab-border"]:not(nav):hover,
+button[class*="bg-fab-surface"][class*="border-fab-border"]:not(nav):hover {
+  transform: translateY(-1px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06),
+              0 4px 16px rgba(0, 0, 0, 0.3),
+              0 2px 4px rgba(0, 0, 0, 0.2);
+  border-color: rgba(212, 165, 74, 0.2);
 }
 
 /* ── Chunky game-style buttons ── */
@@ -553,12 +567,93 @@ h1, h2, h3 {
   gap: 0.75rem;
 }
 
+.section-header::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  background: var(--color-fab-gold);
+  opacity: 0.3;
+  transform: rotate(45deg);
+  flex-shrink: 0;
+}
+
 .section-header::after {
   content: "";
   flex: 1;
   height: 2px;
   background: linear-gradient(90deg, var(--color-fab-border), transparent);
   border-radius: 1px;
+}
+
+/* ── Table polish ── */
+
+table tbody tr {
+  transition: background-color 0.15s;
+}
+
+table tbody tr:hover {
+  background-color: rgba(212, 165, 74, 0.04);
+}
+
+table thead tr {
+  background: linear-gradient(180deg, var(--color-fab-surface) 0%, rgba(62, 53, 40, 0.3) 100%);
+}
+
+/* ── Staggered section reveal ── */
+
+.section-reveal {
+  animation: fade-in-up 0.4s ease-out both;
+  animation-delay: calc(var(--stagger, 0) * 75ms);
+}
+
+/* ── Filter pill active glow ── */
+
+.filter-pill-active {
+  box-shadow: 0 0 8px rgba(212, 165, 74, 0.15),
+              inset 0 0 6px rgba(212, 165, 74, 0.05);
+  transform: scale(1.02);
+  transition: all 0.2s;
+}
+
+/* ── Card hover shimmer sweep ── */
+
+.card-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.card-shimmer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    105deg,
+    transparent 40%,
+    rgba(255, 255, 255, 0.03) 45%,
+    rgba(255, 255, 255, 0.06) 50%,
+    rgba(255, 255, 255, 0.03) 55%,
+    transparent 60%
+  );
+  transform: translateX(-100%) rotate(-15deg);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.card-shimmer:hover::after {
+  animation: feed-shimmer 0.6s ease-out forwards;
+}
+
+/* Scroll progress bar */
+.scroll-progress-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--color-fab-gold), rgba(212, 165, 74, 0.6));
+  z-index: 100;
+  pointer-events: none;
+  transition: width 0.1s linear;
 }
 
 /* ════════════════════════════════════════════════════════════
@@ -747,10 +842,30 @@ h1, h2, h3 {
               inset 0 0 20px rgba(123, 143, 255, 0.1);
 }
 
-/* Section header — blue gradient line */
+/* Section header — blue gradient line + blue diamond */
+[data-theme="leyline"] .section-header::before {
+  background: rgba(123, 143, 255, 0.8);
+  opacity: 0.25;
+}
+
 [data-theme="leyline"] .section-header::after {
   height: 1px;
   background: linear-gradient(90deg, rgba(123, 143, 255, 0.2), rgba(123, 143, 255, 0.05));
+}
+
+/* Blue-tinted table hover + header */
+[data-theme="leyline"] table tbody tr:hover {
+  background-color: rgba(123, 143, 255, 0.04);
+}
+
+[data-theme="leyline"] table thead tr {
+  background: linear-gradient(180deg, var(--color-fab-surface) 0%, rgba(30, 32, 80, 0.3) 100%);
+}
+
+/* Blue filter pill glow */
+[data-theme="leyline"] .filter-pill-active {
+  box-shadow: 0 0 8px rgba(123, 143, 255, 0.15),
+              inset 0 0 6px rgba(123, 143, 255, 0.05);
 }
 
 /* Luminous focus rings */
@@ -883,7 +998,17 @@ h1, h2, h3 {
 /* Card hover — fast border brighten, no glow, no lift */
 [data-theme="rosetta"] [class*="bg-fab-surface"][class*="border-fab-border"]:not(nav):hover {
   border-color: #404040;
+  transform: none;
 }
+
+/* Suppress decorative effects */
+[data-theme="rosetta"] .section-header::before { display: none; }
+[data-theme="rosetta"] .section-reveal { animation: none; }
+[data-theme="rosetta"] .filter-pill-active { box-shadow: none; transform: none; }
+[data-theme="rosetta"] .card-shimmer::after { display: none; }
+[data-theme="rosetta"] .scroll-progress-bar { display: none; }
+[data-theme="rosetta"] table thead tr { background: var(--color-fab-surface); }
+[data-theme="rosetta"] table tbody tr:hover { background-color: rgba(255, 255, 255, 0.03); }
 
 /* Flat monospace buttons — no 3D, no glow */
 [data-theme="rosetta"] .bg-fab-gold {

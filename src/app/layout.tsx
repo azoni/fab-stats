@@ -15,6 +15,7 @@ import { ChatFab } from "@/components/chat/ChatFab";
 import { SonnerProvider } from "@/components/ui/sonner-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { PageVisitTracker } from "@/components/PageVisitTracker";
+import { ScrollProgress } from "@/components/ui/ScrollProgress";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -129,6 +130,7 @@ export default function RootLayout({
         <AuthProvider>
         <ChatProvider>
         <TooltipProvider>
+          <ScrollProgress />
           <div id="fab-bg-layer" aria-hidden="true" />
           <ProfileBackgroundController />
           <Navbar />

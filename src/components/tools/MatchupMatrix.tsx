@@ -8,6 +8,7 @@ import { getCommunityHeroMatchups, getMonthsForPreset, type CommunityMatchupCell
 import type { MatchRecord, LeaderboardEntry, HeroStats } from "@/types";
 import { useDragScroll } from "@/hooks/useDragScroll";
 import { HeroImg } from "@/components/heroes/HeroImg";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 type Mode = "personal" | "community";
 type Period = "all" | "30d" | "90d" | "custom";
@@ -387,10 +388,10 @@ function PersonalList({
 
   if (filteredStats.length === 0) {
     return (
-      <div className="text-center py-12 text-fab-dim">
-        <p className="text-lg mb-1">No matchup data yet</p>
-        <p className="text-sm">Log matches with hero selections to see your matchups.</p>
-      </div>
+      <EmptyState
+        title="No matchup data yet"
+        subtitle="Log matches with hero selections to see your matchups."
+      />
     );
   }
 
@@ -559,10 +560,10 @@ function PersonalGrid({
 
   if (filteredStats.length === 0 || filteredOpponents.length === 0) {
     return (
-      <div className="text-center py-12 text-fab-dim">
-        <p className="text-lg mb-1">No matchup data yet</p>
-        <p className="text-sm">Log matches with hero selections to see your matchup grid.</p>
-      </div>
+      <EmptyState
+        title="No matchup data yet"
+        subtitle="Log matches with hero selections to see your matchup grid."
+      />
     );
   }
 
@@ -643,7 +644,7 @@ function PersonalGrid({
                         key={opp}
                         onClick={() => { if (!movedRef.current) onCellClick(isSelected ? null : { hero: hero.heroName, opp }); }}
                         className={`p-2 text-center border-b border-fab-border/50 transition-all ${bgColor} ${
-                          isSelected ? "ring-2 ring-fab-gold ring-inset" : "hover:brightness-125"
+                          isSelected ? "ring-2 ring-fab-gold ring-inset" : "hover:ring-1 hover:ring-fab-gold/30 hover:shadow-[0_0_8px_rgba(212,165,74,0.1)]"
                         } ${isHL ? "!bg-fab-gold/10" : ""}`}
                       >
                         <div className={`font-bold ${textColor}`}>{mu.winRate.toFixed(0)}%</div>
@@ -784,10 +785,10 @@ function CommunityMatchupGrid({
 
   if (heroRows.length === 0) {
     return (
-      <div className="text-center py-12 text-fab-dim">
-        <p className="text-lg mb-1">No community matchup data yet</p>
-        <p className="text-sm">Matchup data is generated when players log matches with hero and opponent hero data.</p>
-      </div>
+      <EmptyState
+        title="No community matchup data yet"
+        subtitle="Matchup data is generated when players log matches with hero and opponent hero data."
+      />
     );
   }
 
@@ -887,7 +888,7 @@ function CommunityMatchupGrid({
                         key={opp}
                         onClick={() => { if (!movedRef.current) onCellClick(isSelected ? null : { hero: row.hero, opp }); }}
                         className={`p-2 text-center border-b border-fab-border/50 transition-all ${bgColor} ${
-                          isSelected ? "ring-2 ring-fab-gold ring-inset" : "hover:brightness-125"
+                          isSelected ? "ring-2 ring-fab-gold ring-inset" : "hover:ring-1 hover:ring-fab-gold/30 hover:shadow-[0_0_8px_rgba(212,165,74,0.1)]"
                         } ${isHL ? "!bg-fab-gold/10" : ""}`}
                         title={lowSample ? `Low sample (${mu.total} matches)` : undefined}
                       >
