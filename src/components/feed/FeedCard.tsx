@@ -149,6 +149,7 @@ function FeedCardHeader({ event, compact, rankMap }: { event: FeedEvent; compact
       src={event.photoUrl}
       alt=""
       className={`rounded-full shrink-0 ${compact ? "w-6 h-6" : "w-10 h-10"} ${border}`}
+      loading="lazy"
     />
   ) : (
     <div className={`rounded-full bg-fab-gold/20 flex items-center justify-center text-fab-gold font-bold shrink-0 ${compact ? "w-6 h-6 text-[10px]" : "w-10 h-10 text-sm"} ${border}`}>

@@ -59,7 +59,7 @@ export function CommentItem({ comment, currentUid, isMatchOwner, onEdit, onDelet
     <div className="flex gap-3 group">
       {/* Avatar */}
       {comment.authorPhoto ? (
-        <img src={comment.authorPhoto} alt="Commenter photo" className="w-8 h-8 rounded-full shrink-0" />
+        <img src={comment.authorPhoto} alt="Commenter photo" className="w-8 h-8 rounded-full shrink-0" loading="lazy" />
       ) : (
         <div className="w-8 h-8 rounded-full bg-fab-gold/20 flex items-center justify-center text-fab-gold text-xs font-bold shrink-0">
           {initials}

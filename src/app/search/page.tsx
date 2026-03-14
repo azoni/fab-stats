@@ -156,7 +156,7 @@ function SearchContent() {
             >
               <div className="flex items-center gap-3">
                 {r.profile?.photoUrl ? (
-                  <img src={r.profile.photoUrl} alt="" className="w-10 h-10 rounded-full" />
+                  <img src={r.profile.photoUrl} alt="" className="w-10 h-10 rounded-full" loading="lazy" />
                 ) : (
                   <div className="w-10 h-10 rounded-full bg-fab-gold/20 flex items-center justify-center text-fab-gold font-bold">
                     {(r.profile?.displayName || r.username).charAt(0).toUpperCase()}

@@ -294,10 +294,21 @@ export async function loadKudosGivenCounts(
   return snap.data() as Record<string, number>;
 }
 
+// ── Cache for bulk kudos fetches (leaderboard page) ──
+let cachedKudosGiven: KudosCountsEntry[] | null = null;
+let kudosGivenCacheTime = 0;
+let cachedKudosCounts: KudosCountsEntry[] | null = null;
+let kudosCountsCacheTime = 0;
+const KUDOS_CACHE_TTL = 15 * 60_000; // 15 minutes
+
 /** Load all kudos given counts documents (for leaderboard page). */
 export async function loadAllKudosGivenCounts(): Promise<KudosCountsEntry[]> {
+  const now = Date.now();
+  if (cachedKudosGiven && now - kudosGivenCacheTime < KUDOS_CACHE_TTL) {
+    return cachedKudosGiven;
+  }
   const snap = await getDocs(collection(db, "kudosGivenCounts"));
-  return snap.docs
+  cachedKudosGiven = snap.docs
     .map((d) => {
       const data = d.data();
       return {
@@ -310,6 +321,8 @@ export async function loadAllKudosGivenCounts(): Promise<KudosCountsEntry[]> {
       };
     })
     .filter((e) => e.total > 0);
+  kudosGivenCacheTime = now;
+  return cachedKudosGiven;
 }
 
 export interface KudosLeaderEntry {
@@ -344,8 +357,12 @@ export interface KudosCountsEntry {
 
 /** Load all kudos counts documents (for leaderboard page). */
 export async function loadAllKudosCounts(): Promise<KudosCountsEntry[]> {
+  const now = Date.now();
+  if (cachedKudosCounts && now - kudosCountsCacheTime < KUDOS_CACHE_TTL) {
+    return cachedKudosCounts;
+  }
   const snap = await getDocs(collection(db, "kudosCounts"));
-  return snap.docs
+  cachedKudosCounts = snap.docs
     .map((d) => {
       const data = d.data();
       return {
@@ -358,4 +375,6 @@ export async function loadAllKudosCounts(): Promise<KudosCountsEntry[]> {
       };
     })
     .filter((e) => e.total > 0);
+  kudosCountsCacheTime = now;
+  return cachedKudosCounts;
 }

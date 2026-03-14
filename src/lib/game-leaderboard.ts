@@ -1,6 +1,11 @@
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
+// ── Module-level cache ──
+let cachedGameStats: GameLeaderboardEntry[] | null = null;
+let gameStatsCacheTime = 0;
+const GAME_STATS_CACHE_TTL = 15 * 60_000; // 15 minutes
+
 // ── Per-game stat shapes (nullable when user hasn't played that game) ──
 
 export interface FabdokuGameStats {
@@ -162,6 +167,11 @@ type GameKey = keyof typeof COLLECTIONS;
 // ── Bulk fetch ──
 
 export async function loadAllGameStats(): Promise<GameLeaderboardEntry[]> {
+  const now = Date.now();
+  if (cachedGameStats && now - gameStatsCacheTime < GAME_STATS_CACHE_TTL) {
+    return cachedGameStats;
+  }
+
   // Use allSettled so one failing collection doesn't break the entire fetch
   const results = await Promise.allSettled(
     Object.values(COLLECTIONS).map((col) => getDocs(collection(db, col)))
@@ -210,6 +220,7 @@ export async function loadAllGameStats(): Promise<GameLeaderboardEntry[]> {
     if (totalGamesPlayed === 0) continue;
 
     entries.push({
+
       userId,
       fabdoku,
       crossword,
@@ -232,6 +243,8 @@ export async function loadAllGameStats(): Promise<GameLeaderboardEntry[]> {
     });
   }
 
+  cachedGameStats = entries;
+  gameStatsCacheTime = Date.now();
   return entries;
 }
 

@@ -1,6 +1,7 @@
 "use client";
-import { useMemo, useEffect, useRef, useState } from "react";
+import { useMemo, useEffect, useRef, useState, useCallback } from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useMatches } from "@/hooks/useMatches";
 import { useAuth } from "@/contexts/AuthContext";
@@ -14,18 +15,20 @@ import { StatCards } from "@/components/home/StatCards";
 import { LatestMatches } from "@/components/home/LatestMatches";
 import { DashboardInsights } from "@/components/home/DashboardInsights";
 import { DashboardFilters } from "@/components/home/DashboardFilters";
-import { BestFinishShareModal } from "@/components/profile/BestFinishCard";
-import { ProfileShareModal } from "@/components/profile/ProfileCard";
 import { OnThisDay } from "@/components/home/OnThisDay";
 import { ExploreCTA } from "@/components/home/ExploreCTA";
 import { BadgeStrip } from "@/components/profile/BadgeStrip";
 import { getHeroByName } from "@/lib/heroes";
 import { loadKudosCounts } from "@/lib/kudos";
 import { CardBorderWrapper } from "@/components/profile/CardBorderWrapper";
-import { BackgroundChooser } from "@/components/profile/BackgroundChooser";
 import type { UnderlineConfig } from "@/components/profile/CardBorderWrapper";
 import { updateProfile } from "@/lib/firestore-storage";
 import { LoggedOutHome } from "@/components/home/LoggedOutHome";
+
+// Modals — lazy-loaded (only rendered when opened)
+const BestFinishShareModal = dynamic(() => import("@/components/profile/BestFinishCard").then(m => ({ default: m.BestFinishShareModal })), { ssr: false });
+const ProfileShareModal = dynamic(() => import("@/components/profile/ProfileCard").then(m => ({ default: m.ProfileShareModal })), { ssr: false });
+const BackgroundChooser = dynamic(() => import("@/components/profile/BackgroundChooser").then(m => ({ default: m.BackgroundChooser })), { ssr: false });
 
 export default function Dashboard() {
   const router = useRouter();
@@ -67,30 +70,35 @@ export default function Dashboard() {
     return filtered;
   }, [matches, filterFormat, filterEventType, filterHero, filterRated]);
 
-  // Filter options — each derived from matches filtered by the OTHER active filters
-  const allFormats = useMemo(() => {
-    let pool = matches;
-    if (filterEventType !== "all") pool = pool.filter((m) => getEventType(m) === filterEventType);
-    if (filterHero !== "all") pool = pool.filter((m) => m.heroPlayed === filterHero);
-    if (filterRated !== "all") pool = pool.filter((m) => filterRated === "rated" ? m.rated === true : m.rated !== true);
-    return [...new Set(pool.map((m) => m.format))].filter(Boolean).sort();
-  }, [matches, filterEventType, filterHero, filterRated]);
+  // Filter options — single pass: compute all three cross-filtered option lists at once
+  const { allFormats, allEventTypes, allHeroes } = useMemo(() => {
+    const formats = new Set<string>();
+    const eventTypes = new Set<string>();
+    const heroes = new Set<string>();
 
-  const allEventTypes = useMemo(() => {
-    let pool = matches;
-    if (filterFormat !== "all") pool = pool.filter((m) => m.format === filterFormat);
-    if (filterHero !== "all") pool = pool.filter((m) => m.heroPlayed === filterHero);
-    if (filterRated !== "all") pool = pool.filter((m) => filterRated === "rated" ? m.rated === true : m.rated !== true);
-    return [...new Set(pool.map((m) => getEventType(m)))].filter((t) => t !== "Unknown").sort();
-  }, [matches, filterFormat, filterHero, filterRated]);
+    for (const m of matches) {
+      const matchFormat = m.format;
+      const matchEventType = getEventType(m);
+      const matchHero = m.heroPlayed;
+      const matchRated = m.rated === true;
 
-  const allHeroes = useMemo(() => {
-    let pool = matches;
-    if (filterFormat !== "all") pool = pool.filter((m) => m.format === filterFormat);
-    if (filterEventType !== "all") pool = pool.filter((m) => getEventType(m) === filterEventType);
-    if (filterRated !== "all") pool = pool.filter((m) => filterRated === "rated" ? m.rated === true : m.rated !== true);
-    return [...new Set(pool.map((m) => m.heroPlayed))].filter((h) => h && h !== "Unknown").sort();
-  }, [matches, filterFormat, filterEventType, filterRated]);
+      const passFormat = filterFormat === "all" || matchFormat === filterFormat;
+      const passEventType = filterEventType === "all" || matchEventType === filterEventType;
+      const passHero = filterHero === "all" || matchHero === filterHero;
+      const passRated = filterRated === "all" || (filterRated === "rated" ? matchRated : !matchRated);
+
+      // For each filter option list, include if all OTHER filters pass
+      if (passEventType && passHero && passRated && matchFormat) formats.add(matchFormat);
+      if (passFormat && passHero && passRated && matchEventType !== "Unknown") eventTypes.add(matchEventType);
+      if (passFormat && passEventType && passRated && matchHero && matchHero !== "Unknown") heroes.add(matchHero);
+    }
+
+    return {
+      allFormats: [...formats].sort(),
+      allEventTypes: [...eventTypes].sort(),
+      allHeroes: [...heroes].sort(),
+    };
+  }, [matches, filterFormat, filterEventType, filterHero, filterRated]);
 
   // Reset filters whose selected value is no longer available
   useEffect(() => {

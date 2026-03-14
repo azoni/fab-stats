@@ -35,7 +35,7 @@ export function subscribeToMatches(
   userId: string,
   callback: (matches: MatchRecord[]) => void
 ): Unsubscribe {
-  const q = query(matchesCollection(userId), orderBy("createdAt", "desc"));
+  const q = query(matchesCollection(userId), orderBy("createdAt", "desc"), limit(1000));
   return onSnapshot(q, (snapshot) => {
     const matches = snapshot.docs.map((d) => ({
       id: d.id,

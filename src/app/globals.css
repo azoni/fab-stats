@@ -159,6 +159,7 @@ body::after {
   outline: 2px solid rgba(255, 50, 150, 0.9);
   outline-offset: 2px;
   animation: glow-grandmaster 4s ease-in-out infinite;
+  will-change: box-shadow, outline-color;
 }
 
 .rank-border-diamond {
@@ -201,6 +202,15 @@ body::after {
   syntax: "<angle>";
   initial-value: 0deg;
   inherits: false;
+}
+
+/* Leaderboard card borders — promote to compositor layer */
+.leaderboard-card-grandmaster,
+.leaderboard-card-diamond,
+.leaderboard-card-gold,
+.leaderboard-card-silver,
+.leaderboard-card-bronze {
+  will-change: --border-angle;
 }
 
 /* Grandmaster — prismatic rainbow border, fastest rotation, intense glow */
@@ -485,7 +495,27 @@ body::after {
     transparent 60%
   );
   animation: feed-shimmer 4s ease-in-out infinite;
+  will-change: transform;
   pointer-events: none;
+}
+
+/* Pause infinite animations when the user prefers reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .feed-shimmer::after,
+  .badge-special-card,
+  .badge-special-card::before,
+  .rank-border-grandmaster,
+  .rank-border-diamond,
+  .rank-border-gold,
+  .rank-border-silver,
+  .rank-border-bronze,
+  .leaderboard-card-grandmaster,
+  .leaderboard-card-diamond,
+  .leaderboard-card-gold,
+  .leaderboard-card-silver,
+  .leaderboard-card-bronze {
+    animation: none !important;
+  }
 }
 
 /* ── Bold card borders (icon art outline style) ── */

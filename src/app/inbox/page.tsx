@@ -99,7 +99,7 @@ export default function InboxPage() {
                 className="flex items-center gap-3 bg-fab-surface border border-fab-border rounded-lg p-4 hover:border-fab-gold/30 transition-colors"
               >
                 {other?.photoUrl ? (
-                  <img src={other.photoUrl} alt="" className="w-10 h-10 rounded-full shrink-0" />
+                  <img src={other.photoUrl} alt="" className="w-10 h-10 rounded-full shrink-0" loading="lazy" />
                 ) : (
                   <div className="w-10 h-10 rounded-full bg-fab-gold/20 flex items-center justify-center text-fab-gold text-sm font-bold shrink-0">
                     {initials}

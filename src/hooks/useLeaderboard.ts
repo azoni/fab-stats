@@ -9,16 +9,17 @@ export function useLeaderboard(includePrivate = false) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
+  const isAuthenticated = !!user;
 
   useEffect(() => {
-    getLeaderboardEntries(includePrivate, !!user)
+    getLeaderboardEntries(includePrivate, isAuthenticated)
       .then(setEntries)
       .catch((e) => {
         console.error("Failed to load leaderboard:", e);
         setError("Failed to load leaderboard data");
       })
       .finally(() => setLoading(false));
-  }, [includePrivate, user]);
+  }, [includePrivate, isAuthenticated]);
 
   return { entries, loading, error };
 }
