@@ -11,7 +11,7 @@ import {
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { MatchResult, type MatchRecord, type HeroMatchupDoc } from "@/types";
-import { getHeroByName } from "@/lib/heroes";
+import { getHeroByName, resolveHeroName } from "@/lib/heroes";
 
 // ── Helpers ──
 
@@ -76,15 +76,22 @@ export async function updateCommunityHeroMatchups(
   userId: string,
   matches: MatchRecord[],
 ): Promise<void> {
-  // Filter to matches with valid hero names only
-  const linked = matches.filter(
-    (m) =>
-      m.opponentHero &&
-      m.opponentHero !== "Unknown" &&
-      m.result !== MatchResult.Bye &&
-      getHeroByName(m.heroPlayed) !== undefined &&
-      getHeroByName(m.opponentHero) !== undefined,
-  );
+  // Filter to non-bye matches with opponent hero set, resolve names to canonical form
+  const linked = matches
+    .filter(
+      (m) =>
+        m.opponentHero &&
+        m.opponentHero !== "Unknown" &&
+        m.result !== MatchResult.Bye,
+    )
+    .map((m) => ({
+      ...m,
+      heroPlayed: resolveHeroName(m.heroPlayed) || m.heroPlayed,
+      opponentHero: resolveHeroName(m.opponentHero!) || m.opponentHero!,
+    }))
+    .filter(
+      (m) => getHeroByName(m.heroPlayed) !== undefined && getHeroByName(m.opponentHero) !== undefined,
+    );
 
   if (linked.length === 0) return;
 

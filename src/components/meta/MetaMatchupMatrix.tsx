@@ -1,7 +1,7 @@
 "use client";
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { getCommunityHeroMatchups, getMonthsForPreset, type CommunityMatchupCell } from "@/lib/hero-matchups";
-import { getHeroByName } from "@/lib/heroes";
+import { getHeroByName, resolveHeroName } from "@/lib/heroes";
 import { HeroImg } from "@/components/heroes/HeroImg";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { useDragScroll } from "@/hooks/useDragScroll";
@@ -68,20 +68,22 @@ export function MetaMatchupMatrix({ format, sinceDate, untilDate }: MetaMatchupM
     let total = 0;
 
     for (const cell of data) {
-      if (!getHeroByName(cell.hero1) || !getHeroByName(cell.hero2)) continue;
-      if (excludeLL && (isLivingLegendHero(cell.hero1) || isLivingLegendHero(cell.hero2))) continue;
-      if (ageFilter === "adult" && (isYoungHero(cell.hero1) || isYoungHero(cell.hero2))) continue;
-      if (ageFilter === "young" && (!isYoungHero(cell.hero1) || !isYoungHero(cell.hero2))) continue;
+      const h1 = resolveHeroName(cell.hero1);
+      const h2 = resolveHeroName(cell.hero2);
+      if (!h1 || !h2) continue;
+      if (excludeLL && (isLivingLegendHero(h1) || isLivingLegendHero(h2))) continue;
+      if (ageFilter === "adult" && (isYoungHero(h1) || isYoungHero(h2))) continue;
+      if (ageFilter === "young" && (!isYoungHero(h1) || !isYoungHero(h2))) continue;
 
       total += cell.total;
 
-      if (!heroMap.has(cell.hero1)) heroMap.set(cell.hero1, new Map());
-      heroMap.get(cell.hero1)!.set(cell.hero2, {
+      if (!heroMap.has(h1)) heroMap.set(h1, new Map());
+      heroMap.get(h1)!.set(h2, {
         wins: cell.hero1Wins, losses: cell.hero2Wins, draws: cell.draws, total: cell.total,
       });
 
-      if (!heroMap.has(cell.hero2)) heroMap.set(cell.hero2, new Map());
-      heroMap.get(cell.hero2)!.set(cell.hero1, {
+      if (!heroMap.has(h2)) heroMap.set(h2, new Map());
+      heroMap.get(h2)!.set(h1, {
         wins: cell.hero2Wins, losses: cell.hero1Wins, draws: cell.draws, total: cell.total,
       });
     }

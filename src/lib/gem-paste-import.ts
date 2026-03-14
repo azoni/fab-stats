@@ -1,6 +1,6 @@
 import type { MatchRecord } from "@/types";
 import { MatchResult, GameFormat } from "@/types";
-import { getHeroByName } from "@/lib/heroes";
+import { resolveHeroName } from "@/lib/heroes";
 
 export interface PasteImportEvent {
   eventName: string;
@@ -310,10 +310,11 @@ export function parseGemPaste(text: string): PasteImportResult {
       // Handle hero name on line after a format-only line
       if (pendingDeckFormat) {
         const hero = line.trim();
-        if (hero && !/^(Round|Playoff|Matches)\s/i.test(hero) && getHeroByName(hero)) {
+        const resolvedHero = hero && !/^(Round|Playoff|Matches)\s/i.test(hero) ? resolveHeroName(hero) : null;
+        if (resolvedHero) {
           for (const m of currentMatches) {
             if (m.heroPlayed === "Unknown" && m.format === pendingDeckFormat) {
-              m.heroPlayed = hero;
+              m.heroPlayed = resolvedHero;
             }
           }
           pendingDeckFormat = null;
@@ -329,10 +330,11 @@ export function parseGemPaste(text: string): PasteImportResult {
           const fmt = guessFormat(deckMatch[1]);
           if (fmt !== GameFormat.Other) {
             const hero = deckMatch[2].trim();
-            if (getHeroByName(hero)) {
+            const resolvedDeckHero = resolveHeroName(hero);
+            if (resolvedDeckHero) {
               for (const m of currentMatches) {
                 if (m.heroPlayed === "Unknown" && m.format === fmt) {
-                  m.heroPlayed = hero;
+                  m.heroPlayed = resolvedDeckHero;
                 }
               }
               continue;

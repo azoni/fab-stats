@@ -2,7 +2,7 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { computeHeroStats } from "@/lib/stats";
 import { getAvailableFormats } from "@/lib/meta-stats";
-import { getHeroByName } from "@/lib/heroes";
+import { getHeroByName, resolveHeroName } from "@/lib/heroes";
 
 import { getCommunityHeroMatchups, getMonthsForPreset, type CommunityMatchupCell } from "@/lib/hero-matchups";
 import type { MatchRecord, LeaderboardEntry, HeroStats } from "@/types";
@@ -726,16 +726,18 @@ function CommunityMatchupGrid({
     let total = 0;
 
     for (const cell of data) {
-      if (!getHeroByName(cell.hero1) || !getHeroByName(cell.hero2)) continue;
-      const h1Pass = passesHeroFilter(cell.hero1, ageFilter, includeLivingLegend);
-      const h2Pass = passesHeroFilter(cell.hero2, ageFilter, includeLivingLegend);
+      const h1 = resolveHeroName(cell.hero1);
+      const h2 = resolveHeroName(cell.hero2);
+      if (!h1 || !h2) continue;
+      const h1Pass = passesHeroFilter(h1, ageFilter, includeLivingLegend);
+      const h2Pass = passesHeroFilter(h2, ageFilter, includeLivingLegend);
       if (!h1Pass || !h2Pass) continue;
 
       total += cell.total;
 
       // hero1's perspective
-      if (!heroMap.has(cell.hero1)) heroMap.set(cell.hero1, new Map());
-      heroMap.get(cell.hero1)!.set(cell.hero2, {
+      if (!heroMap.has(h1)) heroMap.set(h1, new Map());
+      heroMap.get(h1)!.set(h2, {
         wins: cell.hero1Wins,
         losses: cell.hero2Wins,
         draws: cell.draws,
@@ -743,8 +745,8 @@ function CommunityMatchupGrid({
       });
 
       // hero2's perspective (mirror)
-      if (!heroMap.has(cell.hero2)) heroMap.set(cell.hero2, new Map());
-      heroMap.get(cell.hero2)!.set(cell.hero1, {
+      if (!heroMap.has(h2)) heroMap.set(h2, new Map());
+      heroMap.get(h2)!.set(h1, {
         wins: cell.hero2Wins,
         losses: cell.hero1Wins,
         draws: cell.draws,

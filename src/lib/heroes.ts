@@ -53,6 +53,43 @@ export function getHeroByName(name: string): HeroInfo | undefined {
   return allHeroes.find((h) => h.name === name);
 }
 
+/**
+ * Try to resolve an arbitrary string to a canonical hero name.
+ * Handles case differences, partial names (e.g. "Briar" → "Briar, Warden of Thorns"),
+ * and minor typos. Returns null only if no reasonable match is found.
+ */
+export function resolveHeroName(input: string): string | null {
+  if (!input) return null;
+  const trimmed = input.trim();
+  if (!trimmed) return null;
+
+  // 1. Exact match
+  const exact = heroMap.get(trimmed);
+  if (exact) return exact.name;
+
+  // 2. Case-insensitive exact match
+  const lower = trimmed.toLowerCase();
+  for (const hero of allHeroes) {
+    if (hero.name.toLowerCase() === lower) return hero.name;
+  }
+
+  // 3. Input matches the first part of a hero name (before comma)
+  //    e.g. "Briar" matches "Briar, Warden of Thorns"
+  for (const hero of allHeroes) {
+    const firstName = hero.name.split(",")[0];
+    if (firstName.toLowerCase() === lower) return hero.name;
+  }
+
+  // 4. Hero name starts with or contains input (case-insensitive, min 4 chars to avoid false positives)
+  if (trimmed.length >= 4) {
+    for (const hero of allHeroes) {
+      if (hero.name.toLowerCase().startsWith(lower)) return hero.name;
+    }
+  }
+
+  return null;
+}
+
 export function searchHeroes(query: string, format?: string): HeroInfo[] {
   const lower = query.toLowerCase();
   const pool = format ? getHeroesForFormat(format) : allHeroes;
