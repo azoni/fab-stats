@@ -576,7 +576,7 @@ export default function PlayerProfile() {
       {/* Profile + Filters (always on top) */}
       <div className="space-y-5">
         {/* Profile Header */}
-        <CardBorderWrapper cardBorder={cardBorder} borderStyle={profile.borderStyle || "beam"} underline={underlineConfig} contentClassName="bg-fab-surface p-5 relative">
+        <CardBorderWrapper cardBorder={cardBorder} borderStyle={profile.borderStyle || "beam"} underline={underlineConfig} contentClassName="bg-fab-surface/90 p-5 relative">
           {/* Owner: private/friends-only profile banner */}
           {isOwner && (profile.profileVisibility === "private" || (!profile.profileVisibility && !profile.isPublic)) && (
             <div className="flex items-center gap-2 mb-4 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/25">

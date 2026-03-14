@@ -315,7 +315,7 @@ export default function Dashboard() {
               if (href !== "#") router.push(href);
             }}
           >
-          <CardBorderWrapper cardBorder={cardBorder} borderStyle={profile?.borderStyle || "beam"} underline={underlineConfig} contentClassName="relative bg-fab-surface px-4 py-3 overflow-visible">
+          <CardBorderWrapper cardBorder={cardBorder} borderStyle={profile?.borderStyle || "beam"} underline={underlineConfig} contentClassName="relative bg-fab-surface/90 px-4 py-3 overflow-visible">
               {/* FaB-inspired pitch strip — thin gold accent across the top */}
               <div className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-fab-gold/30 to-transparent" />
               {/* Subtle decorative accent + hero card art — clipped to card bounds */}
