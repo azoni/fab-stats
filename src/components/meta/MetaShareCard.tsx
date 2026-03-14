@@ -1,6 +1,5 @@
 "use client";
 import { useRef, useState, useMemo } from "react";
-import { getHeroByName } from "@/lib/heroes";
 import type { Top8HeroMeta } from "@/lib/meta-stats";
 import { FINISH_THEMES, type FinishTheme } from "@/components/profile/BestFinishCard";
 import { copyCardImage, downloadCardImage } from "@/lib/share-image";
