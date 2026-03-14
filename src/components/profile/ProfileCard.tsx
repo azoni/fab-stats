@@ -564,8 +564,8 @@ export function ProfileShareModal({
         </div>
 
         {/* Card preview — scale down on mobile to fit viewport */}
-        <div className="px-4 pt-3 pb-2 sm:p-4 flex justify-center overflow-hidden">
-          <div className="scale-[0.75] sm:scale-100 origin-top">
+        <div className="px-4 pt-2 pb-1 sm:p-4 flex justify-center overflow-hidden">
+          <div className="scale-[0.75] sm:scale-100 origin-top -mb-[25%] sm:mb-0">
             <div ref={cardRef}>
               <ProfileCard data={data} theme={selectedTheme} />
             </div>

@@ -1,7 +1,7 @@
 "use client";
 import { useState, useMemo, useEffect } from "react";
 import { MatchCard } from "./MatchCard";
-import { MatchResult, GameFormat, type MatchRecord } from "@/types";
+import { MatchResult, type MatchRecord } from "@/types";
 import { allHeroes as knownHeroes } from "@/lib/heroes";
 import { getEventType, getRoundNumber } from "@/lib/stats";
 import { localDate } from "@/lib/constants";
@@ -41,6 +41,10 @@ export function MatchList({ matches, matchOwnerUid, enableComments, editable, on
   useEffect(() => {
     setPage(1);
   }, [filterResult, filterFormat, filterHero, filterEventType, sortOrder, search]);
+
+  const allFormats = useMemo(() => {
+    return [...new Set(matches.map((m) => m.format))].sort();
+  }, [matches]);
 
   const allHeroes = useMemo(() => {
     const heroes = new Set(matches.map((m) => m.heroPlayed).filter((h) => h && VALID_HERO_NAMES.has(h)));
@@ -148,27 +152,29 @@ export function MatchList({ matches, matchOwnerUid, enableComments, editable, on
             className="bg-fab-surface border border-fab-border rounded-md pl-8 pr-3 py-1.5 text-fab-text text-sm placeholder:text-fab-dim focus:outline-none focus:border-fab-gold w-36 sm:w-44"
           />
         </div>
-          <div className="flex gap-0.5 bg-fab-bg rounded-lg p-0.5 border border-fab-border">
-            <button
-              onClick={() => setFilterFormat("all")}
-              className={`px-2 py-0.5 rounded-md text-[11px] font-medium transition-colors ${
-                filterFormat === "all" ? "bg-fab-surface text-fab-text shadow-sm" : "text-fab-dim hover:text-fab-muted"
-              }`}
-            >
-              All
-            </button>
-            {Object.values(GameFormat).map((f) => (
+          {allFormats.length > 1 && (
+            <div className="flex gap-0.5 bg-fab-bg rounded-lg p-0.5 border border-fab-border overflow-x-auto scrollbar-hide">
               <button
-                key={f}
-                onClick={() => setFilterFormat(f)}
+                onClick={() => setFilterFormat("all")}
                 className={`px-2 py-0.5 rounded-md text-[11px] font-medium transition-colors whitespace-nowrap ${
-                  filterFormat === f ? "bg-fab-surface text-fab-text shadow-sm" : "text-fab-dim hover:text-fab-muted"
+                  filterFormat === "all" ? "bg-fab-surface text-fab-text shadow-sm" : "text-fab-dim hover:text-fab-muted"
                 }`}
               >
-                {f === "Classic Constructed" ? "CC" : f}
+                All
               </button>
-            ))}
-          </div>
+              {allFormats.map((f) => (
+                <button
+                  key={f}
+                  onClick={() => setFilterFormat(f)}
+                  className={`px-2 py-0.5 rounded-md text-[11px] font-medium transition-colors whitespace-nowrap ${
+                    filterFormat === f ? "bg-fab-surface text-fab-text shadow-sm" : "text-fab-dim hover:text-fab-muted"
+                  }`}
+                >
+                  {f === "Classic Constructed" ? "CC" : f}
+                </button>
+              ))}
+            </div>
+          )}
 
           {(allHeroes.length > 0 || hasUnsetHeroes) && (
             <select
