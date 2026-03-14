@@ -135,46 +135,40 @@ export function MatchList({ matches, matchOwnerUid, enableComments, editable, on
   return (
     <div>
       {/* Filters */}
-      <div className="space-y-2 mb-4">
-        {/* Row 1: Search + Result pills */}
-        <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2 mb-4">
+        <div className="relative">
+          <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-fab-dim pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search..."
-            className="bg-fab-surface border border-fab-border rounded-md px-3 py-1.5 text-fab-text text-sm placeholder:text-fab-dim focus:outline-none focus:border-fab-gold w-36 sm:w-44"
+            className="bg-fab-surface border border-fab-border rounded-md pl-8 pr-3 py-1.5 text-fab-text text-sm placeholder:text-fab-dim focus:outline-none focus:border-fab-gold w-36 sm:w-44"
           />
-          <div className="flex items-center gap-1 ml-auto flex-wrap">
-            {RESULT_PILLS.map((pill) => (
+        </div>
+          <div className="flex gap-0.5 bg-fab-bg rounded-lg p-0.5 border border-fab-border">
+            <button
+              onClick={() => setFilterFormat("all")}
+              className={`px-2 py-0.5 rounded-md text-[11px] font-medium transition-colors ${
+                filterFormat === "all" ? "bg-fab-surface text-fab-text shadow-sm" : "text-fab-dim hover:text-fab-muted"
+              }`}
+            >
+              All
+            </button>
+            {Object.values(GameFormat).map((f) => (
               <button
-                key={pill.value}
-                onClick={() => setFilterResult(pill.value)}
-                className={`px-2 py-1 rounded-full text-xs font-medium border transition-colors ${
-                  filterResult === pill.value
-                    ? pill.activeClass
-                    : "border-transparent text-fab-dim hover:text-fab-muted"
+                key={f}
+                onClick={() => setFilterFormat(f)}
+                className={`px-2 py-0.5 rounded-md text-[11px] font-medium transition-colors whitespace-nowrap ${
+                  filterFormat === f ? "bg-fab-surface text-fab-text shadow-sm" : "text-fab-dim hover:text-fab-muted"
                 }`}
               >
-                {pill.label}
-                <span className="ml-1 opacity-60">{resultCounts[pill.value] || 0}</span>
+                {f === "Classic Constructed" ? "CC" : f}
               </button>
             ))}
           </div>
-        </div>
-
-        {/* Row 2: Format / Hero / Event Type / Sort */}
-        <div className="flex flex-wrap items-center gap-2">
-          <select
-            value={filterFormat}
-            onChange={(e) => setFilterFormat(e.target.value)}
-            className="bg-fab-surface border border-fab-border rounded-md px-3 py-1.5 text-fab-text text-sm outline-none"
-          >
-            <option value="all">All Formats</option>
-            {Object.values(GameFormat).map((f) => (
-              <option key={f} value={f}>{f}</option>
-            ))}
-          </select>
 
           {(allHeroes.length > 0 || hasUnsetHeroes) && (
             <select
@@ -191,25 +185,64 @@ export function MatchList({ matches, matchOwnerUid, enableComments, editable, on
           )}
 
           {allEventTypes.length > 1 && (
-            <select
-              value={filterEventType}
-              onChange={(e) => setFilterEventType(e.target.value)}
-              className="bg-fab-surface border border-fab-border rounded-md px-3 py-1.5 text-fab-text text-sm outline-none"
-            >
-              <option value="all">All Event Types</option>
+            <div className="flex gap-0.5 bg-fab-bg rounded-lg p-0.5 border border-fab-border overflow-x-auto scrollbar-hide">
+              <button
+                onClick={() => setFilterEventType("all")}
+                className={`px-2 py-0.5 rounded-md text-[11px] font-medium transition-colors ${
+                  filterEventType === "all" ? "bg-fab-surface text-fab-text shadow-sm" : "text-fab-dim hover:text-fab-muted"
+                }`}
+              >
+                All
+              </button>
               {allEventTypes.map((t) => (
-                <option key={t} value={t}>{t}</option>
+                <button
+                  key={t}
+                  onClick={() => setFilterEventType(t)}
+                  className={`px-2 py-0.5 rounded-md text-[11px] font-medium transition-colors whitespace-nowrap ${
+                    filterEventType === t ? "bg-fab-surface text-fab-text shadow-sm" : "text-fab-dim hover:text-fab-muted"
+                  }`}
+                >
+                  {t}
+                </button>
               ))}
-            </select>
+            </div>
           )}
 
-          <button
-            onClick={() => setSortOrder(sortOrder === "newest" ? "oldest" : "newest")}
-            className="bg-fab-surface border border-fab-border rounded-md px-3 py-1.5 text-fab-muted text-sm hover:text-fab-text transition-colors ml-auto"
-          >
-            {sortOrder === "newest" ? "Newest First" : "Oldest First"}
-          </button>
-        </div>
+          <div className="flex gap-1 ml-auto">
+            {([
+              { id: "newest", label: "Newest" },
+              { id: "oldest", label: "Oldest" },
+            ] as const).map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setSortOrder(tab.id)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                  sortOrder === tab.id
+                    ? "bg-fab-gold/15 text-fab-gold"
+                    : "bg-fab-surface text-fab-muted hover:text-fab-text"
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex items-center gap-1 flex-wrap">
+            {RESULT_PILLS.map((pill) => (
+              <button
+                key={pill.value}
+                onClick={() => setFilterResult(pill.value)}
+                className={`px-2 py-1 rounded-full text-xs font-medium border transition-colors ${
+                  filterResult === pill.value
+                    ? pill.activeClass
+                    : "border-transparent text-fab-dim hover:text-fab-muted"
+                }`}
+              >
+                {pill.label}
+                <span className="ml-1 opacity-60">{resultCounts[pill.value] || 0}</span>
+              </button>
+            ))}
+          </div>
       </div>
 
       {filtered.length === 0 ? (
