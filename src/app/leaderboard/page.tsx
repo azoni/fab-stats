@@ -1204,7 +1204,7 @@ function LeaderboardRow({
           </svg>
         )}
         {entry.photoUrl ? (
-          <img src={entry.photoUrl} alt="" className={`w-9 h-9 rounded-full ${rankBorder}`} />
+          <img src={entry.photoUrl} alt="" className={`w-9 h-9 rounded-full ${rankBorder}`} loading="lazy" />
         ) : (
           <div className={`w-9 h-9 rounded-full bg-fab-gold/20 flex items-center justify-center text-fab-gold text-xs font-bold ${rankBorder}`}>
             {initials}

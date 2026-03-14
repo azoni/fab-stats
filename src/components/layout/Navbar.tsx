@@ -258,7 +258,7 @@ function UserMenu({
         title="View profile"
       >
         {profile?.photoUrl ? (
-          <img src={profile.photoUrl} alt="Your profile photo" className="w-7 h-7 rounded-full object-cover shrink-0" />
+          <img src={profile.photoUrl} alt="Your profile photo" className="w-7 h-7 rounded-full object-cover shrink-0" loading="lazy" />
         ) : (
           <span className="w-7 h-7 rounded-full bg-fab-gold/20 flex items-center justify-center text-fab-gold text-xs font-bold shrink-0">{initial}</span>
         )}
@@ -288,7 +288,7 @@ function UserMenu({
             className="flex items-center gap-3 px-4 py-3 hover:bg-fab-surface-hover transition-colors border-b border-fab-border"
           >
             {profile?.photoUrl ? (
-              <img src={profile.photoUrl} alt="Your profile photo" className="w-9 h-9 rounded-full object-cover shrink-0" />
+              <img src={profile.photoUrl} alt="Your profile photo" className="w-9 h-9 rounded-full object-cover shrink-0" loading="lazy" />
             ) : (
               <div className="w-9 h-9 rounded-full bg-fab-gold/20 flex items-center justify-center text-fab-gold font-bold text-sm shrink-0">
                 {initial}
@@ -531,7 +531,7 @@ function MoreDropdown({
                   }}
                 >
                   {creator.imageUrl ? (
-                    <img src={creator.imageUrl} alt="" className="w-6 h-6 rounded-full object-cover shrink-0" />
+                    <img src={creator.imageUrl} alt="" className="w-6 h-6 rounded-full object-cover shrink-0" loading="lazy" />
                   ) : (
                     platformIcons[creator.platform]
                   )}

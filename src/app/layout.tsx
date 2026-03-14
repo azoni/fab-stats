@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Nunito } from "next/font/google";
+import dynamic from "next/dynamic";
 import "./globals.css";
 import { Navbar } from "@/components/layout/Navbar";
 import { MobileNav } from "@/components/layout/MobileNav";
@@ -9,13 +10,15 @@ import { LayoutShell } from "@/components/auth/LayoutShell";
 import { GuestBanner } from "@/components/auth/GuestBanner";
 import { SiteBanner } from "@/components/layout/SiteBanner";
 import { ProfileBackgroundController } from "@/components/layout/ProfileBackgroundController";
-import { FeedbackFab } from "@/components/feedback/FeedbackFab";
 import { ChatProvider } from "@/contexts/ChatContext";
-import { ChatFab } from "@/components/chat/ChatFab";
 import { SonnerProvider } from "@/components/ui/sonner-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { PageVisitTracker } from "@/components/PageVisitTracker";
 import { ScrollProgress } from "@/components/ui/ScrollProgress";
+
+// Non-critical UI — lazy-loaded to reduce initial bundle
+const FeedbackFab = dynamic(() => import("@/components/feedback/FeedbackFab").then(m => ({ default: m.FeedbackFab })), { ssr: false });
+const ChatFab = dynamic(() => import("@/components/chat/ChatFab").then(m => ({ default: m.ChatFab })), { ssr: false });
+const PageVisitTracker = dynamic(() => import("@/components/PageVisitTracker").then(m => ({ default: m.PageVisitTracker })), { ssr: false });
 
 const geistSans = Geist({
   variable: "--font-geist-sans",

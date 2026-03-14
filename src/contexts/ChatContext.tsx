@@ -49,11 +49,16 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   const [rateLimits, setRateLimits] = useState<RateLimits | null>(null);
   const [error, setError] = useState<string | null>(null);
   const messagesRef = useRef<ChatMessage[]>([]);
+  const isLoadingRef = useRef(false);
 
-  // Keep ref in sync for use in sendMessage closure
+  // Keep refs in sync for use in sendMessage closure
   useEffect(() => {
     messagesRef.current = messages;
   }, [messages]);
+
+  useEffect(() => {
+    isLoadingRef.current = isLoading;
+  }, [isLoading]);
 
   // Subscribe to chat messages
   useEffect(() => {
@@ -81,7 +86,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   }, [user, isGuest]);
 
   const sendMessage = useCallback(async (text: string) => {
-    if (!user || isGuest || isLoading) return;
+    if (!user || isGuest || isLoadingRef.current) return;
 
     setError(null);
     setIsLoading(true);
@@ -139,7 +144,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-  }, [user, isGuest, isLoading]);
+  }, [user, isGuest]);
 
   const clearError = useCallback(() => setError(null), []);
 

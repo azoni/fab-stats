@@ -63,7 +63,7 @@ export default function FavoritesPage() {
               className="flex items-center gap-3 bg-fab-surface border border-fab-border rounded-lg p-3 hover:bg-fab-surface-hover transition-colors"
             >
               {fav.targetPhotoUrl ? (
-                <img src={fav.targetPhotoUrl} alt="" className="w-10 h-10 rounded-full" />
+                <img src={fav.targetPhotoUrl} alt="" className="w-10 h-10 rounded-full" loading="lazy" />
               ) : (
                 <div className="w-10 h-10 rounded-full bg-fab-gold/20 flex items-center justify-center text-fab-gold font-bold">
                   {fav.targetDisplayName.charAt(0).toUpperCase()}

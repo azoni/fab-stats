@@ -167,7 +167,7 @@ function NotifAvatar({ n }: { n: UserNotification }) {
   const name = n.type === "message" ? (n.senderName || "?") : n.type === "friendRequest" || n.type === "friendAccepted" ? (n.friendRequestFromName || "?") : (n.commentAuthorName || "?");
 
   return photo ? (
-    <img src={photo} alt="" className="w-9 h-9 rounded-full" />
+    <img src={photo} alt="" className="w-9 h-9 rounded-full" loading="lazy" />
   ) : (
     <div className={`w-9 h-9 rounded-full ${bg} flex items-center justify-center ${iconColor} text-sm font-bold`}>
       {name.charAt(0).toUpperCase()}

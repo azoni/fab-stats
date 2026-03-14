@@ -277,7 +277,7 @@ function PlayerPicker({
       <div className={`flex items-center gap-2 bg-fab-surface border rounded-lg px-3 py-2.5 transition-colors ${isSearching ? "border-fab-gold" : "border-fab-border"}`}>
         {selected && !isSearching ? (
           selected.photoUrl ? (
-            <img src={selected.photoUrl} alt="" className="w-8 h-8 rounded-full shrink-0" />
+            <img src={selected.photoUrl} alt="" className="w-8 h-8 rounded-full shrink-0" loading="lazy" />
           ) : (
             <div className="w-8 h-8 rounded-full bg-fab-gold/20 flex items-center justify-center text-fab-gold text-sm font-bold shrink-0">
               {selected.displayName.charAt(0).toUpperCase()}
@@ -321,7 +321,7 @@ function PlayerPicker({
                 className={`w-full flex items-center gap-2 px-3 py-2 text-left transition-colors ${i === hlIndex ? "bg-fab-gold/10" : "hover:bg-fab-surface-hover"}`}
               >
                 {e.photoUrl ? (
-                  <img src={e.photoUrl} alt="" className="w-7 h-7 rounded-full shrink-0" />
+                  <img src={e.photoUrl} alt="" className="w-7 h-7 rounded-full shrink-0" loading="lazy" />
                 ) : (
                   <div className="w-7 h-7 rounded-full bg-fab-gold/20 flex items-center justify-center text-fab-gold text-xs font-bold shrink-0">
                     {e.displayName.charAt(0).toUpperCase()}
@@ -681,7 +681,7 @@ function ComparisonView({ p1, p2, allEntries }: { p1: LeaderboardEntry; p2: Lead
               <Link href={`/player/${p1.username}`} className="hover:opacity-80 transition-opacity inline-block">
                 <div className={`w-18 h-18 sm:w-20 sm:h-20 rounded-full mx-auto mb-2 p-[3px] ${p1Rank ? rankBorderClass(p1Rank) : ""}`}>
                   {p1.photoUrl ? (
-                    <img src={p1.photoUrl} alt="" className="w-full h-full rounded-full object-cover" />
+                    <img src={p1.photoUrl} alt="" className="w-full h-full rounded-full object-cover" loading="lazy" />
                   ) : (
                     <div className="w-full h-full rounded-full bg-fab-gold/20 flex items-center justify-center text-fab-gold text-2xl font-bold">
                       {p1.displayName.charAt(0).toUpperCase()}
@@ -715,7 +715,7 @@ function ComparisonView({ p1, p2, allEntries }: { p1: LeaderboardEntry; p2: Lead
               <Link href={`/player/${p2.username}`} className="hover:opacity-80 transition-opacity inline-block">
                 <div className={`w-18 h-18 sm:w-20 sm:h-20 rounded-full mx-auto mb-2 p-[3px] ${p2Rank ? rankBorderClass(p2Rank) : ""}`}>
                   {p2.photoUrl ? (
-                    <img src={p2.photoUrl} alt="" className="w-full h-full rounded-full object-cover" />
+                    <img src={p2.photoUrl} alt="" className="w-full h-full rounded-full object-cover" loading="lazy" />
                   ) : (
                     <div className="w-full h-full rounded-full bg-fab-gold/20 flex items-center justify-center text-fab-gold text-2xl font-bold">
                       {p2.displayName.charAt(0).toUpperCase()}
