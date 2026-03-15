@@ -855,6 +855,9 @@ export interface TournamentAnalytics {
   dropRate: number;
   dropCount: number;
   longestEventWinStreak: number; // most consecutive round wins in a single event
+  longestCrossEventWinStreak: number; // consecutive wins across event boundaries
+  consecutiveTop8s: number; // most consecutive events making top 8
+  consecutiveEventWins: number; // most consecutive events won (champion)
 
   // Hero tournament performance
   heroTournamentStats: HeroTournamentRecord[];
@@ -1065,6 +1068,56 @@ export function computeTournamentAnalytics(events: EventStats[]): TournamentAnal
     });
   }
 
+  // Cross-event win streak (consecutive wins spanning event boundaries)
+  let longestCrossEventWinStreak = 0;
+  let currentCrossStreak = 0;
+  for (const event of chronological) {
+    const sorted = [...event.matches]
+      .filter(m => getRoundNumber(m) > 0 && m.result !== MatchResult.Bye)
+      .sort((a, b) => getRoundNumber(a) - getRoundNumber(b));
+    for (const m of sorted) {
+      if (m.result === MatchResult.Win) {
+        currentCrossStreak++;
+        longestCrossEventWinStreak = Math.max(longestCrossEventWinStreak, currentCrossStreak);
+      } else {
+        currentCrossStreak = 0;
+      }
+    }
+  }
+
+  // Consecutive top 8s (most consecutive events making playoffs)
+  let consecutiveTop8s = 0;
+  let currentTop8Streak = 0;
+  for (const event of chronological) {
+    const hasPlayoffsInEvent = event.matches.some(m => getRoundNumber(m) >= 1000);
+    if (hasPlayoffsInEvent) {
+      currentTop8Streak++;
+      consecutiveTop8s = Math.max(consecutiveTop8s, currentTop8Streak);
+    } else {
+      currentTop8Streak = 0;
+    }
+  }
+
+  // Consecutive event wins (champion — won the last playoff match)
+  let consecutiveEventWins = 0;
+  let currentEventWinStreak = 0;
+  for (const event of chronological) {
+    const playoffMatches = event.matches
+      .filter(m => getRoundNumber(m) >= 1000 && m.result !== MatchResult.Bye)
+      .sort((a, b) => getRoundNumber(a) - getRoundNumber(b));
+    if (playoffMatches.length > 0) {
+      const lastPlayoff = playoffMatches[playoffMatches.length - 1];
+      if (lastPlayoff.result === MatchResult.Win) {
+        currentEventWinStreak++;
+        consecutiveEventWins = Math.max(consecutiveEventWins, currentEventWinStreak);
+      } else {
+        currentEventWinStreak = 0;
+      }
+    } else {
+      currentEventWinStreak = 0;
+    }
+  }
+
   // Compute rolling 10-event win rate
   for (let i = 0; i < timeline.length; i++) {
     const window = timeline.slice(Math.max(0, i - 9), i + 1);
@@ -1197,6 +1250,9 @@ export function computeTournamentAnalytics(events: EventStats[]): TournamentAnal
     dropRate: events.length > 0 ? (dropCount / events.length) * 100 : 0,
     dropCount,
     longestEventWinStreak,
+    longestCrossEventWinStreak,
+    consecutiveTop8s,
+    consecutiveEventWins,
 
     heroTournamentStats,
     eventTimeline: timeline,
