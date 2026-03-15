@@ -858,6 +858,8 @@ export interface TournamentAnalytics {
   longestCrossEventWinStreak: number; // consecutive wins across event boundaries
   consecutiveTop8s: number; // most consecutive events making top 8
   consecutiveEventWins: number; // most consecutive events won (champion)
+  submarineCount: number; // lost R1 but made top 8
+  rightRecordWrongOrder: number; // had top 8 record but didn't make it (lost too early)
 
   // Hero tournament performance
   heroTournamentStats: HeroTournamentRecord[];
@@ -1114,6 +1116,39 @@ export function computeTournamentAnalytics(events: EventStats[]): TournamentAnal
     }
   }
 
+  // Submarines: lost R1 but made top 8
+  const top8EventKeys = new Set(
+    allFinishes.map(f => `${f.eventName}|${f.eventDate}`)
+  );
+  let submarineCount = 0;
+  for (const event of chronological) {
+    const r1 = event.matches.find(m => getRoundNumber(m) === 1 && m.result !== MatchResult.Bye);
+    if (r1 && r1.result === MatchResult.Loss && top8EventKeys.has(`${event.eventName}|${event.eventDate}`)) {
+      submarineCount++;
+    }
+  }
+
+  // Right record wrong order: had a record good enough for top 8 but didn't make it
+  // For each event WITHOUT top 8, check if their swiss W-L was >= the best non-top-8 record
+  // Simpler: events where wins > losses AND no top 8 AND at least 3 swiss rounds
+  let rightRecordWrongOrder = 0;
+  for (const event of chronological) {
+    const key = `${event.eventName}|${event.eventDate}`;
+    if (top8EventKeys.has(key)) continue; // already made top 8
+    const swiss = event.matches.filter(m => {
+      const rn = getRoundNumber(m);
+      return rn > 0 && rn < 1000 && m.result !== MatchResult.Bye;
+    });
+    if (swiss.length < 3) continue;
+    const w = swiss.filter(m => m.result === MatchResult.Win).length;
+    const l = swiss.filter(m => m.result === MatchResult.Loss).length;
+    // Typically top 8 requires X-1 or X-2 in a 5+ round event
+    // Heuristic: positive record (wins > losses) with at most 1 loss in 4+ rounds
+    if (swiss.length >= 4 && w > l && l <= 1) {
+      rightRecordWrongOrder++;
+    }
+  }
+
   // Compute rolling 10-event win rate
   for (let i = 0; i < timeline.length; i++) {
     const window = timeline.slice(Math.max(0, i - 9), i + 1);
@@ -1249,6 +1284,8 @@ export function computeTournamentAnalytics(events: EventStats[]): TournamentAnal
     longestCrossEventWinStreak,
     consecutiveTop8s,
     consecutiveEventWins,
+    submarineCount,
+    rightRecordWrongOrder,
 
     heroTournamentStats,
     eventTimeline: timeline,

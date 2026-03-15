@@ -404,8 +404,8 @@ export default function Dashboard() {
           />
           </div>
 
-          {/* Sidebar: Tools + Meta */}
-          <div className="flex flex-col gap-3">
+          {/* Sidebar: Tools + Meta (desktop only) */}
+          <div className="hidden md:flex flex-col gap-3">
             {/* Player Tools */}
             {user && (
               <div className="relative group/tools">

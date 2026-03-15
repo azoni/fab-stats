@@ -470,6 +470,8 @@ function OutcomesSection({ analytics: a }: { analytics: TournamentAnalytics }) {
         <MiniStat label="Undefeated Swiss" value={`${a.undefeatedSwissCount}`} detail={`${a.undefeatedSwissRate.toFixed(0)}% of events`} />
         <MiniStat label="Avg Final Record" value={`${a.avgFinalRecord.wins.toFixed(1)}-${a.avgFinalRecord.losses.toFixed(1)}`} detail={a.avgFinalRecord.draws > 0.05 ? `${a.avgFinalRecord.draws.toFixed(1)} draws` : ""} />
         <MiniStat label="Best Event Streak" value={`${a.longestEventWinStreak}`} detail="consecutive round wins" />
+        <MiniStat label="Submarines" value={`${a.submarineCount}`} detail="lost R1 but made top 8" />
+        <MiniStat label="Right Record, Wrong Order" value={`${a.rightRecordWrongOrder}`} detail="had the record but missed top 8" />
         {a.dropCount > 0 && (
           <MiniStat label="Drops" value={`${a.dropCount}`} detail={`${a.dropRate.toFixed(0)}% of events`} />
         )}
