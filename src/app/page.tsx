@@ -504,22 +504,22 @@ export default function Dashboard() {
                       <p className="text-lg font-bold text-fab-text tabular-nums">{tournamentAnalytics.avgFinalRecord.wins.toFixed(1)}-{tournamentAnalytics.avgFinalRecord.losses.toFixed(1)}</p>
                       <p className="text-[10px] text-fab-muted">Avg W-L / Event</p>
                     </div>
-                    <div title={`Most consecutive round wins in a single event`}>
-                      <p className="text-lg font-bold text-fab-text tabular-nums">{tournamentAnalytics.longestEventWinStreak}</p>
-                      <p className="text-[10px] text-fab-muted">Win Streak</p>
+                    <div title="Most consecutive match wins across all events">
+                      <p className="text-lg font-bold text-fab-text tabular-nums">{tournamentAnalytics.longestCrossEventWinStreak || <span className="text-fab-dim">N/A</span>}</p>
+                      <p className="text-[10px] text-fab-muted">Best Win Streak</p>
                     </div>
-                    {tournamentAnalytics.undefeatedSwissCount > 0 && (
-                      <div title={`Went undefeated through swiss ${tournamentAnalytics.undefeatedSwissCount} time${tournamentAnalytics.undefeatedSwissCount === 1 ? "" : "s"}`}>
-                        <p className="text-lg font-bold text-fab-win tabular-nums">{tournamentAnalytics.undefeatedSwissCount}</p>
-                        <p className="text-[10px] text-fab-muted">Top Seeds</p>
-                      </div>
-                    )}
-                    {tournamentAnalytics.startPatterns.length > 0 && (
-                      <div title={`Your most common record after the first 2 rounds — you start ${tournamentAnalytics.startPatterns[0].pattern} in ${tournamentAnalytics.startPatterns[0].pct.toFixed(0)}% of events`}>
-                        <p className="text-lg font-bold text-fab-text tabular-nums">{tournamentAnalytics.startPatterns[0].pattern}</p>
-                        <p className="text-[10px] text-fab-muted">{tournamentAnalytics.startPatterns[0].pct.toFixed(0)}% of starts</p>
-                      </div>
-                    )}
+                    <div title={`Went undefeated through swiss ${tournamentAnalytics.undefeatedSwissCount} time${tournamentAnalytics.undefeatedSwissCount === 1 ? "" : "s"}`}>
+                      <p className={`text-lg font-bold tabular-nums ${tournamentAnalytics.undefeatedSwissCount > 0 ? "text-fab-win" : "text-fab-dim"}`}>{tournamentAnalytics.undefeatedSwissCount || <span className="text-fab-dim">N/A</span>}</p>
+                      <p className="text-[10px] text-fab-muted">Undefeated Swiss</p>
+                    </div>
+                    <div title="Most consecutive events making top 8">
+                      <p className="text-lg font-bold text-fab-text tabular-nums">{tournamentAnalytics.consecutiveTop8s || <span className="text-fab-dim">N/A</span>}</p>
+                      <p className="text-[10px] text-fab-muted">Consec. Top 8s</p>
+                    </div>
+                    <div title="Most consecutive tournament wins (champion)">
+                      <p className="text-lg font-bold text-fab-gold tabular-nums">{tournamentAnalytics.consecutiveEventWins || <span className="text-fab-dim">N/A</span>}</p>
+                      <p className="text-[10px] text-fab-muted">Consec. Wins</p>
+                    </div>
                   </div>
                 </div>
               </div>
