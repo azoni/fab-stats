@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useMatches } from "@/hooks/useMatches";
 import { useAuth } from "@/contexts/AuthContext";
 import dynamic from "next/dynamic";
-import { computeEventStats, computeTournamentAnalytics, computePlayoffFinishes, computeMinorEventFinishes, type TournamentAnalytics } from "@/lib/stats";
+import { computeEventStats, computeTournamentAnalytics, computePlayoffFinishes, type TournamentAnalytics } from "@/lib/stats";
 
 const TournamentShareModal = dynamic(() => import("@/components/tournament-stats/TournamentShareCard").then(m => ({ default: m.TournamentShareModal })), { ssr: false });
 import { WinRateRing } from "@/components/charts/WinRateRing";
@@ -107,9 +107,7 @@ export default function TournamentStatsPage() {
 
   // Full finalist count from ALL events (consistent with trophy case)
   const allFinalistCount = useMemo(() => {
-    const major = computePlayoffFinishes(allEvents).filter(f => f.type === "finalist").length;
-    const minor = computeMinorEventFinishes(allEvents).filter(f => f.type === "finalist").length;
-    return major + minor;
+    return computePlayoffFinishes(allEvents).filter(f => f.type === "finalist").length;
   }, [allEvents]);
 
   if (!isLoaded) {
