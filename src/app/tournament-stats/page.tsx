@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useMatches } from "@/hooks/useMatches";
 import { useAuth } from "@/contexts/AuthContext";
 import dynamic from "next/dynamic";
-import { computeEventStats, computeTournamentAnalytics, computePlayoffFinishes, type TournamentAnalytics } from "@/lib/stats";
+import { computeEventStats, computeTournamentAnalytics, type TournamentAnalytics } from "@/lib/stats";
 
 const TournamentShareModal = dynamic(() => import("@/components/tournament-stats/TournamentShareCard").then(m => ({ default: m.TournamentShareModal })), { ssr: false });
 import { WinRateRing } from "@/components/charts/WinRateRing";
@@ -105,8 +105,6 @@ export default function TournamentStatsPage() {
   // Tournament analytics
   const analytics = useMemo(() => computeTournamentAnalytics(filteredEvents), [filteredEvents]);
 
-  // Placement counts from ALL events (consistent with trophy case)
-  const allPlayoffFinishes = useMemo(() => computePlayoffFinishes(allEvents), [allEvents]);
 
   if (!isLoaded) {
     return (
@@ -241,9 +239,9 @@ export default function TournamentStatsPage() {
             longestCrossEventWinStreak: analytics.longestCrossEventWinStreak,
             consecutiveTop8s: analytics.consecutiveTop8s,
             consecutiveEventWins: analytics.consecutiveEventWins,
-            championCount: allPlayoffFinishes.filter(f => f.type === "champion").length,
-            finalistCount: allPlayoffFinishes.filter(f => f.type === "finalist").length,
-            top4Count: allPlayoffFinishes.filter(f => f.type === "top4").length,
+            championCount: analytics.championCount,
+            finalistCount: analytics.finalistCount,
+            top4Count: analytics.top4Count,
             submarineCount: analytics.submarineCount,
           }}
           onClose={() => setShareOpen(false)}
