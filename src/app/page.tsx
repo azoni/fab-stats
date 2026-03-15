@@ -478,7 +478,7 @@ export default function Dashboard() {
                     </div>
                     <span className="text-sm font-semibold text-fab-text">Tournament Stats</span>
                   </div>
-                  <span className="text-xs text-fab-gold font-semibold">View all &rarr;</span>
+                  <span className="text-xs font-semibold text-fab-gold border border-fab-gold/30 hover:bg-fab-gold/10 hover:border-fab-gold/50 px-2.5 py-1 rounded-md transition-colors">Full stats &rarr;</span>
                 </div>
                 <div className="grid grid-cols-3 gap-3">
                   <div className="text-center">
