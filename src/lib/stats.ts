@@ -784,3 +784,422 @@ export function computeEventStats(matches: MatchRecord[]): EventStats[] {
     })
     .sort((a, b) => new Date(b.eventDate).getTime() - new Date(a.eventDate).getTime());
 }
+
+// ── Tournament Analytics ──
+
+export interface RoundRecord {
+  round: string;
+  roundNum: number;
+  wins: number;
+  losses: number;
+  draws: number;
+  total: number;
+  winRate: number;
+}
+
+export interface StartPattern {
+  pattern: string;
+  count: number;
+  pct: number;
+  conversionRate: number; // % that finished with wins > losses
+}
+
+export interface HeroTournamentRecord {
+  hero: string;
+  events: number;
+  wins: number;
+  losses: number;
+  draws: number;
+  winRate: number;
+  eventWinRate: number; // % of events with positive record
+}
+
+export interface TournamentAnalytics {
+  // First round
+  r1Wins: number;
+  r1Losses: number;
+  r1Draws: number;
+  r1WinRate: number;
+
+  // Start patterns
+  startPatterns: StartPattern[];
+
+  // Round breakdown
+  roundBreakdown: RoundRecord[];
+
+  // Momentum & mental game
+  bounceBackRate: number; // WR in round after a loss
+  bounceBackWins: number;
+  bounceBackTotal: number;
+  streakWinRate: number; // WR when on 2+ win streak
+  streakWins: number;
+  streakTotal: number;
+  afterByeWinRate: number; // WR in round after a bye
+  afterByeWins: number;
+  afterByeTotal: number;
+  closerRate: number; // WR in final swiss round
+  closerWins: number;
+  closerTotal: number;
+  bestRound: RoundRecord | null;
+  worstRound: RoundRecord | null;
+
+  // Tournament outcomes
+  totalEvents: number;
+  totalMatches: number;
+  overallWinRate: number;
+  top8Rate: number; // % of events making playoffs
+  top8Count: number;
+  undefeatedSwissRate: number;
+  undefeatedSwissCount: number;
+  avgFinalRecord: { wins: number; losses: number; draws: number };
+  dropRate: number;
+  dropCount: number;
+  longestEventWinStreak: number; // most consecutive round wins in a single event
+
+  // Hero tournament performance
+  heroTournamentStats: HeroTournamentRecord[];
+
+  // Trends over time (per event, chronological)
+  eventTimeline: {
+    date: string;
+    eventName: string;
+    eventType: string;
+    wins: number;
+    losses: number;
+    draws: number;
+    winRate: number;
+    rollingWinRate: number; // rolling 10-event WR
+  }[];
+
+  // Events per month
+  eventsPerMonth: { month: string; count: number }[];
+}
+
+export function computeTournamentAnalytics(events: EventStats[]): TournamentAnalytics {
+  // R1 record
+  let r1Wins = 0, r1Losses = 0, r1Draws = 0;
+
+  // Momentum tracking
+  let bounceBackWins = 0, bounceBackTotal = 0;
+  let streakWins = 0, streakTotal = 0;
+  let afterByeWins = 0, afterByeTotal = 0;
+  let closerWins = 0, closerTotal = 0;
+
+  // Round breakdown
+  const roundMap = new Map<number, { wins: number; losses: number; draws: number }>();
+
+  // Start patterns
+  const patternCounts = new Map<string, { count: number; positive: number }>();
+
+  // Outcomes
+  let top8Count = 0;
+  let undefeatedSwissCount = 0;
+  let dropCount = 0;
+  let totalWins = 0, totalLosses = 0, totalDraws = 0, totalMatches = 0;
+  let longestEventWinStreak = 0;
+
+  // Hero tournament stats
+  const heroEventMap = new Map<string, { events: number; wins: number; losses: number; draws: number; positiveEvents: number }>();
+
+  // Timeline
+  const timeline: TournamentAnalytics["eventTimeline"] = [];
+
+  // Events per month
+  const monthMap = new Map<string, number>();
+
+  // Sort events chronologically for timeline
+  const chronological = [...events].sort((a, b) =>
+    new Date(a.eventDate).getTime() - new Date(b.eventDate).getTime()
+  );
+
+  for (const event of chronological) {
+    const swiss = event.matches.filter(m => {
+      const rn = getRoundNumber(m);
+      return rn > 0 && rn < 1000 && m.result !== MatchResult.Bye;
+    });
+    const swissByes = event.matches.filter(m => {
+      const rn = getRoundNumber(m);
+      return rn > 0 && rn < 1000 && m.result === MatchResult.Bye;
+    });
+    const hasPlayoffs = event.matches.some(m => getRoundNumber(m) >= 1000);
+    const allRoundMatches = event.matches.filter(m => getRoundNumber(m) > 0 && m.result !== MatchResult.Bye);
+
+    totalWins += event.wins;
+    totalLosses += event.losses;
+    totalDraws += event.draws;
+    totalMatches += event.totalMatches;
+
+    // Events per month
+    const month = event.eventDate.slice(0, 7); // YYYY-MM
+    monthMap.set(month, (monthMap.get(month) || 0) + 1);
+
+    // R1 record
+    const r1Match = swiss.find(m => getRoundNumber(m) === 1);
+    if (r1Match) {
+      if (r1Match.result === MatchResult.Win) r1Wins++;
+      else if (r1Match.result === MatchResult.Loss) r1Losses++;
+      else if (r1Match.result === MatchResult.Draw) r1Draws++;
+    }
+
+    // Round breakdown + momentum stats
+    let eventWinStreak = 0;
+    let maxEventWinStreak = 0;
+    const allInOrder = [...swiss, ...swissByes].sort((a, b) => getRoundNumber(a) - getRoundNumber(b));
+
+    for (let i = 0; i < allInOrder.length; i++) {
+      const m = allInOrder[i];
+      const rn = getRoundNumber(m);
+
+      if (m.result === MatchResult.Bye) {
+        // Byes don't count in round breakdown but affect "after bye" tracking
+        eventWinStreak = 0; // reset streak (not a win)
+        continue;
+      }
+
+      // Round breakdown
+      const cur = roundMap.get(rn) || { wins: 0, losses: 0, draws: 0 };
+      if (m.result === MatchResult.Win) { cur.wins++; eventWinStreak++; }
+      else if (m.result === MatchResult.Loss) { cur.losses++; eventWinStreak = 0; }
+      else if (m.result === MatchResult.Draw) { cur.draws++; eventWinStreak = 0; }
+      roundMap.set(rn, cur);
+      maxEventWinStreak = Math.max(maxEventWinStreak, eventWinStreak);
+
+      // Bounce-back: WR in round immediately after a loss
+      if (i > 0) {
+        const prev = allInOrder[i - 1];
+        if (prev.result === MatchResult.Loss) {
+          bounceBackTotal++;
+          if (m.result === MatchResult.Win) bounceBackWins++;
+        }
+        // After bye
+        if (prev.result === MatchResult.Bye) {
+          afterByeTotal++;
+          if (m.result === MatchResult.Win) afterByeWins++;
+        }
+      }
+
+      // Streak WR: when on 2+ consecutive wins
+      if (eventWinStreak >= 3) { // current win is #3+, so we WERE on a 2+ streak
+        streakTotal++;
+        streakWins++; // by definition we won
+      } else if (i >= 2) {
+        // Check if previous 2 were wins
+        const p1 = allInOrder[i - 1];
+        const p2 = allInOrder[i - 2];
+        if (p1.result === MatchResult.Win && p2.result === MatchResult.Win) {
+          streakTotal++;
+          if (m.result === MatchResult.Win) streakWins++;
+        }
+      }
+    }
+
+    longestEventWinStreak = Math.max(longestEventWinStreak, maxEventWinStreak);
+
+    // Closer rate: last swiss round
+    if (swiss.length > 0) {
+      const lastSwiss = swiss[swiss.length - 1];
+      closerTotal++;
+      if (lastSwiss.result === MatchResult.Win) closerWins++;
+    }
+
+    // Start patterns (need at least 2 swiss rounds)
+    if (swiss.length >= 2) {
+      const r1 = swiss.find(m => getRoundNumber(m) === 1);
+      const r2 = swiss.find(m => getRoundNumber(m) === 2);
+      if (r1 && r2) {
+        let w = 0, l = 0, d = 0;
+        if (r1.result === MatchResult.Win) w++;
+        else if (r1.result === MatchResult.Loss) l++;
+        else d++;
+        if (r2.result === MatchResult.Win) w++;
+        else if (r2.result === MatchResult.Loss) l++;
+        else d++;
+        const pattern = d > 0 ? `${w}-${l}-${d}` : `${w}-${l}`;
+        const entry = patternCounts.get(pattern) || { count: 0, positive: 0 };
+        entry.count++;
+        if (event.wins > event.losses) entry.positive++;
+        patternCounts.set(pattern, entry);
+      }
+    }
+
+    // Top 8 (has playoff matches)
+    if (hasPlayoffs) top8Count++;
+
+    // Undefeated swiss
+    const swissLosses = swiss.filter(m => m.result === MatchResult.Loss).length;
+    if (swiss.length > 0 && swissLosses === 0) undefeatedSwissCount++;
+
+    // Drop detection: events with significantly fewer rounds than expected
+    // Heuristic: if event has < 3 matches and other events of same type have more
+    if (allRoundMatches.length > 0 && allRoundMatches.length <= 2 && swiss.length <= 2) {
+      const maxRound = Math.max(...swiss.map(m => getRoundNumber(m)), 0);
+      if (maxRound > 0 && maxRound < 3 && !hasPlayoffs) dropCount++;
+    }
+
+    // Hero tournament stats
+    const heroesInEvent = new Set(event.matches.map(m => m.heroPlayed).filter(Boolean));
+    for (const hero of heroesInEvent) {
+      const cur = heroEventMap.get(hero) || { events: 0, wins: 0, losses: 0, draws: 0, positiveEvents: 0 };
+      const heroMatches = event.matches.filter(m => m.heroPlayed === hero && m.result !== MatchResult.Bye);
+      const hw = heroMatches.filter(m => m.result === MatchResult.Win).length;
+      const hl = heroMatches.filter(m => m.result === MatchResult.Loss).length;
+      const hd = heroMatches.filter(m => m.result === MatchResult.Draw).length;
+      cur.events++;
+      cur.wins += hw;
+      cur.losses += hl;
+      cur.draws += hd;
+      if (hw > hl) cur.positiveEvents++;
+      heroEventMap.set(hero, cur);
+    }
+
+    // Timeline entry
+    timeline.push({
+      date: event.eventDate,
+      eventName: event.eventName,
+      eventType: event.eventType || "Other",
+      wins: event.wins,
+      losses: event.losses,
+      draws: event.draws,
+      winRate: event.winRate,
+      rollingWinRate: 0, // filled below
+    });
+  }
+
+  // Compute rolling 10-event win rate
+  for (let i = 0; i < timeline.length; i++) {
+    const window = timeline.slice(Math.max(0, i - 9), i + 1);
+    const w = window.reduce((sum, e) => sum + e.wins, 0);
+    const l = window.reduce((sum, e) => sum + e.losses, 0);
+    const d = window.reduce((sum, e) => sum + e.draws, 0);
+    const t = w + l + d;
+    timeline[i].rollingWinRate = t > 0 ? (w / t) * 100 : 0;
+  }
+
+  // Build round breakdown sorted
+  const roundBreakdown: RoundRecord[] = [...roundMap.entries()]
+    .sort((a, b) => a[0] - b[0])
+    .map(([roundNum, data]) => {
+      const total = data.wins + data.losses + data.draws;
+      return {
+        round: roundNum >= 1000 ? (roundNum === 1000 ? "Playoffs" : `P${roundNum - 1000}`) : `R${roundNum}`,
+        roundNum,
+        wins: data.wins,
+        losses: data.losses,
+        draws: data.draws,
+        total,
+        winRate: total > 0 ? (data.wins / total) * 100 : 0,
+      };
+    });
+
+  // Add playoff aggregate
+  const playoffMatches = events.flatMap(e => e.matches.filter(m => getRoundNumber(m) >= 1000 && m.result !== MatchResult.Bye));
+  if (playoffMatches.length > 0) {
+    const existing = roundBreakdown.filter(r => r.roundNum >= 1000);
+    if (existing.length > 1) {
+      // Already have individual playoff rounds — add aggregate
+      const pw = playoffMatches.filter(m => m.result === MatchResult.Win).length;
+      const pl = playoffMatches.filter(m => m.result === MatchResult.Loss).length;
+      const pd = playoffMatches.filter(m => m.result === MatchResult.Draw).length;
+      const pt = pw + pl + pd;
+      // Remove individual P1/P2/P3 and replace with single "Playoffs"
+      const swissRounds = roundBreakdown.filter(r => r.roundNum < 1000);
+      swissRounds.push({
+        round: "Playoffs",
+        roundNum: 1000,
+        wins: pw,
+        losses: pl,
+        draws: pd,
+        total: pt,
+        winRate: pt > 0 ? (pw / pt) * 100 : 0,
+      });
+      roundBreakdown.length = 0;
+      roundBreakdown.push(...swissRounds);
+    }
+  }
+
+  // Best/worst round (swiss only, min 3 matches)
+  const swissRounds = roundBreakdown.filter(r => r.roundNum < 1000 && r.total >= 3);
+  const bestRound = swissRounds.length > 0
+    ? swissRounds.reduce((best, r) => r.winRate > best.winRate ? r : best)
+    : null;
+  const worstRound = swissRounds.length > 0
+    ? swissRounds.reduce((worst, r) => r.winRate < worst.winRate ? r : worst)
+    : null;
+
+  // Start patterns sorted by count
+  const startPatterns: StartPattern[] = [...patternCounts.entries()]
+    .map(([pattern, data]) => ({
+      pattern,
+      count: data.count,
+      pct: events.length > 0 ? (data.count / events.length) * 100 : 0,
+      conversionRate: data.count > 0 ? (data.positive / data.count) * 100 : 0,
+    }))
+    .sort((a, b) => b.count - a.count);
+
+  // Hero tournament stats sorted by events
+  const heroTournamentStats: HeroTournamentRecord[] = [...heroEventMap.entries()]
+    .map(([hero, data]) => {
+      const total = data.wins + data.losses + data.draws;
+      return {
+        hero,
+        events: data.events,
+        wins: data.wins,
+        losses: data.losses,
+        draws: data.draws,
+        winRate: total > 0 ? (data.wins / total) * 100 : 0,
+        eventWinRate: data.events > 0 ? (data.positiveEvents / data.events) * 100 : 0,
+      };
+    })
+    .filter(h => h.hero && h.hero !== "Unknown")
+    .sort((a, b) => b.events - a.events);
+
+  // Events per month
+  const eventsPerMonth = [...monthMap.entries()]
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([month, count]) => ({ month, count }));
+
+  const r1Total = r1Wins + r1Losses + r1Draws;
+
+  return {
+    r1Wins,
+    r1Losses,
+    r1Draws,
+    r1WinRate: r1Total > 0 ? (r1Wins / r1Total) * 100 : 0,
+
+    startPatterns,
+    roundBreakdown,
+
+    bounceBackRate: bounceBackTotal > 0 ? (bounceBackWins / bounceBackTotal) * 100 : 0,
+    bounceBackWins,
+    bounceBackTotal,
+    streakWinRate: streakTotal > 0 ? (streakWins / streakTotal) * 100 : 0,
+    streakWins,
+    streakTotal,
+    afterByeWinRate: afterByeTotal > 0 ? (afterByeWins / afterByeTotal) * 100 : 0,
+    afterByeWins,
+    afterByeTotal,
+    closerRate: closerTotal > 0 ? (closerWins / closerTotal) * 100 : 0,
+    closerWins,
+    closerTotal,
+    bestRound,
+    worstRound,
+
+    totalEvents: events.length,
+    totalMatches,
+    overallWinRate: totalMatches > 0 ? (totalWins / totalMatches) * 100 : 0,
+    top8Rate: events.length > 0 ? (top8Count / events.length) * 100 : 0,
+    top8Count,
+    undefeatedSwissRate: events.length > 0 ? (undefeatedSwissCount / events.length) * 100 : 0,
+    undefeatedSwissCount,
+    avgFinalRecord: events.length > 0
+      ? { wins: totalWins / events.length, losses: totalLosses / events.length, draws: totalDraws / events.length }
+      : { wins: 0, losses: 0, draws: 0 },
+    dropRate: events.length > 0 ? (dropCount / events.length) * 100 : 0,
+    dropCount,
+    longestEventWinStreak,
+
+    heroTournamentStats,
+    eventTimeline: timeline,
+    eventsPerMonth,
+  };
+}
