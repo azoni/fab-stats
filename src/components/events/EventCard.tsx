@@ -204,7 +204,7 @@ export function EventCard({ event, playerName, obfuscateOpponents = false, visib
             ))}
             {editable && onBatchUpdateEventType && editingEventType ? (
               <select
-                value={event.eventType || "Other"}
+                value={event.matches[0]?.eventTypeOverride || getOriginalEventType(event.matches[0])}
                 onChange={async (e) => {
                   e.stopPropagation();
                   if (!onBatchUpdateEventType) return;
