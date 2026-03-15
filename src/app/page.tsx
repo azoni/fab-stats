@@ -30,6 +30,7 @@ import { LoggedOutHome } from "@/components/home/LoggedOutHome";
 const BestFinishShareModal = dynamic(() => import("@/components/profile/BestFinishCard").then(m => ({ default: m.BestFinishShareModal })), { ssr: false });
 const ProfileShareModal = dynamic(() => import("@/components/profile/ProfileCard").then(m => ({ default: m.ProfileShareModal })), { ssr: false });
 const BackgroundChooser = dynamic(() => import("@/components/profile/BackgroundChooser").then(m => ({ default: m.BackgroundChooser })), { ssr: false });
+const TournamentShareModal = dynamic(() => import("@/components/tournament-stats/TournamentShareCard").then(m => ({ default: m.TournamentShareModal })), { ssr: false });
 
 export default function Dashboard() {
   const router = useRouter();
@@ -42,6 +43,7 @@ export default function Dashboard() {
   const [showBackgroundPicker, setShowBackgroundPicker] = useState(false);
   const [savingBackground, setSavingBackground] = useState(false);
   const [kudosTotal, setKudosTotal] = useState<number | null>(null);
+  const [tournamentShareOpen, setTournamentShareOpen] = useState(false);
   const [filterFormat, setFilterFormat] = useState("all");
   const [filterEventType, setFilterEventType] = useState("all");
   const [filterHero, setFilterHero] = useState("all");
@@ -472,9 +474,20 @@ export default function Dashboard() {
               <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden cursor-pointer hover:border-fab-gold/20 transition-colors" onClick={() => router.push("/tournament-stats")}>
                 <div className="flex items-center justify-between px-4 py-2.5 border-b border-fab-border/50">
                   <p className="text-sm font-semibold text-fab-text">Tournament Stats</p>
-                  <Link href="/tournament-stats" className="text-xs font-semibold text-fab-gold border border-fab-gold/30 hover:bg-fab-gold/10 hover:border-fab-gold/50 px-2.5 py-1 rounded-md transition-colors" onClick={(e) => e.stopPropagation()}>
-                    Tournament stats &rarr;
-                  </Link>
+                  <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                    <button
+                      onClick={() => setTournamentShareOpen(true)}
+                      className="p-1 rounded-md text-fab-dim hover:text-fab-gold hover:bg-fab-gold/10 transition-colors"
+                      title="Share tournament stats"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0 0a2.25 2.25 0 103.935 2.186 2.25 2.25 0 00-3.935-2.186zm0-12.814a2.25 2.25 0 103.933-2.185 2.25 2.25 0 00-3.933 2.185z" />
+                      </svg>
+                    </button>
+                    <Link href="/tournament-stats" className="text-xs font-semibold text-fab-gold border border-fab-gold/30 hover:bg-fab-gold/10 hover:border-fab-gold/50 px-2.5 py-1 rounded-md transition-colors">
+                      Tournament stats &rarr;
+                    </Link>
+                  </div>
                 </div>
                 <div className="p-4 flex flex-col sm:flex-row items-center gap-4 sm:gap-5">
                   {/* R1 Win Rate Ring */}
@@ -617,6 +630,27 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
+      )}
+
+      {tournamentShareOpen && tournamentAnalytics && profile && (
+        <TournamentShareModal
+          data={{
+            playerName: profile.displayName,
+            totalEvents: tournamentAnalytics.totalEvents,
+            totalMatches: tournamentAnalytics.totalMatches,
+            overallWinRate: tournamentAnalytics.overallWinRate,
+            r1WinRate: tournamentAnalytics.r1WinRate,
+            r1Wins: tournamentAnalytics.r1Wins,
+            r1Losses: tournamentAnalytics.r1Losses,
+            top8Count: tournamentAnalytics.top8Count,
+            top8Rate: tournamentAnalytics.top8Rate,
+            undefeatedSwissCount: tournamentAnalytics.undefeatedSwissCount,
+            longestCrossEventWinStreak: tournamentAnalytics.longestCrossEventWinStreak,
+            consecutiveTop8s: tournamentAnalytics.consecutiveTop8s,
+            consecutiveEventWins: tournamentAnalytics.consecutiveEventWins,
+          }}
+          onClose={() => setTournamentShareOpen(false)}
+        />
       )}
     </div>
   );
