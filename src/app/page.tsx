@@ -476,14 +476,14 @@ export default function Dashboard() {
                     Tournament stats &rarr;
                   </Link>
                 </div>
-                <div className="p-4 flex items-center gap-5">
+                <div className="p-4 flex flex-col sm:flex-row items-center gap-4 sm:gap-5">
                   {/* R1 Win Rate Ring */}
                   <Link href="/tournament-stats" className="shrink-0 text-center hover:opacity-80 transition-opacity" title="Your win rate in Round 1 of rated events">
                     <WinRateRing value={tournamentAnalytics.r1WinRate} size={56} strokeWidth={5} label={`${Math.round(tournamentAnalytics.r1WinRate)}%`} />
                     <p className="text-[10px] text-fab-muted font-medium mt-1">Win R1</p>
                   </Link>
                   {/* Key stats */}
-                  <div className="flex-1 grid grid-cols-4 gap-x-3 gap-y-2.5">
+                  <div className="flex-1 w-full grid grid-cols-2 sm:grid-cols-4 gap-x-3 gap-y-2.5 text-center sm:text-left">
                     <div title="Total rated events played">
                       <p className="text-lg font-bold text-fab-text tabular-nums">{tournamentAnalytics.totalEvents}</p>
                       <p className="text-[10px] text-fab-muted">Events</p>
