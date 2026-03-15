@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 
-const BOOKMARKLET_CODE = `javascript:void(function(){var s=document.createElement('script');s.id='fab-stats-bookmarklet';s.src='https://www.fabstats.net/bookmarklet.js?v=1';document.body.appendChild(s)})()`;
+const BOOKMARKLET_CODE = `javascript:void(function(){var s=document.createElement('script');s.id='fab-stats-bookmarklet';s.src='https://www.fabstats.net/bookmarklet.js?v=2';document.body.appendChild(s)})()`;
 
 export default function BookmarkletPage() {
   const [copied, setCopied] = useState(false);
