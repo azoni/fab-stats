@@ -23,6 +23,7 @@ import { getDefaultTheme, saveDefaultTheme, resetAllUserThemes, THEME_OPTIONS, t
 import { loadBotAnalytics, loadDailyUsage, loadCommandLog, type BotAnalytics, type DailyUsage, type CommandLogEntry } from "@/lib/discord-analytics";
 import { ADMIN_BADGES } from "@/lib/badges";
 import { SocialTab } from "@/components/admin/SocialTab";
+import SitemapTab from "@/components/admin/SitemapTab";
 import { GameFormat } from "@/types";
 import type { Season } from "@/types";
 import type { EventShowcaseConfig, EventShowcaseImage } from "@/types";
@@ -158,10 +159,10 @@ export default function AdminPage() {
   const [botLog, setBotLog] = useState<CommandLogEntry[]>([]);
   const [botLoading, setBotLoading] = useState(false);
   const anyToolRunning = fixingDates || backfilling || backfillingGemIds || linkingMatches || resyncingH2H || backfillingMatchups || backfillingPlacements;
-  const [activeTab, setActiveTab] = useState<"overview" | "users" | "feedback" | "content" | "poll" | "tools" | "discord" | "games" | "social">(() => {
+  const [activeTab, setActiveTab] = useState<"overview" | "users" | "feedback" | "content" | "poll" | "tools" | "discord" | "games" | "social" | "sitemap">(() => {
     if (typeof window !== "undefined") {
       const hash = window.location.hash.replace("#", "");
-      if (["overview", "users", "feedback", "content", "poll", "tools", "discord", "games", "social"].includes(hash)) return hash as any;
+      if (["overview", "users", "feedback", "content", "poll", "tools", "discord", "games", "social", "sitemap"].includes(hash)) return hash as any;
     }
     return "overview";
   });
@@ -324,6 +325,7 @@ export default function AdminPage() {
           { id: "games", label: "Games" },
           { id: "discord", label: "Discord Bot" },
           { id: "social", label: "Social" },
+          { id: "sitemap", label: "Sitemap" },
           { id: "tools", label: "Tools" },
         ] as const).map((tab) => (
           <button
@@ -2583,6 +2585,8 @@ export default function AdminPage() {
           {activeTab === "games" && <GameAnalytics />}
 
           {activeTab === "social" && <SocialTab />}
+
+          {activeTab === "sitemap" && <SitemapTab />}
 
           {activeTab === "tools" && <>
           {/* Broadcast Message */}
