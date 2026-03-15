@@ -39,12 +39,12 @@ export function LatestMatches({ matches }: LatestMatchesProps) {
 
   return (
     <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden">
-      <div className="flex items-center justify-between px-4 py-2.5 border-b border-fab-border/50">
+      <Link href="/matches" className="flex items-center justify-between px-4 py-2.5 border-b border-fab-border/50 hover:bg-fab-surface-hover transition-colors">
         <p className="text-sm font-semibold text-fab-text">Latest Matches</p>
-        <Link href="/matches" className="text-xs font-semibold text-fab-gold border border-fab-gold/30 hover:bg-fab-gold/10 hover:border-fab-gold/50 px-2.5 py-1 rounded-md transition-colors">
+        <span className="text-xs font-semibold text-fab-gold border border-fab-gold/30 hover:bg-fab-gold/10 hover:border-fab-gold/50 px-2.5 py-1 rounded-md transition-colors">
           View all matches &rarr;
-        </Link>
-      </div>
+        </span>
+      </Link>
       <div className="divide-y divide-fab-border/30">
         {latest.map((m, i) => (
           <Link key={m.id || i} href="/matches" className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-fab-bg/50 transition-colors">
