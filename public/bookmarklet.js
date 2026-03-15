@@ -1,6 +1,8 @@
 (function () {
   "use strict";
 
+  try {
+
   // ── Validate page ──
   if (location.hostname !== "gem.fabtcg.com") {
     alert("FaB Stats Quick Sync\n\nNavigate to gem.fabtcg.com/profile/history/ first, then tap this bookmarklet again.");
@@ -326,4 +328,8 @@
   // Cleanup
   var scriptEl = document.getElementById("fab-stats-bookmarklet");
   if (scriptEl) scriptEl.remove();
+
+  } catch (err) {
+    alert("FaB Stats Quick Sync — Error\n\n" + err.message + "\n\n" + err.stack);
+  }
 })();
