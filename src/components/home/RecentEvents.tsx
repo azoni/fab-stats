@@ -98,6 +98,10 @@ export function RecentEvents({ eventStats, playerName }: { eventStats: EventStat
                         {ev.eventType}
                       </span>
                     )}
+                    {(() => {
+                      const hero = ev.matches.find(m => m.heroPlayed && m.heroPlayed !== "Unknown")?.heroPlayed;
+                      return hero ? <span className="text-[10px] text-fab-muted truncate">{hero}</span> : null;
+                    })()}
                     <span className="text-[10px] text-fab-dim">{formatDate(ev.eventDate)}</span>
                   </div>
                 </div>
