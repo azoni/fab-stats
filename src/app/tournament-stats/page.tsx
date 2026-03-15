@@ -105,10 +105,8 @@ export default function TournamentStatsPage() {
   // Tournament analytics
   const analytics = useMemo(() => computeTournamentAnalytics(filteredEvents), [filteredEvents]);
 
-  // Full finalist count from ALL events (consistent with trophy case)
-  const allFinalistCount = useMemo(() => {
-    return computePlayoffFinishes(allEvents).filter(f => f.type === "finalist").length;
-  }, [allEvents]);
+  // Placement counts from ALL events (consistent with trophy case)
+  const allPlayoffFinishes = useMemo(() => computePlayoffFinishes(allEvents), [allEvents]);
 
   if (!isLoaded) {
     return (
@@ -243,7 +241,9 @@ export default function TournamentStatsPage() {
             longestCrossEventWinStreak: analytics.longestCrossEventWinStreak,
             consecutiveTop8s: analytics.consecutiveTop8s,
             consecutiveEventWins: analytics.consecutiveEventWins,
-            finalistCount: allFinalistCount,
+            championCount: allPlayoffFinishes.filter(f => f.type === "champion").length,
+            finalistCount: allPlayoffFinishes.filter(f => f.type === "finalist").length,
+            top4Count: allPlayoffFinishes.filter(f => f.type === "top4").length,
             submarineCount: analytics.submarineCount,
           }}
           onClose={() => setShareOpen(false)}
