@@ -668,6 +668,14 @@ service cloud.firestore {
       allow write: if request.auth != null && request.auth.uid == uid;
     }
 
+    // ── Sitemap Decklists (scraped from fabtcg.com, admin-only) ──
+    match /sitemap-decklists/{docId} {
+      allow read, write: if isAdmin();
+    }
+    match /sitemap-meta/{docId} {
+      allow read, write: if isAdmin();
+    }
+
     // Admin stats: any authed user can increment deletedAccounts (during account deletion)
     match /admin/stats {
       allow read: if request.auth != null;
