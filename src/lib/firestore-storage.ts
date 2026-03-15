@@ -15,6 +15,7 @@ import {
   writeBatch,
   runTransaction,
   increment,
+  deleteField,
   type Unsubscribe,
 } from "firebase/firestore";
 import { db } from "./firebase";
@@ -169,6 +170,7 @@ export async function batchUpdateMatchesFirestore(
   const clean: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(changes)) {
     if (v !== undefined) clean[k] = v;
+    else clean[k] = deleteField(); // Remove field from Firestore document
   }
   const batchSize = 500;
   for (let i = 0; i < matchIds.length; i += batchSize) {
