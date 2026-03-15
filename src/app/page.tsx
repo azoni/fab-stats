@@ -18,6 +18,7 @@ import { DashboardFilters } from "@/components/home/DashboardFilters";
 import { OnThisDay } from "@/components/home/OnThisDay";
 import { ExploreCTA } from "@/components/home/ExploreCTA";
 import { BadgeStrip } from "@/components/profile/BadgeStrip";
+import { WinRateRing } from "@/components/charts/WinRateRing";
 import { getHeroByName } from "@/lib/heroes";
 import { loadKudosCounts } from "@/lib/kudos";
 import { CardBorderWrapper } from "@/components/profile/CardBorderWrapper";
@@ -468,41 +469,44 @@ export default function Dashboard() {
           {/* Tournament Stats Card */}
           {tournamentAnalytics && tournamentAnalytics.totalEvents >= 3 && (
             <div className="section-reveal" style={{ '--stagger': 2 } as React.CSSProperties}>
-              <Link href="/tournament-stats" className="block bg-fab-surface border border-fab-border rounded-lg p-4 hover:border-amber-500/30 transition-colors card-shimmer">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-6 h-6 rounded-md bg-amber-500/10 flex items-center justify-center ring-1 ring-inset ring-amber-500/20">
-                      <svg className="w-3.5 h-3.5 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 18.75h-9m9 0a3 3 0 013 3h-15a3 3 0 013-3m9 0v-3.375c0-.621-.503-1.125-1.125-1.125h-.871M7.5 18.75v-3.375c0-.621.504-1.125 1.125-1.125h.872m5.007 0H9.497m5.007 0a7.454 7.454 0 01-.982-3.172M9.497 14.25a7.454 7.454 0 00.981-3.172M5.25 4.236c-.982.143-1.954.317-2.916.52A6.003 6.003 0 007.73 9.728M5.25 4.236V4.5c0 2.108.966 3.99 2.48 5.228M5.25 4.236V2.721C7.456 2.41 9.71 2.25 12 2.25c2.291 0 4.545.16 6.75.47v1.516M18.75 4.236c.982.143 1.954.317 2.916.52A6.003 6.003 0 0016.27 9.728M18.75 4.236V4.5c0 2.108-.966 3.99-2.48 5.228m0 0a6.023 6.023 0 01-2.77.704 6.023 6.023 0 01-2.77-.704" />
-                      </svg>
+              <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden">
+                <div className="flex items-center justify-between px-4 py-2.5 border-b border-fab-border/50">
+                  <p className="text-sm font-semibold text-fab-text">Tournament Stats</p>
+                  <Link href="/tournament-stats" className="text-xs font-semibold text-fab-gold border border-fab-gold/30 hover:bg-fab-gold/10 hover:border-fab-gold/50 px-2.5 py-1 rounded-md transition-colors">
+                    Tournament stats &rarr;
+                  </Link>
+                </div>
+                <div className="p-4 flex items-center gap-5">
+                  {/* R1 Win Rate Ring */}
+                  <Link href="/tournament-stats" className="shrink-0 text-center hover:opacity-80 transition-opacity">
+                    <WinRateRing value={tournamentAnalytics.r1WinRate} size={56} strokeWidth={5} label={`${Math.round(tournamentAnalytics.r1WinRate)}%`} />
+                    <p className="text-[10px] text-fab-muted font-medium mt-1">Round 1</p>
+                  </Link>
+                  {/* Key stats */}
+                  <div className="flex-1 grid grid-cols-2 gap-x-4 gap-y-2">
+                    <div>
+                      <p className="text-lg font-bold text-fab-text tabular-nums">{tournamentAnalytics.totalEvents}</p>
+                      <p className="text-[10px] text-fab-muted">Events Played</p>
                     </div>
-                    <span className="text-sm font-semibold text-fab-text">Tournament Stats</span>
-                  </div>
-                  <span className="text-xs font-semibold text-fab-gold border border-fab-gold/30 hover:bg-fab-gold/10 hover:border-fab-gold/50 px-2.5 py-1 rounded-md transition-colors">Full stats &rarr;</span>
-                </div>
-                <div className="grid grid-cols-3 gap-3">
-                  <div className="text-center">
-                    <p className={`text-xl font-bold ${tournamentAnalytics.r1WinRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>
-                      {Math.round(tournamentAnalytics.r1WinRate)}%
-                    </p>
-                    <p className="text-[10px] text-fab-muted font-medium">Round 1 Win Rate</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-xl font-bold text-fab-text">{tournamentAnalytics.totalEvents}</p>
-                    <p className="text-[10px] text-fab-muted font-medium">Events Played</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-xl font-bold text-fab-win">{tournamentAnalytics.top8Count}</p>
-                    <p className="text-[10px] text-fab-muted font-medium">Top 8 Finishes</p>
+                    <div>
+                      <p className="text-lg font-bold text-fab-win tabular-nums">{tournamentAnalytics.top8Count}</p>
+                      <p className="text-[10px] text-fab-muted">Top 8 Finishes</p>
+                    </div>
+                    {tournamentAnalytics.bounceBackTotal > 0 && (
+                      <div>
+                        <p className="text-lg font-bold text-fab-text tabular-nums">{Math.round(tournamentAnalytics.bounceBackRate)}%</p>
+                        <p className="text-[10px] text-fab-muted">Bounce-back</p>
+                      </div>
+                    )}
+                    {tournamentAnalytics.closerTotal > 0 && (
+                      <div>
+                        <p className="text-lg font-bold text-fab-text tabular-nums">{Math.round(tournamentAnalytics.closerRate)}%</p>
+                        <p className="text-[10px] text-fab-muted">Final Round</p>
+                      </div>
+                    )}
                   </div>
                 </div>
-                {tournamentAnalytics.bounceBackTotal > 0 && (
-                  <p className="text-[10px] text-fab-muted mt-2 text-center">
-                    Bounce-back: <span className="text-fab-text font-semibold">{Math.round(tournamentAnalytics.bounceBackRate)}%</span>
-                    {" · "}Final round: <span className="text-fab-text font-semibold">{Math.round(tournamentAnalytics.closerRate)}%</span>
-                  </p>
-                )}
-              </Link>
+              </div>
             </div>
           )}
 
