@@ -17,6 +17,7 @@ export function HeroSelect({ value, onChange, label, format, allowClear }: HeroS
   const [query, setQuery] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [highlighted, setHighlighted] = useState(0);
+  const [openUpward, setOpenUpward] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -39,6 +40,12 @@ export function HeroSelect({ value, onChange, label, format, allowClear }: HeroS
     if (isOpen) {
       // Delay slightly to ensure the input is rendered (when switching from value display to input)
       requestAnimationFrame(() => inputRef.current?.focus());
+      // Check if dropdown should open upward (near bottom of viewport)
+      if (wrapperRef.current) {
+        const rect = wrapperRef.current.getBoundingClientRect();
+        const spaceBelow = window.innerHeight - rect.bottom;
+        setOpenUpward(spaceBelow < 280);
+      }
     }
   }, [isOpen]);
 
@@ -111,7 +118,7 @@ export function HeroSelect({ value, onChange, label, format, allowClear }: HeroS
         )}
       </div>
       {isOpen && (results.length > 0 || allowClear) && (
-        <div className="absolute z-50 mt-1 w-full max-h-60 overflow-y-auto bg-fab-surface border border-fab-border rounded-md shadow-lg">
+        <div className={`absolute z-50 w-full max-h-60 overflow-y-auto bg-fab-surface border border-fab-border rounded-md shadow-lg ${openUpward ? "bottom-full mb-1" : "mt-1"}`}>
           {allowClear && !query.trim() && (
             <button
               type="button"
