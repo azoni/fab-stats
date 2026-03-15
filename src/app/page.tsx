@@ -478,44 +478,44 @@ export default function Dashboard() {
                 </div>
                 <div className="p-4 flex items-center gap-5">
                   {/* R1 Win Rate Ring */}
-                  <Link href="/tournament-stats" className="shrink-0 text-center hover:opacity-80 transition-opacity">
+                  <Link href="/tournament-stats" className="shrink-0 text-center hover:opacity-80 transition-opacity" title="Your win rate in Round 1 of rated events">
                     <WinRateRing value={tournamentAnalytics.r1WinRate} size={56} strokeWidth={5} label={`${Math.round(tournamentAnalytics.r1WinRate)}%`} />
                     <p className="text-[10px] text-fab-muted font-medium mt-1">Win R1</p>
                   </Link>
                   {/* Key stats */}
                   <div className="flex-1 grid grid-cols-4 gap-x-3 gap-y-2.5">
-                    <div>
+                    <div title="Total rated events played">
                       <p className="text-lg font-bold text-fab-text tabular-nums">{tournamentAnalytics.totalEvents}</p>
                       <p className="text-[10px] text-fab-muted">Events</p>
                     </div>
-                    <div>
+                    <div title={`${tournamentAnalytics.totalMatches} matches across all rated events`}>
                       <p className={`text-lg font-bold tabular-nums ${tournamentAnalytics.overallWinRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>{tournamentAnalytics.overallWinRate.toFixed(1)}%</p>
                       <p className="text-[10px] text-fab-muted">Win Rate</p>
                     </div>
-                    <div>
+                    <div title={`Made top 8 in ${tournamentAnalytics.top8Count} of ${tournamentAnalytics.totalEvents} events`}>
                       <p className="text-lg font-bold text-fab-gold tabular-nums">{tournamentAnalytics.top8Count}</p>
                       <p className="text-[10px] text-fab-muted">Top 8s</p>
                     </div>
-                    <div>
+                    <div title={`You make top 8 in ${Math.round(tournamentAnalytics.top8Rate)}% of your events`}>
                       <p className="text-lg font-bold text-fab-text tabular-nums">{Math.round(tournamentAnalytics.top8Rate)}%</p>
                       <p className="text-[10px] text-fab-muted">Top 8 Rate</p>
                     </div>
-                    <div>
+                    <div title={`On average you finish ${tournamentAnalytics.avgFinalRecord.wins.toFixed(1)} wins and ${tournamentAnalytics.avgFinalRecord.losses.toFixed(1)} losses per event`}>
                       <p className="text-lg font-bold text-fab-text tabular-nums">{tournamentAnalytics.avgFinalRecord.wins.toFixed(1)}-{tournamentAnalytics.avgFinalRecord.losses.toFixed(1)}</p>
                       <p className="text-[10px] text-fab-muted">Avg W-L / Event</p>
                     </div>
-                    <div>
+                    <div title={`Most consecutive round wins in a single event`}>
                       <p className="text-lg font-bold text-fab-text tabular-nums">{tournamentAnalytics.longestEventWinStreak}</p>
                       <p className="text-[10px] text-fab-muted">Win Streak</p>
                     </div>
                     {tournamentAnalytics.undefeatedSwissCount > 0 && (
-                      <div>
+                      <div title={`Went undefeated through swiss ${tournamentAnalytics.undefeatedSwissCount} time${tournamentAnalytics.undefeatedSwissCount === 1 ? "" : "s"}`}>
                         <p className="text-lg font-bold text-fab-win tabular-nums">{tournamentAnalytics.undefeatedSwissCount}</p>
                         <p className="text-[10px] text-fab-muted">Top Seeds</p>
                       </div>
                     )}
                     {tournamentAnalytics.startPatterns.length > 0 && (
-                      <div>
+                      <div title={`Your most common record after the first 2 rounds — you start ${tournamentAnalytics.startPatterns[0].pattern} in ${tournamentAnalytics.startPatterns[0].pct.toFixed(0)}% of events`}>
                         <p className="text-lg font-bold text-fab-text tabular-nums">{tournamentAnalytics.startPatterns[0].pattern}</p>
                         <p className="text-[10px] text-fab-muted">{tournamentAnalytics.startPatterns[0].pct.toFixed(0)}% of starts</p>
                       </div>
