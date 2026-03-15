@@ -463,7 +463,7 @@ export function EventCard({ event, playerName, obfuscateOpponents = false, visib
                         const oppHeroInfo = oppHero ? getHeroByName(oppHero) : null;
                         const isEditable = editable && onUpdateMatch;
                         return (
-                          <div className="sm:hidden mt-0.5">
+                          <div className="sm:hidden mt-0.5" onClick={isEditable ? (e) => e.stopPropagation() : undefined}>
                             {editingOppHeroId === match.id ? (
                               <div className="w-full">
                                 <HeroSelect
@@ -487,7 +487,7 @@ export function EventCard({ event, playerName, obfuscateOpponents = false, visib
                             ) : oppHeroInfo ? (
                               <div
                                 className={`flex items-center gap-1 ${isEditable ? "cursor-pointer" : ""}`}
-                                onClick={isEditable ? (e) => { e.stopPropagation(); setEditingOppHeroId(match.id); } : undefined}
+                                onClick={isEditable ? () => setEditingOppHeroId(match.id) : undefined}
                               >
                                 <span className="text-fab-dim text-xs">vs</span>
                                 <HeroClassIcon heroClass={oppHeroInfo.classes[0]} size="sm" />
@@ -495,8 +495,8 @@ export function EventCard({ event, playerName, obfuscateOpponents = false, visib
                               </div>
                             ) : isEditable ? (
                               <span
-                                className="text-fab-dim text-xs cursor-pointer"
-                                onClick={(e) => { e.stopPropagation(); setEditingOppHeroId(match.id); }}
+                                className="text-fab-dim text-xs cursor-pointer py-1"
+                                onClick={() => setEditingOppHeroId(match.id)}
                               >
                                 + vs hero
                               </span>
@@ -517,7 +517,7 @@ export function EventCard({ event, playerName, obfuscateOpponents = false, visib
                         )}
                       </td>
                     )}
-                    <td className="px-4 py-2.5 hidden sm:table-cell">
+                    <td className="px-4 py-2.5 hidden sm:table-cell" onClick={(e) => { if (editable && onUpdateMatch) e.stopPropagation(); }}>
                       {editingOppHeroId === match.id ? (
                         <div className="w-40">
                           <HeroSelect
