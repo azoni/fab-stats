@@ -434,7 +434,10 @@ export function EventCard({ event, playerName, obfuscateOpponents = false, visib
                       </td>
                     </tr>
                   )}
-                  <tr className="border-t border-fab-border/50">
+                  <tr
+                    className={`border-t border-fab-border/50 ${match.opponentName && !obfuscateOpponents ? "cursor-pointer hover:bg-fab-bg/50 transition-colors" : ""}`}
+                    onClick={() => { if (match.opponentName && !obfuscateOpponents) window.location.href = `/opponents?q=${encodeURIComponent(match.opponentName)}`; }}
+                  >
                     <td className="px-4 py-2.5">
                       {isPlayoff ? (
                         <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${
@@ -451,16 +454,8 @@ export function EventCard({ event, playerName, obfuscateOpponents = false, visib
                     <td className="px-4 py-2.5">
                       {obfuscateOpponents && !(match.opponentName && visibleOpponents?.has(match.opponentName)) ? (
                         <span className="text-fab-dim">Opponent</span>
-                      ) : match.opponentName ? (
-                        <Link
-                          href={`/opponents?q=${encodeURIComponent(match.opponentName)}`}
-                          className="text-fab-text hover:text-fab-gold transition-colors"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          {match.opponentName}
-                        </Link>
                       ) : (
-                        <span className="text-fab-dim">Unknown</span>
+                        <span className="text-fab-text">{match.opponentName || <span className="text-fab-dim">Unknown</span>}</span>
                       )}
                       {/* Mobile-only opponent hero */}
                       {(() => {

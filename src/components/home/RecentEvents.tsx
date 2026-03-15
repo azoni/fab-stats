@@ -142,7 +142,11 @@ export function RecentEvents({ eventStats, playerName }: { eventStats: EventStat
                         const round = roundMatch ? roundMatch[1] : `${i + 1}`;
                         const isPlayoff = roundInfo && (/^(Top 8|Top 4|Finals|Playoff|Skirmish)$/.test(roundInfo) || /^Round P/i.test(roundInfo));
                         return (
-                          <tr key={match.id} className="border-t border-fab-border/20">
+                          <tr
+                            key={match.id}
+                            className={`border-t border-fab-border/20 ${match.opponentName ? "cursor-pointer hover:bg-fab-bg/50 transition-colors" : ""}`}
+                            onClick={() => { if (match.opponentName) window.location.href = `/opponents?q=${encodeURIComponent(match.opponentName)}`; }}
+                          >
                             <td className="px-2.5 py-1.5">
                               {isPlayoff ? (
                                 <span className={`text-[10px] font-bold px-1 py-0.5 rounded ${
@@ -155,14 +159,8 @@ export function RecentEvents({ eventStats, playerName }: { eventStats: EventStat
                                 <span className="text-fab-dim">{round}</span>
                               )}
                             </td>
-                            <td className="px-2.5 py-1.5 truncate max-w-0">
-                              {match.opponentName ? (
-                                <Link href={`/opponents?q=${encodeURIComponent(match.opponentName)}`} className="text-fab-text hover:text-fab-gold transition-colors" onClick={(e) => e.stopPropagation()}>
-                                  {match.opponentName}
-                                </Link>
-                              ) : (
-                                <span className="text-fab-dim">Unknown</span>
-                              )}
+                            <td className="px-2.5 py-1.5 text-fab-text truncate max-w-0">
+                              {match.opponentName || <span className="text-fab-dim">Unknown</span>}
                             </td>
                             <td className={`px-2.5 py-1.5 text-right font-bold ${RESULT_COLORS[match.result]}`}>
                               {RESULT_LABELS[match.result]}

@@ -469,10 +469,10 @@ export default function Dashboard() {
           {/* Tournament Stats Card */}
           {tournamentAnalytics && tournamentAnalytics.totalEvents >= 3 && (
             <div className="section-reveal" style={{ '--stagger': 2 } as React.CSSProperties}>
-              <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden">
+              <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden cursor-pointer hover:border-fab-gold/20 transition-colors" onClick={() => router.push("/tournament-stats")}>
                 <div className="flex items-center justify-between px-4 py-2.5 border-b border-fab-border/50">
                   <p className="text-sm font-semibold text-fab-text">Tournament Stats</p>
-                  <Link href="/tournament-stats" className="text-xs font-semibold text-fab-gold border border-fab-gold/30 hover:bg-fab-gold/10 hover:border-fab-gold/50 px-2.5 py-1 rounded-md transition-colors">
+                  <Link href="/tournament-stats" className="text-xs font-semibold text-fab-gold border border-fab-gold/30 hover:bg-fab-gold/10 hover:border-fab-gold/50 px-2.5 py-1 rounded-md transition-colors" onClick={(e) => e.stopPropagation()}>
                     Tournament stats &rarr;
                   </Link>
                 </div>
