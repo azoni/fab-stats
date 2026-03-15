@@ -500,10 +500,6 @@ export default function Dashboard() {
                       <p className="text-lg font-bold text-fab-text tabular-nums">{Math.round(tournamentAnalytics.top8Rate)}%</p>
                       <p className="text-[10px] text-fab-muted">Top 8 Rate</p>
                     </div>
-                    <div title={`On average you finish ${tournamentAnalytics.avgFinalRecord.wins.toFixed(1)} wins and ${tournamentAnalytics.avgFinalRecord.losses.toFixed(1)} losses per event`}>
-                      <p className="text-lg font-bold text-fab-text tabular-nums">{tournamentAnalytics.avgFinalRecord.wins.toFixed(1)}-{tournamentAnalytics.avgFinalRecord.losses.toFixed(1)}</p>
-                      <p className="text-[10px] text-fab-muted">Avg W-L / Event</p>
-                    </div>
                     <div title="Most consecutive match wins across all events">
                       <p className="text-lg font-bold text-fab-text tabular-nums">{tournamentAnalytics.longestCrossEventWinStreak || <span className="text-fab-dim">N/A</span>}</p>
                       <p className="text-[10px] text-fab-muted">Best Win Streak</p>

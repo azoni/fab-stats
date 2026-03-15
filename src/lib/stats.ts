@@ -1098,21 +1098,17 @@ export function computeTournamentAnalytics(events: EventStats[]): TournamentAnal
     }
   }
 
-  // Consecutive event wins (champion — won the last playoff match)
+  // Consecutive event wins (champion — uses computePlayoffFinishes for consistency)
+  const allFinishes = computePlayoffFinishes(chronological);
+  const championEvents = new Set(
+    allFinishes.filter(f => f.type === "champion").map(f => `${f.eventName}|${f.eventDate}`)
+  );
   let consecutiveEventWins = 0;
   let currentEventWinStreak = 0;
   for (const event of chronological) {
-    const playoffMatches = event.matches
-      .filter(m => getRoundNumber(m) >= 1000 && m.result !== MatchResult.Bye)
-      .sort((a, b) => getRoundNumber(a) - getRoundNumber(b));
-    if (playoffMatches.length > 0) {
-      const lastPlayoff = playoffMatches[playoffMatches.length - 1];
-      if (lastPlayoff.result === MatchResult.Win) {
-        currentEventWinStreak++;
-        consecutiveEventWins = Math.max(consecutiveEventWins, currentEventWinStreak);
-      } else {
-        currentEventWinStreak = 0;
-      }
+    if (championEvents.has(`${event.eventName}|${event.eventDate}`)) {
+      currentEventWinStreak++;
+      consecutiveEventWins = Math.max(consecutiveEventWins, currentEventWinStreak);
     } else {
       currentEventWinStreak = 0;
     }

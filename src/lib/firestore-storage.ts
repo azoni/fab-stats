@@ -92,10 +92,10 @@ export async function updateMatchFirestore(
   updates: Partial<Omit<MatchRecord, "id" | "createdAt">>
 ): Promise<void> {
   const docRef = doc(db, "users", userId, "matches", matchId);
-  // Strip undefined values before writing to Firestore
   const clean: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(updates)) {
     if (v !== undefined) clean[k] = v;
+    else clean[k] = deleteField(); // Remove field from Firestore document
   }
   await updateDoc(docRef, clean);
 }
