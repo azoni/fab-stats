@@ -15,6 +15,7 @@ import {
 } from "@/components/profile/TrophyCase";
 import { FINISH_THEMES, type FinishTheme } from "@/components/profile/BestFinishCard";
 import { CornerFiligree, OrnamentalDivider, CardBackgroundPattern, AccentTopBar, InnerVignette } from "@/components/share/CardOrnaments";
+import { buildOptimizedImageUrl, resolveBackgroundPositionForImage } from "@/lib/profile-backgrounds";
 
 // ── Placement Card ──
 
@@ -96,6 +97,20 @@ export function PlacementShareCard({ data, theme }: { data: PlacementCardData; t
 
   return (
     <div style={{ backgroundColor: t.surface, borderColor: t.border, width: 380 }} className="border rounded-xl overflow-hidden relative">
+      {t.backgroundImage && (
+        <>
+          <img
+            src={buildOptimizedImageUrl(t.backgroundImage, 1080, 62)}
+            alt=""
+            className="absolute inset-0 w-full h-full object-cover"
+            style={{ objectPosition: resolveBackgroundPositionForImage(t.backgroundImage) }}
+            loading="eager"
+            decoding="async"
+            crossOrigin="anonymous"
+          />
+          <div className="absolute inset-0" style={{ backgroundColor: `${t.surface}B8` }} />
+        </>
+      )}
       {/* Background pattern + vignette */}
       <CardBackgroundPattern color={t.accent} id="placement" opacity={0.04} />
       <InnerVignette opacity={0.2} />
@@ -226,16 +241,30 @@ export function PlacementShareModal({ playerName, finish, onClose }: PlacementSh
               <button
                 key={theme.id}
                 onClick={() => setSelectedTheme(theme)}
-                className={`flex-1 rounded-lg p-2 text-center transition-all border ${
+                className={`rounded-lg p-2 text-center transition-all border ${
                   selectedTheme.id === theme.id
                     ? "border-fab-gold ring-1 ring-fab-gold/30"
                     : "border-fab-border hover:border-fab-muted"
                 }`}
               >
-                <div className="flex gap-0.5 justify-center mb-1">
-                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: theme.bg }} />
-                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: theme.accent }} />
-                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: theme.trophy }} />
+                <div className="h-8 rounded-md overflow-hidden border border-white/10 mb-1.5 relative">
+                  {theme.backgroundImage ? (
+                    <>
+                      <img
+                        src={buildOptimizedImageUrl(theme.backgroundImage, 260, 46)}
+                        alt=""
+                        className="absolute inset-0 w-full h-full object-cover"
+                        style={{ objectPosition: resolveBackgroundPositionForImage(theme.backgroundImage) }}
+                        loading="lazy"
+                        decoding="async"
+                        crossOrigin="anonymous"
+                      />
+                      <div className="absolute inset-0" style={{ backgroundColor: `${theme.surface}99` }} />
+                    </>
+                  ) : (
+                    <div className="absolute inset-0" style={{ background: `linear-gradient(135deg, ${theme.bg}, ${theme.surface})` }} />
+                  )}
+                  <div className="absolute top-0 left-0 right-0 h-0.5" style={{ backgroundColor: theme.accent }} />
                 </div>
                 <p className="text-[10px] text-fab-muted">{theme.label}</p>
               </button>

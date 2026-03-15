@@ -17,7 +17,6 @@ import { updateLeaderboardEntry } from "@/lib/leaderboard";
 import { getMatchesByUserId } from "@/lib/firestore-storage";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { MatchCard } from "@/components/matches/MatchCard";
 import { CheckCircleIcon, FileIcon, ChevronDownIcon, ChevronUpIcon } from "@/components/icons/NavIcons";
 import { MatchResult, type MatchRecord, type Achievement } from "@/types";
 import { allHeroes } from "@/lib/heroes";
@@ -56,6 +55,9 @@ export default function ImportPage() {
   const [confirmClear, setConfirmClear] = useState(false);
   const [cleared, setCleared] = useState(false);
   const [heroOverrides, setHeroOverrides] = useState<Record<number, string>>({});
+  const [opponentHeroOverrides, setOpponentHeroOverrides] = useState<Record<string, string>>({});
+  const [quickPreviewReady, setQuickPreviewReady] = useState(false);
+  const [existingFingerprints, setExistingFingerprints] = useState<Set<string> | null>(null);
   const [sessionRecap, setSessionRecap] = useState<SessionRecap | null>(null);
   const [newAchievements, setNewAchievements] = useState<Achievement[]>([]);
   const [newPlacements, setNewPlacements] = useState<PlayoffFinish[]>([]);
@@ -112,10 +114,26 @@ export default function ImportPage() {
     }
   }, []);
 
-  // Auto-import in quick mode (skip preview)
+  // Quick mode: pre-fetch existing matches for duplicate detection, then show preview
   useEffect(() => {
-    if (quickMode && pasteResult && !imported && !importing && (user || isGuest)) {
-      handleImport();
+    if (quickMode && pasteResult && !quickPreviewReady && !imported && !importing && (user || isGuest)) {
+      (async () => {
+        try {
+          let existing: MatchRecord[] = [];
+          if (user) {
+            existing = await getMatchesByUserId(user.uid);
+          } else {
+            existing = getLocalMatches();
+          }
+          const fps = new Set(existing.map((m) =>
+            `${m.date}|${(m.opponentName || "").toLowerCase()}|${m.notes || ""}|${m.result}`
+          ));
+          setExistingFingerprints(fps);
+        } catch {
+          setExistingFingerprints(new Set());
+        }
+        setQuickPreviewReady(true);
+      })();
     }
   }, [quickMode, pasteResult, user, isGuest]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -133,12 +151,17 @@ export default function ImportPage() {
 
   const filteredMatches = useMemo(() => {
     return filteredEvents.flatMap(({ event, origIdx }) =>
-      event.matches.map((m) => {
+      event.matches.map((m, matchIdx) => {
         const hero = heroOverrides[origIdx];
-        return hero ? { ...m, heroPlayed: hero } : m;
+        const oppHeroKey = `${origIdx}-${matchIdx}`;
+        const oppHero = opponentHeroOverrides[oppHeroKey];
+        let updated = m;
+        if (hero) updated = { ...updated, heroPlayed: hero };
+        if (oppHero) updated = { ...updated, opponentHero: oppHero };
+        return updated;
       })
     );
-  }, [filteredEvents, heroOverrides]);
+  }, [filteredEvents, heroOverrides, opponentHeroOverrides]);
 
   // Auto-expand when only 1 event
   useEffect(() => {
@@ -154,6 +177,20 @@ export default function ImportPage() {
     if (!pasteResult) return [];
     return [...new Set(pasteResult.events.map((e) => e.eventType))];
   }, [pasteResult]);
+
+  // Quick mode: filter events to only those with at least one non-duplicate match
+  const quickFilteredEvents = useMemo(() => {
+    if (!quickMode || !existingFingerprints) return filteredEvents;
+    return filteredEvents.filter(({ event }) =>
+      event.matches.some((m) => {
+        const fp = `${m.date}|${(m.opponentName || "").toLowerCase()}|${m.notes || ""}|${m.result}`;
+        return !existingFingerprints.has(fp);
+      })
+    );
+  }, [quickMode, existingFingerprints, filteredEvents]);
+
+  // In quick mode, use the filtered (non-duplicate) events for display
+  const displayEvents = quickMode ? quickFilteredEvents : filteredEvents;
 
   function handleParsePaste() {
     setError("");
@@ -317,8 +354,13 @@ export default function ImportPage() {
 
           const eventStats = computeEventStats(afterMatches);
           const allFinishes = computePlayoffFinishes(eventStats);
-          const importedDates = new Set(matches.map((m) => m.date));
-          freshFinishes = allFinishes.filter((f) => importedDates.has(f.eventDate));
+          // Only show placements for events that contain newly imported matches
+          const newEventKeys = new Set(
+            newlyImported.map((m) => `${getEventName(m)}|${m.date}`)
+          );
+          freshFinishes = allFinishes.filter((f) =>
+            newEventKeys.has(`${f.eventName}|${f.eventDate}`)
+          );
           setNewPlacements(freshFinishes);
         } catch {
           // Non-critical: celebration just won't show achievements/placements
@@ -415,17 +457,189 @@ export default function ImportPage() {
   const totalToImport = pasteResult ? filteredMatches.length : (csvMatches?.length ?? 0);
   const allMatches = pasteResult ? filteredMatches : (csvMatches ?? []);
 
-  // ── Quick Mode Loading Screen ──────────────────────────────────
+  // ── Quick Mode Preview Screen ──────────────────────────────────
 
   if (quickMode && !imported) {
+    // Still loading fingerprints
+    if (!quickPreviewReady || importing) {
+      return (
+        <div className="text-center py-16">
+          <div className="w-12 h-12 border-4 border-fab-border border-t-fab-gold rounded-full animate-spin mx-auto mb-6" />
+          <h1 className="text-2xl font-bold text-fab-gold mb-2">{importing ? "Importing..." : "Quick Syncing..."}</h1>
+          <p className="text-fab-muted">
+            {importing ? `Importing ${filteredMatches.length} matches` : "Checking for new events"}
+          </p>
+        </div>
+      );
+    }
+
+    // No new events
+    if (quickFilteredEvents.length === 0) {
+      return (
+        <div className="text-center py-16">
+          <CheckCircleIcon className="w-14 h-14 text-fab-win mb-4 mx-auto" />
+          <h1 className="text-2xl font-bold text-fab-gold mb-2">You&apos;re up to date!</h1>
+          <p className="text-fab-muted mb-2">No new matches to import.</p>
+          {pasteResult && pasteResult.totalMatches > 0 && (
+            <p className="text-fab-dim text-sm mb-6">{pasteResult.totalMatches} match{pasteResult.totalMatches === 1 ? "" : "es"} already in your history.</p>
+          )}
+          <button onClick={() => router.push("/")} className="px-6 min-h-[48px] py-3 rounded-md font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light active:bg-fab-gold-light transition-colors">
+            Dashboard
+          </button>
+        </div>
+      );
+    }
+
+    // Has new events — show preview
+    const quickNewMatchCount = quickFilteredEvents.reduce((sum, { event }) => sum + event.matches.length, 0);
+    const quickHasMissingHeroes = quickFilteredEvents.some(({ event }) =>
+      event.matches.every((m) => m.heroPlayed === "Unknown") && !heroOverrides[quickFilteredEvents.indexOf(quickFilteredEvents.find(e => e.event === event)!)]
+    );
+
     return (
-      <div className="text-center py-16">
-        <div className="w-12 h-12 border-4 border-fab-border border-t-fab-gold rounded-full animate-spin mx-auto mb-6" />
-        <h1 className="text-2xl font-bold text-fab-gold mb-2">Quick Syncing...</h1>
-        <p className="text-fab-muted">
-          {pasteResult ? `Importing ${filteredMatches.length} matches` : "Preparing data"}
-        </p>
-        <p className="text-fab-dim text-sm mt-1">Duplicates will be skipped automatically</p>
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-fab-gold mb-1">Quick Sync</h1>
+          <p className="text-fab-muted text-sm">
+            {quickFilteredEvents.length} new event{quickFilteredEvents.length === 1 ? "" : "s"} found ({quickNewMatchCount} matches). Review and confirm.
+          </p>
+        </div>
+
+        {/* Hero warning */}
+        {quickFilteredEvents.some(({ event, origIdx }) =>
+          !heroOverrides[origIdx] && event.matches.every((m) => m.heroPlayed === "Unknown")
+        ) && (
+          <div className="bg-fab-draw/10 border border-fab-draw/30 rounded-lg p-4 text-sm">
+            <p className="text-fab-draw font-medium mb-1">Some events are missing hero info</p>
+            <p className="text-fab-muted">Expand events below to set your hero. You can also edit after importing.</p>
+          </div>
+        )}
+
+        {/* Events list */}
+        <div className="space-y-2">
+          {quickFilteredEvents.map(({ event, origIdx }, i) => {
+            const wins = event.matches.filter((m) => m.result === MatchResult.Win).length;
+            const losses = event.matches.filter((m) => m.result === MatchResult.Loss).length;
+            const isExpanded = expandedEvent === i;
+            const heroValue = heroOverrides[origIdx] || event.matches[0]?.heroPlayed || "";
+            const needsHero = !heroOverrides[origIdx] && event.matches.every((m) => m.heroPlayed === "Unknown");
+
+            return (
+              <div key={i} className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden">
+                <button
+                  onClick={() => setExpandedEvent(isExpanded ? null : i)}
+                  className="w-full p-4 text-left hover:bg-fab-surface-hover transition-colors"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-semibold text-fab-text">{event.eventName}</span>
+                        {event.rated && <span className="px-1.5 py-0.5 rounded bg-fab-gold/15 text-fab-gold text-xs">Rated</span>}
+                        {needsHero && <span className="px-1.5 py-0.5 rounded bg-fab-draw/15 text-fab-draw text-xs">Missing Hero</span>}
+                      </div>
+                      <div className="flex items-center gap-2 mt-1 text-xs text-fab-dim">
+                        <span>{event.eventDate}</span>
+                        {event.venue && <span>at {event.venue}</span>}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 shrink-0">
+                      <span className="px-2 py-0.5 rounded bg-fab-bg text-fab-dim text-xs">{event.format}</span>
+                      <span className="px-2 py-0.5 rounded bg-fab-bg text-fab-dim text-xs">{event.eventType}</span>
+                      <span className={`text-sm font-bold ${wins > losses ? "text-fab-win" : wins < losses ? "text-fab-loss" : "text-fab-draw"}`}>
+                        {wins}W-{losses}L
+                      </span>
+                      {isExpanded ? <ChevronUpIcon className="w-4 h-4 text-fab-dim" /> : <ChevronDownIcon className="w-4 h-4 text-fab-dim" />}
+                    </div>
+                  </div>
+                </button>
+                {isExpanded && (
+                  <div className="border-t border-fab-border px-4 pb-4 pt-3 space-y-3">
+                    {/* Hero selection */}
+                    <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                      <label className="text-xs text-fab-muted whitespace-nowrap">Your Hero:</label>
+                      <select
+                        value={heroValue === "Unknown" ? "" : heroValue}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setHeroOverrides((prev) => val ? { ...prev, [origIdx]: val } : (() => { const { [origIdx]: _, ...rest } = prev; return rest; })());
+                        }}
+                        className={`bg-fab-bg border rounded px-2 py-1 text-sm outline-none focus:border-fab-gold ${needsHero ? "border-fab-draw/50 text-fab-draw" : "border-fab-border text-fab-text"}`}
+                      >
+                        <option value="">{needsHero ? "Select hero..." : "Unknown"}</option>
+                        {allHeroes.map((h) => (
+                          <option key={h.name} value={h.name}>{h.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    {/* Matches with opponent hero editing */}
+                    <div className="space-y-2">
+                      {event.matches.map((match, j) => {
+                        const oppKey = `${origIdx}-${j}`;
+                        const oppHero = opponentHeroOverrides[oppKey] || match.opponentHero || "";
+                        const roundInfo = match.notes?.split(" | ")[1]?.trim() || "";
+                        const style = match.result === MatchResult.Win ? "border-l-fab-win bg-fab-win/[0.03]" :
+                                      match.result === MatchResult.Loss ? "border-l-fab-loss bg-fab-loss/[0.03]" :
+                                      match.result === MatchResult.Draw ? "border-l-fab-draw bg-fab-draw/[0.03]" :
+                                      "border-l-fab-dim bg-fab-muted/[0.02]";
+                        return (
+                          <div key={j} className={`border-l-2 ${style} rounded-r-lg px-3 py-2`}>
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2 min-w-0">
+                                <span className={`text-xs font-bold ${
+                                  match.result === MatchResult.Win ? "text-fab-win" :
+                                  match.result === MatchResult.Loss ? "text-fab-loss" :
+                                  match.result === MatchResult.Draw ? "text-fab-draw" : "text-fab-dim"
+                                }`}>
+                                  {match.result === MatchResult.Bye ? "BYE" : match.result.toUpperCase()}
+                                </span>
+                                {roundInfo && <span className="text-[10px] text-fab-dim">{roundInfo}</span>}
+                                <span className="text-sm text-fab-text truncate">vs {match.opponentName || "Unknown"}</span>
+                              </div>
+                            </div>
+                            {match.result !== MatchResult.Bye && (
+                              <div className="flex items-center gap-2 mt-1.5" onClick={(e) => e.stopPropagation()}>
+                                <label className="text-[10px] text-fab-dim whitespace-nowrap">Opp Hero:</label>
+                                <select
+                                  value={oppHero === "Unknown" ? "" : oppHero}
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    setOpponentHeroOverrides((prev) => val ? { ...prev, [oppKey]: val } : (() => { const { [oppKey]: _, ...rest } = prev; return rest; })());
+                                  }}
+                                  className="bg-fab-bg border border-fab-border rounded px-1.5 py-0.5 text-xs text-fab-text outline-none focus:border-fab-gold"
+                                >
+                                  <option value="">Unknown</option>
+                                  {allHeroes.map((h) => (
+                                    <option key={h.name} value={h.name}>{h.name}</option>
+                                  ))}
+                                </select>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Import button */}
+        <div className="flex gap-3">
+          <button
+            onClick={handleImportClick}
+            className="flex-1 py-3 rounded-md font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors"
+          >
+            Import {quickNewMatchCount} Matches
+          </button>
+          <button
+            onClick={() => router.push("/")}
+            className="px-6 py-3 rounded-md font-semibold bg-fab-surface border border-fab-border text-fab-muted hover:text-fab-text transition-colors"
+          >
+            Skip
+          </button>
+        </div>
       </div>
     );
   }
@@ -1045,9 +1259,50 @@ export default function ImportPage() {
                             {needsHero && <span className="text-[10px] text-fab-draw">Optional</span>}
                           </div>
                           <div className="space-y-2">
-                            {event.matches.map((match, j) => (
-                              <MatchCard key={j} match={{ ...match, heroPlayed: heroOverrides[origIdx] || match.heroPlayed, id: `preview-${i}-${j}`, createdAt: "" }} />
-                            ))}
+                            {event.matches.map((match, j) => {
+                              const oppKey = `${origIdx}-${j}`;
+                              const oppHero = opponentHeroOverrides[oppKey] || match.opponentHero || "";
+                              const roundInfo = match.notes?.split(" | ")[1]?.trim() || "";
+                              const mStyle = match.result === MatchResult.Win ? "border-l-fab-win bg-fab-win/[0.03]" :
+                                             match.result === MatchResult.Loss ? "border-l-fab-loss bg-fab-loss/[0.03]" :
+                                             match.result === MatchResult.Draw ? "border-l-fab-draw bg-fab-draw/[0.03]" :
+                                             "border-l-fab-dim bg-fab-muted/[0.02]";
+                              return (
+                                <div key={j} className={`border-l-2 ${mStyle} rounded-r-lg px-3 py-2`}>
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2 min-w-0">
+                                      <span className={`text-xs font-bold ${
+                                        match.result === MatchResult.Win ? "text-fab-win" :
+                                        match.result === MatchResult.Loss ? "text-fab-loss" :
+                                        match.result === MatchResult.Draw ? "text-fab-draw" : "text-fab-dim"
+                                      }`}>
+                                        {match.result === MatchResult.Bye ? "BYE" : match.result.toUpperCase()}
+                                      </span>
+                                      {roundInfo && <span className="text-[10px] text-fab-dim">{roundInfo}</span>}
+                                      <span className="text-sm text-fab-text truncate">vs {match.opponentName || "Unknown"}</span>
+                                    </div>
+                                  </div>
+                                  {match.result !== MatchResult.Bye && (
+                                    <div className="flex items-center gap-2 mt-1.5" onClick={(e) => e.stopPropagation()}>
+                                      <label className="text-[10px] text-fab-dim whitespace-nowrap">Opp Hero:</label>
+                                      <select
+                                        value={oppHero === "Unknown" ? "" : oppHero}
+                                        onChange={(e) => {
+                                          const val = e.target.value;
+                                          setOpponentHeroOverrides((prev) => val ? { ...prev, [oppKey]: val } : (() => { const { [oppKey]: _, ...rest } = prev; return rest; })());
+                                        }}
+                                        className="bg-fab-bg border border-fab-border rounded px-1.5 py-0.5 text-xs text-fab-text outline-none focus:border-fab-gold"
+                                      >
+                                        <option value="">Unknown</option>
+                                        {allHeroes.map((h) => (
+                                          <option key={h.name} value={h.name}>{h.name}</option>
+                                        ))}
+                                      </select>
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
                           </div>
                         </div>
                       )}

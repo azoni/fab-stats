@@ -594,11 +594,7 @@ export function EventCard({ event, playerName, obfuscateOpponents = false, visib
               <div className="flex items-center gap-3">
                 <label className="text-xs font-medium text-fab-muted whitespace-nowrap">Event Type</label>
                 <select
-                  value={(() => {
-                    const originalType = getOriginalEventType(event.matches[0]);
-                    const hasOverride = event.matches[0]?.eventTypeOverride;
-                    return hasOverride ? event.eventType || originalType : originalType;
-                  })()}
+                  value={event.matches[0]?.eventTypeOverride || getOriginalEventType(event.matches[0])}
                   onChange={async (e) => {
                     const newType = e.target.value;
                     setSavingEventType(true);
