@@ -3,6 +3,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { MatchResult, type EventStats } from "@/types";
 import { computePlayoffFinishes } from "@/lib/stats";
+import { HeroImg } from "@/components/heroes/HeroImg";
 import { EventShareModal } from "@/components/events/EventShareCard";
 
 const EVENT_TYPE_COLORS: Record<string, string> = {
@@ -100,7 +101,7 @@ export function RecentEvents({ eventStats, playerName }: { eventStats: EventStat
                     )}
                     {(() => {
                       const hero = ev.matches.find(m => m.heroPlayed && m.heroPlayed !== "Unknown")?.heroPlayed;
-                      return hero ? <span className="text-[10px] text-fab-muted truncate">{hero}</span> : null;
+                      return hero ? <><HeroImg name={hero} size="sm" /><span className="text-[10px] text-fab-muted truncate">{hero.split(",")[0]}</span></> : null;
                     })()}
                     <span className="text-[10px] text-fab-dim">{formatDate(ev.eventDate)}</span>
                   </div>
@@ -166,7 +167,10 @@ export function RecentEvents({ eventStats, playerName }: { eventStats: EventStat
                             <td className="px-2.5 py-1.5 text-fab-text truncate max-w-0">
                               <span className="block truncate">{match.opponentName || <span className="text-fab-dim">Unknown</span>}</span>
                               {match.opponentHero && match.opponentHero !== "Unknown" && (
-                                <span className="block text-[10px] text-fab-dim truncate">{match.opponentHero}</span>
+                                <span className="flex items-center gap-1 mt-0.5">
+                                  <HeroImg name={match.opponentHero} size="sm" />
+                                  <span className="text-[10px] text-fab-dim truncate">{match.opponentHero.split(",")[0]}</span>
+                                </span>
                               )}
                             </td>
                             <td className={`px-2.5 py-1.5 text-right font-bold ${RESULT_COLORS[match.result]}`}>
