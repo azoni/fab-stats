@@ -97,11 +97,11 @@
   [headers.values]
     Cache-Control = "public, max-age=0, must-revalidate"
 
-# Bookmarklet: short cache so updates propagate quickly
+# Bookmarklet: no cache during development, bump to max-age=3600 when stable
 [[headers]]
   for = "/bookmarklet.js"
   [headers.values]
-    Cache-Control = "public, max-age=3600"
+    Cache-Control = "no-cache, no-store, must-revalidate"
 
 # ── Security headers (all pages) ──
 [[headers]]
