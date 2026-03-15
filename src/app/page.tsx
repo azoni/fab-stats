@@ -502,16 +502,16 @@ export default function Dashboard() {
                     </div>
                     <div>
                       <p className="text-lg font-bold text-fab-text tabular-nums">{tournamentAnalytics.avgFinalRecord.wins.toFixed(1)}-{tournamentAnalytics.avgFinalRecord.losses.toFixed(1)}</p>
-                      <p className="text-[10px] text-fab-muted">Typical Finish</p>
+                      <p className="text-[10px] text-fab-muted">Avg W-L / Event</p>
                     </div>
                     <div>
                       <p className="text-lg font-bold text-fab-text tabular-nums">{tournamentAnalytics.longestEventWinStreak}</p>
-                      <p className="text-[10px] text-fab-muted">Best Run</p>
+                      <p className="text-[10px] text-fab-muted">Win Streak</p>
                     </div>
                     {tournamentAnalytics.undefeatedSwissCount > 0 && (
                       <div>
                         <p className="text-lg font-bold text-fab-win tabular-nums">{tournamentAnalytics.undefeatedSwissCount}</p>
-                        <p className="text-[10px] text-fab-muted">Clean Sweeps</p>
+                        <p className="text-[10px] text-fab-muted">Top Seeds</p>
                       </div>
                     )}
                     {tournamentAnalytics.startPatterns.length > 0 && (
