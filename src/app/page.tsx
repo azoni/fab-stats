@@ -483,27 +483,31 @@ export default function Dashboard() {
                     <p className="text-[10px] text-fab-muted font-medium mt-1">Round 1</p>
                   </Link>
                   {/* Key stats */}
-                  <div className="flex-1 grid grid-cols-2 gap-x-4 gap-y-2">
+                  <div className="flex-1 grid grid-cols-3 gap-x-4 gap-y-2.5">
                     <div>
                       <p className="text-lg font-bold text-fab-text tabular-nums">{tournamentAnalytics.totalEvents}</p>
-                      <p className="text-[10px] text-fab-muted">Events Played</p>
+                      <p className="text-[10px] text-fab-muted">Events</p>
                     </div>
                     <div>
-                      <p className="text-lg font-bold text-fab-win tabular-nums">{tournamentAnalytics.top8Count}</p>
-                      <p className="text-[10px] text-fab-muted">Top 8 Finishes</p>
+                      <p className={`text-lg font-bold tabular-nums ${tournamentAnalytics.overallWinRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>{tournamentAnalytics.overallWinRate.toFixed(1)}%</p>
+                      <p className="text-[10px] text-fab-muted">Match Win Rate</p>
                     </div>
-                    {tournamentAnalytics.bounceBackTotal > 0 && (
-                      <div>
-                        <p className="text-lg font-bold text-fab-text tabular-nums">{Math.round(tournamentAnalytics.bounceBackRate)}%</p>
-                        <p className="text-[10px] text-fab-muted">Bounce-back</p>
-                      </div>
-                    )}
-                    {tournamentAnalytics.closerTotal > 0 && (
-                      <div>
-                        <p className="text-lg font-bold text-fab-text tabular-nums">{Math.round(tournamentAnalytics.closerRate)}%</p>
-                        <p className="text-[10px] text-fab-muted">Final Round</p>
-                      </div>
-                    )}
+                    <div>
+                      <p className="text-lg font-bold text-fab-gold tabular-nums">{tournamentAnalytics.top8Count}</p>
+                      <p className="text-[10px] text-fab-muted">Top 8s</p>
+                    </div>
+                    <div>
+                      <p className="text-lg font-bold text-fab-text tabular-nums">{tournamentAnalytics.avgFinalRecord.wins.toFixed(1)}-{tournamentAnalytics.avgFinalRecord.losses.toFixed(1)}</p>
+                      <p className="text-[10px] text-fab-muted">Avg Record</p>
+                    </div>
+                    <div>
+                      <p className="text-lg font-bold text-fab-text tabular-nums">{Math.round(tournamentAnalytics.top8Rate)}%</p>
+                      <p className="text-[10px] text-fab-muted">Top 8 Rate</p>
+                    </div>
+                    <div>
+                      <p className="text-lg font-bold text-fab-text tabular-nums">{tournamentAnalytics.longestEventWinStreak}</p>
+                      <p className="text-[10px] text-fab-muted">Best Streak</p>
+                    </div>
                   </div>
                 </div>
               </div>
