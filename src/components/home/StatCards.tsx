@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { MatchResult } from "@/types";
 import type { OverallStats, MatchRecord } from "@/types";
 import { WinRateRing } from "@/components/charts/WinRateRing";
@@ -13,6 +14,8 @@ interface StatCardsProps {
 }
 
 export function StatCards({ overall, eventCount, bestFinishLabel, recentMatches }: StatCardsProps) {
+  const router = useRouter();
+
   // Recent form data
   const formMatches = recentMatches
     .filter((m) => m.result !== MatchResult.Bye)
@@ -28,88 +31,71 @@ export function StatCards({ overall, eventCount, bestFinishLabel, recentMatches 
   const recentDraws = formMatches.filter((m) => m.result === MatchResult.Draw).length;
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-      {/* Win Rate + Events */}
-      <Link href="/trends" className="bg-fab-surface border border-fab-border rounded-lg p-3 flex items-center gap-3 hover:border-fab-gold/30 transition-colors card-shimmer">
-        <div className="absolute inset-0 bg-gradient-to-b from-white/[0.02] to-transparent pointer-events-none rounded-lg" />
-        <WinRateRing value={overall.overallWinRate} size={48} strokeWidth={4} />
-        <div className="min-w-0 relative">
-          <p className={`text-xl font-bold tabular-nums leading-tight ${overall.overallWinRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>
-            {overall.overallWinRate.toFixed(1)}%
-          </p>
-          <div className="flex items-center gap-1.5 text-xs text-fab-dim mt-0.5">
-            <span>{overall.totalMatches + overall.totalByes} matches</span>
-            {eventCount > 0 && (
-              <>
-                <span>·</span>
-                <span>{eventCount} events</span>
-              </>
-            )}
+    <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden cursor-pointer hover:border-fab-gold/20 transition-colors" onClick={() => router.push("/trends")}>
+      <Link href="/trends" className="flex items-center justify-between px-4 py-2.5 border-b border-fab-border/50 hover:bg-fab-surface-hover transition-colors">
+        <p className="text-sm font-semibold text-fab-text">My Stats</p>
+        <span className="text-xs font-semibold text-fab-gold border border-fab-gold/30 hover:bg-fab-gold/10 hover:border-fab-gold/50 px-2.5 py-1 rounded-md transition-colors" onClick={(e) => e.stopPropagation()}>
+          Full stats &rarr;
+        </span>
+      </Link>
+      <div className="p-4 flex flex-col sm:flex-row items-center gap-4 sm:gap-5">
+        {/* Win Rate Ring */}
+        <div className="shrink-0 text-center">
+          <WinRateRing value={overall.overallWinRate} size={56} strokeWidth={5} label={`${overall.overallWinRate.toFixed(1)}%`} />
+          <p className="text-[10px] text-fab-muted font-medium mt-1">Win Rate</p>
+        </div>
+        {/* Stats grid */}
+        <div className="flex-1 w-full grid grid-cols-3 sm:grid-cols-4 gap-x-3 gap-y-2.5 text-center sm:text-left">
+          <div title={`${overall.totalWins}W-${overall.totalLosses}L${overall.totalDraws > 0 ? `-${overall.totalDraws}D` : ""}`}>
+            <p className="text-lg font-bold text-fab-text tabular-nums">{overall.totalMatches + overall.totalByes}</p>
+            <p className="text-[10px] text-fab-muted">Matches</p>
+          </div>
+          <div title="Total wins - losses - draws">
+            <p className="text-lg font-bold tabular-nums">
+              <span className="text-fab-win">{overall.totalWins}</span>
+              <span className="text-fab-dim">-</span>
+              <span className="text-fab-loss">{overall.totalLosses}</span>
+            </p>
+            <p className="text-[10px] text-fab-muted">Record</p>
+          </div>
+          <div title={`${eventCount} events played`}>
+            <p className="text-lg font-bold text-fab-text tabular-nums">{eventCount}</p>
+            <p className="text-[10px] text-fab-muted">Events</p>
           </div>
           {bestFinishLabel && (
-            <p className="text-xs text-fab-gold mt-0.5 font-medium truncate">{bestFinishLabel}</p>
+            <div title="Best tournament finish">
+              <p className="text-lg font-bold text-fab-gold truncate">{bestFinishLabel}</p>
+              <p className="text-[10px] text-fab-muted">Best Finish</p>
+            </div>
           )}
         </div>
-      </Link>
-
-      {/* Record */}
-      <Link href="/matches" className="bg-fab-surface border border-fab-border rounded-lg p-3 hover:border-fab-gold/30 transition-colors card-shimmer">
-        <div className="absolute inset-0 bg-gradient-to-b from-white/[0.02] to-transparent pointer-events-none rounded-lg" />
-        <p className="text-xs text-fab-dim uppercase tracking-wider mb-1 relative">Record</p>
-        <div className="flex items-baseline gap-1.5 tabular-nums">
-          <span className="text-xl font-bold text-fab-win">{overall.totalWins}</span>
-          <span className="text-fab-dim text-sm">-</span>
-          <span className="text-xl font-bold text-fab-loss">{overall.totalLosses}</span>
-          {overall.totalDraws > 0 && (
-            <>
-              <span className="text-fab-dim text-sm">-</span>
-              <span className="text-xl font-bold text-fab-draw">{overall.totalDraws}</span>
-            </>
-          )}
-        </div>
-        <p className="text-xs text-fab-dim mt-0.5">{overall.totalMatches + overall.totalByes} total</p>
-      </Link>
-
-      {/* Recent Form (mini) */}
-      <Link href="/matches" className="bg-fab-surface border border-fab-border rounded-lg p-3 col-span-2 md:col-span-1 hover:border-fab-gold/30 transition-colors card-shimmer">
-        <div className="flex items-center justify-between mb-1.5">
-          <p className="text-xs text-fab-dim uppercase tracking-wider">Recent Form</p>
-          {formMatches.length > 0 && (
-            <span className="text-xs tabular-nums">
-              <span className="font-semibold text-fab-win">{recentWins}W</span>
-              <span className="text-fab-dim">-</span>
-              <span className="font-semibold text-fab-loss">{recentLosses}L</span>
-              {recentDraws > 0 && (
-                <>
-                  <span className="text-fab-dim">-</span>
-                  <span className="font-semibold text-fab-draw">{recentDraws}D</span>
-                </>
-              )}
-            </span>
-          )}
-        </div>
-        {sparkData.length >= 2 ? (
-          <SparkLine data={sparkData} width={140} height={28} showDot />
-        ) : (
-          <p className="text-sm text-fab-muted">--</p>
-        )}
-        {formMatches.length > 0 && (
-          <div className="flex items-center gap-0.5 mt-1.5">
+      </div>
+      {/* Recent form strip */}
+      {formMatches.length > 0 && (
+        <div className="px-4 pb-3 flex items-center gap-3">
+          <div className="flex items-center gap-0.5">
             {formMatches.slice(-15).map((m, i) => (
               <div
                 key={i}
                 className={`w-2 h-2 rounded-full shrink-0 ${
-                  m.result === MatchResult.Win
-                    ? "bg-fab-win"
-                    : m.result === MatchResult.Loss
-                    ? "bg-fab-loss"
-                    : "bg-fab-draw"
+                  m.result === MatchResult.Win ? "bg-fab-win" :
+                  m.result === MatchResult.Loss ? "bg-fab-loss" : "bg-fab-draw"
                 }`}
               />
             ))}
           </div>
-        )}
-      </Link>
+          <span className="text-[10px] tabular-nums text-fab-dim">
+            <span className="text-fab-win font-semibold">{recentWins}W</span>-<span className="text-fab-loss font-semibold">{recentLosses}L</span>
+            {recentDraws > 0 && <><span>-</span><span className="text-fab-draw font-semibold">{recentDraws}D</span></>}
+            {" "}recent
+          </span>
+          {sparkData.length >= 2 && (
+            <div className="ml-auto">
+              <SparkLine data={sparkData} width={80} height={20} showDot />
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
