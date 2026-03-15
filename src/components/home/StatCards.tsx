@@ -38,7 +38,7 @@ export function StatCards({ overall, eventCount, bestFinishLabel, recentMatches,
         <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
           {onShare && (
             <button
-              onClick={onShare}
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); onShare(); }}
               className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-fab-gold/15 text-fab-gold text-xs font-semibold hover:bg-fab-gold/25 transition-colors"
             >
               <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
