@@ -22,9 +22,34 @@ import { logActivity } from "./activity-log";
 import { logToEcosystem } from "./mcp-webhook";
 import type { MatchRecord, UserProfile } from "@/types";
 
+/** Normalize round info so "Round P1" and "Playoff" match as duplicates */
+export function normalizeNotes(notes: string): string {
+  const parts = notes.split(" | ");
+  const eventName = parts[0]?.trim() || "";
+  const round = parts[1]?.trim() || "";
+  // Normalize playoff round labels to a canonical form
+  let normalizedRound = round;
+  if (/^Round\s+P(\d+)$/i.test(round)) {
+    const n = round.match(/P(\d+)/i)![1];
+    normalizedRound = `P${n}`;
+  } else if (/^Playoff$/i.test(round)) {
+    normalizedRound = "P1";
+  } else if (/^Top\s*8$/i.test(round)) {
+    normalizedRound = "P1";
+  } else if (/^(Quarter|Top\s*4)$/i.test(round)) {
+    normalizedRound = "P2";
+  } else if (/^Semi/i.test(round)) {
+    normalizedRound = "P2";
+  } else if (/^Finals?$/i.test(round)) {
+    normalizedRound = "P3";
+  }
+  return `${eventName}|${normalizedRound}`;
+}
+
 /** Build a fingerprint to detect duplicate matches */
 function matchFingerprint(m: { date: string; opponentName?: string; notes?: string; result: string }): string {
-  return `${m.date}|${(m.opponentName || "").toLowerCase()}|${m.notes || ""}|${m.result}`;
+  const normalizedNotes = m.notes ? normalizeNotes(m.notes) : "";
+  return `${m.date}|${(m.opponentName || "").toLowerCase()}|${normalizedNotes}|${m.result}`;
 }
 
 function matchesCollection(userId: string) {
