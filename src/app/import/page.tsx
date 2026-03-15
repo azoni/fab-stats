@@ -651,12 +651,6 @@ export default function ImportPage() {
           >
             {importing ? "Importing..." : quickConfirmImport ? `Import Anyway (${quickNewMatchCount})` : `Import ${quickNewMatchCount} Matches`}
           </button>
-          <button
-            onClick={() => router.push("/")}
-            className="px-6 py-3 rounded-md font-semibold bg-fab-surface border border-fab-border text-fab-muted hover:text-fab-text transition-colors"
-          >
-            Skip
-          </button>
         </div>
       </div>
     );
