@@ -485,21 +485,21 @@ export default function Dashboard() {
                     <p className={`text-xl font-bold ${tournamentAnalytics.r1WinRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>
                       {Math.round(tournamentAnalytics.r1WinRate)}%
                     </p>
-                    <p className="text-[10px] text-fab-dim">R1 Win Rate</p>
+                    <p className="text-[10px] text-fab-muted font-medium">Round 1 Win Rate</p>
                   </div>
                   <div className="text-center">
                     <p className="text-xl font-bold text-fab-text">{tournamentAnalytics.totalEvents}</p>
-                    <p className="text-[10px] text-fab-dim">Events</p>
+                    <p className="text-[10px] text-fab-muted font-medium">Events Played</p>
                   </div>
                   <div className="text-center">
                     <p className="text-xl font-bold text-fab-win">{tournamentAnalytics.top8Count}</p>
-                    <p className="text-[10px] text-fab-dim">Top 8s</p>
+                    <p className="text-[10px] text-fab-muted font-medium">Top 8 Finishes</p>
                   </div>
                 </div>
                 {tournamentAnalytics.bounceBackTotal > 0 && (
                   <p className="text-[10px] text-fab-muted mt-2 text-center">
-                    Bounce-back rate: <span className="text-fab-text font-semibold">{Math.round(tournamentAnalytics.bounceBackRate)}%</span>
-                    {" · "}Closer rate: <span className="text-fab-text font-semibold">{Math.round(tournamentAnalytics.closerRate)}%</span>
+                    Bounce-back: <span className="text-fab-text font-semibold">{Math.round(tournamentAnalytics.bounceBackRate)}%</span>
+                    {" · "}Final round: <span className="text-fab-text font-semibold">{Math.round(tournamentAnalytics.closerRate)}%</span>
                   </p>
                 )}
               </Link>
