@@ -58,6 +58,7 @@ export default function ImportPage() {
   const [heroOverrides, setHeroOverrides] = useState<Record<number, string>>({});
   const [opponentHeroOverrides, setOpponentHeroOverrides] = useState<Record<string, string>>({});
   const [quickPreviewReady, setQuickPreviewReady] = useState(false);
+  const [quickConfirmImport, setQuickConfirmImport] = useState(false);
   const [existingFingerprints, setExistingFingerprints] = useState<Set<string> | null>(null);
   const [sessionRecap, setSessionRecap] = useState<SessionRecap | null>(null);
   const [newAchievements, setNewAchievements] = useState<Achievement[]>([]);
@@ -620,14 +621,35 @@ export default function ImportPage() {
           })}
         </div>
 
+        {/* Light opponent hero warning */}
+        {quickConfirmImport && (
+          <div className="bg-fab-surface border border-fab-draw/30 rounded-lg p-3 text-sm flex items-start gap-2">
+            <svg className="w-4 h-4 text-fab-draw shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+            </svg>
+            <p className="text-fab-muted">
+              Some opponent heroes are unknown. They&apos;ll auto-fill when matches link with opponents who use FaB Stats.
+            </p>
+          </div>
+        )}
+
         {/* Import button */}
         <div className="flex gap-3">
           <button
-            onClick={() => handleImport()}
+            onClick={() => {
+              const hasUnknownOpp = quickFilteredEvents.some(({ event }) =>
+                event.matches.some(m => m.result !== "bye" && (!m.opponentHero || m.opponentHero === "Unknown") && !opponentHeroOverrides[`${quickFilteredEvents.indexOf(quickFilteredEvents.find(e => e.event === event)!)}-${event.matches.indexOf(m)}`])
+              );
+              if (hasUnknownOpp && !quickConfirmImport) {
+                setQuickConfirmImport(true);
+                return;
+              }
+              handleImport();
+            }}
             disabled={importing}
             className="flex-1 py-3 rounded-md font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors disabled:opacity-50"
           >
-            {importing ? "Importing..." : `Import ${quickNewMatchCount} Matches`}
+            {importing ? "Importing..." : quickConfirmImport ? `Import Anyway (${quickNewMatchCount})` : `Import ${quickNewMatchCount} Matches`}
           </button>
           <button
             onClick={() => router.push("/")}
