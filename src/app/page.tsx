@@ -509,15 +509,15 @@ export default function Dashboard() {
                       <p className="text-[10px] text-fab-muted">Win Rate</p>
                     </div>
                     <div title="Tournament wins (champion)">
-                      <p className="text-lg font-bold text-fab-gold tabular-nums">{playoffFinishes.filter(f => f.type === "champion").length || <span className="text-fab-dim">N/A</span>}</p>
+                      <p className="text-lg font-bold text-fab-gold tabular-nums">{tournamentAnalytics.championCount || <span className="text-fab-dim">N/A</span>}</p>
                       <p className="text-[10px] text-fab-muted">Wins</p>
                     </div>
                     <div title="Events where you reached the finals">
-                      <p className="text-lg font-bold text-fab-text tabular-nums">{playoffFinishes.filter(f => f.type === "finalist").length || <span className="text-fab-dim">N/A</span>}</p>
+                      <p className="text-lg font-bold text-fab-text tabular-nums">{tournamentAnalytics.finalistCount || <span className="text-fab-dim">N/A</span>}</p>
                       <p className="text-[10px] text-fab-muted">Finals</p>
                     </div>
                     <div title="Top 4 finishes">
-                      <p className="text-lg font-bold text-fab-text tabular-nums">{playoffFinishes.filter(f => f.type === "top4").length || <span className="text-fab-dim">N/A</span>}</p>
+                      <p className="text-lg font-bold text-fab-text tabular-nums">{tournamentAnalytics.top4Count || <span className="text-fab-dim">N/A</span>}</p>
                       <p className="text-[10px] text-fab-muted">Top 4s</p>
                     </div>
                     <div title={`Made top 8 in ${tournamentAnalytics.top8Count} of ${tournamentAnalytics.totalEvents} events (${Math.round(tournamentAnalytics.top8Rate)}%)`}>
@@ -668,9 +668,9 @@ export default function Dashboard() {
             longestCrossEventWinStreak: tournamentAnalytics.longestCrossEventWinStreak,
             consecutiveTop8s: tournamentAnalytics.consecutiveTop8s,
             consecutiveEventWins: tournamentAnalytics.consecutiveEventWins,
-            championCount: playoffFinishes.filter(f => f.type === "champion").length,
-            finalistCount: playoffFinishes.filter(f => f.type === "finalist").length,
-            top4Count: playoffFinishes.filter(f => f.type === "top4").length,
+            championCount: tournamentAnalytics.championCount,
+            finalistCount: tournamentAnalytics.finalistCount,
+            top4Count: tournamentAnalytics.top4Count,
             submarineCount: tournamentAnalytics.submarineCount,
           }}
           onClose={() => setTournamentShareOpen(false)}
