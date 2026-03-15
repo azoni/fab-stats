@@ -27,7 +27,7 @@ import { detectTierUp, type BadgeTierInfo } from "@/lib/badge-tiers";
 
 const BOOKMARKLET_HREF = `javascript:void((async function(){var els=document.querySelectorAll('a,button,summary,span,div,[role=button]');var n=0;for(var i=0;i<els.length;i++){var t=(els[i].textContent||'').trim();if(t.match(/View Results/i)&&t.length<30){els[i].click();n++;await new Promise(function(r){setTimeout(r,600)})}}alert('Expanded '+n+' events. Press Ctrl+A, Ctrl+C to copy.')})())`;
 
-type ImportMethod = "extension" | "paste" | "csv" | null;
+type ImportMethod = "extension" | "bookmarklet" | "paste" | "csv" | null;
 
 export default function ImportPage() {
   const router = useRouter();
@@ -386,7 +386,7 @@ export default function ImportPage() {
         .sort((a, b) => b[1] - a[1])
         .slice(0, 3)
         .map(([hero]) => hero);
-      createImportFeedEvent(profile, count, topHeroes, method || undefined).catch(() => {});
+      createImportFeedEvent(profile, count, topHeroes, (method === "bookmarklet" ? "extension" : method) || undefined).catch(() => {});
       getMatchesByUserId(user.uid)
         .then((allUserMatches) => updateLeaderboardEntry(profile, allUserMatches))
         .catch(() => {});
@@ -745,22 +745,6 @@ export default function ImportPage() {
         <div className="bg-fab-loss/10 border border-fab-loss/30 text-fab-loss rounded-md px-4 py-3 text-sm mb-4">{error}</div>
       )}
 
-      {/* Mobile bookmarklet tip */}
-      {isMobile && !hasResults && (
-        <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3 mb-4 flex items-start gap-2">
-          <svg className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
-          </svg>
-          <p className="text-xs text-fab-muted">
-            On mobile? Try the{" "}
-            <Link href="/bookmarklet" className="text-blue-400 font-medium hover:underline">
-              Quick Sync Bookmarklet
-            </Link>
-            {" "}for one-tap import — no extension needed.
-          </p>
-        </div>
-      )}
-
       {/* Method Selection Cards */}
       {!hasResults && (
         <div className="space-y-3 mb-6">
@@ -886,7 +870,63 @@ export default function ImportPage() {
             )}
           </div>
 
-          {/* ── Method 2: Copy & Paste ── */}
+          {/* ── Method 2: Quick Sync Bookmarklet ── */}
+          <div
+            onClick={() => setMethod(method === "bookmarklet" ? null : "bookmarklet")}
+            className={`bg-fab-surface border rounded-lg cursor-pointer transition-all ${method === "bookmarklet" ? "border-fab-gold ring-1 ring-fab-gold/30" : "border-fab-border hover:border-fab-muted"}`}
+          >
+            <div className="p-4">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-lg bg-fab-gold/15 flex items-center justify-center shrink-0 mt-0.5">
+                  <svg className="w-5 h-5 text-fab-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                  </svg>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-semibold text-fab-text">Quick Sync Bookmarklet</h3>
+                    <span className="px-1.5 py-0.5 rounded bg-blue-500/15 text-blue-400 text-xs font-semibold">Mobile Friendly</span>
+                  </div>
+                  <p className="text-sm text-fab-muted mt-0.5">One-tap import from GEM — no extension needed. Works on mobile and desktop.</p>
+                </div>
+                <svg className={`w-5 h-5 text-fab-dim shrink-0 mt-1 transition-transform ${method === "bookmarklet" ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+            </div>
+
+            {method === "bookmarklet" && (
+              <div className="border-t border-fab-border px-4 pb-4 pt-3" onClick={(e) => e.stopPropagation()}>
+                <div className="space-y-4">
+                  <Link
+                    href="/bookmarklet"
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-fab-gold text-fab-bg font-semibold hover:bg-fab-gold-light transition-colors text-sm"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                    </svg>
+                    Set Up Bookmarklet
+                  </Link>
+                  <div className="bg-fab-bg rounded-lg p-4">
+                    <h4 className="text-sm font-semibold text-fab-text mb-3">How it works:</h4>
+                    <ol className="text-sm text-fab-muted space-y-2.5 list-decimal list-inside">
+                      <li>Add the bookmarklet to your browser (one-time setup)</li>
+                      <li>
+                        Tap it from anywhere — it takes you to your{" "}
+                        <a href="https://gem.fabtcg.com/profile/history/" target="_blank" rel="noopener noreferrer" className="text-fab-gold hover:underline">
+                          GEM History
+                        </a>
+                      </li>
+                      <li>Tap it again on the history page — matches sync automatically</li>
+                      <li>For more history, go to page 2, 3, etc. and tap again. Duplicates are skipped.</li>
+                    </ol>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* ── Method 3: Copy & Paste ── */}
           <div
             onClick={() => setMethod(method === "paste" ? null : "paste")}
             className={`bg-fab-surface border rounded-lg cursor-pointer transition-all ${method === "paste" ? "border-fab-gold ring-1 ring-fab-gold/30" : "border-fab-border hover:border-fab-muted"}`}
