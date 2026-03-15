@@ -453,7 +453,7 @@ export function EventCard({ event, playerName, obfuscateOpponents = false, visib
                         <span className="text-fab-dim">Opponent</span>
                       ) : match.opponentName ? (
                         <Link
-                          href={`/search?q=${encodeURIComponent(match.opponentName)}`}
+                          href={`/opponents?q=${encodeURIComponent(match.opponentName)}`}
                           className="text-fab-text hover:text-fab-gold transition-colors"
                           onClick={(e) => e.stopPropagation()}
                         >
