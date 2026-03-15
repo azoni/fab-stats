@@ -204,11 +204,11 @@ export default function Dashboard() {
     return { ...underlineStyle[best], placement: bestPlacement };
   }, [minorFinishes, profile?.underlineEventType, profile?.underlinePlacement]);
 
-  // Tournament analytics (from rated events)
+  // Tournament analytics (from filtered rated events)
   const tournamentAnalytics = useMemo(() => {
-    const ratedEvents = computeEventStats(matches).filter(e => e.rated);
+    const ratedEvents = filteredEventStats.filter(e => e.rated);
     return ratedEvents.length > 0 ? computeTournamentAnalytics(ratedEvents) : null;
-  }, [matches]);
+  }, [filteredEventStats]);
 
   // Community meta (compact — top 3 heroes for mini widget)
   const communityMeta = useMemo(() => computeMetaStats(lbEntries), [lbEntries]);
