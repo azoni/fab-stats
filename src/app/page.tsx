@@ -31,6 +31,7 @@ const BestFinishShareModal = dynamic(() => import("@/components/profile/BestFini
 const ProfileShareModal = dynamic(() => import("@/components/profile/ProfileCard").then(m => ({ default: m.ProfileShareModal })), { ssr: false });
 const BackgroundChooser = dynamic(() => import("@/components/profile/BackgroundChooser").then(m => ({ default: m.BackgroundChooser })), { ssr: false });
 const TournamentShareModal = dynamic(() => import("@/components/tournament-stats/TournamentShareCard").then(m => ({ default: m.TournamentShareModal })), { ssr: false });
+const TrendsShareModal = dynamic(() => import("@/components/trends/TrendsShareCard").then(m => ({ default: m.TrendsShareModal })), { ssr: false });
 
 export default function Dashboard() {
   const router = useRouter();
@@ -44,6 +45,7 @@ export default function Dashboard() {
   const [savingBackground, setSavingBackground] = useState(false);
   const [kudosTotal, setKudosTotal] = useState<number | null>(null);
   const [tournamentShareOpen, setTournamentShareOpen] = useState(false);
+  const [statsShareOpen, setStatsShareOpen] = useState(false);
   const [filterFormat, setFilterFormat] = useState("all");
   const [filterEventType, setFilterEventType] = useState("all");
   const [filterHero, setFilterHero] = useState("all");
@@ -465,7 +467,7 @@ export default function Dashboard() {
 
           {/* Dashboard stats */}
           <div className="section-reveal" style={{ '--stagger': 1 } as React.CSSProperties}>
-            <StatCards overall={overall} eventCount={filteredEventStats.length} bestFinishLabel={bestFinish?.label ?? null} recentMatches={last30} />
+            <StatCards overall={overall} eventCount={filteredEventStats.length} bestFinishLabel={bestFinish?.label ?? null} recentMatches={last30} onShare={profile ? () => setStatsShareOpen(true) : undefined} />
           </div>
 
           {/* Tournament Stats Card */}
@@ -672,6 +674,24 @@ export default function Dashboard() {
             submarineCount: tournamentAnalytics.submarineCount,
           }}
           onClose={() => setTournamentShareOpen(false)}
+        />
+      )}
+
+      {statsShareOpen && profile && (
+        <TrendsShareModal
+          data={{
+            playerName: profile.displayName,
+            totalMatches: overall.totalMatches,
+            winRate: Math.round(overall.overallWinRate),
+            wins: overall.totalWins,
+            losses: overall.totalLosses,
+            draws: overall.totalDraws,
+            longestWinStreak: overall.streaks.longestWinStreak,
+            eventsPlayed: eventStats.length,
+            uniqueHeroes: heroStats.filter(h => h.heroName !== "Unknown").length,
+            topHero: topHero ? { name: topHero.heroName, winRate: Math.round(topHero.winRate), matches: topHero.totalMatches } : undefined,
+          }}
+          onClose={() => setStatsShareOpen(false)}
         />
       )}
     </div>

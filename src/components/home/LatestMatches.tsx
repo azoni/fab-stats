@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { MatchResult } from "@/types";
 import type { MatchRecord } from "@/types";
+import { HeroImg } from "@/components/heroes/HeroImg";
 
 interface LatestMatchesProps {
   matches: MatchRecord[];
@@ -60,11 +61,15 @@ export function LatestMatches({ matches }: LatestMatchesProps) {
                 <span className="text-[10px] text-fab-dim shrink-0 tabular-nums">{formatDate(m.date)}</span>
               </div>
               {(m.heroPlayed || m.opponentHero) && (
-                <p className="text-[10px] text-fab-dim mt-0.5 truncate">
-                  {m.heroPlayed && m.heroPlayed !== "Unknown" ? m.heroPlayed : "?"}{" "}
-                  <span className="text-fab-muted">vs</span>{" "}
-                  {m.opponentHero && m.opponentHero !== "Unknown" ? m.opponentHero : "?"}
-                </p>
+                <div className="flex items-center gap-1 mt-0.5">
+                  {m.heroPlayed && m.heroPlayed !== "Unknown" ? (
+                    <><HeroImg name={m.heroPlayed} size="sm" /><span className="text-[10px] text-fab-dim truncate">{m.heroPlayed.split(",")[0]}</span></>
+                  ) : <span className="text-[10px] text-fab-dim">?</span>}
+                  <span className="text-[10px] text-fab-muted">vs</span>
+                  {m.opponentHero && m.opponentHero !== "Unknown" ? (
+                    <><HeroImg name={m.opponentHero} size="sm" /><span className="text-[10px] text-fab-dim truncate">{m.opponentHero.split(",")[0]}</span></>
+                  ) : <span className="text-[10px] text-fab-dim">?</span>}
+                </div>
               )}
             </div>
           </Link>

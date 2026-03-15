@@ -86,15 +86,15 @@ export function DashboardInsights({ heroStats, opponentStats, matches }: Dashboa
       <div className="p-3 space-y-3">
         {/* Rivalry Highlights */}
         {hasRivalries && highlights && (
-          <div className="space-y-2">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5">
             {highlights.nemesis && (
-              <RivalryRow label="Nemesis" labelColor="text-red-400" opponent={highlights.nemesis} />
+              <RivalryCell label="Nemesis" labelColor="text-red-400" opponent={highlights.nemesis} />
             )}
             {highlights.bestMatchup && (
-              <RivalryRow label="Best" labelColor="text-fab-win" opponent={highlights.bestMatchup} />
+              <RivalryCell label="Best" labelColor="text-fab-win" opponent={highlights.bestMatchup} />
             )}
             {highlights.mostPlayed && (
-              <RivalryRow label="Rival" labelColor="text-amber-400" opponent={highlights.mostPlayed} />
+              <RivalryCell label="Rival" labelColor="text-amber-400" opponent={highlights.mostPlayed} />
             )}
           </div>
         )}
@@ -125,7 +125,7 @@ export function DashboardInsights({ heroStats, opponentStats, matches }: Dashboa
   );
 }
 
-function RivalryRow({
+function RivalryCell({
   label,
   labelColor,
   opponent,
@@ -135,17 +135,14 @@ function RivalryRow({
   opponent: OpponentStats;
 }) {
   return (
-    <Link href={`/opponents?q=${encodeURIComponent(opponent.opponentName)}`} className="flex items-center gap-2.5 py-1 hover:bg-fab-bg/50 rounded-md px-1 -mx-1 transition-colors" onClick={(e) => e.stopPropagation()}>
-      <span className={`text-[9px] uppercase tracking-wider font-bold shrink-0 w-12 ${labelColor}`}>
+    <Link href={`/opponents?q=${encodeURIComponent(opponent.opponentName)}`} className="flex items-center gap-2 py-1.5 px-2 hover:bg-fab-bg/50 rounded-md transition-colors" onClick={(e) => e.stopPropagation()}>
+      <span className={`text-[9px] uppercase tracking-wider font-bold shrink-0 ${labelColor}`}>
         {label}
       </span>
       <span className="text-sm font-medium text-fab-text truncate min-w-0 flex-1">
         {opponent.opponentName}
       </span>
-      <span className="text-[10px] text-fab-dim tabular-nums shrink-0">
-        {opponent.wins}W-{opponent.losses}L
-      </span>
-      <span className={`text-xs font-bold tabular-nums shrink-0 ${opponent.winRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>
+      <span className={`text-[10px] font-bold tabular-nums shrink-0 ${opponent.winRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>
         {opponent.winRate.toFixed(0)}%
       </span>
     </Link>
