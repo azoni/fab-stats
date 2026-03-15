@@ -529,8 +529,8 @@ export default function Dashboard() {
                       <p className="text-lg font-bold text-fab-gold tabular-nums">{tournamentAnalytics.consecutiveEventWins || <span className="text-fab-dim">N/A</span>}</p>
                       <p className="text-[10px] text-fab-muted">Consec. Wins</p>
                     </div>
-                    <div title="Events where you reached the finals">
-                      <p className="text-lg font-bold text-fab-text tabular-nums">{tournamentAnalytics.finalistCount || <span className="text-fab-dim">N/A</span>}</p>
+                    <div title="Events where you reached the finals (all events)">
+                      <p className="text-lg font-bold text-fab-text tabular-nums">{(playoffFinishes.filter(f => f.type === "finalist").length + minorFinishes.filter(f => f.type === "finalist").length) || <span className="text-fab-dim">N/A</span>}</p>
                       <p className="text-[10px] text-fab-muted">Finals</p>
                     </div>
                     <div title="Lost Round 1 but still made top 8">
@@ -656,7 +656,7 @@ export default function Dashboard() {
             longestCrossEventWinStreak: tournamentAnalytics.longestCrossEventWinStreak,
             consecutiveTop8s: tournamentAnalytics.consecutiveTop8s,
             consecutiveEventWins: tournamentAnalytics.consecutiveEventWins,
-            finalistCount: tournamentAnalytics.finalistCount,
+            finalistCount: playoffFinishes.filter(f => f.type === "finalist").length + minorFinishes.filter(f => f.type === "finalist").length,
             submarineCount: tournamentAnalytics.submarineCount,
           }}
           onClose={() => setTournamentShareOpen(false)}
