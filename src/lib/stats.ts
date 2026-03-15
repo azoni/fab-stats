@@ -858,6 +858,7 @@ export interface TournamentAnalytics {
   longestCrossEventWinStreak: number; // consecutive wins across event boundaries
   consecutiveTop8s: number; // most consecutive events making top 8
   consecutiveEventWins: number; // most consecutive events won (champion)
+  finalistCount: number; // events where player reached finals
   submarineCount: number; // lost R1 but made top 8
   rightRecordWrongOrder: number; // had top 8 record but didn't make it (lost too early)
 
@@ -1284,6 +1285,7 @@ export function computeTournamentAnalytics(events: EventStats[]): TournamentAnal
     longestCrossEventWinStreak,
     consecutiveTop8s,
     consecutiveEventWins,
+    finalistCount: allFinishes.filter(f => f.type === "finalist").length,
     submarineCount,
     rightRecordWrongOrder,
 

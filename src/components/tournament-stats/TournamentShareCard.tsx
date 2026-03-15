@@ -19,6 +19,8 @@ export interface TournamentShareData {
   longestCrossEventWinStreak: number;
   consecutiveTop8s: number;
   consecutiveEventWins: number;
+  finalistCount: number;
+  submarineCount: number;
 }
 
 interface TournamentTheme {
@@ -244,6 +246,14 @@ function ShareCardInner({ data, theme }: { data: TournamentShareData; theme: Tou
           <div className="flex justify-between">
             <span style={{ color: t.muted }}>Consec. Top 8s</span>
             <span className="font-bold" style={{ color: t.text }}>{data.consecutiveTop8s || "—"}</span>
+          </div>
+          <div className="flex justify-between">
+            <span style={{ color: t.muted }}>Finals</span>
+            <span className="font-bold" style={{ color: t.text }}>{data.finalistCount || "—"}</span>
+          </div>
+          <div className="flex justify-between">
+            <span style={{ color: t.muted }}>Submarines</span>
+            <span className="font-bold" style={{ color: data.submarineCount > 0 ? t.win : t.dim }}>{data.submarineCount || "—"}</span>
           </div>
           {data.consecutiveEventWins > 0 && (
             <div className="flex justify-between col-span-2">

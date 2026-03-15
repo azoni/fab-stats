@@ -496,7 +496,7 @@ export default function Dashboard() {
                     <p className="text-[10px] text-fab-muted font-medium mt-1">Win R1</p>
                   </Link>
                   {/* Key stats */}
-                  <div className="flex-1 w-full grid grid-cols-2 sm:grid-cols-4 gap-x-3 gap-y-2.5 text-center sm:text-left">
+                  <div className="flex-1 w-full grid grid-cols-2 sm:grid-cols-5 gap-x-3 gap-y-2.5 text-center sm:text-left">
                     <div title="Total rated events played">
                       <p className="text-lg font-bold text-fab-text tabular-nums">{tournamentAnalytics.totalEvents}</p>
                       <p className="text-[10px] text-fab-muted">Events</p>
@@ -528,6 +528,14 @@ export default function Dashboard() {
                     <div title="Most consecutive tournament wins (champion)">
                       <p className="text-lg font-bold text-fab-gold tabular-nums">{tournamentAnalytics.consecutiveEventWins || <span className="text-fab-dim">N/A</span>}</p>
                       <p className="text-[10px] text-fab-muted">Consec. Wins</p>
+                    </div>
+                    <div title="Events where you reached the finals">
+                      <p className="text-lg font-bold text-fab-text tabular-nums">{tournamentAnalytics.finalistCount || <span className="text-fab-dim">N/A</span>}</p>
+                      <p className="text-[10px] text-fab-muted">Finals</p>
+                    </div>
+                    <div title="Lost Round 1 but still made top 8">
+                      <p className="text-lg font-bold text-fab-text tabular-nums">{tournamentAnalytics.submarineCount || <span className="text-fab-dim">N/A</span>}</p>
+                      <p className="text-[10px] text-fab-muted">Submarines</p>
                     </div>
                   </div>
                 </div>
@@ -648,6 +656,8 @@ export default function Dashboard() {
             longestCrossEventWinStreak: tournamentAnalytics.longestCrossEventWinStreak,
             consecutiveTop8s: tournamentAnalytics.consecutiveTop8s,
             consecutiveEventWins: tournamentAnalytics.consecutiveEventWins,
+            finalistCount: tournamentAnalytics.finalistCount,
+            submarineCount: tournamentAnalytics.submarineCount,
           }}
           onClose={() => setTournamentShareOpen(false)}
         />
