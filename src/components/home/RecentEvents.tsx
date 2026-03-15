@@ -155,8 +155,14 @@ export function RecentEvents({ eventStats, playerName }: { eventStats: EventStat
                                 <span className="text-fab-dim">{round}</span>
                               )}
                             </td>
-                            <td className="px-2.5 py-1.5 text-fab-text truncate max-w-0">
-                              {match.opponentName || <span className="text-fab-dim">Unknown</span>}
+                            <td className="px-2.5 py-1.5 truncate max-w-0">
+                              {match.opponentName ? (
+                                <Link href={`/opponents?q=${encodeURIComponent(match.opponentName)}`} className="text-fab-text hover:text-fab-gold transition-colors" onClick={(e) => e.stopPropagation()}>
+                                  {match.opponentName}
+                                </Link>
+                              ) : (
+                                <span className="text-fab-dim">Unknown</span>
+                              )}
                             </td>
                             <td className={`px-2.5 py-1.5 text-right font-bold ${RESULT_COLORS[match.result]}`}>
                               {RESULT_LABELS[match.result]}
