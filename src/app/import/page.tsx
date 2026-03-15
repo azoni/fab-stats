@@ -3,7 +3,7 @@ import { useState, useRef, useMemo, useCallback, useEffect } from "react";
 import { parseGemCsv } from "@/lib/gem-import";
 import { parseGemPaste, parseExtensionJson, type PasteImportResult } from "@/lib/gem-paste-import";
 import { useAuth } from "@/contexts/AuthContext";
-import { importMatchesFirestore, clearAllMatchesFirestore, updateProfile, registerGemId } from "@/lib/firestore-storage";
+import { importMatchesFirestore, clearAllMatchesFirestore, updateProfile, registerGemId, normalizeNotes } from "@/lib/firestore-storage";
 import { importMatchesLocal } from "@/lib/storage";
 import { createImportFeedEvent, createPlacementFeedEvent, deleteAllFeedEventsForUser } from "@/lib/feed";
 import { detectNewAchievements } from "@/lib/achievement-tracking";
@@ -126,7 +126,7 @@ export default function ImportPage() {
             existing = getLocalMatches();
           }
           const fps = new Set(existing.map((m) =>
-            `${m.date}|${(m.opponentName || "").toLowerCase()}|${m.notes || ""}|${m.result}`
+            `${m.date}|${(m.opponentName || "").toLowerCase()}|${m.notes ? normalizeNotes(m.notes) : ""}|${m.result}`
           ));
           setExistingFingerprints(fps);
         } catch {
@@ -183,7 +183,7 @@ export default function ImportPage() {
     if (!quickMode || !existingFingerprints) return filteredEvents;
     return filteredEvents.filter(({ event }) =>
       event.matches.some((m) => {
-        const fp = `${m.date}|${(m.opponentName || "").toLowerCase()}|${m.notes || ""}|${m.result}`;
+        const fp = `${m.date}|${(m.opponentName || "").toLowerCase()}|${m.notes ? normalizeNotes(m.notes) : ""}|${m.result}`;
         return !existingFingerprints.has(fp);
       })
     );
