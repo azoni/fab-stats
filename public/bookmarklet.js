@@ -303,6 +303,9 @@
   }
 
   var payload = { fabStatsVersion: 2, userGemId: "", matches: allMatches };
+
+  alert("FaB Stats Quick Sync\n\nFound " + events.length + " event(s) with " + allMatches.length + " match(es).\n\nRedirecting to FaB Stats to import...");
+
   var compact = JSON.stringify(payload);
 
   try {
@@ -315,7 +318,7 @@
       alert("FaB Stats Quick Sync\n\nToo much data for a single page. This shouldn't normally happen — please report this issue.");
       return;
     }
-    window.open("https://www.fabstats.net/import#quickext=" + encoded, "_blank");
+    window.location.href = "https://www.fabstats.net/import#quickext=" + encoded;
   } catch (e) {
     alert("FaB Stats Quick Sync\n\nFailed to encode data: " + e.message);
   }
