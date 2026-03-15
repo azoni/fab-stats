@@ -3,7 +3,10 @@ import { useState, useMemo } from "react";
 import Link from "next/link";
 import { useMatches } from "@/hooks/useMatches";
 import { useAuth } from "@/contexts/AuthContext";
+import dynamic from "next/dynamic";
 import { computeEventStats, computeTournamentAnalytics, type TournamentAnalytics } from "@/lib/stats";
+
+const TournamentShareModal = dynamic(() => import("@/components/tournament-stats/TournamentShareCard").then(m => ({ default: m.TournamentShareModal })), { ssr: false });
 import { WinRateRing } from "@/components/charts/WinRateRing";
 import { SegmentedBar } from "@/components/charts/SegmentedBar";
 import {
@@ -60,6 +63,7 @@ export default function TournamentStatsPage() {
   const [filterFormat, setFilterFormat] = useState("all");
   const [filterHero, setFilterHero] = useState("all");
   const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set());
+  const [shareOpen, setShareOpen] = useState(false);
 
   const toggle = (id: string) => setCollapsed((prev) => {
     const next = new Set(prev);
@@ -132,10 +136,21 @@ export default function TournamentStatsPage() {
             <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 18.75h-9m9 0a3 3 0 013 3h-15a3 3 0 013-3m9 0v-3.375c0-.621-.503-1.125-1.125-1.125h-.871M7.5 18.75v-3.375c0-.621.504-1.125 1.125-1.125h.872m5.007 0H9.497m5.007 0a7.454 7.454 0 01-.982-3.172M9.497 14.25a7.454 7.454 0 00.981-3.172M5.25 4.236c-.982.143-1.954.317-2.916.52A6.003 6.003 0 007.73 9.728M5.25 4.236V4.5c0 2.108.966 3.99 2.48 5.228M5.25 4.236V2.721C7.456 2.41 9.71 2.25 12 2.25c2.291 0 4.545.16 6.75.47v1.516M18.75 4.236c.982.143 1.954.317 2.916.52A6.003 6.003 0 0016.27 9.728M18.75 4.236V4.5c0 2.108-.966 3.99-2.48 5.228m0 0a6.023 6.023 0 01-2.77.704 6.023 6.023 0 01-2.77-.704" />
           </svg>
         </div>
-        <div>
+        <div className="flex-1">
           <h1 className="text-xl font-bold text-fab-gold">Tournament Stats</h1>
           <p className="text-xs text-fab-muted">Round-by-round analysis of your tournament performance</p>
         </div>
+        {hasEvents && profile && (
+          <button
+            onClick={() => setShareOpen(true)}
+            className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-fab-gold/15 text-fab-gold text-xs font-semibold hover:bg-fab-gold/25 transition-colors"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0 0a2.25 2.25 0 103.935 2.186 2.25 2.25 0 00-3.935-2.186zm0-12.814a2.25 2.25 0 103.933-2.185 2.25 2.25 0 00-3.933 2.185z" />
+            </svg>
+            Share
+          </button>
+        )}
       </div>
 
       {/* Filters */}
@@ -205,6 +220,29 @@ export default function TournamentStatsPage() {
             </Section>
           )}
         </>
+      )}
+
+      {shareOpen && analytics && profile && (
+        <TournamentShareModal
+          data={{
+            playerName: profile.displayName,
+            totalEvents: analytics.totalEvents,
+            totalMatches: analytics.totalMatches,
+            overallWinRate: analytics.overallWinRate,
+            r1WinRate: analytics.r1WinRate,
+            r1Wins: analytics.r1Wins,
+            r1Losses: analytics.r1Losses,
+            top8Count: analytics.top8Count,
+            top8Rate: analytics.top8Rate,
+            undefeatedSwissCount: analytics.undefeatedSwissCount,
+            longestCrossEventWinStreak: analytics.longestCrossEventWinStreak,
+            consecutiveTop8s: analytics.consecutiveTop8s,
+            consecutiveEventWins: analytics.consecutiveEventWins,
+            finalistCount: analytics.finalistCount,
+            submarineCount: analytics.submarineCount,
+          }}
+          onClose={() => setShareOpen(false)}
+        />
       )}
     </div>
   );
