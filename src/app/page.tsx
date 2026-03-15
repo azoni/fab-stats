@@ -472,7 +472,7 @@ export default function Dashboard() {
           {tournamentAnalytics && tournamentAnalytics.totalEvents >= 3 && (
             <div className="section-reveal" style={{ '--stagger': 2 } as React.CSSProperties}>
               <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden cursor-pointer hover:border-fab-gold/20 transition-colors" onClick={() => router.push("/tournament-stats")}>
-                <div className="flex items-center justify-between px-4 py-2.5 border-b border-fab-border/50">
+                <Link href="/tournament-stats" className="flex items-center justify-between px-4 py-2.5 border-b border-fab-border/50 hover:bg-fab-surface-hover transition-colors">
                   <p className="text-sm font-semibold text-fab-text">Tournament Stats</p>
                   <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                     <button
@@ -484,11 +484,11 @@ export default function Dashboard() {
                         <path strokeLinecap="round" strokeLinejoin="round" d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0 0a2.25 2.25 0 103.935 2.186 2.25 2.25 0 00-3.935-2.186zm0-12.814a2.25 2.25 0 103.933-2.185 2.25 2.25 0 00-3.933 2.185z" />
                       </svg>
                     </button>
-                    <Link href="/tournament-stats" className="text-xs font-semibold text-fab-gold border border-fab-gold/30 hover:bg-fab-gold/10 hover:border-fab-gold/50 px-2.5 py-1 rounded-md transition-colors">
+                    <span className="text-xs font-semibold text-fab-gold border border-fab-gold/30 hover:bg-fab-gold/10 hover:border-fab-gold/50 px-2.5 py-1 rounded-md transition-colors">
                       Tournament stats &rarr;
-                    </Link>
+                    </span>
                   </div>
-                </div>
+                </Link>
                 <div className="p-4 flex flex-col sm:flex-row items-center gap-4 sm:gap-5">
                   {/* R1 Win Rate Ring */}
                   <Link href="/tournament-stats" className="shrink-0 text-center hover:opacity-80 transition-opacity" title="Your win rate in Round 1 of rated events">
