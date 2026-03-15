@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useMatches } from "@/hooks/useMatches";
 import { useAuth } from "@/contexts/AuthContext";
 import dynamic from "next/dynamic";
-import { computeEventStats, computeTournamentAnalytics, type TournamentAnalytics } from "@/lib/stats";
+import { computeEventStats, computeTournamentAnalytics, computePlayoffFinishes, computeMinorEventFinishes, type TournamentAnalytics } from "@/lib/stats";
 
 const TournamentShareModal = dynamic(() => import("@/components/tournament-stats/TournamentShareCard").then(m => ({ default: m.TournamentShareModal })), { ssr: false });
 import { WinRateRing } from "@/components/charts/WinRateRing";
@@ -104,6 +104,13 @@ export default function TournamentStatsPage() {
 
   // Tournament analytics
   const analytics = useMemo(() => computeTournamentAnalytics(filteredEvents), [filteredEvents]);
+
+  // Full finalist count from ALL events (consistent with trophy case)
+  const allFinalistCount = useMemo(() => {
+    const major = computePlayoffFinishes(allEvents).filter(f => f.type === "finalist").length;
+    const minor = computeMinorEventFinishes(allEvents).filter(f => f.type === "finalist").length;
+    return major + minor;
+  }, [allEvents]);
 
   if (!isLoaded) {
     return (
@@ -238,7 +245,7 @@ export default function TournamentStatsPage() {
             longestCrossEventWinStreak: analytics.longestCrossEventWinStreak,
             consecutiveTop8s: analytics.consecutiveTop8s,
             consecutiveEventWins: analytics.consecutiveEventWins,
-            finalistCount: analytics.finalistCount,
+            finalistCount: allFinalistCount,
             submarineCount: analytics.submarineCount,
           }}
           onClose={() => setShareOpen(false)}
