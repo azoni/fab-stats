@@ -745,6 +745,22 @@ export default function ImportPage() {
         <div className="bg-fab-loss/10 border border-fab-loss/30 text-fab-loss rounded-md px-4 py-3 text-sm mb-4">{error}</div>
       )}
 
+      {/* Mobile bookmarklet tip */}
+      {isMobile && !hasResults && (
+        <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3 mb-4 flex items-start gap-2">
+          <svg className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+          </svg>
+          <p className="text-xs text-fab-muted">
+            On mobile? Try the{" "}
+            <Link href="/bookmarklet" className="text-blue-400 font-medium hover:underline">
+              Quick Sync Bookmarklet
+            </Link>
+            {" "}for one-tap import — no extension needed.
+          </p>
+        </div>
+      )}
+
       {/* Method Selection Cards */}
       {!hasResults && (
         <div className="space-y-3 mb-6">
