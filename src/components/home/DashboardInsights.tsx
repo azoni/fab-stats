@@ -1,11 +1,12 @@
 "use client";
 import { useMemo } from "react";
 import Link from "next/link";
-import type { HeroStats, OpponentStats } from "@/types";
+import type { HeroStats, OpponentStats, MatchRecord } from "@/types";
 
 interface DashboardInsightsProps {
   heroStats: HeroStats[];
   opponentStats: OpponentStats[];
+  matches?: MatchRecord[];
 }
 
 interface RivalryHighlights {
@@ -14,7 +15,7 @@ interface RivalryHighlights {
   mostPlayed: OpponentStats | null;
 }
 
-export function DashboardInsights({ heroStats, opponentStats }: DashboardInsightsProps) {
+export function DashboardInsights({ heroStats, opponentStats, matches }: DashboardInsightsProps) {
   const topHeroes = useMemo(() => {
     return heroStats
       .filter((h) => h.heroName !== "Unknown" && h.totalMatches >= 3)
@@ -44,10 +45,29 @@ export function DashboardInsights({ heroStats, opponentStats }: DashboardInsight
     return { nemesis, bestMatchup, mostPlayed };
   }, [opponentStats]);
 
+  // 5 newest unique opponents (by most recent match date)
+  const newestOpponents = useMemo(() => {
+    if (!matches || matches.length === 0) return [];
+    const seen = new Set<string>();
+    const result: { name: string; date: string; result: string; hero?: string }[] = [];
+    const sorted = [...matches].sort((a, b) =>
+      new Date(b.date).getTime() - new Date(a.date).getTime() || new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+    for (const m of sorted) {
+      const name = m.opponentName?.trim();
+      if (!name || name === "Unknown" || name === "BYE" || seen.has(name.toLowerCase())) continue;
+      seen.add(name.toLowerCase());
+      result.push({ name, date: m.date, result: m.result, hero: m.opponentHero });
+      if (result.length >= 5) break;
+    }
+    return result;
+  }, [matches]);
+
   const hasHeroes = topHeroes.length > 0;
   const hasRivalries = highlights !== null;
+  const hasNewOpponents = newestOpponents.length > 0;
 
-  if (!hasHeroes && !hasRivalries) return null;
+  if (!hasHeroes && !hasRivalries && !hasNewOpponents) return null;
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -115,6 +135,30 @@ export function DashboardInsights({ heroStats, opponentStats }: DashboardInsight
                 opponent={highlights.mostPlayed}
               />
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Newest Opponents */}
+      {hasNewOpponents && (
+        <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden md:col-span-2">
+          <div className="flex items-center justify-between px-4 py-2.5 border-b border-fab-border/50">
+            <p className="text-sm font-semibold text-fab-text">Recent Opponents</p>
+            <Link href="/opponents" className="text-xs font-semibold text-fab-gold border border-fab-gold/30 hover:bg-fab-gold/10 hover:border-fab-gold/50 px-2.5 py-1 rounded-md transition-colors">
+              All opponents &rarr;
+            </Link>
+          </div>
+          <div className="p-3 grid grid-cols-1 sm:grid-cols-5 gap-1.5">
+            {newestOpponents.map((opp) => {
+              const resultColor = opp.result === "win" ? "text-fab-win" : opp.result === "loss" ? "text-fab-loss" : opp.result === "draw" ? "text-fab-draw" : "text-fab-dim";
+              return (
+                <Link key={opp.name + opp.date} href={`/opponents?q=${encodeURIComponent(opp.name)}`} className="flex items-center gap-2 py-1 px-1.5 hover:bg-fab-bg/50 rounded-md transition-colors">
+                  <span className={`text-[9px] font-bold uppercase ${resultColor}`}>{opp.result === "win" ? "W" : opp.result === "loss" ? "L" : opp.result === "draw" ? "D" : "B"}</span>
+                  <span className="text-sm text-fab-text truncate flex-1">{opp.name}</span>
+                  <span className="text-[10px] text-fab-dim">{opp.date.slice(5)}</span>
+                </Link>
+              );
+            })}
           </div>
         </div>
       )}

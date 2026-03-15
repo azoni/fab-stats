@@ -20,6 +20,7 @@ import Link from "next/link";
 import { CheckCircleIcon, FileIcon, ChevronDownIcon, ChevronUpIcon } from "@/components/icons/NavIcons";
 import { MatchResult, type MatchRecord, type Achievement } from "@/types";
 import { allHeroes } from "@/lib/heroes";
+import { HeroSelect } from "@/components/heroes/HeroSelect";
 import { computeSessionRecap, type SessionRecap } from "@/lib/session-recap";
 import { PostEventRecap } from "@/components/import/PostEventRecap";
 import { getAllMatches as getLocalMatches } from "@/lib/storage";
@@ -597,21 +598,15 @@ export default function ImportPage() {
                               </div>
                             </div>
                             {match.result !== MatchResult.Bye && (
-                              <div className="flex items-center gap-2 mt-1.5" onClick={(e) => e.stopPropagation()}>
-                                <label className="text-[10px] text-fab-dim whitespace-nowrap">Opp Hero:</label>
-                                <select
+                              <div className="mt-1.5" onClick={(e) => e.stopPropagation()}>
+                                <HeroSelect
                                   value={oppHero === "Unknown" ? "" : oppHero}
-                                  onChange={(e) => {
-                                    const val = e.target.value;
-                                    setOpponentHeroOverrides((prev) => val ? { ...prev, [oppKey]: val } : (() => { const { [oppKey]: _, ...rest } = prev; return rest; })());
+                                  onChange={(val) => {
+                                    setOpponentHeroOverrides((prev) => val && val !== "Unknown" ? { ...prev, [oppKey]: val } : (() => { const { [oppKey]: _, ...rest } = prev; return rest; })());
                                   }}
-                                  className="bg-fab-bg border border-fab-border rounded px-1.5 py-0.5 text-xs text-fab-text outline-none focus:border-fab-gold"
-                                >
-                                  <option value="">Unknown</option>
-                                  {allHeroes.map((h) => (
-                                    <option key={h.name} value={h.name}>{h.name}</option>
-                                  ))}
-                                </select>
+                                  label="Opp Hero"
+                                  allowClear
+                                />
                               </div>
                             )}
                           </div>

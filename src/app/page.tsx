@@ -5,7 +5,7 @@ import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useMatches } from "@/hooks/useMatches";
 import { useAuth } from "@/contexts/AuthContext";
-import { computeOverallStats, computeHeroStats, computeEventStats, computeOpponentStats, computeBestFinish, computePlayoffFinishes, computeMinorEventFinishes, getRoundNumber, getEventType } from "@/lib/stats";
+import { computeOverallStats, computeHeroStats, computeEventStats, computeOpponentStats, computeBestFinish, computePlayoffFinishes, computeMinorEventFinishes, computeTournamentAnalytics, getRoundNumber, getEventType } from "@/lib/stats";
 import { updateLeaderboardEntry } from "@/lib/leaderboard";
 import { useLeaderboard } from "@/hooks/useLeaderboard";
 import { computeUserRanks, getBestRank, rankBorderClass } from "@/lib/leaderboard-ranks";
@@ -198,6 +198,12 @@ export default function Dashboard() {
     if (!best) return null;
     return { ...underlineStyle[best], placement: bestPlacement };
   }, [minorFinishes, profile?.underlineEventType, profile?.underlinePlacement]);
+
+  // Tournament analytics (from rated events)
+  const tournamentAnalytics = useMemo(() => {
+    const ratedEvents = computeEventStats(matches).filter(e => e.rated);
+    return ratedEvents.length > 0 ? computeTournamentAnalytics(ratedEvents) : null;
+  }, [matches]);
 
   // Community meta (compact — top 3 heroes for mini widget)
   const communityMeta = useMemo(() => computeMetaStats(lbEntries), [lbEntries]);
@@ -459,17 +465,58 @@ export default function Dashboard() {
             <StatCards overall={overall} eventCount={filteredEventStats.length} bestFinishLabel={bestFinish?.label ?? null} recentMatches={last30} />
           </div>
 
+          {/* Tournament Stats Card */}
+          {tournamentAnalytics && tournamentAnalytics.totalEvents >= 3 && (
+            <div className="section-reveal" style={{ '--stagger': 2 } as React.CSSProperties}>
+              <Link href="/tournament-stats" className="block bg-fab-surface border border-fab-border rounded-lg p-4 hover:border-amber-500/30 transition-colors card-shimmer">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-6 h-6 rounded-md bg-amber-500/10 flex items-center justify-center ring-1 ring-inset ring-amber-500/20">
+                      <svg className="w-3.5 h-3.5 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 18.75h-9m9 0a3 3 0 013 3h-15a3 3 0 013-3m9 0v-3.375c0-.621-.503-1.125-1.125-1.125h-.871M7.5 18.75v-3.375c0-.621.504-1.125 1.125-1.125h.872m5.007 0H9.497m5.007 0a7.454 7.454 0 01-.982-3.172M9.497 14.25a7.454 7.454 0 00.981-3.172M5.25 4.236c-.982.143-1.954.317-2.916.52A6.003 6.003 0 007.73 9.728M5.25 4.236V4.5c0 2.108.966 3.99 2.48 5.228M5.25 4.236V2.721C7.456 2.41 9.71 2.25 12 2.25c2.291 0 4.545.16 6.75.47v1.516M18.75 4.236c.982.143 1.954.317 2.916.52A6.003 6.003 0 0016.27 9.728M18.75 4.236V4.5c0 2.108-.966 3.99-2.48 5.228m0 0a6.023 6.023 0 01-2.77.704 6.023 6.023 0 01-2.77-.704" />
+                      </svg>
+                    </div>
+                    <span className="text-sm font-semibold text-fab-text">Tournament Stats</span>
+                  </div>
+                  <span className="text-xs text-fab-gold font-semibold">View all &rarr;</span>
+                </div>
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="text-center">
+                    <p className={`text-xl font-bold ${tournamentAnalytics.r1WinRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>
+                      {Math.round(tournamentAnalytics.r1WinRate)}%
+                    </p>
+                    <p className="text-[10px] text-fab-dim">R1 Win Rate</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-xl font-bold text-fab-text">{tournamentAnalytics.totalEvents}</p>
+                    <p className="text-[10px] text-fab-dim">Events</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-xl font-bold text-fab-win">{tournamentAnalytics.top8Count}</p>
+                    <p className="text-[10px] text-fab-dim">Top 8s</p>
+                  </div>
+                </div>
+                {tournamentAnalytics.bounceBackTotal > 0 && (
+                  <p className="text-[10px] text-fab-muted mt-2 text-center">
+                    Bounce-back rate: <span className="text-fab-text font-semibold">{Math.round(tournamentAnalytics.bounceBackRate)}%</span>
+                    {" · "}Closer rate: <span className="text-fab-text font-semibold">{Math.round(tournamentAnalytics.closerRate)}%</span>
+                  </p>
+                )}
+              </Link>
+            </div>
+          )}
+
           {/* LatestMatches + RecentEvents */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 section-reveal" style={{ '--stagger': 2 } as React.CSSProperties}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 section-reveal" style={{ '--stagger': 3 } as React.CSSProperties}>
             <LatestMatches matches={latestMatches} />
             <RecentEvents eventStats={filteredEventStats} playerName={profile?.displayName} />
           </div>
 
-          <div className="section-reveal" style={{ '--stagger': 3 } as React.CSSProperties}>
-            <DashboardInsights heroStats={heroStats} opponentStats={opponentStats} />
+          <div className="section-reveal" style={{ '--stagger': 4 } as React.CSSProperties}>
+            <DashboardInsights heroStats={heroStats} opponentStats={opponentStats} matches={filteredMatches} />
           </div>
 
-          <div className="section-reveal" style={{ '--stagger': 4 } as React.CSSProperties}>
+          <div className="section-reveal" style={{ '--stagger': 5 } as React.CSSProperties}>
             <ExploreCTA />
           </div>
         </div>
