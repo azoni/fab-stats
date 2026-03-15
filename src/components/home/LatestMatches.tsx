@@ -55,7 +55,7 @@ export function LatestMatches({ matches }: LatestMatchesProps) {
 
             {/* Main content */}
             <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center justify-between gap-2">
                 <span className="text-fab-text font-medium truncate">{m.opponentName || "Unknown"}</span>
                 <span className="text-[10px] text-fab-dim shrink-0 tabular-nums">{formatDate(m.date)}</span>
               </div>
