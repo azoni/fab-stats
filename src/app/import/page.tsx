@@ -19,7 +19,6 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { CheckCircleIcon, FileIcon, ChevronDownIcon, ChevronUpIcon } from "@/components/icons/NavIcons";
 import { MatchResult, type MatchRecord, type Achievement } from "@/types";
-import { allHeroes } from "@/lib/heroes";
 import { HeroSelect } from "@/components/heroes/HeroSelect";
 import { computeSessionRecap, type SessionRecap } from "@/lib/session-recap";
 import { PostEventRecap } from "@/components/import/PostEventRecap";
@@ -557,21 +556,16 @@ export default function ImportPage() {
                 {isExpanded && (
                   <div className="border-t border-fab-border px-4 pb-4 pt-3 space-y-3">
                     {/* Hero selection */}
-                    <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                      <label className="text-xs text-fab-muted whitespace-nowrap">Your Hero:</label>
-                      <select
+                    <div onClick={(e) => e.stopPropagation()}>
+                      <HeroSelect
                         value={heroValue === "Unknown" ? "" : heroValue}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setHeroOverrides((prev) => val ? { ...prev, [origIdx]: val } : (() => { const { [origIdx]: _, ...rest } = prev; return rest; })());
+                        onChange={(val) => {
+                          setHeroOverrides((prev) => val && val !== "Unknown" ? { ...prev, [origIdx]: val } : (() => { const { [origIdx]: _, ...rest } = prev; return rest; })());
                         }}
-                        className={`bg-fab-bg border rounded px-2 py-1 text-sm outline-none focus:border-fab-gold ${needsHero ? "border-fab-draw/50 text-fab-draw" : "border-fab-border text-fab-text"}`}
-                      >
-                        <option value="">{needsHero ? "Select hero..." : "Unknown"}</option>
-                        {allHeroes.map((h) => (
-                          <option key={h.name} value={h.name}>{h.name}</option>
-                        ))}
-                      </select>
+                        label="Your Hero"
+                        format={event.format}
+                        allowClear
+                      />
                     </div>
                     {/* Matches with opponent hero editing */}
                     <div className="space-y-2">
@@ -606,6 +600,7 @@ export default function ImportPage() {
                                     setOpponentHeroOverrides((prev) => val && val !== "Unknown" ? { ...prev, [oppKey]: val } : (() => { const { [oppKey]: _, ...rest } = prev; return rest; })());
                                   }}
                                   label="Opp Hero"
+                                  format={event.format}
                                   allowClear
                                 />
                               </div>
@@ -1253,22 +1248,16 @@ export default function ImportPage() {
                       </button>
                       {isExpanded && (
                         <div className="border-t border-fab-border px-4 pb-4 pt-3 space-y-3">
-                          <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                            <label className="text-xs text-fab-muted whitespace-nowrap">Hero:</label>
-                            <select
+                          <div onClick={(e) => e.stopPropagation()}>
+                            <HeroSelect
                               value={heroValue === "Unknown" ? "" : heroValue}
-                              onChange={(e) => {
-                                const val = e.target.value;
-                                setHeroOverrides((prev) => val ? { ...prev, [origIdx]: val } : (() => { const { [origIdx]: _, ...rest } = prev; return rest; })());
+                              onChange={(val) => {
+                                setHeroOverrides((prev) => val && val !== "Unknown" ? { ...prev, [origIdx]: val } : (() => { const { [origIdx]: _, ...rest } = prev; return rest; })());
                               }}
-                              className={`bg-fab-bg border rounded px-2 py-1 text-sm outline-none focus:border-fab-gold ${needsHero ? "border-fab-draw/50 text-fab-draw" : "border-fab-border text-fab-text"}`}
-                            >
-                              <option value="">{needsHero ? "Select hero..." : "Unknown"}</option>
-                              {allHeroes.map((h) => (
-                                <option key={h.name} value={h.name}>{h.name}</option>
-                              ))}
-                            </select>
-                            {needsHero && <span className="text-[10px] text-fab-draw">Optional</span>}
+                              label={needsHero ? "Hero (optional)" : "Hero"}
+                              format={event.format}
+                              allowClear
+                            />
                           </div>
                           <div className="space-y-2">
                             {event.matches.map((match, j) => {
@@ -1295,21 +1284,16 @@ export default function ImportPage() {
                                     </div>
                                   </div>
                                   {match.result !== MatchResult.Bye && (
-                                    <div className="flex items-center gap-2 mt-1.5" onClick={(e) => e.stopPropagation()}>
-                                      <label className="text-[10px] text-fab-dim whitespace-nowrap">Opp Hero:</label>
-                                      <select
+                                    <div className="mt-1.5" onClick={(e) => e.stopPropagation()}>
+                                      <HeroSelect
                                         value={oppHero === "Unknown" ? "" : oppHero}
-                                        onChange={(e) => {
-                                          const val = e.target.value;
-                                          setOpponentHeroOverrides((prev) => val ? { ...prev, [oppKey]: val } : (() => { const { [oppKey]: _, ...rest } = prev; return rest; })());
+                                        onChange={(val) => {
+                                          setOpponentHeroOverrides((prev) => val && val !== "Unknown" ? { ...prev, [oppKey]: val } : (() => { const { [oppKey]: _, ...rest } = prev; return rest; })());
                                         }}
-                                        className="bg-fab-bg border border-fab-border rounded px-1.5 py-0.5 text-xs text-fab-text outline-none focus:border-fab-gold"
-                                      >
-                                        <option value="">Unknown</option>
-                                        {allHeroes.map((h) => (
-                                          <option key={h.name} value={h.name}>{h.name}</option>
-                                        ))}
-                                      </select>
+                                        label="Opp Hero"
+                                        format={event.format}
+                                        allowClear
+                                      />
                                     </div>
                                   )}
                                 </div>
