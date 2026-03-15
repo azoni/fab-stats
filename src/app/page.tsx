@@ -496,7 +496,8 @@ export default function Dashboard() {
                     <p className="text-[10px] text-fab-muted font-medium mt-1">Win R1</p>
                   </Link>
                   {/* Key stats */}
-                  <div className="flex-1 w-full grid grid-cols-2 sm:grid-cols-5 gap-x-3 gap-y-2.5 text-center sm:text-left">
+                  <div className="flex-1 w-full grid grid-cols-3 sm:grid-cols-6 gap-x-3 gap-y-2.5 text-center sm:text-left">
+                    {/* Row 1: Overview */}
                     <div title="Total rated events played">
                       <p className="text-lg font-bold text-fab-text tabular-nums">{tournamentAnalytics.totalEvents}</p>
                       <p className="text-[10px] text-fab-muted">Events</p>
@@ -505,14 +506,23 @@ export default function Dashboard() {
                       <p className={`text-lg font-bold tabular-nums ${tournamentAnalytics.overallWinRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>{tournamentAnalytics.overallWinRate.toFixed(1)}%</p>
                       <p className="text-[10px] text-fab-muted">Win Rate</p>
                     </div>
-                    <div title={`Made top 8 in ${tournamentAnalytics.top8Count} of ${tournamentAnalytics.totalEvents} events`}>
-                      <p className="text-lg font-bold text-fab-gold tabular-nums">{tournamentAnalytics.top8Count}</p>
+                    <div title="Tournament wins (champion)">
+                      <p className="text-lg font-bold text-fab-gold tabular-nums">{playoffFinishes.filter(f => f.type === "champion").length || <span className="text-fab-dim">N/A</span>}</p>
+                      <p className="text-[10px] text-fab-muted">Wins</p>
+                    </div>
+                    <div title="Events where you reached the finals">
+                      <p className="text-lg font-bold text-fab-text tabular-nums">{playoffFinishes.filter(f => f.type === "finalist").length || <span className="text-fab-dim">N/A</span>}</p>
+                      <p className="text-[10px] text-fab-muted">Finals</p>
+                    </div>
+                    <div title="Top 4 finishes">
+                      <p className="text-lg font-bold text-fab-text tabular-nums">{playoffFinishes.filter(f => f.type === "top4").length || <span className="text-fab-dim">N/A</span>}</p>
+                      <p className="text-[10px] text-fab-muted">Top 4s</p>
+                    </div>
+                    <div title={`Made top 8 in ${tournamentAnalytics.top8Count} of ${tournamentAnalytics.totalEvents} events (${Math.round(tournamentAnalytics.top8Rate)}%)`}>
+                      <p className="text-lg font-bold text-fab-text tabular-nums">{tournamentAnalytics.top8Count}</p>
                       <p className="text-[10px] text-fab-muted">Top 8s</p>
                     </div>
-                    <div title={`You make top 8 in ${Math.round(tournamentAnalytics.top8Rate)}% of your events`}>
-                      <p className="text-lg font-bold text-fab-text tabular-nums">{Math.round(tournamentAnalytics.top8Rate)}%</p>
-                      <p className="text-[10px] text-fab-muted">Top 8 Rate</p>
-                    </div>
+                    {/* Row 2: Deep stats */}
                     <div title="Most consecutive match wins across all events">
                       <p className="text-lg font-bold text-fab-text tabular-nums">{tournamentAnalytics.longestCrossEventWinStreak || <span className="text-fab-dim">N/A</span>}</p>
                       <p className="text-[10px] text-fab-muted">Best Win Streak</p>
@@ -520,6 +530,10 @@ export default function Dashboard() {
                     <div title={`Went undefeated through swiss ${tournamentAnalytics.undefeatedSwissCount} time${tournamentAnalytics.undefeatedSwissCount === 1 ? "" : "s"}`}>
                       <p className={`text-lg font-bold tabular-nums ${tournamentAnalytics.undefeatedSwissCount > 0 ? "text-fab-win" : "text-fab-dim"}`}>{tournamentAnalytics.undefeatedSwissCount || <span className="text-fab-dim">N/A</span>}</p>
                       <p className="text-[10px] text-fab-muted">Undefeated Swiss</p>
+                    </div>
+                    <div title="Lost Round 1 but still made top 8">
+                      <p className="text-lg font-bold text-fab-text tabular-nums">{tournamentAnalytics.submarineCount || <span className="text-fab-dim">N/A</span>}</p>
+                      <p className="text-[10px] text-fab-muted">Submarines</p>
                     </div>
                     <div title="Most consecutive events making top 8">
                       <p className="text-lg font-bold text-fab-text tabular-nums">{tournamentAnalytics.consecutiveTop8s || <span className="text-fab-dim">N/A</span>}</p>
@@ -529,13 +543,9 @@ export default function Dashboard() {
                       <p className="text-lg font-bold text-fab-gold tabular-nums">{tournamentAnalytics.consecutiveEventWins || <span className="text-fab-dim">N/A</span>}</p>
                       <p className="text-[10px] text-fab-muted">Consec. Wins</p>
                     </div>
-                    <div title="Events where you reached the finals">
-                      <p className="text-lg font-bold text-fab-text tabular-nums">{playoffFinishes.filter(f => f.type === "finalist").length || <span className="text-fab-dim">N/A</span>}</p>
-                      <p className="text-[10px] text-fab-muted">Finals</p>
-                    </div>
-                    <div title="Lost Round 1 but still made top 8">
-                      <p className="text-lg font-bold text-fab-text tabular-nums">{tournamentAnalytics.submarineCount || <span className="text-fab-dim">N/A</span>}</p>
-                      <p className="text-[10px] text-fab-muted">Submarines</p>
+                    <div title={`You make top 8 in ${Math.round(tournamentAnalytics.top8Rate)}% of your events`}>
+                      <p className="text-lg font-bold text-fab-text tabular-nums">{Math.round(tournamentAnalytics.top8Rate)}%</p>
+                      <p className="text-[10px] text-fab-muted">Top 8 Rate</p>
                     </div>
                   </div>
                 </div>
@@ -656,7 +666,9 @@ export default function Dashboard() {
             longestCrossEventWinStreak: tournamentAnalytics.longestCrossEventWinStreak,
             consecutiveTop8s: tournamentAnalytics.consecutiveTop8s,
             consecutiveEventWins: tournamentAnalytics.consecutiveEventWins,
+            championCount: playoffFinishes.filter(f => f.type === "champion").length,
             finalistCount: playoffFinishes.filter(f => f.type === "finalist").length,
+            top4Count: playoffFinishes.filter(f => f.type === "top4").length,
             submarineCount: tournamentAnalytics.submarineCount,
           }}
           onClose={() => setTournamentShareOpen(false)}

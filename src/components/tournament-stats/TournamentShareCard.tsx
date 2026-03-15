@@ -19,7 +19,9 @@ export interface TournamentShareData {
   longestCrossEventWinStreak: number;
   consecutiveTop8s: number;
   consecutiveEventWins: number;
+  championCount: number;
   finalistCount: number;
+  top4Count: number;
   submarineCount: number;
 }
 
@@ -228,28 +230,35 @@ function ShareCardInner({ data, theme }: { data: TournamentShareData; theme: Tou
         <OrnamentalDivider color={t.accent} />
 
         {/* Detail stats */}
-        <div className="grid grid-cols-2 gap-x-4 gap-y-2 my-4 text-[11px]">
-          <div className="flex justify-between">
-            <span style={{ color: t.muted }}>Top 8 Rate</span>
-            <span className="font-bold" style={{ color: t.text }}>{Math.round(data.top8Rate)}%</span>
+        <div className="grid grid-cols-3 gap-3 my-4 text-center">
+          <div>
+            <p className="text-lg font-black" style={{ color: t.gold }}>{data.championCount || "—"}</p>
+            <p className="text-[9px] uppercase tracking-wider" style={{ color: t.muted }}>Wins</p>
           </div>
+          <div>
+            <p className="text-lg font-black" style={{ color: t.text }}>{data.finalistCount || "—"}</p>
+            <p className="text-[9px] uppercase tracking-wider" style={{ color: t.muted }}>Finals</p>
+          </div>
+          <div>
+            <p className="text-lg font-black" style={{ color: t.text }}>{data.top4Count || "—"}</p>
+            <p className="text-[9px] uppercase tracking-wider" style={{ color: t.muted }}>Top 4s</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-x-4 gap-y-2 my-3 text-[11px]">
           <div className="flex justify-between">
             <span style={{ color: t.muted }}>Best Win Streak</span>
             <span className="font-bold" style={{ color: t.win }}>{data.longestCrossEventWinStreak || "—"}</span>
+          </div>
+          <div className="flex justify-between">
+            <span style={{ color: t.muted }}>Top 8 Rate</span>
+            <span className="font-bold" style={{ color: t.text }}>{Math.round(data.top8Rate)}%</span>
           </div>
           <div className="flex justify-between">
             <span style={{ color: t.muted }}>Undefeated Swiss</span>
             <span className="font-bold" style={{ color: data.undefeatedSwissCount > 0 ? t.win : t.dim }}>
               {data.undefeatedSwissCount || "—"}
             </span>
-          </div>
-          <div className="flex justify-between">
-            <span style={{ color: t.muted }}>Consec. Top 8s</span>
-            <span className="font-bold" style={{ color: t.text }}>{data.consecutiveTop8s || "—"}</span>
-          </div>
-          <div className="flex justify-between">
-            <span style={{ color: t.muted }}>Finals</span>
-            <span className="font-bold" style={{ color: t.text }}>{data.finalistCount || "—"}</span>
           </div>
           <div className="flex justify-between">
             <span style={{ color: t.muted }}>Submarines</span>
