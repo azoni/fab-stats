@@ -628,10 +628,11 @@ export default function ImportPage() {
         {/* Import button */}
         <div className="flex gap-3">
           <button
-            onClick={handleImportClick}
-            className="flex-1 py-3 rounded-md font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors"
+            onClick={() => handleImport()}
+            disabled={importing}
+            className="flex-1 py-3 rounded-md font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors disabled:opacity-50"
           >
-            Import {quickNewMatchCount} Matches
+            {importing ? "Importing..." : `Import ${quickNewMatchCount} Matches`}
           </button>
           <button
             onClick={() => router.push("/")}
