@@ -3,13 +3,13 @@
 
   try {
 
-  // ── Validate page ──
+  // ── Validate page — redirect if not on the right page ──
   if (location.hostname !== "gem.fabtcg.com") {
-    alert("FaB Stats Quick Sync\n\nNavigate to gem.fabtcg.com/profile/history/ first, then tap this bookmarklet again.");
+    window.location.href = "https://gem.fabtcg.com/profile/history/";
     return;
   }
   if (!location.pathname.startsWith("/profile/history") && !location.pathname.startsWith("/profile/player")) {
-    alert("FaB Stats Quick Sync\n\nNavigate to your GEM History page first:\ngem.fabtcg.com/profile/history/");
+    window.location.href = "https://gem.fabtcg.com/profile/history/";
     return;
   }
 
