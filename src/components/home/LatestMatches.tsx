@@ -53,24 +53,20 @@ export function LatestMatches({ matches }: LatestMatchesProps) {
               {resultLabel[m.result] || "?"}
             </span>
 
-            {/* Opponent */}
-            <span className="text-fab-text font-medium truncate min-w-0 flex-1">
-              {m.opponentName || "Unknown"}
-            </span>
-
-            {/* Hero matchup */}
-            <span className="text-[10px] text-fab-dim hidden sm:block shrink-0 truncate max-w-[120px]">
-              {m.heroPlayed && m.opponentHero ? (
-                <>{m.heroPlayed} <span className="text-fab-muted">vs</span> {m.opponentHero}</>
-              ) : m.heroPlayed ? (
-                m.heroPlayed
-              ) : null}
-            </span>
-
-            {/* Date */}
-            <span className="text-[10px] text-fab-dim shrink-0 tabular-nums">
-              {formatDate(m.date)}
-            </span>
+            {/* Main content */}
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5">
+                <span className="text-fab-text font-medium truncate">{m.opponentName || "Unknown"}</span>
+                <span className="text-[10px] text-fab-dim shrink-0 tabular-nums">{formatDate(m.date)}</span>
+              </div>
+              {(m.heroPlayed || m.opponentHero) && (
+                <p className="text-[10px] text-fab-dim mt-0.5 truncate">
+                  {m.heroPlayed && m.heroPlayed !== "Unknown" ? m.heroPlayed : "?"}{" "}
+                  <span className="text-fab-muted">vs</span>{" "}
+                  {m.opponentHero && m.opponentHero !== "Unknown" ? m.opponentHero : "?"}
+                </p>
+              )}
+            </div>
           </Link>
         ))}
       </div>

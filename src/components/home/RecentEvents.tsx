@@ -160,7 +160,10 @@ export function RecentEvents({ eventStats, playerName }: { eventStats: EventStat
                               )}
                             </td>
                             <td className="px-2.5 py-1.5 text-fab-text truncate max-w-0">
-                              {match.opponentName || <span className="text-fab-dim">Unknown</span>}
+                              <span className="block truncate">{match.opponentName || <span className="text-fab-dim">Unknown</span>}</span>
+                              {match.opponentHero && match.opponentHero !== "Unknown" && (
+                                <span className="block text-[10px] text-fab-dim truncate">{match.opponentHero}</span>
+                              )}
                             </td>
                             <td className={`px-2.5 py-1.5 text-right font-bold ${RESULT_COLORS[match.result]}`}>
                               {RESULT_LABELS[match.result]}
