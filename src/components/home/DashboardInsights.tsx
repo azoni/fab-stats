@@ -45,27 +45,39 @@ export function DashboardInsights({ heroStats, opponentStats, matches }: Dashboa
     return { nemesis, bestMatchup, mostPlayed };
   }, [opponentStats]);
 
-  // 5 newest unique opponents (by most recent match date)
-  const newestOpponents = useMemo(() => {
+  // 5 newest opponents — opponents you've only played once (first encounter)
+  const newOpponents = useMemo(() => {
     if (!matches || matches.length === 0) return [];
-    const seen = new Set<string>();
-    const result: { name: string; date: string; result: string; hero?: string }[] = [];
+    // Count how many times each opponent appears
+    const counts = new Map<string, number>();
+    for (const m of matches) {
+      const name = m.opponentName?.trim()?.toLowerCase();
+      if (!name || name === "unknown" || name === "bye") continue;
+      counts.set(name, (counts.get(name) || 0) + 1);
+    }
+    // Find single-match opponents, sorted by most recent
     const sorted = [...matches].sort((a, b) =>
       new Date(b.date).getTime() - new Date(a.date).getTime() || new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     );
+    const seen = new Set<string>();
+    const result: { name: string; date: string; result: string }[] = [];
     for (const m of sorted) {
       const name = m.opponentName?.trim();
-      if (!name || name === "Unknown" || name === "BYE" || seen.has(name.toLowerCase())) continue;
-      seen.add(name.toLowerCase());
-      result.push({ name, date: m.date, result: m.result, hero: m.opponentHero });
-      if (result.length >= 5) break;
+      if (!name || name === "Unknown" || name === "BYE") continue;
+      const key = name.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      if ((counts.get(key) || 0) === 1) {
+        result.push({ name, date: m.date, result: m.result });
+        if (result.length >= 5) break;
+      }
     }
     return result;
   }, [matches]);
 
   const hasHeroes = topHeroes.length > 0;
   const hasRivalries = highlights !== null;
-  const hasNewOpponents = newestOpponents.length > 0;
+  const hasNewOpponents = newOpponents.length > 0;
 
   if (!hasHeroes && !hasRivalries && !hasNewOpponents) return null;
 
@@ -139,17 +151,17 @@ export function DashboardInsights({ heroStats, opponentStats, matches }: Dashboa
         </div>
       )}
 
-      {/* Newest Opponents */}
+      {/* New Opponents — first-time encounters */}
       {hasNewOpponents && (
         <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden md:col-span-2">
           <div className="flex items-center justify-between px-4 py-2.5 border-b border-fab-border/50">
-            <p className="text-sm font-semibold text-fab-text">Recent Opponents</p>
+            <p className="text-sm font-semibold text-fab-text">New Opponents</p>
             <Link href="/opponents" className="text-xs font-semibold text-fab-gold border border-fab-gold/30 hover:bg-fab-gold/10 hover:border-fab-gold/50 px-2.5 py-1 rounded-md transition-colors">
               All opponents &rarr;
             </Link>
           </div>
           <div className="p-3 grid grid-cols-1 sm:grid-cols-5 gap-1.5">
-            {newestOpponents.map((opp) => {
+            {newOpponents.map((opp) => {
               const resultColor = opp.result === "win" ? "text-fab-win" : opp.result === "loss" ? "text-fab-loss" : opp.result === "draw" ? "text-fab-draw" : "text-fab-dim";
               return (
                 <Link key={opp.name + opp.date} href={`/opponents?q=${encodeURIComponent(opp.name)}`} className="flex items-center gap-2 py-1 px-1.5 hover:bg-fab-bg/50 rounded-md transition-colors">
