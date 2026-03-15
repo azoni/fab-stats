@@ -207,7 +207,7 @@ export default function MetaPage() {
       </div>
 
       {/* Period tabs */}
-      <div className="flex gap-1 mb-4 flex-wrap items-center overflow-x-auto">
+      <div className="flex gap-1 mb-4 flex-wrap items-center">
         {/* Season button first on mobile for visibility */}
         {seasons.length > 0 && (
           <div className="relative sm:hidden">
