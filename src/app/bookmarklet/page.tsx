@@ -57,10 +57,12 @@ export default function BookmarkletPage() {
       {/* Desktop Setup */}
       <div className="bg-fab-surface border border-fab-border rounded-lg p-4 mb-4">
         <h2 className="text-sm font-semibold text-fab-text mb-3">Desktop Setup</h2>
-        <p className="text-sm text-fab-muted mb-3">
-          Drag this button to your bookmarks bar:
+
+        {/* Method 1: Drag */}
+        <p className="text-sm text-fab-muted mb-2">
+          <span className="text-fab-gold font-bold">Option 1:</span> Drag this button to your bookmarks bar:
         </p>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 mb-4">
           <a
             href={BOOKMARKLET_CODE}
             onClick={(e) => e.preventDefault()}
@@ -77,6 +79,24 @@ export default function BookmarkletPage() {
           <span className="text-xs text-fab-dim">
             Drag me to your bookmarks bar
           </span>
+        </div>
+
+        {/* Method 2: Manual */}
+        <p className="text-sm text-fab-muted mb-2">
+          <span className="text-fab-gold font-bold">Option 2:</span> If dragging doesn&apos;t work (some browsers block it):
+        </p>
+        <ol className="text-xs text-fab-dim space-y-1.5 ml-4 mb-3 list-decimal list-inside">
+          <li>Right-click your bookmarks bar &rarr; &quot;Add page&quot; or &quot;Add bookmark&quot;</li>
+          <li>Set the name to <strong className="text-fab-muted">FaB Stats Sync</strong></li>
+          <li>For the URL, paste the code below</li>
+        </ol>
+        <div className="flex gap-2">
+          <button
+            onClick={handleCopy}
+            className="px-4 py-2 rounded-md font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors text-sm"
+          >
+            {copied ? "Copied!" : "Copy Bookmarklet Code"}
+          </button>
         </div>
       </div>
 
