@@ -85,6 +85,36 @@ interface ParsedDecklist {
   placement: string;
   cards: { name: string; count: number }[];
   gemDecklistId: string | null;
+  eventDate: string;
+  eventUrl: string;
+  format: string;
+  country: string;
+  countryCode: string;
+  playerGemId: string;
+}
+
+function decodeHtml(text: string): string {
+  return text
+    .replace(/&#8211;/g, "–")
+    .replace(/&amp;/g, "&")
+    .replace(/&#8217;/g, "'")
+    .replace(/&#8220;/g, '"')
+    .replace(/&#8221;/g, '"')
+    .replace(/&#8216;/g, "'")
+    .replace(/&quot;/g, '"')
+    .replace(/&#039;/g, "'");
+}
+
+function parsePlayerGridField(html: string, label: string): string {
+  // Matches: <h3>\n  Label  \n</h3>\n<p>\n  Value  \n</p>
+  const regex = new RegExp(
+    `<h3>\\s*${label}\\s*</h3>\\s*<p[^>]*>([\\s\\S]*?)</p>`,
+    "i"
+  );
+  const match = html.match(regex);
+  if (!match) return "";
+  // Strip HTML tags and trim
+  return decodeHtml(match[1].replace(/<[^>]+>/g, "").trim());
 }
 
 function parseDecklistHtml(html: string, url: string): ParsedDecklist {
@@ -93,9 +123,8 @@ function parseDecklistHtml(html: string, url: string): ParsedDecklist {
   const slug = slugMatch ? slugMatch[1] : url;
 
   // Extract player-name h2 content: "Player Name – Hero – Event Name"
-  // The HTML uses &#8211; for the – character
   const h2Match = html.match(/<div class="player-name">\s*<h2>([^<]+)<\/h2>/);
-  const h2Text = h2Match ? h2Match[1].replace(/&#8211;/g, "–").replace(/&amp;/g, "&").replace(/&#8217;/g, "'").replace(/&#8220;/g, '"').replace(/&#8221;/g, '"') : "";
+  const h2Text = h2Match ? decodeHtml(h2Match[1]) : "";
 
   // Split on " – " (en dash with spaces)
   const parts = h2Text.split(" – ").map((p) => p.trim());
@@ -103,27 +132,63 @@ function parseDecklistHtml(html: string, url: string): ParsedDecklist {
   const hero = parts[1] || "";
   const event = parts.slice(2).join(" – ") || "";
 
-  // Extract placement/rank
+  // ── Player Grid Fields ──
+
+  // Rank/placement
   const rankMatch = html.match(/<p class="rank">\s*([^<]+)\s*<\/p>/);
   const placement = rankMatch ? rankMatch[1].trim() : "";
 
-  // Extract GEM decklist ID from import link
+  // Date (e.g. "September 7, 2024")
+  const dateRaw = parsePlayerGridField(html, "Date");
+  let eventDate = "";
+  if (dateRaw) {
+    const d = new Date(dateRaw);
+    if (!isNaN(d.getTime())) eventDate = d.toISOString().split("T")[0];
+  }
+
+  // Player GEM ID (e.g. "Michael Hamilton (34331578)" → "34331578")
+  const playerFieldRaw = parsePlayerGridField(html, "Player");
+  const gemIdMatch = playerFieldRaw.match(/\((\d+)\)\s*$/);
+  const playerGemId = gemIdMatch ? gemIdMatch[1] : "";
+
+  // Event URL (link inside Event field)
+  const eventUrlMatch = html.match(
+    /player-grid[\s\S]*?Event[\s\S]*?<a\s+href="([^"]+)"[^>]*>/i
+  );
+  const eventUrl = eventUrlMatch ? eventUrlMatch[1] : "";
+
+  // Format
+  const format = parsePlayerGridField(html, "Format");
+
+  // Country/Region
+  const countryRaw = parsePlayerGridField(html, "Country/Region");
+  const country = countryRaw || "";
+
+  // Country code from flag class (e.g. <i class="us flag">)
+  const flagMatch = html.match(
+    /player-grid[\s\S]*?Country[\s\S]*?<i class="(\w{2}) flag">/i
+  );
+  const countryCode = flagMatch ? flagMatch[1].toUpperCase() : "";
+
+  // GEM decklist import ID
   const gemMatch = html.match(/gem\.fabtcg\.com\/profile\/decklists\/import\/fabtcg\/\?id=([a-f0-9-]+)/);
   const gemDecklistId = gemMatch ? gemMatch[1] : null;
 
-  // Extract cards from card-name elements
-  // Pattern: <span class="card-name">1 x Card Name (red)</span>
+  // Cards
   const cards: { name: string; count: number }[] = [];
   const cardRegex = /<span class="card-name">(\d+)\s*x\s*([^<]+)<\/span>/g;
   let cardMatch;
   while ((cardMatch = cardRegex.exec(html)) !== null) {
     cards.push({
       count: parseInt(cardMatch[1], 10),
-      name: cardMatch[2].trim().replace(/&amp;/g, "&").replace(/&#8217;/g, "'"),
+      name: decodeHtml(cardMatch[2].trim()),
     });
   }
 
-  return { slug, url, player, hero, event, placement, cards, gemDecklistId };
+  return {
+    slug, url, player, hero, event, placement, cards, gemDecklistId,
+    eventDate, eventUrl, format, country, countryCode, playerGemId,
+  };
 }
 
 async function fetchAndParseDecklist(url: string): Promise<ParsedDecklist> {

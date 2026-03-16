@@ -28,6 +28,12 @@ export interface SitemapDecklist {
   cards: { name: string; count: number }[];
   gemDecklistId: string | null;
   scrapedAt: string;
+  eventDate: string;
+  eventUrl: string;
+  format: string;
+  country: string;
+  countryCode: string;
+  playerGemId: string;
 }
 
 export interface ScrapeStatus {
@@ -191,6 +197,11 @@ export interface DecklistSummary {
   event: string;
   placement: string;
   player: string;
+  eventDate: string;
+  format: string;
+  country: string;
+  countryCode: string;
+  playerGemId: string;
 }
 
 let analyticsCache: { data: DecklistSummary[]; ts: number } | null = null;
@@ -209,6 +220,11 @@ export async function getAllDecklistSummaries(): Promise<DecklistSummary[]> {
       event: raw.event || "",
       placement: raw.placement || "",
       player: raw.player || "",
+      eventDate: raw.eventDate || "",
+      format: raw.format || "",
+      country: raw.country || "",
+      countryCode: raw.countryCode || "",
+      playerGemId: raw.playerGemId || "",
     };
   });
 
