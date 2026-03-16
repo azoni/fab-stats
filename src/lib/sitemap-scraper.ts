@@ -227,6 +227,8 @@ export interface CoverageEvent {
   coverageUrl: string;
   tournamentUrl: string;
   eventName: string;
+  eventDate: string;
+  format: string;
   roundCount: number;
   matchCount: number;
   scrapedAt: string;
@@ -249,7 +251,7 @@ export async function fetchTournamentUrls(): Promise<string[]> {
 
 export async function discoverCoverage(
   tournamentUrl: string
-): Promise<{ coverageUrl: string; tournamentName: string } | null> {
+): Promise<{ coverageUrl: string; tournamentName: string; eventDate: string } | null> {
   const token = await getAuthToken();
   const res = await fetch(
     `/.netlify/functions/sitemap-scrape?mode=coverage-discover&url=${encodeURIComponent(tournamentUrl)}`,
@@ -262,7 +264,7 @@ export async function discoverCoverage(
 
 export async function fetchCoverageRounds(
   coverageUrl: string
-): Promise<{ coverageUrl: string; eventName: string; roundCount: number; resultUrls: string[] }> {
+): Promise<{ coverageUrl: string; eventName: string; roundCount: number; resultUrls: string[]; format: string }> {
   const token = await getAuthToken();
   const res = await fetch(
     `/.netlify/functions/sitemap-scrape?mode=coverage-rounds&url=${encodeURIComponent(coverageUrl)}`,
@@ -406,6 +408,119 @@ export function computeCoverageMatchups(
   }
 
   return [...pairMap.values()].sort((a, b) => b.total - a.total);
+}
+
+// ── Pre-aggregated Matchup Summaries (for public use) ──
+
+const MATCHUP_SUMMARIES_COLLECTION = "coverage-matchup-summaries";
+
+export interface MatchupSummaryDoc {
+  hero1: string;
+  hero2: string;
+  hero1Wins: number;
+  hero2Wins: number;
+  draws: number;
+  total: number;
+  byEvent: Record<string, { hero1Wins: number; hero2Wins: number; draws: number; total: number }>;
+  byFormat: Record<string, { hero1Wins: number; hero2Wins: number; draws: number; total: number }>;
+  updatedAt: string;
+}
+
+export async function rebuildMatchupSummaries(): Promise<number> {
+  // Read all coverage matches
+  const snap = await getDocs(collection(db, COVERAGE_COLLECTION));
+  const matches = snap.docs.map((d) => d.data() as CoverageMatch);
+
+  // Compute summaries
+  const pairMap = new Map<string, MatchupSummaryDoc>();
+
+  for (const m of matches) {
+    if (!m.player1Hero || !m.player2Hero) continue;
+
+    const sorted = [m.player1Hero, m.player2Hero].sort();
+    const key = `${sorted[0]}__${sorted[1]}`;
+    const isHero1 = m.player1Hero === sorted[0];
+
+    let summary = pairMap.get(key);
+    if (!summary) {
+      summary = {
+        hero1: sorted[0],
+        hero2: sorted[1],
+        hero1Wins: 0,
+        hero2Wins: 0,
+        draws: 0,
+        total: 0,
+        byEvent: {},
+        byFormat: {},
+        updatedAt: "",
+      };
+      pairMap.set(key, summary);
+    }
+
+    // Overall
+    summary.total++;
+    if (m.result === "draw") {
+      summary.draws++;
+    } else if (m.result === "player1") {
+      if (isHero1) summary.hero1Wins++;
+      else summary.hero2Wins++;
+    } else if (m.result === "player2") {
+      if (isHero1) summary.hero2Wins++;
+      else summary.hero1Wins++;
+    }
+
+    // By event
+    if (m.event) {
+      if (!summary.byEvent[m.event]) {
+        summary.byEvent[m.event] = { hero1Wins: 0, hero2Wins: 0, draws: 0, total: 0 };
+      }
+      const ev = summary.byEvent[m.event];
+      ev.total++;
+      if (m.result === "draw") ev.draws++;
+      else if (m.result === "player1") { if (isHero1) ev.hero1Wins++; else ev.hero2Wins++; }
+      else if (m.result === "player2") { if (isHero1) ev.hero2Wins++; else ev.hero1Wins++; }
+    }
+
+    // By format
+    if (m.format) {
+      if (!summary.byFormat[m.format]) {
+        summary.byFormat[m.format] = { hero1Wins: 0, hero2Wins: 0, draws: 0, total: 0 };
+      }
+      const fmt = summary.byFormat[m.format];
+      fmt.total++;
+      if (m.result === "draw") fmt.draws++;
+      else if (m.result === "player1") { if (isHero1) fmt.hero1Wins++; else fmt.hero2Wins++; }
+      else if (m.result === "player2") { if (isHero1) fmt.hero2Wins++; else fmt.hero1Wins++; }
+    }
+  }
+
+  // Clear existing summaries
+  const existingSnap = await getDocs(collection(db, MATCHUP_SUMMARIES_COLLECTION));
+  for (let i = 0; i < existingSnap.docs.length; i += 400) {
+    const batch = writeBatch(db);
+    for (const d of existingSnap.docs.slice(i, i + 400)) batch.delete(d.ref);
+    await batch.commit();
+  }
+
+  // Write new summaries
+  const now = new Date().toISOString();
+  const summaries = [...pairMap.values()];
+  for (let i = 0; i < summaries.length; i += 400) {
+    const batch = writeBatch(db);
+    for (const s of summaries.slice(i, i + 400)) {
+      s.updatedAt = now;
+      const docId = `${s.hero1}__${s.hero2}`.replace(/[/\\.\s]+/g, "_");
+      batch.set(doc(db, MATCHUP_SUMMARIES_COLLECTION, docId), s);
+    }
+    await batch.commit();
+  }
+
+  return summaries.length;
+}
+
+export async function getMatchupSummaries(): Promise<MatchupSummaryDoc[]> {
+  const snap = await getDocs(collection(db, MATCHUP_SUMMARIES_COLLECTION));
+  return snap.docs.map((d) => d.data() as MatchupSummaryDoc);
 }
 
 // ── Analytics ──

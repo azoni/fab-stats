@@ -225,7 +225,7 @@ async function fetchTournamentUrls(): Promise<string[]> {
   return urls;
 }
 
-async function findCoverageUrl(tournamentUrl: string): Promise<{ coverageUrl: string; tournamentName: string } | null> {
+async function findCoverageUrl(tournamentUrl: string): Promise<{ coverageUrl: string; tournamentName: string; eventDate: string } | null> {
   const res = await fetch(tournamentUrl, {
     headers: { "User-Agent": USER_AGENT },
     redirect: "follow",
@@ -239,11 +239,15 @@ async function findCoverageUrl(tournamentUrl: string): Promise<{ coverageUrl: st
     ? decodeHtml(titleMatch[1].replace(/ - Flesh and Blood TCG$/, "").trim())
     : "";
 
+  // Extract event date from datePublished in JSON-LD
+  const dateMatch = html.match(/"datePublished":"(\d{4}-\d{2}-\d{2})/);
+  const eventDate = dateMatch ? dateMatch[1] : "";
+
   // Find coverage link
   const covMatch = html.match(/href="(https:\/\/fabtcg\.com\/coverage\/[^"]+)"/);
   if (!covMatch) return null;
 
-  return { coverageUrl: covMatch[1], tournamentName };
+  return { coverageUrl: covMatch[1], tournamentName, eventDate };
 }
 
 // ── Coverage Round Discovery ──
@@ -253,6 +257,7 @@ interface CoverageInfo {
   eventName: string;
   roundCount: number;
   resultUrls: string[];
+  format: string;
 }
 
 async function fetchCoverageRounds(coverageUrl: string): Promise<CoverageInfo> {
@@ -268,6 +273,10 @@ async function fetchCoverageRounds(coverageUrl: string): Promise<CoverageInfo> {
   const eventName = titleMatch
     ? decodeHtml(titleMatch[1].replace(/ - Flesh and Blood TCG$/, "").trim())
     : "";
+
+  // Extract format from round labels (e.g. "Round 1 - Classic Constructed")
+  const formatMatch = html.match(/class="rounds">[^<]*-\s*([^<]+)</);
+  const format = formatMatch ? formatMatch[1].trim() : "";
 
   // Find all results round URLs
   const resultUrls: string[] = [];
@@ -291,6 +300,7 @@ async function fetchCoverageRounds(coverageUrl: string): Promise<CoverageInfo> {
     eventName,
     roundCount: resultUrls.length,
     resultUrls,
+    format,
   };
 }
 
@@ -445,7 +455,7 @@ export default async function handler(req: Request) {
         return jsonResponse({ error: "Invalid tournament URL" }, 400);
       }
       const result = await findCoverageUrl(tournamentUrl);
-      return jsonResponse({ result }, 200);
+      return jsonResponse({ result }, 200); // includes eventDate now
     }
 
     if (mode === "coverage-rounds") {

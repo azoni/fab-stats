@@ -22,6 +22,7 @@ import {
   getAllCoverageMatches,
   clearCoverageData,
   computeCoverageMatchups,
+  rebuildMatchupSummaries,
   type SitemapDecklist,
   type DecklistSummary,
   type HeroMetaStat,
@@ -318,8 +319,8 @@ export default function SitemapTab() {
                   ...m,
                   event: roundInfo.eventName || discovery.tournamentName,
                   coverageUrl: discovery.coverageUrl,
-                  eventDate: "",
-                  format: "",
+                  eventDate: discovery.eventDate || "",
+                  format: roundInfo.format || "",
                 });
               }
             } catch {
@@ -336,6 +337,8 @@ export default function SitemapTab() {
               coverageUrl: discovery.coverageUrl,
               tournamentUrl: tUrl,
               eventName: roundInfo.eventName || discovery.tournamentName,
+              eventDate: discovery.eventDate || "",
+              format: roundInfo.format || "",
               roundCount: roundInfo.resultUrls.length,
               matchCount: allMatches.length,
               scrapedAt: new Date().toISOString(),
@@ -812,6 +815,21 @@ export default function SitemapTab() {
                   className="px-4 py-2 rounded-md text-xs font-medium bg-green-600 text-white hover:bg-green-500 transition-colors"
                 >
                   Scrape Coverage
+                </button>
+                <button
+                  onClick={async () => {
+                    setCoverageProgress("Rebuilding matchup summaries...");
+                    try {
+                      const count = await rebuildMatchupSummaries();
+                      setCoverageProgress(`Rebuilt ${count} matchup summaries.`);
+                    } catch (err: unknown) {
+                      const msg = err instanceof Error ? err.message : "Rebuild failed";
+                      setCoverageProgress(`Error: ${msg}`);
+                    }
+                  }}
+                  className="px-4 py-2 rounded-md text-xs font-medium bg-blue-600 text-white hover:bg-blue-500 transition-colors"
+                >
+                  Rebuild Summaries
                 </button>
                 <button
                   onClick={async () => {
