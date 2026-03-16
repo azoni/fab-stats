@@ -141,6 +141,19 @@ export async function getScrapeStatus(): Promise<ScrapeStatus | null> {
   return snap.data() as ScrapeStatus;
 }
 
+export interface AutoScrapeStatus {
+  lastRunAt: string;
+  newEvents: number;
+  newMatches: number;
+  totalEventsChecked: number;
+}
+
+export async function getAutoScrapeStatus(): Promise<AutoScrapeStatus | null> {
+  const snap = await getDoc(doc(db, "sitemap-meta/auto-scrape-status"));
+  if (!snap.exists()) return null;
+  return snap.data() as AutoScrapeStatus;
+}
+
 export async function updateScrapeStatus(
   status: Partial<ScrapeStatus>
 ): Promise<void> {

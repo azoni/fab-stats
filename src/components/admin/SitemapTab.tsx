@@ -1,5 +1,5 @@
 "use client";
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import {
   fetchSitemapUrls,
   fetchDecklist,
@@ -23,6 +23,8 @@ import {
   clearCoverageData,
   computeCoverageMatchups,
   rebuildMatchupSummaries,
+  getAutoScrapeStatus,
+  type AutoScrapeStatus,
   type SitemapDecklist,
   type DecklistSummary,
   type HeroMetaStat,
@@ -56,6 +58,12 @@ export default function SitemapTab() {
 
   // Stats
   const [statusMsg, setStatusMsg] = useState("");
+
+  // Auto-scrape status
+  const [autoScrapeStatus, setAutoScrapeStatus] = useState<AutoScrapeStatus | null>(null);
+  useEffect(() => {
+    getAutoScrapeStatus().then(setAutoScrapeStatus).catch(() => {});
+  }, []);
 
   // Coverage scrape state
   const [coverageScraping, setCoverageScraping] = useState(false);
@@ -416,6 +424,14 @@ export default function SitemapTab() {
           Scrape official decklists from fabtcg.com sitemap. Data includes
           player names, heroes, events, placements, and full card lists.
         </p>
+        {autoScrapeStatus && (
+          <p className="text-[10px] text-fab-dim mt-1">
+            Last auto-scrape: {new Date(autoScrapeStatus.lastRunAt).toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
+            {autoScrapeStatus.newEvents > 0
+              ? ` — ${autoScrapeStatus.newEvents} new event${autoScrapeStatus.newEvents === 1 ? "" : "s"}, ${autoScrapeStatus.newMatches} matches`
+              : " — no new events"}
+          </p>
+        )}
       </div>
 
       {/* ── Scrape Controls ── */}

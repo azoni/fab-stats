@@ -354,6 +354,15 @@ export default async function handler() {
       console.log(`[auto-scrape] Rebuilt ${summaryCount} matchup summaries`);
     }
 
+    // Save scrape status for admin dashboard
+    const db = getAdminDb();
+    await db.doc("sitemap-meta/auto-scrape-status").set({
+      lastRunAt: new Date().toISOString(),
+      newEvents,
+      newMatches,
+      totalEventsChecked: tournamentUrls.length,
+    });
+
     console.log(`[auto-scrape] Done. ${newEvents} new events, ${newMatches} new matches.`);
   } catch (err) {
     console.error("[auto-scrape] Fatal error:", err);
