@@ -283,7 +283,7 @@
 
   var events = parseCurrentPage();
   if (events.length === 0) {
-    alert("FaB Stats Quick Sync\n\nNo events found on this page. Make sure you're on your GEM History page with events listed.");
+    alert("FaB Stats Quick Sync\n\nNo events found on this page.\n\nMake sure you're on:\n• gem.fabtcg.com/profile/history/ (completed events)\n• gem.fabtcg.com/profile/player/ (in-progress events)");
     return;
   }
 

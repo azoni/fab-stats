@@ -41,7 +41,7 @@ export default function BookmarkletPage() {
           </li>
           <li className="flex gap-2">
             <span className="text-fab-gold font-bold shrink-0">2.</span>
-            <span>Log into <a href="https://gem.fabtcg.com/profile/history/" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">gem.fabtcg.com/profile/history</a></span>
+            <span>Log into GEM and go to <a href="https://gem.fabtcg.com/profile/history/" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">History</a> or <a href="https://gem.fabtcg.com/profile/player/" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">Player</a> page</span>
           </li>
           <li className="flex gap-2">
             <span className="text-fab-gold font-bold shrink-0">3.</span>
@@ -50,6 +50,10 @@ export default function BookmarkletPage() {
           <li className="flex gap-2">
             <span className="text-fab-gold font-bold shrink-0">4.</span>
             <span>For more history, navigate to page 2, 3, etc. and tap again. Duplicates are skipped.</span>
+          </li>
+          <li className="flex gap-2">
+            <span className="text-fab-gold font-bold shrink-0"></span>
+            <span className="text-fab-muted text-xs">Tip: Use the Player page to import in-progress events (e.g. if you dropped early or the store hasn&apos;t closed the event yet).</span>
           </li>
         </ol>
       </div>
