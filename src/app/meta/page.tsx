@@ -7,7 +7,7 @@ import { computeMetaStats, getAvailableFormats, getAvailableEventTypes, computeT
 import { getWeekStart, getMonthStart } from "@/lib/leaderboard";
 import { getSeasonWeeks } from "@/lib/seasons";
 import { getHeroByName } from "@/lib/heroes";
-import { HeroClassIcon } from "@/components/heroes/HeroClassIcon";
+import { HeroImg } from "@/components/heroes/HeroImg";
 import { MetaShareModal } from "@/components/meta/MetaShareCard";
 import { MetaOverviewShareModal } from "@/components/meta/MetaOverviewShareCard";
 import { MetaMatchupMatrix } from "@/components/meta/MetaMatchupMatrix";
@@ -470,14 +470,12 @@ export default function MetaPage() {
                 <div className="flex-1">
                   {pSlice.map((t8, i) => {
                     const globalIdx = pStart + i;
-                    const heroInfo = getHeroByName(t8.hero);
-                    const heroClass = heroInfo?.classes[0];
                     return (
                       <div key={t8.hero} className={`flex items-center gap-2.5 px-4 py-2 ${i > 0 ? "border-t border-fab-border/50" : ""}`}>
                         <span className={`text-xs font-bold w-4 text-center shrink-0 ${globalIdx === 0 ? "text-amber-400" : globalIdx < 3 ? "text-fab-text" : "text-fab-dim"}`}>
                           {globalIdx + 1}
                         </span>
-                        <HeroClassIcon heroClass={heroClass} size="sm" />
+                        <HeroImg name={t8.hero} size="sm" />
                         <span className={`text-sm font-medium flex-1 truncate ${globalIdx === 0 ? "text-amber-400" : "text-fab-text"}`}>
                           {t8.hero}
                         </span>
@@ -687,7 +685,7 @@ function HeroMetaRow({ hero, index }: { hero: HeroMetaStats; index: number }) {
       </span>
 
       {/* Hero Icon */}
-      <HeroClassIcon heroClass={heroClass} size="lg" />
+      <HeroImg name={hero.hero} size="lg" />
 
       {/* Name + class + meta share bar */}
       <div className="flex-1 min-w-0">
