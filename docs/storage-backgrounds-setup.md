@@ -74,6 +74,9 @@ Recommended fields:
 - `adminOnly` (boolean, optional)
 - `sortOrder` (number, optional)
 - `isActive` (boolean, optional, default `true`)
+- `unlockType` (`achievement` | `supporter` | `manual`, optional)
+- `unlockKey` (string, optional; required when `unlockType` is set)
+- `unlockLabel` (string, optional)
 
 Minimal required:
 
@@ -129,10 +132,17 @@ Manifest format (array of objects):
     "file": "lore-solana-matte.jpg",
     "kind": "playmat",
     "focusPosition": "center center",
-    "adminOnly": false
+    "adminOnly": false,
+    "unlockType": "achievement",
+    "unlockKey": "bg_mastery_500",
+    "unlockLabel": "Win 500 matches"
   }
 ]
 ```
+
+Alternative manifest source:
+
+- Use `sourcePath` (repo-relative path) instead of `file` for vendor/imported assets.
 
 ## Notes
 
@@ -141,3 +151,7 @@ Manifest format (array of objects):
   - regular users load only active non-admin backgrounds
   - admins can load full catalog
 - Profile background rendering lazily fetches unknown IDs on demand instead of loading the full catalog on every page load.
+- Admin dashboard includes a **Background Visibility Manager** for toggling:
+  - `active` vs `inactive`
+  - `public` vs `admin-only`
+  - optional unlock metadata (`unlockType`, `unlockKey`, `unlockLabel`)

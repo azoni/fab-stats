@@ -25,6 +25,7 @@ import { loadBotAnalytics, loadDailyUsage, loadCommandLog, type BotAnalytics, ty
 import { ADMIN_BADGES } from "@/lib/badges";
 import { SocialTab } from "@/components/admin/SocialTab";
 import SitemapTab from "@/components/admin/SitemapTab";
+import { BackgroundCatalogManager } from "@/components/admin/BackgroundCatalogManager";
 import { GameFormat } from "@/types";
 import type { Season } from "@/types";
 import type { EventShowcaseConfig, EventShowcaseImage } from "@/types";
@@ -520,6 +521,8 @@ export default function AdminPage() {
           {(backgroundCatalogProgress || backfillProgress || fixDatesProgress || linkProgress || gemIdProgress || h2hProgress || matchupProgress || placementProgress) && (
             <p className="text-xs text-fab-dim">{backgroundCatalogProgress || placementProgress || matchupProgress || h2hProgress || linkProgress || gemIdProgress || fixDatesProgress || backfillProgress}</p>
           )}
+
+          <BackgroundCatalogManager />
         </div>
       )}
 

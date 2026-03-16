@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useProfileBackgroundCatalog } from "@/hooks/useProfileBackgroundCatalog";
 import { buildOptimizedImageUrl, NONE_BACKGROUND_ID, DEFAULT_BACKGROUND_ID } from "@/lib/profile-backgrounds";
 
@@ -15,13 +15,62 @@ export function BackgroundChooser({ selectedId, isAdmin, onSelect, disabled }: B
   const { options, loading } = useProfileBackgroundCatalog(isAdmin);
   const [expanded, setExpanded] = useState(false);
   const [brokenPreviewIds, setBrokenPreviewIds] = useState<Record<string, true>>({});
+  const [adminVisibilityFilter, setAdminVisibilityFilter] = useState<"all" | "public" | "admin">("all");
+  const [adminUnlockFilter, setAdminUnlockFilter] = useState<"all" | "open" | "gated">("all");
+  const [adminKindFilter, setAdminKindFilter] = useState<"all" | "key-art" | "playmat" | "hero-art">("all");
 
   const markPreviewBroken = useCallback((id: string) => {
     setBrokenPreviewIds((prev) => (prev[id] ? prev : { ...prev, [id]: true }));
   }, []);
 
+  const filteredOptions = useMemo(() => {
+    if (!isAdmin) return options;
+    return options.filter((opt) => {
+      const adminOnly = opt.adminOnly === true;
+      const gated = Boolean(opt.unlockType);
+      if (adminVisibilityFilter === "public" && adminOnly) return false;
+      if (adminVisibilityFilter === "admin" && !adminOnly) return false;
+      if (adminUnlockFilter === "open" && gated) return false;
+      if (adminUnlockFilter === "gated" && !gated) return false;
+      if (adminKindFilter !== "all" && opt.kind !== adminKindFilter) return false;
+      return true;
+    });
+  }, [options, isAdmin, adminVisibilityFilter, adminUnlockFilter, adminKindFilter]);
+
   return (
     <div>
+      {isAdmin && (
+        <div className="mb-2 grid grid-cols-1 sm:grid-cols-3 gap-2">
+          <select
+            value={adminVisibilityFilter}
+            onChange={(e) => setAdminVisibilityFilter(e.target.value as "all" | "public" | "admin")}
+            className="bg-fab-surface border border-fab-border text-fab-text text-xs rounded px-2 py-1.5 focus:outline-none focus:border-fab-gold"
+          >
+            <option value="all">Visibility: All</option>
+            <option value="public">Visibility: Public</option>
+            <option value="admin">Visibility: Admin-only</option>
+          </select>
+          <select
+            value={adminKindFilter}
+            onChange={(e) => setAdminKindFilter(e.target.value as "all" | "key-art" | "playmat" | "hero-art")}
+            className="bg-fab-surface border border-fab-border text-fab-text text-xs rounded px-2 py-1.5 focus:outline-none focus:border-fab-gold"
+          >
+            <option value="all">Kind: All</option>
+            <option value="key-art">Kind: Key Art</option>
+            <option value="playmat">Kind: Playmat</option>
+            <option value="hero-art">Kind: Hero Art</option>
+          </select>
+          <select
+            value={adminUnlockFilter}
+            onChange={(e) => setAdminUnlockFilter(e.target.value as "all" | "open" | "gated")}
+            className="bg-fab-surface border border-fab-border text-fab-text text-xs rounded px-2 py-1.5 focus:outline-none focus:border-fab-gold"
+          >
+            <option value="all">Unlock: All</option>
+            <option value="open">Unlock: Open</option>
+            <option value="gated">Unlock: Gated</option>
+          </select>
+        </div>
+      )}
       <div className={`${expanded ? "" : "max-h-[240px]"} overflow-y-auto`}>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
           <button
@@ -41,7 +90,7 @@ export function BackgroundChooser({ selectedId, isAdmin, onSelect, disabled }: B
             <p className="text-[10px] text-fab-muted leading-tight">No Background</p>
           </button>
 
-          {options.map((opt) => (
+          {filteredOptions.map((opt) => (
             <button
               key={opt.id}
               type="button"
@@ -74,18 +123,33 @@ export function BackgroundChooser({ selectedId, isAdmin, onSelect, disabled }: B
                 )}
               </div>
               <p className="text-[10px] text-fab-muted leading-tight">{opt.label}</p>
+              {isAdmin && (
+                <div className="mt-1 flex items-center gap-1 flex-wrap">
+                  <span className={`text-[9px] px-1 rounded border ${opt.adminOnly ? "border-amber-500/40 text-amber-300" : "border-green-500/40 text-green-300"}`}>
+                    {opt.adminOnly ? "admin" : "public"}
+                  </span>
+                  {opt.unlockType && (
+                    <span className="text-[9px] px-1 rounded border border-cyan-500/40 text-cyan-300">
+                      {opt.unlockType}
+                    </span>
+                  )}
+                </div>
+              )}
             </button>
           ))}
         </div>
       </div>
-      {options.length > 4 && (
+      {filteredOptions.length > 4 && (
         <button
           type="button"
           onClick={() => setExpanded(!expanded)}
           className="text-xs text-fab-gold hover:text-fab-gold-light transition-colors font-medium mt-2"
         >
-          {expanded ? "Show less" : `Show all ${options.length + 1} backgrounds`}
+          {expanded ? "Show less" : `Show all ${filteredOptions.length + 1} backgrounds`}
         </button>
+      )}
+      {isAdmin && filteredOptions.length === 0 && (
+        <p className="mt-2 text-[10px] text-fab-dim">No backgrounds match current admin filters.</p>
       )}
       {loading && <p className="mt-2 text-[10px] text-fab-dim">Loading background catalog...</p>}
     </div>

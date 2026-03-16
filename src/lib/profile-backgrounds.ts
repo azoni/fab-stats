@@ -1,4 +1,5 @@
 export type ProfileBackgroundKind = "key-art" | "playmat" | "hero-art";
+export type ProfileBackgroundUnlockType = "achievement" | "supporter" | "manual";
 
 export interface ProfileBackgroundOption {
   id: string;
@@ -10,6 +11,9 @@ export interface ProfileBackgroundOption {
   adminOnly?: boolean;
   sortOrder?: number;
   isActive?: boolean;
+  unlockType?: ProfileBackgroundUnlockType;
+  unlockKey?: string;
+  unlockLabel?: string;
 }
 
 export const NONE_BACKGROUND_ID = "none";

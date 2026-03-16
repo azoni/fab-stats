@@ -1,10 +1,12 @@
 import {
   collection,
+  deleteField,
   doc,
   getDoc,
   getDocs,
   limit,
   query,
+  updateDoc,
   where,
   writeBatch,
   type QueryConstraint,
@@ -15,6 +17,7 @@ import {
   setRuntimeProfileBackgroundOptions,
   type ProfileBackgroundKind,
   type ProfileBackgroundOption,
+  type ProfileBackgroundUnlockType,
 } from "@/lib/profile-backgrounds";
 
 const PROFILE_BACKGROUND_CATALOG_COLLECTION = "profileBackgroundCatalog";
@@ -45,6 +48,7 @@ const inFlightCatalogLoad: Partial<Record<CatalogScope, Promise<ProfileBackgroun
 const optionCacheById = new Map<string, ProfileBackgroundOption>();
 
 const VALID_KINDS: ProfileBackgroundKind[] = ["key-art", "playmat", "hero-art"];
+const VALID_UNLOCK_TYPES: ProfileBackgroundUnlockType[] = ["achievement", "supporter", "manual"];
 
 for (const option of PROFILE_BACKGROUND_OPTIONS) {
   optionCacheById.set(option.id, option);
@@ -52,6 +56,10 @@ for (const option of PROFILE_BACKGROUND_OPTIONS) {
 
 function isValidKind(value: unknown): value is ProfileBackgroundKind {
   return typeof value === "string" && (VALID_KINDS as string[]).includes(value);
+}
+
+function isValidUnlockType(value: unknown): value is ProfileBackgroundUnlockType {
+  return typeof value === "string" && (VALID_UNLOCK_TYPES as string[]).includes(value);
 }
 
 function isBrowser(): boolean {
@@ -139,9 +147,15 @@ function sanitizeOption(raw: unknown, fallbackId: string): ProfileBackgroundOpti
     thumbnailUrl,
     sortOrder: typeof data.sortOrder === "number" && Number.isFinite(data.sortOrder) ? data.sortOrder : undefined,
     isActive: data.isActive !== false,
+    unlockType: isValidUnlockType(data.unlockType) ? data.unlockType : undefined,
+    unlockKey: typeof data.unlockKey === "string" && data.unlockKey.trim() ? data.unlockKey.trim() : undefined,
+    unlockLabel: typeof data.unlockLabel === "string" && data.unlockLabel.trim() ? data.unlockLabel.trim() : undefined,
   };
 
   if (option.focusPosition && option.focusPosition.length > 40) return null;
+  if (option.unlockKey && option.unlockKey.length > 120) return null;
+  if (option.unlockLabel && option.unlockLabel.length > 120) return null;
+  if (option.unlockType && !option.unlockKey) return null;
 
   return option;
 }
@@ -174,6 +188,31 @@ function normalizeScopeOptions(options: ProfileBackgroundOption[], includeAdmin:
 function refreshRuntimeCatalogFromCache(): void {
   const merged = dedupeOptions([...PROFILE_BACKGROUND_OPTIONS, ...optionCacheById.values()]);
   setRuntimeProfileBackgroundOptions(sortOptions(merged));
+}
+
+function resetOptionCacheToDefaults(): void {
+  optionCacheById.clear();
+  for (const option of PROFILE_BACKGROUND_OPTIONS) {
+    optionCacheById.set(option.id, option);
+  }
+  refreshRuntimeCatalogFromCache();
+}
+
+function clearPersistedScopeCatalog(scope: CatalogScope): void {
+  if (!isBrowser()) return;
+  try {
+    window.localStorage.removeItem(`${LOCAL_STORAGE_CACHE_KEY_PREFIX}:${scope}`);
+  } catch {
+    // Ignore storage failures.
+  }
+}
+
+export function invalidateProfileBackgroundCatalogCache(): void {
+  scopeCache.public = { options: null, cachedAt: 0 };
+  scopeCache.all = { options: null, cachedAt: 0 };
+  clearPersistedScopeCatalog("public");
+  clearPersistedScopeCatalog("all");
+  resetOptionCacheToDefaults();
 }
 
 function persistScopeCatalog(scope: CatalogScope, options: ProfileBackgroundOption[]): void {
@@ -351,6 +390,86 @@ export async function loadProfileBackgroundOptionById(backgroundId: string): Pro
   }
 }
 
+interface AdminCatalogLoadOptions {
+  includeInactive?: boolean;
+}
+
+export async function loadProfileBackgroundCatalogForAdmin(options?: AdminCatalogLoadOptions): Promise<ProfileBackgroundOption[]> {
+  const includeInactive = options?.includeInactive === true;
+  const colRef = collection(db, PROFILE_BACKGROUND_CATALOG_COLLECTION);
+  const snap = await getDocs(colRef);
+  const parsed = snap.docs
+    .map((docSnap) => sanitizeOption(docSnap.data(), docSnap.id))
+    .filter((opt): opt is ProfileBackgroundOption => Boolean(opt));
+
+  const normalized = sortOptions(dedupeOptions(parsed))
+    .filter((opt) => includeInactive || opt.isActive !== false)
+    .slice(0, MAX_CATALOG_OPTIONS);
+
+  for (const option of normalized) {
+    optionCacheById.set(option.id, option);
+  }
+  refreshRuntimeCatalogFromCache();
+
+  return normalized;
+}
+
+export interface ProfileBackgroundCatalogVisibilityPatch {
+  adminOnly?: boolean;
+  isActive?: boolean;
+  unlockType?: ProfileBackgroundUnlockType | null;
+  unlockKey?: string | null;
+  unlockLabel?: string | null;
+}
+
+export async function updateProfileBackgroundCatalogEntry(
+  backgroundId: string,
+  patch: ProfileBackgroundCatalogVisibilityPatch,
+): Promise<void> {
+  const id = backgroundId.trim();
+  if (!id || !/^[a-z0-9][a-z0-9-]{1,79}$/i.test(id)) {
+    throw new Error("Invalid background id.");
+  }
+
+  const payload: Record<string, unknown> = {
+    updatedAt: new Date().toISOString(),
+  };
+
+  if ("adminOnly" in patch) payload.adminOnly = patch.adminOnly === true;
+  if ("isActive" in patch) payload.isActive = patch.isActive !== false;
+
+  if ("unlockType" in patch) {
+    if (!patch.unlockType) {
+      payload.unlockType = deleteField();
+      payload.unlockKey = deleteField();
+      payload.unlockLabel = deleteField();
+    } else {
+      if (!isValidUnlockType(patch.unlockType)) {
+        throw new Error("Invalid unlock type.");
+      }
+      payload.unlockType = patch.unlockType;
+    }
+  }
+
+  if ("unlockKey" in patch) {
+    const unlockKey = patch.unlockKey?.trim() || "";
+    payload.unlockKey = unlockKey ? unlockKey : deleteField();
+  }
+
+  if ("unlockLabel" in patch) {
+    const unlockLabel = patch.unlockLabel?.trim() || "";
+    payload.unlockLabel = unlockLabel ? unlockLabel : deleteField();
+  }
+
+  const keyLen = typeof payload.unlockKey === "string" ? payload.unlockKey.length : 0;
+  const labelLen = typeof payload.unlockLabel === "string" ? payload.unlockLabel.length : 0;
+  if (keyLen > 120) throw new Error("Unlock key must be 120 characters or fewer.");
+  if (labelLen > 120) throw new Error("Unlock label must be 120 characters or fewer.");
+
+  await updateDoc(doc(db, PROFILE_BACKGROUND_CATALOG_COLLECTION, id), payload);
+  invalidateProfileBackgroundCatalogCache();
+}
+
 function buildStorageMediaUrl(bucket: string, objectPath: string): string {
   return `https://firebasestorage.googleapis.com/v0/b/${bucket}/o/${encodeURIComponent(objectPath)}?alt=media`;
 }
@@ -431,6 +550,9 @@ export async function syncProfileBackgroundCatalogFromDefaults(options?: SyncCat
           adminOnly: option.adminOnly === true,
           sortOrder: option.sortOrder ?? 0,
           isActive: option.isActive !== false,
+          unlockType: option.unlockType || deleteField(),
+          unlockKey: option.unlockKey || deleteField(),
+          unlockLabel: option.unlockLabel || deleteField(),
           updatedAt,
         },
         { merge: true },

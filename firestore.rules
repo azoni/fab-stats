@@ -20,6 +20,10 @@ service cloud.firestore {
       return kind in ["key-art", "playmat", "hero-art"];
     }
 
+    function validBackgroundUnlockType(unlockType) {
+      return unlockType in ["achievement", "supporter", "manual"];
+    }
+
     function validBackgroundStorageUrl(url, folder) {
       return url is string
         && url.size() <= 600
@@ -40,6 +44,9 @@ service cloud.firestore {
         'adminOnly',
         'sortOrder',
         'isActive',
+        'unlockType',
+        'unlockKey',
+        'unlockLabel',
         'updatedAt'
       ])
       && ('id' in data)
@@ -58,6 +65,10 @@ service cloud.firestore {
       && (!('adminOnly' in data) || data.adminOnly is bool)
       && (!('sortOrder' in data) || (data.sortOrder is int && data.sortOrder >= 0 && data.sortOrder <= 100000))
       && (!('isActive' in data) || data.isActive is bool)
+      && (!('unlockType' in data) || validBackgroundUnlockType(data.unlockType))
+      && (!('unlockKey' in data) || maxLen(data.unlockKey, 120))
+      && (!('unlockLabel' in data) || maxLen(data.unlockLabel, 120))
+      && (!('unlockType' in data) || ('unlockKey' in data))
       && (!('updatedAt' in data) || maxLen(data.updatedAt, 40));
     }
 

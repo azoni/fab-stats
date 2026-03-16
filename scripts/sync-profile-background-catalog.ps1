@@ -63,6 +63,9 @@ function Convert-ManifestToOptions([string]$manifestPath) {
       kind = [string]$entry.kind
       focusPosition = if ($entry.PSObject.Properties.Name -contains 'focusPosition') { [string]$entry.focusPosition } else { "center center" }
       adminOnly = if ($entry.PSObject.Properties.Name -contains 'adminOnly') { [bool]$entry.adminOnly } else { $false }
+      unlockType = if ($entry.PSObject.Properties.Name -contains 'unlockType') { [string]$entry.unlockType } else { $null }
+      unlockKey = if ($entry.PSObject.Properties.Name -contains 'unlockKey') { [string]$entry.unlockKey } else { $null }
+      unlockLabel = if ($entry.PSObject.Properties.Name -contains 'unlockLabel') { [string]$entry.unlockLabel } else { $null }
     }
   }
   return $parsed
@@ -270,6 +273,12 @@ for ($i = 0; $i -lt $options.Count; $i++) {
   if ($opt.kind -notin @("key-art", "playmat", "hero-art")) {
     throw "Invalid kind '$($opt.kind)' for id '$($opt.id)'."
   }
+  if (-not [string]::IsNullOrWhiteSpace([string]$opt.unlockType) -and $opt.unlockType -notin @("achievement", "supporter", "manual")) {
+    throw "Invalid unlockType '$($opt.unlockType)' for id '$($opt.id)'."
+  }
+  if (-not [string]::IsNullOrWhiteSpace([string]$opt.unlockType) -and [string]::IsNullOrWhiteSpace([string]$opt.unlockKey)) {
+    throw "unlockKey is required when unlockType is set (id: $($opt.id))."
+  }
 }
 
 $uploadedFull = 0
@@ -325,6 +334,9 @@ for ($i = 0; $i -lt $options.Count; $i++) {
     adminOnly = [bool]$opt.adminOnly
     sortOrder = [int]$i
     isActive = $true
+    unlockType = if ([string]::IsNullOrWhiteSpace([string]$opt.unlockType)) { $null } else { [string]$opt.unlockType }
+    unlockKey = if ([string]::IsNullOrWhiteSpace([string]$opt.unlockKey)) { $null } else { [string]$opt.unlockKey }
+    unlockLabel = if ([string]::IsNullOrWhiteSpace([string]$opt.unlockLabel)) { $null } else { [string]$opt.unlockLabel }
     updatedAt = $updatedAt
   }
 
