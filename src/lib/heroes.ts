@@ -49,70 +49,49 @@ export const allHeroes: HeroInfo[] = Array.from(heroMap.values()).sort(
   (a, b) => a.name.localeCompare(b.name)
 );
 
-// ── Hero Portrait Images (from FABTCG coverage CDN) ──
-// These are high-quality hero art portraits, not card images.
-// URL naming is inconsistent on the CDN so we use a static map.
+// ── Hero Portrait Images (from FABTCG CDN) ──
+// Most heroes work with: {CDN}/media/images/heroes/{URL-encoded name}.jpg
+// A few have non-standard filenames — these are handled with overrides.
 
 const PORTRAIT_CDN = "https://dgmi4fxzalveh.cloudfront.net/media/images/heroes";
 
-const HERO_PORTRAIT_MAP: Record<string, string> = {
-  "Arakni, Huntsman": `${PORTRAIT_CDN}/Arakni%2C%20Huntsman.jpg`,
-  "Arakni, Marionette": `${PORTRAIT_CDN}/Arakni%2C%20Marionette.jpg`,
+// Only heroes whose CDN filename doesn't match their canonical name
+const PORTRAIT_OVERRIDES: Record<string, string> = {
   "Aurora, Shooting Star": `${PORTRAIT_CDN}/Aurora_Shooting_Star.jpg`,
-  "Aurora": `${PORTRAIT_CDN}/Aurora.jpg`,
-  "Azalea, Ace in the Hole": `${PORTRAIT_CDN}/Azalea%2C%20Ace%20in%20the%20Hole.jpg`,
-  "Bravo, Showstopper": `${PORTRAIT_CDN}/Bravo%2C%20Showstopper.jpg`,
-  "Cindra, Dracai of Retribution": `${PORTRAIT_CDN}/Cindra%2C%20Dracai%20of%20Retribution.jpg`,
   "Dash I/O": `${PORTRAIT_CDN}/Dash%20I%3AO.jpg`,
-  "Dash, Inventor Extraordinaire": `${PORTRAIT_CDN}/Dash%2C%20Inventor%20Extraordinaire.jpg`,
-  "Dorinthea Ironsong": `${PORTRAIT_CDN}/Dorinthea%20Ironsong.jpg`,
   "Enigma, Ledger of Ancestry": `${PORTRAIT_CDN}/Enigma%2C%20Legend%20of%20Ancestry.jpg`,
-  "Fai, Rising Rebellion": `${PORTRAIT_CDN}/Fai%2C%20Rising%20Rebellion.jpg`,
-  "Fang, Dracai of Blades": `${PORTRAIT_CDN}/Fang%2C%20Dracai%20of%20Blades.jpg`,
   "Florian, Rotwood Harbinger": `${PORTRAIT_CDN}/Florian%2C%20Rotwood%20Harbringer.jpg`,
-  "Ira, Scarlet Revenger": `${PORTRAIT_CDN}/Ira%2C%20Scarlet%20Revenger.jpg`,
-  "Kano, Dracai of Aether": `${PORTRAIT_CDN}/Kano%2C%20Dracai%20of%20Aether.jpg`,
   "Kassai of the Golden Sand": `${PORTRAIT_CDN}/Kassai%2C%20of%20the%20Golden%20Sand.jpg`,
-  "Katsu, the Wanderer": `${PORTRAIT_CDN}/Katsu%2C%20the%20Wanderer.jpg`,
   "Kayo, Armed and Dangerous": `${PORTRAIT_CDN}/Kayo_Armed_and_Dangerous.jpg`,
-  "Levia, Shadowborn Abomination": `${PORTRAIT_CDN}/Levia%2C%20Shadowborn%20Abomination.jpg`,
+  "Kayo, Berserker Runt": `${PORTRAIT_CDN}/Kayo.jpg`,
+  "Kayo, Strong-arm": `${PORTRAIT_CDN}/Kayo.jpg`,
+  "Lyath Goldmane": `${PORTRAIT_CDN}/Lyath_Goldmane_Vile_Savant.jpg`,
   "Lyath Goldmane, Vile Savant": `${PORTRAIT_CDN}/Lyath_Goldmane_Vile_Savant.jpg`,
   "Maxx Nitro": `${PORTRAIT_CDN}/Maxx%20%27The%20Hype%27%20Nitro.jpg`,
-  "Nuu, Alluring Desire": `${PORTRAIT_CDN}/Nuu%2C%20Alluring%20Desire.jpg`,
-  "Olympia, Prized Fighter": `${PORTRAIT_CDN}/Olympia%2C%20Prized%20Fighter.jpg`,
-  "Oscilio, Constella Intelligence": `${PORTRAIT_CDN}/Oscilio%2C%20Constella%20Intelligence.jpg`,
   "Pleiades, Superstar": `${PORTRAIT_CDN}/Pleiades_Superstar.jpg`,
-  "Prism, Awakener of Sol": `${PORTRAIT_CDN}/Prism%2C%20Awakener%20of%20Sol.jpg`,
-  "Rhinar, Reckless Rampage": `${PORTRAIT_CDN}/Rhinar%2C%20Reckless%20Rampage.jpg`,
-  "Riptide, Lurker of the Deep": `${PORTRAIT_CDN}/Riptide%2C%20Lurker%20of%20the%20Deep.jpg`,
-  "Ser Boltyn, Breaker of Dawn": `${PORTRAIT_CDN}/Ser%20Boltyn%2C%20Breaker%20of%20Dawn.jpg`,
-  "Teklovossen, Esteemed Magnate": `${PORTRAIT_CDN}/Teklovossen%2C%20Esteemed%20Magnate.jpg`,
-  "Uzuri, Switchblade": `${PORTRAIT_CDN}/Uzuri%2C%20Switchblade.jpg`,
+  "Valda Brightaxe": `${PORTRAIT_CDN}/Valda_Seismic_Impact_cWNA1HW.jpg`,
   "Valda, Seismic Impact": `${PORTRAIT_CDN}/Valda_Seismic_Impact_cWNA1HW.jpg`,
   "Verdance, Thorn of the Rose": `${PORTRAIT_CDN}/Verdance%2C%20Thorn%20of%20Rose.jpg`,
-  "Victor Goldmane, High and Mighty": `${PORTRAIT_CDN}/Victor%20Goldmane%2C%20High%20and%20Mighty.jpg`,
-  "Viserai, Rune Blood": `${PORTRAIT_CDN}/Viserai%2C%20Rune%20Blood.jpg`,
-  "Vynnset, Iron Maiden": `${PORTRAIT_CDN}/Vynnset%2C%20Iron%20Maiden.jpg`,
-  "Zen, Tamer of Purpose": `${PORTRAIT_CDN}/Zen%2C%20Tamer%20of%20Purpose.jpg`,
 };
 
-// Dynamic portraits from Firestore (populated by auto-scrape)
+// Dynamic portraits from Firestore (populated by auto-scrape, catches new heroes)
 let dynamicPortraits: Record<string, string> | null = null;
 let dynamicPortraitsLoading = false;
 
 export function getHeroPortraitUrl(name: string): string | null {
-  // Check static map first (instant)
-  if (HERO_PORTRAIT_MAP[name]) return HERO_PORTRAIT_MAP[name];
+  // Check overrides first (non-standard filenames)
+  if (PORTRAIT_OVERRIDES[name]) return PORTRAIT_OVERRIDES[name];
 
-  // Check dynamic portraits (loaded from Firestore)
-  if (dynamicPortraits && dynamicPortraits[name]) return dynamicPortraits[name];
+  // Check dynamic portraits from auto-scrape
+  if (dynamicPortraits?.[name]) return dynamicPortraits[name];
 
-  // Trigger async load if not loaded yet
+  // Trigger async load of dynamic portraits if not loaded yet
   if (!dynamicPortraits && !dynamicPortraitsLoading) {
     loadDynamicPortraits();
   }
 
-  return null;
+  // Default: URL-encode the hero name (works for ~90% of heroes)
+  return `${PORTRAIT_CDN}/${encodeURIComponent(name)}.jpg`;
 }
 
 async function loadDynamicPortraits() {
