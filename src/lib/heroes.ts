@@ -57,18 +57,28 @@ const PORTRAIT_CDN = "https://dgmi4fxzalveh.cloudfront.net/media/images/heroes";
 
 // Only heroes whose CDN filename doesn't match their canonical name
 const PORTRAIT_OVERRIDES: Record<string, string> = {
+  // Non-standard filenames (typos, underscores, alternate names on CDN)
   "Aurora, Shooting Star": `${PORTRAIT_CDN}/Aurora_Shooting_Star.jpg`,
+  "Arakni, 5L!p3d 7hRu 7h3 cR4X": `${PORTRAIT_CDN}/Arakni_Slipped_thru_the_Cracks.jpg`,
   "Dash I/O": `${PORTRAIT_CDN}/Dash%20I%3AO.jpg`,
   "Enigma, Ledger of Ancestry": `${PORTRAIT_CDN}/Enigma%2C%20Legend%20of%20Ancestry.jpg`,
   "Florian, Rotwood Harbinger": `${PORTRAIT_CDN}/Florian%2C%20Rotwood%20Harbringer.jpg`,
+  "Gravy Bones": `${PORTRAIT_CDN}/Gravy_Bones_Shipwrecked_Looter.jpg`,
+  "Gravy Bones, Shipwrecked Looter": `${PORTRAIT_CDN}/Gravy_Bones_Shipwrecked_Looter.jpg`,
+  "Jarl Vetreiði": `${PORTRAIT_CDN}/Jarl%20Vetrei%C4%91i.jpg`,
   "Kassai of the Golden Sand": `${PORTRAIT_CDN}/Kassai%2C%20of%20the%20Golden%20Sand.jpg`,
   "Kayo, Armed and Dangerous": `${PORTRAIT_CDN}/Kayo_Armed_and_Dangerous.jpg`,
   "Kayo, Berserker Runt": `${PORTRAIT_CDN}/Kayo.jpg`,
   "Kayo, Strong-arm": `${PORTRAIT_CDN}/Kayo.jpg`,
+  "Kayo, Underhanded Cheat": `${PORTRAIT_CDN}/Kayo_Underhanded_Cheat.jpg`,
   "Lyath Goldmane": `${PORTRAIT_CDN}/Lyath_Goldmane_Vile_Savant.jpg`,
   "Lyath Goldmane, Vile Savant": `${PORTRAIT_CDN}/Lyath_Goldmane_Vile_Savant.jpg`,
+  "Marlynn, Treasure Hunter": `${PORTRAIT_CDN}/Marlynn_Treasure_Hunter.jpg`,
   "Maxx Nitro": `${PORTRAIT_CDN}/Maxx%20%27The%20Hype%27%20Nitro.jpg`,
   "Pleiades, Superstar": `${PORTRAIT_CDN}/Pleiades_Superstar.jpg`,
+  "Puffin, Hightail": `${PORTRAIT_CDN}/Puffin_Hightail.jpg`,
+  "Scurv, Stowaway": `${PORTRAIT_CDN}/Scurv_Stowaway.jpg`,
+  "Tuffnut, Bumbling Hulkster": `${PORTRAIT_CDN}/Tuffnut_Bumbling_Hulkster.jpg`,
   "Valda Brightaxe": `${PORTRAIT_CDN}/Valda_Seismic_Impact_cWNA1HW.jpg`,
   "Valda, Seismic Impact": `${PORTRAIT_CDN}/Valda_Seismic_Impact_cWNA1HW.jpg`,
   "Verdance, Thorn of the Rose": `${PORTRAIT_CDN}/Verdance%2C%20Thorn%20of%20Rose.jpg`,
