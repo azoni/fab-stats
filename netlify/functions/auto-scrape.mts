@@ -48,8 +48,6 @@ async function findCoverage(tournamentUrl: string): Promise<{
   eventDate: string;
 } | null> {
   const html = await fetchPage(tournamentUrl);
-  const covMatch = html.match(/href="(https:\/\/fabtcg\.com\/coverage\/[^"]+)"/);
-  if (!covMatch) return null;
 
   const titleMatch = html.match(/<title>([^<]+)<\/title>/);
   const name = titleMatch
@@ -59,7 +57,34 @@ async function findCoverage(tournamentUrl: string): Promise<{
   const dateMatch = html.match(/"datePublished":"(\d{4}-\d{2}-\d{2})/);
   const eventDate = dateMatch ? dateMatch[1] : "";
 
-  return { coverageUrl: covMatch[1], name, eventDate };
+  // Strategy 1: Find coverage link on the tournament page
+  const covMatch = html.match(/href="(https:\/\/fabtcg\.com\/coverage\/[^"]+)"/);
+  if (covMatch) {
+    return { coverageUrl: covMatch[1], name, eventDate };
+  }
+
+  // Strategy 2: Try the tournament slug as a coverage URL directly
+  const slugMatch = tournamentUrl.match(/\/organised-play\/\d{4}\/([^/]+)\/?$/);
+  if (slugMatch) {
+    const guessUrl = `https://fabtcg.com/coverage/${slugMatch[1]}/`;
+    try {
+      const guessRes = await fetch(guessUrl, {
+        headers: { "User-Agent": USER_AGENT },
+        redirect: "follow",
+        signal: AbortSignal.timeout(5000),
+      });
+      if (guessRes.ok) {
+        const guessHtml = await guessRes.text();
+        if (guessHtml.includes('/results/') || guessHtml.includes('match-row') || guessHtml.includes('class="rounds"')) {
+          return { coverageUrl: guessUrl, name, eventDate };
+        }
+      }
+    } catch {
+      // Guess failed
+    }
+  }
+
+  return null;
 }
 
 async function getRounds(coverageUrl: string): Promise<{

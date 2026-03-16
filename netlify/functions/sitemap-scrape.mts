@@ -243,11 +243,35 @@ async function findCoverageUrl(tournamentUrl: string): Promise<{ coverageUrl: st
   const dateMatch = html.match(/"datePublished":"(\d{4}-\d{2}-\d{2})/);
   const eventDate = dateMatch ? dateMatch[1] : "";
 
-  // Find coverage link
+  // Strategy 1: Find coverage link on the tournament page
   const covMatch = html.match(/href="(https:\/\/fabtcg\.com\/coverage\/[^"]+)"/);
-  if (!covMatch) return null;
+  if (covMatch) {
+    return { coverageUrl: covMatch[1], tournamentName, eventDate };
+  }
 
-  return { coverageUrl: covMatch[1], tournamentName, eventDate };
+  // Strategy 2: Try the tournament slug as a coverage URL directly
+  const slugMatch = tournamentUrl.match(/\/organised-play\/\d{4}\/([^/]+)\/?$/);
+  if (slugMatch) {
+    const guessUrl = `https://fabtcg.com/coverage/${slugMatch[1]}/`;
+    try {
+      const guessRes = await fetch(guessUrl, {
+        headers: { "User-Agent": USER_AGENT },
+        redirect: "follow",
+        signal: AbortSignal.timeout(5000),
+      });
+      if (guessRes.ok) {
+        const guessHtml = await guessRes.text();
+        // Verify it actually has results (not just a template page)
+        if (guessHtml.includes('/results/') || guessHtml.includes('match-row') || guessHtml.includes('class="rounds"')) {
+          return { coverageUrl: guessUrl, tournamentName, eventDate };
+        }
+      }
+    } catch {
+      // Guess failed, that's fine
+    }
+  }
+
+  return null;
 }
 
 // ── Coverage Round Discovery ──
