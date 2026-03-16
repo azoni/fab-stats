@@ -168,7 +168,20 @@ export default function PrivacyPage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-fab-text mb-2">11. Children&apos;s Privacy</h2>
+          <h2 className="text-lg font-semibold text-fab-text mb-2">11. GEM Auto-Sync &amp; Credential Storage</h2>
+          <p>
+            If you opt in to GEM Auto-Sync, the following additional data handling applies:
+          </p>
+          <ul className="list-disc list-inside mt-2 space-y-1">
+            <li><strong className="text-fab-text">Credential storage:</strong> your GEM username and password are encrypted using AES-256-GCM before being stored in Firestore. The encryption key is held in a separate server environment variable and is never stored alongside your credentials.</li>
+            <li><strong className="text-fab-text">Usage:</strong> your encrypted credentials are decrypted only on our server at sync time to log in to GEM and retrieve your match history. They are never sent to your browser, displayed in the UI, or shared with any third party.</li>
+            <li><strong className="text-fab-text">Deletion:</strong> when you disconnect your GEM account, the encrypted credential document is permanently deleted from Firestore — not merely disabled.</li>
+            <li><strong className="text-fab-text">Scope:</strong> the server accesses only your GEM match history pages (/profile/history/) and profile page (/profile/player/). No other GEM actions are performed on your behalf.</li>
+          </ul>
+        </section>
+
+        <section>
+          <h2 className="text-lg font-semibold text-fab-text mb-2">12. Children&apos;s Privacy</h2>
           <p>
             The Service is not directed to children under 13. We do not knowingly collect personal
             information from children under 13. If you believe a child has provided us with
@@ -177,7 +190,7 @@ export default function PrivacyPage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-fab-text mb-2">12. Changes to This Policy</h2>
+          <h2 className="text-lg font-semibold text-fab-text mb-2">13. Changes to This Policy</h2>
           <p>
             We may update this policy from time to time. The &quot;last updated&quot; date at the top of this
             page reflects the most recent revision. Continued use of the Service after changes
@@ -186,7 +199,7 @@ export default function PrivacyPage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-fab-text mb-2">13. Contact</h2>
+          <h2 className="text-lg font-semibold text-fab-text mb-2">14. Contact</h2>
           <p>
             For questions about this privacy policy or to exercise your data rights, contact{" "}
             <a href="mailto:charltonuw@gmail.com" className="text-fab-gold hover:underline">

@@ -2,6 +2,8 @@
 
 const MCP_URL = process.env.MCP_URL || "https://azoni-mcp.onrender.com";
 const MCP_ADMIN_KEY = process.env.MCP_ADMIN_KEY;
+const PORTFOLIO_URL = "https://azoni.netlify.app/.netlify/functions/log-agent-activity";
+const PORTFOLIO_SECRET = process.env.AGENT_WEBHOOK_SECRET;
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -29,16 +31,34 @@ export default async function handler(req: Request) {
     const title = clamp(body.title, "Activity", 120);
     const description = clamp(body.description, "", 500);
 
-    if (MCP_ADMIN_KEY) {
-      await fetch(`${MCP_URL}/activity/log`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${MCP_ADMIN_KEY}`,
-        },
-        body: JSON.stringify({ type, title, source: "fabstats", description }),
-      });
+    const promises: Promise<unknown>[] = [];
+
+    // Write directly to portfolio Firestore (primary — what the dashboard reads)
+    if (PORTFOLIO_SECRET) {
+      promises.push(
+        fetch(PORTFOLIO_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ type, title, source: "fabstats", description, secret: PORTFOLIO_SECRET }),
+        }).catch(() => {})
+      );
     }
+
+    // Also forward to MCP
+    if (MCP_ADMIN_KEY) {
+      promises.push(
+        fetch(`${MCP_URL}/activity/log`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${MCP_ADMIN_KEY}`,
+          },
+          body: JSON.stringify({ type, title, source: "fabstats", description }),
+        }).catch(() => {})
+      );
+    }
+
+    await Promise.allSettled(promises);
 
     return new Response(JSON.stringify({ ok: true }), {
       status: 200,

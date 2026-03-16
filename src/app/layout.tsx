@@ -16,6 +16,7 @@ import { SonnerProvider } from "@/components/ui/sonner-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { PageVisitTracker } from "@/components/PageVisitTracker";
 import { ScrollProgress } from "@/components/ui/ScrollProgress";
+import { AutoSyncRecompute } from "@/components/AutoSyncRecompute";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -168,6 +169,7 @@ export default function RootLayout({
           <ChatFab />
           <MobileNav />
           <PageVisitTracker />
+          <AutoSyncRecompute />
           <SonnerProvider />
         </TooltipProvider>
         </ChatProvider>
