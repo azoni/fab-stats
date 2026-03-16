@@ -140,10 +140,12 @@ function parseResults(html: string, round: number): ParsedMatch[] {
       const nameMatch = block.match(/<strong>\s*(?:<[^>]+>\s*)*([^<]+)/);
       const heroMatch = block.match(/<span(?:\s+class="hero-name")?>\s*([^<]+)\s*<\/span>/);
       const flagMatch = block.match(/<i class="flag (\w{2})">|<i class="(\w{2}) flag">/);
+      const imgMatch = block.match(/class="hero-img"[^>]*src="([^"]+)"|src="([^"]+)"[^>]*class="hero-img"/);
       return {
         name: nameMatch ? decodeHtml(nameMatch[1].trim()) : "",
         hero: heroMatch ? decodeHtml(heroMatch[1].trim()) : "",
         country: flagMatch ? (flagMatch[1] || flagMatch[2] || "").toUpperCase() : "",
+        heroImg: imgMatch ? (imgMatch[1] || imgMatch[2] || "") : "",
       };
     };
 
@@ -426,6 +428,7 @@ export default async function handler() {
     const scrapedSlugs = await getScrapedSlugs();
     let newEvents = 0;
     let newMatches = 0;
+    const heroPortraits = new Map<string, string>(); // hero name → portrait URL
 
     for (const tournament of tournaments) {
       for (const coverageUrl of tournament.coverageUrls) {
@@ -443,6 +446,17 @@ export default async function handler() {
               const html = await fetchPage(resultUrl);
               const round = parseInt(resultUrl.match(/\/results\/(\d+)\//)?.[1] || "0");
               const parsed = parseResults(html, round);
+
+              // Extract hero portrait URLs from this page
+              const imgRegex = /class="hero-img"[^>]*src="([^"]+)"[^>]*alt="([^"]*)"/g;
+              let imgMatch;
+              while ((imgMatch = imgRegex.exec(html)) !== null) {
+                const imgUrl = imgMatch[1];
+                const heroName = decodeHtml(imgMatch[2].trim());
+                if (heroName && imgUrl && imgUrl.includes("/heroes/")) {
+                  heroPortraits.set(heroName, imgUrl);
+                }
+              }
 
               for (const m of parsed) {
                 allMatches.push({
@@ -483,6 +497,27 @@ export default async function handler() {
         }
 
         await new Promise((r) => setTimeout(r, 300));
+      }
+    }
+
+    // Save discovered hero portraits
+    if (heroPortraits.size > 0) {
+      const portraitDb = getAdminDb();
+      const existingSnap = await portraitDb.doc("sitemap-meta/hero-portraits").get();
+      const existing = (existingSnap.data()?.portraits || {}) as Record<string, string>;
+      let newPortraits = 0;
+      for (const [hero, url] of heroPortraits) {
+        if (!existing[hero]) {
+          existing[hero] = url;
+          newPortraits++;
+        }
+      }
+      if (newPortraits > 0) {
+        await portraitDb.doc("sitemap-meta/hero-portraits").set({
+          portraits: existing,
+          updatedAt: new Date().toISOString(),
+        });
+        console.log(`[auto-scrape] Saved ${newPortraits} new hero portraits (${Object.keys(existing).length} total)`);
       }
     }
 

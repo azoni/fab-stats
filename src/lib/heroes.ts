@@ -96,8 +96,40 @@ const HERO_PORTRAIT_MAP: Record<string, string> = {
   "Zen, Tamer of Purpose": `${PORTRAIT_CDN}/Zen%2C%20Tamer%20of%20Purpose.jpg`,
 };
 
+// Dynamic portraits from Firestore (populated by auto-scrape)
+let dynamicPortraits: Record<string, string> | null = null;
+let dynamicPortraitsLoading = false;
+
 export function getHeroPortraitUrl(name: string): string | null {
-  return HERO_PORTRAIT_MAP[name] || null;
+  // Check static map first (instant)
+  if (HERO_PORTRAIT_MAP[name]) return HERO_PORTRAIT_MAP[name];
+
+  // Check dynamic portraits (loaded from Firestore)
+  if (dynamicPortraits && dynamicPortraits[name]) return dynamicPortraits[name];
+
+  // Trigger async load if not loaded yet
+  if (!dynamicPortraits && !dynamicPortraitsLoading) {
+    loadDynamicPortraits();
+  }
+
+  return null;
+}
+
+async function loadDynamicPortraits() {
+  dynamicPortraitsLoading = true;
+  try {
+    const { doc, getDoc } = await import("firebase/firestore");
+    const { db } = await import("./firebase");
+    const snap = await getDoc(doc(db, "sitemap-meta/hero-portraits"));
+    if (snap.exists()) {
+      dynamicPortraits = (snap.data().portraits || {}) as Record<string, string>;
+    } else {
+      dynamicPortraits = {};
+    }
+  } catch {
+    dynamicPortraits = {};
+  }
+  dynamicPortraitsLoading = false;
 }
 
 export function getHeroByName(name: string): HeroInfo | undefined {
