@@ -16,7 +16,7 @@ export interface MatchRecord {
   goingFirst?: boolean;
   matchNotes?: string;
   commentCount?: number;
-  source?: "extension" | "csv" | "paste" | "manual";
+  source?: "extension" | "bookmarklet" | "csv" | "paste" | "manual";
   extensionVersion?: string;
   gemEventId?: string;
   heroSuggestionSent?: string;
@@ -332,7 +332,7 @@ export interface LeaderboardEntry {
   updatedAt: string;
 }
 
-export type ImportSource = "extension" | "csv" | "paste" | "manual";
+export type ImportSource = "extension" | "bookmarklet" | "csv" | "paste" | "manual";
 
 interface FeedEventBase {
   id: string;

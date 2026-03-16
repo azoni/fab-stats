@@ -562,7 +562,7 @@ export function parseExtensionJson(json: string): PasteImportResult {
       venue: entry.venue || undefined,
       eventType: entry.eventType || undefined,
       rated: entry.rated,
-      source: "extension",
+      source: (entry.extensionVersion || "").startsWith("bookmarklet") ? "bookmarklet" : "extension",
       extensionVersion: entry.extensionVersion || undefined,
       gemEventId: entry.gemEventId || undefined,
     });
