@@ -11,6 +11,7 @@ import {
   getAllDecklistSummaries,
   computeHeroMeta,
   computeEventSummaries,
+  clearAllDecklists,
   type SitemapDecklist,
   type DecklistSummary,
   type HeroMetaStat,
@@ -272,6 +273,28 @@ export default function SitemapTab() {
               className="px-4 py-2 rounded-md text-xs font-medium bg-red-600 text-white hover:bg-red-500 transition-colors"
             >
               Stop
+            </button>
+          )}
+
+          {!scraping && (
+            <button
+              onClick={async () => {
+                if (!confirm("Clear all scraped decklists? You'll need to re-scrape.")) return;
+                setStatusMsg("Clearing...");
+                try {
+                  const count = await clearAllDecklists();
+                  setScrapedSlugs(new Set());
+                  setResults([]);
+                  setAnalyticsLoaded(false);
+                  setStatusMsg(`Cleared ${count} decklists.`);
+                } catch (err: unknown) {
+                  const msg = err instanceof Error ? err.message : "Clear failed";
+                  setStatusMsg(`Error: ${msg}`);
+                }
+              }}
+              className="px-4 py-2 rounded-md text-xs font-medium bg-fab-surface border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-colors"
+            >
+              Clear All
             </button>
           )}
         </div>
