@@ -25,14 +25,14 @@ export default function BookmarkletPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto">
+    <div className="max-w-2xl mx-auto relative z-10">
       <h1 className="text-2xl font-bold text-fab-gold mb-2">Quick Sync Bookmarklet</h1>
       <p className="text-fab-muted text-sm mb-6">
         Import your GEM match history with a single tap — no extension needed. Works on mobile and desktop.
       </p>
 
       {/* How it works */}
-      <div className="bg-fab-surface border border-fab-border rounded-lg p-4 mb-6">
+      <div className="bg-fab-bg/95 backdrop-blur-sm border border-fab-border rounded-lg p-4 mb-6">
         <h2 className="text-sm font-semibold text-fab-text mb-3">How it works</h2>
         <ol className="space-y-2 text-sm text-fab-muted">
           <li className="flex gap-2">
@@ -55,7 +55,7 @@ export default function BookmarkletPage() {
       </div>
 
       {/* Desktop Setup */}
-      <div className="bg-fab-surface border border-fab-border rounded-lg p-4 mb-4">
+      <div className="bg-fab-bg/95 backdrop-blur-sm border border-fab-border rounded-lg p-4 mb-4">
         <h2 className="text-sm font-semibold text-fab-text mb-3">Desktop Setup</h2>
 
         {/* Method 1: Drag */}
@@ -76,7 +76,7 @@ export default function BookmarkletPage() {
             </svg>
             FaB Stats Sync
           </a>
-          <span className="text-xs text-fab-dim">
+          <span className="text-xs text-fab-muted">
             Drag me to your bookmarks bar
           </span>
         </div>
@@ -85,7 +85,7 @@ export default function BookmarkletPage() {
         <p className="text-sm text-fab-muted mb-2">
           <span className="text-fab-gold font-bold">Option 2:</span> If dragging doesn&apos;t work (some browsers block it):
         </p>
-        <ol className="text-xs text-fab-dim space-y-1.5 ml-4 mb-3 list-decimal list-inside">
+        <ol className="text-xs text-fab-muted space-y-1.5 ml-4 mb-3 list-decimal list-inside">
           <li>Right-click your bookmarks bar &rarr; &quot;Add page&quot; or &quot;Add bookmark&quot;</li>
           <li>Set the name to <strong className="text-fab-muted">FaB Stats Sync</strong></li>
           <li>For the URL, paste the code below</li>
@@ -101,7 +101,7 @@ export default function BookmarkletPage() {
       </div>
 
       {/* Mobile Setup */}
-      <div className="bg-fab-surface border border-fab-border rounded-lg p-4 mb-6">
+      <div className="bg-fab-bg/95 backdrop-blur-sm border border-fab-border rounded-lg p-4 mb-6">
         <h2 className="text-sm font-semibold text-fab-text mb-3">Mobile Setup</h2>
 
         {/* Step 1: Copy */}
@@ -122,7 +122,7 @@ export default function BookmarkletPage() {
           <p className="text-sm text-fab-muted mb-1">
             <span className="text-fab-gold font-bold">Step 2:</span> Bookmark any page
           </p>
-          <p className="text-xs text-fab-dim">
+          <p className="text-xs text-fab-muted">
             Bookmark this page or any other page — we&apos;ll replace the URL next.
           </p>
         </div>
@@ -132,7 +132,7 @@ export default function BookmarkletPage() {
           <p className="text-sm text-fab-muted mb-1">
             <span className="text-fab-gold font-bold">Step 3:</span> Edit the bookmark
           </p>
-          <ul className="text-xs text-fab-dim space-y-1 ml-4">
+          <ul className="text-xs text-fab-muted space-y-1 ml-4">
             <li><strong className="text-fab-muted">Safari (iOS):</strong> Open Bookmarks, long-press the bookmark, tap Edit, replace the URL with the copied code</li>
             <li><strong className="text-fab-muted">Chrome (Android):</strong> Open Bookmarks (three dots &gt; Bookmarks), long-press the bookmark, tap Edit, replace the URL</li>
           </ul>
@@ -143,27 +143,27 @@ export default function BookmarkletPage() {
           <p className="text-sm text-fab-muted mb-1">
             <span className="text-fab-gold font-bold">Step 4:</span> Navigate to GEM &amp; tap
           </p>
-          <p className="text-xs text-fab-dim">
+          <p className="text-xs text-fab-muted">
             Go to <a href="https://gem.fabtcg.com/profile/history/" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">gem.fabtcg.com/profile/history</a>, then open your bookmarks and tap &quot;FaB Stats Sync&quot;.
           </p>
         </div>
       </div>
 
       {/* FAQ */}
-      <div className="bg-fab-surface border border-fab-border rounded-lg p-4">
+      <div className="bg-fab-bg/95 backdrop-blur-sm border border-fab-border rounded-lg p-4">
         <h2 className="text-sm font-semibold text-fab-text mb-3">FAQ</h2>
         <div className="space-y-3">
           <div>
             <p className="text-sm text-fab-muted font-medium">Does it import all my history?</p>
-            <p className="text-xs text-fab-dim">It imports the current page of events. If you have multiple pages, navigate to each page and tap the bookmarklet again. Duplicates are automatically skipped.</p>
+            <p className="text-xs text-fab-muted">It imports the current page of events. If you have multiple pages, navigate to each page and tap the bookmarklet again. Duplicates are automatically skipped.</p>
           </div>
           <div>
             <p className="text-sm text-fab-muted font-medium">Is it safe?</p>
-            <p className="text-xs text-fab-dim">The bookmarklet only reads your GEM page data — it doesn&apos;t send anything to any server. Your data goes directly from GEM to FaB Stats in your browser.</p>
+            <p className="text-xs text-fab-muted">The bookmarklet only reads your GEM page data — it doesn&apos;t send anything to any server. Your data goes directly from GEM to FaB Stats in your browser.</p>
           </div>
           <div>
             <p className="text-sm text-fab-muted font-medium">How is this different from the extension?</p>
-            <p className="text-xs text-fab-dim">The browser extension auto-paginates through all your history pages. The bookmarklet imports one page at a time but works on mobile and requires no install.</p>
+            <p className="text-xs text-fab-muted">The browser extension auto-paginates through all your history pages. The bookmarklet imports one page at a time but works on mobile and requires no install.</p>
           </div>
         </div>
       </div>
