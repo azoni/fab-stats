@@ -190,6 +190,21 @@ export async function getScrapedCount(): Promise<number> {
   return snap.size;
 }
 
+export async function clearAllDecklists(): Promise<number> {
+  const snap = await getDocs(collection(db, COLLECTION));
+  let deleted = 0;
+  for (let i = 0; i < snap.docs.length; i += 400) {
+    const batch = writeBatch(db);
+    for (const d of snap.docs.slice(i, i + 400)) {
+      batch.delete(d.ref);
+    }
+    await batch.commit();
+    deleted += Math.min(400, snap.docs.length - i);
+  }
+  analyticsCache = null;
+  return deleted;
+}
+
 // ── Analytics ──
 
 export interface DecklistSummary {
