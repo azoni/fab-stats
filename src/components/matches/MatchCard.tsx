@@ -248,7 +248,17 @@ export function MatchCard({ match, matchOwnerUid, enableComments = false, obfusc
           </div>
         )}
 
-        {/* No hero set — edit prompt */}
+        {/* Missing opponent hero — edit prompt */}
+        {hasHero && !hasOppHero && !editing && editable && onUpdateMatch && (
+          <button onClick={startEditing} className="flex items-center gap-1 mt-1 text-xs text-fab-dim hover:text-fab-gold transition-colors">
+            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+            </svg>
+            + vs hero
+          </button>
+        )}
+
+        {/* No hero set at all — edit prompt */}
         {!hasHero && !hasOppHero && !editing && editable && onUpdateMatch && (
           <button onClick={startEditing} className="flex items-center gap-1 mt-1 text-xs text-fab-dim hover:text-fab-gold transition-colors">
             <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
