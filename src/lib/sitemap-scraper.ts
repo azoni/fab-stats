@@ -205,6 +205,209 @@ export async function clearAllDecklists(): Promise<number> {
   return deleted;
 }
 
+// ── Coverage Types ──
+
+export interface CoverageMatch {
+  player1: string;
+  player1Hero: string;
+  player1Country: string;
+  player2: string;
+  player2Hero: string;
+  player2Country: string;
+  result: "player1" | "player2" | "draw";
+  round: number;
+  event: string;
+  coverageUrl: string;
+  eventDate: string;
+  format: string;
+}
+
+export interface CoverageEvent {
+  slug: string;
+  coverageUrl: string;
+  tournamentUrl: string;
+  eventName: string;
+  roundCount: number;
+  matchCount: number;
+  scrapedAt: string;
+}
+
+// ── Coverage API Calls ──
+
+const COVERAGE_COLLECTION = "coverage-matches";
+const COVERAGE_EVENTS_COLLECTION = "coverage-events";
+
+export async function fetchTournamentUrls(): Promise<string[]> {
+  const token = await getAuthToken();
+  const res = await fetch("/.netlify/functions/sitemap-scrape?mode=tournament-urls", {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error("Failed to fetch tournament URLs");
+  const data = await res.json();
+  return data.urls;
+}
+
+export async function discoverCoverage(
+  tournamentUrl: string
+): Promise<{ coverageUrl: string; tournamentName: string } | null> {
+  const token = await getAuthToken();
+  const res = await fetch(
+    `/.netlify/functions/sitemap-scrape?mode=coverage-discover&url=${encodeURIComponent(tournamentUrl)}`,
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  if (!res.ok) throw new Error("Failed to discover coverage");
+  const data = await res.json();
+  return data.result;
+}
+
+export async function fetchCoverageRounds(
+  coverageUrl: string
+): Promise<{ coverageUrl: string; eventName: string; roundCount: number; resultUrls: string[] }> {
+  const token = await getAuthToken();
+  const res = await fetch(
+    `/.netlify/functions/sitemap-scrape?mode=coverage-rounds&url=${encodeURIComponent(coverageUrl)}`,
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  if (!res.ok) throw new Error("Failed to fetch coverage rounds");
+  const data = await res.json();
+  return data.info;
+}
+
+export async function fetchCoverageResults(
+  resultUrl: string
+): Promise<{ player1: string; player1Hero: string; player1Country: string; player2: string; player2Hero: string; player2Country: string; result: "player1" | "player2" | "draw"; round: number }[]> {
+  const token = await getAuthToken();
+  const res = await fetch(
+    `/.netlify/functions/sitemap-scrape?mode=coverage-results&url=${encodeURIComponent(resultUrl)}`,
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  if (!res.ok) throw new Error("Failed to fetch results");
+  const data = await res.json();
+  return data.matches;
+}
+
+// ── Coverage Firestore Operations ──
+
+export async function saveCoverageMatches(
+  matches: CoverageMatch[]
+): Promise<number> {
+  let saved = 0;
+  for (let i = 0; i < matches.length; i += 400) {
+    const batch = writeBatch(db);
+    const chunk = matches.slice(i, i + 400);
+    for (const m of chunk) {
+      const docId = `${m.event}_r${m.round}_${m.player1}_${m.player2}`.replace(/[/\\.\s]+/g, "_").slice(0, 200);
+      batch.set(doc(db, COVERAGE_COLLECTION, docId), m);
+      saved++;
+    }
+    await batch.commit();
+  }
+  return saved;
+}
+
+export async function saveCoverageEvent(event: CoverageEvent): Promise<void> {
+  await setDoc(doc(db, COVERAGE_EVENTS_COLLECTION, event.slug), event);
+}
+
+export async function getScrapedCoverageEvents(): Promise<CoverageEvent[]> {
+  const snap = await getDocs(collection(db, COVERAGE_EVENTS_COLLECTION));
+  return snap.docs.map((d) => d.data() as CoverageEvent);
+}
+
+export async function getAllCoverageMatches(): Promise<CoverageMatch[]> {
+  if (coverageCache && Date.now() - coverageCache.ts < COVERAGE_CACHE_TTL) {
+    return coverageCache.data;
+  }
+  const snap = await getDocs(collection(db, COVERAGE_COLLECTION));
+  const data = snap.docs.map((d) => d.data() as CoverageMatch);
+  coverageCache = { data, ts: Date.now() };
+  return data;
+}
+
+let coverageCache: { data: CoverageMatch[]; ts: number } | null = null;
+const COVERAGE_CACHE_TTL = 10 * 60_000;
+
+export async function clearCoverageData(): Promise<number> {
+  let deleted = 0;
+  // Clear matches
+  const matchSnap = await getDocs(collection(db, COVERAGE_COLLECTION));
+  for (let i = 0; i < matchSnap.docs.length; i += 400) {
+    const batch = writeBatch(db);
+    for (const d of matchSnap.docs.slice(i, i + 400)) batch.delete(d.ref);
+    await batch.commit();
+    deleted += Math.min(400, matchSnap.docs.length - i);
+  }
+  // Clear events
+  const eventSnap = await getDocs(collection(db, COVERAGE_EVENTS_COLLECTION));
+  for (let i = 0; i < eventSnap.docs.length; i += 400) {
+    const batch = writeBatch(db);
+    for (const d of eventSnap.docs.slice(i, i + 400)) batch.delete(d.ref);
+    await batch.commit();
+  }
+  coverageCache = null;
+  return deleted;
+}
+
+// ── Coverage Analytics ──
+
+export interface HeroMatchupStat {
+  hero1: string;
+  hero2: string;
+  hero1Wins: number;
+  hero2Wins: number;
+  draws: number;
+  total: number;
+}
+
+export function computeCoverageMatchups(
+  matches: CoverageMatch[],
+  filters?: { event?: string; format?: string; dateFrom?: string; dateTo?: string }
+): HeroMatchupStat[] {
+  let filtered = matches;
+
+  if (filters?.event) {
+    filtered = filtered.filter((m) => m.event === filters.event);
+  }
+  if (filters?.format) {
+    filtered = filtered.filter((m) => m.format === filters.format);
+  }
+  if (filters?.dateFrom) {
+    filtered = filtered.filter((m) => m.eventDate >= filters.dateFrom!);
+  }
+  if (filters?.dateTo) {
+    filtered = filtered.filter((m) => m.eventDate <= filters.dateTo!);
+  }
+
+  const pairMap = new Map<string, HeroMatchupStat>();
+
+  for (const m of filtered) {
+    if (!m.player1Hero || !m.player2Hero) continue;
+
+    const sorted = [m.player1Hero, m.player2Hero].sort();
+    const key = `${sorted[0]}__${sorted[1]}`;
+    const isHero1 = m.player1Hero === sorted[0];
+
+    let stat = pairMap.get(key);
+    if (!stat) {
+      stat = { hero1: sorted[0], hero2: sorted[1], hero1Wins: 0, hero2Wins: 0, draws: 0, total: 0 };
+      pairMap.set(key, stat);
+    }
+
+    stat.total++;
+    if (m.result === "draw") {
+      stat.draws++;
+    } else if (m.result === "player1") {
+      if (isHero1) stat.hero1Wins++;
+      else stat.hero2Wins++;
+    } else if (m.result === "player2") {
+      if (isHero1) stat.hero2Wins++;
+      else stat.hero1Wins++;
+    }
+  }
+
+  return [...pairMap.values()].sort((a, b) => b.total - a.total);
+}
+
 // ── Analytics ──
 
 export interface DecklistSummary {

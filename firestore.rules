@@ -675,6 +675,12 @@ service cloud.firestore {
     match /sitemap-meta/{docId} {
       allow read, write: if isAdmin();
     }
+    match /coverage-matches/{docId} {
+      allow read, write: if isAdmin();
+    }
+    match /coverage-events/{docId} {
+      allow read, write: if isAdmin();
+    }
 
     // Admin stats: any authed user can increment deletedAccounts (during account deletion)
     match /admin/stats {

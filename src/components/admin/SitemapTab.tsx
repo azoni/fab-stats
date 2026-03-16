@@ -12,10 +12,23 @@ import {
   computeHeroMeta,
   computeEventSummaries,
   clearAllDecklists,
+  fetchTournamentUrls,
+  discoverCoverage,
+  fetchCoverageRounds,
+  fetchCoverageResults,
+  saveCoverageMatches,
+  saveCoverageEvent,
+  getScrapedCoverageEvents,
+  getAllCoverageMatches,
+  clearCoverageData,
+  computeCoverageMatchups,
   type SitemapDecklist,
   type DecklistSummary,
   type HeroMetaStat,
   type EventSummary,
+  type CoverageMatch,
+  type CoverageEvent,
+  type HeroMatchupStat,
 } from "@/lib/sitemap-scraper";
 
 export default function SitemapTab() {
@@ -42,6 +55,20 @@ export default function SitemapTab() {
 
   // Stats
   const [statusMsg, setStatusMsg] = useState("");
+
+  // Coverage scrape state
+  const [coverageScraping, setCoverageScraping] = useState(false);
+  const [coverageProgress, setCoverageProgress] = useState("");
+  const [coverageEvents, setCoverageEvents] = useState<CoverageEvent[]>([]);
+  const coverageAbortRef = useRef(false);
+
+  // Coverage analytics state
+  const [coverageMatches, setCoverageMatches] = useState<CoverageMatch[]>([]);
+  const [matchupStats, setMatchupStats] = useState<HeroMatchupStat[]>([]);
+  const [coverageLoaded, setCoverageLoaded] = useState(false);
+  const [loadingCoverage, setLoadingCoverage] = useState(false);
+  const [matchupEventFilter, setMatchupEventFilter] = useState("");
+  const [matchupFormatFilter, setMatchupFormatFilter] = useState("");
 
   // Analytics state
   const [allDecklists, setAllDecklists] = useState<DecklistSummary[]>([]);
@@ -228,6 +255,149 @@ export default function SitemapTab() {
       }
     },
     [allDecklists]
+  );
+
+  // ── Coverage Scraping ──
+
+  const handleScrapeCoverage = useCallback(async () => {
+    coverageAbortRef.current = false;
+    setCoverageScraping(true);
+    setCoverageProgress("Fetching tournament URLs...");
+
+    try {
+      const tournamentUrls = await fetchTournamentUrls();
+      setCoverageProgress(`Found ${tournamentUrls.length} tournaments. Checking for coverage...`);
+
+      const scrapedEvents = await getScrapedCoverageEvents();
+      const scrapedSlugs = new Set(scrapedEvents.map((e) => e.slug));
+      setCoverageEvents(scrapedEvents);
+
+      let eventsProcessed = 0;
+      let totalMatches = 0;
+
+      for (const tUrl of tournamentUrls) {
+        if (coverageAbortRef.current) break;
+
+        const slug = tUrl.replace(/\/$/, "").split("/").pop() || "";
+        if (scrapedSlugs.has(slug)) {
+          eventsProcessed++;
+          continue;
+        }
+
+        setCoverageProgress(`[${eventsProcessed + 1}/${tournamentUrls.length}] Checking ${slug}...`);
+
+        try {
+          const discovery = await discoverCoverage(tUrl);
+          if (!discovery) {
+            eventsProcessed++;
+            await new Promise((r) => setTimeout(r, 300));
+            continue;
+          }
+
+          setCoverageProgress(`[${eventsProcessed + 1}/${tournamentUrls.length}] Found coverage for ${discovery.tournamentName}. Getting rounds...`);
+          await new Promise((r) => setTimeout(r, 300));
+
+          const roundInfo = await fetchCoverageRounds(discovery.coverageUrl);
+
+          if (roundInfo.resultUrls.length === 0) {
+            eventsProcessed++;
+            continue;
+          }
+
+          setCoverageProgress(`[${eventsProcessed + 1}/${tournamentUrls.length}] ${discovery.tournamentName}: scraping ${roundInfo.resultUrls.length} rounds...`);
+
+          const allMatches: CoverageMatch[] = [];
+
+          for (const resultUrl of roundInfo.resultUrls) {
+            if (coverageAbortRef.current) break;
+
+            try {
+              const parsed = await fetchCoverageResults(resultUrl);
+              for (const m of parsed) {
+                allMatches.push({
+                  ...m,
+                  event: roundInfo.eventName || discovery.tournamentName,
+                  coverageUrl: discovery.coverageUrl,
+                  eventDate: "",
+                  format: "",
+                });
+              }
+            } catch {
+              // skip failed round
+            }
+
+            await new Promise((r) => setTimeout(r, 500));
+          }
+
+          if (allMatches.length > 0) {
+            await saveCoverageMatches(allMatches);
+            await saveCoverageEvent({
+              slug,
+              coverageUrl: discovery.coverageUrl,
+              tournamentUrl: tUrl,
+              eventName: roundInfo.eventName || discovery.tournamentName,
+              roundCount: roundInfo.resultUrls.length,
+              matchCount: allMatches.length,
+              scrapedAt: new Date().toISOString(),
+            });
+            totalMatches += allMatches.length;
+            scrapedSlugs.add(slug);
+          }
+        } catch {
+          // skip failed tournament
+        }
+
+        eventsProcessed++;
+        await new Promise((r) => setTimeout(r, 300));
+      }
+
+      setCoverageProgress(
+        coverageAbortRef.current
+          ? `Stopped. Processed ${eventsProcessed} tournaments, ${totalMatches} new matches.`
+          : `Done! Processed ${eventsProcessed} tournaments, ${totalMatches} new matches.`
+      );
+
+      const updated = await getScrapedCoverageEvents();
+      setCoverageEvents(updated);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Coverage scrape failed";
+      setCoverageProgress(`Error: ${msg}`);
+    } finally {
+      setCoverageScraping(false);
+    }
+  }, []);
+
+  const handleLoadCoverage = useCallback(async () => {
+    setLoadingCoverage(true);
+    try {
+      const [matches, events] = await Promise.all([
+        getAllCoverageMatches(),
+        getScrapedCoverageEvents(),
+      ]);
+      setCoverageMatches(matches);
+      setCoverageEvents(events);
+      setMatchupStats(computeCoverageMatchups(matches));
+      setCoverageLoaded(true);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to load coverage data";
+      setCoverageProgress(`Error: ${msg}`);
+    } finally {
+      setLoadingCoverage(false);
+    }
+  }, []);
+
+  const handleMatchupFilter = useCallback(
+    (event: string, format: string) => {
+      setMatchupEventFilter(event);
+      setMatchupFormatFilter(format);
+      setMatchupStats(
+        computeCoverageMatchups(coverageMatches, {
+          event: event || undefined,
+          format: format || undefined,
+        })
+      );
+    },
+    [coverageMatches]
   );
 
   const progressPct =
@@ -623,6 +793,199 @@ export default function SitemapTab() {
                 </div>
               );
             })()}
+          </>
+        )}
+      </div>
+
+      {/* ── Coverage Match Scraper ── */}
+      <div className="bg-fab-surface border border-fab-border rounded-lg p-4 space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-sm font-semibold text-fab-text">Coverage Match Data</h3>
+            <p className="text-[10px] text-fab-dim">Scrape round-by-round match results from FABTCG coverage pages (hero vs hero, win/loss)</p>
+          </div>
+          <div className="flex gap-2">
+            {!coverageScraping && (
+              <>
+                <button
+                  onClick={handleScrapeCoverage}
+                  className="px-4 py-2 rounded-md text-xs font-medium bg-green-600 text-white hover:bg-green-500 transition-colors"
+                >
+                  Scrape Coverage
+                </button>
+                <button
+                  onClick={async () => {
+                    if (!confirm("Clear all coverage match data?")) return;
+                    setCoverageProgress("Clearing...");
+                    try {
+                      const count = await clearCoverageData();
+                      setCoverageEvents([]);
+                      setCoverageMatches([]);
+                      setMatchupStats([]);
+                      setCoverageLoaded(false);
+                      setCoverageProgress(`Cleared ${count} matches.`);
+                    } catch {
+                      setCoverageProgress("Clear failed.");
+                    }
+                  }}
+                  className="px-4 py-2 rounded-md text-xs font-medium bg-fab-surface border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-colors"
+                >
+                  Clear
+                </button>
+              </>
+            )}
+            {coverageScraping && (
+              <button
+                onClick={() => { coverageAbortRef.current = true; }}
+                className="px-4 py-2 rounded-md text-xs font-medium bg-red-600 text-white hover:bg-red-500 transition-colors"
+              >
+                Stop
+              </button>
+            )}
+          </div>
+        </div>
+
+        {coverageProgress && (
+          <p className="text-xs text-fab-muted">{coverageProgress}</p>
+        )}
+
+        {coverageEvents.length > 0 && (
+          <div>
+            <p className="text-[10px] text-fab-dim mb-1">{coverageEvents.length} events scraped</p>
+            <div className="max-h-32 overflow-y-auto space-y-0.5">
+              {coverageEvents.map((e) => (
+                <p key={e.slug} className="text-[10px] text-fab-muted">
+                  {e.eventName} — {e.roundCount} rounds, {e.matchCount} matches
+                </p>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ── Hero vs Hero Matchup Matrix ── */}
+      <div className="bg-fab-surface border border-fab-border rounded-lg p-4 space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-sm font-semibold text-fab-text">Tournament Matchup Matrix</h3>
+            <p className="text-[10px] text-fab-dim">Hero vs hero win rates from official tournament coverage data</p>
+          </div>
+          <button
+            onClick={handleLoadCoverage}
+            disabled={loadingCoverage}
+            className="px-4 py-2 rounded-md text-xs font-medium bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors disabled:opacity-50"
+          >
+            {loadingCoverage ? "Loading..." : coverageLoaded ? "Refresh" : "Load Data"}
+          </button>
+        </div>
+
+        {coverageLoaded && (
+          <>
+            {/* Overview */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              <div className="bg-fab-bg rounded-lg p-3 text-center">
+                <p className="text-lg font-bold text-fab-gold">{coverageMatches.length}</p>
+                <p className="text-[10px] text-fab-dim">Matches</p>
+              </div>
+              <div className="bg-fab-bg rounded-lg p-3 text-center">
+                <p className="text-lg font-bold text-fab-gold">{coverageEvents.length}</p>
+                <p className="text-[10px] text-fab-dim">Events</p>
+              </div>
+              <div className="bg-fab-bg rounded-lg p-3 text-center">
+                <p className="text-lg font-bold text-fab-gold">{matchupStats.length}</p>
+                <p className="text-[10px] text-fab-dim">Matchups</p>
+              </div>
+              <div className="bg-fab-bg rounded-lg p-3 text-center">
+                <p className="text-lg font-bold text-fab-gold">
+                  {new Set(coverageMatches.flatMap((m) => [m.player1Hero, m.player2Hero]).filter(Boolean)).size}
+                </p>
+                <p className="text-[10px] text-fab-dim">Heroes</p>
+              </div>
+            </div>
+
+            {/* Filters */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div>
+                <label className="block text-[10px] text-fab-dim mb-0.5">Filter by Event</label>
+                <select
+                  value={matchupEventFilter}
+                  onChange={(e) => handleMatchupFilter(e.target.value, matchupFormatFilter)}
+                  className="w-full bg-fab-bg border border-fab-border rounded-md px-2 py-1.5 text-xs text-fab-text outline-none focus:border-fab-gold/50"
+                >
+                  <option value="">All Events</option>
+                  {coverageEvents.map((e) => (
+                    <option key={e.slug} value={e.eventName}>{e.eventName}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-[10px] text-fab-dim mb-0.5">Filter by Format</label>
+                <select
+                  value={matchupFormatFilter}
+                  onChange={(e) => handleMatchupFilter(matchupEventFilter, e.target.value)}
+                  className="w-full bg-fab-bg border border-fab-border rounded-md px-2 py-1.5 text-xs text-fab-text outline-none focus:border-fab-gold/50"
+                >
+                  <option value="">All Formats</option>
+                  {[...new Set(coverageMatches.map((m) => m.format).filter(Boolean))].sort().map((f) => (
+                    <option key={f} value={f}>{f}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Matchup table */}
+            {matchupStats.length > 0 && (
+              <div>
+                <h4 className="text-xs font-semibold text-fab-text mb-2">
+                  Hero vs Hero ({matchupStats.length} matchups, {matchupStats.reduce((s, m) => s + m.total, 0)} games)
+                </h4>
+                <div className="overflow-x-auto max-h-[500px] overflow-y-auto">
+                  <table className="w-full text-xs">
+                    <thead className="sticky top-0 bg-fab-surface">
+                      <tr className="border-b border-fab-border text-left text-fab-dim">
+                        <th className="py-1.5 pr-2">Hero 1</th>
+                        <th className="py-1.5 pr-2">Hero 2</th>
+                        <th className="py-1.5 pr-2 text-right">H1 Wins</th>
+                        <th className="py-1.5 pr-2 text-right">H2 Wins</th>
+                        <th className="py-1.5 pr-2 text-right">Draws</th>
+                        <th className="py-1.5 pr-2 text-right">Total</th>
+                        <th className="py-1.5 pr-2 text-right">H1 WR%</th>
+                        <th className="py-1.5 w-28">Spread</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {matchupStats.filter((m) => m.total >= 3).map((m) => {
+                        const h1wr = m.total > 0 ? Math.round(((m.hero1Wins / (m.total - m.draws)) || 0) * 1000) / 10 : 0;
+                        const h1pct = m.total > 0 ? (m.hero1Wins / m.total) * 100 : 50;
+                        const h2pct = m.total > 0 ? (m.hero2Wins / m.total) * 100 : 50;
+                        const drawPct = m.total > 0 ? (m.draws / m.total) * 100 : 0;
+                        return (
+                          <tr key={`${m.hero1}__${m.hero2}`} className="border-b border-fab-border/30">
+                            <td className="py-1.5 pr-2 text-fab-text font-medium">{m.hero1}</td>
+                            <td className="py-1.5 pr-2 text-fab-text font-medium">{m.hero2}</td>
+                            <td className="py-1.5 pr-2 text-right text-green-400">{m.hero1Wins}</td>
+                            <td className="py-1.5 pr-2 text-right text-red-400">{m.hero2Wins}</td>
+                            <td className="py-1.5 pr-2 text-right text-fab-dim">{m.draws}</td>
+                            <td className="py-1.5 pr-2 text-right text-fab-muted">{m.total}</td>
+                            <td className={`py-1.5 pr-2 text-right font-medium ${h1wr >= 55 ? "text-green-400" : h1wr <= 45 ? "text-red-400" : "text-fab-muted"}`}>
+                              {m.total - m.draws > 0 ? `${h1wr}%` : "-"}
+                            </td>
+                            <td className="py-1.5 w-28">
+                              <div className="flex h-2 rounded-full overflow-hidden bg-fab-bg">
+                                <div className="bg-green-500/70" style={{ width: `${h1pct}%` }} />
+                                <div className="bg-fab-dim/30" style={{ width: `${drawPct}%` }} />
+                                <div className="bg-red-500/70" style={{ width: `${h2pct}%` }} />
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+                <p className="text-[10px] text-fab-dim mt-1">Showing matchups with 3+ games</p>
+              </div>
+            )}
           </>
         )}
       </div>
