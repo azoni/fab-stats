@@ -77,6 +77,8 @@ export default function SitemapTab() {
   const [loadingCoverage, setLoadingCoverage] = useState(false);
   const [matchupEventFilter, setMatchupEventFilter] = useState("");
   const [matchupFormatFilter, setMatchupFormatFilter] = useState("");
+  const [matchupDateFrom, setMatchupDateFrom] = useState("");
+  const [matchupDateTo, setMatchupDateTo] = useState("");
 
   // Analytics state
   const [allDecklists, setAllDecklists] = useState<DecklistSummary[]>([]);
@@ -395,13 +397,17 @@ export default function SitemapTab() {
   }, []);
 
   const handleMatchupFilter = useCallback(
-    (event: string, format: string) => {
+    (event: string, format: string, dateFrom: string, dateTo: string) => {
       setMatchupEventFilter(event);
       setMatchupFormatFilter(format);
+      setMatchupDateFrom(dateFrom);
+      setMatchupDateTo(dateTo);
       setMatchupStats(
         computeCoverageMatchups(coverageMatches, {
           event: event || undefined,
           format: format || undefined,
+          dateFrom: dateFrom || undefined,
+          dateTo: dateTo || undefined,
         })
       );
     },
@@ -955,25 +961,27 @@ export default function SitemapTab() {
             </div>
 
             {/* Filters */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
               <div>
-                <label className="block text-[10px] text-fab-dim mb-0.5">Filter by Event</label>
+                <label className="block text-[10px] text-fab-dim mb-0.5">Event</label>
                 <select
                   value={matchupEventFilter}
-                  onChange={(e) => handleMatchupFilter(e.target.value, matchupFormatFilter)}
+                  onChange={(e) => handleMatchupFilter(e.target.value, matchupFormatFilter, matchupDateFrom, matchupDateTo)}
                   className="w-full bg-fab-bg border border-fab-border rounded-md px-2 py-1.5 text-xs text-fab-text outline-none focus:border-fab-gold/50"
                 >
                   <option value="">All Events</option>
-                  {coverageEvents.map((e) => (
-                    <option key={e.slug} value={e.eventName}>{e.eventName}</option>
+                  {[...coverageEvents].sort((a, b) => (b.eventDate || "").localeCompare(a.eventDate || "")).map((e) => (
+                    <option key={e.slug} value={e.eventName}>
+                      {e.eventName}{e.eventDate ? ` (${e.eventDate.slice(0, 7)})` : ""}
+                    </option>
                   ))}
                 </select>
               </div>
               <div>
-                <label className="block text-[10px] text-fab-dim mb-0.5">Filter by Format</label>
+                <label className="block text-[10px] text-fab-dim mb-0.5">Format</label>
                 <select
                   value={matchupFormatFilter}
-                  onChange={(e) => handleMatchupFilter(matchupEventFilter, e.target.value)}
+                  onChange={(e) => handleMatchupFilter(matchupEventFilter, e.target.value, matchupDateFrom, matchupDateTo)}
                   className="w-full bg-fab-bg border border-fab-border rounded-md px-2 py-1.5 text-xs text-fab-text outline-none focus:border-fab-gold/50"
                 >
                   <option value="">All Formats</option>
@@ -981,6 +989,24 @@ export default function SitemapTab() {
                     <option key={f} value={f}>{f}</option>
                   ))}
                 </select>
+              </div>
+              <div>
+                <label className="block text-[10px] text-fab-dim mb-0.5">From</label>
+                <input
+                  type="date"
+                  value={matchupDateFrom}
+                  onChange={(e) => handleMatchupFilter(matchupEventFilter, matchupFormatFilter, e.target.value, matchupDateTo)}
+                  className="w-full bg-fab-bg border border-fab-border rounded-md px-2 py-1.5 text-xs text-fab-text outline-none focus:border-fab-gold/50"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] text-fab-dim mb-0.5">To</label>
+                <input
+                  type="date"
+                  value={matchupDateTo}
+                  onChange={(e) => handleMatchupFilter(matchupEventFilter, matchupFormatFilter, matchupDateFrom, e.target.value)}
+                  className="w-full bg-fab-bg border border-fab-border rounded-md px-2 py-1.5 text-xs text-fab-text outline-none focus:border-fab-gold/50"
+                />
               </div>
             </div>
 
