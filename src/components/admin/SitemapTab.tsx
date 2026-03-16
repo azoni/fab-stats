@@ -8,7 +8,13 @@ import {
   searchDecklists,
   getScrapeStatus,
   updateScrapeStatus,
+  getAllDecklistSummaries,
+  computeHeroMeta,
+  computeEventSummaries,
   type SitemapDecklist,
+  type DecklistSummary,
+  type HeroMetaStat,
+  type EventSummary,
 } from "@/lib/sitemap-scraper";
 
 export default function SitemapTab() {
@@ -35,6 +41,14 @@ export default function SitemapTab() {
 
   // Stats
   const [statusMsg, setStatusMsg] = useState("");
+
+  // Analytics state
+  const [allDecklists, setAllDecklists] = useState<DecklistSummary[]>([]);
+  const [heroStats, setHeroStats] = useState<HeroMetaStat[]>([]);
+  const [eventSummaries, setEventSummaries] = useState<EventSummary[]>([]);
+  const [selectedEvent, setSelectedEvent] = useState<string>("");
+  const [loadingAnalytics, setLoadingAnalytics] = useState(false);
+  const [analyticsLoaded, setAnalyticsLoaded] = useState(false);
 
   // ── Fetch Sitemap URLs ──
 
@@ -182,6 +196,37 @@ export default function SitemapTab() {
       }
     },
     [searchHero, searchPlayer, searchEvent, lastSlug]
+  );
+
+  // ── Analytics ──
+
+  const handleLoadAnalytics = useCallback(async () => {
+    setLoadingAnalytics(true);
+    try {
+      const data = await getAllDecklistSummaries();
+      setAllDecklists(data);
+      setHeroStats(computeHeroMeta(data));
+      setEventSummaries(computeEventSummaries(data));
+      setAnalyticsLoaded(true);
+      setSelectedEvent("");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to load analytics";
+      setStatusMsg(`Analytics error: ${msg}`);
+    } finally {
+      setLoadingAnalytics(false);
+    }
+  }, []);
+
+  const handleEventFilter = useCallback(
+    (event: string) => {
+      setSelectedEvent(event);
+      if (event) {
+        setHeroStats(computeHeroMeta(allDecklists, event));
+      } else {
+        setHeroStats(computeHeroMeta(allDecklists));
+      }
+    },
+    [allDecklists]
   );
 
   const progressPct =
@@ -418,6 +463,144 @@ export default function SitemapTab() {
               </button>
             )}
           </div>
+        )}
+      </div>
+
+      {/* ── Tournament Meta Analytics ── */}
+      <div className="bg-fab-surface border border-fab-border rounded-lg p-4 space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-sm font-semibold text-fab-text">Tournament Meta</h3>
+            <p className="text-[10px] text-fab-dim">Hero distribution and placement data from official FABTCG decklists</p>
+          </div>
+          <button
+            onClick={handleLoadAnalytics}
+            disabled={loadingAnalytics}
+            className="px-4 py-2 rounded-md text-xs font-medium bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors disabled:opacity-50"
+          >
+            {loadingAnalytics ? "Loading..." : analyticsLoaded ? "Refresh" : "Load Data"}
+          </button>
+        </div>
+
+        {analyticsLoaded && (
+          <>
+            {/* Overview cards */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              <div className="bg-fab-bg rounded-lg p-3 text-center">
+                <p className="text-lg font-bold text-fab-gold">{allDecklists.length}</p>
+                <p className="text-[10px] text-fab-dim">Decklists</p>
+              </div>
+              <div className="bg-fab-bg rounded-lg p-3 text-center">
+                <p className="text-lg font-bold text-fab-gold">{eventSummaries.length}</p>
+                <p className="text-[10px] text-fab-dim">Events</p>
+              </div>
+              <div className="bg-fab-bg rounded-lg p-3 text-center">
+                <p className="text-lg font-bold text-fab-gold">{heroStats.length}</p>
+                <p className="text-[10px] text-fab-dim">Heroes</p>
+              </div>
+              <div className="bg-fab-bg rounded-lg p-3 text-center">
+                <p className="text-lg font-bold text-fab-gold">
+                  {new Set(allDecklists.map((d) => d.player)).size}
+                </p>
+                <p className="text-[10px] text-fab-dim">Players</p>
+              </div>
+            </div>
+
+            {/* Event filter */}
+            <div>
+              <label className="block text-[10px] text-fab-dim mb-0.5">Filter by Event</label>
+              <select
+                value={selectedEvent}
+                onChange={(e) => handleEventFilter(e.target.value)}
+                className="w-full bg-fab-bg border border-fab-border rounded-md px-2 py-1.5 text-xs text-fab-text outline-none focus:border-fab-gold/50"
+              >
+                <option value="">All Events ({allDecklists.length} decklists)</option>
+                {eventSummaries.map((es) => (
+                  <option key={es.event} value={es.event}>
+                    {es.event} ({es.decklistCount})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Hero meta table */}
+            <div>
+              <h4 className="text-xs font-semibold text-fab-text mb-2">
+                Hero Meta {selectedEvent ? `— ${selectedEvent}` : "— All Events"}
+              </h4>
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="border-b border-fab-border text-left text-fab-dim">
+                      <th className="py-1.5 pr-2 w-6">#</th>
+                      <th className="py-1.5 pr-2">Hero</th>
+                      <th className="py-1.5 pr-2 text-right">Decklists</th>
+                      <th className="py-1.5 pr-2 text-right">Meta %</th>
+                      <th className="py-1.5 pr-2 text-right">Wins</th>
+                      <th className="py-1.5 pr-2">Meta Share</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {heroStats.map((h, i) => (
+                      <tr key={h.hero} className="border-b border-fab-border/30">
+                        <td className="py-1.5 pr-2 text-fab-dim">{i + 1}</td>
+                        <td className="py-1.5 pr-2 text-fab-text font-medium">{h.hero}</td>
+                        <td className="py-1.5 pr-2 text-right text-fab-muted">{h.count}</td>
+                        <td className="py-1.5 pr-2 text-right text-fab-gold font-medium">{h.metaShare}%</td>
+                        <td className="py-1.5 pr-2 text-right text-fab-muted">{h.wins}</td>
+                        <td className="py-1.5 pr-2 w-32">
+                          <div className="w-full bg-fab-bg rounded-full h-2 overflow-hidden">
+                            <div
+                              className="h-full bg-fab-gold/60 rounded-full"
+                              style={{ width: `${Math.min(h.metaShare * 2, 100)}%` }}
+                            />
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Event breakdown */}
+            {selectedEvent && (() => {
+              const evtData = eventSummaries.find((e) => e.event === selectedEvent);
+              if (!evtData) return null;
+              return (
+                <div>
+                  <h4 className="text-xs font-semibold text-fab-text mb-2">
+                    Placements — {selectedEvent}
+                  </h4>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs">
+                      <thead>
+                        <tr className="border-b border-fab-border text-left text-fab-dim">
+                          <th className="py-1.5 pr-2">Hero</th>
+                          <th className="py-1.5 pr-2 text-right">Count</th>
+                          <th className="py-1.5 pr-2 text-right">Share</th>
+                          <th className="py-1.5 pr-2">Placements</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {evtData.heroes.map((h) => (
+                          <tr key={h.hero} className="border-b border-fab-border/30">
+                            <td className="py-1.5 pr-2 text-fab-text font-medium">{h.hero}</td>
+                            <td className="py-1.5 pr-2 text-right text-fab-muted">{h.count}</td>
+                            <td className="py-1.5 pr-2 text-right text-fab-gold">{h.metaShare}%</td>
+                            <td className="py-1.5 pr-2 text-fab-dim">
+                              {h.placements.slice(0, 5).join(", ")}
+                              {h.placements.length > 5 && ` +${h.placements.length - 5}`}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              );
+            })()}
+          </>
         )}
       </div>
     </div>
