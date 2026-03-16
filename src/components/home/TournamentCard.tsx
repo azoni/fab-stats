@@ -1,7 +1,6 @@
 "use client";
 import Link from "next/link";
-import { getHeroByName } from "@/lib/heroes";
-import { HeroClassIcon } from "@/components/heroes/HeroClassIcon";
+import { HeroImg } from "@/components/heroes/HeroImg";
 import type { FeaturedEvent, LeaderboardEntry } from "@/types";
 import { localDate, playerHref } from "@/lib/constants";
 
@@ -72,8 +71,6 @@ export function TournamentCard({ event, entryMap, fullImage }: TournamentCardPro
           <div className="mt-3 space-y-1">
             {players.map((player, pi) => {
               const lbEntry = player.username ? entryMap.get(player.username) : undefined;
-              const heroInfo = player.hero ? getHeroByName(player.hero) : undefined;
-              const heroClass = heroInfo?.classes[0];
               const placement = BRACKET_PLACEMENT[pi] ?? pi + 1;
               const isChampion = placement === 1;
 
@@ -118,7 +115,7 @@ export function TournamentCard({ event, entryMap, fullImage }: TournamentCardPro
 
                   {player.hero && (
                     <div className="flex items-center gap-1.5 shrink-0">
-                      <HeroClassIcon heroClass={heroClass} size="sm" />
+                      <HeroImg name={player.hero} size="sm" />
                       <span className="text-xs text-fab-muted hidden sm:inline">{player.hero}</span>
                     </div>
                   )}
