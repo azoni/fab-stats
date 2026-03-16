@@ -131,6 +131,7 @@ export default function RootLayout({
         <ChatProvider>
         <TooltipProvider>
           <ScrollProgress />
+          <p className="hidden">Impact-Site-Verification: 9c661e6e-9cd9-451b-acbf-247741498db4</p>
           <div id="fab-bg-layer" aria-hidden="true" />
           <ProfileBackgroundController />
           <Navbar />
