@@ -325,7 +325,7 @@ export default function SitemapTab() {
               for (const m of parsed) {
                 allMatches.push({
                   ...m,
-                  event: roundInfo.eventName || discovery.tournamentName,
+                  event: discovery.tournamentName || roundInfo.eventName,
                   coverageUrl: discovery.coverageUrl,
                   eventDate: discovery.eventDate || "",
                   format: roundInfo.format || "",
@@ -344,7 +344,7 @@ export default function SitemapTab() {
               slug,
               coverageUrl: discovery.coverageUrl,
               tournamentUrl: tUrl,
-              eventName: roundInfo.eventName || discovery.tournamentName,
+              eventName: discovery.tournamentName || roundInfo.eventName,
               eventDate: discovery.eventDate || "",
               format: roundInfo.format || "",
               roundCount: roundInfo.resultUrls.length,
@@ -427,9 +427,9 @@ export default function SitemapTab() {
         {autoScrapeStatus && (
           <p className="text-[10px] text-fab-dim mt-1">
             Last auto-scrape: {new Date(autoScrapeStatus.lastRunAt).toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
-            {autoScrapeStatus.newEvents > 0
-              ? ` — ${autoScrapeStatus.newEvents} new event${autoScrapeStatus.newEvents === 1 ? "" : "s"}, ${autoScrapeStatus.newMatches} matches`
-              : " — no new events"}
+            {autoScrapeStatus.newEvents > 0 || autoScrapeStatus.newDecklists > 0
+              ? ` — ${autoScrapeStatus.newDecklists || 0} decklists, ${autoScrapeStatus.newEvents} event${autoScrapeStatus.newEvents === 1 ? "" : "s"}, ${autoScrapeStatus.newMatches} matches`
+              : " — no new data"}
           </p>
         )}
       </div>

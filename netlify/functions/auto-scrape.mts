@@ -301,12 +301,134 @@ async function rebuildSummaries(
   return summaries.length;
 }
 
+// ── Decklist Sitemap Scraping ──
+
+const DECKLIST_SITEMAPS = [
+  "https://fabtcg.com/decklist-sitemap.xml",
+  "https://fabtcg.com/decklist-sitemap2.xml",
+  "https://fabtcg.com/decklist-sitemap3.xml",
+  "https://fabtcg.com/decklist-sitemap4.xml",
+];
+
+async function getDecklistUrls(): Promise<string[]> {
+  const allUrls: string[] = [];
+  for (const sitemapUrl of DECKLIST_SITEMAPS) {
+    try {
+      const xml = await fetchPage(sitemapUrl);
+      const regex = /<loc>(https:\/\/fabtcg\.com\/decklists\/[^<]+)<\/loc>/g;
+      let match;
+      while ((match = regex.exec(xml)) !== null) {
+        const url = match[1];
+        if (url === "https://fabtcg.com/decklists/" || url.includes("/ja/")) continue;
+        allUrls.push(url);
+      }
+    } catch {
+      // skip failed sitemap
+    }
+  }
+  return allUrls;
+}
+
+function parsePlayerGridField(html: string, label: string): string {
+  const regex = new RegExp(`<h3>\\s*${label}\\s*</h3>\\s*<p[^>]*>([\\s\\S]*?)</p>`, "i");
+  const match = html.match(regex);
+  if (!match) return "";
+  return decodeHtml(match[1].replace(/<[^>]+>/g, "").trim());
+}
+
+async function scrapeDecklistPage(url: string): Promise<Record<string, unknown> | null> {
+  try {
+    const html = await fetchPage(url);
+    const slugMatch = url.match(/\/decklists\/([^/]+)\/?$/);
+    const slug = slugMatch ? slugMatch[1] : url;
+
+    const h2Match = html.match(/<div class="player-name">\s*<h2>([^<]+)<\/h2>/);
+    const h2Text = h2Match ? decodeHtml(h2Match[1]) : "";
+    const parts = h2Text.split(" – ").map((p: string) => p.trim());
+
+    const rankMatch = html.match(/<p class="rank">\s*([^<]+)\s*<\/p>/);
+    const dateRaw = parsePlayerGridField(html, "Date");
+    let eventDate = "";
+    if (dateRaw) { const d = new Date(dateRaw); if (!isNaN(d.getTime())) eventDate = d.toISOString().split("T")[0]; }
+
+    const playerField = parsePlayerGridField(html, "Player");
+    const gemIdMatch = playerField.match(/\((\d+)\)\s*$/);
+
+    const eventUrlMatch = html.match(/player-grid[\s\S]*?Event[\s\S]*?<a\s+href="([^"]+)"[^>]*>/i);
+    const flagMatch = html.match(/player-grid[\s\S]*?Country[\s\S]*?<i class="(\w{2}) flag">/i);
+    const gemDeckMatch = html.match(/gem\.fabtcg\.com\/profile\/decklists\/import\/fabtcg\/\?id=([a-f0-9-]+)/);
+
+    const cards: { name: string; count: number }[] = [];
+    const cardRegex = /<span class="card-name">(\d+)\s*x\s*([^<]+)<\/span>/g;
+    let cm;
+    while ((cm = cardRegex.exec(html)) !== null) {
+      cards.push({ count: parseInt(cm[1], 10), name: decodeHtml(cm[2].trim()) });
+    }
+
+    return {
+      slug, url,
+      player: parts[0] || "", playerLower: (parts[0] || "").toLowerCase(),
+      hero: parts[1] || "", event: parts.slice(2).join(" – ") || "",
+      placement: rankMatch ? rankMatch[1].trim() : "",
+      cards, gemDecklistId: gemDeckMatch ? gemDeckMatch[1] : null,
+      eventDate, eventUrl: eventUrlMatch ? eventUrlMatch[1] : "",
+      format: parsePlayerGridField(html, "Format"),
+      country: parsePlayerGridField(html, "Country/Region"),
+      countryCode: flagMatch ? flagMatch[1].toUpperCase() : "",
+      playerGemId: gemIdMatch ? gemIdMatch[1] : "",
+      scrapedAt: new Date().toISOString(),
+    };
+  } catch {
+    return null;
+  }
+}
+
+async function getScrapedDecklistSlugs(): Promise<Set<string>> {
+  const db = getAdminDb();
+  const snap = await db.collection("sitemap-decklists").get();
+  return new Set(snap.docs.map((d) => d.id));
+}
+
+async function saveDecklistDoc(data: Record<string, unknown>): Promise<void> {
+  const db = getAdminDb();
+  await db.collection("sitemap-decklists").doc(data.slug as string).set(data);
+}
+
 // ── Main Handler ──
 
 export default async function handler() {
-  console.log("[auto-scrape] Starting scheduled coverage scrape...");
+  console.log("[auto-scrape] Starting scheduled scrape...");
 
   try {
+    // ── Phase 1: New Decklists ──
+    let newDecklists = 0;
+    try {
+      const decklistUrls = await getDecklistUrls();
+      const scrapedDecklistSlugs = await getScrapedDecklistSlugs();
+      const newUrls = decklistUrls.filter((u) => {
+        const slug = u.match(/\/decklists\/([^/]+)\/?$/)?.[1];
+        return slug && !scrapedDecklistSlugs.has(slug);
+      });
+
+      if (newUrls.length > 0) {
+        console.log(`[auto-scrape] Found ${newUrls.length} new decklists to scrape`);
+        // Scrape up to 100 new decklists per run to stay within time limits
+        const batch = newUrls.slice(0, 100);
+        for (const url of batch) {
+          const data = await scrapeDecklistPage(url);
+          if (data) {
+            await saveDecklistDoc(data);
+            newDecklists++;
+          }
+          await new Promise((r) => setTimeout(r, 500));
+        }
+        console.log(`[auto-scrape] Scraped ${newDecklists} new decklists`);
+      }
+    } catch (err) {
+      console.error("[auto-scrape] Decklist scrape error:", err);
+    }
+
+    // ── Phase 2: Coverage ──
     const tournamentUrls = await getTournamentUrls();
     const scrapedSlugs = await getScrapedSlugs();
     let newEvents = 0;
@@ -336,7 +458,7 @@ export default async function handler() {
             for (const m of parsed) {
               allMatches.push({
                 ...m,
-                event: roundInfo.eventName || discovery.name,
+                event: discovery.name || roundInfo.eventName,
                 coverageUrl: discovery.coverageUrl,
                 eventDate: discovery.eventDate || "",
                 format: roundInfo.format || "",
@@ -355,7 +477,7 @@ export default async function handler() {
             slug,
             coverageUrl: discovery.coverageUrl,
             tournamentUrl: tUrl,
-            eventName: roundInfo.eventName || discovery.name,
+            eventName: discovery.name || roundInfo.eventName,
             eventDate: discovery.eventDate || "",
             format: roundInfo.format || "",
             roundCount: roundInfo.resultUrls.length,
@@ -380,15 +502,16 @@ export default async function handler() {
     }
 
     // Save scrape status for admin dashboard
-    const db = getAdminDb();
-    await db.doc("sitemap-meta/auto-scrape-status").set({
+    const statusDb = getAdminDb();
+    await statusDb.doc("sitemap-meta/auto-scrape-status").set({
       lastRunAt: new Date().toISOString(),
       newEvents,
       newMatches,
+      newDecklists,
       totalEventsChecked: tournamentUrls.length,
     });
 
-    console.log(`[auto-scrape] Done. ${newEvents} new events, ${newMatches} new matches.`);
+    console.log(`[auto-scrape] Done. ${newDecklists} decklists, ${newEvents} events, ${newMatches} matches.`);
   } catch (err) {
     console.error("[auto-scrape] Fatal error:", err);
   }

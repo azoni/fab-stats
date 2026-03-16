@@ -145,6 +145,7 @@ export interface AutoScrapeStatus {
   lastRunAt: string;
   newEvents: number;
   newMatches: number;
+  newDecklists: number;
   totalEventsChecked: number;
 }
 
