@@ -175,6 +175,14 @@ export interface UserProfile {
   underlinePlacement?: string;
   selectedBadgeIds?: string[];
   siteBackgroundId?: string;
+  gemSyncStatus?: {
+    enabled: boolean;
+    lastSyncAt?: string;
+    lastStatus?: "connected" | "disconnected" | "success" | "error" | "syncing";
+    lastError?: string;
+    matchesImported?: number;
+  };
+  needsRecompute?: boolean;
 }
 
 export interface ShowcaseCard {

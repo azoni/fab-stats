@@ -17,6 +17,7 @@
     "@radix-ui/react-switch": "^1.2.6",
     "@radix-ui/react-tooltip": "^1.2.8",
     "@resvg/resvg-js": "^2.6.2",
+    "cheerio": "^1.2.0",
     "firebase": "^12.9.0",
     "firebase-admin": "^13.7.0",
     "framer-motion": "^12.35.0",
