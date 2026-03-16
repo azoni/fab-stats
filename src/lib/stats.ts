@@ -881,6 +881,20 @@ export interface TournamentAnalytics {
 
   // Events per month
   eventsPerMonth: { month: string; count: number }[];
+
+  // Top 8s by venue
+  venueTop8s: {
+    venue: string;
+    events: number;
+    top8s: number;
+    top8Rate: number;
+    champions: number;
+    finalists: number;
+    winRate: number;
+    wins: number;
+    losses: number;
+    draws: number;
+  }[];
 }
 
 export function computeTournamentAnalytics(events: EventStats[]): TournamentAnalytics {
@@ -1245,6 +1259,43 @@ export function computeTournamentAnalytics(events: EventStats[]): TournamentAnal
     .sort((a, b) => a[0].localeCompare(b[0]))
     .map(([month, count]) => ({ month, count }));
 
+  // Top 8s by venue
+  const venueAgg = new Map<string, { events: number; top8s: number; champions: number; finalists: number; wins: number; losses: number; draws: number }>();
+  const finishKeys = new Set(allFinishes.map(f => `${f.eventName}|${f.eventDate}`));
+  const championKeys = new Set(allFinishes.filter(f => f.type === "champion").map(f => `${f.eventName}|${f.eventDate}`));
+  const finalistKeys = new Set(allFinishes.filter(f => f.type === "finalist").map(f => `${f.eventName}|${f.eventDate}`));
+
+  for (const evt of events) {
+    const venue = evt.venue || "Unknown";
+    let entry = venueAgg.get(venue);
+    if (!entry) entry = { events: 0, top8s: 0, champions: 0, finalists: 0, wins: 0, losses: 0, draws: 0 };
+    entry.events++;
+    entry.wins += evt.wins;
+    entry.losses += evt.losses;
+    entry.draws += evt.draws;
+    const key = `${evt.eventName}|${evt.eventDate}`;
+    if (finishKeys.has(key)) entry.top8s++;
+    if (championKeys.has(key)) entry.champions++;
+    if (finalistKeys.has(key)) entry.finalists++;
+    venueAgg.set(venue, entry);
+  }
+
+  const venueTop8s = [...venueAgg.entries()]
+    .filter(([v]) => v !== "Unknown")
+    .map(([venue, d]) => ({
+      venue,
+      events: d.events,
+      top8s: d.top8s,
+      top8Rate: d.events > 0 ? (d.top8s / d.events) * 100 : 0,
+      champions: d.champions,
+      finalists: d.finalists,
+      winRate: (d.wins + d.losses + d.draws) > 0 ? (d.wins / (d.wins + d.losses + d.draws)) * 100 : 0,
+      wins: d.wins,
+      losses: d.losses,
+      draws: d.draws,
+    }))
+    .sort((a, b) => b.events - a.events);
+
   const r1Total = r1Wins + r1Losses + r1Draws;
 
   return {
@@ -1296,5 +1347,6 @@ export function computeTournamentAnalytics(events: EventStats[]): TournamentAnal
     heroTournamentStats,
     eventTimeline: timeline,
     eventsPerMonth,
+    venueTop8s,
   };
 }

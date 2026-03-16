@@ -214,6 +214,13 @@ export default function TournamentStatsPage() {
             </Section>
           )}
 
+          {/* Top 8s by Venue */}
+          {analytics.venueTop8s.length > 0 && (
+            <Section id="venues" title="Top 8s by Venue" collapsed={collapsed.has("venues")} toggle={toggle}>
+              <VenueTop8Section analytics={analytics} />
+            </Section>
+          )}
+
           {/* Trends Over Time */}
           {analytics.eventTimeline.length >= 3 && (
             <Section id="trends" title="Tournament Trends" collapsed={collapsed.has("trends")} toggle={toggle}>
@@ -579,6 +586,67 @@ function HeroTournamentSection({ analytics: a }: { analytics: TournamentAnalytic
         </tbody>
       </table>
       <p className="text-[10px] text-fab-dim mt-2">Event WR = % of events finishing with more wins than losses.</p>
+    </div>
+  );
+}
+
+// ── Top 8s by Venue ──
+
+function VenueTop8Section({ analytics: a }: { analytics: TournamentAnalytics }) {
+  const [sortBy, setSortBy] = useState<"events" | "top8s" | "top8Rate" | "winRate">("events");
+  const sorted = useMemo(() =>
+    [...a.venueTop8s].sort((x, y) => {
+      if (sortBy === "top8s") return y.top8s - x.top8s;
+      if (sortBy === "top8Rate") return y.top8Rate - x.top8Rate;
+      if (sortBy === "winRate") return y.winRate - x.winRate;
+      return y.events - x.events;
+    }),
+    [a.venueTop8s, sortBy]
+  );
+
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-xs">
+        <thead>
+          <tr className="text-fab-muted text-left">
+            <th className="px-2 py-1.5">Venue</th>
+            <th className="px-2 py-1.5 text-center cursor-pointer hover:text-fab-text" onClick={() => setSortBy("events")}>
+              Events{sortBy === "events" ? " ▼" : ""}
+            </th>
+            <th className="px-2 py-1.5 text-center cursor-pointer hover:text-fab-text" onClick={() => setSortBy("top8s")}>
+              Top 8s{sortBy === "top8s" ? " ▼" : ""}
+            </th>
+            <th className="px-2 py-1.5 text-right cursor-pointer hover:text-fab-text" onClick={() => setSortBy("top8Rate")}>
+              Top 8 %{sortBy === "top8Rate" ? " ▼" : ""}
+            </th>
+            <th className="px-2 py-1.5 text-center">W-L-D</th>
+            <th className="px-2 py-1.5 text-right cursor-pointer hover:text-fab-text" onClick={() => setSortBy("winRate")}>
+              WR%{sortBy === "winRate" ? " ▼" : ""}
+            </th>
+            <th className="px-2 py-1.5 text-center">Trophies</th>
+          </tr>
+        </thead>
+        <tbody>
+          {sorted.map((v) => (
+            <tr key={v.venue} className="border-t border-fab-border/50">
+              <td className="px-2 py-1.5 font-semibold text-fab-text truncate max-w-[200px]" title={v.venue}>{v.venue}</td>
+              <td className="px-2 py-1.5 text-center text-fab-muted">{v.events}</td>
+              <td className="px-2 py-1.5 text-center text-fab-gold font-semibold">{v.top8s}</td>
+              <td className="px-2 py-1.5 text-right font-semibold" style={{ color: v.top8Rate >= 50 ? COLORS.win : v.top8Rate > 0 ? COLORS.gold : COLORS.muted }}>
+                {v.top8Rate.toFixed(0)}%
+              </td>
+              <td className="px-2 py-1.5 text-center text-fab-muted">{v.wins}-{v.losses}{v.draws > 0 ? `-${v.draws}` : ""}</td>
+              <td className="px-2 py-1.5 text-right font-semibold" style={{ color: v.winRate >= 50 ? COLORS.win : COLORS.loss }}>
+                {v.winRate.toFixed(1)}%
+              </td>
+              <td className="px-2 py-1.5 text-center">
+                {v.champions > 0 && <span className="text-yellow-400" title={`${v.champions} win${v.champions > 1 ? "s" : ""}`}>{"🏆".repeat(Math.min(v.champions, 3))}{v.champions > 3 ? `+${v.champions - 3}` : ""}</span>}
+                {v.finalists > 0 && v.champions === 0 && <span className="text-fab-dim" title={`${v.finalists} finalist`}>🥈</span>}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
