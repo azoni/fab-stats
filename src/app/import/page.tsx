@@ -49,6 +49,7 @@ export default function ImportPage() {
   const [filterEventType, setFilterEventType] = useState("all");
   const [expandedEvent, setExpandedEvent] = useState<number | null>(null);
   const [skippedCount, setSkippedCount] = useState(0);
+  const [coverageHerosFilled, setCoverageHerosFilled] = useState(0);
   const [importing, setImporting] = useState(false);
   const [autoDetected, setAutoDetected] = useState(false);
   const [clearing, setClearing] = useState(false);
@@ -309,6 +310,33 @@ export default function ImportPage() {
       // If we can't get before matches, recap will still work with empty array
     }
 
+    // Enrich matches with opponent heroes from coverage data
+    let coverageHeroCount = 0;
+    try {
+      const { getAllCoverageMatches } = await import("@/lib/sitemap-scraper");
+      const { buildCoverageIndex, findOpponentHero } = await import("@/lib/coverage-lookup");
+      const coverageMatches = await getAllCoverageMatches();
+      if (coverageMatches.length > 0) {
+        const index = buildCoverageIndex(coverageMatches);
+        for (const m of matches) {
+          if (m.opponentHero && m.opponentHero !== "Unknown") continue;
+          if (!m.opponentName) continue;
+          const lookup = findOpponentHero(
+            m.opponentName,
+            m.date,
+            m.notes || "",
+            index
+          );
+          if (lookup && lookup.confidence === "exact") {
+            (m as Record<string, unknown>).opponentHero = lookup.hero;
+            coverageHeroCount++;
+          }
+        }
+      }
+    } catch {
+      // Coverage enrichment is best-effort — don't block import
+    }
+
     let count: number;
     if (user) {
       count = await importMatchesFirestore(user.uid, matches);
@@ -317,6 +345,9 @@ export default function ImportPage() {
     }
     setImportedCount(count);
     setSkippedCount(matches.length - count);
+    if (coverageHeroCount > 0) {
+      setCoverageHerosFilled(coverageHeroCount);
+    }
 
     // Compute session recap + achievements + placements before showing results
     let afterMatches: MatchRecord[] = [];
@@ -428,6 +459,7 @@ export default function ImportPage() {
     setError("");
     setImported(false);
     setSkippedCount(0);
+    setCoverageHerosFilled(0);
     setFilterFormat("all");
     setFilterEventType("all");
     setExpandedEvent(null);
@@ -697,9 +729,13 @@ export default function ImportPage() {
         <h1 className="text-2xl font-bold text-fab-gold mb-2">{quickMode ? "Sync Complete!" : "Import Complete!"}</h1>
         <p className="text-fab-muted mb-2">{importedCount} matches imported successfully.</p>
         {skippedCount > 0 && (
-          <p className="text-fab-dim text-sm mb-6">{skippedCount} duplicate{skippedCount === 1 ? "" : "s"} skipped.</p>
+          <p className="text-fab-dim text-sm mb-2">{skippedCount} duplicate{skippedCount === 1 ? "" : "s"} skipped.</p>
         )}
-        {skippedCount === 0 && <div className="mb-6" />}
+        {coverageHerosFilled > 0 && (
+          <p className="text-purple-400 text-sm mb-2">{coverageHerosFilled} opponent hero{coverageHerosFilled === 1 ? "" : "es"} auto-filled from tournament data.</p>
+        )}
+        {skippedCount === 0 && coverageHerosFilled === 0 && <div className="mb-6" />}
+        {(skippedCount > 0 || coverageHerosFilled > 0) && <div className="mb-4" />}
         <div className="flex gap-3 justify-center flex-wrap">
           <button onClick={() => router.push("/opponents")} className="px-6 min-h-[48px] py-3 rounded-md font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light active:bg-fab-gold-light transition-colors">
             View Opponent Stats

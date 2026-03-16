@@ -833,6 +833,26 @@ export default function SitemapTab() {
                 </button>
                 <button
                   onClick={async () => {
+                    setCoverageProgress("Backfilling opponent heroes from coverage data...");
+                    try {
+                      const { backfillOpponentHeroesFromCoverage } = await import("@/lib/admin");
+                      const { usersProcessed, matchesUpdated, failed } = await backfillOpponentHeroesFromCoverage(
+                        (_done, _total, msg) => { if (msg) setCoverageProgress(msg); }
+                      );
+                      setCoverageProgress(
+                        `Done! Updated ${matchesUpdated} matches across ${usersProcessed} users.${failed > 0 ? ` ${failed} failed.` : ""}`
+                      );
+                    } catch (err: unknown) {
+                      const msg = err instanceof Error ? err.message : "Backfill failed";
+                      setCoverageProgress(`Error: ${msg}`);
+                    }
+                  }}
+                  className="px-4 py-2 rounded-md text-xs font-medium bg-purple-600 text-white hover:bg-purple-500 transition-colors"
+                >
+                  Backfill Heroes
+                </button>
+                <button
+                  onClick={async () => {
                     if (!confirm("Clear all coverage match data?")) return;
                     setCoverageProgress("Clearing...");
                     try {

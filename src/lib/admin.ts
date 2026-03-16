@@ -790,3 +790,68 @@ export async function backfillHeroMatchups(
 
   return { usersProcessed, matchesCounted, failed: failedCount };
 }
+
+// ── Backfill Opponent Heroes from Coverage Data ──
+
+export async function backfillOpponentHeroesFromCoverage(
+  onProgress?: (done: number, total: number, message?: string) => void
+): Promise<{ usersProcessed: number; matchesUpdated: number; failed: number }> {
+  const { getAllCoverageMatches } = await import("./sitemap-scraper");
+  const { buildCoverageIndex, findMatchesNeedingHeroes } = await import("./coverage-lookup");
+
+  onProgress?.(0, 0, "Loading coverage data...");
+  const coverageMatches = await getAllCoverageMatches();
+  if (coverageMatches.length === 0) {
+    onProgress?.(0, 0, "No coverage data found. Run coverage scrape first.");
+    return { usersProcessed: 0, matchesUpdated: 0, failed: 0 };
+  }
+
+  onProgress?.(0, 0, `Building index from ${coverageMatches.length} coverage matches...`);
+  const index = buildCoverageIndex(coverageMatches);
+
+  const usernamesSnap = await getDocs(collection(db, "usernames"));
+  const userEntries = usernamesSnap.docs.map((d) => ({
+    userId: (d.data() as { userId: string }).userId,
+  }));
+
+  let usersProcessed = 0;
+  let totalUpdated = 0;
+  let failedCount = 0;
+  let done = 0;
+
+  for (const { userId } of userEntries) {
+    try {
+      const matchesSnap = await getDocs(
+        query(collection(db, "users", userId, "matches"), orderBy("createdAt", "desc"))
+      );
+      const matches = matchesSnap.docs.map((d) => ({ id: d.id, ...d.data() })) as MatchRecord[];
+
+      const needsUpdate = findMatchesNeedingHeroes(matches, userId, index);
+
+      if (needsUpdate.length > 0) {
+        // Batch update matches
+        for (let i = 0; i < needsUpdate.length; i += 400) {
+          const batch = writeBatch(db);
+          for (const u of needsUpdate.slice(i, i + 400)) {
+            batch.update(doc(db, "users", userId, "matches", u.matchId), {
+              opponentHero: u.hero,
+            });
+          }
+          await batch.commit();
+        }
+
+        totalUpdated += needsUpdate.length;
+        usersProcessed++;
+      }
+    } catch {
+      failedCount++;
+    }
+
+    done++;
+    if (done % 5 === 0 || done === userEntries.length) {
+      onProgress?.(done, userEntries.length, `${usersProcessed} users, ${totalUpdated} heroes filled`);
+    }
+  }
+
+  return { usersProcessed, matchesUpdated: totalUpdated, failed: failedCount };
+}
