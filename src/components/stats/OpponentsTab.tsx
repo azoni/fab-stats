@@ -657,7 +657,7 @@ function OpponentRow({ opp, isExpanded, onToggle, matchOwnerUid, playerName, upd
             <p className="text-xs text-fab-muted mb-2">Match History ({sortedMatches.length})</p>
             <div className="space-y-2">
               {sortedMatches.map((match) => (
-                <MatchCard key={match.id} match={match} matchOwnerUid={matchOwnerUid} onUpdateMatch={updateMatch} />
+                <MatchCard key={match.id} match={match} matchOwnerUid={matchOwnerUid} onUpdateMatch={updateMatch} editable />
               ))}
             </div>
           </div>
