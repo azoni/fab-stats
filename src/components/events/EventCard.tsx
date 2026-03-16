@@ -5,6 +5,7 @@ import { ChevronDownIcon, ChevronUpIcon } from "@/components/icons/NavIcons";
 import { HeroSelect } from "@/components/heroes/HeroSelect";
 import { getHeroByName } from "@/lib/heroes";
 import { HeroClassIcon } from "@/components/heroes/HeroClassIcon";
+import { HeroImg } from "@/components/heroes/HeroImg";
 import { MatchResult, GameFormat } from "@/types";
 import { localDate } from "@/lib/constants";
 import type { EventStats, MatchRecord } from "@/types";
@@ -188,7 +189,7 @@ export function EventCard({ event, playerName, obfuscateOpponents = false, visib
               )}
               {sharedHeroInfo && (
                 <div className="flex items-center gap-1">
-                  <HeroClassIcon heroClass={sharedHeroInfo.classes[0]} size="sm" />
+                  <HeroImg name={sharedHero!} size="sm" />
                   <span className="text-xs text-fab-muted">{sharedHero}</span>
                 </div>
               )}
@@ -490,7 +491,7 @@ export function EventCard({ event, playerName, obfuscateOpponents = false, visib
                                 onClick={isEditable ? () => setEditingOppHeroId(match.id) : undefined}
                               >
                                 <span className="text-fab-dim text-xs">vs</span>
-                                <HeroClassIcon heroClass={oppHeroInfo.classes[0]} size="sm" />
+                                <HeroImg name={oppHero!} size="sm" />
                                 <span className="text-xs text-fab-muted">{oppHero}</span>
                               </div>
                             ) : isEditable ? (
@@ -509,7 +510,7 @@ export function EventCard({ event, playerName, obfuscateOpponents = false, visib
                       <td className="px-4 py-2.5 hidden sm:table-cell">
                         {matchHeroInfo ? (
                           <div className="flex items-center gap-1">
-                            <HeroClassIcon heroClass={matchHeroInfo.classes[0]} size="sm" />
+                            <HeroImg name={matchHero!} size="sm" />
                             <span className="text-xs text-fab-muted">{matchHero}</span>
                           </div>
                         ) : (
@@ -549,7 +550,7 @@ export function EventCard({ event, playerName, obfuscateOpponents = false, visib
                               <span className="text-fab-dim text-xs">Saving...</span>
                             ) : oppHeroInfo ? (
                               <>
-                                <HeroClassIcon heroClass={oppHeroInfo.classes[0]} size="sm" />
+                                <HeroImg name={oppHero!} size="sm" />
                                 <span className="text-xs text-fab-muted">{oppHero}</span>
                                 {isEditable && (
                                   <svg className="w-3 h-3 text-fab-dim opacity-0 group-hover:opacity-100 transition-opacity ml-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
