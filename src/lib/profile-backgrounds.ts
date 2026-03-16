@@ -4,9 +4,12 @@ export interface ProfileBackgroundOption {
   id: string;
   label: string;
   imageUrl: string;
+  thumbnailUrl?: string;
   kind: ProfileBackgroundKind;
   focusPosition?: string;
   adminOnly?: boolean;
+  sortOrder?: number;
+  isActive?: boolean;
 }
 
 export const NONE_BACKGROUND_ID = "none";
@@ -30,25 +33,54 @@ export const PROFILE_BACKGROUND_OPTIONS: ProfileBackgroundOption[] = [
   { id: "high-seas-gravybones", label: "Gravy Bones (High Seas)", imageUrl: "/backgrounds/fab-official/high-seas-gravybones.jpg", kind: "hero-art", focusPosition: "50% 20%", adminOnly: true },
 ];
 
-export function getProfileBackgroundOptions(isAdmin: boolean): ProfileBackgroundOption[] {
-  return PROFILE_BACKGROUND_OPTIONS.filter((opt) => isAdmin || !opt.adminOnly);
+let runtimeProfileBackgroundOptions: ProfileBackgroundOption[] | null = null;
+
+export function setRuntimeProfileBackgroundOptions(options: ProfileBackgroundOption[] | null): void {
+  runtimeProfileBackgroundOptions = options && options.length > 0 ? options : null;
+}
+
+function getEffectiveBackgroundOptions(): ProfileBackgroundOption[] {
+  if (runtimeProfileBackgroundOptions && runtimeProfileBackgroundOptions.length > 0) {
+    return runtimeProfileBackgroundOptions;
+  }
+  return PROFILE_BACKGROUND_OPTIONS;
+}
+
+function findBackgroundById(backgroundId: string): ProfileBackgroundOption | undefined {
+  return (
+    getEffectiveBackgroundOptions().find((opt) => opt.id === backgroundId)
+    || PROFILE_BACKGROUND_OPTIONS.find((opt) => opt.id === backgroundId)
+  );
+}
+
+export function hasProfileBackgroundOption(backgroundId?: string | null): boolean {
+  if (!backgroundId || backgroundId === NONE_BACKGROUND_ID) return true;
+  return Boolean(findBackgroundById(backgroundId));
 }
 
 export function resolveProfileBackgroundImage(backgroundId?: string | null): string | undefined {
   if (backgroundId === NONE_BACKGROUND_ID) return undefined;
   const effectiveId = backgroundId || DEFAULT_BACKGROUND_ID;
-  return PROFILE_BACKGROUND_OPTIONS.find((opt) => opt.id === effectiveId)?.imageUrl;
+  const resolved = findBackgroundById(effectiveId)?.imageUrl;
+  if (resolved) return resolved;
+  return findBackgroundById(DEFAULT_BACKGROUND_ID)?.imageUrl;
 }
 
 export function resolveProfileBackgroundPosition(backgroundId?: string | null): string | undefined {
   if (backgroundId === NONE_BACKGROUND_ID) return undefined;
   const effectiveId = backgroundId || DEFAULT_BACKGROUND_ID;
-  return PROFILE_BACKGROUND_OPTIONS.find((opt) => opt.id === effectiveId)?.focusPosition;
+  const resolved = findBackgroundById(effectiveId)?.focusPosition;
+  if (resolved) return resolved;
+  return findBackgroundById(DEFAULT_BACKGROUND_ID)?.focusPosition;
 }
 
 export function resolveBackgroundPositionForImage(imageUrl?: string | null): string {
   if (!imageUrl) return "center center";
-  return PROFILE_BACKGROUND_OPTIONS.find((opt) => opt.imageUrl === imageUrl)?.focusPosition || "center center";
+  return (
+    getEffectiveBackgroundOptions().find((opt) => opt.imageUrl === imageUrl)?.focusPosition
+    || PROFILE_BACKGROUND_OPTIONS.find((opt) => opt.imageUrl === imageUrl)?.focusPosition
+    || "center center"
+  );
 }
 
 export function buildOptimizedImageUrl(imageUrl: string, width: number, quality = 68): string {

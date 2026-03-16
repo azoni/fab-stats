@@ -10,6 +10,7 @@ import { getEvents, saveEvents } from "@/lib/featured-events";
 import { lookupEvents, type LookupEvent } from "@/lib/event-lookup";
 import { getOrCreateConversation, sendMessage, sendMessageNotification } from "@/lib/messages";
 import { getAnalytics, getDailyPageViewTrend, type AnalyticsTimeRange } from "@/lib/analytics";
+import { syncProfileBackgroundCatalogFromDefaults } from "@/lib/profile-background-catalog";
 import { getBanner, saveBanner, type BannerConfig } from "@/lib/banner";
 import { getAllPolls, getPollResults, getPollVoters, savePoll, removePoll, clearVotes, mergeOptions, closePredictionVoting, reopenPredictionVoting, resolvePrediction } from "@/lib/polls";
 import { grantPredictionAchievements } from "@/lib/prediction-service";
@@ -91,6 +92,8 @@ export default function AdminPage() {
   const [matchupProgress, setMatchupProgress] = useState("");
   const [backfillingPlacements, setBackfillingPlacements] = useState(false);
   const [placementProgress, setPlacementProgress] = useState("");
+  const [syncingBackgroundCatalog, setSyncingBackgroundCatalog] = useState(false);
+  const [backgroundCatalogProgress, setBackgroundCatalogProgress] = useState("");
   // Poll: new poll form
   const [newPollQuestion, setNewPollQuestion] = useState("");
   const [newPollOptions, setNewPollOptions] = useState<string[]>(["", ""]);
@@ -158,7 +161,7 @@ export default function AdminPage() {
   const [botDaily, setBotDaily] = useState<DailyUsage[]>([]);
   const [botLog, setBotLog] = useState<CommandLogEntry[]>([]);
   const [botLoading, setBotLoading] = useState(false);
-  const anyToolRunning = fixingDates || backfilling || backfillingGemIds || linkingMatches || resyncingH2H || backfillingMatchups || backfillingPlacements;
+  const anyToolRunning = fixingDates || backfilling || backfillingGemIds || linkingMatches || resyncingH2H || backfillingMatchups || backfillingPlacements || syncingBackgroundCatalog;
   const [activeTab, setActiveTab] = useState<"overview" | "users" | "feedback" | "content" | "poll" | "tools" | "discord" | "games" | "social" | "sitemap">(() => {
     if (typeof window !== "undefined") {
       const hash = window.location.hash.replace("#", "");
@@ -490,9 +493,32 @@ export default function AdminPage() {
             >
               {backfillingPlacements ? "Backfilling..." : "Backfill Placements"}
             </button>
+            <button
+              onClick={async () => {
+                setSyncingBackgroundCatalog(true);
+                setBackgroundCatalogProgress("Starting...");
+                try {
+                  const { upserted } = await syncProfileBackgroundCatalogFromDefaults({
+                    useStorageUrls: true,
+                    onProgress: (done, total, id) => {
+                      setBackgroundCatalogProgress(`${done}/${total} - ${id}`);
+                    },
+                  });
+                  setBackgroundCatalogProgress(`Done: ${upserted} backgrounds synced`);
+                } catch (err) {
+                  setBackgroundCatalogProgress(`Background sync failed: ${err instanceof Error ? err.message : String(err)}`);
+                } finally {
+                  setSyncingBackgroundCatalog(false);
+                }
+              }}
+              disabled={anyToolRunning}
+              className="px-3 py-1.5 rounded text-xs font-medium bg-fab-bg border border-fab-border text-fab-muted hover:text-fab-text hover:border-fab-gold transition-colors disabled:opacity-50"
+            >
+              {syncingBackgroundCatalog ? "Syncing..." : "Sync Background Catalog"}
+            </button>
           </div>
-          {(backfillProgress || fixDatesProgress || linkProgress || gemIdProgress || h2hProgress || matchupProgress || placementProgress) && (
-            <p className="text-xs text-fab-dim">{placementProgress || matchupProgress || h2hProgress || linkProgress || gemIdProgress || fixDatesProgress || backfillProgress}</p>
+          {(backgroundCatalogProgress || backfillProgress || fixDatesProgress || linkProgress || gemIdProgress || h2hProgress || matchupProgress || placementProgress) && (
+            <p className="text-xs text-fab-dim">{backgroundCatalogProgress || placementProgress || matchupProgress || h2hProgress || linkProgress || gemIdProgress || fixDatesProgress || backfillProgress}</p>
           )}
         </div>
       )}

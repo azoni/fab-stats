@@ -15,6 +15,52 @@ service cloud.firestore {
       return field is string && field.size() <= len;
     }
 
+    // Profile background catalog validation guards
+    function validBackgroundKind(kind) {
+      return kind in ["key-art", "playmat", "hero-art"];
+    }
+
+    function validBackgroundStorageUrl(url, folder) {
+      return url is string
+        && url.size() <= 600
+        && (
+          url.matches('^https://firebasestorage.googleapis.com/v0/b/[^/]+/o/profile-backgrounds%2F' + folder + '%2F[A-Za-z0-9._-]+\\.(jpg|jpeg|png|webp)\\?alt=media(&token=[A-Za-z0-9._%-]+)?$')
+          || url.matches('^/backgrounds/[A-Za-z0-9/_-]+\\.(jpg|jpeg|png|webp)$')
+        );
+    }
+
+    function validProfileBackgroundCatalogDoc(data, backgroundId) {
+      return data.keys().hasOnly([
+        'id',
+        'label',
+        'imageUrl',
+        'thumbnailUrl',
+        'kind',
+        'focusPosition',
+        'adminOnly',
+        'sortOrder',
+        'isActive',
+        'updatedAt'
+      ])
+      && ('id' in data)
+      && ('label' in data)
+      && ('imageUrl' in data)
+      && ('thumbnailUrl' in data)
+      && ('kind' in data)
+      && data.id is string
+      && data.id == backgroundId
+      && data.id.size() <= 80
+      && maxLen(data.label, 80)
+      && validBackgroundKind(data.kind)
+      && validBackgroundStorageUrl(data.imageUrl, 'full')
+      && validBackgroundStorageUrl(data.thumbnailUrl, 'thumb')
+      && (!('focusPosition' in data) || maxLen(data.focusPosition, 40))
+      && (!('adminOnly' in data) || data.adminOnly is bool)
+      && (!('sortOrder' in data) || (data.sortOrder is int && data.sortOrder >= 0 && data.sortOrder <= 100000))
+      && (!('isActive' in data) || data.isActive is bool)
+      && (!('updatedAt' in data) || maxLen(data.updatedAt, 40));
+    }
+
     // ── User profiles ──
     match /users/{userId}/profile/{docId} {
       // Owner can read/write their own profile
@@ -365,6 +411,15 @@ service cloud.firestore {
         allow read: if request.auth != null;
       }
     }
+
+    // Profile background catalog metadata (image URLs + thumbnail URLs + labels)
+    match /profileBackgroundCatalog/{backgroundId} {
+      allow read: if true;
+      allow create, update: if isAdmin()
+        && validProfileBackgroundCatalogDoc(request.resource.data, backgroundId);
+      allow delete: if isAdmin();
+    }
+
     // ── Head-to-Head records (precomputed from match data) ──
     match /h2h/{pairId} {
       // Anyone can read (public comparison data)

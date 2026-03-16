@@ -3,7 +3,13 @@ import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { getProfileByUsername } from "@/lib/firestore-storage";
-import { buildOptimizedImageUrl, resolveProfileBackgroundImage, resolveProfileBackgroundPosition } from "@/lib/profile-backgrounds";
+import { loadProfileBackgroundOptionById } from "@/lib/profile-background-catalog";
+import {
+  buildOptimizedImageUrl,
+  hasProfileBackgroundOption,
+  resolveProfileBackgroundImage,
+  resolveProfileBackgroundPosition,
+} from "@/lib/profile-backgrounds";
 
 function applyProfileBackground(imageUrl?: string, focusPosition = "center top") {
   const root = document.documentElement;
@@ -43,24 +49,33 @@ export function ProfileBackgroundController() {
 
   useEffect(() => {
     const requestId = ++requestIdRef.current;
-    const ownImage = resolveProfileBackgroundImage(profile?.siteBackgroundId);
-    const ownPosition = resolveProfileBackgroundPosition(profile?.siteBackgroundId) || "center top";
-    const viewedUsername = getViewedUsername(pathname);
+    const ensureBackgroundResolved = async (backgroundId?: string | null): Promise<void> => {
+      if (!backgroundId || backgroundId === "none") return;
+      if (hasProfileBackgroundOption(backgroundId)) return;
+      await loadProfileBackgroundOptionById(backgroundId);
+    };
 
-    // Everywhere except /player/:username uses the viewer's own site background.
-    if (!viewedUsername) {
-      applyProfileBackground(ownImage, ownPosition);
-      return;
-    }
-
-    // Viewing your own profile.
-    if (profile?.username && profile.username.toLowerCase() === viewedUsername.toLowerCase()) {
-      applyProfileBackground(ownImage, ownPosition);
-      return;
-    }
-
-    // Viewing another profile: show their chosen background if available.
     (async () => {
+      await ensureBackgroundResolved(profile?.siteBackgroundId);
+      if (requestIdRef.current !== requestId) return;
+
+      const ownImage = resolveProfileBackgroundImage(profile?.siteBackgroundId);
+      const ownPosition = resolveProfileBackgroundPosition(profile?.siteBackgroundId) || "center top";
+      const viewedUsername = getViewedUsername(pathname);
+
+      // Everywhere except /player/:username uses the viewer's own site background.
+      if (!viewedUsername) {
+        applyProfileBackground(ownImage, ownPosition);
+        return;
+      }
+
+      // Viewing your own profile.
+      if (profile?.username && profile.username.toLowerCase() === viewedUsername.toLowerCase()) {
+        applyProfileBackground(ownImage, ownPosition);
+        return;
+      }
+
+      // Viewing another profile: show their chosen background if available.
       try {
         const viewedProfile = await getProfileByUsername(viewedUsername);
         if (requestIdRef.current !== requestId) return;
@@ -68,6 +83,10 @@ export function ProfileBackgroundController() {
           applyProfileBackground(ownImage, ownPosition);
           return;
         }
+
+        await ensureBackgroundResolved(viewedProfile.siteBackgroundId);
+        if (requestIdRef.current !== requestId) return;
+
         applyProfileBackground(
           resolveProfileBackgroundImage(viewedProfile.siteBackgroundId),
           resolveProfileBackgroundPosition(viewedProfile.siteBackgroundId) || "center top",

@@ -1,0 +1,55 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return signedIn()
+        && request.auth.token.email != null
+        && request.auth.token.email in
+           firestore.get(/databases/(default)/documents/admin/config).data.adminEmails;
+    }
+
+    function validBackgroundFileName(fileName) {
+      return fileName.matches('^[A-Za-z0-9._-]+\\.(jpg|jpeg|png|webp)$');
+    }
+
+    function validImageUpload(maxBytes) {
+      return request.resource != null
+        && request.resource.contentType.matches('image/(jpeg|png|webp)')
+        && request.resource.size <= maxBytes;
+    }
+
+    // Public read for profile backgrounds (site visitors can load these images).
+    // Writes are admin-only and constrained by path + content limits.
+    match /profile-backgrounds/full/{fileName} {
+      allow read: if true;
+      allow write: if isAdmin()
+        && (
+          request.resource == null
+          || (validBackgroundFileName(fileName) && validImageUpload(8 * 1024 * 1024))
+        );
+    }
+
+    match /profile-backgrounds/thumb/{fileName} {
+      allow read: if true;
+      allow write: if isAdmin()
+        && (
+          request.resource == null
+          || (validBackgroundFileName(fileName) && validImageUpload(800 * 1024))
+        );
+    }
+
+    match /profile-backgrounds/{allPaths=**} {
+      allow read, write: if false;
+    }
+
+    // Default deny for everything else in Storage.
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

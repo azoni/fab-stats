@@ -1,0 +1,426 @@
+﻿[
+    {
+        "id":  "wtr-key-art-v1",
+        "label":  "Welcome to Rathe",
+        "focusPosition":  "center top",
+        "adminOnly":  false,
+        "kind":  "key-art",
+        "file":  "wtr-key-art-v1.jpg"
+    },
+    {
+        "id":  "arcane-rising-key-art",
+        "label":  "Arcane Rising",
+        "focusPosition":  "center top",
+        "adminOnly":  false,
+        "kind":  "key-art",
+        "file":  "arcane-rising-key-art.jpg"
+    },
+    {
+        "id":  "monarch-key-art",
+        "label":  "Monarch",
+        "focusPosition":  "center top",
+        "adminOnly":  false,
+        "kind":  "key-art",
+        "file":  "monarch-key-art.jpg"
+    },
+    {
+        "id":  "tales-of-aria-key-art",
+        "label":  "Tales of Aria",
+        "focusPosition":  "center top",
+        "adminOnly":  false,
+        "kind":  "key-art",
+        "file":  "tales-of-aria-key-art.jpg"
+    },
+    {
+        "id":  "playmat-aria",
+        "label":  "Aria Playmat",
+        "focusPosition":  "center center",
+        "adminOnly":  false,
+        "kind":  "playmat",
+        "file":  "lore-aria-matte.jpg"
+    },
+    {
+        "id":  "playmat-solana",
+        "label":  "Solana Playmat",
+        "focusPosition":  "center center",
+        "adminOnly":  false,
+        "kind":  "playmat",
+        "file":  "lore-solana-matte.jpg"
+    },
+    {
+        "id":  "playmat-volcor",
+        "label":  "Volcor Playmat",
+        "focusPosition":  "center center",
+        "adminOnly":  false,
+        "kind":  "playmat",
+        "file":  "lore-volcor-matte.jpg"
+    },
+    {
+        "id":  "wtr-key-art-v2",
+        "label":  "Rathe Alt Key Art",
+        "focusPosition":  "center top",
+        "adminOnly":  true,
+        "kind":  "key-art",
+        "file":  "wtr-key-art-v2.jpg"
+    },
+    {
+        "id":  "hunted-key-art",
+        "label":  "The Hunted",
+        "focusPosition":  "center top",
+        "adminOnly":  true,
+        "kind":  "key-art",
+        "file":  "hunted-key-art.jpg"
+    },
+    {
+        "id":  "hunted-cindra-adult",
+        "label":  "Cindra (The Hunted)",
+        "focusPosition":  "50% 18%",
+        "adminOnly":  true,
+        "kind":  "hero-art",
+        "file":  "hunted-cindra-adult.jpg"
+    },
+    {
+        "id":  "hunted-fang-adult",
+        "label":  "Fang (The Hunted)",
+        "focusPosition":  "50% 20%",
+        "adminOnly":  true,
+        "kind":  "hero-art",
+        "file":  "hunted-fang-adult.jpg"
+    },
+    {
+        "id":  "hunted-arakni-adult",
+        "label":  "Arakni (The Hunted)",
+        "focusPosition":  "50% 22%",
+        "adminOnly":  true,
+        "kind":  "hero-art",
+        "file":  "hunted-arakni-adult.jpg"
+    },
+    {
+        "id":  "high-seas-marlynn",
+        "label":  "Marlynn (High Seas)",
+        "focusPosition":  "52% 18%",
+        "adminOnly":  true,
+        "kind":  "hero-art",
+        "file":  "high-seas-marlynn.jpg"
+    },
+    {
+        "id":  "high-seas-puffin",
+        "label":  "Puffin (High Seas)",
+        "focusPosition":  "52% 20%",
+        "adminOnly":  true,
+        "kind":  "hero-art",
+        "file":  "high-seas-puffin.jpg"
+    },
+    {
+        "id":  "high-seas-gravybones",
+        "label":  "Gravy Bones (High Seas)",
+        "focusPosition":  "50% 20%",
+        "adminOnly":  true,
+        "kind":  "hero-art",
+        "file":  "high-seas-gravybones.jpg"
+    },
+    {
+        "id":  "fab-25-07-gempack-3-carousel",
+        "label":  "25 07 Gempack 3 Carousel",
+        "kind":  "key-art",
+        "focusPosition":  "center center",
+        "adminOnly":  true,
+        "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2025/08/25_07_GEMPACK-3_CAROUSEL-2000x700.jpg"
+    },
+    {
+        "id":  "fab-ad-ziggy-marketing-tiles-01",
+        "label":  "Ad Ziggy Marketing Tiles 01",
+        "kind":  "key-art",
+        "focusPosition":  "center center",
+        "adminOnly":  true,
+        "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2026/03/ad_Ziggy_marketing_tiles_01-2099x700.jpg"
+    },
+    {
+        "id":  "fab-ad-zyggy",
+        "label":  "Ad Zyggy",
+        "kind":  "key-art",
+        "focusPosition":  "center center",
+        "adminOnly":  true,
+        "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2026/03/AD-ZYGGY.jpg"
+    },
+    {
+        "id":  "fab-brisbane",
+        "label":  "Brisbane",
+        "kind":  "key-art",
+        "focusPosition":  "center center",
+        "adminOnly":  true,
+        "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2026/03/Brisbane-scaled.png"
+    },
+    {
+        "id":  "fab-dash-io",
+        "label":  "Dash Io",
+        "kind":  "key-art",
+        "focusPosition":  "center center",
+        "adminOnly":  true,
+        "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2025/06/dash_io.jpg"
+    },
+    {
+        "id":  "fab-en-omn-display-aurora",
+        "label":  "En Omn Display Aurora",
+        "kind":  "key-art",
+        "focusPosition":  "center center",
+        "adminOnly":  true,
+        "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2026/03/en_omn_display_aurora.png"
+    },
+    {
+        "id":  "fab-en-omn-display-oscilio",
+        "label":  "En Omn Display Oscilio",
+        "kind":  "key-art",
+        "focusPosition":  "center center",
+        "adminOnly":  true,
+        "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2026/03/en_omn_display_oscilio.png"
+    },
+    {
+        "id":  "fab-en-omn-display-zyggy",
+        "label":  "En Omn Display Zyggy",
+        "kind":  "key-art",
+        "focusPosition":  "center center",
+        "adminOnly":  true,
+        "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2026/03/en_omn_display_zyggy.png"
+    },
+    {
+        "id":  "fab-en-omn-prerelease-pack",
+        "label":  "En Omn Prerelease Pack",
+        "kind":  "key-art",
+        "focusPosition":  "center center",
+        "adminOnly":  true,
+        "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2026/03/en_omn_prerelease_pack.png"
+    },
+    {
+        "id":  "fab-gem-pack-4-packs-1",
+        "label":  "Gem Pack 4 Packs 1",
+        "kind":  "key-art",
+        "focusPosition":  "center center",
+        "adminOnly":  true,
+        "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2026/01/GEM-PACK-4-PACKS-1-scaled.png"
+    },
+    {
+        "id":  "fab-great-library-of-solana-federico-musetti-banner",
+        "label":  "Great Library Of Solana Federico Musetti Banner",
+        "kind":  "key-art",
+        "focusPosition":  "center center",
+        "adminOnly":  true,
+        "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2025/10/Great-Library-of-Solana-Federico-Musetti-banner.png"
+    },
+    {
+        "id":  "fab-homepage-carousel",
+        "label":  "Homepage Carousel",
+        "kind":  "key-art",
+        "focusPosition":  "center center",
+        "adminOnly":  true,
+        "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2025/11/HOMEPAGE-CAROUSEL-scaled.jpg"
+    },
+    {
+        "id":  "fab-jp-zyggy-name",
+        "label":  "Jp Zyggy Name",
+        "kind":  "key-art",
+        "focusPosition":  "center center",
+        "adminOnly":  true,
+        "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2026/03/jp_zyggy_name-scaled.png"
+    },
+    {
+        "id":  "fab-omens-of-the-third-age-logo",
+        "label":  "Omens Of The Third Age Logo",
+        "kind":  "key-art",
+        "focusPosition":  "center center",
+        "adminOnly":  true,
+        "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2026/03/omens_of_the_third_age_logo.png"
+    },
+    {
+        "id":  "fab-omens-of-the-third-age-logo-jp",
+        "label":  "Omens Of The Third Age Logo Jp",
+        "kind":  "key-art",
+        "focusPosition":  "center center",
+        "adminOnly":  true,
+        "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2026/03/omens_of_the_third_age_logo_jp.png"
+    },
+    {
+        "id":  "fab-omn-art-sig-aurora-adult",
+        "label":  "Omn Art Sig Aurora Adult",
+        "kind":  "hero-art",
+        "focusPosition":  "center center",
+        "adminOnly":  true,
+        "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2026/03/OMN_art_sig_aurora_adult.jpg"
+    },
+    {
+        "id":  "fab-omn-art-sig-aurora-young",
+        "label":  "Omn Art Sig Aurora Young",
+        "kind":  "hero-art",
+        "focusPosition":  "center center",
+        "adminOnly":  true,
+        "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2026/03/OMN_art_sig_aurora_young.jpg"
+    },
+    {
+        "id":  "fab-omn-art-sig-omens-of-arcana",
+        "label":  "Omn Art Sig Omens Of Arcana",
+        "kind":  "hero-art",
+        "focusPosition":  "center center",
+        "adminOnly":  true,
+        "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2026/03/OMN_art_sig_Omens-of-Arcana.jpg"
+    },
+    {
+        "id":  "fab-omn-art-sig-oscilio-adult",
+        "label":  "Omn Art Sig Oscilio Adult",
+        "kind":  "hero-art",
+        "focusPosition":  "center center",
+        "adminOnly":  true,
+        "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2026/03/OMN_art_sig_oscilio_adult.jpg"
+    },
+    {
+        "id":  "fab-omn-art-sig-oscilio-young",
+        "label":  "Omn Art Sig Oscilio Young",
+        "kind":  "hero-art",
+        "focusPosition":  "center center",
+        "adminOnly":  true,
+        "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2026/03/OMN_art_sig_oscilio_young.jpg"
+    },
+    {
+        "id":  "fab-omn-art-sig-zyggy-adult",
+        "label":  "Omn Art Sig Zyggy Adult",
+        "kind":  "hero-art",
+        "focusPosition":  "center center",
+        "adminOnly":  true,
+        "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2026/03/OMN_art_sig_zyggy_adult.jpg"
+    },
+    {
+        "id":  "fab-omn-marketing-tiles-eml10",
+        "label":  "Omn Marketing Tiles Eml10",
+        "kind":  "key-art",
+        "focusPosition":  "center center",
+        "adminOnly":  true,
+        "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2026/03/OMN_marketing_tiles_EML10.jpg"
+    },
+    {
+        "id":  "fab-omn-marketing-tiles-fb-ban2",
+        "label":  "Omn Marketing Tiles Fb Ban2",
+        "kind":  "key-art",
+        "focusPosition":  "center center",
+        "adminOnly":  true,
+        "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2026/03/OMN_marketing_tiles_FB_BAN2-scaled.jpg"
+    },
+    {
+        "id":  "fab-omn-marketing-tiles-fbpost3",
+        "label":  "Omn Marketing Tiles Fbpost3",
+        "kind":  "key-art",
+        "focusPosition":  "center center",
+        "adminOnly":  true,
+        "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2026/03/OMN_marketing_tiles_FBPOST3.jpg"
+    },
+    {
+        "id":  "fab-omn-marketing-tiles-social4",
+        "label":  "Omn Marketing Tiles Social4",
+        "kind":  "key-art",
+        "focusPosition":  "center center",
+        "adminOnly":  true,
+        "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2026/03/OMN_marketing_tiles_SOCIAL4-scaled.jpg"
+    },
+    {
+        "id":  "fab-omn-marketing-tiles-social5",
+        "label":  "Omn Marketing Tiles Social5",
+        "kind":  "key-art",
+        "focusPosition":  "center center",
+        "adminOnly":  true,
+        "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2026/03/OMN_marketing_tiles_SOCIAL5-scaled.jpg"
+    },
+    {
+        "id":  "fab-omn-marketing-tiles-social6",
+        "label":  "Omn Marketing Tiles Social6",
+        "kind":  "key-art",
+        "focusPosition":  "center center",
+        "adminOnly":  true,
+        "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2026/03/OMN_marketing_tiles_SOCIAL6-scaled.jpg"
+    },
+    {
+        "id":  "fab-omn-marketing-tiles-story7",
+        "label":  "Omn Marketing Tiles Story7",
+        "kind":  "key-art",
+        "focusPosition":  "center center",
+        "adminOnly":  true,
+        "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2026/03/OMN_marketing_tiles_STORY7-scaled.jpg"
+    },
+    {
+        "id":  "fab-omn-marketing-tiles-story8-1",
+        "label":  "Omn Marketing Tiles Story8 1",
+        "kind":  "key-art",
+        "focusPosition":  "center center",
+        "adminOnly":  true,
+        "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2026/03/OMN_marketing_tiles_STORY8-1-scaled.jpg"
+    },
+    {
+        "id":  "fab-omn-marketing-tiles-story9",
+        "label":  "Omn Marketing Tiles Story9",
+        "kind":  "key-art",
+        "focusPosition":  "center center",
+        "adminOnly":  true,
+        "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2026/03/OMN_marketing_tiles_STORY9-scaled.jpg"
+    },
+    {
+        "id":  "fab-omn-marketing-tiles-stream1",
+        "label":  "Omn Marketing Tiles Stream1",
+        "kind":  "key-art",
+        "focusPosition":  "center center",
+        "adminOnly":  true,
+        "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2026/03/OMN_marketing_tiles_STREAM1-scaled.jpg"
+    },
+    {
+        "id":  "fab-omn-marketing-tiles-x-ban1",
+        "label":  "Omn Marketing Tiles X Ban1",
+        "kind":  "key-art",
+        "focusPosition":  "center center",
+        "adminOnly":  true,
+        "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2026/03/OMN_marketing_tiles_X_BAN1-scaled.jpg"
+    },
+    {
+        "id":  "fab-omn-homepage-header",
+        "label":  "Omn Homepage Header",
+        "kind":  "key-art",
+        "focusPosition":  "center center",
+        "adminOnly":  true,
+        "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2026/03/OMN-HOMEPAGE-HEADER-scaled.png"
+    },
+    {
+        "id":  "fab-omn-texture",
+        "label":  "Omn Texture",
+        "kind":  "key-art",
+        "focusPosition":  "center center",
+        "adminOnly":  true,
+        "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2026/03/OMN-TEXTURE.jpg"
+    },
+    {
+        "id":  "fab-pq-general",
+        "label":  "Pq General",
+        "kind":  "key-art",
+        "focusPosition":  "center center",
+        "adminOnly":  true,
+        "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2026/02/pq-general.jpg"
+    },
+    {
+        "id":  "fab-sage-3-homepage-carousel",
+        "label":  "Sage 3 Homepage Carousel",
+        "kind":  "key-art",
+        "focusPosition":  "center center",
+        "adminOnly":  true,
+        "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2026/02/SAGE-3-homepage-carousel-scaled.png"
+    },
+    {
+        "id":  "fab-world-tour-2026",
+        "label":  "World Tour 2026",
+        "kind":  "key-art",
+        "focusPosition":  "center center",
+        "adminOnly":  true,
+        "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2025/11/world-tour-2026-scaled.png"
+    },
+    {
+        "id":  "fab-wt-brisbane-stream1-1",
+        "label":  "Wt Brisbane Stream1 1",
+        "kind":  "key-art",
+        "focusPosition":  "center center",
+        "adminOnly":  true,
+        "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2025/12/WT_Brisbane_Stream1-1-2048x1152.png"
+    }
+]
