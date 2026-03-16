@@ -130,8 +130,8 @@ function mergeCookies(existing: string, newCookies: string): string {
  * GEM uses Django with CSRF protection.
  */
 export async function gemLogin(username: string, password: string): Promise<string> {
-  // Step 1: GET the login page to obtain CSRF token + initial cookies
-  const loginPageRes = await fetch(`${GEM_BASE}/accounts/login/`, {
+  // Step 1: GET the GEM homepage which contains the login form
+  const loginPageRes = await fetch(`${GEM_BASE}/`, {
     headers: { "User-Agent": USER_AGENT },
     redirect: "manual",
   });
@@ -139,35 +139,30 @@ export async function gemLogin(username: string, password: string): Promise<stri
   const loginHtml = await loginPageRes.text();
   const initialCookies = extractCookies(loginPageRes.headers);
 
-  // Extract CSRF token from the form
+  // Extract CSRF token from the login form
   const $ = cheerio.load(loginHtml);
   const csrfToken =
     $('input[name="csrfmiddlewaretoken"]').val() as string ||
     "";
 
   if (!csrfToken) {
-    throw new GemLoginError("Could not find CSRF token on login page");
+    throw new GemLoginError("Could not find CSRF token on GEM login page");
   }
 
-  // Also extract csrftoken from cookies
-  const csrfCookie = initialCookies
-    .split("; ")
-    .find((c) => c.startsWith("csrftoken="));
-
-  // Step 2: POST login credentials
+  // Step 2: POST login credentials (form submits to homepage)
   const formBody = new URLSearchParams({
     csrfmiddlewaretoken: csrfToken,
-    login: username,
+    username: username,
     password: password,
   });
 
-  const loginRes = await fetch(`${GEM_BASE}/accounts/login/`, {
+  const loginRes = await fetch(`${GEM_BASE}/`, {
     method: "POST",
     headers: {
       "User-Agent": USER_AGENT,
       "Content-Type": "application/x-www-form-urlencoded",
       Cookie: initialCookies,
-      Referer: `${GEM_BASE}/accounts/login/`,
+      Referer: `${GEM_BASE}/`,
     },
     body: formBody.toString(),
     redirect: "manual",
@@ -176,20 +171,25 @@ export async function gemLogin(username: string, password: string): Promise<stri
   const responseCookies = extractCookies(loginRes.headers);
   const allCookies = mergeCookies(initialCookies, responseCookies);
 
-  // Successful login redirects (302) to profile or home page
+  // Successful login redirects (302) to profile page
   const status = loginRes.status;
   if (status >= 300 && status < 400) {
     const location = loginRes.headers.get("location") || "";
-    // If redirected back to login, credentials were wrong
-    if (location.includes("/accounts/login")) {
-      throw new GemLoginError("Invalid credentials — redirected back to login");
+    // If redirected to profile or dashboard, login succeeded
+    if (location.includes("/profile") || location.includes("/dashboard")) {
+      return allCookies;
     }
-    return allCookies;
+    // Redirected somewhere else — could still be valid
+    // Check if we got a sessionid cookie (indicates successful auth)
+    if (allCookies.includes("sessionid=")) {
+      return allCookies;
+    }
+    throw new GemLoginError("Invalid credentials");
   }
 
-  // If we got a 200, the login form was re-rendered (likely with errors)
+  // If we got a 200, the login form was re-rendered (credentials were wrong)
   if (status === 200) {
-    throw new GemLoginError("Login failed — invalid username or password");
+    throw new GemLoginError("Invalid username or password");
   }
 
   throw new GemLoginError(`Unexpected login response: HTTP ${status}`);
