@@ -183,3 +183,137 @@ export async function getScrapedCount(): Promise<number> {
   const snap = await getDocs(collection(db, COLLECTION));
   return snap.size;
 }
+
+// ── Analytics ──
+
+export interface DecklistSummary {
+  hero: string;
+  event: string;
+  placement: string;
+  player: string;
+}
+
+let analyticsCache: { data: DecklistSummary[]; ts: number } | null = null;
+const ANALYTICS_CACHE_TTL = 10 * 60_000; // 10 minutes
+
+export async function getAllDecklistSummaries(): Promise<DecklistSummary[]> {
+  if (analyticsCache && Date.now() - analyticsCache.ts < ANALYTICS_CACHE_TTL) {
+    return analyticsCache.data;
+  }
+
+  const snap = await getDocs(collection(db, COLLECTION));
+  const data = snap.docs.map((d) => {
+    const raw = d.data();
+    return {
+      hero: raw.hero || "",
+      event: raw.event || "",
+      placement: raw.placement || "",
+      player: raw.player || "",
+    };
+  });
+
+  analyticsCache = { data, ts: Date.now() };
+  return data;
+}
+
+export interface HeroMetaStat {
+  hero: string;
+  count: number;
+  metaShare: number;
+  placements: { label: string; count: number }[];
+  wins: number;
+  top8s: number;
+  events: Set<string>;
+}
+
+export interface EventSummary {
+  event: string;
+  decklistCount: number;
+  heroes: { hero: string; count: number; metaShare: number; placements: string[] }[];
+}
+
+export function computeHeroMeta(
+  decklists: DecklistSummary[],
+  eventFilter?: string
+): HeroMetaStat[] {
+  const filtered = eventFilter
+    ? decklists.filter((d) => d.event === eventFilter)
+    : decklists;
+
+  const total = filtered.length;
+  const heroMap = new Map<string, { count: number; placements: Map<string, number>; events: Set<string> }>();
+
+  for (const dl of filtered) {
+    if (!dl.hero) continue;
+    let entry = heroMap.get(dl.hero);
+    if (!entry) {
+      entry = { count: 0, placements: new Map(), events: new Set() };
+      heroMap.set(dl.hero, entry);
+    }
+    entry.count++;
+    entry.events.add(dl.event);
+    if (dl.placement) {
+      entry.placements.set(dl.placement, (entry.placements.get(dl.placement) || 0) + 1);
+    }
+  }
+
+  return [...heroMap.entries()]
+    .map(([hero, data]) => {
+      const placements = [...data.placements.entries()]
+        .map(([label, count]) => ({ label, count }))
+        .sort((a, b) => b.count - a.count);
+
+      const wins = placements
+        .filter((p) => /^1st$|^champion$/i.test(p.label))
+        .reduce((s, p) => s + p.count, 0);
+
+      const top8s = placements
+        .filter((p) => /top\s*8|top\s*4|finalist|2nd|3rd|4th|5th|6th|7th|8th|champion|1st/i.test(p.label))
+        .reduce((s, p) => s + p.count, 0);
+
+      return {
+        hero,
+        count: data.count,
+        metaShare: total > 0 ? Math.round((data.count / total) * 1000) / 10 : 0,
+        placements,
+        wins,
+        top8s,
+        events: data.events,
+      };
+    })
+    .sort((a, b) => b.count - a.count);
+}
+
+export function computeEventSummaries(decklists: DecklistSummary[]): EventSummary[] {
+  const eventMap = new Map<string, DecklistSummary[]>();
+  for (const dl of decklists) {
+    if (!dl.event) continue;
+    const list = eventMap.get(dl.event) || [];
+    list.push(dl);
+    eventMap.set(dl.event, list);
+  }
+
+  return [...eventMap.entries()]
+    .map(([event, entries]) => {
+      const total = entries.length;
+      const heroCount = new Map<string, { count: number; placements: string[] }>();
+      for (const e of entries) {
+        if (!e.hero) continue;
+        const h = heroCount.get(e.hero) || { count: 0, placements: [] };
+        h.count++;
+        if (e.placement) h.placements.push(e.placement);
+        heroCount.set(e.hero, h);
+      }
+      const heroes = [...heroCount.entries()]
+        .map(([hero, data]) => ({
+          hero,
+          count: data.count,
+          metaShare: total > 0 ? Math.round((data.count / total) * 1000) / 10 : 0,
+          placements: data.placements,
+        }))
+        .sort((a, b) => b.count - a.count);
+
+      return { event, decklistCount: total, heroes };
+    })
+    .sort((a, b) => b.decklistCount - a.decklistCount);
+}
