@@ -24,6 +24,7 @@ import { computeSessionRecap, type SessionRecap } from "@/lib/session-recap";
 import { PostEventRecap } from "@/components/import/PostEventRecap";
 import { getAllMatches as getLocalMatches } from "@/lib/storage";
 import { detectTierUp, type BadgeTierInfo } from "@/lib/badge-tiers";
+import { GemAutoSync } from "@/components/import/GemAutoSync";
 
 const BOOKMARKLET_HREF = `javascript:void((async function(){var els=document.querySelectorAll('a,button,summary,span,div,[role=button]');var n=0;for(var i=0;i<els.length;i++){var t=(els[i].textContent||'').trim();if(t.match(/View Results/i)&&t.length<30){els[i].click();n++;await new Promise(function(r){setTimeout(r,600)})}}alert('Expanded '+n+' events. Press Ctrl+A, Ctrl+C to copy.')})())`;
 
@@ -779,6 +780,13 @@ export default function ImportPage() {
 
       {error && (
         <div className="bg-fab-loss/10 border border-fab-loss/30 text-fab-loss rounded-md px-4 py-3 text-sm mb-4">{error}</div>
+      )}
+
+      {/* GEM Auto-Sync */}
+      {user && !isGuest && !hasResults && (
+        <div className="mb-6">
+          <GemAutoSync />
+        </div>
       )}
 
       {/* Method Selection Cards */}
