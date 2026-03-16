@@ -253,6 +253,23 @@ export interface CoverageEvent {
 const COVERAGE_COLLECTION = "coverage-matches";
 const COVERAGE_EVENTS_COLLECTION = "coverage-events";
 
+export interface TournamentWithCoverage {
+  slug: string;
+  title: string;
+  datePublished: string;
+  coverageUrls: string[];
+}
+
+export async function fetchTournamentsWithCoverage(): Promise<TournamentWithCoverage[]> {
+  const token = await getAuthToken();
+  const res = await fetch("/.netlify/functions/sitemap-scrape?mode=tournaments-with-coverage", {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error("Failed to fetch tournaments");
+  const data = await res.json();
+  return data.tournaments;
+}
+
 export async function fetchTournamentUrls(): Promise<string[]> {
   const token = await getAuthToken();
   const res = await fetch("/.netlify/functions/sitemap-scrape?mode=tournament-urls", {

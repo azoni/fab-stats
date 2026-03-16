@@ -207,71 +207,55 @@ async function fetchAndParseDecklist(url: string): Promise<ParsedDecklist> {
 
 // ── Coverage Discovery ──
 
-const TOURNAMENT_SITEMAP_URL = "https://fabtcg.com/tournament-sitemap.xml";
+// ── Coverage Discovery via WP REST API ──
 
-async function fetchTournamentUrls(): Promise<string[]> {
-  const res = await fetch(TOURNAMENT_SITEMAP_URL, {
-    headers: { "User-Agent": USER_AGENT },
-    redirect: "follow",
-  });
-  if (!res.ok) throw new Error(`Failed to fetch tournament sitemap: ${res.status}`);
-  const xml = await res.text();
-  const urls: string[] = [];
-  const locRegex = /<loc>(https:\/\/fabtcg\.com\/organised-play\/[^<]+)<\/loc>/g;
-  let match;
-  while ((match = locRegex.exec(xml)) !== null) {
-    urls.push(match[1]);
-  }
-  return urls;
+interface TournamentInfo {
+  slug: string;
+  title: string;
+  coverageSlugs: string[];
+  datePublished: string;
 }
 
-async function findCoverageUrl(tournamentUrl: string): Promise<{ coverageUrl: string; tournamentName: string; eventDate: string } | null> {
-  const res = await fetch(tournamentUrl, {
-    headers: { "User-Agent": USER_AGENT },
-    redirect: "follow",
-  });
-  if (!res.ok) return null;
-  const html = await res.text();
+async function fetchAllTournaments(): Promise<TournamentInfo[]> {
+  const tournaments: TournamentInfo[] = [];
+  const totalPages = 4; // 357 tournaments / 100 per page
 
-  // Extract tournament name from <title>
-  const titleMatch = html.match(/<title>([^<]+)<\/title>/);
-  const tournamentName = titleMatch
-    ? decodeHtml(titleMatch[1].replace(/ - Flesh and Blood TCG$/, "").trim())
-    : "";
+  for (let page = 1; page <= totalPages; page++) {
+    const res = await fetch(
+      `https://fabtcg.com/wp-json/wp/v2/tournament?per_page=100&page=${page}`,
+      { headers: { "User-Agent": USER_AGENT } }
+    );
+    if (!res.ok) break;
+    const data = await res.json() as {
+      slug: string;
+      title: { rendered: string };
+      content: { rendered: string };
+      date: string;
+    }[];
 
-  // Extract event date from datePublished in JSON-LD
-  const dateMatch = html.match(/"datePublished":"(\d{4}-\d{2}-\d{2})/);
-  const eventDate = dateMatch ? dateMatch[1] : "";
+    for (const t of data) {
+      const content = t.content?.rendered || "";
+      const coverageMatches = content.match(/fabtcg\.com\/coverage\/([^/"]+)/g) || [];
+      const coverageSlugs = [...new Set(
+        coverageMatches.map((m: string) => m.replace("fabtcg.com/coverage/", ""))
+      )];
 
-  // Strategy 1: Find coverage link on the tournament page
-  const covMatch = html.match(/href="(https:\/\/fabtcg\.com\/coverage\/[^"]+)"/);
-  if (covMatch) {
-    return { coverageUrl: covMatch[1], tournamentName, eventDate };
-  }
-
-  // Strategy 2: Try the tournament slug as a coverage URL directly
-  const slugMatch = tournamentUrl.match(/\/organised-play\/\d{4}\/([^/]+)\/?$/);
-  if (slugMatch) {
-    const guessUrl = `https://fabtcg.com/coverage/${slugMatch[1]}/`;
-    try {
-      const guessRes = await fetch(guessUrl, {
-        headers: { "User-Agent": USER_AGENT },
-        redirect: "follow",
-        signal: AbortSignal.timeout(5000),
+      tournaments.push({
+        slug: t.slug,
+        title: decodeHtml((t.title?.rendered || "").replace(/&#8211;/g, "–")),
+        coverageSlugs,
+        datePublished: t.date ? t.date.split("T")[0] : "",
       });
-      if (guessRes.ok) {
-        const guessHtml = await guessRes.text();
-        // Verify it actually has results (not just a template page)
-        if (guessHtml.includes('/results/') || guessHtml.includes('match-row') || guessHtml.includes('class="rounds"')) {
-          return { coverageUrl: guessUrl, tournamentName, eventDate };
-        }
-      }
-    } catch {
-      // Guess failed, that's fine
     }
   }
 
-  return null;
+  return tournaments;
+}
+
+// Legacy function for backward compatibility with existing handler
+async function fetchTournamentUrls(): Promise<string[]> {
+  const tournaments = await fetchAllTournaments();
+  return tournaments.map((t) => `https://fabtcg.com/organised-play/${t.datePublished.slice(0, 4) || "2025"}/${t.slug}/`);
 }
 
 // ── Coverage Round Discovery ──
@@ -473,13 +457,40 @@ export default async function handler(req: Request) {
       return jsonResponse({ urls }, 200);
     }
 
+    if (mode === "tournaments-with-coverage") {
+      const tournaments = await fetchAllTournaments();
+      const withCoverage = tournaments
+        .filter((t) => t.coverageSlugs.length > 0)
+        .map((t) => ({
+          slug: t.slug,
+          title: t.title,
+          datePublished: t.datePublished,
+          coverageUrls: t.coverageSlugs.map((s) => `https://fabtcg.com/coverage/${s}/`),
+        }));
+      return jsonResponse({ tournaments: withCoverage }, 200);
+    }
+
     if (mode === "coverage-discover") {
+      // Legacy mode — kept for backward compatibility
       const tournamentUrl = url.searchParams.get("url");
       if (!tournamentUrl || !tournamentUrl.startsWith("https://fabtcg.com/organised-play/")) {
         return jsonResponse({ error: "Invalid tournament URL" }, 400);
       }
-      const result = await findCoverageUrl(tournamentUrl);
-      return jsonResponse({ result }, 200); // includes eventDate now
+      // Use WP API approach
+      const tournaments = await fetchAllTournaments();
+      const slugMatch = tournamentUrl.match(/\/organised-play\/\d{4}\/([^/]+)\/?$/);
+      if (!slugMatch) return jsonResponse({ result: null }, 200);
+      const tournament = tournaments.find((t) => t.slug === slugMatch[1]);
+      if (!tournament || tournament.coverageSlugs.length === 0) {
+        return jsonResponse({ result: null }, 200);
+      }
+      return jsonResponse({
+        result: {
+          coverageUrl: `https://fabtcg.com/coverage/${tournament.coverageSlugs[0]}/`,
+          tournamentName: tournament.title,
+          eventDate: tournament.datePublished,
+        },
+      }, 200);
     }
 
     if (mode === "coverage-rounds") {

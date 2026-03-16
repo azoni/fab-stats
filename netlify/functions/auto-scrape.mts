@@ -8,7 +8,6 @@ import { getAdminDb } from "./firebase-admin.ts";
 const USER_AGENT =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
 
-const TOURNAMENT_SITEMAP_URL = "https://fabtcg.com/tournament-sitemap.xml";
 
 function decodeHtml(text: string): string {
   return text
@@ -33,58 +32,52 @@ async function fetchPage(url: string): Promise<string> {
 
 // ── Tournament & Coverage Discovery ──
 
-async function getTournamentUrls(): Promise<string[]> {
-  const xml = await fetchPage(TOURNAMENT_SITEMAP_URL);
-  const urls: string[] = [];
-  const regex = /<loc>(https:\/\/fabtcg\.com\/organised-play\/[^<]+)<\/loc>/g;
-  let match;
-  while ((match = regex.exec(xml)) !== null) urls.push(match[1]);
-  return urls;
+interface TournamentCoverage {
+  slug: string;
+  title: string;
+  datePublished: string;
+  coverageUrls: string[];
 }
 
-async function findCoverage(tournamentUrl: string): Promise<{
-  coverageUrl: string;
-  name: string;
-  eventDate: string;
-} | null> {
-  const html = await fetchPage(tournamentUrl);
+async function fetchTournamentsWithCoverage(): Promise<TournamentCoverage[]> {
+  const tournaments: TournamentCoverage[] = [];
 
-  const titleMatch = html.match(/<title>([^<]+)<\/title>/);
-  const name = titleMatch
-    ? decodeHtml(titleMatch[1].replace(/ - Flesh and Blood TCG$/, "").trim())
-    : "";
-
-  const dateMatch = html.match(/"datePublished":"(\d{4}-\d{2}-\d{2})/);
-  const eventDate = dateMatch ? dateMatch[1] : "";
-
-  // Strategy 1: Find coverage link on the tournament page
-  const covMatch = html.match(/href="(https:\/\/fabtcg\.com\/coverage\/[^"]+)"/);
-  if (covMatch) {
-    return { coverageUrl: covMatch[1], name, eventDate };
-  }
-
-  // Strategy 2: Try the tournament slug as a coverage URL directly
-  const slugMatch = tournamentUrl.match(/\/organised-play\/\d{4}\/([^/]+)\/?$/);
-  if (slugMatch) {
-    const guessUrl = `https://fabtcg.com/coverage/${slugMatch[1]}/`;
+  for (let page = 1; page <= 4; page++) {
     try {
-      const guessRes = await fetch(guessUrl, {
-        headers: { "User-Agent": USER_AGENT },
-        redirect: "follow",
-        signal: AbortSignal.timeout(5000),
-      });
-      if (guessRes.ok) {
-        const guessHtml = await guessRes.text();
-        if (guessHtml.includes('/results/') || guessHtml.includes('match-row') || guessHtml.includes('class="rounds"')) {
-          return { coverageUrl: guessUrl, name, eventDate };
+      const res = await fetch(
+        `https://fabtcg.com/wp-json/wp/v2/tournament?per_page=100&page=${page}`,
+        { headers: { "User-Agent": USER_AGENT } }
+      );
+      if (!res.ok) break;
+      const data = await res.json() as {
+        slug: string;
+        title: { rendered: string };
+        content: { rendered: string };
+        date: string;
+      }[];
+
+      for (const t of data) {
+        const content = t.content?.rendered || "";
+        const matches = content.match(/fabtcg\.com\/coverage\/([^/"]+)/g) || [];
+        const coverageSlugs = [...new Set(
+          matches.map((m: string) => m.replace("fabtcg.com/coverage/", ""))
+        )];
+
+        if (coverageSlugs.length > 0) {
+          tournaments.push({
+            slug: t.slug,
+            title: decodeHtml((t.title?.rendered || "").replace(/&#8211;/g, "–")),
+            datePublished: t.date ? t.date.split("T")[0] : "",
+            coverageUrls: coverageSlugs.map((s) => `https://fabtcg.com/coverage/${s}/`),
+          });
         }
       }
     } catch {
-      // Guess failed
+      break;
     }
   }
 
-  return null;
+  return tournaments;
 }
 
 async function getRounds(coverageUrl: string): Promise<{
@@ -429,70 +422,68 @@ export default async function handler() {
     }
 
     // ── Phase 2: Coverage ──
-    const tournamentUrls = await getTournamentUrls();
+    const tournaments = await fetchTournamentsWithCoverage();
     const scrapedSlugs = await getScrapedSlugs();
     let newEvents = 0;
     let newMatches = 0;
 
-    for (const tUrl of tournamentUrls) {
-      const slug = tUrl.replace(/\/$/, "").split("/").pop() || "";
-      if (scrapedSlugs.has(slug)) continue;
+    for (const tournament of tournaments) {
+      for (const coverageUrl of tournament.coverageUrls) {
+        const covSlug = coverageUrl.replace(/\/$/, "").split("/").pop() || "";
+        if (scrapedSlugs.has(covSlug)) continue;
 
-      try {
-        const discovery = await findCoverage(tUrl);
-        if (!discovery) continue;
+        try {
+          const roundInfo = await getRounds(coverageUrl);
+          if (roundInfo.resultUrls.length === 0) continue;
 
-        await new Promise((r) => setTimeout(r, 500));
+          const allMatches: Record<string, unknown>[] = [];
 
-        const roundInfo = await getRounds(discovery.coverageUrl);
-        if (roundInfo.resultUrls.length === 0) continue;
+          for (const resultUrl of roundInfo.resultUrls) {
+            try {
+              const html = await fetchPage(resultUrl);
+              const round = parseInt(resultUrl.match(/\/results\/(\d+)\//)?.[1] || "0");
+              const parsed = parseResults(html, round);
 
-        const allMatches: Record<string, unknown>[] = [];
-
-        for (const resultUrl of roundInfo.resultUrls) {
-          try {
-            const html = await fetchPage(resultUrl);
-            const round = parseInt(resultUrl.match(/\/results\/(\d+)\//)?.[1] || "0");
-            const parsed = parseResults(html, round);
-
-            for (const m of parsed) {
-              allMatches.push({
-                ...m,
-                event: discovery.name || roundInfo.eventName,
-                coverageUrl: discovery.coverageUrl,
-                eventDate: discovery.eventDate || "",
-                format: roundInfo.format || "",
-              });
+              for (const m of parsed) {
+                allMatches.push({
+                  ...m,
+                  event: tournament.title || roundInfo.eventName,
+                  coverageUrl,
+                  eventDate: tournament.datePublished || "",
+                  format: roundInfo.format || "",
+                });
+              }
+            } catch {
+              // skip failed round
             }
-          } catch {
-            // skip failed round
+
+            await new Promise((r) => setTimeout(r, 500));
           }
 
-          await new Promise((r) => setTimeout(r, 500));
+          if (allMatches.length > 0) {
+            await saveMatches(allMatches);
+            await saveEvent(covSlug, {
+              slug: covSlug,
+              coverageUrl,
+              tournamentUrl: `https://fabtcg.com/organised-play/${tournament.datePublished.slice(0, 4) || "2025"}/${tournament.slug}/`,
+              eventName: tournament.title || roundInfo.eventName,
+              eventDate: tournament.datePublished || "",
+              format: roundInfo.format || "",
+              roundCount: roundInfo.resultUrls.length,
+              matchCount: allMatches.length,
+              scrapedAt: new Date().toISOString(),
+            });
+            newEvents++;
+            newMatches += allMatches.length;
+            scrapedSlugs.add(covSlug);
+            console.log(`[auto-scrape] Scraped ${tournament.title}: ${allMatches.length} matches`);
+          }
+        } catch (err) {
+          console.error(`[auto-scrape] Failed on ${covSlug}:`, err);
         }
 
-        if (allMatches.length > 0) {
-          await saveMatches(allMatches);
-          await saveEvent(slug, {
-            slug,
-            coverageUrl: discovery.coverageUrl,
-            tournamentUrl: tUrl,
-            eventName: discovery.name || roundInfo.eventName,
-            eventDate: discovery.eventDate || "",
-            format: roundInfo.format || "",
-            roundCount: roundInfo.resultUrls.length,
-            matchCount: allMatches.length,
-            scrapedAt: new Date().toISOString(),
-          });
-          newEvents++;
-          newMatches += allMatches.length;
-          console.log(`[auto-scrape] Scraped ${discovery.name}: ${allMatches.length} matches`);
-        }
-      } catch (err) {
-        console.error(`[auto-scrape] Failed on ${slug}:`, err);
+        await new Promise((r) => setTimeout(r, 300));
       }
-
-      await new Promise((r) => setTimeout(r, 300));
     }
 
     // Rebuild summaries if we got new data

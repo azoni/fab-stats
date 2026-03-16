@@ -12,8 +12,7 @@ import {
   computeHeroMeta,
   computeEventSummaries,
   clearAllDecklists,
-  fetchTournamentUrls,
-  discoverCoverage,
+  fetchTournamentsWithCoverage,
   fetchCoverageRounds,
   fetchCoverageResults,
   saveCoverageMatches,
@@ -271,49 +270,47 @@ export default function SitemapTab() {
   const handleScrapeCoverage = useCallback(async () => {
     coverageAbortRef.current = false;
     setCoverageScraping(true);
-    setCoverageProgress("Fetching tournament URLs...");
+    setCoverageProgress("Fetching tournaments with coverage from WP API...");
 
     try {
-      const tournamentUrls = await fetchTournamentUrls();
-      setCoverageProgress(`Found ${tournamentUrls.length} tournaments. Checking for coverage...`);
+      const tournaments = await fetchTournamentsWithCoverage();
+      setCoverageProgress(`Found ${tournaments.length} tournaments with coverage. Checking for new ones...`);
 
       const scrapedEvents = await getScrapedCoverageEvents();
       const scrapedSlugs = new Set(scrapedEvents.map((e) => e.slug));
       setCoverageEvents(scrapedEvents);
 
+      // Build list of coverage URLs to scrape (skip already-scraped)
+      const toScrape: { coverageUrl: string; title: string; datePublished: string; tournamentSlug: string }[] = [];
+      for (const t of tournaments) {
+        for (const covUrl of t.coverageUrls) {
+          const covSlug = covUrl.replace(/\/$/, "").split("/").pop() || "";
+          if (!scrapedSlugs.has(covSlug)) {
+            toScrape.push({ coverageUrl: covUrl, title: t.title, datePublished: t.datePublished, tournamentSlug: t.slug });
+          }
+        }
+      }
+
+      setCoverageProgress(`${toScrape.length} new coverage events to scrape.`);
+
       let eventsProcessed = 0;
       let totalMatches = 0;
 
-      for (const tUrl of tournamentUrls) {
+      for (const item of toScrape) {
         if (coverageAbortRef.current) break;
 
-        const slug = tUrl.replace(/\/$/, "").split("/").pop() || "";
-        if (scrapedSlugs.has(slug)) {
-          eventsProcessed++;
-          continue;
-        }
-
-        setCoverageProgress(`[${eventsProcessed + 1}/${tournamentUrls.length}] Checking ${slug}...`);
+        const covSlug = item.coverageUrl.replace(/\/$/, "").split("/").pop() || "";
+        setCoverageProgress(`[${eventsProcessed + 1}/${toScrape.length}] ${item.title}: getting rounds...`);
 
         try {
-          const discovery = await discoverCoverage(tUrl);
-          if (!discovery) {
-            eventsProcessed++;
-            await new Promise((r) => setTimeout(r, 300));
-            continue;
-          }
-
-          setCoverageProgress(`[${eventsProcessed + 1}/${tournamentUrls.length}] Found coverage for ${discovery.tournamentName}. Getting rounds...`);
-          await new Promise((r) => setTimeout(r, 300));
-
-          const roundInfo = await fetchCoverageRounds(discovery.coverageUrl);
+          const roundInfo = await fetchCoverageRounds(item.coverageUrl);
 
           if (roundInfo.resultUrls.length === 0) {
             eventsProcessed++;
             continue;
           }
 
-          setCoverageProgress(`[${eventsProcessed + 1}/${tournamentUrls.length}] ${discovery.tournamentName}: scraping ${roundInfo.resultUrls.length} rounds...`);
+          setCoverageProgress(`[${eventsProcessed + 1}/${toScrape.length}] ${item.title}: scraping ${roundInfo.resultUrls.length} rounds...`);
 
           const allMatches: CoverageMatch[] = [];
 
@@ -325,9 +322,9 @@ export default function SitemapTab() {
               for (const m of parsed) {
                 allMatches.push({
                   ...m,
-                  event: discovery.tournamentName || roundInfo.eventName,
-                  coverageUrl: discovery.coverageUrl,
-                  eventDate: discovery.eventDate || "",
+                  event: item.title || roundInfo.eventName,
+                  coverageUrl: item.coverageUrl,
+                  eventDate: item.datePublished || "",
                   format: roundInfo.format || "",
                 });
               }
@@ -341,21 +338,21 @@ export default function SitemapTab() {
           if (allMatches.length > 0) {
             await saveCoverageMatches(allMatches);
             await saveCoverageEvent({
-              slug,
-              coverageUrl: discovery.coverageUrl,
-              tournamentUrl: tUrl,
-              eventName: discovery.tournamentName || roundInfo.eventName,
-              eventDate: discovery.eventDate || "",
+              slug: covSlug,
+              coverageUrl: item.coverageUrl,
+              tournamentUrl: `https://fabtcg.com/organised-play/${item.datePublished.slice(0, 4) || "2025"}/${item.tournamentSlug}/`,
+              eventName: item.title || roundInfo.eventName,
+              eventDate: item.datePublished || "",
               format: roundInfo.format || "",
               roundCount: roundInfo.resultUrls.length,
               matchCount: allMatches.length,
               scrapedAt: new Date().toISOString(),
             });
             totalMatches += allMatches.length;
-            scrapedSlugs.add(slug);
+            scrapedSlugs.add(covSlug);
           }
         } catch {
-          // skip failed tournament
+          // skip failed event
         }
 
         eventsProcessed++;
@@ -364,8 +361,8 @@ export default function SitemapTab() {
 
       setCoverageProgress(
         coverageAbortRef.current
-          ? `Stopped. Processed ${eventsProcessed} tournaments, ${totalMatches} new matches.`
-          : `Done! Processed ${eventsProcessed} tournaments, ${totalMatches} new matches.`
+          ? `Stopped. Scraped ${eventsProcessed}/${toScrape.length} events, ${totalMatches} new matches.`
+          : `Done! Scraped ${eventsProcessed} events, ${totalMatches} new matches.`
       );
 
       const updated = await getScrapedCoverageEvents();
