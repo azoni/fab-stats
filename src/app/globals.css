@@ -542,6 +542,11 @@ textarea[class*="border-fab-border"] {
   border-width: 1.5px;
 }
 
+/* Dashboard cards — semi-transparent to show background */
+.transparent-cards [class*="bg-fab-surface"][class*="border-fab-border"]:not(nav):not(td):not(tr) {
+  background-color: color-mix(in srgb, var(--color-fab-surface) 80%, transparent);
+}
+
 /* Card depth — universal shadow + inner highlight */
 [class*="bg-fab-surface"][class*="border-fab-border"]:not(nav):not(td):not(tr) {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04),
