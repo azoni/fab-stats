@@ -21,12 +21,13 @@ export function BackgroundChooser({ selectedId, isAdmin, onSelect, disabled }: B
   const [previewMode, setPreviewMode] = useState<"fit" | "fill">("fit");
   const [searchQuery, setSearchQuery] = useState("");
   const [brokenPreviewIds, setBrokenPreviewIds] = useState<Record<string, true>>({});
+  const [failedThumbIds, setFailedThumbIds] = useState<Record<string, true>>({});
   const [adminVisibilityFilter, setAdminVisibilityFilter] = useState<"all" | "public" | "admin">("all");
   const [adminUnlockFilter, setAdminUnlockFilter] = useState<"all" | "open" | "gated">("all");
   const [adminKindFilter, setAdminKindFilter] = useState<"all" | "key-art" | "playmat" | "hero-art">("all");
 
-  const markPreviewBroken = useCallback((id: string) => {
-    setBrokenPreviewIds((prev) => (prev[id] ? prev : { ...prev, [id]: true }));
+  const markPreviewBroken = useCallback((previewKey: string) => {
+    setBrokenPreviewIds((prev) => (prev[previewKey] ? prev : { ...prev, [previewKey]: true }));
   }, []);
 
   const filteredOptions = useMemo(() => {
@@ -158,6 +159,9 @@ export function BackgroundChooser({ selectedId, isAdmin, onSelect, disabled }: B
         </button>
 
         {displayedOptions.map((opt) => (
+          (() => {
+            const previewKey = `${opt.id}:${opt.thumbnailUrl || ""}:${opt.imageUrl}`;
+            return (
           <button
             key={opt.id}
             type="button"
@@ -171,21 +175,33 @@ export function BackgroundChooser({ selectedId, isAdmin, onSelect, disabled }: B
             title={opt.label}
           >
             <div className="h-20 rounded-md overflow-hidden border border-white/10 mb-1.5 relative bg-fab-bg/70">
-              {!brokenPreviewIds[opt.id] && (
+              {!brokenPreviewIds[previewKey] && (
                 <img
-                  src={buildOptimizedImageUrl(opt.thumbnailUrl || opt.imageUrl, 520, 52)}
+                  src={buildOptimizedImageUrl(
+                    failedThumbIds[previewKey]
+                      ? opt.imageUrl
+                      : (opt.thumbnailUrl || opt.imageUrl),
+                    520,
+                    52,
+                  )}
                   alt=""
                   className={`absolute inset-0 w-full h-full ${previewMode === "fit" ? "object-contain" : "object-cover"}`}
                   loading="lazy"
                   decoding="async"
                   fetchPriority="low"
-                  style={previewMode === "fit" ? { objectPosition: "center center" } : undefined}
-                  onError={() => markPreviewBroken(opt.id)}
+                  style={{ objectPosition: previewMode === "fit" ? "center center" : (opt.focusPosition || "center center") }}
+                  onError={() => {
+                    if (!failedThumbIds[previewKey] && opt.thumbnailUrl && opt.thumbnailUrl !== opt.imageUrl) {
+                      setFailedThumbIds((prev) => (prev[previewKey] ? prev : { ...prev, [previewKey]: true }));
+                      return;
+                    }
+                    markPreviewBroken(previewKey);
+                  }}
                 />
               )}
-              <div className={`absolute inset-0 ${brokenPreviewIds[opt.id] ? "bg-gradient-to-br from-fab-bg via-fab-surface to-fab-bg" : "bg-black/25"}`} />
+              <div className={`absolute inset-0 ${brokenPreviewIds[previewKey] ? "bg-gradient-to-br from-fab-bg via-fab-surface to-fab-bg" : "bg-black/25"}`} />
               <div className="absolute top-0 left-0 right-0 h-0.5 bg-fab-gold/70" />
-              {brokenPreviewIds[opt.id] && (
+              {brokenPreviewIds[previewKey] && (
                 <span className="absolute bottom-1 left-1 text-[9px] text-fab-dim">Preview unavailable</span>
               )}
             </div>
@@ -203,6 +219,8 @@ export function BackgroundChooser({ selectedId, isAdmin, onSelect, disabled }: B
               </div>
             )}
           </button>
+            );
+          })()
         ))}
       </div>
 
