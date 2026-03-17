@@ -6,6 +6,14 @@ interface ThemeWithBackground {
   backgroundImage?: string;
 }
 
+function normalizeLabelKey(label?: string): string {
+  return (label || "")
+    .toLowerCase()
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function normalizeBackgroundKey(image?: string): string {
   const raw = (image || "").trim();
   if (!raw) return "";
@@ -62,15 +70,22 @@ export function appendCatalogBackgroundThemes<T extends ThemeWithBackground>(
       .map((theme) => normalizeBackgroundKey(theme.backgroundImage))
       .filter((key) => key.length > 0),
   );
+  const seenLabels = new Set(
+    merged
+      .map((theme) => normalizeLabelKey(theme.label))
+      .filter((key) => key.length > 0),
+  );
 
   let idx = 0;
   for (const option of backgroundOptions) {
+    const labelKey = normalizeLabelKey(option.label);
     const bgKey = normalizeBackgroundKey(option.imageUrl);
-    if (!bgKey || seenBackgrounds.has(bgKey)) continue;
+    if (!bgKey || seenBackgrounds.has(bgKey) || (labelKey && seenLabels.has(labelKey))) continue;
 
     const built = buildTheme(option, idx, baseTheme);
     const id = makeUniqueThemeId(built.id || `catalog-${option.id}`, usedIds);
     const label = built.label || option.label;
+    const builtLabelKey = normalizeLabelKey(label);
     const themed = {
       ...built,
       id,
@@ -80,6 +95,7 @@ export function appendCatalogBackgroundThemes<T extends ThemeWithBackground>(
     merged.push(themed);
     usedIds.add(id);
     seenBackgrounds.add(bgKey);
+    if (builtLabelKey) seenLabels.add(builtLabelKey);
     idx += 1;
   }
 

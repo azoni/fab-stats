@@ -162,12 +162,16 @@ const TRENDS_THEMES: TrendsTheme[] = [
 
 function ShareCardInner({ data, theme }: { data: TrendsShareData; theme: TrendsTheme }) {
   const t = theme;
+  const [bgFailed, setBgFailed] = useState(false);
+
+  const showBackgroundImage = Boolean(t.backgroundImage && !bgFailed);
+
   return (
     <div
       className="relative rounded-lg p-5 border overflow-hidden"
       style={{ width: 380, backgroundColor: t.surface, borderColor: t.border }}
     >
-      {t.backgroundImage && (
+      {showBackgroundImage && (
         <>
           <img
             src={buildOptimizedImageUrl(t.backgroundImage, 960, 60)}
@@ -177,6 +181,7 @@ function ShareCardInner({ data, theme }: { data: TrendsShareData; theme: TrendsT
             loading="eager"
             decoding="async"
             crossOrigin="anonymous"
+            onError={() => setBgFailed(true)}
           />
           <div className="absolute inset-0" style={{ backgroundColor: `${t.surface}B8` }} />
         </>
@@ -283,6 +288,7 @@ export function TrendsShareModal({ data, onClose }: { data: TrendsShareData; onC
   const [themeQuery, setThemeQuery] = useState("");
   const [themePage, setThemePage] = useState(1);
   const [status, setStatus] = useState<"idle" | "copying" | "copied" | "downloaded">("idle");
+  const [failedThumbIds, setFailedThumbIds] = useState<Record<string, true>>({});
 
   const filteredThemes = useMemo(() => {
     const q = themeQuery.trim().toLowerCase();
@@ -339,7 +345,7 @@ export function TrendsShareModal({ data, onClose }: { data: TrendsShareData; onC
         </div>
 
         <div ref={cardRef} className="flex justify-center overflow-x-auto">
-          <ShareCardInner data={data} theme={selectedTheme} />
+          <ShareCardInner key={selectedTheme.id} data={data} theme={selectedTheme} />
         </div>
 
         <div>
@@ -366,7 +372,7 @@ export function TrendsShareModal({ data, onClose }: { data: TrendsShareData; onC
                 }`}
               >
                 <div className="h-12 rounded-md overflow-hidden border border-white/10 mb-1.5 relative bg-fab-bg/70">
-                  {theme.backgroundImage ? (
+                  {theme.backgroundImage && !failedThumbIds[theme.id] ? (
                     <>
                       <img
                         src={buildOptimizedImageUrl(theme.backgroundImage, 360, 48)}
@@ -376,6 +382,9 @@ export function TrendsShareModal({ data, onClose }: { data: TrendsShareData; onC
                         loading="lazy"
                         decoding="async"
                         fetchPriority="low"
+                        onError={() => {
+                          setFailedThumbIds((prev) => (prev[theme.id] ? prev : { ...prev, [theme.id]: true }));
+                        }}
                       />
                       <div className="absolute inset-0" style={{ backgroundColor: `${theme.surface}99` }} />
                     </>
