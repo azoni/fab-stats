@@ -495,7 +495,7 @@ function OnThisDayShareModal({
                         loading="lazy"
                         decoding="async"
                         fetchPriority="low"
-                      />
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
                       <div className="absolute inset-0" style={{ backgroundColor: `${theme.surface}99` }} />
                     </>
                   ) : (

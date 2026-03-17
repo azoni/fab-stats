@@ -53,7 +53,7 @@ export function OnThisDayCard({ data, theme }: { data: OnThisDayData; theme: Car
             loading="eager"
             decoding="async"
             crossOrigin="anonymous"
-          />
+          onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
           <div className="absolute inset-0" style={{ backgroundColor: `${t.surface}B8` }} />
         </>
       )}

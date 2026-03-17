@@ -183,7 +183,7 @@ function ShareCardInner({ data, theme }: { data: TournamentShareData; theme: Tou
             loading="eager"
             decoding="async"
             crossOrigin="anonymous"
-          />
+          onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
           <div className="absolute inset-0" style={{ backgroundColor: `${t.surface}B8` }} />
         </>
       )}
@@ -398,7 +398,7 @@ export function TournamentShareModal({ data, onClose }: { data: TournamentShareD
                         style={{ objectPosition: "center center" }}
                         loading="lazy"
                         decoding="async"
-                      />
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
                       <div className="absolute inset-0" style={{ backgroundColor: `${theme.surface}99` }} />
                     </>
                   ) : (

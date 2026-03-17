@@ -181,8 +181,7 @@ function ShareCardInner({ data, theme }: { data: TrendsShareData; theme: TrendsT
             loading="eager"
             decoding="async"
             crossOrigin="anonymous"
-            onError={() => setBgFailed(true)}
-          />
+            onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; setBgFailed(true); }} />
           <div className="absolute inset-0" style={{ backgroundColor: `${t.surface}B8` }} />
         </>
       )}
@@ -382,10 +381,7 @@ export function TrendsShareModal({ data, onClose }: { data: TrendsShareData; onC
                         loading="lazy"
                         decoding="async"
                         fetchPriority="low"
-                        onError={() => {
-                          setFailedThumbIds((prev) => (prev[theme.id] ? prev : { ...prev, [theme.id]: true }));
-                        }}
-                      />
+                        onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; setFailedThumbIds((prev) => (prev[theme.id] ? prev : { ...prev, [theme.id]: true })); }} />
                       <div className="absolute inset-0" style={{ backgroundColor: `${theme.surface}99` }} />
                     </>
                   ) : (
