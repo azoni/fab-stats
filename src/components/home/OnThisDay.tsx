@@ -1,12 +1,15 @@
 "use client";
-import { useMemo, useState, useEffect, useRef } from "react";
+import { useMemo, useState, useRef } from "react";
 import { MatchResult, type MatchRecord } from "@/types";
 import { localDate } from "@/lib/constants";
 import { getRoundNumber } from "@/lib/stats";
 import { CARD_THEMES } from "@/components/opponents/RivalryCard";
 import { copyCardImage, downloadCardImage } from "@/lib/share-image";
-import { buildOptimizedImageUrl, resolveBackgroundPositionForImage } from "@/lib/profile-backgrounds";
+import { buildOptimizedImageUrl } from "@/lib/profile-backgrounds";
 import { OnThisDayCard, type OnThisDayData } from "./OnThisDayCard";
+import { useAuth } from "@/contexts/AuthContext";
+import { useProfileBackgroundCatalog } from "@/hooks/useProfileBackgroundCatalog";
+import { appendCatalogBackgroundThemes } from "@/lib/catalog-share-themes";
 
 
 interface OnThisDayProps {
@@ -110,18 +113,20 @@ function getRoundLabel(m: MatchRecord): string {
 }
 
 export function OnThisDay({ matches }: OnThisDayProps) {
-  const [overrideDate, setOverrideDate] = useState<string | undefined>();
-  const [overrideYear, setOverrideYear] = useState<number | undefined>();
+  const [overrideDate] = useState<string | undefined>(() => {
+    if (typeof window === "undefined") return undefined;
+    const value = new URLSearchParams(window.location.search).get("otd");
+    return value || undefined;
+  });
+  const [overrideYear] = useState<number | undefined>(() => {
+    if (typeof window === "undefined") return undefined;
+    const raw = new URLSearchParams(window.location.search).get("otdYear");
+    if (!raw) return undefined;
+    const parsed = Number(raw);
+    return Number.isFinite(parsed) ? parsed : undefined;
+  });
   const [showShareModal, setShowShareModal] = useState(false);
   const [collapsed, setCollapsed] = useState(true);
-
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const otd = params.get("otd");
-    const otdYear = params.get("otdYear");
-    if (otd) setOverrideDate(otd);
-    if (otdYear) setOverrideYear(Number(otdYear));
-  }, []);
 
   const memories = useMemo(() => {
     const today = new Date();
@@ -373,9 +378,38 @@ function OnThisDayShareModal({
   data: OnThisDayData;
   onClose: () => void;
 }) {
-  const [selectedTheme, setSelectedTheme] = useState(CARD_THEMES[0]);
+  const { isAdmin } = useAuth();
+  const { options: backgroundOptions } = useProfileBackgroundCatalog(Boolean(isAdmin));
+  const themeOptions = useMemo(
+    () => appendCatalogBackgroundThemes(CARD_THEMES, backgroundOptions, (background, index, base) => ({
+      ...base,
+      id: `catalog-${background.id}-${index}`,
+      label: background.label,
+      backgroundImage: background.imageUrl,
+    })),
+    [backgroundOptions],
+  );
+  const [selectedThemeId, setSelectedThemeId] = useState(CARD_THEMES[0].id);
+  const selectedTheme = useMemo(
+    () => themeOptions.find((theme) => theme.id === selectedThemeId) || themeOptions[0] || CARD_THEMES[0],
+    [themeOptions, selectedThemeId],
+  );
+  const [themeQuery, setThemeQuery] = useState("");
+  const [themeExpanded, setThemeExpanded] = useState(false);
+  const [themePage, setThemePage] = useState(1);
   const [shareStatus, setShareStatus] = useState<"idle" | "sharing" | "copied" | "text-copied">("idle");
   const cardRef = useRef<HTMLDivElement>(null);
+
+  const filteredThemes = useMemo(() => {
+    const q = themeQuery.trim().toLowerCase();
+    if (!q) return themeOptions;
+    return themeOptions.filter((theme) => theme.label.toLowerCase().includes(q) || theme.id.toLowerCase().includes(q));
+  }, [themeOptions, themeQuery]);
+
+  const displayedThemes = useMemo(() => {
+    if (!themeExpanded) return filteredThemes.slice(0, 12);
+    return filteredThemes.slice(0, themePage * 24);
+  }, [filteredThemes, themeExpanded, themePage]);
 
   async function handleCopy() {
     setShareStatus("sharing");
@@ -424,24 +458,34 @@ function OnThisDayShareModal({
         <div className="px-4 pb-3">
           <p className="text-[10px] text-fab-muted uppercase tracking-wider font-medium mb-2">Theme</p>
           <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
-            {CARD_THEMES.map((theme) => (
+            <input
+              type="text"
+              value={themeQuery}
+              onChange={(e) => {
+                setThemeQuery(e.target.value);
+                setThemePage(1);
+              }}
+              placeholder="Search backgrounds..."
+              className="col-span-3 sm:col-span-5 bg-fab-surface border border-fab-border text-fab-text text-xs rounded px-2 py-1.5 focus:outline-none focus:border-fab-gold"
+            />
+            {displayedThemes.map((theme) => (
               <button
                 key={theme.id}
-                onClick={() => setSelectedTheme(theme)}
+                onClick={() => setSelectedThemeId(theme.id)}
                 className={`rounded-lg p-2 text-center transition-all border ${
                   selectedTheme.id === theme.id
                     ? "border-fab-gold ring-1 ring-fab-gold/30"
                     : "border-fab-border hover:border-fab-muted"
                 }`}
               >
-                <div className="h-8 rounded-md overflow-hidden border border-white/10 mb-1.5 relative">
+                <div className="h-12 rounded-md overflow-hidden border border-white/10 mb-1.5 relative bg-fab-bg/70">
                   {theme.backgroundImage ? (
                     <>
                       <img
-                        src={buildOptimizedImageUrl(theme.backgroundImage, 260, 46)}
+                        src={buildOptimizedImageUrl(theme.backgroundImage, 360, 48)}
                         alt=""
-                        className="absolute inset-0 w-full h-full object-cover"
-                        style={{ objectPosition: resolveBackgroundPositionForImage(theme.backgroundImage) }}
+                        className="absolute inset-0 w-full h-full object-contain"
+                        style={{ objectPosition: "center center" }}
                         loading="lazy"
                         decoding="async"
                         fetchPriority="low"
@@ -457,6 +501,36 @@ function OnThisDayShareModal({
                 <p className="text-[10px] text-fab-muted leading-tight">{theme.label}</p>
               </button>
             ))}
+            {!themeExpanded && filteredThemes.length > 12 && (
+              <button
+                type="button"
+                onClick={() => {
+                  setThemeExpanded(true);
+                  setThemePage(1);
+                }}
+                className="col-span-3 sm:col-span-5 text-xs text-fab-gold hover:text-fab-gold-light transition-colors font-medium py-1"
+              >
+                Show all {filteredThemes.length} backgrounds
+              </button>
+            )}
+            {themeExpanded && (themePage * 24) < filteredThemes.length && (
+              <button
+                type="button"
+                onClick={() => setThemePage((prev) => prev + 1)}
+                className="col-span-3 sm:col-span-5 text-xs text-fab-gold hover:text-fab-gold-light transition-colors font-medium py-1"
+              >
+                Load more ({Math.min(24, filteredThemes.length - (themePage * 24))})
+              </button>
+            )}
+            {themeExpanded && (
+              <button
+                type="button"
+                onClick={() => setThemeExpanded(false)}
+                className="col-span-3 sm:col-span-5 text-xs text-fab-muted hover:text-fab-text transition-colors font-medium py-1"
+              >
+                Show less
+              </button>
+            )}
           </div>
         </div>
 

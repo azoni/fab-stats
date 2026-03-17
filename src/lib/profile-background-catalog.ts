@@ -24,7 +24,7 @@ const PROFILE_BACKGROUND_CATALOG_COLLECTION = "profileBackgroundCatalog";
 const CACHE_TTL_MS = 5 * 60 * 1000;
 const PERSIST_TTL_MS = 12 * 60 * 60 * 1000;
 const LOCAL_STORAGE_CACHE_KEY_PREFIX = "fab.profileBackgroundCatalog.v1";
-const MAX_CATALOG_OPTIONS = 300;
+const MAX_CATALOG_OPTIONS = 1000;
 const DEFAULT_STORAGE_BUCKET = "fab-stats-fc757.firebasestorage.app";
 
 type CatalogScope = "public" | "all";

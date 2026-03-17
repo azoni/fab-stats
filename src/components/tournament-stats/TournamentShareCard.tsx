@@ -1,9 +1,12 @@
 "use client";
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { copyCardImage, downloadCardImage } from "@/lib/share-image";
 import { logActivity } from "@/lib/activity-log";
 import { buildOptimizedImageUrl, resolveBackgroundPositionForImage } from "@/lib/profile-backgrounds";
 import { OrnamentalDivider, CornerFiligree, CardBackgroundPattern, InnerVignette } from "@/components/share/CardOrnaments";
+import { useAuth } from "@/contexts/AuthContext";
+import { useProfileBackgroundCatalog } from "@/hooks/useProfileBackgroundCatalog";
+import { appendCatalogBackgroundThemes } from "@/lib/catalog-share-themes";
 
 export interface TournamentShareData {
   playerName: string;
@@ -282,9 +285,38 @@ function ShareCardInner({ data, theme }: { data: TournamentShareData; theme: Tou
 }
 
 export function TournamentShareModal({ data, onClose }: { data: TournamentShareData; onClose: () => void }) {
+  const { isAdmin } = useAuth();
+  const { options: backgroundOptions } = useProfileBackgroundCatalog(Boolean(isAdmin));
   const cardRef = useRef<HTMLDivElement>(null);
-  const [selectedTheme, setSelectedTheme] = useState(THEMES[0]);
+  const themeOptions = useMemo(
+    () => appendCatalogBackgroundThemes(THEMES, backgroundOptions, (background, index, base) => ({
+      ...base,
+      id: `catalog-${background.id}-${index}`,
+      label: background.label,
+      backgroundImage: background.imageUrl,
+    })),
+    [backgroundOptions],
+  );
+  const [selectedThemeId, setSelectedThemeId] = useState(THEMES[0].id);
+  const selectedTheme = useMemo(
+    () => themeOptions.find((theme) => theme.id === selectedThemeId) || themeOptions[0] || THEMES[0],
+    [themeOptions, selectedThemeId],
+  );
+  const [themeQuery, setThemeQuery] = useState("");
+  const [themeExpanded, setThemeExpanded] = useState(false);
+  const [themePage, setThemePage] = useState(1);
   const [status, setStatus] = useState<"idle" | "copying" | "copied" | "downloaded">("idle");
+
+  const filteredThemes = useMemo(() => {
+    const q = themeQuery.trim().toLowerCase();
+    if (!q) return themeOptions;
+    return themeOptions.filter((theme) => theme.label.toLowerCase().includes(q) || theme.id.toLowerCase().includes(q));
+  }, [themeOptions, themeQuery]);
+
+  const displayedThemes = useMemo(() => {
+    if (!themeExpanded) return filteredThemes.slice(0, 12);
+    return filteredThemes.slice(0, themePage * 24);
+  }, [filteredThemes, themeExpanded, themePage]);
 
   async function handleCopy() {
     if (!cardRef.current) return;
@@ -333,24 +365,34 @@ export function TournamentShareModal({ data, onClose }: { data: TournamentShareD
         <div>
           <p className="text-[10px] text-fab-muted uppercase tracking-wider font-medium mb-2">Theme</p>
           <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-            {THEMES.map((theme) => (
+            <input
+              type="text"
+              value={themeQuery}
+              onChange={(e) => {
+                setThemeQuery(e.target.value);
+                setThemePage(1);
+              }}
+              placeholder="Search backgrounds..."
+              className="col-span-3 sm:col-span-4 bg-fab-surface border border-fab-border text-fab-text text-xs rounded px-2 py-1.5 focus:outline-none focus:border-fab-gold"
+            />
+            {displayedThemes.map((theme) => (
               <button
                 key={theme.id}
-                onClick={() => setSelectedTheme(theme)}
+                onClick={() => setSelectedThemeId(theme.id)}
                 className={`rounded-lg p-2 text-center transition-all border ${
                   selectedTheme.id === theme.id
                     ? "border-fab-gold ring-1 ring-fab-gold/30"
                     : "border-fab-border hover:border-fab-muted"
                 }`}
               >
-                <div className="h-8 rounded-md overflow-hidden border border-white/10 mb-1.5 relative">
+                <div className="h-12 rounded-md overflow-hidden border border-white/10 mb-1.5 relative bg-fab-bg/70">
                   {theme.backgroundImage ? (
                     <>
                       <img
-                        src={buildOptimizedImageUrl(theme.backgroundImage, 260, 46)}
+                        src={buildOptimizedImageUrl(theme.backgroundImage, 360, 48)}
                         alt=""
-                        className="absolute inset-0 w-full h-full object-cover"
-                        style={{ objectPosition: resolveBackgroundPositionForImage(theme.backgroundImage) }}
+                        className="absolute inset-0 w-full h-full object-contain"
+                        style={{ objectPosition: "center center" }}
                         loading="lazy"
                         decoding="async"
                         crossOrigin="anonymous"
@@ -365,6 +407,36 @@ export function TournamentShareModal({ data, onClose }: { data: TournamentShareD
                 <p className="text-[10px] text-fab-muted leading-tight">{theme.label}</p>
               </button>
             ))}
+            {!themeExpanded && filteredThemes.length > 12 && (
+              <button
+                type="button"
+                onClick={() => {
+                  setThemeExpanded(true);
+                  setThemePage(1);
+                }}
+                className="col-span-3 sm:col-span-4 text-xs text-fab-gold hover:text-fab-gold-light transition-colors font-medium py-1"
+              >
+                Show all {filteredThemes.length} backgrounds
+              </button>
+            )}
+            {themeExpanded && (themePage * 24) < filteredThemes.length && (
+              <button
+                type="button"
+                onClick={() => setThemePage((prev) => prev + 1)}
+                className="col-span-3 sm:col-span-4 text-xs text-fab-gold hover:text-fab-gold-light transition-colors font-medium py-1"
+              >
+                Load more ({Math.min(24, filteredThemes.length - (themePage * 24))})
+              </button>
+            )}
+            {themeExpanded && (
+              <button
+                type="button"
+                onClick={() => setThemeExpanded(false)}
+                className="col-span-3 sm:col-span-4 text-xs text-fab-muted hover:text-fab-text transition-colors font-medium py-1"
+              >
+                Show less
+              </button>
+            )}
           </div>
         </div>
 

@@ -38,7 +38,7 @@ export function useProfileBackgroundCatalog(isAdmin: boolean): UseProfileBackgro
   }, [isAdmin]);
 
   const options = useMemo(
-    () => allOptions.filter((opt) => opt.isActive !== false && (isAdmin || !opt.adminOnly)),
+    () => allOptions.filter((opt) => opt.isActive !== false && (isAdmin || !opt.adminOnly) && (isAdmin || !opt.unlockType)),
     [allOptions, isAdmin],
   );
 

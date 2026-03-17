@@ -72,8 +72,12 @@ function Convert-ManifestToOptions([string]$manifestPath) {
 }
 
 function Get-FirebaseAccessToken() {
-  try {
-    $nodeScript = @"
+  $configPath = Join-Path $env:USERPROFILE ".config\configstore\firebase-tools.json"
+  if (-not (Test-Path $configPath)) {
+    throw "Firebase CLI token cache not found at $configPath. Run `firebase login` first."
+  }
+
+  $nodeScript = @"
 const fs = require('fs');
 const path = require('path');
 const cfgPath = path.join(process.env.USERPROFILE, '.config', 'configstore', 'firebase-tools.json');
@@ -94,24 +98,12 @@ auth.getAccessToken(cfg.tokens.refresh_token, scopes).then((tokenData) => {
   process.exit(1);
 });
 "@
-    $cliToken = (& node -e $nodeScript 2>$null)
-    if ($LASTEXITCODE -eq 0 -and -not [string]::IsNullOrWhiteSpace($cliToken)) {
-      return $cliToken.Trim()
-    }
-  } catch {
-    # Fall back to cached token below.
-  }
 
-  $configPath = Join-Path $env:USERPROFILE ".config\configstore\firebase-tools.json"
-  if (-not (Test-Path $configPath)) {
-    throw "Firebase CLI token cache not found at $configPath. Run `firebase login` first."
+  $cliToken = (& node --no-deprecation -e $nodeScript 2>$null)
+  if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($cliToken)) {
+    throw "Unable to refresh Firebase access token from CLI cache. Run `firebase login --reauth`."
   }
-  $json = Get-Content $configPath | ConvertFrom-Json
-  $token = $json.tokens.access_token
-  if ([string]::IsNullOrWhiteSpace($token)) {
-    throw "No Firebase access token found in CLI cache."
-  }
-  return $token
+  return $cliToken.Trim()
 }
 
 function New-JpegThumbnail([string]$sourcePath, [string]$outputPath, [int]$targetWidth = 480, [long]$quality = 70L) {
