@@ -1,12 +1,13 @@
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "./firebase";
 
-export type ThemeName = "grimoire" | "leyline" | "rosetta";
+export type ThemeName = "grimoire" | "leyline" | "rosetta" | "shamrock";
 
 export const THEME_OPTIONS: { value: ThemeName; label: string; description: string }[] = [
   { value: "grimoire", label: "Grimoire", description: "Ancient spellbook, warm leather & candlelight" },
   { value: "leyline", label: "Leyline", description: "Arcane glass observatory, luminous & floating" },
   { value: "rosetta", label: "Rosetta", description: "Pure data terminal, sharp & monochrome" },
+  { value: "shamrock", label: "Shamrock", description: "St. Patrick's Day — luck of the Irish" },
 ];
 
 const CACHE_KEY = "fab_theme_config";

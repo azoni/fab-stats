@@ -57,6 +57,7 @@ const THEME_PREVIEWS: Record<ThemeName, { bg: string; surface: string; border: s
   grimoire: { bg: "#0e0c08", surface: "#1c1812", border: "#3e3528", accent: "#d4a54a", text: "#e6ddd0", muted: "#9a8e7a", radius: "4px" },
   leyline: { bg: "#08080f", surface: "#14142a", border: "#1e2050", accent: "#7b8fff", text: "#e0e4f0", muted: "#6b7094", radius: "10px" },
   rosetta: { bg: "#0a0a0a", surface: "#141414", border: "#262626", accent: "#f0f0f0", text: "#fafafa", muted: "#737373", radius: "2px" },
+  shamrock: { bg: "#071207", surface: "#0f1f0f", border: "#1e3a1e", accent: "#22c55e", text: "#d4edda", muted: "#6b9b6b", radius: "8px" },
 };
 
 function ThemePicker() {

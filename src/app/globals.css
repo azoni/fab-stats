@@ -1114,3 +1114,145 @@ table thead tr {
 [data-theme="rosetta"] .spotlight-card::after {
   display: none;
 }
+
+/* ═══════════════════════════════════════════════
+   SHAMROCK — St. Patrick's Day
+   ═══════════════════════════════════════════════ */
+
+[data-theme="shamrock"] {
+  --color-fab-bg: #071207;
+  --color-fab-surface: #0f1f0f;
+  --color-fab-surface-hover: #162a16;
+  --color-fab-border: #1e3a1e;
+  --color-fab-gold: #22c55e;
+  --color-fab-gold-light: #4ade80;
+  --color-fab-gold-dark: #15803d;
+  --color-fab-red: #7a2020;
+  --color-fab-red-light: #a33030;
+  --color-fab-crimson: #5c1515;
+  --color-fab-win: #fbbf24;
+  --color-fab-loss: #f87171;
+  --color-fab-draw: #a3e635;
+  --color-fab-text: #d4edda;
+  --color-fab-muted: #6b9b6b;
+  --color-fab-dim: #3d5c3d;
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.25rem;
+}
+
+/* Subtle clover pattern overlay */
+[data-theme="shamrock"] body::before {
+  display: none;
+}
+[data-theme="shamrock"] body::after {
+  opacity: 0.015;
+  background:
+    radial-gradient(circle at 25% 25%, #22c55e 1px, transparent 1px),
+    radial-gradient(circle at 75% 75%, #22c55e 1px, transparent 1px);
+  background-size: 60px 60px;
+}
+
+[data-theme="shamrock"] .text-fab-gold {
+  text-shadow: 0 0 14px rgba(34, 197, 94, 0.3),
+               0 0 40px rgba(34, 197, 94, 0.08);
+}
+
+[data-theme="shamrock"] h1,
+[data-theme="shamrock"] h2,
+[data-theme="shamrock"] h3 {
+  font-family: Georgia, 'Palatino Linotype', 'Book Antiqua', Palatino, serif;
+  letter-spacing: 0.02em;
+}
+
+[data-theme="shamrock"] ::selection {
+  background: rgba(34, 197, 94, 0.3);
+  color: #fff;
+}
+
+[data-theme="shamrock"] [class*="bg-fab-surface"][class*="border-fab-border"]:not(nav):not(td):not(tr) {
+  border-width: 1px;
+  box-shadow: inset 0 1px 0 rgba(34, 197, 94, 0.06),
+              0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="shamrock"] [class*="bg-fab-surface"][class*="border-fab-border"]:not(nav):hover {
+  border-color: rgba(34, 197, 94, 0.25);
+  box-shadow: inset 0 0 20px rgba(34, 197, 94, 0.04),
+              0 2px 12px rgba(0, 0, 0, 0.5);
+}
+
+[data-theme="shamrock"] .section-header::before {
+  background: rgba(34, 197, 94, 0.8);
+}
+[data-theme="shamrock"] .section-header::after {
+  background: linear-gradient(90deg, transparent 5%, rgba(34, 197, 94, 0.3) 20%, rgba(34, 197, 94, 0.4) 50%, rgba(34, 197, 94, 0.3) 80%, transparent 95%);
+}
+
+[data-theme="shamrock"] .bg-fab-gold {
+  letter-spacing: 0.03em;
+  font-weight: 700;
+  box-shadow: 0 3px 0 var(--color-fab-gold-dark),
+              0 6px 12px rgba(0, 0, 0, 0.3),
+              inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+[data-theme="shamrock"] .bg-fab-gold:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 0 var(--color-fab-gold-dark),
+              0 8px 16px rgba(34, 197, 94, 0.2),
+              inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+[data-theme="shamrock"] .bg-fab-gold:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 var(--color-fab-gold-dark);
+}
+
+[data-theme="shamrock"] .filter-pill-active {
+  box-shadow: 0 0 10px rgba(34, 197, 94, 0.15),
+              inset 0 0 6px rgba(34, 197, 94, 0.05);
+}
+
+[data-theme="shamrock"] table tbody tr:hover {
+  background-color: rgba(34, 197, 94, 0.04);
+}
+[data-theme="shamrock"] table thead tr {
+  background: linear-gradient(180deg, var(--color-fab-surface) 0%, rgba(15, 40, 15, 0.4) 100%);
+}
+
+[data-theme="shamrock"] input:focus,
+[data-theme="shamrock"] select:focus,
+[data-theme="shamrock"] textarea:focus {
+  border-color: rgba(34, 197, 94, 0.4);
+  box-shadow: 0 0 12px rgba(34, 197, 94, 0.08);
+}
+
+[data-theme="shamrock"] ::-webkit-scrollbar { width: 6px; }
+[data-theme="shamrock"] ::-webkit-scrollbar-thumb {
+  background: rgba(34, 197, 94, 0.25);
+  border-radius: 9999px;
+}
+[data-theme="shamrock"] ::-webkit-scrollbar-thumb:hover {
+  background: rgba(34, 197, 94, 0.4);
+}
+[data-theme="shamrock"] ::-webkit-scrollbar-track { background: transparent; }
+
+[data-theme="shamrock"] .nav-btn:hover { transform: none; }
+[data-theme="shamrock"] .nav-btn-log::before {
+  background: linear-gradient(90deg, transparent, #22c55e, #4ade80, #22c55e, transparent);
+}
+[data-theme="shamrock"] .nav-btn-log::after {
+  background: radial-gradient(ellipse at 50% 0%, rgba(34, 197, 94, 0.1) 0%, transparent 70%);
+}
+[data-theme="shamrock"] .nav-btn-log:hover {
+  border-color: rgba(34, 197, 94, 0.35);
+  box-shadow: 0 8px 30px -5px rgba(34, 197, 94, 0.2), 0 0 0 1px rgba(34, 197, 94, 0.06);
+}
+
+/* Spotlight cards get a shamrock glow */
+[data-theme="shamrock"] .spotlight-card::before {
+  background: conic-gradient(from 180deg, transparent 60%, rgba(34, 197, 94, 0.08) 80%, transparent 100%);
+}
+[data-theme="shamrock"] .spotlight-card::after {
+  background: radial-gradient(ellipse at 50% 0%, rgba(34, 197, 94, 0.06), transparent 60%);
+}
