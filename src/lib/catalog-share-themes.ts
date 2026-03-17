@@ -7,7 +7,33 @@ interface ThemeWithBackground {
 }
 
 function normalizeBackgroundKey(image?: string): string {
-  return (image || "").trim().toLowerCase();
+  const raw = (image || "").trim();
+  if (!raw) return "";
+
+  const cleanRaw = raw.split("#")[0].split("?")[0];
+
+  try {
+    const parsed = raw.startsWith("http://") || raw.startsWith("https://")
+      ? new URL(raw)
+      : new URL(raw, "https://fabstats.local");
+
+    if (parsed.hostname.toLowerCase() === "firebasestorage.googleapis.com") {
+      const match = parsed.pathname.match(/\/o\/(.+)$/);
+      if (match && match[1]) {
+        const objectPath = decodeURIComponent(match[1]).toLowerCase();
+        const objectName = objectPath.split("/").filter(Boolean).pop();
+        return objectName || objectPath;
+      }
+    }
+
+    const pathName = decodeURIComponent(parsed.pathname).toLowerCase();
+    const fileName = pathName.split("/").filter(Boolean).pop();
+    return fileName || pathName;
+  } catch {
+    const fallback = cleanRaw.toLowerCase();
+    const fileName = fallback.split("/").filter(Boolean).pop();
+    return fileName || fallback;
+  }
 }
 
 function makeUniqueThemeId(candidate: string, usedIds: Set<string>): string {

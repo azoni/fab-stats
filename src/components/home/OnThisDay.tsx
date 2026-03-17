@@ -378,6 +378,7 @@ function OnThisDayShareModal({
   data: OnThisDayData;
   onClose: () => void;
 }) {
+  const THEME_PAGE_SIZE = 16;
   const { isAdmin } = useAuth();
   const { options: backgroundOptions } = useProfileBackgroundCatalog(Boolean(isAdmin));
   const themeOptions = useMemo(
@@ -395,7 +396,6 @@ function OnThisDayShareModal({
     [themeOptions, selectedThemeId],
   );
   const [themeQuery, setThemeQuery] = useState("");
-  const [themeExpanded, setThemeExpanded] = useState(false);
   const [themePage, setThemePage] = useState(1);
   const [shareStatus, setShareStatus] = useState<"idle" | "sharing" | "copied" | "text-copied">("idle");
   const cardRef = useRef<HTMLDivElement>(null);
@@ -406,10 +406,13 @@ function OnThisDayShareModal({
     return themeOptions.filter((theme) => theme.label.toLowerCase().includes(q) || theme.id.toLowerCase().includes(q));
   }, [themeOptions, themeQuery]);
 
+  const totalThemePages = Math.max(1, Math.ceil(filteredThemes.length / THEME_PAGE_SIZE));
+  const currentThemePage = Math.min(themePage, totalThemePages);
+
   const displayedThemes = useMemo(() => {
-    if (!themeExpanded) return filteredThemes.slice(0, 12);
-    return filteredThemes.slice(0, themePage * 24);
-  }, [filteredThemes, themeExpanded, themePage]);
+    const start = (currentThemePage - 1) * THEME_PAGE_SIZE;
+    return filteredThemes.slice(start, start + THEME_PAGE_SIZE);
+  }, [filteredThemes, currentThemePage, THEME_PAGE_SIZE]);
 
   async function handleCopy() {
     setShareStatus("sharing");
@@ -489,7 +492,6 @@ function OnThisDayShareModal({
                         loading="lazy"
                         decoding="async"
                         fetchPriority="low"
-                        crossOrigin="anonymous"
                       />
                       <div className="absolute inset-0" style={{ backgroundColor: `${theme.surface}99` }} />
                     </>
@@ -501,35 +503,26 @@ function OnThisDayShareModal({
                 <p className="text-[10px] text-fab-muted leading-tight">{theme.label}</p>
               </button>
             ))}
-            {!themeExpanded && filteredThemes.length > 12 && (
-              <button
-                type="button"
-                onClick={() => {
-                  setThemeExpanded(true);
-                  setThemePage(1);
-                }}
-                className="col-span-3 sm:col-span-5 text-xs text-fab-gold hover:text-fab-gold-light transition-colors font-medium py-1"
-              >
-                Show all {filteredThemes.length} backgrounds
-              </button>
-            )}
-            {themeExpanded && (themePage * 24) < filteredThemes.length && (
-              <button
-                type="button"
-                onClick={() => setThemePage((prev) => prev + 1)}
-                className="col-span-3 sm:col-span-5 text-xs text-fab-gold hover:text-fab-gold-light transition-colors font-medium py-1"
-              >
-                Load more ({Math.min(24, filteredThemes.length - (themePage * 24))})
-              </button>
-            )}
-            {themeExpanded && (
-              <button
-                type="button"
-                onClick={() => setThemeExpanded(false)}
-                className="col-span-3 sm:col-span-5 text-xs text-fab-muted hover:text-fab-text transition-colors font-medium py-1"
-              >
-                Show less
-              </button>
+            {filteredThemes.length > THEME_PAGE_SIZE && (
+              <div className="col-span-3 sm:col-span-5 flex items-center justify-between gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setThemePage((prev) => Math.max(1, prev - 1))}
+                  disabled={currentThemePage <= 1}
+                  className="text-xs px-2 py-1 rounded border border-fab-border text-fab-muted disabled:opacity-40 disabled:cursor-not-allowed hover:text-fab-text"
+                >
+                  Prev
+                </button>
+                <span className="text-[10px] text-fab-dim">Page {currentThemePage} / {totalThemePages}</span>
+                <button
+                  type="button"
+                  onClick={() => setThemePage((prev) => Math.min(totalThemePages, prev + 1))}
+                  disabled={currentThemePage >= totalThemePages}
+                  className="text-xs px-2 py-1 rounded border border-fab-border text-fab-muted disabled:opacity-40 disabled:cursor-not-allowed hover:text-fab-text"
+                >
+                  Next
+                </button>
+              </div>
             )}
           </div>
         </div>
