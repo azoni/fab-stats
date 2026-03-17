@@ -14,6 +14,7 @@ import { computeH2HForUser } from "@/lib/h2h";
 import { updateCommunityHeroMatchups } from "@/lib/hero-matchups";
 import type { GemMetadata } from "@/lib/gem-import";
 import { updateLeaderboardEntry } from "@/lib/leaderboard";
+import { trackImportMethod } from "@/lib/analytics";
 import { getMatchesByUserId } from "@/lib/firestore-storage";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -419,6 +420,7 @@ export default function ImportPage() {
         .slice(0, 3)
         .map(([hero]) => hero);
       createImportFeedEvent(profile, count, topHeroes, method || undefined).catch(() => {});
+      trackImportMethod(method || "unknown", count);
       getMatchesByUserId(user.uid)
         .then((allUserMatches) => updateLeaderboardEntry(profile, allUserMatches))
         .catch(() => {});

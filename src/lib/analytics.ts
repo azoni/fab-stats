@@ -197,3 +197,22 @@ export async function getAnalytics(range: AnalyticsTimeRange = "all"): Promise<{
 
   return { pageViews, creatorClicks };
 }
+
+/** Track an import method usage */
+export function trackImportMethod(method: string, matchCount: number) {
+  if (!method) return;
+  try {
+    setDoc(doc(db, "analytics", "importMethods"), {
+      [method]: increment(matchCount),
+      [`${method}_count`]: increment(1),
+    }, { merge: true }).catch(() => {});
+  } catch {
+    // Fire and forget
+  }
+}
+
+/** Read import method stats (admin only) */
+export async function getImportMethodStats(): Promise<Record<string, number>> {
+  const snap = await getDoc(doc(db, "analytics", "importMethods"));
+  return (snap.data() as Record<string, number>) || {};
+}

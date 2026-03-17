@@ -9,7 +9,7 @@ import { getCreators, saveCreators } from "@/lib/creators";
 import { getEvents, saveEvents } from "@/lib/featured-events";
 import { lookupEvents, type LookupEvent } from "@/lib/event-lookup";
 import { getOrCreateConversation, sendMessage, sendMessageNotification } from "@/lib/messages";
-import { getAnalytics, getDailyPageViewTrend, type AnalyticsTimeRange } from "@/lib/analytics";
+import { getAnalytics, getDailyPageViewTrend, getImportMethodStats, type AnalyticsTimeRange } from "@/lib/analytics";
 import { syncProfileBackgroundCatalogFromDefaults } from "@/lib/profile-background-catalog";
 import { getBanner, saveBanner, type BannerConfig } from "@/lib/banner";
 import { getAllPolls, getPollResults, getPollVoters, savePoll, removePoll, clearVotes, mergeOptions, closePredictionVoting, reopenPredictionVoting, resolvePrediction } from "@/lib/polls";
@@ -81,6 +81,7 @@ export default function AdminPage() {
   const [broadcastProgress, setBroadcastProgress] = useState("");
   const [broadcastResult, setBroadcastResult] = useState("");
   const [analyticsData, setAnalyticsData] = useState<{ pageViews: Record<string, number>; creatorClicks: Record<string, number> } | null>(null);
+  const [importMethods, setImportMethods] = useState<Record<string, number>>({});
   const [fixingDates, setFixingDates] = useState(false);
   const [fixDatesProgress, setFixDatesProgress] = useState("");
   const [linkingMatches, setLinkingMatches] = useState(false);
@@ -182,7 +183,7 @@ export default function AdminPage() {
     setFetching(true);
     setError("");
     try {
-      const [result, fb, cr, ev, analytics, polls, bannerData, badges, muted, showcaseData, themeDefault, chatStats, seasonsData, deletedCount] = await Promise.all([getAdminDashboardData(), getAllFeedback(), getCreators(), getEvents(), getAnalytics(), getAllPolls(), getBanner(), getAllBadgeAssignments(), getMutedUserIds(), getEventShowcase(), getDefaultTheme(), getChatGlobalStats(), getSeasons(), getDeletedAccountCount()]);
+      const [result, fb, cr, ev, analytics, polls, bannerData, badges, muted, showcaseData, themeDefault, chatStats, seasonsData, deletedCount, importMethodData] = await Promise.all([getAdminDashboardData(), getAllFeedback(), getCreators(), getEvents(), getAnalytics(), getAllPolls(), getBanner(), getAllBadgeAssignments(), getMutedUserIds(), getEventShowcase(), getDefaultTheme(), getChatGlobalStats(), getSeasons(), getDeletedAccountCount(), getImportMethodStats()]);
       setData(result);
       setAiCost(chatStats);
       setDeletedAccounts(deletedCount);
@@ -198,6 +199,7 @@ export default function AdminPage() {
         players: e.players || (e.playerUsernames || []).map((u: string) => ({ name: u, username: u })),
       })));
       setAnalyticsData(analytics);
+      setImportMethods(importMethodData);
       setAllPolls(polls);
       setBadgeAssignments(badges);
       setMutedIds(new Set(muted));
@@ -569,6 +571,38 @@ export default function AdminPage() {
                   <MetricCard label="AI Chat Cost" value={aiCost.totalCost.toFixed(4)} prefix="$" subtext={`${aiCost.totalMessages} msgs · ${Object.keys(aiCost.users).length} users`} />
                 </button>
                 {deletedAccounts > 0 && <MetricCard label="Deleted Accounts" value={deletedAccounts} />}
+              </div>
+            );
+          })()}
+
+          {/* Import Methods */}
+          {Object.keys(importMethods).length > 0 && (() => {
+            const methods = ["extension", "paste", "csv", "bookmarklet", "manual", "auto-sync"] as const;
+            const totalMatches = methods.reduce((s, m) => s + (importMethods[m] || 0), 0);
+            const totalImports = methods.reduce((s, m) => s + (importMethods[`${m}_count`] || 0), 0);
+            return (
+              <div className="bg-fab-surface border border-fab-border rounded-lg p-4 mb-6">
+                <h3 className="text-sm font-semibold text-fab-text mb-3">Import Methods</h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {methods.map((m) => {
+                    const matches = importMethods[m] || 0;
+                    const imports = importMethods[`${m}_count`] || 0;
+                    if (matches === 0 && imports === 0) return null;
+                    const pct = totalMatches > 0 ? ((matches / totalMatches) * 100).toFixed(1) : "0";
+                    return (
+                      <div key={m} className="bg-fab-bg rounded-md px-3 py-2">
+                        <p className="text-xs text-fab-dim capitalize">{m}</p>
+                        <p className="text-sm font-bold text-fab-text">{matches.toLocaleString()} <span className="text-fab-dim font-normal">matches</span></p>
+                        <p className="text-[10px] text-fab-muted">{imports} imports · {pct}%</p>
+                      </div>
+                    );
+                  })}
+                  <div className="bg-fab-bg rounded-md px-3 py-2">
+                    <p className="text-xs text-fab-dim">Total</p>
+                    <p className="text-sm font-bold text-fab-text">{totalMatches.toLocaleString()} <span className="text-fab-dim font-normal">matches</span></p>
+                    <p className="text-[10px] text-fab-muted">{totalImports} imports</p>
+                  </div>
+                </div>
               </div>
             );
           })()}
