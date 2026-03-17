@@ -3,6 +3,7 @@ import { useCallback, useMemo, useState } from "react";
 import type { ProfileBackgroundOption } from "@/lib/profile-backgrounds";
 import { buildOptimizedImageUrl, NONE_BACKGROUND_ID, DEFAULT_BACKGROUND_ID } from "@/lib/profile-backgrounds";
 import { useProfileBackgroundCatalog } from "@/hooks/useProfileBackgroundCatalog";
+import { deleteProfileBackgroundFromStorage, updateProfileBackgroundCatalogEntry } from "@/lib/profile-background-catalog";
 
 interface BackgroundChooserProps {
   selectedId?: string;
@@ -19,13 +20,15 @@ function toVisualKey(opt: ProfileBackgroundOption): string {
 
 export function BackgroundChooser({ selectedId, isAdmin, onSelect, disabled }: BackgroundChooserProps) {
   const selected = selectedId || DEFAULT_BACKGROUND_ID;
-  const { options, loading } = useProfileBackgroundCatalog(isAdmin);
+  const { options, loading, refreshCatalog } = useProfileBackgroundCatalog(isAdmin);
   const [previewMode, setPreviewMode] = useState<"fit" | "fill">("fit");
   const [searchQuery, setSearchQuery] = useState("");
   const [hideDuplicateVisuals, setHideDuplicateVisuals] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [brokenPreviewIds, setBrokenPreviewIds] = useState<Record<string, true>>({});
   const [failedThumbIds, setFailedThumbIds] = useState<Record<string, true>>({});
+  const [adminActionById, setAdminActionById] = useState<Record<string, "saving" | "deleting">>({});
+  const [adminActionError, setAdminActionError] = useState<string | null>(null);
   const [adminVisibilityFilter, setAdminVisibilityFilter] = useState<"all" | "public" | "admin">("all");
   const [adminUnlockFilter, setAdminUnlockFilter] = useState<"all" | "open" | "gated">("all");
   const [adminKindFilter, setAdminKindFilter] = useState<"all" | "key-art" | "playmat" | "hero-art">("all");
@@ -33,6 +36,24 @@ export function BackgroundChooser({ selectedId, isAdmin, onSelect, disabled }: B
   const markPreviewBroken = useCallback((previewKey: string) => {
     setBrokenPreviewIds((prev) => (prev[previewKey] ? prev : { ...prev, [previewKey]: true }));
   }, []);
+
+  const runAdminAction = useCallback(async (id: string, action: "saving" | "deleting", fn: () => Promise<void>) => {
+    setAdminActionError(null);
+    setAdminActionById((prev) => ({ ...prev, [id]: action }));
+    try {
+      await fn();
+      await refreshCatalog();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Background action failed.";
+      setAdminActionError(message);
+    } finally {
+      setAdminActionById((prev) => {
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      });
+    }
+  }, [refreshCatalog]);
 
   const filteredOptions = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -211,19 +232,23 @@ export function BackgroundChooser({ selectedId, isAdmin, onSelect, disabled }: B
         </button>
 
         {displayedOptions.map((opt) => {
-            const previewKey = `${opt.id}:${opt.thumbnailUrl || ""}:${opt.imageUrl}`;
-            return (
+          const previewKey = `${opt.id}:${opt.thumbnailUrl || ""}:${opt.imageUrl}`;
+          const isActing = Boolean(adminActionById[opt.id]);
+          return (
+            <div
+              key={opt.id}
+              className={`rounded-lg p-2 text-left transition-all border ${
+                selected === opt.id
+                  ? "border-fab-gold ring-1 ring-fab-gold/30"
+                  : "border-fab-border hover:border-fab-muted"
+              } ${disabled ? "opacity-60" : ""}`}
+              title={opt.label}
+            >
               <button
-                key={opt.id}
                 type="button"
                 onClick={() => onSelect(opt.id)}
-                disabled={disabled}
-                className={`rounded-lg p-2 text-left transition-all border ${
-                  selected === opt.id
-                    ? "border-fab-gold ring-1 ring-fab-gold/30"
-                    : "border-fab-border hover:border-fab-muted"
-                } ${disabled ? "opacity-60 cursor-not-allowed" : ""}`}
-                title={opt.label}
+                disabled={disabled || isActing}
+                className={`w-full text-left ${disabled || isActing ? "cursor-not-allowed" : ""}`}
               >
                 <div className="h-20 rounded-md overflow-hidden border border-white/10 mb-1.5 relative bg-fab-bg/70">
                   {!brokenPreviewIds[previewKey] && (
@@ -257,8 +282,11 @@ export function BackgroundChooser({ selectedId, isAdmin, onSelect, disabled }: B
                   )}
                 </div>
                 <p className="text-[10px] text-fab-muted leading-tight">{opt.label}</p>
-                {isAdmin && (
-                  <div className="mt-1 flex items-center gap-1 flex-wrap">
+              </button>
+
+              {isAdmin && (
+                <div className="mt-1.5 space-y-1">
+                  <div className="flex items-center gap-1 flex-wrap">
                     <span className={`text-[9px] px-1 rounded border ${opt.adminOnly ? "border-amber-500/40 text-amber-300" : "border-green-500/40 text-green-300"}`}>
                       {opt.adminOnly ? "admin" : "public"}
                     </span>
@@ -268,10 +296,41 @@ export function BackgroundChooser({ selectedId, isAdmin, onSelect, disabled }: B
                       </span>
                     )}
                   </div>
-                )}
-              </button>
-            );
-          })}
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <button
+                      type="button"
+                      disabled={isActing || disabled}
+                      onClick={() => {
+                        void runAdminAction(opt.id, "saving", async () => {
+                          await updateProfileBackgroundCatalogEntry(opt.id, { adminOnly: !opt.adminOnly });
+                        });
+                      }}
+                      className="text-[10px] px-1.5 py-0.5 rounded border border-fab-border text-fab-muted hover:text-fab-text disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {adminActionById[opt.id] === "saving" ? "Saving..." : (opt.adminOnly ? "Make Public" : "Admin Only")}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={isActing || disabled}
+                      onClick={() => {
+                        if (!window.confirm(`Delete \"${opt.label}\" from Firebase Storage and hide it from chooser?`)) return;
+                        void runAdminAction(opt.id, "deleting", async () => {
+                          await deleteProfileBackgroundFromStorage(opt);
+                          if (selected === opt.id) {
+                            onSelect(NONE_BACKGROUND_ID);
+                          }
+                        });
+                      }}
+                      className="text-[10px] px-1.5 py-0.5 rounded border border-rose-500/40 text-rose-300 hover:text-rose-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {adminActionById[opt.id] === "deleting" ? "Deleting..." : "Delete"}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
 
       {totalPages > 1 && (
@@ -314,6 +373,9 @@ export function BackgroundChooser({ selectedId, isAdmin, onSelect, disabled }: B
 
       {isAdmin && dedupedOptions.length === 0 && (
         <p className="mt-2 text-[10px] text-fab-dim">No backgrounds match current filters.</p>
+      )}
+      {isAdmin && adminActionError && (
+        <p className="mt-1 text-[11px] text-rose-300">{adminActionError}</p>
       )}
       {loading && <p className="mt-2 text-[10px] text-fab-dim">Loading background catalog...</p>}
     </div>

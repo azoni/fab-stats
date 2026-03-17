@@ -11,7 +11,8 @@ import {
   writeBatch,
   type QueryConstraint,
 } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { deleteObject, getStorage, ref as storageRef } from "firebase/storage";
+import { app, db } from "@/lib/firebase";
 import {
   PROFILE_BACKGROUND_OPTIONS,
   setRuntimeProfileBackgroundOptions,
@@ -110,6 +111,32 @@ function isAllowedStorageBackgroundUrl(url: string, folder: "full" | "thumb"): b
 
   const alt = parsed.searchParams.get("alt");
   return alt === null || alt === "media";
+}
+
+function parseStorageBackgroundObject(
+  url: string,
+  folder: "full" | "thumb",
+): { bucket: string; objectPath: string } | null {
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    return null;
+  }
+
+  if (parsed.origin !== "https://firebasestorage.googleapis.com") return null;
+  const pathMatch = parsed.pathname.match(/^\/v0\/b\/([^/]+)\/o\/(.+)$/);
+  if (!pathMatch) return null;
+
+  const bucket = decodeURIComponent(pathMatch[1]);
+  if (!getAllowedStorageBuckets().has(bucket)) return null;
+
+  const objectPath = decodeURIComponent(pathMatch[2]);
+  const expectedPrefix = `profile-backgrounds/${folder}/`;
+  if (!objectPath.startsWith(expectedPrefix)) return null;
+  if (!/\.(jpg|jpeg|png|webp)$/i.test(objectPath)) return null;
+
+  return { bucket, objectPath };
 }
 
 function isAllowedCatalogImageUrl(url: string, folder: "full" | "thumb"): boolean {
@@ -468,6 +495,35 @@ export async function updateProfileBackgroundCatalogEntry(
 
   await updateDoc(doc(db, PROFILE_BACKGROUND_CATALOG_COLLECTION, id), payload);
   invalidateProfileBackgroundCatalogCache();
+}
+
+async function deleteStorageObjectIfPresent(bucket: string, objectPath: string): Promise<void> {
+  try {
+    const storage = getStorage(app, `gs://${bucket}`);
+    await deleteObject(storageRef(storage, objectPath));
+  } catch (error) {
+    const code = typeof error === "object" && error && "code" in error ? String((error as { code?: string }).code) : "";
+    if (code === "storage/object-not-found") return;
+    throw error;
+  }
+}
+
+export async function deleteProfileBackgroundFromStorage(background: ProfileBackgroundOption): Promise<void> {
+  const full = parseStorageBackgroundObject(background.imageUrl, "full");
+  const thumb = background.thumbnailUrl ? parseStorageBackgroundObject(background.thumbnailUrl, "thumb") : null;
+
+  const deleteJobs: Promise<void>[] = [];
+
+  if (full) {
+    deleteJobs.push(deleteStorageObjectIfPresent(full.bucket, full.objectPath));
+  }
+
+  if (thumb && (!full || thumb.bucket !== full.bucket || thumb.objectPath !== full.objectPath)) {
+    deleteJobs.push(deleteStorageObjectIfPresent(thumb.bucket, thumb.objectPath));
+  }
+
+  await Promise.all(deleteJobs);
+  await updateProfileBackgroundCatalogEntry(background.id, { isActive: false });
 }
 
 function buildStorageMediaUrl(bucket: string, objectPath: string): string {

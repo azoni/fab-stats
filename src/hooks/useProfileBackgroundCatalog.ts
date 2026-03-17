@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { ProfileBackgroundOption } from "@/lib/profile-backgrounds";
 import { getCachedProfileBackgroundCatalog, loadProfileBackgroundCatalog } from "@/lib/profile-background-catalog";
 
@@ -8,6 +8,7 @@ interface UseProfileBackgroundCatalogResult {
   options: ProfileBackgroundOption[];
   allOptions: ProfileBackgroundOption[];
   loading: boolean;
+  refreshCatalog: () => Promise<void>;
 }
 
 export function useProfileBackgroundCatalog(isAdmin: boolean): UseProfileBackgroundCatalogResult {
@@ -15,6 +16,18 @@ export function useProfileBackgroundCatalog(isAdmin: boolean): UseProfileBackgro
     () => getCachedProfileBackgroundCatalog({ includeAdmin: isAdmin }),
   );
   const [loading, setLoading] = useState(true);
+
+  const refreshCatalog = useCallback(async () => {
+    setLoading(true);
+    try {
+      const catalog = await loadProfileBackgroundCatalog({ includeAdmin: isAdmin, forceRefresh: true });
+      setAllOptions(catalog);
+    } catch {
+      setAllOptions(getCachedProfileBackgroundCatalog({ includeAdmin: isAdmin }));
+    } finally {
+      setLoading(false);
+    }
+  }, [isAdmin]);
 
   useEffect(() => {
     let active = true;
@@ -42,5 +55,5 @@ export function useProfileBackgroundCatalog(isAdmin: boolean): UseProfileBackgro
     [allOptions, isAdmin],
   );
 
-  return { options, allOptions, loading };
+  return { options, allOptions, loading, refreshCatalog };
 }
