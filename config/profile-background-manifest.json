@@ -60,7 +60,7 @@
         "label":  "Rathe Alt Key Art",
         "kind":  "key-art",
         "focusPosition":  "center top",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "file":  "wtr-key-art-v2.jpg"
     },
     {
@@ -68,7 +68,7 @@
         "label":  "The Hunted",
         "kind":  "key-art",
         "focusPosition":  "center top",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "file":  "hunted-key-art.jpg"
     },
     {
@@ -76,7 +76,7 @@
         "label":  "Cindra (The Hunted)",
         "kind":  "hero-art",
         "focusPosition":  "50% 18%",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "file":  "hunted-cindra-adult.jpg"
     },
     {
@@ -84,7 +84,7 @@
         "label":  "Fang (The Hunted)",
         "kind":  "hero-art",
         "focusPosition":  "50% 20%",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "file":  "hunted-fang-adult.jpg"
     },
     {
@@ -92,7 +92,7 @@
         "label":  "Arakni (The Hunted)",
         "kind":  "hero-art",
         "focusPosition":  "50% 22%",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "file":  "hunted-arakni-adult.jpg"
     },
     {
@@ -100,7 +100,7 @@
         "label":  "Marlynn (High Seas)",
         "kind":  "hero-art",
         "focusPosition":  "52% 18%",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "file":  "high-seas-marlynn.jpg"
     },
     {
@@ -108,7 +108,7 @@
         "label":  "Puffin (High Seas)",
         "kind":  "hero-art",
         "focusPosition":  "52% 20%",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "file":  "high-seas-puffin.jpg"
     },
     {
@@ -116,7 +116,7 @@
         "label":  "Gravy Bones (High Seas)",
         "kind":  "hero-art",
         "focusPosition":  "50% 20%",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "file":  "high-seas-gravybones.jpg"
     },
     {
@@ -124,7 +124,7 @@
         "label":  "1Hp Keyart Dnhz 720X392",
         "kind":  "key-art",
         "focusPosition":  "center top",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2025/06/1hp_keyart_dnhz-720x392.jpg"
     },
     {
@@ -132,7 +132,7 @@
         "label":  "25 07 Gempack 3 Carousel",
         "kind":  "key-art",
         "focusPosition":  "center center",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2025/08/25_07_GEMPACK-3_CAROUSEL-2000x700.jpg"
     },
     {
@@ -140,7 +140,7 @@
         "label":  "Ad Ziggy Marketing Tiles 01",
         "kind":  "key-art",
         "focusPosition":  "center top",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/extracted/cdn.fabtcg.com/uploads/2026/03/ad_zyggy_marketing_en/ad_zyggy_marketing_en/ad_Ziggy_marketing_tiles_01.jpg"
     },
     {
@@ -148,7 +148,7 @@
         "label":  "Ad Ziggy Marketing Tiles 02",
         "kind":  "key-art",
         "focusPosition":  "center top",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/extracted/cdn.fabtcg.com/uploads/2026/03/ad_zyggy_marketing_en/ad_zyggy_marketing_en/ad_Ziggy_marketing_tiles_02.jpg"
     },
     {
@@ -156,7 +156,7 @@
         "label":  "Ad Ziggy Marketing Tiles 03",
         "kind":  "key-art",
         "focusPosition":  "center top",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/extracted/cdn.fabtcg.com/uploads/2026/03/ad_zyggy_marketing_en/ad_zyggy_marketing_en/ad_Ziggy_marketing_tiles_03.jpg"
     },
     {
@@ -164,7 +164,7 @@
         "label":  "Ad Ziggy Marketing Tiles 04",
         "kind":  "hero-art",
         "focusPosition":  "50% 18%",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/extracted/cdn.fabtcg.com/uploads/2026/03/ad_zyggy_marketing_en/ad_zyggy_marketing_en/ad_Ziggy_marketing_tiles_04.jpg"
     },
     {
@@ -172,7 +172,7 @@
         "label":  "Ad Ziggy Marketing Tiles Eml6",
         "kind":  "key-art",
         "focusPosition":  "center top",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/extracted/cdn.fabtcg.com/uploads/2026/03/ad_zyggy_marketing_en/ad_zyggy_marketing_en/ad_Ziggy_marketing_tiles_EML6.jpg"
     },
     {
@@ -180,7 +180,7 @@
         "label":  "Ad Ziggy Marketing Tiles Jp 01",
         "kind":  "key-art",
         "focusPosition":  "center top",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/extracted/cdn.fabtcg.com/uploads/2026/03/ad_zyggy_marketing_jp/ad_zyggy_marketing_jp/ad_Ziggy_marketing_tiles JP_01.jpg"
     },
     {
@@ -188,7 +188,7 @@
         "label":  "Ad Ziggy Marketing Tiles Jp 02",
         "kind":  "key-art",
         "focusPosition":  "center top",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/extracted/cdn.fabtcg.com/uploads/2026/03/ad_zyggy_marketing_jp/ad_zyggy_marketing_jp/ad_Ziggy_marketing_tiles JP_02.jpg"
     },
     {
@@ -196,7 +196,7 @@
         "label":  "Ad Ziggy Marketing Tiles Jp 03",
         "kind":  "key-art",
         "focusPosition":  "center top",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/extracted/cdn.fabtcg.com/uploads/2026/03/ad_zyggy_marketing_jp/ad_zyggy_marketing_jp/ad_Ziggy_marketing_tiles JP_03.jpg"
     },
     {
@@ -204,7 +204,7 @@
         "label":  "Ad Ziggy Marketing Tiles Jp 03 720X378",
         "kind":  "key-art",
         "focusPosition":  "center top",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2026/03/ad_Ziggy_marketing_tiles-JP_03-720x378.jpg"
     },
     {
@@ -212,7 +212,7 @@
         "label":  "Ad Ziggy Marketing Tiles Jp 04",
         "kind":  "hero-art",
         "focusPosition":  "50% 18%",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/extracted/cdn.fabtcg.com/uploads/2026/03/ad_zyggy_marketing_jp/ad_zyggy_marketing_jp/ad_Ziggy_marketing_tiles JP_04.jpg"
     },
     {
@@ -220,7 +220,7 @@
         "label":  "Ad Ziggy Marketing Tiles Jp Eml6",
         "kind":  "key-art",
         "focusPosition":  "center top",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/extracted/cdn.fabtcg.com/uploads/2026/03/ad_zyggy_marketing_jp/ad_zyggy_marketing_jp/ad_Ziggy_marketing_tiles JP_EML6.jpg"
     },
     {
@@ -228,7 +228,7 @@
         "label":  "Ad Ziggy Marketing Tiles Jp Story5",
         "kind":  "hero-art",
         "focusPosition":  "50% 18%",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/extracted/cdn.fabtcg.com/uploads/2026/03/ad_zyggy_marketing_jp/ad_zyggy_marketing_jp/ad_Ziggy_marketing_tiles JP_STORY5.jpg"
     },
     {
@@ -236,7 +236,7 @@
         "label":  "Ad Ziggy Marketing Tiles Jp Stream1",
         "kind":  "key-art",
         "focusPosition":  "center top",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/extracted/cdn.fabtcg.com/uploads/2026/03/ad_zyggy_marketing_jp/ad_zyggy_marketing_jp/ad_Ziggy_marketing_tiles JP_STREAM1.jpg"
     },
     {
@@ -244,7 +244,7 @@
         "label":  "Ad Ziggy Marketing Tiles Story5",
         "kind":  "hero-art",
         "focusPosition":  "50% 18%",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/extracted/cdn.fabtcg.com/uploads/2026/03/ad_zyggy_marketing_en/ad_zyggy_marketing_en/ad_Ziggy_marketing_tiles_STORY5.jpg"
     },
     {
@@ -252,7 +252,7 @@
         "label":  "Ad Ziggy Marketing Tiles Stream1",
         "kind":  "key-art",
         "focusPosition":  "center top",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/extracted/cdn.fabtcg.com/uploads/2026/03/ad_zyggy_marketing_en/ad_zyggy_marketing_en/ad_Ziggy_marketing_tiles_STREAM1.jpg"
     },
     {
@@ -260,7 +260,7 @@
         "label":  "Ad Zyggy",
         "kind":  "key-art",
         "focusPosition":  "center center",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2026/03/AD-ZYGGY.jpg"
     },
     {
@@ -268,7 +268,7 @@
         "label":  "Article Cover 21 720X540",
         "kind":  "key-art",
         "focusPosition":  "center top",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2026/02/Article-Cover-21-720x540.png"
     },
     {
@@ -276,7 +276,7 @@
         "label":  "Azalea Cover Lvzmgxt.Original 666X560",
         "kind":  "hero-art",
         "focusPosition":  "50% 18%",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2026/01/azalea_cover_lVzmgxT.original-666x560.jpg"
     },
     {
@@ -284,7 +284,7 @@
         "label":  "Boltyn Social Img 706X560",
         "kind":  "key-art",
         "focusPosition":  "center top",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2025/12/boltyn_social_img-706x560.jpg"
     },
     {
@@ -292,7 +292,7 @@
         "label":  "Bright Lights Button .Original 718X560",
         "kind":  "key-art",
         "focusPosition":  "center top",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2026/01/bright_lights_button_.original-718x560.png"
     },
     {
@@ -300,7 +300,7 @@
         "label":  "Brisbane",
         "kind":  "key-art",
         "focusPosition":  "center center",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2026/03/Brisbane-scaled.png"
     },
     {
@@ -308,7 +308,7 @@
         "label":  "Compendium Of Rathe Trailer Hero Mobile 720X465",
         "kind":  "key-art",
         "focusPosition":  "center top",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2026/02/compendium-of-rathe-trailer-hero-mobile-720x465.jpg"
     },
     {
@@ -316,7 +316,7 @@
         "label":  "Cropped Fab Colour E1753248389224 1",
         "kind":  "key-art",
         "focusPosition":  "center top",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2025/10/cropped-FAB_Colour-e1753248389224-1.png"
     },
     {
@@ -324,7 +324,7 @@
         "label":  "Dash Io",
         "kind":  "key-art",
         "focusPosition":  "center center",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2025/06/dash_io.jpg"
     },
     {
@@ -332,7 +332,7 @@
         "label":  "Dash Io Hero Shot 679X1025",
         "kind":  "hero-art",
         "focusPosition":  "50% 18%",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2025/10/dash-io-hero-shot-679x1025.jpeg"
     },
     {
@@ -340,7 +340,7 @@
         "label":  "Dtd Button 720X540",
         "kind":  "key-art",
         "focusPosition":  "center top",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2026/01/dtd-button-720x540.png"
     },
     {
@@ -348,7 +348,7 @@
         "label":  "Dyn Art Arakni Min.Width 10000 1 679X1025",
         "kind":  "hero-art",
         "focusPosition":  "50% 18%",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2026/03/dyn_art_Arakni_min.width-10000-1-679x1025.jpg"
     },
     {
@@ -356,7 +356,7 @@
         "label":  "Dyn Key Art Ncopy.Width 10000.Min 1000X300.Format Webp Copia 720X392",
         "kind":  "playmat",
         "focusPosition":  "center center",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2025/08/dyn_key_art_ncopy.width-10000.min-1000x300.format-webp-copia-720x392.png"
     },
     {
@@ -364,7 +364,7 @@
         "label":  "En Ad Zyggy Mockup",
         "kind":  "hero-art",
         "focusPosition":  "50% 18%",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/extracted/cdn.fabtcg.com/uploads/2026/03/ad_zyggy_marketing_en/ad_zyggy_marketing_en/en_ad_zyggy_mockup.png"
     },
     {
@@ -372,7 +372,7 @@
         "label":  "En Omn Booster Aurora",
         "kind":  "hero-art",
         "focusPosition":  "50% 18%",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2026/03/en_omn_booster_aurora.png"
     },
     {
@@ -380,7 +380,7 @@
         "label":  "En Omn Booster Oscilio",
         "kind":  "hero-art",
         "focusPosition":  "50% 18%",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2026/03/en_omn_booster_oscilio.png"
     },
     {
@@ -388,7 +388,7 @@
         "label":  "En Omn Booster Zyggy",
         "kind":  "hero-art",
         "focusPosition":  "50% 18%",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2026/03/en_omn_booster_zyggy.png"
     },
     {
@@ -396,7 +396,7 @@
         "label":  "En Omn Display Aurora",
         "kind":  "key-art",
         "focusPosition":  "center center",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2026/03/en_omn_display_aurora.png"
     },
     {
@@ -404,7 +404,7 @@
         "label":  "En Omn Display Oscilio",
         "kind":  "key-art",
         "focusPosition":  "center center",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2026/03/en_omn_display_oscilio.png"
     },
     {
@@ -412,7 +412,7 @@
         "label":  "En Omn Display Zyggy",
         "kind":  "key-art",
         "focusPosition":  "center center",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2026/03/en_omn_display_zyggy.png"
     },
     {
@@ -420,7 +420,7 @@
         "label":  "En Omn Prerelease Pack",
         "kind":  "key-art",
         "focusPosition":  "center center",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2026/03/en_omn_prerelease_pack.png"
     },
     {
@@ -428,7 +428,7 @@
         "label":  "En Omn Worldpremiere Booster",
         "kind":  "hero-art",
         "focusPosition":  "50% 18%",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2026/03/en_omn_worldpremiere_booster.png"
     },
     {
@@ -436,7 +436,7 @@
         "label":  "En Pen Display Lo Res 1 648X700",
         "kind":  "hero-art",
         "focusPosition":  "50% 18%",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2025/11/en_pen_display_LO-RES-1-648x700.png"
     },
     {
@@ -444,7 +444,7 @@
         "label":  "Everfest Key Art Fullhd 720X392",
         "kind":  "key-art",
         "focusPosition":  "center top",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2025/12/Everfest_Key_Art_FullHD-720x392.jpg"
     },
     {
@@ -452,7 +452,7 @@
         "label":  "Fr Ad Zyggy Mockup",
         "kind":  "hero-art",
         "focusPosition":  "50% 18%",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2026/03/fr_ad_zyggy_mockup.png"
     },
     {
@@ -460,7 +460,7 @@
         "label":  "Fr Omn Booster Aurora",
         "kind":  "hero-art",
         "focusPosition":  "50% 18%",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/extracted/cdn.fabtcg.com/uploads/2026/03/fr_omn_products/fr_omn_booster_aurora.png"
     },
     {
@@ -468,7 +468,7 @@
         "label":  "Fr Omn Booster Oscilio",
         "kind":  "hero-art",
         "focusPosition":  "50% 18%",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/extracted/cdn.fabtcg.com/uploads/2026/03/fr_omn_products/fr_omn_booster_oscilio.png"
     },
     {
@@ -476,7 +476,7 @@
         "label":  "Fr Omn Booster Zyggy",
         "kind":  "hero-art",
         "focusPosition":  "50% 18%",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/extracted/cdn.fabtcg.com/uploads/2026/03/fr_omn_products/fr_omn_booster_zyggy.png"
     },
     {
@@ -484,7 +484,7 @@
         "label":  "Fr Omn Display Aurora",
         "kind":  "hero-art",
         "focusPosition":  "50% 18%",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/extracted/cdn.fabtcg.com/uploads/2026/03/fr_omn_products/fr_omn_display_aurora.png"
     },
     {
@@ -492,7 +492,7 @@
         "label":  "Fr Omn Display Oscilio",
         "kind":  "hero-art",
         "focusPosition":  "50% 18%",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/extracted/cdn.fabtcg.com/uploads/2026/03/fr_omn_products/fr_omn_display_oscilio.png"
     },
     {
@@ -500,7 +500,7 @@
         "label":  "Fr Omn Display Zyggy",
         "kind":  "hero-art",
         "focusPosition":  "50% 18%",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/extracted/cdn.fabtcg.com/uploads/2026/03/fr_omn_products/fr_omn_display_zyggy.png"
     },
     {
@@ -508,7 +508,7 @@
         "label":  "Gem Pack 4 Packs 1",
         "kind":  "key-art",
         "focusPosition":  "center center",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2026/01/GEM-PACK-4-PACKS-1-scaled.png"
     },
     {
@@ -516,7 +516,7 @@
         "label":  "Gravy Cover 1536X1199 1 717X560",
         "kind":  "key-art",
         "focusPosition":  "center top",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2025/07/gravy_cover-1536x1199-1-717x560.jpg"
     },
     {
@@ -524,7 +524,7 @@
         "label":  "Great Library Of Solana Federico Musetti Banner",
         "kind":  "key-art",
         "focusPosition":  "center center",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2025/10/Great-Library-of-Solana-Federico-Musetti-banner.png"
     },
     {
@@ -532,7 +532,7 @@
         "label":  "Guardian Hero Victor Goldmane High And Mighty Billychristian 1 679X1025",
         "kind":  "hero-art",
         "focusPosition":  "50% 18%",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2026/03/GUARDIAN-HERO-Victor-Goldmane-High-and-Mighty-BillyChristian-1-679x1025.jpg"
     },
     {
@@ -540,7 +540,7 @@
         "label":  "Hala Cover 720X540",
         "kind":  "key-art",
         "focusPosition":  "center top",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2026/01/hala-cover-720x540.png"
     },
     {
@@ -548,7 +548,7 @@
         "label":  "Heavy Hitters Key Art.Min 1000X300.Format Webp Copia 720X392",
         "kind":  "playmat",
         "focusPosition":  "center center",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2025/08/heavy_hitters_key_art.min-1000x300.format-webp-copia-720x392.png"
     },
     {
@@ -556,7 +556,7 @@
         "label":  "Heroes 3 2",
         "kind":  "key-art",
         "focusPosition":  "center top",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2025/09/Heroes_3-2.png"
     },
     {
@@ -564,7 +564,7 @@
         "label":  "History Pack 2 Key Art 720X392",
         "kind":  "key-art",
         "focusPosition":  "center top",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2025/12/history_pack_2_key_art-720x392.jpg"
     },
     {
@@ -572,7 +572,7 @@
         "label":  "Hnt Button 720X405",
         "kind":  "key-art",
         "focusPosition":  "center top",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2026/01/hnt-button-720x405.png"
     },
     {
@@ -580,7 +580,7 @@
         "label":  "Homepage Carousel",
         "kind":  "key-art",
         "focusPosition":  "center center",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2025/11/HOMEPAGE-CAROUSEL-scaled.jpg"
     },
     {
@@ -588,7 +588,7 @@
         "label":  "Iys And Wod 720X543",
         "kind":  "key-art",
         "focusPosition":  "center top",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2025/10/iys-and-wod-720x543.jpg"
     },
     {
@@ -596,7 +596,7 @@
         "label":  "Jp Ad Zyggy Mockup",
         "kind":  "hero-art",
         "focusPosition":  "50% 18%",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2026/03/jp_ad_zyggy_mockup.png"
     },
     {
@@ -604,7 +604,7 @@
         "label":  "Jp Omn Booster Aurora",
         "kind":  "hero-art",
         "focusPosition":  "50% 18%",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/extracted/cdn.fabtcg.com/uploads/2026/03/jp_omn_products/jp_omn_booster_aurora.png"
     },
     {
@@ -612,7 +612,7 @@
         "label":  "Jp Omn Booster Oscilio",
         "kind":  "hero-art",
         "focusPosition":  "50% 18%",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/extracted/cdn.fabtcg.com/uploads/2026/03/jp_omn_products/jp_omn_booster_oscilio.png"
     },
     {
@@ -620,7 +620,7 @@
         "label":  "Jp Omn Booster Zyggy",
         "kind":  "hero-art",
         "focusPosition":  "50% 18%",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/extracted/cdn.fabtcg.com/uploads/2026/03/jp_omn_products/jp_omn_booster_zyggy.png"
     },
     {
@@ -628,7 +628,7 @@
         "label":  "Jp Omn Display Aurora",
         "kind":  "hero-art",
         "focusPosition":  "50% 18%",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/extracted/cdn.fabtcg.com/uploads/2026/03/jp_omn_products/jp_omn_display_aurora.png"
     },
     {
@@ -636,7 +636,7 @@
         "label":  "Jp Omn Display Oscilio",
         "kind":  "hero-art",
         "focusPosition":  "50% 18%",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/extracted/cdn.fabtcg.com/uploads/2026/03/jp_omn_products/jp_omn_display_oscilio.png"
     },
     {
@@ -644,7 +644,7 @@
         "label":  "Jp Omn Display Zyggy",
         "kind":  "hero-art",
         "focusPosition":  "50% 18%",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/extracted/cdn.fabtcg.com/uploads/2026/03/jp_omn_products/jp_omn_display_zyggy.png"
     },
     {
@@ -652,7 +652,7 @@
         "label":  "Jp Zyggy Name",
         "kind":  "key-art",
         "focusPosition":  "center center",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2026/03/jp_zyggy_name-scaled.png"
     },
     {
@@ -660,7 +660,7 @@
         "label":  "Kayo Mibvpns 720X532",
         "kind":  "key-art",
         "focusPosition":  "center top",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2025/08/kayo_mibVpnS-720x532.jpg"
     },
     {
@@ -668,7 +668,7 @@
         "label":  "Map 3 2",
         "kind":  "key-art",
         "focusPosition":  "center top",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2025/09/MAP_3-2.png"
     },
     {
@@ -676,7 +676,7 @@
         "label":  "Mpg Button 720X454",
         "kind":  "key-art",
         "focusPosition":  "center top",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2025/12/mpg_button-720x454.png"
     },
     {
@@ -684,7 +684,7 @@
         "label":  "Mst Button 720X540",
         "kind":  "key-art",
         "focusPosition":  "center top",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2025/10/mst_button-720x540.png"
     },
     {
@@ -692,7 +692,7 @@
         "label":  "Omn Art Sig Aurora Adult",
         "kind":  "hero-art",
         "focusPosition":  "center center",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2026/03/OMN_art_sig_aurora_adult.jpg"
     },
     {
@@ -700,7 +700,7 @@
         "label":  "Omn Art Sig Aurora Young",
         "kind":  "hero-art",
         "focusPosition":  "center center",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2026/03/OMN_art_sig_aurora_young.jpg"
     },
     {
@@ -708,7 +708,7 @@
         "label":  "Omn Art Sig Omens Of Arcana",
         "kind":  "hero-art",
         "focusPosition":  "center center",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2026/03/OMN_art_sig_Omens-of-Arcana.jpg"
     },
     {
@@ -716,7 +716,7 @@
         "label":  "Omn Art Sig Oscilio Adult",
         "kind":  "hero-art",
         "focusPosition":  "center center",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2026/03/OMN_art_sig_oscilio_adult.jpg"
     },
     {
@@ -724,7 +724,7 @@
         "label":  "Omn Art Sig Oscilio Young",
         "kind":  "hero-art",
         "focusPosition":  "center center",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2026/03/OMN_art_sig_oscilio_young.jpg"
     },
     {
@@ -732,7 +732,7 @@
         "label":  "Omn Art Sig Zyggy Adult",
         "kind":  "hero-art",
         "focusPosition":  "center center",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2026/03/OMN_art_sig_zyggy_adult.jpg"
     },
     {
@@ -740,7 +740,7 @@
         "label":  "Omn Homepage Header",
         "kind":  "key-art",
         "focusPosition":  "center center",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2026/03/OMN-HOMEPAGE-HEADER-scaled.png"
     },
     {
@@ -748,7 +748,7 @@
         "label":  "Omn Marketing Tiles Copy Social1",
         "kind":  "hero-art",
         "focusPosition":  "50% 18%",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/extracted/cdn.fabtcg.com/uploads/2026/03/omn_marketing_nodate_en/EN MARKETING/OMN_marketing_tiles copy_SOCIAL1.jpg"
     },
     {
@@ -756,7 +756,7 @@
         "label":  "Omn Marketing Tiles Copy Social2",
         "kind":  "hero-art",
         "focusPosition":  "50% 18%",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/extracted/cdn.fabtcg.com/uploads/2026/03/omn_marketing_nodate_en/EN MARKETING/OMN_marketing_tiles copy_SOCIAL2.jpg"
     },
     {
@@ -764,7 +764,7 @@
         "label":  "Omn Marketing Tiles Copy Social3",
         "kind":  "hero-art",
         "focusPosition":  "50% 18%",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/extracted/cdn.fabtcg.com/uploads/2026/03/omn_marketing_nodate_en/EN MARKETING/OMN_marketing_tiles copy_SOCIAL3.jpg"
     },
     {
@@ -772,7 +772,7 @@
         "label":  "Omn Marketing Tiles Copy Story4",
         "kind":  "hero-art",
         "focusPosition":  "50% 18%",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/extracted/cdn.fabtcg.com/uploads/2026/03/omn_marketing_nodate_en/EN MARKETING/OMN_marketing_tiles copy_STORY4.jpg"
     },
     {
@@ -780,7 +780,7 @@
         "label":  "Omn Marketing Tiles Copy Story5",
         "kind":  "hero-art",
         "focusPosition":  "50% 18%",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/extracted/cdn.fabtcg.com/uploads/2026/03/omn_marketing_nodate_en/EN MARKETING/OMN_marketing_tiles copy_STORY5.jpg"
     },
     {
@@ -788,7 +788,7 @@
         "label":  "Omn Marketing Tiles Copy Story6",
         "kind":  "hero-art",
         "focusPosition":  "50% 18%",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/extracted/cdn.fabtcg.com/uploads/2026/03/omn_marketing_nodate_en/EN MARKETING/OMN_marketing_tiles copy_STORY6.jpg"
     },
     {
@@ -796,7 +796,7 @@
         "label":  "Omn Marketing Tiles Eml10",
         "kind":  "key-art",
         "focusPosition":  "center center",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2026/03/OMN_marketing_tiles_EML10.jpg"
     },
     {
@@ -804,7 +804,7 @@
         "label":  "Omn Marketing Tiles Fb Ban2",
         "kind":  "key-art",
         "focusPosition":  "center center",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2026/03/OMN_marketing_tiles_FB_BAN2-scaled.jpg"
     },
     {
@@ -812,7 +812,7 @@
         "label":  "Omn Marketing Tiles Fbpost3",
         "kind":  "key-art",
         "focusPosition":  "center center",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2026/03/OMN_marketing_tiles_FBPOST3.jpg"
     },
     {
@@ -820,7 +820,7 @@
         "label":  "Omn Marketing Tiles Jp Eml7",
         "kind":  "key-art",
         "focusPosition":  "center top",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/extracted/cdn.fabtcg.com/uploads/2026/03/omn_marketing_instores_jp/JP IN STORES/OMN_marketing_tiles JP_EML7.jpg"
     },
     {
@@ -828,7 +828,7 @@
         "label":  "Omn Marketing Tiles Jp Fb Ban2",
         "kind":  "key-art",
         "focusPosition":  "center top",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/extracted/cdn.fabtcg.com/uploads/2026/03/omn_marketing_instores_jp/JP IN STORES/OMN_marketing_tiles JP_FB_BAN2.jpg"
     },
     {
@@ -836,7 +836,7 @@
         "label":  "Omn Marketing Tiles Jp Fbpost3",
         "kind":  "key-art",
         "focusPosition":  "center top",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/extracted/cdn.fabtcg.com/uploads/2026/03/omn_marketing_instores_jp/JP IN STORES/OMN_marketing_tiles JP_FBPOST3.jpg"
     },
     {
@@ -844,7 +844,7 @@
         "label":  "Omn Marketing Tiles Jp Social4",
         "kind":  "hero-art",
         "focusPosition":  "50% 18%",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/extracted/cdn.fabtcg.com/uploads/2026/03/omn_marketing_instores_jp/JP IN STORES/OMN_marketing_tiles JP_SOCIAL4.jpg"
     },
     {
@@ -852,7 +852,7 @@
         "label":  "Omn Marketing Tiles Jp Social5",
         "kind":  "hero-art",
         "focusPosition":  "50% 18%",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/extracted/cdn.fabtcg.com/uploads/2026/03/omn_marketing_instores_jp/JP IN STORES/OMN_marketing_tiles JP_SOCIAL5.jpg"
     },
     {
@@ -860,7 +860,7 @@
         "label":  "Omn Marketing Tiles Jp Social6",
         "kind":  "hero-art",
         "focusPosition":  "50% 18%",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/extracted/cdn.fabtcg.com/uploads/2026/03/omn_marketing_instores_jp/JP IN STORES/OMN_marketing_tiles JP_SOCIAL6.jpg"
     },
     {
@@ -868,7 +868,7 @@
         "label":  "Omn Marketing Tiles Jp Story4",
         "kind":  "hero-art",
         "focusPosition":  "50% 18%",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/extracted/cdn.fabtcg.com/uploads/2026/03/omn_marketing_instores_jp/JP IN STORES/OMN_marketing_tiles JP_STORY4.jpg"
     },
     {
@@ -876,7 +876,7 @@
         "label":  "Omn Marketing Tiles Jp Story5",
         "kind":  "hero-art",
         "focusPosition":  "50% 18%",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/extracted/cdn.fabtcg.com/uploads/2026/03/omn_marketing_instores_jp/JP IN STORES/OMN_marketing_tiles JP_STORY5.jpg"
     },
     {
@@ -884,7 +884,7 @@
         "label":  "Omn Marketing Tiles Jp Story6",
         "kind":  "hero-art",
         "focusPosition":  "50% 18%",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/extracted/cdn.fabtcg.com/uploads/2026/03/omn_marketing_instores_jp/JP IN STORES/OMN_marketing_tiles JP_STORY6.jpg"
     },
     {
@@ -892,7 +892,7 @@
         "label":  "Omn Marketing Tiles Jp Stream1",
         "kind":  "key-art",
         "focusPosition":  "center top",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/extracted/cdn.fabtcg.com/uploads/2026/03/omn_marketing_instores_jp/JP IN STORES/OMN_marketing_tiles JP_STREAM1.jpg"
     },
     {
@@ -900,7 +900,7 @@
         "label":  "Omn Marketing Tiles Jp X Ban1",
         "kind":  "key-art",
         "focusPosition":  "center top",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/extracted/cdn.fabtcg.com/uploads/2026/03/omn_marketing_instores_jp/JP IN STORES/OMN_marketing_tiles JP_X_BAN1.jpg"
     },
     {
@@ -908,7 +908,7 @@
         "label":  "Omn Marketing Tiles Social4",
         "kind":  "key-art",
         "focusPosition":  "center center",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2026/03/OMN_marketing_tiles_SOCIAL4-scaled.jpg"
     },
     {
@@ -916,7 +916,7 @@
         "label":  "Omn Marketing Tiles Social5",
         "kind":  "key-art",
         "focusPosition":  "center center",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2026/03/OMN_marketing_tiles_SOCIAL5-scaled.jpg"
     },
     {
@@ -924,7 +924,7 @@
         "label":  "Omn Marketing Tiles Social6",
         "kind":  "key-art",
         "focusPosition":  "center center",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2026/03/OMN_marketing_tiles_SOCIAL6-scaled.jpg"
     },
     {
@@ -932,7 +932,7 @@
         "label":  "Omn Marketing Tiles Story7",
         "kind":  "key-art",
         "focusPosition":  "center center",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2026/03/OMN_marketing_tiles_STORY7-scaled.jpg"
     },
     {
@@ -940,7 +940,7 @@
         "label":  "Omn Marketing Tiles Story8 1",
         "kind":  "key-art",
         "focusPosition":  "center center",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2026/03/OMN_marketing_tiles_STORY8-1-scaled.jpg"
     },
     {
@@ -948,7 +948,7 @@
         "label":  "Omn Marketing Tiles Story9",
         "kind":  "key-art",
         "focusPosition":  "center center",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2026/03/OMN_marketing_tiles_STORY9-scaled.jpg"
     },
     {
@@ -956,7 +956,7 @@
         "label":  "Omn Marketing Tiles Stream1",
         "kind":  "key-art",
         "focusPosition":  "center center",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2026/03/OMN_marketing_tiles_STREAM1-scaled.jpg"
     },
     {
@@ -964,7 +964,7 @@
         "label":  "Omn Marketing Tiles X Ban1",
         "kind":  "key-art",
         "focusPosition":  "center center",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2026/03/OMN_marketing_tiles_X_BAN1-scaled.jpg"
     },
     {
@@ -972,7 +972,7 @@
         "label":  "Omn Texture",
         "kind":  "key-art",
         "focusPosition":  "center center",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2026/03/OMN-TEXTURE.jpg"
     },
     {
@@ -980,7 +980,7 @@
         "label":  "Pq General",
         "kind":  "key-art",
         "focusPosition":  "center center",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2026/02/pq-general.jpg"
     },
     {
@@ -988,7 +988,7 @@
         "label":  "Pq S9 Cover 1 720X540",
         "kind":  "key-art",
         "focusPosition":  "center top",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2025/11/PQ-S9-COVER-1-720x540.jpg"
     },
     {
@@ -996,7 +996,7 @@
         "label":  "Rhinar 712X560",
         "kind":  "key-art",
         "focusPosition":  "center top",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2025/12/rhinar-712x560.jpg"
     },
     {
@@ -1004,7 +1004,7 @@
         "label":  "Ros Art Adult Aurora Cropped.Original 720X493",
         "kind":  "key-art",
         "focusPosition":  "center top",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2025/12/ros_art_adult-aurora_cropped.original-720x493.jpg"
     },
     {
@@ -1012,7 +1012,7 @@
         "label":  "Sage 3 Homepage Carousel",
         "kind":  "key-art",
         "focusPosition":  "center center",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2026/02/SAGE-3-homepage-carousel-scaled.png"
     },
     {
@@ -1020,7 +1020,7 @@
         "label":  "Scar For A Scar 720X540",
         "kind":  "key-art",
         "focusPosition":  "center top",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2025/08/scar_for_a_scar-720x540.jpg"
     },
     {
@@ -1028,7 +1028,7 @@
         "label":  "Sea Button 2 720X528",
         "kind":  "key-art",
         "focusPosition":  "center top",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2025/07/sea_button_2-720x528.png"
     },
     {
@@ -1036,7 +1036,7 @@
         "label":  "Slippy Cover 720X540",
         "kind":  "key-art",
         "focusPosition":  "center top",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2025/08/slippy_cover-720x540.jpg"
     },
     {
@@ -1044,7 +1044,7 @@
         "label":  "Smash Palace Key Art 648X560",
         "kind":  "hero-art",
         "focusPosition":  "50% 18%",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2025/07/SMASH_PALACE_KEY_ART-648x560.png"
     },
     {
@@ -1052,7 +1052,7 @@
         "label":  "Social Play Cover 720X540",
         "kind":  "key-art",
         "focusPosition":  "center top",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2026/01/social-play-cover-720x540.png"
     },
     {
@@ -1060,7 +1060,7 @@
         "label":  "Stories 3 2",
         "kind":  "key-art",
         "focusPosition":  "center top",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2025/09/STORIES_3-2.png"
     },
     {
@@ -1068,7 +1068,7 @@
         "label":  "Sup Hero Cropped Pleiades 720X455",
         "kind":  "key-art",
         "focusPosition":  "center top",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2025/12/sup_hero_cropped_pleiades-720x455.jpg"
     },
     {
@@ -1076,7 +1076,7 @@
         "label":  "Tcc Generic Bg 720X360",
         "kind":  "key-art",
         "focusPosition":  "center top",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2025/06/TCC_Generic_BG-720x360.jpg"
     },
     {
@@ -1084,7 +1084,7 @@
         "label":  "Untitled Design 53",
         "kind":  "hero-art",
         "focusPosition":  "50% 18%",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2025/10/Untitled-design-53.png"
     },
     {
@@ -1092,7 +1092,7 @@
         "label":  "Untitled Presentation 43 14 720X540",
         "kind":  "key-art",
         "focusPosition":  "center top",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2026/03/Untitled-Presentation-43-14-720x540.png"
     },
     {
@@ -1100,7 +1100,7 @@
         "label":  "World Tour 2026",
         "kind":  "key-art",
         "focusPosition":  "center center",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2025/11/world-tour-2026-scaled.png"
     },
     {
@@ -1108,7 +1108,7 @@
         "label":  "Wt Brisbane Stream1 1",
         "kind":  "key-art",
         "focusPosition":  "center center",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2025/12/WT_Brisbane_Stream1-1-2048x1152.png"
     },
     {
@@ -1116,7 +1116,7 @@
         "label":  "Wt Memphis Stream1 720X405",
         "kind":  "key-art",
         "focusPosition":  "center top",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2026/03/WT_MEMPHIS_Stream1-720x405.png"
     },
     {
@@ -1124,7 +1124,7 @@
         "label":  "Wt Shanghai Stream1 720X405",
         "kind":  "key-art",
         "focusPosition":  "center top",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2026/03/WT_Shanghai_Stream1-720x405.png"
     },
     {
@@ -1132,7 +1132,7 @@
         "label":  "Wtr Button 720X540",
         "kind":  "key-art",
         "focusPosition":  "center top",
-        "adminOnly":  true,
+        "adminOnly":  false,
         "sourcePath":  "vendor/fabtcg-digital-assets-full/images/cdn.fabtcg.com/uploads/2026/01/wtr-button-720x540.png"
     }
 ]

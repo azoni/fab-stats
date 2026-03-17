@@ -68,15 +68,19 @@ export async function checkIsAdmin(
   email: string | null
 ): Promise<boolean> {
   if (!email) return false;
+  const normalizedEmail = email.toLowerCase();
   try {
     if (adminCache && Date.now() - adminCache.ts < ADMIN_CACHE_TTL) {
-      return adminCache.emails.includes(email.toLowerCase());
+      return adminCache.emails.includes(normalizedEmail);
     }
     const snap = await getDoc(doc(db, "admin", "config"));
     if (!snap.exists()) return false;
     const config = snap.data() as AdminConfig;
-    adminCache = { emails: config.adminEmails, ts: Date.now() };
-    return config.adminEmails.includes(email.toLowerCase());
+    const normalizedEmails = (config.adminEmails || [])
+      .map((entry) => (typeof entry === "string" ? entry.toLowerCase() : ""))
+      .filter(Boolean);
+    adminCache = { emails: normalizedEmails, ts: Date.now() };
+    return normalizedEmails.includes(normalizedEmail);
   } catch {
     return false;
   }

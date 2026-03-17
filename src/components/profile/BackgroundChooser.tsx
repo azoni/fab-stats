@@ -54,11 +54,12 @@ export function BackgroundChooser({ selectedId, isAdmin, onSelect, disabled }: B
   }, [options, isAdmin, searchQuery, adminVisibilityFilter, adminUnlockFilter, adminKindFilter]);
 
   const displayedOptions = useMemo(() => {
+    if (isAdmin) return filteredOptions.slice(0, Math.max(visibleCount, 240));
     if (!expanded) return filteredOptions.slice(0, COLLAPSED_VISIBLE_COUNT);
     return filteredOptions.slice(0, visibleCount);
-  }, [filteredOptions, expanded, visibleCount]);
+  }, [filteredOptions, isAdmin, expanded, visibleCount]);
 
-  const canLoadMore = expanded && visibleCount < filteredOptions.length;
+  const canLoadMore = (isAdmin || expanded) && visibleCount < filteredOptions.length;
 
   return (
     <div>
@@ -208,7 +209,7 @@ export function BackgroundChooser({ selectedId, isAdmin, onSelect, disabled }: B
       </div>
 
       <div className="mt-2 flex items-center gap-3 flex-wrap">
-        {!expanded && filteredOptions.length > COLLAPSED_VISIBLE_COUNT && (
+        {!isAdmin && !expanded && filteredOptions.length > COLLAPSED_VISIBLE_COUNT && (
           <button
             type="button"
             onClick={() => {
@@ -229,7 +230,7 @@ export function BackgroundChooser({ selectedId, isAdmin, onSelect, disabled }: B
             Load more ({Math.min(EXPANDED_PAGE_SIZE, filteredOptions.length - visibleCount)})
           </button>
         )}
-        {expanded && (
+        {!isAdmin && expanded && (
           <button
             type="button"
             onClick={() => {

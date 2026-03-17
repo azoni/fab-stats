@@ -19,7 +19,7 @@ export function useProfileBackgroundCatalog(isAdmin: boolean): UseProfileBackgro
   useEffect(() => {
     let active = true;
 
-    loadProfileBackgroundCatalog({ includeAdmin: isAdmin })
+    loadProfileBackgroundCatalog({ includeAdmin: isAdmin, forceRefresh: true })
       .then((catalog) => {
         if (!active) return;
         setAllOptions(catalog);
