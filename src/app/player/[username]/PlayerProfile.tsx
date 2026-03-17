@@ -1102,8 +1102,8 @@ export default function PlayerProfile() {
                   if (savingBackground) return;
                   setSavingBackground(true);
                   try {
-                    await updateProfile(profile.uid, { siteBackgroundId: id === "none" ? undefined : id });
-                    setState((prev) => prev.status === "loaded" ? { ...prev, profile: { ...prev.profile, siteBackgroundId: id === "none" ? undefined : id } } : prev);
+                    await updateProfile(profile.uid, { siteBackgroundId: id });
+                    setState((prev) => prev.status === "loaded" ? { ...prev, profile: { ...prev.profile, siteBackgroundId: id } } : prev);
                     await refreshProfile().catch(() => {});
                   } finally {
                     setSavingBackground(false);

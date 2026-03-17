@@ -639,7 +639,7 @@ export default function Dashboard() {
                   if (savingBackground) return;
                   setSavingBackground(true);
                   try {
-                    await updateProfile(user.uid, { siteBackgroundId: id === "none" ? undefined : id });
+                    await updateProfile(user.uid, { siteBackgroundId: id });
                     await refreshProfile().catch(() => {});
                   } finally {
                     setSavingBackground(false);

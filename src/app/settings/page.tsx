@@ -285,7 +285,7 @@ export default function SettingsPage() {
     setSiteBackgroundId(nextId);
     setSavingBackground(true);
     try {
-      await updateProfile(user.uid, { siteBackgroundId: nextId === "none" ? undefined : nextId });
+      await updateProfile(user.uid, { siteBackgroundId: nextId });
       await refreshProfile();
       logActivity("background_change", nextId);
       toast.success("Background updated");
