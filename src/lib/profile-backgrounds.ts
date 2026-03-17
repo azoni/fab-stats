@@ -18,6 +18,7 @@ export interface ProfileBackgroundOption {
 
 export const NONE_BACKGROUND_ID = "none";
 export const DEFAULT_BACKGROUND_ID = "playmat-solana";
+let runtimeDefaultBackgroundId: string | null = null;
 
 export const PROFILE_BACKGROUND_OPTIONS: ProfileBackgroundOption[] = [
   { id: "wtr-key-art-v1", label: "Welcome to Rathe", imageUrl: "/backgrounds/fab-official/wtr-key-art-v1.jpg", kind: "key-art", focusPosition: "center top" },
@@ -43,6 +44,15 @@ export function setRuntimeProfileBackgroundOptions(options: ProfileBackgroundOpt
   runtimeProfileBackgroundOptions = options && options.length > 0 ? options : null;
 }
 
+export function setRuntimeDefaultBackgroundId(backgroundId: string | null | undefined): void {
+  const normalized = (backgroundId || "").trim();
+  if (!normalized || normalized === NONE_BACKGROUND_ID) {
+    runtimeDefaultBackgroundId = null;
+    return;
+  }
+  runtimeDefaultBackgroundId = normalized;
+}
+
 function getEffectiveBackgroundOptions(): ProfileBackgroundOption[] {
   if (runtimeProfileBackgroundOptions && runtimeProfileBackgroundOptions.length > 0) {
     return runtimeProfileBackgroundOptions;
@@ -57,25 +67,35 @@ function findBackgroundById(backgroundId: string): ProfileBackgroundOption | und
   );
 }
 
+function getResolvedDefaultBackgroundId(overrideDefaultId?: string | null): string {
+  const candidate = (overrideDefaultId || runtimeDefaultBackgroundId || DEFAULT_BACKGROUND_ID).trim();
+  if (candidate && candidate !== NONE_BACKGROUND_ID && findBackgroundById(candidate)) {
+    return candidate;
+  }
+  return DEFAULT_BACKGROUND_ID;
+}
+
 export function hasProfileBackgroundOption(backgroundId?: string | null): boolean {
   if (!backgroundId || backgroundId === NONE_BACKGROUND_ID) return true;
   return Boolean(findBackgroundById(backgroundId));
 }
 
-export function resolveProfileBackgroundImage(backgroundId?: string | null): string | undefined {
+export function resolveProfileBackgroundImage(backgroundId?: string | null, overrideDefaultId?: string | null): string | undefined {
   if (backgroundId === NONE_BACKGROUND_ID) return undefined;
-  const effectiveId = backgroundId || DEFAULT_BACKGROUND_ID;
+  const defaultId = getResolvedDefaultBackgroundId(overrideDefaultId);
+  const effectiveId = backgroundId || defaultId;
   const resolved = findBackgroundById(effectiveId)?.imageUrl;
   if (resolved) return resolved;
-  return findBackgroundById(DEFAULT_BACKGROUND_ID)?.imageUrl;
+  return findBackgroundById(defaultId)?.imageUrl || findBackgroundById(DEFAULT_BACKGROUND_ID)?.imageUrl;
 }
 
-export function resolveProfileBackgroundPosition(backgroundId?: string | null): string | undefined {
+export function resolveProfileBackgroundPosition(backgroundId?: string | null, overrideDefaultId?: string | null): string | undefined {
   if (backgroundId === NONE_BACKGROUND_ID) return undefined;
-  const effectiveId = backgroundId || DEFAULT_BACKGROUND_ID;
+  const defaultId = getResolvedDefaultBackgroundId(overrideDefaultId);
+  const effectiveId = backgroundId || defaultId;
   const resolved = findBackgroundById(effectiveId)?.focusPosition;
   if (resolved) return resolved;
-  return findBackgroundById(DEFAULT_BACKGROUND_ID)?.focusPosition;
+  return findBackgroundById(defaultId)?.focusPosition || findBackgroundById(DEFAULT_BACKGROUND_ID)?.focusPosition;
 }
 
 export function resolveBackgroundPositionForImage(imageUrl?: string | null): string {

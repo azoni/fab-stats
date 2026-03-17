@@ -6,6 +6,7 @@ import {
   getDocs,
   limit,
   query,
+  setDoc,
   updateDoc,
   where,
   writeBatch,
@@ -14,7 +15,9 @@ import {
 import { deleteObject, getStorage, ref as storageRef } from "firebase/storage";
 import { app, db } from "@/lib/firebase";
 import {
+  DEFAULT_BACKGROUND_ID,
   PROFILE_BACKGROUND_OPTIONS,
+  setRuntimeDefaultBackgroundId,
   setRuntimeProfileBackgroundOptions,
   type ProfileBackgroundKind,
   type ProfileBackgroundOption,
@@ -22,11 +25,14 @@ import {
 } from "@/lib/profile-backgrounds";
 
 const PROFILE_BACKGROUND_CATALOG_COLLECTION = "profileBackgroundCatalog";
+const ADMIN_CONFIG_DOC = ["admin", "config"] as const;
 const CACHE_TTL_MS = 5 * 60 * 1000;
 const PERSIST_TTL_MS = 12 * 60 * 60 * 1000;
 const LOCAL_STORAGE_CACHE_KEY_PREFIX = "fab.profileBackgroundCatalog.v1";
+const LOCAL_STORAGE_DEFAULT_BG_KEY = "fab.profileBackgroundDefault.v1";
 const MAX_CATALOG_OPTIONS = 1000;
 const DEFAULT_STORAGE_BUCKET = "fab-stats-fc757.firebasestorage.app";
+const DEFAULT_BG_CACHE_TTL_MS = 5 * 60 * 1000;
 
 type CatalogScope = "public" | "all";
 
@@ -47,6 +53,10 @@ const scopeCache: Record<CatalogScope, ScopeCache> = {
 
 const inFlightCatalogLoad: Partial<Record<CatalogScope, Promise<ProfileBackgroundOption[]>>> = {};
 const optionCacheById = new Map<string, ProfileBackgroundOption>();
+let defaultBackgroundCache: { value: string; cachedAt: number } = {
+  value: DEFAULT_BACKGROUND_ID,
+  cachedAt: 0,
+};
 
 const VALID_KINDS: ProfileBackgroundKind[] = ["key-art", "playmat", "hero-art"];
 const VALID_UNLOCK_TYPES: ProfileBackgroundUnlockType[] = ["achievement", "supporter", "manual"];
@@ -61,6 +71,10 @@ function isValidKind(value: unknown): value is ProfileBackgroundKind {
 
 function isValidUnlockType(value: unknown): value is ProfileBackgroundUnlockType {
   return typeof value === "string" && (VALID_UNLOCK_TYPES as string[]).includes(value);
+}
+
+function isValidBackgroundId(value: unknown): value is string {
+  return typeof value === "string" && /^[a-z0-9][a-z0-9-]{1,79}$/i.test(value);
 }
 
 function isBrowser(): boolean {
@@ -234,12 +248,47 @@ function clearPersistedScopeCatalog(scope: CatalogScope): void {
   }
 }
 
+function persistDefaultBackgroundId(backgroundId: string): void {
+  if (!isBrowser()) return;
+  try {
+    window.localStorage.setItem(LOCAL_STORAGE_DEFAULT_BG_KEY, backgroundId);
+  } catch {
+    // Ignore storage write failures (quota/private mode).
+  }
+}
+
+function readPersistedDefaultBackgroundId(): string | null {
+  if (!isBrowser()) return null;
+  try {
+    const raw = window.localStorage.getItem(LOCAL_STORAGE_DEFAULT_BG_KEY);
+    if (!raw) return null;
+    const trimmed = raw.trim();
+    return isValidBackgroundId(trimmed) ? trimmed : null;
+  } catch {
+    return null;
+  }
+}
+
 export function invalidateProfileBackgroundCatalogCache(): void {
   scopeCache.public = { options: null, cachedAt: 0 };
   scopeCache.all = { options: null, cachedAt: 0 };
   clearPersistedScopeCatalog("public");
   clearPersistedScopeCatalog("all");
   resetOptionCacheToDefaults();
+}
+
+export function getCachedGlobalDefaultBackgroundId(): string {
+  const cacheFresh = defaultBackgroundCache.value && Date.now() - defaultBackgroundCache.cachedAt < DEFAULT_BG_CACHE_TTL_MS;
+  if (cacheFresh) {
+    setRuntimeDefaultBackgroundId(defaultBackgroundCache.value);
+    return defaultBackgroundCache.value;
+  }
+
+  const persisted = readPersistedDefaultBackgroundId();
+  const resolved = persisted || DEFAULT_BACKGROUND_ID;
+  defaultBackgroundCache = { value: resolved, cachedAt: Date.now() };
+  setRuntimeDefaultBackgroundId(resolved);
+  return resolved;
 }
 
 function persistScopeCatalog(scope: CatalogScope, options: ProfileBackgroundOption[]): void {
@@ -377,6 +426,60 @@ export async function loadProfileBackgroundCatalog(options?: LoadCatalogOptions)
   })();
 
   return inFlightCatalogLoad[scope]!;
+}
+
+export async function loadGlobalDefaultBackgroundId(forceRefresh = false): Promise<string> {
+  const cacheFresh = defaultBackgroundCache.value && Date.now() - defaultBackgroundCache.cachedAt < DEFAULT_BG_CACHE_TTL_MS;
+  if (!forceRefresh && cacheFresh) {
+    setRuntimeDefaultBackgroundId(defaultBackgroundCache.value);
+    return defaultBackgroundCache.value;
+  }
+
+  if (!forceRefresh) {
+    const persisted = readPersistedDefaultBackgroundId();
+    if (persisted) {
+      defaultBackgroundCache = { value: persisted, cachedAt: Date.now() };
+      setRuntimeDefaultBackgroundId(persisted);
+      return persisted;
+    }
+  }
+
+  try {
+    const snap = await getDoc(doc(db, ...ADMIN_CONFIG_DOC));
+    if (!snap.exists()) {
+      defaultBackgroundCache = { value: DEFAULT_BACKGROUND_ID, cachedAt: Date.now() };
+      persistDefaultBackgroundId(DEFAULT_BACKGROUND_ID);
+      setRuntimeDefaultBackgroundId(DEFAULT_BACKGROUND_ID);
+      return DEFAULT_BACKGROUND_ID;
+    }
+
+    const raw = snap.data()?.defaultSiteBackgroundId;
+    const resolved = isValidBackgroundId(raw) ? raw : DEFAULT_BACKGROUND_ID;
+    defaultBackgroundCache = { value: resolved, cachedAt: Date.now() };
+    persistDefaultBackgroundId(resolved);
+    setRuntimeDefaultBackgroundId(resolved);
+    return resolved;
+  } catch {
+    const fallback = getCachedGlobalDefaultBackgroundId();
+    setRuntimeDefaultBackgroundId(fallback);
+    return fallback;
+  }
+}
+
+export async function setGlobalDefaultBackgroundId(backgroundId: string): Promise<void> {
+  const normalized = (backgroundId || "").trim();
+  if (!isValidBackgroundId(normalized)) {
+    throw new Error("Invalid default background id.");
+  }
+
+  await setDoc(doc(db, ...ADMIN_CONFIG_DOC), {
+    defaultSiteBackgroundId: normalized,
+    updatedAt: new Date().toISOString(),
+  }, { merge: true });
+
+  defaultBackgroundCache = { value: normalized, cachedAt: Date.now() };
+  persistDefaultBackgroundId(normalized);
+  setRuntimeDefaultBackgroundId(normalized);
 }
 
 export async function loadProfileBackgroundOptionById(backgroundId: string): Promise<ProfileBackgroundOption | null> {

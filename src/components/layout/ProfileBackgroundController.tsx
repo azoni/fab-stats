@@ -3,7 +3,7 @@ import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { getProfileByUsername } from "@/lib/firestore-storage";
-import { loadProfileBackgroundOptionById } from "@/lib/profile-background-catalog";
+import { loadGlobalDefaultBackgroundId, loadProfileBackgroundOptionById } from "@/lib/profile-background-catalog";
 import {
   buildOptimizedImageUrl,
   hasProfileBackgroundOption,
@@ -56,11 +56,15 @@ export function ProfileBackgroundController() {
     };
 
     (async () => {
+      const globalDefaultId = await loadGlobalDefaultBackgroundId();
+      await ensureBackgroundResolved(globalDefaultId);
+      if (requestIdRef.current !== requestId) return;
+
       await ensureBackgroundResolved(profile?.siteBackgroundId);
       if (requestIdRef.current !== requestId) return;
 
-      const ownImage = resolveProfileBackgroundImage(profile?.siteBackgroundId);
-      const ownPosition = resolveProfileBackgroundPosition(profile?.siteBackgroundId) || "center top";
+      const ownImage = resolveProfileBackgroundImage(profile?.siteBackgroundId, globalDefaultId);
+      const ownPosition = resolveProfileBackgroundPosition(profile?.siteBackgroundId, globalDefaultId) || "center top";
       const viewedUsername = getViewedUsername(pathname);
 
       // Everywhere except /player/:username uses the viewer's own site background.
@@ -88,8 +92,8 @@ export function ProfileBackgroundController() {
         if (requestIdRef.current !== requestId) return;
 
         applyProfileBackground(
-          resolveProfileBackgroundImage(viewedProfile.siteBackgroundId),
-          resolveProfileBackgroundPosition(viewedProfile.siteBackgroundId) || "center top",
+          resolveProfileBackgroundImage(viewedProfile.siteBackgroundId, globalDefaultId),
+          resolveProfileBackgroundPosition(viewedProfile.siteBackgroundId, globalDefaultId) || "center top",
         );
       } catch {
         if (requestIdRef.current === requestId) {

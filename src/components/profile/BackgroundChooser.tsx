@@ -3,7 +3,12 @@ import { useCallback, useMemo, useState } from "react";
 import type { ProfileBackgroundOption } from "@/lib/profile-backgrounds";
 import { buildOptimizedImageUrl, NONE_BACKGROUND_ID, DEFAULT_BACKGROUND_ID } from "@/lib/profile-backgrounds";
 import { useProfileBackgroundCatalog } from "@/hooks/useProfileBackgroundCatalog";
-import { deleteProfileBackgroundFromStorage, updateProfileBackgroundCatalogEntry } from "@/lib/profile-background-catalog";
+import {
+  deleteProfileBackgroundFromStorage,
+  getCachedGlobalDefaultBackgroundId,
+  setGlobalDefaultBackgroundId,
+  updateProfileBackgroundCatalogEntry,
+} from "@/lib/profile-background-catalog";
 
 interface BackgroundChooserProps {
   selectedId?: string;
@@ -25,6 +30,7 @@ export function BackgroundChooser({ selectedId, isAdmin, onSelect, disabled }: B
   const [searchQuery, setSearchQuery] = useState("");
   const [hideDuplicateVisuals, setHideDuplicateVisuals] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
+  const [globalDefaultId, setGlobalDefaultId] = useState<string>(() => getCachedGlobalDefaultBackgroundId());
   const [brokenPreviewIds, setBrokenPreviewIds] = useState<Record<string, true>>({});
   const [failedThumbIds, setFailedThumbIds] = useState<Record<string, true>>({});
   const [adminActionById, setAdminActionById] = useState<Record<string, "saving" | "deleting">>({});
@@ -96,6 +102,10 @@ export function BackgroundChooser({ selectedId, isAdmin, onSelect, disabled }: B
   const pageStart = (page - 1) * PAGE_SIZE;
   const displayedOptions = dedupedOptions.slice(pageStart, pageStart + PAGE_SIZE);
   const hiddenDuplicateCount = filteredOptions.length - dedupedOptions.length;
+  const globalDefaultLabel = useMemo(
+    () => options.find((opt) => opt.id === globalDefaultId)?.label || globalDefaultId,
+    [options, globalDefaultId],
+  );
 
   return (
     <div className="space-y-2">
@@ -189,6 +199,11 @@ export function BackgroundChooser({ selectedId, isAdmin, onSelect, disabled }: B
             </div>
           </div>
         </div>
+        {isAdmin && (
+          <p className="text-[10px] text-fab-dim">
+            Global default for users with no selected background: <span className="text-fab-text">{globalDefaultLabel}</span>
+          </p>
+        )}
       </div>
 
       {totalPages > 1 && (
@@ -290,6 +305,11 @@ export function BackgroundChooser({ selectedId, isAdmin, onSelect, disabled }: B
                     <span className={`text-[9px] px-1 rounded border ${opt.adminOnly ? "border-amber-500/40 text-amber-300" : "border-green-500/40 text-green-300"}`}>
                       {opt.adminOnly ? "admin" : "public"}
                     </span>
+                    {opt.id === globalDefaultId && (
+                      <span className="text-[9px] px-1 rounded border border-blue-500/40 text-blue-300">
+                        default
+                      </span>
+                    )}
                     {opt.unlockType && (
                       <span className="text-[9px] px-1 rounded border border-cyan-500/40 text-cyan-300">
                         {opt.unlockType}
@@ -297,6 +317,19 @@ export function BackgroundChooser({ selectedId, isAdmin, onSelect, disabled }: B
                     )}
                   </div>
                   <div className="flex items-center gap-1.5 flex-wrap">
+                    <button
+                      type="button"
+                      disabled={isActing || disabled || opt.id === globalDefaultId}
+                      onClick={() => {
+                        void runAdminAction(opt.id, "saving", async () => {
+                          await setGlobalDefaultBackgroundId(opt.id);
+                          setGlobalDefaultId(opt.id);
+                        });
+                      }}
+                      className="text-[10px] px-1.5 py-0.5 rounded border border-blue-500/40 text-blue-300 hover:text-blue-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {opt.id === globalDefaultId ? "Default" : "Set Default"}
+                    </button>
                     <button
                       type="button"
                       disabled={isActing || disabled}
@@ -315,6 +348,11 @@ export function BackgroundChooser({ selectedId, isAdmin, onSelect, disabled }: B
                       onClick={() => {
                         if (!window.confirm(`Delete \"${opt.label}\" from Firebase Storage and hide it from chooser?`)) return;
                         void runAdminAction(opt.id, "deleting", async () => {
+                          if (opt.id === globalDefaultId) {
+                            const fallbackDefaultId = options.find((candidate) => candidate.id !== opt.id)?.id || DEFAULT_BACKGROUND_ID;
+                            await setGlobalDefaultBackgroundId(fallbackDefaultId);
+                            setGlobalDefaultId(fallbackDefaultId);
+                          }
                           await deleteProfileBackgroundFromStorage(opt);
                           if (selected === opt.id) {
                             onSelect(NONE_BACKGROUND_ID);
