@@ -6,11 +6,29 @@ service firebase.storage {
       return request.auth != null;
     }
 
+    function adminConfig() {
+      return firestore.get(/databases/(default)/documents/admin/config).data;
+    }
+
+    function adminEmails() {
+      return ('adminEmails' in adminConfig() && adminConfig().adminEmails is list)
+        ? adminConfig().adminEmails
+        : [];
+    }
+
+    function adminUids() {
+      return ('adminUids' in adminConfig() && adminConfig().adminUids is list)
+        ? adminConfig().adminUids
+        : [];
+    }
+
     function isAdmin() {
       return signedIn()
-        && request.auth.token.email != null
-        && request.auth.token.email in
-           firestore.get(/databases/(default)/documents/admin/config).data.adminEmails;
+        && (
+          request.auth.token.admin == true
+          || (request.auth.token.email != null && request.auth.token.email in adminEmails())
+          || (request.auth.uid != null && request.auth.uid in adminUids())
+        );
     }
 
     function validBackgroundFileName(fileName) {

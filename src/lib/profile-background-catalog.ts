@@ -611,22 +611,47 @@ async function deleteStorageObjectIfPresent(bucket: string, objectPath: string):
   }
 }
 
-export async function deleteProfileBackgroundFromStorage(background: ProfileBackgroundOption): Promise<void> {
+export interface DeleteProfileBackgroundResult {
+  storageDeleted: boolean;
+  deactivated: boolean;
+  storageErrorCode?: string;
+}
+
+function getStorageErrorCode(error: unknown): string {
+  if (typeof error === "object" && error && "code" in error) {
+    const code = String((error as { code?: string }).code || "");
+    if (code) return code;
+  }
+  return "storage/unknown";
+}
+
+export async function deleteProfileBackgroundFromStorage(background: ProfileBackgroundOption): Promise<DeleteProfileBackgroundResult> {
   const full = parseStorageBackgroundObject(background.imageUrl, "full");
   const thumb = background.thumbnailUrl ? parseStorageBackgroundObject(background.thumbnailUrl, "thumb") : null;
-
-  const deleteJobs: Promise<void>[] = [];
+  let storageErrorCode: string | undefined;
 
   if (full) {
-    deleteJobs.push(deleteStorageObjectIfPresent(full.bucket, full.objectPath));
+    try {
+      await deleteStorageObjectIfPresent(full.bucket, full.objectPath);
+    } catch (error) {
+      storageErrorCode = getStorageErrorCode(error);
+    }
   }
 
   if (thumb && (!full || thumb.bucket !== full.bucket || thumb.objectPath !== full.objectPath)) {
-    deleteJobs.push(deleteStorageObjectIfPresent(thumb.bucket, thumb.objectPath));
+    try {
+      await deleteStorageObjectIfPresent(thumb.bucket, thumb.objectPath);
+    } catch (error) {
+      storageErrorCode = storageErrorCode || getStorageErrorCode(error);
+    }
   }
 
-  await Promise.all(deleteJobs);
   await updateProfileBackgroundCatalogEntry(background.id, { isActive: false });
+  return {
+    storageDeleted: !storageErrorCode,
+    deactivated: true,
+    storageErrorCode,
+  };
 }
 
 function buildStorageMediaUrl(bucket: string, objectPath: string): string {

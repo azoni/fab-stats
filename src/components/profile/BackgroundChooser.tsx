@@ -35,6 +35,7 @@ export function BackgroundChooser({ selectedId, isAdmin, onSelect, disabled }: B
   const [failedThumbIds, setFailedThumbIds] = useState<Record<string, true>>({});
   const [adminActionById, setAdminActionById] = useState<Record<string, "saving" | "deleting">>({});
   const [adminActionError, setAdminActionError] = useState<string | null>(null);
+  const [adminActionNotice, setAdminActionNotice] = useState<string | null>(null);
   const [adminVisibilityFilter, setAdminVisibilityFilter] = useState<"all" | "public" | "admin">("all");
   const [adminUnlockFilter, setAdminUnlockFilter] = useState<"all" | "open" | "gated">("all");
   const [adminKindFilter, setAdminKindFilter] = useState<"all" | "key-art" | "playmat" | "hero-art">("all");
@@ -46,6 +47,7 @@ export function BackgroundChooser({ selectedId, isAdmin, onSelect, disabled }: B
 
   const runAdminAction = useCallback(async (id: string, action: "saving" | "deleting", fn: () => Promise<void>) => {
     setAdminActionError(null);
+    setAdminActionNotice(null);
     setAdminActionById((prev) => ({ ...prev, [id]: action }));
     try {
       await fn();
@@ -374,7 +376,13 @@ export function BackgroundChooser({ selectedId, isAdmin, onSelect, disabled }: B
                             await setGlobalDefaultBackgroundId(fallbackDefaultId);
                             setGlobalDefaultId(fallbackDefaultId);
                           }
-                          await deleteProfileBackgroundFromStorage(opt);
+                          const result = await deleteProfileBackgroundFromStorage(opt);
+                          if (!result.storageDeleted) {
+                            const code = result.storageErrorCode || "storage/unknown";
+                            setAdminActionNotice(
+                              `Removed "${opt.label}" from chooser, but storage delete was denied (${code}). Check Storage rules/admin auth and re-login.`,
+                            );
+                          }
                           if (selected === opt.id) {
                             onSelect(NONE_BACKGROUND_ID);
                           }
@@ -435,6 +443,9 @@ export function BackgroundChooser({ selectedId, isAdmin, onSelect, disabled }: B
       )}
       {isAdmin && adminActionError && (
         <p className="mt-1 text-[11px] text-rose-300">{adminActionError}</p>
+      )}
+      {isAdmin && adminActionNotice && (
+        <p className="mt-1 text-[11px] text-amber-300">{adminActionNotice}</p>
       )}
       {loading && <p className="mt-2 text-[10px] text-fab-dim">Loading background catalog...</p>}
     </div>
