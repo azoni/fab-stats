@@ -10,8 +10,8 @@ interface BackgroundChooserProps {
   disabled?: boolean;
 }
 
-const COLLAPSED_VISIBLE_COUNT = 9;
-const EXPANDED_PAGE_SIZE = 24;
+const COLLAPSED_VISIBLE_COUNT = 6;
+const EXPANDED_PAGE_SIZE = 12;
 
 export function BackgroundChooser({ selectedId, isAdmin, onSelect, disabled }: BackgroundChooserProps) {
   const selected = selectedId || DEFAULT_BACKGROUND_ID;
@@ -54,12 +54,11 @@ export function BackgroundChooser({ selectedId, isAdmin, onSelect, disabled }: B
   }, [options, isAdmin, searchQuery, adminVisibilityFilter, adminUnlockFilter, adminKindFilter]);
 
   const displayedOptions = useMemo(() => {
-    if (isAdmin) return filteredOptions.slice(0, Math.max(visibleCount, 240));
     if (!expanded) return filteredOptions.slice(0, COLLAPSED_VISIBLE_COUNT);
     return filteredOptions.slice(0, visibleCount);
-  }, [filteredOptions, isAdmin, expanded, visibleCount]);
+  }, [filteredOptions, expanded, visibleCount]);
 
-  const canLoadMore = (isAdmin || expanded) && visibleCount < filteredOptions.length;
+  const canLoadMore = expanded && visibleCount < filteredOptions.length;
 
   return (
     <div>
@@ -180,7 +179,6 @@ export function BackgroundChooser({ selectedId, isAdmin, onSelect, disabled }: B
                   loading="lazy"
                   decoding="async"
                   fetchPriority="low"
-                  crossOrigin="anonymous"
                   style={previewMode === "fit" ? { objectPosition: "center center" } : undefined}
                   onError={() => markPreviewBroken(opt.id)}
                 />
@@ -209,7 +207,7 @@ export function BackgroundChooser({ selectedId, isAdmin, onSelect, disabled }: B
       </div>
 
       <div className="mt-2 flex items-center gap-3 flex-wrap">
-        {!isAdmin && !expanded && filteredOptions.length > COLLAPSED_VISIBLE_COUNT && (
+        {!expanded && filteredOptions.length > COLLAPSED_VISIBLE_COUNT && (
           <button
             type="button"
             onClick={() => {
@@ -230,7 +228,7 @@ export function BackgroundChooser({ selectedId, isAdmin, onSelect, disabled }: B
             Load more ({Math.min(EXPANDED_PAGE_SIZE, filteredOptions.length - visibleCount)})
           </button>
         )}
-        {!isAdmin && expanded && (
+        {expanded && (
           <button
             type="button"
             onClick={() => {
