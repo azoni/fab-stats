@@ -13,7 +13,7 @@ export type ShareResult = "image" | "shared" | "text" | "failed";
 interface CaptureOptions {
   backgroundColor: string;
   pixelRatio?: number;
-  /** If true, retry without <img> elements on CORS failure (ProfileCard needs this). */
+  /** Retry without <img> elements on CORS failure. Defaults to true. */
   retryWithoutImages?: boolean;
 }
 
@@ -30,7 +30,7 @@ export async function captureCardBlob(
   try {
     return await toBlob(el, base);
   } catch {
-    if (opts.retryWithoutImages) {
+    if (opts.retryWithoutImages !== false) {
       try {
         return await toBlob(el, { ...base, filter: (node: HTMLElement) => node.tagName !== "IMG" });
       } catch {
