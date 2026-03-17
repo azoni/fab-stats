@@ -270,14 +270,14 @@ export function OnThisDay({ matches }: OnThisDayProps) {
       {!collapsed && (
         <>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mt-3">
-            {memories.map((mem) => {
+            {memories.map((mem, i) => {
               const yearsAgo = thisYear - mem.year;
               const record = `${mem.wins}W-${mem.losses}L${mem.draws > 0 ? `-${mem.draws}D` : ""}`;
               const wasGoodDay = mem.wins > mem.losses;
               const wasUndefeated = mem.losses === 0 && mem.wins > 0;
 
               return (
-                <div key={mem.year} className="bg-fab-bg border border-fab-border rounded-lg p-3">
+                <div key={`${mem.year}-${mem.events[0] || i}`} className="bg-fab-bg border border-fab-border rounded-lg p-3">
                   {/* Year badge + record */}
                   <div className="flex items-center gap-2 mb-2">
                     <span className="text-xs font-bold text-fab-gold bg-fab-gold/10 px-2 py-0.5 rounded-full">

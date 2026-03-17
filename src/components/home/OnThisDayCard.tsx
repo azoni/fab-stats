@@ -68,13 +68,13 @@ export function OnThisDayCard({ data, theme }: { data: OnThisDayData; theme: Car
       </div>
 
       <div className="px-5 pt-4 pb-4 space-y-4 relative">
-        {memories.slice(0, 4).map((mem) => {
+        {memories.slice(0, 4).map((mem, i) => {
           const record = `${mem.wins}W-${mem.losses}L${mem.draws > 0 ? `-${mem.draws}D` : ""}`;
           const wasGoodDay = mem.wins > mem.losses;
           const wasUndefeated = mem.losses === 0 && mem.wins > 0;
 
           return (
-            <div key={mem.year} className="flex gap-3">
+            <div key={`${mem.year}-${mem.events[0] || i}`} className="flex gap-3">
               {/* Year badge */}
               <div className="shrink-0 text-center w-12 pt-0.5">
                 <p style={{ color: t.accent }} className="text-lg font-bold">{mem.yearsAgo}</p>
