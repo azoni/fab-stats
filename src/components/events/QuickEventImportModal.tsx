@@ -12,6 +12,7 @@ import { computeOverallStats, computeHeroStats, computeOpponentStats, computeEve
 import { updateLeaderboardEntry } from "@/lib/leaderboard";
 import { computeH2HForUser } from "@/lib/h2h";
 import { updateCommunityHeroMatchups } from "@/lib/hero-matchups";
+import { trackImportMethod } from "@/lib/analytics";
 import { allHeroes } from "@/lib/heroes";
 import { MatchResult, type MatchRecord } from "@/types";
 import { localDate } from "@/lib/constants";
@@ -179,6 +180,9 @@ export function QuickEventImportModal({ open, onClose, onImportComplete }: Quick
     setImportedCount(count);
     setSkippedCount(matches.length - count);
     setPhase("complete");
+
+    // Track import method
+    if (count > 0) trackImportMethod("paste", count);
 
     // Post to feed + update leaderboard (non-blocking)
     if (user && profile && count > 0) {

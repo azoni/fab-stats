@@ -149,19 +149,22 @@ export function OnThisDay({ matches }: OnThisDayProps) {
 
     if (onThisDay.length === 0) return [];
 
-    const byYear = new Map<number, MatchRecord[]>();
+    // Group by year + event name so separate events don't merge
+    const byYearEvent = new Map<string, { year: number; event: string; matches: MatchRecord[] }>();
     for (const m of onThisDay) {
       const year = localDate(m.date).getFullYear();
-      if (!byYear.has(year)) byYear.set(year, []);
-      byYear.get(year)!.push(m);
+      const event = m.notes?.split(" | ")[0]?.trim() || "";
+      const key = `${year}::${event}`;
+      if (!byYearEvent.has(key)) byYearEvent.set(key, { year, event, matches: [] });
+      byYearEvent.get(key)!.matches.push(m);
     }
 
     const result: YearMemory[] = [];
-    for (const [year, yearMatches] of byYear) {
-      const effective = computeEffectiveRounds(yearMatches);
+    for (const { year, event, matches: eventMatches } of byYearEvent.values()) {
+      const effective = computeEffectiveRounds(eventMatches);
 
       // Sort: numbered rounds first, inferred playoffs after swiss, unknown (0) last
-      yearMatches.sort((a, b) => {
+      eventMatches.sort((a, b) => {
         const rnA = effective.get(a) ?? 0;
         const rnB = effective.get(b) ?? 0;
         if (rnA === 0 && rnB === 0) return 0;
@@ -170,14 +173,14 @@ export function OnThisDay({ matches }: OnThisDayProps) {
         return rnA - rnB;
       });
 
-      const wins = yearMatches.filter((m) => m.result === MatchResult.Win).length;
-      const losses = yearMatches.filter((m) => m.result === MatchResult.Loss).length;
-      const draws = yearMatches.filter((m) => m.result === MatchResult.Draw).length;
-      const heroes = [...new Set(yearMatches.map((m) => m.heroPlayed).filter((h) => h && h !== "Unknown"))];
-      const events = [...new Set(yearMatches.map((m) => m.notes?.split(" | ")[0]).filter(Boolean))] as string[];
+      const wins = eventMatches.filter((m) => m.result === MatchResult.Win).length;
+      const losses = eventMatches.filter((m) => m.result === MatchResult.Loss).length;
+      const draws = eventMatches.filter((m) => m.result === MatchResult.Draw).length;
+      const heroes = [...new Set(eventMatches.map((m) => m.heroPlayed).filter((h) => h && h !== "Unknown"))];
+      const events = event ? [event] : [];
 
-      const placement = detectPlacement(effective, yearMatches);
-      const roundInfo: RoundInfo[] = yearMatches.map((m) => {
+      const placement = detectPlacement(effective, eventMatches);
+      const roundInfo: RoundInfo[] = eventMatches.map((m) => {
         const eff = effective.get(m) ?? 0;
         if (eff >= 1003) return { label: "F", isPlayoff: true };
         if (eff >= 1002) return { label: "SF", isPlayoff: true };
@@ -186,10 +189,10 @@ export function OnThisDay({ matches }: OnThisDayProps) {
         return { label: getRoundLabel(m), isPlayoff: getRoundNumber(m) >= 1000 };
       });
 
-      result.push({ year, matches: yearMatches, wins, losses, draws, heroes, events, placement, roundInfo });
+      result.push({ year, matches: eventMatches, wins, losses, draws, heroes, events, placement, roundInfo });
     }
 
-    return result.sort((a, b) => b.year - a.year);
+    return result.sort((a, b) => b.year - a.year || b.matches.length - a.matches.length);
   }, [matches, overrideDate, overrideYear]);
 
   if (memories.length === 0) return null;
