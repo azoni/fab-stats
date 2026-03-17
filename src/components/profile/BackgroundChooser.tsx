@@ -1,11 +1,12 @@
 "use client";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { ProfileBackgroundOption } from "@/lib/profile-backgrounds";
 import { buildOptimizedImageUrl, NONE_BACKGROUND_ID, DEFAULT_BACKGROUND_ID } from "@/lib/profile-backgrounds";
 import { useProfileBackgroundCatalog } from "@/hooks/useProfileBackgroundCatalog";
 import {
   deleteProfileBackgroundFromStorage,
   getCachedGlobalDefaultBackgroundId,
+  loadGlobalDefaultBackgroundId,
   setGlobalDefaultBackgroundId,
   updateProfileBackgroundCatalogEntry,
 } from "@/lib/profile-background-catalog";
@@ -24,7 +25,6 @@ function toVisualKey(opt: ProfileBackgroundOption): string {
 }
 
 export function BackgroundChooser({ selectedId, isAdmin, onSelect, disabled }: BackgroundChooserProps) {
-  const selected = selectedId || DEFAULT_BACKGROUND_ID;
   const { options, loading, refreshCatalog } = useProfileBackgroundCatalog(isAdmin);
   const [previewMode, setPreviewMode] = useState<"fit" | "fill">("fit");
   const [searchQuery, setSearchQuery] = useState("");
@@ -38,6 +38,7 @@ export function BackgroundChooser({ selectedId, isAdmin, onSelect, disabled }: B
   const [adminVisibilityFilter, setAdminVisibilityFilter] = useState<"all" | "public" | "admin">("all");
   const [adminUnlockFilter, setAdminUnlockFilter] = useState<"all" | "open" | "gated">("all");
   const [adminKindFilter, setAdminKindFilter] = useState<"all" | "key-art" | "playmat" | "hero-art">("all");
+  const selected = selectedId || globalDefaultId || DEFAULT_BACKGROUND_ID;
 
   const markPreviewBroken = useCallback((previewKey: string) => {
     setBrokenPreviewIds((prev) => (prev[previewKey] ? prev : { ...prev, [previewKey]: true }));
@@ -60,6 +61,19 @@ export function BackgroundChooser({ selectedId, isAdmin, onSelect, disabled }: B
       });
     }
   }, [refreshCatalog]);
+
+  useEffect(() => {
+    let active = true;
+    loadGlobalDefaultBackgroundId(false)
+      .then((resolvedId) => {
+        if (!active) return;
+        setGlobalDefaultId(resolvedId);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const filteredOptions = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -97,10 +111,17 @@ export function BackgroundChooser({ selectedId, isAdmin, onSelect, disabled }: B
     });
   }, [filteredOptions, hideDuplicateVisuals]);
 
-  const totalPages = Math.max(1, Math.ceil(dedupedOptions.length / PAGE_SIZE));
+  const orderedOptions = useMemo(() => {
+    if (!globalDefaultId) return dedupedOptions;
+    const idx = dedupedOptions.findIndex((opt) => opt.id === globalDefaultId);
+    if (idx <= 0) return dedupedOptions;
+    return [dedupedOptions[idx], ...dedupedOptions.slice(0, idx), ...dedupedOptions.slice(idx + 1)];
+  }, [dedupedOptions, globalDefaultId]);
+
+  const totalPages = Math.max(1, Math.ceil(orderedOptions.length / PAGE_SIZE));
   const page = Math.min(currentPage, totalPages);
   const pageStart = (page - 1) * PAGE_SIZE;
-  const displayedOptions = dedupedOptions.slice(pageStart, pageStart + PAGE_SIZE);
+  const displayedOptions = orderedOptions.slice(pageStart, pageStart + PAGE_SIZE);
   const hiddenDuplicateCount = filteredOptions.length - dedupedOptions.length;
   const globalDefaultLabel = useMemo(
     () => options.find((opt) => opt.id === globalDefaultId)?.label || globalDefaultId,
