@@ -174,10 +174,10 @@ function ShareCardInner({ data, theme }: { data: TrendsShareData; theme: TrendsT
       {showBackgroundImage && (
         <>
           <img
-            src={buildOptimizedImageUrl(t.backgroundImage, 960, 60)}
+            src={buildOptimizedImageUrl(t.backgroundImage!, 960, 60)}
             alt=""
             className="absolute inset-0 w-full h-full object-cover"
-            style={{ objectPosition: resolveBackgroundPositionForImage(t.backgroundImage) }}
+            style={{ objectPosition: resolveBackgroundPositionForImage(t.backgroundImage!) }}
             loading="eager"
             decoding="async"
             crossOrigin="anonymous"
