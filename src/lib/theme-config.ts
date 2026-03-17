@@ -1,13 +1,21 @@
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "./firebase";
 
-export type ThemeName = "grimoire" | "leyline" | "rosetta" | "shamrock";
+export type ThemeName = "grimoire" | "leyline" | "rosetta" | "shamrock" | "newyear" | "valentine" | "firework" | "spooky" | "holly" | "pastel" | "thankful" | "lunar";
 
 export const THEME_OPTIONS: { value: ThemeName; label: string; description: string }[] = [
   { value: "grimoire", label: "Grimoire", description: "Ancient spellbook, warm leather & candlelight" },
   { value: "leyline", label: "Leyline", description: "Arcane glass observatory, luminous & floating" },
   { value: "rosetta", label: "Rosetta", description: "Pure data terminal, sharp & monochrome" },
   { value: "shamrock", label: "Shamrock", description: "St. Patrick's Day — luck of the Irish" },
+  { value: "newyear", label: "New Year", description: "Midnight champagne & golden sparkle" },
+  { value: "valentine", label: "Valentine", description: "Roses, blush & heartfelt pink" },
+  { value: "pastel", label: "Pastel", description: "Easter — spring pastels & soft lavender" },
+  { value: "firework", label: "Firework", description: "Fourth of July — red, white & blue" },
+  { value: "spooky", label: "Spooky", description: "Halloween — pumpkin orange & midnight purple" },
+  { value: "thankful", label: "Thankful", description: "Thanksgiving — harvest amber & warm cider" },
+  { value: "holly", label: "Holly", description: "Christmas — warm red, pine green & snow" },
+  { value: "lunar", label: "Lunar", description: "New Year's Eve — midnight violet & starlight" },
 ];
 
 const CACHE_KEY = "fab_theme_config";
