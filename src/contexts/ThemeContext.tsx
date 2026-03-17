@@ -19,6 +19,7 @@ const ThemeContext = createContext<ThemeContextType>({
 
 const USER_THEME_KEY = "fab-theme";
 const USER_THEME_GEN_KEY = "fab-theme-gen";
+const HOLIDAY_DISMISSED_KEY = "fab-holiday-dismissed";
 
 /** Compute Easter Sunday for a given year (Anonymous Gregorian algorithm). */
 function computeEaster(year: number): { month: number; day: number } {
@@ -89,26 +90,47 @@ function migrateSlug(raw: string | null): ThemeName | null {
 }
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
+  const holiday = getHolidayTheme();
+
+  // Check if user dismissed today's holiday theme by switching away
+  const holidayDismissed = (() => {
+    if (!holiday || typeof window === "undefined") return false;
+    try {
+      const dismissed = localStorage.getItem(HOLIDAY_DISMISSED_KEY);
+      if (!dismissed) return false;
+      const { theme: dTheme, date } = JSON.parse(dismissed);
+      const today = new Date().toISOString().slice(0, 10);
+      return dTheme === holiday && date === today;
+    } catch { return false; }
+  })();
+
   const [theme, setThemeState] = useState<ThemeName>(() => {
     if (typeof window === "undefined") return "grimoire";
+    // Holiday overrides everyone unless they dismissed it today
+    if (holiday && !holidayDismissed) return holiday;
     const stored = migrateSlug(localStorage.getItem(USER_THEME_KEY));
-    return stored || getHolidayTheme() || "grimoire";
+    return stored || "grimoire";
   });
   const [isCustom, setIsCustom] = useState(() => {
     if (typeof window === "undefined") return false;
+    if (holiday && !holidayDismissed) return false;
     return localStorage.getItem(USER_THEME_KEY) !== null;
   });
 
   // Fetch admin config — check generation to force-reset stale user choices
-  // Holiday themes override the default for the day (users can still pick their own)
   useEffect(() => {
     getThemeConfig().then(({ theme: adminTheme, generation }) => {
-      const holiday = getHolidayTheme();
-      const effectiveDefault = holiday || adminTheme;
+      const effectiveDefault = (holiday && !holidayDismissed) ? holiday : adminTheme;
       const userTheme = localStorage.getItem(USER_THEME_KEY);
       const userGen = parseInt(localStorage.getItem(USER_THEME_GEN_KEY) || "0", 10);
 
-      if (userTheme && userGen < generation) {
+      if (holiday && !holidayDismissed) {
+        // Holiday active — apply it regardless of user preference
+        localStorage.setItem(USER_THEME_GEN_KEY, String(generation));
+        setThemeState(holiday);
+        setIsCustom(false);
+        document.documentElement.setAttribute("data-theme", holiday);
+      } else if (userTheme && userGen < generation) {
         // Admin bumped generation — clear user's choice
         localStorage.removeItem(USER_THEME_KEY);
         localStorage.setItem(USER_THEME_GEN_KEY, String(generation));
@@ -116,16 +138,16 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         setIsCustom(false);
         document.documentElement.setAttribute("data-theme", effectiveDefault);
       } else if (!userTheme) {
-        // No user choice — use holiday or admin default
+        // No user choice — use admin default
         localStorage.setItem(USER_THEME_GEN_KEY, String(generation));
-        setThemeState(effectiveDefault);
-        document.documentElement.setAttribute("data-theme", effectiveDefault);
+        setThemeState(adminTheme);
+        document.documentElement.setAttribute("data-theme", adminTheme);
       } else {
         // User has a valid choice, just sync generation
         localStorage.setItem(USER_THEME_GEN_KEY, String(generation));
       }
     });
-  }, []);
+  }, [holiday, holidayDismissed]);
 
   // Apply data-theme attribute
   useEffect(() => {
@@ -137,7 +159,15 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     setIsCustom(true);
     localStorage.setItem(USER_THEME_KEY, t);
     document.documentElement.setAttribute("data-theme", t);
-  }, []);
+    // If switching away from a holiday theme, remember the dismissal for today
+    if (holiday && t !== holiday) {
+      try {
+        localStorage.setItem(HOLIDAY_DISMISSED_KEY, JSON.stringify({
+          theme: holiday, date: new Date().toISOString().slice(0, 10),
+        }));
+      } catch {}
+    }
+  }, [holiday]);
 
   const resetTheme = useCallback(() => {
     localStorage.removeItem(USER_THEME_KEY);
