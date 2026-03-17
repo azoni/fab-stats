@@ -58,14 +58,15 @@ export default async function handler(req: Request) {
       );
     }
 
-    await Promise.allSettled(promises);
+    const results = await Promise.allSettled(promises);
+    const details = results.map((r, i) => r.status === 'fulfilled' ? `${i}:ok` : `${i}:${String((r as PromiseRejectedResult).reason)}`);
 
-    return new Response(JSON.stringify({ ok: true }), {
+    return new Response(JSON.stringify({ ok: true, paths: promises.length, results: details, hasSecret: !!PORTFOLIO_SECRET, hasMcp: !!MCP_ADMIN_KEY }), {
       status: 200,
       headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
     });
-  } catch {
-    return new Response(JSON.stringify({ ok: true }), {
+  } catch (err) {
+    return new Response(JSON.stringify({ ok: false, error: String(err) }), {
       status: 200,
       headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
     });
