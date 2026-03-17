@@ -13,7 +13,7 @@ import {
   type QueryConstraint,
 } from "firebase/firestore";
 import { deleteObject, getStorage, ref as storageRef } from "firebase/storage";
-import { app, db } from "@/lib/firebase";
+import { app, auth, db } from "@/lib/firebase";
 import {
   DEFAULT_BACKGROUND_ID,
   PROFILE_BACKGROUND_OPTIONS,
@@ -611,6 +611,49 @@ async function deleteStorageObjectIfPresent(bucket: string, objectPath: string):
   }
 }
 
+class AdminFunctionDeleteError extends Error {
+  code: string;
+
+  constructor(message: string, code: string) {
+    super(message);
+    this.name = "AdminFunctionDeleteError";
+    this.code = code;
+  }
+}
+
+function isAuthDeleteErrorCode(code: string | undefined): boolean {
+  return code === "storage/unauthorized" || code === "storage/unauthenticated";
+}
+
+async function deleteStorageViaAdminFunction(background: ProfileBackgroundOption): Promise<void> {
+  const user = auth.currentUser;
+  if (!user) {
+    throw new AdminFunctionDeleteError("Authentication required", "storage/unauthenticated");
+  }
+
+  const idToken = await user.getIdToken();
+  const response = await fetch("/.netlify/functions/profile-background-admin", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${idToken}`,
+    },
+    body: JSON.stringify({
+      action: "delete-storage-background",
+      backgroundId: background.id,
+      imageUrl: background.imageUrl,
+      thumbnailUrl: background.thumbnailUrl || null,
+    }),
+  });
+
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok || payload?.ok === false) {
+    const code = typeof payload?.code === "string" ? payload.code : "storage/unknown";
+    const message = typeof payload?.error === "string" ? payload.error : "Admin delete request failed";
+    throw new AdminFunctionDeleteError(message, code);
+  }
+}
+
 export interface DeleteProfileBackgroundResult {
   storageDeleted: boolean;
   deactivated: boolean;
@@ -643,6 +686,15 @@ export async function deleteProfileBackgroundFromStorage(background: ProfileBack
       await deleteStorageObjectIfPresent(thumb.bucket, thumb.objectPath);
     } catch (error) {
       storageErrorCode = storageErrorCode || getStorageErrorCode(error);
+    }
+  }
+
+  if (isAuthDeleteErrorCode(storageErrorCode)) {
+    try {
+      await deleteStorageViaAdminFunction(background);
+      storageErrorCode = undefined;
+    } catch (error) {
+      storageErrorCode = getStorageErrorCode(error);
     }
   }
 
