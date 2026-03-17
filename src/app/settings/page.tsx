@@ -58,6 +58,14 @@ const THEME_PREVIEWS: Record<ThemeName, { bg: string; surface: string; border: s
   leyline: { bg: "#08080f", surface: "#14142a", border: "#1e2050", accent: "#7b8fff", text: "#e0e4f0", muted: "#6b7094", radius: "10px" },
   rosetta: { bg: "#0a0a0a", surface: "#141414", border: "#262626", accent: "#f0f0f0", text: "#fafafa", muted: "#737373", radius: "2px" },
   shamrock: { bg: "#071207", surface: "#0f1f0f", border: "#1e3a1e", accent: "#22c55e", text: "#d4edda", muted: "#6b9b6b", radius: "8px" },
+  newyear: { bg: "#0a0814", surface: "#141028", border: "#2a2050", accent: "#f5c542", text: "#eee8f5", muted: "#8b7faa", radius: "8px" },
+  valentine: { bg: "#140810", surface: "#1f0f1a", border: "#3d1a30", accent: "#f472b6", text: "#f5e0ed", muted: "#9b6b88", radius: "12px" },
+  pastel: { bg: "#0e0c14", surface: "#18152a", border: "#2e2850", accent: "#c4b5fd", text: "#ede8f5", muted: "#8b80aa", radius: "12px" },
+  firework: { bg: "#0a0c14", surface: "#101828", border: "#1e2a50", accent: "#ef4444", text: "#e8ecf5", muted: "#7b8baa", radius: "6px" },
+  spooky: { bg: "#0d0a08", surface: "#1a1410", border: "#3a2a18", accent: "#f97316", text: "#f0e6d8", muted: "#8b7a60", radius: "6px" },
+  thankful: { bg: "#0e0a06", surface: "#1c1508", border: "#3a2e14", accent: "#d97706", text: "#f0e8d0", muted: "#8b7a55", radius: "6px" },
+  holly: { bg: "#0c0808", surface: "#1a1010", border: "#3a1818", accent: "#dc2626", text: "#f5e8e8", muted: "#9b7070", radius: "8px" },
+  lunar: { bg: "#08060e", surface: "#100e1c", border: "#252040", accent: "#a78bfa", text: "#e8e4f5", muted: "#7b70aa", radius: "10px" },
 };
 
 function ThemePicker() {

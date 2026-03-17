@@ -20,12 +20,49 @@ const ThemeContext = createContext<ThemeContextType>({
 const USER_THEME_KEY = "fab-theme";
 const USER_THEME_GEN_KEY = "fab-theme-gen";
 
+/** Compute Easter Sunday for a given year (Anonymous Gregorian algorithm). */
+function computeEaster(year: number): { month: number; day: number } {
+  const a = year % 19;
+  const b = Math.floor(year / 100);
+  const c = year % 100;
+  const d = Math.floor(b / 4);
+  const e = b % 4;
+  const f = Math.floor((b + 8) / 25);
+  const g = Math.floor((b - f + 1) / 3);
+  const h = (19 * a + b - d - g + 15) % 30;
+  const i = Math.floor(c / 4);
+  const k = c % 4;
+  const l = (32 + 2 * e + 2 * i - h - k) % 7;
+  const m = Math.floor((a + 11 * h + 22 * l) / 451);
+  const month = Math.floor((h + l - 7 * m + 114) / 31); // 3=Mar, 4=Apr
+  const day = ((h + l - 7 * m + 114) % 31) + 1;
+  return { month, day };
+}
+
+/** Get the 4th Thursday of November (Thanksgiving). */
+function thanksgivingDay(year: number): number {
+  // Nov 1 day of week (0=Sun), find first Thursday, add 3 weeks
+  const dow = new Date(Date.UTC(year, 10, 1)).getUTCDay();
+  const firstThurs = dow <= 4 ? 5 - dow : 12 - dow;
+  return firstThurs + 21; // 4th Thursday
+}
+
 /** Check if today is a holiday with a special theme override. Uses UTC date. */
 function getHolidayTheme(): ThemeName | null {
   const now = new Date();
+  const y = now.getUTCFullYear();
   const m = now.getUTCMonth() + 1; // 1-12
   const d = now.getUTCDate();
-  if (m === 3 && d === 17) return "shamrock"; // St. Patrick's Day
+  if (m === 1 && d === 1) return "newyear";        // New Year's Day
+  if (m === 2 && d === 14) return "valentine";      // Valentine's Day
+  if (m === 3 && d === 17) return "shamrock";       // St. Patrick's Day
+  const easter = computeEaster(y);
+  if (m === easter.month && d === easter.day) return "pastel"; // Easter Sunday
+  if (m === 7 && d === 4) return "firework";        // Independence Day
+  if (m === 10 && d === 31) return "spooky";        // Halloween
+  if (m === 11 && d === thanksgivingDay(y)) return "thankful"; // Thanksgiving
+  if (m === 12 && (d === 24 || d === 25)) return "holly"; // Christmas Eve & Day
+  if (m === 12 && d === 31) return "lunar";         // New Year's Eve
   return null;
 }
 
