@@ -20,6 +20,15 @@ const ThemeContext = createContext<ThemeContextType>({
 const USER_THEME_KEY = "fab-theme";
 const USER_THEME_GEN_KEY = "fab-theme-gen";
 
+/** Check if today is a holiday with a special theme override. Uses UTC date. */
+function getHolidayTheme(): ThemeName | null {
+  const now = new Date();
+  const m = now.getUTCMonth() + 1; // 1-12
+  const d = now.getUTCDate();
+  if (m === 3 && d === 17) return "shamrock"; // St. Patrick's Day
+  return null;
+}
+
 // Migrate old theme slugs to new ones
 const SLUG_MIGRATION: Record<string, ThemeName> = {
   arcana: "grimoire",
@@ -46,7 +55,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = useState<ThemeName>(() => {
     if (typeof window === "undefined") return "grimoire";
     const stored = migrateSlug(localStorage.getItem(USER_THEME_KEY));
-    return stored || "grimoire";
+    return stored || getHolidayTheme() || "grimoire";
   });
   const [isCustom, setIsCustom] = useState(() => {
     if (typeof window === "undefined") return false;
@@ -54,8 +63,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   });
 
   // Fetch admin config — check generation to force-reset stale user choices
+  // Holiday themes override the default for the day (users can still pick their own)
   useEffect(() => {
     getThemeConfig().then(({ theme: adminTheme, generation }) => {
+      const holiday = getHolidayTheme();
+      const effectiveDefault = holiday || adminTheme;
       const userTheme = localStorage.getItem(USER_THEME_KEY);
       const userGen = parseInt(localStorage.getItem(USER_THEME_GEN_KEY) || "0", 10);
 
@@ -63,14 +75,14 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         // Admin bumped generation — clear user's choice
         localStorage.removeItem(USER_THEME_KEY);
         localStorage.setItem(USER_THEME_GEN_KEY, String(generation));
-        setThemeState(adminTheme);
+        setThemeState(effectiveDefault);
         setIsCustom(false);
-        document.documentElement.setAttribute("data-theme", adminTheme);
+        document.documentElement.setAttribute("data-theme", effectiveDefault);
       } else if (!userTheme) {
-        // No user choice — use admin default
+        // No user choice — use holiday or admin default
         localStorage.setItem(USER_THEME_GEN_KEY, String(generation));
-        setThemeState(adminTheme);
-        document.documentElement.setAttribute("data-theme", adminTheme);
+        setThemeState(effectiveDefault);
+        document.documentElement.setAttribute("data-theme", effectiveDefault);
       } else {
         // User has a valid choice, just sync generation
         localStorage.setItem(USER_THEME_GEN_KEY, String(generation));
@@ -94,8 +106,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem(USER_THEME_KEY);
     setIsCustom(false);
     getThemeConfig().then(({ theme: t }) => {
-      setThemeState(t);
-      document.documentElement.setAttribute("data-theme", t);
+      const effective = getHolidayTheme() || t;
+      setThemeState(effective);
+      document.documentElement.setAttribute("data-theme", effective);
     });
   }, []);
 
