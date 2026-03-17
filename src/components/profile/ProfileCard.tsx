@@ -293,7 +293,7 @@ export function ProfileCard({ data, theme }: { data: ProfileCardData; theme?: Ca
             loading="eager"
             decoding="async"
             crossOrigin="anonymous"
-          />
+          onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
           <div className="absolute inset-0" style={{ backgroundColor: `${t.surface}B3` }} />
         </>
       )}
@@ -642,7 +642,7 @@ export function ProfileShareModal({
                         loading="lazy"
                         decoding="async"
                         fetchPriority="low"
-                      />
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
                       <div className="absolute inset-0" style={{ backgroundColor: `${theme.surface}99` }} />
                     </>
                   ) : (

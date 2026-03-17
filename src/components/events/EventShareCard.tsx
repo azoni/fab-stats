@@ -101,7 +101,7 @@ export function EventShareCardInner({ data, theme }: { data: EventShareData; the
             loading="eager"
             decoding="async"
             crossOrigin="anonymous"
-          />
+          onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
           <div className="absolute inset-0" style={{ backgroundColor: `${t.surface}B8` }} />
         </>
       )}
@@ -278,7 +278,7 @@ export function EventShareModal({ event, playerName, onClose }: EventShareModalP
                         decoding="async"
                         fetchPriority="low"
                         crossOrigin="anonymous"
-                      />
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
                       <div className="absolute inset-0" style={{ backgroundColor: `${theme.surface}99` }} />
                     </>
                   ) : (

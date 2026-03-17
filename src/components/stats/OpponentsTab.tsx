@@ -776,7 +776,7 @@ function ShareModal({
                         decoding="async"
                         fetchPriority="low"
                         crossOrigin="anonymous"
-                      />
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
                       <div className="absolute inset-0" style={{ backgroundColor: `${theme.surface}99` }} />
                     </>
                   ) : (
