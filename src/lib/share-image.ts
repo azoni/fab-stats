@@ -17,6 +17,28 @@ interface CaptureOptions {
   retryWithoutImages?: boolean;
 }
 
+/**
+ * Convert an <img> element's src to an inline data URL via canvas.
+ * This avoids CORS/tainted-canvas issues with html-to-image.
+ */
+async function inlineImageSrc(img: HTMLImageElement): Promise<string | null> {
+  try {
+    // If already a data URL, nothing to do
+    if (img.src.startsWith("data:")) return null;
+
+    const res = await fetch(img.src);
+    const blob = await res.blob();
+    return await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  } catch {
+    return null;
+  }
+}
+
 /** Convert a card DOM node to a PNG blob via html-to-image. */
 export async function captureCardBlob(
   el: HTMLElement,
@@ -27,7 +49,17 @@ export async function captureCardBlob(
   const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
   const defaultRatio = isMobile ? 1.5 : 2;
   const base = { pixelRatio: opts.pixelRatio ?? defaultRatio, backgroundColor: opts.backgroundColor, cacheBust: true };
+
+  // Inline all <img> src attributes as data URLs to avoid CORS issues
+  const images = Array.from(el.querySelectorAll("img"));
+  const originalSrcs: string[] = images.map((img) => img.src);
   try {
+    await Promise.all(
+      images.map(async (img) => {
+        const dataUrl = await inlineImageSrc(img);
+        if (dataUrl) img.src = dataUrl;
+      }),
+    );
     return await toBlob(el, base);
   } catch {
     if (opts.retryWithoutImages !== false) {
@@ -38,6 +70,9 @@ export async function captureCardBlob(
       }
     }
     return null;
+  } finally {
+    // Restore original src attributes so the preview isn't broken
+    images.forEach((img, i) => { img.src = originalSrcs[i]; });
   }
 }
 
