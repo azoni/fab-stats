@@ -49,6 +49,11 @@ const moreLinks: { href: string; label: string; icon: ReactNode; authOnly?: bool
   { href: "/roadmap", label: "Roadmap", icon: <ClipboardCheck className="w-4 h-4" /> },
   { href: "/changelog", label: "Changelog", icon: <ClipboardList className="w-4 h-4" /> },
   { href: "/docs", label: "Docs", icon: <BookOpen className="w-4 h-4" /> },
+  { href: "/support", label: "Support", icon: <Heart className="w-4 h-4 text-pink-400" />, subItems: [
+    { href: "https://partner.tcgplayer.com/fabstats", label: "Shop TCGplayer" },
+    { href: "https://github.com/sponsors/azoni", label: "GitHub Sponsors" },
+    { href: "https://ko-fi.com/azoni", label: "Ko-fi" },
+  ] },
 ];
 
 const userMenuLinks: { href: string; label: string; icon: ReactNode; adminOnly?: boolean }[] = [
@@ -508,11 +513,57 @@ function MoreDropdown({
             return (
               <CollapsibleSection key={section.label} label={section.label} expanded={expanded.has(section.label.toLowerCase())} onToggle={() => toggle(section.label.toLowerCase())}>
                 {visible.map((link) => (
-                  <Link key={link.href} href={link.href} onClick={() => setOpen(false)} className={linkClass(link.href)}>
-                    {link.icon}
-                    {link.label}
-                    {link.badge && <span className="text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-teal-400/15 text-teal-400 border border-teal-400/25 ml-auto">{link.badge}</span>}
-                  </Link>
+                  <div key={link.href} className="group/sub relative">
+                    <Link href={link.href} onClick={() => setOpen(false)} className={`${linkClass(link.href)} justify-between`}>
+                      <span className="flex items-center gap-3">
+                        {link.icon}
+                        {link.label}
+                      </span>
+                      {link.badge && <span className="text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-teal-400/15 text-teal-400 border border-teal-400/25">{link.badge}</span>}
+                      {link.subItems && (
+                        <ChevronDown className="w-3 h-3 text-fab-dim -rotate-90" />
+                      )}
+                    </Link>
+                    {link.subItems && (
+                      <div className="absolute left-full top-0 pl-1 hidden group-hover/sub:block z-50">
+                        <div className="w-48 bg-fab-surface border border-fab-border rounded-lg shadow-xl overflow-hidden">
+                          {link.subItems.map((sub) => {
+                            const isExternal = sub.href.startsWith("http");
+                            const trackKey = sub.href.includes("tcgplayer") ? "tcgplayer" : sub.href.includes("sponsors") ? "github_sponsors" : sub.href.includes("ko-fi") ? "kofi" : undefined;
+                            if (isExternal) {
+                              return (
+                                <a
+                                  key={sub.href}
+                                  href={sub.href}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  onClick={() => { if (trackKey) trackSupportClick(trackKey); setOpen(false); }}
+                                  className="flex items-center justify-between px-3 py-2 text-sm text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover transition-colors"
+                                >
+                                  {sub.label}
+                                  <ExternalLink className="w-3 h-3 text-fab-dim" />
+                                </a>
+                              );
+                            }
+                            return (
+                              <Link
+                                key={sub.href}
+                                href={sub.href}
+                                onClick={() => setOpen(false)}
+                                className={`block px-3 py-2 text-sm transition-colors ${
+                                  pathname === sub.href || (sub.href.includes("?") && pathname === sub.href.split("?")[0])
+                                    ? "text-fab-gold bg-fab-gold/10"
+                                    : "text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover"
+                                }`}
+                              >
+                                {sub.label}
+                              </Link>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 ))}
               </CollapsibleSection>
             );
@@ -550,60 +601,6 @@ function MoreDropdown({
             </CollapsibleSection>
           )}
 
-          {/* Support — collapsible */}
-          <CollapsibleSection label="Support" expanded={expanded.has("support")} onToggle={() => toggle("support")}>
-            <Link
-              href="/support"
-              className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-fab-surface-hover transition-colors group"
-              onClick={() => setOpen(false)}
-            >
-              <svg className="w-4 h-4 text-fab-gold shrink-0" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
-              </svg>
-              <span className="text-sm font-medium text-fab-muted group-hover:text-fab-text transition-colors">Support FaB Stats</span>
-            </Link>
-            <a
-              href="https://partner.tcgplayer.com/fabstats"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-fab-surface-hover transition-colors group"
-              onClick={() => { trackSupportClick("tcgplayer"); setOpen(false); }}
-            >
-              <svg className="w-4 h-4 text-blue-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="9" cy="21" r="1" />
-                <circle cx="20" cy="21" r="1" />
-                <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
-              </svg>
-              <span className="text-sm font-medium text-fab-muted group-hover:text-fab-text transition-colors">Shop TCGplayer</span>
-              <ExternalLink className="w-3.5 h-3.5 text-fab-dim shrink-0 ml-auto" />
-            </a>
-            <a
-              href="https://github.com/sponsors/azoni"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-fab-surface-hover transition-colors group"
-              onClick={() => { trackSupportClick("github_sponsors"); setOpen(false); }}
-            >
-              <svg className="w-4 h-4 text-pink-400 shrink-0" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
-              </svg>
-              <span className="text-sm font-medium text-fab-muted group-hover:text-fab-text transition-colors">GitHub Sponsors</span>
-              <ExternalLink className="w-3.5 h-3.5 text-fab-dim shrink-0 ml-auto" />
-            </a>
-            <a
-              href="https://ko-fi.com/azoni"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-fab-surface-hover transition-colors group"
-              onClick={() => { trackSupportClick("kofi"); setOpen(false); }}
-            >
-              <svg className="w-4 h-4 text-yellow-400 shrink-0" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M23.881 8.948c-.773-4.085-4.859-4.593-4.859-4.593H.723c-.604 0-.679.798-.679.798s-.082 7.324-.022 11.822c.164 2.424 2.586 2.672 2.586 2.672s8.267-.023 11.966-.049c2.438-.426 2.683-2.566 2.658-3.734 4.352.24 7.422-2.831 6.649-6.916zm-11.062 3.511c-1.246 1.453-4.011 3.976-4.011 3.976s-.121.119-.31.023c-.076-.057-.108-.09-.108-.09-.443-.441-3.368-3.049-4.034-3.954-.709-.965-1.041-2.7-.091-3.71.951-1.01 3.005-1.086 4.363.407 0 0 1.565-1.782 3.468-.963 1.904.82 1.832 3.011.723 4.311zm6.173.478c-.928.116-1.682.028-1.682.028V7.284h1.493s1.535-.199 2.089 1.024c.603 1.332-.084 4.39-1.9 4.629z" />
-              </svg>
-              <span className="text-sm font-medium text-fab-muted group-hover:text-fab-text transition-colors">Ko-fi</span>
-              <ExternalLink className="w-3.5 h-3.5 text-fab-dim shrink-0 ml-auto" />
-            </a>
-          </CollapsibleSection>
 
           {/* Social — always visible at bottom */}
           <div className="border-t border-fab-border">
