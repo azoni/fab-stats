@@ -40,14 +40,57 @@ export function trackCreatorClick(creatorName: string) {
   }
 }
 
+/** Throttle map for support clicks: "uid:source" → last click timestamp */
+const supportClickThrottle = new Map<string, number>();
+const SUPPORT_CLICK_COOLDOWN = 30_000; // 30 seconds per (user, source)
+
+/** Cached admin email list for filtering support clicks (avoids circular import with admin.ts) */
+let adminEmailCache: { emails: string[]; ts: number } | null = null;
+const ADMIN_CACHE_TTL = 10 * 60_000;
+
+async function isCurrentUserAdmin(): Promise<boolean> {
+  const email = auth.currentUser?.email?.toLowerCase();
+  if (!email) return false;
+  try {
+    if (adminEmailCache && Date.now() - adminEmailCache.ts < ADMIN_CACHE_TTL) {
+      return adminEmailCache.emails.includes(email);
+    }
+    const snap = await getDoc(doc(db, "admin", "config"));
+    if (!snap.exists()) return false;
+    const emails = ((snap.data().adminEmails || []) as string[]).map((e) => e.toLowerCase()).filter(Boolean);
+    adminEmailCache = { emails, ts: Date.now() };
+    return emails.includes(email);
+  } catch {
+    return false;
+  }
+}
+
 /** Increment a support link click counter (e.g. "tcgplayer", "github_sponsors", "kofi", "discord", "twitter") */
 export function trackSupportClick(source: string) {
   if (!source) return;
-  const now = new Date();
+  const uid = auth.currentUser?.uid;
+
+  // Skip admin clicks
+  isCurrentUserAdmin().then((admin) => {
+    if (!admin) doTrackSupportClick(source, uid);
+  }).catch(() => {
+    doTrackSupportClick(source, uid);
+  });
+}
+
+function doTrackSupportClick(source: string, uid?: string) {
+  // Throttle: max 1 click per 30s per (user, source) to prevent spam
+  const key = `${uid || "anon"}:${source}`;
+  const now = Date.now();
+  const last = supportClickThrottle.get(key) || 0;
+  if (now - last < SUPPORT_CLICK_COOLDOWN) return;
+  supportClickThrottle.set(key, now);
+
+  const date = new Date();
   try {
     setDoc(doc(db, "analytics", "supportClicks"), { [source]: increment(1) }, { merge: true }).catch(() => {});
-    setDoc(doc(db, "analytics", `sc_h_${hourKey(now)}`), { [source]: increment(1) }, { merge: true }).catch(() => {});
-    setDoc(doc(db, "analytics", `sc_d_${dayKey(now)}`), { [source]: increment(1) }, { merge: true }).catch(() => {});
+    setDoc(doc(db, "analytics", `sc_h_${hourKey(date)}`), { [source]: increment(1) }, { merge: true }).catch(() => {});
+    setDoc(doc(db, "analytics", `sc_d_${dayKey(date)}`), { [source]: increment(1) }, { merge: true }).catch(() => {});
   } catch {
     // Fire and forget
   }
