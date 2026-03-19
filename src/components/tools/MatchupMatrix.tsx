@@ -716,6 +716,7 @@ function CommunityMatchupGrid({
   includeLivingLegend: boolean;
 }) {
   const [showAll, setShowAll] = useState(true);
+  const [heroSearch, setHeroSearch] = useState("");
   const { ref: scrollRef, onMouseDown, movedRef } = useDragScroll();
   const [highlightRow, setHighlightRow] = useState<string | null>(null);
   const [highlightCol, setHighlightCol] = useState<string | null>(null);
@@ -795,8 +796,15 @@ function CommunityMatchupGrid({
     );
   }
 
-  const displayRows = showAll ? heroRows : heroRows.slice(0, 20);
-  const displayCols = showAll ? allHeroes : allHeroes.slice(0, 20);
+  const searchLower = heroSearch.toLowerCase().trim();
+  const filteredRows = searchLower
+    ? heroRows.filter((r) => r.hero.toLowerCase().includes(searchLower))
+    : heroRows;
+  const filteredHeroes = searchLower
+    ? allHeroes.filter((h) => h.toLowerCase().includes(searchLower))
+    : allHeroes;
+  const displayRows = showAll ? filteredRows : filteredRows.slice(0, 20);
+  const displayCols = showAll ? filteredHeroes : filteredHeroes.slice(0, 20);
 
   // Find selected cell data
   const selectedMu = selectedCell
@@ -805,10 +813,17 @@ function CommunityMatchupGrid({
 
   return (
     <div>
-      {/* Data coverage */}
+      {/* Data coverage + search */}
       <div className="flex items-center gap-4 mb-3 text-xs text-fab-dim">
         <span>{totalMatches.toLocaleString()} matches</span>
-        <span>{heroRows.length} heroes</span>
+        <span>{filteredRows.length} of {heroRows.length} heroes</span>
+        <input
+          type="text"
+          value={heroSearch}
+          onChange={(e) => setHeroSearch(e.target.value)}
+          placeholder="Search heroes..."
+          className="ml-auto px-2.5 py-1 rounded-lg text-xs bg-fab-bg border border-fab-border text-fab-text placeholder:text-fab-dim focus:outline-none focus:border-fab-gold/50 w-36"
+        />
       </div>
 
       <div ref={scrollRef} onMouseDown={onMouseDown} className="overflow-auto max-h-[70vh] cursor-grab rounded-lg border border-fab-border bg-fab-bg">
