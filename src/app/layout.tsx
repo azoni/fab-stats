@@ -10,6 +10,7 @@ import { GuestBanner } from "@/components/auth/GuestBanner";
 import { SiteBanner } from "@/components/layout/SiteBanner";
 import { ProfileBackgroundController } from "@/components/layout/ProfileBackgroundController";
 import { FeedbackFab } from "@/components/feedback/FeedbackFab";
+import { SupportFab } from "@/components/support/SupportFab";
 import { ChatProvider } from "@/contexts/ChatContext";
 import { ChatFab } from "@/components/chat/ChatFab";
 import { SonnerProvider } from "@/components/ui/sonner-provider";
@@ -167,6 +168,7 @@ export default function RootLayout({
               Flesh and Blood is a trademark of Legend Story Studios. &copy; Legend Story Studios. Not affiliated with or endorsed by LSS.
             </p>
           </footer>
+          <SupportFab />
           <FeedbackFab />
           <ChatFab />
           <MobileNav />
