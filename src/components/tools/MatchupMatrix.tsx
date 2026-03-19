@@ -715,7 +715,7 @@ function CommunityMatchupGrid({
   ageFilter: AgeFilter;
   includeLivingLegend: boolean;
 }) {
-  const [showAll, setShowAll] = useState(false);
+  const [showAll, setShowAll] = useState(true);
   const { ref: scrollRef, onMouseDown, movedRef } = useDragScroll();
   const [highlightRow, setHighlightRow] = useState<string | null>(null);
   const [highlightCol, setHighlightCol] = useState<string | null>(null);

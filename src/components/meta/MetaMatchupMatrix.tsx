@@ -35,7 +35,7 @@ export function MetaMatchupMatrix({ format, sinceDate, untilDate }: MetaMatchupM
   const [data, setData] = useState<CommunityMatchupCell[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedCell, setSelectedCell] = useState<{ hero: string; opp: string } | null>(null);
-  const [showAll, setShowAll] = useState(false);
+  const [showAll, setShowAll] = useState(true);
   const [ageFilter, setAgeFilter] = useState<"adult" | "young" | "all">("adult");
   const [excludeLL, setExcludeLL] = useState(true);
   const [highlightRow, setHighlightRow] = useState<string | null>(null);
