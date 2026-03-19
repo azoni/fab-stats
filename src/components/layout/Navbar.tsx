@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { SwordsIcon, TrendsIcon, ImportIcon, CalendarIcon, TrophyIcon } from "@/components/icons/NavIcons";
+import { SwordsIcon, TrendsIcon, ImportIcon, TrophyIcon } from "@/components/icons/NavIcons";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCreators } from "@/hooks/useCreators";
@@ -11,10 +11,9 @@ import { useCommunityStats } from "@/hooks/useCommunityStats";
 import { useFriends } from "@/hooks/useFriends";
 import type { ReactNode } from "react";
 import type { Creator } from "@/types";
-import { GAMES } from "@/lib/games";
 import {
-  Globe, ClipboardList, BookOpen, ClipboardCheck, Zap,
-  AlignLeft, Wrench, Puzzle, ChevronDown,
+  Globe, BookOpen, Zap,
+  Wrench, ChevronDown,
   Mail, Star, Users, Settings, ShieldCheck, ExternalLink,
   MoreVertical, Heart,
 } from "lucide-react";
@@ -39,20 +38,6 @@ const moreLinks: { href: string; label: string; icon: ReactNode; authOnly?: bool
     { href: "/tools?tab=matrix", label: "Matchup Matrix" },
     { href: "/tools?tab=prep", label: "Tournament Prep" },
     { href: "/tools?tab=notes", label: "Matchup Notes" },
-  ] },
-  { divider: true, sectionLabel: "Explore", href: "", label: "", icon: null },
-  { href: "/compare", label: "Versus", icon: <Zap className="w-4 h-4" /> },
-  { href: "/tier-list", label: "Tier List", badge: "New", icon: <AlignLeft className="w-4 h-4" /> },
-  { href: "/tournaments", label: "Tournaments", icon: <CalendarIcon className="w-4 h-4" /> },
-  { href: "/games", label: "Games", badge: String(GAMES.length), icon: <Puzzle className="w-4 h-4" /> },
-  { divider: true, sectionLabel: "Resources", href: "", label: "", icon: null },
-  { href: "/roadmap", label: "Roadmap", icon: <ClipboardCheck className="w-4 h-4" /> },
-  { href: "/changelog", label: "Changelog", icon: <ClipboardList className="w-4 h-4" /> },
-  { href: "/docs", label: "Docs", icon: <BookOpen className="w-4 h-4" /> },
-  { href: "/support", label: "Support", icon: <Heart className="w-4 h-4 text-pink-400" />, subItems: [
-    { href: "https://partner.tcgplayer.com/fabstats", label: "Shop TCGplayer" },
-    { href: "https://github.com/sponsors/azoni", label: "GitHub Sponsors" },
-    { href: "https://ko-fi.com/azoni", label: "Ko-fi" },
   ] },
 ];
 
@@ -601,6 +586,73 @@ function MoreDropdown({
             </CollapsibleSection>
           )}
 
+
+          {/* Explore, Resources, Support — always visible with hover sub-items */}
+          <div className="border-t border-fab-border p-1.5 space-y-0.5">
+            {/* Explore */}
+            <div className="group/explore relative">
+              <Link href="/explore" onClick={() => setOpen(false)} className={`${linkClass("/explore")} justify-between`}>
+                <span className="flex items-center gap-3">
+                  <Zap className="w-4 h-4 text-yellow-400" />
+                  Explore
+                </span>
+                <ChevronDown className="w-3 h-3 text-fab-dim -rotate-90" />
+              </Link>
+              <div className="absolute left-full top-0 pl-1 hidden group-hover/explore:block z-50">
+                <div className="w-48 bg-fab-surface border border-fab-border rounded-lg shadow-xl overflow-hidden">
+                  <Link href="/compare" onClick={() => setOpen(false)} className={`block px-3 py-2 text-sm transition-colors ${pathname === "/compare" ? "text-fab-gold bg-fab-gold/10" : "text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover"}`}>Versus</Link>
+                  <Link href="/tier-list" onClick={() => setOpen(false)} className={`block px-3 py-2 text-sm transition-colors ${pathname === "/tier-list" ? "text-fab-gold bg-fab-gold/10" : "text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover"}`}>Tier List</Link>
+                  <Link href="/tournaments" onClick={() => setOpen(false)} className={`block px-3 py-2 text-sm transition-colors ${pathname === "/tournaments" ? "text-fab-gold bg-fab-gold/10" : "text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover"}`}>Tournaments</Link>
+                  <Link href="/games" onClick={() => setOpen(false)} className={`block px-3 py-2 text-sm transition-colors ${pathname === "/games" ? "text-fab-gold bg-fab-gold/10" : "text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover"}`}>Games</Link>
+                </div>
+              </div>
+            </div>
+
+            {/* Resources */}
+            <div className="group/resources relative">
+              <Link href="/resources" onClick={() => setOpen(false)} className={`${linkClass("/resources")} justify-between`}>
+                <span className="flex items-center gap-3">
+                  <BookOpen className="w-4 h-4 text-blue-400" />
+                  Resources
+                </span>
+                <ChevronDown className="w-3 h-3 text-fab-dim -rotate-90" />
+              </Link>
+              <div className="absolute left-full top-0 pl-1 hidden group-hover/resources:block z-50">
+                <div className="w-48 bg-fab-surface border border-fab-border rounded-lg shadow-xl overflow-hidden">
+                  <Link href="/roadmap" onClick={() => setOpen(false)} className={`block px-3 py-2 text-sm transition-colors ${pathname === "/roadmap" ? "text-fab-gold bg-fab-gold/10" : "text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover"}`}>Roadmap</Link>
+                  <Link href="/changelog" onClick={() => setOpen(false)} className={`block px-3 py-2 text-sm transition-colors ${pathname === "/changelog" ? "text-fab-gold bg-fab-gold/10" : "text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover"}`}>Changelog</Link>
+                  <Link href="/docs" onClick={() => setOpen(false)} className={`block px-3 py-2 text-sm transition-colors ${pathname === "/docs" ? "text-fab-gold bg-fab-gold/10" : "text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover"}`}>Docs</Link>
+                </div>
+              </div>
+            </div>
+
+            {/* Support */}
+            <div className="group/support relative">
+              <Link href="/support" onClick={() => setOpen(false)} className={`${linkClass("/support")} justify-between`}>
+                <span className="flex items-center gap-3">
+                  <Heart className="w-4 h-4 text-pink-400" />
+                  Support
+                </span>
+                <ChevronDown className="w-3 h-3 text-fab-dim -rotate-90" />
+              </Link>
+              <div className="absolute left-full top-0 pl-1 hidden group-hover/support:block z-50">
+                <div className="w-48 bg-fab-surface border border-fab-border rounded-lg shadow-xl overflow-hidden">
+                  <a href="https://partner.tcgplayer.com/fabstats" target="_blank" rel="noopener noreferrer" onClick={() => { trackSupportClick("tcgplayer"); setOpen(false); }} className="flex items-center justify-between px-3 py-2 text-sm text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover transition-colors">
+                    Shop TCGplayer
+                    <ExternalLink className="w-3 h-3 text-fab-dim" />
+                  </a>
+                  <a href="https://github.com/sponsors/azoni" target="_blank" rel="noopener noreferrer" onClick={() => { trackSupportClick("github_sponsors"); setOpen(false); }} className="flex items-center justify-between px-3 py-2 text-sm text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover transition-colors">
+                    GitHub Sponsors
+                    <ExternalLink className="w-3 h-3 text-fab-dim" />
+                  </a>
+                  <a href="https://ko-fi.com/azoni" target="_blank" rel="noopener noreferrer" onClick={() => { trackSupportClick("kofi"); setOpen(false); }} className="flex items-center justify-between px-3 py-2 text-sm text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover transition-colors">
+                    Ko-fi
+                    <ExternalLink className="w-3 h-3 text-fab-dim" />
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
 
           {/* Social — always visible at bottom */}
           <div className="border-t border-fab-border">
