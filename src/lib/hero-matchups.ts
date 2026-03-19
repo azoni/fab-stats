@@ -15,8 +15,13 @@ import { getHeroByName, resolveHeroName } from "@/lib/heroes";
 
 // ── Helpers ──
 
+/** Sanitize hero name for use in Firestore document IDs (forward slashes are forbidden). */
+function safeHeroId(name: string): string {
+  return name.replaceAll("/", "___");
+}
+
 function getHeroMatchupDocId(hero1: string, hero2: string, month: string): string {
-  const sorted = [hero1, hero2].sort();
+  const sorted = [safeHeroId(hero1), safeHeroId(hero2)].sort();
   return `${sorted[0]}_${sorted[1]}_${month}`;
 }
 
