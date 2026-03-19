@@ -607,6 +607,53 @@ export default function AdminPage() {
             );
           })()}
 
+          {/* Support & Affiliate */}
+          {analyticsData && (() => {
+            const sc = analyticsData.supportClicks;
+            const totalClicks = Object.values(sc).reduce((s, v) => s + v, 0);
+            const supportPageViews = analyticsData.pageViews["support"] || 0;
+            const LABELS: Record<string, string> = {
+              tcgplayer: "TCGplayer",
+              github_sponsors: "GitHub Sponsors",
+              kofi: "Ko-fi",
+              discord: "Discord",
+              twitter: "X / Twitter",
+              navbar: "Nav Bar",
+              mobile_tab: "Mobile Tab",
+              fab: "Floating Button",
+            };
+            const sources = Object.entries(sc).sort(([, a], [, b]) => b - a);
+            return (
+              <div className="bg-fab-surface border border-fab-border rounded-lg p-4 mb-6">
+                <h3 className="text-sm font-semibold text-fab-text mb-3">Support & Affiliate</h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <div className="bg-fab-bg rounded-md px-3 py-2">
+                    <p className="text-xs text-fab-dim">Page Views</p>
+                    <p className="text-sm font-bold text-fab-text">{supportPageViews.toLocaleString()}</p>
+                    <p className="text-[10px] text-fab-muted">/support</p>
+                  </div>
+                  <div className="bg-fab-bg rounded-md px-3 py-2">
+                    <p className="text-xs text-fab-dim">Total Clicks</p>
+                    <p className="text-sm font-bold text-fab-text">{totalClicks.toLocaleString()}</p>
+                    <p className="text-[10px] text-fab-muted">all sources</p>
+                  </div>
+                  {sources.map(([key, count]) => (
+                    <div key={key} className="bg-fab-bg rounded-md px-3 py-2">
+                      <p className="text-xs text-fab-dim">{LABELS[key] || key}</p>
+                      <p className="text-sm font-bold text-fab-text">{count.toLocaleString()}</p>
+                      <p className="text-[10px] text-fab-muted">{totalClicks > 0 ? ((count / totalClicks) * 100).toFixed(1) : "0"}%</p>
+                    </div>
+                  ))}
+                  {totalClicks === 0 && sources.length === 0 && (
+                    <div className="col-span-2 bg-fab-bg rounded-md px-3 py-2">
+                      <p className="text-xs text-fab-dim">No click data yet</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
+
           {/* Growth Charts */}
           <GrowthCharts users={data.users} />
 

@@ -85,7 +85,7 @@ export default function SupportPageContent() {
       <div className="text-center mb-8">
         <h1 className="text-2xl font-bold text-fab-text mb-2">Support FaB Stats</h1>
         <p className="text-sm text-fab-muted leading-relaxed">
-          FaB Stats is a free community project built by players, for players.
+          FaB Stats is a free community project built by a Flesh and Blood player, for players.
           <br />
           Here are a few ways you can help keep it going.
         </p>
