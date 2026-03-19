@@ -127,11 +127,8 @@ export function MetaMatchupMatrix({ format, sinceDate, untilDate }: MetaMatchupM
   const filteredRows = searchLower
     ? heroRows.filter((r) => r.hero.toLowerCase().includes(searchLower))
     : heroRows;
-  const filteredHeroes = searchLower
-    ? allHeroes.filter((h) => h.toLowerCase().includes(searchLower))
-    : allHeroes;
   const displayRows = showAll ? filteredRows : filteredRows.slice(0, 20);
-  const displayCols = showAll ? filteredHeroes : filteredHeroes.slice(0, 20);
+  const displayCols = showAll ? allHeroes : allHeroes.slice(0, 20);
 
   const selectedMu = selectedCell
     ? heroRows.find((r) => r.hero === selectedCell.hero)?.matchups.get(selectedCell.opp)
