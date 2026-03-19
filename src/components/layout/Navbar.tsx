@@ -16,13 +16,14 @@ import {
   Globe, ClipboardList, BookOpen, ClipboardCheck, Zap,
   AlignLeft, Wrench, Puzzle, ChevronDown,
   Mail, Star, Users, Settings, ShieldCheck, ExternalLink,
-  MoreVertical,
+  MoreVertical, Heart,
 } from "lucide-react";
 
 const navLinks: { href: string; label: string; icon: ReactNode; color: string; bg: string; authOnly?: boolean }[] = [
   { href: "/community", label: "Community", icon: <Users className="w-4 h-4" />, color: "text-indigo-400", bg: "bg-indigo-400/10" },
   { href: "/meta", label: "Meta", icon: <Globe className="w-4 h-4" />, color: "text-teal-400", bg: "bg-teal-400/10" },
   { href: "/leaderboard", label: "Rankings", icon: <TrophyIcon className="w-4 h-4" />, color: "text-amber-400", bg: "bg-amber-400/10" },
+  { href: "/support", label: "Support", icon: <Heart className="w-4 h-4" />, color: "text-pink-400", bg: "bg-pink-400/10" },
 ];
 
 const moreLinks: { href: string; label: string; icon: ReactNode; authOnly?: boolean; adminOnly?: boolean; badge?: string; divider?: boolean; sectionLabel?: string; subItems?: { href: string; label: string }[] }[] = [
@@ -127,6 +128,7 @@ export function Navbar() {
                       <Link
                         key={link.href}
                         href={link.href}
+                        onClick={link.href === "/support" ? () => trackSupportClick("navbar") : undefined}
                         className={`flex items-center gap-1.5 px-2.5 py-2 rounded-md text-sm font-medium transition-colors ${
                           pathname === link.href
                             ? `${link.color} ${link.bg}`

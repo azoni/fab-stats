@@ -12,7 +12,7 @@ import {
   Settings, ClipboardList, BookOpen, Bell,
   MessageCircle, ShieldCheck, Home, MoreHorizontal,
   Globe, AlignLeft, Wrench,
-  Puzzle, Users, LogIn,
+  Puzzle, Users, LogIn, Heart,
 } from "lucide-react";
 
 const tabs: { href: string; label: string; icon: ReactNode; color: string }[] = [
@@ -20,6 +20,7 @@ const tabs: { href: string; label: string; icon: ReactNode; color: string }[] = 
   { href: "/community", label: "Community", icon: <Users className="w-5 h-5" />, color: "text-indigo-400" },
   { href: "/meta", label: "Meta", icon: <Globe className="w-5 h-5" />, color: "text-teal-400" },
   { href: "/leaderboard", label: "Rankings", icon: <TrophyIcon />, color: "text-amber-400" },
+  { href: "/support", label: "Support", icon: <Heart className="w-5 h-5" />, color: "text-pink-400" },
 ];
 
 // Local icon function definitions removed — using Lucide imports above
@@ -260,6 +261,7 @@ export function MobileNav() {
               <Link
                 key={tab.href}
                 href={tab.href}
+                onClick={tab.href === "/support" ? () => trackSupportClick("mobile_tab") : undefined}
                 className={`flex flex-col items-center gap-0.5 px-2 py-1 text-xs transition-colors ${
                   isActive ? tab.color : "text-fab-muted"
                 }`}
