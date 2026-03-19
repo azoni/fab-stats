@@ -628,7 +628,7 @@ function MoreDropdown({
 
             {/* Support */}
             <div className="group/support relative">
-              <Link href="/support" onClick={() => setOpen(false)} className={`${linkClass("/support")} justify-between`}>
+              <Link href="/support" onClick={() => { trackSupportClick("more_menu"); setOpen(false); }} className={`${linkClass("/support")} justify-between`}>
                 <span className="flex items-center gap-3">
                   <Heart className="w-4 h-4 text-pink-400" />
                   Support
