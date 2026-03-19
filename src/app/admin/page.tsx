@@ -80,7 +80,7 @@ export default function AdminPage() {
   const [broadcasting, setBroadcasting] = useState(false);
   const [broadcastProgress, setBroadcastProgress] = useState("");
   const [broadcastResult, setBroadcastResult] = useState("");
-  const [analyticsData, setAnalyticsData] = useState<{ pageViews: Record<string, number>; creatorClicks: Record<string, number> } | null>(null);
+  const [analyticsData, setAnalyticsData] = useState<{ pageViews: Record<string, number>; creatorClicks: Record<string, number>; supportClicks: Record<string, number> } | null>(null);
   const [importMethods, setImportMethods] = useState<Record<string, number>>({});
   const [fixingDates, setFixingDates] = useState(false);
   const [fixDatesProgress, setFixDatesProgress] = useState("");
@@ -3216,7 +3216,7 @@ const ROUTE_LABELS: Record<string, string> = {
   fabdoku: "FaBdoku",
 };
 
-function ActivitySection({ analytics: initialAnalytics }: { analytics: { pageViews: Record<string, number>; creatorClicks: Record<string, number> } }) {
+function ActivitySection({ analytics: initialAnalytics }: { analytics: { pageViews: Record<string, number>; creatorClicks: Record<string, number>; supportClicks: Record<string, number> } }) {
   const [expanded, setExpanded] = useState(true);
   const [profilesExpanded, setProfilesExpanded] = useState(false);
   const [timeRange, setTimeRange] = useState<AnalyticsTimeRange>("all");
@@ -3245,7 +3245,7 @@ function ActivitySection({ analytics: initialAnalytics }: { analytics: { pageVie
     }).catch((err) => {
       console.error("Failed to fetch analytics for range:", timeRange, err);
       if (!cancelled && id === fetchIdRef.current) {
-        setAnalytics({ pageViews: {}, creatorClicks: {} });
+        setAnalytics({ pageViews: {}, creatorClicks: {}, supportClicks: {} });
         setLoadingRange(false);
         setRangeError("Failed to load data for this range.");
       }
@@ -3277,6 +3277,10 @@ function ActivitySection({ analytics: initialAnalytics }: { analytics: { pageVie
   const creatorClickEntries = Object.entries(analytics.creatorClicks)
     .sort(([, a], [, b]) => b - a);
   const totalCreatorClicks = creatorClickEntries.reduce((sum, [, count]) => sum + count, 0);
+
+  const supportClickEntries = Object.entries(analytics.supportClicks)
+    .sort(([, a], [, b]) => b - a);
+  const totalSupportClicks = supportClickEntries.reduce((sum, [, count]) => sum + count, 0);
 
   function routeLabel(key: string): string {
     if (key === "__player_profiles__") return `Player Profiles (${playerEntries.length})`;
@@ -3415,6 +3419,40 @@ function ActivitySection({ analytics: initialAnalytics }: { analytics: { pageVie
                 })}
                 {creatorClickEntries.length === 0 && (
                   <p className="text-xs text-fab-dim">No creator click data yet.</p>
+                )}
+              </div>
+            </div>
+
+            {/* Support Clicks */}
+            <div>
+              <h3 className="text-xs text-fab-muted uppercase tracking-wider font-medium mb-3">
+                Support Link Clicks
+                {totalSupportClicks > 0 && (
+                  <span className="text-fab-dim font-normal ml-2">({totalSupportClicks.toLocaleString()} total)</span>
+                )}
+              </h3>
+              <div className="space-y-1.5">
+                {supportClickEntries.map(([name, count]) => {
+                  const pct = totalSupportClicks > 0 ? (count / totalSupportClicks) * 100 : 0;
+                  return (
+                    <div key={name} className="flex items-center gap-2">
+                      <div className="w-32 text-xs text-fab-text truncate" title={name}>
+                        {name}
+                      </div>
+                      <div className="flex-1 h-4 bg-fab-bg rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-blue-500/30 rounded-full transition-all"
+                          style={{ width: `${Math.max(pct, 1)}%` }}
+                        />
+                      </div>
+                      <div className="w-16 text-right text-xs font-mono text-fab-dim">
+                        {count.toLocaleString()}
+                      </div>
+                    </div>
+                  );
+                })}
+                {supportClickEntries.length === 0 && (
+                  <p className="text-xs text-fab-dim">No support click data yet.</p>
                 )}
               </div>
             </div>

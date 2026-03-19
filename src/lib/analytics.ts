@@ -40,6 +40,19 @@ export function trackCreatorClick(creatorName: string) {
   }
 }
 
+/** Increment a support link click counter (e.g. "tcgplayer", "github_sponsors", "kofi", "discord", "twitter") */
+export function trackSupportClick(source: string) {
+  if (!source) return;
+  const now = new Date();
+  try {
+    setDoc(doc(db, "analytics", "supportClicks"), { [source]: increment(1) }, { merge: true }).catch(() => {});
+    setDoc(doc(db, "analytics", `sc_h_${hourKey(now)}`), { [source]: increment(1) }, { merge: true }).catch(() => {});
+    setDoc(doc(db, "analytics", `sc_d_${dayKey(now)}`), { [source]: increment(1) }, { merge: true }).catch(() => {});
+  } catch {
+    // Fire and forget
+  }
+}
+
 /** Update the user's "last seen" timestamp. Throttled to every 5 minutes (in-memory). */
 let lastPresenceUpdate = 0;
 export function trackPresence() {
@@ -140,21 +153,25 @@ export type AnalyticsTimeRange = "1h" | "12h" | "24h" | "7d" | "all";
 export async function getAnalytics(range: AnalyticsTimeRange = "all"): Promise<{
   pageViews: Record<string, number>;
   creatorClicks: Record<string, number>;
+  supportClicks: Record<string, number>;
 }> {
   if (range === "all") {
-    const [pvSnap, ccSnap] = await Promise.all([
+    const [pvSnap, ccSnap, scSnap] = await Promise.all([
       getDoc(doc(db, "analytics", "pageViews")),
       getDoc(doc(db, "analytics", "creatorClicks")),
+      getDoc(doc(db, "analytics", "supportClicks")),
     ]);
     return {
       pageViews: (pvSnap.data() as Record<string, number>) || {},
       creatorClicks: (ccSnap.data() as Record<string, number>) || {},
+      supportClicks: (scSnap.data() as Record<string, number>) || {},
     };
   }
 
   const now = new Date();
   const pvDocIds: string[] = [];
   const ccDocIds: string[] = [];
+  const scDocIds: string[] = [];
 
   if (range === "1h" || range === "12h" || range === "24h") {
     const hours = range === "1h" ? 1 : range === "12h" ? 12 : 24;
@@ -162,20 +179,23 @@ export async function getAnalytics(range: AnalyticsTimeRange = "all"): Promise<{
       const d = new Date(now.getTime() - i * 3600000);
       pvDocIds.push(`pv_h_${hourKey(d)}`);
       ccDocIds.push(`cc_h_${hourKey(d)}`);
+      scDocIds.push(`sc_h_${hourKey(d)}`);
     }
   } else if (range === "7d") {
     for (let i = 0; i < 7; i++) {
       const d = new Date(now.getTime() - i * 86400000);
       pvDocIds.push(`pv_d_${dayKey(d)}`);
       ccDocIds.push(`cc_d_${dayKey(d)}`);
+      scDocIds.push(`sc_d_${dayKey(d)}`);
     }
   }
 
-  const allDocIds = [...pvDocIds, ...ccDocIds];
+  const allDocIds = [...pvDocIds, ...ccDocIds, ...scDocIds];
   const snaps = await Promise.all(allDocIds.map((id) => getDoc(doc(db, "analytics", id))));
 
   const pageViews: Record<string, number> = {};
   const creatorClicks: Record<string, number> = {};
+  const supportClicks: Record<string, number> = {};
 
   for (let i = 0; i < pvDocIds.length; i++) {
     const data = snaps[i].data() as Record<string, number> | undefined;
@@ -195,7 +215,16 @@ export async function getAnalytics(range: AnalyticsTimeRange = "all"): Promise<{
     }
   }
 
-  return { pageViews, creatorClicks };
+  for (let i = 0; i < scDocIds.length; i++) {
+    const data = snaps[pvDocIds.length + ccDocIds.length + i].data() as Record<string, number> | undefined;
+    if (data) {
+      for (const [key, count] of Object.entries(data)) {
+        supportClicks[key] = (supportClicks[key] || 0) + count;
+      }
+    }
+  }
+
+  return { pageViews, creatorClicks, supportClicks };
 }
 
 /** Track an import method usage */
