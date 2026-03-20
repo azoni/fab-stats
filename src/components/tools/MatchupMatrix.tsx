@@ -51,6 +51,7 @@ interface MatchupMatrixProps {
 export function MatchupMatrix({ matches, entries, isLoaded }: MatchupMatrixProps) {
   const [mode, setMode] = useState<Mode>("personal");
   const [format, setFormat] = useState<string>("");
+  const [ratedFilter, setRatedFilter] = useState<"all" | "rated" | "unrated">("all");
   const [selectedCell, setSelectedCell] = useState<{ hero: string; opp: string } | null>(null);
   const [ageFilter, setAgeFilter] = useState<AgeFilter>("adult");
   const [includeLivingLegend, setIncludeLivingLegend] = useState(false);
@@ -81,6 +82,8 @@ export function MatchupMatrix({ matches, entries, isLoaded }: MatchupMatrixProps
   const filteredMatches = useMemo(() => {
     let m = matches;
     if (format) m = m.filter((match) => match.format === format);
+    if (ratedFilter === "rated") m = m.filter((match) => match.rated === true);
+    else if (ratedFilter === "unrated") m = m.filter((match) => match.rated !== true);
     if (period === "30d") {
       const since = new Date();
       since.setDate(since.getDate() - 30);
@@ -95,7 +98,7 @@ export function MatchupMatrix({ matches, entries, isLoaded }: MatchupMatrixProps
       m = m.filter((match) => match.date >= customStart && match.date <= customEnd);
     }
     return m;
-  }, [matches, format, period, customStart, customEnd]);
+  }, [matches, format, ratedFilter, period, customStart, customEnd]);
 
   // Personal hero stats
   const heroStats = useMemo(
@@ -194,6 +197,21 @@ export function MatchupMatrix({ matches, entries, isLoaded }: MatchupMatrixProps
               }`}
             >
               {f}
+            </button>
+          ))}
+        </div>
+
+        {/* Rated filter */}
+        <div className="flex gap-1.5">
+          {(["all", "rated", "unrated"] as const).map((r) => (
+            <button
+              key={r}
+              onClick={() => setRatedFilter(r)}
+              className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
+                ratedFilter === r ? "bg-fab-gold/15 text-fab-gold" : "bg-fab-surface text-fab-muted hover:text-fab-text border border-fab-border"
+              }`}
+            >
+              {r === "all" ? "All Events" : r === "rated" ? "Rated" : "Unrated"}
             </button>
           ))}
         </div>
