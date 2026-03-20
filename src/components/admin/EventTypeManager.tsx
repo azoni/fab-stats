@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { searchUsernames } from "@/lib/firestore-storage";
 import { adminGetUserEvents, adminOverrideEventType, adminResyncLeaderboard, type AdminEventSummary } from "@/lib/admin";
 
@@ -98,8 +99,15 @@ export function EventTypeManager() {
 
       {selectedUser && !loading && events.length > 0 && (
         <>
-          {/* Resync + filter */}
+          {/* User actions */}
           <div className="flex items-center gap-2 mb-2">
+            <Link
+              href={`/player/${selectedUser.username}`}
+              target="_blank"
+              className="px-2.5 py-1 rounded text-xs font-medium bg-fab-surface border border-fab-border text-fab-muted hover:text-fab-text transition-colors"
+            >
+              View Profile
+            </Link>
             <button
               onClick={async () => {
                 if (!selectedUser) return;
