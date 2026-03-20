@@ -16,6 +16,8 @@ import { computeH2HForUser } from "./h2h";
 import { updateCommunityHeroMatchups } from "./hero-matchups";
 import { getOrCreateConversation, sendMessage, sendMessageNotification } from "./messages";
 import { getUserVisitData } from "./analytics";
+import { computeEventStats, getEventType } from "./stats";
+import { batchUpdateMatchesFirestore } from "./firestore-storage";
 import type { UserProfile, MatchRecord } from "@/types";
 
 interface AdminConfig {
@@ -858,4 +860,42 @@ export async function backfillOpponentHeroesFromCoverage(
   }
 
   return { usersProcessed, matchesUpdated: totalUpdated, failed: failedCount };
+}
+
+// ── Admin Event Type Manager ──
+
+export interface AdminEventSummary {
+  eventName: string;
+  eventDate: string;
+  eventType: string;
+  matchCount: number;
+  matchIds: string[];
+  hasOverride: boolean;
+}
+
+export async function adminGetUserEvents(userId: string): Promise<AdminEventSummary[]> {
+  const matchesSnap = await getDocs(
+    query(collection(db, "users", userId, "matches"), orderBy("createdAt", "desc"))
+  );
+  const matches = matchesSnap.docs.map((d) => ({ id: d.id, ...d.data() })) as MatchRecord[];
+  const events = computeEventStats(matches);
+
+  return events.map((e) => ({
+    eventName: e.eventName,
+    eventDate: e.eventDate,
+    eventType: e.eventType || "Other",
+    matchCount: e.totalMatches,
+    matchIds: e.matches.map((m) => m.id),
+    hasOverride: e.matches.some((m) => m.eventTypeOverride),
+  }));
+}
+
+export async function adminOverrideEventType(
+  userId: string,
+  matchIds: string[],
+  newEventType: string,
+): Promise<void> {
+  await batchUpdateMatchesFirestore(userId, matchIds, {
+    eventTypeOverride: newEventType || undefined,
+  });
 }

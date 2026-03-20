@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
-import { getAdminDashboardData, getChatGlobalStats, getAdminChatMessages, getDeletedAccountCount, backfillLeaderboard, backfillPlacementFeedEvents, broadcastMessage, fixMatchDates, backfillGemIds, backfillMatchLinking, backfillH2H, backfillHeroMatchups, type AdminDashboardData, type AdminUserStats, type ChatGlobalStats } from "@/lib/admin";
+import { getAdminDashboardData, getChatGlobalStats, getAdminChatMessages, getDeletedAccountCount, backfillLeaderboard, backfillPlacementFeedEvents, broadcastMessage, fixMatchDates, backfillGemIds, backfillMatchLinking, backfillH2H, backfillHeroMatchups, adminGetUserEvents, adminOverrideEventType, type AdminDashboardData, type AdminUserStats, type ChatGlobalStats, type AdminEventSummary } from "@/lib/admin";
 import { getAllFeedback, updateFeedbackStatus } from "@/lib/feedback";
 import { getCreators, saveCreators } from "@/lib/creators";
 import { getEvents, saveEvents } from "@/lib/featured-events";
@@ -26,6 +26,7 @@ import { ADMIN_BADGES } from "@/lib/badges";
 import { SocialTab } from "@/components/admin/SocialTab";
 import SitemapTab from "@/components/admin/SitemapTab";
 import { BackgroundCatalogManager } from "@/components/admin/BackgroundCatalogManager";
+import { EventTypeManager } from "@/components/admin/EventTypeManager";
 import { GameFormat } from "@/types";
 import type { Season } from "@/types";
 import type { EventShowcaseConfig, EventShowcaseImage } from "@/types";
@@ -523,6 +524,8 @@ export default function AdminPage() {
           {(backgroundCatalogProgress || backfillProgress || fixDatesProgress || linkProgress || gemIdProgress || h2hProgress || matchupProgress || placementProgress) && (
             <p className="text-xs text-fab-dim">{backgroundCatalogProgress || placementProgress || matchupProgress || h2hProgress || linkProgress || gemIdProgress || fixDatesProgress || backfillProgress}</p>
           )}
+
+          <EventTypeManager />
 
           <BackgroundCatalogManager />
         </div>

@@ -129,6 +129,7 @@ export function Navbar() {
                         >
                           {link.icon}
                           <span className="hidden xl:inline">{link.label}</span>
+                          {link.subItems && <ChevronDown className="w-3 h-3 text-fab-dim hidden xl:block" />}
                         </Link>
                         {link.subItems && (
                           <div className="absolute left-0 top-full pt-1 hidden group-hover/nav:block z-50">
