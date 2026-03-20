@@ -15,7 +15,9 @@ interface ProcessedHeroRow {
 function isLivingLegendHero(name: string): boolean {
   const hero = getHeroByName(name);
   if (!hero) return false;
-  return hero.legalFormats.includes("Living Legend");
+  return hero.legalFormats.includes("Living Legend") &&
+    !hero.legalFormats.includes("Classic Constructed") &&
+    !hero.legalFormats.includes("Blitz");
 }
 
 function isYoungHero(name: string): boolean {
