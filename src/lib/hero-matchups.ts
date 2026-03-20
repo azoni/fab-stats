@@ -101,9 +101,10 @@ export async function updateCommunityHeroMatchups(
   if (linked.length === 0) return;
 
   // Group by (hero pair, month) — count from all sides
+  type TallyGroup = { hero1Wins: number; hero2Wins: number; draws: number; total: number };
   const groups = new Map<
     string,
-    { hero1: string; hero2: string; month: string; hero1Wins: number; hero2Wins: number; draws: number; total: number; byFormat: Map<string, { hero1Wins: number; hero2Wins: number; draws: number; total: number }> }
+    { hero1: string; hero2: string; month: string; hero1Wins: number; hero2Wins: number; draws: number; total: number; byFormat: Map<string, TallyGroup>; byRated: Map<string, TallyGroup> }
   >();
 
   for (const m of linked) {
@@ -130,6 +131,7 @@ export async function updateCommunityHeroMatchups(
         draws: 0,
         total: 0,
         byFormat: new Map(),
+        byRated: new Map(),
       };
       groups.set(key, group);
     }
@@ -161,6 +163,22 @@ export async function updateCommunityHeroMatchups(
       else fmtGroup.hero1Wins++;
     } else if (m.result === MatchResult.Draw) fmtGroup.draws++;
     fmtGroup.total++;
+
+    // Rated breakdown
+    const ratedKey = m.rated ? "rated" : "unrated";
+    let ratedGroup = group.byRated.get(ratedKey);
+    if (!ratedGroup) {
+      ratedGroup = { hero1Wins: 0, hero2Wins: 0, draws: 0, total: 0 };
+      group.byRated.set(ratedKey, ratedGroup);
+    }
+    if (m.result === MatchResult.Win) {
+      if (isHero1) ratedGroup.hero1Wins++;
+      else ratedGroup.hero2Wins++;
+    } else if (m.result === MatchResult.Loss) {
+      if (isHero1) ratedGroup.hero2Wins++;
+      else ratedGroup.hero1Wins++;
+    } else if (m.result === MatchResult.Draw) ratedGroup.draws++;
+    ratedGroup.total++;
   }
 
   if (groups.size === 0) return;
@@ -185,17 +203,24 @@ export async function updateCommunityHeroMatchups(
       updatedAt: new Date().toISOString(),
     }, { merge: true });
 
-    // Collect byFormat data for phase 2 (updateDoc handles dot-notation as field paths)
-    if (g.byFormat.size > 0) {
-      const fmtData: Record<string, unknown> = {};
-      for (const [fmt, fData] of g.byFormat) {
-        const prefix = `byFormat.${fmt}`;
-        fmtData[`${prefix}.hero1Wins`] = increment(fData.hero1Wins);
-        fmtData[`${prefix}.hero2Wins`] = increment(fData.hero2Wins);
-        fmtData[`${prefix}.draws`] = increment(fData.draws);
-        fmtData[`${prefix}.total`] = increment(fData.total);
-      }
-      formatUpdates.push({ ref, data: fmtData });
+    // Collect byFormat + byRated data for phase 2 (updateDoc handles dot-notation as field paths)
+    const nestedData: Record<string, unknown> = {};
+    for (const [fmt, fData] of g.byFormat) {
+      const prefix = `byFormat.${fmt}`;
+      nestedData[`${prefix}.hero1Wins`] = increment(fData.hero1Wins);
+      nestedData[`${prefix}.hero2Wins`] = increment(fData.hero2Wins);
+      nestedData[`${prefix}.draws`] = increment(fData.draws);
+      nestedData[`${prefix}.total`] = increment(fData.total);
+    }
+    for (const [rKey, rData] of g.byRated) {
+      const prefix = `byRated.${rKey}`;
+      nestedData[`${prefix}.hero1Wins`] = increment(rData.hero1Wins);
+      nestedData[`${prefix}.hero2Wins`] = increment(rData.hero2Wins);
+      nestedData[`${prefix}.draws`] = increment(rData.draws);
+      nestedData[`${prefix}.total`] = increment(rData.total);
+    }
+    if (Object.keys(nestedData).length > 0) {
+      formatUpdates.push({ ref, data: nestedData });
     }
 
     count++;
@@ -484,12 +509,14 @@ const CACHE_TTL = 15 * 60_000; // 15 minutes
  * Fetch aggregated community hero matchup data.
  * @param months — list of months to include (empty = all time)
  * @param format — optional format filter
+ * @param rated — optional "rated" | "unrated" filter
  */
 export async function getCommunityHeroMatchups(
   months: string[],
   format?: string,
+  rated?: "rated" | "unrated",
 ): Promise<CommunityMatchupCell[]> {
-  const cacheKey = `${months.join(",")}_${format || ""}`;
+  const cacheKey = `${months.join(",")}_${format || ""}_${rated || ""}`;
   if (cachedData && cachedData.key === cacheKey && Date.now() - cachedData.ts < CACHE_TTL) {
     return cachedData.data;
   }
@@ -524,17 +551,24 @@ export async function getCommunityHeroMatchups(
       pairMap.set(key, cell);
     }
 
-    if (format && d.byFormat?.[format]) {
-      const f = d.byFormat[format];
-      cell.hero1Wins += f.hero1Wins;
-      cell.hero2Wins += f.hero2Wins;
-      cell.draws += f.draws;
-      cell.total += f.total;
-    } else if (!format) {
-      cell.hero1Wins += d.hero1Wins;
-      cell.hero2Wins += d.hero2Wins;
-      cell.draws += d.draws;
-      cell.total += d.total;
+    // Determine the source stats based on format and rated filters
+    let src: { hero1Wins: number; hero2Wins: number; draws: number; total: number } | null = null;
+    if (format && rated) {
+      // Both filters: no pre-computed intersection, skip (would need byFormatRated)
+      // Fall back to format-only for now
+      src = d.byFormat?.[format] || null;
+    } else if (format) {
+      src = d.byFormat?.[format] || null;
+    } else if (rated) {
+      src = d.byRated?.[rated] || null;
+    } else {
+      src = d;
+    }
+    if (src) {
+      cell.hero1Wins += src.hero1Wins;
+      cell.hero2Wins += src.hero2Wins;
+      cell.draws += src.draws;
+      cell.total += src.total;
     }
   }
 

@@ -712,5 +712,6 @@ export interface HeroMatchupDoc {
   draws: number;
   total: number;
   byFormat?: Record<string, { hero1Wins: number; hero2Wins: number; draws: number; total: number }>;
+  byRated?: Record<string, { hero1Wins: number; hero2Wins: number; draws: number; total: number }>;
   updatedAt: string;
 }
