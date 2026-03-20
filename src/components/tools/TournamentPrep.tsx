@@ -4,7 +4,7 @@ import { computeHeroStats } from "@/lib/stats";
 import { computeMetaStats, getAvailableFormats, getAvailableEventTypes, computeTop8HeroMeta } from "@/lib/meta-stats";
 import { useMatchupNotes } from "@/hooks/useMatchupNotes";
 import { HeroSelect } from "@/components/heroes/HeroSelect";
-import { HeroClassIcon } from "@/components/heroes/HeroClassIcon";
+import { HeroImg } from "@/components/heroes/HeroImg";
 import { getHeroByName } from "@/lib/heroes";
 import type { MatchRecord, LeaderboardEntry } from "@/types";
 
@@ -181,7 +181,7 @@ export function TournamentPrep({ matches, entries, isLoaded, isAuthenticated }: 
                     <div className="absolute bottom-0 left-0 right-0 bg-teal-500/10 transition-all" style={{ height: `${pct}%` }} />
                     <div className="relative">
                       <div className="flex justify-center mb-1">
-                        <HeroClassIcon heroClass={heroInfo?.classes[0]} size="sm" />
+                        <HeroImg name={hero.hero} size="sm" />
                       </div>
                       <p className="text-[11px] font-medium text-fab-text truncate">{hero.hero.split(",")[0]}</p>
                       <p className="text-xs font-bold text-teal-400">{hero.metaShare.toFixed(1)}%</p>
@@ -262,7 +262,7 @@ export function TournamentPrep({ matches, entries, isLoaded, isAuthenticated }: 
                   return (
                     <div key={t.hero} className={`rounded-lg border ${rowBg} px-3 py-2`}>
                       <div className="flex items-center gap-2">
-                        <HeroClassIcon heroClass={t.heroClass} size="sm" />
+                        <HeroImg name={t.hero} size="sm" />
                         <span className="text-sm font-medium text-fab-text flex-1 truncate">
                           {t.hero.split(",")[0]}
                         </span>
@@ -358,7 +358,7 @@ export function TournamentPrep({ matches, entries, isLoaded, isAuthenticated }: 
                   const heroInfo = getHeroByName(t8.hero);
                   return (
                     <div key={t8.hero} className={`flex items-center gap-3 px-4 py-2.5 ${i > 0 ? "border-t border-fab-border" : ""}`}>
-                      <HeroClassIcon heroClass={heroInfo?.classes[0]} size="sm" />
+                      <HeroImg name={t8.hero} size="sm" />
                       <span className="text-sm font-medium text-fab-text flex-1 truncate">{t8.hero}</span>
                       <span className="text-xs text-fab-dim">
                         {t8.count} top 8{t8.count !== 1 ? "s" : ""}
@@ -388,7 +388,7 @@ export function TournamentPrep({ matches, entries, isLoaded, isAuthenticated }: 
                     key={t.hero}
                     className="flex items-center gap-2 px-3 py-2 rounded-lg bg-fab-surface border border-fab-border"
                   >
-                    <HeroClassIcon heroClass={t.heroClass} size="sm" />
+                    <HeroImg name={t.hero} size="sm" />
                     <span className="text-sm font-medium text-fab-text">{t.hero.split(",")[0]}</span>
                     <span className="text-xs text-fab-dim">
                       {t.metaShare.toFixed(1)}% meta
