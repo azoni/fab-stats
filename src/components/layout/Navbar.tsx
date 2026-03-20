@@ -18,13 +18,13 @@ import {
   MoreVertical, Heart,
 } from "lucide-react";
 
-const navLinks: { href: string; label: string; icon: ReactNode; color: string; bg: string; authOnly?: boolean; subItems?: { href: string; label: string }[] }[] = [
+const navLinks: { href: string; label: string; icon: ReactNode; color: string; bg: string; authOnly?: boolean; subItems?: { href: string; label: string; adminOnly?: boolean }[] }[] = [
   { href: "/community", label: "Community", icon: <Users className="w-4 h-4" />, color: "text-indigo-400", bg: "bg-indigo-400/10" },
   { href: "/meta", label: "Meta", icon: <Globe className="w-4 h-4" />, color: "text-teal-400", bg: "bg-teal-400/10", subItems: [
     { href: "/matchups", label: "Matchup Matrix" },
-    { href: "/meta/snapshot", label: "Meta Snapshot" },
-    { href: "/meta/matchup-spotlight", label: "Matchup Spotlight" },
-    { href: "/meta/hot-takes", label: "Hot Takes" },
+    { href: "/meta/snapshot", label: "Meta Snapshot", adminOnly: true },
+    { href: "/meta/matchup-spotlight", label: "Matchup Spotlight", adminOnly: true },
+    { href: "/meta/hot-takes", label: "Hot Takes", adminOnly: true },
   ] },
   { href: "/leaderboard", label: "Rankings", icon: <TrophyIcon className="w-4 h-4" />, color: "text-amber-400", bg: "bg-amber-400/10" },
   { href: "/support", label: "Support", icon: <Heart className="w-4 h-4" />, color: "text-pink-400", bg: "bg-pink-400/10" },
@@ -119,25 +119,28 @@ export function Navbar() {
               <>
                 {/* Main nav links — hidden on mobile */}
                 <div className="hidden md:flex items-center gap-0.5">
-                  {navLinks.filter((link) => !link.authOnly || isAuthenticated).map((link) => (
-                      <div key={link.href} className={`relative ${link.subItems ? "group/nav" : ""}`}>
+                  {navLinks.filter((link) => !link.authOnly || isAuthenticated).map((link) => {
+                      const visibleSubs = link.subItems?.filter((s) => !s.adminOnly || isAdmin);
+                      const hasSubs = visibleSubs && visibleSubs.length > 0;
+                      return (
+                      <div key={link.href} className={`relative ${hasSubs ? "group/nav" : ""}`}>
                         <Link
                           href={link.href}
                           onClick={link.href === "/support" ? () => trackSupportClick("navbar") : undefined}
                           className={`flex items-center gap-1.5 px-2.5 py-2 rounded-md text-sm font-medium transition-colors ${
-                            pathname === link.href || link.subItems?.some((s) => pathname === s.href)
+                            pathname === link.href || visibleSubs?.some((s) => pathname === s.href)
                               ? `${link.color} ${link.bg}`
                               : "text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover"
                           }`}
                         >
                           {link.icon}
                           <span className="hidden xl:inline">{link.label}</span>
-                          {link.subItems && <ChevronDown className="w-3 h-3 text-fab-dim hidden xl:block" />}
+                          {hasSubs && <ChevronDown className="w-3 h-3 text-fab-dim hidden xl:block" />}
                         </Link>
-                        {link.subItems && (
+                        {hasSubs && (
                           <div className="absolute left-0 top-full pt-1 hidden group-hover/nav:block z-50">
                             <div className="w-48 bg-fab-surface border border-fab-border rounded-lg shadow-xl overflow-hidden">
-                              {link.subItems.map((sub) => (
+                              {visibleSubs.map((sub) => (
                                 <Link
                                   key={sub.href}
                                   href={sub.href}
@@ -154,7 +157,8 @@ export function Navbar() {
                           </div>
                         )}
                       </div>
-                  ))}
+                      );
+                  })}
                   {isAuthenticated && (
                     <Link
                       href="/import"
