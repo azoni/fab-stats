@@ -898,4 +898,19 @@ export async function adminOverrideEventType(
   await batchUpdateMatchesFirestore(userId, matchIds, {
     eventTypeOverride: newEventType || undefined,
   });
+
+  // Re-sync leaderboard entry so cached trophy counts reflect the override
+  try {
+    const profileSnap = await getDoc(doc(db, "users", userId, "profile", "main"));
+    if (profileSnap.exists()) {
+      const profile = profileSnap.data() as UserProfile;
+      const matchesSnap = await getDocs(
+        query(collection(db, "users", userId, "matches"), orderBy("createdAt", "desc"))
+      );
+      const matches = matchesSnap.docs.map((d) => ({ id: d.id, ...d.data() })) as MatchRecord[];
+      await updateLeaderboardEntry(profile, matches);
+    }
+  } catch {
+    // Non-critical — leaderboard will self-heal when user views their profile
+  }
 }
