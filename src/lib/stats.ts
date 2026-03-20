@@ -353,9 +353,15 @@ export function refineEventType(eventType: string, eventName: string): string {
   if (lower.includes("armory")) return "Armory";
   if (lower.includes("world premiere")) return "Pre-Release";
   if (lower.includes("pre-release") || lower.includes("prerelease")) return "Pre-Release";
+  // Explicitly catch "Road to Nationals" / "RTN" before general classification,
+  // even if the provided eventType says "Nationals"
+  if (/road to national|\brtn\b/i.test(lower)) return "Road to Nationals";
   // Competitive events — pick lowest prestige when multiple match
   const competitive = classifyCompetitiveEvent(lower);
   if (competitive) return competitive;
+  // Also check the provided eventType string itself for RTN patterns
+  // (GEM may set eventType to "Road to Nationals" but name could be generic)
+  if (/road to national|\brtn\b/i.test(eventType.toLowerCase())) return "Road to Nationals";
   // Fall back to provided eventType (don't promote random "invitational" / "championship" store events)
   return eventType;
 }
