@@ -37,6 +37,7 @@ type Tab = "community" | "personal";
 export default function MatchupsPageContent() {
   const [tab, setTab] = useState<Tab>("community");
   const [format, setFormat] = useState("");
+  const [ratedFilter, setRatedFilter] = useState<"" | "rated" | "unrated">("");
   const [timePreset, setTimePreset] = useState("all");
   const { user, isGuest } = useAuth();
   const { matches, isLoaded } = useMatches();
@@ -95,6 +96,21 @@ export default function MatchupsPageContent() {
               ))}
             </div>
             <div className="flex rounded-lg border border-fab-border overflow-hidden">
+              {(["", "rated", "unrated"] as const).map((r, i) => (
+                <button
+                  key={r}
+                  onClick={() => setRatedFilter(r)}
+                  className={`px-2.5 py-1 text-xs font-medium transition-colors ${
+                    i > 0 ? "border-l border-fab-border" : ""
+                  } ${
+                    ratedFilter === r ? "bg-fab-gold/15 text-fab-gold" : "text-fab-muted hover:text-fab-text"
+                  }`}
+                >
+                  {r === "" ? "All Events" : r === "rated" ? "Rated" : "Unrated"}
+                </button>
+              ))}
+            </div>
+            <div className="flex rounded-lg border border-fab-border overflow-hidden">
               {TIME_PRESETS.map((t, i) => (
                 <button
                   key={t.id}
@@ -111,7 +127,7 @@ export default function MatchupsPageContent() {
             </div>
           </div>
 
-          <MetaMatchupMatrix format={format || undefined} sinceDate={since} untilDate={until} />
+          <MetaMatchupMatrix format={format || undefined} sinceDate={since} untilDate={until} rated={ratedFilter || undefined} />
         </>
       )}
 

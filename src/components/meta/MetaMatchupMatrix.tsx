@@ -30,9 +30,10 @@ interface MetaMatchupMatrixProps {
   format?: string;
   sinceDate?: string;
   untilDate?: string;
+  rated?: "rated" | "unrated";
 }
 
-export function MetaMatchupMatrix({ format, sinceDate, untilDate }: MetaMatchupMatrixProps) {
+export function MetaMatchupMatrix({ format, sinceDate, untilDate, rated }: MetaMatchupMatrixProps) {
   const [data, setData] = useState<CommunityMatchupCell[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedCell, setSelectedCell] = useState<{ hero: string; opp: string } | null>(null);
@@ -52,14 +53,14 @@ export function MetaMatchupMatrix({ format, sinceDate, untilDate }: MetaMatchupM
         preset = `custom:${sinceDate}:${untilDate}`;
       }
       const months = getMonthsForPreset(preset);
-      const result = await getCommunityHeroMatchups(months, format || undefined);
+      const result = await getCommunityHeroMatchups(months, format || undefined, rated);
       setData(result);
     } catch {
       setData([]);
     } finally {
       setLoading(false);
     }
-  }, [format, sinceDate, untilDate]);
+  }, [format, sinceDate, untilDate, rated]);
 
   useEffect(() => {
     fetchData();
