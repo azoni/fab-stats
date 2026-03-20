@@ -45,6 +45,15 @@ for (const card of heroCards) {
   }
 }
 
+// Override format data for heroes where the card package is out of date
+const LL_OVERRIDES: Record<string, string[]> = {
+  "Verdance, Thorn of the Rose": ["Living Legend", "Open"],
+};
+for (const [name, formats] of Object.entries(LL_OVERRIDES)) {
+  const hero = heroMap.get(name);
+  if (hero) hero.legalFormats = formats;
+}
+
 export const allHeroes: HeroInfo[] = Array.from(heroMap.values()).sort(
   (a, b) => a.name.localeCompare(b.name)
 );
