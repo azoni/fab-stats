@@ -540,7 +540,9 @@ export function computePlayoffFinishes(
   const finishes: PlayoffFinish[] = [];
 
   for (const event of eventStats) {
-    const raw = refineEventType(event.eventType || "Other", event.eventName);
+    // Trust the eventType from computeEventStats — it already applied eventTypeOverride
+    // and refineEventType. Don't re-refine or overrides get undone.
+    const raw = event.eventType || "Other";
     // Non-competitive event types with a Top 8 get shown as "Other" (marble icons)
     // Unrated events with major event types get downgraded to "Other" too
     const isMajorType = ["Battle Hardened", "The Calling", "Nationals", "Pro Tour", "Worlds"].includes(raw);
@@ -647,7 +649,7 @@ export function computeMinorEventFinishes(eventStats: EventStats[]): MinorEventF
   const finishes: MinorEventFinish[] = [];
 
   for (const event of eventStats) {
-    const raw = refineEventType(event.eventType || "Other", event.eventName);
+    const raw = event.eventType || "Other";
     if (!MINOR_EVENT_TYPES.has(raw)) continue;
 
     const hero = event.matches[0]?.heroPlayed;
