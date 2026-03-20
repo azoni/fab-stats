@@ -6,7 +6,7 @@ const SUPPORT_OPTIONS = [
   {
     title: "Shop on TCGplayer",
     description:
-      "Buying cards? Use our affiliate link and a portion goes to supporting FaB Stats — at no extra cost to you.",
+      "Buying cards? Use this affiliate link and a portion goes to supporting FaB Stats — at no extra cost to you.",
     href: "https://partner.tcgplayer.com/fabstats",
     trackKey: "tcgplayer",
     color: "text-blue-400",
@@ -38,7 +38,7 @@ const SUPPORT_OPTIONS = [
   {
     title: "Ko-fi",
     description:
-      "Buy us a coffee (or a booster pack). One-time donations welcome — no account needed.",
+      "Buy me a coffee (or a booster pack). One-time donations welcome — no account needed.",
     href: "https://ko-fi.com/azoni",
     trackKey: "kofi",
     color: "text-yellow-400",
