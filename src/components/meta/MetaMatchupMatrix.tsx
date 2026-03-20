@@ -9,6 +9,7 @@ import { useDragScroll } from "@/hooks/useDragScroll";
 interface ProcessedHeroRow {
   hero: string;
   totalMatches: number;
+  overallWinRate: number;
   matchups: Map<string, { wins: number; losses: number; draws: number; total: number; winRate: number }>;
 }
 
@@ -92,12 +93,14 @@ export function MetaMatchupMatrix({ format, sinceDate, untilDate }: MetaMatchupM
     const rows: ProcessedHeroRow[] = [];
     for (const [hero, matchups] of heroMap) {
       let totalForHero = 0;
+      let totalWins = 0;
       const enriched = new Map<string, { wins: number; losses: number; draws: number; total: number; winRate: number }>();
       for (const [opp, stats] of matchups) {
         totalForHero += stats.total;
+        totalWins += stats.wins;
         enriched.set(opp, { ...stats, winRate: stats.total > 0 ? (stats.wins / stats.total) * 100 : 0 });
       }
-      rows.push({ hero, totalMatches: totalForHero, matchups: enriched });
+      rows.push({ hero, totalMatches: totalForHero, overallWinRate: totalForHero > 0 ? (totalWins / totalForHero) * 100 : 0, matchups: enriched });
     }
 
     rows.sort((a, b) => b.totalMatches - a.totalMatches);
@@ -214,9 +217,12 @@ export function MetaMatchupMatrix({ format, sinceDate, untilDate }: MetaMatchupM
                   >
                     <div className="flex items-center gap-1.5">
                       <HeroImg name={row.hero} />
-                      <span className="truncate max-w-[140px]">{row.hero}</span>
+                      <span className="truncate max-w-[100px]" title={row.hero}>{row.hero.split(",")[0]}</span>
                     </div>
-                    <span className="text-[10px] text-fab-dim">({row.totalMatches})</span>
+                    <div className="flex items-center gap-1.5 text-[10px]">
+                      <span className={row.overallWinRate >= 50 ? "text-fab-win" : "text-fab-loss"}>{row.overallWinRate.toFixed(0)}%</span>
+                      <span className="text-fab-dim">({row.totalMatches})</span>
+                    </div>
                   </td>
                   {displayCols.map((opp) => {
                     const isHL = isRowHL || highlightCol === opp;
