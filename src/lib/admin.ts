@@ -890,6 +890,17 @@ export async function adminGetUserEvents(userId: string): Promise<AdminEventSumm
   }));
 }
 
+export async function adminResyncLeaderboard(userId: string): Promise<void> {
+  const profileSnap = await getDoc(doc(db, "users", userId, "profile", "main"));
+  if (!profileSnap.exists()) throw new Error("Profile not found");
+  const profile = profileSnap.data() as UserProfile;
+  const matchesSnap = await getDocs(
+    query(collection(db, "users", userId, "matches"), orderBy("createdAt", "desc"))
+  );
+  const matches = matchesSnap.docs.map((d) => ({ id: d.id, ...d.data() })) as MatchRecord[];
+  await updateLeaderboardEntry(profile, matches);
+}
+
 export async function adminOverrideEventType(
   userId: string,
   matchIds: string[],
