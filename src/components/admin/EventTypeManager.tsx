@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { searchUsernames } from "@/lib/firestore-storage";
-import { adminGetUserEvents, adminOverrideEventType, type AdminEventSummary } from "@/lib/admin";
+import { adminGetUserEvents, adminOverrideEventType, adminResyncLeaderboard, type AdminEventSummary } from "@/lib/admin";
 
 const EVENT_TYPES = [
   "Other", "Armory", "Pre-Release", "On Demand", "Skirmish",
@@ -18,6 +18,8 @@ export function EventTypeManager() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState<string | null>(null);
   const [filter, setFilter] = useState("");
+  const [resyncing, setResyncing] = useState(false);
+  const [resyncResult, setResyncResult] = useState("");
 
   async function searchUsers(val: string) {
     setQuery(val);
@@ -96,7 +98,29 @@ export function EventTypeManager() {
 
       {selectedUser && !loading && events.length > 0 && (
         <>
-          {/* Filter by type */}
+          {/* Resync + filter */}
+          <div className="flex items-center gap-2 mb-2">
+            <button
+              onClick={async () => {
+                if (!selectedUser) return;
+                setResyncing(true);
+                setResyncResult("");
+                try {
+                  await adminResyncLeaderboard(selectedUser.userId);
+                  setResyncResult("Leaderboard re-synced");
+                } catch {
+                  setResyncResult("Re-sync failed");
+                } finally {
+                  setResyncing(false);
+                }
+              }}
+              disabled={resyncing}
+              className="px-2.5 py-1 rounded text-xs font-medium bg-fab-gold/15 text-fab-gold hover:bg-fab-gold/25 transition-colors disabled:opacity-50"
+            >
+              {resyncing ? "Syncing..." : "Re-sync Leaderboard"}
+            </button>
+            {resyncResult && <span className="text-xs text-fab-dim">{resyncResult}</span>}
+          </div>
           <div className="flex flex-wrap items-center gap-1 mb-2">
             <button
               onClick={() => setFilter("")}
