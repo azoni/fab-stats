@@ -1059,7 +1059,7 @@ export default function DocsPage() {
               </a>
               {" · "}
               <a
-                href="https://discord.gg/knDmm9s7"
+                href="https://discord.gg/WPP5aqCUHY"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-fab-gold hover:underline"

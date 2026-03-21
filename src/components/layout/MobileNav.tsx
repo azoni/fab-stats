@@ -224,7 +224,7 @@ export function MobileNav() {
                 Ko-fi
               </a>
               <a
-                href="https://discord.gg/knDmm9s7"
+                href="https://discord.gg/WPP5aqCUHY"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium text-fab-text active:bg-fab-surface-hover transition-colors"

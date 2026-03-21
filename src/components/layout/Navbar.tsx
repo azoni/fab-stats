@@ -688,7 +688,7 @@ function MoreDropdown({
           {/* Social — always visible at bottom */}
           <div className="border-t border-fab-border">
             <a
-              href="https://discord.gg/knDmm9s7"
+              href="https://discord.gg/WPP5aqCUHY"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-3 px-4 py-2.5 hover:bg-fab-surface-hover transition-colors group"
