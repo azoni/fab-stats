@@ -9,6 +9,7 @@ import { EmblemPicker } from "@/components/profile/EmblemPicker";
 import { BadgeStripPicker } from "@/components/profile/BadgeStripPicker";
 import { updateLeaderboardEntry, findUserIdByStaleUsername } from "@/lib/leaderboard";
 import { computeOverallStats, computeHeroStats, computeEventStats, computeOpponentStats, computeBestFinish, computePlayoffFinishes, computeMinorEventFinishes, getEventType, getRoundNumber } from "@/lib/stats";
+import { getEventTier, TIER_LABELS } from "@/lib/events";
 import { evaluateAchievements, getAchievementProgress } from "@/lib/achievements";
 import { getUserBadgeIds } from "@/lib/badge-service";
 import { AdminBadgePanel } from "@/components/gamification/AdminBadgePanel";
@@ -97,6 +98,7 @@ export default function PlayerProfile() {
   const { isFriend, hasSentRequest, hasReceivedRequest, getFriendshipForUser, sendRequest, acceptRequest } = useFriends();
   const creators = useCreators();
   const [filterFormat, setFilterFormat] = useState<string>("all");
+  const [filterTier, setFilterTier] = useState<string>("all");
   const [filterRated, setFilterRated] = useState<string>("all");
   const [filterHero, setFilterHero] = useState<string>("all");
   const [showRawData, setShowRawData] = useState(false);
@@ -178,13 +180,14 @@ export default function PlayerProfile() {
   const fm = useMemo(() => {
     return loadedMatches.filter((m) => {
       if (filterFormat !== "all" && m.format !== filterFormat) return false;
+      if (filterTier !== "all" && getEventTier(getEventType(m)) !== Number(filterTier)) return false;
       if (filterRated === "rated" && m.rated !== true) return false;
       if (filterRated === "unrated" && m.rated === true) return false;
       if (filterRated !== "all" && filterRated !== "rated" && filterRated !== "unrated" && getEventType(m) !== filterRated) return false;
       if (filterHero !== "all" && m.heroPlayed !== filterHero) return false;
       return true;
     });
-  }, [loadedMatches, filterFormat, filterRated, filterHero]);
+  }, [loadedMatches, filterFormat, filterTier, filterRated, filterHero]);
 
   // Update tab title and OG meta tags from generic pre-rendered values to actual username
   useEffect(() => {
@@ -537,7 +540,7 @@ export default function PlayerProfile() {
   const { profile, matches, isOwner: actualIsOwner } = state;
   const isOwner = actualIsOwner && !previewAsVisitor;
 
-  const isFiltered = filterFormat !== "all" || filterRated !== "all" || filterHero !== "all";
+  const isFiltered = filterFormat !== "all" || filterTier !== "all" || filterRated !== "all" || filterHero !== "all";
   const { streaks } = overall;
 
   if (matches.length === 0) {
@@ -930,6 +933,16 @@ export default function PlayerProfile() {
             ))}
           </select>
           <select
+            value={filterTier}
+            onChange={(e) => setFilterTier(e.target.value)}
+            className="bg-fab-surface border border-fab-border text-fab-text text-xs rounded-lg px-2 py-1 focus:outline-none focus:border-fab-gold"
+          >
+            <option value="all">All Tiers</option>
+            {[4, 3, 2, 1].map((t) => (
+              <option key={t} value={String(t)}>{TIER_LABELS[t]}</option>
+            ))}
+          </select>
+          <select
             value={filterRated}
             onChange={(e) => setFilterRated(e.target.value)}
             className="bg-fab-surface border border-fab-border text-fab-text text-xs rounded-lg px-2 py-1 focus:outline-none focus:border-fab-gold"
@@ -1051,7 +1064,7 @@ export default function PlayerProfile() {
         <div className="text-center py-16">
           <p className="text-fab-muted text-lg">No matches found for this filter.</p>
           <button
-            onClick={() => { setFilterFormat("all"); setFilterRated("all"); setFilterHero("all"); }}
+            onClick={() => { setFilterFormat("all"); setFilterTier("all"); setFilterRated("all"); setFilterHero("all"); }}
             className="mt-4 text-fab-gold hover:underline text-sm"
           >
             Clear Filters
