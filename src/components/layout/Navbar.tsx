@@ -18,7 +18,7 @@ import {
   MoreVertical, Heart,
 } from "lucide-react";
 
-const navLinks: { href: string; label: string; icon: ReactNode; color: string; bg: string; authOnly?: boolean; subItems?: { href: string; label: string; adminOnly?: boolean }[] }[] = [
+const navLinks: { href: string; label: string; icon: ReactNode; color: string; bg: string; authOnly?: boolean; subItems?: { href: string; label: string; adminOnly?: boolean; badge?: string }[] }[] = [
   { href: "/community", label: "Community", icon: <Users className="w-4 h-4" />, color: "text-indigo-400", bg: "bg-indigo-400/10" },
   { href: "/meta", label: "Meta", icon: <Globe className="w-4 h-4" />, color: "text-teal-400", bg: "bg-teal-400/10", subItems: [
     { href: "/matchups", label: "Matchup Matrix" },
@@ -28,8 +28,8 @@ const navLinks: { href: string; label: string; icon: ReactNode; color: string; b
   ] },
   { href: "/leaderboard", label: "Rankings", icon: <TrophyIcon className="w-4 h-4" />, color: "text-amber-400", bg: "bg-amber-400/10" },
   { href: "/support", label: "Support", icon: <Heart className="w-4 h-4" />, color: "text-pink-400", bg: "bg-pink-400/10", subItems: [
-    { href: "https://www.amazon.com/?tag=oldwaystoda00-20", label: "Shop Amazon" },
-    { href: "https://partner.tcgplayer.com/fabstats", label: "Shop TCGplayer" },
+    { href: "https://www.amazon.com/?tag=oldwaystoda00-20", label: "Shop Amazon", badge: "Free" },
+    { href: "https://partner.tcgplayer.com/fabstats", label: "Shop TCGplayer", badge: "Free" },
     { href: "https://github.com/sponsors/azoni", label: "GitHub Sponsors" },
     { href: "https://ko-fi.com/azoni", label: "Ko-fi" },
   ] },
@@ -156,10 +156,11 @@ export function Navbar() {
                                       target="_blank"
                                       rel="noopener noreferrer"
                                       onClick={() => { if (trackKey) trackSupportClick(trackKey); }}
-                                      className="flex items-center justify-between px-3 py-2 text-sm text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover transition-colors"
+                                      className="flex items-center gap-2 px-3 py-2 text-sm text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover transition-colors"
                                     >
-                                      {sub.label}
-                                      <ExternalLink className="w-3 h-3 text-fab-dim" />
+                                      <span className="flex-1">{sub.label}</span>
+                                      {sub.badge && <span className="text-[8px] font-bold uppercase tracking-wider text-emerald-400 bg-emerald-400/15 px-1.5 py-0.5 rounded-full">{sub.badge}</span>}
+                                      <ExternalLink className="w-3 h-3 text-fab-dim shrink-0" />
                                     </a>
                                   );
                                 }
