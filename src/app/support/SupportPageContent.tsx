@@ -6,7 +6,7 @@ const SUPPORT_OPTIONS = [
   {
     title: "Shop on TCGplayer",
     description:
-      "Buying cards? Use this affiliate link and a portion goes to supporting FaB Stats — at no extra cost to you.",
+      "Buying cards? Just start your shopping from this link. You pay the same price — TCGplayer sends a small cut to FaB Stats.",
     href: "https://partner.tcgplayer.com/fabstats",
     trackKey: "tcgplayer",
     color: "text-blue-400",
@@ -23,7 +23,7 @@ const SUPPORT_OPTIONS = [
   {
     title: "Shop on Amazon",
     description:
-      "Shopping on Amazon? Use this link and a small percentage supports FaB Stats — at no extra cost to you.",
+      "Ordering anything on Amazon? Start here first. Same prices, same everything — Amazon sends a small percentage to FaB Stats.",
     href: "https://www.amazon.com/?tag=oldwaystoda00-20",
     trackKey: "amazon",
     color: "text-orange-400",
@@ -99,15 +99,54 @@ export default function SupportPageContent() {
     <div className="max-w-2xl mx-auto">
       <div className="text-center mb-8">
         <h1 className="text-2xl font-bold text-fab-text mb-2">Support FaB Stats</h1>
-        <p className="text-sm text-fab-muted leading-relaxed">
+        <p className="text-sm text-fab-muted leading-relaxed max-w-md mx-auto">
           FaB Stats is a free community project built by a Flesh and Blood player, for players.
-          <br />
-          Here are a few ways you can help keep it going.
+          If you find it useful, here are a few easy ways to help keep it running.
         </p>
       </div>
 
+      {/* Free support — costs nothing */}
+      <div className="mb-2">
+        <p className="text-xs font-semibold text-fab-gold uppercase tracking-wider mb-1">Costs you nothing</p>
+        <p className="text-xs text-fab-muted mb-3">Already shopping? Just use these links and a small percentage goes to FaB Stats. You pay the exact same price.</p>
+      </div>
+      <div className="space-y-3 mb-8">
+        {SUPPORT_OPTIONS.filter((opt) => opt.trackKey === "tcgplayer" || opt.trackKey === "amazon").map((opt) => (
+          <a
+            key={opt.title}
+            href={opt.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-start gap-4 p-4 rounded-xl bg-fab-surface border border-fab-border hover:border-fab-muted transition-all group"
+            onClick={() => trackSupportClick(opt.trackKey)}
+          >
+            <div className={`w-10 h-10 rounded-lg ${opt.bgColor} flex items-center justify-center ring-1 ring-inset ${opt.ringColor} shrink-0 ${opt.color}`}>
+              {opt.icon}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold text-fab-text group-hover:text-fab-gold transition-colors">
+                {opt.title}
+              </p>
+              <p className="text-xs text-fab-muted mt-0.5 leading-relaxed">
+                {opt.description}
+              </p>
+            </div>
+            <svg className="w-4 h-4 text-fab-dim shrink-0 mt-1" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+              <polyline points="15 3 21 3 21 9" />
+              <line x1="10" y1="14" x2="21" y2="3" />
+            </svg>
+          </a>
+        ))}
+      </div>
+
+      {/* Direct support */}
+      <div className="mb-2">
+        <p className="text-xs font-semibold text-fab-text uppercase tracking-wider mb-1">Direct Support</p>
+        <p className="text-xs text-fab-muted mb-3">Help cover hosting, development, and late-night coding sessions.</p>
+      </div>
       <div className="space-y-3">
-        {SUPPORT_OPTIONS.map((opt) => (
+        {SUPPORT_OPTIONS.filter((opt) => opt.trackKey !== "tcgplayer" && opt.trackKey !== "amazon").map((opt) => (
           <a
             key={opt.title}
             href={opt.href}
