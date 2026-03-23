@@ -27,7 +27,12 @@ const navLinks: { href: string; label: string; icon: ReactNode; color: string; b
     { href: "/meta/hot-takes", label: "Hot Takes", adminOnly: true },
   ] },
   { href: "/leaderboard", label: "Rankings", icon: <TrophyIcon className="w-4 h-4" />, color: "text-amber-400", bg: "bg-amber-400/10" },
-  { href: "/support", label: "Support", icon: <Heart className="w-4 h-4" />, color: "text-pink-400", bg: "bg-pink-400/10" },
+  { href: "/support", label: "Support", icon: <Heart className="w-4 h-4" />, color: "text-pink-400", bg: "bg-pink-400/10", subItems: [
+    { href: "https://www.amazon.com/?tag=oldwaystoda00-20", label: "Shop Amazon" },
+    { href: "https://partner.tcgplayer.com/fabstats", label: "Shop TCGplayer" },
+    { href: "https://github.com/sponsors/azoni", label: "GitHub Sponsors" },
+    { href: "https://ko-fi.com/azoni", label: "Ko-fi" },
+  ] },
 ];
 
 const moreLinks: { href: string; label: string; icon: ReactNode; authOnly?: boolean; adminOnly?: boolean; badge?: string; divider?: boolean; sectionLabel?: string; subItems?: { href: string; label: string }[] }[] = [
@@ -140,19 +145,38 @@ export function Navbar() {
                         {hasSubs && (
                           <div className="absolute left-0 top-full pt-1 hidden group-hover/nav:block z-50">
                             <div className="w-48 bg-fab-surface border border-fab-border rounded-lg shadow-xl overflow-hidden">
-                              {visibleSubs.map((sub) => (
-                                <Link
-                                  key={sub.href}
-                                  href={sub.href}
-                                  className={`block px-3 py-2 text-sm transition-colors ${
-                                    pathname === sub.href
-                                      ? "text-fab-gold bg-fab-gold/10"
-                                      : "text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover"
-                                  }`}
-                                >
-                                  {sub.label}
-                                </Link>
-                              ))}
+                              {visibleSubs.map((sub) => {
+                                const isExternal = sub.href.startsWith("http");
+                                const trackKey = sub.href.includes("amazon") ? "amazon" : sub.href.includes("tcgplayer") ? "tcgplayer" : sub.href.includes("sponsors") ? "github_sponsors" : sub.href.includes("ko-fi") ? "kofi" : undefined;
+                                if (isExternal) {
+                                  return (
+                                    <a
+                                      key={sub.href}
+                                      href={sub.href}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      onClick={() => { if (trackKey) trackSupportClick(trackKey); }}
+                                      className="flex items-center justify-between px-3 py-2 text-sm text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover transition-colors"
+                                    >
+                                      {sub.label}
+                                      <ExternalLink className="w-3 h-3 text-fab-dim" />
+                                    </a>
+                                  );
+                                }
+                                return (
+                                  <Link
+                                    key={sub.href}
+                                    href={sub.href}
+                                    className={`block px-3 py-2 text-sm transition-colors ${
+                                      pathname === sub.href
+                                        ? "text-fab-gold bg-fab-gold/10"
+                                        : "text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover"
+                                    }`}
+                                  >
+                                    {sub.label}
+                                  </Link>
+                                );
+                              })}
                             </div>
                           </div>
                         )}
@@ -617,7 +641,7 @@ function MoreDropdown({
           )}
 
 
-          {/* Explore, Resources, Support — always visible with hover sub-items */}
+          {/* Explore, Resources — always visible with hover sub-items */}
           <div className="border-t border-fab-border p-1.5 space-y-0.5">
             {/* Explore */}
             <div className="group/explore relative">
@@ -657,32 +681,6 @@ function MoreDropdown({
               </div>
             </div>
 
-            {/* Support */}
-            <div className="group/support relative">
-              <Link href="/support" onClick={() => { trackSupportClick("more_menu"); setOpen(false); }} className={`${linkClass("/support")} justify-between`}>
-                <span className="flex items-center gap-3">
-                  <Heart className="w-4 h-4 text-pink-400" />
-                  Support
-                </span>
-                <ChevronDown className="w-3 h-3 text-fab-dim -rotate-90" />
-              </Link>
-              <div className="absolute left-full top-0 pl-1 hidden group-hover/support:block z-50">
-                <div className="w-48 bg-fab-surface border border-fab-border rounded-lg shadow-xl overflow-hidden">
-                  <a href="https://partner.tcgplayer.com/fabstats" target="_blank" rel="noopener noreferrer" onClick={() => { trackSupportClick("tcgplayer"); setOpen(false); }} className="flex items-center justify-between px-3 py-2 text-sm text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover transition-colors">
-                    Shop TCGplayer
-                    <ExternalLink className="w-3 h-3 text-fab-dim" />
-                  </a>
-                  <a href="https://github.com/sponsors/azoni" target="_blank" rel="noopener noreferrer" onClick={() => { trackSupportClick("github_sponsors"); setOpen(false); }} className="flex items-center justify-between px-3 py-2 text-sm text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover transition-colors">
-                    GitHub Sponsors
-                    <ExternalLink className="w-3 h-3 text-fab-dim" />
-                  </a>
-                  <a href="https://ko-fi.com/azoni" target="_blank" rel="noopener noreferrer" onClick={() => { trackSupportClick("kofi"); setOpen(false); }} className="flex items-center justify-between px-3 py-2 text-sm text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover transition-colors">
-                    Ko-fi
-                    <ExternalLink className="w-3 h-3 text-fab-dim" />
-                  </a>
-                </div>
-              </div>
-            </div>
           </div>
 
           {/* Social — always visible at bottom */}
