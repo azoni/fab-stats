@@ -21,6 +21,21 @@ const SUPPORT_OPTIONS = [
     ),
   },
   {
+    title: "Shop on Amazon",
+    description:
+      "Shopping on Amazon? Use this link and a small percentage supports FaB Stats — at no extra cost to you.",
+    href: "https://www.amazon.com/?tag=oldwaystoda00-20",
+    trackKey: "amazon",
+    color: "text-orange-400",
+    bgColor: "bg-orange-400/10",
+    ringColor: "ring-orange-400/20",
+    icon: (
+      <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M.045 18.02c.07-.116.36-.51.53-.76 1.61-2.37 4.1-4.12 7.03-4.83a11.24 11.24 0 0 1 4.84-.18c1.67.32 3.22 1.01 4.55 2.02.34.26.67.54.97.84l.07.07c.08.08.03.2-.08.17a16.4 16.4 0 0 1-5.75-1.26 16.1 16.1 0 0 1-4.63-2.96c-.17-.16-.41.07-.27.26a17.23 17.23 0 0 0 7.07 5.42c1.34.56 2.73.94 4.15 1.12.36.04.72.07 1.08.08.12 0 .16.14.07.21-1.85 1.47-4.03 2.36-6.37 2.6a12.97 12.97 0 0 1-7.37-1.37A12.34 12.34 0 0 1 .88 18.5c-.21-.2-.09-.13.045-.48zM21.67 16.71c-.46-.6-1.48-.82-2.32-.61-.12.03-.1.15.03.15.72-.03 2.34.46 2.65 1.56.03.12.18.09.18-.04a3.5 3.5 0 0 0-.54-1.06z" />
+      </svg>
+    ),
+  },
+  {
     title: "GitHub Sponsors",
     description:
       "Monthly or one-time sponsorship through GitHub. Every bit helps cover hosting and development costs.",
