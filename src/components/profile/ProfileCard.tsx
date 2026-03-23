@@ -46,6 +46,7 @@ export interface ProfileCardData {
   armoryUndefeated?: number;
   isSiteCreator?: boolean;
   selectedBadgeIds?: string[];
+  filterLabel?: string;
 }
 
 // ── Fantasy-themed profile card themes ──
@@ -489,6 +490,9 @@ export function ProfileCard({ data, theme }: { data: ProfileCardData; theme?: Ca
             </g>
           </svg>
           <p style={{ color: t.accent, opacity: 0.5 }} className="text-[10px] tracking-wider font-semibold">fabstats.net</p>
+          {data.filterLabel && (
+            <p style={{ color: t.dim }} className="text-[8px] tracking-wider mt-0.5">{data.filterLabel}</p>
+          )}
         </div>
         {/* Underline bar */}
         {data.underline && (

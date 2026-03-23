@@ -541,6 +541,16 @@ export default function PlayerProfile() {
   const isOwner = actualIsOwner && !previewAsVisitor;
 
   const isFiltered = filterFormat !== "all" || filterTier !== "all" || filterRated !== "all" || filterHero !== "all";
+  const activeFilterLabel = useMemo(() => {
+    const parts: string[] = [];
+    if (filterFormat !== "all") parts.push(filterFormat === "Classic Constructed" ? "CC" : filterFormat);
+    if (filterTier !== "all") parts.push(TIER_LABELS[Number(filterTier)] || `Tier ${filterTier}`);
+    if (filterRated === "rated") parts.push("Rated");
+    else if (filterRated === "unrated") parts.push("Unrated");
+    else if (filterRated !== "all") parts.push(filterRated);
+    if (filterHero !== "all") parts.push(filterHero.split(",")[0]);
+    return parts.length > 0 ? parts.join(" · ") : undefined;
+  }, [filterFormat, filterTier, filterRated, filterHero]);
   const { streaks } = overall;
 
   if (matches.length === 0) {
@@ -1196,6 +1206,7 @@ export default function PlayerProfile() {
             armoryUndefeated: eventStats.filter(e => e.eventType === "Armory" && e.losses === 0 && e.wins > 0).length,
             isSiteCreator: profile.username === "azoni",
             selectedBadgeIds: profile.selectedBadgeIds,
+            filterLabel: activeFilterLabel,
           }}
           onClose={() => setProfileShareOpen(false)}
         />
