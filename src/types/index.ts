@@ -62,6 +62,7 @@ export enum GameFormat {
 
 export interface HeroStats {
   heroName: string;
+  format?: string;
   totalMatches: number;
   wins: number;
   losses: number;

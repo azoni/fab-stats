@@ -13,6 +13,23 @@ import type {
 import { MatchResult } from "@/types";
 import { localDate } from "@/lib/constants";
 
+export const FORMAT_SHORT: Record<string, string> = {
+  "Classic Constructed": "CC",
+  "Blitz": "Blitz",
+  "Living Legend": "LL",
+  "Draft": "Draft",
+  "Sealed": "Sealed",
+  "Clash": "Clash",
+  "Ultimate Pit Fight": "UPF",
+  "Silver Age": "SA",
+  "Other": "Other",
+};
+
+export function formatShortLabel(format?: string): string {
+  if (!format) return "";
+  return FORMAT_SHORT[format] || format;
+}
+
 export function computeOverallStats(matches: MatchRecord[]): OverallStats {
   const sorted = [...matches].sort(
     (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
@@ -37,17 +54,19 @@ export function computeOverallStats(matches: MatchRecord[]): OverallStats {
   };
 }
 
-export function computeHeroStats(matches: MatchRecord[]): HeroStats[] {
+export function computeHeroStats(matches: MatchRecord[], splitByFormat = true): HeroStats[] {
   const heroMap = new Map<string, MatchRecord[]>();
 
   for (const match of matches) {
-    const existing = heroMap.get(match.heroPlayed) ?? [];
+    const key = splitByFormat ? `${match.heroPlayed}::${match.format}` : match.heroPlayed;
+    const existing = heroMap.get(key) ?? [];
     existing.push(match);
-    heroMap.set(match.heroPlayed, existing);
+    heroMap.set(key, existing);
   }
 
   return Array.from(heroMap.entries())
-    .map(([heroName, heroMatches]) => {
+    .map(([key, heroMatches]) => {
+      const [heroName, format] = splitByFormat ? key.split("::") : [key, undefined];
       const wins = heroMatches.filter((m) => m.result === MatchResult.Win).length;
       const losses = heroMatches.filter((m) => m.result === MatchResult.Loss).length;
       const draws = heroMatches.filter((m) => m.result === MatchResult.Draw).length;
@@ -55,6 +74,7 @@ export function computeHeroStats(matches: MatchRecord[]): HeroStats[] {
 
       return {
         heroName,
+        format,
         totalMatches: played,
         wins,
         losses,
@@ -310,14 +330,18 @@ export function computeRollingWinRate(
  *  tournaments), we pick the LOWEST tier — "Battle Hardened at Worlds" is a
  *  Battle Hardened, not a Worlds event. */
 const COMPETITIVE_EVENT_TYPES: [RegExp, string][] = [
+  [/super armory|super armorys/i, "Super Armory"],
   [/skirmish/i, "Skirmish"],
   [/road to national|\brtn\b/i, "Road to Nationals"],
   [/proquest|pro quest|\bpq\b/i, "ProQuest"],
+  [/showdown/i, "Showdown"],
+  [/battleground/i, "Battlegrounds"],
   [/battle hardened|\bbh\b/i, "Battle Hardened"],
   [/\bcalling\b/i, "The Calling"],
   [/\bnational/i, "Nationals"],
   [/pro tour/i, "Pro Tour"],
   [/worlds|world championship/i, "Worlds"],
+  [/path to.*(pro tour)|convention.*5k|\bldxp\b/i, "Path to Pro Tour"],
 ];
 
 /** Find the lowest-prestige competitive event type that matches the text. */
@@ -330,9 +354,10 @@ function classifyCompetitiveEvent(text: string): string | null {
 
 export function guessEventTypeFromNotes(notes: string): string {
   const lower = notes.toLowerCase();
-  // Local/casual events — always win
+  // Local/casual events — always win (super armory before armory)
   if (lower.includes("world premiere")) return "Pre-Release";
   if (lower.includes("pre release") || lower.includes("pre-release")) return "Pre-Release";
+  if (/super armory|super armorys/i.test(lower)) return "Super Armory";
   if (lower.includes("armory")) return "Armory";
   if (lower.includes("on demand")) return "On Demand";
   // Competitive events — pick lowest prestige when multiple match
@@ -349,7 +374,8 @@ export function guessEventTypeFromNotes(notes: string): string {
  *  (side events at major tournaments carry the parent name). */
 export function refineEventType(eventType: string, eventName: string): string {
   const lower = eventName.toLowerCase();
-  // Local/casual events — these always win
+  // Local/casual events — these always win (super armory before armory)
+  if (/super armory|super armorys/i.test(lower)) return "Super Armory";
   if (lower.includes("armory")) return "Armory";
   if (lower.includes("world premiere")) return "Pre-Release";
   if (lower.includes("pre-release") || lower.includes("prerelease")) return "Pre-Release";
@@ -457,14 +483,18 @@ export function computeVenueStats(matches: MatchRecord[]): VenueStats[] {
 }
 
 const EVENT_PRESTIGE: Record<string, number> = {
-  "Worlds": 10,
-  "Pro Tour": 9,
-  "The Calling": 8,
-  "Nationals": 7,
-  "Battle Hardened": 6,
-  "Road to Nationals": 5,
-  "ProQuest": 4,
+  "Worlds": 12,
+  "Path to Pro Tour": 11,
+  "Pro Tour": 10,
+  "The Calling": 9,
+  "Nationals": 8,
+  "Battle Hardened": 7,
+  "Battlegrounds": 6,
+  "Showdown": 5,
+  "Road to Nationals": 4,
+  "ProQuest": 3,
   "Championship": 3,
+  "Super Armory": 2,
   "Skirmish": 2,
   "On Demand": 1,
 };
@@ -545,7 +575,7 @@ export function computePlayoffFinishes(
     const raw = event.eventType || "Other";
     // Non-competitive event types with a Top 8 get shown as "Other" (marble icons)
     // Unrated events with major event types get downgraded to "Other" too
-    const isMajorType = ["Battle Hardened", "The Calling", "Nationals", "Pro Tour", "Worlds"].includes(raw);
+    const isMajorType = ["Battle Hardened", "The Calling", "Battlegrounds", "Nationals", "Pro Tour", "Worlds", "Path to Pro Tour"].includes(raw);
     const refinedEventType = (raw === "Armory" || raw === "Pre-Release" || raw === "On Demand" || (isMajorType && !event.rated)) ? "Other" : raw;
 
     // Check for manual override first
@@ -643,7 +673,7 @@ export interface MinorEventFinish {
   hero?: string;
 }
 
-const MINOR_EVENT_TYPES = new Set(["Armory", "Skirmish", "Road to Nationals", "ProQuest"]);
+const MINOR_EVENT_TYPES = new Set(["Armory", "Super Armory", "Skirmish", "Road to Nationals", "ProQuest", "Showdown"]);
 
 export function computeMinorEventFinishes(eventStats: EventStats[]): MinorEventFinish[] {
   const finishes: MinorEventFinish[] = [];

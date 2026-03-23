@@ -81,14 +81,18 @@ export function expandEventName(name: string): string {
 /** Competitive event types ordered by prestige (lowest first).
  *  When multiple keywords match, the lowest tier wins. */
 const COMPETITIVE_TYPES: [RegExp, string][] = [
+  [/super armory|super armorys/i, "Super Armory"],
   [/skirmish/i, "Skirmish"],
   [/road to national|\brtn\b/i, "Road to Nationals"],
   [/proquest|pro quest|\bpq\b/i, "ProQuest"],
+  [/showdown/i, "Showdown"],
+  [/battleground/i, "Battlegrounds"],
   [/battle hardened|\bbh\b/i, "Battle Hardened"],
   [/\bcalling\b/i, "The Calling"],
   [/\bnational/i, "Nationals"],
   [/pro tour/i, "Pro Tour"],
   [/worlds|world championship/i, "Worlds"],
+  [/path to.*(pro tour)|convention.*5k|\bldxp\b/i, "Path to Pro Tour"],
 ];
 
 export function guessEventType(lines: string[]): string {
@@ -96,6 +100,7 @@ export function guessEventType(lines: string[]): string {
   // Local/casual events — always win
   if (all.includes("world premiere")) return "Pre-Release";
   if (all.includes("pre release") || all.includes("pre-release")) return "Pre-Release";
+  if (/super armory|super armorys/i.test(all)) return "Super Armory";
   if (all.includes("armory")) return "Armory";
   if (all.includes("on demand")) return "On Demand";
   // Competitive events — pick lowest prestige when multiple match
