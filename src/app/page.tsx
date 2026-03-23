@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useMatches } from "@/hooks/useMatches";
 import { useAuth } from "@/contexts/AuthContext";
 import { computeOverallStats, computeHeroStats, computeEventStats, computeOpponentStats, computeBestFinish, computePlayoffFinishes, computeMinorEventFinishes, computeTournamentAnalytics, getRoundNumber, getEventType } from "@/lib/stats";
-import { getEventTier } from "@/lib/events";
+import { getEventTier, TIER_LABELS } from "@/lib/events";
 import { updateLeaderboardEntry } from "@/lib/leaderboard";
 import { useLeaderboard } from "@/hooks/useLeaderboard";
 import { computeUserRanks, getBestRank, rankBorderClass } from "@/lib/leaderboard-ranks";
@@ -118,6 +118,17 @@ export default function Dashboard() {
   }, [allFormats, allEventTypes, allHeroes, filterFormat, filterEventType, filterHero]);
 
   // Stats (filtered)
+  const activeFilterLabel = useMemo(() => {
+    const parts: string[] = [];
+    if (filterFormat !== "all") parts.push(filterFormat === "Classic Constructed" ? "CC" : filterFormat);
+    if (filterTier !== "all") parts.push(TIER_LABELS[Number(filterTier)] || `Tier ${filterTier}`);
+    if (filterEventType !== "all") parts.push(filterEventType);
+    if (filterRated === "rated") parts.push("Rated");
+    else if (filterRated === "unrated") parts.push("Unrated");
+    if (filterHero !== "all") parts.push(filterHero.split(",")[0]);
+    return parts.length > 0 ? parts.join(" · ") : undefined;
+  }, [filterFormat, filterTier, filterEventType, filterRated, filterHero]);
+
   const overall = useMemo(() => computeOverallStats(filteredMatches), [filteredMatches]);
   const heroStats = useMemo(() => computeHeroStats(filteredMatches), [filteredMatches]);
   const opponentStats = useMemo(() => computeOpponentStats(filteredMatches), [filteredMatches]);
@@ -618,6 +629,7 @@ export default function Dashboard() {
             armoryUndefeated: eventStats.filter(e => e.eventType === "Armory" && e.losses === 0 && e.wins > 0).length,
             isSiteCreator: profile.username === "azoni",
             selectedBadgeIds: profile?.selectedBadgeIds,
+            filterLabel: activeFilterLabel,
           }}
           onClose={() => setProfileShareOpen(false)}
         />
