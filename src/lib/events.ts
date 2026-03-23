@@ -29,6 +29,27 @@ const EVENT_TYPE_TO_TIER: Record<string, { tier: EventTier; label: string }> = {
   "Battle Hardened": { tier: "battle-hardened", label: "Battle Hardened" },
 };
 
+// ── LSS Event Tiers (higher number = more prestigious) ──
+
+export const EVENT_TIER_MAP: Record<string, number> = {
+  "Worlds": 4, "Pro Tour": 4,
+  "Nationals": 3, "The Calling": 3, "Battle Hardened": 3,
+  "Road to Nationals": 2, "Battlegrounds": 2, "Showdown": 2, "ProQuest": 2,
+  "Skirmish": 1, "Super Armory": 1, "Armory": 1, "On Demand": 1, "Pre-Release": 1,
+};
+
+export function getEventTier(eventType: string): number {
+  return EVENT_TIER_MAP[eventType] ?? 0;
+}
+
+export const TIER_LABELS: Record<number, string> = {
+  4: "Tier 4",
+  3: "Tier 3",
+  2: "Tier 2",
+  1: "Tier 1",
+  0: "Other",
+};
+
 function extractCity(eventName: string, tierLabel: string): string {
   // Try common separators: "Battle Hardened: Seattle", "Battle Hardened - Seattle", "Battle Hardened Seattle"
   const prefixes = [tierLabel + ":", tierLabel + " -", tierLabel];

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useMatches } from "@/hooks/useMatches";
 import { useAuth } from "@/contexts/AuthContext";
 import { computeOverallStats, computeHeroStats, computeEventStats, computeOpponentStats, computeBestFinish, computePlayoffFinishes, computeMinorEventFinishes, computeTournamentAnalytics, getRoundNumber, getEventType } from "@/lib/stats";
+import { getEventTier } from "@/lib/events";
 import { updateLeaderboardEntry } from "@/lib/leaderboard";
 import { useLeaderboard } from "@/hooks/useLeaderboard";
 import { computeUserRanks, getBestRank, rankBorderClass } from "@/lib/leaderboard-ranks";
@@ -48,6 +49,7 @@ export default function Dashboard() {
   const [statsShareOpen, setStatsShareOpen] = useState(false);
   const [filterFormat, setFilterFormat] = useState("all");
   const [filterEventType, setFilterEventType] = useState("all");
+  const [filterTier, setFilterTier] = useState("all");
   const [filterHero, setFilterHero] = useState("all");
   const [filterRated, setFilterRated] = useState("all");
   const leaderboardUpdated = useRef(false);
@@ -70,10 +72,11 @@ export default function Dashboard() {
     let filtered = matches;
     if (filterFormat !== "all") filtered = filtered.filter((m) => m.format === filterFormat);
     if (filterEventType !== "all") filtered = filtered.filter((m) => getEventType(m) === filterEventType);
+    if (filterTier !== "all") filtered = filtered.filter((m) => getEventTier(getEventType(m)) === Number(filterTier));
     if (filterHero !== "all") filtered = filtered.filter((m) => m.heroPlayed === filterHero);
     if (filterRated !== "all") filtered = filtered.filter((m) => filterRated === "rated" ? m.rated === true : m.rated !== true);
     return filtered;
-  }, [matches, filterFormat, filterEventType, filterHero, filterRated]);
+  }, [matches, filterFormat, filterEventType, filterTier, filterHero, filterRated]);
 
   // Filter options — single pass: compute all three cross-filtered option lists at once
   const { allFormats, allEventTypes, allHeroes } = useMemo(() => {
@@ -84,18 +87,20 @@ export default function Dashboard() {
     for (const m of matches) {
       const matchFormat = m.format;
       const matchEventType = getEventType(m);
+      const matchTier = getEventTier(matchEventType);
       const matchHero = m.heroPlayed;
       const matchRated = m.rated === true;
 
       const passFormat = filterFormat === "all" || matchFormat === filterFormat;
       const passEventType = filterEventType === "all" || matchEventType === filterEventType;
+      const passTier = filterTier === "all" || matchTier === Number(filterTier);
       const passHero = filterHero === "all" || matchHero === filterHero;
       const passRated = filterRated === "all" || (filterRated === "rated" ? matchRated : !matchRated);
 
       // For each filter option list, include if all OTHER filters pass
-      if (passEventType && passHero && passRated && matchFormat) formats.add(matchFormat);
-      if (passFormat && passHero && passRated && matchEventType !== "Unknown") eventTypes.add(matchEventType);
-      if (passFormat && passEventType && passRated && matchHero && matchHero !== "Unknown") heroes.add(matchHero);
+      if (passEventType && passTier && passHero && passRated && matchFormat) formats.add(matchFormat);
+      if (passFormat && passTier && passHero && passRated && matchEventType !== "Unknown") eventTypes.add(matchEventType);
+      if (passFormat && passEventType && passTier && passRated && matchHero && matchHero !== "Unknown") heroes.add(matchHero);
     }
 
     return {
@@ -103,7 +108,7 @@ export default function Dashboard() {
       allEventTypes: [...eventTypes].sort(),
       allHeroes: [...heroes].sort(),
     };
-  }, [matches, filterFormat, filterEventType, filterHero, filterRated]);
+  }, [matches, filterFormat, filterEventType, filterTier, filterHero, filterRated]);
 
   // Reset filters whose selected value is no longer available
   useEffect(() => {
@@ -397,10 +402,12 @@ export default function Dashboard() {
             heroes={allHeroes}
             filterFormat={filterFormat}
             filterEventType={filterEventType}
+            filterTier={filterTier}
             filterHero={filterHero}
             filterRated={filterRated}
             onFormatChange={setFilterFormat}
             onEventTypeChange={setFilterEventType}
+            onTierChange={setFilterTier}
             onHeroChange={setFilterHero}
             onRatedChange={setFilterRated}
           />

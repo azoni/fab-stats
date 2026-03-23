@@ -1,15 +1,19 @@
 "use client";
 
+import { TIER_LABELS } from "@/lib/events";
+
 interface DashboardFiltersProps {
   formats: string[];
   eventTypes: string[];
   heroes: string[];
   filterFormat: string;
   filterEventType: string;
+  filterTier: string;
   filterHero: string;
   filterRated: string;
   onFormatChange: (v: string) => void;
   onEventTypeChange: (v: string) => void;
+  onTierChange: (v: string) => void;
   onHeroChange: (v: string) => void;
   onRatedChange: (v: string) => void;
 }
@@ -22,10 +26,12 @@ export function DashboardFilters({
   heroes,
   filterFormat,
   filterEventType,
+  filterTier,
   filterHero,
   filterRated,
   onFormatChange,
   onEventTypeChange,
+  onTierChange,
   onHeroChange,
   onRatedChange,
 }: DashboardFiltersProps) {
@@ -44,6 +50,18 @@ export function DashboardFilters({
           ))}
         </select>
       )}
+
+      {/* Tier */}
+      <select
+        value={filterTier}
+        onChange={(e) => onTierChange(e.target.value)}
+        className={selectClass}
+      >
+        <option value="all">All Tiers</option>
+        {[4, 3, 2, 1].map((t) => (
+          <option key={t} value={String(t)}>{TIER_LABELS[t]}</option>
+        ))}
+      </select>
 
       {/* Event Type */}
       {eventTypes.length > 1 && (
