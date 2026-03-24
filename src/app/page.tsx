@@ -248,51 +248,8 @@ export default function Dashboard() {
       {/* Has matches: profile + stats */}
       {hasMatches && (
         <div className="flex flex-col gap-6">
-          {/* Profile card (thin) + Filters */}
-          <div className="flex flex-col gap-3 section-reveal" style={{ '--stagger': 0 } as React.CSSProperties}>
-          <div
-            className="cursor-pointer"
-            onClick={() => {
-              const href = profile?.username ? `/player/${profile.username}` : "#";
-              if (href !== "#") router.push(href);
-            }}
-          >
-          <CardBorderWrapper cardBorder={cardBorder} borderStyle={profile?.borderStyle || "beam"} underline={underlineConfig} contentClassName="relative bg-fab-surface/80 px-3 py-2 overflow-visible">
-              <div className="flex items-center gap-2.5">
-                {profile ? (
-                  <Link href={`/player/${profile.username}`} className="shrink-0" onClick={(e) => e.stopPropagation()}>
-                    {profile.photoUrl ? (
-                      <img src={profile.photoUrl} alt="" className={`w-8 h-8 rounded-full ${rankBorderClass(bestRank ?? null)}`} />
-                    ) : (
-                      <div className={`w-8 h-8 rounded-full bg-fab-gold/20 flex items-center justify-center text-fab-gold text-sm font-bold ${rankBorderClass(bestRank ?? null)}`}>
-                        {profile.displayName.charAt(0).toUpperCase()}
-                      </div>
-                    )}
-                  </Link>
-                ) : null}
-                <Link href={profile?.username ? `/player/${profile.username}` : "#"} className="hover:opacity-80 transition-opacity min-w-0" onClick={(e) => e.stopPropagation()}>
-                  <p className="text-sm font-bold text-fab-gold truncate">{profile?.displayName || "My Profile"}</p>
-                </Link>
-                <BadgeStrip selectedBadgeIds={profile?.selectedBadgeIds} className="hidden sm:flex" />
-                <div className="flex items-center gap-1 shrink-0 ml-auto" onClick={(e) => e.stopPropagation()}>
-                  {profile?.username && (
-                    <button onClick={() => setProfileShareOpen(true)} className="p-1 rounded-md text-fab-dim hover:text-fab-gold hover:bg-fab-bg transition-colors" title="Share profile card">
-                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z" />
-                      </svg>
-                    </button>
-                  )}
-                  {profile?.username && (
-                    <button onClick={() => setShowBackgroundPicker(true)} className="hidden sm:block p-1 rounded-md text-fab-dim hover:text-fab-gold hover:bg-fab-bg transition-colors" title="Change background">
-                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="m2.25 15 5.159-5.159a2.25 2.25 0 0 1 3.182 0L15 14.25m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0L21.75 15m-10.5-6h.008v.008h-.008V9Zm-8.25 9h18a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5h-18A1.5 1.5 0 0 0 1.5 6v10.5A1.5 1.5 0 0 0 3 18Z" />
-                      </svg>
-                    </button>
-                  )}
-                </div>
-              </div>
-            </CardBorderWrapper>
-          </div>
+          {/* Filters */}
+          <div className="section-reveal" style={{ '--stagger': 0 } as React.CSSProperties}>
           <DashboardFilters
             formats={allFormats}
             eventTypes={allEventTypes}
