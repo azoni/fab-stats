@@ -250,42 +250,24 @@ export default function Dashboard() {
         <div className="flex flex-col gap-6">
           {/* Profile + sidebar grid */}
           <div className="grid grid-cols-1 md:grid-cols-[1fr_280px] gap-4 items-start section-reveal" style={{ '--stagger': 0 } as React.CSSProperties}>
-          {/* Left column: Profile card + Filters */}
+          {/* Left column: Profile card (compact) + Filters */}
           <div className="flex flex-col gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-[auto_1fr] gap-3 items-start">
           <div
-            className="cursor-pointer"
+            className="cursor-pointer md:w-56"
             onClick={() => {
               const href = profile?.username ? `/player/${profile.username}` : "#";
               if (href !== "#") router.push(href);
             }}
           >
-          <CardBorderWrapper cardBorder={cardBorder} borderStyle={profile?.borderStyle || "beam"} underline={underlineConfig} contentClassName="relative bg-fab-surface/80 px-4 py-3 overflow-visible">
-              {/* FaB-inspired pitch strip — thin gold accent across the top */}
-              <div className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-fab-gold/30 to-transparent" />
-              {/* Subtle decorative accent + hero card art — clipped to card bounds */}
-              <div className="absolute inset-0 overflow-hidden rounded-lg pointer-events-none">
-                <div className="absolute -top-10 -right-10 w-32 h-32 bg-fab-gold/5 rounded-full blur-2xl" />
-                {topHero && getHeroByName(topHero.heroName)?.imageUrl && (
-                  <img
-                    src={getHeroByName(topHero.heroName)!.imageUrl}
-                    alt=""
-                    className="absolute -right-6 -top-2 -bottom-2 w-28 object-cover object-top opacity-[0.08] select-none"
-                    loading="lazy"
-                  />
-                )}
-              </div>
-              <div className="flex items-center gap-3">
+          <CardBorderWrapper cardBorder={cardBorder} borderStyle={profile?.borderStyle || "beam"} underline={underlineConfig} contentClassName="relative bg-fab-surface/80 px-3 py-2.5 overflow-visible">
+              <div className="flex items-center gap-2.5">
                 {profile ? (
-                  <Link href={`/player/${profile.username}`} className="relative shrink-0">
-                    {profile.username === "azoni" && (
-                      <svg className="absolute -top-3.5 left-1/2 -translate-x-1/2 w-6 h-6 text-fab-gold drop-shadow-[0_0_6px_rgba(201,168,76,0.6)] z-10" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M2.5 19h19v3h-19zM22.5 7l-5 4-5.5-7-5.5 7-5-4 2 12h17z" />
-                      </svg>
-                    )}
+                  <Link href={`/player/${profile.username}`} className="shrink-0">
                     {profile.photoUrl ? (
-                      <img src={profile.photoUrl} alt="" className={`w-12 h-12 rounded-full ${rankBorderClass(bestRank ?? null)}`} />
+                      <img src={profile.photoUrl} alt="" className={`w-10 h-10 rounded-full ${rankBorderClass(bestRank ?? null)}`} />
                     ) : (
-                      <div className={`w-12 h-12 rounded-full bg-fab-gold/20 flex items-center justify-center text-fab-gold text-lg font-bold ${rankBorderClass(bestRank ?? null)}`}>
+                      <div className={`w-10 h-10 rounded-full bg-fab-gold/20 flex items-center justify-center text-fab-gold font-bold ${rankBorderClass(bestRank ?? null)}`}>
                         {profile.displayName.charAt(0).toUpperCase()}
                       </div>
                     )}
@@ -293,111 +275,26 @@ export default function Dashboard() {
                 ) : null}
                 <div className="flex-1 min-w-0">
                   <Link href={profile?.username ? `/player/${profile.username}` : "#"} className="hover:opacity-80 transition-opacity">
-                    <h1 className="text-lg font-bold text-fab-gold truncate">
-                      {profile?.displayName || "My Profile"}
-                    </h1>
+                    <p className="text-sm font-bold text-fab-gold truncate">{profile?.displayName || "My Profile"}</p>
                   </Link>
-                  <div className="flex items-center gap-2 mt-0.5 text-xs text-fab-muted">
-                    <span>{overall.totalMatches + overall.totalByes} matches</span>
-                    <span className="text-fab-dim">·</span>
-                    <span className={overall.overallWinRate >= 50 ? "text-fab-win" : "text-fab-loss"}>{overall.overallWinRate.toFixed(1)}%</span>
-                    {eventStats.length > 0 && (
-                      <>
-                        <span className="text-fab-dim">·</span>
-                        <span>{eventStats.length} events</span>
-                      </>
-                    )}
-                    {topHero && (
-                      <>
-                        <span className="text-fab-dim hidden sm:inline">·</span>
-                        <span className="hidden sm:inline truncate">{topHero.heroName}</span>
-                      </>
-                    )}
-                  </div>
+                  <BadgeStrip selectedBadgeIds={profile?.selectedBadgeIds} className="mt-0.5" />
                 </div>
-                <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
+                <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
                   {profile?.username && (
-                    <button
-                      onClick={async () => {
-                        const url = `${window.location.origin}/player/${profile.username}`;
-                        try {
-                          await navigator.clipboard.writeText(url);
-                          setShareCopied(true);
-                          setTimeout(() => setShareCopied(false), 2000);
-                        } catch {}
-                      }}
-                      className="p-1.5 rounded-md transition-colors hover:bg-fab-bg"
-                      title="Copy profile link"
-                    >
-                      {shareCopied ? (
-                        <svg className="w-3.5 h-3.5 text-fab-win" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                        </svg>
-                      ) : (
-                        <svg className="w-3.5 h-3.5 text-fab-dim hover:text-fab-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M9 8.25H7.5a2.25 2.25 0 00-2.25 2.25v9a2.25 2.25 0 002.25 2.25h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25H15m0-3l-3-3m0 0l-3 3m3-3v11.25" />
-                        </svg>
-                      )}
-                    </button>
-                  )}
-                  {profile?.username && (
-                    <button
-                      onClick={() => {
-                        const url = `${window.location.origin}/player/${profile.username}`;
-                        const text = `Check out my Flesh and Blood stats on FaB Stats (Beta)!\n\n${url}`;
-                        window.open(`https://x.com/intent/tweet?text=${encodeURIComponent(text)}`, "_blank", "noopener,noreferrer");
-                      }}
-                      className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-fab-bg border border-fab-border text-fab-dim hover:text-fab-text hover:border-fab-muted transition-colors"
-                      title="Share on X"
-                    >
-                      <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-                      </svg>
-                      <span className="text-[10px] font-semibold">Post</span>
-                    </button>
-                  )}
-                  {profile?.username && (
-                    <button
-                      onClick={() => setProfileShareOpen(true)}
-                      className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-fab-bg border border-fab-border text-fab-dim hover:text-fab-text hover:border-fab-muted transition-colors"
-                      title="Share profile card"
-                    >
-                      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <button onClick={() => setProfileShareOpen(true)} className="p-1.5 rounded-md text-fab-dim hover:text-fab-gold hover:bg-fab-bg transition-colors" title="Share profile card">
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z" />
                       </svg>
-                      <span className="text-[10px] font-semibold">Card</span>
                     </button>
                   )}
                   {profile?.username && (
-                    <button
-                      onClick={() => setShowBackgroundPicker(true)}
-                      className="hidden sm:inline-flex items-center gap-1 px-2 py-1 rounded-md bg-fab-bg border border-fab-border text-fab-dim hover:text-fab-text hover:border-fab-muted transition-colors"
-                      title="Change profile background"
-                    >
-                      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <button onClick={() => setShowBackgroundPicker(true)} className="hidden sm:block p-1.5 rounded-md text-fab-dim hover:text-fab-gold hover:bg-fab-bg transition-colors" title="Change background">
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="m2.25 15 5.159-5.159a2.25 2.25 0 0 1 3.182 0L15 14.25m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0L21.75 15m-10.5-6h.008v.008h-.008V9Zm-8.25 9h18a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5h-18A1.5 1.5 0 0 0 1.5 6v10.5A1.5 1.5 0 0 0 3 18Z" />
                       </svg>
-                      <span className="text-[10px] font-semibold">Background</span>
                     </button>
                   )}
                 </div>
-              </div>
-              <BadgeStrip selectedBadgeIds={profile?.selectedBadgeIds} className="mt-2 ml-1" />
-              {profile?.username && (
-                <p className="mt-1 ml-1 text-[10px] text-fab-dim">
-                  Background sets what visitors see on your public profile.
-                </p>
-              )}
-              {/* Score badges — bottom right */}
-              <div className="absolute bottom-1.5 right-2.5 flex items-center gap-1.5 z-10" onClick={(e) => e.stopPropagation()}>
-                {kudosTotal !== null && (
-                  <Link href="/leaderboard?tab=kudos_total" className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-fab-bg/80 border border-fab-border hover:border-fab-gold/40 transition-colors group" title="Total kudos received">
-                    <svg className="w-3 h-3 text-fab-dim group-hover:text-fab-gold transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M6.633 10.25c.806 0 1.533-.446 2.031-1.08a9.041 9.041 0 0 1 2.861-2.4c.723-.384 1.35-.956 1.653-1.715a4.498 4.498 0 0 0 .322-1.672V2.75a.75.75 0 0 1 .75-.75 2.25 2.25 0 0 1 2.25 2.25c0 1.152-.26 2.243-.723 3.218-.266.558.107 1.282.725 1.282m0 0h3.126c1.026 0 1.945.694 2.054 1.715.045.422.068.85.068 1.285a11.95 11.95 0 0 1-2.649 7.521c-.388.482-.987.729-1.605.729H13.48c-.483 0-.964-.078-1.423-.23l-3.114-1.04a4.501 4.501 0 0 0-1.423-.23H5.904m10.598-9.75H14.25M5.904 18.5c.083.205.173.405.27.602.197.4-.078.898-.523.898h-.908c-.889 0-1.713-.518-1.972-1.368a12 12 0 0 1-.521-3.507c0-1.553.295-3.036.831-4.398C3.387 9.953 4.167 9.5 5 9.5h1.053c.472 0 .745.556.5.96a8.958 8.958 0 0 0-1.302 4.665c0 1.194.232 2.333.654 3.375Z" />
-                    </svg>
-                    <span className="text-[10px] font-bold text-fab-dim group-hover:text-fab-gold transition-colors tabular-nums">{kudosTotal}</span>
-                  </Link>
-                )}
               </div>
             </CardBorderWrapper>
           </div>
@@ -414,6 +311,7 @@ export default function Dashboard() {
             onTierChange={setFilterTier}
             onHeroChange={setFilterHero}
           />
+          </div>
           </div>
 
           {/* Sidebar: Tools + Meta (desktop only) */}
@@ -475,69 +373,75 @@ export default function Dashboard() {
           </div>
           </div>
 
-          {/* Quick Stats Row — merged profile + stats */}
+          {/* My Stats */}
           <div className="section-reveal" style={{ '--stagger': 1 } as React.CSSProperties}>
-            <div className="bg-fab-surface border border-fab-border rounded-lg p-4">
-              <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
-                {/* Win Rate — large */}
-                <div className="text-center">
-                  <p className={`text-3xl font-black tabular-nums ${overall.overallWinRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>
-                    {overall.overallWinRate.toFixed(1)}%
-                  </p>
-                  <p className="text-[10px] text-fab-text/50 uppercase tracking-wider font-semibold">Win Rate</p>
-                </div>
-                {/* Record */}
-                <div className="text-center">
-                  <p className="text-lg font-bold tabular-nums text-fab-text">
-                    <span className="text-fab-win">{overall.totalWins}</span>
-                    <span className="text-fab-dim">-</span>
-                    <span className="text-fab-loss">{overall.totalLosses}</span>
-                    {overall.totalDraws > 0 && <><span className="text-fab-dim">-</span><span className="text-fab-muted">{overall.totalDraws}</span></>}
-                  </p>
-                  <p className="text-[10px] text-fab-text/50 uppercase tracking-wider font-semibold">Record</p>
-                </div>
-                {/* Events */}
-                <div className="text-center">
-                  <p className="text-lg font-black tabular-nums text-fab-text">{filteredEventStats.length}</p>
-                  <p className="text-[10px] text-fab-text/50 uppercase tracking-wider font-semibold">Events</p>
-                </div>
-                {/* Best Finish */}
-                {bestFinish && (
-                  <div className="text-center">
-                    <p className="text-lg font-black text-fab-gold">{bestFinish.label}</p>
-                    <p className="text-[10px] text-fab-text/50 uppercase tracking-wider font-semibold">Best Finish</p>
-                  </div>
-                )}
-                {/* Top Hero */}
-                {topHero && (
-                  <div className="text-center">
-                    <p className="text-lg font-bold text-fab-text truncate max-w-[120px]">{topHero.heroName.split(",")[0]}</p>
-                    <p className="text-[10px] text-fab-text/50 uppercase tracking-wider font-semibold">Top Hero</p>
-                  </div>
-                )}
-                {/* Streak */}
-                {streaks.currentStreak && streaks.currentStreak.count >= 2 && (
-                  <div className="text-center">
-                    <p className={`text-lg font-black ${streaks.currentStreak.type === "win" ? "text-fab-win" : "text-fab-loss"}`}>
-                      {streaks.currentStreak.count}{streaks.currentStreak.type === "win" ? "W" : "L"}
-                    </p>
-                    <p className="text-[10px] text-fab-text/50 uppercase tracking-wider font-semibold">Streak</p>
-                  </div>
-                )}
-                {/* Share buttons */}
-                <div className="flex items-center gap-1.5 ml-auto" onClick={(e) => e.stopPropagation()}>
-                  {profile && (
-                    <button onClick={() => setStatsShareOpen(true)} className="px-2.5 py-1.5 rounded-md bg-fab-gold/15 text-fab-gold text-xs font-semibold hover:bg-fab-gold/25 transition-colors" title="Share stats">
-                      Share Stats
+            <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden">
+              <div className="flex items-center justify-between px-4 py-2.5 border-b border-fab-border/50">
+                <p className="text-sm font-semibold text-fab-text">My Stats</p>
+                {profile && (
+                  <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                    <button onClick={() => setStatsShareOpen(true)} className="inline-flex items-center gap-1.5 text-xs font-semibold text-fab-gold border border-fab-gold/30 hover:bg-fab-gold/10 hover:border-fab-gold/50 px-2.5 py-1 rounded-md transition-colors">
+                      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0 0a2.25 2.25 0 103.935 2.186 2.25 2.25 0 00-3.935-2.186zm0-12.814a2.25 2.25 0 103.933-2.185 2.25 2.25 0 00-3.933 2.185z" />
+                      </svg>
+                      Share
                     </button>
-                  )}
-                  {profile && tournamentAnalytics && tournamentAnalytics.totalEvents >= 3 && (
-                    <button onClick={() => setTournamentShareOpen(true)} className="px-2.5 py-1.5 rounded-md bg-fab-bg border border-fab-border text-fab-dim text-xs font-semibold hover:text-fab-text transition-colors" title="Share tournament stats">
-                      Tournament
-                    </button>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
+              <div className="p-4">
+                <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+                  {/* Win Rate — large */}
+                  <div className="text-center">
+                    <p className={`text-3xl font-black tabular-nums ${overall.overallWinRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>
+                      {overall.overallWinRate.toFixed(1)}%
+                    </p>
+                    <p className="text-[10px] text-fab-text/50 uppercase tracking-wider font-semibold">Win Rate</p>
+                  </div>
+                  {/* Record */}
+                  <div className="text-center">
+                    <p className="text-lg font-bold tabular-nums text-fab-text">
+                      <span className="text-fab-win">{overall.totalWins}</span>
+                      <span className="text-fab-dim">-</span>
+                      <span className="text-fab-loss">{overall.totalLosses}</span>
+                      {overall.totalDraws > 0 && <><span className="text-fab-dim">-</span><span className="text-fab-muted">{overall.totalDraws}</span></>}
+                    </p>
+                    <p className="text-[10px] text-fab-text/50 uppercase tracking-wider font-semibold">Record</p>
+                  </div>
+                  {/* Matches */}
+                  <div className="text-center">
+                    <p className="text-lg font-black tabular-nums text-fab-text">{overall.totalMatches + overall.totalByes}</p>
+                    <p className="text-[10px] text-fab-text/50 uppercase tracking-wider font-semibold">Matches</p>
+                  </div>
+                  {/* Events */}
+                  <div className="text-center">
+                    <p className="text-lg font-black tabular-nums text-fab-text">{filteredEventStats.length}</p>
+                    <p className="text-[10px] text-fab-text/50 uppercase tracking-wider font-semibold">Events</p>
+                  </div>
+                  {/* Best Finish */}
+                  {bestFinish && (
+                    <div className="text-center">
+                      <p className="text-lg font-black text-fab-gold">{bestFinish.label}</p>
+                      <p className="text-[10px] text-fab-text/50 uppercase tracking-wider font-semibold">Best Finish</p>
+                    </div>
+                  )}
+                  {/* Top Hero */}
+                  {topHero && (
+                    <div className="text-center">
+                      <p className="text-lg font-bold text-fab-text truncate max-w-[120px]">{topHero.heroName.split(",")[0]}</p>
+                      <p className="text-[10px] text-fab-text/50 uppercase tracking-wider font-semibold">Top Hero</p>
+                    </div>
+                  )}
+                  {/* Streak */}
+                  {streaks.currentStreak && streaks.currentStreak.count >= 2 && (
+                    <div className="text-center">
+                      <p className={`text-lg font-black ${streaks.currentStreak.type === "win" ? "text-fab-win" : "text-fab-loss"}`}>
+                        {streaks.currentStreak.count}{streaks.currentStreak.type === "win" ? "W" : "L"}
+                      </p>
+                      <p className="text-[10px] text-fab-text/50 uppercase tracking-wider font-semibold">Streak</p>
+                    </div>
+                  )}
+                </div>
               {/* Recent form dots */}
               {last30.length > 0 && (
                 <div className="flex items-center gap-0.5 mt-3">
@@ -553,6 +457,7 @@ export default function Dashboard() {
                 </div>
               )}
             </div>
+          </div>
           </div>
 
           {/* Tournament Stats Card */}
