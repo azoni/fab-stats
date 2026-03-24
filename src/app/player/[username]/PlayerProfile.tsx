@@ -541,7 +541,7 @@ export default function PlayerProfile() {
   const isOwner = actualIsOwner && !previewAsVisitor;
 
   const isFiltered = filterFormat !== "all" || filterTier !== "all" || filterRated !== "all" || filterHero !== "all";
-  const activeFilterLabel = useMemo(() => {
+  const activeFilterLabel = (() => {
     const parts: string[] = [];
     if (filterFormat !== "all") parts.push(filterFormat === "Classic Constructed" ? "CC" : filterFormat);
     if (filterTier !== "all") parts.push(TIER_LABELS[Number(filterTier)] || `Tier ${filterTier}`);
@@ -550,7 +550,7 @@ export default function PlayerProfile() {
     else if (filterRated !== "all") parts.push(filterRated);
     if (filterHero !== "all") parts.push(filterHero.split(",")[0]);
     return parts.length > 0 ? parts.join(" · ") : undefined;
-  }, [filterFormat, filterTier, filterRated, filterHero]);
+  })();
   const { streaks } = overall;
 
   if (matches.length === 0) {
