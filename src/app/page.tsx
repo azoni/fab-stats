@@ -298,23 +298,23 @@ export default function Dashboard() {
                   ) : null}
                   <div className="flex-1 min-w-0">
                     <p className="text-base font-bold text-fab-gold truncate">{profile?.displayName || "My Profile"}</p>
-                    {topHero && (
-                      <div className="flex items-center gap-1.5 mt-0.5">
-                        <HeroImg name={topHero.heroName} size="sm" />
-                        <span className="text-xs text-fab-muted truncate">{topHero.heroName.split(",")[0]}</span>
-                        <span className={`text-xs font-bold ${topHero.winRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>{topHero.winRate.toFixed(0)}%</span>
-                      </div>
-                    )}
                     <BadgeStrip selectedBadgeIds={profile?.selectedBadgeIds} className="mt-1" />
                   </div>
+                  {topHero && (
+                    <div className="text-right shrink-0">
+                      <HeroImg name={topHero.heroName} size="md" />
+                      <p className="text-xs font-semibold text-fab-text mt-1">{topHero.heroName.split(",")[0]}</p>
+                      <p className={`text-xs font-bold ${topHero.winRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>{topHero.winRate.toFixed(0)}%</p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
 
             {/* My Stats */}
-            <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden">
+            <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden cursor-pointer hover:border-fab-gold/20 transition-colors" onClick={() => router.push("/trends")}>
               <div className="flex items-center justify-between px-4 py-2.5 border-b border-fab-border/50">
-                <Link href="/trends" className="text-sm font-semibold text-fab-text hover:text-fab-gold transition-colors">
+                <Link href="/trends" onClick={(e) => e.stopPropagation()} className="text-sm font-semibold text-fab-text hover:text-fab-gold transition-colors">
                   My Stats <span className="text-fab-dim">&rarr;</span>
                 </Link>
                 {profile && (
