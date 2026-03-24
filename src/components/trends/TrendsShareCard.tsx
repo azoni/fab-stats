@@ -20,6 +20,7 @@ export interface TrendsShareData {
   uniqueHeroes: number;
   topHero?: { name: string; winRate: number; matches: number };
   recentTrend?: number;
+  filterLabel?: string;
 }
 
 interface TrendsTheme {
@@ -258,7 +259,10 @@ function ShareCardInner({ data, theme }: { data: TrendsShareData; theme: TrendsT
         </div>
 
         <div className="text-center mt-3">
-          <p className="text-[8px] uppercase tracking-[0.15em]" style={{ color: `${t.muted}88` }}>fabstats.com</p>
+          <p className="text-[8px] uppercase tracking-[0.15em]" style={{ color: `${t.muted}88` }}>fabstats.net</p>
+          {data.filterLabel && (
+            <p className="text-[7px] tracking-wider mt-0.5" style={{ color: `${t.dim}88` }}>{data.filterLabel}</p>
+          )}
         </div>
       </div>
     </div>

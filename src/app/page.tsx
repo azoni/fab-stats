@@ -5,7 +5,7 @@ import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useMatches } from "@/hooks/useMatches";
 import { useAuth } from "@/contexts/AuthContext";
-import { computeOverallStats, computeHeroStats, computeEventStats, computeOpponentStats, computeBestFinish, computePlayoffFinishes, computeMinorEventFinishes, computeTournamentAnalytics, getRoundNumber, getEventType } from "@/lib/stats";
+import { computeOverallStats, computeHeroStats, computeEventStats, computeOpponentStats, computeBestFinish, computePlayoffFinishes, computeMinorEventFinishes, computeTournamentAnalytics, getRoundNumber, getEventType, formatShortLabel } from "@/lib/stats";
 import { getEventTier, TIER_LABELS } from "@/lib/events";
 import { updateLeaderboardEntry } from "@/lib/leaderboard";
 import { useLeaderboard } from "@/hooks/useLeaderboard";
@@ -691,6 +691,7 @@ export default function Dashboard() {
             finalistCount: tournamentAnalytics.finalistCount,
             top4Count: tournamentAnalytics.top4Count,
             submarineCount: tournamentAnalytics.submarineCount,
+            filterLabel: activeFilterLabel,
           }}
           onClose={() => setTournamentShareOpen(false)}
         />
@@ -709,6 +710,7 @@ export default function Dashboard() {
             eventsPlayed: eventStats.length,
             uniqueHeroes: heroStats.filter(h => h.heroName !== "Unknown").length,
             topHero: topHero ? { name: topHero.heroName, winRate: Math.round(topHero.winRate), matches: topHero.totalMatches } : undefined,
+            filterLabel: activeFilterLabel,
           }}
           onClose={() => setStatsShareOpen(false)}
         />
