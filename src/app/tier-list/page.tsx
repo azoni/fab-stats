@@ -10,7 +10,7 @@ import { MiniDonut } from "@/components/charts/MiniDonut";
 import { useLeaderboard } from "@/hooks/useLeaderboard";
 import { computeMetaStats, getAvailableFormats, computeTop8HeroMeta, type HeroMetaStats, type MetaPeriod, type Top8HeroMeta } from "@/lib/meta-stats";
 import { getHeroByName } from "@/lib/heroes";
-import { HeroClassIcon } from "@/components/heroes/HeroClassIcon";
+import { HeroImg } from "@/components/heroes/HeroImg";
 
 type Tier = "S" | "A" | "B" | "C" | "D";
 
@@ -275,7 +275,7 @@ export default function TierListPage() {
                           }`}
                           title={`${h.hero} — Score: ${h.score.toFixed(1)}`}
                         >
-                          <HeroClassIcon heroClass={h.heroClass} size="sm" />
+                          <HeroImg name={h.hero} size="sm" />
                           <span className="text-xs font-medium text-fab-text truncate max-w-[100px] sm:max-w-[140px]">
                             {h.hero.split(",")[0]}
                           </span>
@@ -332,7 +332,7 @@ function HeroDetail({ hero: h, borderClass, bgClass, colorClass, maxMetaShare, m
   return (
     <div className={`border-t ${borderClass} px-4 py-3 ${bgClass}`}>
       <div className="flex items-center gap-3 mb-3">
-        <HeroClassIcon heroClass={h.heroClass} size="md" />
+        <HeroImg name={h.hero} size="md" />
         <div className="flex-1 min-w-0">
           <p className="font-semibold text-fab-text">{h.hero}</p>
           <p className="text-[10px] text-fab-dim">

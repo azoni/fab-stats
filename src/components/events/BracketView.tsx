@@ -1,7 +1,7 @@
 "use client";
 import { useMemo } from "react";
 import { getHeroByName } from "@/lib/heroes";
-import { HeroClassIcon } from "@/components/heroes/HeroClassIcon";
+import { HeroImg } from "@/components/heroes/HeroImg";
 import { MatchResult } from "@/types";
 import type { MatchRecord } from "@/types";
 
@@ -117,7 +117,7 @@ export function BracketView({ matches, playerName }: BracketViewProps) {
                 >
                   {/* Player (you) */}
                   <div className={`flex items-center gap-2 px-3 py-1.5 ${won ? "bg-fab-win/5" : "bg-fab-surface"}`}>
-                    <HeroClassIcon heroClass={myHeroInfo?.classes[0]} size="sm" />
+                    <HeroImg name={node.heroPlayed} size="sm" />
                     <span className={`text-xs font-medium flex-1 truncate ${won ? "text-fab-win" : "text-fab-text"}`}>
                       {playerName || "You"}
                     </span>
@@ -127,7 +127,7 @@ export function BracketView({ matches, playerName }: BracketViewProps) {
                   </div>
                   {/* Opponent */}
                   <div className={`flex items-center gap-2 px-3 py-1.5 border-t ${won ? "border-fab-win/10" : "border-fab-border/50"} bg-fab-bg/50`}>
-                    <HeroClassIcon heroClass={oppHeroInfo?.classes[0]} size="sm" />
+                    <HeroImg name={node.opponentHero || "Unknown"} size="sm" />
                     <span className="text-xs text-fab-dim flex-1 truncate">
                       {node.opponentName}
                     </span>

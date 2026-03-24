@@ -4,7 +4,6 @@ import Link from "next/link";
 import { ChevronDownIcon, ChevronUpIcon } from "@/components/icons/NavIcons";
 import { HeroSelect } from "@/components/heroes/HeroSelect";
 import { getHeroByName } from "@/lib/heroes";
-import { HeroClassIcon } from "@/components/heroes/HeroClassIcon";
 import { HeroImg } from "@/components/heroes/HeroImg";
 import { MatchResult, GameFormat } from "@/types";
 import { localDate } from "@/lib/constants";

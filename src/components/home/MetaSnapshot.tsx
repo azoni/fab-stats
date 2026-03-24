@@ -2,7 +2,7 @@
 import { memo, useState, useMemo } from "react";
 import Link from "next/link";
 import { getHeroByName } from "@/lib/heroes";
-import { HeroClassIcon } from "@/components/heroes/HeroClassIcon";
+import { HeroImg } from "@/components/heroes/HeroImg";
 import { MetaShareModal, DonutChart, buildSegments } from "@/components/meta/MetaShareCard";
 import { MiniDonut, DONUT_COLORS } from "@/components/charts/MiniDonut";
 import { WinRateRing } from "@/components/charts/WinRateRing";
@@ -257,7 +257,7 @@ export const MetaSnapshot = memo(function MetaSnapshot({ topHeroes, top8Heroes, 
                 return (
                   <div key={t8.hero} className={`relative flex items-center gap-3 px-4 py-2.5 ${i > 0 ? "border-t border-fab-border" : ""}`}>
                     <span className={`text-sm w-5 text-center relative ${RANK_CLASS[globalIdx] || "text-fab-muted font-bold"}`}>{globalIdx + 1}</span>
-                    <HeroClassIcon heroClass={heroClass} size="sm" />
+                    <HeroImg name={t8.hero} size="sm" />
                     <span className={`font-medium text-fab-text flex-1 truncate text-sm relative ${globalIdx === 0 ? "text-fab-gold" : ""}`}>{t8.hero}</span>
                     <div className="flex items-center gap-3 shrink-0 relative text-xs tabular-nums">
                       <span className="text-fab-muted w-8 text-right">{t8.totalPlayers > 0 ? t8.totalPlayers : "–"}</span>
@@ -285,7 +285,7 @@ export const MetaSnapshot = memo(function MetaSnapshot({ topHeroes, top8Heroes, 
                   <div className="grid grid-cols-5 gap-1">
                     {topWinners.map((h, i) => (
                       <div key={h.hero} className="flex flex-col items-center gap-0.5 py-1">
-                        <HeroClassIcon heroClass={getHeroByName(h.hero)?.classes[0]} size="sm" />
+                        <HeroImg name={h.hero} size="sm" />
                         <span className={`text-[10px] truncate max-w-full ${i === 0 ? "font-bold text-fab-gold" : "text-fab-text"}`}>{h.hero.split(",")[0]}</span>
                         <span className="text-[10px] text-fab-muted tabular-nums font-semibold">{h.champions}</span>
                       </div>
@@ -348,7 +348,7 @@ export const MetaSnapshot = memo(function MetaSnapshot({ topHeroes, top8Heroes, 
                 <div key={hero.hero} className={`flex items-center gap-3 py-2.5 ${i > 0 ? "border-t border-fab-border" : ""}`}>
                   <span className={`text-sm w-5 text-center ${RANK_CLASS[i] || "text-fab-muted font-bold"}`}>{i + 1}</span>
                   <div className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ backgroundColor: DONUT_COLORS[i % DONUT_COLORS.length] }} />
-                  <HeroClassIcon heroClass={heroClass} size="sm" />
+                  <HeroImg name={hero.hero} size="sm" />
                   <span className={`font-medium text-fab-text flex-1 truncate text-sm ${i === 0 ? "text-fab-gold" : ""}`}>{hero.hero}</span>
                   <span className="text-xs text-fab-muted shrink-0 tabular-nums">{hero.metaShare.toFixed(1)}%</span>
                   <WinRateRing value={hero.avgWinRate} size={28} strokeWidth={3} />

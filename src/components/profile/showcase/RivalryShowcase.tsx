@@ -1,6 +1,6 @@
 "use client";
 import { getHeroByName } from "@/lib/heroes";
-import { HeroClassIcon } from "@/components/heroes/HeroClassIcon";
+import { HeroImg } from "@/components/heroes/HeroImg";
 import type { OpponentStats } from "@/types";
 import { MatchResult } from "@/types";
 
@@ -38,14 +38,14 @@ export function RivalryShowcase({ opponent }: RivalryShowcaseProps) {
         <div className="flex items-center gap-1 ml-auto">
           {opponent.heroesPlayed.slice(0, 2).map((h) => {
             const info = getHeroByName(h);
-            return <HeroClassIcon key={h} heroClass={info?.classes[0]} size="sm" />;
+            return <HeroImg key={h} name={h} size="sm" />;
           })}
           {opponent.opponentHeroes.length > 0 && (
             <>
               <span className="text-[10px] text-fab-dim">vs</span>
               {opponent.opponentHeroes.slice(0, 2).map((h) => {
                 const info = getHeroByName(h);
-                return <HeroClassIcon key={h} heroClass={info?.classes[0]} size="sm" />;
+                return <HeroImg key={h} name={h} size="sm" />;
               })}
             </>
           )}

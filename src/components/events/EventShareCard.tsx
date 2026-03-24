@@ -4,7 +4,7 @@ import { MatchResult, type EventStats } from "@/types";
 import { logActivity } from "@/lib/activity-log";
 import { copyCardImage, downloadCardImage } from "@/lib/share-image";
 import { getHeroByName } from "@/lib/heroes";
-import { HeroClassIcon } from "@/components/heroes/HeroClassIcon";
+import { HeroImg } from "@/components/heroes/HeroImg";
 import { FINISH_THEMES, type FinishTheme } from "@/components/profile/BestFinishCard";
 import { buildOptimizedImageUrl, resolveBackgroundPositionForImage } from "@/lib/profile-backgrounds";
 import type { PlayoffFinish } from "@/lib/stats";
@@ -162,7 +162,7 @@ export function EventShareCardInner({ data, theme }: { data: EventShareData; the
           <p style={{ color: t.accent }} className="text-lg font-black">{playerName}</p>
           {sharedHero && (
             <div className="flex items-center justify-center gap-1.5 mt-1">
-              <HeroClassIcon heroClass={heroClass} size="sm" />
+              <HeroImg name={sharedHero} size="sm" />
               <span style={{ color: t.dim }} className="text-xs">{sharedHero}</span>
             </div>
           )}
