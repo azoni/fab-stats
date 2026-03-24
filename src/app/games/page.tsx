@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
-import { GAMES, GAME_CATEGORIES } from "@/lib/games";
+import { GAMES, VISIBLE_GAMES, GAME_CATEGORIES } from "@/lib/games";
 import { AllGamesShareCard } from "@/components/games/AllGamesShareCard";
 
 function getTodayDateStr(): string {
@@ -13,7 +13,7 @@ function getCompletedCount(): number {
   if (typeof window === "undefined") return 0;
   const today = getTodayDateStr();
   let count = 0;
-  for (const game of GAMES) {
+  for (const game of VISIBLE_GAMES) {
     try {
       const raw = localStorage.getItem(`${game.slug}-${today}`);
       if (raw) {
@@ -52,7 +52,7 @@ export default function GamesPage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-xl font-bold text-fab-text">Daily Games</h1>
-          <p className="text-xs text-fab-muted mt-1">{GAMES.length} games — new challenges every day at midnight.</p>
+          <p className="text-xs text-fab-muted mt-1">{VISIBLE_GAMES.length} games — new challenges every day at midnight.</p>
         </div>
         {completed >= 2 && (
           <button
@@ -69,7 +69,7 @@ export default function GamesPage() {
 
       <div className="space-y-6">
         {GAME_CATEGORIES.map((cat) => {
-          const games = GAMES.filter((g) => g.category === cat.id);
+          const games = VISIBLE_GAMES.filter((g) => g.category === cat.id);
           if (games.length === 0) return null;
 
           return (

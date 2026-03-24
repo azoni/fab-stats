@@ -210,32 +210,32 @@ export function BestFinishCard({ data, theme }: { data: BestFinishData; theme?: 
         {/* Event name */}
         <div className="text-center">
           <p style={{ color: t.text }} className="text-sm font-bold leading-tight">{eventName}</p>
-          <p style={{ color: t.dim }} className="text-xs mt-1">{formatDate(eventDate)}</p>
+          <p style={{ color: t.text, opacity: 0.5 }} className="text-xs mt-1">{formatDate(eventDate)}</p>
         </div>
 
         {/* Player */}
-        <div style={{ backgroundColor: t.bg }} className="rounded-lg p-3 mt-4 text-center">
-          <p style={{ color: t.muted }} className="text-[10px] uppercase tracking-widest mb-1">Player</p>
+        <div style={{ backgroundColor: t.bg }} className="rounded-lg p-3 mt-3 text-center">
+          <p style={{ color: t.text, opacity: 0.6 }} className="text-[10px] uppercase tracking-widest font-semibold mb-1">Player</p>
           <p style={{ color: t.accent }} className="text-lg font-black">{playerName}</p>
           {topHero && (
-            <p style={{ color: t.dim }} className="text-xs mt-0.5">{topHero}</p>
+            <p style={{ color: t.text, opacity: 0.5 }} className="text-xs mt-0.5">{topHero}</p>
           )}
         </div>
 
         {/* Stats row */}
-        <div className="mt-4 flex justify-center gap-6">
+        <div className="mt-3 flex justify-center gap-8">
           <div className="text-center">
-            <p style={{ color: t.text }} className="text-xl font-black">{totalMatches}</p>
-            <p style={{ color: t.muted }} className="text-[10px] uppercase">Matches</p>
+            <p style={{ color: t.text }} className="text-2xl font-black">{totalMatches}</p>
+            <p style={{ color: t.text, opacity: 0.6 }} className="text-[10px] uppercase font-semibold">Matches</p>
           </div>
           <div className="text-center">
-            <p style={{ color: winRate >= 50 ? t.trophy : t.text }} className="text-xl font-black">{winRate.toFixed(0)}%</p>
-            <p style={{ color: t.muted }} className="text-[10px] uppercase">Win Rate</p>
+            <p style={{ color: winRate >= 50 ? t.trophy : t.text }} className="text-2xl font-black">{winRate.toFixed(0)}%</p>
+            <p style={{ color: t.text, opacity: 0.6 }} className="text-[10px] uppercase font-semibold">Win Rate</p>
           </div>
         </div>
 
         {/* Tagline */}
-        <p style={{ color: t.dim }} className="text-[10px] text-center mt-3 italic">
+        <p style={{ color: t.text, opacity: 0.4 }} className="text-[10px] text-center mt-2 italic">
           {getFinishTagline(finishLabel)}
         </p>
       </div>

@@ -120,44 +120,20 @@ export function DashboardInsights({ heroStats, opponentStats, matches }: Dashboa
           </div>
         )}
       </div>
-      <div className="p-3 space-y-3">
-        {/* Rivalry Highlights */}
-        {hasRivalries && highlights && (
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5">
-            {highlights.nemesis && (
-              <RivalryCell label="Nemesis" labelColor="text-red-400" opponent={highlights.nemesis} />
-            )}
-            {highlights.bestMatchup && (
-              <RivalryCell label="Best" labelColor="text-fab-win" opponent={highlights.bestMatchup} />
-            )}
-            {highlights.mostPlayed && (
-              <RivalryCell label="Rival" labelColor="text-amber-400" opponent={highlights.mostPlayed} />
-            )}
-          </div>
-        )}
-
-        {/* New Opponents */}
-        {hasNewOpponents && (
-          <>
-            {hasRivalries && <div className="border-t border-fab-border/30" />}
-            <div>
-              <p className="text-[10px] text-fab-dim uppercase tracking-wider font-medium mb-1.5">New Opponents</p>
-              <div className="grid grid-cols-1 sm:grid-cols-5 gap-1">
-                {newOpponents.map((opp) => {
-                  const resultColor = opp.result === "win" ? "text-fab-win" : opp.result === "loss" ? "text-fab-loss" : opp.result === "draw" ? "text-fab-draw" : "text-fab-dim";
-                  return (
-                    <Link key={opp.name + opp.date} href={`/opponents?q=${encodeURIComponent(opp.name)}`} className="flex items-center gap-2 py-1 px-1.5 hover:bg-fab-bg/50 rounded-md transition-colors" onClick={(e) => e.stopPropagation()}>
-                      <span className={`text-[9px] font-bold uppercase ${resultColor}`}>{opp.result === "win" ? "W" : opp.result === "loss" ? "L" : opp.result === "draw" ? "D" : "B"}</span>
-                      <span className="text-sm text-fab-text truncate flex-1">{opp.name}</span>
-                      <span className="text-[10px] text-fab-dim">{opp.date.slice(5)}</span>
-                    </Link>
-                  );
-                })}
-              </div>
-            </div>
-          </>
-        )}
-      </div>
+      {/* Rivalry Highlights */}
+      {hasRivalries && highlights && (
+        <div className="px-3 pb-3 space-y-1">
+          {highlights.nemesis && (
+            <RivalryCell label="Nemesis" labelColor="text-red-400" opponent={highlights.nemesis} />
+          )}
+          {highlights.bestMatchup && (
+            <RivalryCell label="Best" labelColor="text-fab-win" opponent={highlights.bestMatchup} />
+          )}
+          {highlights.mostPlayed && (
+            <RivalryCell label="Rival" labelColor="text-amber-400" opponent={highlights.mostPlayed} />
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -172,14 +148,17 @@ function RivalryCell({
   opponent: OpponentStats;
 }) {
   return (
-    <Link href={`/opponents?q=${encodeURIComponent(opponent.opponentName)}`} className="flex items-center gap-2 py-1.5 px-2 hover:bg-fab-bg/50 rounded-md transition-colors" onClick={(e) => e.stopPropagation()}>
-      <span className={`text-[9px] uppercase tracking-wider font-bold shrink-0 ${labelColor}`}>
+    <Link href={`/opponents?q=${encodeURIComponent(opponent.opponentName)}`} className="flex items-center gap-3 py-2 px-2.5 hover:bg-fab-bg/50 rounded-lg transition-colors">
+      <span className={`text-[10px] uppercase tracking-wider font-bold w-14 shrink-0 ${labelColor}`}>
         {label}
       </span>
-      <span className="text-sm font-medium text-fab-text truncate min-w-0 flex-1">
+      <span className="text-sm font-semibold text-fab-text truncate min-w-0 flex-1">
         {opponent.opponentName}
       </span>
-      <span className={`text-[10px] font-bold tabular-nums shrink-0 ${opponent.winRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>
+      <span className="text-xs text-fab-dim tabular-nums shrink-0">
+        {opponent.wins}W-{opponent.losses}L
+      </span>
+      <span className={`text-sm font-bold tabular-nums shrink-0 ${opponent.winRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>
         {opponent.winRate.toFixed(0)}%
       </span>
     </Link>

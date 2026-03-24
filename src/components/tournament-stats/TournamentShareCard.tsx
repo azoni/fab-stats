@@ -265,22 +265,22 @@ function ShareCardInner({ data, theme }: { data: TournamentShareData; theme: Tou
             </span>
           </div>
           <div className="flex justify-between">
-            <span style={{ color: t.muted }}>Submarines</span>
+            <span style={{ color: t.text, opacity: 0.6 }}>Submarines</span>
             <span className="font-bold" style={{ color: data.submarineCount > 0 ? t.win : t.dim }}>{data.submarineCount || "—"}</span>
           </div>
           {data.consecutiveEventWins > 0 && (
             <div className="flex justify-between col-span-2">
-              <span style={{ color: t.muted }}>Consecutive Wins</span>
+              <span style={{ color: t.text, opacity: 0.6 }}>Consecutive Wins</span>
               <span className="font-bold" style={{ color: t.gold }}>{data.consecutiveEventWins}</span>
             </div>
           )}
         </div>
 
         {/* Footer */}
-        <div className="text-center mt-3">
-          <p className="text-[8px] uppercase tracking-[0.15em]" style={{ color: `${t.muted}88` }}>fabstats.net</p>
+        <div className="flex items-center justify-between mt-3">
+          <p className="text-[10px] uppercase tracking-[0.15em] font-semibold" style={{ color: t.accent, opacity: 0.5 }}>fabstats.net</p>
           {data.filterLabel && (
-            <p className="text-[7px] tracking-wider mt-0.5" style={{ color: `${t.dim}88` }}>{data.filterLabel}</p>
+            <p className="text-[10px] tracking-wider font-semibold" style={{ color: t.accent, opacity: 0.7 }}>{data.filterLabel}</p>
           )}
         </div>
       </div>
