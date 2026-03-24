@@ -491,7 +491,10 @@ export function ProfileCard({ data, theme }: { data: ProfileCardData; theme?: Ca
           </svg>
           <p style={{ color: t.accent, opacity: 0.5 }} className="text-[10px] tracking-wider font-semibold">fabstats.net</p>
           {data.filterLabel && (
-            <p style={{ color: t.accent }} className="text-[10px] tracking-wider font-semibold ml-auto opacity-70">{data.filterLabel}</p>
+            <span className="ml-auto flex items-center gap-1.5">
+              <span style={{ color: t.text, opacity: 0.4 }} className="text-[9px] uppercase tracking-wider font-semibold">Filtered</span>
+              <span style={{ color: t.accent }} className="text-[10px] tracking-wider font-bold">{data.filterLabel}</span>
+            </span>
           )}
         </div>
         {/* Underline bar */}
