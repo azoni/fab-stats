@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { getHeroByName } from "@/lib/heroes";
+import { getHeroByName, getHeroPortraitUrl } from "@/lib/heroes";
 
 function PlusIcon({ className }: { className?: string }) {
   return (
@@ -95,10 +95,17 @@ export function FaBdokuCell({
     >
       {showImg ? (
         <img
-          src={hero.imageUrl}
+          src={getHeroPortraitUrl(heroName) || hero.imageUrl}
           alt={heroName}
           className="w-full h-full object-cover object-top"
-          onError={() => setImgError(true)}
+          onError={(e) => {
+            const img = e.target as HTMLImageElement;
+            if (hero.imageUrl && img.src !== hero.imageUrl) {
+              img.src = hero.imageUrl;
+            } else {
+              setImgError(true);
+            }
+          }}
         />
       ) : (
         <div className="w-full h-full bg-fab-surface flex items-center justify-center p-1">

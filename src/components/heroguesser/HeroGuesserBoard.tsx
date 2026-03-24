@@ -2,7 +2,7 @@
 import { useState, useRef, useEffect } from "react";
 import type { HeroGuess } from "@/lib/heroguesser/types";
 import type { HeroInfo } from "@/types";
-import { getHeroByName } from "@/lib/heroes";
+import { getHeroByName, getHeroPortraitUrl } from "@/lib/heroes";
 
 const CLUE_BG: Record<string, string> = {
   correct: "bg-fab-win/25 text-fab-win",
@@ -128,7 +128,7 @@ export function HeroGuesserBoard({
                   onClick={() => selectHero(h.name)}
                   className={`w-full flex items-center gap-2 px-3 py-2 text-left transition-colors ${idx === highlightIndex ? "bg-fab-gold/15 text-fab-gold" : "hover:bg-fab-surface-hover"}`}
                 >
-                  <img src={h.imageUrl} alt="" className="w-6 h-6 rounded object-cover" />
+                  <img src={getHeroPortraitUrl(h.name) || h.imageUrl} alt="" className="w-6 h-6 rounded object-cover" />
                   <span className="text-xs text-fab-text">{h.name}</span>
                   <span className="text-[9px] text-fab-dim ml-auto">{h.classes.join(", ")}</span>
                 </button>
@@ -170,7 +170,7 @@ export function HeroGuesserBoard({
         {guesses.map((guess, i) => (
           <div key={i} className="grid grid-cols-[1fr_repeat(6,minmax(0,1fr))] gap-1">
             <div className="flex items-center gap-1.5 min-w-0">
-              <img src={getHeroByName(guess.heroName)?.imageUrl} alt="" className="w-6 h-6 rounded object-cover shrink-0" />
+              <img src={getHeroPortraitUrl(guess.heroName) || getHeroByName(guess.heroName)?.imageUrl} alt="" className="w-6 h-6 rounded object-cover shrink-0" />
               <span className="text-[10px] text-fab-text font-medium truncate">{guess.heroName}</span>
             </div>
             {COLUMNS.map((col) => {

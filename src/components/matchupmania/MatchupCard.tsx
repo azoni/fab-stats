@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { getHeroByName } from "@/lib/heroes";
+import { getHeroByName, getHeroPortraitUrl } from "@/lib/heroes";
 import type { MatchupRound } from "@/lib/matchupmania/types";
 
 function HeroSide({
@@ -19,7 +19,7 @@ function HeroSide({
   onClick: () => void;
 }) {
   const hero = getHeroByName(heroName);
-  const imgSrc = hero?.imageUrl || "";
+  const imgSrc = getHeroPortraitUrl(heroName) || hero?.imageUrl || "";
 
   return (
     <button
