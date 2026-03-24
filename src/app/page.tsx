@@ -51,7 +51,6 @@ export default function Dashboard() {
   const [filterEventType, setFilterEventType] = useState("all");
   const [filterTier, setFilterTier] = useState("all");
   const [filterHero, setFilterHero] = useState("all");
-  const [filterRated, setFilterRated] = useState("all");
   const leaderboardUpdated = useRef(false);
 
   // Load kudos total for the current user
@@ -74,9 +73,8 @@ export default function Dashboard() {
     if (filterEventType !== "all") filtered = filtered.filter((m) => getEventType(m) === filterEventType);
     if (filterTier !== "all") filtered = filtered.filter((m) => getEventTier(getEventType(m)) === Number(filterTier));
     if (filterHero !== "all") filtered = filtered.filter((m) => m.heroPlayed === filterHero);
-    if (filterRated !== "all") filtered = filtered.filter((m) => filterRated === "rated" ? m.rated === true : m.rated !== true);
     return filtered;
-  }, [matches, filterFormat, filterEventType, filterTier, filterHero, filterRated]);
+  }, [matches, filterFormat, filterEventType, filterTier, filterHero]);
 
   // Filter options — single pass: compute all three cross-filtered option lists at once
   const { allFormats, allEventTypes, allHeroes } = useMemo(() => {
@@ -89,18 +87,16 @@ export default function Dashboard() {
       const matchEventType = getEventType(m);
       const matchTier = getEventTier(matchEventType);
       const matchHero = m.heroPlayed;
-      const matchRated = m.rated === true;
 
       const passFormat = filterFormat === "all" || matchFormat === filterFormat;
       const passEventType = filterEventType === "all" || matchEventType === filterEventType;
       const passTier = filterTier === "all" || matchTier === Number(filterTier);
       const passHero = filterHero === "all" || matchHero === filterHero;
-      const passRated = filterRated === "all" || (filterRated === "rated" ? matchRated : !matchRated);
 
       // For each filter option list, include if all OTHER filters pass
-      if (passEventType && passTier && passHero && passRated && matchFormat) formats.add(matchFormat);
-      if (passFormat && passTier && passHero && passRated && matchEventType !== "Unknown") eventTypes.add(matchEventType);
-      if (passFormat && passEventType && passTier && passRated && matchHero && matchHero !== "Unknown") heroes.add(matchHero);
+      if (passEventType && passTier && passHero && matchFormat) formats.add(matchFormat);
+      if (passFormat && passTier && passHero && matchEventType !== "Unknown") eventTypes.add(matchEventType);
+      if (passFormat && passEventType && passTier && matchHero && matchHero !== "Unknown") heroes.add(matchHero);
     }
 
     return {
@@ -108,7 +104,7 @@ export default function Dashboard() {
       allEventTypes: [...eventTypes].sort(),
       allHeroes: [...heroes].sort(),
     };
-  }, [matches, filterFormat, filterEventType, filterTier, filterHero, filterRated]);
+  }, [matches, filterFormat, filterEventType, filterTier, filterHero]);
 
   // Reset filters whose selected value is no longer available
   useEffect(() => {
@@ -123,11 +119,9 @@ export default function Dashboard() {
     if (filterFormat !== "all") parts.push(filterFormat === "Classic Constructed" ? "CC" : filterFormat);
     if (filterTier !== "all") parts.push(TIER_LABELS[Number(filterTier)] || `Tier ${filterTier}`);
     if (filterEventType !== "all") parts.push(filterEventType);
-    if (filterRated === "rated") parts.push("Rated");
-    else if (filterRated === "unrated") parts.push("Unrated");
     if (filterHero !== "all") parts.push(filterHero.split(",")[0]);
     return parts.length > 0 ? parts.join(" · ") : undefined;
-  }, [filterFormat, filterTier, filterEventType, filterRated, filterHero]);
+  }, [filterFormat, filterTier, filterEventType, filterHero]);
 
   const overall = useMemo(() => computeOverallStats(filteredMatches), [filteredMatches]);
   const heroStats = useMemo(() => computeHeroStats(filteredMatches), [filteredMatches]);
@@ -415,12 +409,10 @@ export default function Dashboard() {
             filterEventType={filterEventType}
             filterTier={filterTier}
             filterHero={filterHero}
-            filterRated={filterRated}
             onFormatChange={setFilterFormat}
             onEventTypeChange={setFilterEventType}
             onTierChange={setFilterTier}
             onHeroChange={setFilterHero}
-            onRatedChange={setFilterRated}
           />
           </div>
 
@@ -573,13 +565,9 @@ export default function Dashboard() {
             </div>
           )}
 
-          {/* LatestMatches + RecentEvents */}
+          {/* RecentEvents + Opponents */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 section-reveal" style={{ '--stagger': 3 } as React.CSSProperties}>
-            <LatestMatches matches={latestMatches} />
             <RecentEvents eventStats={filteredEventStats} playerName={profile?.displayName} />
-          </div>
-
-          <div className="section-reveal" style={{ '--stagger': 4 } as React.CSSProperties}>
             <DashboardInsights heroStats={heroStats} opponentStats={opponentStats} matches={filteredMatches} />
           </div>
 
