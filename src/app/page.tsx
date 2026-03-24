@@ -475,9 +475,84 @@ export default function Dashboard() {
           </div>
           </div>
 
-          {/* Dashboard stats */}
+          {/* Quick Stats Row — merged profile + stats */}
           <div className="section-reveal" style={{ '--stagger': 1 } as React.CSSProperties}>
-            <StatCards overall={overall} eventCount={filteredEventStats.length} bestFinishLabel={bestFinish?.label ?? null} recentMatches={last30} onShare={profile ? () => setStatsShareOpen(true) : undefined} />
+            <div className="bg-fab-surface border border-fab-border rounded-lg p-4">
+              <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+                {/* Win Rate — large */}
+                <div className="text-center">
+                  <p className={`text-3xl font-black tabular-nums ${overall.overallWinRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>
+                    {overall.overallWinRate.toFixed(1)}%
+                  </p>
+                  <p className="text-[10px] text-fab-text/50 uppercase tracking-wider font-semibold">Win Rate</p>
+                </div>
+                {/* Record */}
+                <div className="text-center">
+                  <p className="text-lg font-bold tabular-nums text-fab-text">
+                    <span className="text-fab-win">{overall.totalWins}</span>
+                    <span className="text-fab-dim">-</span>
+                    <span className="text-fab-loss">{overall.totalLosses}</span>
+                    {overall.totalDraws > 0 && <><span className="text-fab-dim">-</span><span className="text-fab-muted">{overall.totalDraws}</span></>}
+                  </p>
+                  <p className="text-[10px] text-fab-text/50 uppercase tracking-wider font-semibold">Record</p>
+                </div>
+                {/* Events */}
+                <div className="text-center">
+                  <p className="text-lg font-black tabular-nums text-fab-text">{filteredEventStats.length}</p>
+                  <p className="text-[10px] text-fab-text/50 uppercase tracking-wider font-semibold">Events</p>
+                </div>
+                {/* Best Finish */}
+                {bestFinish && (
+                  <div className="text-center">
+                    <p className="text-lg font-black text-fab-gold">{bestFinish.label}</p>
+                    <p className="text-[10px] text-fab-text/50 uppercase tracking-wider font-semibold">Best Finish</p>
+                  </div>
+                )}
+                {/* Top Hero */}
+                {topHero && (
+                  <div className="text-center">
+                    <p className="text-lg font-bold text-fab-text truncate max-w-[120px]">{topHero.heroName.split(",")[0]}</p>
+                    <p className="text-[10px] text-fab-text/50 uppercase tracking-wider font-semibold">Top Hero</p>
+                  </div>
+                )}
+                {/* Streak */}
+                {streaks.currentStreak && streaks.currentStreak.count >= 2 && (
+                  <div className="text-center">
+                    <p className={`text-lg font-black ${streaks.currentStreak.type === "win" ? "text-fab-win" : "text-fab-loss"}`}>
+                      {streaks.currentStreak.count}{streaks.currentStreak.type === "win" ? "W" : "L"}
+                    </p>
+                    <p className="text-[10px] text-fab-text/50 uppercase tracking-wider font-semibold">Streak</p>
+                  </div>
+                )}
+                {/* Share buttons */}
+                <div className="flex items-center gap-1.5 ml-auto" onClick={(e) => e.stopPropagation()}>
+                  {profile && (
+                    <button onClick={() => setStatsShareOpen(true)} className="px-2.5 py-1.5 rounded-md bg-fab-gold/15 text-fab-gold text-xs font-semibold hover:bg-fab-gold/25 transition-colors" title="Share stats">
+                      Share Stats
+                    </button>
+                  )}
+                  {profile && tournamentAnalytics && tournamentAnalytics.totalEvents >= 3 && (
+                    <button onClick={() => setTournamentShareOpen(true)} className="px-2.5 py-1.5 rounded-md bg-fab-bg border border-fab-border text-fab-dim text-xs font-semibold hover:text-fab-text transition-colors" title="Share tournament stats">
+                      Tournament
+                    </button>
+                  )}
+                </div>
+              </div>
+              {/* Recent form dots */}
+              {last30.length > 0 && (
+                <div className="flex items-center gap-0.5 mt-3">
+                  <span className="text-[9px] text-fab-dim uppercase tracking-wider font-semibold mr-2">Recent</span>
+                  {last30.slice(-15).map((m, i) => (
+                    <div
+                      key={i}
+                      className={`w-2 h-2 rounded-full ${
+                        m.result === "win" ? "bg-fab-win" : m.result === "loss" ? "bg-fab-loss" : m.result === "draw" ? "bg-fab-draw" : "bg-fab-dim"
+                      }`}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Tournament Stats Card */}
