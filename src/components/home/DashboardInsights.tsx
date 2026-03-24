@@ -64,7 +64,7 @@ export function DashboardInsights({ heroStats, opponentStats, matches }: Dashboa
       seen.add(key);
       if ((counts.get(key) || 0) === 1) {
         result.push({ name, date: m.date, result: m.result });
-        if (result.length >= 5) break;
+        if (result.length >= 3) break;
       }
     }
     return result;
@@ -85,15 +85,15 @@ export function DashboardInsights({ heroStats, opponentStats, matches }: Dashboa
   if (!hasRivalries && !hasNewOpponents && opponentStats.length === 0) return null;
 
   return (
-    <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden">
+    <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden cursor-pointer hover:border-fab-gold/20 transition-colors" onClick={() => router.push("/opponents")}>
       <div className="flex items-center justify-between px-4 py-2.5 border-b border-fab-border/50">
         <p className="text-sm font-semibold text-fab-text">Opponents</p>
-        <Link href="/opponents" className="text-xs font-semibold text-fab-gold border border-fab-gold/30 hover:bg-fab-gold/10 hover:border-fab-gold/50 px-2.5 py-1 rounded-md transition-colors">
+        <Link href="/opponents" className="text-xs font-semibold text-fab-gold border border-fab-gold/30 hover:bg-fab-gold/10 hover:border-fab-gold/50 px-2.5 py-1 rounded-md transition-colors" onClick={(e) => e.stopPropagation()}>
           View all &rarr;
         </Link>
       </div>
       {/* Search bar */}
-      <div className="px-3 pt-3 relative">
+      <div className="px-3 pt-3 relative" onClick={(e) => e.stopPropagation()}>
         <input
           type="text"
           value={oppSearch}
@@ -122,7 +122,7 @@ export function DashboardInsights({ heroStats, opponentStats, matches }: Dashboa
       </div>
       {/* Rivalry Highlights */}
       {hasRivalries && highlights && (
-        <div className="px-3 pb-3 space-y-1">
+        <div className="px-3 pb-1 space-y-1">
           {highlights.nemesis && (
             <RivalryCell label="Nemesis" labelColor="text-red-400" opponent={highlights.nemesis} />
           )}
@@ -132,6 +132,25 @@ export function DashboardInsights({ heroStats, opponentStats, matches }: Dashboa
           {highlights.mostPlayed && (
             <RivalryCell label="Rival" labelColor="text-amber-400" opponent={highlights.mostPlayed} />
           )}
+        </div>
+      )}
+      {/* New Opponents */}
+      {hasNewOpponents && (
+        <div className="px-3 pb-3">
+          {hasRivalries && <div className="border-t border-fab-border/30 my-2" />}
+          <p className="text-[10px] text-fab-text/50 uppercase tracking-wider font-semibold mb-1.5">New Opponents</p>
+          <div className="space-y-0.5">
+            {newOpponents.map((opp) => {
+              const resultColor = opp.result === "win" ? "text-fab-win" : opp.result === "loss" ? "text-fab-loss" : opp.result === "draw" ? "text-fab-draw" : "text-fab-dim";
+              return (
+                <div key={opp.name + opp.date} className="flex items-center gap-2 py-1 px-1">
+                  <span className={`text-[10px] font-bold uppercase w-3 ${resultColor}`}>{opp.result === "win" ? "W" : opp.result === "loss" ? "L" : opp.result === "draw" ? "D" : "B"}</span>
+                  <span className="text-sm text-fab-text truncate flex-1">{opp.name}</span>
+                  <span className="text-[10px] text-fab-dim">{opp.date.slice(5)}</span>
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
     </div>

@@ -79,41 +79,41 @@ export function RecentEvents({ eventStats, playerName }: { eventStats: EventStat
             <div key={key}>
               <button
                 onClick={() => setExpandedKey(isExpanded ? null : key)}
-                className="w-full flex items-center gap-2 py-1.5 px-2 rounded-md hover:bg-fab-bg/50 transition-colors text-left"
+                className="w-full flex items-center gap-3 py-2.5 px-3 rounded-lg hover:bg-fab-bg/50 transition-colors text-left"
               >
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1.5">
-                    <p className="text-[11px] font-semibold text-fab-text truncate">{ev.eventName}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-semibold text-fab-text truncate">{ev.eventName}</p>
                     {(() => {
                       const badge = PLACEMENT_BADGE[placementMap.get(`${ev.eventName}::${ev.eventDate}`) || ""];
                       return badge ? (
-                        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border shrink-0 ${badge.color}`}>
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded border shrink-0 ${badge.color}`}>
                           {badge.text}
                         </span>
                       ) : null;
                     })()}
                   </div>
-                  <div className="flex items-center gap-1.5 mt-0.5">
+                  <div className="flex items-center gap-2 mt-1">
                     {ev.eventType && (
-                      <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded border ${typeColor}`}>
+                      <span className={`text-[10px] font-semibold px-2 py-0.5 rounded border ${typeColor}`}>
                         {ev.eventType}
                       </span>
                     )}
                     {ev.format && (
-                      <span className="text-[9px] text-fab-dim px-1 py-0.5 rounded bg-fab-bg border border-fab-border">
+                      <span className="text-[10px] text-fab-dim px-1.5 py-0.5 rounded bg-fab-bg border border-fab-border">
                         {ev.format === "Classic Constructed" ? "CC" : ev.format}
                       </span>
                     )}
                     {(() => {
                       const hero = ev.matches.find(m => m.heroPlayed && m.heroPlayed !== "Unknown")?.heroPlayed;
-                      return hero ? <><HeroImg name={hero} size="sm" /><span className="text-[10px] text-fab-muted truncate">{hero.split(",")[0]}</span></> : null;
+                      return hero ? <><HeroImg name={hero} size="sm" /><span className="text-xs text-fab-muted truncate">{hero.split(",")[0]}</span></> : null;
                     })()}
-                    <span className="text-[10px] text-fab-dim">{formatDate(ev.eventDate)}</span>
+                    <span className="text-xs text-fab-dim">{formatDate(ev.eventDate)}</span>
                   </div>
                 </div>
                 <div className="text-right shrink-0 flex items-center gap-2">
                   <div>
-                    <p className="text-[11px] font-bold tabular-nums">
+                    <p className="text-sm font-bold tabular-nums">
                       <span className="text-fab-win">{ev.wins}</span>
                       <span className="text-fab-dim">-</span>
                       <span className="text-fab-loss">{ev.losses}</span>
@@ -124,7 +124,7 @@ export function RecentEvents({ eventStats, playerName }: { eventStats: EventStat
                         </>
                       )}
                     </p>
-                    <p className={`text-[10px] font-semibold ${ev.winRate >= 50 ? "text-fab-win/70" : "text-fab-loss/70"}`}>
+                    <p className={`text-xs font-bold ${ev.winRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>
                       {ev.winRate.toFixed(0)}%
                     </p>
                   </div>
