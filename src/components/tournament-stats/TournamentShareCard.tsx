@@ -206,23 +206,23 @@ function ShareCardInner({ data, theme }: { data: TournamentShareData; theme: Tou
         <div className="grid grid-cols-3 gap-3 my-4 text-center">
           <div>
             <p className="text-2xl font-black" style={{ color: t.accent }}>{data.totalEvents}</p>
-            <p className="text-[9px] uppercase tracking-wider" style={{ color: t.muted }}>Events</p>
+            <p className="text-[10px] uppercase tracking-wider font-semibold" style={{ color: t.text, opacity: 0.6 }}>Events</p>
           </div>
           <div>
             <p className="text-2xl font-black" style={{ color: data.overallWinRate >= 50 ? t.win : t.loss }}>
               {data.overallWinRate.toFixed(1)}%
             </p>
-            <p className="text-[9px] uppercase tracking-wider" style={{ color: t.muted }}>Win Rate</p>
+            <p className="text-[10px] uppercase tracking-wider font-semibold" style={{ color: t.text, opacity: 0.6 }}>Win Rate</p>
           </div>
           <div>
             <p className="text-2xl font-black" style={{ color: t.gold }}>{data.top8Count}</p>
-            <p className="text-[9px] uppercase tracking-wider" style={{ color: t.muted }}>Top 8s</p>
+            <p className="text-[10px] uppercase tracking-wider font-semibold" style={{ color: t.text, opacity: 0.6 }}>Top 8s</p>
           </div>
         </div>
 
         {/* Round 1 highlight */}
         <div className="text-center mb-3">
-          <p className="text-[9px] uppercase tracking-wider mb-1" style={{ color: t.muted }}>Round 1 Win Rate</p>
+          <p className="text-[10px] uppercase tracking-wider font-semibold mb-1" style={{ color: t.text, opacity: 0.6 }}>Round 1 Win Rate</p>
           <p className="text-xl font-black" style={{ color: data.r1WinRate >= 50 ? t.win : t.loss }}>
             {Math.round(data.r1WinRate)}%
           </p>
@@ -237,29 +237,29 @@ function ShareCardInner({ data, theme }: { data: TournamentShareData; theme: Tou
         <div className="grid grid-cols-3 gap-3 my-4 text-center">
           <div>
             <p className="text-lg font-black" style={{ color: t.gold }}>{data.championCount || "—"}</p>
-            <p className="text-[9px] uppercase tracking-wider" style={{ color: t.muted }}>Wins</p>
+            <p className="text-[10px] uppercase tracking-wider font-semibold" style={{ color: t.text, opacity: 0.6 }}>Wins</p>
           </div>
           <div>
             <p className="text-lg font-black" style={{ color: t.text }}>{data.finalistCount || "—"}</p>
-            <p className="text-[9px] uppercase tracking-wider" style={{ color: t.muted }}>Finals</p>
+            <p className="text-[10px] uppercase tracking-wider font-semibold" style={{ color: t.text, opacity: 0.6 }}>Finals</p>
           </div>
           <div>
             <p className="text-lg font-black" style={{ color: t.text }}>{data.top4Count || "—"}</p>
-            <p className="text-[9px] uppercase tracking-wider" style={{ color: t.muted }}>Top 4s</p>
+            <p className="text-[10px] uppercase tracking-wider font-semibold" style={{ color: t.text, opacity: 0.6 }}>Top 4s</p>
           </div>
         </div>
 
         <div className="grid grid-cols-2 gap-x-4 gap-y-2 my-3 text-[11px]">
           <div className="flex justify-between">
-            <span style={{ color: t.muted }}>Best Win Streak</span>
+            <span style={{ color: t.text, opacity: 0.6 }}>Best Win Streak</span>
             <span className="font-bold" style={{ color: t.win }}>{data.longestCrossEventWinStreak || "—"}</span>
           </div>
           <div className="flex justify-between">
-            <span style={{ color: t.muted }}>Top 8 Rate</span>
+            <span style={{ color: t.text, opacity: 0.6 }}>Top 8 Rate</span>
             <span className="font-bold" style={{ color: t.text }}>{Math.round(data.top8Rate)}%</span>
           </div>
           <div className="flex justify-between">
-            <span style={{ color: t.muted }}>Undefeated Swiss</span>
+            <span style={{ color: t.text, opacity: 0.6 }}>Undefeated Swiss</span>
             <span className="font-bold" style={{ color: data.undefeatedSwissCount > 0 ? t.win : t.dim }}>
               {data.undefeatedSwissCount || "—"}
             </span>

@@ -1,5 +1,5 @@
 "use client";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { HeroStats, OpponentStats, MatchRecord } from "@/types";
@@ -70,19 +70,56 @@ export function DashboardInsights({ heroStats, opponentStats, matches }: Dashboa
     return result;
   }, [matches]);
 
+  const [oppSearch, setOppSearch] = useState("");
+  const searchResults = useMemo(() => {
+    if (!oppSearch.trim()) return [];
+    const q = oppSearch.toLowerCase();
+    return opponentStats
+      .filter((o) => o.opponentName.toLowerCase().includes(q) && o.opponentName !== "Unknown")
+      .slice(0, 5);
+  }, [oppSearch, opponentStats]);
+
   const hasRivalries = highlights !== null;
   const hasNewOpponents = newOpponents.length > 0;
 
-  if (!hasRivalries && !hasNewOpponents) return null;
+  if (!hasRivalries && !hasNewOpponents && opponentStats.length === 0) return null;
 
   return (
-    <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden cursor-pointer hover:border-fab-gold/20 transition-colors" onClick={() => router.push("/opponents")}>
-      <Link href="/opponents" className="flex items-center justify-between px-4 py-2.5 border-b border-fab-border/50 hover:bg-fab-surface-hover transition-colors">
+    <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden">
+      <div className="flex items-center justify-between px-4 py-2.5 border-b border-fab-border/50">
         <p className="text-sm font-semibold text-fab-text">Opponents</p>
-        <span className="text-xs font-semibold text-fab-gold border border-fab-gold/30 hover:bg-fab-gold/10 hover:border-fab-gold/50 px-2.5 py-1 rounded-md transition-colors" onClick={(e) => e.stopPropagation()}>
-          All opponents &rarr;
-        </span>
-      </Link>
+        <Link href="/opponents" className="text-xs font-semibold text-fab-gold border border-fab-gold/30 hover:bg-fab-gold/10 hover:border-fab-gold/50 px-2.5 py-1 rounded-md transition-colors">
+          View all &rarr;
+        </Link>
+      </div>
+      {/* Search bar */}
+      <div className="px-3 pt-3 relative">
+        <input
+          type="text"
+          value={oppSearch}
+          onChange={(e) => setOppSearch(e.target.value)}
+          placeholder="Search opponents..."
+          className="w-full px-3 py-2 rounded-lg text-sm bg-fab-bg border border-fab-border text-fab-text placeholder:text-fab-dim focus:outline-none focus:border-fab-gold/50"
+        />
+        {searchResults.length > 0 && (
+          <div className="absolute left-3 right-3 top-full mt-1 bg-fab-surface border border-fab-border rounded-lg shadow-xl z-50 overflow-hidden">
+            {searchResults.map((opp) => (
+              <Link
+                key={opp.opponentName}
+                href={`/opponents?q=${encodeURIComponent(opp.opponentName)}`}
+                onClick={() => setOppSearch("")}
+                className="flex items-center justify-between px-3 py-2 text-sm hover:bg-fab-surface-hover transition-colors"
+              >
+                <span className="text-fab-text truncate">{opp.opponentName}</span>
+                <span className="flex items-center gap-2 shrink-0">
+                  <span className={`text-xs font-bold ${opp.winRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>{opp.winRate.toFixed(0)}%</span>
+                  <span className="text-[10px] text-fab-dim">{opp.totalMatches}m</span>
+                </span>
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
       <div className="p-3 space-y-3">
         {/* Rivalry Highlights */}
         {hasRivalries && highlights && (
