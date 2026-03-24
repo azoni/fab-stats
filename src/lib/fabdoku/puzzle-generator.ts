@@ -43,6 +43,9 @@ const GROUP_MAP: Record<CategoryGroup, CategoryDef[]> = {
   format: FORMAT_CATEGORIES,
 };
 
+/** Every cell must have at least this many valid heroes for good gameplay. */
+const MIN_HEROES_PER_CELL = 3;
+
 /** Return heroes matching both row and column category predicates. */
 function getValidHeroes(
   row: CategoryDef,
@@ -52,8 +55,41 @@ function getValidHeroes(
 }
 
 /**
+ * Check whether 9 distinct heroes can be assigned to all cells
+ * of the grid (backtracking search over the flattened 9 cells).
+ */
+function isSolvable(validAnswers: string[][][]): boolean {
+  const cells: string[][] = [];
+  for (let r = 0; r < 3; r++) {
+    for (let c = 0; c < 3; c++) {
+      cells.push(validAnswers[r][c]);
+    }
+  }
+  // Sort by fewest options first to prune early
+  const order = cells
+    .map((opts, i) => ({ i, opts }))
+    .sort((a, b) => a.opts.length - b.opts.length)
+    .map((x) => x.i);
+
+  const used = new Set<string>();
+  function bt(idx: number): boolean {
+    if (idx === 9) return true;
+    const cellIdx = order[idx];
+    for (const hero of cells[cellIdx]) {
+      if (used.has(hero)) continue;
+      used.add(hero);
+      if (bt(idx + 1)) return true;
+      used.delete(hero);
+    }
+    return false;
+  }
+  return bt(0);
+}
+
+/**
  * Try to build a valid 3×3 grid from the given category pools.
- * Returns the puzzle if every cell has ≥1 valid hero, or null.
+ * Returns the puzzle if every cell has ≥1 valid hero AND the grid
+ * is solvable with 9 distinct heroes, or null.
  */
 function tryBuildGrid(
   rowPool: CategoryDef[],
@@ -81,7 +117,7 @@ function tryBuildGrid(
         validAnswers[r] = [];
         for (let c = 0; c < 3; c++) {
           const heroes = getValidHeroes(rows[r], cols[c]);
-          if (heroes.length === 0) {
+          if (heroes.length < MIN_HEROES_PER_CELL) {
             allValid = false;
             break;
           }
@@ -90,7 +126,7 @@ function tryBuildGrid(
         if (!allValid) break;
       }
 
-      if (allValid) {
+      if (allValid && isSolvable(validAnswers)) {
         return { date, rows, cols, validAnswers };
       }
     }
