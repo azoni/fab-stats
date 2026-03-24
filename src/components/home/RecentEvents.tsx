@@ -99,6 +99,11 @@ export function RecentEvents({ eventStats, playerName }: { eventStats: EventStat
                         {ev.eventType}
                       </span>
                     )}
+                    {ev.format && (
+                      <span className="text-[9px] text-fab-dim px-1 py-0.5 rounded bg-fab-bg border border-fab-border">
+                        {ev.format === "Classic Constructed" ? "CC" : ev.format}
+                      </span>
+                    )}
                     {(() => {
                       const hero = ev.matches.find(m => m.heroPlayed && m.heroPlayed !== "Unknown")?.heroPlayed;
                       return hero ? <><HeroImg name={hero} size="sm" /><span className="text-[10px] text-fab-muted truncate">{hero.split(",")[0]}</span></> : null;

@@ -54,7 +54,7 @@ export function computeOverallStats(matches: MatchRecord[]): OverallStats {
   };
 }
 
-export function computeHeroStats(matches: MatchRecord[], splitByFormat = true): HeroStats[] {
+export function computeHeroStats(matches: MatchRecord[], splitByFormat = false): HeroStats[] {
   const heroMap = new Map<string, MatchRecord[]>();
 
   for (const match of matches) {
