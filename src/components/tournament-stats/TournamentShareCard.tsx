@@ -280,7 +280,10 @@ function ShareCardInner({ data, theme }: { data: TournamentShareData; theme: Tou
         <div className="flex items-center justify-between mt-3">
           <p className="text-[10px] uppercase tracking-[0.15em] font-semibold" style={{ color: t.accent, opacity: 0.5 }}>fabstats.net</p>
           {data.filterLabel && (
-            <p className="text-[10px] tracking-wider font-semibold" style={{ color: t.accent, opacity: 0.7 }}>{data.filterLabel}</p>
+            <span className="flex items-center gap-1.5">
+              <span style={{ color: t.text, opacity: 0.4 }} className="text-[9px] uppercase tracking-wider font-semibold">Filtered</span>
+              <span className="text-[10px] tracking-wider font-bold" style={{ color: t.accent }}>{data.filterLabel}</span>
+            </span>
           )}
         </div>
       </div>
