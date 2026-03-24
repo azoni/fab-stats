@@ -15,12 +15,15 @@ export function generateDailyPuzzle(dateStr: string): CrosswordPuzzle {
   // Filter to crossword-friendly lengths (3-7 for a compact grid)
   const eligible = WORD_BANK.filter((w) => w.word.length >= 3 && w.word.length <= 7);
 
-  // Ensure category diversity: pick words from each category
+  // Ensure category diversity: prioritize FaB-themed categories, limit generic words
+  const FAB_CATEGORIES = new Set(["hero", "keyword", "lore", "mechanic", "talent", "class", "type", "general", "card"]);
   const categories = [...new Set(eligible.map((w) => w.category))];
   const diversePool: typeof eligible = [];
   for (const cat of categories) {
     const catWords = eligible.filter((w) => w.category === cat);
-    const picked = seededShuffle(catWords, rng).slice(0, Math.max(4, Math.ceil(catWords.length * 0.5)));
+    // Take more from FaB categories, fewer from generic cardwords
+    const ratio = FAB_CATEGORIES.has(cat || "") ? 0.7 : 0.15;
+    const picked = seededShuffle(catWords, rng).slice(0, Math.max(4, Math.ceil(catWords.length * ratio)));
     diversePool.push(...picked);
   }
 
