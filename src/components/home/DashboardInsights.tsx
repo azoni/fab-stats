@@ -64,7 +64,7 @@ export function DashboardInsights({ heroStats, opponentStats, matches }: Dashboa
       seen.add(key);
       if ((counts.get(key) || 0) === 1) {
         result.push({ name, date: m.date, result: m.result });
-        if (result.length >= 3) break;
+        if (result.length >= 5) break;
       }
     }
     return result;
@@ -143,11 +143,11 @@ export function DashboardInsights({ heroStats, opponentStats, matches }: Dashboa
             {newOpponents.map((opp) => {
               const resultColor = opp.result === "win" ? "text-fab-win" : opp.result === "loss" ? "text-fab-loss" : opp.result === "draw" ? "text-fab-draw" : "text-fab-dim";
               return (
-                <div key={opp.name + opp.date} className="flex items-center gap-2 py-1 px-1">
+                <Link key={opp.name + opp.date} href={`/opponents?q=${encodeURIComponent(opp.name)}`} className="flex items-center gap-2 py-1 px-1 hover:bg-fab-bg/50 rounded transition-colors" onClick={(e) => e.stopPropagation()}>
                   <span className={`text-[10px] font-bold uppercase w-3 ${resultColor}`}>{opp.result === "win" ? "W" : opp.result === "loss" ? "L" : opp.result === "draw" ? "D" : "B"}</span>
                   <span className="text-sm text-fab-text truncate flex-1">{opp.name}</span>
                   <span className="text-[10px] text-fab-dim">{opp.date.slice(5)}</span>
-                </div>
+                </Link>
               );
             })}
           </div>
