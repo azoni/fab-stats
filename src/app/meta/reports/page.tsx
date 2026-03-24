@@ -5,7 +5,7 @@ import { useLeaderboard } from "@/hooks/useLeaderboard";
 import { getAvailableFormats } from "@/lib/meta-stats";
 import { computeMetaReport, type MetaMover } from "@/lib/meta-reports";
 import { getHeroByName } from "@/lib/heroes";
-import { HeroClassIcon } from "@/components/heroes/HeroClassIcon";
+import { HeroImg } from "@/components/heroes/HeroImg";
 
 type CompareMode = "week_vs_month" | "month_vs_all";
 
@@ -120,7 +120,7 @@ export default function MetaReportsPage() {
                 return (
                   <div key={hero.hero} className={`flex items-center gap-3 px-4 py-2.5 ${i > 0 ? "border-t border-fab-border" : ""}`}>
                     <span className="text-xs font-bold w-4 text-center text-fab-dim">{i + 1}</span>
-                    <HeroClassIcon heroClass={heroInfo?.classes[0]} size="sm" />
+                    <HeroImg name={hero.hero} size="sm" />
                     <span className="text-sm font-medium text-fab-text flex-1 truncate">{hero.hero}</span>
                     <span className="text-xs text-fab-muted">{hero.metaShare.toFixed(1)}%</span>
                     {mover && (
@@ -197,7 +197,7 @@ function MoverCard({ mover }: { mover: MetaMover }) {
 
   return (
     <div className={`bg-fab-surface border rounded-lg p-3 flex items-center gap-3 ${isUp ? "border-fab-win/20" : "border-fab-loss/20"}`}>
-      <HeroClassIcon heroClass={heroInfo?.classes[0]} size="sm" />
+      <HeroImg name={mover.hero} size="sm" />
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium text-fab-text truncate">{mover.hero.split(",")[0]}</p>
         <p className="text-[10px] text-fab-dim">
@@ -227,7 +227,7 @@ function MoverRow({ mover }: { mover: MetaMover }) {
 
   return (
     <div className="flex items-center gap-3 bg-fab-surface border border-fab-border rounded-lg px-3 py-2">
-      <HeroClassIcon heroClass={heroInfo?.classes[0]} size="sm" />
+      <HeroImg name={mover.hero} size="sm" />
       <span className="text-sm font-medium text-fab-text flex-1 truncate">{mover.hero}</span>
       <span className="text-xs text-fab-muted">{mover.currentShare.toFixed(1)}%</span>
       <DeltaBadge value={mover.shareChange} suffix="%" />

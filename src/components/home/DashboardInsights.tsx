@@ -146,7 +146,7 @@ export function DashboardInsights({ heroStats, opponentStats, matches }: Dashboa
                 <Link key={opp.name + opp.date} href={`/opponents?q=${encodeURIComponent(opp.name)}`} className="flex items-center gap-2 py-1 px-1 hover:bg-fab-bg/50 rounded transition-colors" onClick={(e) => e.stopPropagation()}>
                   <span className={`text-[10px] font-bold uppercase w-3 ${resultColor}`}>{opp.result === "win" ? "W" : opp.result === "loss" ? "L" : opp.result === "draw" ? "D" : "B"}</span>
                   <span className="text-sm text-fab-text truncate flex-1">{opp.name}</span>
-                  <span className="text-[10px] text-fab-dim">{opp.date.slice(5)}</span>
+                  <span className="text-xs text-fab-dim">{opp.date.slice(5)}</span>
                 </Link>
               );
             })}

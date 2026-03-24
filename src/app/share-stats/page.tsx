@@ -6,7 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { computeOverallStats, computeHeroStats, computeEventStats } from "@/lib/stats";
 import { computeEloRating, getEloTier } from "@/lib/elo";
 import { getHeroByName } from "@/lib/heroes";
-import { HeroClassIcon } from "@/components/heroes/HeroClassIcon";
+import { HeroImg } from "@/components/heroes/HeroImg";
 import { MatchResult } from "@/types";
 import { WinRateRing } from "@/components/charts/WinRateRing";
 import { MiniDonut } from "@/components/charts/MiniDonut";
@@ -167,7 +167,7 @@ export default function ShareStatsPage() {
                   return (
                     <div key={hero.heroName} className="flex items-center gap-3">
                       <span className="text-xs font-bold w-4 text-center text-fab-dim">{i + 1}</span>
-                      <HeroClassIcon heroClass={heroInfo?.classes[0]} size="sm" />
+                      <HeroImg name={hero.heroName} size="sm" />
                       <span className="text-sm font-medium text-fab-text flex-1 truncate">{hero.heroName}</span>
                       <span className="text-xs text-fab-dim">{hero.totalMatches} matches</span>
                       <WinRateRing value={hero.winRate} size={24} strokeWidth={2.5} />
@@ -191,7 +191,7 @@ export default function ShareStatsPage() {
                   const oppInfo = getHeroByName(m.opponent);
                   return (
                     <div key={i} className="flex items-center gap-3">
-                      <HeroClassIcon heroClass={oppInfo?.classes[0]} size="sm" />
+                      <HeroImg name={m.opponent} size="sm" />
                       <span className="text-sm text-fab-text flex-1 truncate">
                         vs {m.opponent.split(",")[0]}
                       </span>

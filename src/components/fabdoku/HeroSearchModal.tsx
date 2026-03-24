@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { allHeroes, searchHeroes } from "@/lib/heroes";
-import { HeroClassIcon } from "@/components/heroes/HeroClassIcon";
+import { HeroImg } from "@/components/heroes/HeroImg";
 import { Search, X } from "lucide-react";
 import * as RadixDialog from "@radix-ui/react-dialog";
 import { motion, AnimatePresence } from "framer-motion";
@@ -140,10 +140,7 @@ export function HeroSearchModal({
                             className="w-8 h-8 rounded object-cover object-top shrink-0"
                           />
                         ) : (
-                          <HeroClassIcon
-                            heroClass={hero.classes[0]}
-                            size="sm"
-                          />
+                          <HeroImg name={hero.name} size="sm" />
                         )}
                         <div className="flex-1 min-w-0">
                           <p

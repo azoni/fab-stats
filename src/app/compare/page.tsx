@@ -7,7 +7,7 @@ import { logActivity } from "@/lib/activity-log";
 import { copyCardImage, downloadCardImage } from "@/lib/share-image";
 import { useAuth } from "@/contexts/AuthContext";
 import { getHeroByName } from "@/lib/heroes";
-import { HeroClassIcon } from "@/components/heroes/HeroClassIcon";
+import { HeroImg } from "@/components/heroes/HeroImg";
 import { CARD_THEMES, type CardTheme } from "@/components/opponents/RivalryCard";
 import { CompareCard } from "@/components/compare/CompareCard";
 import { SwordsIcon } from "@/components/icons/NavIcons";
@@ -335,7 +335,7 @@ function PlayerPicker({
                     <span>{e.totalMatches + e.totalByes} matches</span>
                   </div>
                 </div>
-                {hero && <HeroClassIcon heroClass={hero.classes[0]} size="sm" />}
+                {e.topHero && <HeroImg name={e.topHero} size="sm" />}
               </button>
             );
           })}
@@ -737,14 +737,14 @@ function ComparisonView({ p1, p2, allEntries }: { p1: LeaderboardEntry; p2: Lead
           {/* Top Heroes */}
           <div className="grid grid-cols-2 gap-3 mt-4 pt-3 border-t border-fab-border/50">
             <div className="flex items-center justify-center gap-2">
-              {hero1 && <HeroClassIcon heroClass={hero1.classes[0]} size="sm" />}
+              {p1.topHero && <HeroImg name={p1.topHero} size="sm" />}
               <div className="text-center">
                 <p className="text-xs font-semibold text-fab-text">{p1.topHero || "---"}</p>
                 <p className="text-[10px] text-fab-dim">{p1.topHeroMatches} matches</p>
               </div>
             </div>
             <div className="flex items-center justify-center gap-2">
-              {hero2 && <HeroClassIcon heroClass={hero2.classes[0]} size="sm" />}
+              {p2.topHero && <HeroImg name={p2.topHero} size="sm" />}
               <div className="text-center">
                 <p className="text-xs font-semibold text-fab-text">{p2.topHero || "---"}</p>
                 <p className="text-[10px] text-fab-dim">{p2.topHeroMatches} matches</p>
@@ -999,7 +999,7 @@ function HeroRoster({ p1, p2 }: { p1: LeaderboardEntry; p2: LeaderboardEntry }) 
             const heroData = getHeroByName(h.hero);
             return (
               <div key={h.hero} className="flex items-center gap-2">
-                {heroData && <HeroClassIcon heroClass={heroData.classes[0]} size="sm" />}
+                <HeroImg name={h.hero} size="sm" />
                 <div className="min-w-0 flex-1">
                   <p className="text-xs font-medium text-fab-text truncate">{h.hero}</p>
                   <p className="text-[10px] text-fab-dim">{h.matches}m</p>
@@ -1015,7 +1015,7 @@ function HeroRoster({ p1, p2 }: { p1: LeaderboardEntry; p2: LeaderboardEntry }) 
             const heroData = getHeroByName(h.hero);
             return (
               <div key={h.hero} className="flex items-center gap-2">
-                {heroData && <HeroClassIcon heroClass={heroData.classes[0]} size="sm" />}
+                <HeroImg name={h.hero} size="sm" />
                 <div className="min-w-0 flex-1">
                   <p className="text-xs font-medium text-fab-text truncate">{h.hero}</p>
                   <p className="text-[10px] text-fab-dim">{h.matches}m</p>

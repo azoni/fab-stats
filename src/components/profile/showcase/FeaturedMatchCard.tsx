@@ -1,6 +1,6 @@
 "use client";
 import { getHeroByName } from "@/lib/heroes";
-import { HeroClassIcon } from "@/components/heroes/HeroClassIcon";
+import { HeroImg } from "@/components/heroes/HeroImg";
 import { localDate } from "@/lib/constants";
 import type { MatchRecord } from "@/types";
 import { MatchResult } from "@/types";
@@ -26,9 +26,9 @@ export function FeaturedMatchCard({ match }: FeaturedMatchCardProps) {
           <span className={`text-sm font-black ${isWin ? "text-fab-win" : isDraw ? "text-fab-draw" : "text-fab-loss"}`}>
             {match.result === MatchResult.Win ? "W" : match.result === MatchResult.Loss ? "L" : "D"}
           </span>
-          <HeroClassIcon heroClass={heroInfo?.classes[0]} size="sm" />
+          <HeroImg name={match.heroPlayed} size="sm" />
           <span className="text-[11px] text-fab-dim">vs</span>
-          <HeroClassIcon heroClass={oppInfo?.classes[0]} size="sm" />
+          <HeroImg name={match.opponentHero} size="sm" />
           <span className="text-xs text-fab-text truncate">{match.opponentName || match.opponentHero}</span>
         </div>
         <p className="text-[11px] text-fab-dim truncate mt-1">
