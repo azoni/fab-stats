@@ -129,7 +129,6 @@ export default function Dashboard() {
   const opponentStats = useMemo(() => computeOpponentStats(filteredMatches), [filteredMatches]);
 
   // Event stats (unfiltered — used for profile card borders, best finish)
-  const eventStats = useMemo(() => computeEventStats(matches), [matches]);
   const filteredEventStats = useMemo(() => computeEventStats(filteredMatches), [filteredMatches]);
   const bestFinish = useMemo(() => computeBestFinish(filteredEventStats), [filteredEventStats]);
   const userRanks = useMemo(() => user ? computeUserRanks(lbEntries, user.uid) : [], [user, lbEntries]);
@@ -147,7 +146,7 @@ export default function Dashboard() {
   );
   const last30 = useMemo(() => sortedByDateDesc.slice(0, 30).reverse(), [sortedByDateDesc]);
   const latestMatches = useMemo(() => sortedByDateDesc.slice(0, 6), [sortedByDateDesc]);
-  const playoffFinishes = useMemo(() => computePlayoffFinishes(eventStats), [eventStats]);
+  const playoffFinishes = useMemo(() => computePlayoffFinishes(filteredEventStats), [filteredEventStats]);
   const cardBorder = useMemo(() => {
     const tierRank: Record<string, number> = { "Battle Hardened": 1, "The Calling": 2, Nationals: 3, "Pro Tour": 4, Worlds: 5 };
     const tierStyle: Record<string, { border: string; shadow: string; rgb: string }> = {
@@ -182,7 +181,7 @@ export default function Dashboard() {
   }, [playoffFinishes, profile?.borderEventType, profile?.borderPlacement]);
 
   // Minor event finishes (Armory/Skirmish/RTN/PQ) for underline
-  const minorFinishes = useMemo(() => computeMinorEventFinishes(eventStats), [eventStats]);
+  const minorFinishes = useMemo(() => computeMinorEventFinishes(filteredEventStats), [filteredEventStats]);
   const underlineConfig = useMemo((): UnderlineConfig | null => {
     const underlineStyle: Record<string, { color: string; rgb: string }> = {
       Armory:              { color: "#d4975a", rgb: "212,151,90" },
@@ -514,7 +513,7 @@ export default function Dashboard() {
             draws: overall.totalDraws,
             byes: overall.totalByes,
             winRate: overall.overallWinRate,
-            events: eventStats.length,
+            events: filteredEventStats.length,
             totalMatches: overall.totalMatches + overall.totalByes,
             topHero: topHero?.heroName || null,
             currentStreak: streaks.currentStreak,
@@ -525,8 +524,8 @@ export default function Dashboard() {
             underline: underlineConfig,
             bestRank,
             playoffFinishes,
-            armoryCount: eventStats.filter(e => e.eventType === "Armory").length,
-            armoryUndefeated: eventStats.filter(e => e.eventType === "Armory" && e.losses === 0 && e.wins > 0).length,
+            armoryCount: filteredEventStats.filter(e => e.eventType === "Armory").length,
+            armoryUndefeated: filteredEventStats.filter(e => e.eventType === "Armory" && e.losses === 0 && e.wins > 0).length,
             isSiteCreator: profile.username === "azoni",
             selectedBadgeIds: profile?.selectedBadgeIds,
             filterLabel: activeFilterLabel,
@@ -607,7 +606,7 @@ export default function Dashboard() {
             losses: overall.totalLosses,
             draws: overall.totalDraws,
             longestWinStreak: overall.streaks.longestWinStreak,
-            eventsPlayed: eventStats.length,
+            eventsPlayed: filteredEventStats.length,
             uniqueHeroes: heroStats.filter(h => h.heroName !== "Unknown").length,
             topHero: topHero ? { name: topHero.heroName, winRate: Math.round(topHero.winRate), matches: topHero.totalMatches } : undefined,
             filterLabel: activeFilterLabel,

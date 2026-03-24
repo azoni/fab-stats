@@ -119,20 +119,42 @@ export default function PlayerProfile() {
   const [kudosGivenByMe, setKudosGivenByMe] = useState<Set<string>>(new Set());
   const [adminKudosGiven, setAdminKudosGiven] = useState<Set<string>>(new Set());
   const [fabdokuScore, setFabdokuScore] = useState<number | null>(null);
-  const [fabdokuFullStats, setFabdokuFullStats] = useState<FaBdokuStats | null>(null);
-  const [crosswordFullStats, setCrosswordFullStats] = useState<CrosswordStats | null>(null);
-  const [heroGuesserFullStats, setHeroGuesserFullStats] = useState<HeroGuesserStats | null>(null);
-  const [matchupManiaFullStats, setMatchupManiaFullStats] = useState<MatchupManiaStats | null>(null);
-  const [triviaFullStats, setTriviaFullStats] = useState<TriviaStats | null>(null);
-  const [timelineFullStats, setTimelineFullStats] = useState<TimelineStats | null>(null);
-  const [connectionsFullStats, setConnectionsFullStats] = useState<ConnectionsStats | null>(null);
-  const [fabdokuCardFullStats, setFabdokuCardFullStats] = useState<FaBdokuStats | null>(null);
-  const [rampageFullStats, setRampageFullStats] = useState<RampageStats | null>(null);
-  const [knockoutFullStats, setKnockoutFullStats] = useState<KnockoutStats | null>(null);
-  const [brawlFullStats, setBrawlFullStats] = useState<BrawlStats | null>(null);
-  const [ninjaComboFullStats, setNinjaComboFullStats] = useState<NinjaComboStats | null>(null);
-  const [shadowStrikeFullStats, setShadowStrikeFullStats] = useState<ShadowStrikeStats | null>(null);
-  const [bladeDashFullStats, setBladeDashFullStats] = useState<BladeDashStats | null>(null);
+
+  // All game stats bundled into a single state to avoid 15 cascading re-renders on load
+  interface GameStatsBundle {
+    fabdoku: FaBdokuStats | null;
+    fabdokuCard: FaBdokuStats | null;
+    crossword: CrosswordStats | null;
+    heroGuesser: HeroGuesserStats | null;
+    matchupMania: MatchupManiaStats | null;
+    trivia: TriviaStats | null;
+    timeline: TimelineStats | null;
+    connections: ConnectionsStats | null;
+    rampage: RampageStats | null;
+    knockout: KnockoutStats | null;
+    brawl: BrawlStats | null;
+    ninjaCombo: NinjaComboStats | null;
+    shadowStrike: ShadowStrikeStats | null;
+    bladeDash: BladeDashStats | null;
+  }
+  const [gameStats, setGameStats] = useState<GameStatsBundle | null>(null);
+
+  // Convenience aliases for backward compatibility with downstream code
+  const fabdokuFullStats = gameStats?.fabdoku ?? null;
+  const fabdokuCardFullStats = gameStats?.fabdokuCard ?? null;
+  const crosswordFullStats = gameStats?.crossword ?? null;
+  const heroGuesserFullStats = gameStats?.heroGuesser ?? null;
+  const matchupManiaFullStats = gameStats?.matchupMania ?? null;
+  const triviaFullStats = gameStats?.trivia ?? null;
+  const timelineFullStats = gameStats?.timeline ?? null;
+  const connectionsFullStats = gameStats?.connections ?? null;
+  const rampageFullStats = gameStats?.rampage ?? null;
+  const knockoutFullStats = gameStats?.knockout ?? null;
+  const brawlFullStats = gameStats?.brawl ?? null;
+  const ninjaComboFullStats = gameStats?.ninjaCombo ?? null;
+  const shadowStrikeFullStats = gameStats?.shadowStrike ?? null;
+  const bladeDashFullStats = gameStats?.bladeDash ?? null;
+
   const [gaveFeedback, setGaveFeedback] = useState(false);
   const [previewAsVisitor, setPreviewAsVisitor] = useState(false);
   const [editingSocials, setEditingSocials] = useState(false);
@@ -334,25 +356,46 @@ export default function PlayerProfile() {
     }).catch(() => {});
   }, [profileUid, currentUser?.uid]);
 
-  // Load today's fabdoku score + stats + crossword stats for this profile
+  // Load today's fabdoku score + all game stats for this profile (batched into single state update)
   useEffect(() => {
     if (!profileUid) return;
     loadUserResult(profileUid, getTodayDateStr()).then((r) => setFabdokuScore(r?.score ?? null)).catch(() => {});
-    loadFabdokuStats(profileUid).then((s) => setFabdokuFullStats(s ?? null)).catch(() => {});
-    loadCrosswordPlayerStats(profileUid).then((s) => setCrosswordFullStats(s ?? null)).catch(() => {});
-    loadHeroGuesserStats(profileUid).then((s) => setHeroGuesserFullStats(s ?? null)).catch(() => {});
-    loadMatchupManiaStats(profileUid).then((s) => setMatchupManiaFullStats(s ?? null)).catch(() => {});
-    loadTriviaStats(profileUid).then((s) => setTriviaFullStats(s ?? null)).catch(() => {});
-    loadTimelineStats(profileUid).then((s) => setTimelineFullStats(s ?? null)).catch(() => {});
-    loadConnectionsStats(profileUid).then((s) => setConnectionsFullStats(s ?? null)).catch(() => {});
-    loadFabdokuCardStats(profileUid).then((s) => setFabdokuCardFullStats(s ?? null)).catch(() => {});
-    loadRampageStats(profileUid).then((s) => setRampageFullStats(s ?? null)).catch(() => {});
-    loadKnockoutStats(profileUid).then((s) => setKnockoutFullStats(s ?? null)).catch(() => {});
-    loadBrawlStats(profileUid).then((s) => setBrawlFullStats(s ?? null)).catch(() => {});
-    loadNinjaComboStats(profileUid).then((s) => setNinjaComboFullStats(s ?? null)).catch(() => {});
-    loadShadowStrikeStats(profileUid).then((s) => setShadowStrikeFullStats(s ?? null)).catch(() => {});
-    loadBladeDashStats(profileUid).then((s) => setBladeDashFullStats(s ?? null)).catch(() => {});
     hasUserSubmittedFeedback(profileUid).then(setGaveFeedback).catch(() => {});
+    Promise.allSettled([
+      loadFabdokuStats(profileUid),
+      loadFabdokuCardStats(profileUid),
+      loadCrosswordPlayerStats(profileUid),
+      loadHeroGuesserStats(profileUid),
+      loadMatchupManiaStats(profileUid),
+      loadTriviaStats(profileUid),
+      loadTimelineStats(profileUid),
+      loadConnectionsStats(profileUid),
+      loadRampageStats(profileUid),
+      loadKnockoutStats(profileUid),
+      loadBrawlStats(profileUid),
+      loadNinjaComboStats(profileUid),
+      loadShadowStrikeStats(profileUid),
+      loadBladeDashStats(profileUid),
+    ]).then(([fabdoku, fabdokuCard, crossword, heroGuesser, matchupMania, trivia, timeline, connections, rampage, knockout, brawl, ninjaCombo, shadowStrike, bladeDash]) => {
+      const v = <T,>(r: PromiseSettledResult<T | undefined>): T | null =>
+        r.status === "fulfilled" ? r.value ?? null : null;
+      setGameStats({
+        fabdoku: v(fabdoku),
+        fabdokuCard: v(fabdokuCard),
+        crossword: v(crossword),
+        heroGuesser: v(heroGuesser),
+        matchupMania: v(matchupMania),
+        trivia: v(trivia),
+        timeline: v(timeline),
+        connections: v(connections),
+        rampage: v(rampage),
+        knockout: v(knockout),
+        brawl: v(brawl),
+        ninjaCombo: v(ninjaCombo),
+        shadowStrike: v(shadowStrike),
+        bladeDash: v(bladeDash),
+      });
+    });
   }, [profileUid]);
 
   // Admin: fetch friend count for the viewed profile

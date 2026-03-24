@@ -1,4 +1,4 @@
-import { doc, setDoc, getDoc, increment } from "firebase/firestore";
+import { doc, setDoc, getDoc, increment, writeBatch } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { auth } from "@/lib/firebase";
 
@@ -19,9 +19,11 @@ export function trackPageView(path: string) {
   const field = path === "/" ? "_home" : path.replace(/\//g, "_").replace(/^_/, "");
   const now = new Date();
   try {
-    setDoc(doc(db, "analytics", "pageViews"), { [field]: increment(1) }, { merge: true }).catch(() => {});
-    setDoc(doc(db, "analytics", `pv_h_${hourKey(now)}`), { [field]: increment(1) }, { merge: true }).catch(() => {});
-    setDoc(doc(db, "analytics", `pv_d_${dayKey(now)}`), { [field]: increment(1) }, { merge: true }).catch(() => {});
+    const batch = writeBatch(db);
+    batch.set(doc(db, "analytics", "pageViews"), { [field]: increment(1) }, { merge: true });
+    batch.set(doc(db, "analytics", `pv_h_${hourKey(now)}`), { [field]: increment(1) }, { merge: true });
+    batch.set(doc(db, "analytics", `pv_d_${dayKey(now)}`), { [field]: increment(1) }, { merge: true });
+    batch.commit().catch(() => {});
   } catch {
     // Fire and forget — don't block UI
   }
@@ -32,9 +34,11 @@ export function trackCreatorClick(creatorName: string) {
   if (!creatorName || !auth.currentUser) return;
   const now = new Date();
   try {
-    setDoc(doc(db, "analytics", "creatorClicks"), { [creatorName]: increment(1) }, { merge: true }).catch(() => {});
-    setDoc(doc(db, "analytics", `cc_h_${hourKey(now)}`), { [creatorName]: increment(1) }, { merge: true }).catch(() => {});
-    setDoc(doc(db, "analytics", `cc_d_${dayKey(now)}`), { [creatorName]: increment(1) }, { merge: true }).catch(() => {});
+    const batch = writeBatch(db);
+    batch.set(doc(db, "analytics", "creatorClicks"), { [creatorName]: increment(1) }, { merge: true });
+    batch.set(doc(db, "analytics", `cc_h_${hourKey(now)}`), { [creatorName]: increment(1) }, { merge: true });
+    batch.set(doc(db, "analytics", `cc_d_${dayKey(now)}`), { [creatorName]: increment(1) }, { merge: true });
+    batch.commit().catch(() => {});
   } catch {
     // Fire and forget
   }
@@ -88,9 +92,11 @@ function doTrackSupportClick(source: string, uid?: string) {
 
   const date = new Date();
   try {
-    setDoc(doc(db, "analytics", "supportClicks"), { [source]: increment(1) }, { merge: true }).catch(() => {});
-    setDoc(doc(db, "analytics", `sc_h_${hourKey(date)}`), { [source]: increment(1) }, { merge: true }).catch(() => {});
-    setDoc(doc(db, "analytics", `sc_d_${dayKey(date)}`), { [source]: increment(1) }, { merge: true }).catch(() => {});
+    const batch = writeBatch(db);
+    batch.set(doc(db, "analytics", "supportClicks"), { [source]: increment(1) }, { merge: true });
+    batch.set(doc(db, "analytics", `sc_h_${hourKey(date)}`), { [source]: increment(1) }, { merge: true });
+    batch.set(doc(db, "analytics", `sc_d_${dayKey(date)}`), { [source]: increment(1) }, { merge: true });
+    batch.commit().catch(() => {});
   } catch {
     // Fire and forget
   }

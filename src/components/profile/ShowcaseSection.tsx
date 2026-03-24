@@ -270,7 +270,7 @@ export function ShowcaseSection({
           <div className="absolute -top-10 -right-10 w-32 h-32 bg-fab-gold/5 rounded-full blur-2xl pointer-events-none" />
           <div className="absolute -bottom-8 -left-8 w-24 h-24 bg-fab-gold/5 rounded-full blur-xl pointer-events-none" />
           <div className="relative">
-            <img src="/assets/empty-states/setup-profile.png" alt="" className="w-16 h-16 mx-auto mb-3 object-contain opacity-80" />
+            <img src="/assets/empty-states/setup-profile.webp" alt="" className="w-16 h-16 mx-auto mb-3 object-contain opacity-80" />
             <h3 className="text-sm font-semibold text-fab-text mb-1">Customize Your Profile</h3>
             <p className="text-xs text-fab-muted mb-1 max-w-xs mx-auto">
               Choose what to show on your profile — stats, achievements, event results, rivalries, and more.

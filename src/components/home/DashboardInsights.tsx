@@ -1,5 +1,5 @@
 "use client";
-import { useMemo, useState } from "react";
+import { useMemo, useState, memo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { HeroStats, OpponentStats, MatchRecord } from "@/types";
@@ -16,7 +16,7 @@ interface RivalryHighlights {
   mostPlayed: OpponentStats | null;
 }
 
-export function DashboardInsights({ heroStats, opponentStats, matches }: DashboardInsightsProps) {
+export const DashboardInsights = memo(function DashboardInsights({ heroStats, opponentStats, matches }: DashboardInsightsProps) {
   const router = useRouter();
 
   const highlights = useMemo((): RivalryHighlights | null => {
@@ -155,7 +155,7 @@ export function DashboardInsights({ heroStats, opponentStats, matches }: Dashboa
       )}
     </div>
   );
-}
+});
 
 function RivalryCell({
   label,

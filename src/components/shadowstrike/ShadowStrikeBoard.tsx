@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect } from "react";
 import type { ShadowStrikeGameState } from "@/lib/shadowstrike/types";
 import type { DailyPuzzle } from "@/lib/shadowstrike/puzzle-generator";
 import { CARD_BANK } from "@/lib/shadowstrike/card-bank";
@@ -10,6 +10,20 @@ function formatTime(ms: number): string {
   const m = Math.floor(totalSecs / 60);
   const s = totalSecs % 60;
   return `${m}:${String(s).padStart(2, "0")}`;
+}
+
+/** Isolated timer component — only this re-renders every 100ms, not the entire board. */
+function GameTimer({ elapsedMs, startedAt, completed }: {
+  elapsedMs: number; startedAt: number | null; completed: boolean;
+}) {
+  const [displayTime, setDisplayTime] = useState(elapsedMs);
+  useEffect(() => {
+    if (completed) { setDisplayTime(elapsedMs); return; }
+    if (!startedAt) { setDisplayTime(elapsedMs); return; }
+    const id = setInterval(() => setDisplayTime(elapsedMs + (Date.now() - startedAt)), 100);
+    return () => clearInterval(id);
+  }, [startedAt, elapsedMs, completed]);
+  return <span className="font-mono text-fab-text">{formatTime(displayTime)}</span>;
 }
 
 const cardMap = new Map(CARD_BANK.map((c) => [c.id, c]));
@@ -25,31 +39,13 @@ export function ShadowStrikeBoard({
   onFlip: (position: number) => void;
   onHint: () => void;
 }) {
-  const [displayTime, setDisplayTime] = useState(gameState.elapsedMs);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  // Live timer
-  useEffect(() => {
-    if (gameState.completed) {
-      setDisplayTime(gameState.elapsedMs);
-      if (timerRef.current) clearInterval(timerRef.current);
-      return;
-    }
-    if (gameState.startedAt) {
-      timerRef.current = setInterval(() => {
-        setDisplayTime(gameState.elapsedMs + (Date.now() - gameState.startedAt!));
-      }, 100);
-      return () => { if (timerRef.current) clearInterval(timerRef.current); };
-    }
-    setDisplayTime(gameState.elapsedMs);
-  }, [gameState.startedAt, gameState.elapsedMs, gameState.completed]);
 
   return (
     <div>
       {/* Stats bar */}
       <div className="flex items-center justify-between mb-3 text-xs text-fab-muted">
         <span>Flips: <span className="font-bold text-fab-text">{gameState.flips}</span></span>
-        <span className="font-mono text-fab-text">{formatTime(displayTime)}</span>
+        <GameTimer elapsedMs={gameState.elapsedMs} startedAt={gameState.startedAt} completed={gameState.completed} />
         <span>Pairs: <span className="font-bold text-fab-text">{gameState.matchedCardIds.length}/{TOTAL_PAIRS}</span></span>
       </div>
 

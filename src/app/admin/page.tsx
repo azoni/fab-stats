@@ -82,6 +82,8 @@ export default function AdminPage() {
   const [broadcastProgress, setBroadcastProgress] = useState("");
   const [broadcastResult, setBroadcastResult] = useState("");
   const [analyticsData, setAnalyticsData] = useState<{ pageViews: Record<string, number>; creatorClicks: Record<string, number>; supportClicks: Record<string, number> } | null>(null);
+  const [supportClicks24h, setSupportClicks24h] = useState<Record<string, number>>({});
+  const [supportClicks7d, setSupportClicks7d] = useState<Record<string, number>>({});
   const [importMethods, setImportMethods] = useState<Record<string, number>>({});
   const [fixingDates, setFixingDates] = useState(false);
   const [fixDatesProgress, setFixDatesProgress] = useState("");
@@ -184,7 +186,7 @@ export default function AdminPage() {
     setFetching(true);
     setError("");
     try {
-      const [result, fb, cr, ev, analytics, polls, bannerData, badges, muted, showcaseData, themeDefault, chatStats, seasonsData, deletedCount, importMethodData] = await Promise.all([getAdminDashboardData(), getAllFeedback(), getCreators(), getEvents(), getAnalytics(), getAllPolls(), getBanner(), getAllBadgeAssignments(), getMutedUserIds(), getEventShowcase(), getDefaultTheme(), getChatGlobalStats(), getSeasons(), getDeletedAccountCount(), getImportMethodStats()]);
+      const [result, fb, cr, ev, analytics, polls, bannerData, badges, muted, showcaseData, themeDefault, chatStats, seasonsData, deletedCount, importMethodData, sc24h, sc7d] = await Promise.all([getAdminDashboardData(), getAllFeedback(), getCreators(), getEvents(), getAnalytics(), getAllPolls(), getBanner(), getAllBadgeAssignments(), getMutedUserIds(), getEventShowcase(), getDefaultTheme(), getChatGlobalStats(), getSeasons(), getDeletedAccountCount(), getImportMethodStats(), getAnalytics("24h"), getAnalytics("7d")]);
       setData(result);
       setAiCost(chatStats);
       setDeletedAccounts(deletedCount);
@@ -200,6 +202,8 @@ export default function AdminPage() {
         players: e.players || (e.playerUsernames || []).map((u: string) => ({ name: u, username: u })),
       })));
       setAnalyticsData(analytics);
+      setSupportClicks24h(sc24h.supportClicks);
+      setSupportClicks7d(sc7d.supportClicks);
       setImportMethods(importMethodData);
       setAllPolls(polls);
       setBadgeAssignments(badges);
@@ -614,6 +618,8 @@ export default function AdminPage() {
           {analyticsData && (() => {
             const sc = analyticsData.supportClicks;
             const totalClicks = Object.values(sc).reduce((s, v) => s + v, 0);
+            const total24h = Object.values(supportClicks24h).reduce((s, v) => s + v, 0);
+            const total7d = Object.values(supportClicks7d).reduce((s, v) => s + v, 0);
             const supportPageViews = analyticsData.pageViews["support"] || 0;
             const LABELS: Record<string, string> = {
               tcgplayer: "TCGplayer",
@@ -638,13 +644,19 @@ export default function AdminPage() {
                   <div className="bg-fab-bg rounded-md px-3 py-2">
                     <p className="text-xs text-fab-dim">Total Clicks</p>
                     <p className="text-sm font-bold text-fab-text">{totalClicks.toLocaleString()}</p>
-                    <p className="text-[10px] text-fab-muted">all sources</p>
+                    <div className="flex gap-2 mt-0.5">
+                      <p className="text-[10px] text-fab-muted">24h: <span className="text-fab-text font-medium">{total24h.toLocaleString()}</span></p>
+                      <p className="text-[10px] text-fab-muted">7d: <span className="text-fab-text font-medium">{total7d.toLocaleString()}</span></p>
+                    </div>
                   </div>
                   {sources.map(([key, count]) => (
                     <div key={key} className="bg-fab-bg rounded-md px-3 py-2">
                       <p className="text-xs text-fab-dim">{LABELS[key] || key}</p>
                       <p className="text-sm font-bold text-fab-text">{count.toLocaleString()}</p>
-                      <p className="text-[10px] text-fab-muted">{totalClicks > 0 ? ((count / totalClicks) * 100).toFixed(1) : "0"}%</p>
+                      <div className="flex gap-2 mt-0.5">
+                        <p className="text-[10px] text-fab-muted">24h: <span className="text-fab-text font-medium">{(supportClicks24h[key] || 0).toLocaleString()}</span></p>
+                        <p className="text-[10px] text-fab-muted">7d: <span className="text-fab-text font-medium">{(supportClicks7d[key] || 0).toLocaleString()}</span></p>
+                      </div>
                     </div>
                   ))}
                   {totalClicks === 0 && sources.length === 0 && (
@@ -1167,7 +1179,7 @@ export default function AdminPage() {
                 <div className="space-y-2">
                   {showcaseImages.map((img, i) => (
                     <div key={i} className="flex gap-2">
-                      <input type="text" placeholder="Image URL (e.g. /montreal.png)" value={img.url} onChange={(e) => setShowcaseImages((prev) => prev.map((im, j) => j === i ? { ...im, url: e.target.value } : im))} className="flex-1 bg-fab-bg border border-fab-border text-fab-text text-sm rounded px-2 py-1.5 focus:outline-none focus:border-fab-gold" />
+                      <input type="text" placeholder="Image URL (e.g. /montreal.webp)" value={img.url} onChange={(e) => setShowcaseImages((prev) => prev.map((im, j) => j === i ? { ...im, url: e.target.value } : im))} className="flex-1 bg-fab-bg border border-fab-border text-fab-text text-sm rounded px-2 py-1.5 focus:outline-none focus:border-fab-gold" />
                       <input type="text" placeholder="Alt text" value={img.alt || ""} onChange={(e) => setShowcaseImages((prev) => prev.map((im, j) => j === i ? { ...im, alt: e.target.value || undefined } : im))} className="w-40 bg-fab-bg border border-fab-border text-fab-text text-sm rounded px-2 py-1.5 focus:outline-none focus:border-fab-gold" />
                       <button onClick={() => setShowcaseImages((prev) => prev.filter((_, j) => j !== i))} className="text-xs text-fab-loss hover:text-fab-loss/80 transition-colors px-2">Remove</button>
                     </div>

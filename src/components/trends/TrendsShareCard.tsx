@@ -67,7 +67,7 @@ const TRENDS_THEMES: TrendsTheme[] = [
     win: "#4ade80",
     loss: "#f87171",
     draw: "#facc15",
-    backgroundImage: "/backgrounds/fab-official/wtr-key-art-v1.jpg",
+    backgroundImage: "/backgrounds/fab-official/wtr-key-art-v1.webp",
   },
   {
     id: "arcane",
@@ -82,7 +82,7 @@ const TRENDS_THEMES: TrendsTheme[] = [
     win: "#34d399",
     loss: "#fb7185",
     draw: "#a1a1aa",
-    backgroundImage: "/backgrounds/fab-official/arcane-rising-key-art.jpg",
+    backgroundImage: "/backgrounds/fab-official/arcane-rising-key-art.webp",
   },
   {
     id: "cindra",
@@ -97,7 +97,7 @@ const TRENDS_THEMES: TrendsTheme[] = [
     win: "#4ade80",
     loss: "#fda4af",
     draw: "#facc15",
-    backgroundImage: "/backgrounds/fab-official/hunted-cindra-adult.jpg",
+    backgroundImage: "/backgrounds/fab-official/hunted-cindra-adult.webp",
   },
   {
     id: "gravybones",
@@ -112,7 +112,7 @@ const TRENDS_THEMES: TrendsTheme[] = [
     win: "#4ade80",
     loss: "#fca5a5",
     draw: "#facc15",
-    backgroundImage: "/backgrounds/fab-official/high-seas-gravybones.jpg",
+    backgroundImage: "/backgrounds/fab-official/high-seas-gravybones.webp",
   },
   {
     id: "aria",
@@ -127,7 +127,7 @@ const TRENDS_THEMES: TrendsTheme[] = [
     win: "#6ee7b7",
     loss: "#fca5a5",
     draw: "#a1a1aa",
-    backgroundImage: "/backgrounds/fab-official/tales-of-aria-key-art.jpg",
+    backgroundImage: "/backgrounds/fab-official/tales-of-aria-key-art.webp",
   },
   {
     id: "playmat-solana",
@@ -142,7 +142,7 @@ const TRENDS_THEMES: TrendsTheme[] = [
     win: "#86efac",
     loss: "#fda4af",
     draw: "#c4b5fd",
-    backgroundImage: "/backgrounds/fab-official/lore-solana-matte.jpg",
+    backgroundImage: "/backgrounds/fab-official/lore-solana-matte.webp",
   },
   {
     id: "playmat-volcor",
@@ -157,7 +157,7 @@ const TRENDS_THEMES: TrendsTheme[] = [
     win: "#86efac",
     loss: "#fda4af",
     draw: "#a1a1aa",
-    backgroundImage: "/backgrounds/fab-official/lore-volcor-matte.jpg",
+    backgroundImage: "/backgrounds/fab-official/lore-volcor-matte.webp",
   },
 ];
 

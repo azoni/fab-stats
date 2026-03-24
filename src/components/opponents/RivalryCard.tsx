@@ -34,7 +34,7 @@ export const CARD_THEMES: CardTheme[] = [
     loss: "#f87171",
     draw: "#a1a1aa",
     barBg: "rgba(248,113,113,0.25)",
-    backgroundImage: "/backgrounds/fab-official/wtr-key-art-v1.jpg",
+    backgroundImage: "/backgrounds/fab-official/wtr-key-art-v1.webp",
   },
   {
     id: "midnight",
@@ -50,7 +50,7 @@ export const CARD_THEMES: CardTheme[] = [
     loss: "#fb7185",
     draw: "#94a3b8",
     barBg: "rgba(251,113,133,0.25)",
-    backgroundImage: "/backgrounds/fab-official/arcane-rising-key-art.jpg",
+    backgroundImage: "/backgrounds/fab-official/arcane-rising-key-art.webp",
   },
   {
     id: "crimson",
@@ -66,7 +66,7 @@ export const CARD_THEMES: CardTheme[] = [
     loss: "#f87171",
     draw: "#a1a1aa",
     barBg: "rgba(248,113,113,0.25)",
-    backgroundImage: "/backgrounds/fab-official/hunted-cindra-adult.jpg",
+    backgroundImage: "/backgrounds/fab-official/hunted-cindra-adult.webp",
   },
   {
     id: "forest",
@@ -82,7 +82,7 @@ export const CARD_THEMES: CardTheme[] = [
     loss: "#fca5a5",
     draw: "#a1a1aa",
     barBg: "rgba(252,165,165,0.25)",
-    backgroundImage: "/backgrounds/fab-official/tales-of-aria-key-art.jpg",
+    backgroundImage: "/backgrounds/fab-official/tales-of-aria-key-art.webp",
   },
   {
     id: "royal",
@@ -98,7 +98,7 @@ export const CARD_THEMES: CardTheme[] = [
     loss: "#fb7185",
     draw: "#a1a1aa",
     barBg: "rgba(251,113,133,0.25)",
-    backgroundImage: "/backgrounds/fab-official/high-seas-gravybones.jpg",
+    backgroundImage: "/backgrounds/fab-official/high-seas-gravybones.webp",
   },
 ];
 

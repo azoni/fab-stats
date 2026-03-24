@@ -1,4 +1,5 @@
 "use client";
+import { memo } from "react";
 import Link from "next/link";
 import { MatchResult } from "@/types";
 import type { MatchRecord } from "@/types";
@@ -33,7 +34,7 @@ function formatDate(dateStr: string): string {
   return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
-export function LatestMatches({ matches }: LatestMatchesProps) {
+export const LatestMatches = memo(function LatestMatches({ matches }: LatestMatchesProps) {
   const latest = matches.slice(0, 6);
 
   if (latest.length === 0) return null;
@@ -77,4 +78,4 @@ export function LatestMatches({ matches }: LatestMatchesProps) {
       </div>
     </div>
   );
-}
+});

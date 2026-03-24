@@ -11,6 +11,20 @@ function formatTime(ms: number): string {
   return `${m}:${String(s).padStart(2, "0")}`;
 }
 
+/** Isolated timer component — only this re-renders every 100ms, not the entire board. */
+function GameTimer({ elapsedMs, startedAt, completed, className }: {
+  elapsedMs: number; startedAt: number | null; completed: boolean; className?: string;
+}) {
+  const [displayTime, setDisplayTime] = useState(elapsedMs);
+  useEffect(() => {
+    if (completed) { setDisplayTime(elapsedMs); return; }
+    if (!startedAt) { setDisplayTime(elapsedMs); return; }
+    const id = setInterval(() => setDisplayTime(elapsedMs + (Date.now() - startedAt)), 100);
+    return () => clearInterval(id);
+  }, [startedAt, elapsedMs, completed]);
+  return <span className={className}>{formatTime(displayTime)}</span>;
+}
+
 const CATEGORY_COLORS: Record<string, string> = {
   hero: "bg-indigo-500/20 text-indigo-400",
   weapon: "bg-red-500/20 text-red-400",
@@ -34,25 +48,7 @@ export function BladeDashBoard({
   const [input, setInput] = useState("");
   const [shake, setShake] = useState(false);
   const [solved, setSolved] = useState(false);
-  const [displayTime, setDisplayTime] = useState(gameState.elapsedMs);
   const inputRef = useRef<HTMLInputElement>(null);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  // Live timer
-  useEffect(() => {
-    if (gameState.completed) {
-      setDisplayTime(gameState.elapsedMs);
-      if (timerRef.current) clearInterval(timerRef.current);
-      return;
-    }
-    if (gameState.startedAt) {
-      timerRef.current = setInterval(() => {
-        setDisplayTime(gameState.elapsedMs + (Date.now() - gameState.startedAt!));
-      }, 100);
-      return () => { if (timerRef.current) clearInterval(timerRef.current); };
-    }
-    setDisplayTime(gameState.elapsedMs);
-  }, [gameState.startedAt, gameState.elapsedMs, gameState.completed]);
 
   // Focus input when current word changes
   useEffect(() => {
@@ -71,7 +67,7 @@ export function BladeDashBoard({
       <div>
         <ProgressDots gameState={gameState} />
         <div className="text-center">
-          <p className="font-mono text-fab-text">{formatTime(displayTime)}</p>
+          <GameTimer elapsedMs={gameState.elapsedMs} startedAt={gameState.startedAt} completed={gameState.completed} className="font-mono text-fab-text" />
         </div>
       </div>
     );
@@ -108,7 +104,7 @@ export function BladeDashBoard({
 
       {/* Timer */}
       <div className="text-center mb-3">
-        <span className="font-mono text-sm text-fab-text">{formatTime(displayTime)}</span>
+        <GameTimer elapsedMs={gameState.elapsedMs} startedAt={gameState.startedAt} completed={gameState.completed} className="font-mono text-sm text-fab-text" />
         <span className={`ml-3 text-[10px] ${gameState.totalHintsUsed >= HINT_FAIL_THRESHOLD ? "text-fab-loss font-medium" : "text-fab-dim"}`}>
           Hints: {gameState.totalHintsUsed}{gameState.totalHintsUsed >= HINT_FAIL_THRESHOLD ? " (fail)" : ""}
         </span>

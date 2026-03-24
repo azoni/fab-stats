@@ -44,8 +44,8 @@ export const MetaSnapshot = memo(function MetaSnapshot({ topHeroes, top8Heroes, 
 
   // Auto-select season banner if none provided
   const resolvedBg = backgroundImage || (isSeason && activeEventType
-    ? activeEventType.toLowerCase().includes("proquest") ? "proquest-banner.png"
-    : activeEventType.toLowerCase().includes("battle hardened") ? "battle-hardened-banner.png"
+    ? activeEventType.toLowerCase().includes("proquest") ? "proquest-banner.webp"
+    : activeEventType.toLowerCase().includes("battle hardened") ? "battle-hardened-banner.webp"
     : undefined
   : undefined) || undefined;
 

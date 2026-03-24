@@ -60,11 +60,12 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     isLoadingRef.current = isLoading;
   }, [isLoading]);
 
-  // Subscribe to chat messages
+  // Subscribe to chat messages — deferred until chat is opened to avoid
+  // unnecessary Firestore listener for users who never open chat
   useEffect(() => {
-    if (!user || isGuest) {
-      setMessages([]);
-      setLoaded(false);
+    if (!user || isGuest || !isOpen) {
+      if (!isOpen) { setLoaded(false); }
+      if (!user || isGuest) { setMessages([]); setLoaded(false); }
       return;
     }
 
@@ -83,7 +84,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     });
 
     return unsub;
-  }, [user, isGuest]);
+  }, [user, isGuest, isOpen]);
 
   const sendMessage = useCallback(async (text: string) => {
     if (!user || isGuest || isLoadingRef.current) return;

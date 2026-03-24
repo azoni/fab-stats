@@ -35,7 +35,7 @@ export const FINISH_THEMES: FinishTheme[] = [
     muted: "#9a8a5a",
     dim: "#6b5f3a",
     trophy: "#fbbf24",
-    backgroundImage: "/backgrounds/fab-official/monarch-key-art.jpg",
+    backgroundImage: "/backgrounds/fab-official/monarch-key-art.webp",
   },
   {
     id: "platinum",
@@ -48,7 +48,7 @@ export const FINISH_THEMES: FinishTheme[] = [
     muted: "#7a80b0",
     dim: "#4a4e78",
     trophy: "#c7d2fe",
-    backgroundImage: "/backgrounds/fab-official/hunted-key-art.jpg",
+    backgroundImage: "/backgrounds/fab-official/hunted-key-art.webp",
   },
   {
     id: "emerald",
@@ -61,7 +61,7 @@ export const FINISH_THEMES: FinishTheme[] = [
     muted: "#5a9a78",
     dim: "#3a6b50",
     trophy: "#6ee7b7",
-    backgroundImage: "/backgrounds/fab-official/tales-of-aria-key-art.jpg",
+    backgroundImage: "/backgrounds/fab-official/tales-of-aria-key-art.webp",
   },
   {
     id: "flame",
@@ -74,7 +74,7 @@ export const FINISH_THEMES: FinishTheme[] = [
     muted: "#9a7050",
     dim: "#6b4a30",
     trophy: "#fb923c",
-    backgroundImage: "/backgrounds/fab-official/hunted-fang-adult.jpg",
+    backgroundImage: "/backgrounds/fab-official/hunted-fang-adult.webp",
   },
   {
     id: "diamond",
@@ -87,7 +87,7 @@ export const FINISH_THEMES: FinishTheme[] = [
     muted: "#5a8a98",
     dim: "#3a5a68",
     trophy: "#67e8f9",
-    backgroundImage: "/backgrounds/fab-official/high-seas-puffin.jpg",
+    backgroundImage: "/backgrounds/fab-official/high-seas-puffin.webp",
   },
   {
     id: "playmat-aria",
@@ -100,7 +100,7 @@ export const FINISH_THEMES: FinishTheme[] = [
     muted: "#8bb9a6",
     dim: "#557764",
     trophy: "#6ee7b7",
-    backgroundImage: "/backgrounds/fab-official/lore-aria-matte.jpg",
+    backgroundImage: "/backgrounds/fab-official/lore-aria-matte.webp",
   },
   {
     id: "playmat-solana",
@@ -113,7 +113,7 @@ export const FINISH_THEMES: FinishTheme[] = [
     muted: "#b9a678",
     dim: "#8a7750",
     trophy: "#facc15",
-    backgroundImage: "/backgrounds/fab-official/lore-solana-matte.jpg",
+    backgroundImage: "/backgrounds/fab-official/lore-solana-matte.webp",
   },
   {
     id: "playmat-volcor",
@@ -126,7 +126,7 @@ export const FINISH_THEMES: FinishTheme[] = [
     muted: "#c08d78",
     dim: "#875c4d",
     trophy: "#fb923c",
-    backgroundImage: "/backgrounds/fab-official/lore-volcor-matte.jpg",
+    backgroundImage: "/backgrounds/fab-official/lore-volcor-matte.webp",
   },
 ];
 

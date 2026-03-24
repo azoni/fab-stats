@@ -73,7 +73,7 @@ const THEMES: TournamentTheme[] = [
     win: "#4ade80",
     loss: "#f87171",
     gold: "#fbbf24",
-    backgroundImage: "/backgrounds/fab-official/wtr-key-art-v1.jpg",
+    backgroundImage: "/backgrounds/fab-official/wtr-key-art-v1.webp",
   },
   {
     id: "arcane",
@@ -88,7 +88,7 @@ const THEMES: TournamentTheme[] = [
     win: "#34d399",
     loss: "#fb7185",
     gold: "#fbbf24",
-    backgroundImage: "/backgrounds/fab-official/arcane-rising-key-art.jpg",
+    backgroundImage: "/backgrounds/fab-official/arcane-rising-key-art.webp",
   },
   {
     id: "cindra",
@@ -103,7 +103,7 @@ const THEMES: TournamentTheme[] = [
     win: "#4ade80",
     loss: "#fda4af",
     gold: "#fbbf24",
-    backgroundImage: "/backgrounds/fab-official/hunted-cindra-adult.jpg",
+    backgroundImage: "/backgrounds/fab-official/hunted-cindra-adult.webp",
   },
   {
     id: "gravybones",
@@ -118,7 +118,7 @@ const THEMES: TournamentTheme[] = [
     win: "#4ade80",
     loss: "#fca5a5",
     gold: "#fbbf24",
-    backgroundImage: "/backgrounds/fab-official/high-seas-gravybones.jpg",
+    backgroundImage: "/backgrounds/fab-official/high-seas-gravybones.webp",
   },
   {
     id: "aria",
@@ -133,7 +133,7 @@ const THEMES: TournamentTheme[] = [
     win: "#6ee7b7",
     loss: "#fca5a5",
     gold: "#fbbf24",
-    backgroundImage: "/backgrounds/fab-official/tales-of-aria-key-art.jpg",
+    backgroundImage: "/backgrounds/fab-official/tales-of-aria-key-art.webp",
   },
   {
     id: "playmat-solana",
@@ -148,7 +148,7 @@ const THEMES: TournamentTheme[] = [
     win: "#86efac",
     loss: "#fda4af",
     gold: "#fbbf24",
-    backgroundImage: "/backgrounds/fab-official/lore-solana-matte.jpg",
+    backgroundImage: "/backgrounds/fab-official/lore-solana-matte.webp",
   },
   {
     id: "playmat-volcor",
@@ -163,7 +163,7 @@ const THEMES: TournamentTheme[] = [
     win: "#86efac",
     loss: "#fda4af",
     gold: "#fbbf24",
-    backgroundImage: "/backgrounds/fab-official/lore-volcor-matte.jpg",
+    backgroundImage: "/backgrounds/fab-official/lore-volcor-matte.webp",
   },
 ];
 

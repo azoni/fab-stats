@@ -21,21 +21,21 @@ export const DEFAULT_BACKGROUND_ID = "playmat-solana";
 let runtimeDefaultBackgroundId: string | null = null;
 
 export const PROFILE_BACKGROUND_OPTIONS: ProfileBackgroundOption[] = [
-  { id: "wtr-key-art-v1", label: "Welcome to Rathe", imageUrl: "/backgrounds/fab-official/wtr-key-art-v1.jpg", kind: "key-art", focusPosition: "center top" },
-  { id: "arcane-rising-key-art", label: "Arcane Rising", imageUrl: "/backgrounds/fab-official/arcane-rising-key-art.jpg", kind: "key-art", focusPosition: "center top" },
-  { id: "monarch-key-art", label: "Monarch", imageUrl: "/backgrounds/fab-official/monarch-key-art.jpg", kind: "key-art", focusPosition: "center top" },
-  { id: "tales-of-aria-key-art", label: "Tales of Aria", imageUrl: "/backgrounds/fab-official/tales-of-aria-key-art.jpg", kind: "key-art", focusPosition: "center top" },
-  { id: "playmat-aria", label: "Aria Playmat", imageUrl: "/backgrounds/fab-official/lore-aria-matte.jpg", kind: "playmat", focusPosition: "center center" },
-  { id: "playmat-solana", label: "Solana Playmat", imageUrl: "/backgrounds/fab-official/lore-solana-matte.jpg", kind: "playmat", focusPosition: "center center" },
-  { id: "playmat-volcor", label: "Volcor Playmat", imageUrl: "/backgrounds/fab-official/lore-volcor-matte.jpg", kind: "playmat", focusPosition: "center center" },
-  { id: "wtr-key-art-v2", label: "Rathe Alt Key Art", imageUrl: "/backgrounds/fab-official/wtr-key-art-v2.jpg", kind: "key-art", focusPosition: "center top", adminOnly: true },
-  { id: "hunted-key-art", label: "The Hunted", imageUrl: "/backgrounds/fab-official/hunted-key-art.jpg", kind: "key-art", focusPosition: "center top", adminOnly: true },
-  { id: "hunted-cindra-adult", label: "Cindra (The Hunted)", imageUrl: "/backgrounds/fab-official/hunted-cindra-adult.jpg", kind: "hero-art", focusPosition: "50% 18%", adminOnly: true },
-  { id: "hunted-fang-adult", label: "Fang (The Hunted)", imageUrl: "/backgrounds/fab-official/hunted-fang-adult.jpg", kind: "hero-art", focusPosition: "50% 20%", adminOnly: true },
-  { id: "hunted-arakni-adult", label: "Arakni (The Hunted)", imageUrl: "/backgrounds/fab-official/hunted-arakni-adult.jpg", kind: "hero-art", focusPosition: "50% 22%", adminOnly: true },
-  { id: "high-seas-marlynn", label: "Marlynn (High Seas)", imageUrl: "/backgrounds/fab-official/high-seas-marlynn.jpg", kind: "hero-art", focusPosition: "52% 18%", adminOnly: true },
-  { id: "high-seas-puffin", label: "Puffin (High Seas)", imageUrl: "/backgrounds/fab-official/high-seas-puffin.jpg", kind: "hero-art", focusPosition: "52% 20%", adminOnly: true },
-  { id: "high-seas-gravybones", label: "Gravy Bones (High Seas)", imageUrl: "/backgrounds/fab-official/high-seas-gravybones.jpg", kind: "hero-art", focusPosition: "50% 20%", adminOnly: true },
+  { id: "wtr-key-art-v1", label: "Welcome to Rathe", imageUrl: "/backgrounds/fab-official/wtr-key-art-v1.webp", kind: "key-art", focusPosition: "center top" },
+  { id: "arcane-rising-key-art", label: "Arcane Rising", imageUrl: "/backgrounds/fab-official/arcane-rising-key-art.webp", kind: "key-art", focusPosition: "center top" },
+  { id: "monarch-key-art", label: "Monarch", imageUrl: "/backgrounds/fab-official/monarch-key-art.webp", kind: "key-art", focusPosition: "center top" },
+  { id: "tales-of-aria-key-art", label: "Tales of Aria", imageUrl: "/backgrounds/fab-official/tales-of-aria-key-art.webp", kind: "key-art", focusPosition: "center top" },
+  { id: "playmat-aria", label: "Aria Playmat", imageUrl: "/backgrounds/fab-official/lore-aria-matte.webp", kind: "playmat", focusPosition: "center center" },
+  { id: "playmat-solana", label: "Solana Playmat", imageUrl: "/backgrounds/fab-official/lore-solana-matte.webp", kind: "playmat", focusPosition: "center center" },
+  { id: "playmat-volcor", label: "Volcor Playmat", imageUrl: "/backgrounds/fab-official/lore-volcor-matte.webp", kind: "playmat", focusPosition: "center center" },
+  { id: "wtr-key-art-v2", label: "Rathe Alt Key Art", imageUrl: "/backgrounds/fab-official/wtr-key-art-v2.webp", kind: "key-art", focusPosition: "center top", adminOnly: true },
+  { id: "hunted-key-art", label: "The Hunted", imageUrl: "/backgrounds/fab-official/hunted-key-art.webp", kind: "key-art", focusPosition: "center top", adminOnly: true },
+  { id: "hunted-cindra-adult", label: "Cindra (The Hunted)", imageUrl: "/backgrounds/fab-official/hunted-cindra-adult.webp", kind: "hero-art", focusPosition: "50% 18%", adminOnly: true },
+  { id: "hunted-fang-adult", label: "Fang (The Hunted)", imageUrl: "/backgrounds/fab-official/hunted-fang-adult.webp", kind: "hero-art", focusPosition: "50% 20%", adminOnly: true },
+  { id: "hunted-arakni-adult", label: "Arakni (The Hunted)", imageUrl: "/backgrounds/fab-official/hunted-arakni-adult.webp", kind: "hero-art", focusPosition: "50% 22%", adminOnly: true },
+  { id: "high-seas-marlynn", label: "Marlynn (High Seas)", imageUrl: "/backgrounds/fab-official/high-seas-marlynn.webp", kind: "hero-art", focusPosition: "52% 18%", adminOnly: true },
+  { id: "high-seas-puffin", label: "Puffin (High Seas)", imageUrl: "/backgrounds/fab-official/high-seas-puffin.webp", kind: "hero-art", focusPosition: "52% 20%", adminOnly: true },
+  { id: "high-seas-gravybones", label: "Gravy Bones (High Seas)", imageUrl: "/backgrounds/fab-official/high-seas-gravybones.webp", kind: "hero-art", focusPosition: "50% 20%", adminOnly: true },
 ];
 
 let runtimeProfileBackgroundOptions: ProfileBackgroundOption[] | null = null;
