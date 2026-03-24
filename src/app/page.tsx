@@ -21,6 +21,7 @@ import { ExploreCTA } from "@/components/home/ExploreCTA";
 import { BadgeStrip } from "@/components/profile/BadgeStrip";
 import { WinRateRing } from "@/components/charts/WinRateRing";
 import { getHeroByName } from "@/lib/heroes";
+import { HeroImg } from "@/components/heroes/HeroImg";
 import { loadKudosCounts } from "@/lib/kudos";
 import { CardBorderWrapper } from "@/components/profile/CardBorderWrapper";
 import type { UnderlineConfig } from "@/components/profile/CardBorderWrapper";
@@ -265,11 +266,57 @@ export default function Dashboard() {
           />
           </div>
 
-          {/* My Stats */}
-          <div className="section-reveal" style={{ '--stagger': 1 } as React.CSSProperties}>
+          {/* Profile Card + My Stats — side by side */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 section-reveal" style={{ '--stagger': 1 } as React.CSSProperties}>
+            {/* Profile Card */}
+            <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden cursor-pointer hover:border-fab-gold/20 transition-colors" onClick={() => { if (profile?.username) router.push(`/player/${profile.username}`); }}>
+              <div className="flex items-center justify-between px-4 py-2.5 border-b border-fab-border/50">
+                <p className="text-sm font-semibold text-fab-text">My Profile</p>
+                <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                  {profile?.username && (
+                    <button onClick={() => setProfileShareOpen(true)} className="inline-flex items-center gap-1.5 text-xs font-semibold text-fab-gold border border-fab-gold/30 hover:bg-fab-gold/10 hover:border-fab-gold/50 px-2.5 py-1 rounded-md transition-colors">
+                      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0 0a2.25 2.25 0 103.935 2.186 2.25 2.25 0 00-3.935-2.186zm0-12.814a2.25 2.25 0 103.933-2.185 2.25 2.25 0 00-3.933 2.185z" />
+                      </svg>
+                      Share
+                    </button>
+                  )}
+                </div>
+              </div>
+              <div className="p-4">
+                <div className="flex items-center gap-3">
+                  {profile ? (
+                    <div className="shrink-0">
+                      {profile.photoUrl ? (
+                        <img src={profile.photoUrl} alt="" className={`w-12 h-12 rounded-full ${rankBorderClass(bestRank ?? null)}`} />
+                      ) : (
+                        <div className={`w-12 h-12 rounded-full bg-fab-gold/20 flex items-center justify-center text-fab-gold text-lg font-bold ${rankBorderClass(bestRank ?? null)}`}>
+                          {profile.displayName.charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                    </div>
+                  ) : null}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-base font-bold text-fab-gold truncate">{profile?.displayName || "My Profile"}</p>
+                    {topHero && (
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <HeroImg name={topHero.heroName} size="sm" />
+                        <span className="text-xs text-fab-muted truncate">{topHero.heroName.split(",")[0]}</span>
+                        <span className={`text-xs font-bold ${topHero.winRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>{topHero.winRate.toFixed(0)}%</span>
+                      </div>
+                    )}
+                    <BadgeStrip selectedBadgeIds={profile?.selectedBadgeIds} className="mt-1" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* My Stats */}
             <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden">
               <div className="flex items-center justify-between px-4 py-2.5 border-b border-fab-border/50">
-                <p className="text-sm font-semibold text-fab-text">My Stats</p>
+                <Link href="/trends" className="text-sm font-semibold text-fab-text hover:text-fab-gold transition-colors">
+                  My Stats <span className="text-fab-dim">&rarr;</span>
+                </Link>
                 {profile && (
                   <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                     <button onClick={() => setStatsShareOpen(true)} className="inline-flex items-center gap-1.5 text-xs font-semibold text-fab-gold border border-fab-gold/30 hover:bg-fab-gold/10 hover:border-fab-gold/50 px-2.5 py-1 rounded-md transition-colors">
@@ -282,7 +329,7 @@ export default function Dashboard() {
                 )}
               </div>
               <div className="p-4">
-                <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+                <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
                   {/* Win Rate — large */}
                   <div className="text-center">
                     <p className={`text-3xl font-black tabular-nums ${overall.overallWinRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>
@@ -315,13 +362,6 @@ export default function Dashboard() {
                     <div className="text-center">
                       <p className="text-lg font-black text-fab-gold">{bestFinish.label}</p>
                       <p className="text-[10px] text-fab-text/50 uppercase tracking-wider font-semibold">Best Finish</p>
-                    </div>
-                  )}
-                  {/* Top Hero */}
-                  {topHero && (
-                    <div className="text-center">
-                      <p className="text-lg font-bold text-fab-text truncate max-w-[120px]">{topHero.heroName.split(",")[0]}</p>
-                      <p className="text-[10px] text-fab-text/50 uppercase tracking-wider font-semibold">Top Hero</p>
                     </div>
                   )}
                   {/* Streak */}
