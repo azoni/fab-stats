@@ -10,15 +10,13 @@ interface DashboardFiltersProps {
   filterEventType: string;
   filterTier: string;
   filterHero: string;
-  filterRated: string;
   onFormatChange: (v: string) => void;
   onEventTypeChange: (v: string) => void;
   onTierChange: (v: string) => void;
   onHeroChange: (v: string) => void;
-  onRatedChange: (v: string) => void;
 }
 
-const selectClass = "bg-fab-surface border border-fab-border rounded-md px-3 py-2 text-sm text-fab-text outline-none focus:border-fab-gold/40 transition-colors min-w-0";
+const selectClass = "bg-fab-surface border border-fab-border rounded-lg px-3 py-2.5 text-sm text-fab-text outline-none focus:border-fab-gold/40 transition-colors w-full";
 
 export function DashboardFilters({
   formats,
@@ -28,29 +26,13 @@ export function DashboardFilters({
   filterEventType,
   filterTier,
   filterHero,
-  filterRated,
   onFormatChange,
   onEventTypeChange,
   onTierChange,
   onHeroChange,
-  onRatedChange,
 }: DashboardFiltersProps) {
   return (
-    <div className="flex items-center gap-2 flex-wrap">
-      {/* Format */}
-      {formats.length > 1 && (
-        <select
-          value={filterFormat}
-          onChange={(e) => onFormatChange(e.target.value)}
-          className={selectClass}
-        >
-          <option value="all">All Formats</option>
-          {formats.map((f) => (
-            <option key={f} value={f}>{f === "Classic Constructed" ? "CC" : f}</option>
-          ))}
-        </select>
-      )}
-
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
       {/* Tier */}
       <select
         value={filterTier}
@@ -63,43 +45,40 @@ export function DashboardFilters({
         ))}
       </select>
 
-      {/* Event Type */}
-      {eventTypes.length > 1 && (
-        <select
-          value={filterEventType}
-          onChange={(e) => onEventTypeChange(e.target.value)}
-          className={selectClass}
-        >
-          <option value="all">All Events</option>
-          {eventTypes.map((t) => (
-            <option key={t} value={t}>{t}</option>
-          ))}
-        </select>
-      )}
-
-      {/* Hero */}
-      {heroes.length > 1 && (
-        <select
-          value={filterHero}
-          onChange={(e) => onHeroChange(e.target.value)}
-          className={selectClass}
-        >
-          <option value="all">All Heroes</option>
-          {heroes.map((h) => (
-            <option key={h} value={h}>{h}</option>
-          ))}
-        </select>
-      )}
-
-      {/* Rated */}
+      {/* Format */}
       <select
-        value={filterRated}
-        onChange={(e) => onRatedChange(e.target.value)}
+        value={filterFormat}
+        onChange={(e) => onFormatChange(e.target.value)}
         className={selectClass}
       >
-        <option value="all">All Matches</option>
-        <option value="rated">Rated</option>
-        <option value="unrated">Unrated</option>
+        <option value="all">All Formats</option>
+        {formats.map((f) => (
+          <option key={f} value={f}>{f === "Classic Constructed" ? "CC" : f}</option>
+        ))}
+      </select>
+
+      {/* Event Type */}
+      <select
+        value={filterEventType}
+        onChange={(e) => onEventTypeChange(e.target.value)}
+        className={selectClass}
+      >
+        <option value="all">All Events</option>
+        {eventTypes.map((t) => (
+          <option key={t} value={t}>{t}</option>
+        ))}
+      </select>
+
+      {/* Hero */}
+      <select
+        value={filterHero}
+        onChange={(e) => onHeroChange(e.target.value)}
+        className={selectClass}
+      >
+        <option value="all">All Heroes</option>
+        {heroes.map((h) => (
+          <option key={h} value={h}>{h}</option>
+        ))}
       </select>
     </div>
   );
