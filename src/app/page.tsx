@@ -248,47 +248,42 @@ export default function Dashboard() {
       {/* Has matches: profile + stats */}
       {hasMatches && (
         <div className="flex flex-col gap-6">
-          {/* Profile + sidebar grid */}
-          <div className="grid grid-cols-1 md:grid-cols-[1fr_280px] gap-4 items-start section-reveal" style={{ '--stagger': 0 } as React.CSSProperties}>
-          {/* Left column: Profile card (compact) + Filters */}
-          <div className="flex flex-col gap-3">
-          <div className="grid grid-cols-1 md:grid-cols-[auto_1fr] gap-3 items-start">
+          {/* Profile card (thin) + Filters */}
+          <div className="flex flex-col gap-3 section-reveal" style={{ '--stagger': 0 } as React.CSSProperties}>
           <div
-            className="cursor-pointer md:w-56"
+            className="cursor-pointer"
             onClick={() => {
               const href = profile?.username ? `/player/${profile.username}` : "#";
               if (href !== "#") router.push(href);
             }}
           >
-          <CardBorderWrapper cardBorder={cardBorder} borderStyle={profile?.borderStyle || "beam"} underline={underlineConfig} contentClassName="relative bg-fab-surface/80 px-3 py-2.5 overflow-visible">
+          <CardBorderWrapper cardBorder={cardBorder} borderStyle={profile?.borderStyle || "beam"} underline={underlineConfig} contentClassName="relative bg-fab-surface/80 px-3 py-2 overflow-visible">
               <div className="flex items-center gap-2.5">
                 {profile ? (
-                  <Link href={`/player/${profile.username}`} className="shrink-0">
+                  <Link href={`/player/${profile.username}`} className="shrink-0" onClick={(e) => e.stopPropagation()}>
                     {profile.photoUrl ? (
-                      <img src={profile.photoUrl} alt="" className={`w-10 h-10 rounded-full ${rankBorderClass(bestRank ?? null)}`} />
+                      <img src={profile.photoUrl} alt="" className={`w-8 h-8 rounded-full ${rankBorderClass(bestRank ?? null)}`} />
                     ) : (
-                      <div className={`w-10 h-10 rounded-full bg-fab-gold/20 flex items-center justify-center text-fab-gold font-bold ${rankBorderClass(bestRank ?? null)}`}>
+                      <div className={`w-8 h-8 rounded-full bg-fab-gold/20 flex items-center justify-center text-fab-gold text-sm font-bold ${rankBorderClass(bestRank ?? null)}`}>
                         {profile.displayName.charAt(0).toUpperCase()}
                       </div>
                     )}
                   </Link>
                 ) : null}
-                <div className="flex-1 min-w-0">
-                  <Link href={profile?.username ? `/player/${profile.username}` : "#"} className="hover:opacity-80 transition-opacity">
-                    <p className="text-sm font-bold text-fab-gold truncate">{profile?.displayName || "My Profile"}</p>
-                  </Link>
-                  <BadgeStrip selectedBadgeIds={profile?.selectedBadgeIds} className="mt-0.5" />
-                </div>
-                <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+                <Link href={profile?.username ? `/player/${profile.username}` : "#"} className="hover:opacity-80 transition-opacity min-w-0" onClick={(e) => e.stopPropagation()}>
+                  <p className="text-sm font-bold text-fab-gold truncate">{profile?.displayName || "My Profile"}</p>
+                </Link>
+                <BadgeStrip selectedBadgeIds={profile?.selectedBadgeIds} className="hidden sm:flex" />
+                <div className="flex items-center gap-1 shrink-0 ml-auto" onClick={(e) => e.stopPropagation()}>
                   {profile?.username && (
-                    <button onClick={() => setProfileShareOpen(true)} className="p-1.5 rounded-md text-fab-dim hover:text-fab-gold hover:bg-fab-bg transition-colors" title="Share profile card">
+                    <button onClick={() => setProfileShareOpen(true)} className="p-1 rounded-md text-fab-dim hover:text-fab-gold hover:bg-fab-bg transition-colors" title="Share profile card">
                       <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z" />
                       </svg>
                     </button>
                   )}
                   {profile?.username && (
-                    <button onClick={() => setShowBackgroundPicker(true)} className="hidden sm:block p-1.5 rounded-md text-fab-dim hover:text-fab-gold hover:bg-fab-bg transition-colors" title="Change background">
+                    <button onClick={() => setShowBackgroundPicker(true)} className="hidden sm:block p-1 rounded-md text-fab-dim hover:text-fab-gold hover:bg-fab-bg transition-colors" title="Change background">
                       <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="m2.25 15 5.159-5.159a2.25 2.25 0 0 1 3.182 0L15 14.25m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0L21.75 15m-10.5-6h.008v.008h-.008V9Zm-8.25 9h18a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5h-18A1.5 1.5 0 0 0 1.5 6v10.5A1.5 1.5 0 0 0 3 18Z" />
                       </svg>
@@ -311,66 +306,6 @@ export default function Dashboard() {
             onTierChange={setFilterTier}
             onHeroChange={setFilterHero}
           />
-          </div>
-          </div>
-
-          {/* Sidebar: Tools + Meta (desktop only) */}
-          <div className="hidden md:flex flex-col gap-3">
-            {/* Player Tools */}
-            {user && (
-              <div className="relative group/tools">
-                <Link href="/tools" className="block rounded-lg bg-fab-surface border border-fab-border px-4 py-3 hover:border-amber-500/30 transition-colors card-shimmer">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-6 h-6 rounded-md bg-amber-500/10 flex items-center justify-center ring-1 ring-inset ring-amber-500/20 shrink-0">
-                      <svg className="w-3.5 h-3.5 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M11.42 15.17L17.25 21A2.652 2.652 0 0021 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 11-3.586-3.586l6.837-5.63m5.108-.233c.55-.164 1.163-.188 1.743-.14a4.5 4.5 0 004.486-6.336l-3.276 3.277a3.004 3.004 0 01-2.25-2.25l3.276-3.276a4.5 4.5 0 00-6.336 4.486c.091 1.076-.071 2.264-.904 2.95l-.102.085" />
-                      </svg>
-                    </div>
-                    <span className="text-sm font-medium text-fab-text">Player Tools</span>
-                    <svg className="w-3.5 h-3.5 text-fab-dim ml-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-                    </svg>
-                  </div>
-                </Link>
-                {/* Hover dropdown */}
-                <div className="absolute left-0 right-0 top-full pt-1 z-30 hidden group-hover/tools:block">
-                  <div className="rounded-lg bg-fab-surface border border-fab-border shadow-lg overflow-hidden">
-                    {[
-                      { id: "matrix", label: "Matchup Matrix", icon: "M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" },
-                      { id: "prep", label: "Tournament Prep", icon: "M16.5 18.75h-9m9 0a3 3 0 013 3h-15a3 3 0 013-3m9 0v-3.375c0-.621-.503-1.125-1.125-1.125h-.871M7.5 18.75v-3.375c0-.621.504-1.125 1.125-1.125h.872m5.007 0H9.497m5.007 0a7.454 7.454 0 01-.982-3.172M9.497 14.25a7.454 7.454 0 00.981-3.172M5.25 4.236c-.982.143-1.954.317-2.916.52A6.003 6.003 0 007.73 9.728M5.25 4.236V4.5c0 2.108.966 3.99 2.48 5.228M5.25 4.236V2.721C7.456 2.41 9.71 2.25 12 2.25c2.291 0 4.545.16 6.75.47v1.516M18.75 4.236c.982.143 1.954.317 2.916.52A6.003 6.003 0 0016.27 9.728M18.75 4.236V4.5c0 2.108-.966 3.99-2.48 5.228m0 0a6.023 6.023 0 01-2.77.704 6.023 6.023 0 01-2.77-.704" },
-                      { id: "notes", label: "Matchup Notes", icon: "M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" },
-                    ].map((tool) => (
-                      <Link
-                        key={tool.id}
-                        href={`/tools?tab=${tool.id}`}
-                        className="flex items-center gap-2.5 px-3 py-2 text-sm text-fab-muted hover:text-fab-text hover:bg-fab-bg transition-colors"
-                      >
-                        <svg className="w-3.5 h-3.5 text-amber-400/70 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d={tool.icon} />
-                        </svg>
-                        <span>{tool.label}</span>
-                      </Link>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Community */}
-            <Link href="/community" className="block rounded-lg bg-fab-surface border border-fab-border px-4 py-3 hover:border-teal-500/30 transition-colors card-shimmer">
-              <div className="flex items-center gap-2.5">
-                <div className="w-6 h-6 rounded-md bg-teal-500/10 flex items-center justify-center ring-1 ring-inset ring-teal-500/20 shrink-0">
-                  <svg className="w-3.5 h-3.5 text-teal-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
-                  </svg>
-                </div>
-                <span className="text-sm font-medium text-fab-text">Community</span>
-                <svg className="w-3.5 h-3.5 text-fab-dim ml-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-                </svg>
-              </div>
-            </Link>
-          </div>
           </div>
 
           {/* My Stats */}
