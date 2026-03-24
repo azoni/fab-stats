@@ -566,7 +566,7 @@ export default function Dashboard() {
           )}
 
           {/* RecentEvents + Opponents */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 section-reveal" style={{ '--stagger': 3 } as React.CSSProperties}>
+          <div className="grid grid-cols-1 md:grid-cols-[3fr_2fr] gap-4 section-reveal" style={{ '--stagger': 3 } as React.CSSProperties}>
             <RecentEvents eventStats={filteredEventStats} playerName={profile?.displayName} />
             <DashboardInsights heroStats={heroStats} opponentStats={opponentStats} matches={filteredMatches} />
           </div>
