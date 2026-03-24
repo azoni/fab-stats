@@ -194,41 +194,36 @@ function ShareCardInner({ data, theme }: { data: TournamentShareData; theme: Tou
       <CornerFiligree color={t.accent} />
 
       <div className="relative z-10">
-        {/* Header */}
-        <div className="text-center mb-3">
-          <p className="text-[10px] uppercase tracking-[0.2em] mb-1" style={{ color: `${t.accent}99` }}>Tournament Stats</p>
-          <p className="text-lg font-bold" style={{ color: t.text }}>{data.playerName}</p>
+        {/* Header — title + name on same row */}
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-[10px] uppercase tracking-[0.2em]" style={{ color: `${t.accent}99` }}>Tournament Stats</p>
+          <p className="text-sm font-bold" style={{ color: t.text }}>{data.playerName}</p>
         </div>
 
         <OrnamentalDivider color={t.accent} />
 
-        {/* Big 3: Events, Win Rate, Top 8s */}
-        <div className="grid grid-cols-3 gap-3 my-4 text-center">
+        {/* Big 4: Events, Win Rate, Top 8s, R1 WR */}
+        <div className="grid grid-cols-4 gap-2 my-3 text-center">
           <div>
             <p className="text-2xl font-black" style={{ color: t.accent }}>{data.totalEvents}</p>
-            <p className="text-[10px] uppercase tracking-wider font-semibold" style={{ color: t.text, opacity: 0.6 }}>Events</p>
+            <p className="text-[9px] uppercase tracking-wider font-semibold" style={{ color: t.text, opacity: 0.6 }}>Events</p>
           </div>
           <div>
             <p className="text-2xl font-black" style={{ color: data.overallWinRate >= 50 ? t.win : t.loss }}>
               {data.overallWinRate.toFixed(1)}%
             </p>
-            <p className="text-[10px] uppercase tracking-wider font-semibold" style={{ color: t.text, opacity: 0.6 }}>Win Rate</p>
+            <p className="text-[9px] uppercase tracking-wider font-semibold" style={{ color: t.text, opacity: 0.6 }}>Win Rate</p>
           </div>
           <div>
             <p className="text-2xl font-black" style={{ color: t.gold }}>{data.top8Count}</p>
-            <p className="text-[10px] uppercase tracking-wider font-semibold" style={{ color: t.text, opacity: 0.6 }}>Top 8s</p>
+            <p className="text-[9px] uppercase tracking-wider font-semibold" style={{ color: t.text, opacity: 0.6 }}>Top 8s</p>
           </div>
-        </div>
-
-        {/* Round 1 highlight */}
-        <div className="text-center mb-3">
-          <p className="text-[10px] uppercase tracking-wider font-semibold mb-1" style={{ color: t.text, opacity: 0.6 }}>Round 1 Win Rate</p>
-          <p className="text-xl font-black" style={{ color: data.r1WinRate >= 50 ? t.win : t.loss }}>
-            {Math.round(data.r1WinRate)}%
-          </p>
-          <p className="text-[10px] tabular-nums" style={{ color: t.dim }}>
-            {data.r1Wins}W - {data.r1Losses}L
-          </p>
+          <div>
+            <p className="text-2xl font-black" style={{ color: data.r1WinRate >= 50 ? t.win : t.loss }}>
+              {Math.round(data.r1WinRate)}%
+            </p>
+            <p className="text-[9px] uppercase tracking-wider font-semibold" style={{ color: t.text, opacity: 0.6 }}>R1 WR</p>
+          </div>
         </div>
 
         <OrnamentalDivider color={t.accent} />
