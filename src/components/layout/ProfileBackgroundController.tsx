@@ -56,11 +56,12 @@ export function ProfileBackgroundController() {
     };
 
     (async () => {
-      const globalDefaultId = await loadGlobalDefaultBackgroundId();
+      // Load global default and user preference in parallel to avoid flash
+      const [globalDefaultId] = await Promise.all([
+        loadGlobalDefaultBackgroundId(),
+        profile?.siteBackgroundId ? ensureBackgroundResolved(profile.siteBackgroundId) : Promise.resolve(),
+      ]);
       await ensureBackgroundResolved(globalDefaultId);
-      if (requestIdRef.current !== requestId) return;
-
-      await ensureBackgroundResolved(profile?.siteBackgroundId);
       if (requestIdRef.current !== requestId) return;
 
       const ownImage = resolveProfileBackgroundImage(profile?.siteBackgroundId, globalDefaultId);
