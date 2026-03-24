@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { GAMES, GAME_CATEGORIES } from "@/lib/games";
+import { GAMES, VISIBLE_GAMES, GAME_CATEGORIES } from "@/lib/games";
 
 function getTodayDateStr(): string {
   const now = new Date();
@@ -31,7 +31,7 @@ export function GameNav({ current }: { current: string }) {
     return () => document.removeEventListener("mousedown", handleClick);
   }, [openCat]);
 
-  const currentGame = GAMES.find((g) => g.slug === current);
+  const currentGame = VISIBLE_GAMES.find((g) => g.slug === current);
 
   return (
     <div ref={navRef} className="flex items-center gap-1.5 mb-4 flex-wrap">
@@ -44,7 +44,7 @@ export function GameNav({ current }: { current: string }) {
       <span className="text-fab-border/40 mx-0.5">|</span>
 
       {GAME_CATEGORIES.map((cat) => {
-        const games = GAMES.filter((g) => g.category === cat.id);
+        const games = VISIBLE_GAMES.filter((g) => g.category === cat.id);
         const isCurrentCat = currentGame?.category === cat.id;
         const isOpen = openCat === cat.id;
 

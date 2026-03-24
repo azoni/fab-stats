@@ -199,47 +199,47 @@ function ShareCardInner({ data, theme }: { data: TrendsShareData; theme: TrendsT
 
         <OrnamentalDivider color={t.accent} />
 
-        <div className="grid grid-cols-3 gap-3 my-4 text-center">
+        <div className="grid grid-cols-3 gap-3 my-3 text-center">
           <div>
-            <p className="text-2xl font-black" style={{ color: t.accent }}>{data.totalMatches}</p>
-            <p className="text-[9px] uppercase tracking-wider" style={{ color: t.muted }}>Matches</p>
+            <p className="text-3xl font-black" style={{ color: t.accent }}>{data.totalMatches}</p>
+            <p className="text-[10px] uppercase tracking-wider font-semibold" style={{ color: t.text, opacity: 0.6 }}>Matches</p>
           </div>
           <div>
-            <p className="text-2xl font-black" style={{ color: data.winRate >= 50 ? t.win : t.loss }}>{data.winRate}%</p>
-            <p className="text-[9px] uppercase tracking-wider" style={{ color: t.muted }}>Win Rate</p>
+            <p className="text-3xl font-black" style={{ color: data.winRate >= 50 ? t.win : t.loss }}>{data.winRate}%</p>
+            <p className="text-[10px] uppercase tracking-wider font-semibold" style={{ color: t.text, opacity: 0.6 }}>Win Rate</p>
           </div>
           <div>
-            <p className="text-2xl font-black" style={{ color: t.accent }}>{data.eventsPlayed}</p>
-            <p className="text-[9px] uppercase tracking-wider" style={{ color: t.muted }}>Events</p>
+            <p className="text-3xl font-black" style={{ color: t.accent }}>{data.eventsPlayed}</p>
+            <p className="text-[10px] uppercase tracking-wider font-semibold" style={{ color: t.text, opacity: 0.6 }}>Events</p>
           </div>
         </div>
 
-        <div className="text-center mb-3 text-sm tabular-nums">
-          <span className="font-bold" style={{ color: t.win }}>{data.wins}W</span>
-          <span style={{ color: t.muted }}> - </span>
-          <span className="font-bold" style={{ color: t.loss }}>{data.losses}L</span>
+        <div className="text-center mb-2 text-sm tabular-nums font-bold">
+          <span style={{ color: t.win }}>{data.wins}W</span>
+          <span style={{ color: t.text, opacity: 0.3 }}> - </span>
+          <span style={{ color: t.loss }}>{data.losses}L</span>
           {data.draws > 0 && (
             <>
-              <span style={{ color: t.muted }}> - </span>
-              <span className="font-bold" style={{ color: t.draw }}>{data.draws}D</span>
+              <span style={{ color: t.text, opacity: 0.3 }}> - </span>
+              <span style={{ color: t.draw }}>{data.draws}D</span>
             </>
           )}
         </div>
 
         <OrnamentalDivider color={t.accent} />
 
-        <div className="grid grid-cols-2 gap-x-4 gap-y-2 my-4 text-[11px]">
+        <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 my-3 text-xs">
           <div className="flex justify-between">
-            <span style={{ color: t.muted }}>Win Streak</span>
+            <span style={{ color: t.text, opacity: 0.6 }}>Win Streak</span>
             <span className="font-bold" style={{ color: t.win }}>{data.longestWinStreak}</span>
           </div>
           <div className="flex justify-between">
-            <span style={{ color: t.muted }}>Heroes Played</span>
+            <span style={{ color: t.text, opacity: 0.6 }}>Heroes Played</span>
             <span className="font-bold" style={{ color: t.text }}>{data.uniqueHeroes}</span>
           </div>
           {data.topHero && (
             <div className="flex justify-between col-span-2">
-              <span style={{ color: t.muted }}>Top Hero</span>
+              <span style={{ color: t.text, opacity: 0.6 }}>Top Hero</span>
               <span className="font-bold" style={{ color: t.text }}>
                 {data.topHero.name}{" "}
                 <span style={{ color: data.topHero.winRate >= 50 ? t.win : t.loss }}>
@@ -250,7 +250,7 @@ function ShareCardInner({ data, theme }: { data: TrendsShareData; theme: TrendsT
           )}
           {data.recentTrend !== undefined && data.recentTrend !== 0 && (
             <div className="flex justify-between col-span-2">
-              <span style={{ color: t.muted }}>Recent Trend</span>
+              <span style={{ color: t.text, opacity: 0.6 }}>Recent Trend</span>
               <span className="font-bold" style={{ color: data.recentTrend > 0 ? t.win : t.loss }}>
                 {data.recentTrend > 0 ? "+" : ""}{data.recentTrend}% vs all-time
               </span>
@@ -258,10 +258,10 @@ function ShareCardInner({ data, theme }: { data: TrendsShareData; theme: TrendsT
           )}
         </div>
 
-        <div className="text-center mt-3">
-          <p className="text-[8px] uppercase tracking-[0.15em]" style={{ color: `${t.muted}88` }}>fabstats.net</p>
+        <div className="flex items-center justify-between mt-2">
+          <p className="text-[10px] uppercase tracking-[0.15em] font-semibold" style={{ color: t.accent, opacity: 0.5 }}>fabstats.net</p>
           {data.filterLabel && (
-            <p className="text-[7px] tracking-wider mt-0.5" style={{ color: `${t.dim}88` }}>{data.filterLabel}</p>
+            <p className="text-[10px] tracking-wider font-semibold" style={{ color: t.accent, opacity: 0.7 }}>{data.filterLabel}</p>
           )}
         </div>
       </div>

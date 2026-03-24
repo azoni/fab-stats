@@ -1,6 +1,6 @@
 "use client";
 import { useRef, useState } from "react";
-import { GAMES } from "@/lib/games";
+import { VISIBLE_GAMES as GAMES } from "@/lib/games";
 import { copyCardImage, downloadCardImage } from "@/lib/share-image";
 
 interface GameResult {

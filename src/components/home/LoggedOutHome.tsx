@@ -5,7 +5,7 @@ import type { User } from "firebase/auth";
 import type { LeaderboardEntry } from "@/types";
 import type { HeroMetaStats, CommunityOverview } from "@/lib/meta-stats";
 import { selectFeaturedProfiles } from "@/lib/featured-profiles";
-import { GAMES } from "@/lib/games";
+import { VISIBLE_GAMES as GAMES } from "@/lib/games";
 import { MetaSnapshot } from "@/components/home/MetaSnapshot";
 import { FeaturedProfiles } from "@/components/home/FeaturedProfiles";
 import { ShieldIcon } from "@/components/icons/NavIcons";

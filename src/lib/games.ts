@@ -17,6 +17,7 @@ export interface GameEntry {
   description: string;
   color: string;
   iconPath: string;
+  hidden?: boolean;
   category: GameCategory;
 }
 
@@ -99,6 +100,7 @@ export const GAMES: GameEntry[] = [
     description: "Roll dice to build damage. Bank or bust — can you defeat Rhinar?",
     color: "text-red-500",
     category: "dice",
+    hidden: true,
     iconPath: "M21 7.5l-2.25-1.313M21 7.5v2.25m0-2.25l-2.25 1.313M3 7.5l2.25-1.313M3 7.5l2.25 1.313M3 7.5v2.25m9 3l2.25-1.313M12 12.75l-2.25-1.313M12 12.75V15m0 6.75l2.25-1.313M12 21.75V19.5m0 2.25l-2.25-1.313m0-16.875L12 2.25l2.25 1.313M21 14.25v2.25l-2.25 1.313m-13.5 0L3 16.5v-2.25",
   },
   {
@@ -109,6 +111,7 @@ export const GAMES: GameEntry[] = [
     description: "Roll 5 dice, pick combos, KO Kayo in 3 rounds. Yahtzee meets FaB.",
     color: "text-red-400",
     category: "dice",
+    hidden: true,
     iconPath: "M15.042 21.672L13.684 16.6m0 0l-2.51 2.225.569-9.47 5.227 7.917-3.286-.672zM12 2.25V4.5m5.834.166l-1.591 1.591M20.25 10.5H18M7.757 14.743l-1.59 1.59M6 10.5H3.75m4.007-4.243l-1.59-1.59",
   },
   {
@@ -119,6 +122,7 @@ export const GAMES: GameEntry[] = [
     description: "Roll attack dice vs a daily defender. Deal 20 damage to win!",
     color: "text-red-600",
     category: "dice",
+    hidden: true,
     iconPath: "M15.362 5.214A8.252 8.252 0 0112 21 8.25 8.25 0 016.038 7.047 8.287 8.287 0 009 9.601a8.983 8.983 0 013.361-6.867 8.21 8.21 0 003 2.48z",
   },
   {
@@ -129,6 +133,7 @@ export const GAMES: GameEntry[] = [
     description: "Sequence 5 attack cards to maximize combo damage. Find the optimal chain!",
     color: "text-cyan-400",
     category: "ninja",
+    hidden: true,
     iconPath: "M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z",
   },
   {
@@ -139,6 +144,7 @@ export const GAMES: GameEntry[] = [
     description: "Find all 8 matching ninja card pairs in a 4×4 memory grid.",
     color: "text-indigo-400",
     category: "ninja",
+    hidden: true,
     iconPath: "M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178zM15 12a3 3 0 11-6 0 3 3 0 016 0z",
   },
   {
@@ -149,6 +155,10 @@ export const GAMES: GameEntry[] = [
     description: "Unscramble 8 ninja-themed words as fast as you can.",
     color: "text-pink-400",
     category: "ninja",
+    hidden: true,
     iconPath: "M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5",
   },
 ];
+
+/** Visible games (excludes hidden games) */
+export const VISIBLE_GAMES = GAMES.filter((g) => !g.hidden);
