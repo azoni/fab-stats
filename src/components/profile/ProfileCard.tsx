@@ -427,23 +427,23 @@ export function ProfileCard({ data, theme }: { data: ProfileCardData; theme?: Ca
       {/* Context bar — 3 col */}
       <div className="grid grid-cols-3 gap-2 px-5 py-2.5 relative">
         <div style={{ backgroundColor: t.backgroundImage ? `${t.bg}CC` : t.bg }} className="rounded-lg p-2 text-center">
-          <p style={{ color: t.muted }} className="text-[9px] uppercase tracking-wider font-semibold">Events</p>
-          <p style={{ color: t.text }} className="text-sm font-black">{events}</p>
+          <p style={{ color: t.text, opacity: 0.6 }} className="text-[10px] uppercase tracking-wider font-semibold">Events</p>
+          <p style={{ color: t.text }} className="text-base font-black">{events}</p>
         </div>
         <div style={{ backgroundColor: t.backgroundImage ? `${t.bg}CC` : t.bg }} className="rounded-lg p-2 text-center">
-          <p style={{ color: t.muted }} className="text-[9px] uppercase tracking-wider font-semibold">Top Hero</p>
+          <p style={{ color: t.text, opacity: 0.6 }} className="text-[10px] uppercase tracking-wider font-semibold">Top Hero</p>
           <p style={{ color: t.text }} className="text-xs font-bold truncate mt-0.5">{topHero || "—"}</p>
         </div>
         <div style={{ backgroundColor: t.backgroundImage ? `${t.bg}CC` : t.bg }} className="rounded-lg p-2 text-center">
-          <p style={{ color: t.muted }} className="text-[9px] uppercase tracking-wider font-semibold">{slot3.label}</p>
-          <p style={{ color: slot3.color }} className="text-sm font-black truncate">{slot3.value}</p>
+          <p style={{ color: t.text, opacity: 0.6 }} className="text-[10px] uppercase tracking-wider font-semibold">{slot3.label}</p>
+          <p style={{ color: slot3.color }} className="text-base font-black truncate">{slot3.value}</p>
         </div>
       </div>
 
       {/* Trophy Case — grouped by event tier */}
       {trophyByTier.length > 0 && (
         <div className="px-5 py-1.5 relative">
-          <p style={{ color: t.dim }} className="text-[8px] uppercase tracking-wider font-semibold mb-1">Trophies</p>
+          <p style={{ color: t.text, opacity: 0.5 }} className="text-[9px] uppercase tracking-wider font-semibold mb-1">Trophies</p>
           <div className="flex flex-wrap gap-x-3 gap-y-0.5">
             {trophyByTier.map((group) => (
               <div key={group.tier} className="flex items-center gap-1">
@@ -463,7 +463,7 @@ export function ProfileCard({ data, theme }: { data: ProfileCardData; theme?: Ca
       {/* Armory — single line */}
       {hasArmory && (
         <div className="flex items-center gap-1.5 px-5 py-1.5 relative">
-          <p style={{ color: t.dim }} className="text-[8px] uppercase tracking-wider font-semibold shrink-0">Armory</p>
+          <p style={{ color: t.text, opacity: 0.5 }} className="text-[9px] uppercase tracking-wider font-semibold shrink-0">Armory</p>
           <p className="text-[10px]">
             <span style={{ color: t.text }}>{armoryCount} event{armoryCount !== 1 ? "s" : ""}</span>
             {armoryUndefeated ? (
@@ -491,7 +491,7 @@ export function ProfileCard({ data, theme }: { data: ProfileCardData; theme?: Ca
           </svg>
           <p style={{ color: t.accent, opacity: 0.5 }} className="text-[10px] tracking-wider font-semibold">fabstats.net</p>
           {data.filterLabel && (
-            <p style={{ color: t.dim }} className="text-[8px] tracking-wider mt-0.5">{data.filterLabel}</p>
+            <p style={{ color: t.accent }} className="text-[10px] tracking-wider font-semibold ml-auto opacity-70">{data.filterLabel}</p>
           )}
         </div>
         {/* Underline bar */}
