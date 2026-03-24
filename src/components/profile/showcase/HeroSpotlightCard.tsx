@@ -1,6 +1,7 @@
 "use client";
 import { getHeroByName } from "@/lib/heroes";
 import { HeroClassIcon } from "@/components/heroes/HeroClassIcon";
+import { formatShortLabel } from "@/lib/stats";
 import { tierConfig } from "@/lib/mastery";
 import type { HeroStats, HeroMastery } from "@/types";
 
@@ -21,7 +22,7 @@ export function HeroSpotlightCard({ heroStats, mastery }: HeroSpotlightCardProps
       <p className="text-[10px] text-purple-400/70 uppercase tracking-wider font-medium mb-1">Hero</p>
       <div className="flex items-center gap-2">
         <HeroClassIcon heroClass={heroClass} size="sm" />
-        <span className="text-sm font-bold text-fab-text truncate">{heroStats.heroName}</span>
+        <span className="text-sm font-bold text-fab-text truncate">{heroStats.heroName}{heroStats.format ? ` (${formatShortLabel(heroStats.format)})` : ""}</span>
         {tc && (
           <span className={`text-[10px] font-bold px-1 py-0.5 rounded ${tc.bg} ${tc.color} ${tc.border} border leading-none shrink-0`}>
             {tc.label}

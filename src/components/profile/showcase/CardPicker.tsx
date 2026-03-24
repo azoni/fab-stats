@@ -2,6 +2,7 @@
 import { useState, useRef } from "react";
 import { getHeroByName } from "@/lib/heroes";
 import { HeroClassIcon } from "@/components/heroes/HeroClassIcon";
+import { formatShortLabel } from "@/lib/stats";
 import { AchievementIcon } from "@/components/gamification/AchievementIcons";
 import { localDate } from "@/lib/constants";
 import type { ShowcaseCard, MatchRecord, HeroStats, EventStats, OpponentStats, Achievement } from "@/types";
@@ -201,9 +202,9 @@ export function HeroPicker({ heroStats, onSelect }: { heroStats: HeroStats[]; on
       {heroStats.map((h) => {
         const info = getHeroByName(h.heroName);
         return (
-          <button key={h.heroName} onClick={() => onSelect(h.heroName)} className="w-full flex items-center gap-2 p-1.5 rounded hover:bg-fab-surface-hover text-left transition-colors">
+          <button key={`${h.heroName}::${h.format}`} onClick={() => onSelect(h.heroName)} className="w-full flex items-center gap-2 p-1.5 rounded hover:bg-fab-surface-hover text-left transition-colors">
             <HeroClassIcon heroClass={info?.classes[0]} size="sm" />
-            <span className="text-[10px] text-fab-text truncate flex-1">{h.heroName}</span>
+            <span className="text-[10px] text-fab-text truncate flex-1">{h.heroName}{h.format ? ` (${formatShortLabel(h.format)})` : ""}</span>
             <span className="text-[9px] text-fab-muted">{h.totalMatches}m</span>
             <span className={`text-[9px] font-medium ${h.winRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>{h.winRate.toFixed(0)}%</span>
           </button>

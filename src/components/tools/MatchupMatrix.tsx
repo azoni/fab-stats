@@ -102,7 +102,7 @@ export function MatchupMatrix({ matches, entries, isLoaded }: MatchupMatrixProps
 
   // Personal hero stats
   const heroStats = useMemo(
-    () => computeHeroStats(filteredMatches).filter((h) => getHeroByName(h.heroName)),
+    () => computeHeroStats(filteredMatches, false).filter((h) => getHeroByName(h.heroName)),
     [filteredMatches]
   );
 
