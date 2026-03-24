@@ -1,7 +1,6 @@
 "use client";
 import { useState } from "react";
 import * as RadixCollapsible from "@radix-ui/react-collapsible";
-import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown } from "lucide-react";
 
 interface CollapsibleProps {
@@ -23,21 +22,16 @@ export function Collapsible({ title, children, defaultOpen = false }: Collapsibl
           }`}
         />
       </RadixCollapsible.Trigger>
-      <AnimatePresence initial={false}>
-        {open && (
-          <RadixCollapsible.Content forceMount asChild>
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.2, ease: "easeInOut" }}
-              style={{ overflow: "hidden" }}
-            >
-              {children}
-            </motion.div>
-          </RadixCollapsible.Content>
-        )}
-      </AnimatePresence>
+      <RadixCollapsible.Content forceMount asChild>
+        <div
+          className="overflow-hidden transition-[grid-template-rows,opacity] duration-200 grid"
+          style={{ gridTemplateRows: open ? "1fr" : "0fr", opacity: open ? 1 : 0 }}
+        >
+          <div className="min-h-0">
+            {children}
+          </div>
+        </div>
+      </RadixCollapsible.Content>
     </RadixCollapsible.Root>
   );
 }

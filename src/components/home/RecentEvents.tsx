@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, memo } from "react";
 import Link from "next/link";
 import { MatchResult, type EventStats } from "@/types";
 import { computePlayoffFinishes } from "@/lib/stats";
@@ -42,7 +42,7 @@ function formatDate(dateStr: string): string {
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
-export function RecentEvents({ eventStats, playerName }: { eventStats: EventStats[]; playerName?: string }) {
+export const RecentEvents = memo(function RecentEvents({ eventStats, playerName }: { eventStats: EventStats[]; playerName?: string }) {
   const [expandedKey, setExpandedKey] = useState<string | null>(null);
   const [shareEvent, setShareEvent] = useState<EventStats | null>(null);
 
@@ -217,4 +217,4 @@ export function RecentEvents({ eventStats, playerName }: { eventStats: EventStat
       )}
     </div>
   );
-}
+});

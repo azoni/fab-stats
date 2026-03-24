@@ -30,16 +30,27 @@ export function formatShortLabel(format?: string): string {
   return FORMAT_SHORT[format] || format;
 }
 
+/** Count wins/losses/draws in a single pass over a match array. */
+function countResults(matches: MatchRecord[]): { wins: number; losses: number; draws: number; byes: number } {
+  let wins = 0, losses = 0, draws = 0, byes = 0;
+  for (const m of matches) {
+    switch (m.result) {
+      case MatchResult.Win: wins++; break;
+      case MatchResult.Loss: losses++; break;
+      case MatchResult.Draw: draws++; break;
+      case MatchResult.Bye: byes++; break;
+    }
+  }
+  return { wins, losses, draws, byes };
+}
+
 export function computeOverallStats(matches: MatchRecord[]): OverallStats {
   const sorted = [...matches].sort(
     (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
       || getRoundNumber(a) - getRoundNumber(b)
       || new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
   );
-  const totalWins = sorted.filter((m) => m.result === MatchResult.Win).length;
-  const totalLosses = sorted.filter((m) => m.result === MatchResult.Loss).length;
-  const totalDraws = sorted.filter((m) => m.result === MatchResult.Draw).length;
-  const totalByes = sorted.filter((m) => m.result === MatchResult.Bye).length;
+  const { wins: totalWins, losses: totalLosses, draws: totalDraws, byes: totalByes } = countResults(sorted);
   const totalMatches = totalWins + totalLosses + totalDraws;
   const overallWinRate = totalMatches > 0 ? (totalWins / totalMatches) * 100 : 0;
 
@@ -67,9 +78,7 @@ export function computeHeroStats(matches: MatchRecord[], splitByFormat = false):
   return Array.from(heroMap.entries())
     .map(([key, heroMatches]) => {
       const [heroName, format] = splitByFormat ? key.split("::") : [key, undefined];
-      const wins = heroMatches.filter((m) => m.result === MatchResult.Win).length;
-      const losses = heroMatches.filter((m) => m.result === MatchResult.Loss).length;
-      const draws = heroMatches.filter((m) => m.result === MatchResult.Draw).length;
+      const { wins, losses, draws } = countResults(heroMatches);
       const played = wins + losses + draws;
 
       return {
@@ -98,9 +107,7 @@ function computeMatchups(heroMatches: MatchRecord[]): MatchupRecord[] {
 
   return Array.from(oppMap.entries())
     .map(([opponentHero, matchupMatches]) => {
-      const wins = matchupMatches.filter((m) => m.result === MatchResult.Win).length;
-      const losses = matchupMatches.filter((m) => m.result === MatchResult.Loss).length;
-      const draws = matchupMatches.filter((m) => m.result === MatchResult.Draw).length;
+      const { wins, losses, draws } = countResults(matchupMatches);
       const played = wins + losses + draws;
 
       return {
@@ -230,9 +237,7 @@ export function computeOpponentStats(matches: MatchRecord[]): OpponentStats[] {
         opponentName = normalizedToDisplay.get(key.slice(5))?.name || "Unknown";
       }
 
-      const wins = oppMatches.filter((m) => m.result === MatchResult.Win).length;
-      const losses = oppMatches.filter((m) => m.result === MatchResult.Loss).length;
-      const draws = oppMatches.filter((m) => m.result === MatchResult.Draw).length;
+      const { wins, losses, draws } = countResults(oppMatches);
       const heroesPlayed = [...new Set(oppMatches.map((m) => m.heroPlayed))];
       const opponentHeroes = [...new Set(oppMatches.map((m) => m.opponentHero))];
 
@@ -283,9 +288,7 @@ export function computeTrends(
   }
 
   return Array.from(groups.entries()).map(([label, groupMatches]) => {
-    const wins = groupMatches.filter((m) => m.result === MatchResult.Win).length;
-    const losses = groupMatches.filter((m) => m.result === MatchResult.Loss).length;
-    const draws = groupMatches.filter((m) => m.result === MatchResult.Draw).length;
+    const { wins, losses, draws } = countResults(groupMatches);
     const played = wins + losses + draws;
     return {
       label,
@@ -311,15 +314,18 @@ export function computeRollingWinRate(
     );
 
   const results: { index: number; winRate: number; date: string }[] = [];
+  let windowWins = 0;
 
-  for (let i = windowSize - 1; i < sorted.length; i++) {
-    const window = sorted.slice(i - windowSize + 1, i + 1);
-    const wins = window.filter((m) => m.result === MatchResult.Win).length;
-    results.push({
-      index: i,
-      winRate: (wins / windowSize) * 100,
-      date: sorted[i].date,
-    });
+  for (let i = 0; i < sorted.length; i++) {
+    if (sorted[i].result === MatchResult.Win) windowWins++;
+    if (i >= windowSize && sorted[i - windowSize].result === MatchResult.Win) windowWins--;
+    if (i >= windowSize - 1) {
+      results.push({
+        index: i,
+        winRate: (windowWins / windowSize) * 100,
+        date: sorted[i].date,
+      });
+    }
   }
 
   return results;
@@ -438,9 +444,7 @@ export function computeEventTypeStats(matches: MatchRecord[]): EventTypeStats[] 
 
   return Array.from(map.entries())
     .map(([eventType, group]) => {
-      const wins = group.filter((m) => m.result === MatchResult.Win).length;
-      const losses = group.filter((m) => m.result === MatchResult.Loss).length;
-      const draws = group.filter((m) => m.result === MatchResult.Draw).length;
+      const { wins, losses, draws } = countResults(group);
       const played = wins + losses + draws;
       return {
         eventType,
@@ -466,9 +470,7 @@ export function computeVenueStats(matches: MatchRecord[]): VenueStats[] {
 
   return Array.from(map.entries())
     .map(([venue, group]) => {
-      const wins = group.filter((m) => m.result === MatchResult.Win).length;
-      const losses = group.filter((m) => m.result === MatchResult.Loss).length;
-      const draws = group.filter((m) => m.result === MatchResult.Draw).length;
+      const { wins, losses, draws } = countResults(group);
       const played = wins + losses + draws;
       return {
         venue,
@@ -605,8 +607,7 @@ export function computePlayoffFinishes(
       // For Skirmish events without playoffs (not enough players for top cut),
       // an undefeated record means the player won the event
       if (refinedEventType === "Skirmish") {
-        const wins = event.matches.filter((m) => m.result === MatchResult.Win).length;
-        const losses = event.matches.filter((m) => m.result === MatchResult.Loss).length;
+        const { wins, losses } = countResults(event.matches);
         if (wins > 0 && losses === 0) {
           finishes.push({
             type: "champion",
@@ -621,8 +622,7 @@ export function computePlayoffFinishes(
       continue;
     }
 
-    const playoffWins = playoffMatches.filter((m) => m.result === MatchResult.Win).length;
-    const playoffLosses = playoffMatches.filter((m) => m.result === MatchResult.Loss).length;
+    const { wins: playoffWins, losses: playoffLosses } = countResults(playoffMatches);
 
     // Detect which rounds were played from explicit round names
     const roundInfos = playoffMatches.map((m) => (m.notes?.split(" | ")[1]?.trim() || "").toLowerCase());
@@ -716,8 +716,7 @@ export function computeMinorEventFinishes(eventStats: EventStats[]): MinorEventF
       continue;
     }
 
-    const playoffWins = playoffMatches.filter((m) => m.result === MatchResult.Win).length;
-    const playoffLosses = playoffMatches.filter((m) => m.result === MatchResult.Loss).length;
+    const { wins: playoffWins, losses: playoffLosses } = countResults(playoffMatches);
     const roundInfos = playoffMatches.map((m) => (m.notes?.split(" | ")[1]?.trim() || "").toLowerCase());
     const playedFinals = roundInfos.some((r) => /finals?$/i.test(r) || /\bfinal\b/i.test(r));
     const playedSemis = roundInfos.some((r) => /semi/i.test(r) || /top\s*4/i.test(r));
@@ -789,9 +788,7 @@ export function computeEventStats(matches: MatchRecord[]): EventStats[] {
       const [eventName] = key.split("|");
       const sorted = [...group].sort((a, b) => getRoundNumber(a) - getRoundNumber(b));
       const first = sorted[0];
-      const wins = group.filter((m) => m.result === MatchResult.Win).length;
-      const losses = group.filter((m) => m.result === MatchResult.Loss).length;
-      const draws = group.filter((m) => m.result === MatchResult.Draw).length;
+      const { wins, losses, draws } = countResults(group);
 
       // Compute unique formats — ordered by first appearance in sorted rounds
       const seen = new Set<string>();

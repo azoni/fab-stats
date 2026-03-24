@@ -1,4 +1,5 @@
 "use client";
+import { memo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { MatchResult } from "@/types";
@@ -14,7 +15,7 @@ interface StatCardsProps {
   onShare?: () => void;
 }
 
-export function StatCards({ overall, eventCount, bestFinishLabel, recentMatches, onShare }: StatCardsProps) {
+export const StatCards = memo(function StatCards({ overall, eventCount, bestFinishLabel, recentMatches, onShare }: StatCardsProps) {
   const router = useRouter();
 
   // Recent form data
@@ -112,4 +113,4 @@ export function StatCards({ overall, eventCount, bestFinishLabel, recentMatches,
       )}
     </div>
   );
-}
+});

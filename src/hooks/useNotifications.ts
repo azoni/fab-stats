@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   subscribeToNotifications,
@@ -18,6 +18,9 @@ export function useNotifications() {
   // Default to true if not explicitly set
   const enabled = profile?.notificationsEnabled !== false;
 
+  const unsubRef = useRef<(() => void) | null>(null);
+
+  // Delay notification listener by 30s to avoid Firestore reads for bounce visits
   useEffect(() => {
     if (isGuest || !user || !enabled) {
       setNotifications([]);
@@ -25,12 +28,18 @@ export function useNotifications() {
       return;
     }
 
-    const unsubscribe = subscribeToNotifications(user.uid, (data) => {
-      setNotifications(data);
-      setLoaded(true);
-    });
+    const timer = setTimeout(() => {
+      unsubRef.current = subscribeToNotifications(user.uid, (data) => {
+        setNotifications(data);
+        setLoaded(true);
+      });
+    }, 30_000);
 
-    return unsubscribe;
+    return () => {
+      clearTimeout(timer);
+      unsubRef.current?.();
+      unsubRef.current = null;
+    };
   }, [user, isGuest, enabled]);
 
   // Unread count: group message notifications by sender (each sender = 1 count)

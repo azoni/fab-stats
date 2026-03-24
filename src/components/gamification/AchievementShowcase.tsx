@@ -115,7 +115,7 @@ export function AchievementShowcase({ earned, progress, forceExpanded }: { earne
   if (totalEarned === 0) return (
     <div id="achievements" className="bg-fab-surface/50 border border-fab-border rounded-lg overflow-hidden px-4 py-3">
       <div className="flex items-center gap-3">
-        <img src="/assets/empty-states/no-achievements.png" alt="" className="w-10 h-10 object-contain opacity-60 shrink-0" />
+        <img src="/assets/empty-states/no-achievements.webp" alt="" className="w-10 h-10 object-contain opacity-60 shrink-0" />
         <div>
           <div className="flex items-center gap-2">
             <AchievementIcon icon="section-achievements" className="w-4 h-4 text-fab-gold" />

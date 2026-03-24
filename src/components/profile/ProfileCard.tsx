@@ -66,7 +66,7 @@ export const PROFILE_THEMES: CardTheme[] = [
     loss: "#fca5a5",
     draw: "#a1a1aa",
     barBg: "rgba(245,158,11,0.2)",
-    backgroundImage: "/backgrounds/fab-official/wtr-key-art-v1.jpg",
+    backgroundImage: "/backgrounds/fab-official/wtr-key-art-v1.webp",
   },
   {
     id: "arcane",
@@ -82,7 +82,7 @@ export const PROFILE_THEMES: CardTheme[] = [
     loss: "#fb7185",
     draw: "#a1a1aa",
     barBg: "rgba(139,92,246,0.2)",
-    backgroundImage: "/backgrounds/fab-official/arcane-rising-key-art.jpg",
+    backgroundImage: "/backgrounds/fab-official/arcane-rising-key-art.webp",
   },
   {
     id: "dragon",
@@ -98,7 +98,7 @@ export const PROFILE_THEMES: CardTheme[] = [
     loss: "#fda4af",
     draw: "#a1a1aa",
     barBg: "rgba(239,68,68,0.2)",
-    backgroundImage: "/backgrounds/fab-official/hunted-cindra-adult.jpg",
+    backgroundImage: "/backgrounds/fab-official/hunted-cindra-adult.webp",
   },
   {
     id: "guardian",
@@ -114,7 +114,7 @@ export const PROFILE_THEMES: CardTheme[] = [
     loss: "#fca5a5",
     draw: "#94a3b8",
     barBg: "rgba(56,189,248,0.2)",
-    backgroundImage: "/backgrounds/fab-official/high-seas-gravybones.jpg",
+    backgroundImage: "/backgrounds/fab-official/high-seas-gravybones.webp",
   },
   {
     id: "nature",
@@ -130,7 +130,7 @@ export const PROFILE_THEMES: CardTheme[] = [
     loss: "#fca5a5",
     draw: "#a1a1aa",
     barBg: "rgba(16,185,129,0.2)",
-    backgroundImage: "/backgrounds/fab-official/tales-of-aria-key-art.jpg",
+    backgroundImage: "/backgrounds/fab-official/tales-of-aria-key-art.webp",
   },
   {
     id: "playmat-aria",
@@ -146,7 +146,7 @@ export const PROFILE_THEMES: CardTheme[] = [
     loss: "#fca5a5",
     draw: "#a1a1aa",
     barBg: "rgba(126,224,187,0.2)",
-    backgroundImage: "/backgrounds/fab-official/lore-aria-matte.jpg",
+    backgroundImage: "/backgrounds/fab-official/lore-aria-matte.webp",
   },
   {
     id: "playmat-solana",
@@ -162,7 +162,7 @@ export const PROFILE_THEMES: CardTheme[] = [
     loss: "#fda4af",
     draw: "#c4b5fd",
     barBg: "rgba(245,210,108,0.2)",
-    backgroundImage: "/backgrounds/fab-official/lore-solana-matte.jpg",
+    backgroundImage: "/backgrounds/fab-official/lore-solana-matte.webp",
   },
   {
     id: "playmat-volcor",
@@ -178,7 +178,7 @@ export const PROFILE_THEMES: CardTheme[] = [
     loss: "#fda4af",
     draw: "#a1a1aa",
     barBg: "rgba(251,146,60,0.22)",
-    backgroundImage: "/backgrounds/fab-official/lore-volcor-matte.jpg",
+    backgroundImage: "/backgrounds/fab-official/lore-volcor-matte.webp",
   },
 ];
 

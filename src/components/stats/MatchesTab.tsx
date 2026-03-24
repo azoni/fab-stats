@@ -56,7 +56,7 @@ export function MatchesTab({ matches, user, profile, updateMatch }: MatchesTabPr
 
       {matches.length === 0 ? (
         <div className="text-center py-16 text-fab-dim">
-          <img src="/assets/empty-states/no-matches.png" alt="" className="w-24 h-24 mx-auto mb-4 object-contain opacity-70" />
+          <img src="/assets/empty-states/no-matches.webp" alt="" className="w-24 h-24 mx-auto mb-4 object-contain opacity-70" />
           <p className="text-lg mb-2">No matches yet</p>
           <p className="text-sm mb-4">
             {user ? "Import your tournament history or log a match manually to get started" : "Sign up to track your Flesh and Blood tournament results"}
