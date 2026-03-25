@@ -3,6 +3,7 @@ import { useMemo } from "react";
 import type { ReactNode } from "react";
 import Link from "next/link";
 import type { FeaturedProfile } from "@/lib/featured-profiles";
+import { HeroShieldBadge } from "@/components/profile/HeroShieldBadge";
 import type { Creator } from "@/types";
 import { rankBorderClass } from "@/lib/leaderboard-ranks";
 import { playerHref } from "@/lib/constants";
@@ -329,8 +330,9 @@ export function FeaturedProfiles({ profiles, creators, rankMap, underlineTierMap
               )}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5">
-                  <p className="font-semibold text-fab-text truncate text-sm group-hover:text-fab-gold transition-colors">
+                  <p className="font-semibold text-fab-text truncate text-sm group-hover:text-fab-gold transition-colors flex items-center gap-1">
                     {fp.entry.displayName}
+                    <HeroShieldBadge pct={fp.entry.heroCompletionPct ?? 0} />
                   </p>
                   <span className={`text-[9px] font-bold uppercase tracking-wider shrink-0 ${config.accent}`}>
                     {fp.reason}

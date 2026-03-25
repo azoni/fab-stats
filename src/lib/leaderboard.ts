@@ -302,6 +302,7 @@ export async function updateLeaderboardEntry(
     eventsPlayed: events.length,
     eventWins,
     uniqueHeroes: heroData.size,
+    heroCompletionPct: matches.length > 0 ? Math.round(matches.filter((m) => m.heroPlayed && m.heroPlayed !== "Unknown").length / matches.length * 100) : 0,
     topHero,
     topHeroMatches,
     nemesis: nemesisOpp?.opponentName,
@@ -369,6 +370,8 @@ function sanitizeEntries(docs: LeaderboardEntry[]): LeaderboardEntry[] {
   const monthlyCutoff = localDateStr(60); // 30-day window written >30 days before current start → no overlap
 
   return docs.map((entry) => {
+    // Backfill heroCompletionPct for entries that predate the field
+    if (entry.heroCompletionPct === undefined) entry.heroCompletionPct = 0;
     if (!entry.weekStart || entry.weekStart < weeklyCutoff) {
       entry.weeklyMatches = 0;
       entry.weeklyWins = 0;
