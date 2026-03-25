@@ -1,22 +1,22 @@
 @import "tailwindcss";
 
 @theme inline {
-  --color-fab-bg: #14120c;
-  --color-fab-surface: #26221a;
-  --color-fab-surface-hover: #302c22;
-  --color-fab-border: #584a3a;
-  --color-fab-gold: #e0b050;
-  --color-fab-gold-light: #f2d080;
-  --color-fab-gold-dark: #9e7a2f;
+  --color-fab-bg: #1a1610;
+  --color-fab-surface: #2e2820;
+  --color-fab-surface-hover: #3a3228;
+  --color-fab-border: #625240;
+  --color-fab-gold: #e8b84c;
+  --color-fab-gold-light: #f4d480;
+  --color-fab-gold-dark: #a8822f;
   --color-fab-red: #7a2020;
   --color-fab-red-light: #a33030;
   --color-fab-crimson: #5c1515;
-  --color-fab-win: #5cec90;
-  --color-fab-loss: #ff8080;
+  --color-fab-win: #60f094;
+  --color-fab-loss: #ff8888;
   --color-fab-draw: #facc15;
-  --color-fab-text: #f2ebe0;
-  --color-fab-muted: #bfb09a;
-  --color-fab-dim: #948570;
+  --color-fab-text: #f5efe4;
+  --color-fab-muted: #c8b8a0;
+  --color-fab-dim: #a09080;
   --radius-sm: 0.375rem;
   --radius-md: 0.5rem;
   --radius-lg: 0.625rem;
@@ -42,6 +42,9 @@ body {
   position: fixed;
   inset: 0;
   z-index: -2;
+  /* Constrain background image to content width for better quality */
+  max-width: 80rem; /* matches max-w-7xl */
+  margin-inline: auto;
   background-image:
     linear-gradient(180deg, var(--fab-user-bg-overlay), var(--fab-user-bg-overlay)),
     var(--fab-user-bg-image);
@@ -52,7 +55,7 @@ body {
 }
 
 html[data-profile-bg="on"] body::after {
-  background: radial-gradient(ellipse 80% 40% at 50% -5%, rgba(224, 176, 80, 0.02), transparent 70%);
+  background: radial-gradient(ellipse 80% 40% at 50% -5%, rgba(232, 184, 76, 0.02), transparent 70%);
 }
 
 /* Subtle noise texture overlay */
@@ -73,13 +76,13 @@ body::after {
   inset: 0;
   pointer-events: none;
   z-index: 0;
-  background: radial-gradient(ellipse 80% 40% at 50% -5%, rgba(224, 176, 80, 0.04), transparent 70%);
+  background: radial-gradient(ellipse 80% 40% at 50% -5%, rgba(232, 184, 76, 0.04), transparent 70%);
 }
 
 /* Gold accent glow for headings */
 .text-fab-gold {
-  text-shadow: 0 0 8px rgba(224, 176, 80, 0.25),
-               0 0 30px rgba(224, 176, 80, 0.08);
+  text-shadow: 0 0 8px rgba(232, 184, 76, 0.25),
+               0 0 30px rgba(232, 184, 76, 0.08);
 }
 
 /* Scrollbar */
@@ -122,7 +125,7 @@ body::after {
 
 /* Selection */
 ::selection {
-  background: rgba(224, 176, 80, 0.25);
+  background: rgba(232, 184, 76, 0.25);
   color: #fff8e8;
 }
 
@@ -563,7 +566,7 @@ button[class*="bg-fab-surface"][class*="border-fab-border"]:not(nav):hover {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06),
               0 4px 16px rgba(0, 0, 0, 0.3),
               0 2px 4px rgba(0, 0, 0, 0.2);
-  border-color: rgba(224, 176, 80, 0.2);
+  border-color: rgba(232, 184, 76, 0.2);
 }
 
 /* ── Chunky game-style buttons ── */
@@ -581,7 +584,7 @@ button[class*="bg-fab-surface"][class*="border-fab-border"]:not(nav):hover {
 .bg-fab-gold:hover {
   transform: translateY(-1px);
   box-shadow: 0 3px 0 var(--color-fab-gold-dark),
-              0 6px 16px rgba(224, 176, 80, 0.25);
+              0 6px 16px rgba(232, 184, 76, 0.25);
 }
 
 .bg-fab-gold:active {
@@ -627,11 +630,11 @@ table tbody tr {
 }
 
 table tbody tr:hover {
-  background-color: rgba(224, 176, 80, 0.04);
+  background-color: rgba(232, 184, 76, 0.04);
 }
 
 table thead tr {
-  background: linear-gradient(180deg, var(--color-fab-surface) 0%, rgba(88, 74, 58, 0.3) 100%);
+  background: linear-gradient(180deg, var(--color-fab-surface) 0%, rgba(98, 82, 64, 0.3) 100%);
 }
 
 /* ── Staggered section reveal ── */
@@ -644,8 +647,8 @@ table thead tr {
 /* ── Filter pill active glow ── */
 
 .filter-pill-active {
-  box-shadow: 0 0 8px rgba(224, 176, 80, 0.15),
-              inset 0 0 6px rgba(224, 176, 80, 0.05);
+  box-shadow: 0 0 8px rgba(232, 184, 76, 0.15),
+              inset 0 0 6px rgba(232, 184, 76, 0.05);
   transform: scale(1.02);
   transition: all 0.2s;
 }
@@ -685,7 +688,7 @@ table thead tr {
   top: 0;
   left: 0;
   height: 2px;
-  background: linear-gradient(90deg, var(--color-fab-gold), rgba(224, 176, 80, 0.6));
+  background: linear-gradient(90deg, var(--color-fab-gold), rgba(232, 184, 76, 0.6));
   z-index: 100;
   pointer-events: none;
   transition: width 0.1s linear;
@@ -720,14 +723,14 @@ table thead tr {
 
 /* Card hover — warm inner glow, no lift */
 [data-theme="grimoire"] [class*="bg-fab-surface"][class*="border-fab-border"]:not(nav):hover {
-  box-shadow: inset 0 0 20px rgba(224, 176, 80, 0.06),
+  box-shadow: inset 0 0 20px rgba(232, 184, 76, 0.06),
               0 2px 12px rgba(0, 0, 0, 0.5);
-  border-color: rgba(224, 176, 80, 0.3);
+  border-color: rgba(232, 184, 76, 0.3);
 }
 
 /* Centered symmetrical divider — like a book rule */
 [data-theme="grimoire"] .section-header::after {
-  background: linear-gradient(90deg, transparent 5%, rgba(224, 176, 80, 0.3) 20%, rgba(224, 176, 80, 0.4) 50%, rgba(224, 176, 80, 0.3) 80%, transparent 95%);
+  background: linear-gradient(90deg, transparent 5%, rgba(232, 184, 76, 0.3) 20%, rgba(232, 184, 76, 0.4) 50%, rgba(232, 184, 76, 0.3) 80%, transparent 95%);
 }
 
 /* Buttons — wax seal press feel, wider tracking */
