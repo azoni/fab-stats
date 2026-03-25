@@ -406,9 +406,10 @@ export default function PlayerProfile() {
   }, [isAdmin, profileUid]);
 
   const heroCompletion = useMemo(() => {
-    if (fm.length === 0) return null;
-    const withHero = fm.filter((m) => m.heroPlayed && m.heroPlayed !== "Unknown").length;
-    return { withHero, total: fm.length, pct: Math.round((withHero / fm.length) * 100) };
+    const nonBye = fm.filter((m) => m.result !== MatchResult.Bye);
+    if (nonBye.length === 0) return null;
+    const withHero = nonBye.filter((m) => m.heroPlayed && m.heroPlayed !== "Unknown").length;
+    return { withHero, total: nonBye.length, pct: Math.round((withHero / nonBye.length) * 100) };
   }, [fm]);
   const overall = useMemo(() => computeOverallStats(fm), [fm]);
   const heroStats = useMemo(() => computeHeroStats(fm), [fm]);

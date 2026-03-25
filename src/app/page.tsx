@@ -23,6 +23,7 @@ import { WinRateRing } from "@/components/charts/WinRateRing";
 import { getHeroByName } from "@/lib/heroes";
 import { HeroImg } from "@/components/heroes/HeroImg";
 import { HeroShieldBadge } from "@/components/profile/HeroShieldBadge";
+import { MatchResult } from "@/types";
 import { Tooltip } from "@/components/ui/tooltip";
 import { loadKudosCounts } from "@/lib/kudos";
 import { CardBorderWrapper } from "@/components/profile/CardBorderWrapper";
@@ -136,9 +137,10 @@ export default function Dashboard() {
   const userRanks = useMemo(() => user ? computeUserRanks(lbEntries, user.uid) : [], [user, lbEntries]);
   const bestRank = useMemo(() => getBestRank(userRanks), [userRanks]);
   const heroCompletion = useMemo(() => {
-    if (filteredMatches.length === 0) return null;
-    const withHero = filteredMatches.filter((m) => m.heroPlayed && m.heroPlayed !== "Unknown").length;
-    return { withHero, total: filteredMatches.length, pct: Math.round((withHero / filteredMatches.length) * 100) };
+    const nonBye = filteredMatches.filter((m) => m.result !== MatchResult.Bye);
+    if (nonBye.length === 0) return null;
+    const withHero = nonBye.filter((m) => m.heroPlayed && m.heroPlayed !== "Unknown").length;
+    return { withHero, total: nonBye.length, pct: Math.round((withHero / nonBye.length) * 100) };
   }, [filteredMatches]);
   const topHero = useMemo(() => {
     const known = heroStats.filter((h) => h.heroName !== "Unknown");
