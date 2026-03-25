@@ -21,6 +21,7 @@ export interface TrendsShareData {
   topHero?: { name: string; winRate: number; matches: number };
   recentTrend?: number;
   filterLabel?: string;
+  heroCompletionPct?: number;
 }
 
 interface TrendsTheme {
@@ -194,7 +195,14 @@ function ShareCardInner({ data, theme }: { data: TrendsShareData; theme: TrendsT
       <div className="relative z-10">
         <div className="flex items-center justify-between mb-3">
           <p className="text-[10px] uppercase tracking-[0.2em]" style={{ color: `${t.accent}99` }}>My Stats</p>
-          <p className="text-lg font-bold" style={{ color: t.text }}>{data.playerName}</p>
+          <span className="flex items-center gap-1.5">
+            <p className="text-lg font-bold" style={{ color: t.text }}>{data.playerName}</p>
+            {data.heroCompletionPct !== undefined && data.heroCompletionPct >= 35 && (
+              <svg className="w-4 h-4" style={{ color: data.heroCompletionPct === 100 ? "#fbbf24" : data.heroCompletionPct >= 90 ? "#a78bfa" : data.heroCompletionPct >= 75 ? "#f87171" : data.heroCompletionPct >= 50 ? "#60a5fa" : "#cd7f32" }} viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-1.5 13.5l-3.5-3.5 1.41-1.41L10.5 11.67l5.09-5.09L17 8l-6.5 6.5z" />
+              </svg>
+            )}
+          </span>
         </div>
 
         <OrnamentalDivider color={t.accent} />

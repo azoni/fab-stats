@@ -50,6 +50,7 @@ export function useCommunityStats() {
         })
         .catch(() => {});
     }
+
   }, []);
 
   return { userCount, matchCount };
