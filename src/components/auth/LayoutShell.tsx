@@ -12,6 +12,7 @@ function isPublicPath(pathname: string): boolean {
   if (pathname === "/opponents/nemesis") return true;
   if (pathname === "/opponents/rivalry") return true;
   if (pathname === "/achievements/best-finish") return true;
+  if (pathname.startsWith("/deck")) return true;
   return false;
 }
 
