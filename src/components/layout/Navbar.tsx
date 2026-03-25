@@ -15,11 +15,11 @@ import {
   Globe, BookOpen, Zap,
   Wrench, ChevronDown,
   Mail, Star, Users, Settings, ShieldCheck, ExternalLink,
-  MoreVertical, Heart, MessageCircle,
+  MoreVertical, Heart, MessageCircle, ShoppingCart, Coffee, Github,
 } from "lucide-react";
 import { FeedbackModal } from "@/components/feedback/FeedbackModal";
 
-const navLinks: { href: string; label: string; icon: ReactNode; color: string; bg: string; authOnly?: boolean; iconOnly?: boolean; subItems?: { href: string; label: string; adminOnly?: boolean; badge?: string }[] }[] = [
+const navLinks: { href: string; label: string; icon: ReactNode; color: string; bg: string; authOnly?: boolean; iconOnly?: boolean; subItems?: { href: string; label: string; adminOnly?: boolean; badge?: string; icon?: ReactNode }[] }[] = [
   { href: "/matches", label: "Matches", icon: <SwordsIcon className="w-4 h-4" />, color: "text-red-400", bg: "bg-red-400/10", authOnly: true, subItems: [
     { href: "/matches", label: "Matches" },
     { href: "/events", label: "Events" },
@@ -35,13 +35,13 @@ const navLinks: { href: string; label: string; icon: ReactNode; color: string; b
   { href: "/leaderboard", label: "Rankings", icon: <TrophyIcon className="w-4 h-4" />, color: "text-amber-400", bg: "bg-amber-400/10" },
   { href: "/community", label: "Community", icon: <Users className="w-4 h-4" />, color: "text-indigo-400", bg: "bg-indigo-400/10" },
   { href: "/support", label: "Support", icon: <Heart className="w-4 h-4" />, color: "text-pink-400", bg: "bg-pink-400/10", iconOnly: true, subItems: [
-    { href: "https://www.amazon.com/?tag=oldwaystoda00-20", label: "Shop Amazon", badge: "Free" },
-    { href: "https://partner.tcgplayer.com/fabstats", label: "Shop TCGplayer", badge: "Free" },
-    { href: "https://github.com/sponsors/azoni", label: "GitHub Sponsors" },
-    { href: "https://ko-fi.com/azoni", label: "Ko-fi" },
-    { href: "/feedback", label: "Send Feedback" },
-    { href: "https://discord.gg/WPP5aqCUHY", label: "Join Discord" },
-    { href: "https://x.com/FabStats", label: "Follow on X" },
+    { href: "https://www.amazon.com/?tag=oldwaystoda00-20", label: "Shop Amazon", badge: "Free", icon: <ShoppingCart className="w-3.5 h-3.5" /> },
+    { href: "https://partner.tcgplayer.com/fabstats", label: "Shop TCGplayer", badge: "Free", icon: <ShoppingCart className="w-3.5 h-3.5" /> },
+    { href: "https://github.com/sponsors/azoni", label: "GitHub Sponsors", icon: <Github className="w-3.5 h-3.5" /> },
+    { href: "https://ko-fi.com/azoni", label: "Ko-fi", icon: <Coffee className="w-3.5 h-3.5" /> },
+    { href: "/feedback", label: "Send Feedback", icon: <MessageCircle className="w-3.5 h-3.5" /> },
+    { href: "https://discord.gg/WPP5aqCUHY", label: "Join Discord", icon: <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128c.126-.094.252-.192.372-.292a.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.095 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.095 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></svg> },
+    { href: "https://x.com/FabStats", label: "Follow on X", icon: <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg> },
   ] },
 ];
 
@@ -117,32 +117,7 @@ export function Navbar() {
             </svg>
             <span className="text-xl font-bold text-fab-gold tracking-tight">FaB Stats</span>
             {(userCount > 0 || matchCount > 0) && (
-              <div className="hidden xl:flex relative group/stats ml-1.5">
-                <Link
-                  href="/community"
-                  className="flex flex-col leading-tight px-2 py-1 rounded-md border border-fab-border/50 hover:border-fab-gold/30 hover:bg-fab-surface-hover transition-colors"
-                >
-                  {userCount > 0 && <span className="text-[10px] text-fab-muted font-medium tabular-nums">{userCount.toLocaleString()} players</span>}
-                  {matchCount > 0 && <span className="text-[10px] text-fab-dim font-medium tabular-nums">{matchCount.toLocaleString()} matches</span>}
-                </Link>
-                <div className="absolute left-0 top-full pt-1 hidden group-hover/stats:block z-50">
-                  <div className="w-52 bg-fab-surface border border-fab-border rounded-lg shadow-xl p-3">
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs text-fab-muted">Players</span>
-                        <span className="text-sm font-bold text-fab-text tabular-nums">{userCount.toLocaleString()}</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs text-fab-muted">Matches Tracked</span>
-                        <span className="text-sm font-bold text-fab-text tabular-nums">{matchCount.toLocaleString()}</span>
-                      </div>
-                    </div>
-                    <div className="mt-2 pt-2 border-t border-fab-border/50">
-                      <span className="text-[10px] text-fab-dim">View community &rarr;</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <CommunityStatsPopover userCount={userCount} matchCount={matchCount} />
             )}
           </Link>
 
@@ -185,6 +160,7 @@ export function Navbar() {
                                       onClick={() => { if (trackKey) trackSupportClick(trackKey); }}
                                       className="flex items-center gap-2 px-3 py-2 text-sm text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover transition-colors"
                                     >
+                                      {sub.icon && <span className="text-fab-dim shrink-0">{sub.icon}</span>}
                                       <span className="flex-1">{sub.label}</span>
                                       {sub.badge && <span className="text-[8px] font-bold uppercase tracking-wider text-emerald-400 bg-emerald-400/15 px-1.5 py-0.5 rounded-full">{sub.badge}</span>}
                                       <ExternalLink className="w-3 h-3 text-fab-dim shrink-0" />
@@ -196,8 +172,9 @@ export function Navbar() {
                                     <button
                                       key={sub.href}
                                       onClick={() => setFeedbackOpen(true)}
-                                      className="block w-full text-left px-3 py-2 text-sm text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover transition-colors"
+                                      className="flex items-center gap-2 w-full text-left px-3 py-2 text-sm text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover transition-colors"
                                     >
+                                      {sub.icon && <span className="text-fab-dim shrink-0">{sub.icon}</span>}
                                       {sub.label}
                                     </button>
                                   );
@@ -467,6 +444,129 @@ function CollapsibleSection({
       </button>
       {expanded && <div className="px-1.5 pb-1.5">{children}</div>}
     </>
+  );
+}
+
+const SHIELD_TIERS = [
+  { min: 100, color: "#fbbf24", label: "Gold" },
+  { min: 90, color: "#a78bfa", label: "Purple" },
+  { min: 75, color: "#f87171", label: "Red" },
+  { min: 50, color: "#60a5fa", label: "Blue" },
+  { min: 35, color: "#cd7f32", label: "Bronze" },
+] as const;
+
+interface CommunityHeroStats {
+  totalMatches: number;
+  withHero: number;
+  tierCounts: { label: string; color: string; count: number; pct: number }[];
+}
+
+function CommunityStatsPopover({ userCount, matchCount }: { userCount: number; matchCount: number }) {
+  const [heroStats, setHeroStats] = useState<CommunityHeroStats | null>(null);
+  const [loaded, setLoaded] = useState(false);
+
+  const loadStats = useCallback(() => {
+    if (loaded) return;
+    setLoaded(true);
+    // Check localStorage cache first
+    const cacheKey = "fab_community_hero_stats";
+    try {
+      const cached = localStorage.getItem(cacheKey);
+      if (cached) {
+        const { stats, ts } = JSON.parse(cached);
+        if (Date.now() - ts < 30 * 60 * 1000) { setHeroStats(stats); return; }
+      }
+    } catch {}
+
+    // Lazy fetch from leaderboard
+    import("@/lib/leaderboard").then(({ getLeaderboardEntries }) => {
+      getLeaderboardEntries().then((entries) => {
+        let totalMatches = 0;
+        let withHero = 0;
+        const tierBuckets = [0, 0, 0, 0, 0, 0]; // gold, purple, red, blue, bronze, none
+
+        for (const e of entries) {
+          totalMatches += e.totalMatches || 0;
+          const pct = e.heroCompletionPct ?? 0;
+          if (pct > 0) {
+            withHero += Math.round(pct / 100 * (e.totalMatches || 0));
+          }
+          if (pct === 100) tierBuckets[0]++;
+          else if (pct >= 90) tierBuckets[1]++;
+          else if (pct >= 75) tierBuckets[2]++;
+          else if (pct >= 50) tierBuckets[3]++;
+          else if (pct >= 35) tierBuckets[4]++;
+          else tierBuckets[5]++;
+        }
+
+        const total = entries.length;
+        const tierCounts = SHIELD_TIERS.map((t, i) => ({
+          label: t.label,
+          color: t.color,
+          count: tierBuckets[i],
+          pct: total > 0 ? Math.round(tierBuckets[i] / total * 100) : 0,
+        }));
+
+        const stats: CommunityHeroStats = { totalMatches, withHero, tierCounts };
+        setHeroStats(stats);
+        try { localStorage.setItem(cacheKey, JSON.stringify({ stats, ts: Date.now() })); } catch {}
+      });
+    });
+  }, [loaded]);
+
+  const heroPct = heroStats ? Math.round(heroStats.withHero / heroStats.totalMatches * 100) : 0;
+
+  return (
+    <div className="hidden xl:flex relative group/stats ml-1.5" onMouseEnter={loadStats}>
+      <div className="flex flex-col leading-tight px-2 py-1 rounded-md border border-fab-border/50 hover:border-fab-gold/30 hover:bg-fab-surface-hover transition-colors cursor-default">
+        {userCount > 0 && <span className="text-[10px] text-fab-muted font-medium tabular-nums">{userCount.toLocaleString()} players</span>}
+        {matchCount > 0 && <span className="text-[10px] text-fab-dim font-medium tabular-nums">{matchCount.toLocaleString()} matches</span>}
+      </div>
+      <div className="absolute left-0 top-full pt-1 hidden group-hover/stats:block z-50">
+        <div className="w-64 bg-fab-surface border border-fab-border rounded-lg shadow-xl p-3">
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-fab-muted">Players</span>
+              <span className="text-sm font-bold text-fab-text tabular-nums">{userCount.toLocaleString()}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-fab-muted">Matches Tracked</span>
+              <span className="text-sm font-bold text-fab-text tabular-nums">{matchCount.toLocaleString()}</span>
+            </div>
+            {heroStats && (
+              <>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-fab-muted">With Hero Data</span>
+                  <span className="text-sm font-bold text-fab-text tabular-nums">{heroStats.withHero.toLocaleString()} <span className="text-xs text-fab-dim font-normal">({heroPct}%)</span></span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-fab-muted">Missing Hero</span>
+                  <span className="text-sm font-bold text-fab-text tabular-nums">{(heroStats.totalMatches - heroStats.withHero).toLocaleString()} <span className="text-xs text-fab-dim font-normal">({100 - heroPct}%)</span></span>
+                </div>
+                <div className="mt-1 pt-1.5 border-t border-fab-border/50">
+                  <p className="text-[10px] text-fab-dim mb-1.5">Shield Badge Distribution</p>
+                  {heroStats.tierCounts.map((t) => (
+                    <div key={t.label} className="flex items-center gap-2 py-0.5">
+                      <svg className="w-3 h-3 shrink-0" style={{ color: t.color }} viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-1.5 13.5l-3.5-3.5 1.41-1.41L10.5 11.67l5.09-5.09L17 8l-6.5 6.5z" />
+                      </svg>
+                      <span className="text-[10px] text-fab-muted flex-1">{t.label}</span>
+                      <span className="text-[10px] text-fab-text tabular-nums font-medium">{t.count}</span>
+                      <span className="text-[10px] text-fab-dim tabular-nums w-8 text-right">{t.pct}%</span>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+            {!heroStats && loaded && (
+              <div className="flex items-center justify-center py-2">
+                <div className="w-4 h-4 border-2 border-fab-gold border-t-transparent rounded-full animate-spin" />
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 
