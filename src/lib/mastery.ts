@@ -46,11 +46,11 @@ export function computeHeroMastery(heroStats: HeroStats[]): HeroMastery[] {
 
 export const tierConfig: Record<MasteryTier, { label: string; color: string; bg: string; border: string }> = {
   novice: { label: "Novice", color: "text-zinc-400", bg: "bg-zinc-400/10", border: "border-zinc-400/30" },
-  apprentice: { label: "Apprentice", color: "text-green-400", bg: "bg-green-400/10", border: "border-green-400/30" },
-  skilled: { label: "Skilled", color: "text-blue-400", bg: "bg-blue-400/10", border: "border-blue-400/30" },
-  expert: { label: "Expert", color: "text-purple-400", bg: "bg-purple-400/10", border: "border-purple-400/30" },
-  master: { label: "Master", color: "text-fab-gold", bg: "bg-fab-gold/10", border: "border-fab-gold/30" },
-  grandmaster: { label: "Grandmaster", color: "text-fuchsia-400", bg: "bg-fuchsia-400/10", border: "border-fuchsia-400/30" },
-  legend: { label: "Legend", color: "text-sky-400", bg: "bg-sky-400/10", border: "border-sky-400/30" },
-  mythic: { label: "Mythic", color: "text-red-400", bg: "bg-red-400/10", border: "border-red-400/30" },
+  apprentice: { label: "Apprentice", color: "text-[#4ade80]", bg: "bg-[#4ade80]/10", border: "border-[#4ade80]/30" },
+  skilled: { label: "Skilled", color: "text-[#2dd4bf]", bg: "bg-[#2dd4bf]/10", border: "border-[#2dd4bf]/30" },
+  expert: { label: "Expert", color: "text-[#cd7f32]", bg: "bg-[#cd7f32]/10", border: "border-[#cd7f32]/30" },
+  master: { label: "Master", color: "text-[#60a5fa]", bg: "bg-[#60a5fa]/10", border: "border-[#60a5fa]/30" },
+  grandmaster: { label: "Grandmaster", color: "text-[#f87171]", bg: "bg-[#f87171]/10", border: "border-[#f87171]/30" },
+  legend: { label: "Legend", color: "text-[#a78bfa]", bg: "bg-[#a78bfa]/10", border: "border-[#a78bfa]/30" },
+  mythic: { label: "Mythic", color: "text-[#fbbf24]", bg: "bg-[#fbbf24]/10", border: "border-[#fbbf24]/30" },
 };

@@ -104,9 +104,9 @@ export const TIER_VISUALS: Record<BadgeTier, TierVisual> = {
 
 /** Map achievement rarity to visual styling for badge strip */
 export const RARITY_VISUALS: Record<string, TierVisual> = {
-  common:    { ringColor: "#fde68a", glowColor: "#fde68a", glowOpacity: 0.1,  animate: false, cornerAccents: false },
-  uncommon:  { ringColor: "#4ade80", glowColor: "#4ade80", glowOpacity: 0.2,  animate: false, cornerAccents: false },
-  rare:      { ringColor: "#60a5fa", glowColor: "#60a5fa", glowOpacity: 0.3,  animate: false, cornerAccents: false },
-  epic:      { ringColor: "#c084fc", glowColor: "#c084fc", glowOpacity: 0.4,  animate: true,  cornerAccents: false },
-  legendary: { ringColor: "#C9A84C", glowColor: "#C9A84C", glowOpacity: 0.5,  animate: true,  cornerAccents: true  },
+  common:    { ringColor: "#cd7f32", glowColor: "#cd7f32", glowOpacity: 0.1,  animate: false, cornerAccents: false },
+  uncommon:  { ringColor: "#60a5fa", glowColor: "#60a5fa", glowOpacity: 0.2,  animate: false, cornerAccents: false },
+  rare:      { ringColor: "#f87171", glowColor: "#f87171", glowOpacity: 0.3,  animate: false, cornerAccents: false },
+  epic:      { ringColor: "#a78bfa", glowColor: "#a78bfa", glowOpacity: 0.4,  animate: true,  cornerAccents: false },
+  legendary: { ringColor: "#fbbf24", glowColor: "#fbbf24", glowOpacity: 0.5,  animate: true,  cornerAccents: true  },
 };
