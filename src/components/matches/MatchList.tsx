@@ -135,7 +135,7 @@ export function MatchList({ matches, matchOwnerUid, enableComments, editable, on
     });
 
     return result;
-  }, [matches, filterResult, filterFormat, filterHero, filterEventType, sortOrder, search]);
+  }, [matches, filterResult, filterFormat, filterHero, filterOpponentHero, filterEventType, sortOrder, search]);
 
   // Stats from filtered matches (reflects current view)
   const stats = useMemo(() => {
@@ -212,8 +212,8 @@ export function MatchList({ matches, matchOwnerUid, enableComments, editable, on
               onChange={(e) => setFilterOpponentHero(e.target.value)}
               className="bg-fab-surface border border-fab-border rounded-md px-3 py-1.5 text-fab-text text-sm outline-none"
             >
-              <option value="all">All Opponent Heroes</option>
-              {hasUnsetOpponentHeroes && <option value="none">No Opponent Hero Set</option>}
+              <option value="all">Opp. Hero</option>
+              {hasUnsetOpponentHeroes && <option value="none">No Opp. Hero</option>}
               {allOpponentHeroes.map((h) => (
                 <option key={h} value={h}>{h}</option>
               ))}
