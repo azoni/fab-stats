@@ -304,6 +304,8 @@ export interface LeaderboardEntry {
   eventWins: number;
   uniqueHeroes: number;
   heroCompletionPct: number;
+  opponentHeroCompletionPct: number;
+  bothHeroesCompletionPct: number;
   topHero: string;
   topHeroMatches: number;
   nemesis?: string;

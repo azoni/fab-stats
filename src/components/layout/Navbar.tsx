@@ -458,6 +458,8 @@ const SHIELD_TIERS = [
 interface CommunityHeroStats {
   totalMatches: number;
   withHero: number;
+  withOpponent: number;
+  withBoth: number;
   tierCounts: { label: string; color: string; count: number; pct: number }[];
 }
 
@@ -483,19 +485,24 @@ function CommunityStatsPopover({ userCount, matchCount }: { userCount: number; m
       getLeaderboardEntries().then((entries) => {
         let totalMatches = 0;
         let withHero = 0;
+        let withOpponent = 0;
+        let withBoth = 0;
         const tierBuckets = [0, 0, 0, 0, 0, 0]; // gold, purple, red, blue, bronze, none
 
         for (const e of entries) {
-          totalMatches += e.totalMatches || 0;
-          const pct = e.heroCompletionPct ?? 0;
-          if (pct > 0) {
-            withHero += Math.round(pct / 100 * (e.totalMatches || 0));
-          }
-          if (pct === 100) tierBuckets[0]++;
-          else if (pct >= 90) tierBuckets[1]++;
-          else if (pct >= 75) tierBuckets[2]++;
-          else if (pct >= 50) tierBuckets[3]++;
-          else if (pct >= 35) tierBuckets[4]++;
+          const tm = e.totalMatches || 0;
+          totalMatches += tm;
+          const heroPct = e.heroCompletionPct ?? 0;
+          const oppPct = e.opponentHeroCompletionPct ?? 0;
+          const bothPct = e.bothHeroesCompletionPct ?? 0;
+          if (heroPct > 0) withHero += Math.round(heroPct / 100 * tm);
+          if (oppPct > 0) withOpponent += Math.round(oppPct / 100 * tm);
+          if (bothPct > 0) withBoth += Math.round(bothPct / 100 * tm);
+          if (heroPct === 100) tierBuckets[0]++;
+          else if (heroPct >= 90) tierBuckets[1]++;
+          else if (heroPct >= 75) tierBuckets[2]++;
+          else if (heroPct >= 50) tierBuckets[3]++;
+          else if (heroPct >= 35) tierBuckets[4]++;
           else tierBuckets[5]++;
         }
 
@@ -507,7 +514,7 @@ function CommunityStatsPopover({ userCount, matchCount }: { userCount: number; m
           pct: total > 0 ? Math.round(tierBuckets[i] / total * 100) : 0,
         }));
 
-        const stats: CommunityHeroStats = { totalMatches, withHero, tierCounts };
+        const stats: CommunityHeroStats = { totalMatches, withHero, withOpponent, withBoth, tierCounts };
         setHeroStats(stats);
         try { localStorage.setItem(cacheKey, JSON.stringify({ stats, ts: Date.now() })); } catch {}
       });
@@ -535,13 +542,20 @@ function CommunityStatsPopover({ userCount, matchCount }: { userCount: number; m
             </div>
             {heroStats && (
               <>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-fab-muted">With Hero Data</span>
-                  <span className="text-sm font-bold text-fab-text tabular-nums">{heroStats.withHero.toLocaleString()} <span className="text-xs text-fab-dim font-normal">({heroPct}%)</span></span>
+                <div className="mt-1 pt-1.5 border-t border-fab-border/50">
+                  <p className="text-[10px] text-fab-dim mb-1">Hero Data Coverage</p>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-fab-muted">Missing Hero</span>
-                  <span className="text-sm font-bold text-fab-text tabular-nums">{(heroStats.totalMatches - heroStats.withHero).toLocaleString()} <span className="text-xs text-fab-dim font-normal">({100 - heroPct}%)</span></span>
+                  <span className="text-xs text-fab-muted">Player Hero</span>
+                  <span className="text-xs font-bold text-fab-text tabular-nums">{heroStats.withHero.toLocaleString()} <span className="text-fab-dim font-normal">({heroPct}%)</span></span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-fab-muted">Opponent Hero</span>
+                  <span className="text-xs font-bold text-fab-text tabular-nums">{heroStats.withOpponent.toLocaleString()} <span className="text-fab-dim font-normal">({heroStats.totalMatches > 0 ? Math.round(heroStats.withOpponent / heroStats.totalMatches * 100) : 0}%)</span></span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-fab-muted">Both Heroes</span>
+                  <span className="text-xs font-bold text-fab-text tabular-nums">{heroStats.withBoth.toLocaleString()} <span className="text-fab-dim font-normal">({heroStats.totalMatches > 0 ? Math.round(heroStats.withBoth / heroStats.totalMatches * 100) : 0}%)</span></span>
                 </div>
                 <div className="mt-1 pt-1.5 border-t border-fab-border/50">
                   <p className="text-[10px] text-fab-dim mb-1.5">Shield Badge Distribution</p>
