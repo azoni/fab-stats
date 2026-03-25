@@ -186,7 +186,7 @@ export default function AdminPage() {
     setFetching(true);
     setError("");
     try {
-      const [result, fb, cr, ev, analytics, polls, bannerData, badges, muted, showcaseData, themeDefault, chatStats, seasonsData, deletedCount, importMethodData, sc24h, sc7d] = await Promise.all([getAdminDashboardData(), getAllFeedback(), getCreators(), getEvents(), getAnalytics(), getAllPolls(), getBanner(), getAllBadgeAssignments(), getMutedUserIds(), getEventShowcase(), getDefaultTheme(), getChatGlobalStats(), getSeasons(), getDeletedAccountCount(), getImportMethodStats(), getAnalytics("24h"), getAnalytics("7d")]);
+      const [result, fb, cr, ev, analytics, polls, bannerData, badges, muted, showcaseData, themeDefault, chatStats, seasonsData, deletedCount, importMethodData] = await Promise.all([getAdminDashboardData(), getAllFeedback(), getCreators(), getEvents(), getAnalytics(), getAllPolls(), getBanner(), getAllBadgeAssignments(), getMutedUserIds(), getEventShowcase(), getDefaultTheme(), getChatGlobalStats(), getSeasons(), getDeletedAccountCount(), getImportMethodStats()]);
       setData(result);
       setAiCost(chatStats);
       setDeletedAccounts(deletedCount);
@@ -202,9 +202,12 @@ export default function AdminPage() {
         players: e.players || (e.playerUsernames || []).map((u: string) => ({ name: u, username: u })),
       })));
       setAnalyticsData(analytics);
-      setSupportClicks24h(sc24h.supportClicks);
-      setSupportClicks7d(sc7d.supportClicks);
       setImportMethods(importMethodData);
+      // Lazy-load 24h/7d support click stats (93 fewer Firestore reads on initial load)
+      Promise.all([getAnalytics("24h"), getAnalytics("7d")]).then(([sc24h, sc7d]) => {
+        setSupportClicks24h(sc24h.supportClicks);
+        setSupportClicks7d(sc7d.supportClicks);
+      }).catch(() => {});
       setAllPolls(polls);
       setBadgeAssignments(badges);
       setMutedIds(new Set(muted));
