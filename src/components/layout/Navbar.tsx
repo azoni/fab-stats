@@ -448,11 +448,11 @@ function CollapsibleSection({
 }
 
 const SHIELD_TIERS = [
-  { min: 100, color: "#fbbf24", label: "Gold" },
-  { min: 90, color: "#a78bfa", label: "Purple" },
-  { min: 75, color: "#f87171", label: "Red" },
-  { min: 50, color: "#60a5fa", label: "Blue" },
-  { min: 35, color: "#cd7f32", label: "Bronze" },
+  { min: 100, color: "#fbbf24", label: "Gold", req: "100%" },
+  { min: 90, color: "#a78bfa", label: "Purple", req: "90%+" },
+  { min: 75, color: "#f87171", label: "Red", req: "75%+" },
+  { min: 50, color: "#60a5fa", label: "Blue", req: "50%+" },
+  { min: 35, color: "#cd7f32", label: "Bronze", req: "35%+" },
 ] as const;
 
 interface CommunityHeroStats {
@@ -460,7 +460,7 @@ interface CommunityHeroStats {
   withHero: number;
   withOpponent: number;
   withBoth: number;
-  tierCounts: { label: string; color: string; count: number; pct: number }[];
+  tierCounts: { label: string; color: string; req: string; count: number; pct: number }[];
 }
 
 function CommunityStatsPopover({ userCount, matchCount }: { userCount: number; matchCount: number }) {
@@ -510,6 +510,7 @@ function CommunityStatsPopover({ userCount, matchCount }: { userCount: number; m
         const tierCounts = SHIELD_TIERS.map((t, i) => ({
           label: t.label,
           color: t.color,
+          req: t.req,
           count: tierBuckets[i],
           pct: total > 0 ? Math.round(tierBuckets[i] / total * 100) : 0,
         }));
@@ -543,19 +544,21 @@ function CommunityStatsPopover({ userCount, matchCount }: { userCount: number; m
             {heroStats && (
               <>
                 <div className="mt-1 pt-1.5 border-t border-fab-border/50">
-                  <p className="text-[10px] text-fab-dim mb-1">Hero Data Coverage</p>
+                  <p className="text-[10px] text-fab-dim mb-1">Community Match Data</p>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-fab-muted">Player Hero</span>
+                  <span className="text-xs text-fab-muted">Matches w/ Hero</span>
                   <span className="text-xs font-bold text-fab-text tabular-nums">{heroStats.withHero.toLocaleString()} <span className="text-fab-dim font-normal">({heroPct}%)</span></span>
                 </div>
+                {heroStats.withBoth > 0 && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-fab-muted">Matches w/ Both Heroes</span>
+                    <span className="text-xs font-bold text-fab-text tabular-nums">{heroStats.withBoth.toLocaleString()} <span className="text-fab-dim font-normal">({heroStats.totalMatches > 0 ? Math.round(heroStats.withBoth / heroStats.totalMatches * 100) : 0}%)</span></span>
+                  </div>
+                )}
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-fab-muted">Opponent Hero</span>
-                  <span className="text-xs font-bold text-fab-text tabular-nums">{heroStats.withOpponent.toLocaleString()} <span className="text-fab-dim font-normal">({heroStats.totalMatches > 0 ? Math.round(heroStats.withOpponent / heroStats.totalMatches * 100) : 0}%)</span></span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-fab-muted">Both Heroes</span>
-                  <span className="text-xs font-bold text-fab-text tabular-nums">{heroStats.withBoth.toLocaleString()} <span className="text-fab-dim font-normal">({heroStats.totalMatches > 0 ? Math.round(heroStats.withBoth / heroStats.totalMatches * 100) : 0}%)</span></span>
+                  <span className="text-xs text-fab-muted">Missing Hero Data</span>
+                  <span className="text-xs font-bold text-fab-text tabular-nums">{(heroStats.totalMatches - heroStats.withHero).toLocaleString()} <span className="text-fab-dim font-normal">({100 - heroPct}%)</span></span>
                 </div>
                 <div className="mt-1 pt-1.5 border-t border-fab-border/50">
                   <p className="text-[10px] text-fab-dim mb-1.5">Shield Badge Distribution</p>
@@ -564,7 +567,7 @@ function CommunityStatsPopover({ userCount, matchCount }: { userCount: number; m
                       <svg className="w-3 h-3 shrink-0" style={{ color: t.color }} viewBox="0 0 24 24" fill="currentColor">
                         <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-1.5 13.5l-3.5-3.5 1.41-1.41L10.5 11.67l5.09-5.09L17 8l-6.5 6.5z" />
                       </svg>
-                      <span className="text-[10px] text-fab-muted flex-1">{t.label}</span>
+                      <span className="text-[10px] text-fab-muted flex-1">{t.label} <span className="text-fab-dim">({t.req})</span></span>
                       <span className="text-[10px] text-fab-text tabular-nums font-medium">{t.count}</span>
                       <span className="text-[10px] text-fab-dim tabular-nums w-8 text-right">{t.pct}%</span>
                     </div>
