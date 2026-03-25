@@ -404,6 +404,11 @@ export default function PlayerProfile() {
     getFriendCount(profileUid).then(setFriendCount).catch(() => {});
   }, [isAdmin, profileUid]);
 
+  const heroCompletion = useMemo(() => {
+    if (fm.length === 0) return null;
+    const withHero = fm.filter((m) => m.heroPlayed && m.heroPlayed !== "Unknown").length;
+    return { withHero, total: fm.length, pct: Math.round((withHero / fm.length) * 100) };
+  }, [fm]);
   const overall = useMemo(() => computeOverallStats(fm), [fm]);
   const heroStats = useMemo(() => computeHeroStats(fm), [fm]);
   const allOpponentStats = useMemo(() => computeOpponentStats(fm), [fm]);
@@ -619,7 +624,7 @@ export default function PlayerProfile() {
             <span className="text-xs font-semibold text-fab-dim">Private Profile — only visible to you (admin) and the owner</span>
           </div>
         )}
-        <ProfileHeader profile={profile} isAdmin={isAdmin} isOwner={isOwner} isFavorited={!isOwner && !!currentUser && !isGuest && isFavorited(profile.uid)} onToggleFavorite={!isOwner && !!currentUser && !isGuest ? () => toggleFavorite(profile) : undefined} friendStatus={!isOwner && !!currentUser && !isGuest ? (isFriend(profile.uid) ? "friends" : hasSentRequest(profile.uid) ? "sent" : hasReceivedRequest(profile.uid) ? "received" : "none") : undefined} onFriendAction={!isOwner && !!currentUser && !isGuest ? () => { const fs = getFriendshipForUser(profile.uid); if (isFriend(profile.uid)) return; if (hasReceivedRequest(profile.uid) && fs) { acceptRequest(fs.id); } else if (!hasSentRequest(profile.uid)) { sendRequest(profile); } } : undefined} friendCount={isAdmin ? friendCount : undefined} />
+        <ProfileHeader profile={profile} isAdmin={isAdmin} isOwner={isOwner} isFavorited={!isOwner && !!currentUser && !isGuest && isFavorited(profile.uid)} onToggleFavorite={!isOwner && !!currentUser && !isGuest ? () => toggleFavorite(profile) : undefined} friendStatus={!isOwner && !!currentUser && !isGuest ? (isFriend(profile.uid) ? "friends" : hasSentRequest(profile.uid) ? "sent" : hasReceivedRequest(profile.uid) ? "received" : "none") : undefined} onFriendAction={!isOwner && !!currentUser && !isGuest ? () => { const fs = getFriendshipForUser(profile.uid); if (isFriend(profile.uid)) return; if (hasReceivedRequest(profile.uid) && fs) { acceptRequest(fs.id); } else if (!hasSentRequest(profile.uid)) { sendRequest(profile); } } : undefined} friendCount={isAdmin ? friendCount : undefined} heroCompletion={heroCompletion} />
         <div className="text-center py-16">
           <p className="text-fab-muted">This player hasn&apos;t logged any matches yet.</p>
         </div>
@@ -694,7 +699,7 @@ export default function PlayerProfile() {
           <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-3">
-                <ProfileHeader profile={profile} bestRank={bestRank} isAdmin={isAdmin} isOwner={isOwner} isFavorited={!actualIsOwner && !!currentUser && !isGuest && isFavorited(profile.uid)} onToggleFavorite={!actualIsOwner && !!currentUser && !isGuest ? () => toggleFavorite(profile) : undefined} friendStatus={!actualIsOwner && !!currentUser && !isGuest ? (isFriend(profile.uid) ? "friends" : hasSentRequest(profile.uid) ? "sent" : hasReceivedRequest(profile.uid) ? "received" : "none") : undefined} onFriendAction={!actualIsOwner && !!currentUser && !isGuest ? () => { const fs = getFriendshipForUser(profile.uid); if (isFriend(profile.uid)) return; if (hasReceivedRequest(profile.uid) && fs) { acceptRequest(fs.id); } else if (!hasSentRequest(profile.uid)) { sendRequest(profile); } } : undefined} onShareCard={actualIsOwner || isAdmin ? () => setProfileShareOpen(true) : undefined} friendCount={isAdmin ? friendCount : undefined} creator={creatorInfo} />
+                <ProfileHeader profile={profile} bestRank={bestRank} isAdmin={isAdmin} isOwner={isOwner} isFavorited={!actualIsOwner && !!currentUser && !isGuest && isFavorited(profile.uid)} onToggleFavorite={!actualIsOwner && !!currentUser && !isGuest ? () => toggleFavorite(profile) : undefined} friendStatus={!actualIsOwner && !!currentUser && !isGuest ? (isFriend(profile.uid) ? "friends" : hasSentRequest(profile.uid) ? "sent" : hasReceivedRequest(profile.uid) ? "received" : "none") : undefined} onFriendAction={!actualIsOwner && !!currentUser && !isGuest ? () => { const fs = getFriendshipForUser(profile.uid); if (isFriend(profile.uid)) return; if (hasReceivedRequest(profile.uid) && fs) { acceptRequest(fs.id); } else if (!hasSentRequest(profile.uid)) { sendRequest(profile); } } : undefined} onShareCard={actualIsOwner || isAdmin ? () => setProfileShareOpen(true) : undefined} friendCount={isAdmin ? friendCount : undefined} creator={creatorInfo} heroCompletion={heroCompletion} />
               </div>
               <div className="flex items-center gap-2 mt-0.5">
                 {lastUpdated && (
@@ -1334,7 +1339,7 @@ export default function PlayerProfile() {
   );
 }
 
-function ProfileHeader({ profile, bestRank, isAdmin, isOwner, isFavorited, onToggleFavorite, friendStatus, onFriendAction, onShareCard, friendCount, creator }: { profile: UserProfile; bestRank?: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | null; isAdmin?: boolean; isOwner?: boolean; isFavorited?: boolean; onToggleFavorite?: () => void; friendStatus?: "none" | "sent" | "received" | "friends"; onFriendAction?: () => void; onShareCard?: () => void; friendCount?: number | null; creator?: Creator | null }) {
+function ProfileHeader({ profile, bestRank, isAdmin, isOwner, isFavorited, onToggleFavorite, friendStatus, onFriendAction, onShareCard, friendCount, creator, heroCompletion }: { profile: UserProfile; bestRank?: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | null; isAdmin?: boolean; isOwner?: boolean; isFavorited?: boolean; onToggleFavorite?: () => void; friendStatus?: "none" | "sent" | "received" | "friends"; onFriendAction?: () => void; onShareCard?: () => void; friendCount?: number | null; creator?: Creator | null; heroCompletion?: { withHero: number; total: number; pct: number } | null }) {
   const [linkCopied, setLinkCopied] = useState(false);
   const ringClass = rankBorderClass(bestRank ?? null);
   const isSiteCreator = profile.username === "azoni";
@@ -1357,6 +1362,16 @@ function ProfileHeader({ profile, bestRank, isAdmin, isOwner, isFavorited, onTog
       <div>
         <div className="flex items-center gap-2 flex-wrap">
           <h1 className="text-2xl font-bold text-fab-gold">{profile.displayName}</h1>
+          {heroCompletion && heroCompletion.pct >= 50 && (
+            <span
+              title={`Hero Data: ${heroCompletion.pct}% complete (${heroCompletion.withHero}/${heroCompletion.total})`}
+              className="shrink-0"
+            >
+              <svg className={`w-5 h-5 ${heroCompletion.pct === 100 ? "text-fab-win" : heroCompletion.pct >= 90 ? "text-blue-400" : heroCompletion.pct >= 75 ? "text-purple-400" : "text-fab-dim"}`} viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-1.5 13.5l-3.5-3.5 1.41-1.41L10.5 11.67l5.09-5.09L17 8l-6.5 6.5z" />
+              </svg>
+            </span>
+          )}
           {onToggleFavorite && (
             <button
               onClick={onToggleFavorite}
