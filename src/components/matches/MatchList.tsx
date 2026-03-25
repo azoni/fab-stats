@@ -212,8 +212,8 @@ export function MatchList({ matches, matchOwnerUid, enableComments, editable, on
               onChange={(e) => setFilterOpponentHero(e.target.value)}
               className="bg-fab-surface border border-fab-border rounded-md px-3 py-1.5 text-fab-text text-sm outline-none"
             >
-              <option value="all">All Opponents</option>
-              {hasUnsetOpponentHeroes && <option value="none">No Opponent Set</option>}
+              <option value="all">All Opponent Heroes</option>
+              {hasUnsetOpponentHeroes && <option value="none">No Opponent Hero Set</option>}
               {allOpponentHeroes.map((h) => (
                 <option key={h} value={h}>{h}</option>
               ))}
