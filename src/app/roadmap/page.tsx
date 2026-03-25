@@ -16,6 +16,16 @@ interface RoadmapItem {
 
 const items: RoadmapItem[] = [
   {
+    title: "Hero Data Shield badges",
+    description: "5-tier shield badge (Gold/Purple/Red/Blue/Bronze) next to player names everywhere, showing hero data completion percentage. Required hero selection for imports from Feb 24, 2026 onward.",
+    status: "done",
+  },
+  {
+    title: "Sitewide performance optimization",
+    description: "Single-pass stats, batched Firebase writes, lazy listeners, React.memo, WebP assets, CSS animations replacing framer-motion. ~38MB asset savings.",
+    status: "done",
+  },
+  {
     title: "Visual data overhaul — charts across all pages",
     description: "WinRateRing, MiniDonut, SegmentedBar, SparkLine, and RadarChart components added to Dashboard, Meta, Matches, Leaderboard, Tier List, Versus, Goals, and Share Stats pages.",
     status: "done",
@@ -33,11 +43,6 @@ const items: RoadmapItem[] = [
   {
     title: "Tournaments page hero distribution",
     description: "MiniDonut showing hero distribution in each tournament's top 8 results.",
-    status: "planned",
-  },
-  {
-    title: "Improve hero detection for non-extension imports",
-    description: "Better hero matching when importing via paste or CSV without the Chrome Extension.",
     status: "planned",
   },
 ];
