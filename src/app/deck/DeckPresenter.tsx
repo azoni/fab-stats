@@ -1,7 +1,13 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { AnimatePresence, motion, useMotionValue, useTransform, animate } from "framer-motion";
+import {
+  AnimatePresence,
+  motion,
+  useMotionValue,
+  useTransform,
+  animate,
+} from "framer-motion";
 import {
   ChevronLeft,
   ChevronRight,
@@ -40,9 +46,19 @@ function useSlideNavigation(total: number) {
 
 /* ── Animated counter ───────────────────────────────────── */
 
-function AnimatedNumber({ value, suffix = "", delay = 0 }: { value: number; suffix?: string; delay?: number }) {
+function AnimatedNumber({
+  value,
+  suffix = "",
+  delay = 0,
+}: {
+  value: number;
+  suffix?: string;
+  delay?: number;
+}) {
   const count = useMotionValue(0);
-  const rounded = useTransform(count, (v) => Math.round(v).toLocaleString());
+  const rounded = useTransform(count, (v) =>
+    Math.round(v).toLocaleString(),
+  );
 
   useEffect(() => {
     const controls = animate(count, value, {
@@ -67,7 +83,13 @@ function isBulletItem(b: Bullet): b is BulletItem {
   return typeof b !== "string";
 }
 
-function BulletList({ bullets, delay = 0 }: { bullets: Bullet[]; delay?: number }) {
+function BulletList({
+  bullets,
+  delay = 0,
+}: {
+  bullets: Bullet[];
+  delay?: number;
+}) {
   return (
     <ul className="space-y-3 text-lg text-fab-muted">
       {bullets.map((b, i) => (
@@ -102,34 +124,68 @@ function BulletList({ bullets, delay = 0 }: { bullets: Bullet[]; delay?: number 
   );
 }
 
-/* ── Code block renderer ────────────────────────────────── */
+/* ── Code block renderer (with terminal header) ─────────── */
 
 function CodeBlock({
   snippet,
   highlightLines,
+  filename,
 }: {
   snippet: string;
   highlightLines?: number[];
+  filename?: string;
 }) {
   const lines = snippet.split("\n");
   const highlights = new Set(highlightLines ?? []);
 
   return (
-    <pre className="overflow-x-auto rounded-lg border border-fab-border bg-fab-surface p-5 text-sm leading-relaxed">
-      <code>
-        {lines.map((line, i) => (
-          <div
-            key={i}
-            className={`px-2 ${highlights.has(i + 1) ? "bg-fab-gold/10 border-l-2 border-fab-gold" : ""}`}
-          >
-            <span className="mr-4 inline-block w-6 select-none text-right text-fab-dim/50">
-              {i + 1}
-            </span>
-            {line}
-          </div>
-        ))}
-      </code>
-    </pre>
+    <div>
+      {/* Terminal header bar */}
+      <div className="flex gap-1.5 items-center px-4 py-2.5 bg-fab-surface rounded-t-lg border border-b-0 border-fab-border">
+        <span className="w-3 h-3 rounded-full bg-red-500/60" />
+        <span className="w-3 h-3 rounded-full bg-yellow-500/60" />
+        <span className="w-3 h-3 rounded-full bg-green-500/60" />
+        {filename && (
+          <span className="ml-3 text-xs text-fab-dim font-mono">
+            {filename}
+          </span>
+        )}
+      </div>
+      <pre className="overflow-x-auto rounded-lg rounded-t-none border border-fab-border bg-fab-surface p-5 text-sm leading-relaxed">
+        <code>
+          {lines.map((line, i) => (
+            <div
+              key={i}
+              className={`px-2 ${
+                highlights.has(i + 1)
+                  ? "bg-fab-gold/10 border-l-2 border-fab-gold"
+                  : ""
+              }`}
+            >
+              <span className="mr-4 inline-block w-6 select-none text-right text-fab-dim/50">
+                {i + 1}
+              </span>
+              {line}
+            </div>
+          ))}
+        </code>
+      </pre>
+    </div>
+  );
+}
+
+/* ── Shared components ──────────────────────────────────── */
+
+function SectionPill({ label }: { label: string }) {
+  return (
+    <motion.span
+      initial={{ opacity: 0, y: -5 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+      className="inline-block rounded-full border border-fab-gold/20 bg-fab-gold/10 px-3 py-1 text-xs uppercase tracking-wider text-fab-gold"
+    >
+      {label}
+    </motion.span>
   );
 }
 
@@ -138,20 +194,30 @@ function CodeBlock({
 function TitleSlide({ slide }: { slide: Slide }) {
   return (
     <div className="relative flex flex-col items-center justify-center text-center">
-      {/* Background art */}
-      {slide.bgImage && (
-        <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden rounded-3xl opacity-15">
-          <img src={slide.bgImage} alt="" className="h-full w-full object-cover blur-sm" />
-        </div>
-      )}
+      {/* Subtle radial gradient glow */}
+      <div
+        className="pointer-events-none absolute inset-0 -z-10"
+        style={{
+          background:
+            "radial-gradient(ellipse at center, var(--color-fab-gold) 0%, transparent 70%)",
+          opacity: 0.06,
+        }}
+      />
       <motion.h1
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="font-[var(--font-nunito)] text-6xl font-bold text-fab-gold drop-shadow-lg"
+        className="font-[var(--font-nunito)] text-7xl font-bold tracking-tight text-fab-gold drop-shadow-lg"
       >
         {slide.title}
       </motion.h1>
+      {/* Thin gold line */}
+      <motion.div
+        initial={{ scaleX: 0 }}
+        animate={{ scaleX: 1 }}
+        transition={{ delay: 0.25, duration: 0.5 }}
+        className="mt-5 h-px w-24 bg-fab-gold/50"
+      />
       {slide.subtitle && (
         <motion.p
           initial={{ opacity: 0 }}
@@ -167,24 +233,28 @@ function TitleSlide({ slide }: { slide: Slide }) {
 }
 
 function SectionSlide({ slide }: { slide: Slide }) {
+  const sectionNumber = slide.sectionNumber;
+
   return (
-    <div className="relative flex flex-col items-center justify-center text-center">
-      {slide.bgImage && (
-        <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden rounded-3xl opacity-10">
-          <img src={slide.bgImage} alt="" className="h-full w-full object-cover" />
-        </div>
+    <div className="relative flex flex-col items-center justify-center text-center overflow-hidden">
+      {/* Large watermark number */}
+      {sectionNumber && (
+        <span className="text-[12rem] font-bold text-fab-gold/5 absolute select-none leading-none">
+          {sectionNumber}
+        </span>
       )}
+      {/* Gold accent line */}
       <motion.div
         initial={{ scaleX: 0 }}
         animate={{ scaleX: 1 }}
         transition={{ duration: 0.6 }}
-        className="mb-6 h-0.5 w-24 bg-fab-gold"
+        className="w-16 h-0.5 bg-fab-gold mb-4"
       />
       <motion.h2
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.15, duration: 0.5 }}
-        className="font-[var(--font-nunito)] text-5xl font-bold text-fab-text"
+        className="font-[var(--font-nunito)] text-4xl font-bold text-fab-text"
       >
         {slide.title}
       </motion.h2>
@@ -194,6 +264,47 @@ function SectionSlide({ slide }: { slide: Slide }) {
           animate={{ opacity: 1 }}
           transition={{ delay: 0.4, duration: 0.4 }}
           className="mt-4 max-w-lg text-lg text-fab-muted"
+        >
+          {slide.subtitle}
+        </motion.p>
+      )}
+    </div>
+  );
+}
+
+function HeroSlide({ slide }: { slide: Slide }) {
+  return (
+    <div className="relative flex flex-col items-center justify-center text-center">
+      {/* Subtle radial gradient glow */}
+      <div
+        className="pointer-events-none absolute inset-0 -z-10"
+        style={{
+          background:
+            "radial-gradient(ellipse at center, var(--color-fab-gold) 0%, transparent 70%)",
+          opacity: 0.05,
+        }}
+      />
+      <motion.h2
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="font-[var(--font-nunito)] text-5xl font-semibold text-fab-text leading-tight max-w-3xl"
+      >
+        {slide.title}
+      </motion.h2>
+      {/* Animated gold line that expands from center */}
+      <motion.div
+        initial={{ scaleX: 0 }}
+        animate={{ scaleX: 1 }}
+        transition={{ delay: 0.3, duration: 0.6, ease: "easeOut" }}
+        className="mt-6 h-0.5 w-32 bg-fab-gold origin-center"
+      />
+      {slide.subtitle && (
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.5, duration: 0.4 }}
+          className="mt-6 text-lg text-fab-muted max-w-2xl"
         >
           {slide.subtitle}
         </motion.p>
@@ -224,10 +335,14 @@ function StatsSlide({ slide }: { slide: Slide }) {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 + i * 0.1, duration: 0.4 }}
-            className="flex flex-col items-center rounded-xl border border-fab-border bg-fab-surface/60 p-6 text-center"
+            className="flex flex-col items-center rounded-xl border border-fab-border bg-fab-surface/40 border-t-2 border-t-fab-gold/40 p-6 text-center"
           >
-            <span className="text-4xl font-bold text-fab-gold lg:text-5xl">
-              <AnimatedNumber value={stat.value} suffix={stat.suffix} delay={0.3 + i * 0.1} />
+            <span className="text-5xl font-bold text-fab-gold">
+              <AnimatedNumber
+                value={stat.value}
+                suffix={stat.suffix}
+                delay={0.3 + i * 0.1}
+              />
             </span>
             <span className="mt-2 text-sm text-fab-muted">{stat.label}</span>
           </motion.div>
@@ -241,7 +356,9 @@ function StatsSlide({ slide }: { slide: Slide }) {
           className="text-center text-lg text-fab-muted"
         >
           {slide.bullets.map((b, i) => (
-            <p key={i} className="mt-1">{typeof b === "string" ? b : b.text}</p>
+            <p key={i} className="mt-1">
+              {typeof b === "string" ? b : b.text}
+            </p>
           ))}
         </motion.div>
       )}
@@ -249,11 +366,23 @@ function StatsSlide({ slide }: { slide: Slide }) {
   );
 }
 
-function ShowcaseSlide({ slide }: { slide: Slide }) {
-  const images = slide.showcaseImages ?? [];
+interface CardData {
+  icon?: string;
+  title: string;
+  description?: string;
+  mono?: string;
+}
+
+function CardsSlide({ slide }: { slide: Slide }) {
+  const cards = (slide.cards ?? []) as CardData[];
+  const colClass =
+    cards.length >= 5
+      ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
+      : "grid-cols-1 sm:grid-cols-2";
+
   return (
-    <div className="flex w-full max-w-6xl flex-col gap-8">
-      <div>
+    <div className="flex w-full max-w-5xl flex-col items-center gap-8">
+      <div className="text-center">
         {slide.section && <SectionPill label={slide.section} />}
         <motion.h2
           initial={{ opacity: 0, y: 10 }}
@@ -263,36 +392,150 @@ function ShowcaseSlide({ slide }: { slide: Slide }) {
         >
           {slide.title}
         </motion.h2>
+        {slide.subtitle && (
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.15, duration: 0.4 }}
+            className="mt-2 text-lg text-fab-muted"
+          >
+            {slide.subtitle}
+          </motion.p>
+        )}
       </div>
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <div className="flex flex-col justify-center gap-4">
-          {images.map((img, i) => (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.2 + i * 0.15, duration: 0.4 }}
-              className="overflow-hidden rounded-xl border border-fab-border shadow-lg"
-            >
-              <img src={img.src} alt={img.alt} className="w-full object-cover" />
-              {img.caption && (
-                <div className="bg-fab-surface px-4 py-2 text-sm text-fab-dim">{img.caption}</div>
+      <div className={`grid w-full gap-5 ${colClass}`}>
+        {cards.map((card, i) => (
+          <motion.div
+            key={i}
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15 + i * 0.08, duration: 0.35 }}
+            className="rounded-xl border border-fab-border bg-fab-surface/40 p-6 border-t-2 border-t-fab-gold/20 hover:border-fab-gold/40 transition-colors"
+          >
+            {card.icon && <div className="text-2xl mb-3">{card.icon}</div>}
+            <h3 className="text-lg font-semibold text-fab-text">
+              {card.title}
+            </h3>
+            {card.description && (
+              <p className="text-sm text-fab-muted mt-1 leading-relaxed">
+                {card.description}
+              </p>
+            )}
+            {card.mono && (
+              <span className="inline-block font-mono text-xs bg-fab-bg/80 text-fab-dim px-2 py-0.5 rounded mt-3">
+                {card.mono}
+              </span>
+            )}
+          </motion.div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+interface StepData {
+  label: string;
+  description?: string;
+}
+
+function TimelineSlide({ slide }: { slide: Slide }) {
+  const steps = (slide.timelineSteps ?? []) as StepData[];
+
+  return (
+    <div className="flex w-full max-w-5xl flex-col items-center gap-10">
+      <div className="text-center">
+        {slide.section && <SectionPill label={slide.section} />}
+        <motion.h2
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+          className="mt-2 font-[var(--font-nunito)] text-4xl font-bold text-fab-text"
+        >
+          {slide.title}
+        </motion.h2>
+        {slide.subtitle && (
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.15, duration: 0.4 }}
+            className="mt-2 text-lg text-fab-muted"
+          >
+            {slide.subtitle}
+          </motion.p>
+        )}
+      </div>
+
+      {/* Desktop: horizontal */}
+      <div className="hidden lg:flex items-start w-full">
+        {steps.map((step, i) => (
+          <motion.div
+            key={i}
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 + i * 0.12, duration: 0.35 }}
+            className="flex flex-1 flex-col items-center text-center"
+          >
+            <div className="flex items-center w-full">
+              {i > 0 && <div className="h-0.5 flex-1 bg-fab-border" />}
+              {i === 0 && <div className="flex-1" />}
+              <div className="w-10 h-10 rounded-full border-2 border-fab-gold bg-fab-gold/10 flex items-center justify-center text-fab-gold font-bold text-sm shrink-0">
+                {i + 1}
+              </div>
+              {i < steps.length - 1 && (
+                <div className="h-0.5 flex-1 bg-fab-border" />
               )}
-            </motion.div>
-          ))}
-        </div>
-        <div className="flex items-center">
-          {slide.bullets && <BulletList bullets={slide.bullets} delay={0.4} />}
-        </div>
+              {i === steps.length - 1 && <div className="flex-1" />}
+            </div>
+            <span className="text-base font-semibold text-fab-text mt-3">
+              {step.label}
+            </span>
+            {step.description && (
+              <span className="text-sm text-fab-muted mt-1 max-w-[10rem]">
+                {step.description}
+              </span>
+            )}
+          </motion.div>
+        ))}
+      </div>
+
+      {/* Mobile: vertical */}
+      <div className="flex lg:hidden flex-col items-start gap-0 w-full max-w-md">
+        {steps.map((step, i) => (
+          <motion.div
+            key={i}
+            initial={{ opacity: 0, x: -16 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.2 + i * 0.12, duration: 0.35 }}
+            className="flex items-start gap-4"
+          >
+            <div className="flex flex-col items-center">
+              <div className="w-10 h-10 rounded-full border-2 border-fab-gold bg-fab-gold/10 flex items-center justify-center text-fab-gold font-bold text-sm shrink-0">
+                {i + 1}
+              </div>
+              {i < steps.length - 1 && (
+                <div className="w-0.5 h-8 bg-fab-border" />
+              )}
+            </div>
+            <div className="pt-1.5">
+              <span className="text-base font-semibold text-fab-text">
+                {step.label}
+              </span>
+              {step.description && (
+                <p className="text-sm text-fab-muted mt-1">
+                  {step.description}
+                </p>
+              )}
+            </div>
+          </motion.div>
+        ))}
       </div>
     </div>
   );
 }
 
 function ContentSlide({ slide }: { slide: Slide }) {
-  const hasImage = !!slide.image;
   return (
-    <div className={`flex w-full flex-col gap-8 ${hasImage ? "max-w-6xl" : "max-w-4xl"}`}>
+    <div className="flex w-full max-w-3xl flex-col gap-8">
       <div>
         {slide.section && <SectionPill label={slide.section} />}
         <motion.h2
@@ -304,28 +547,7 @@ function ContentSlide({ slide }: { slide: Slide }) {
           {slide.title}
         </motion.h2>
       </div>
-      {hasImage ? (
-        <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-2">
-          <div>{slide.bullets && <BulletList bullets={slide.bullets} delay={0.2} />}</div>
-          <motion.figure
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.2, duration: 0.4 }}
-            className="flex flex-col items-center"
-          >
-            <img
-              src={slide.image!.src}
-              alt={slide.image!.alt}
-              className="max-h-[50vh] rounded-lg border border-fab-border object-contain shadow-lg"
-            />
-            {slide.image!.caption && (
-              <figcaption className="mt-2 text-sm text-fab-dim">{slide.image!.caption}</figcaption>
-            )}
-          </motion.figure>
-        </div>
-      ) : (
-        slide.bullets && <BulletList bullets={slide.bullets} delay={0.2} />
-      )}
+      {slide.bullets && <BulletList bullets={slide.bullets} delay={0.2} />}
     </div>
   );
 }
@@ -354,6 +576,7 @@ function CodeSlide({ slide }: { slide: Slide }) {
             <CodeBlock
               snippet={slide.code.snippet}
               highlightLines={slide.code.highlightLines}
+              filename={slide.code.filename}
             />
           )}
         </motion.div>
@@ -385,7 +608,7 @@ function SplitSlide({ slide }: { slide: Slide }) {
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.2, duration: 0.4 }}
-            className="rounded-lg border border-fab-border bg-fab-surface/50 p-6"
+            className="rounded-xl border border-fab-border bg-fab-surface/40 p-8 border-t-2 border-t-fab-gold/40"
           >
             <h3 className="mb-4 text-lg font-bold text-fab-gold">
               {slide.left.title}
@@ -405,7 +628,7 @@ function SplitSlide({ slide }: { slide: Slide }) {
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.35, duration: 0.4 }}
-            className="rounded-lg border border-fab-border bg-fab-surface/50 p-6"
+            className="rounded-xl border border-fab-border bg-fab-surface/40 p-8 border-t-2 border-t-fab-muted/20"
           >
             <h3 className="mb-4 text-lg font-bold text-fab-muted">
               {slide.right.title}
@@ -448,21 +671,6 @@ function DiagramSlide({ slide }: { slide: Slide }) {
         {slide.diagram === "data-flow" && <DataFlowDiagram />}
       </motion.div>
     </div>
-  );
-}
-
-/* ── Shared components ──────────────────────────────────── */
-
-function SectionPill({ label }: { label: string }) {
-  return (
-    <motion.span
-      initial={{ opacity: 0, y: -5 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
-      className="inline-block rounded-full border border-fab-gold/20 bg-fab-gold/10 px-3 py-1 text-xs uppercase tracking-wider text-fab-gold"
-    >
-      {label}
-    </motion.span>
   );
 }
 
@@ -530,7 +738,13 @@ function SlideOverview({
 
 /* ── Notes panel ────────────────────────────────────────── */
 
-function NotesPanel({ notes, onClose }: { notes: string[]; onClose: () => void }) {
+function NotesPanel({
+  notes,
+  onClose,
+}: {
+  notes: string[];
+  onClose: () => void;
+}) {
   return (
     <motion.div
       initial={{ x: "100%" }}
@@ -553,7 +767,10 @@ function NotesPanel({ notes, onClose }: { notes: string[]; onClose: () => void }
       <div className="flex-1 overflow-y-auto px-5 py-4">
         <ul className="space-y-3">
           {notes.map((note, i) => (
-            <li key={i} className="flex items-start gap-3 text-sm leading-relaxed text-fab-muted">
+            <li
+              key={i}
+              className="flex items-start gap-3 text-sm leading-relaxed text-fab-muted"
+            >
               <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-fab-gold/50" />
               <span>{note}</span>
             </li>
@@ -647,7 +864,11 @@ export function DeckPresenter() {
   /* Click navigation — left 30% prev, right 70% next */
   function handleSlideClick(e: React.MouseEvent<HTMLDivElement>) {
     const target = e.target as HTMLElement;
-    if (target.closest("button") || target.closest("a") || target.closest("pre"))
+    if (
+      target.closest("button") ||
+      target.closest("a") ||
+      target.closest("pre")
+    )
       return;
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX - rect.left;
@@ -661,6 +882,8 @@ export function DeckPresenter() {
         return <TitleSlide slide={s} />;
       case "section":
         return <SectionSlide slide={s} />;
+      case "hero" as string:
+        return <HeroSlide slide={s} />;
       case "content":
         return <ContentSlide slide={s} />;
       case "code":
@@ -671,8 +894,12 @@ export function DeckPresenter() {
         return <DiagramSlide slide={s} />;
       case "stats":
         return <StatsSlide slide={s} />;
-      case "showcase":
-        return <ShowcaseSlide slide={s} />;
+      case "cards":
+        return <CardsSlide slide={s} />;
+      case "timeline":
+        return <TimelineSlide slide={s} />;
+      default:
+        return <ContentSlide slide={s} />;
     }
   }
 
@@ -680,7 +907,7 @@ export function DeckPresenter() {
     <div className="fixed inset-0 z-[100] flex flex-col bg-fab-bg">
       {/* Slide area */}
       <div
-        className="flex flex-1 cursor-pointer items-center justify-center overflow-hidden px-12 py-8"
+        className="flex flex-1 cursor-pointer items-center justify-center overflow-hidden px-16 py-12"
         onClick={handleSlideClick}
       >
         <AnimatePresence mode="wait" custom={nav.direction}>
