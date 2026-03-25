@@ -290,7 +290,12 @@ export default function Dashboard() {
               <div className="p-4">
                 <div className="flex items-center gap-3">
                   {profile ? (
-                    <div className="shrink-0">
+                    <div className="relative shrink-0">
+                      {profile.username === "azoni" && (
+                        <svg className="absolute -top-3 left-1/2 -translate-x-1/2 w-5 h-5 text-fab-gold drop-shadow-[0_0_6px_rgba(201,168,76,0.6)] z-10" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M2.5 19h19v3h-19zM22.5 7l-5 4-5.5-7-5.5 7-5-4 2 12h17z" />
+                        </svg>
+                      )}
                       {profile.photoUrl ? (
                         <img src={profile.photoUrl} alt="" className={`w-12 h-12 rounded-full ${rankBorderClass(bestRank ?? null)}`} />
                       ) : (
@@ -301,7 +306,19 @@ export default function Dashboard() {
                     </div>
                   ) : null}
                   <div className="flex-1 min-w-0">
-                    <p className="text-base font-bold text-fab-gold truncate">{profile?.displayName || "My Profile"}</p>
+                    <div className="flex items-center gap-1.5">
+                      <p className="text-base font-bold text-fab-gold truncate">{profile?.displayName || "My Profile"}</p>
+                      {heroCompletion && heroCompletion.pct >= 50 && (
+                        <span
+                          title={`Hero Data: ${heroCompletion.pct}% complete (${heroCompletion.withHero}/${heroCompletion.total})`}
+                          className="shrink-0"
+                        >
+                          <svg className={`w-4 h-4 ${heroCompletion.pct === 100 ? "text-fab-win" : heroCompletion.pct >= 90 ? "text-blue-400" : heroCompletion.pct >= 75 ? "text-purple-400" : "text-fab-dim"}`} viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-1.5 13.5l-3.5-3.5 1.41-1.41L10.5 11.67l5.09-5.09L17 8l-6.5 6.5z" />
+                          </svg>
+                        </span>
+                      )}
+                    </div>
                     <BadgeStrip selectedBadgeIds={profile?.selectedBadgeIds} className="mt-1" />
                   </div>
                   {topHero && (
