@@ -117,10 +117,9 @@ export function Navbar() {
             </svg>
             <span className="text-xl font-bold text-fab-gold tracking-tight">FaB Stats</span>
             {(userCount > 0 || matchCount > 0) && (
-              <span className="hidden xl:inline whitespace-nowrap text-xs text-fab-muted font-medium ml-1.5 self-end mb-0.5">
-                {userCount > 0 && <>{userCount.toLocaleString()} players</>}
-                {userCount > 0 && matchCount > 0 && <span className="text-fab-dim mx-1">·</span>}
-                {matchCount > 0 && <>{matchCount.toLocaleString()} matches</>}
+              <span className="hidden xl:flex flex-col ml-1.5 leading-tight">
+                {userCount > 0 && <span className="text-[10px] text-fab-muted font-medium tabular-nums">{userCount.toLocaleString()} players</span>}
+                {matchCount > 0 && <span className="text-[10px] text-fab-dim font-medium tabular-nums">{matchCount.toLocaleString()} matches</span>}
               </span>
             )}
           </Link>
