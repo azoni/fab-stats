@@ -471,7 +471,7 @@ function CommunityStatsPopover({ userCount, matchCount }: { userCount: number; m
     if (loaded) return;
     setLoaded(true);
     // Check localStorage cache first
-    const cacheKey = "fab_community_hero_stats";
+    const cacheKey = "fab_community_hero_stats_v2";
     try {
       const cached = localStorage.getItem(cacheKey);
       if (cached) {
