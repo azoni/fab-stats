@@ -8,6 +8,7 @@ import {
   Maximize,
   Minimize,
   Grid3X3,
+  StickyNote,
   X,
 } from "lucide-react";
 import { SLIDES, type Slide, type Bullet, type BulletItem } from "./slides";
@@ -109,6 +110,28 @@ function CodeBlock({
   );
 }
 
+/* ── Image block ────────────────────────────────────────── */
+
+function ImageBlock({ src, alt, caption }: { src: string; alt: string; caption?: string }) {
+  return (
+    <motion.figure
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ delay: 0.2, duration: 0.4 }}
+      className="flex flex-col items-center"
+    >
+      <img
+        src={src}
+        alt={alt}
+        className="max-h-[50vh] rounded-lg border border-fab-border object-contain shadow-lg"
+      />
+      {caption && (
+        <figcaption className="mt-2 text-sm text-fab-dim">{caption}</figcaption>
+      )}
+    </motion.figure>
+  );
+}
+
 /* ── Slide renderers ────────────────────────────────────── */
 
 function TitleSlide({ slide }: { slide: Slide }) {
@@ -158,8 +181,9 @@ function SectionSlide({ slide }: { slide: Slide }) {
 }
 
 function ContentSlide({ slide }: { slide: Slide }) {
+  const hasImage = !!slide.image;
   return (
-    <div className="flex w-full max-w-4xl flex-col gap-8">
+    <div className={`flex w-full flex-col gap-8 ${hasImage ? "max-w-6xl" : "max-w-4xl"}`}>
       <div>
         {slide.section && <SectionPill label={slide.section} />}
         <motion.h2
@@ -171,7 +195,14 @@ function ContentSlide({ slide }: { slide: Slide }) {
           {slide.title}
         </motion.h2>
       </div>
-      {slide.bullets && <BulletList bullets={slide.bullets} delay={0.2} />}
+      {hasImage ? (
+        <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-2">
+          <div>{slide.bullets && <BulletList bullets={slide.bullets} delay={0.2} />}</div>
+          <ImageBlock src={slide.image!.src} alt={slide.image!.alt} caption={slide.image!.caption} />
+        </div>
+      ) : (
+        slide.bullets && <BulletList bullets={slide.bullets} delay={0.2} />
+      )}
     </div>
   );
 }
@@ -374,6 +405,42 @@ function SlideOverview({
   );
 }
 
+/* ── Notes panel ────────────────────────────────────────── */
+
+function NotesPanel({ notes, onClose }: { notes: string[]; onClose: () => void }) {
+  return (
+    <motion.div
+      initial={{ x: "100%" }}
+      animate={{ x: 0 }}
+      exit={{ x: "100%" }}
+      transition={{ type: "spring", damping: 25, stiffness: 300 }}
+      className="fixed right-0 top-0 z-[150] flex h-full w-[420px] max-w-[90vw] flex-col border-l border-fab-border bg-fab-bg/98 shadow-2xl backdrop-blur-sm"
+    >
+      <div className="flex items-center justify-between border-b border-fab-border px-5 py-3">
+        <h3 className="text-sm font-semibold uppercase tracking-wider text-fab-gold">
+          Speaker Notes
+        </h3>
+        <button
+          onClick={onClose}
+          className="rounded-lg p-1.5 text-fab-muted transition-colors hover:bg-fab-surface hover:text-fab-text"
+        >
+          <X size={16} />
+        </button>
+      </div>
+      <div className="flex-1 overflow-y-auto px-5 py-4">
+        <ul className="space-y-3">
+          {notes.map((note, i) => (
+            <li key={i} className="flex items-start gap-3 text-sm leading-relaxed text-fab-muted">
+              <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-fab-gold/50" />
+              <span>{note}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </motion.div>
+  );
+}
+
 /* ── Main presenter ─────────────────────────────────────── */
 
 const slideVariants = {
@@ -391,6 +458,7 @@ const slideVariants = {
 export function DeckPresenter() {
   const nav = useSlideNavigation(SLIDES.length);
   const [showOverview, setShowOverview] = useState(false);
+  const [showNotes, setShowNotes] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   const slide = SLIDES[nav.current];
@@ -441,6 +509,10 @@ export function DeckPresenter() {
         case "g":
           e.preventDefault();
           setShowOverview((v) => !v);
+          break;
+        case "n":
+          e.preventDefault();
+          setShowNotes((v) => !v);
           break;
       }
     }
@@ -521,6 +593,15 @@ export function DeckPresenter() {
 
         <div className="flex items-center gap-4">
           <button
+            onClick={() => setShowNotes((v) => !v)}
+            className={`rounded-lg p-2 transition-colors hover:bg-fab-surface hover:text-fab-text ${
+              showNotes ? "text-fab-gold" : "text-fab-muted"
+            }`}
+            title="Speaker notes (N)"
+          >
+            <StickyNote size={16} />
+          </button>
+          <button
             onClick={() => setShowOverview((v) => !v)}
             className="rounded-lg p-2 text-fab-muted transition-colors hover:bg-fab-surface hover:text-fab-text"
             title="Slide overview (G)"
@@ -557,6 +638,16 @@ export function DeckPresenter() {
           transition={{ duration: 0.3 }}
         />
       </div>
+
+      {/* Notes panel */}
+      <AnimatePresence>
+        {showNotes && slide.notes && (
+          <NotesPanel
+            notes={slide.notes}
+            onClose={() => setShowNotes(false)}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Slide overview */}
       <AnimatePresence>
