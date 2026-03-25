@@ -578,13 +578,13 @@ export default function DocsPage() {
                 <tbody className="divide-y divide-fab-border">
                   {[
                     ["Novice", 1, "text-zinc-400"],
-                    ["Apprentice", 5, "text-green-400"],
-                    ["Skilled", 15, "text-blue-400"],
-                    ["Expert", 30, "text-purple-400"],
-                    ["Master", 50, "text-fab-gold"],
-                    ["Grandmaster", 75, "text-fuchsia-400"],
-                    ["Legend", 100, "text-sky-400"],
-                    ["Mythic", 150, "text-red-400"],
+                    ["Apprentice", 5, "text-[#4ade80]"],
+                    ["Skilled", 15, "text-[#2dd4bf]"],
+                    ["Expert", 30, "text-[#cd7f32]"],
+                    ["Master", 50, "text-[#60a5fa]"],
+                    ["Grandmaster", 75, "text-[#f87171]"],
+                    ["Legend", 100, "text-[#a78bfa]"],
+                    ["Mythic", 150, "text-[#fbbf24]"],
                   ].map(([name, matches, color]) => (
                     <tr key={name as string}>
                       <td className={`px-3 py-1.5 font-medium ${color}`}>{name}</td>
@@ -622,11 +622,11 @@ export default function DocsPage() {
             </p>
             <div className="flex flex-wrap gap-2">
               {[
-                ["Common", "text-amber-200 bg-amber-200/10"],
-                ["Uncommon", "text-green-400 bg-green-400/10"],
-                ["Rare", "text-blue-400 bg-blue-400/10"],
-                ["Epic", "text-purple-400 bg-purple-400/10"],
-                ["Legendary", "text-fab-gold bg-fab-gold/10"],
+                ["Common", "text-[#cd7f32] bg-[#cd7f32]/10"],
+                ["Uncommon", "text-[#60a5fa] bg-[#60a5fa]/10"],
+                ["Rare", "text-[#f87171] bg-[#f87171]/10"],
+                ["Epic", "text-[#a78bfa] bg-[#a78bfa]/10"],
+                ["Legendary", "text-[#fbbf24] bg-[#fbbf24]/10"],
               ].map(([name, classes]) => (
                 <span key={name} className={`px-2.5 py-1 rounded-full text-xs font-medium ${classes}`}>
                   {name}
