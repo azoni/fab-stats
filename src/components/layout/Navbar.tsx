@@ -108,18 +108,20 @@ export function Navbar() {
     <nav className="md:fixed md:top-0 md:left-0 md:right-0 z-50 bg-fab-surface/95 backdrop-blur-md border-b border-fab-border">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-14 items-center justify-between">
-          <Link href="/" className="flex items-center gap-2.5 shrink-0">
-            <svg className="w-7 h-7" viewBox="0 0 24 24" fill="none">
-              <rect x="5" y="2" width="14" height="20" rx="2" stroke="#D9A05B" strokeWidth="2" />
-              <rect x="7.5" y="13" width="2" height="3" fill="#E53935" />
-              <rect x="11" y="10" width="2" height="6" fill="#FBC02D" />
-              <rect x="14.5" y="6" width="2" height="10" fill="#1E88E5" />
-            </svg>
-            <span className="text-xl font-bold text-fab-gold tracking-tight">FaB Stats</span>
+          <div className="flex items-center gap-2.5 shrink-0">
+            <Link href="/" className="flex items-center gap-2.5">
+              <svg className="w-7 h-7" viewBox="0 0 24 24" fill="none">
+                <rect x="5" y="2" width="14" height="20" rx="2" stroke="#D9A05B" strokeWidth="2" />
+                <rect x="7.5" y="13" width="2" height="3" fill="#E53935" />
+                <rect x="11" y="10" width="2" height="6" fill="#FBC02D" />
+                <rect x="14.5" y="6" width="2" height="10" fill="#1E88E5" />
+              </svg>
+              <span className="text-xl font-bold text-fab-gold tracking-tight">FaB Stats</span>
+            </Link>
             {(userCount > 0 || matchCount > 0) && (
               <CommunityStatsPopover userCount={userCount} matchCount={matchCount} />
             )}
-          </Link>
+          </div>
 
           <div className="flex items-center gap-1">
             {mounted && (
