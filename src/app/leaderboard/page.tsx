@@ -8,6 +8,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { computeOpponentStats } from "@/lib/stats";
 import { getWeekStart, getMonthStart } from "@/lib/leaderboard";
 import { countQualifyingTabs, computeUserRanks, computeUserRanksByTab, type LeaderboardRank } from "@/lib/leaderboard-ranks";
+import { HeroShieldBadge } from "@/components/profile/HeroShieldBadge";
 import { computePowerLevel, getPowerTier } from "@/lib/power-level";
 import { TrophyIcon } from "@/components/icons/NavIcons";
 import { playerHref } from "@/lib/constants";
@@ -1054,8 +1055,9 @@ export default function LeaderboardPage() {
                     </div>
 
                     {/* Name */}
-                    <p className={`font-semibold text-fab-text truncate w-full ${isCenter ? "text-sm" : "text-xs"}`}>
+                    <p className={`font-semibold text-fab-text truncate w-full flex items-center gap-1 ${isCenter ? "text-sm" : "text-xs"}`}>
                       {entry.displayName}
+                      <HeroShieldBadge pct={entry.heroCompletionPct ?? 0} />
                     </p>
                     <p className="text-[10px] text-fab-dim truncate w-full">
                       @{entry.username}
@@ -1216,6 +1218,7 @@ function LeaderboardRow({
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
           <p className="font-semibold text-fab-text text-sm truncate">{entry.displayName}</p>
+          <HeroShieldBadge pct={entry.heroCompletionPct ?? 0} />
           {entry.topHero && entry.topHero !== "—" && entry.topHero !== "Unknown" && (
             <span className="hidden sm:inline text-[10px] px-1.5 py-0.5 rounded bg-fab-bg text-fab-dim border border-fab-border/50 truncate max-w-[100px]">
               {entry.topHero}

@@ -4,6 +4,7 @@ import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import { getProfileByUsername, getMatchesByUserId, updateProfile, searchUsernames, getProfile } from "@/lib/firestore-storage";
 import { BadgeStrip } from "@/components/profile/BadgeStrip";
+import { HeroShieldBadge } from "@/components/profile/HeroShieldBadge";
 import { EmblemDisplay } from "@/components/profile/EmblemDisplay";
 import { EmblemPicker } from "@/components/profile/EmblemPicker";
 import { BadgeStripPicker } from "@/components/profile/BadgeStripPicker";
@@ -1362,20 +1363,7 @@ function ProfileHeader({ profile, bestRank, isAdmin, isOwner, isFavorited, onTog
       <div>
         <div className="flex items-center gap-2 flex-wrap">
           <h1 className="text-2xl font-bold text-fab-gold">{profile.displayName}</h1>
-          {heroCompletion && heroCompletion.pct >= 35 && (() => {
-            const tier = heroCompletion.pct === 100 ? { color: "text-[#fbbf24]", label: "Gold" }
-              : heroCompletion.pct >= 90 ? { color: "text-[#a78bfa]", label: "Purple" }
-              : heroCompletion.pct >= 75 ? { color: "text-[#f87171]", label: "Red" }
-              : heroCompletion.pct >= 50 ? { color: "text-[#60a5fa]", label: "Blue" }
-              : { color: "text-[#cd7f32]", label: "Bronze" };
-            return (
-              <span title={`Hero Data ${tier.label}: ${heroCompletion.pct}% complete (${heroCompletion.withHero}/${heroCompletion.total} matches)`} className="shrink-0">
-                <svg className={`w-5 h-5 ${tier.color}`} viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-1.5 13.5l-3.5-3.5 1.41-1.41L10.5 11.67l5.09-5.09L17 8l-6.5 6.5z" />
-                </svg>
-              </span>
-            );
-          })()}
+          {heroCompletion && <HeroShieldBadge pct={heroCompletion.pct} size="md" withHero={heroCompletion.withHero} total={heroCompletion.total} />}
           {onToggleFavorite && (
             <button
               onClick={onToggleFavorite}

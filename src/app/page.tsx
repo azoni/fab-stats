@@ -22,6 +22,7 @@ import { BadgeStrip } from "@/components/profile/BadgeStrip";
 import { WinRateRing } from "@/components/charts/WinRateRing";
 import { getHeroByName } from "@/lib/heroes";
 import { HeroImg } from "@/components/heroes/HeroImg";
+import { HeroShieldBadge } from "@/components/profile/HeroShieldBadge";
 import { loadKudosCounts } from "@/lib/kudos";
 import { CardBorderWrapper } from "@/components/profile/CardBorderWrapper";
 import type { UnderlineConfig } from "@/components/profile/CardBorderWrapper";
@@ -308,20 +309,7 @@ export default function Dashboard() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5">
                       <p className="text-base font-bold text-fab-gold truncate">{profile?.displayName || "My Profile"}</p>
-                      {heroCompletion && heroCompletion.pct >= 35 && (() => {
-                        const tier = heroCompletion.pct === 100 ? { color: "text-[#fbbf24]", label: "Gold" }
-                          : heroCompletion.pct >= 90 ? { color: "text-[#a78bfa]", label: "Purple" }
-                          : heroCompletion.pct >= 75 ? { color: "text-[#f87171]", label: "Red" }
-                          : heroCompletion.pct >= 50 ? { color: "text-[#60a5fa]", label: "Blue" }
-                          : { color: "text-[#cd7f32]", label: "Bronze" };
-                        return (
-                          <span title={`Hero Data ${tier.label}: ${heroCompletion.pct}% complete (${heroCompletion.withHero}/${heroCompletion.total} matches)`} className="shrink-0">
-                            <svg className={`w-4 h-4 ${tier.color}`} viewBox="0 0 24 24" fill="currentColor">
-                              <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-1.5 13.5l-3.5-3.5 1.41-1.41L10.5 11.67l5.09-5.09L17 8l-6.5 6.5z" />
-                            </svg>
-                          </span>
-                        );
-                      })()}
+                      {heroCompletion && <HeroShieldBadge pct={heroCompletion.pct} withHero={heroCompletion.withHero} total={heroCompletion.total} />}
                     </div>
                     <BadgeStrip selectedBadgeIds={profile?.selectedBadgeIds} className="mt-1" />
                   </div>
