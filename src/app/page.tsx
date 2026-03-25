@@ -133,6 +133,11 @@ export default function Dashboard() {
   const bestFinish = useMemo(() => computeBestFinish(filteredEventStats), [filteredEventStats]);
   const userRanks = useMemo(() => user ? computeUserRanks(lbEntries, user.uid) : [], [user, lbEntries]);
   const bestRank = useMemo(() => getBestRank(userRanks), [userRanks]);
+  const heroCompletion = useMemo(() => {
+    if (filteredMatches.length === 0) return null;
+    const withHero = filteredMatches.filter((m) => m.heroPlayed && m.heroPlayed !== "Unknown").length;
+    return { withHero, total: filteredMatches.length, pct: Math.round((withHero / filteredMatches.length) * 100) };
+  }, [filteredMatches]);
   const topHero = useMemo(() => {
     const known = heroStats.filter((h) => h.heroName !== "Unknown");
     return known.length > 0 ? known[0] : null;
@@ -307,6 +312,19 @@ export default function Dashboard() {
                     </div>
                   )}
                 </div>
+                {heroCompletion && heroCompletion.total > 0 && (
+                  <div className="mt-3 pt-3 border-t border-fab-border/50 flex items-center gap-2">
+                    <div className="flex-1 h-1.5 rounded-full bg-fab-bg overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all ${heroCompletion.pct === 100 ? "bg-fab-win" : heroCompletion.pct >= 75 ? "bg-fab-gold" : "bg-fab-loss"}`}
+                        style={{ width: `${heroCompletion.pct}%` }}
+                      />
+                    </div>
+                    <span className="text-xs text-fab-muted whitespace-nowrap tabular-nums">
+                      {heroCompletion.withHero}/{heroCompletion.total} heroes ({heroCompletion.pct}%)
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
 
