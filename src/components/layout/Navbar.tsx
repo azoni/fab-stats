@@ -15,8 +15,9 @@ import {
   Globe, BookOpen, Zap,
   Wrench, ChevronDown,
   Mail, Star, Users, Settings, ShieldCheck, ExternalLink,
-  MoreVertical, Heart,
+  MoreVertical, Heart, MessageCircle,
 } from "lucide-react";
+import { FeedbackModal } from "@/components/feedback/FeedbackModal";
 
 const navLinks: { href: string; label: string; icon: ReactNode; color: string; bg: string; authOnly?: boolean; iconOnly?: boolean; subItems?: { href: string; label: string; adminOnly?: boolean; badge?: string }[] }[] = [
   { href: "/matches", label: "Matches", icon: <SwordsIcon className="w-4 h-4" />, color: "text-red-400", bg: "bg-red-400/10", authOnly: true, subItems: [
@@ -25,7 +26,6 @@ const navLinks: { href: string; label: string; icon: ReactNode; color: string; b
     { href: "/opponents", label: "Opponents" },
     { href: "/tools?tab=matrix", label: "Matchup Matrix" },
   ] },
-  { href: "/community", label: "Community", icon: <Users className="w-4 h-4" />, color: "text-indigo-400", bg: "bg-indigo-400/10" },
   { href: "/meta", label: "Meta", icon: <Globe className="w-4 h-4" />, color: "text-teal-400", bg: "bg-teal-400/10", subItems: [
     { href: "/matchups", label: "Matchup Matrix" },
     { href: "/meta/snapshot", label: "Meta Snapshot", adminOnly: true },
@@ -33,11 +33,15 @@ const navLinks: { href: string; label: string; icon: ReactNode; color: string; b
     { href: "/meta/hot-takes", label: "Hot Takes", adminOnly: true },
   ] },
   { href: "/leaderboard", label: "Rankings", icon: <TrophyIcon className="w-4 h-4" />, color: "text-amber-400", bg: "bg-amber-400/10" },
+  { href: "/community", label: "Community", icon: <Users className="w-4 h-4" />, color: "text-indigo-400", bg: "bg-indigo-400/10" },
   { href: "/support", label: "Support", icon: <Heart className="w-4 h-4" />, color: "text-pink-400", bg: "bg-pink-400/10", iconOnly: true, subItems: [
     { href: "https://www.amazon.com/?tag=oldwaystoda00-20", label: "Shop Amazon", badge: "Free" },
     { href: "https://partner.tcgplayer.com/fabstats", label: "Shop TCGplayer", badge: "Free" },
     { href: "https://github.com/sponsors/azoni", label: "GitHub Sponsors" },
     { href: "https://ko-fi.com/azoni", label: "Ko-fi" },
+    { href: "/feedback", label: "Send Feedback" },
+    { href: "https://discord.gg/WPP5aqCUHY", label: "Join Discord" },
+    { href: "https://x.com/FabStats", label: "Follow on X" },
   ] },
 ];
 
@@ -65,6 +69,7 @@ export function Navbar() {
   const { user, profile, isGuest, isAdmin } = useAuth();
   const creators = useCreators();
   const [mounted, setMounted] = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
   const { userCount, matchCount } = useCommunityStats();
   const { incomingCount } = useFriends();
   useEffect(() => setMounted(true), []);
@@ -99,7 +104,7 @@ export function Navbar() {
 
   const isAuthenticated = user && !isGuest;
 
-  return (
+  return (<>
     <nav className="md:fixed md:top-0 md:left-0 md:right-0 z-50 bg-fab-surface/95 backdrop-blur-md border-b border-fab-border">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-14 items-center justify-between">
@@ -163,6 +168,17 @@ export function Navbar() {
                                       {sub.badge && <span className="text-[8px] font-bold uppercase tracking-wider text-emerald-400 bg-emerald-400/15 px-1.5 py-0.5 rounded-full">{sub.badge}</span>}
                                       <ExternalLink className="w-3 h-3 text-fab-dim shrink-0" />
                                     </a>
+                                  );
+                                }
+                                if (sub.href === "/feedback") {
+                                  return (
+                                    <button
+                                      key={sub.href}
+                                      onClick={() => setFeedbackOpen(true)}
+                                      className="block w-full text-left px-3 py-2 text-sm text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover transition-colors"
+                                    >
+                                      {sub.label}
+                                    </button>
                                   );
                                 }
                                 return (
@@ -253,6 +269,8 @@ export function Navbar() {
         </div>
       </div>
     </nav>
+    {feedbackOpen && <FeedbackModal open={feedbackOpen} onClose={() => setFeedbackOpen(false)} />}
+  </>
   );
 }
 

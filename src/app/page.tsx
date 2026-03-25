@@ -305,25 +305,32 @@ export default function Dashboard() {
                     <BadgeStrip selectedBadgeIds={profile?.selectedBadgeIds} className="mt-1" />
                   </div>
                   {topHero && (
-                    <div className="text-right shrink-0">
+                    <div className="flex items-center gap-2 shrink-0">
                       <HeroImg name={topHero.heroName} size="md" />
-                      <p className="text-xs font-semibold text-fab-text mt-1">{topHero.heroName.split(",")[0]}</p>
-                      <p className={`text-xs font-bold ${topHero.winRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>{topHero.winRate.toFixed(0)}%</p>
+                      <div className="text-right">
+                        <p className="text-xs font-semibold text-fab-text">{topHero.heroName.split(",")[0]}</p>
+                        <p className={`text-xs font-bold ${topHero.winRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>{topHero.winRate.toFixed(0)}%</p>
+                      </div>
                     </div>
                   )}
                 </div>
                 {heroCompletion && heroCompletion.total > 0 && (
-                  <div className="mt-3 pt-3 border-t border-fab-border/50 flex items-center gap-2">
+                  <Link
+                    href="/matches"
+                    onClick={(e) => e.stopPropagation()}
+                    title={`${heroCompletion.withHero} of ${heroCompletion.total} matches have hero data — click to view matches`}
+                    className="mt-2 flex items-center gap-2 group/hc"
+                  >
                     <div className="flex-1 h-1.5 rounded-full bg-fab-bg overflow-hidden">
                       <div
                         className={`h-full rounded-full transition-all ${heroCompletion.pct === 100 ? "bg-fab-win" : heroCompletion.pct >= 75 ? "bg-fab-gold" : "bg-fab-loss"}`}
                         style={{ width: `${heroCompletion.pct}%` }}
                       />
                     </div>
-                    <span className="text-xs text-fab-muted whitespace-nowrap tabular-nums">
-                      {heroCompletion.withHero}/{heroCompletion.total} heroes ({heroCompletion.pct}%)
+                    <span className="text-[10px] text-fab-dim group-hover/hc:text-fab-muted whitespace-nowrap tabular-nums transition-colors">
+                      {heroCompletion.withHero}/{heroCompletion.total} ({heroCompletion.pct}%)
                     </span>
-                  </div>
+                  </Link>
                 )}
               </div>
             </div>
