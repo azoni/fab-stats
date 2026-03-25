@@ -23,6 +23,7 @@ const navLinks: { href: string; label: string; icon: ReactNode; color: string; b
     { href: "/matches", label: "Matches" },
     { href: "/events", label: "Events" },
     { href: "/opponents", label: "Opponents" },
+    { href: "/tools?tab=matrix", label: "Matchup Matrix" },
   ] },
   { href: "/community", label: "Community", icon: <Users className="w-4 h-4" />, color: "text-indigo-400", bg: "bg-indigo-400/10" },
   { href: "/meta", label: "Meta", icon: <Globe className="w-4 h-4" />, color: "text-teal-400", bg: "bg-teal-400/10", subItems: [
@@ -332,8 +333,7 @@ function UserMenu({
           {/* Profile header */}
           <Link
             href={profile?.username ? `/player/${profile.username}` : "/settings"}
-            onClick={() => setOpen(false)}
-            className="flex items-center gap-3 px-4 py-3 hover:bg-fab-surface-hover transition-colors border-b border-fab-border"
+                       className="flex items-center gap-3 px-4 py-3 hover:bg-fab-surface-hover transition-colors border-b border-fab-border"
           >
             {profile?.photoUrl ? (
               <img src={profile.photoUrl} alt="Your profile photo" className="w-9 h-9 rounded-full object-cover shrink-0" loading="lazy" />
@@ -358,8 +358,7 @@ function UserMenu({
               <Link
                 key={link.href}
                 href={link.href}
-                onClick={() => setOpen(false)}
-                className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                               className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                   pathname === link.href
                     ? "text-fab-gold bg-fab-gold/10"
                     : "text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover"
@@ -443,19 +442,8 @@ function MoreDropdown({
   isAuthenticated?: boolean;
   isAdmin?: boolean;
 }) {
-  const [open, setOpen] = useState(false);
   const [expanded, setExpanded] = useState<Set<string>>(new Set(["games"]));
   const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    function handleClick(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    }
-    if (open) document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, [open]);
 
   const toggle = useCallback((section: string) => {
     setExpanded((prev) => {
@@ -489,22 +477,17 @@ function MoreDropdown({
     }`;
 
   return (
-    <div className="relative" ref={ref}>
+    <div className="relative group/more" ref={ref}>
       <button
-        onClick={() => setOpen(!open)}
-        className={`flex items-center gap-1.5 px-2.5 py-2 rounded-md text-sm font-medium transition-colors ${
-          open
-            ? "text-fab-gold bg-fab-gold/10"
-            : "text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover"
-        }`}
+        className="flex items-center gap-1.5 px-2.5 py-2 rounded-md text-sm font-medium transition-colors text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover group-hover/more:text-fab-gold group-hover/more:bg-fab-gold/10"
       >
         <MoreVertical className="w-4 h-4" />
         <span className="hidden lg:inline">More</span>
-        <ChevronDown className={`w-3 h-3 transition-transform ${open ? "rotate-180" : ""}`} />
+        <ChevronDown className="w-3 h-3 transition-transform group-hover/more:rotate-180" />
       </button>
 
-      {open && (
-        <div className="absolute top-full right-0 mt-1 w-64 bg-fab-surface border border-fab-border rounded-lg shadow-xl z-50">
+      <div className="absolute top-full right-0 pt-1 hidden group-hover/more:block z-50">
+        <div className="w-64 bg-fab-surface border border-fab-border rounded-lg shadow-xl">
           {/* Sections */}
           {sections.map((section, sIdx) => {
             const visible = section.links.filter((l) => (!l.authOnly || isAuthenticated) && (!l.adminOnly || isAdmin));
@@ -515,7 +498,7 @@ function MoreDropdown({
                 <div key={section.label} className="p-1.5">
                   {visible.map((link) => (
                     <div key={link.href} className="group/sub relative">
-                      <Link href={link.href} onClick={() => setOpen(false)} className={`${linkClass(link.href)} justify-between`}>
+                      <Link href={link.href} className={`${linkClass(link.href)} justify-between`}>
                         <span className="flex items-center gap-3">
                           {link.icon}
                           {link.label}
@@ -532,8 +515,7 @@ function MoreDropdown({
                               <Link
                                 key={sub.href}
                                 href={sub.href}
-                                onClick={() => setOpen(false)}
-                                className={`block px-3 py-2 text-sm transition-colors ${
+                                                               className={`block px-3 py-2 text-sm transition-colors ${
                                   pathname === sub.href || (sub.href.includes("?") && pathname === sub.href.split("?")[0])
                                     ? "text-fab-gold bg-fab-gold/10"
                                     : "text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover"
@@ -554,7 +536,7 @@ function MoreDropdown({
               <CollapsibleSection key={section.label} label={section.label} expanded={expanded.has(section.label.toLowerCase())} onToggle={() => toggle(section.label.toLowerCase())}>
                 {visible.map((link) => (
                   <div key={link.href} className="group/sub relative">
-                    <Link href={link.href} onClick={() => setOpen(false)} className={`${linkClass(link.href)} justify-between`}>
+                    <Link href={link.href} className={`${linkClass(link.href)} justify-between`}>
                       <span className="flex items-center gap-3">
                         {link.icon}
                         {link.label}
@@ -577,7 +559,7 @@ function MoreDropdown({
                                   href={sub.href}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  onClick={() => { if (trackKey) trackSupportClick(trackKey); setOpen(false); }}
+                                  onClick={() => { if (trackKey) trackSupportClick(trackKey); }}
                                   className="flex items-center justify-between px-3 py-2 text-sm text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover transition-colors"
                                 >
                                   {sub.label}
@@ -589,8 +571,7 @@ function MoreDropdown({
                               <Link
                                 key={sub.href}
                                 href={sub.href}
-                                onClick={() => setOpen(false)}
-                                className={`block px-3 py-2 text-sm transition-colors ${
+                                                               className={`block px-3 py-2 text-sm transition-colors ${
                                   pathname === sub.href || (sub.href.includes("?") && pathname === sub.href.split("?")[0])
                                     ? "text-fab-gold bg-fab-gold/10"
                                     : "text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover"
@@ -621,7 +602,6 @@ function MoreDropdown({
                   className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-fab-surface-hover transition-colors group"
                   onClick={() => {
                     trackCreatorClick(creator.name);
-                    setOpen(false);
                   }}
                 >
                   {creator.imageUrl ? (
@@ -646,7 +626,7 @@ function MoreDropdown({
           <div className="border-t border-fab-border p-1.5 space-y-0.5">
             {/* Explore */}
             <div className="group/explore relative">
-              <Link href="/explore" onClick={() => setOpen(false)} className={`${linkClass("/explore")} justify-between`}>
+              <Link href="/explore" className={`${linkClass("/explore")} justify-between`}>
                 <span className="flex items-center gap-3">
                   <Zap className="w-4 h-4 text-yellow-400" />
                   Explore
@@ -655,18 +635,18 @@ function MoreDropdown({
               </Link>
               <div className="absolute left-full top-0 pl-1 hidden group-hover/explore:block z-50">
                 <div className="w-48 bg-fab-surface border border-fab-border rounded-lg shadow-xl overflow-hidden">
-                  <Link href="/matchups" onClick={() => setOpen(false)} className={`block px-3 py-2 text-sm transition-colors ${pathname === "/matchups" ? "text-fab-gold bg-fab-gold/10" : "text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover"}`}>Matchup Matrix</Link>
-                  <Link href="/compare" onClick={() => setOpen(false)} className={`block px-3 py-2 text-sm transition-colors ${pathname === "/compare" ? "text-fab-gold bg-fab-gold/10" : "text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover"}`}>Versus</Link>
-                  <Link href="/tier-list" onClick={() => setOpen(false)} className={`block px-3 py-2 text-sm transition-colors ${pathname === "/tier-list" ? "text-fab-gold bg-fab-gold/10" : "text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover"}`}>Tier List</Link>
-                  <Link href="/tournaments" onClick={() => setOpen(false)} className={`block px-3 py-2 text-sm transition-colors ${pathname === "/tournaments" ? "text-fab-gold bg-fab-gold/10" : "text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover"}`}>Tournaments</Link>
-                  <Link href="/games" onClick={() => setOpen(false)} className={`block px-3 py-2 text-sm transition-colors ${pathname === "/games" ? "text-fab-gold bg-fab-gold/10" : "text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover"}`}>Games</Link>
+                  <Link href="/matchups" className={`block px-3 py-2 text-sm transition-colors ${pathname === "/matchups" ? "text-fab-gold bg-fab-gold/10" : "text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover"}`}>Matchup Matrix</Link>
+                  <Link href="/compare" className={`block px-3 py-2 text-sm transition-colors ${pathname === "/compare" ? "text-fab-gold bg-fab-gold/10" : "text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover"}`}>Versus</Link>
+                  <Link href="/tier-list" className={`block px-3 py-2 text-sm transition-colors ${pathname === "/tier-list" ? "text-fab-gold bg-fab-gold/10" : "text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover"}`}>Tier List</Link>
+                  <Link href="/tournaments" className={`block px-3 py-2 text-sm transition-colors ${pathname === "/tournaments" ? "text-fab-gold bg-fab-gold/10" : "text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover"}`}>Tournaments</Link>
+                  <Link href="/games" className={`block px-3 py-2 text-sm transition-colors ${pathname === "/games" ? "text-fab-gold bg-fab-gold/10" : "text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover"}`}>Games</Link>
                 </div>
               </div>
             </div>
 
             {/* Resources */}
             <div className="group/resources relative">
-              <Link href="/resources" onClick={() => setOpen(false)} className={`${linkClass("/resources")} justify-between`}>
+              <Link href="/resources" className={`${linkClass("/resources")} justify-between`}>
                 <span className="flex items-center gap-3">
                   <BookOpen className="w-4 h-4 text-blue-400" />
                   Resources
@@ -675,9 +655,9 @@ function MoreDropdown({
               </Link>
               <div className="absolute left-full top-0 pl-1 hidden group-hover/resources:block z-50">
                 <div className="w-48 bg-fab-surface border border-fab-border rounded-lg shadow-xl overflow-hidden">
-                  <Link href="/roadmap" onClick={() => setOpen(false)} className={`block px-3 py-2 text-sm transition-colors ${pathname === "/roadmap" ? "text-fab-gold bg-fab-gold/10" : "text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover"}`}>Roadmap</Link>
-                  <Link href="/changelog" onClick={() => setOpen(false)} className={`block px-3 py-2 text-sm transition-colors ${pathname === "/changelog" ? "text-fab-gold bg-fab-gold/10" : "text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover"}`}>Changelog</Link>
-                  <Link href="/docs" onClick={() => setOpen(false)} className={`block px-3 py-2 text-sm transition-colors ${pathname === "/docs" ? "text-fab-gold bg-fab-gold/10" : "text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover"}`}>Docs</Link>
+                  <Link href="/roadmap" className={`block px-3 py-2 text-sm transition-colors ${pathname === "/roadmap" ? "text-fab-gold bg-fab-gold/10" : "text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover"}`}>Roadmap</Link>
+                  <Link href="/changelog" className={`block px-3 py-2 text-sm transition-colors ${pathname === "/changelog" ? "text-fab-gold bg-fab-gold/10" : "text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover"}`}>Changelog</Link>
+                  <Link href="/docs" className={`block px-3 py-2 text-sm transition-colors ${pathname === "/docs" ? "text-fab-gold bg-fab-gold/10" : "text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover"}`}>Docs</Link>
                 </div>
               </div>
             </div>
@@ -691,8 +671,7 @@ function MoreDropdown({
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-3 px-4 py-2.5 hover:bg-fab-surface-hover transition-colors group"
-              onClick={() => setOpen(false)}
-            >
+                         >
               <svg className="w-4 h-4 text-indigo-400 shrink-0" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M20.317 4.37a19.791 19.791 0 00-4.885-1.515.074.074 0 00-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 00-5.487 0 12.64 12.64 0 00-.617-1.25.077.077 0 00-.079-.037A19.736 19.736 0 003.677 4.37a.07.07 0 00-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 00.031.057 19.9 19.9 0 005.993 3.03.078.078 0 00.084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 00-.041-.106 13.107 13.107 0 01-1.872-.892.077.077 0 01-.008-.128 10.2 10.2 0 00.372-.292.074.074 0 01.077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 01.078.01c.12.098.246.198.373.292a.077.077 0 01-.006.127 12.299 12.299 0 01-1.873.892.077.077 0 00-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 00.084.028 19.839 19.839 0 006.002-3.03.077.077 0 00.032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 00-.031-.03z" />
               </svg>
@@ -709,8 +688,7 @@ function MoreDropdown({
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-3 px-4 py-2.5 hover:bg-fab-surface-hover transition-colors group"
-              onClick={() => setOpen(false)}
-            >
+                         >
               <svg className="w-4 h-4 text-fab-dim shrink-0" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
               </svg>
@@ -724,7 +702,7 @@ function MoreDropdown({
             </a>
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }
