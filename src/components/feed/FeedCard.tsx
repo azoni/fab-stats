@@ -4,6 +4,7 @@ import Link from "next/link";
 import type { FeedEvent, ImportFeedEvent, FaBdokuFeedEvent, FaBdokuCardFeedEvent, CrosswordFeedEvent, HeroGuesserFeedEvent, MatchupManiaFeedEvent, TriviaFeedEvent, TimelineFeedEvent, ConnectionsFeedEvent, RampageFeedEvent, KnockoutFeedEvent, BrawlFeedEvent, NinjaComboFeedEvent, ShadowStrikeFeedEvent, BladeDashFeedEvent } from "@/types";
 import { rankBorderClass } from "@/lib/leaderboard-ranks";
 import { playerHref } from "@/lib/constants";
+import { HeroShieldBadge } from "@/components/profile/HeroShieldBadge";
 import { FEED_REACTIONS, addFeedReaction, removeFeedReaction, deleteFeedEvent } from "@/lib/feed";
 
 export interface FeedGroup {
@@ -163,7 +164,8 @@ function FeedCardHeader({ event, compact, rankMap }: { event: FeedEvent; compact
   return avatar;
 }
 
-function NameAndTime({ event, compact }: { event: FeedEvent; compact?: boolean }) {
+function NameAndTime({ event, compact, heroCompletionMap }: { event: FeedEvent; compact?: boolean; heroCompletionMap?: Map<string, number> }) {
+  const pct = heroCompletionMap?.get(event.userId) ?? 0;
   return (
     <div className="flex items-center gap-1.5 flex-wrap">
       {event.isPublic ? (
@@ -173,6 +175,7 @@ function NameAndTime({ event, compact }: { event: FeedEvent; compact?: boolean }
       ) : (
         <span className={`font-semibold text-fab-text ${compact ? "text-xs" : ""}`}>{event.displayName}</span>
       )}
+      {pct >= 35 && <HeroShieldBadge pct={pct} />}
       {compact ? (
         <span className="text-[10px] text-fab-dim">{formatTimeAgo(event.createdAt)}</span>
       ) : (
@@ -384,7 +387,7 @@ function HeroPill({ hero, compact }: { hero: string; compact?: boolean }) {
 
 // ── Content components ──
 
-export function FeedCard({ event, compact, rankMap, eventTierMap, underlineTierMap, userId, isAdmin, onDelete }: { event: FeedEvent; compact?: boolean; rankMap?: Map<string, 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8>; eventTierMap?: Map<string, { border: string; shadow: string }>; underlineTierMap?: Map<string, { color: string; rgb: string }>; userId?: string; isAdmin?: boolean; onDelete?: (eventId: string) => void }) {
+export function FeedCard({ event, compact, rankMap, eventTierMap, underlineTierMap, heroCompletionMap, userId, isAdmin, onDelete }: { event: FeedEvent; compact?: boolean; rankMap?: Map<string, 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8>; eventTierMap?: Map<string, { border: string; shadow: string }>; underlineTierMap?: Map<string, { color: string; rgb: string }>; heroCompletionMap?: Map<string, number>; userId?: string; isAdmin?: boolean; onDelete?: (eventId: string) => void }) {
   const tierStyle = eventTierMap?.get(event.userId);
   const underlineStyle = underlineTierMap?.get(event.userId);
   const canDelete = isAdmin || (userId && userId === event.userId);
@@ -501,7 +504,7 @@ export function FeedCard({ event, compact, rankMap, eventTierMap, underlineTierM
       <div className={`flex items-center ${compact ? "gap-2" : "gap-3 items-start"}`}>
         <FeedCardHeader event={event} compact={compact} rankMap={rankMap} />
         <div className="flex-1 min-w-0">
-          <NameAndTime event={event} compact={compact} />
+          <NameAndTime event={event} compact={compact} heroCompletionMap={heroCompletionMap} />
           {event.type === "import" && <ImportContent event={event} compact={compact} />}
           {event.type === "achievement" && <AchievementContent event={event} compact={compact} />}
           {event.type === "placement" && <PlacementContent event={event} compact={compact} />}
@@ -1153,7 +1156,7 @@ function GroupedImportRow({ event }: { event: ImportFeedEvent }) {
   );
 }
 
-export function GroupedFeedCard({ group, compact, rankMap, eventTierMap, underlineTierMap, userId, isAdmin, onDelete }: { group: FeedGroup; compact?: boolean; rankMap?: Map<string, 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8>; eventTierMap?: Map<string, { border: string; shadow: string }>; underlineTierMap?: Map<string, { color: string; rgb: string }>; userId?: string; isAdmin?: boolean; onDelete?: (eventId: string) => void }) {
+export function GroupedFeedCard({ group, compact, rankMap, eventTierMap, underlineTierMap, heroCompletionMap, userId, isAdmin, onDelete }: { group: FeedGroup; compact?: boolean; rankMap?: Map<string, 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8>; eventTierMap?: Map<string, { border: string; shadow: string }>; underlineTierMap?: Map<string, { color: string; rgb: string }>; heroCompletionMap?: Map<string, number>; userId?: string; isAdmin?: boolean; onDelete?: (eventId: string) => void }) {
   const [expanded, setExpanded] = useState(false);
   const first = group.events[0];
   const isSingle = group.events.length === 1;
@@ -1163,7 +1166,7 @@ export function GroupedFeedCard({ group, compact, rankMap, eventTierMap, underli
     group.events.flatMap((e) => e.type === "import" ? (e.topHeroes || []) : []),
   )];
 
-  if (isSingle) return <FeedCard event={first} compact={compact} rankMap={rankMap} eventTierMap={eventTierMap} underlineTierMap={underlineTierMap} userId={userId} isAdmin={isAdmin} onDelete={onDelete} />;
+  if (isSingle) return <FeedCard event={first} compact={compact} rankMap={rankMap} eventTierMap={eventTierMap} underlineTierMap={underlineTierMap} heroCompletionMap={heroCompletionMap} userId={userId} isAdmin={isAdmin} onDelete={onDelete} />;
 
   const isGameGroup = GAME_TYPES.has(first.type);
   const tierStyle = eventTierMap?.get(first.userId);

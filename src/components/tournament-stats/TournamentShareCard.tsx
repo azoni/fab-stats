@@ -197,7 +197,7 @@ function ShareCardInner({ data, theme }: { data: TournamentShareData; theme: Tou
         {/* Header — title + name on same row */}
         <div className="flex items-center justify-between mb-3">
           <p className="text-[10px] uppercase tracking-[0.2em]" style={{ color: `${t.accent}99` }}>Tournament Stats</p>
-          <p className="text-sm font-bold" style={{ color: t.text }}>{data.playerName}</p>
+          <p className="text-lg font-bold" style={{ color: t.text }}>{data.playerName}</p>
         </div>
 
         <OrnamentalDivider color={t.accent} />

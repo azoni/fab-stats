@@ -44,6 +44,7 @@ export default function CommunityPage() {
   const rankMap = useMemo(() => computeRankMap(lbEntries), [lbEntries]);
   const eventTierMap = useMemo(() => computeEventTierMap(lbEntries), [lbEntries]);
   const underlineTierMap = useMemo(() => computeUnderlineTierMap(lbEntries), [lbEntries]);
+  const heroCompletionMap = useMemo(() => new Map(lbEntries.map((e) => [e.userId, e.heroCompletionPct ?? 0])), [lbEntries]);
   const featuredProfiles = useMemo(() => selectFeaturedProfiles(lbEntries), [lbEntries]);
 
   const eventStats = useMemo(() => computeEventStats(matches), [matches]);
@@ -92,7 +93,7 @@ export default function CommunityPage() {
         {/* Feed or sign-in CTA */}
         <div className="min-w-0">
           {user ? (
-            <ActivityFeed rankMap={rankMap} eventTierMap={eventTierMap} underlineTierMap={underlineTierMap} />
+            <ActivityFeed rankMap={rankMap} eventTierMap={eventTierMap} underlineTierMap={underlineTierMap} heroCompletionMap={heroCompletionMap} />
           ) : (
             <div className="rounded-xl bg-fab-surface border border-fab-border p-6 text-center space-y-3">
               <p className="text-fab-text font-semibold">See what the community is up to</p>

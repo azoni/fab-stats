@@ -194,7 +194,7 @@ function ShareCardInner({ data, theme }: { data: TrendsShareData; theme: TrendsT
       <div className="relative z-10">
         <div className="flex items-center justify-between mb-3">
           <p className="text-[10px] uppercase tracking-[0.2em]" style={{ color: `${t.accent}99` }}>My Stats</p>
-          <p className="text-sm font-bold" style={{ color: t.text }}>{data.playerName}</p>
+          <p className="text-lg font-bold" style={{ color: t.text }}>{data.playerName}</p>
         </div>
 
         <OrnamentalDivider color={t.accent} />
