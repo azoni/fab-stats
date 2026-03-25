@@ -33,6 +33,7 @@ export function MatchList({ matches, matchOwnerUid, enableComments, editable, on
   const [filterResult, setFilterResult] = useState<string>("all");
   const [filterFormat, setFilterFormat] = useState<string>("all");
   const [filterHero, setFilterHero] = useState<string>("all");
+  const [filterOpponentHero, setFilterOpponentHero] = useState<string>("all");
   const [filterEventType, setFilterEventType] = useState<string>("all");
   const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
   const [search, setSearch] = useState("");
@@ -41,7 +42,7 @@ export function MatchList({ matches, matchOwnerUid, enableComments, editable, on
   // Reset to page 1 when filters/search/sort change
   useEffect(() => {
     setPage(1);
-  }, [filterResult, filterFormat, filterHero, filterEventType, sortOrder, search]);
+  }, [filterResult, filterFormat, filterHero, filterOpponentHero, filterEventType, sortOrder, search]);
 
   const allFormats = useMemo(() => {
     return [...new Set(matches.map((m) => m.format))].sort();
@@ -54,6 +55,15 @@ export function MatchList({ matches, matchOwnerUid, enableComments, editable, on
 
   const hasUnsetHeroes = useMemo(() => {
     return matches.some((m) => !m.heroPlayed || m.heroPlayed === "Unknown");
+  }, [matches]);
+
+  const allOpponentHeroes = useMemo(() => {
+    const heroes = new Set(matches.map((m) => m.opponentHero).filter((h) => h && h !== "Unknown" && VALID_HERO_NAMES.has(h)));
+    return Array.from(heroes).sort();
+  }, [matches]);
+
+  const hasUnsetOpponentHeroes = useMemo(() => {
+    return matches.some((m) => !m.opponentHero || m.opponentHero === "Unknown");
   }, [matches]);
 
   const allEventTypes = useMemo(() => {
@@ -83,6 +93,11 @@ export function MatchList({ matches, matchOwnerUid, enableComments, editable, on
       result = result.filter((m) => !m.heroPlayed || m.heroPlayed === "Unknown");
     } else if (filterHero !== "all") {
       result = result.filter((m) => m.heroPlayed === filterHero);
+    }
+    if (filterOpponentHero === "none") {
+      result = result.filter((m) => !m.opponentHero || m.opponentHero === "Unknown");
+    } else if (filterOpponentHero !== "all") {
+      result = result.filter((m) => m.opponentHero === filterOpponentHero);
     }
     if (filterEventType !== "all") {
       result = result.filter((m) => getEventType(m) === filterEventType);
@@ -186,6 +201,20 @@ export function MatchList({ matches, matchOwnerUid, enableComments, editable, on
               <option value="all">All Heroes</option>
               {hasUnsetHeroes && <option value="none">No Hero Set</option>}
               {allHeroes.map((h) => (
+                <option key={h} value={h}>{h}</option>
+              ))}
+            </select>
+          )}
+
+          {(allOpponentHeroes.length > 0 || hasUnsetOpponentHeroes) && (
+            <select
+              value={filterOpponentHero}
+              onChange={(e) => setFilterOpponentHero(e.target.value)}
+              className="bg-fab-surface border border-fab-border rounded-md px-3 py-1.5 text-fab-text text-sm outline-none"
+            >
+              <option value="all">All Opponents</option>
+              {hasUnsetOpponentHeroes && <option value="none">No Opponent Set</option>}
+              {allOpponentHeroes.map((h) => (
                 <option key={h} value={h}>{h}</option>
               ))}
             </select>
