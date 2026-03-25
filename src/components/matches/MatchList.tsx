@@ -33,7 +33,7 @@ export function MatchList({ matches, matchOwnerUid, enableComments, editable, on
   const [filterResult, setFilterResult] = useState<string>("all");
   const [filterFormat, setFilterFormat] = useState<string>("all");
   const [filterHero, setFilterHero] = useState<string>("all");
-  const [filterOpponentHero, setFilterOpponentHero] = useState<string>("all");
+  const [filterMissing, setFilterMissing] = useState<string>("all");
   const [filterEventType, setFilterEventType] = useState<string>("all");
   const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
   const [search, setSearch] = useState("");
@@ -42,7 +42,7 @@ export function MatchList({ matches, matchOwnerUid, enableComments, editable, on
   // Reset to page 1 when filters/search/sort change
   useEffect(() => {
     setPage(1);
-  }, [filterResult, filterFormat, filterHero, filterOpponentHero, filterEventType, sortOrder, search]);
+  }, [filterResult, filterFormat, filterHero, filterMissing, filterEventType, sortOrder, search]);
 
   const allFormats = useMemo(() => {
     return [...new Set(matches.map((m) => m.format))].sort();
@@ -57,14 +57,6 @@ export function MatchList({ matches, matchOwnerUid, enableComments, editable, on
     return matches.some((m) => !m.heroPlayed || m.heroPlayed === "Unknown");
   }, [matches]);
 
-  const allOpponentHeroes = useMemo(() => {
-    const heroes = new Set(matches.map((m) => m.opponentHero).filter((h) => h && h !== "Unknown" && VALID_HERO_NAMES.has(h)));
-    return Array.from(heroes).sort();
-  }, [matches]);
-
-  const hasUnsetOpponentHeroes = useMemo(() => {
-    return matches.some((m) => !m.opponentHero || m.opponentHero === "Unknown");
-  }, [matches]);
 
   const allEventTypes = useMemo(() => {
     const types = new Set(matches.map((m) => getEventType(m)).filter(Boolean));
@@ -94,10 +86,10 @@ export function MatchList({ matches, matchOwnerUid, enableComments, editable, on
     } else if (filterHero !== "all") {
       result = result.filter((m) => m.heroPlayed === filterHero);
     }
-    if (filterOpponentHero === "none") {
+    if (filterMissing === "no-hero") {
+      result = result.filter((m) => !m.heroPlayed || m.heroPlayed === "Unknown");
+    } else if (filterMissing === "no-opp-hero") {
       result = result.filter((m) => !m.opponentHero || m.opponentHero === "Unknown");
-    } else if (filterOpponentHero !== "all") {
-      result = result.filter((m) => m.opponentHero === filterOpponentHero);
     }
     if (filterEventType !== "all") {
       result = result.filter((m) => getEventType(m) === filterEventType);
@@ -135,7 +127,7 @@ export function MatchList({ matches, matchOwnerUid, enableComments, editable, on
     });
 
     return result;
-  }, [matches, filterResult, filterFormat, filterHero, filterOpponentHero, filterEventType, sortOrder, search]);
+  }, [matches, filterResult, filterFormat, filterHero, filterMissing, filterEventType, sortOrder, search]);
 
   // Stats from filtered matches (reflects current view)
   const stats = useMemo(() => {
@@ -199,26 +191,21 @@ export function MatchList({ matches, matchOwnerUid, enableComments, editable, on
               className="bg-fab-surface border border-fab-border rounded-md px-3 py-1.5 text-fab-text text-sm outline-none"
             >
               <option value="all">All Heroes</option>
-              {hasUnsetHeroes && <option value="none">No Hero Set</option>}
               {allHeroes.map((h) => (
                 <option key={h} value={h}>{h}</option>
               ))}
             </select>
           )}
 
-          {(allOpponentHeroes.length > 0 || hasUnsetOpponentHeroes) && (
-            <select
-              value={filterOpponentHero}
-              onChange={(e) => setFilterOpponentHero(e.target.value)}
-              className="bg-fab-surface border border-fab-border rounded-md px-3 py-1.5 text-fab-text text-sm outline-none"
-            >
-              <option value="all">Opp. Hero</option>
-              {hasUnsetOpponentHeroes && <option value="none">No Opp. Hero</option>}
-              {allOpponentHeroes.map((h) => (
-                <option key={h} value={h}>{h}</option>
-              ))}
-            </select>
-          )}
+          <select
+            value={filterMissing}
+            onChange={(e) => setFilterMissing(e.target.value)}
+            className="bg-fab-surface border border-fab-border rounded-md px-3 py-1.5 text-fab-text text-sm outline-none"
+          >
+            <option value="all">Missing Data</option>
+            <option value="no-hero">No Hero Set</option>
+            <option value="no-opp-hero">No Opp. Hero</option>
+          </select>
 
           {allEventTypes.length > 1 && (
             <div className="flex gap-0.5 bg-fab-bg rounded-lg p-0.5 border border-fab-border overflow-x-auto scrollbar-hide">
