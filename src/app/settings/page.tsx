@@ -57,6 +57,7 @@ const THEME_PREVIEWS: Record<ThemeName, { bg: string; surface: string; border: s
   grimoire: { bg: "#0e0c08", surface: "#1c1812", border: "#3e3528", accent: "#d4a54a", text: "#e6ddd0", muted: "#9a8e7a", radius: "4px" },
   leyline: { bg: "#08080f", surface: "#14142a", border: "#1e2050", accent: "#7b8fff", text: "#e0e4f0", muted: "#6b7094", radius: "10px" },
   rosetta: { bg: "#0a0a0a", surface: "#141414", border: "#262626", accent: "#f0f0f0", text: "#fafafa", muted: "#737373", radius: "2px" },
+  daylight: { bg: "#f5f5f5", surface: "#ffffff", border: "#e0e0e0", accent: "#2563eb", text: "#1a1a1a", muted: "#6b7280", radius: "6px" },
   shamrock: { bg: "#071207", surface: "#0f1f0f", border: "#1e3a1e", accent: "#22c55e", text: "#d4edda", muted: "#6b9b6b", radius: "8px" },
   newyear: { bg: "#0a0814", surface: "#141028", border: "#2a2050", accent: "#f5c542", text: "#eee8f5", muted: "#8b7faa", radius: "8px" },
   valentine: { bg: "#140810", surface: "#1f0f1a", border: "#3d1a30", accent: "#f472b6", text: "#f5e0ed", muted: "#9b6b88", radius: "12px" },
@@ -72,18 +73,17 @@ function ThemePicker() {
   const { theme, setTheme, resetTheme, isCustom } = useTheme();
 
   return (
-    <div className="bg-fab-surface border border-fab-border rounded-lg p-6 mb-4">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-sm font-semibold text-fab-text">Appearance</h2>
-        {isCustom && (
+    <div>
+      {isCustom && (
+        <div className="flex justify-end mb-3">
           <button
             onClick={resetTheme}
             className="text-[11px] text-fab-dim hover:text-fab-muted transition-colors"
           >
             Reset to default
           </button>
-        )}
-      </div>
+        </div>
+      )}
       <div className="grid grid-cols-3 gap-3">
         {THEME_OPTIONS.map((opt) => {
           const p = THEME_PREVIEWS[opt.value];
@@ -222,6 +222,8 @@ export default function SettingsPage() {
   const [togglingGuests, setTogglingGuests] = useState(false);
   const [siteBackgroundId, setSiteBackgroundId] = useState(profile?.siteBackgroundId || "none");
   const [savingBackground, setSavingBackground] = useState(false);
+  const [appearanceOpen, setAppearanceOpen] = useState(false);
+  const [backgroundOpen, setBackgroundOpen] = useState(false);
   const [confirmClear, setConfirmClear] = useState(false);
   const [clearing, setClearing] = useState(false);
   const [clearConfirmText, setClearConfirmText] = useState("");
@@ -403,27 +405,48 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      {/* Appearance */}
-      <ThemePicker />
+      {/* Appearance — collapsible */}
+      <div className="bg-fab-surface border border-fab-border rounded-lg mb-4">
+        <button onClick={() => setAppearanceOpen(!appearanceOpen)} className="flex items-center justify-between w-full px-6 py-4 text-left">
+          <h2 className="text-sm font-semibold text-fab-text">Appearance</h2>
+          <svg className={`w-4 h-4 text-fab-dim transition-transform duration-200 ${appearanceOpen ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+        {appearanceOpen && (
+          <div className="px-6 pb-6 -mt-1">
+            <ThemePicker />
+          </div>
+        )}
+      </div>
 
-      {/* Profile background */}
-      <div id="background" className="bg-fab-surface border border-fab-border rounded-lg p-6 mb-4">
-        <div className="flex items-center justify-between mb-2">
-          <h2 className="text-sm font-semibold text-fab-text">Profile Background</h2>
-          {isAdmin && (
-            <span className="text-[10px] px-2 py-0.5 rounded bg-fab-gold/15 text-fab-gold">Admin: full FaB art library</span>
-          )}
-        </div>
-        <p className="text-xs text-fab-dim mb-3">
-          This background is shown across your site view and on your public profile. When viewing another player&apos;s profile, their selected background is used.
-        </p>
-        <BackgroundChooser
-          selectedId={siteBackgroundId}
-          isAdmin={isAdmin}
-          onSelect={handleBackgroundChange}
-          disabled={savingBackground}
-        />
-        <p className="text-[10px] text-fab-dim mt-2">{savingBackground ? "Saving background..." : "Tip: You can also change this directly from your profile page."}</p>
+      {/* Profile background — collapsible */}
+      <div id="background" className="bg-fab-surface border border-fab-border rounded-lg mb-4">
+        <button onClick={() => setBackgroundOpen(!backgroundOpen)} className="flex items-center justify-between w-full px-6 py-4 text-left">
+          <div className="flex items-center gap-2">
+            <h2 className="text-sm font-semibold text-fab-text">Profile Background</h2>
+            {isAdmin && (
+              <span className="text-[10px] px-2 py-0.5 rounded bg-fab-gold/15 text-fab-gold">Admin: full FaB art library</span>
+            )}
+          </div>
+          <svg className={`w-4 h-4 text-fab-dim transition-transform duration-200 ${backgroundOpen ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+        {backgroundOpen && (
+          <div className="px-6 pb-6 -mt-1">
+            <p className="text-xs text-fab-dim mb-3">
+              This background is shown across your site view and on your public profile. When viewing another player&apos;s profile, their selected background is used.
+            </p>
+            <BackgroundChooser
+              selectedId={siteBackgroundId}
+              isAdmin={isAdmin}
+              onSelect={handleBackgroundChange}
+              disabled={savingBackground}
+            />
+            <p className="text-[10px] text-fab-dim mt-2">{savingBackground ? "Saving background..." : "Tip: You can also change this directly from your profile page."}</p>
+          </div>
+        )}
       </div>
 
       {/* Profile info */}

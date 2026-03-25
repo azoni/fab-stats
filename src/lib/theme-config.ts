@@ -1,12 +1,13 @@
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "./firebase";
 
-export type ThemeName = "grimoire" | "leyline" | "rosetta" | "shamrock" | "newyear" | "valentine" | "firework" | "spooky" | "holly" | "pastel" | "thankful" | "lunar";
+export type ThemeName = "grimoire" | "leyline" | "rosetta" | "daylight" | "shamrock" | "newyear" | "valentine" | "firework" | "spooky" | "holly" | "pastel" | "thankful" | "lunar";
 
 export const THEME_OPTIONS: { value: ThemeName; label: string; description: string }[] = [
   { value: "grimoire", label: "Grimoire", description: "Ancient spellbook, warm leather & candlelight" },
   { value: "leyline", label: "Leyline", description: "Arcane glass observatory, luminous & floating" },
   { value: "rosetta", label: "Rosetta", description: "Pure data terminal, sharp & monochrome" },
+  { value: "daylight", label: "Daylight", description: "Clean & bright — light backgrounds, easy on the eyes" },
   { value: "shamrock", label: "Shamrock", description: "St. Patrick's Day — luck of the Irish" },
   { value: "newyear", label: "New Year", description: "Midnight champagne & golden sparkle" },
   { value: "valentine", label: "Valentine", description: "Roses, blush & heartfelt pink" },

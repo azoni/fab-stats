@@ -136,7 +136,7 @@ export default function RootLayout({
           <ProfileBackgroundController />
           <Navbar />
           <main className="min-h-screen pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-8 md:pt-16">
-            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6">
+            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 transparent-cards">
               <SiteBanner />
               <GuestBanner />
               <LayoutShell>{children}</LayoutShell>

@@ -241,7 +241,7 @@ export default function Dashboard() {
   const { streaks } = overall;
 
   return (
-    <div className="relative space-y-8 transparent-cards">
+    <div className="relative space-y-8">
       {/* Ambient page glow — subtle gold atmosphere at the top */}
       <div className="pointer-events-none absolute inset-x-0 -top-24 h-72 bg-[radial-gradient(ellipse_60%_50%_at_50%_-10%,rgba(201,168,76,0.06),transparent)]" />
 
