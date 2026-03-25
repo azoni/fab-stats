@@ -1,12 +1,14 @@
 export type SlideType =
   | "title"
   | "section"
+  | "hero"
+  | "stats"
+  | "cards"
+  | "timeline"
   | "content"
-  | "diagram"
   | "code"
   | "split"
-  | "stats"
-  | "showcase";
+  | "diagram";
 
 export interface BulletItem {
   text: string;
@@ -21,32 +23,39 @@ export interface StatItem {
   label: string;
 }
 
-export interface ShowcaseImage {
-  src: string;
-  alt: string;
-  caption?: string;
+export interface CardItem {
+  icon: string;
+  title: string;
+  description: string;
+  mono?: string;
+}
+
+export interface TimelineStep {
+  label: string;
+  description: string;
 }
 
 export interface Slide {
   id: string;
   type: SlideType;
   section?: string;
+  sectionNumber?: string;
   title: string;
   subtitle?: string;
   bullets?: Bullet[];
-  code?: { snippet: string; language: string; highlightLines?: number[] };
+  code?: {
+    snippet: string;
+    language: string;
+    highlightLines?: number[];
+    filename?: string;
+  };
   diagram?: "architecture" | "data-flow";
   left?: { title: string; bullets: string[] };
   right?: { title: string; bullets: string[] };
   notes?: string[];
-  /** Path relative to /public, e.g. "/deck/fabdoku.png" */
-  image?: { src: string; alt: string; caption?: string };
-  /** Background image for title/section slides */
-  bgImage?: string;
-  /** For stats slide type — animated number cards */
   stats?: StatItem[];
-  /** For showcase slide type — images with bullets */
-  showcaseImages?: ShowcaseImage[];
+  cards?: CardItem[];
+  timelineSteps?: TimelineStep[];
 }
 
 export const SLIDES: Slide[] = [
@@ -54,9 +63,8 @@ export const SLIDES: Slide[] = [
   {
     id: "title",
     type: "title",
-    title: "FaB Stats: Engineering Deep Dive",
-    subtitle: "fabstats.net — Charlton — XPathLabs Interview",
-    bgImage: "/backgrounds/fab-official/monarch-key-art.webp",
+    title: "FaB Stats",
+    subtitle: "Engineering Deep Dive — Charlton — XPathLabs",
     notes: [
       "Intro: 'Thanks for having me. I'm going to walk through FaB Stats — a project I built and shipped end-to-end as a solo developer.'",
       "This presentation itself is built inside the project — it's a Next.js page at /deck using the same stack, theme system, and framer-motion animations.",
@@ -64,29 +72,30 @@ export const SLIDES: Slide[] = [
     ],
   },
   {
-    id: "overview",
+    id: "hero-intro",
+    type: "hero",
+    title:
+      "A Flesh and Blood TCG stats platform built end-to-end by one developer in one month.",
+    notes: [
+      "Flesh and Blood is a trading card game by Legend Story Studios — think Magic: The Gathering but newer, growing competitive scene.",
+      "GEM is the official tournament platform — it tracks matches but has no stats, no win rates, no matchup data. Players were literally using spreadsheets.",
+      "If asked 'why solo?': 'This is a community project I built for myself and other players. The velocity was possible because of Claude Code — I'll cover that workflow later.'",
+    ],
+  },
+  {
+    id: "stats-overview",
     type: "stats",
-    section: "Overview",
-    title: "FaB Stats — By the Numbers",
+    title: "By the Numbers",
     stats: [
       { value: 65, suffix: "K", label: "Lines of TypeScript" },
       { value: 1167, label: "Commits in 1 Month" },
       { value: 12, suffix: "+", label: "Daily Minigames" },
-      { value: 158, label: "Achievements" },
-      { value: 60, suffix: "+", label: "App Routes" },
-      { value: 446, label: "Source Files" },
-      { value: 5, label: "Import Methods" },
       { value: 0, suffix: "", label: "Server Cost" },
     ],
-    bullets: [
-      "Flesh and Blood TCG match tracker + daily minigame platform — built as a player who needed better stats",
-    ],
     notes: [
-      "Flesh and Blood is a trading card game by Legend Story Studios — think Magic: The Gathering but newer, growing competitive scene.",
-      "GEM is the official tournament platform — it tracks matches but has no stats, no win rates, no matchup data. Players were literally using spreadsheets.",
       "The 1,167 commits in 1 month is real — I was shipping features daily using Claude Code. Average ~38 commits/day.",
       "The 65K lines includes: 446 TypeScript/TSX files, 60+ Next.js routes, Firestore security rules, Netlify serverless functions, and a Manifest V3 browser extension.",
-      "If asked 'why solo?': 'This is a community project I built for myself and other players. The velocity was possible because of Claude Code — I'll cover that workflow later.'",
+      "$0 server cost: Firebase Spark plan (free), Netlify free tier. The only cost is the domain name.",
     ],
   },
 
@@ -94,25 +103,56 @@ export const SLIDES: Slide[] = [
   {
     id: "walkthrough-divider",
     type: "section",
+    sectionNumber: "01",
     title: "Project Walkthrough",
-    subtitle: "Problem, ownership, architecture, testing, deployment, and production issues",
-    bgImage: "/backgrounds/fab-official/wtr-key-art-v1.webp",
+    subtitle: "Problem → Architecture → Testing → Deploy → Production Issues",
     notes: [
       "This section maps to: problem statement, what you owned, architecture, testing, deployment, and production issues.",
       "Keep each slide to ~2 minutes. Leave room for questions — they'll likely dig into one or two areas.",
     ],
   },
   {
-    id: "problem",
-    type: "content",
+    id: "hero-problem",
+    type: "hero",
+    title: "No API. No stats. Just spreadsheets.",
+    notes: [
+      "This is the one-liner hook. Let it land, then expand: 'GEM, the official tournament platform, tracks matches but gives players no way to analyze their performance. People were literally copy-pasting results into Google Sheets.'",
+    ],
+  },
+  {
+    id: "problem-cards",
+    type: "cards",
     section: "Problem",
-    title: "Problem Statement",
-    bullets: [
-      "FaB community had no centralized stats platform — players tracked results in spreadsheets",
-      "GEM (official tournament platform) has no public API — had to reverse-engineer scraping",
-      "No standard data format for match records across events and formats",
-      "Daily games needed global sync — puzzles must reset at the same time for all players worldwide",
-      "Card data from @flesh-and-blood/cards has inconsistencies (e.g. 'Go again' vs 'Go Again', generic cards)",
+    title: "What Made This Hard",
+    cards: [
+      {
+        icon: "🔒",
+        title: "No GEM API",
+        description:
+          "Had to reverse-engineer scraping via a Manifest V3 browser extension",
+        mono: "content.js",
+      },
+      {
+        icon: "📋",
+        title: "No Standard Format",
+        description:
+          "Matches lack consistent format identifiers — built guessEventType() with regex",
+        mono: "gem-paste-import.ts",
+      },
+      {
+        icon: "🌍",
+        title: "Global Puzzle Sync",
+        description:
+          "Daily games must reset at the same time for all players worldwide — UTC only",
+        mono: "getTodayDateStr()",
+      },
+      {
+        icon: "🃏",
+        title: "Card Data Gaps",
+        description:
+          "4,200+ cards with inconsistencies: 'Go again' vs 'Go Again', generic card exclusions",
+        mono: "@flesh-and-blood/cards",
+      },
     ],
     notes: [
       "GEM scraping: The extension uses a Manifest V3 content script that runs on gem.fabtcg.com. It parses HTML tables, extracts match data (hero, opponent, result, format, event), and serializes it with LZ compression into a URL that opens fabstats.net/import.",
@@ -123,41 +163,44 @@ export const SLIDES: Slide[] = [
     ],
   },
   {
-    id: "ownership",
-    type: "content",
+    id: "ownership-cards",
+    type: "cards",
     section: "Ownership",
     title: "Full-Stack Solo Dev",
-    bullets: [
+    cards: [
       {
-        text: "Frontend",
-        sub: [
-          "Next.js 16 with App Router, React 19, Tailwind CSS v4, 60+ routes",
-        ],
+        icon: "⚛️",
+        title: "Frontend",
+        description: "60+ routes, App Router, React 19, Tailwind v4",
+        mono: "Next.js 16",
       },
       {
-        text: "Backend",
-        sub: [
-          "Firebase Auth, Firestore with security rules, dual-layer public/private data",
-        ],
+        icon: "🔥",
+        title: "Backend",
+        description:
+          "Auth, Firestore, security rules, dual-layer public/private data",
+        mono: "Firebase",
       },
       {
-        text: "Infrastructure",
-        sub: [
-          "Netlify static export + edge functions + serverless OG image generation",
-        ],
+        icon: "🌐",
+        title: "Infrastructure",
+        description:
+          "Static export + edge functions + serverless OG image generation",
+        mono: "Netlify",
       },
       {
-        text: "Browser Extension",
-        sub: [
-          "Manifest V3 content script that scrapes GEM tournament data",
-        ],
+        icon: "🧩",
+        title: "Browser Extension",
+        description:
+          "Content script scrapes GEM tournament data with LZ compression",
+        mono: "Manifest V3",
       },
       {
-        text: "Data Pipeline — 5 Import Methods",
-        sub: [
-          "Browser extension (one-click GEM scrape), bookmarklet (mobile-friendly), copy-paste, CSV/JSON upload, admin auto-sync",
-          "Dual-hash fingerprinting for dedup, cross-player match linking",
-        ],
+        icon: "📊",
+        title: "Data Pipeline",
+        description:
+          "5 import methods, dual-hash fingerprinting, cross-player match linking",
+        mono: "importMatches()",
       },
     ],
     notes: [
@@ -213,18 +256,18 @@ export const SLIDES: Slide[] = [
       title: "What I Test",
       bullets: [
         "TypeScript strict mode as first line of defense",
-        "Deterministic seeded RNG — same date always produces same puzzle",
-        "Firestore security rules tested with emulator",
-        "Manual QA on daily puzzle generation and game flows",
-        "Build verification: npx tsc --noEmit + npm run build on every change",
+        "Deterministic seeded RNG — same date = same puzzle",
+        "Firestore security rules with emulator",
+        "Manual QA on daily puzzles and game flows",
+        "Build verification on every change",
       ],
     },
     right: {
-      title: "What I Don't (and Why)",
+      title: "What I Don't (Yet)",
       bullets: [
-        "No unit test suite — velocity tradeoff as solo dev on a 1-month-old project",
-        "No E2E tests — manual flows are fast enough at current scale",
-        "Plan: add Vitest for critical paths (puzzle generators, fingerprinting) as project stabilizes",
+        "No unit test suite — velocity tradeoff at 1 month old",
+        "No E2E — manual flows fast enough at current scale",
+        "Plan: Vitest for puzzle generators and fingerprinting",
       ],
     },
     notes: [
@@ -232,21 +275,28 @@ export const SLIDES: Slide[] = [
       "Deterministic seeded RNG is inherently testable: dateToSeed('2026-03-25') always returns the same number, which always generates the same puzzle. You can 'snapshot test' this by running the generator for a date and checking the output. I do this manually but it would be the first thing to automate.",
       "Firestore emulator: Firebase provides a local emulator suite. I test security rules by writing rule unit tests that verify: unauthenticated users can't write, users can only read their own private data, admin-only fields are protected, string length limits are enforced.",
       "Why no unit tests yet: 'It's a deliberate tradeoff. The project is 1 month old and I'm the only developer. The cost of a test suite is high upfront, and the cost of bugs is low (I can hotfix in minutes). As the project stabilizes and onboards contributors, tests become essential. Vitest is my planned framework — it's fast, ESM-native, and works well with React.'",
-      "If challenged: 'I know this is a risk. The puzzle generator bug (slide 12) is exactly the kind of thing a test would have caught. That's why it's the first thing I'd add — a test that validates every generated puzzle has at least 3 valid answers per cell.'",
+      "If challenged: 'I know this is a risk. The puzzle generator bug is exactly the kind of thing a test would have caught. That's why it's the first thing I'd add — a test that validates every generated puzzle has at least 3 valid answers per cell.'",
     ],
   },
   {
     id: "deployment",
-    type: "content",
+    type: "timeline",
     section: "Deploy",
     title: "Deployment Pipeline",
-    bullets: [
-      "Git push → Netlify auto-build → static export to global CDN",
-      "Zero server runtime — output: 'export' means every page is pre-rendered HTML",
-      "Edge functions handle dynamic OG images (satori + resvg-js → PNG)",
-      "Immutable asset hashing: JS/CSS get 1-year cache, images get 1-day + 7-day stale",
-      "Monitoring: Netlify deploy logs, Firebase console, Discord bot health pings",
-      "Branch workflow: feature/* and fix/* branches → PR → merge to main → auto-deploy",
+    timelineSteps: [
+      { label: "Git Push", description: "Feature branch → PR → merge to main" },
+      {
+        label: "Netlify Build",
+        description: "Auto-build, static export, zip extension",
+      },
+      {
+        label: "CDN Deploy",
+        description: "Pre-rendered HTML to global edge",
+      },
+      {
+        label: "Edge Functions",
+        description: "OG image rewrites + serverless rendering",
+      },
     ],
     notes: [
       "Static export: next build with output: 'export' in next.config.ts. This generates an out/ directory with static HTML for every route. No Node.js server needed at runtime. Netlify serves these files from edge locations worldwide.",
@@ -258,10 +308,20 @@ export const SLIDES: Slide[] = [
     ],
   },
   {
+    id: "hero-bugs",
+    type: "hero",
+    title: "Three production bugs. Three different lessons.",
+    notes: [
+      "Pause here. Let the statement land. Then say: 'Let me walk through each one — they each taught me something different about building production software.'",
+      "The unsolvable FaBdoku puzzles bug: Puzzle generator sometimes created grids with no valid solution. Root cause: random category pairs could produce cells with zero valid heroes. Fix: added backtracking validation — every cell must have ≥3 valid answers. Added fallback cascade: retry with different category pairs if validation fails. Lesson: generative algorithms need constraint validation, not just randomness.",
+      "How FaBdoku works: It's a 3×3 grid where rows and columns are FaB categories (class, talent, age, stat, format). Each cell is the intersection of a row category and column category. Players must name a hero that satisfies both.",
+    ],
+  },
+  {
     id: "prod-utc",
     type: "code",
-    section: "Prod Issue #1",
-    title: "Bug: Players Seeing Different Puzzles",
+    section: "Prod Issue",
+    title: "Players Seeing Different Puzzles",
     code: {
       snippet: `// ❌ Before — uses local timezone
 function getTodayDateStr(): string {
@@ -282,12 +342,12 @@ function getTodayDateStr(): string {
 }`,
       language: "typescript",
       highlightLines: [3, 4, 5, 11, 12, 13],
+      filename: "puzzle-generator.ts",
     },
     bullets: [
-      "Players in different timezones saw different daily puzzles",
       "Root cause: getMonth() returns local time, not UTC",
       "Fix: standardized ALL game dates to UTC — 21 files changed",
-      "Prevention: added UTC rule to CLAUDE.md so Claude Code never repeats this",
+      "Added UTC rule to CLAUDE.md — never happened again",
     ],
     notes: [
       "How I discovered it: A player in New Zealand reported seeing a different puzzle than a player in the US, even though both were playing 'today's' puzzle. The NZ player was already in the next UTC day.",
@@ -301,8 +361,8 @@ function getTodayDateStr(): string {
   {
     id: "prod-hooks",
     type: "code",
-    section: "Prod Issue #2",
-    title: "Bug: Profile Pages Crashing",
+    section: "Prod Issue",
+    title: "Profile Pages Crashing",
     code: {
       snippet: `// ❌ Before — hook after early return
 function PlayerProfile({ data }) {
@@ -324,12 +384,12 @@ function PlayerProfile({ data }) {
 }`,
       language: "tsx",
       highlightLines: [7, 8, 16],
+      filename: "PlayerProfile.tsx",
     },
     bullets: [
-      "Profile pages crashing: 'rendered more hooks than previous render'",
-      "Root cause: useMemo called after an early return statement",
-      "Fix: replaced useMemo with IIFE — no hook needed for simple derivation",
-      "Lesson: hooks must be called unconditionally before any early returns",
+      "useMemo called after early return → React hook order violation",
+      "Fix: replaced with IIFE — no hook needed for simple derivation",
+      "Lesson: hooks must be called unconditionally before returns",
     ],
     notes: [
       "React's Rules of Hooks: Hooks must be called in the same order every render. If you return early before a hook, React sees fewer hooks on that render than the previous one and throws.",
@@ -339,35 +399,15 @@ function PlayerProfile({ data }) {
       "If asked about React 19 specifics: React 19 didn't change the Rules of Hooks. The same constraint applies. The React Compiler (which React 19 introduces) can auto-memoize, but it still can't fix hooks-after-returns because that's a fundamental invariant of the reconciler.",
     ],
   },
-  {
-    id: "prod-puzzles",
-    type: "content",
-    section: "Prod Issue #3",
-    title: "Bug: Impossible FaBdoku Grids",
-    bullets: [
-      "Puzzle generator sometimes created grids with no valid solution",
-      "Root cause: random category pairs could produce cells with zero valid heroes",
-      "Fix: added backtracking validation — every cell must have ≥3 valid answers",
-      "Added fallback cascade: retry with different category pairs if validation fails",
-      "Lesson: generative algorithms need constraint validation, not just randomness",
-    ],
-    notes: [
-      "How FaBdoku works: It's a 3×3 grid where rows and columns are FaB categories (class, talent, age, stat, format). Each cell is the intersection of a row category and column category. Players must name a hero that satisfies both.",
-      "The bug: The puzzle generator picks random category pairs (e.g., class × talent) and random values within each category. Some combinations produce cells with zero valid heroes. For example: 'Mechanologist' (class) × 'Ice' (talent) — no hero has both.",
-      "Why ≥3 answers? With only 1-2 valid answers, the puzzle feels unfair — players who don't know those specific heroes are stuck. 3+ valid answers makes it challenging but solvable. This threshold was tuned based on player feedback.",
-      "The fallback cascade: 1) Try the randomly selected categories. 2) If any cell has <3 valid heroes, reshuffle the category values. 3) If still invalid, try a different axis pair (e.g., switch from class×talent to class×age). 4) If all axis pairs fail for this date, use a known-good fallback configuration.",
-      "The fix also avoids repeating the same axis pair as yesterday — so players get variety across consecutive days.",
-      "If asked about the hero data: There are ~136 heroes in the pool. Each hero has properties like class (Warrior, Wizard, etc.), talent (Shadow, Ice, etc.), age (Young, Adult), stats (Life, Intellect thresholds), and format legality. The puzzle generator filters heroes against category predicates.",
-    ],
-  },
 
   // ── Section 2: Tradeoffs ─────────────────────────────────
   {
     id: "tradeoffs-divider",
     type: "section",
+    sectionNumber: "02",
     title: "Tradeoffs & Decisions",
-    subtitle: "Architecture choices, performance vs simplicity, tech debt, and security",
-    bgImage: "/backgrounds/fab-official/arcane-rising-key-art.webp",
+    subtitle:
+      "Architecture choices → Performance vs simplicity → Tech debt → Security",
     notes: [
       "This section is where they'll dig deepest. Be ready for follow-up questions on any decision.",
       "Frame every tradeoff as: 'I chose X because of constraint Y, knowing I was accepting cost Z.'",
@@ -390,10 +430,10 @@ function PlayerProfile({ data }) {
     right: {
       title: "Over",
       bullets: [
-        "SSR/ISR — adds server cost, complexity for a content app",
-        "Supabase/Postgres — Firebase gives auth + realtime for free",
-        "Vercel — Netlify edge functions better fit for OG images",
-        "Server components — games need localStorage + interactivity",
+        "SSR/ISR — server cost + complexity",
+        "Supabase — Firebase gives auth + realtime free",
+        "Vercel — Netlify edge better for OG images",
+        "Server components — games need localStorage",
       ],
     },
     notes: [
@@ -428,12 +468,12 @@ function dateToSeed(dateStr: string): number {
 }`,
       language: "typescript",
       highlightLines: [6, 15],
+      filename: "seeded-random.ts",
     },
     bullets: [
-      "Legacy Java hash: ((hash << 5) - hash + ch) | 0 — used by FaBdoku since day one",
-      "Fibonacci hash: Math.imul(raw, 2654435761) — better distribution for newer games",
-      "Can't migrate: changing FaBdoku's hash would break all historical puzzles and scores",
-      "Accepted tradeoff: maintain two implementations forever, documented in CLAUDE.md",
+      "Legacy Java hash — FaBdoku since day one, can't change",
+      "Fibonacci hash — better distribution for newer games",
+      "Permanent tradeoff: two implementations forever, documented in CLAUDE.md",
     ],
     notes: [
       "The legacy hash is Java's String.hashCode() algorithm: ((hash << 5) - hash + ch) | 0. The '| 0' forces 32-bit integer truncation. This was the first hash I used and all FaBdoku puzzle data (picks, scores, uniqueness percentages) is keyed by date strings hashed with this function.",
@@ -445,38 +485,46 @@ function dateToSeed(dateStr: string): number {
     ],
   },
   {
-    id: "tech-debt",
-    type: "content",
+    id: "hero-debt",
+    type: "hero",
+    title: "Some debt is permanent. Document it.",
+    notes: [
+      "This refers to the dual seeded random implementations. You can't pay down all debt — some is structural and permanent. The key is documentation so everyone (including AI tools) knows about it.",
+    ],
+  },
+  {
+    id: "tech-debt-cards",
+    type: "cards",
     section: "Tech Debt",
-    title: "Debt I Accepted (and the Paydown Plan)",
-    bullets: [
+    title: "Debt I Accepted",
+    cards: [
       {
-        text: "No test suite",
-        sub: [
-          "Velocity tradeoff for 1-month-old project",
-          "Plan: add Vitest for puzzle generators and fingerprinting first",
-        ],
+        icon: "🧪",
+        title: "No Test Suite",
+        description:
+          "Velocity tradeoff — plan to add Vitest for puzzle generators first",
+        mono: "vitest",
       },
       {
-        text: "Some oversized components",
-        sub: [
-          "Progressive extraction as features stabilize",
-          "Claude Code makes refactoring cheap",
-        ],
+        icon: "📦",
+        title: "Large Components",
+        description:
+          "Some pages are 500+ lines — progressive extraction as features stabilize",
+        mono: "refactor",
       },
       {
-        text: "Dual seeded random implementations",
-        sub: [
-          "Permanent — can't consolidate without breaking historical data",
-          "Documented as a rule in CLAUDE.md",
-        ],
+        icon: "#️⃣",
+        title: "Dual Hashing",
+        description:
+          "Permanent — can't consolidate without breaking historical puzzle data",
+        mono: "seeded-random.ts",
       },
       {
-        text: "Firestore query limitations",
-        sub: [
-          "No complex aggregations",
-          "Workaround: dual-layer public stats + client-side computation",
-        ],
+        icon: "🔍",
+        title: "Firestore Limits",
+        description:
+          "No JOINs or aggregations — workaround with denormalized data + client compute",
+        mono: "Firestore",
       },
     ],
     notes: [
@@ -487,16 +535,39 @@ function dateToSeed(dateStr: string): number {
     ],
   },
   {
-    id: "security",
-    type: "content",
+    id: "security-cards",
+    type: "cards",
     section: "Security",
     title: "Security Model",
-    bullets: [
-      "Firebase Auth for identity — Google OAuth + anonymous guest mode",
-      "Firestore rules: field-level validation, string length limits, admin config via token claims + email + UID lists",
-      "Dual-layer data: public stats in top-level collection, private data in user subcollections",
-      "Browser extension: content script isolation, no credential storage, data passed via URL params",
-      "Secrets: environment variables only, never in client bundle. CSP headers whitelist Firebase + Google APIs",
+    cards: [
+      {
+        icon: "🔐",
+        title: "Firebase Auth",
+        description:
+          "Google OAuth + anonymous guest mode, custom claims for admin roles",
+        mono: "auth",
+      },
+      {
+        icon: "🛡️",
+        title: "Firestore Rules",
+        description:
+          "Field-level validation, string limits, admin config via token claims",
+        mono: "firestore.rules",
+      },
+      {
+        icon: "📊",
+        title: "Dual-Layer Data",
+        description:
+          "Public stats for OG images, private data in user subcollections",
+        mono: "leaderboard",
+      },
+      {
+        icon: "🧩",
+        title: "Extension Isolation",
+        description:
+          "Content script isolation, no credentials stored, LZ-compressed URL params",
+        mono: "content.js",
+      },
     ],
     notes: [
       "Firebase Auth: Supports Google OAuth for real accounts and anonymous auth for guest mode. Guest users can play games and see their stats locally, but data isn't persisted to Firestore until they upgrade to a real account. Custom claims are used for admin roles (token.admin == true).",
@@ -508,6 +579,15 @@ function dateToSeed(dateStr: string): number {
     ],
   },
   {
+    id: "hero-users",
+    type: "hero",
+    title: "Build what users need, not what's fun to develop.",
+    notes: [
+      "Scope creep story: I built an AI chatbot (using Claude API) that could answer questions about your stats. It was cool tech but nobody asked for it. Meanwhile, users were submitting feedback asking for better filtering on the stats page and more detailed match breakdowns. I was building what excited me, not what users needed.",
+      "How I caught it: The daily feedback triage with Claude. I'd review new user submissions and Claude would help prioritize. After a week of feedback all asking for core stats improvements and zero asking for chat features, the pattern was obvious. I removed the chatbot entirely.",
+    ],
+  },
+  {
     id: "hindsight",
     type: "content",
     section: "Hindsight",
@@ -516,14 +596,13 @@ function dateToSeed(dateStr: string): number {
       {
         text: "Stay focused on the core product",
         sub: [
-          "It's a stats app — but I got excited and added 12 games, an AI chatbot, and features nobody asked for",
-          "Had to remove the chatbot and rein in scope after feedback made it clear users wanted better stats, not more games",
-          "Lesson: build what users need, not what's fun to develop",
+          "Added 12 games, an AI chatbot, and features nobody asked for",
+          "Feedback loop caught it — removed chatbot, refocused on stats",
         ],
       },
-      "Start with a test framework from day one — even minimal coverage catches regressions",
-      "Use Supabase/Postgres for relational queries — Firestore struggles with complex aggregations",
-      "Design achievements with event sourcing — current check functions re-evaluate every time",
+      "Start with a test framework from day one",
+      "Use Supabase/Postgres for relational queries",
+      "Design achievements with event sourcing",
       "Abstract the game data layer earlier — each new game repeats 8 isolation steps",
     ],
     notes: [
@@ -539,9 +618,9 @@ function dateToSeed(dateStr: string): number {
   {
     id: "claude-divider",
     type: "section",
+    sectionNumber: "03",
     title: "Working with Claude Code",
-    subtitle: "Workflow, CLAUDE.md, keeping diffs small, catching errors, and large changes",
-    bgImage: "/backgrounds/fab-official/tales-of-aria-key-art.webp",
+    subtitle: "Workflow → CLAUDE.md → Small diffs → Catching errors → Large changes",
     notes: [
       "This section is unique to the interview — they specifically want to understand your AI-assisted workflow.",
       "Be honest about both benefits and limitations. They want to see you're a critical thinker, not just a prompt-and-accept developer.",
@@ -549,22 +628,30 @@ function dateToSeed(dateStr: string): number {
   },
   {
     id: "workflow",
-    type: "content",
+    type: "timeline",
     section: "Workflow",
-    title: "How I Work with Claude Code Day-to-Day",
-    bullets: [
-      "1. Prompt with context — file paths, constraints, reference to CLAUDE.md rules",
-      "2. Claude edits files — I review every diff before accepting",
+    title: "Day-to-Day Workflow",
+    timelineSteps: [
       {
-        text: "3. Validate correctness at three levels:",
-        sub: [
-          "npx tsc --noEmit — catches type errors immediately",
-          "npm run build — verifies static export succeeds, no runtime issues",
-          "Manual QA — test the feature in browser, check edge cases across devices",
-        ],
+        label: "Prompt",
+        description: "File paths, constraints, CLAUDE.md rules",
       },
-      "4. Iterate: refine with follow-up prompts scoped to specific issues",
-      "5. Daily feedback triage: review user submissions with Claude in plan mode to course-correct",
+      {
+        label: "Edit",
+        description: "Claude writes code, I review every diff",
+      },
+      {
+        label: "Verify",
+        description: "tsc --noEmit → build → manual QA",
+      },
+      {
+        label: "Iterate",
+        description: "Scoped follow-ups, one change at a time",
+      },
+      {
+        label: "Triage",
+        description: "Daily feedback review in plan mode",
+      },
     ],
     notes: [
       "Context in prompts is key: Instead of 'add a new game', I say 'add a new Connections game. See the FaBdoku implementation in src/lib/fabdoku/ for the pattern. Follow the data isolation table in CLAUDE.md. Use the Fibonacci hash from src/lib/games/seeded-random.ts, not the legacy FaBdoku hash.' Specificity prevents mistakes.",
@@ -576,23 +663,39 @@ function dateToSeed(dateStr: string): number {
     ],
   },
   {
-    id: "claude-md",
-    type: "content",
+    id: "claude-md-cards",
+    type: "cards",
     section: "CLAUDE.md",
-    title: "CLAUDE.md + Feedback-Driven Development",
-    bullets: [
-      "Encodes domain rules Claude can't infer — UTC dates, seeded random compatibility, data isolation patterns",
-      "Prevents recurring mistakes — after the UTC bug, added the rule so it never happens again",
-      "Acts as onboarding doc — new context windows pick up project conventions instantly",
+    title: "CLAUDE.md — Project Memory",
+    cards: [
       {
-        text: "Daily feedback triage with Claude",
-        sub: [
-          "Built a feedback button — users submit suggestions directly to Firestore",
-          "Each day, review new feedback with Claude in plan mode — it reads from Firestore and helps prioritize",
-          "This loop is what caught the scope creep — users wanted core stats improvements, not more games",
-        ],
+        icon: "📜",
+        title: "Domain Rules",
+        description:
+          "UTC dates, seeded random compat, data isolation — rules Claude can't infer from code",
+        mono: "CLAUDE.md",
       },
-      "Git workflow rules: never commit to main, feature branches, focused PRs",
+      {
+        icon: "🚫",
+        title: "Mistake Prevention",
+        description:
+          "After the UTC bug, added the rule — it never happened again across 12+ games",
+        mono: "UTC rule",
+      },
+      {
+        icon: "🚀",
+        title: "Instant Onboarding",
+        description:
+          "New context windows pick up conventions instantly — no re-explaining",
+        mono: "auto-loaded",
+      },
+      {
+        icon: "📬",
+        title: "Feedback Loop",
+        description:
+          "Users submit to Firestore, Claude triages daily — caught the scope creep",
+        mono: "plan mode",
+      },
     ],
     notes: [
       "CLAUDE.md is loaded into every new Claude Code context window automatically. It's the first thing Claude 'reads' when starting a session. This means every conversation starts with the project's conventions, constraints, and rules already understood.",
@@ -603,23 +706,16 @@ function dateToSeed(dateStr: string): number {
     ],
   },
   {
-    id: "diffs",
-    type: "content",
-    section: "Diffs",
-    title: "Keeping Changes Manageable",
-    bullets: [
-      "One feature per branch — 70+ feature branches, 70+ fix branches in this repo",
-      "Scope prompts narrowly: 'add UTC validation to this function' not 'fix all date handling'",
-      "Review each change before prompting the next — don't let Claude chain unchecked edits",
-      "CLAUDE.md prevents scope creep — Claude knows the boundaries and conventions",
-      "Result: 1,167 commits that are each small, focused, and reviewable",
-    ],
+    id: "hero-diffs",
+    type: "hero",
+    title: "Scope prompts narrowly. Review before the next.",
     notes: [
       "Branch naming convention: feature/* for new features, fix/* for bug fixes, perf/* for performance, style/* for UI changes. We have 140+ branches total, showing a disciplined branching strategy.",
       "Narrow prompts are critical: If I say 'fix all date handling', Claude might touch 30 files and introduce regressions. If I say 'change getMonth() to getUTCMonth() in src/lib/fabdoku/puzzle-generator.ts', I get a precise 1-line change I can verify in seconds.",
       "Serial review: I don't batch prompt. I make one change, verify it works (tsc, build, manual check), then prompt the next change. This keeps each change small and means I can git bisect to find regressions easily.",
       "CLAUDE.md prevents scope creep in Claude's output too: Without it, Claude might 'helpfully' refactor nearby code or add error handling that isn't needed. The conventions in CLAUDE.md keep Claude focused on the task.",
       "If asked about PR review: 'Since I'm the only developer, there's no formal code review. But the branch → PR → merge workflow still adds value: it creates a record of each change, Netlify builds a deploy preview, and I can roll back by reverting a PR merge if something breaks.'",
+      "Result: 1,167 commits that are each small, focused, and reviewable. 70+ feature branches, 70+ fix branches.",
     ],
   },
   {
@@ -645,13 +741,12 @@ const dateStr = getTodayDateStr();
 // Uses getUTCFullYear/Month/Date internally`,
       language: "typescript",
       highlightLines: [2, 3, 4, 14],
+      filename: "new-game.ts",
     },
     bullets: [
-      "Claude used getMonth() instead of getUTCMonth() for game date logic",
-      "Violated the UTC rule documented in CLAUDE.md",
-      "Caught by: manual testing showed different puzzles in different timezones",
-      "Fix: corrected the code + strengthened the CLAUDE.md rule",
-      "Lesson: domain-specific rules in CLAUDE.md are essential — Claude follows them on subsequent prompts",
+      "Claude used getMonth() — violates CLAUDE.md UTC rule",
+      "Caught in manual testing: different puzzle per timezone",
+      "Strengthened the rule — Claude follows it every session since",
     ],
     notes: [
       "This happened early in the project, before the UTC rule was in CLAUDE.md. Claude used the standard JavaScript Date methods because that's the most common pattern in codebases — there was nothing telling it to use UTC.",
@@ -662,23 +757,39 @@ const dateStr = getTodayDateStr();
     ],
   },
   {
-    id: "large-changes",
-    type: "content",
+    id: "large-changes-cards",
+    type: "cards",
     section: "Large Changes",
-    title: "Breaking Down Big Features",
-    bullets: [
-      "Phase approach: data layer first → components → integration → polish",
-      "Example: FaBdoku card mode required 8 isolated layers",
+    title: "FaBdoku Card Mode — 8 Isolated Layers",
+    cards: [
       {
-        text: "Each layer added separately:",
-        sub: [
-          "Seed offset (+1,000,003)",
-          "localStorage keys (fabdoku-card-{date})",
-          "Firestore collections (fabdoku-card-results, fabdoku-card-picks)",
-          "Stats subcollection, public stats, feed event type, activity action",
-        ],
+        icon: "🎲",
+        title: "Seed Offset",
+        description:
+          "+1,000,003 prime offset for completely different puzzles",
+        mono: "dateToSeed()",
       },
-      "Documented the pattern in CLAUDE.md so future game modes follow the same isolation checklist",
+      {
+        icon: "💾",
+        title: "localStorage",
+        description:
+          "Separate keys: fabdoku-card-{date} vs fabdoku-{date}",
+        mono: "localStorage",
+      },
+      {
+        icon: "🔥",
+        title: "Firestore Collections",
+        description:
+          "Separate results + picks collections for uniqueness scoring",
+        mono: "fabdoku-card-*",
+      },
+      {
+        icon: "📡",
+        title: "Stats + Feed + Activity",
+        description:
+          "Subcollection, public stats, feed event type, activity action",
+        mono: "4 more layers",
+      },
     ],
     notes: [
       "Why phase approach: Claude works best with clear, bounded tasks. 'Build the entire card mode' would produce a massive diff that's hard to review. 'Add the Firestore collections for card mode results and picks' is a small, verifiable change.",
@@ -691,45 +802,53 @@ const dateStr = getTodayDateStr();
 
   // ── Closing ──────────────────────────────────────────────
   {
-    id: "takeaways",
-    type: "content",
-    section: "Takeaways",
-    title: "Key Takeaways",
-    bullets: [
-      "Solo-dev velocity is real with AI tooling — 65K lines in a month, shipping daily",
-      "Production-grade patterns matter: UTC-first, data isolation, static-first architecture",
-      "CLAUDE.md is the most underrated feature — it turns Claude from a tool into a teammate",
-      "Pragmatic tradeoffs with clear documentation beat perfect architecture",
-      "The presentation you're looking at is built with the same stack — Next.js, Tailwind, framer-motion",
-    ],
+    id: "hero-velocity",
+    type: "hero",
+    title: "Solo-dev velocity is real with AI tooling.",
     notes: [
       "The 65K lines number: This isn't generated boilerplate. It's 446 TypeScript files with meaningful business logic — puzzle generators, achievement systems, data pipelines, real-time features.",
-      "UTC-first is a philosophy: Once you decide all dates are UTC, every new feature inherits that constraint. It's a one-time architectural decision that prevents an entire class of bugs.",
       "CLAUDE.md as a concept: Even if you're not using Claude Code, the idea of a 'machine-readable project convention file' is powerful. It could work with any LLM-powered tool. The key insight is: encode the rules that aren't obvious from the code itself.",
-      "Static-first architecture: Zero server costs, instant global CDN, and the simplest possible deployment. Add server-side capabilities only when static export can't solve the problem (like dynamic OG images).",
-      "The meta point: This slide deck is a Next.js page component at /deck. It uses the same Tailwind theme tokens, framer-motion animations, and deployment pipeline as the rest of the app. Building the presentation inside the project wasn't just clever — it saved time by reusing existing infrastructure.",
     ],
   },
   {
-    id: "demo",
-    type: "showcase",
-    section: "Demo",
-    title: "Want to See It Live?",
-    showcaseImages: [
-      { src: "/og-preview.png", alt: "FaB Stats OG preview card", caption: "Dynamic OG image — generated server-side with satori" },
-      { src: "/assets/cards/bg-hero.webp", alt: "Hero card background", caption: "Custom card backgrounds for stats sharing" },
-    ],
-    bullets: [
-      "fabstats.net — try the daily FaBdoku, Crossword, Connections",
-      "Player profiles with 158 achievements, leaderboards, activity feed",
-      "Browser extension imports matches from GEM in one click",
-      "Happy to walk through any part of the codebase",
+    id: "takeaways-cards",
+    type: "cards",
+    section: "Takeaways",
+    title: "Key Takeaways",
+    cards: [
+      {
+        icon: "⚡",
+        title: "AI-Powered Velocity",
+        description:
+          "65K lines in one month — shipping features daily with Claude Code",
+        mono: "1,167 commits",
+      },
+      {
+        icon: "🏗️",
+        title: "Production Patterns",
+        description:
+          "UTC-first, data isolation, static-first architecture, deterministic seeding",
+        mono: "patterns",
+      },
+      {
+        icon: "📋",
+        title: "CLAUDE.md is Key",
+        description:
+          "Turns Claude from a general tool into a project-aware teammate",
+        mono: "CLAUDE.md",
+      },
+      {
+        icon: "⚖️",
+        title: "Pragmatic Tradeoffs",
+        description:
+          "Clear documentation beats perfect architecture — know what you're accepting",
+        mono: "tradeoffs",
+      },
     ],
     notes: [
-      "If they want a live demo: Navigate to fabstats.net, show the daily FaBdoku, complete a puzzle, show the share card, show the leaderboard.",
-      "If they want to see code: Open the repo and walk through src/lib/fabdoku/puzzle-generator.ts (the generator), src/lib/achievements.ts (the achievement system), or firestore.rules (the security rules).",
-      "If they want to see the extension: Show the extension popup on gem.fabtcg.com, run an import, show how matches appear on the site.",
-      "Good closing: 'I'm happy to dive into any part of the codebase — the puzzle generation, the achievement system, the security rules, the OG image pipeline, or the extension. What interests you most?'",
+      "UTC-first is a philosophy: Once you decide all dates are UTC, every new feature inherits that constraint. It's a one-time architectural decision that prevents an entire class of bugs.",
+      "Static-first architecture: Zero server costs, instant global CDN, and the simplest possible deployment. Add server-side capabilities only when static export can't solve the problem (like dynamic OG images).",
+      "The meta point: This slide deck is a Next.js page component at /deck. It uses the same Tailwind theme tokens, framer-motion animations, and deployment pipeline as the rest of the app. Building the presentation inside the project wasn't just clever — it saved time by reusing existing infrastructure.",
     ],
   },
   {
@@ -737,13 +856,15 @@ const dateStr = getTodayDateStr();
     type: "title",
     title: "Thanks — Questions?",
     subtitle: "fabstats.net | Charlton",
-    bgImage: "/backgrounds/fab-official/hunted-key-art.webp",
     notes: [
       "Common follow-up questions and answers:",
       "Q: 'How do you handle conflicts between Claude's suggestions and your own ideas?' A: 'I treat Claude as a very fast junior developer. It writes code, I review it. If I disagree with an approach, I explain why in the next prompt. CLAUDE.md encodes the patterns I want followed so I don't have to re-explain every session.'",
       "Q: 'What's your biggest concern about AI-assisted development?' A: 'Over-reliance. It's easy to accept code without fully understanding it. I combat this by always reading the diff and running the type checker. If I can't explain why a change works, I don't merge it.'",
       "Q: 'How would this project change with a team?' A: 'First: add tests. Second: formalize the data layer abstractions so new games are configuration, not code. Third: split the monorepo into packages (games, core, extension). Fourth: add CI/CD with test gates on PRs.'",
       "Q: 'What's the hardest technical challenge you solved?' A: 'The puzzle generation validation. Making sure every randomly generated grid is solvable while maintaining variety across consecutive days, with backward-compatible seeded randomness, is a non-trivial constraint satisfaction problem.'",
+      "If they want a live demo: Navigate to fabstats.net, show the daily FaBdoku, complete a puzzle, show the share card, show the leaderboard.",
+      "If they want to see code: Open the repo and walk through src/lib/fabdoku/puzzle-generator.ts (the generator), src/lib/achievements.ts (the achievement system), or firestore.rules (the security rules).",
+      "Good closing: 'I'm happy to dive into any part of the codebase — the puzzle generation, the achievement system, the security rules, the OG image pipeline, or the extension. What interests you most?'",
     ],
   },
 ];
