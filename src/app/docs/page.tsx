@@ -20,6 +20,7 @@ const TOC = [
   { id: "event-detection", label: "Event Detection" },
   { id: "hero-mastery", label: "Hero Mastery" },
   { id: "achievements", label: "Achievements" },
+  { id: "hero-shield", label: "Hero Data Shield" },
   { id: "formats", label: "Supported Formats" },
   { id: "leaderboard", label: "Leaderboard" },
   { id: "weekly-monthly", label: "Weekly & Monthly" },
@@ -632,6 +633,44 @@ export default function DocsPage() {
                 </span>
               ))}
             </div>
+          </section>
+
+          {/* ─── Hero Data Shield ─── */}
+          <section id="hero-shield">
+            <h2 className="text-xl font-semibold text-fab-text mb-3 pb-2 border-b border-fab-border">Hero Data Shield</h2>
+            <p className="text-sm text-fab-muted mb-3">
+              The shield badge next to your name shows how complete your hero data is across all matches.
+              When you import matches, each match can have a hero attached. The more matches with hero data,
+              the higher your shield tier. The badge appears everywhere your name shows: profile, leaderboard,
+              activity feed, and share cards.
+            </p>
+            <p className="text-sm text-fab-muted mb-3">
+              Starting February 24, 2026, new imports require hero selection. You can always choose
+              &quot;Unknown&quot; if you don&apos;t remember, but you must make the choice explicitly.
+            </p>
+            <div className="space-y-2 mb-4">
+              {[
+                ["100%", "#fbbf24", "Gold", "Worlds-tier — every match has hero data"],
+                ["90%+", "#a78bfa", "Purple", "Pro Tour-tier"],
+                ["75%+", "#f87171", "Red", "Nationals-tier"],
+                ["50%+", "#60a5fa", "Blue", "Calling-tier"],
+                ["35%+", "#cd7f32", "Bronze", "Battle Hardened-tier"],
+              ].map(([pct, color, label, desc]) => (
+                <div key={label} className="flex items-center gap-3 p-2.5 rounded-lg bg-fab-surface border border-fab-border">
+                  <svg className="w-5 h-5 shrink-0" style={{ color }} viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-1.5 13.5l-3.5-3.5 1.41-1.41L10.5 11.67l5.09-5.09L17 8l-6.5 6.5z" />
+                  </svg>
+                  <div>
+                    <div className="text-sm font-medium text-fab-text">{label} <span className="text-fab-dim font-normal">({pct})</span></div>
+                    <div className="text-xs text-fab-dim">{desc}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <p className="text-sm text-fab-muted">
+              Below 35% completion no badge is shown. Import more matches with heroes or edit existing matches
+              to increase your completion percentage.
+            </p>
           </section>
 
           {/* ─── Supported Formats ─── */}

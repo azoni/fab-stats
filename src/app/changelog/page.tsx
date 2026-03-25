@@ -33,6 +33,32 @@ const badgeLabels: Record<ChangeType, string> = {
 
 const changelog: Entry[] = [
   {
+    date: "March 24, 2026",
+    id: "mar-24",
+    changes: [
+      { type: "new", text: "Hero Data Shield badges — 5 color-coded tiers (Gold/Purple/Red/Blue/Bronze) showing hero data completion next to player names everywhere" },
+      { type: "new", text: "Hero selection required for imports from Feb 24, 2026 onward — \"Unknown\" is valid but must be an explicit choice" },
+      { type: "new", text: "Sticky import bar — floating bottom bar with match count so you don't scroll through dozens of events" },
+      { type: "new", text: "Hero completion progress bar on profile card with link to matches page" },
+      { type: "improved", text: "Navbar — Matches promoted to first item with hover submenu (Matches/Events/Opponents/Matchup Matrix)" },
+      { type: "improved", text: "Navbar — Support is now icon-only (heart) with expanded hover dropdown including Feedback, Discord, and X" },
+      { type: "improved", text: "Navbar — More dropdown opens on hover instead of click" },
+      { type: "improved", text: "Player/match counts stacked vertically next to logo for cleaner layout" },
+      { type: "improved", text: "Support FAB includes Discord, X, and Send Feedback with icons" },
+      { type: "improved", text: "Share card player names increased from text-sm to text-lg for better readability" },
+      { type: "improved", text: "All tooltips use fast Radix tooltips (100ms delay) instead of slow browser native titles" },
+      { type: "improved", text: "Performance: single-pass stats counting, batched analytics writes, lazy chat/notification listeners, React.memo on dashboard components" },
+      { type: "improved", text: "Performance: PNG/JPEG assets converted to WebP (~38MB saved), background image preload removed" },
+      { type: "improved", text: "Performance: framer-motion replaced with CSS transitions in dialog/collapsible" },
+      { type: "improved", text: "Performance: game timers isolated to prevent full board re-renders, profile stats batched into single load" },
+      { type: "fixed", text: "Share cards now respect dashboard filters for event counts and stats" },
+      { type: "fixed", text: "FaBdoku puzzle generator validates solvability with distinct heroes and requires ≥3 heroes per cell" },
+      { type: "fixed", text: "Discord bot digest scheduler no longer marks failed posts as completed" },
+      { type: "fixed", text: "Achievement badge tooltip text no longer overflows the container" },
+      { type: "fixed", text: "Admin crown restored on home page profile card" },
+    ],
+  },
+  {
     date: "March 7, 2026",
     id: "mar-7",
     changes: [

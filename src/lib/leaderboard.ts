@@ -371,7 +371,18 @@ function sanitizeEntries(docs: LeaderboardEntry[]): LeaderboardEntry[] {
 
   return docs.map((entry) => {
     // Backfill heroCompletionPct for entries that predate the field
-    if (entry.heroCompletionPct === undefined) entry.heroCompletionPct = 0;
+    if (entry.heroCompletionPct === undefined) {
+      // Estimate from hero breakdown: matches with known heroes vs total
+      if (entry.heroBreakdownDetailed && entry.heroBreakdownDetailed.length > 0 && entry.totalMatches > 0) {
+        const knownMatches = entry.heroBreakdownDetailed.reduce((sum, h) => sum + h.matches, 0);
+        entry.heroCompletionPct = Math.round((knownMatches / entry.totalMatches) * 100);
+      } else if (entry.heroBreakdown && entry.heroBreakdown.length > 0 && entry.totalMatches > 0) {
+        const knownMatches = entry.heroBreakdown.reduce((sum, h) => sum + h.matches, 0);
+        entry.heroCompletionPct = Math.round((knownMatches / entry.totalMatches) * 100);
+      } else {
+        entry.heroCompletionPct = 0;
+      }
+    }
     if (!entry.weekStart || entry.weekStart < weeklyCutoff) {
       entry.weeklyMatches = 0;
       entry.weeklyWins = 0;
