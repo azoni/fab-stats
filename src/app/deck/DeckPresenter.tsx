@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useMotionValue, useTransform, animate } from "framer-motion";
 import {
   ChevronLeft,
   ChevronRight,
@@ -36,6 +36,29 @@ function useSlideNavigation(total: number) {
   const prev = useCallback(() => go(current - 1), [go, current]);
 
   return { current, direction, next, prev, go, total };
+}
+
+/* ── Animated counter ───────────────────────────────────── */
+
+function AnimatedNumber({ value, suffix = "", delay = 0 }: { value: number; suffix?: string; delay?: number }) {
+  const count = useMotionValue(0);
+  const rounded = useTransform(count, (v) => Math.round(v).toLocaleString());
+
+  useEffect(() => {
+    const controls = animate(count, value, {
+      duration: 1.5,
+      delay,
+      ease: "easeOut",
+    });
+    return controls.stop;
+  }, [count, value, delay]);
+
+  return (
+    <span>
+      <motion.span>{rounded}</motion.span>
+      {suffix}
+    </span>
+  );
 }
 
 /* ── Bullet renderer ────────────────────────────────────── */
@@ -110,38 +133,22 @@ function CodeBlock({
   );
 }
 
-/* ── Image block ────────────────────────────────────────── */
-
-function ImageBlock({ src, alt, caption }: { src: string; alt: string; caption?: string }) {
-  return (
-    <motion.figure
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ delay: 0.2, duration: 0.4 }}
-      className="flex flex-col items-center"
-    >
-      <img
-        src={src}
-        alt={alt}
-        className="max-h-[50vh] rounded-lg border border-fab-border object-contain shadow-lg"
-      />
-      {caption && (
-        <figcaption className="mt-2 text-sm text-fab-dim">{caption}</figcaption>
-      )}
-    </motion.figure>
-  );
-}
-
 /* ── Slide renderers ────────────────────────────────────── */
 
 function TitleSlide({ slide }: { slide: Slide }) {
   return (
-    <div className="flex flex-col items-center justify-center text-center">
+    <div className="relative flex flex-col items-center justify-center text-center">
+      {/* Background art */}
+      {slide.bgImage && (
+        <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden rounded-3xl opacity-15">
+          <img src={slide.bgImage} alt="" className="h-full w-full object-cover blur-sm" />
+        </div>
+      )}
       <motion.h1
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="font-[var(--font-nunito)] text-6xl font-bold text-fab-gold"
+        className="font-[var(--font-nunito)] text-6xl font-bold text-fab-gold drop-shadow-lg"
       >
         {slide.title}
       </motion.h1>
@@ -161,12 +168,17 @@ function TitleSlide({ slide }: { slide: Slide }) {
 
 function SectionSlide({ slide }: { slide: Slide }) {
   return (
-    <div className="flex flex-col items-center justify-center text-center">
+    <div className="relative flex flex-col items-center justify-center text-center">
+      {slide.bgImage && (
+        <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden rounded-3xl opacity-10">
+          <img src={slide.bgImage} alt="" className="h-full w-full object-cover" />
+        </div>
+      )}
       <motion.div
-        initial={{ scale: 0.8, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ duration: 0.4 }}
-        className="mb-6 h-1 w-16 rounded-full bg-fab-gold"
+        initial={{ scaleX: 0 }}
+        animate={{ scaleX: 1 }}
+        transition={{ duration: 0.6 }}
+        className="mb-6 h-0.5 w-24 bg-fab-gold"
       />
       <motion.h2
         initial={{ opacity: 0, y: 20 }}
@@ -176,6 +188,103 @@ function SectionSlide({ slide }: { slide: Slide }) {
       >
         {slide.title}
       </motion.h2>
+      {slide.subtitle && (
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.4, duration: 0.4 }}
+          className="mt-4 max-w-lg text-lg text-fab-muted"
+        >
+          {slide.subtitle}
+        </motion.p>
+      )}
+    </div>
+  );
+}
+
+function StatsSlide({ slide }: { slide: Slide }) {
+  const stats = slide.stats ?? [];
+  return (
+    <div className="flex w-full max-w-5xl flex-col items-center gap-10">
+      <div className="text-center">
+        {slide.section && <SectionPill label={slide.section} />}
+        <motion.h2
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+          className="mt-2 font-[var(--font-nunito)] text-4xl font-bold text-fab-text"
+        >
+          {slide.title}
+        </motion.h2>
+      </div>
+      <div className="grid w-full grid-cols-2 gap-6 lg:grid-cols-4">
+        {stats.map((stat, i) => (
+          <motion.div
+            key={stat.label}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 + i * 0.1, duration: 0.4 }}
+            className="flex flex-col items-center rounded-xl border border-fab-border bg-fab-surface/60 p-6 text-center"
+          >
+            <span className="text-4xl font-bold text-fab-gold lg:text-5xl">
+              <AnimatedNumber value={stat.value} suffix={stat.suffix} delay={0.3 + i * 0.1} />
+            </span>
+            <span className="mt-2 text-sm text-fab-muted">{stat.label}</span>
+          </motion.div>
+        ))}
+      </div>
+      {slide.bullets && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.8 }}
+          className="text-center text-lg text-fab-muted"
+        >
+          {slide.bullets.map((b, i) => (
+            <p key={i} className="mt-1">{typeof b === "string" ? b : b.text}</p>
+          ))}
+        </motion.div>
+      )}
+    </div>
+  );
+}
+
+function ShowcaseSlide({ slide }: { slide: Slide }) {
+  const images = slide.showcaseImages ?? [];
+  return (
+    <div className="flex w-full max-w-6xl flex-col gap-8">
+      <div>
+        {slide.section && <SectionPill label={slide.section} />}
+        <motion.h2
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+          className="mt-2 font-[var(--font-nunito)] text-4xl font-bold text-fab-text"
+        >
+          {slide.title}
+        </motion.h2>
+      </div>
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <div className="flex flex-col justify-center gap-4">
+          {images.map((img, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.2 + i * 0.15, duration: 0.4 }}
+              className="overflow-hidden rounded-xl border border-fab-border shadow-lg"
+            >
+              <img src={img.src} alt={img.alt} className="w-full object-cover" />
+              {img.caption && (
+                <div className="bg-fab-surface px-4 py-2 text-sm text-fab-dim">{img.caption}</div>
+              )}
+            </motion.div>
+          ))}
+        </div>
+        <div className="flex items-center">
+          {slide.bullets && <BulletList bullets={slide.bullets} delay={0.4} />}
+        </div>
+      </div>
     </div>
   );
 }
@@ -198,7 +307,21 @@ function ContentSlide({ slide }: { slide: Slide }) {
       {hasImage ? (
         <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-2">
           <div>{slide.bullets && <BulletList bullets={slide.bullets} delay={0.2} />}</div>
-          <ImageBlock src={slide.image!.src} alt={slide.image!.alt} caption={slide.image!.caption} />
+          <motion.figure
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.2, duration: 0.4 }}
+            className="flex flex-col items-center"
+          >
+            <img
+              src={slide.image!.src}
+              alt={slide.image!.alt}
+              className="max-h-[50vh] rounded-lg border border-fab-border object-contain shadow-lg"
+            />
+            {slide.image!.caption && (
+              <figcaption className="mt-2 text-sm text-fab-dim">{slide.image!.caption}</figcaption>
+            )}
+          </motion.figure>
         </div>
       ) : (
         slide.bullets && <BulletList bullets={slide.bullets} delay={0.2} />
@@ -546,6 +669,10 @@ export function DeckPresenter() {
         return <SplitSlide slide={s} />;
       case "diagram":
         return <DiagramSlide slide={s} />;
+      case "stats":
+        return <StatsSlide slide={s} />;
+      case "showcase":
+        return <ShowcaseSlide slide={s} />;
     }
   }
 

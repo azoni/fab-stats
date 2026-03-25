@@ -4,7 +4,9 @@ export type SlideType =
   | "content"
   | "diagram"
   | "code"
-  | "split";
+  | "split"
+  | "stats"
+  | "showcase";
 
 export interface BulletItem {
   text: string;
@@ -12,6 +14,18 @@ export interface BulletItem {
 }
 
 export type Bullet = string | BulletItem;
+
+export interface StatItem {
+  value: number;
+  suffix?: string;
+  label: string;
+}
+
+export interface ShowcaseImage {
+  src: string;
+  alt: string;
+  caption?: string;
+}
 
 export interface Slide {
   id: string;
@@ -27,6 +41,12 @@ export interface Slide {
   notes?: string[];
   /** Path relative to /public, e.g. "/deck/fabdoku.png" */
   image?: { src: string; alt: string; caption?: string };
+  /** Background image for title/section slides */
+  bgImage?: string;
+  /** For stats slide type — animated number cards */
+  stats?: StatItem[];
+  /** For showcase slide type — images with bullets */
+  showcaseImages?: ShowcaseImage[];
 }
 
 export const SLIDES: Slide[] = [
@@ -36,6 +56,7 @@ export const SLIDES: Slide[] = [
     type: "title",
     title: "FaB Stats: Engineering Deep Dive",
     subtitle: "fabstats.net — Charlton — XPathLabs Interview",
+    bgImage: "/backgrounds/fab-official/monarch-key-art.webp",
     notes: [
       "Intro: 'Thanks for having me. I'm going to walk through FaB Stats — a project I built and shipped end-to-end as a solo developer.'",
       "This presentation itself is built inside the project — it's a Next.js page at /deck using the same stack, theme system, and framer-motion animations.",
@@ -44,17 +65,21 @@ export const SLIDES: Slide[] = [
   },
   {
     id: "overview",
-    type: "content",
+    type: "stats",
     section: "Overview",
-    title: "What is FaB Stats?",
-    // Screenshot: homepage dashboard showing stats overview + game launchers
-    image: { src: "/deck/homepage.png", alt: "FaB Stats homepage dashboard", caption: "fabstats.net — homepage dashboard" },
+    title: "FaB Stats — By the Numbers",
+    stats: [
+      { value: 65, suffix: "K", label: "Lines of TypeScript" },
+      { value: 1167, label: "Commits in 1 Month" },
+      { value: 12, suffix: "+", label: "Daily Minigames" },
+      { value: 158, label: "Achievements" },
+      { value: 60, suffix: "+", label: "App Routes" },
+      { value: 446, label: "Source Files" },
+      { value: 5, label: "Import Methods" },
+      { value: 0, suffix: "", label: "Server Cost" },
+    ],
     bullets: [
-      "Flesh and Blood TCG match tracker + daily minigame platform",
-      "Built as a player — I needed better stats than what existed",
-      "1 month, 1,167 commits, 65K lines of TypeScript across 446 files",
-      "12+ daily games, 158 achievements, browser extension, serverless OG images",
-      "Solo full-stack: Next.js 16, Firebase, Netlify, Manifest V3 extension",
+      "Flesh and Blood TCG match tracker + daily minigame platform — built as a player who needed better stats",
     ],
     notes: [
       "Flesh and Blood is a trading card game by Legend Story Studios — think Magic: The Gathering but newer, growing competitive scene.",
@@ -70,6 +95,8 @@ export const SLIDES: Slide[] = [
     id: "walkthrough-divider",
     type: "section",
     title: "Project Walkthrough",
+    subtitle: "Problem, ownership, architecture, testing, deployment, and production issues",
+    bgImage: "/backgrounds/fab-official/wtr-key-art-v1.webp",
     notes: [
       "This section maps to: problem statement, what you owned, architecture, testing, deployment, and production issues.",
       "Keep each slide to ~2 minutes. Leave room for questions — they'll likely dig into one or two areas.",
@@ -80,8 +107,6 @@ export const SLIDES: Slide[] = [
     type: "content",
     section: "Problem",
     title: "Problem Statement",
-    // Screenshot: GEM tournament platform showing the lack of stats
-    image: { src: "/deck/gem-history.png", alt: "GEM tournament history page", caption: "GEM — no stats, no API, just match lists" },
     bullets: [
       "FaB community had no centralized stats platform — players tracked results in spreadsheets",
       "GEM (official tournament platform) has no public API — had to reverse-engineer scraping",
@@ -319,8 +344,6 @@ function PlayerProfile({ data }) {
     type: "content",
     section: "Prod Issue #3",
     title: "Bug: Impossible FaBdoku Grids",
-    // Screenshot: FaBdoku grid showing the 3x3 puzzle
-    image: { src: "/deck/fabdoku.png", alt: "FaBdoku daily puzzle grid", caption: "FaBdoku — 3×3 hero matching puzzle" },
     bullets: [
       "Puzzle generator sometimes created grids with no valid solution",
       "Root cause: random category pairs could produce cells with zero valid heroes",
@@ -343,6 +366,8 @@ function PlayerProfile({ data }) {
     id: "tradeoffs-divider",
     type: "section",
     title: "Tradeoffs & Decisions",
+    subtitle: "Architecture choices, performance vs simplicity, tech debt, and security",
+    bgImage: "/backgrounds/fab-official/arcane-rising-key-art.webp",
     notes: [
       "This section is where they'll dig deepest. Be ready for follow-up questions on any decision.",
       "Frame every tradeoff as: 'I chose X because of constraint Y, knowing I was accepting cost Z.'",
@@ -466,8 +491,6 @@ function dateToSeed(dateStr: string): number {
     type: "content",
     section: "Security",
     title: "Security Model",
-    // Screenshot: Firestore rules or Firebase console
-    image: { src: "/deck/firestore-rules.png", alt: "Firestore security rules", caption: "Firestore rules — field-level validation" },
     bullets: [
       "Firebase Auth for identity — Google OAuth + anonymous guest mode",
       "Firestore rules: field-level validation, string length limits, admin config via token claims + email + UID lists",
@@ -517,6 +540,8 @@ function dateToSeed(dateStr: string): number {
     id: "claude-divider",
     type: "section",
     title: "Working with Claude Code",
+    subtitle: "Workflow, CLAUDE.md, keeping diffs small, catching errors, and large changes",
+    bgImage: "/backgrounds/fab-official/tales-of-aria-key-art.webp",
     notes: [
       "This section is unique to the interview — they specifically want to understand your AI-assisted workflow.",
       "Be honest about both benefits and limitations. They want to see you're a critical thinker, not just a prompt-and-accept developer.",
@@ -687,11 +712,13 @@ const dateStr = getTodayDateStr();
   },
   {
     id: "demo",
-    type: "content",
+    type: "showcase",
     section: "Demo",
     title: "Want to See It Live?",
-    // Screenshot: player profile page with achievements, stats, share card
-    image: { src: "/deck/profile.png", alt: "Player profile with stats and achievements", caption: "Player profile — stats, achievements, OG share card" },
+    showcaseImages: [
+      { src: "/og-preview.png", alt: "FaB Stats OG preview card", caption: "Dynamic OG image — generated server-side with satori" },
+      { src: "/assets/cards/bg-hero.webp", alt: "Hero card background", caption: "Custom card backgrounds for stats sharing" },
+    ],
     bullets: [
       "fabstats.net — try the daily FaBdoku, Crossword, Connections",
       "Player profiles with 158 achievements, leaderboards, activity feed",
@@ -710,6 +737,7 @@ const dateStr = getTodayDateStr();
     type: "title",
     title: "Thanks — Questions?",
     subtitle: "fabstats.net | Charlton",
+    bgImage: "/backgrounds/fab-official/hunted-key-art.webp",
     notes: [
       "Common follow-up questions and answers:",
       "Q: 'How do you handle conflicts between Claude's suggestions and your own ideas?' A: 'I treat Claude as a very fast junior developer. It writes code, I review it. If I disagree with an approach, I explain why in the next prompt. CLAUDE.md encodes the patterns I want followed so I don't have to re-explain every session.'",
