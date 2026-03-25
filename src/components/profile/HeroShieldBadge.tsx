@@ -36,7 +36,7 @@ export function HeroShieldBadge({ pct, size = "sm", withHero, total }: HeroShiel
 
   return (
     <Tooltip content={tip} delayDuration={100}>
-      <span className="shrink-0 inline-flex cursor-help">
+      <span className="shrink-0 inline-flex">
         <svg className={`${sizeClass} ${tier.color}`} viewBox="0 0 24 24" fill="currentColor">
           <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-1.5 13.5l-3.5-3.5 1.41-1.41L10.5 11.67l5.09-5.09L17 8l-6.5 6.5z" />
         </svg>

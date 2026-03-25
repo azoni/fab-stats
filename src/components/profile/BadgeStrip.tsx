@@ -91,7 +91,7 @@ export function BadgeStrip({ selectedBadgeIds, earnedAchievementIds, className, 
               </div>
             </BadgeTierWrapper>
             {hoveredId === ach.id && (
-              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2 py-1 rounded bg-fab-bg border border-fab-border text-[10px] text-fab-text whitespace-nowrap z-20 shadow-lg max-w-[200px]">
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2 py-1 rounded bg-fab-bg border border-fab-border text-[10px] text-fab-text z-20 shadow-lg max-w-[200px] w-max">
                 <span className="font-semibold">{ach.name}</span>
                 <span className="text-fab-dim"> — {ach.description}</span>
                 <span className="ml-1" style={{ color: visual.ringColor }}>({rarityLabel})</span>

@@ -23,6 +23,7 @@ import { WinRateRing } from "@/components/charts/WinRateRing";
 import { getHeroByName } from "@/lib/heroes";
 import { HeroImg } from "@/components/heroes/HeroImg";
 import { HeroShieldBadge } from "@/components/profile/HeroShieldBadge";
+import { Tooltip } from "@/components/ui/tooltip";
 import { loadKudosCounts } from "@/lib/kudos";
 import { CardBorderWrapper } from "@/components/profile/CardBorderWrapper";
 import type { UnderlineConfig } from "@/components/profile/CardBorderWrapper";
@@ -324,10 +325,10 @@ export default function Dashboard() {
                   )}
                 </div>
                 {heroCompletion && heroCompletion.total > 0 && (
+                  <Tooltip content={`${heroCompletion.withHero} of ${heroCompletion.total} matches have hero data — click to view matches`} delayDuration={100}>
                   <Link
                     href="/matches"
                     onClick={(e) => e.stopPropagation()}
-                    title={`${heroCompletion.withHero} of ${heroCompletion.total} matches have hero data — click to view matches`}
                     className="mt-2 flex items-center gap-2 group/hc"
                   >
                     <div className="flex-1 h-1.5 rounded-full bg-fab-bg overflow-hidden">
@@ -340,6 +341,7 @@ export default function Dashboard() {
                       {heroCompletion.withHero}/{heroCompletion.total} ({heroCompletion.pct}%)
                     </span>
                   </Link>
+                  </Tooltip>
                 )}
               </div>
             </div>
