@@ -324,6 +324,9 @@ export default function Dashboard() {
                       </svg>
                       Share
                     </button>
+                    <Link href="/trends" onClick={(e) => e.stopPropagation()} className="text-xs font-semibold text-fab-gold border border-fab-gold/30 hover:bg-fab-gold/10 hover:border-fab-gold/50 px-2.5 py-1 rounded-md transition-colors">
+                      My Stats &rarr;
+                    </Link>
                   </div>
                 )}
               </div>

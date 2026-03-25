@@ -1,6 +1,9 @@
 export const STORAGE_KEY = "fab-stats-data";
 export const CURRENT_VERSION = 1;
 
+/** Matches on or after this date require explicit hero selection during import. */
+export const HERO_REQUIRED_CUTOFF = "2026-02-24";
+
 /** Valid username slug pattern (lowercase alphanumeric, underscores, hyphens). */
 const VALID_USERNAME = /^[a-z0-9_-]+$/i;
 
