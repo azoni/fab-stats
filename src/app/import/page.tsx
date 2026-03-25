@@ -20,6 +20,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { CheckCircleIcon, FileIcon, ChevronDownIcon, ChevronUpIcon } from "@/components/icons/NavIcons";
 import { MatchResult, type MatchRecord, type Achievement } from "@/types";
+import { HERO_REQUIRED_CUTOFF } from "@/lib/constants";
 import { HeroSelect } from "@/components/heroes/HeroSelect";
 import { computeSessionRecap, type SessionRecap } from "@/lib/session-recap";
 import { PostEventRecap } from "@/components/import/PostEventRecap";
@@ -72,6 +73,7 @@ export default function ImportPage() {
   const [quickMode, setQuickMode] = useState(false);
   const [showHeroWarning, setShowHeroWarning] = useState(false);
   const [confirmSkipHero, setConfirmSkipHero] = useState(false);
+  const [heroRequiredHard, setHeroRequiredHard] = useState(false);
   const [showOtherBrowsers, setShowOtherBrowsers] = useState(false);
   const [visibleEventCount, setVisibleEventCount] = useState(10);
 
@@ -283,9 +285,24 @@ export default function ImportPage() {
   function handleImportClick() {
     const matches = pasteResult ? filteredMatches : csvMatches;
     if (!matches) return;
-    const hasMissingHeroes = matches.some((m) => m.heroPlayed === "Unknown");
-    if (hasMissingHeroes) {
+
+    // For post-cutoff matches, check if hero was auto-detected or user explicitly chose one
+    const hasPostCutoffMissing = pasteResult
+      ? filteredEvents.some(({ event, origIdx }) =>
+          !(origIdx in heroOverrides) &&
+          event.matches.every((m) => m.heroPlayed === "Unknown") &&
+          event.matches.some((m) => m.date >= HERO_REQUIRED_CUTOFF)
+        )
+      : matches.some((m) => m.heroPlayed === "Unknown" && m.date >= HERO_REQUIRED_CUTOFF);
+
+    const hasAnyMissing = matches.some((m) => m.heroPlayed === "Unknown");
+
+    if (hasPostCutoffMissing) {
       setShowHeroWarning(true);
+      setHeroRequiredHard(true);
+    } else if (hasAnyMissing) {
+      setShowHeroWarning(true);
+      setHeroRequiredHard(false);
     } else {
       handleImport();
     }
@@ -1484,6 +1501,23 @@ export default function ImportPage() {
         </div>
       )}
 
+      {/* Sticky bottom import bar — visible when events are ready */}
+      {totalToImport > 0 && !importing && !sessionRecap && !showHeroWarning && (
+        <div className="fixed bottom-0 left-0 right-0 z-40 md:bottom-0 pb-[env(safe-area-inset-bottom)] pointer-events-none">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-4 pointer-events-auto">
+            <div className="flex items-center justify-between gap-3 bg-fab-surface/95 backdrop-blur-md border border-fab-border rounded-lg px-4 py-3 shadow-lg">
+              <span className="text-sm text-fab-muted truncate">{totalToImport} match{totalToImport !== 1 ? "es" : ""} ready</span>
+              <button
+                onClick={handleImportClick}
+                className="shrink-0 px-6 py-2 rounded-md font-semibold text-sm bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors"
+              >
+                {clearBeforeImport ? "Clear & Import" : "Import"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Hero Warning Dialog */}
       {showHeroWarning && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
@@ -1497,44 +1531,66 @@ export default function ImportPage() {
               </div>
               <h3 className="text-lg font-bold text-fab-text">Heroes Missing!</h3>
             </div>
-            <p className="text-sm text-fab-muted mb-2">
-              {(() => {
-                if (pasteResult) {
-                  const missingCount = filteredEvents.filter(({ event, origIdx }) =>
-                    !heroOverrides[origIdx] && event.matches.every((m) => m.heroPlayed === "Unknown")
-                  ).length;
-                  return `${missingCount} of your ${filteredEvents.length} event${filteredEvents.length !== 1 ? "s" : ""} ${missingCount === 1 ? "is" : "are"} missing hero information.`;
-                }
-                return "Your matches are missing hero information.";
-              })()}
-            </p>
-            <p className="text-sm text-fab-muted mb-2">
-              Without heroes, your stats will be incomplete and your placements will show without a hero on the feed.
-            </p>
-            <p className="text-sm text-fab-muted mb-5">
-              Set heroes per event in the preview above, or use the Browser Extension for automatic detection.
-            </p>
+            {(() => {
+              const allMissing = pasteResult
+                ? filteredEvents.filter(({ event, origIdx }) =>
+                    !(origIdx in heroOverrides) && event.matches.every((m) => m.heroPlayed === "Unknown")
+                  )
+                : [];
+              const postCutoffMissing = allMissing.filter(({ event }) =>
+                event.matches.some((m) => m.date >= HERO_REQUIRED_CUTOFF)
+              );
+              const preCutoffMissing = allMissing.length - postCutoffMissing.length;
+
+              return heroRequiredHard ? (
+                <>
+                  <p className="text-sm text-fab-muted mb-2">
+                    {postCutoffMissing.length} event{postCutoffMissing.length !== 1 ? "s" : ""} from Feb 24, 2026 onward {postCutoffMissing.length === 1 ? "needs" : "need"} a hero selection before importing.
+                  </p>
+                  <p className="text-sm text-fab-muted mb-2">
+                    Scroll up and set the hero for {postCutoffMissing.length === 1 ? "that event" : "those events"} — select &quot;Unknown&quot; if you don&apos;t remember.
+                    {preCutoffMissing > 0 && ` Your ${preCutoffMissing} older event${preCutoffMissing !== 1 ? "s" : ""} can still import without a hero.`}
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="text-sm text-fab-muted mb-2">
+                    {pasteResult
+                      ? `${allMissing.length} of your ${filteredEvents.length} event${filteredEvents.length !== 1 ? "s" : ""} ${allMissing.length === 1 ? "is" : "are"} missing hero information.`
+                      : "Your matches are missing hero information."}
+                  </p>
+                  <p className="text-sm text-fab-muted mb-2">
+                    Without heroes, your stats will be incomplete and your placements will show without a hero on the feed.
+                  </p>
+                  <p className="text-sm text-fab-muted mb-5">
+                    Set heroes per event in the preview above, or use the Browser Extension for automatic detection.
+                  </p>
+                </>
+              );
+            })()}
             <div className="flex flex-col gap-2">
               <button
-                onClick={() => { setShowHeroWarning(false); setConfirmSkipHero(false); }}
+                onClick={() => { setShowHeroWarning(false); setConfirmSkipHero(false); setHeroRequiredHard(false); }}
                 className="w-full min-h-[44px] py-2.5 rounded-lg font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors text-sm"
               >
                 Go Back &amp; Add Heroes
               </button>
-              {!confirmSkipHero ? (
-                <button
-                  onClick={() => setConfirmSkipHero(true)}
-                  className="w-full min-h-[44px] py-2.5 rounded-lg font-semibold bg-fab-surface border border-fab-border text-fab-dim hover:text-fab-muted transition-colors text-xs"
-                >
-                  Import without heroes...
-                </button>
-              ) : (
-                <button
-                  onClick={() => { setShowHeroWarning(false); setConfirmSkipHero(false); handleImport(); }}
-                  className="w-full min-h-[44px] py-2.5 rounded-lg font-semibold bg-fab-loss/20 border border-fab-loss/30 text-fab-loss hover:bg-fab-loss/30 transition-colors text-sm"
-                >
-                  Yes, import without heroes
-                </button>
+              {!heroRequiredHard && (
+                !confirmSkipHero ? (
+                  <button
+                    onClick={() => setConfirmSkipHero(true)}
+                    className="w-full min-h-[44px] py-2.5 rounded-lg font-semibold bg-fab-surface border border-fab-border text-fab-dim hover:text-fab-muted transition-colors text-xs"
+                  >
+                    Import without heroes...
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => { setShowHeroWarning(false); setConfirmSkipHero(false); handleImport(); }}
+                    className="w-full min-h-[44px] py-2.5 rounded-lg font-semibold bg-fab-loss/20 border border-fab-loss/30 text-fab-loss hover:bg-fab-loss/30 transition-colors text-sm"
+                  >
+                    Yes, import without heroes
+                  </button>
+                )
               )}
             </div>
           </div>

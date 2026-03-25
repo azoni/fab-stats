@@ -15,7 +15,7 @@ import { updateCommunityHeroMatchups } from "@/lib/hero-matchups";
 import { trackImportMethod } from "@/lib/analytics";
 import { allHeroes } from "@/lib/heroes";
 import { MatchResult, type MatchRecord } from "@/types";
-import { localDate } from "@/lib/constants";
+import { localDate, HERO_REQUIRED_CUTOFF } from "@/lib/constants";
 import type { PasteImportEvent } from "@/lib/gem-paste-import";
 
 const VALID_HERO_NAMES = allHeroes.map((h) => h.name).sort();
@@ -58,6 +58,8 @@ export function QuickEventImportModal({ open, onClose, onImportComplete }: Quick
   const [dragActive, setDragActive] = useState(false);
   const [showHeroWarning, setShowHeroWarning] = useState(false);
   const [confirmSkipHero, setConfirmSkipHero] = useState(false);
+  const [heroTouched, setHeroTouched] = useState(false);
+  const [heroRequiredHard, setHeroRequiredHard] = useState(false);
   const [opponentHeroOverrides, setOpponentHeroOverrides] = useState<Record<number, string>>({});
 
   function handleReset() {
@@ -72,6 +74,8 @@ export function QuickEventImportModal({ open, onClose, onImportComplete }: Quick
     setDragActive(false);
     setShowHeroWarning(false);
     setConfirmSkipHero(false);
+    setHeroTouched(false);
+    setHeroRequiredHard(false);
     setOpponentHeroOverrides({});
   }
 
@@ -152,7 +156,17 @@ export function QuickEventImportModal({ open, onClose, onImportComplete }: Quick
 
   function handleImportClick() {
     if (heroPlayed === "Unknown") {
-      setShowHeroWarning(true);
+      // Check if event is post-cutoff and user hasn't explicitly chosen a hero
+      const eventDate = parsedEvent?.matches[0]?.date || "";
+      const isPostCutoff = eventDate >= HERO_REQUIRED_CUTOFF;
+
+      if (isPostCutoff && !heroTouched) {
+        setShowHeroWarning(true);
+        setHeroRequiredHard(true);
+      } else {
+        setShowHeroWarning(true);
+        setHeroRequiredHard(false);
+      }
     } else {
       handleImport();
     }
@@ -370,7 +384,7 @@ export function QuickEventImportModal({ open, onClose, onImportComplete }: Quick
                 <label className="block text-sm text-fab-muted mb-1">Hero you played</label>
                 <select
                   value={heroPlayed}
-                  onChange={(e) => setHeroPlayed(e.target.value)}
+                  onChange={(e) => { setHeroPlayed(e.target.value); setHeroTouched(true); }}
                   className="w-full bg-fab-surface border border-fab-border text-fab-text text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-fab-gold"
                 >
                   <option value="Unknown">Select hero...</option>
@@ -471,29 +485,33 @@ export function QuickEventImportModal({ open, onClose, onImportComplete }: Quick
                 <p className="text-sm font-semibold text-fab-loss">No hero selected!</p>
               </div>
               <p className="text-sm text-fab-muted mb-3">
-                Without a hero, your stats will be incomplete and placements will show without a hero on the feed. Select a hero above. Setting opponent heroes helps build community matchup data — fill them in now or edit later from the Events tab.
+                {heroRequiredHard
+                  ? "Events from Feb 24, 2026 onward require a hero selection. Pick your hero above — select \"Unknown\" if you don't remember."
+                  : "Without a hero, your stats will be incomplete and placements will show without a hero on the feed. Select a hero above. Setting opponent heroes helps build community matchup data — fill them in now or edit later from the Events tab."}
               </p>
               <div className="flex flex-col gap-2">
                 <button
-                  onClick={() => { setShowHeroWarning(false); setConfirmSkipHero(false); }}
+                  onClick={() => { setShowHeroWarning(false); setConfirmSkipHero(false); setHeroRequiredHard(false); }}
                   className="w-full py-2 rounded-lg text-sm font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors"
                 >
                   Select a Hero
                 </button>
-                {!confirmSkipHero ? (
-                  <button
-                    onClick={() => setConfirmSkipHero(true)}
-                    className="w-full py-2 rounded-lg text-xs font-semibold bg-fab-surface border border-fab-border text-fab-dim hover:text-fab-muted transition-colors"
-                  >
-                    Import without hero...
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => { setShowHeroWarning(false); setConfirmSkipHero(false); handleImport(); }}
-                    className="w-full py-2 rounded-lg text-sm font-semibold bg-fab-loss/20 border border-fab-loss/30 text-fab-loss hover:bg-fab-loss/30 transition-colors"
-                  >
-                    Yes, import without hero
-                  </button>
+                {!heroRequiredHard && (
+                  !confirmSkipHero ? (
+                    <button
+                      onClick={() => setConfirmSkipHero(true)}
+                      className="w-full py-2 rounded-lg text-xs font-semibold bg-fab-surface border border-fab-border text-fab-dim hover:text-fab-muted transition-colors"
+                    >
+                      Import without hero...
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => { setShowHeroWarning(false); setConfirmSkipHero(false); handleImport(); }}
+                      className="w-full py-2 rounded-lg text-sm font-semibold bg-fab-loss/20 border border-fab-loss/30 text-fab-loss hover:bg-fab-loss/30 transition-colors"
+                    >
+                      Yes, import without hero
+                    </button>
+                  )
                 )}
               </div>
             </div>
