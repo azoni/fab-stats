@@ -629,6 +629,10 @@ export function computePlayoffFinishes(
     const playedFinals = roundInfos.some((r) => /finals?$/i.test(r) || /\bfinal\b/i.test(r));
     const playedSemis = roundInfos.some((r) => /semi/i.test(r) || /top\s*4/i.test(r));
 
+    // Check if the last playoff match was a loss (lost in the final round they played)
+    const lastPlayoffResult = playoffMatches[playoffMatches.length - 1]?.result;
+    const lostLastPlayoff = lastPlayoffResult === MatchResult.Loss;
+
     let finishType: PlayoffFinish["type"];
 
     // No losses in playoffs = won the whole bracket
@@ -640,8 +644,15 @@ export function computePlayoffFinishes(
     } else if (playedSemis) {
       // Played in semis but not finals → lost in semis
       finishType = "top4";
+    } else if (lostLastPlayoff) {
+      // Lost their last playoff match — they were eliminated at that round
+      // Use total playoff rounds played to determine bracket depth
+      const totalPlayoffRounds = playoffMatches.length;
+      if (totalPlayoffRounds >= 3) finishType = "finalist"; // Lost in round 3+ = at least finalist
+      else if (totalPlayoffRounds === 2) finishType = "top4";
+      else finishType = "top8";
     } else if (playoffWins >= 3) {
-      // Generic playoff rounds (Round P style) — use win count heuristic
+      // Won 3+ with no loss at the end — champion
       finishType = "champion";
     } else if (playoffWins === 2) {
       finishType = "finalist";
@@ -720,11 +731,19 @@ export function computeMinorEventFinishes(eventStats: EventStats[]): MinorEventF
     const roundInfos = playoffMatches.map((m) => (m.notes?.split(" | ")[1]?.trim() || "").toLowerCase());
     const playedFinals = roundInfos.some((r) => /finals?$/i.test(r) || /\bfinal\b/i.test(r));
     const playedSemis = roundInfos.some((r) => /semi/i.test(r) || /top\s*4/i.test(r));
+    const lastPlayoffResult = playoffMatches[playoffMatches.length - 1]?.result;
+    const lostLastPlayoff = lastPlayoffResult === MatchResult.Loss;
 
     let finishType: MinorEventFinish["type"];
     if (playoffLosses === 0 && playoffWins > 0) finishType = "champion";
     else if (playedFinals) finishType = "finalist";
     else if (playedSemis) finishType = "top4";
+    else if (lostLastPlayoff) {
+      const totalPlayoffRounds = playoffMatches.length;
+      if (totalPlayoffRounds >= 3) finishType = "finalist";
+      else if (totalPlayoffRounds === 2) finishType = "top4";
+      else finishType = "top8";
+    }
     else if (playoffWins >= 3) finishType = "champion";
     else if (playoffWins === 2) finishType = "finalist";
     else if (playoffWins === 1) finishType = "top4";

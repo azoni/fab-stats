@@ -82,7 +82,20 @@ export default function TournamentStatsPage() {
     } else if (filterEventType !== "all") {
       filtered = filtered.filter(e => e.eventType === filterEventType);
     }
-    if (filterFormat !== "all") filtered = filtered.filter(e => e.formats.includes(filterFormat));
+    if (filterFormat !== "all") {
+      filtered = filtered
+        .filter(e => e.formats.includes(filterFormat))
+        .map(e => {
+          const fmtMatches = e.matches.filter(m => m.format === filterFormat);
+          if (fmtMatches.length === e.matches.length) return e;
+          const wins = fmtMatches.filter(m => m.result === "win").length;
+          const losses = fmtMatches.filter(m => m.result === "loss").length;
+          const draws = fmtMatches.filter(m => m.result === "draw").length;
+          const totalMatches = wins + losses + draws;
+          return { ...e, matches: fmtMatches, wins, losses, draws, totalMatches, winRate: totalMatches > 0 ? (wins / totalMatches) * 100 : 0 };
+        })
+        .filter(e => e.matches.length > 0);
+    }
     if (filterHero !== "all") filtered = filtered.filter(e => e.matches.some(m => m.heroPlayed === filterHero));
     return filtered;
   }, [allEvents, filterEventType, filterFormat, filterHero]);

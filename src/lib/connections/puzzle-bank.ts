@@ -177,7 +177,7 @@ export const CONNECTIONS_PUZZLES: ConnectionsPuzzle[] = [
     groups: [
       { name: "Fai Signature Cards", words: ["Phoenix Flame", "Rise Up", "Lava Burst", "Spreading Flames"], difficulty: 1 },
       { name: "Dromai Signature Cards", words: ["Invoke Tomeltai", "Rake the Embers", "Billowing Mirage", "Invoke Dracona Optimai"], difficulty: 2 },
-      { name: "Lexi Signature Cards", words: ["Endless Winter", "Ice Bolt", "Three of a Kind", "Aether Hail"], difficulty: 3 },
+      { name: "Lexi Signature Cards", words: ["Bolt'n' Shot", "Ice Bolt", "Three of a Kind", "Shiver"], difficulty: 3 },
       { name: "Iyslander Signature Cards", words: ["Insidious Chill", "Waning Moon", "Channel Lake Frigid", "Frost Hex"], difficulty: 4 },
     ],
   },
@@ -583,7 +583,7 @@ export const CONNECTIONS_PUZZLES: ConnectionsPuzzle[] = [
       { name: "Fai's Phoenix Attacks", words: ["Phoenix Flame", "Rise Up", "Lava Burst", "Blaze Headlong"], difficulty: 1 },
       { name: "Dromai's Dragon Summons", words: ["Invoke Tomeltai", "Invoke Kyloria", "Invoke Cromai", "Invoke Dracona Optimai"], difficulty: 2 },
       { name: "Iyslander's Ice Magic", words: ["Frost Hex", "Insidious Chill", "Aether Hail", "Channel Lake Frigid"], difficulty: 3 },
-      { name: "Lexi's Lightning Arrows", words: ["Bolt'n' Shot", "Three of a Kind", "Endless Winter", "Ice Bolt"], difficulty: 4 },
+      { name: "Lexi's Lightning Arrows", words: ["Bolt'n' Shot", "Three of a Kind", "Searing Shot", "Ice Bolt"], difficulty: 4 },
     ],
   },
   {
