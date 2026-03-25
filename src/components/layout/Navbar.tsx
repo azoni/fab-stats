@@ -117,10 +117,32 @@ export function Navbar() {
             </svg>
             <span className="text-xl font-bold text-fab-gold tracking-tight">FaB Stats</span>
             {(userCount > 0 || matchCount > 0) && (
-              <span className="hidden xl:flex flex-col ml-1.5 leading-tight">
-                {userCount > 0 && <span className="text-[10px] text-fab-muted font-medium tabular-nums">{userCount.toLocaleString()} players</span>}
-                {matchCount > 0 && <span className="text-[10px] text-fab-dim font-medium tabular-nums">{matchCount.toLocaleString()} matches</span>}
-              </span>
+              <div className="hidden xl:flex relative group/stats ml-1.5">
+                <Link
+                  href="/community"
+                  className="flex flex-col leading-tight px-2 py-1 rounded-md border border-fab-border/50 hover:border-fab-gold/30 hover:bg-fab-surface-hover transition-colors"
+                >
+                  {userCount > 0 && <span className="text-[10px] text-fab-muted font-medium tabular-nums">{userCount.toLocaleString()} players</span>}
+                  {matchCount > 0 && <span className="text-[10px] text-fab-dim font-medium tabular-nums">{matchCount.toLocaleString()} matches</span>}
+                </Link>
+                <div className="absolute left-0 top-full pt-1 hidden group-hover/stats:block z-50">
+                  <div className="w-52 bg-fab-surface border border-fab-border rounded-lg shadow-xl p-3">
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-fab-muted">Players</span>
+                        <span className="text-sm font-bold text-fab-text tabular-nums">{userCount.toLocaleString()}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-fab-muted">Matches Tracked</span>
+                        <span className="text-sm font-bold text-fab-text tabular-nums">{matchCount.toLocaleString()}</span>
+                      </div>
+                    </div>
+                    <div className="mt-2 pt-2 border-t border-fab-border/50">
+                      <span className="text-[10px] text-fab-dim">View community &rarr;</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
             )}
           </Link>
 

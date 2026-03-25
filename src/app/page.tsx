@@ -630,6 +630,7 @@ export default function Dashboard() {
             top4Count: tournamentAnalytics.top4Count,
             submarineCount: tournamentAnalytics.submarineCount,
             filterLabel: activeFilterLabel,
+            heroCompletionPct: heroCompletion?.pct,
           }}
           onClose={() => setTournamentShareOpen(false)}
         />
@@ -649,6 +650,7 @@ export default function Dashboard() {
             uniqueHeroes: heroStats.filter(h => h.heroName !== "Unknown").length,
             topHero: topHero ? { name: topHero.heroName, winRate: Math.round(topHero.winRate), matches: topHero.totalMatches } : undefined,
             filterLabel: activeFilterLabel,
+            heroCompletionPct: heroCompletion?.pct,
           }}
           onClose={() => setStatsShareOpen(false)}
         />
