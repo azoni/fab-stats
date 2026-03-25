@@ -303,6 +303,8 @@ export async function updateLeaderboardEntry(
     eventWins,
     uniqueHeroes: heroData.size,
     heroCompletionPct: matches.length > 0 ? Math.round(matches.filter((m) => m.heroPlayed && m.heroPlayed !== "Unknown").length / matches.length * 100) : 0,
+    opponentHeroCompletionPct: matches.length > 0 ? Math.round(matches.filter((m) => m.opponentHero && m.opponentHero !== "Unknown").length / matches.length * 100) : 0,
+    bothHeroesCompletionPct: matches.length > 0 ? Math.round(matches.filter((m) => m.heroPlayed && m.heroPlayed !== "Unknown" && m.opponentHero && m.opponentHero !== "Unknown").length / matches.length * 100) : 0,
     topHero,
     topHeroMatches,
     nemesis: nemesisOpp?.opponentName,
@@ -383,6 +385,8 @@ function sanitizeEntries(docs: LeaderboardEntry[]): LeaderboardEntry[] {
         entry.heroCompletionPct = 0;
       }
     }
+    if (entry.opponentHeroCompletionPct === undefined) entry.opponentHeroCompletionPct = 0;
+    if (entry.bothHeroesCompletionPct === undefined) entry.bothHeroesCompletionPct = 0;
     if (!entry.weekStart || entry.weekStart < weeklyCutoff) {
       entry.weeklyMatches = 0;
       entry.weeklyWins = 0;
