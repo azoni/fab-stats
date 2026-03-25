@@ -111,7 +111,7 @@ export default function ImportPage() {
         if (result.totalMatches > 0) {
           setPasteResult(result);
           setAutoDetected(true);
-          setMethod("extension");
+          setMethod(isQuick ? "bookmarklet" : "extension");
           if (isQuick) setQuickMode(true);
         }
       } catch (e) {
