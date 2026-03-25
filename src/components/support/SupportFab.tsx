@@ -4,7 +4,8 @@ import Link from "next/link";
 import { trackSupportClick } from "@/lib/analytics";
 import { Heart, ShoppingCart, MessageCircle } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { FeedbackModal } from "@/components/feedback/FeedbackModal";
+import dynamic from "next/dynamic";
+const FeedbackModal = dynamic(() => import("@/components/feedback/FeedbackModal").then(m => ({ default: m.FeedbackModal })), { ssr: false });
 
 const LINKS: { href: string; label: string; trackKey: string; badge?: string; icon: ReactNode }[] = [
   { href: "https://partner.tcgplayer.com/fabstats", label: "TCGplayer", trackKey: "tcgplayer", badge: "Free", icon: <ShoppingCart className="w-3.5 h-3.5" /> },

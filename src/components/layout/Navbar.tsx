@@ -17,7 +17,8 @@ import {
   Mail, Star, Users, Settings, ShieldCheck, ExternalLink,
   MoreVertical, Heart, MessageCircle, ShoppingCart, Coffee, Github,
 } from "lucide-react";
-import { FeedbackModal } from "@/components/feedback/FeedbackModal";
+import dynamic from "next/dynamic";
+const FeedbackModal = dynamic(() => import("@/components/feedback/FeedbackModal").then(m => ({ default: m.FeedbackModal })), { ssr: false });
 
 const navLinks: { href: string; label: string; icon: ReactNode; color: string; bg: string; authOnly?: boolean; iconOnly?: boolean; subItems?: { href: string; label: string; adminOnly?: boolean; badge?: string; icon?: ReactNode }[] }[] = [
   { href: "/matches", label: "Matches", icon: <SwordsIcon className="w-4 h-4" />, color: "text-red-400", bg: "bg-red-400/10", authOnly: true, subItems: [

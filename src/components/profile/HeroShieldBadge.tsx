@@ -1,4 +1,5 @@
 "use client";
+import { memo } from "react";
 import { Tooltip } from "@/components/ui/tooltip";
 
 interface HeroShieldBadgeProps {
@@ -26,7 +27,7 @@ function getTier(pct: number) {
   return null;
 }
 
-export function HeroShieldBadge({ pct, size = "sm", withHero, total }: HeroShieldBadgeProps) {
+export const HeroShieldBadge = memo(function HeroShieldBadge({ pct, size = "sm", withHero, total }: HeroShieldBadgeProps) {
   const tier = getTier(pct);
   if (!tier) return null;
 
@@ -43,4 +44,4 @@ export function HeroShieldBadge({ pct, size = "sm", withHero, total }: HeroShiel
       </span>
     </Tooltip>
   );
-}
+});
