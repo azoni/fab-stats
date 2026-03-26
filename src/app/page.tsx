@@ -1,5 +1,5 @@
 "use client";
-import { useMemo, useEffect, useRef, useState, useCallback } from "react";
+import { useMemo, useEffect, useRef, useState, useCallback, useDeferredValue } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
@@ -121,7 +121,11 @@ export default function Dashboard() {
     if (filterHero !== "all" && !allHeroes.includes(filterHero)) setFilterHero("all");
   }, [allFormats, allEventTypes, allHeroes, filterFormat, filterEventType, filterHero]);
 
-  // Stats (filtered)
+  // Defer heavy stat computations so the profile card renders immediately
+  const deferredMatches = useDeferredValue(filteredMatches);
+  const isStatsStale = deferredMatches !== filteredMatches;
+
+  // Stats (filtered — uses deferred matches for lower-priority computation)
   const activeFilterLabel = useMemo(() => {
     const parts: string[] = [];
     if (filterFormat !== "all") parts.push(filterFormat === "Classic Constructed" ? "CC" : filterFormat);
@@ -131,31 +135,31 @@ export default function Dashboard() {
     return parts.length > 0 ? parts.join(" · ") : undefined;
   }, [filterFormat, filterTier, filterEventType, filterHero]);
 
-  const overall = useMemo(() => computeOverallStats(filteredMatches), [filteredMatches]);
-  const heroStats = useMemo(() => computeHeroStats(filteredMatches), [filteredMatches]);
-  const opponentStats = useMemo(() => computeOpponentStats(filteredMatches), [filteredMatches]);
+  const overall = useMemo(() => computeOverallStats(deferredMatches), [deferredMatches]);
+  const heroStats = useMemo(() => computeHeroStats(deferredMatches), [deferredMatches]);
+  const opponentStats = useMemo(() => computeOpponentStats(deferredMatches), [deferredMatches]);
 
-  // Event stats (unfiltered — used for profile card borders, best finish)
-  const filteredEventStats = useMemo(() => computeEventStats(filteredMatches), [filteredMatches]);
+  // Event stats (uses deferred matches for profile card borders, best finish)
+  const filteredEventStats = useMemo(() => computeEventStats(deferredMatches), [deferredMatches]);
   const bestFinish = useMemo(() => computeBestFinish(filteredEventStats), [filteredEventStats]);
   const userRanks = useMemo(() => user ? computeUserRanks(lbEntries, user.uid) : [], [user, lbEntries]);
   const bestRank = useMemo(() => getBestRank(userRanks), [userRanks]);
   const heroCompletion = useMemo(() => {
-    const nonBye = filteredMatches.filter((m) => m.result !== MatchResult.Bye);
+    const nonBye = deferredMatches.filter((m) => m.result !== MatchResult.Bye);
     if (nonBye.length === 0) return null;
     const withHero = nonBye.filter((m) => m.heroPlayed && m.heroPlayed !== "Unknown").length;
     return { withHero, total: nonBye.length, pct: Math.round((withHero / nonBye.length) * 100) };
-  }, [filteredMatches]);
+  }, [deferredMatches]);
   const topHero = useMemo(() => {
     const known = heroStats.filter((h) => h.heroName !== "Unknown");
     return known.length > 0 ? known[0] : null;
   }, [heroStats]);
 
   const sortedByDateDesc = useMemo(() =>
-    [...filteredMatches].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+    [...deferredMatches].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
       || getRoundNumber(b) - getRoundNumber(a)
       || new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
-    [filteredMatches]
+    [deferredMatches]
   );
   const last30 = useMemo(() => sortedByDateDesc.slice(0, 30).reverse(), [sortedByDateDesc]);
   const latestMatches = useMemo(() => sortedByDateDesc.slice(0, 6), [sortedByDateDesc]);
