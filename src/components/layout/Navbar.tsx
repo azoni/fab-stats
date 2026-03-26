@@ -68,7 +68,7 @@ const userMenuLinks: { href: string; label: string; icon: ReactNode; adminOnly?:
 export function Navbar() {
   const pathname = usePathname();
   const { user, profile, isGuest, isAdmin } = useAuth();
-  const creators = useCreators();
+  const creators = useCreators({ lazy: true });
   const [mounted, setMounted] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const { userCount, matchCount } = useCommunityStats();
@@ -218,6 +218,7 @@ export function Navbar() {
                   <MoreDropdown
                     pathname={pathname}
                     creators={creators}
+                    onCreatorsNeeded={creators.load}
                     isAuthenticated={!!isAuthenticated}
                     isAdmin={isAdmin}
                   />
@@ -593,11 +594,13 @@ function CommunityStatsPopover({ userCount, matchCount }: { userCount: number; m
 function MoreDropdown({
   pathname,
   creators,
+  onCreatorsNeeded,
   isAuthenticated,
   isAdmin,
 }: {
   pathname: string;
   creators: Creator[];
+  onCreatorsNeeded?: () => void;
   isAuthenticated?: boolean;
   isAdmin?: boolean;
 }) {
@@ -636,7 +639,7 @@ function MoreDropdown({
     }`;
 
   return (
-    <div className="relative group/more" ref={ref}>
+    <div className="relative group/more" ref={ref} onMouseEnter={onCreatorsNeeded}>
       <button
         className="flex items-center gap-1.5 px-2.5 py-2 rounded-md text-sm font-medium transition-colors text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover group-hover/more:text-fab-gold group-hover/more:bg-fab-gold/10"
       >

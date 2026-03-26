@@ -4,9 +4,18 @@ import { db } from "@/lib/firebase";
 
 const CACHE_TTL = 30 * 60 * 1000; // 30 minutes
 
+function readCached(key: string): number {
+  if (typeof window === "undefined") return 0;
+  try {
+    const raw = localStorage.getItem(key);
+    if (raw) return JSON.parse(raw).count ?? 0;
+  } catch {}
+  return 0;
+}
+
 export function useCommunityStats() {
-  const [userCount, setUserCount] = useState(0);
-  const [matchCount, setMatchCount] = useState(0);
+  const [userCount, setUserCount] = useState(() => readCached("fab_user_count"));
+  const [matchCount, setMatchCount] = useState(() => readCached("fab_match_count"));
 
   useEffect(() => {
     // User count

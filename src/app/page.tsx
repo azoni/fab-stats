@@ -63,11 +63,15 @@ export default function Dashboard() {
     loadKudosCounts(user.uid).then((c) => setKudosTotal(c.total > 0 ? c.total : null)).catch(() => {});
   }, [user]);
 
-  // Sync leaderboard entry when matches are loaded
+  // Sync leaderboard entry when matches are loaded (throttled to every 10 min)
   useEffect(() => {
     if (!isLoaded || !profile || matches.length === 0 || leaderboardUpdated.current) return;
+    const lastSync = localStorage.getItem("fab_lb_sync");
+    if (lastSync && Date.now() - Number(lastSync) < 10 * 60 * 1000) return;
     leaderboardUpdated.current = true;
-    updateLeaderboardEntry(profile, matches).catch(() => {});
+    updateLeaderboardEntry(profile, matches)
+      .then(() => localStorage.setItem("fab_lb_sync", String(Date.now())))
+      .catch(() => {});
   }, [isLoaded, profile, matches]);
 
   // Filtered matches
