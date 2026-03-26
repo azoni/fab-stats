@@ -357,46 +357,59 @@ export default function PlayerProfile() {
     }).catch(() => {});
   }, [profileUid, currentUser?.uid]);
 
-  // Load today's fabdoku score + all game stats for this profile (batched into single state update)
+  // Load today's fabdoku score + feedback immediately; defer game stats to idle time
   useEffect(() => {
     if (!profileUid) return;
     loadUserResult(profileUid, getTodayDateStr()).then((r) => setFabdokuScore(r?.score ?? null)).catch(() => {});
     hasUserSubmittedFeedback(profileUid).then(setGaveFeedback).catch(() => {});
-    Promise.allSettled([
-      loadFabdokuStats(profileUid),
-      loadFabdokuCardStats(profileUid),
-      loadCrosswordPlayerStats(profileUid),
-      loadHeroGuesserStats(profileUid),
-      loadMatchupManiaStats(profileUid),
-      loadTriviaStats(profileUid),
-      loadTimelineStats(profileUid),
-      loadConnectionsStats(profileUid),
-      loadRampageStats(profileUid),
-      loadKnockoutStats(profileUid),
-      loadBrawlStats(profileUid),
-      loadNinjaComboStats(profileUid),
-      loadShadowStrikeStats(profileUid),
-      loadBladeDashStats(profileUid),
-    ]).then(([fabdoku, fabdokuCard, crossword, heroGuesser, matchupMania, trivia, timeline, connections, rampage, knockout, brawl, ninjaCombo, shadowStrike, bladeDash]) => {
-      const v = <T,>(r: PromiseSettledResult<T | undefined>): T | null =>
-        r.status === "fulfilled" ? r.value ?? null : null;
-      setGameStats({
-        fabdoku: v(fabdoku),
-        fabdokuCard: v(fabdokuCard),
-        crossword: v(crossword),
-        heroGuesser: v(heroGuesser),
-        matchupMania: v(matchupMania),
-        trivia: v(trivia),
-        timeline: v(timeline),
-        connections: v(connections),
-        rampage: v(rampage),
-        knockout: v(knockout),
-        brawl: v(brawl),
-        ninjaCombo: v(ninjaCombo),
-        shadowStrike: v(shadowStrike),
-        bladeDash: v(bladeDash),
+
+    // Defer 14 game-stat Firestore reads until browser is idle
+    const loadGameStats = () => {
+      Promise.allSettled([
+        loadFabdokuStats(profileUid),
+        loadFabdokuCardStats(profileUid),
+        loadCrosswordPlayerStats(profileUid),
+        loadHeroGuesserStats(profileUid),
+        loadMatchupManiaStats(profileUid),
+        loadTriviaStats(profileUid),
+        loadTimelineStats(profileUid),
+        loadConnectionsStats(profileUid),
+        loadRampageStats(profileUid),
+        loadKnockoutStats(profileUid),
+        loadBrawlStats(profileUid),
+        loadNinjaComboStats(profileUid),
+        loadShadowStrikeStats(profileUid),
+        loadBladeDashStats(profileUid),
+      ]).then(([fabdoku, fabdokuCard, crossword, heroGuesser, matchupMania, trivia, timeline, connections, rampage, knockout, brawl, ninjaCombo, shadowStrike, bladeDash]) => {
+        const v = <T,>(r: PromiseSettledResult<T | undefined>): T | null =>
+          r.status === "fulfilled" ? r.value ?? null : null;
+        setGameStats({
+          fabdoku: v(fabdoku),
+          fabdokuCard: v(fabdokuCard),
+          crossword: v(crossword),
+          heroGuesser: v(heroGuesser),
+          matchupMania: v(matchupMania),
+          trivia: v(trivia),
+          timeline: v(timeline),
+          connections: v(connections),
+          rampage: v(rampage),
+          knockout: v(knockout),
+          brawl: v(brawl),
+          ninjaCombo: v(ninjaCombo),
+          shadowStrike: v(shadowStrike),
+          bladeDash: v(bladeDash),
+        });
       });
-    });
+    };
+
+    if ("requestIdleCallback" in window) {
+      const id = requestIdleCallback(loadGameStats, { timeout: 2000 });
+      return () => cancelIdleCallback(id);
+    } else {
+      // Fallback: defer to next frame
+      const id = setTimeout(loadGameStats, 100);
+      return () => clearTimeout(id);
+    }
   }, [profileUid]);
 
   // Admin: fetch friend count for the viewed profile
