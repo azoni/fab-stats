@@ -549,12 +549,39 @@ export default function PlayerProfile() {
 
   if (state.status === "loading") {
     return (
-      <div className="space-y-8">
-        <div className="h-8 w-48 bg-fab-surface rounded animate-pulse" />
-        <div className="bg-fab-surface border border-fab-border rounded-xl p-6 h-32 animate-pulse" />
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="space-y-5">
+        {/* Profile card skeleton */}
+        <div className="bg-fab-surface/80 border border-fab-border rounded-xl p-5">
+          <div className="flex items-start gap-4">
+            {/* Avatar */}
+            <div className="w-16 h-16 rounded-full bg-fab-border/50 animate-pulse shrink-0" />
+            <div className="flex-1 space-y-2">
+              {/* Name */}
+              <div className="h-6 w-40 bg-fab-border/50 rounded animate-pulse" />
+              {/* Username */}
+              <div className="h-4 w-24 bg-fab-border/30 rounded animate-pulse" />
+              {/* Badge strip */}
+              <div className="flex gap-2 mt-2">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="w-8 h-8 rounded-full bg-fab-border/30 animate-pulse" />
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+        {/* Stat cards skeleton */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {[...Array(4)].map((_, i) => (
-            <div key={i} className="bg-fab-surface border border-fab-border rounded-lg p-4 h-20 animate-pulse" />
+            <div key={i} className="bg-fab-surface/60 border border-fab-border rounded-lg p-4 space-y-2">
+              <div className="h-3 w-16 bg-fab-border/30 rounded animate-pulse" />
+              <div className="h-7 w-12 bg-fab-border/50 rounded animate-pulse" />
+            </div>
+          ))}
+        </div>
+        {/* Match history skeleton */}
+        <div className="space-y-2">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="bg-fab-surface/40 border border-fab-border rounded-lg p-4 h-16 animate-pulse" />
           ))}
         </div>
       </div>
