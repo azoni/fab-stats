@@ -11,10 +11,16 @@ import {
 } from "@/lib/friends";
 import type { Friendship } from "@/types";
 
+function getCachedIncomingCount(): number {
+  if (typeof window === "undefined") return 0;
+  try { return Number(localStorage.getItem("fab_incoming_friends")) || 0; } catch { return 0; }
+}
+
 export function useFriends() {
   const { user, isGuest } = useAuth();
   const [allFriendships, setAllFriendships] = useState<Friendship[]>([]);
   const [loaded, setLoaded] = useState(false);
+  const [cachedIncoming] = useState(getCachedIncomingCount);
 
   useEffect(() => {
     if (isGuest || !user) {
@@ -26,6 +32,11 @@ export function useFriends() {
     return subscribeFriendships(user.uid, (friendships) => {
       setAllFriendships(friendships);
       setLoaded(true);
+      // Cache incoming count so next page load renders instantly
+      const incoming = friendships.filter(
+        (f) => f.status === "pending" && f.recipientUid === user.uid
+      ).length;
+      try { localStorage.setItem("fab_incoming_friends", String(incoming)); } catch {}
     });
   }, [user, isGuest]);
 
@@ -105,7 +116,7 @@ export function useFriends() {
     friends,
     incomingRequests,
     outgoingRequests,
-    incomingCount: incomingRequests.length,
+    incomingCount: loaded ? incomingRequests.length : cachedIncoming,
     loaded,
     isFriend,
     hasSentRequest,

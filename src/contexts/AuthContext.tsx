@@ -78,7 +78,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(false);
   }, []);
 
-  // Listen to auth state
+  // Listen to auth state — fetch profile + admin in parallel immediately
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (u) => {
       setUser(u);
@@ -97,42 +97,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (!u) {
         setProfile(null);
+        setIsAdmin(false);
         setProfileLoading(false);
         setLoading(false);
+        setActivityUsername(null);
+        return;
       }
-    });
-    return unsubscribe;
-  }, []);
 
-  // Check admin status when user changes
-  useEffect(() => {
-    if (!user?.email) {
-      setIsAdmin(false);
-      return;
-    }
-    checkIsAdmin(user.email).then(setIsAdmin);
-  }, [user]);
+      // Run profile fetch + admin check concurrently (no extra render cycle)
+      setProfileLoading(true);
+      const [profileResult, adminResult] = await Promise.allSettled([
+        getProfile(u.uid),
+        u.email ? checkIsAdmin(u.email) : Promise.resolve(false),
+      ]);
 
-  // Fetch profile once when user is set
-  useEffect(() => {
-    if (!user) {
-      setProfile(null);
-      setProfileLoading(false);
-      setActivityUsername(null);
-      return;
-    }
-
-    setProfileLoading(true);
-    getProfile(user.uid).then((p) => {
+      const p = profileResult.status === "fulfilled" ? profileResult.value : null;
       setProfile(p);
       setActivityUsername(p?.username ?? null);
-    }).catch(() => {
-      setProfile(null);
-    }).finally(() => {
+      setIsAdmin(adminResult.status === "fulfilled" ? (adminResult.value as boolean) : false);
       setProfileLoading(false);
       setLoading(false);
     });
-  }, [user]);
+    return unsubscribe;
+  }, []);
 
   const refreshProfile = useCallback(async () => {
     if (!user) return;
