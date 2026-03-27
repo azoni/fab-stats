@@ -51,11 +51,11 @@ export function SupportFab() {
         {/* Heart button — expands to "Support" on hover */}
         <Link
           href="/support"
-          className="flex items-center gap-0 py-2.5 px-2.5 rounded-full bg-pink-500 text-white font-semibold text-sm shadow-lg hover:bg-pink-400 hover:gap-2 hover:px-4 transition-all active:scale-95"
+          className="group/fab flex items-center gap-0 py-2.5 px-2.5 rounded-full bg-pink-500 text-white font-semibold text-sm shadow-lg hover:bg-pink-400 hover:gap-2 hover:px-4 transition-all active:scale-95"
           title="Support FaB Stats"
         >
           <Heart className="w-4 h-4 fill-current shrink-0" />
-          <span className="max-w-0 overflow-hidden whitespace-nowrap group-hover:max-w-[4rem] transition-all duration-200">
+          <span className="max-w-0 overflow-hidden whitespace-nowrap group-hover/fab:max-w-[4rem] transition-all duration-200">
             Support
           </span>
         </Link>
