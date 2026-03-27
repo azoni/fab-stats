@@ -65,6 +65,12 @@ export const StatCards = memo(function StatCards({ overall, eventCount, bestFini
             <p className="text-lg font-bold text-fab-text tabular-nums">{overall.totalMatches + overall.totalByes}</p>
             <p className="text-[10px] text-fab-muted">Matches</p>
           </div>
+          {overall.totalByes > 0 && (
+            <div title={`${overall.totalByes} bye${overall.totalByes !== 1 ? "s" : ""}`}>
+              <p className="text-lg font-bold text-fab-text tabular-nums">{overall.totalByes}</p>
+              <p className="text-[10px] text-fab-muted">Byes</p>
+            </div>
+          )}
           <div title="Total wins - losses - draws">
             <p className="text-lg font-bold tabular-nums">
               <span className="text-fab-win">{overall.totalWins}</span>

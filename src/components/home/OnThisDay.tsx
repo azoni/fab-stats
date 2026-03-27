@@ -5,6 +5,7 @@ import { localDate } from "@/lib/constants";
 import { getRoundNumber } from "@/lib/stats";
 import { CARD_THEMES } from "@/components/opponents/RivalryCard";
 import { copyCardImage, downloadCardImage } from "@/lib/share-image";
+import { logActivity } from "@/lib/activity-log";
 import { buildOptimizedImageUrl } from "@/lib/profile-backgrounds";
 import { OnThisDayCard, type OnThisDayData } from "./OnThisDayCard";
 import { useAuth } from "@/contexts/AuthContext";
@@ -424,9 +425,11 @@ function OnThisDayShareModal({
       shareTitle: "FaB Stats — On This Day", shareText: "", fallbackText: window.location.href,
     });
     if (result === "image" || result === "shared") {
+      logActivity("onthisday_share");
       setShareStatus("copied");
       setTimeout(() => { setShareStatus("idle"); onClose(); }, 1500);
     } else if (result === "text") {
+      logActivity("onthisday_share");
       setShareStatus("text-copied");
       setTimeout(() => { setShareStatus("idle"); onClose(); }, 2000);
     } else {
@@ -437,6 +440,7 @@ function OnThisDayShareModal({
   async function handleDownload() {
     setShareStatus("sharing");
     await downloadCardImage(cardRef.current, { backgroundColor: selectedTheme.bg, fileName: "onthisday.png" });
+    logActivity("onthisday_share");
     setShareStatus("idle");
   }
 
