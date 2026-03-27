@@ -21,39 +21,43 @@ export function SupportFab() {
 
   return (
     <>
-      <div className="fixed right-4 bottom-6 z-40 hidden md:flex flex-col items-end gap-2">
-        {/* Hover links — hidden by default */}
-        <div className={`flex flex-col gap-1.5 transition-all duration-200 ${open ? "opacity-100 translate-y-0 pointer-events-auto" : "opacity-0 translate-y-2 pointer-events-none"}`}>
-          {LINKS.map((link) => (
-            <a
-              key={link.trackKey}
-              href={link.href}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={() => trackSupportClick(link.trackKey)}
-              className="flex items-center gap-2.5 px-4 py-2 rounded-full bg-fab-surface border border-fab-border text-fab-text text-sm font-medium shadow-lg hover:border-fab-gold/50 hover:bg-fab-surface-hover transition-colors whitespace-nowrap"
-            >
-              <span className="text-fab-dim">{link.icon}</span>
-              {link.label}
-              {link.badge && <span className="text-[9px] font-bold uppercase tracking-wider text-emerald-400 bg-emerald-400/15 px-1.5 py-0.5 rounded-full">{link.badge}</span>}
-            </a>
-          ))}
-          {user && !isGuest && (
-            <button
-              onClick={() => setFeedbackOpen(true)}
-              className="flex items-center gap-2.5 px-4 py-2 rounded-full bg-fab-surface border border-fab-border text-fab-text text-sm font-medium shadow-lg hover:border-fab-gold/50 hover:bg-fab-surface-hover transition-colors whitespace-nowrap"
-            >
-              <span className="text-fab-dim"><MessageCircle className="w-3.5 h-3.5" /></span>
-              Send Feedback
-            </button>
-          )}
-        </div>
+      <div
+        className="fixed right-4 bottom-6 z-40 hidden md:flex flex-col items-end gap-2"
+        onMouseLeave={() => setOpen(false)}
+      >
+        {/* Hover links — visible only when open */}
+        {open && (
+          <div className="flex flex-col gap-1.5 animate-in fade-in slide-in-from-bottom-1 duration-200">
+            {LINKS.map((link) => (
+              <a
+                key={link.trackKey}
+                href={link.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => trackSupportClick(link.trackKey)}
+                className="flex items-center gap-2.5 px-4 py-2 rounded-full bg-fab-surface border border-fab-border text-fab-text text-sm font-medium shadow-lg hover:border-fab-gold/50 hover:bg-fab-surface-hover transition-colors whitespace-nowrap"
+              >
+                <span className="text-fab-dim">{link.icon}</span>
+                {link.label}
+                {link.badge && <span className="text-[9px] font-bold uppercase tracking-wider text-emerald-400 bg-emerald-400/15 px-1.5 py-0.5 rounded-full">{link.badge}</span>}
+              </a>
+            ))}
+            {user && !isGuest && (
+              <button
+                onClick={() => setFeedbackOpen(true)}
+                className="flex items-center gap-2.5 px-4 py-2 rounded-full bg-fab-surface border border-fab-border text-fab-text text-sm font-medium shadow-lg hover:border-fab-gold/50 hover:bg-fab-surface-hover transition-colors whitespace-nowrap"
+              >
+                <span className="text-fab-dim"><MessageCircle className="w-3.5 h-3.5" /></span>
+                Send Feedback
+              </button>
+            )}
+          </div>
+        )}
 
         {/* Heart button — expands to "Support" on hover */}
         <Link
           href="/support"
           onMouseEnter={() => setOpen(true)}
-          onMouseLeave={() => setOpen(false)}
           className="group/fab flex items-center gap-0 py-2.5 px-2.5 rounded-full bg-pink-500 text-white font-semibold text-sm shadow-lg hover:bg-pink-400 hover:gap-2 hover:px-4 transition-all active:scale-95"
           title="Support FaB Stats"
         >
