@@ -657,11 +657,12 @@ export default function Dashboard() {
         <TrendsShareModal
           data={{
             playerName: profile.displayName,
-            totalMatches: overall.totalMatches,
+            totalMatches: overall.totalMatches + overall.totalByes,
             winRate: Math.round(overall.overallWinRate),
             wins: overall.totalWins,
             losses: overall.totalLosses,
             draws: overall.totalDraws,
+            byes: overall.totalByes,
             longestWinStreak: overall.streaks.longestWinStreak,
             eventsPlayed: filteredEventStats.length,
             uniqueHeroes: heroStats.filter(h => h.heroName !== "Unknown").length,

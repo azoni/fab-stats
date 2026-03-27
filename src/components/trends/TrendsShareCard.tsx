@@ -15,6 +15,7 @@ export interface TrendsShareData {
   wins: number;
   losses: number;
   draws: number;
+  byes?: number;
   longestWinStreak: number;
   eventsPlayed: number;
   uniqueHeroes: number;
@@ -230,6 +231,12 @@ function ShareCardInner({ data, theme }: { data: TrendsShareData; theme: TrendsT
             <>
               <span style={{ color: t.text, opacity: 0.3 }}> - </span>
               <span style={{ color: t.draw }}>{data.draws}D</span>
+            </>
+          )}
+          {data.byes !== undefined && data.byes > 0 && (
+            <>
+              <span style={{ color: t.text, opacity: 0.3 }}> - </span>
+              <span style={{ color: t.text, opacity: 0.7 }}>{data.byes}B</span>
             </>
           )}
         </div>
