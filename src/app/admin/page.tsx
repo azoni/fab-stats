@@ -99,6 +99,8 @@ export default function AdminPage() {
   const [placementProgress, setPlacementProgress] = useState("");
   const [syncingBackgroundCatalog, setSyncingBackgroundCatalog] = useState(false);
   const [backgroundCatalogProgress, setBackgroundCatalogProgress] = useState("");
+  const [buildingHistorical, setBuildingHistorical] = useState(false);
+  const [historicalProgress, setHistoricalProgress] = useState("");
   // Poll: new poll form
   const [newPollQuestion, setNewPollQuestion] = useState("");
   const [newPollOptions, setNewPollOptions] = useState<string[]>(["", ""]);
@@ -166,7 +168,7 @@ export default function AdminPage() {
   const [botDaily, setBotDaily] = useState<DailyUsage[]>([]);
   const [botLog, setBotLog] = useState<CommandLogEntry[]>([]);
   const [botLoading, setBotLoading] = useState(false);
-  const anyToolRunning = fixingDates || backfilling || backfillingGemIds || linkingMatches || resyncingH2H || backfillingMatchups || backfillingPlacements || syncingBackgroundCatalog;
+  const anyToolRunning = fixingDates || backfilling || backfillingGemIds || linkingMatches || resyncingH2H || backfillingMatchups || backfillingPlacements || syncingBackgroundCatalog || buildingHistorical;
   const [activeTab, setActiveTab] = useState<"overview" | "users" | "feedback" | "content" | "poll" | "tools" | "discord" | "games" | "social" | "sitemap">(() => {
     if (typeof window !== "undefined") {
       const hash = window.location.hash.replace("#", "");
@@ -527,9 +529,32 @@ export default function AdminPage() {
             >
               {syncingBackgroundCatalog ? "Syncing..." : "Sync Background Catalog"}
             </button>
+            <button
+              onClick={async () => {
+                setBuildingHistorical(true);
+                setHistoricalProgress("Building...");
+                try {
+                  const res = await fetch("/.netlify/functions/build-historical-events");
+                  const data = await res.json();
+                  if (data.error) {
+                    setHistoricalProgress(`Error: ${data.error}`);
+                  } else {
+                    setHistoricalProgress(`Done: ${data.eventsWritten} historical events written`);
+                  }
+                } catch (err) {
+                  setHistoricalProgress(`Failed: ${err instanceof Error ? err.message : String(err)}`);
+                } finally {
+                  setBuildingHistorical(false);
+                }
+              }}
+              disabled={anyToolRunning}
+              className="px-3 py-1.5 rounded text-xs font-medium bg-fab-bg border border-fab-border text-fab-muted hover:text-fab-text hover:border-fab-gold transition-colors disabled:opacity-50"
+            >
+              {buildingHistorical ? "Building..." : "Build Historical Events"}
+            </button>
           </div>
-          {(backgroundCatalogProgress || backfillProgress || fixDatesProgress || linkProgress || gemIdProgress || h2hProgress || matchupProgress || placementProgress) && (
-            <p className="text-xs text-fab-dim">{backgroundCatalogProgress || placementProgress || matchupProgress || h2hProgress || linkProgress || gemIdProgress || fixDatesProgress || backfillProgress}</p>
+          {(historicalProgress || backgroundCatalogProgress || backfillProgress || fixDatesProgress || linkProgress || gemIdProgress || h2hProgress || matchupProgress || placementProgress) && (
+            <p className="text-xs text-fab-dim">{historicalProgress || backgroundCatalogProgress || placementProgress || matchupProgress || h2hProgress || linkProgress || gemIdProgress || fixDatesProgress || backfillProgress}</p>
           )}
 
           <EventTypeManager />
