@@ -165,7 +165,7 @@ export default function TrendsPage() {
       else cutoff = new Date(now.getTime() - 180 * 24 * 60 * 60 * 1000); // 6m
       fm = fm.filter((m) => new Date(m.date) >= cutoff);
     }
-    return fm;
+    return fm.filter((m) => m.result !== MatchResult.Bye);
   }, [matches, filterFormat, filterEventType, filterHero, filterTimeRange]);
 
   const isFiltered = filterFormat !== "all" || filterEventType !== "all" || filterHero !== "all" || filterTimeRange !== "all";
@@ -424,20 +424,21 @@ export default function TrendsPage() {
 
   // Recent vs All-time comparison
   const recentVsAllTime = useMemo(() => {
-    if (matches.length < 10) return null;
-    const sorted = [...matches].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    const nonBye = matches.filter((m) => m.result !== MatchResult.Bye);
+    if (nonBye.length < 10) return null;
+    const sorted = [...nonBye].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     const cutoff30 = new Date();
     cutoff30.setDate(cutoff30.getDate() - 30);
     const cutoffTime = cutoff30.getTime();
     const recent30 = sorted.filter((m) => new Date(m.date).getTime() >= cutoffTime);
     if (recent30.length < 3) return null;
-    const wr = (arr: typeof matches) => {
+    const wr = (arr: typeof nonBye) => {
       const w = arr.filter((m) => m.result === MatchResult.Win).length;
       return arr.length > 0 ? Math.round((w / arr.length) * 100) : 0;
     };
-    const allTimeWR = wr(matches);
+    const allTimeWR = wr(nonBye);
     const recentWR = wr(recent30);
-    return { recentCount: recent30.length, allTimeCount: matches.length, recentWR, allTimeWR, diff: recentWR - allTimeWR };
+    return { recentCount: recent30.length, allTimeCount: nonBye.length, recentWR, allTimeWR, diff: recentWR - allTimeWR };
   }, [matches]);
 
   // Personal records
