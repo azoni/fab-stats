@@ -10,8 +10,7 @@ export const metadata: Metadata = {
 
 const TOC = [
   { id: "about", label: "About" },
-  { id: "tech-stack", label: "Tech Stack" },
-  { id: "architecture", label: "Architecture" },
+  { id: "tech-stack", label: "Tech & Architecture" },
   { id: "getting-started", label: "Getting Started" },
   { id: "chrome-extension", label: "Chrome Extension" },
   { id: "win-rate", label: "Win Rate & Record" },
@@ -91,8 +90,13 @@ export default function DocsPage() {
           </section>
 
           {/* ─── Tech Stack ─── */}
-          <section id="tech-stack">
-            <h2 className="text-xl font-semibold text-fab-text mb-3 pb-2 border-b border-fab-border">Tech Stack</h2>
+          <details id="tech-stack" className="group">
+            <summary className="text-xl font-semibold text-fab-text mb-3 pb-2 border-b border-fab-border cursor-pointer list-none flex items-center gap-2">
+              <svg className="w-4 h-4 text-fab-muted transition-transform group-open:rotate-90" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" /></svg>
+              Tech &amp; Architecture
+            </summary>
+          <section>
+            <h2 className="text-lg font-semibold text-fab-text mb-3 pb-2 border-b border-fab-border">Tech Stack</h2>
             <p className="text-sm text-fab-muted mb-4">
               FaB Stats is built with modern web technologies, optimized for speed and static deployment.
             </p>
@@ -115,7 +119,7 @@ export default function DocsPage() {
 
           {/* ─── Architecture ─── */}
           <section id="architecture">
-            <h2 className="text-xl font-semibold text-fab-text mb-3 pb-2 border-b border-fab-border">Technical Architecture</h2>
+            <h2 className="text-lg font-semibold text-fab-text mb-3 pb-2 border-b border-fab-border">Technical Architecture</h2>
             <p className="text-sm text-fab-muted mb-6">
               A deeper look at the engineering decisions, trade-offs, and patterns behind FaB Stats.
             </p>
@@ -393,6 +397,7 @@ export default function DocsPage() {
               </p>
             </div>
           </section>
+          </details>
 
           {/* ─── Getting Started ─── */}
           <section id="getting-started">
