@@ -544,6 +544,25 @@ export interface FeaturedEvent {
   players: FeaturedEventPlayer[];
 }
 
+// Historical events (auto-generated from scraped decklists)
+export interface HistoricalPlacement {
+  placement: string;
+  name: string;
+  hero: string;
+  country?: string;
+  decklistUrl?: string;
+  fabstatsUsername?: string;
+}
+
+export interface HistoricalEvent {
+  name: string;
+  date: string;
+  format: string;
+  eventType: string;
+  totalDecklists: number;
+  top8: HistoricalPlacement[];
+}
+
 // Seasons
 export interface Season {
   id: string;           // URL-safe slug, e.g. "pq-cc-s1-2026"

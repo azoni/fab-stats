@@ -771,6 +771,12 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // ── Historical Events (auto-generated from scraped decklists) ──
+    match /historical-events/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
     // Admin stats: any authed user can increment deletedAccounts (during account deletion)
     match /admin/stats {
       allow read: if request.auth != null;
