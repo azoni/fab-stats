@@ -130,6 +130,12 @@ export default function ShareStatsPage() {
                   <p className="font-bold text-fab-draw">{overall.totalDraws}</p>
                   <p className="text-[9px] text-fab-dim">D</p>
                 </div>
+                {overall.totalByes > 0 && (
+                  <div className="text-center">
+                    <p className="font-bold text-fab-text">{overall.totalByes}</p>
+                    <p className="text-[9px] text-fab-dim">B</p>
+                  </div>
+                )}
               </div>
             </div>
             <SegmentedBar
@@ -148,7 +154,7 @@ export default function ShareStatsPage() {
                 <p className="text-[10px] text-fab-dim">ELO ({eloTier.label})</p>
               </div>
               <div className="bg-fab-bg/50 rounded-lg p-2 text-center">
-                <p className="text-lg font-bold text-fab-text">{overall.totalMatches}</p>
+                <p className="text-lg font-bold text-fab-text">{overall.totalMatches + overall.totalByes}</p>
                 <p className="text-[10px] text-fab-dim">Total Matches</p>
               </div>
             </div>

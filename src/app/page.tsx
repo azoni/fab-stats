@@ -400,6 +400,13 @@ export default function Dashboard() {
                     <p className="text-lg font-black tabular-nums text-fab-text">{overall.totalMatches + overall.totalByes}</p>
                     <p className="text-[10px] text-fab-text/50 uppercase tracking-wider font-semibold">Matches</p>
                   </div>
+                  {/* Byes */}
+                  {overall.totalByes > 0 && (
+                    <div className="text-center">
+                      <p className="text-lg font-black tabular-nums text-fab-text">{overall.totalByes}</p>
+                      <p className="text-[10px] text-fab-text/50 uppercase tracking-wider font-semibold">Byes</p>
+                    </div>
+                  )}
                   {/* Events */}
                   <div className="text-center">
                     <p className="text-lg font-black tabular-nums text-fab-text">{filteredEventStats.length}</p>
