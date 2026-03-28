@@ -3,13 +3,22 @@ import { Suspense, useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { searchUsernames, getProfile } from "@/lib/firestore-storage";
+import { searchTeams, getTeam } from "@/lib/teams";
 import { playerHref } from "@/lib/constants";
 import { useAuth } from "@/contexts/AuthContext";
-import type { UserProfile } from "@/types";
+import { Users } from "lucide-react";
+import type { UserProfile, Team } from "@/types";
 
 interface SearchResult {
   username: string;
   profile: UserProfile | null;
+}
+
+interface TeamSearchResult {
+  teamId: string;
+  name: string;
+  nameLower: string;
+  team: Team | null;
 }
 
 export default function SearchPage() {
@@ -38,6 +47,7 @@ function SearchContent() {
   const initialQuery = searchParams.get("q") || "";
   const [query, setQuery] = useState(initialQuery);
   const [results, setResults] = useState<SearchResult[]>([]);
+  const [teamResults, setTeamResults] = useState<TeamSearchResult[]>([]);
   const [searched, setSearched] = useState(false);
   const [loading, setLoading] = useState(false);
   const { isAdmin, user } = useAuth();
@@ -45,13 +55,17 @@ function SearchContent() {
   async function doSearch(q: string, autoRedirect = false) {
     if (!q.trim()) {
       setResults([]);
+      setTeamResults([]);
       setSearched(false);
       return;
     }
     setLoading(true);
     setSearched(true);
 
-    const usernames = await searchUsernames(q.trim());
+    const [usernames, teams] = await Promise.all([
+      searchUsernames(q.trim()),
+      searchTeams(q.trim(), 10),
+    ]);
 
     const withProfiles = await Promise.all(
       usernames.map(async (u) => ({
@@ -66,12 +80,20 @@ function SearchContent() {
       return true;
     });
 
-    if (autoRedirect && filtered.length === 1) {
+    const teamsWithData = await Promise.all(
+      teams.map(async (t) => ({
+        ...t,
+        team: await getTeam(t.teamId),
+      }))
+    );
+
+    if (autoRedirect && filtered.length === 1 && teamsWithData.length === 0) {
       router.replace(`/player/${filtered[0].username}`);
       return;
     }
 
     setResults(filtered);
+    setTeamResults(teamsWithData);
     setLoading(false);
   }
 
@@ -109,7 +131,7 @@ function SearchContent() {
         </div>
         <div>
           <h1 className="text-lg font-bold text-fab-text leading-tight">Search</h1>
-          <p className="text-xs text-fab-muted leading-tight">Find players by name or username</p>
+          <p className="text-xs text-fab-muted leading-tight">Find players or teams</p>
         </div>
       </div>
 
@@ -139,15 +161,51 @@ function SearchContent() {
         </div>
       )}
 
-      {!loading && searched && results.length === 0 && (
+      {!loading && searched && results.length === 0 && teamResults.length === 0 && (
         <div className="text-center py-16 text-fab-dim">
-          <p className="text-lg mb-1">No players found</p>
-          <p className="text-sm">No results matching &quot;{query}&quot; — try a different name or username.</p>
+          <p className="text-lg mb-1">No results found</p>
+          <p className="text-sm">No players or teams matching &quot;{query}&quot; — try a different search.</p>
         </div>
       )}
 
+      {/* Team results */}
+      {!loading && teamResults.length > 0 && (
+        <div className="mb-6">
+          <h2 className="text-xs font-semibold text-fab-muted uppercase tracking-wider mb-2">Teams</h2>
+          <div className="space-y-2">
+            {teamResults.map((t) => (
+              <Link
+                key={t.teamId}
+                href={`/team/${t.nameLower}`}
+                className="block bg-fab-surface border border-fab-border rounded-lg p-4 hover:bg-fab-surface-hover transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  {t.team?.iconUrl ? (
+                    <img src={t.team.iconUrl} alt="" className="w-10 h-10 rounded-lg object-cover border border-fab-border" />
+                  ) : (
+                    <div className="w-10 h-10 rounded-lg bg-amber-500/15 flex items-center justify-center">
+                      <Users className="w-5 h-5 text-amber-400" />
+                    </div>
+                  )}
+                  <div>
+                    <p className="font-semibold text-fab-text">{t.name}</p>
+                    <div className="flex items-center gap-2 text-sm text-fab-dim">
+                      {t.team && <span>{t.team.memberCount} member{t.team.memberCount !== 1 ? "s" : ""}</span>}
+                      {t.team && <span className="text-[10px] px-1.5 py-0.5 rounded bg-fab-bg border border-fab-border">{t.team.joinMode === "open" ? "Open" : "Invite Only"}</span>}
+                    </div>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Player results */}
       {!loading && results.length > 0 && (
-        <div className="space-y-2">
+        <div>
+          {teamResults.length > 0 && <h2 className="text-xs font-semibold text-fab-muted uppercase tracking-wider mb-2">Players</h2>}
+          <div className="space-y-2">
           {results.map((r) => (
             <Link
               key={r.username}
@@ -177,6 +235,7 @@ function SearchContent() {
               </div>
             </Link>
           ))}
+          </div>
         </div>
       )}
 

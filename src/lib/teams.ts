@@ -446,6 +446,31 @@ export async function getMyPendingInvites(uid: string): Promise<TeamInvite[]> {
   return snap.docs.map((d) => d.data() as TeamInvite);
 }
 
+export async function searchTeams(
+  prefix: string,
+  maxResults = 10
+): Promise<{ teamId: string; name: string; nameLower: string }[]> {
+  if (!prefix.trim()) return [];
+  const lower = prefix.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  if (!lower) return [];
+  const end = lower.slice(0, -1) + String.fromCharCode(lower.charCodeAt(lower.length - 1) + 1);
+
+  const snap = await getDocs(
+    query(
+      teamNamesCollection(),
+      where("__name__", ">=", lower),
+      where("__name__", "<", end),
+      limit(maxResults)
+    )
+  );
+
+  return snap.docs.map((d) => ({
+    teamId: (d.data() as { teamId: string }).teamId,
+    name: (d.data() as { name: string }).name,
+    nameLower: d.id,
+  }));
+}
+
 // ── Subscriptions ──
 
 export function subscribeToTeam(teamId: string, cb: (team: Team | null) => void): Unsubscribe {
