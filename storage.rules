@@ -65,6 +65,26 @@ service firebase.storage {
       allow read, write: if false;
     }
 
+    // Team icons: public read, authenticated write with size limits
+    match /team-images/icons/{teamId}/{fileName} {
+      allow read: if true;
+      allow write: if signedIn()
+        && (
+          request.resource == null
+          || validImageUpload(2 * 1024 * 1024)
+        );
+    }
+
+    // Team share card backgrounds: public read, authenticated write with size limits
+    match /team-images/backgrounds/{teamId}/{fileName} {
+      allow read: if true;
+      allow write: if signedIn()
+        && (
+          request.resource == null
+          || validImageUpload(8 * 1024 * 1024)
+        );
+    }
+
     // Default deny for everything else in Storage.
     match /{allPaths=**} {
       allow read, write: if false;

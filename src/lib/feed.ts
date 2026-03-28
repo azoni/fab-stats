@@ -36,6 +36,12 @@ function logFirestoreError(context: string, error: unknown): void {
   }
 }
 
+/** Enrich feed event data with optional team + photo fields from profile */
+function enrichWithProfileFields(clean: Record<string, unknown>, profile: UserProfile): void {
+  if (profile.photoUrl) clean.photoUrl = profile.photoUrl;
+  if (profile.teamId) clean.teamId = profile.teamId;
+}
+
 export async function createImportFeedEvent(
   profile: UserProfile,
   matchCount: number,
@@ -61,7 +67,7 @@ export async function createImportFeedEvent(
     if (v !== undefined) clean[k] = v;
   }
 
-  if (profile.photoUrl) clean.photoUrl = profile.photoUrl;
+  enrichWithProfileFields(clean, profile);
   if (topHeroes.length > 0) clean.topHeroes = topHeroes.slice(0, 3);
 
   await addDoc(feedCollection(), clean);
@@ -93,7 +99,7 @@ export async function createAchievementFeedEvent(
   for (const [k, v] of Object.entries(data)) {
     if (v !== undefined) clean[k] = v;
   }
-  if (profile.photoUrl) clean.photoUrl = profile.photoUrl;
+  enrichWithProfileFields(clean, profile);
 
   await addDoc(feedCollection(), clean);
   invalidateFeedCache();
@@ -135,7 +141,7 @@ export async function createPlacementFeedEvent(
   for (const [k, v] of Object.entries(data)) {
     if (v !== undefined) clean[k] = v;
   }
-  if (profile.photoUrl) clean.photoUrl = profile.photoUrl;
+  enrichWithProfileFields(clean, profile);
   if (hero && hero !== "Unknown") clean.hero = hero;
 
   await addDoc(feedCollection(), clean);

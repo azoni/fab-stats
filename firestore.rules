@@ -796,5 +796,70 @@ service cloud.firestore {
       allow read: if request.auth != null;
       allow write: if isAdmin();
     }
+
+    // ── Teams ──
+
+    match /teams/{teamId} {
+      allow read: if true;
+      allow create: if request.auth != null
+        && request.resource.data.ownerUid == request.auth.uid
+        && maxLen(request.resource.data.name, 50)
+        && request.resource.data.memberCount is int;
+      allow update: if request.auth != null
+        && (
+          resource.data.ownerUid == request.auth.uid
+          || (exists(/databases/$(database)/documents/teams/$(teamId)/members/$(request.auth.uid))
+              && get(/databases/$(database)/documents/teams/$(teamId)/members/$(request.auth.uid)).data.role in ["owner", "admin"])
+        )
+        && !('ownerUid' in request.resource.data.diff(resource.data).affectedKeys());
+      allow delete: if request.auth != null
+        && resource.data.ownerUid == request.auth.uid;
+
+      match /members/{memberId} {
+        allow read: if true;
+        // Self-join on open teams
+        allow create: if request.auth != null
+          && request.auth.uid == memberId
+          && request.resource.data.role == "member"
+          && get(/databases/$(database)/documents/teams/$(teamId)).data.joinMode == "open";
+        // Owner/admin can add members (invite acceptance)
+        allow create: if request.auth != null
+          && exists(/databases/$(database)/documents/teams/$(teamId)/members/$(request.auth.uid))
+          && get(/databases/$(database)/documents/teams/$(teamId)/members/$(request.auth.uid)).data.role in ["owner", "admin"];
+        // Owner/admin can update roles (not to owner)
+        allow update: if request.auth != null
+          && exists(/databases/$(database)/documents/teams/$(teamId)/members/$(request.auth.uid))
+          && get(/databases/$(database)/documents/teams/$(teamId)/members/$(request.auth.uid)).data.role in ["owner", "admin"]
+          && request.resource.data.role in ["admin", "member"];
+        // Self-leave or owner/admin kick
+        allow delete: if request.auth != null
+          && (request.auth.uid == memberId
+              || (exists(/databases/$(database)/documents/teams/$(teamId)/members/$(request.auth.uid))
+                  && get(/databases/$(database)/documents/teams/$(teamId)/members/$(request.auth.uid)).data.role in ["owner", "admin"]));
+      }
+    }
+
+    match /teamnames/{nameLower} {
+      allow read: if true;
+      allow create: if request.auth != null;
+      allow delete: if request.auth != null
+        && resource.data.teamId != null
+        && get(/databases/$(database)/documents/teams/$(resource.data.teamId)).data.ownerUid == request.auth.uid;
+    }
+
+    match /teamInvites/{inviteId} {
+      allow read: if request.auth != null
+        && (resource.data.inviterUid == request.auth.uid
+            || resource.data.targetUid == request.auth.uid);
+      allow create: if request.auth != null
+        && request.resource.data.inviterUid == request.auth.uid
+        && request.resource.data.status == "pending";
+      allow update: if request.auth != null
+        && resource.data.targetUid == request.auth.uid
+        && request.resource.data.status in ["accepted", "declined"];
+      allow delete: if request.auth != null
+        && (resource.data.inviterUid == request.auth.uid
+            || resource.data.targetUid == request.auth.uid);
+    }
   }
 }

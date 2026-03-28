@@ -5,6 +5,7 @@ import type { FeedEvent, ImportFeedEvent, FaBdokuFeedEvent, FaBdokuCardFeedEvent
 import { rankBorderClass } from "@/lib/leaderboard-ranks";
 import { playerHref } from "@/lib/constants";
 import { HeroShieldBadge } from "@/components/profile/HeroShieldBadge";
+import { TeamBadge } from "@/components/profile/TeamBadge";
 import { FEED_REACTIONS, addFeedReaction, removeFeedReaction, deleteFeedEvent } from "@/lib/feed";
 
 export interface FeedGroup {
@@ -175,6 +176,7 @@ function NameAndTime({ event, compact, heroCompletionMap }: { event: FeedEvent; 
       ) : (
         <span className={`font-semibold text-fab-text ${compact ? "text-xs" : ""}`}>{event.displayName}</span>
       )}
+      {event.teamName && <TeamBadge teamName={event.teamName} teamIconUrl={event.teamIconUrl} size="xs" />}
       {pct >= 35 && <HeroShieldBadge pct={pct} />}
       {compact ? (
         <span className="text-[10px] text-fab-dim">{formatTimeAgo(event.createdAt)}</span>
