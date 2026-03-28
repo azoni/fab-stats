@@ -63,8 +63,8 @@ function SearchContent() {
     setSearched(true);
 
     const [usernames, teams] = await Promise.all([
-      searchUsernames(q.trim()),
-      searchTeams(q.trim(), 10),
+      searchUsernames(q.trim()).catch(() => []),
+      searchTeams(q.trim(), 10).catch(() => []),
     ]);
 
     const withProfiles = await Promise.all(

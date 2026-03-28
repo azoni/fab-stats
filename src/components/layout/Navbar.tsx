@@ -61,6 +61,7 @@ const userMenuLinks: { href: string; label: string; icon: ReactNode; adminOnly?:
   { href: "/inbox", label: "Inbox", icon: <Mail className="w-4 h-4" /> },
   { href: "/favorites", label: "Favorites", icon: <Star className="w-4 h-4" /> },
   { href: "/friends", label: "Friends", icon: <Users className="w-4 h-4" /> },
+  { href: "/team", label: "Teams", icon: <Users className="w-4 h-4" /> },
   { href: "/settings", label: "Settings", icon: <Settings className="w-4 h-4" /> },
   { href: "/admin", label: "Admin", adminOnly: true, icon: <ShieldCheck className="w-4 h-4" /> },
 ];
