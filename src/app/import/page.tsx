@@ -32,10 +32,14 @@ const BOOKMARKLET_HREF = `javascript:void((async function(){var els=document.que
 
 type ImportMethod = "extension" | "bookmarklet" | "paste" | "csv" | null;
 
+/** Sentinel stored in heroOverrides when user explicitly acknowledges an unknown hero */
+const ACKNOWLEDGED_UNKNOWN = "__ACKNOWLEDGED_UNKNOWN__";
+
 export default function ImportPage() {
   const router = useRouter();
   const { user, profile, isGuest, isAdmin } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const eventCardRefs = useRef<Record<number, HTMLDivElement | null>>({});
   const bookmarkletRef = useCallback((node: HTMLAnchorElement | null) => {
     if (node) node.setAttribute("href", BOOKMARKLET_HREF);
   }, []);
@@ -163,12 +167,25 @@ export default function ImportPage() {
         const oppHeroKey = `${origIdx}-${matchIdx}`;
         const oppHero = opponentHeroOverrides[oppHeroKey];
         let updated = m;
-        if (hero) updated = { ...updated, heroPlayed: hero };
+        if (hero && hero !== ACKNOWLEDGED_UNKNOWN) updated = { ...updated, heroPlayed: hero };
         if (oppHero) updated = { ...updated, opponentHero: oppHero };
         return updated;
       })
     );
   }, [filteredEvents, heroOverrides, opponentHeroOverrides]);
+
+  // Events missing hero selection (for validation + UI)
+  const missingHeroEvents = useMemo(() => {
+    if (!pasteResult) return { all: [] as typeof filteredEvents, postCutoff: [] as typeof filteredEvents, preCutoff: 0 };
+    const all = filteredEvents.filter(({ event, origIdx }) =>
+      !(origIdx in heroOverrides) &&
+      event.matches.every((m) => m.heroPlayed === "Unknown")
+    );
+    const postCutoff = all.filter(({ event }) =>
+      event.matches.some((m) => m.date >= HERO_REQUIRED_CUTOFF)
+    );
+    return { all, postCutoff, preCutoff: all.length - postCutoff.length };
+  }, [filteredEvents, heroOverrides, pasteResult]);
 
   // Auto-expand when only 1 event
   useEffect(() => {
@@ -288,11 +305,7 @@ export default function ImportPage() {
 
     // For post-cutoff matches, check if hero was auto-detected or user explicitly chose one
     const hasPostCutoffMissing = pasteResult
-      ? filteredEvents.some(({ event, origIdx }) =>
-          !(origIdx in heroOverrides) &&
-          event.matches.every((m) => m.heroPlayed === "Unknown") &&
-          event.matches.some((m) => m.date >= HERO_REQUIRED_CUTOFF)
-        )
+      ? missingHeroEvents.postCutoff.length > 0
       : matches.some((m) => m.heroPlayed === "Unknown" && m.date >= HERO_REQUIRED_CUTOFF);
 
     const hasAnyMissing = matches.some((m) => m.heroPlayed === "Unknown");
@@ -576,11 +589,12 @@ export default function ImportPage() {
             const wins = event.matches.filter((m) => m.result === MatchResult.Win).length;
             const losses = event.matches.filter((m) => m.result === MatchResult.Loss).length;
             const isExpanded = expandedEvent === i;
-            const heroValue = heroOverrides[origIdx] || event.matches[0]?.heroPlayed || "";
+            const rawOverride = heroOverrides[origIdx];
+            const heroValue = rawOverride === ACKNOWLEDGED_UNKNOWN ? "" : (rawOverride || event.matches[0]?.heroPlayed || "");
             const needsHero = !heroOverrides[origIdx] && event.matches.every((m) => m.heroPlayed === "Unknown");
 
             return (
-              <div key={i} className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden">
+              <div key={i} ref={(el) => { eventCardRefs.current[i] = el; }} className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden">
                 <button
                   onClick={() => setExpandedEvent(isExpanded ? null : i)}
                   className="w-full p-4 text-left hover:bg-fab-surface-hover transition-colors"
@@ -614,7 +628,7 @@ export default function ImportPage() {
                       <HeroSelect
                         value={heroValue === "Unknown" ? "" : heroValue}
                         onChange={(val) => {
-                          setHeroOverrides((prev) => val && val !== "Unknown" ? { ...prev, [origIdx]: val } : (() => { const { [origIdx]: _, ...rest } = prev; return rest; })());
+                          setHeroOverrides((prev) => val && val !== "Unknown" && val !== "" ? { ...prev, [origIdx]: val } : { ...prev, [origIdx]: ACKNOWLEDGED_UNKNOWN });
                         }}
                         label="Your Hero"
                         format={event.format}
@@ -1318,7 +1332,8 @@ export default function ImportPage() {
                   const wins = event.matches.filter((m) => m.result === MatchResult.Win).length;
                   const losses = event.matches.filter((m) => m.result === MatchResult.Loss).length;
                   const isExpanded = expandedEvent === i;
-                  const heroValue = heroOverrides[origIdx] || event.matches[0]?.heroPlayed || "";
+                  const rawOverride = heroOverrides[origIdx];
+                  const heroValue = rawOverride === ACKNOWLEDGED_UNKNOWN ? "" : (rawOverride || event.matches[0]?.heroPlayed || "");
                   const needsHero = !heroOverrides[origIdx] && event.matches.every((m) => m.heroPlayed === "Unknown");
 
                   // Detect playoff placement from match round labels
@@ -1335,7 +1350,7 @@ export default function ImportPage() {
                   }
 
                   return (
-                    <div key={i} className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden">
+                    <div key={i} ref={(el) => { eventCardRefs.current[i] = el; }} className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden">
                       <button
                         onClick={() => setExpandedEvent(isExpanded ? null : i)}
                         className="w-full p-4 text-left hover:bg-fab-surface-hover transition-colors"
@@ -1352,6 +1367,13 @@ export default function ImportPage() {
                                   bestPlayoff === "Top 8" ? "bg-orange-500/15 text-orange-400" :
                                   "bg-blue-500/15 text-blue-400"
                                 }`}>{bestPlayoff}</span>
+                              )}
+                              {needsHero && (
+                                <span className={`px-1.5 py-0.5 rounded text-xs ${
+                                  event.matches.some((m) => m.date >= HERO_REQUIRED_CUTOFF)
+                                    ? "bg-fab-loss/15 text-fab-loss"
+                                    : "bg-fab-draw/15 text-fab-draw"
+                                }`}>Missing Hero</span>
                               )}
                             </div>
                             <div className="flex items-center gap-2 mt-1 text-xs text-fab-dim">
@@ -1375,7 +1397,7 @@ export default function ImportPage() {
                             <HeroSelect
                               value={heroValue === "Unknown" ? "" : heroValue}
                               onChange={(val) => {
-                                setHeroOverrides((prev) => val && val !== "Unknown" ? { ...prev, [origIdx]: val } : (() => { const { [origIdx]: _, ...rest } = prev; return rest; })());
+                                setHeroOverrides((prev) => val && val !== "Unknown" && val !== "" ? { ...prev, [origIdx]: val } : { ...prev, [origIdx]: ACKNOWLEDGED_UNKNOWN });
                               }}
                               label={needsHero ? "Hero (optional)" : "Hero"}
                               format={event.format}
@@ -1531,46 +1553,58 @@ export default function ImportPage() {
               </div>
               <h3 className="text-lg font-bold text-fab-text">Heroes Missing!</h3>
             </div>
-            {(() => {
-              const allMissing = pasteResult
-                ? filteredEvents.filter(({ event, origIdx }) =>
-                    !(origIdx in heroOverrides) && event.matches.every((m) => m.heroPlayed === "Unknown")
-                  )
-                : [];
-              const postCutoffMissing = allMissing.filter(({ event }) =>
-                event.matches.some((m) => m.date >= HERO_REQUIRED_CUTOFF)
-              );
-              const preCutoffMissing = allMissing.length - postCutoffMissing.length;
-
-              return heroRequiredHard ? (
-                <>
-                  <p className="text-sm text-fab-muted mb-2">
-                    {postCutoffMissing.length} event{postCutoffMissing.length !== 1 ? "s" : ""} from Feb 24, 2026 onward {postCutoffMissing.length === 1 ? "needs" : "need"} a hero selection before importing.
-                  </p>
-                  <p className="text-sm text-fab-muted mb-2">
-                    Scroll up and set the hero for {postCutoffMissing.length === 1 ? "that event" : "those events"} — select &quot;Unknown&quot; if you don&apos;t remember.
-                    {preCutoffMissing > 0 && ` Your ${preCutoffMissing} older event${preCutoffMissing !== 1 ? "s" : ""} can still import without a hero.`}
-                  </p>
-                </>
-              ) : (
-                <>
-                  <p className="text-sm text-fab-muted mb-2">
-                    {pasteResult
-                      ? `${allMissing.length} of your ${filteredEvents.length} event${filteredEvents.length !== 1 ? "s" : ""} ${allMissing.length === 1 ? "is" : "are"} missing hero information.`
-                      : "Your matches are missing hero information."}
-                  </p>
-                  <p className="text-sm text-fab-muted mb-2">
-                    Without heroes, your stats will be incomplete and your placements will show without a hero on the feed.
-                  </p>
-                  <p className="text-sm text-fab-muted mb-5">
-                    Set heroes per event in the preview above, or use the Browser Extension for automatic detection.
-                  </p>
-                </>
-              );
-            })()}
+            {heroRequiredHard ? (
+              <>
+                <p className="text-sm text-fab-muted mb-2">
+                  {missingHeroEvents.postCutoff.length} event{missingHeroEvents.postCutoff.length !== 1 ? "s" : ""} from Feb 24, 2026 onward {missingHeroEvents.postCutoff.length === 1 ? "needs" : "need"} a hero selection before importing:
+                </p>
+                <ul className="text-sm mb-3 space-y-1">
+                  {missingHeroEvents.postCutoff.map(({ event, origIdx }) => (
+                    <li key={origIdx} className="flex items-center gap-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-fab-loss shrink-0" />
+                      <span className="text-fab-text">{event.eventName}</span>
+                      <span className="text-fab-dim text-xs">({event.eventDate})</span>
+                    </li>
+                  ))}
+                </ul>
+                <p className="text-sm text-fab-muted mb-2">
+                  Set the hero for {missingHeroEvents.postCutoff.length === 1 ? "that event" : "those events"} — use &quot;No hero (clear)&quot; if you don&apos;t remember.
+                  {missingHeroEvents.preCutoff > 0 && ` Your ${missingHeroEvents.preCutoff} older event${missingHeroEvents.preCutoff !== 1 ? "s" : ""} can still import without a hero.`}
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="text-sm text-fab-muted mb-2">
+                  {pasteResult
+                    ? `${missingHeroEvents.all.length} of your ${filteredEvents.length} event${filteredEvents.length !== 1 ? "s" : ""} ${missingHeroEvents.all.length === 1 ? "is" : "are"} missing hero information.`
+                    : "Your matches are missing hero information."}
+                </p>
+                <p className="text-sm text-fab-muted mb-2">
+                  Without heroes, your stats will be incomplete and your placements will show without a hero on the feed.
+                </p>
+                <p className="text-sm text-fab-muted mb-5">
+                  Set heroes per event in the preview above, or use the Browser Extension for automatic detection.
+                </p>
+              </>
+            )}
             <div className="flex flex-col gap-2">
               <button
-                onClick={() => { setShowHeroWarning(false); setConfirmSkipHero(false); setHeroRequiredHard(false); }}
+                onClick={() => {
+                  setShowHeroWarning(false);
+                  setConfirmSkipHero(false);
+                  setHeroRequiredHard(false);
+                  const first = missingHeroEvents.postCutoff[0] ?? missingHeroEvents.all[0];
+                  if (first) {
+                    const displayIdx = filteredEvents.findIndex((e) => e.origIdx === first.origIdx);
+                    if (displayIdx >= 0) {
+                      if (displayIdx >= visibleEventCount) setVisibleEventCount(displayIdx + 1);
+                      setExpandedEvent(displayIdx);
+                      requestAnimationFrame(() => {
+                        eventCardRefs.current[displayIdx]?.scrollIntoView({ behavior: "smooth", block: "center" });
+                      });
+                    }
+                  }
+                }}
                 className="w-full min-h-[44px] py-2.5 rounded-lg font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors text-sm"
               >
                 Go Back &amp; Add Heroes

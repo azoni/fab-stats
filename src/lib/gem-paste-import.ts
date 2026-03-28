@@ -279,6 +279,10 @@ export function parseGemPaste(text: string): PasteImportResult {
         if (currentEvent) currentEvent.rated = val.toLowerCase() === "yes";
         continue;
       }
+      if (key === "hero selection") {
+        pendingHero = resolveHeroName(val) || val;
+        continue;
+      }
       // For known metadata keys, strip the prefix and keep only the value
       if (key === "event nickname" || key === "event name" || key === "event type" || key === "date") {
         line = val;
