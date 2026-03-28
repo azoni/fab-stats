@@ -39,7 +39,6 @@ export default function TeamHub() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [joinMode, setJoinMode] = useState<"open" | "invite">("invite");
-  const [visibility, setVisibility] = useState<"public" | "private">("public");
   const [creating, setCreating] = useState(false);
   const [matchCount, setMatchCount] = useState<number | null>(null);
 
@@ -96,7 +95,7 @@ export default function TeamHub() {
     if (!user || !profile) return;
     setCreating(true);
     try {
-      await createTeam(profile, matchCount ?? 0, { name: name.trim(), description: description.trim() || undefined, joinMode, visibility });
+      await createTeam(profile, matchCount ?? 0, { name: name.trim(), description: description.trim() || undefined, joinMode });
       toast.success("Team created!");
       setName(""); setDescription("");
       setActiveTab("my-team");
@@ -490,20 +489,6 @@ export default function TeamHub() {
                   ))}
                 </div>
                 <p className="text-[10px] text-fab-dim mt-1">{joinMode === "invite" ? "Only invited users can join." : "Anyone can join your team."}</p>
-              </div>
-              <div>
-                <label className="block text-xs text-fab-muted mb-1">Visibility</label>
-                <div className="flex gap-2">
-                  {(["public", "private"] as const).map((v) => (
-                    <button key={v} onClick={() => setVisibility(v)}
-                      className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
-                        visibility === v ? "bg-fab-gold/15 text-fab-gold border border-fab-gold/30" : "bg-fab-bg border border-fab-border text-fab-dim hover:text-fab-muted"
-                      }`}>
-                      {v === "public" ? "Public" : "Private"}
-                    </button>
-                  ))}
-                </div>
-                <p className="text-[10px] text-fab-dim mt-1">{visibility === "public" ? "Anyone can find and view your team." : "Team is hidden from browse and search."}</p>
               </div>
               <button onClick={handleCreate} disabled={!name.trim() || creating}
                 className="w-full py-2.5 rounded-lg font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors text-sm disabled:opacity-50">
