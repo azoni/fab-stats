@@ -123,7 +123,7 @@ export function HeroSelect({ value, onChange, label, format, allowClear }: HeroS
             <button
               type="button"
               onClick={() => {
-                onChange("Unknown");
+                onChange("");
                 setQuery("");
                 setIsOpen(false);
               }}
