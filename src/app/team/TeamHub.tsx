@@ -18,9 +18,12 @@ import { Users, Shield, Globe, Plus, Settings, ChevronRight } from "lucide-react
 type Tab = "my-team" | "browse" | "create";
 
 export default function TeamHub() {
+  const [mounted, setMounted] = useState(false);
   const { user, profile } = useAuth();
   const { team, members, myRole, loading } = useMyTeam();
   const { invites } = useTeamInvites();
+
+  useEffect(() => { setMounted(true); }, []);
 
   const hasTeam = !!team;
   const [activeTab, setActiveTab] = useState<Tab>("browse");
@@ -162,7 +165,7 @@ export default function TeamHub() {
     }
   }
 
-  if (loading) {
+  if (!mounted || loading) {
     return (
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="animate-pulse space-y-4">
