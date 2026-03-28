@@ -184,6 +184,46 @@ export interface UserProfile {
     matchesImported?: number;
   };
   needsRecompute?: boolean;
+  teamId?: string;
+}
+
+// ── Teams ──
+
+export interface Team {
+  id: string;
+  name: string;
+  nameLower: string;
+  description?: string;
+  iconUrl?: string;
+  iconThumbUrl?: string;
+  backgroundUrl?: string;
+  backgroundThumbUrl?: string;
+  ownerUid: string;
+  joinMode: "open" | "invite";
+  memberCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TeamMember {
+  uid: string;
+  username: string;
+  displayName: string;
+  photoUrl?: string;
+  role: "owner" | "admin" | "member";
+  joinedAt: string;
+}
+
+export interface TeamInvite {
+  id: string;
+  teamId: string;
+  teamName: string;
+  teamIconUrl?: string;
+  inviterUid: string;
+  inviterName: string;
+  targetUid: string;
+  status: "pending" | "accepted" | "declined";
+  createdAt: string;
 }
 
 export interface ShowcaseCard {
@@ -236,7 +276,7 @@ export interface MatchComment {
 
 export interface UserNotification {
   id: string;
-  type: "comment" | "message" | "friendRequest" | "friendAccepted" | "badge" | "kudos" | "heroCorrection" | "feedbackStatus";
+  type: "comment" | "message" | "friendRequest" | "friendAccepted" | "badge" | "kudos" | "heroCorrection" | "feedbackStatus" | "teamInvite";
   // Comment fields
   matchId?: string;
   matchOwnerUid?: string;
@@ -275,6 +315,13 @@ export interface UserNotification {
   feedbackType?: "bug" | "feature";
   newStatus?: "reviewed" | "done";
   feedbackMessage?: string;
+  // Team invite fields
+  teamInviteId?: string;
+  teamId?: string;
+  teamName?: string;
+  teamIconUrl?: string;
+  teamInviteFromUid?: string;
+  teamInviteFromName?: string;
   // Common
   createdAt: string;
   read: boolean;
@@ -340,6 +387,9 @@ export interface LeaderboardEntry {
   uniqueVenues?: number;
   venueBreakdown?: { venue: string; matches: number; wins: number; winRate: number }[];
   eloRating?: number;
+  teamId?: string;
+  teamName?: string;
+  teamIconUrl?: string;
   createdAt?: string;
   updatedAt: string;
 }
@@ -353,6 +403,9 @@ interface FeedEventBase {
   displayName: string;
   photoUrl?: string;
   isPublic: boolean;
+  teamId?: string;
+  teamName?: string;
+  teamIconUrl?: string;
   createdAt: string;
   reactions?: Record<string, string[]>;
 }
