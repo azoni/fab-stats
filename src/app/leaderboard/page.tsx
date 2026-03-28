@@ -9,6 +9,7 @@ import { computeOpponentStats } from "@/lib/stats";
 import { getWeekStart, getMonthStart } from "@/lib/leaderboard";
 import { countQualifyingTabs, computeUserRanks, computeUserRanksByTab, type LeaderboardRank } from "@/lib/leaderboard-ranks";
 import { HeroShieldBadge } from "@/components/profile/HeroShieldBadge";
+import { TeamBadge } from "@/components/profile/TeamBadge";
 import { computePowerLevel, getPowerTier } from "@/lib/power-level";
 import { TrophyIcon } from "@/components/icons/NavIcons";
 import { playerHref } from "@/lib/constants";
@@ -1056,6 +1057,7 @@ export default function LeaderboardPage() {
 
                     {/* Name */}
                     <p className={`font-semibold text-fab-text truncate w-full flex items-center gap-1 ${isCenter ? "text-sm" : "text-xs"}`}>
+                      {entry.teamName && <TeamBadge teamName={entry.teamName} teamIconUrl={entry.teamIconUrl} size="xs" />}
                       {entry.displayName}
                       <HeroShieldBadge pct={entry.heroCompletionPct ?? 0} />
                     </p>
@@ -1217,6 +1219,7 @@ function LeaderboardRow({
       {/* Name + H2H */}
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
+          {entry.teamName && <TeamBadge teamName={entry.teamName} teamIconUrl={entry.teamIconUrl} size="xs" />}
           <p className="font-semibold text-fab-text text-sm truncate">{entry.displayName}</p>
           <HeroShieldBadge pct={entry.heroCompletionPct ?? 0} />
           {entry.topHero && entry.topHero !== "—" && entry.topHero !== "Unknown" && (

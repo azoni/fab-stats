@@ -1,6 +1,7 @@
 import {
   collection,
   doc,
+  getDoc,
   setDoc,
   getDocs,
   query,
@@ -348,6 +349,19 @@ export async function updateLeaderboardEntry(
     if (v !== undefined) clean[k] = v;
   }
   if (profile.photoUrl) clean.photoUrl = profile.photoUrl;
+
+  // Write team fields if user is on a team
+  if (profile.teamId) {
+    try {
+      const teamSnap = await getDoc(doc(db, "teams", profile.teamId));
+      if (teamSnap.exists()) {
+        const teamData = teamSnap.data();
+        clean.teamId = profile.teamId;
+        clean.teamName = teamData.name;
+        if (teamData.iconUrl) clean.teamIconUrl = teamData.iconUrl;
+      }
+    } catch { /* skip if team fetch fails */ }
+  }
 
   await setDoc(doc(leaderboardCollection(), profile.uid), clean);
   invalidateLeaderboardCache();

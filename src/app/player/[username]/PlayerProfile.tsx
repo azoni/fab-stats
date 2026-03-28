@@ -5,6 +5,8 @@ import Link from "next/link";
 import { getProfileByUsername, getMatchesByUserId, updateProfile, searchUsernames, getProfile } from "@/lib/firestore-storage";
 import { BadgeStrip } from "@/components/profile/BadgeStrip";
 import { HeroShieldBadge } from "@/components/profile/HeroShieldBadge";
+import { TeamBadge } from "@/components/profile/TeamBadge";
+import { useTeamOnce } from "@/hooks/useTeam";
 import { EmblemDisplay } from "@/components/profile/EmblemDisplay";
 import { EmblemPicker } from "@/components/profile/EmblemPicker";
 import { BadgeStripPicker } from "@/components/profile/BadgeStripPicker";
@@ -1385,6 +1387,7 @@ function ProfileHeader({ profile, bestRank, isAdmin, isOwner, isFavorited, onTog
   const [linkCopied, setLinkCopied] = useState(false);
   const ringClass = rankBorderClass(bestRank ?? null);
   const isSiteCreator = profile.username === "azoni";
+  const { team: profileTeam } = useTeamOnce(profile.teamId || null);
   return (
     <div className="flex items-center gap-4 flex-1 min-w-0">
       <div className="relative shrink-0">
@@ -1506,6 +1509,12 @@ function ProfileHeader({ profile, bestRank, isAdmin, isOwner, isFavorited, onTog
           @{profile.username}
           {!profile.isPublic && <span className="ml-1.5 text-[9px] px-1.5 py-0.5 rounded bg-fab-dim/10 text-fab-dim">Private</span>}
         </p>
+        {profileTeam && (
+          <Link href={`/team/${profileTeam.nameLower}`} className="inline-flex items-center gap-1.5 text-xs text-fab-muted hover:text-fab-gold transition-colors mb-1">
+            <TeamBadge teamName={profileTeam.name} teamIconUrl={profileTeam.iconUrl} size="xs" linkToTeam={false} />
+            {profileTeam.name}
+          </Link>
+        )}
         {isAdmin && !isOwner && (
           <div className="flex items-center gap-3 mt-1">
             <Link

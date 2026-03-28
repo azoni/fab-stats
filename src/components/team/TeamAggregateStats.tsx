@@ -49,7 +49,9 @@ export function TeamAggregateStats({ entries }: TeamAggregateStatsProps) {
         winRate: matches > 0 ? Math.round((wins / matches) * 100) : 0,
       }));
 
-    return { totalMatches, totalWins, totalLosses, totalDraws, winRate, totalEvents, totalTop8s, topHeroes };
+    const top8Conversion = totalEvents > 0 ? Math.round((totalTop8s / totalEvents) * 100) : 0;
+
+    return { totalMatches, totalWins, totalLosses, totalDraws, winRate, totalEvents, totalTop8s, top8Conversion, topHeroes };
   }, [entries]);
 
   if (entries.length === 0) return null;
@@ -57,7 +59,7 @@ export function TeamAggregateStats({ entries }: TeamAggregateStatsProps) {
   return (
     <div>
       <h2 className="text-sm font-semibold text-fab-text mb-3">Team Stats</h2>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-2 mb-4">
         <StatCard
           label="Total Matches"
           value={stats.totalMatches.toLocaleString()}
@@ -79,6 +81,13 @@ export function TeamAggregateStats({ entries }: TeamAggregateStatsProps) {
           label="Top 8 Finishes"
           value={stats.totalTop8s.toLocaleString()}
           icon={<Trophy className="w-3.5 h-3.5" />}
+        />
+        <StatCard
+          label="Top 8 Conversion"
+          value={`${stats.top8Conversion}%`}
+          sub={`${stats.totalTop8s} / ${stats.totalEvents} events`}
+          icon={<Trophy className="w-3.5 h-3.5" />}
+          color={stats.top8Conversion >= 20 ? "var(--color-fab-win)" : undefined}
         />
       </div>
 
