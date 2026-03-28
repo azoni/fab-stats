@@ -23,12 +23,12 @@ export default function TeamHub() {
   const { invites } = useTeamInvites();
 
   const hasTeam = !!team;
-  const [activeTab, setActiveTab] = useState<Tab>(hasTeam ? "my-team" : "browse");
+  const [activeTab, setActiveTab] = useState<Tab>("browse");
 
-  // Sync tab when team state changes
+  // Sync tab when team loads
   useEffect(() => {
-    if (team && activeTab === "create") setActiveTab("my-team");
-    if (!team && activeTab === "my-team") setActiveTab("browse");
+    if (team) setActiveTab("my-team");
+    else if (activeTab === "my-team") setActiveTab("browse");
   }, [team]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Browse state
