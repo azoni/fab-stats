@@ -200,6 +200,7 @@ export interface Team {
   backgroundThumbUrl?: string;
   ownerUid: string;
   joinMode: "open" | "invite";
+  visibility: "public" | "private";
   memberCount: number;
   createdAt: string;
   updatedAt: string;

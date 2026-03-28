@@ -62,8 +62,8 @@ export function SmartSearch({ placeholder = "Search players or teams...", classN
       setSearching(true);
       try {
         const [players, teams] = await Promise.all([
-          searchUsernames(query.trim(), 8),
-          searchTeams(query.trim(), 5),
+          searchUsernames(query.trim(), 8).catch(() => []),
+          searchTeams(query.trim(), 5).catch(() => []),
         ]);
 
         const combined: SearchResult[] = [
@@ -74,7 +74,8 @@ export function SmartSearch({ placeholder = "Search players or teams...", classN
         setResults(combined);
         setIsOpen(combined.length > 0);
         setHighlighted(-1);
-      } catch {
+      } catch (err) {
+        console.error("[SmartSearch] Search failed:", err);
         setResults([]);
       }
       setSearching(false);

@@ -50,7 +50,7 @@ function getInviteId(teamId: string, targetUid: string): string {
 export async function createTeam(
   profile: UserProfile,
   matchCount: number,
-  opts: { name: string; description?: string; joinMode: "open" | "invite" }
+  opts: { name: string; description?: string; joinMode: "open" | "invite"; visibility?: "public" | "private" }
 ): Promise<string> {
   if (matchCount < 25) {
     throw new Error("You need at least 25 logged matches to create a team.");
@@ -93,6 +93,7 @@ export async function createTeam(
     nameLower,
     ownerUid: profile.uid,
     joinMode: opts.joinMode,
+    visibility: opts.visibility || "public",
     memberCount: 1,
     createdAt: now,
     updatedAt: now,
@@ -120,7 +121,7 @@ export async function createTeam(
 
 export async function updateTeam(
   teamId: string,
-  updates: Partial<Pick<Team, "name" | "description" | "joinMode">>
+  updates: Partial<Pick<Team, "name" | "description" | "joinMode" | "visibility">>
 ): Promise<void> {
   const updateData: Record<string, unknown> = {
     updatedAt: new Date().toISOString(),
@@ -176,6 +177,10 @@ export async function updateTeam(
 
   if (updates.joinMode !== undefined) {
     updateData.joinMode = updates.joinMode;
+  }
+
+  if (updates.visibility !== undefined) {
+    updateData.visibility = updates.visibility;
   }
 
   await updateDoc(doc(db, "teams", teamId), updateData);
@@ -414,6 +419,11 @@ export async function cancelTeamInvite(inviteId: string): Promise<void> {
 }
 
 // ── Queries ──
+
+export async function getAllTeams(): Promise<Team[]> {
+  const snap = await getDocs(query(teamsCollection(), where("memberCount", ">", 0), limit(50)));
+  return snap.docs.map((d) => d.data() as Team);
+}
 
 export async function getTeam(teamId: string): Promise<Team | null> {
   const snap = await getDoc(doc(db, "teams", teamId));
