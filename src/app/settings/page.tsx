@@ -24,6 +24,7 @@ import { Collapsible } from "@/components/ui/collapsible";
 import { BackgroundChooser } from "@/components/profile/BackgroundChooser";
 import { Settings, CheckCircle, Camera, ChevronRight, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
+import { TeamSettings } from "./TeamSettings";
 
 function resizeImage(file: File, maxSize: number): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -224,6 +225,7 @@ export default function SettingsPage() {
   const [savingBackground, setSavingBackground] = useState(false);
   const [appearanceOpen, setAppearanceOpen] = useState(false);
   const [backgroundOpen, setBackgroundOpen] = useState(false);
+  const [teamOpen, setTeamOpen] = useState(false);
   const [confirmClear, setConfirmClear] = useState(false);
   const [clearing, setClearing] = useState(false);
   const [clearConfirmText, setClearConfirmText] = useState("");
@@ -901,6 +903,23 @@ export default function SettingsPage() {
           </div>
         )}
       </div>
+
+      {/* Team */}
+      {user && !isGuest && (
+        <div className="bg-fab-surface border border-fab-border rounded-lg mb-4">
+          <button onClick={() => setTeamOpen(!teamOpen)} className="flex items-center justify-between w-full px-6 py-4 text-left">
+            <h2 className="text-sm font-semibold text-fab-text">Team</h2>
+            <svg className={`w-4 h-4 text-fab-dim transition-transform duration-200 ${teamOpen ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          {teamOpen && (
+            <div className="px-6 pb-6 -mt-1">
+              <TeamSettings />
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Account */}
       <div className="bg-fab-surface border border-fab-border rounded-lg p-6">
