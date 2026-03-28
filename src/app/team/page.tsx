@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
-import TeamHub from "./TeamHub";
+import dynamic from "next/dynamic";
+
+const TeamHub = dynamic(() => import("./TeamHub"), { ssr: false });
 
 export const metadata: Metadata = {
   title: "Teams | FaB Stats",

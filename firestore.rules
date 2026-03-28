@@ -817,6 +817,11 @@ service cloud.firestore {
 
       match /members/{memberId} {
         allow read: if true;
+        // Team creator adds themselves as owner
+        allow create: if request.auth != null
+          && request.auth.uid == memberId
+          && request.resource.data.role == "owner"
+          && get(/databases/$(database)/documents/teams/$(teamId)).data.ownerUid == request.auth.uid;
         // Self-join on open teams
         allow create: if request.auth != null
           && request.auth.uid == memberId
