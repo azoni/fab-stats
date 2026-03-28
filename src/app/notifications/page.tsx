@@ -128,6 +128,16 @@ function getNotifIcon(type: string): { bg: string; iconColor: string; icon: Reac
           </svg>
         ),
       };
+    case "teamInvite":
+      return {
+        bg: "bg-amber-500/15",
+        iconColor: "text-amber-400",
+        icon: (
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M18 18.72a9.094 9.094 0 0 0 3.741-.479 3 3 0 0 0-4.682-2.72m.94 3.198.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0 1 12 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 0 1 6 18.719m12 0a5.971 5.971 0 0 0-.941-3.197m0 0A5.995 5.995 0 0 0 12 12.75a5.995 5.995 0 0 0-5.058 2.772m0 0a3 3 0 0 0-4.681 2.72 8.986 8.986 0 0 0 3.74.477m.94-3.197a5.971 5.971 0 0 0-.94 3.197M15 6.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 3a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm-13.5 0a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z" />
+          </svg>
+        ),
+      };
     case "message":
       return {
         bg: "bg-emerald-500/15",
@@ -154,6 +164,16 @@ function getNotifIcon(type: string): { bg: string; iconColor: string; icon: Reac
 /** Get avatar for a notification */
 function NotifAvatar({ n }: { n: UserNotification }) {
   const { bg, iconColor, icon } = getNotifIcon(n.type);
+
+  if (n.type === "teamInvite") {
+    return n.teamIconUrl ? (
+      <img src={n.teamIconUrl} alt="" className="w-9 h-9 rounded-full object-cover border border-fab-border" />
+    ) : (
+      <div className={`w-9 h-9 rounded-full ${bg} flex items-center justify-center ${iconColor}`}>
+        {icon}
+      </div>
+    );
+  }
 
   if (n.type === "badge" || n.type === "kudos" || n.type === "heroCorrection" || n.type === "feedbackStatus") {
     return (
@@ -275,6 +295,9 @@ export default function NotificationsPage() {
       if (username) router.push(`/player/${username}`);
     } else if (n.type === "heroCorrection") {
       // Don't navigate — handled by inline Accept/Dismiss buttons
+      await markAsRead(n.id);
+    } else if (n.type === "teamInvite") {
+      // Don't navigate — handled by inline Accept/Decline buttons
       await markAsRead(n.id);
     } else if (n.type === "feedbackStatus") {
       await markAsRead(n.id);
@@ -456,6 +479,48 @@ export default function NotificationsPage() {
                                 &quot;{n.feedbackMessage}&quot;
                               </p>
                             )}
+                          </>
+                        ) : n.type === "teamInvite" ? (
+                          <>
+                            <p className="text-sm text-fab-text">
+                              <span className="font-semibold">{n.teamInviteFromName}</span>{" "}
+                              invited you to join{" "}
+                              <span className="font-semibold text-amber-400">{n.teamName}</span>
+                            </p>
+                            <div className="flex items-center gap-2 mt-2">
+                              <button
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  if (!n.teamInviteId || !profile) return;
+                                  try {
+                                    const { acceptTeamInvite } = await import("@/lib/teams");
+                                    await acceptTeamInvite(n.teamInviteId, profile);
+                                    handleGroupDelete(group);
+                                  } catch (err) {
+                                    console.error("Failed to accept team invite:", err);
+                                  }
+                                }}
+                                className="px-3 py-1 rounded-md text-xs font-medium bg-fab-win/20 text-fab-win hover:bg-fab-win/30 transition-colors"
+                              >
+                                Accept
+                              </button>
+                              <button
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  if (!n.teamInviteId) return;
+                                  try {
+                                    const { declineTeamInvite } = await import("@/lib/teams");
+                                    await declineTeamInvite(n.teamInviteId);
+                                    handleGroupDelete(group);
+                                  } catch (err) {
+                                    console.error("Failed to decline team invite:", err);
+                                  }
+                                }}
+                                className="px-3 py-1 rounded-md text-xs font-medium text-fab-dim hover:text-fab-text transition-colors"
+                              >
+                                Decline
+                              </button>
+                            </div>
                           </>
                         ) : n.type === "heroCorrection" ? (
                           <>
