@@ -339,6 +339,25 @@ export async function updateMemberRole(
   await updateDoc(doc(membersCollection(teamId), targetUid), { role: newRole });
 }
 
+export async function transferOwnership(teamId: string, ownerUid: string, newOwnerUid: string): Promise<void> {
+  // Verify current owner
+  const ownerSnap = await getDoc(doc(membersCollection(teamId), ownerUid));
+  if (!ownerSnap.exists()) throw new Error("You are not a member of this team.");
+  const owner = ownerSnap.data() as TeamMember;
+  if (owner.role !== "owner") throw new Error("Only the owner can transfer ownership.");
+
+  // Verify target is a member
+  const targetSnap = await getDoc(doc(membersCollection(teamId), newOwnerUid));
+  if (!targetSnap.exists()) throw new Error("Target is not a member of this team.");
+
+  const now = new Date().toISOString();
+  const batch = writeBatch(db);
+  batch.update(doc(membersCollection(teamId), ownerUid), { role: "admin" });
+  batch.update(doc(membersCollection(teamId), newOwnerUid), { role: "owner" });
+  batch.update(doc(db, "teams", teamId), { ownerUid: newOwnerUid, updatedAt: now });
+  await batch.commit();
+}
+
 // ── Admin Force-Add ──
 
 /**

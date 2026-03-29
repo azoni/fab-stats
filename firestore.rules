@@ -811,7 +811,10 @@ service cloud.firestore {
           || (exists(/databases/$(database)/documents/teams/$(teamId)/members/$(request.auth.uid))
               && get(/databases/$(database)/documents/teams/$(teamId)/members/$(request.auth.uid)).data.role in ["owner", "admin"])
         )
-        && !('ownerUid' in request.resource.data.diff(resource.data).affectedKeys());
+        && (
+          !('ownerUid' in request.resource.data.diff(resource.data).affectedKeys())
+          || resource.data.ownerUid == request.auth.uid
+        );
       allow delete: if request.auth != null
         && resource.data.ownerUid == request.auth.uid;
 

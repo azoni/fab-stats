@@ -185,6 +185,7 @@ export interface UserProfile {
   };
   needsRecompute?: boolean;
   teamId?: string;
+  trophyDesigns?: Record<string, number>;
 }
 
 // ── Teams ──

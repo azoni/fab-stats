@@ -12,10 +12,7 @@ import {
   TIER_MAP,
   col,
   glowFilter,
-  ShieldBadge,
-  MedalIcon,
-  TrophyIcon,
-  MarbleIcon,
+  renderTrophyDesign,
 } from "@/components/profile/TrophyCase";
 import { CornerFiligree, OrnamentalDivider, CardBackgroundPattern, AccentTopBar, InnerVignette } from "@/components/share/CardOrnaments";
 
@@ -62,10 +59,7 @@ function PlacementBadge({ event, theme }: { event: EventStats; theme: FinishThem
   const wrapperStyle = { transform: "scale(2.5)", transformOrigin: "center" as const, filter: glowFilter(placement.type) };
 
   let badge;
-  if (tier === "trophy") badge = <TrophyIcon type={placement.type} id={id} />;
-  else if (tier === "medal") badge = <MedalIcon type={placement.type} id={id} />;
-  else if (tier === "marble") badge = <MarbleIcon type={placement.type} id={id} idx={0} />;
-  else badge = <ShieldBadge type={placement.type} id={id} />;
+  badge = renderTrophyDesign(event.eventType || "Other", 0, placement.type, id, 0);
 
   return (
     <div className="text-center mb-3">

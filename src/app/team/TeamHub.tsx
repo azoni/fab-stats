@@ -8,7 +8,7 @@ import { TeamMemberRow } from "@/components/team/TeamMemberRow";
 import { TeamInviteSearch } from "@/components/team/TeamInviteSearch";
 import { TeamImageUploader } from "@/components/team/TeamImageUploader";
 import { SmartSearch } from "@/components/search/SmartSearch";
-import { createTeam, updateTeam, disbandTeam, leaveTeam, kickMember, updateMemberRole, getPendingInvites } from "@/lib/teams";
+import { createTeam, updateTeam, disbandTeam, leaveTeam, kickMember, updateMemberRole, transferOwnership, getPendingInvites } from "@/lib/teams";
 import type { Team, TeamInvite as TeamInviteType, LeaderboardEntry } from "@/types";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
@@ -19,7 +19,7 @@ type Tab = "my-team" | "browse" | "create";
 
 export default function TeamHub() {
   const [mounted, setMounted] = useState(false);
-  const { user, profile } = useAuth();
+  const { user, profile, isAdmin: isSiteAdmin } = useAuth();
   const { team, members, myRole, loading } = useMyTeam();
   const { invites } = useTeamInvites();
 
@@ -58,6 +58,8 @@ export default function TeamHub() {
   const [pendingInvites, setPendingInvites] = useState<TeamInviteType[]>([]);
   const [confirmDisband, setConfirmDisband] = useState(false);
   const [disbanding, setDisbanding] = useState(false);
+  const [transferTarget, setTransferTarget] = useState<string | null>(null);
+  const [transferring, setTransferring] = useState(false);
   const [leaving, setLeaving] = useState(false);
 
   // Load match count for create validation
@@ -75,7 +77,7 @@ export default function TeamHub() {
   useEffect(() => {
     if (activeTab !== "browse") return;
     setTeamsLoading(true);
-    getAllTeams().then((teams) => setAllTeams(teams.filter((t) => t.visibility !== "private"))).catch(() => {}).finally(() => setTeamsLoading(false));
+    getAllTeams().then((teams) => setAllTeams(isSiteAdmin ? teams : teams.filter((t) => t.visibility !== "private"))).catch(() => {}).finally(() => setTeamsLoading(false));
   }, [activeTab]);
 
   // Load pending invites for manage
@@ -135,6 +137,19 @@ export default function TeamHub() {
       toast.error(err instanceof Error ? err.message : "Failed to disband.");
     }
     setDisbanding(false);
+  }
+
+  async function handleTransfer() {
+    if (!team || !user || !transferTarget) return;
+    setTransferring(true);
+    try {
+      await transferOwnership(team.id, user.uid, transferTarget);
+      toast.success("Ownership transferred.");
+      setTransferTarget(null);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to transfer.");
+    }
+    setTransferring(false);
   }
 
   async function handleLeave() {
@@ -389,6 +404,42 @@ export default function TeamHub() {
             </div>
           </div>
 
+          {/* Transfer Ownership (owner only) */}
+          {myRole === "owner" && members.length > 1 && (
+            <div className="bg-fab-surface border border-fab-border rounded-xl p-6">
+              <h3 className="text-sm font-semibold text-fab-text mb-3">Transfer Ownership</h3>
+              {!transferTarget ? (
+                <div className="space-y-2">
+                  <p className="text-xs text-fab-dim">Select a member to make the new owner. You will become an admin.</p>
+                  <div className="flex flex-wrap gap-2">
+                    {members.filter((m) => m.uid !== user?.uid).map((m) => (
+                      <button key={m.uid} onClick={() => setTransferTarget(m.uid)}
+                        className="px-3 py-1.5 rounded-lg text-xs bg-fab-bg border border-fab-border text-fab-muted hover:text-fab-text hover:border-fab-gold/30 transition-colors">
+                        {m.displayName}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3">
+                  <p className="text-sm text-amber-400 font-medium mb-2">
+                    Transfer ownership to {members.find((m) => m.uid === transferTarget)?.displayName}?
+                  </p>
+                  <div className="flex gap-2">
+                    <button onClick={handleTransfer} disabled={transferring}
+                      className="px-4 py-1.5 rounded-lg bg-fab-gold text-fab-bg text-sm font-semibold hover:bg-fab-gold-light transition-colors disabled:opacity-50">
+                      {transferring ? "Transferring..." : "Confirm Transfer"}
+                    </button>
+                    <button onClick={() => setTransferTarget(null)}
+                      className="px-4 py-1.5 rounded-lg bg-fab-surface border border-fab-border text-fab-dim text-sm hover:text-fab-muted transition-colors">
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Leave / Disband */}
           <div className="bg-fab-surface border border-fab-border rounded-xl p-6">
             {myRole === "owner" ? (
@@ -453,7 +504,12 @@ export default function TeamHub() {
                       </div>
                     )}
                     <div className="min-w-0">
-                      <p className="font-semibold text-fab-text group-hover:text-fab-gold transition-colors truncate">{t.name}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="font-semibold text-fab-text group-hover:text-fab-gold transition-colors truncate">{t.name}</p>
+                        {isSiteAdmin && t.visibility === "private" && (
+                          <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-red-500/15 text-red-400 shrink-0">Private</span>
+                        )}
+                      </div>
                       <div className="flex items-center gap-2 text-xs text-fab-dim mt-0.5">
                         <span>{t.memberCount} member{t.memberCount !== 1 ? "s" : ""}</span>
                         {t.joinMode === "open" ? (
