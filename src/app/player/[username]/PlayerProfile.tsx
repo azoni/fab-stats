@@ -1135,7 +1135,21 @@ export default function PlayerProfile() {
           ? "grid grid-cols-1 md:grid-cols-2 gap-3"
           : ""
         }>
-          {playoffFinishes.length > 0 && <TrophyCase finishes={playoffFinishes} />}
+          {playoffFinishes.length > 0 && (
+            <TrophyCase
+              finishes={playoffFinishes}
+              trophyDesigns={profile.trophyDesigns}
+              isOwner={isOwner}
+              isAdmin={isAdmin}
+              onDesignChange={isOwner ? async (eventType, designIndex) => {
+                const current = profile.trophyDesigns || {};
+                const updated = { ...current, [eventType]: designIndex };
+                // Remove default selections to keep storage clean
+                if (designIndex === 0) delete updated[eventType];
+                await updateProfile(profile.uid, { trophyDesigns: Object.keys(updated).length > 0 ? updated : undefined });
+              } : undefined}
+            />
+          )}
           <ArmoryGarden eventStats={eventStats} ownerProfile={profile} isOwner={isOwner} />
         </div>
       )}
