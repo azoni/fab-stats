@@ -7,6 +7,7 @@ import { OrnamentalDivider, CornerFiligree, CardBackgroundPattern, InnerVignette
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfileBackgroundCatalog } from "@/hooks/useProfileBackgroundCatalog";
 import { appendCatalogBackgroundThemes } from "@/lib/catalog-share-themes";
+import { useTeamOnce } from "@/hooks/useTeam";
 
 export interface TournamentShareData {
   playerName: string;
@@ -296,18 +297,27 @@ function ShareCardInner({ data, theme }: { data: TournamentShareData; theme: Tou
 
 export function TournamentShareModal({ data, onClose }: { data: TournamentShareData; onClose: () => void }) {
   const THEME_PAGE_SIZE = 16;
-  const { isAdmin } = useAuth();
+  const { isAdmin, profile } = useAuth();
   const { options: backgroundOptions } = useProfileBackgroundCatalog(Boolean(isAdmin));
+  const { team } = useTeamOnce(profile?.teamId || null);
   const cardRef = useRef<HTMLDivElement>(null);
-  const themeOptions = useMemo(
-    () => appendCatalogBackgroundThemes(THEMES, backgroundOptions, (background, index, base) => ({
-      ...base,
+  const themeOptions = useMemo(() => {
+    const base = appendCatalogBackgroundThemes(THEMES, backgroundOptions, (background, index, baseTheme) => ({
+      ...baseTheme,
       id: `catalog-${background.id}-${index}`,
       label: background.label,
       backgroundImage: background.imageUrl,
-    })),
-    [backgroundOptions],
-  );
+    }));
+    if (team?.backgroundUrl) {
+      base.splice(1, 0, {
+        ...THEMES[0],
+        id: `team-${team.id}`,
+        label: team.name,
+        backgroundImage: team.backgroundUrl,
+      });
+    }
+    return base;
+  }, [backgroundOptions, team]);
   const [selectedThemeId, setSelectedThemeId] = useState(THEMES[0].id);
   const selectedTheme = useMemo(
     () => themeOptions.find((theme) => theme.id === selectedThemeId) || themeOptions[0] || THEMES[0],
