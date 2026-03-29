@@ -1,6 +1,6 @@
 "use client";
 import type { Team, TeamMember } from "@/types";
-import { Users, Shield, Globe, Calendar, EyeOff } from "lucide-react";
+import { Users, Shield, Globe, Calendar, EyeOff, Share2 } from "lucide-react";
 
 interface TeamHeaderProps {
   team: Team;
@@ -8,6 +8,7 @@ interface TeamHeaderProps {
   viewerRole: "owner" | "admin" | "member" | null;
   onJoin?: () => void;
   onLeave?: () => void;
+  onShare?: () => void;
   joining?: boolean;
   leaving?: boolean;
   canJoin?: boolean;
@@ -22,7 +23,7 @@ function formatDate(iso: string) {
   }
 }
 
-export function TeamHeader({ team, members, viewerRole, onJoin, onLeave, joining, leaving, canJoin, isSiteAdmin }: TeamHeaderProps) {
+export function TeamHeader({ team, members, viewerRole, onJoin, onLeave, onShare, joining, leaving, canJoin, isSiteAdmin }: TeamHeaderProps) {
   const isMember = viewerRole !== null;
   const accent = team.accentColor || "#d4a843";
   const hasBg = !!team.backgroundUrl;
@@ -113,7 +114,16 @@ export function TeamHeader({ team, members, viewerRole, onJoin, onLeave, joining
           </div>
 
           {/* Actions */}
-          <div className="shrink-0 sm:self-center">
+          <div className="shrink-0 sm:self-center flex items-center gap-2">
+            {onShare && (
+              <button
+                onClick={onShare}
+                className="p-2 rounded-xl bg-white/10 backdrop-blur border border-white/10 text-white/70 hover:text-white hover:bg-white/15 transition-all"
+                title="Share team card"
+              >
+                <Share2 className="w-4 h-4" />
+              </button>
+            )}
             {!isMember && team.joinMode === "open" && canJoin && onJoin && (
               <button
                 onClick={onJoin}

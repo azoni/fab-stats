@@ -29,6 +29,7 @@ export type ActivityAction =
   | "bladedash_share"
   | "trends_share"
   | "onthisday_share"
+  | "team_share"
   | "background_change";
 
 export interface ActivityEvent {
@@ -113,6 +114,7 @@ export const ACTIVITY_LABELS: Record<ActivityAction, string> = {
   bladedash_share: "shared a blade dash result",
   trends_share: "shared their stats summary",
   onthisday_share: "shared an on this day card",
+  team_share: "shared a team card",
   background_change: "changed their background",
 };
 
