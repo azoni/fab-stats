@@ -7,6 +7,7 @@ import { TIER_MAP, EVENT_ABBR, PLACEMENT_TEXT, col, glowFilter } from "@/compone
 interface MemberFinish extends PlayoffFinish {
   memberName: string;
   memberUsername?: string;
+  memberPhotoUrl?: string;
 }
 
 interface TeamRecentPlacementsProps {
@@ -62,7 +63,7 @@ export function TeamRecentPlacements({ finishes, accentColor = "#d4a843" }: Team
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-sm font-bold text-fab-text uppercase tracking-wider">Accomplishments</h2>
+        <h2 className="text-sm font-bold text-fab-text uppercase tracking-wider">Recent Accomplishments</h2>
         <div className="flex items-center gap-3 text-[10px] text-fab-dim">
           {summary.wins > 0 && <span><span className="text-amber-400 font-bold">{summary.wins}</span> wins</span>}
           {summary.finals > 0 && <span><span className="text-gray-400 font-bold">{summary.finals}</span> finals</span>}
@@ -88,32 +89,42 @@ export function TeamRecentPlacements({ finishes, accentColor = "#d4a843" }: Team
               />
 
               <div className="relative flex items-start gap-3">
-                {/* Event type badge */}
-                <div
-                  className="shrink-0 w-10 h-10 rounded-lg flex items-center justify-center text-[11px] font-black"
-                  style={{ background: `${c.from}15`, color: c.from }}
-                >
-                  {abbr}
-                </div>
+                {/* Player photo or event type badge */}
+                {f.memberPhotoUrl ? (
+                  <img src={f.memberPhotoUrl} alt="" className="w-10 h-10 rounded-full object-cover shrink-0 ring-1 ring-white/10" />
+                ) : (
+                  <div
+                    className="shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-[11px] font-bold"
+                    style={{ background: `${c.from}15`, color: c.from }}
+                  >
+                    {f.memberName.charAt(0).toUpperCase()}
+                  </div>
+                )}
 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-0.5">
                     <PlacementBadge type={f.type} />
-                    {f.hero && (
-                      <span className="text-[10px] text-fab-dim truncate">on {f.hero.split(",")[0]}</span>
-                    )}
+                    <span className="text-[10px] font-medium px-1.5 py-0.5 rounded" style={{ background: `${c.from}12`, color: c.from }}>
+                      {abbr}
+                    </span>
                   </div>
                   <p className="text-sm font-semibold text-fab-text truncate">{f.eventName}</p>
-                  <div className="flex items-center gap-2 mt-1">
+                  <div className="flex items-center gap-2 mt-1 text-xs">
                     {f.memberUsername ? (
-                      <Link href={`/player/${f.memberUsername}`} className="text-xs text-fab-muted hover:text-fab-text transition-colors">
+                      <Link href={`/player/${f.memberUsername}`} className="text-fab-muted hover:text-fab-text transition-colors font-medium">
                         {f.memberName}
                       </Link>
                     ) : (
-                      <span className="text-xs text-fab-muted">{f.memberName}</span>
+                      <span className="text-fab-muted font-medium">{f.memberName}</span>
+                    )}
+                    {f.hero && (
+                      <>
+                        <span className="text-fab-dim">·</span>
+                        <span className="text-fab-muted">{f.hero.split(",")[0]}</span>
+                      </>
                     )}
                     <span className="text-fab-dim">·</span>
-                    <span className="text-[10px] text-fab-dim">{formatDate(f.eventDate)}</span>
+                    <span className="text-fab-dim">{formatDate(f.eventDate)}</span>
                   </div>
                 </div>
               </div>

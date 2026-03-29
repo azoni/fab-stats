@@ -36,7 +36,7 @@ export default function TeamPage() {
   const [leaderboardMap, setLeaderboardMap] = useState<Map<string, LeaderboardEntry>>(new Map());
 
   // Match-based data (lazy loaded)
-  const [allFinishes, setAllFinishes] = useState<(PlayoffFinish & { memberName: string; memberUsername?: string })[]>([]);
+  const [allFinishes, setAllFinishes] = useState<(PlayoffFinish & { memberName: string; memberUsername?: string; memberPhotoUrl?: string })[]>([]);
   const [allArmoryStats, setAllArmoryStats] = useState<EventStats[]>([]);
   const [matchDataLoaded, setMatchDataLoaded] = useState(false);
 
@@ -109,7 +109,7 @@ export default function TeamPage() {
     let cancelled = false;
 
     (async () => {
-      const finishes: (PlayoffFinish & { memberName: string; memberUsername?: string })[] = [];
+      const finishes: (PlayoffFinish & { memberName: string; memberUsername?: string; memberPhotoUrl?: string })[] = [];
       const armoryStats: EventStats[] = [];
       const memberMatches = new Map<string, MatchRecord[]>();
 
@@ -126,7 +126,7 @@ export default function TeamPage() {
             const es = computeEventStats(matches);
             const pf = computePlayoffFinishes(es);
             for (const f of pf) {
-              finishes.push({ ...f, memberName: member.displayName, memberUsername: member.username });
+              finishes.push({ ...f, memberName: member.displayName, memberUsername: member.username, memberPhotoUrl: member.photoUrl });
             }
 
             const armory = es.filter((e) => e.eventType === "Armory");
@@ -233,6 +233,22 @@ export default function TeamPage() {
 
   const lbEntries = [...leaderboardMap.values()];
 
+  // Recompute finishes from filtered matches when filters active
+  const filteredFinishes = useMemo(() => {
+    if (!isFiltered || !matchDataLoaded) return allFinishes;
+    const finishes: (PlayoffFinish & { memberName: string; memberUsername?: string; memberPhotoUrl?: string })[] = [];
+    for (const member of members.slice(0, 20)) {
+      const matches = filteredMatchesPerMember.get(member.uid);
+      if (!matches || matches.length === 0) continue;
+      const es = computeEventStats(matches);
+      const pf = computePlayoffFinishes(es);
+      for (const f of pf) {
+        finishes.push({ ...f, memberName: member.displayName, memberUsername: member.username });
+      }
+    }
+    return finishes;
+  }, [isFiltered, matchDataLoaded, filteredMatchesPerMember, members, allFinishes]);
+
   // Compute share card data from leaderboard entries
   const shareData = useMemo<TeamShareData | null>(() => {
     if (!team) return null;
@@ -290,6 +306,12 @@ export default function TeamPage() {
       totalMatches, winRate, wins: totalWins, losses: totalLosses, draws: totalDraws,
       totalEvents, totalTop8s, top8Conversion, bestStreak,
       topHeroes, topMembers,
+      placements: {
+        champions: allFinishes.filter((f) => f.type === "champion").length,
+        finalists: allFinishes.filter((f) => f.type === "finalist").length,
+        top4s: allFinishes.filter((f) => f.type === "top4").length,
+        top8s: allFinishes.filter((f) => f.type === "top8").length,
+      },
     };
   }, [team, lbEntries, members, leaderboardMap]);
 
@@ -357,18 +379,18 @@ export default function TeamPage() {
       )}
 
       {/* Team Stats */}
-      <TeamAggregateStats entries={lbEntries} accentColor={accent} />
+      <TeamAggregateStats entries={lbEntries} accentColor={accent} filteredMatches={isFiltered ? filteredMatchesPerMember : undefined} />
 
       {/* Recent Placements — the showcase highlight */}
-      {matchDataLoaded && allFinishes.length > 0 && (
-        <TeamRecentPlacements finishes={allFinishes} accentColor={accent} />
+      {matchDataLoaded && filteredFinishes.length > 0 && (
+        <TeamRecentPlacements finishes={filteredFinishes} accentColor={accent} />
       )}
 
       {/* Trophy Case */}
-      {allFinishes.length > 0 && (
+      {filteredFinishes.length > 0 && (
         <div>
           <h2 className="text-sm font-bold text-fab-text uppercase tracking-wider mb-4">Trophy Case</h2>
-          <TrophyCase finishes={allFinishes} />
+          <TrophyCase finishes={filteredFinishes} />
         </div>
       )}
 

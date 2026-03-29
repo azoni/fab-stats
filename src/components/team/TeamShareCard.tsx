@@ -27,6 +27,7 @@ export interface TeamShareData {
   bestStreak: number;
   topHeroes: { hero: string; matches: number; winRate: number }[];
   topMembers: { name: string; photoUrl?: string; matches: number; winRate: number }[];
+  placements?: { champions: number; finalists: number; top4s: number; top8s: number };
 }
 
 interface TeamTheme {
@@ -139,7 +140,7 @@ function ShareCardInner({ data, theme }: { data: TeamShareData; theme: TeamTheme
             decoding="async"
             onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; setBgFailed(true); }}
           />
-          <div className="absolute inset-0" style={{ backgroundColor: `${t.surface}B8` }} />
+          <div className="absolute inset-0" style={{ backgroundColor: `${t.surface}D8` }} />
         </>
       )}
 
@@ -187,15 +188,15 @@ function ShareCardInner({ data, theme }: { data: TeamShareData; theme: TeamTheme
         <div className="grid grid-cols-3 gap-3 my-3 text-center">
           <div>
             <p className="text-2xl font-black" style={{ color: t.accent }}>{data.totalMatches.toLocaleString()}</p>
-            <p className="text-[9px] uppercase tracking-wider font-semibold" style={{ color: t.text, opacity: 0.5 }}>Matches</p>
+            <p className="text-[9px] uppercase tracking-wider font-semibold" style={{ color: t.text, opacity: 0.7 }}>Matches</p>
           </div>
           <div>
             <p className="text-2xl font-black" style={{ color: data.winRate >= 50 ? t.win : t.loss }}>{data.winRate}%</p>
-            <p className="text-[9px] uppercase tracking-wider font-semibold" style={{ color: t.text, opacity: 0.5 }}>Win Rate</p>
+            <p className="text-[9px] uppercase tracking-wider font-semibold" style={{ color: t.text, opacity: 0.7 }}>Win Rate</p>
           </div>
           <div>
             <p className="text-2xl font-black" style={{ color: t.accent }}>{data.totalTop8s}</p>
-            <p className="text-[9px] uppercase tracking-wider font-semibold" style={{ color: t.text, opacity: 0.5 }}>Top 8s</p>
+            <p className="text-[9px] uppercase tracking-wider font-semibold" style={{ color: t.text, opacity: 0.7 }}>Top 8s</p>
           </div>
         </div>
 
@@ -217,18 +218,54 @@ function ShareCardInner({ data, theme }: { data: TeamShareData; theme: TeamTheme
         {/* ── Secondary Stats ── */}
         <div className="grid grid-cols-2 gap-x-4 gap-y-1 my-3 text-xs">
           <div className="flex justify-between">
-            <span style={{ color: t.text, opacity: 0.5 }}>Events</span>
+            <span style={{ color: t.text, opacity: 0.7 }}>Events</span>
             <span className="font-bold" style={{ color: t.text }}>{data.totalEvents}</span>
           </div>
           <div className="flex justify-between">
-            <span style={{ color: t.text, opacity: 0.5 }}>Best Streak</span>
+            <span style={{ color: t.text, opacity: 0.7 }}>Best Streak</span>
             <span className="font-bold" style={{ color: t.win }}>{data.bestStreak}W</span>
           </div>
           <div className="flex justify-between">
-            <span style={{ color: t.text, opacity: 0.5 }}>Top 8 Conv.</span>
+            <span style={{ color: t.text, opacity: 0.7 }}>Top 8 Conv.</span>
             <span className="font-bold" style={{ color: data.top8Conversion >= 20 ? t.win : t.text }}>{data.top8Conversion}%</span>
           </div>
         </div>
+
+        {/* ── Tournament Placements ── */}
+        {data.placements && (data.placements.champions > 0 || data.placements.finalists > 0 || data.placements.top4s > 0 || data.placements.top8s > 0) && (
+          <>
+            <OrnamentalDivider color={t.accent} />
+            <div className="my-3">
+              <p className="text-[9px] uppercase tracking-wider font-semibold mb-2" style={{ color: t.accent, opacity: 0.7 }}>Tournament Results</p>
+              <div className="flex justify-around text-center">
+                {data.placements.champions > 0 && (
+                  <div>
+                    <p className="text-lg font-black" style={{ color: "#FFD700" }}>{data.placements.champions}</p>
+                    <p className="text-[8px] uppercase tracking-wider font-semibold" style={{ color: t.text, opacity: 0.6 }}>Wins</p>
+                  </div>
+                )}
+                {data.placements.finalists > 0 && (
+                  <div>
+                    <p className="text-lg font-black" style={{ color: "#C0C0C0" }}>{data.placements.finalists}</p>
+                    <p className="text-[8px] uppercase tracking-wider font-semibold" style={{ color: t.text, opacity: 0.6 }}>Finals</p>
+                  </div>
+                )}
+                {data.placements.top4s > 0 && (
+                  <div>
+                    <p className="text-lg font-black" style={{ color: "#F59E0B" }}>{data.placements.top4s}</p>
+                    <p className="text-[8px] uppercase tracking-wider font-semibold" style={{ color: t.text, opacity: 0.6 }}>Top 4</p>
+                  </div>
+                )}
+                {data.placements.top8s > 0 && (
+                  <div>
+                    <p className="text-lg font-black" style={{ color: "#60A5FA" }}>{data.placements.top8s}</p>
+                    <p className="text-[8px] uppercase tracking-wider font-semibold" style={{ color: t.text, opacity: 0.6 }}>Top 8</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </>
+        )}
 
         {/* ── Roster Strip ── */}
         {data.topMembers.length > 0 && (
