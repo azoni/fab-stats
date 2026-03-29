@@ -173,13 +173,18 @@ export function TrophyCase({
         <div className="flex items-center justify-between mb-3">
           <p className="text-[10px] text-fab-muted uppercase tracking-wider font-medium">Trophy Case</p>
           <div className="flex items-center gap-2">
-            {isOwner && (
+            {isOwner && onDesignChange && (
               <button
-                onClick={() => setPickerEventType("__browse__")}
-                className="text-fab-dim hover:text-fab-gold transition-colors"
+                onClick={() => {
+                  // Open picker for the first trophy's event type
+                  const first = sorted[0]?.eventType;
+                  if (first) setPickerEventType(first);
+                }}
+                className="flex items-center gap-1 text-[10px] text-fab-dim hover:text-fab-gold transition-colors px-1.5 py-0.5 rounded hover:bg-fab-gold/10"
                 title="Customize trophy designs"
               >
-                <Palette className="w-3.5 h-3.5" />
+                <Palette className="w-3 h-3" />
+                <span>Customize</span>
               </button>
             )}
             <p className="text-[10px] text-fab-dim">{finishes.length} finish{finishes.length !== 1 ? "es" : ""}</p>
@@ -223,7 +228,7 @@ export function TrophyCase({
       </div>
 
       {/* Design picker modal */}
-      {pickerEventType && pickerEventType !== "__browse__" && onDesignChange && (
+      {pickerEventType && onDesignChange && (
         <TrophyDesignPicker
           eventType={pickerEventType}
           selectedIndex={getSelectedDesign(pickerEventType, trophyDesigns)}
