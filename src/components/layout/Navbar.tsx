@@ -827,7 +827,6 @@ function MoreDropdown({
               </Link>
               <div className="absolute left-full top-0 pl-1 hidden group-hover/resources:block z-50">
                 <div className="w-48 bg-fab-surface border border-fab-border rounded-lg shadow-xl overflow-hidden">
-                  <Link href="/roadmap" className={`block px-3 py-2 text-sm transition-colors ${pathname === "/roadmap" ? "text-fab-gold bg-fab-gold/10" : "text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover"}`}>Roadmap</Link>
                   <Link href="/changelog" className={`block px-3 py-2 text-sm transition-colors ${pathname === "/changelog" ? "text-fab-gold bg-fab-gold/10" : "text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover"}`}>Changelog</Link>
                   <Link href="/docs" className={`block px-3 py-2 text-sm transition-colors ${pathname === "/docs" ? "text-fab-gold bg-fab-gold/10" : "text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover"}`}>Docs</Link>
                 </div>

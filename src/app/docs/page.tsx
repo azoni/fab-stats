@@ -34,8 +34,8 @@ const TOC = [
   { id: "on-this-day", label: "On This Day" },
   { id: "community-meta", label: "Community Meta" },
   { id: "tournaments", label: "Tournaments" },
+  { id: "teams", label: "Teams" },
   { id: "privacy", label: "Privacy" },
-  { id: "roadmap", label: "Roadmap" },
 ];
 
 export default function DocsPage() {
@@ -1235,6 +1235,50 @@ export default function DocsPage() {
             </p>
           </section>
 
+          {/* ─── Teams ─── */}
+          <section id="teams">
+            <h2 className="text-xl font-semibold text-fab-text mb-3 pb-2 border-b border-fab-border">Teams</h2>
+            <p className="text-sm text-fab-muted mb-3">
+              Create or join a team to track combined stats, showcase tournament results, and represent
+              your squad across the site. Teams require 25+ logged matches to create.
+            </p>
+            <div className="space-y-2 text-sm text-fab-muted">
+              <p>
+                <span className="font-medium text-fab-text">Team Page</span> — Each team gets a public page
+                at <span className="text-fab-gold">fabstats.net/team/yourteam</span> showing aggregate stats
+                (matches, win rate, events, top 8s, best streak), recent accomplishments with member photos,
+                trophy case, hero breakdown, armory garden, and a full roster with individual stats.
+              </p>
+              <p>
+                <span className="font-medium text-fab-text">Customization</span> — Upload a team icon and background
+                image, choose an accent color (9 presets or custom), set a description, and pick between open join
+                or invite-only.
+              </p>
+              <p>
+                <span className="font-medium text-fab-text">Roles</span> — Owner, Admin, and Member. Owners can
+                transfer ownership, manage settings, and disband. Admins can invite, kick, and edit settings.
+                Members appear on the roster and contribute to team stats.
+              </p>
+              <p>
+                <span className="font-medium text-fab-text">Team Badge</span> — Your team badge appears next to
+                your name on the leaderboard, your profile, and in the activity feed.
+              </p>
+              <p>
+                <span className="font-medium text-fab-text">Share Card</span> — Generate a themed team card image
+                showing stats, roster, tournament results, and top heroes. Share via clipboard, native share sheet,
+                or download as PNG.
+              </p>
+              <p>
+                <span className="font-medium text-fab-text">Filters</span> — Filter all team stats by format,
+                event type, hero, and tier. Stats, placements, and trophy case all update with the active filters.
+              </p>
+              <p>
+                <span className="font-medium text-fab-text">Privacy</span> — Teams can be set to public or private.
+                Private teams are hidden from browse and search but accessible via direct link.
+              </p>
+            </div>
+          </section>
+
           {/* ─── Privacy ─── */}
           <section id="privacy">
             <h2 className="text-xl font-semibold text-fab-text mb-3 pb-2 border-b border-fab-border">Privacy</h2>
@@ -1263,15 +1307,6 @@ export default function DocsPage() {
             </div>
           </section>
 
-          {/* ─── Roadmap ─── */}
-          <section id="roadmap">
-            <h2 className="text-xl font-semibold text-fab-text mb-3 pb-2 border-b border-fab-border">Roadmap</h2>
-            <p className="text-sm text-fab-muted">
-              Check out the <Link href="/roadmap" className="text-fab-gold hover:underline">Roadmap</Link> page
-              for a public list of planned features, improvements, and fixes. Items are added and removed as
-              development progresses.
-            </p>
-          </section>
         </div>
 
         {/* Back to top */}
