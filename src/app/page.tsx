@@ -288,7 +288,8 @@ export default function Dashboard() {
           {/* Profile Card + My Stats — side by side */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 section-reveal" style={{ '--stagger': 1 } as React.CSSProperties}>
             {/* Profile Card */}
-            <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden cursor-pointer hover:border-fab-gold/20 transition-colors" onClick={() => { if (profile?.username) router.push(`/player/${profile.username}`); }}>
+            <CardBorderWrapper cardBorder={cardBorder} borderStyle={profile?.borderStyle || "beam"} underline={underlineConfig} contentClassName="bg-fab-surface rounded-lg overflow-hidden">
+              <div className="cursor-pointer" onClick={() => { if (profile?.username) router.push(`/player/${profile.username}`); }}>
               <div className="flex items-center justify-between px-4 py-2.5 border-b border-fab-border/50">
                 <p className="text-sm font-semibold text-fab-text">My Profile</p>
                 <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
@@ -358,7 +359,8 @@ export default function Dashboard() {
                   </Tooltip>
                 )}
               </div>
-            </div>
+              </div>
+            </CardBorderWrapper>
 
             {/* My Stats */}
             <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden cursor-pointer hover:border-fab-gold/20 transition-colors" onClick={() => router.push("/trends")}>
