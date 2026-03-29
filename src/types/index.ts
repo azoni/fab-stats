@@ -198,6 +198,7 @@ export interface Team {
   iconThumbUrl?: string;
   backgroundUrl?: string;
   backgroundThumbUrl?: string;
+  accentColor?: string;
   ownerUid: string;
   joinMode: "open" | "invite";
   visibility: "public" | "private";

@@ -130,7 +130,7 @@ export async function createTeam(
 
 export async function updateTeam(
   teamId: string,
-  updates: Partial<Pick<Team, "name" | "description" | "joinMode" | "visibility">> & { slug?: string }
+  updates: Partial<Pick<Team, "name" | "description" | "joinMode" | "visibility" | "accentColor">> & { slug?: string }
 ): Promise<void> {
   const updateData: Record<string, unknown> = {
     updatedAt: new Date().toISOString(),
@@ -198,6 +198,10 @@ export async function updateTeam(
 
   if (updates.visibility !== undefined) {
     updateData.visibility = updates.visibility;
+  }
+
+  if (updates.accentColor !== undefined) {
+    updateData.accentColor = updates.accentColor;
   }
 
   await updateDoc(doc(db, "teams", teamId), updateData);
@@ -335,6 +339,40 @@ export async function updateMemberRole(
   await updateDoc(doc(membersCollection(teamId), targetUid), { role: newRole });
 }
 
+// ── Admin Force-Add ──
+
+/**
+ * Website admin force-adds a user to a team.
+ * Does NOT set teamId on their profile — the user can still freely join/create another team.
+ */
+export async function forceAddMember(teamId: string, targetUid: string): Promise<void> {
+  const teamSnap = await getDoc(doc(db, "teams", teamId));
+  if (!teamSnap.exists()) throw new Error("Team not found.");
+
+  const targetProfileSnap = await getDoc(doc(db, "users", targetUid, "profile", "main"));
+  if (!targetProfileSnap.exists()) throw new Error("User not found.");
+  const targetProfile = targetProfileSnap.data() as UserProfile;
+
+  // If user is already on this team, nothing to do
+  const existingMember = await getDoc(doc(membersCollection(teamId), targetUid));
+  if (existingMember.exists()) throw new Error("User is already on this team.");
+
+  const now = new Date().toISOString();
+  const memberData: Record<string, unknown> = {
+    uid: targetUid,
+    username: targetProfile.username,
+    displayName: targetProfile.displayName,
+    role: "member",
+    joinedAt: now,
+  };
+  if (targetProfile.photoUrl) memberData.photoUrl = targetProfile.photoUrl;
+
+  const batch = writeBatch(db);
+  batch.set(doc(membersCollection(teamId), targetUid), memberData);
+  batch.update(doc(db, "teams", teamId), { memberCount: increment(1), updatedAt: now });
+  await batch.commit();
+}
+
 // ── Invites ──
 
 export async function sendTeamInvite(
@@ -344,15 +382,6 @@ export async function sendTeamInvite(
   inviter: { uid: string; displayName: string },
   targetUid: string
 ): Promise<void> {
-  // Check target isn't already on a team
-  const targetProfileSnap = await getDoc(doc(db, "users", targetUid, "profile", "main"));
-  if (targetProfileSnap.exists()) {
-    const targetProfile = targetProfileSnap.data() as UserProfile;
-    if (targetProfile.teamId) {
-      throw new Error("This user is already on a team.");
-    }
-  }
-
   const inviteId = getInviteId(teamId, targetUid);
 
   // Check for existing pending invite
@@ -397,7 +426,7 @@ export async function sendTeamInvite(
 
 export async function acceptTeamInvite(inviteId: string, profile: UserProfile): Promise<void> {
   if (profile.teamId) {
-    throw new Error("You are already on a team.");
+    throw new Error("Leave your current team before accepting this invite.");
   }
 
   const inviteSnap = await getDoc(doc(db, "teamInvites", inviteId));
