@@ -362,7 +362,9 @@ export async function transferOwnership(teamId: string, ownerUid: string, newOwn
 
 /**
  * Website admin force-adds a user to a team.
- * Does NOT set teamId on their profile — the user can still freely join/create another team.
+ * If the user is already on another team, removes them from it first.
+ * Sets teamId on their profile so they get the full team experience
+ * (badge, profile display, leaderboard sync).
  */
 export async function forceAddMember(teamId: string, targetUid: string): Promise<void> {
   const teamSnap = await getDoc(doc(db, "teams", teamId));
@@ -375,6 +377,22 @@ export async function forceAddMember(teamId: string, targetUid: string): Promise
   // If user is already on this team, nothing to do
   const existingMember = await getDoc(doc(membersCollection(teamId), targetUid));
   if (existingMember.exists()) throw new Error("User is already on this team.");
+
+  // If user is on another team, remove them first
+  if (targetProfile.teamId && targetProfile.teamId !== teamId) {
+    const oldMemberSnap = await getDoc(doc(membersCollection(targetProfile.teamId), targetUid));
+    if (oldMemberSnap.exists()) {
+      const oldMember = oldMemberSnap.data() as TeamMember;
+      if (oldMember.role === "owner") {
+        throw new Error("Cannot force-add a team owner. They must transfer ownership or disband first.");
+      }
+      const now = new Date().toISOString();
+      const removeBatch = writeBatch(db);
+      removeBatch.delete(doc(membersCollection(targetProfile.teamId), targetUid));
+      removeBatch.update(doc(db, "teams", targetProfile.teamId), { memberCount: increment(-1), updatedAt: now });
+      await removeBatch.commit();
+    }
+  }
 
   const now = new Date().toISOString();
   const memberData: Record<string, unknown> = {
@@ -389,6 +407,7 @@ export async function forceAddMember(teamId: string, targetUid: string): Promise
   const batch = writeBatch(db);
   batch.set(doc(membersCollection(teamId), targetUid), memberData);
   batch.update(doc(db, "teams", teamId), { memberCount: increment(1), updatedAt: now });
+  batch.update(doc(db, "users", targetUid, "profile", "main"), { teamId });
   await batch.commit();
 }
 
