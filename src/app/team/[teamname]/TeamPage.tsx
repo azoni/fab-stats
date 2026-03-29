@@ -231,32 +231,6 @@ export default function TeamPage() {
     return stats;
   }, [filteredMatchesPerMember, isFiltered]);
 
-  if (state === "loading") {
-    return (
-      <div className="max-w-5xl mx-auto px-4 py-16">
-        <div className="animate-pulse space-y-4">
-          <div className="h-40 bg-fab-surface rounded-2xl" />
-          <div className="grid grid-cols-6 gap-2">
-            {[...Array(6)].map((_, i) => <div key={i} className="h-20 bg-fab-surface rounded-xl" />)}
-          </div>
-          <div className="h-48 bg-fab-surface rounded-xl" />
-        </div>
-      </div>
-    );
-  }
-
-  if (state === "not_found") {
-    return (
-      <div className="max-w-5xl mx-auto px-4 py-16 text-center">
-        <h1 className="text-2xl font-bold text-fab-text mb-2">Team Not Found</h1>
-        <p className="text-sm text-fab-muted mb-4">This team doesn&apos;t exist or has been disbanded.</p>
-        <Link href="/" className="text-sm text-fab-gold hover:text-fab-gold-light transition-colors">
-          Go home
-        </Link>
-      </div>
-    );
-  }
-
   const lbEntries = [...leaderboardMap.values()];
 
   // Compute share card data from leaderboard entries
@@ -318,6 +292,32 @@ export default function TeamPage() {
       topHeroes, topMembers,
     };
   }, [team, lbEntries, members, leaderboardMap]);
+
+  if (state === "loading") {
+    return (
+      <div className="max-w-5xl mx-auto px-4 py-16">
+        <div className="animate-pulse space-y-4">
+          <div className="h-40 bg-fab-surface rounded-2xl" />
+          <div className="grid grid-cols-6 gap-2">
+            {[...Array(6)].map((_, i) => <div key={i} className="h-20 bg-fab-surface rounded-xl" />)}
+          </div>
+          <div className="h-48 bg-fab-surface rounded-xl" />
+        </div>
+      </div>
+    );
+  }
+
+  if (state === "not_found") {
+    return (
+      <div className="max-w-5xl mx-auto px-4 py-16 text-center">
+        <h1 className="text-2xl font-bold text-fab-text mb-2">Team Not Found</h1>
+        <p className="text-sm text-fab-muted mb-4">This team doesn&apos;t exist or has been disbanded.</p>
+        <Link href="/" className="text-sm text-fab-gold hover:text-fab-gold-light transition-colors">
+          Go home
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
