@@ -109,8 +109,12 @@ export async function createTeam(
   };
   if (profile.photoUrl) memberData.photoUrl = profile.photoUrl;
 
+  // Create team doc first — member rules use get() on the team doc,
+  // and Firestore get() in rules sees pre-batch state, so the team
+  // must exist before the member doc can be created.
+  await setDoc(teamRef, teamData);
+
   const batch = writeBatch(db);
-  batch.set(teamRef, teamData);
   batch.set(doc(membersCollection(teamId), profile.uid), memberData);
   batch.set(doc(db, "teamnames", nameLower), { teamId, name: trimmedName });
   batch.update(doc(db, "users", profile.uid, "profile", "main"), { teamId });
