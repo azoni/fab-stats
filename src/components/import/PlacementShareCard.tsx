@@ -106,7 +106,6 @@ export function PlacementShareCard({ data, theme }: { data: PlacementCardData; t
             style={{ objectPosition: resolveBackgroundPositionForImage(t.backgroundImage) }}
             loading="eager"
             decoding="async"
-            crossOrigin="anonymous"
           onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
           <div className="absolute inset-0" style={{ backgroundColor: `${t.surface}B8` }} />
         </>
@@ -257,7 +256,6 @@ export function PlacementShareModal({ playerName, finish, onClose }: PlacementSh
                         style={{ objectPosition: resolveBackgroundPositionForImage(theme.backgroundImage) }}
                         loading="lazy"
                         decoding="async"
-                        crossOrigin="anonymous"
                       onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
                       <div className="absolute inset-0" style={{ backgroundColor: `${theme.surface}99` }} />
                     </>

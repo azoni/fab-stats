@@ -128,7 +128,6 @@ export function MetaShareCard({ heroes, title, subtitle, theme }: MetaShareCardP
             style={{ objectPosition: resolveBackgroundPositionForImage(t.backgroundImage) }}
             loading="eager"
             decoding="async"
-            crossOrigin="anonymous"
           onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
           <div className="absolute inset-0" style={{ backgroundColor: `${t.surface}B8` }} />
         </>
@@ -295,7 +294,6 @@ export function MetaShareModal({ heroes, title, subtitle, onClose }: MetaShareMo
                         loading="lazy"
                         decoding="async"
                         fetchPriority="low"
-                        crossOrigin="anonymous"
                       onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
                       <div className="absolute inset-0" style={{ backgroundColor: `${theme.surface}99` }} />
                     </>

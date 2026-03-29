@@ -108,7 +108,6 @@ function MetaOverviewCard({ overview, heroStats, title, subtitle, theme }: MetaO
             style={{ objectPosition: resolveBackgroundPositionForImage(t.backgroundImage) }}
             loading="eager"
             decoding="async"
-            crossOrigin="anonymous"
           onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
           <div className="absolute inset-0" style={{ backgroundColor: `${t.surface}B8` }} />
         </>
@@ -260,7 +259,6 @@ export function MetaOverviewShareModal({ overview, heroStats, title, subtitle, o
                         loading="lazy"
                         decoding="async"
                         fetchPriority="low"
-                        crossOrigin="anonymous"
                       onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
                       <div className="absolute inset-0" style={{ backgroundColor: `${theme.surface}99` }} />
                     </>

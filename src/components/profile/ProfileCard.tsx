@@ -328,7 +328,6 @@ export function ProfileCard({ data, theme }: { data: ProfileCardData; theme?: Ca
                     alt=""
                     style={{ borderColor: rankRing ? t.surface : t.accent }}
                     className="w-14 h-14 rounded-full border-2"
-                    crossOrigin="anonymous"
                   />
                 </div>
               ) : (
