@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useMemo } from "react";
-import { useParams } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { getTeamByName, getTeamMembers, joinTeam, leaveTeam } from "@/lib/teams";
 import { getMatchesByUserId } from "@/lib/firestore-storage";
@@ -20,8 +20,8 @@ import Link from "next/link";
 type PageState = "loading" | "not_found" | "loaded";
 
 export default function TeamPage() {
-  const params = useParams();
-  const teamname = typeof params?.teamname === "string" ? params.teamname : "";
+  const pathname = usePathname();
+  const teamname = decodeURIComponent(pathname.split("/").pop() || "");
   const { user, profile } = useAuth();
 
   const [state, setState] = useState<PageState>("loading");
