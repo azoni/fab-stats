@@ -374,9 +374,14 @@ export async function forceAddMember(teamId: string, targetUid: string): Promise
   if (!targetProfileSnap.exists()) throw new Error("User not found.");
   const targetProfile = targetProfileSnap.data() as UserProfile;
 
-  // If user is already on this team, nothing to do
+  // If user is already on this team, just ensure teamId is set on their profile
   const existingMember = await getDoc(doc(membersCollection(teamId), targetUid));
-  if (existingMember.exists()) throw new Error("User is already on this team.");
+  if (existingMember.exists()) {
+    if (targetProfile.teamId !== teamId) {
+      await updateDoc(doc(db, "users", targetUid, "profile", "main"), { teamId });
+    }
+    return;
+  }
 
   // If user is on another team, remove them first
   if (targetProfile.teamId && targetProfile.teamId !== teamId) {
@@ -409,6 +414,13 @@ export async function forceAddMember(teamId: string, targetUid: string): Promise
   batch.update(doc(db, "teams", teamId), { memberCount: increment(1), updatedAt: now });
   batch.update(doc(db, "users", targetUid, "profile", "main"), { teamId });
   await batch.commit();
+}
+
+/** Repair: set teamId on a user's profile if they're already a member but missing it */
+export async function repairMemberTeamId(teamId: string, targetUid: string): Promise<void> {
+  const memberSnap = await getDoc(doc(membersCollection(teamId), targetUid));
+  if (!memberSnap.exists()) throw new Error("User is not a member of this team.");
+  await updateDoc(doc(db, "users", targetUid, "profile", "main"), { teamId });
 }
 
 // ── Invites ──
