@@ -471,6 +471,7 @@ export default function PlayerProfile() {
   // Card border = event tier color + placement intensity
   // User can select which event+placement combo to display
   const profileObj = state.status === "loaded" ? state.profile : null;
+  const { team: profileTeamData } = useTeamOnce(profileObj?.teamId || null);
   const cardBorder = useMemo(() => {
     const tierStyle: Record<string, { border: string; shadow: string; rgb: string }> = {
       "Battle Hardened": { border: "#cd7f32", shadow: "0 0 8px rgba(205,127,50,0.25)", rgb: "205,127,50" },
@@ -1299,6 +1300,8 @@ export default function PlayerProfile() {
             isSiteCreator: profile.username === "azoni",
             selectedBadgeIds: profile.selectedBadgeIds,
             filterLabel: activeFilterLabel,
+            teamName: profileTeamData?.name,
+            teamIconUrl: profileTeamData?.iconUrl,
           }}
           onClose={() => setProfileShareOpen(false)}
         />

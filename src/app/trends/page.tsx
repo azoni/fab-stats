@@ -3,6 +3,7 @@ import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { useMatches } from "@/hooks/useMatches";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTeamOnce } from "@/hooks/useTeam";
 import {
   computeTrends,
   computeRollingWinRate,
@@ -98,6 +99,7 @@ const tooltipStyle = {
 export default function TrendsPage() {
   const { matches, isLoaded } = useMatches();
   const { user, profile } = useAuth();
+  const { team: myTeam } = useTeamOnce(profile?.teamId || null);
   const [granularity, setGranularity] = useState<"weekly" | "monthly">("weekly");
   const [windowSize, setWindowSize] = useState(10);
   const [showShare, setShowShare] = useState(false);
@@ -1273,6 +1275,8 @@ export default function TrendsPage() {
               uniqueHeroes,
               topHero: topHero ? { name: topHero.heroName, winRate: Math.round(topHero.winRate), matches: topHero.totalMatches } : undefined,
               recentTrend: recentVsAllTime?.diff,
+              teamName: myTeam?.name,
+              teamIconUrl: myTeam?.iconUrl,
             }}
             onClose={() => setShowShare(false)}
           />

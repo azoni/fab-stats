@@ -591,6 +591,8 @@ export default function Dashboard() {
             isSiteCreator: profile.username === "azoni",
             selectedBadgeIds: profile?.selectedBadgeIds,
             filterLabel: activeFilterLabel,
+            teamName: myTeam?.name,
+            teamIconUrl: myTeam?.iconUrl,
           }}
           onClose={() => setProfileShareOpen(false)}
         />
@@ -675,6 +677,8 @@ export default function Dashboard() {
             topHero: topHero ? { name: topHero.heroName, winRate: Math.round(topHero.winRate), matches: topHero.totalMatches } : undefined,
             filterLabel: activeFilterLabel,
             heroCompletionPct: heroCompletion?.pct,
+            teamName: myTeam?.name,
+            teamIconUrl: myTeam?.iconUrl,
           }}
           onClose={() => setStatsShareOpen(false)}
         />
