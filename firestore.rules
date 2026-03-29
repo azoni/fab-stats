@@ -834,11 +834,15 @@ service cloud.firestore {
         allow create: if request.auth != null
           && exists(/databases/$(database)/documents/teams/$(teamId)/members/$(request.auth.uid))
           && get(/databases/$(database)/documents/teams/$(teamId)/members/$(request.auth.uid)).data.role in ["owner", "admin"];
-        // Owner/admin can update roles (not to owner)
+        // Owner/admin can update roles (only owner can promote to owner for transfers)
         allow update: if request.auth != null
           && exists(/databases/$(database)/documents/teams/$(teamId)/members/$(request.auth.uid))
           && get(/databases/$(database)/documents/teams/$(teamId)/members/$(request.auth.uid)).data.role in ["owner", "admin"]
-          && request.resource.data.role in ["admin", "member"];
+          && (
+            request.resource.data.role in ["admin", "member"]
+            || (request.resource.data.role == "owner"
+                && get(/databases/$(database)/documents/teams/$(teamId)).data.ownerUid == request.auth.uid)
+          );
         // Self-leave or owner/admin kick
         allow delete: if request.auth != null
           && (request.auth.uid == memberId
