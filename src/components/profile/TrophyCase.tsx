@@ -230,12 +230,11 @@ export function TrophyCase({
       {/* Design picker modal */}
       {pickerEventType && onDesignChange && (
         <TrophyDesignPicker
-          eventType={pickerEventType}
-          selectedIndex={getSelectedDesign(pickerEventType, trophyDesigns)}
+          trophyDesigns={trophyDesigns}
           isAdmin={isAdmin}
-          onSelect={(index) => {
-            onDesignChange(pickerEventType, index);
-            setPickerEventType(null);
+          highlightEventType={pickerEventType}
+          onSelect={(eventType, index) => {
+            onDesignChange(eventType, index);
           }}
           onClose={() => setPickerEventType(null)}
         />
