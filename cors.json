@@ -1,0 +1,7 @@
+[
+  {
+    "origin": ["https://www.fabstats.net", "https://fabstats.net", "http://localhost:3000"],
+    "method": ["GET"],
+    "maxAgeSeconds": 3600
+  }
+]
