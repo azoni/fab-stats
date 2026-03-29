@@ -43,6 +43,18 @@
   to = "/player/_.html"
   status = 200
 
+# Serve team hub page at exact /team path
+[[redirects]]
+  from = "/team"
+  to = "/team.html"
+  status = 200
+
+# Serve pre-rendered team profile page for /team/* URLs
+[[redirects]]
+  from = "/team/*"
+  to = "/team/_.html"
+  status = 200
+
 # Serve pre-rendered inbox page for all /inbox/* URLs
 [[redirects]]
   from = "/inbox/*"
