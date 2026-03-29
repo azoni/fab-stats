@@ -5,6 +5,7 @@ export const EVENT_TYPES = [
   "Armory",
   "Skirmish",
   "ProQuest",
+  "Battlegrounds",
   "Road to Nationals",
   "Battle Hardened",
   "The Calling",

@@ -92,8 +92,10 @@ export default function MetaPage() {
   const effectiveFormat = activeSeason ? activeSeason.format : filterFormat !== "all" ? filterFormat : undefined;
   const effectiveEventType = activeSeason ? activeSeason.eventType : filterEventType !== "all" ? filterEventType : undefined;
 
-  // Derive the MetaPeriod for computeMetaStats (seasons/custom use "all" base)
-  const basePeriod: MetaPeriod = periodSelection === "weekly" ? "weekly" : periodSelection === "monthly" ? "monthly" : "all";
+  // Always use "all" as the base period — date-range filtering via sinceDate/untilDate
+  // is more accurate than the pre-computed weekly/monthly breakdowns on leaderboard entries
+  // (those are snapshots from each user's last sync, not the actual current time window).
+  const basePeriod: MetaPeriod = "all";
 
   // Derive date range for Top 8 filtering
   // Season dates are padded ±1 day to account for timezone differences in GEM event dates
