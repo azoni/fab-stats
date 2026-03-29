@@ -43,6 +43,9 @@ export function DashboardFilters({
         {[4, 3, 2, 1].map((t) => (
           <option key={t} value={String(t)}>{TIER_LABELS[t]}</option>
         ))}
+        <option disabled>──────</option>
+        <option value="rated">Rated Only</option>
+        <option value="unrated">Unrated Only</option>
       </select>
 
       {/* Format */}

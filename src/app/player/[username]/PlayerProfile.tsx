@@ -206,7 +206,9 @@ export default function PlayerProfile() {
   const fm = useMemo(() => {
     return loadedMatches.filter((m) => {
       if (filterFormat !== "all" && m.format !== filterFormat) return false;
-      if (filterTier !== "all" && getEventTier(getEventType(m)) !== Number(filterTier)) return false;
+      if (filterTier === "rated" && m.rated !== true) return false;
+      if (filterTier === "unrated" && m.rated === true) return false;
+      if (filterTier !== "all" && filterTier !== "rated" && filterTier !== "unrated" && getEventTier(getEventType(m)) !== Number(filterTier)) return false;
       if (filterEventType !== "all" && getEventType(m) !== filterEventType) return false;
       if (filterHero !== "all" && m.heroPlayed !== filterHero) return false;
       return true;
@@ -646,7 +648,9 @@ export default function PlayerProfile() {
   const activeFilterLabel = (() => {
     const parts: string[] = [];
     if (filterFormat !== "all") parts.push(filterFormat === "Classic Constructed" ? "CC" : filterFormat);
-    if (filterTier !== "all") parts.push(TIER_LABELS[Number(filterTier)] || `Tier ${filterTier}`);
+    if (filterTier === "rated") parts.push("Rated");
+    else if (filterTier === "unrated") parts.push("Unrated");
+    else if (filterTier !== "all") parts.push(TIER_LABELS[Number(filterTier)] || `Tier ${filterTier}`);
     if (filterEventType !== "all") parts.push(filterEventType);
     if (filterHero !== "all") parts.push(filterHero.split(",")[0]);
     return parts.length > 0 ? parts.join(" · ") : undefined;

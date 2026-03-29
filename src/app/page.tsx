@@ -82,7 +82,9 @@ export default function Dashboard() {
     let filtered = matches;
     if (filterFormat !== "all") filtered = filtered.filter((m) => m.format === filterFormat);
     if (filterEventType !== "all") filtered = filtered.filter((m) => getEventType(m) === filterEventType);
-    if (filterTier !== "all") filtered = filtered.filter((m) => getEventTier(getEventType(m)) === Number(filterTier));
+    if (filterTier === "rated") filtered = filtered.filter((m) => m.rated === true);
+    else if (filterTier === "unrated") filtered = filtered.filter((m) => m.rated !== true);
+    else if (filterTier !== "all") filtered = filtered.filter((m) => getEventTier(getEventType(m)) === Number(filterTier));
     if (filterHero !== "all") filtered = filtered.filter((m) => m.heroPlayed === filterHero);
     return filtered;
   }, [matches, filterFormat, filterEventType, filterTier, filterHero]);
@@ -132,7 +134,9 @@ export default function Dashboard() {
   const activeFilterLabel = useMemo(() => {
     const parts: string[] = [];
     if (filterFormat !== "all") parts.push(filterFormat === "Classic Constructed" ? "CC" : filterFormat);
-    if (filterTier !== "all") parts.push(TIER_LABELS[Number(filterTier)] || `Tier ${filterTier}`);
+    if (filterTier === "rated") parts.push("Rated");
+    else if (filterTier === "unrated") parts.push("Unrated");
+    else if (filterTier !== "all") parts.push(TIER_LABELS[Number(filterTier)] || `Tier ${filterTier}`);
     if (filterEventType !== "all") parts.push(filterEventType);
     if (filterHero !== "all") parts.push(filterHero.split(",")[0]);
     return parts.length > 0 ? parts.join(" · ") : undefined;

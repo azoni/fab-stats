@@ -11,10 +11,15 @@ import { TeamHeader } from "@/components/team/TeamHeader";
 import { TeamAggregateStats } from "@/components/team/TeamAggregateStats";
 import { TeamRoster } from "@/components/team/TeamRoster";
 import { TeamRecentPlacements } from "@/components/team/TeamRecentPlacements";
+import { TeamShareModal, type TeamShareData } from "@/components/team/TeamShareCard";
 import { TrophyCase } from "@/components/profile/TrophyCase";
 import { ArmoryGarden } from "@/components/profile/ArmoryGarden";
 import type { Team, TeamMember, LeaderboardEntry, EventStats, UserProfile } from "@/types";
 import type { PlayoffFinish } from "@/lib/stats";
+import { DashboardFilters } from "@/components/home/DashboardFilters";
+import { getEventType } from "@/lib/stats";
+import { getEventTier } from "@/lib/events";
+import type { MatchRecord } from "@/types";
 import { toast } from "sonner";
 import Link from "next/link";
 
@@ -35,8 +40,16 @@ export default function TeamPage() {
   const [allArmoryStats, setAllArmoryStats] = useState<EventStats[]>([]);
   const [matchDataLoaded, setMatchDataLoaded] = useState(false);
 
+  const [allMatches, setAllMatches] = useState<Map<string, MatchRecord[]>>(new Map());
   const [joining, setJoining] = useState(false);
   const [leaving, setLeaving] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
+
+  // Filters
+  const [filterFormat, setFilterFormat] = useState("all");
+  const [filterEventType, setFilterEventType] = useState("all");
+  const [filterTier, setFilterTier] = useState("all");
+  const [filterHero, setFilterHero] = useState("all");
 
   const viewerRole = useMemo(() => {
     if (!user) return null;
@@ -98,6 +111,7 @@ export default function TeamPage() {
     (async () => {
       const finishes: (PlayoffFinish & { memberName: string; memberUsername?: string })[] = [];
       const armoryStats: EventStats[] = [];
+      const memberMatches = new Map<string, MatchRecord[]>();
 
       // Fetch matches for each member (limited to first 20 members for perf)
       const fetchMembers = members.slice(0, 20);
@@ -106,6 +120,8 @@ export default function TeamPage() {
           try {
             const matches = await getMatchesByUserId(member.uid);
             if (cancelled) return;
+
+            memberMatches.set(member.uid, matches);
 
             const es = computeEventStats(matches);
             const pf = computePlayoffFinishes(es);
@@ -121,6 +137,7 @@ export default function TeamPage() {
 
       if (cancelled) return;
 
+      setAllMatches(memberMatches);
       setAllFinishes(finishes);
       setAllArmoryStats(armoryStats);
       setMatchDataLoaded(true);
@@ -162,6 +179,58 @@ export default function TeamPage() {
     uid: "", username: "", displayName: team?.name ?? "", createdAt: "", isPublic: true,
   }), [team?.name]);
 
+  // Compute filter options + filtered matches from all members
+  const allMemberMatches = useMemo(() => [...allMatches.values()].flat(), [allMatches]);
+
+  const filterOptions = useMemo(() => {
+    const formats = new Set<string>();
+    const eventTypes = new Set<string>();
+    const heroes = new Set<string>();
+    for (const m of allMemberMatches) {
+      if (m.format) formats.add(m.format);
+      const et = getEventType(m);
+      if (et && et !== "Other") eventTypes.add(et);
+      if (m.heroPlayed && m.heroPlayed !== "Unknown") heroes.add(m.heroPlayed);
+    }
+    return {
+      formats: [...formats].sort(),
+      eventTypes: [...eventTypes].sort(),
+      heroes: [...heroes].sort(),
+    };
+  }, [allMemberMatches]);
+
+  const isFiltered = filterFormat !== "all" || filterEventType !== "all" || filterTier !== "all" || filterHero !== "all";
+
+  // Filtered matches per member (for filtered aggregate stats)
+  const filteredMatchesPerMember = useMemo(() => {
+    if (!isFiltered) return allMatches;
+    const result = new Map<string, MatchRecord[]>();
+    for (const [uid, matches] of allMatches) {
+      result.set(uid, matches.filter((m) => {
+        if (filterFormat !== "all" && m.format !== filterFormat) return false;
+        if (filterTier === "rated" && m.rated !== true) return false;
+        if (filterTier === "unrated" && m.rated === true) return false;
+        if (filterTier !== "all" && filterTier !== "rated" && filterTier !== "unrated" && getEventTier(getEventType(m)) !== Number(filterTier)) return false;
+        if (filterEventType !== "all" && getEventType(m) !== filterEventType) return false;
+        if (filterHero !== "all" && m.heroPlayed !== filterHero) return false;
+        return true;
+      }));
+    }
+    return result;
+  }, [allMatches, filterFormat, filterEventType, filterTier, filterHero, isFiltered]);
+
+  // Filtered aggregate stats for roster display
+  const filteredMemberStats = useMemo(() => {
+    if (!isFiltered) return null; // use leaderboard data when no filters
+    const stats = new Map<string, { matches: number; wins: number; winRate: number }>();
+    for (const [uid, matches] of filteredMatchesPerMember) {
+      const wins = matches.filter((m) => m.result === "win").length;
+      const total = matches.filter((m) => m.result !== "bye").length;
+      stats.set(uid, { matches: matches.length, wins, winRate: total > 0 ? Math.round((wins / total) * 100) : -1 });
+    }
+    return stats;
+  }, [filteredMatchesPerMember, isFiltered]);
+
   if (state === "loading") {
     return (
       <div className="max-w-5xl mx-auto px-4 py-16">
@@ -190,6 +259,66 @@ export default function TeamPage() {
 
   const lbEntries = [...leaderboardMap.values()];
 
+  // Compute share card data from leaderboard entries
+  const shareData = useMemo<TeamShareData | null>(() => {
+    if (!team) return null;
+    let totalMatches = 0, totalWins = 0, totalLosses = 0, totalDraws = 0, totalByes = 0;
+    let totalEvents = 0, totalTop8s = 0, bestStreak = 0;
+    const heroMap = new Map<string, { matches: number; wins: number }>();
+
+    for (const e of lbEntries) {
+      totalMatches += e.totalMatches;
+      totalWins += e.totalWins;
+      totalLosses += e.totalLosses;
+      totalDraws += e.totalDraws;
+      totalByes += e.totalByes;
+      totalEvents += e.eventsPlayed ?? 0;
+      totalTop8s += e.totalTop8s ?? 0;
+      if (e.longestWinStreak > bestStreak) bestStreak = e.longestWinStreak;
+      if (e.heroBreakdown) {
+        for (const h of e.heroBreakdown) {
+          const existing = heroMap.get(h.hero);
+          if (existing) { existing.matches += h.matches; existing.wins += h.wins; }
+          else heroMap.set(h.hero, { matches: h.matches, wins: h.wins });
+        }
+      }
+    }
+
+    const denom = totalMatches - totalByes;
+    const winRate = denom > 0 ? Math.round((totalWins / denom) * 100) : 0;
+    const top8Conversion = totalEvents > 0 ? Math.round((totalTop8s / totalEvents) * 100) : 0;
+
+    const topHeroes = [...heroMap.entries()]
+      .sort((a, b) => b[1].matches - a[1].matches)
+      .slice(0, 3)
+      .map(([hero, { matches, wins }]) => ({
+        hero: hero.split(",")[0],
+        matches,
+        winRate: matches > 0 ? Math.round((wins / matches) * 100) : 0,
+      }));
+
+    const topMembers = [...members]
+      .map((m) => {
+        const lb = leaderboardMap.get(m.uid);
+        return { name: m.displayName, photoUrl: m.photoUrl, matches: lb?.totalMatches ?? 0, winRate: lb?.winRate ?? 0 };
+      })
+      .sort((a, b) => b.matches - a.matches)
+      .slice(0, 5);
+
+    return {
+      teamName: team.name,
+      teamSlug: team.nameLower,
+      teamIconUrl: team.iconUrl,
+      teamBackgroundUrl: team.backgroundUrl,
+      accentColor: team.accentColor || "#d4a843",
+      description: team.description,
+      memberCount: members.length,
+      totalMatches, winRate, wins: totalWins, losses: totalLosses, draws: totalDraws,
+      totalEvents, totalTop8s, top8Conversion, bestStreak,
+      topHeroes, topMembers,
+    };
+  }, [team, lbEntries, members, leaderboardMap]);
+
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
       {/* Hero Header */}
@@ -199,11 +328,33 @@ export default function TeamPage() {
         viewerRole={viewerRole}
         onJoin={handleJoin}
         onLeave={handleLeave}
+        onShare={() => setShowShareModal(true)}
         joining={joining}
         leaving={leaving}
         canJoin={canJoin}
         isSiteAdmin={isSiteAdmin}
       />
+
+      {showShareModal && shareData && (
+        <TeamShareModal data={shareData} onClose={() => setShowShareModal(false)} />
+      )}
+
+      {/* Filters */}
+      {matchDataLoaded && filterOptions.formats.length > 0 && (
+        <DashboardFilters
+          formats={filterOptions.formats}
+          eventTypes={filterOptions.eventTypes}
+          heroes={filterOptions.heroes}
+          filterFormat={filterFormat}
+          filterEventType={filterEventType}
+          filterTier={filterTier}
+          filterHero={filterHero}
+          onFormatChange={setFilterFormat}
+          onEventTypeChange={setFilterEventType}
+          onTierChange={setFilterTier}
+          onHeroChange={setFilterHero}
+        />
+      )}
 
       {/* Team Stats */}
       <TeamAggregateStats entries={lbEntries} accentColor={accent} />
@@ -238,7 +389,7 @@ export default function TeamPage() {
       )}
 
       {/* Roster */}
-      <TeamRoster members={members} leaderboardMap={leaderboardMap} accentColor={accent} />
+      <TeamRoster members={members} leaderboardMap={leaderboardMap} accentColor={accent} filteredStats={filteredMemberStats} />
     </div>
   );
 }

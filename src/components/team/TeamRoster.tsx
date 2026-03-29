@@ -7,6 +7,7 @@ interface TeamRosterProps {
   members: TeamMember[];
   leaderboardMap: Map<string, LeaderboardEntry>;
   accentColor?: string;
+  filteredStats?: Map<string, { matches: number; wins: number; winRate: number }> | null;
 }
 
 const ROLE_CONFIG: Record<string, { label: string; cls: string; icon?: typeof Crown }> = {
@@ -14,7 +15,7 @@ const ROLE_CONFIG: Record<string, { label: string; cls: string; icon?: typeof Cr
   admin: { label: "Admin", cls: "text-violet-400", icon: ShieldCheck },
 };
 
-export function TeamRoster({ members, leaderboardMap, accentColor = "#d4a843" }: TeamRosterProps) {
+export function TeamRoster({ members, leaderboardMap, accentColor = "#d4a843", filteredStats }: TeamRosterProps) {
   const sorted = [...members].sort((a, b) => {
     const order = { owner: 0, admin: 1, member: 2 };
     const roleSort = (order[a.role] ?? 3) - (order[b.role] ?? 3);
@@ -71,24 +72,37 @@ export function TeamRoster({ members, leaderboardMap, accentColor = "#d4a843" }:
               </div>
 
               {/* Stats row */}
-              {lb && (
-                <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-fab-border/50">
-                  <div>
-                    <p className="text-[9px] text-fab-dim uppercase tracking-wider">Matches</p>
-                    <p className="text-sm font-bold text-fab-text tabular-nums">{lb.totalMatches}</p>
+              {(() => {
+                const fs = filteredStats?.get(member.uid);
+                const showFiltered = filteredStats && fs;
+                const matchCount = showFiltered ? fs.matches : lb?.totalMatches;
+                const winRate = showFiltered ? fs.winRate : lb ? Math.round(lb.winRate) : null;
+                const topHero = showFiltered ? null : lb?.topHero?.split(",")[0];
+
+                if (!lb && !showFiltered) return null;
+                return (
+                  <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-fab-border/50">
+                    <div>
+                      <p className="text-[9px] text-fab-dim uppercase tracking-wider">Matches</p>
+                      <p className="text-sm font-bold text-fab-text tabular-nums">{matchCount ?? "—"}</p>
+                    </div>
+                    <div>
+                      <p className="text-[9px] text-fab-dim uppercase tracking-wider">Win Rate</p>
+                      {winRate !== null && winRate >= 0 ? (
+                        <p className={`text-sm font-bold tabular-nums ${winRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>
+                          {winRate}%
+                        </p>
+                      ) : (
+                        <p className="text-sm font-bold text-fab-dim">N/A</p>
+                      )}
+                    </div>
+                    <div>
+                      <p className="text-[9px] text-fab-dim uppercase tracking-wider">Top Hero</p>
+                      <p className="text-xs font-medium text-fab-text truncate">{topHero || "—"}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-[9px] text-fab-dim uppercase tracking-wider">Win Rate</p>
-                    <p className={`text-sm font-bold tabular-nums ${lb.winRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>
-                      {Math.round(lb.winRate)}%
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-[9px] text-fab-dim uppercase tracking-wider">Top Hero</p>
-                    <p className="text-xs font-medium text-fab-text truncate">{lb.topHero?.split(",")[0] || "—"}</p>
-                  </div>
-                </div>
-              )}
+                );
+              })()}
             </Link>
           );
         })}
