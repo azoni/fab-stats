@@ -23,6 +23,8 @@ import { WinRateRing } from "@/components/charts/WinRateRing";
 import { getHeroByName } from "@/lib/heroes";
 import { HeroImg } from "@/components/heroes/HeroImg";
 import { HeroShieldBadge } from "@/components/profile/HeroShieldBadge";
+import { TeamBadge } from "@/components/profile/TeamBadge";
+import { useTeamOnce } from "@/hooks/useTeam";
 import { MatchResult } from "@/types";
 import { Tooltip } from "@/components/ui/tooltip";
 import { loadKudosCounts } from "@/lib/kudos";
@@ -42,6 +44,7 @@ export default function Dashboard() {
   const router = useRouter();
   const { matches, isLoaded } = useMatches();
   const { user, profile, isAdmin, refreshProfile } = useAuth();
+  const { team: myTeam } = useTeamOnce(profile?.teamId || null);
   const { entries: lbEntries } = useLeaderboard(true);
   const [shareCopied, setShareCopied] = useState(false);
   const [bestFinishShareOpen, setBestFinishShareOpen] = useState(false);
@@ -320,6 +323,7 @@ export default function Dashboard() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5">
                       <p className="text-base font-bold text-fab-gold truncate">{profile?.displayName || "My Profile"}</p>
+                      {myTeam && <TeamBadge teamName={myTeam.name} teamIconUrl={myTeam.iconUrl} teamNameLower={myTeam.nameLower} size="xs" />}
                       {heroCompletion && <HeroShieldBadge pct={heroCompletion.pct} withHero={heroCompletion.withHero} total={heroCompletion.total} />}
                     </div>
                     <BadgeStrip selectedBadgeIds={profile?.selectedBadgeIds} className="mt-1" />

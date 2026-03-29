@@ -1407,6 +1407,7 @@ function ProfileHeader({ profile, bestRank, isAdmin, isOwner, isFavorited, onTog
       <div>
         <div className="flex items-center gap-2 flex-wrap">
           <h1 className="text-2xl font-bold text-fab-gold">{profile.displayName}</h1>
+          {profileTeam && <TeamBadge teamName={profileTeam.name} teamIconUrl={profileTeam.iconUrl} teamNameLower={profileTeam.nameLower} size="sm" />}
           {heroCompletion && <HeroShieldBadge pct={heroCompletion.pct} size="md" withHero={heroCompletion.withHero} total={heroCompletion.total} />}
           {onToggleFavorite && (
             <button
