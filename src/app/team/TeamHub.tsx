@@ -19,7 +19,7 @@ type Tab = "my-team" | "browse" | "create";
 
 export default function TeamHub() {
   const [mounted, setMounted] = useState(false);
-  const { user, profile } = useAuth();
+  const { user, profile, isAdmin: isSiteAdmin } = useAuth();
   const { team, members, myRole, loading } = useMyTeam();
   const { invites } = useTeamInvites();
 
@@ -77,7 +77,7 @@ export default function TeamHub() {
   useEffect(() => {
     if (activeTab !== "browse") return;
     setTeamsLoading(true);
-    getAllTeams().then((teams) => setAllTeams(teams.filter((t) => t.visibility !== "private"))).catch(() => {}).finally(() => setTeamsLoading(false));
+    getAllTeams().then((teams) => setAllTeams(isSiteAdmin ? teams : teams.filter((t) => t.visibility !== "private"))).catch(() => {}).finally(() => setTeamsLoading(false));
   }, [activeTab]);
 
   // Load pending invites for manage
@@ -504,7 +504,12 @@ export default function TeamHub() {
                       </div>
                     )}
                     <div className="min-w-0">
-                      <p className="font-semibold text-fab-text group-hover:text-fab-gold transition-colors truncate">{t.name}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="font-semibold text-fab-text group-hover:text-fab-gold transition-colors truncate">{t.name}</p>
+                        {isSiteAdmin && t.visibility === "private" && (
+                          <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-red-500/15 text-red-400 shrink-0">Private</span>
+                        )}
+                      </div>
                       <div className="flex items-center gap-2 text-xs text-fab-dim mt-0.5">
                         <span>{t.memberCount} member{t.memberCount !== 1 ? "s" : ""}</span>
                         {t.joinMode === "open" ? (
