@@ -13,6 +13,7 @@ import { BadgeStripPicker } from "@/components/profile/BadgeStripPicker";
 import { updateLeaderboardEntry, findUserIdByStaleUsername } from "@/lib/leaderboard";
 import { computeOverallStats, computeHeroStats, computeEventStats, computeOpponentStats, computeBestFinish, computePlayoffFinishes, computeMinorEventFinishes, getEventType, getRoundNumber } from "@/lib/stats";
 import { getEventTier, TIER_LABELS } from "@/lib/events";
+import { DashboardFilters } from "@/components/home/DashboardFilters";
 import { evaluateAchievements, getAchievementProgress } from "@/lib/achievements";
 import { getUserBadgeIds } from "@/lib/badge-service";
 import { AdminBadgePanel } from "@/components/gamification/AdminBadgePanel";
@@ -102,7 +103,7 @@ export default function PlayerProfile() {
   const creators = useCreators();
   const [filterFormat, setFilterFormat] = useState<string>("all");
   const [filterTier, setFilterTier] = useState<string>("all");
-  const [filterRated, setFilterRated] = useState<string>("all");
+  const [filterEventType, setFilterEventType] = useState<string>("all");
   const [filterHero, setFilterHero] = useState<string>("all");
   const [showRawData, setShowRawData] = useState(false);
   const [bestFinishShareOpen, setBestFinishShareOpen] = useState(false);
@@ -206,13 +207,11 @@ export default function PlayerProfile() {
     return loadedMatches.filter((m) => {
       if (filterFormat !== "all" && m.format !== filterFormat) return false;
       if (filterTier !== "all" && getEventTier(getEventType(m)) !== Number(filterTier)) return false;
-      if (filterRated === "rated" && m.rated !== true) return false;
-      if (filterRated === "unrated" && m.rated === true) return false;
-      if (filterRated !== "all" && filterRated !== "rated" && filterRated !== "unrated" && getEventType(m) !== filterRated) return false;
+      if (filterEventType !== "all" && getEventType(m) !== filterEventType) return false;
       if (filterHero !== "all" && m.heroPlayed !== filterHero) return false;
       return true;
     });
-  }, [loadedMatches, filterFormat, filterTier, filterRated, filterHero]);
+  }, [loadedMatches, filterFormat, filterTier, filterEventType, filterHero]);
 
   // Update tab title and OG meta tags from generic pre-rendered values to actual username
   useEffect(() => {
@@ -643,14 +642,12 @@ export default function PlayerProfile() {
   const { profile, matches, isOwner: actualIsOwner } = state;
   const isOwner = actualIsOwner && !previewAsVisitor;
 
-  const isFiltered = filterFormat !== "all" || filterTier !== "all" || filterRated !== "all" || filterHero !== "all";
+  const isFiltered = filterFormat !== "all" || filterTier !== "all" || filterEventType !== "all" || filterHero !== "all";
   const activeFilterLabel = (() => {
     const parts: string[] = [];
     if (filterFormat !== "all") parts.push(filterFormat === "Classic Constructed" ? "CC" : filterFormat);
     if (filterTier !== "all") parts.push(TIER_LABELS[Number(filterTier)] || `Tier ${filterTier}`);
-    if (filterRated === "rated") parts.push("Rated");
-    else if (filterRated === "unrated") parts.push("Unrated");
-    else if (filterRated !== "all") parts.push(filterRated);
+    if (filterEventType !== "all") parts.push(filterEventType);
     if (filterHero !== "all") parts.push(filterHero.split(",")[0]);
     return parts.length > 0 ? parts.join(" · ") : undefined;
   })();
@@ -1005,67 +1002,37 @@ export default function PlayerProfile() {
           </div>
         )}
 
-        {/* Filters */}
-        <div className="flex gap-2 flex-wrap items-center">
-          <select
-            value={filterFormat}
-            onChange={(e) => setFilterFormat(e.target.value)}
-            className="bg-fab-surface border border-fab-border text-fab-text text-xs rounded-lg px-2 py-1 focus:outline-none focus:border-fab-gold"
-          >
-            <option value="all">All Formats</option>
-            {allFormats.map((f) => (
-              <option key={f} value={f}>{f}</option>
-            ))}
-          </select>
-          <select
-            value={filterTier}
-            onChange={(e) => setFilterTier(e.target.value)}
-            className="bg-fab-surface border border-fab-border text-fab-text text-xs rounded-lg px-2 py-1 focus:outline-none focus:border-fab-gold"
-          >
-            <option value="all">All Tiers</option>
-            {[4, 3, 2, 1].map((t) => (
-              <option key={t} value={String(t)}>{TIER_LABELS[t]}</option>
-            ))}
-          </select>
-          <select
-            value={filterRated}
-            onChange={(e) => setFilterRated(e.target.value)}
-            className="bg-fab-surface border border-fab-border text-fab-text text-xs rounded-lg px-2 py-1 focus:outline-none focus:border-fab-gold"
-            title="Filter by rated status or event type"
-          >
-            <option value="all">All</option>
-            <option value="rated">Rated Only</option>
-            <option value="unrated">Unrated Only</option>
-            {allEventTypes.map((t) => (
-              <option key={t} value={t}>{t}</option>
-            ))}
-          </select>
-          {allHeroes.length > 1 && (
-            <select
-              value={filterHero}
-              onChange={(e) => setFilterHero(e.target.value)}
-              className="bg-fab-surface border border-fab-border text-fab-text text-xs rounded-lg px-2 py-1 focus:outline-none focus:border-fab-gold"
-            >
-              <option value="all">All Heroes</option>
-              {allHeroes.map((h) => (
-                <option key={h} value={h}>{h}</option>
-              ))}
-            </select>
-          )}
-          {isAdmin && (
-            <button
-              onClick={() => setShowRawData(true)}
-              className="text-xs px-2 py-1 rounded bg-fab-surface border border-fab-border text-fab-dim hover:text-fab-text transition-colors"
-            >
-              Raw Data
-            </button>
-          )}
-          {isFiltered && (
-            <span className="text-xs text-fab-dim">
-              Showing {fm.length} of {matches.length} matches
-            </span>
-          )}
-        </div>
+        {/* Filters — consistent with home page */}
+        <DashboardFilters
+          formats={allFormats}
+          eventTypes={allEventTypes}
+          heroes={allHeroes}
+          filterFormat={filterFormat}
+          filterEventType={filterEventType}
+          filterTier={filterTier}
+          filterHero={filterHero}
+          onFormatChange={setFilterFormat}
+          onEventTypeChange={setFilterEventType}
+          onTierChange={setFilterTier}
+          onHeroChange={setFilterHero}
+        />
+        {(isFiltered || isAdmin) && (
+          <div className="flex items-center gap-2 mt-1">
+            {isFiltered && (
+              <span className="text-xs text-fab-dim">
+                Showing {fm.length} of {matches.length} matches
+              </span>
+            )}
+            {isAdmin && (
+              <button
+                onClick={() => setShowRawData(true)}
+                className="text-xs px-2 py-1 rounded bg-fab-surface border border-fab-border text-fab-dim hover:text-fab-text transition-colors"
+              >
+                Raw Data
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Two-column grid: Showcases side by side on desktop, stacked on mobile */}
@@ -1163,7 +1130,7 @@ export default function PlayerProfile() {
         <div className="text-center py-16">
           <p className="text-fab-muted text-lg">No matches found for this filter.</p>
           <button
-            onClick={() => { setFilterFormat("all"); setFilterTier("all"); setFilterRated("all"); setFilterHero("all"); }}
+            onClick={() => { setFilterFormat("all"); setFilterTier("all"); setFilterEventType("all"); setFilterHero("all"); }}
             className="mt-4 text-fab-gold hover:underline text-sm"
           >
             Clear Filters
