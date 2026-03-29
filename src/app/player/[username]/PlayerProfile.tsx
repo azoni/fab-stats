@@ -310,6 +310,16 @@ export default function PlayerProfile() {
         if (!cancelled) {
           setState({ status: "loaded", profile, matches, isOwner });
 
+          // Populate social link draft for owner
+          if (isOwner) {
+            setSocialDraft({
+              twitter: profile.socialLinks?.twitter || "",
+              discord: profile.socialLinks?.discord || "",
+              fabrary: profile.socialLinks?.fabrary || "",
+              fabraryName: profile.socialLinks?.fabraryName || "",
+            });
+          }
+
           // Sync leaderboard entry when the owner views their profile
           if (isOwner && matches.length > 0) {
             updateLeaderboardEntry(profile, matches).catch(() => {});
@@ -754,8 +764,54 @@ export default function PlayerProfile() {
                 )}
                 <BadgeStrip selectedBadgeIds={profile.selectedBadgeIds} earnedAchievementIds={achievements.map((a) => a.id)} isOwner={isOwner && !previewAsVisitor} onEdit={() => setShowBadgePicker(true)} />
               </div>
-              {/* Social links */}
-              {(profile.socialLinks?.twitter || profile.socialLinks?.discord || profile.socialLinks?.fabrary || isOwner) && !editingSocials && (
+              {/* Social links — always-visible inputs for owner, display-only for visitors */}
+              {isOwner && !previewAsVisitor ? (
+                <div className="mt-2 space-y-1.5">
+                  <p className="text-[10px] text-fab-dim uppercase tracking-wider font-medium">Links</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    <div className="flex items-center gap-1 bg-fab-bg border border-fab-border rounded-lg px-2 py-1">
+                      <svg className="w-3 h-3 text-fab-dim shrink-0" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                      <input type="text" placeholder="X handle" value={socialDraft.twitter} onChange={(e) => setSocialDraft((d) => ({ ...d, twitter: e.target.value }))}
+                        className="w-20 bg-transparent text-[11px] text-fab-text placeholder:text-fab-dim focus:outline-none" />
+                    </div>
+                    <div className="flex items-center gap-1 bg-fab-bg border border-fab-border rounded-lg px-2 py-1">
+                      <svg className="w-3 h-3 text-fab-dim shrink-0" viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.37a19.791 19.791 0 00-4.885-1.515.074.074 0 00-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 00-5.487 0 12.64 12.64 0 00-.617-1.25.077.077 0 00-.079-.037A19.736 19.736 0 003.677 4.37a.07.07 0 00-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 00.031.057 19.9 19.9 0 005.993 3.03.078.078 0 00.084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 00-.041-.106 13.107 13.107 0 01-1.872-.892.077.077 0 01-.008-.128 10.2 10.2 0 00.372-.292.074.074 0 01.077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 01.078.01c.12.098.246.198.373.292a.077.077 0 01-.006.127 12.299 12.299 0 01-1.873.892.077.077 0 00-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 00.084.028 19.839 19.839 0 006.002-3.03.077.077 0 00.032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 00-.031-.03z"/></svg>
+                      <input type="text" placeholder="Discord" value={socialDraft.discord} onChange={(e) => setSocialDraft((d) => ({ ...d, discord: e.target.value }))}
+                        className="w-20 bg-transparent text-[11px] text-fab-text placeholder:text-fab-dim focus:outline-none" />
+                    </div>
+                    <div className="flex items-center gap-1 bg-fab-bg border border-fab-border rounded-lg px-2 py-1">
+                      <svg className="w-3 h-3 text-fab-dim shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
+                      <input type="text" placeholder="Deck URL" value={socialDraft.fabrary} onChange={(e) => setSocialDraft((d) => ({ ...d, fabrary: e.target.value }))}
+                        className="w-24 bg-transparent text-[11px] text-fab-text placeholder:text-fab-dim focus:outline-none" />
+                    </div>
+                    {socialDraft.fabrary.trim() && (
+                      <div className="flex items-center gap-1 bg-fab-bg border border-fab-border rounded-lg px-2 py-1">
+                        <input type="text" placeholder="Deck name" value={socialDraft.fabraryName} onChange={(e) => setSocialDraft((d) => ({ ...d, fabraryName: e.target.value }))}
+                          className="w-20 bg-transparent text-[11px] text-fab-text placeholder:text-fab-dim focus:outline-none" />
+                      </div>
+                    )}
+                  </div>
+                  {(socialDraft.twitter !== (profile.socialLinks?.twitter || "") ||
+                    socialDraft.discord !== (profile.socialLinks?.discord || "") ||
+                    socialDraft.fabrary !== (profile.socialLinks?.fabrary || "") ||
+                    socialDraft.fabraryName !== (profile.socialLinks?.fabraryName || "")) && (
+                    <button
+                      onClick={async () => {
+                        const links: { twitter?: string; discord?: string; fabrary?: string; fabraryName?: string } = {};
+                        if (socialDraft.twitter.trim()) links.twitter = socialDraft.twitter.trim().replace(/^@/, "");
+                        if (socialDraft.discord.trim()) links.discord = socialDraft.discord.trim();
+                        if (socialDraft.fabrary.trim()) links.fabrary = socialDraft.fabrary.trim();
+                        if (socialDraft.fabraryName.trim()) links.fabraryName = socialDraft.fabraryName.trim();
+                        await updateProfile(profile.uid, { socialLinks: Object.keys(links).length > 0 ? links : undefined });
+                        setState((prev) => prev.status === "loaded" ? { ...prev, profile: { ...prev.profile, socialLinks: Object.keys(links).length > 0 ? links : undefined } } : prev);
+                      }}
+                      className="px-2.5 py-1 rounded-lg text-[11px] font-medium bg-fab-gold/20 text-fab-gold hover:bg-fab-gold/30 transition-colors"
+                    >
+                      Save Links
+                    </button>
+                  )}
+                </div>
+              ) : (profile.socialLinks?.twitter || profile.socialLinks?.discord || profile.socialLinks?.fabrary) ? (
                 <div className="flex items-center gap-2 mt-1 flex-wrap">
                   {profile.socialLinks?.twitter && (
                     <a href={`https://x.com/${profile.socialLinks.twitter.replace(/^@/, "")}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-[11px] text-fab-muted hover:text-fab-text transition-colors">
@@ -779,82 +835,8 @@ export default function PlayerProfile() {
                       <span>{profile.socialLinks.fabraryName || "Deck"}</span>
                     </a>
                   )}
-                  {isOwner && (
-                    <button
-                      onClick={() => {
-                        setSocialDraft({
-                          twitter: profile.socialLinks?.twitter || "",
-                          discord: profile.socialLinks?.discord || "",
-                          fabrary: profile.socialLinks?.fabrary || "",
-                          fabraryName: profile.socialLinks?.fabraryName || "",
-                        });
-                        setEditingSocials(true);
-                      }}
-                      className="text-fab-muted hover:text-fab-gold transition-colors"
-                      title="Edit social links"
-                    >
-                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
-                      </svg>
-                    </button>
-                  )}
                 </div>
-              )}
-              {editingSocials && (
-                <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                  <input
-                    type="text"
-                    placeholder="X handle"
-                    value={socialDraft.twitter}
-                    onChange={(e) => setSocialDraft((d) => ({ ...d, twitter: e.target.value }))}
-                    className="w-24 px-1.5 py-0.5 rounded text-[11px] bg-fab-bg border border-fab-border text-fab-text placeholder:text-fab-dim focus:border-fab-gold/40 focus:outline-none"
-                  />
-                  <input
-                    type="text"
-                    placeholder="Discord"
-                    value={socialDraft.discord}
-                    onChange={(e) => setSocialDraft((d) => ({ ...d, discord: e.target.value }))}
-                    className="w-24 px-1.5 py-0.5 rounded text-[11px] bg-fab-bg border border-fab-border text-fab-text placeholder:text-fab-dim focus:border-fab-gold/40 focus:outline-none"
-                  />
-                  <input
-                    type="text"
-                    placeholder="Deck URL"
-                    value={socialDraft.fabrary}
-                    onChange={(e) => setSocialDraft((d) => ({ ...d, fabrary: e.target.value }))}
-                    className="w-32 px-1.5 py-0.5 rounded text-[11px] bg-fab-bg border border-fab-border text-fab-text placeholder:text-fab-dim focus:border-fab-gold/40 focus:outline-none"
-                  />
-                  {socialDraft.fabrary.trim() && (
-                    <input
-                      type="text"
-                      placeholder="Deck name"
-                      value={socialDraft.fabraryName}
-                      onChange={(e) => setSocialDraft((d) => ({ ...d, fabraryName: e.target.value }))}
-                      className="w-24 px-1.5 py-0.5 rounded text-[11px] bg-fab-bg border border-fab-border text-fab-text placeholder:text-fab-dim focus:border-fab-gold/40 focus:outline-none"
-                    />
-                  )}
-                  <button
-                    onClick={async () => {
-                      const links: { twitter?: string; discord?: string; fabrary?: string; fabraryName?: string } = {};
-                      if (socialDraft.twitter.trim()) links.twitter = socialDraft.twitter.trim().replace(/^@/, "");
-                      if (socialDraft.discord.trim()) links.discord = socialDraft.discord.trim();
-                      if (socialDraft.fabrary.trim()) links.fabrary = socialDraft.fabrary.trim();
-                      if (socialDraft.fabraryName.trim()) links.fabraryName = socialDraft.fabraryName.trim();
-                      await updateProfile(profile.uid, { socialLinks: Object.keys(links).length > 0 ? links : undefined });
-                      setState((prev) => prev.status === "loaded" ? { ...prev, profile: { ...prev.profile, socialLinks: Object.keys(links).length > 0 ? links : undefined } } : prev);
-                      setEditingSocials(false);
-                    }}
-                    className="px-2 py-0.5 rounded text-[11px] font-medium bg-fab-gold/20 text-fab-gold hover:bg-fab-gold/30 transition-colors"
-                  >
-                    Save
-                  </button>
-                  <button
-                    onClick={() => setEditingSocials(false)}
-                    className="px-2 py-0.5 rounded text-[11px] text-fab-dim hover:text-fab-muted transition-colors"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              )}
+              ) : null}
             </div>
             <div className="flex items-center gap-3 shrink-0">
               {/* Kudos — received counts with given counts inline (hidden on private profiles) */}

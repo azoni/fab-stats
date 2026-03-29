@@ -95,6 +95,9 @@ service cloud.firestore {
     match /users/{userId}/profile/{docId} {
       // Owner can read/write their own profile
       allow read, write: if request.auth != null && request.auth.uid == userId;
+      // Any authenticated user can update only the teamId field (for kick, disband, join, force-add)
+      allow update: if request.auth != null
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['teamId']);
       // Authenticated users can read public profiles
       allow read: if resource.data.isPublic == true
         && (request.auth != null || resource.data.get('hideFromGuests', false) == false);
