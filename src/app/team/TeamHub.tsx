@@ -40,6 +40,7 @@ export default function TeamHub() {
 
   // Create state
   const [name, setName] = useState("");
+  const [slug, setSlug] = useState("");
   const [description, setDescription] = useState("");
   const [joinMode, setJoinMode] = useState<"open" | "invite">("invite");
   const [creating, setCreating] = useState(false);
@@ -49,6 +50,7 @@ export default function TeamHub() {
   const [editing, setEditing] = useState(false);
   const [editName, setEditName] = useState("");
   const [editDesc, setEditDesc] = useState("");
+  const [editSlug, setEditSlug] = useState("");
   const [editJoinMode, setEditJoinMode] = useState<"open" | "invite">("invite");
   const [editVisibility, setEditVisibility] = useState<"public" | "private">("public");
   const [saving, setSaving] = useState(false);
@@ -98,9 +100,9 @@ export default function TeamHub() {
     if (!user || !profile) return;
     setCreating(true);
     try {
-      await createTeam(profile, matchCount ?? 0, { name: name.trim(), description: description.trim() || undefined, joinMode });
+      await createTeam(profile, matchCount ?? 0, { name: name.trim(), slug: slug.trim() || undefined, description: description.trim() || undefined, joinMode });
       toast.success("Team created!");
-      setName(""); setDescription("");
+      setName(""); setSlug(""); setDescription("");
       setActiveTab("my-team");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to create team.");
@@ -112,7 +114,7 @@ export default function TeamHub() {
     if (!team) return;
     setSaving(true);
     try {
-      await updateTeam(team.id, { name: editName.trim(), description: editDesc.trim(), joinMode: editJoinMode, visibility: editVisibility });
+      await updateTeam(team.id, { name: editName.trim(), slug: editSlug.trim() || undefined, description: editDesc.trim(), joinMode: editJoinMode, visibility: editVisibility });
       toast.success("Team updated!");
       setEditing(false);
     } catch (err) {
@@ -269,7 +271,7 @@ export default function TeamHub() {
               </div>
               {isOwnerOrAdmin && (
                 <button
-                  onClick={() => { setEditing(!editing); setEditName(team.name); setEditDesc(team.description || ""); setEditJoinMode(team.joinMode); setEditVisibility(team.visibility || "public"); }}
+                  onClick={() => { setEditing(!editing); setEditName(team.name); setEditSlug(team.nameLower); setEditDesc(team.description || ""); setEditJoinMode(team.joinMode); setEditVisibility(team.visibility || "public"); }}
                   className="text-xs text-fab-gold hover:text-fab-gold-light transition-colors"
                 >
                   {editing ? "Cancel" : "Edit"}
@@ -285,6 +287,14 @@ export default function TeamHub() {
                   <label className="block text-xs text-fab-muted mb-1">Team Name</label>
                   <input type="text" value={editName} onChange={(e) => setEditName(e.target.value.slice(0, 50))} maxLength={50}
                     className="w-full bg-fab-bg border border-fab-border rounded-lg px-3 py-2 text-sm text-fab-text focus:outline-none focus:border-fab-gold/50 transition-colors" />
+                </div>
+                <div>
+                  <label className="block text-xs text-fab-muted mb-1">URL Slug</label>
+                  <div className="flex items-center gap-0 bg-fab-bg border border-fab-border rounded-lg overflow-hidden">
+                    <span className="text-xs text-fab-dim pl-3 shrink-0">fabstats.net/team/</span>
+                    <input type="text" value={editSlug} onChange={(e) => setEditSlug(e.target.value.toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 30))} maxLength={30}
+                      className="flex-1 bg-transparent py-2 pr-3 text-sm text-fab-text focus:outline-none" />
+                  </div>
                 </div>
                 <div>
                   <label className="block text-xs text-fab-muted mb-1">Description</label>
@@ -472,6 +482,15 @@ export default function TeamHub() {
                 <input type="text" value={name} onChange={(e) => setName(e.target.value.slice(0, 50))} placeholder="Enter team name..." maxLength={50}
                   className="w-full bg-fab-bg border border-fab-border rounded-lg px-3 py-2 text-sm text-fab-text placeholder:text-fab-dim focus:outline-none focus:border-fab-gold/50 transition-colors" />
                 <span className="text-[10px] text-fab-dim">{name.length}/50</span>
+              </div>
+              <div>
+                <label className="block text-xs text-fab-muted mb-1">URL Slug (optional)</label>
+                <div className="flex items-center gap-0 bg-fab-bg border border-fab-border rounded-lg overflow-hidden">
+                  <span className="text-xs text-fab-dim pl-3 shrink-0">fabstats.net/team/</span>
+                  <input type="text" value={slug} onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 30))} placeholder={name ? name.toLowerCase().replace(/[^a-z0-9]/g, "") : "teamname"} maxLength={30}
+                    className="flex-1 bg-transparent py-2 pr-3 text-sm text-fab-text placeholder:text-fab-dim focus:outline-none" />
+                </div>
+                <span className="text-[10px] text-fab-dim">Leave blank to auto-generate from team name</span>
               </div>
               <div>
                 <label className="block text-xs text-fab-muted mb-1">Description (optional)</label>

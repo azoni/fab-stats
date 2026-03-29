@@ -38,7 +38,7 @@ function teamInvitesCollection() {
 }
 
 function slugify(name: string): string {
-  return name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  return name.toLowerCase().replace(/[^a-z0-9]/g, "");
 }
 
 function getInviteId(teamId: string, targetUid: string): string {
@@ -50,7 +50,7 @@ function getInviteId(teamId: string, targetUid: string): string {
 export async function createTeam(
   profile: UserProfile,
   matchCount: number,
-  opts: { name: string; description?: string; joinMode: "open" | "invite"; visibility?: "public" | "private" }
+  opts: { name: string; slug?: string; description?: string; joinMode: "open" | "invite"; visibility?: "public" | "private" }
 ): Promise<string> {
   if (matchCount < 25) {
     throw new Error("You need at least 25 logged matches to create a team.");
@@ -72,15 +72,20 @@ export async function createTeam(
     throw new Error("Description contains inappropriate language.");
   }
 
-  const nameLower = slugify(trimmedName);
-  if (!nameLower) {
-    throw new Error("Team name must contain at least one letter or number.");
+  const nameLower = opts.slug
+    ? opts.slug.toLowerCase().replace(/[^a-z0-9]/g, "")
+    : slugify(trimmedName);
+  if (!nameLower || nameLower.length < 2) {
+    throw new Error("URL slug must be at least 2 characters.");
+  }
+  if (nameLower.length > 30) {
+    throw new Error("URL slug must be 30 characters or less.");
   }
 
   // Check name uniqueness
   const nameDoc = await getDoc(doc(db, "teamnames", nameLower));
   if (nameDoc.exists()) {
-    throw new Error("A team with this name already exists.");
+    throw new Error("This URL slug is already taken.");
   }
 
   const now = new Date().toISOString();
@@ -125,11 +130,22 @@ export async function createTeam(
 
 export async function updateTeam(
   teamId: string,
-  updates: Partial<Pick<Team, "name" | "description" | "joinMode" | "visibility">>
+  updates: Partial<Pick<Team, "name" | "description" | "joinMode" | "visibility">> & { slug?: string }
 ): Promise<void> {
   const updateData: Record<string, unknown> = {
     updatedAt: new Date().toISOString(),
   };
+
+  const teamSnap = await getDoc(doc(db, "teams", teamId));
+  const currentTeam = teamSnap.data() as Team | undefined;
+
+  // Resolve new slug: explicit slug param > derived from name > unchanged
+  let newNameLower: string | null = null;
+  if (updates.slug !== undefined) {
+    newNameLower = updates.slug.toLowerCase().replace(/[^a-z0-9]/g, "");
+  } else if (updates.name !== undefined) {
+    newNameLower = slugify(updates.name.trim());
+  }
 
   if (updates.name !== undefined) {
     const trimmedName = updates.name.trim();
@@ -139,34 +155,31 @@ export async function updateTeam(
     if (containsProfanity(trimmedName)) {
       throw new Error("Team name contains inappropriate language.");
     }
-    const nameLower = slugify(trimmedName);
-    if (!nameLower) {
-      throw new Error("Team name must contain at least one letter or number.");
+    updateData.name = trimmedName;
+  }
+
+  if (newNameLower !== null) {
+    if (!newNameLower || newNameLower.length < 2) {
+      throw new Error("URL slug must be at least 2 characters.");
+    }
+    if (newNameLower.length > 30) {
+      throw new Error("URL slug must be 30 characters or less.");
     }
 
-    // Check name uniqueness (if changed)
-    const teamSnap = await getDoc(doc(db, "teams", teamId));
-    const currentTeam = teamSnap.data() as Team | undefined;
-    if (currentTeam && currentTeam.nameLower !== nameLower) {
-      const nameDoc = await getDoc(doc(db, "teamnames", nameLower));
+    if (currentTeam && currentTeam.nameLower !== newNameLower) {
+      const nameDoc = await getDoc(doc(db, "teamnames", newNameLower));
       if (nameDoc.exists()) {
-        throw new Error("A team with this name already exists.");
+        throw new Error("This URL slug is already taken.");
       }
 
       const batch = writeBatch(db);
       batch.delete(doc(db, "teamnames", currentTeam.nameLower));
-      batch.set(doc(db, "teamnames", nameLower), { teamId, name: trimmedName });
-      batch.update(doc(db, "teams", teamId), {
-        ...updateData,
-        name: trimmedName,
-        nameLower,
-      });
+      batch.set(doc(db, "teamnames", newNameLower), { teamId, name: (updateData.name as string) || currentTeam.name });
+      updateData.nameLower = newNameLower;
+      batch.update(doc(db, "teams", teamId), updateData);
       await batch.commit();
       return;
     }
-
-    updateData.name = trimmedName;
-    updateData.nameLower = nameLower;
   }
 
   if (updates.description !== undefined) {
@@ -465,7 +478,7 @@ export async function searchTeams(
   maxResults = 10
 ): Promise<{ teamId: string; name: string; nameLower: string }[]> {
   if (!prefix.trim()) return [];
-  const lower = prefix.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  const lower = prefix.toLowerCase().replace(/[^a-z0-9]/g, "");
   if (!lower) return [];
   const end = lower.slice(0, -1) + String.fromCharCode(lower.charCodeAt(lower.length - 1) + 1);
 
