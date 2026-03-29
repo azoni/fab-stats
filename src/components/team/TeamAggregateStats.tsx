@@ -1,72 +1,114 @@
 "use client";
 import { useMemo } from "react";
-import type { LeaderboardEntry } from "@/types";
+import type { LeaderboardEntry, MatchRecord } from "@/types";
 import { Swords, Target, Star, Trophy, TrendingUp, Flame } from "lucide-react";
 
 interface TeamAggregateStatsProps {
   entries: LeaderboardEntry[];
   accentColor?: string;
+  /** When provided, stats are computed from these matches instead of leaderboard entries */
+  filteredMatches?: Map<string, MatchRecord[]>;
 }
 
-export function TeamAggregateStats({ entries, accentColor = "#d4a843" }: TeamAggregateStatsProps) {
-  const stats = useMemo(() => {
-    let totalMatches = 0;
-    let totalWins = 0;
-    let totalLosses = 0;
-    let totalDraws = 0;
-    let totalByes = 0;
-    let totalEvents = 0;
-    let totalTop8s = 0;
-    let bestStreak = 0;
-    const heroMap = new Map<string, { matches: number; wins: number }>();
+function computeFromMatches(matchMap: Map<string, MatchRecord[]>) {
+  let totalMatches = 0, totalWins = 0, totalLosses = 0, totalDraws = 0, totalByes = 0;
+  let bestStreak = 0;
+  const heroMap = new Map<string, { matches: number; wins: number }>();
+  // Track events by grouping matches by event name+date per member
+  const eventKeys = new Set<string>();
 
-    for (const e of entries) {
-      totalMatches += e.totalMatches;
-      totalWins += e.totalWins;
-      totalLosses += e.totalLosses;
-      totalDraws += e.totalDraws;
-      totalByes += e.totalByes;
-      totalEvents += e.eventsPlayed ?? 0;
-      totalTop8s += e.totalTop8s ?? 0;
-      if (e.longestWinStreak > bestStreak) bestStreak = e.longestWinStreak;
+  for (const [, matches] of matchMap) {
+    let streak = 0;
+    for (const m of matches) {
+      totalMatches++;
+      if (m.result === "win") { totalWins++; streak++; if (streak > bestStreak) bestStreak = streak; }
+      else if (m.result === "loss") { totalLosses++; streak = 0; }
+      else if (m.result === "draw") { totalDraws++; streak = 0; }
+      else if (m.result === "bye") { totalByes++; }
 
-      if (e.heroBreakdown) {
-        for (const h of e.heroBreakdown) {
-          const existing = heroMap.get(h.hero);
-          if (existing) {
-            existing.matches += h.matches;
-            existing.wins += h.wins;
-          } else {
-            heroMap.set(h.hero, { matches: h.matches, wins: h.wins });
-          }
-        }
+      if (m.heroPlayed && m.heroPlayed !== "Unknown") {
+        const existing = heroMap.get(m.heroPlayed);
+        const isWin = m.result === "win" ? 1 : 0;
+        if (existing) { existing.matches++; existing.wins += isWin; }
+        else heroMap.set(m.heroPlayed, { matches: 1, wins: isWin });
+      }
+
+      // Approximate event grouping from notes field
+      const eventKey = m.notes?.split(" | ")[0]?.trim();
+      if (eventKey && m.date) eventKeys.add(`${eventKey}|${m.date}`);
+    }
+  }
+
+  const totalEvents = eventKeys.size;
+  const denominator = totalMatches - totalByes;
+  const winRate = denominator > 0 ? Math.round((totalWins / denominator) * 100) : 0;
+  const topHeroes = [...heroMap.entries()]
+    .sort((a, b) => b[1].matches - a[1].matches)
+    .slice(0, 6)
+    .map(([hero, { matches, wins }]) => ({
+      hero: hero.split(",")[0],
+      matches,
+      winRate: matches > 0 ? Math.round((wins / matches) * 100) : 0,
+    }));
+
+  return { totalMatches, totalWins, totalLosses, totalDraws, winRate, totalEvents, totalTop8s: 0, top8Conversion: 0, topHeroes, bestStreak };
+}
+
+function computeFromLeaderboard(entries: LeaderboardEntry[]) {
+  let totalMatches = 0, totalWins = 0, totalLosses = 0, totalDraws = 0, totalByes = 0;
+  let totalEvents = 0, totalTop8s = 0, bestStreak = 0;
+  const heroMap = new Map<string, { matches: number; wins: number }>();
+
+  for (const e of entries) {
+    totalMatches += e.totalMatches;
+    totalWins += e.totalWins;
+    totalLosses += e.totalLosses;
+    totalDraws += e.totalDraws;
+    totalByes += e.totalByes;
+    totalEvents += e.eventsPlayed ?? 0;
+    totalTop8s += e.totalTop8s ?? 0;
+    if (e.longestWinStreak > bestStreak) bestStreak = e.longestWinStreak;
+
+    if (e.heroBreakdown) {
+      for (const h of e.heroBreakdown) {
+        const existing = heroMap.get(h.hero);
+        if (existing) { existing.matches += h.matches; existing.wins += h.wins; }
+        else heroMap.set(h.hero, { matches: h.matches, wins: h.wins });
       }
     }
+  }
 
-    const denominator = totalMatches - totalByes;
-    const winRate = denominator > 0 ? Math.round((totalWins / denominator) * 100) : 0;
-    const topHeroes = [...heroMap.entries()]
-      .sort((a, b) => b[1].matches - a[1].matches)
-      .slice(0, 6)
-      .map(([hero, { matches, wins }]) => ({
-        hero: hero.split(",")[0],
-        matches,
-        winRate: matches > 0 ? Math.round((wins / matches) * 100) : 0,
-      }));
+  const denominator = totalMatches - totalByes;
+  const winRate = denominator > 0 ? Math.round((totalWins / denominator) * 100) : 0;
+  const topHeroes = [...heroMap.entries()]
+    .sort((a, b) => b[1].matches - a[1].matches)
+    .slice(0, 6)
+    .map(([hero, { matches, wins }]) => ({
+      hero: hero.split(",")[0],
+      matches,
+      winRate: matches > 0 ? Math.round((wins / matches) * 100) : 0,
+    }));
+  const top8Conversion = totalEvents > 0 ? Math.round((totalTop8s / totalEvents) * 100) : 0;
 
-    const top8Conversion = totalEvents > 0 ? Math.round((totalTop8s / totalEvents) * 100) : 0;
+  return { totalMatches, totalWins, totalLosses, totalDraws, winRate, totalEvents, totalTop8s, top8Conversion, topHeroes, bestStreak };
+}
 
-    return { totalMatches, totalWins, totalLosses, totalDraws, winRate, totalEvents, totalTop8s, top8Conversion, topHeroes, bestStreak };
-  }, [entries]);
+export function TeamAggregateStats({ entries, accentColor = "#d4a843", filteredMatches }: TeamAggregateStatsProps) {
+  const stats = useMemo(() => {
+    if (filteredMatches) return computeFromMatches(filteredMatches);
+    return computeFromLeaderboard(entries);
+  }, [entries, filteredMatches]);
 
-  if (entries.length === 0) return null;
+  if (stats.totalMatches === 0) return null;
 
   const statItems = [
     { label: "Matches", value: stats.totalMatches.toLocaleString(), icon: Swords },
     { label: "Win Rate", value: `${stats.winRate}%`, sub: `${stats.totalWins}W ${stats.totalLosses}L ${stats.totalDraws}D`, icon: Target, color: stats.winRate >= 50 ? "var(--color-fab-win)" : "var(--color-fab-loss)" },
     { label: "Events", value: stats.totalEvents.toLocaleString(), icon: Star },
-    { label: "Top 8s", value: stats.totalTop8s.toLocaleString(), icon: Trophy, color: stats.totalTop8s > 0 ? accentColor : undefined },
-    { label: "Conversion", value: `${stats.top8Conversion}%`, sub: `${stats.totalTop8s}/${stats.totalEvents}`, icon: TrendingUp },
+    ...(filteredMatches ? [] : [
+      { label: "Top 8s", value: stats.totalTop8s.toLocaleString(), icon: Trophy, color: stats.totalTop8s > 0 ? accentColor : undefined },
+      { label: "Conversion", value: `${stats.top8Conversion}%`, sub: `${stats.totalTop8s}/${stats.totalEvents}`, icon: TrendingUp },
+    ]),
     { label: "Best Streak", value: `${stats.bestStreak}W`, icon: Flame, color: stats.bestStreak >= 5 ? "var(--color-fab-win)" : undefined },
   ];
 
@@ -75,7 +117,7 @@ export function TeamAggregateStats({ entries, accentColor = "#d4a843" }: TeamAgg
       <h2 className="text-sm font-bold text-fab-text uppercase tracking-wider mb-4">Team Stats</h2>
 
       {/* Stat grid */}
-      <div className="grid grid-cols-3 md:grid-cols-6 gap-2 mb-4">
+      <div className={`grid gap-2 mb-4 ${filteredMatches ? "grid-cols-2 md:grid-cols-4" : "grid-cols-3 md:grid-cols-6"}`}>
         {statItems.map((s) => (
           <div key={s.label} className="bg-fab-surface border border-fab-border rounded-xl px-3 py-3 text-center">
             <s.icon className="w-3.5 h-3.5 mx-auto mb-1 text-fab-dim" />
