@@ -324,7 +324,7 @@ export default function Dashboard() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5">
                       <p className="text-base font-bold text-fab-gold truncate">{profile?.displayName || "My Profile"}</p>
-                      {myTeam && <TeamBadge teamName={myTeam.name} teamIconUrl={myTeam.iconUrl} teamNameLower={myTeam.nameLower} size="xs" />}
+                      {myTeam && <TeamBadge teamName={myTeam.name} teamIconUrl={myTeam.iconUrl} teamNameLower={myTeam.nameLower} size="xs" isPrivate={myTeam.visibility === "private"} isSiteAdmin={isAdmin} />}
                       {heroCompletion && <HeroShieldBadge pct={heroCompletion.pct} withHero={heroCompletion.withHero} total={heroCompletion.total} />}
                     </div>
                     <BadgeStrip selectedBadgeIds={profile?.selectedBadgeIds} className="mt-1" />

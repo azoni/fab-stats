@@ -1410,7 +1410,7 @@ function ProfileHeader({ profile, bestRank, isAdmin, isOwner, isFavorited, onTog
       <div>
         <div className="flex items-center gap-2 flex-wrap">
           <h1 className="text-2xl font-bold text-fab-gold">{profile.displayName}</h1>
-          {profileTeam && <TeamBadge teamName={profileTeam.name} teamIconUrl={profileTeam.iconUrl} teamNameLower={profileTeam.nameLower} size="sm" />}
+          {profileTeam && <TeamBadge teamName={profileTeam.name} teamIconUrl={profileTeam.iconUrl} teamNameLower={profileTeam.nameLower} size="sm" isPrivate={profileTeam.visibility === "private"} isSiteAdmin={isAdmin} />}
           {heroCompletion && <HeroShieldBadge pct={heroCompletion.pct} size="md" withHero={heroCompletion.withHero} total={heroCompletion.total} />}
           {onToggleFavorite && (
             <button
@@ -1515,7 +1515,7 @@ function ProfileHeader({ profile, bestRank, isAdmin, isOwner, isFavorited, onTog
         </p>
         {profileTeam && (
           <Link href={`/team/${profileTeam.nameLower}`} className="inline-flex items-center gap-1.5 text-xs text-fab-muted hover:text-fab-gold transition-colors mb-1">
-            <TeamBadge teamName={profileTeam.name} teamIconUrl={profileTeam.iconUrl} size="xs" linkToTeam={false} />
+            <TeamBadge teamName={profileTeam.name} teamIconUrl={profileTeam.iconUrl} size="xs" linkToTeam={false} isPrivate={profileTeam.visibility === "private"} isSiteAdmin={isAdmin} />
             {profileTeam.name}
           </Link>
         )}

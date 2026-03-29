@@ -1057,7 +1057,7 @@ export default function LeaderboardPage() {
 
                     {/* Name */}
                     <p className={`font-semibold text-fab-text truncate w-full flex items-center gap-1 ${isCenter ? "text-sm" : "text-xs"}`}>
-                      {entry.teamName && <TeamBadge teamName={entry.teamName} teamIconUrl={entry.teamIconUrl} size="xs" />}
+                      {entry.teamName && <TeamBadge teamName={entry.teamName} teamIconUrl={entry.teamIconUrl} size="xs" isPrivate={entry.teamVisibility === "private"} isSiteAdmin={isAdmin} />}
                       {entry.displayName}
                       <HeroShieldBadge pct={entry.heroCompletionPct ?? 0} />
                     </p>
@@ -1102,6 +1102,7 @@ export default function LeaderboardPage() {
                   isMe={entry.userId === user?.uid}
                   kudosEntry={isKudosGivenTab(activeTab) ? kudosGivenMap.get(entry.userId) : kudosMap.get(entry.userId)}
                   gameEntry={gamesMap.get(entry.userId)}
+                  isSiteAdmin={isAdmin}
                 />
               );
             })}
@@ -1145,6 +1146,7 @@ function LeaderboardRow({
   isMe,
   kudosEntry,
   gameEntry,
+  isSiteAdmin,
 }: {
   entry: LeaderboardEntry;
   rank: number;
@@ -1153,6 +1155,7 @@ function LeaderboardRow({
   isMe?: boolean;
   kudosEntry?: KudosCountsEntry;
   gameEntry?: GameLeaderboardEntry;
+  isSiteAdmin?: boolean;
 }) {
   const initials = entry.displayName
     .split(" ")
@@ -1219,7 +1222,7 @@ function LeaderboardRow({
       {/* Name + H2H */}
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
-          {entry.teamName && <TeamBadge teamName={entry.teamName} teamIconUrl={entry.teamIconUrl} size="xs" />}
+          {entry.teamName && <TeamBadge teamName={entry.teamName} teamIconUrl={entry.teamIconUrl} size="xs" isPrivate={entry.teamVisibility === "private"} isSiteAdmin={isSiteAdmin} />}
           <p className="font-semibold text-fab-text text-sm truncate">{entry.displayName}</p>
           <HeroShieldBadge pct={entry.heroCompletionPct ?? 0} />
           {entry.topHero && entry.topHero !== "—" && entry.topHero !== "Unknown" && (
