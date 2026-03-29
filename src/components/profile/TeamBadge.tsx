@@ -29,7 +29,7 @@ function teamColor(name: string): string {
 function TeamBadgeInner({ teamName, teamNameLower, teamIconUrl, size = "sm", linkToTeam = true }: TeamBadgeProps) {
   const s = SIZES[size];
   const abbr = teamName.slice(0, 2).toUpperCase();
-  const slug = teamNameLower || teamName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  const slug = teamNameLower || teamName.toLowerCase().replace(/[^a-z0-9]/g, "");
 
   const badge = teamIconUrl ? (
     <img
