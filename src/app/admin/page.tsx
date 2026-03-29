@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
-import { getAdminDashboardData, getChatGlobalStats, getAdminChatMessages, getDeletedAccountCount, backfillLeaderboard, backfillPlacementFeedEvents, broadcastMessage, fixMatchDates, backfillGemIds, backfillMatchLinking, backfillH2H, backfillHeroMatchups, adminGetUserEvents, adminOverrideEventType, type AdminDashboardData, type AdminUserStats, type ChatGlobalStats, type AdminEventSummary } from "@/lib/admin";
+import { getAdminDashboardData, getChatGlobalStats, getAdminChatMessages, getDeletedAccountCount, backfillLeaderboard, backfillPlacementFeedEvents, broadcastMessage, fixMatchDates, backfillGemIds, backfillMatchLinking, backfillH2H, backfillHeroMatchups, adminGetUserEvents, adminOverrideEventType, adminResyncLeaderboard, type AdminDashboardData, type AdminUserStats, type ChatGlobalStats, type AdminEventSummary } from "@/lib/admin";
 import { getAllFeedback, updateFeedbackStatus } from "@/lib/feedback";
 import { getCreators, saveCreators } from "@/lib/creators";
 import { getEvents, saveEvents } from "@/lib/featured-events";
@@ -2852,6 +2852,8 @@ export default function AdminPage() {
                     setForceAddResult("");
                     try {
                       await forceAddMember(forceAddSelectedTeam.teamId, forceAddSelectedUser.userId);
+                      // Auto-resync leaderboard so team badge appears immediately
+                      try { await adminResyncLeaderboard(forceAddSelectedUser.userId); } catch { /* best effort */ }
                       setForceAddResult(`Added @${forceAddSelectedUser.username} to ${forceAddSelectedTeam.name}`);
                       setForceAddSelectedUser(null);
                       setForceAddSelectedTeam(null);
@@ -3269,7 +3271,7 @@ function UserExpandedStats({ user: u, assignedBadgeIds, isMuted, onAssignBadge, 
         </div>
       </div>
 
-      <div className="pt-1">
+      <div className="pt-1 flex items-center gap-4">
         <Link
           href={`/player/${u.username}`}
           className="text-xs text-fab-gold hover:text-fab-gold-light"
@@ -3277,6 +3279,24 @@ function UserExpandedStats({ user: u, assignedBadgeIds, isMuted, onAssignBadge, 
         >
           View Profile →
         </Link>
+        <button
+          className="text-xs text-fab-muted hover:text-fab-text transition-colors"
+          onClick={async (e) => {
+            e.stopPropagation();
+            const btn = e.currentTarget;
+            btn.textContent = "Syncing...";
+            btn.disabled = true;
+            try {
+              const { adminResyncLeaderboard } = await import("@/lib/admin");
+              await adminResyncLeaderboard(u.uid);
+              btn.textContent = "Synced ✓";
+            } catch {
+              btn.textContent = "Failed";
+            }
+          }}
+        >
+          Resync Leaderboard
+        </button>
       </div>
     </div>
   );
