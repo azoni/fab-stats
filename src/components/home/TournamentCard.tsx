@@ -116,8 +116,12 @@ export function TournamentCard({ event, entryMap, nameMap, fullImage }: Tourname
               const placement = BRACKET_PLACEMENT[pi] ?? pi + 1;
               const isChampion = placement === 1;
 
-              // Build decoration configs from their best finish
-              const { border: cardBorder, underline } = lbEntry ? getBestBorder(lbEntry) : { border: null, underline: null };
+              // Build decoration configs from their best finish, or fallback for champion
+              let { border: cardBorder } = lbEntry ? getBestBorder(lbEntry) : { border: null };
+              // Ensure champion always has a border even without leaderboard history
+              if (isChampion && !cardBorder) {
+                cardBorder = buildCardBorder(event.eventType || "Other", "champion");
+              }
 
               const nameEl = (
                 <span className={`font-medium text-sm truncate ${isChampion ? "text-fab-gold" : "text-fab-text"}`}>
@@ -185,13 +189,13 @@ export function TournamentCard({ event, entryMap, nameMap, fullImage }: Tourname
               );
 
               // Wrap linked players with their card border decoration
+              // Use static glow only (placement 1) — no animated beams/pulses
               if (lbEntry && cardBorder && cardBorder.placement > 0) {
                 return (
                   <CardBorderWrapper
                     key={pi}
-                    cardBorder={cardBorder}
-                    borderStyle="beam"
-                    underline={underline}
+                    cardBorder={{ ...cardBorder, placement: 1 }}
+                    borderStyle="glow"
                     contentClassName="rounded-lg"
                   >
                     {row}

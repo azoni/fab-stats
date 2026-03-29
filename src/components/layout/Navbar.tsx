@@ -154,9 +154,9 @@ export function Navbar() {
                         </Link>
                         {hasSubs && (
                           <div className="absolute left-0 top-full pt-1 hidden group-hover/nav:block z-50">
-                            <div className={`bg-fab-surface border border-fab-border rounded-lg shadow-xl overflow-hidden ${link.href === "/community" ? "w-64" : "w-48"}`}>
+                            <div className={`bg-fab-surface border border-fab-border rounded-lg shadow-xl ${link.href === "/community" ? "w-64 overflow-visible" : "w-48 overflow-hidden"}`}>
                               {link.href === "/community" && (
-                                <div className="px-2 pt-2 pb-1">
+                                <div className="px-2 pt-2 pb-1 relative">
                                   <SmartSearch placeholder="Search players or teams..." className="text-xs" />
                                 </div>
                               )}

@@ -1174,21 +1174,6 @@ export default function PlayerProfile() {
       {/* Leaderboard Rankings */}
       <LeaderboardCrowns ranks={userRanks} />
 
-      {/* ELO Rating Badge */}
-      {eloRating !== null && eloTier !== null && (
-        <div className="flex items-center gap-3">
-          <Link
-            href="/leaderboard?tab=elo"
-            className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-fab-surface border border-fab-border hover:border-fab-gold/30 transition-colors"
-          >
-            <div className="flex items-center gap-1.5">
-              <span className="text-lg font-bold" style={{ color: eloTier.color }}>{eloRating}</span>
-              <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: eloTier.color }}>{eloTier.label}</span>
-            </div>
-            <span className="text-[10px] text-fab-dim">ELO</span>
-          </Link>
-        </div>
-      )}
 
       {/* Profile background picker modal */}
       {showBackgroundPicker && isOwner && (
