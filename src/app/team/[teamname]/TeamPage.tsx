@@ -243,7 +243,7 @@ export default function TeamPage() {
       const es = computeEventStats(matches);
       const pf = computePlayoffFinishes(es);
       for (const f of pf) {
-        finishes.push({ ...f, memberName: member.displayName, memberUsername: member.username });
+        finishes.push({ ...f, memberName: member.displayName, memberUsername: member.username, memberPhotoUrl: member.photoUrl });
       }
     }
     return finishes;
