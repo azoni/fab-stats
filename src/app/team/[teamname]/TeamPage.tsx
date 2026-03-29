@@ -10,9 +10,10 @@ import { db } from "@/lib/firebase";
 import { TeamHeader } from "@/components/team/TeamHeader";
 import { TeamAggregateStats } from "@/components/team/TeamAggregateStats";
 import { TeamRoster } from "@/components/team/TeamRoster";
+import { TeamRecentPlacements } from "@/components/team/TeamRecentPlacements";
 import { TrophyCase } from "@/components/profile/TrophyCase";
 import { ArmoryGarden } from "@/components/profile/ArmoryGarden";
-import type { Team, TeamMember, LeaderboardEntry, MatchRecord, EventStats, UserProfile } from "@/types";
+import type { Team, TeamMember, LeaderboardEntry, EventStats, UserProfile } from "@/types";
 import type { PlayoffFinish } from "@/lib/stats";
 import { toast } from "sonner";
 import Link from "next/link";
@@ -30,7 +31,7 @@ export default function TeamPage() {
   const [leaderboardMap, setLeaderboardMap] = useState<Map<string, LeaderboardEntry>>(new Map());
 
   // Match-based data (lazy loaded)
-  const [allFinishes, setAllFinishes] = useState<(PlayoffFinish & { memberName: string })[]>([]);
+  const [allFinishes, setAllFinishes] = useState<(PlayoffFinish & { memberName: string; memberUsername?: string })[]>([]);
   const [allArmoryStats, setAllArmoryStats] = useState<EventStats[]>([]);
   const [matchDataLoaded, setMatchDataLoaded] = useState(false);
 
@@ -44,6 +45,7 @@ export default function TeamPage() {
   }, [user, members]);
 
   const canJoin = !!user && !!profile && !profile.teamId;
+  const accent = team?.accentColor || "#d4a843";
 
   // ── Load team + members + leaderboard data ──
   useEffect(() => {
@@ -88,13 +90,13 @@ export default function TeamPage() {
     return () => { cancelled = true; };
   }, [teamname]);
 
-  // ── Lazy load match data for trophy case + armory ──
+  // ── Lazy load match data for trophy case + armory + placements ──
   useEffect(() => {
     if (state !== "loaded" || matchDataLoaded || members.length === 0) return;
     let cancelled = false;
 
     (async () => {
-      const finishes: (PlayoffFinish & { memberName: string })[] = [];
+      const finishes: (PlayoffFinish & { memberName: string; memberUsername?: string })[] = [];
       const armoryStats: EventStats[] = [];
 
       // Fetch matches for each member (limited to first 20 members for perf)
@@ -108,7 +110,7 @@ export default function TeamPage() {
             const es = computeEventStats(matches);
             const pf = computePlayoffFinishes(es);
             for (const f of pf) {
-              finishes.push({ ...f, memberName: member.displayName });
+              finishes.push({ ...f, memberName: member.displayName, memberUsername: member.username });
             }
 
             const armory = es.filter((e) => e.eventType === "Armory");
@@ -133,7 +135,6 @@ export default function TeamPage() {
     try {
       await joinTeam(team.id, profile);
       toast.success("You joined the team!");
-      // Reload
       const m = await getTeamMembers(team.id);
       setMembers(m);
     } catch (err) {
@@ -156,7 +157,7 @@ export default function TeamPage() {
     setLeaving(false);
   }
 
-  // Dummy profile for ArmoryGarden (it only uses unlockedCans which we skip in team mode)
+  // Dummy profile for ArmoryGarden
   const dummyProfile = useMemo<UserProfile>(() => ({
     uid: "", username: "", displayName: team?.name ?? "", createdAt: "", isPublic: true,
   }), [team?.name]);
@@ -165,11 +166,11 @@ export default function TeamPage() {
     return (
       <div className="max-w-5xl mx-auto px-4 py-16">
         <div className="animate-pulse space-y-4">
-          <div className="h-28 bg-fab-surface rounded-xl" />
-          <div className="grid grid-cols-4 gap-2">
-            {[...Array(4)].map((_, i) => <div key={i} className="h-20 bg-fab-surface rounded-lg" />)}
+          <div className="h-40 bg-fab-surface rounded-2xl" />
+          <div className="grid grid-cols-6 gap-2">
+            {[...Array(6)].map((_, i) => <div key={i} className="h-20 bg-fab-surface rounded-xl" />)}
           </div>
-          <div className="h-48 bg-fab-surface rounded-lg" />
+          <div className="h-48 bg-fab-surface rounded-xl" />
         </div>
       </div>
     );
@@ -190,7 +191,8 @@ export default function TeamPage() {
   const lbEntries = [...leaderboardMap.values()];
 
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+      {/* Hero Header */}
       <TeamHeader
         team={team!}
         members={members}
@@ -202,30 +204,40 @@ export default function TeamPage() {
         canJoin={canJoin}
       />
 
-      <TeamAggregateStats entries={lbEntries} />
+      {/* Team Stats */}
+      <TeamAggregateStats entries={lbEntries} accentColor={accent} />
+
+      {/* Recent Placements — the showcase highlight */}
+      {matchDataLoaded && allFinishes.length > 0 && (
+        <TeamRecentPlacements finishes={allFinishes} accentColor={accent} />
+      )}
 
       {/* Trophy Case */}
       {allFinishes.length > 0 && (
         <div>
-          <h2 className="text-sm font-semibold text-fab-text mb-3">Trophy Case</h2>
+          <h2 className="text-sm font-bold text-fab-text uppercase tracking-wider mb-4">Trophy Case</h2>
           <TrophyCase finishes={allFinishes} />
         </div>
       )}
+
+      {/* Loading indicator for match data */}
       {!matchDataLoaded && (
-        <div className="bg-fab-surface border border-fab-border rounded-lg p-6">
-          <p className="text-xs text-fab-dim animate-pulse">Loading trophy case and armory garden...</p>
+        <div className="bg-fab-surface border border-fab-border rounded-xl p-8 text-center">
+          <div className="inline-block w-5 h-5 border-2 border-fab-dim border-t-transparent rounded-full animate-spin mb-2" />
+          <p className="text-xs text-fab-dim">Loading placements and match data...</p>
         </div>
       )}
 
       {/* Armory Garden */}
       {matchDataLoaded && allArmoryStats.length > 0 && (
         <div>
-          <h2 className="text-sm font-semibold text-fab-text mb-3">Armory Garden</h2>
+          <h2 className="text-sm font-bold text-fab-text uppercase tracking-wider mb-4">Armory Garden</h2>
           <ArmoryGarden eventStats={allArmoryStats} ownerProfile={dummyProfile} />
         </div>
       )}
 
-      <TeamRoster members={members} leaderboardMap={leaderboardMap} />
+      {/* Roster */}
+      <TeamRoster members={members} leaderboardMap={leaderboardMap} accentColor={accent} />
     </div>
   );
 }

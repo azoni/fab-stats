@@ -53,6 +53,7 @@ export default function TeamHub() {
   const [editSlug, setEditSlug] = useState("");
   const [editJoinMode, setEditJoinMode] = useState<"open" | "invite">("invite");
   const [editVisibility, setEditVisibility] = useState<"public" | "private">("public");
+  const [editAccentColor, setEditAccentColor] = useState("#d4a843");
   const [saving, setSaving] = useState(false);
   const [pendingInvites, setPendingInvites] = useState<TeamInviteType[]>([]);
   const [confirmDisband, setConfirmDisband] = useState(false);
@@ -114,7 +115,7 @@ export default function TeamHub() {
     if (!team) return;
     setSaving(true);
     try {
-      await updateTeam(team.id, { name: editName.trim(), slug: editSlug.trim() || undefined, description: editDesc.trim(), joinMode: editJoinMode, visibility: editVisibility });
+      await updateTeam(team.id, { name: editName.trim(), slug: editSlug.trim() || undefined, description: editDesc.trim(), joinMode: editJoinMode, visibility: editVisibility, accentColor: editAccentColor });
       toast.success("Team updated!");
       setEditing(false);
     } catch (err) {
@@ -191,9 +192,12 @@ export default function TeamHub() {
       </div>
 
       {/* Pending invites */}
-      {invites.length > 0 && !hasTeam && (
+      {invites.length > 0 && (
         <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 space-y-3">
           <h2 className="text-sm font-semibold text-amber-400">Team Invites</h2>
+          {hasTeam && (
+            <p className="text-xs text-amber-400/70">Leave your current team to accept an invite.</p>
+          )}
           {invites.map((inv) => (
             <div key={inv.id} className="flex items-center justify-between bg-fab-surface rounded-lg p-3">
               <div>
@@ -201,9 +205,11 @@ export default function TeamHub() {
                 <p className="text-xs text-fab-dim">Invited by {inv.inviterName}</p>
               </div>
               <div className="flex gap-2">
-                <button onClick={() => handleAcceptInvite(inv)} className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-fab-win/20 text-fab-win hover:bg-fab-win/30 transition-colors">
-                  Accept
-                </button>
+                {!hasTeam && (
+                  <button onClick={() => handleAcceptInvite(inv)} className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-fab-win/20 text-fab-win hover:bg-fab-win/30 transition-colors">
+                    Accept
+                  </button>
+                )}
                 <button onClick={() => handleDeclineInvite(inv)} className="px-3 py-1.5 rounded-lg text-xs font-semibold text-fab-dim hover:text-fab-muted transition-colors">
                   Decline
                 </button>
@@ -271,7 +277,7 @@ export default function TeamHub() {
               </div>
               {isOwnerOrAdmin && (
                 <button
-                  onClick={() => { setEditing(!editing); setEditName(team.name); setEditSlug(team.nameLower); setEditDesc(team.description || ""); setEditJoinMode(team.joinMode); setEditVisibility(team.visibility || "public"); }}
+                  onClick={() => { setEditing(!editing); setEditName(team.name); setEditSlug(team.nameLower); setEditDesc(team.description || ""); setEditJoinMode(team.joinMode); setEditVisibility(team.visibility || "public"); setEditAccentColor(team.accentColor || "#d4a843"); }}
                   className="text-xs text-fab-gold hover:text-fab-gold-light transition-colors"
                 >
                   {editing ? "Cancel" : "Edit"}
@@ -327,6 +333,21 @@ export default function TeamHub() {
                     ))}
                   </div>
                   <p className="text-[10px] text-fab-dim mt-1">{editVisibility === "public" ? "Anyone can find and view your team." : "Team is hidden from browse and search."}</p>
+                </div>
+                <div>
+                  <label className="block text-xs text-fab-muted mb-1">Accent Color</label>
+                  <div className="flex items-center gap-3">
+                    <div className="flex gap-1.5">
+                      {["#d4a843", "#ef4444", "#f97316", "#22c55e", "#3b82f6", "#8b5cf6", "#ec4899", "#06b6d4", "#64748b"].map((c) => (
+                        <button key={c} onClick={() => setEditAccentColor(c)}
+                          className={`w-7 h-7 rounded-lg transition-all ${editAccentColor === c ? "ring-2 ring-white/40 scale-110" : "ring-1 ring-white/10 hover:ring-white/20"}`}
+                          style={{ background: c }}
+                        />
+                      ))}
+                    </div>
+                    <input type="color" value={editAccentColor} onChange={(e) => setEditAccentColor(e.target.value)}
+                      className="w-7 h-7 rounded-lg cursor-pointer border-0 bg-transparent" title="Custom color" />
+                  </div>
                 </div>
                 <button onClick={handleSaveEdit} disabled={saving || !editName.trim()}
                   className="w-full py-2 rounded-lg font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors text-sm disabled:opacity-50">

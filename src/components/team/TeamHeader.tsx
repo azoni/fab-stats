@@ -1,6 +1,6 @@
 "use client";
 import type { Team, TeamMember } from "@/types";
-import { Users, Shield, Globe } from "lucide-react";
+import { Users, Shield, Globe, Calendar } from "lucide-react";
 
 interface TeamHeaderProps {
   team: Team;
@@ -13,71 +13,127 @@ interface TeamHeaderProps {
   canJoin?: boolean;
 }
 
+function formatDate(iso: string) {
+  try {
+    return new Date(iso).toLocaleDateString("en-US", { month: "short", year: "numeric" });
+  } catch {
+    return "";
+  }
+}
+
 export function TeamHeader({ team, members, viewerRole, onJoin, onLeave, joining, leaving, canJoin }: TeamHeaderProps) {
   const isMember = viewerRole !== null;
+  const accent = team.accentColor || "#d4a843";
+  const hasBg = !!team.backgroundUrl;
 
   return (
-    <div className="bg-fab-surface border border-fab-border rounded-xl p-6 md:p-8">
-      <div className="flex flex-col sm:flex-row items-start gap-5">
-        {/* Icon */}
-        {team.iconUrl ? (
+    <div className="relative rounded-2xl overflow-hidden border border-fab-border">
+      {/* Background layer */}
+      <div className="absolute inset-0">
+        {hasBg ? (
           <img
-            src={team.iconUrl}
-            alt={team.name}
-            className="w-20 h-20 rounded-xl object-cover border-2 border-fab-border shrink-0"
+            src={team.backgroundUrl}
+            alt=""
+            className="w-full h-full object-cover"
           />
         ) : (
-          <div className="w-20 h-20 rounded-xl bg-fab-gold/15 border-2 border-fab-gold/30 flex items-center justify-center shrink-0">
-            <span className="text-2xl font-bold text-fab-gold">{team.name.slice(0, 2).toUpperCase()}</span>
-          </div>
+          <div
+            className="w-full h-full"
+            style={{
+              background: `linear-gradient(135deg, ${accent}18 0%, transparent 50%, ${accent}08 100%)`,
+            }}
+          />
         )}
+        {/* Gradient overlay for readability */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background: hasBg
+              ? `linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.5) 50%, rgba(0,0,0,0.3) 100%)`
+              : "transparent",
+          }}
+        />
+      </div>
 
-        {/* Info */}
-        <div className="flex-1 min-w-0">
-          <h1 className="text-2xl font-bold text-fab-text">{team.name}</h1>
-          {team.description && (
-            <p className="text-sm text-fab-muted mt-1 max-w-xl">{team.description}</p>
+      {/* Accent bar */}
+      <div className="absolute top-0 inset-x-0 h-1" style={{ background: accent }} />
+
+      {/* Content */}
+      <div className="relative px-6 pt-8 pb-6 md:px-8 md:pt-10 md:pb-8">
+        <div className="flex flex-col sm:flex-row items-start gap-5">
+          {/* Icon */}
+          {team.iconUrl ? (
+            <img
+              src={team.iconUrl}
+              alt={team.name}
+              className="w-20 h-20 md:w-24 md:h-24 rounded-2xl object-cover shrink-0 ring-2 ring-white/10 shadow-lg"
+            />
+          ) : (
+            <div
+              className="w-20 h-20 md:w-24 md:h-24 rounded-2xl flex items-center justify-center shrink-0 shadow-lg ring-2 ring-white/10"
+              style={{ background: `linear-gradient(135deg, ${accent}40, ${accent}20)` }}
+            >
+              <span className="text-3xl md:text-4xl font-black" style={{ color: accent }}>
+                {team.name.slice(0, 2).toUpperCase()}
+              </span>
+            </div>
           )}
-          <div className="flex items-center gap-4 mt-3 text-xs text-fab-dim">
-            <span className="flex items-center gap-1.5">
-              <Users className="w-3.5 h-3.5" />
-              {members.length} member{members.length !== 1 ? "s" : ""}
-            </span>
-            <span className="flex items-center gap-1.5">
-              {team.joinMode === "open" ? (
-                <><Globe className="w-3.5 h-3.5" /> Open</>
-              ) : (
-                <><Shield className="w-3.5 h-3.5" /> Invite Only</>
-              )}
-            </span>
+
+          {/* Info */}
+          <div className="flex-1 min-w-0">
+            <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight">{team.name}</h1>
+            {team.description && (
+              <p className="text-sm text-white/70 mt-1.5 max-w-xl leading-relaxed">{team.description}</p>
+            )}
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-3 text-xs text-white/50">
+              <span className="flex items-center gap-1.5">
+                <Users className="w-3.5 h-3.5" />
+                {members.length} member{members.length !== 1 ? "s" : ""}
+              </span>
+              <span className="flex items-center gap-1.5">
+                {team.joinMode === "open" ? (
+                  <><Globe className="w-3.5 h-3.5" /> Open</>
+                ) : (
+                  <><Shield className="w-3.5 h-3.5" /> Invite Only</>
+                )}
+              </span>
+              <span className="flex items-center gap-1.5">
+                <Calendar className="w-3.5 h-3.5" />
+                Est. {formatDate(team.createdAt)}
+              </span>
+            </div>
           </div>
-        </div>
 
-        {/* Actions */}
-        <div className="shrink-0 sm:self-center">
-          {!isMember && team.joinMode === "open" && canJoin && onJoin && (
-            <button
-              onClick={onJoin}
-              disabled={joining}
-              className="px-5 py-2 rounded-lg font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors text-sm disabled:opacity-50"
-            >
-              {joining ? "Joining..." : "Join Team"}
-            </button>
-          )}
-          {isMember && viewerRole !== "owner" && onLeave && (
-            <button
-              onClick={onLeave}
-              disabled={leaving}
-              className="px-5 py-2 rounded-lg font-semibold bg-fab-surface border border-fab-border text-fab-dim hover:text-fab-muted transition-colors text-sm disabled:opacity-50"
-            >
-              {leaving ? "Leaving..." : "Leave Team"}
-            </button>
-          )}
-          {isMember && viewerRole === "owner" && (
-            <span className="px-3 py-1.5 rounded-lg bg-fab-gold/15 text-fab-gold text-xs font-semibold">
-              Owner
-            </span>
-          )}
+          {/* Actions */}
+          <div className="shrink-0 sm:self-center">
+            {!isMember && team.joinMode === "open" && canJoin && onJoin && (
+              <button
+                onClick={onJoin}
+                disabled={joining}
+                className="px-6 py-2.5 rounded-xl font-bold text-sm transition-all disabled:opacity-50 shadow-lg"
+                style={{ background: accent, color: "#111" }}
+              >
+                {joining ? "Joining..." : "Join Team"}
+              </button>
+            )}
+            {isMember && viewerRole !== "owner" && onLeave && (
+              <button
+                onClick={onLeave}
+                disabled={leaving}
+                className="px-5 py-2 rounded-xl font-semibold bg-white/10 backdrop-blur border border-white/10 text-white/70 hover:text-white hover:bg-white/15 transition-all text-sm disabled:opacity-50"
+              >
+                {leaving ? "Leaving..." : "Leave Team"}
+              </button>
+            )}
+            {isMember && viewerRole === "owner" && (
+              <span
+                className="px-3 py-1.5 rounded-lg text-xs font-bold"
+                style={{ background: `${accent}25`, color: accent }}
+              >
+                Owner
+              </span>
+            )}
+          </div>
         </div>
       </div>
     </div>

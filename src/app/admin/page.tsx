@@ -16,6 +16,7 @@ import { getAllPolls, getPollResults, getPollVoters, savePoll, removePoll, clear
 import { grantPredictionAchievements } from "@/lib/prediction-service";
 import { searchHeroes } from "@/lib/heroes";
 import { searchUsernames } from "@/lib/firestore-storage";
+import { forceAddMember, searchTeams } from "@/lib/teams";
 import { getAllBadgeAssignments, assignBadge, revokeBadge } from "@/lib/badge-service";
 import { getMutedUserIds, muteUser, unmuteUser } from "@/lib/mute-service";
 import { getEventShowcase, saveEventShowcase } from "@/lib/event-showcase";
@@ -168,6 +169,15 @@ export default function AdminPage() {
   const [botDaily, setBotDaily] = useState<DailyUsage[]>([]);
   const [botLog, setBotLog] = useState<CommandLogEntry[]>([]);
   const [botLoading, setBotLoading] = useState(false);
+  // Force-add to team
+  const [forceAddUserSearch, setForceAddUserSearch] = useState("");
+  const [forceAddUserResults, setForceAddUserResults] = useState<{ username: string; userId: string }[]>([]);
+  const [forceAddSelectedUser, setForceAddSelectedUser] = useState<{ username: string; userId: string } | null>(null);
+  const [forceAddTeamSearch, setForceAddTeamSearch] = useState("");
+  const [forceAddTeamResults, setForceAddTeamResults] = useState<{ teamId: string; name: string; nameLower: string }[]>([]);
+  const [forceAddSelectedTeam, setForceAddSelectedTeam] = useState<{ teamId: string; name: string } | null>(null);
+  const [forceAdding, setForceAdding] = useState(false);
+  const [forceAddResult, setForceAddResult] = useState("");
   const anyToolRunning = fixingDates || backfilling || backfillingGemIds || linkingMatches || resyncingH2H || backfillingMatchups || backfillingPlacements || syncingBackgroundCatalog || buildingHistorical;
   const [activeTab, setActiveTab] = useState<"overview" | "users" | "feedback" | "content" | "poll" | "tools" | "discord" | "games" | "social" | "sitemap">(() => {
     if (typeof window !== "undefined") {
@@ -2742,6 +2752,124 @@ export default function AdminPage() {
           {activeTab === "sitemap" && <SitemapTab />}
 
           {activeTab === "tools" && <>
+          {/* Force Add to Team */}
+          <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden mb-4">
+            <div className="px-4 py-3 border-b border-fab-border">
+              <h2 className="text-sm font-semibold text-fab-text">Force Add to Team</h2>
+              <p className="text-xs text-fab-dim mt-0.5">Add a user to a team directly. Removes them from their current team if needed.</p>
+            </div>
+            <div className="p-4 space-y-3">
+              {/* User search */}
+              <div>
+                <label className="block text-xs text-fab-muted mb-1">User</label>
+                {forceAddSelectedUser ? (
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-fab-text">@{forceAddSelectedUser.username}</span>
+                    <button onClick={() => setForceAddSelectedUser(null)} className="text-xs text-fab-dim hover:text-fab-muted">&times;</button>
+                  </div>
+                ) : (
+                  <>
+                    <input
+                      type="text"
+                      value={forceAddUserSearch}
+                      onChange={async (e) => {
+                        setForceAddUserSearch(e.target.value);
+                        if (e.target.value.trim().length >= 2) {
+                          const res = await searchUsernames(e.target.value, 5);
+                          setForceAddUserResults(res);
+                        } else {
+                          setForceAddUserResults([]);
+                        }
+                      }}
+                      placeholder="Search username..."
+                      className="w-full bg-fab-bg border border-fab-border text-fab-text text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-fab-gold"
+                    />
+                    {forceAddUserResults.length > 0 && (
+                      <div className="mt-1 space-y-1">
+                        {forceAddUserResults.map((r) => (
+                          <button
+                            key={r.userId}
+                            onClick={() => { setForceAddSelectedUser(r); setForceAddUserSearch(""); setForceAddUserResults([]); }}
+                            className="block w-full text-left px-3 py-1.5 text-sm text-fab-text hover:bg-fab-bg rounded"
+                          >
+                            @{r.username}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+              {/* Team search */}
+              <div>
+                <label className="block text-xs text-fab-muted mb-1">Team</label>
+                {forceAddSelectedTeam ? (
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-fab-text">{forceAddSelectedTeam.name}</span>
+                    <button onClick={() => setForceAddSelectedTeam(null)} className="text-xs text-fab-dim hover:text-fab-muted">&times;</button>
+                  </div>
+                ) : (
+                  <>
+                    <input
+                      type="text"
+                      value={forceAddTeamSearch}
+                      onChange={async (e) => {
+                        setForceAddTeamSearch(e.target.value);
+                        if (e.target.value.trim().length >= 2) {
+                          const res = await searchTeams(e.target.value, 5);
+                          setForceAddTeamResults(res);
+                        } else {
+                          setForceAddTeamResults([]);
+                        }
+                      }}
+                      placeholder="Search team name..."
+                      className="w-full bg-fab-bg border border-fab-border text-fab-text text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-fab-gold"
+                    />
+                    {forceAddTeamResults.length > 0 && (
+                      <div className="mt-1 space-y-1">
+                        {forceAddTeamResults.map((r) => (
+                          <button
+                            key={r.teamId}
+                            onClick={() => { setForceAddSelectedTeam({ teamId: r.teamId, name: r.name }); setForceAddTeamSearch(""); setForceAddTeamResults([]); }}
+                            className="block w-full text-left px-3 py-1.5 text-sm text-fab-text hover:bg-fab-bg rounded"
+                          >
+                            {r.name}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="text-xs">
+                  {forceAddResult && <span className={forceAddResult.startsWith("Error") ? "text-fab-loss" : "text-fab-win"}>{forceAddResult}</span>}
+                </div>
+                <button
+                  onClick={async () => {
+                    if (!forceAddSelectedUser || !forceAddSelectedTeam) return;
+                    setForceAdding(true);
+                    setForceAddResult("");
+                    try {
+                      await forceAddMember(forceAddSelectedTeam.teamId, forceAddSelectedUser.userId);
+                      setForceAddResult(`Added @${forceAddSelectedUser.username} to ${forceAddSelectedTeam.name}`);
+                      setForceAddSelectedUser(null);
+                      setForceAddSelectedTeam(null);
+                    } catch (err) {
+                      setForceAddResult(`Error: ${err instanceof Error ? err.message : "Failed"}`);
+                    } finally {
+                      setForceAdding(false);
+                    }
+                  }}
+                  disabled={forceAdding || !forceAddSelectedUser || !forceAddSelectedTeam}
+                  className="px-4 py-2 rounded-lg text-sm font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors disabled:opacity-50"
+                >
+                  {forceAdding ? "Adding..." : "Force Add"}
+                </button>
+              </div>
+            </div>
+          </div>
+
           {/* Broadcast Message */}
           <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden">
             <div className="px-4 py-3 border-b border-fab-border">
