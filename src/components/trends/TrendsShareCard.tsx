@@ -184,7 +184,6 @@ function ShareCardInner({ data, theme }: { data: TrendsShareData; theme: TrendsT
             style={{ objectPosition: resolveBackgroundPositionForImage(t.backgroundImage!) }}
             loading="eager"
             decoding="async"
-            crossOrigin="anonymous"
             onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; setBgFailed(true); }} />
           <div className="absolute inset-0" style={{ backgroundColor: `${t.surface}B8` }} />
         </>

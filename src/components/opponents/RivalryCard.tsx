@@ -141,7 +141,6 @@ export function RivalryCard({ data, theme }: { data: RivalryData; theme?: CardTh
             style={{ objectPosition: resolveBackgroundPositionForImage(t.backgroundImage) }}
             loading="eager"
             decoding="async"
-            crossOrigin="anonymous"
           onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
           <div className="absolute inset-0" style={{ backgroundColor: `${t.surface}B8` }} />
         </>
