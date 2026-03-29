@@ -1,6 +1,6 @@
 "use client";
 import type { Team, TeamMember } from "@/types";
-import { Users, Shield, Globe, Calendar } from "lucide-react";
+import { Users, Shield, Globe, Calendar, EyeOff } from "lucide-react";
 
 interface TeamHeaderProps {
   team: Team;
@@ -11,6 +11,7 @@ interface TeamHeaderProps {
   joining?: boolean;
   leaving?: boolean;
   canJoin?: boolean;
+  isSiteAdmin?: boolean;
 }
 
 function formatDate(iso: string) {
@@ -21,7 +22,7 @@ function formatDate(iso: string) {
   }
 }
 
-export function TeamHeader({ team, members, viewerRole, onJoin, onLeave, joining, leaving, canJoin }: TeamHeaderProps) {
+export function TeamHeader({ team, members, viewerRole, onJoin, onLeave, joining, leaving, canJoin, isSiteAdmin }: TeamHeaderProps) {
   const isMember = viewerRole !== null;
   const accent = team.accentColor || "#d4a843";
   const hasBg = !!team.backgroundUrl;
@@ -34,7 +35,7 @@ export function TeamHeader({ team, members, viewerRole, onJoin, onLeave, joining
           <img
             src={team.backgroundUrl}
             alt=""
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover scale-110 blur-sm opacity-40"
           />
         ) : (
           <div
@@ -49,7 +50,7 @@ export function TeamHeader({ team, members, viewerRole, onJoin, onLeave, joining
           className="absolute inset-0"
           style={{
             background: hasBg
-              ? `linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.5) 50%, rgba(0,0,0,0.3) 100%)`
+              ? `linear-gradient(to top, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.4) 50%, rgba(0,0,0,0.3) 100%)`
               : "transparent",
           }}
         />
@@ -81,7 +82,14 @@ export function TeamHeader({ team, members, viewerRole, onJoin, onLeave, joining
 
           {/* Info */}
           <div className="flex-1 min-w-0">
-            <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight">{team.name}</h1>
+            <div className="flex items-center gap-2.5">
+              <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight">{team.name}</h1>
+              {isSiteAdmin && team.visibility === "private" && (
+                <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-500/15 text-red-400 text-[10px] font-bold uppercase tracking-wider shrink-0">
+                  <EyeOff className="w-3 h-3" /> Private
+                </span>
+              )}
+            </div>
             {team.description && (
               <p className="text-sm text-white/70 mt-1.5 max-w-xl leading-relaxed">{team.description}</p>
             )}

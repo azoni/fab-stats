@@ -5,7 +5,10 @@ import { useHistoricalEvents } from "@/hooks/useHistoricalEvents";
 import { useLeaderboard } from "@/hooks/useLeaderboard";
 import { TournamentCard } from "@/components/home/TournamentCard";
 import { TrophyIcon } from "@/components/icons/NavIcons";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { FeaturedEvent } from "@/types";
+
+const PAGE_SIZE = 12;
 
 export default function TournamentsPage() {
   const featuredEvents = useFeaturedEvents();
@@ -14,11 +17,22 @@ export default function TournamentsPage() {
   const [filterFormat, setFilterFormat] = useState("all");
   const [filterEventType, setFilterEventType] = useState("all");
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
 
   const entryMap = useMemo(() => new Map(lbEntries.map((e) => [e.username, e])), [lbEntries]);
 
+  // Build a displayName → LeaderboardEntry map for auto-matching tournament player names
+  const nameMap = useMemo(() => {
+    const map = new Map<string, typeof lbEntries[0]>();
+    for (const e of lbEntries) {
+      if (e.displayName) {
+        map.set(e.displayName.toLowerCase(), e);
+      }
+    }
+    return map;
+  }, [lbEntries]);
+
   // Merge featured + historical into a unified list
-  // Featured events take priority (dedupe by name+date)
   const allEvents = useMemo(() => {
     const featuredKeys = new Set(
       featuredEvents.map((e) => `${e.name.toLowerCase()}|${e.date}`)
@@ -77,6 +91,14 @@ export default function TournamentsPage() {
     return result.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [allEvents, filterFormat, filterEventType, search]);
 
+  // Reset page when filters change
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const paged = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+
+  // Reset page on filter/search change
+  const resetPage = () => setPage(1);
+
   if (loading || historicalLoading) {
     return (
       <div className="space-y-6">
@@ -107,7 +129,7 @@ export default function TournamentsPage() {
         <input
           type="text"
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => { setSearch(e.target.value); resetPage(); }}
           placeholder="Search..."
           className="bg-fab-surface border border-fab-border rounded-md px-3 py-1.5 text-fab-text text-sm placeholder:text-fab-dim focus:outline-none focus:border-fab-gold w-36 sm:w-44"
         />
@@ -115,7 +137,7 @@ export default function TournamentsPage() {
           {formats.length > 1 && (
             <select
               value={filterFormat}
-              onChange={(e) => setFilterFormat(e.target.value)}
+              onChange={(e) => { setFilterFormat(e.target.value); resetPage(); }}
               className="bg-fab-surface border border-fab-border rounded-md px-3 py-1.5 text-fab-text text-sm outline-none"
             >
               <option value="all">All Formats</option>
@@ -127,7 +149,7 @@ export default function TournamentsPage() {
           {eventTypes.length > 1 && (
             <select
               value={filterEventType}
-              onChange={(e) => setFilterEventType(e.target.value)}
+              onChange={(e) => { setFilterEventType(e.target.value); resetPage(); }}
               className="bg-fab-surface border border-fab-border rounded-md px-3 py-1.5 text-fab-text text-sm outline-none"
             >
               <option value="all">All Event Types</option>
@@ -146,11 +168,63 @@ export default function TournamentsPage() {
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {filtered.map((event, i) => (
-            <TournamentCard key={`${event.name}-${i}`} event={event} entryMap={entryMap} />
-          ))}
-        </div>
+        <>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {paged.map((event, i) => (
+              <TournamentCard key={`${event.name}-${event.date}-${i}`} event={event} entryMap={entryMap} nameMap={nameMap} />
+            ))}
+          </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-2 pt-2">
+              <button
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={safePage <= 1}
+                className="p-1.5 rounded-lg bg-fab-surface border border-fab-border text-fab-muted hover:text-fab-text disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+
+              {Array.from({ length: totalPages }, (_, i) => i + 1)
+                .filter((p) => p === 1 || p === totalPages || Math.abs(p - safePage) <= 2)
+                .reduce<(number | "...")[]>((acc, p, idx, arr) => {
+                  if (idx > 0 && p - arr[idx - 1] > 1) acc.push("...");
+                  acc.push(p);
+                  return acc;
+                }, [])
+                .map((item, i) =>
+                  item === "..." ? (
+                    <span key={`dots-${i}`} className="text-fab-dim text-sm px-1">...</span>
+                  ) : (
+                    <button
+                      key={item}
+                      onClick={() => setPage(item)}
+                      className={`min-w-[32px] h-8 rounded-lg text-sm font-medium transition-colors ${
+                        item === safePage
+                          ? "bg-fab-gold/15 text-fab-gold border border-fab-gold/30"
+                          : "bg-fab-surface border border-fab-border text-fab-muted hover:text-fab-text"
+                      }`}
+                    >
+                      {item}
+                    </button>
+                  )
+                )}
+
+              <button
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={safePage >= totalPages}
+                className="p-1.5 rounded-lg bg-fab-surface border border-fab-border text-fab-muted hover:text-fab-text disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+
+              <span className="text-xs text-fab-dim ml-2">
+                {filtered.length} tournament{filtered.length !== 1 ? "s" : ""}
+              </span>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

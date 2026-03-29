@@ -23,7 +23,7 @@ type PageState = "loading" | "not_found" | "loaded";
 export default function TeamPage() {
   const pathname = usePathname();
   const teamname = decodeURIComponent(pathname.split("/").pop() || "");
-  const { user, profile } = useAuth();
+  const { user, profile, isAdmin: isSiteAdmin } = useAuth();
 
   const [state, setState] = useState<PageState>("loading");
   const [team, setTeam] = useState<Team | null>(null);
@@ -202,6 +202,7 @@ export default function TeamPage() {
         joining={joining}
         leaving={leaving}
         canJoin={canJoin}
+        isSiteAdmin={isSiteAdmin}
       />
 
       {/* Team Stats */}
