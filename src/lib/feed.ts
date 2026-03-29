@@ -1,6 +1,7 @@
 import {
   collection,
   addDoc,
+  getDoc,
   getDocs,
   deleteDoc,
   doc,
@@ -37,9 +38,19 @@ function logFirestoreError(context: string, error: unknown): void {
 }
 
 /** Enrich feed event data with optional team + photo fields from profile */
-function enrichWithProfileFields(clean: Record<string, unknown>, profile: UserProfile): void {
+async function enrichWithProfileFields(clean: Record<string, unknown>, profile: UserProfile): Promise<void> {
   if (profile.photoUrl) clean.photoUrl = profile.photoUrl;
-  if (profile.teamId) clean.teamId = profile.teamId;
+  if (profile.teamId) {
+    clean.teamId = profile.teamId;
+    try {
+      const teamSnap = await getDoc(doc(db, "teams", profile.teamId));
+      if (teamSnap.exists()) {
+        const teamData = teamSnap.data();
+        if (teamData.name) clean.teamName = teamData.name;
+        if (teamData.iconUrl) clean.teamIconUrl = teamData.iconUrl;
+      }
+    } catch { /* team fetch is best-effort */ }
+  }
 }
 
 export async function createImportFeedEvent(
@@ -67,7 +78,7 @@ export async function createImportFeedEvent(
     if (v !== undefined) clean[k] = v;
   }
 
-  enrichWithProfileFields(clean, profile);
+  await enrichWithProfileFields(clean, profile);
   if (topHeroes.length > 0) clean.topHeroes = topHeroes.slice(0, 3);
 
   await addDoc(feedCollection(), clean);
@@ -99,7 +110,7 @@ export async function createAchievementFeedEvent(
   for (const [k, v] of Object.entries(data)) {
     if (v !== undefined) clean[k] = v;
   }
-  enrichWithProfileFields(clean, profile);
+  await enrichWithProfileFields(clean, profile);
 
   await addDoc(feedCollection(), clean);
   invalidateFeedCache();
@@ -141,7 +152,7 @@ export async function createPlacementFeedEvent(
   for (const [k, v] of Object.entries(data)) {
     if (v !== undefined) clean[k] = v;
   }
-  enrichWithProfileFields(clean, profile);
+  await enrichWithProfileFields(clean, profile);
   if (hero && hero !== "Unknown") clean.hero = hero;
 
   await addDoc(feedCollection(), clean);
@@ -191,7 +202,7 @@ export async function createFaBdokuFeedEvent(
   for (const [k, v] of Object.entries(data)) {
     if (v !== undefined) clean[k] = v;
   }
-  if (profile.photoUrl) clean.photoUrl = profile.photoUrl;
+  await enrichWithProfileFields(clean, profile);
   if (uniquenessScore !== undefined) clean.uniquenessScore = uniquenessScore;
 
   await addDoc(feedCollection(), clean);
@@ -244,7 +255,7 @@ export async function createCrosswordFeedEvent(
   for (const [k, v] of Object.entries(data)) {
     if (v !== undefined) clean[k] = v;
   }
-  if (profile.photoUrl) clean.photoUrl = profile.photoUrl;
+  await enrichWithProfileFields(clean, profile);
 
   await addDoc(feedCollection(), clean);
   invalidateFeedCache();
@@ -290,7 +301,7 @@ export async function createHeroGuesserFeedEvent(
   for (const [k, v] of Object.entries(data)) {
     if (v !== undefined) clean[k] = v;
   }
-  if (profile.photoUrl) clean.photoUrl = profile.photoUrl;
+  await enrichWithProfileFields(clean, profile);
 
   await addDoc(feedCollection(), clean);
   invalidateFeedCache();
@@ -335,7 +346,7 @@ export async function createMatchupManiaFeedEvent(
   for (const [k, v] of Object.entries(data)) {
     if (v !== undefined) clean[k] = v;
   }
-  if (profile.photoUrl) clean.photoUrl = profile.photoUrl;
+  await enrichWithProfileFields(clean, profile);
 
   await addDoc(feedCollection(), clean);
   invalidateFeedCache();
@@ -380,7 +391,7 @@ export async function createTriviaFeedEvent(
   for (const [k, v] of Object.entries(data)) {
     if (v !== undefined) clean[k] = v;
   }
-  if (profile.photoUrl) clean.photoUrl = profile.photoUrl;
+  await enrichWithProfileFields(clean, profile);
 
   await addDoc(feedCollection(), clean);
   invalidateFeedCache();
@@ -425,7 +436,7 @@ export async function createTimelineFeedEvent(
   for (const [k, v] of Object.entries(data)) {
     if (v !== undefined) clean[k] = v;
   }
-  if (profile.photoUrl) clean.photoUrl = profile.photoUrl;
+  await enrichWithProfileFields(clean, profile);
 
   await addDoc(feedCollection(), clean);
   invalidateFeedCache();
@@ -470,7 +481,7 @@ export async function createConnectionsFeedEvent(
   for (const [k, v] of Object.entries(data)) {
     if (v !== undefined) clean[k] = v;
   }
-  if (profile.photoUrl) clean.photoUrl = profile.photoUrl;
+  await enrichWithProfileFields(clean, profile);
 
   await addDoc(feedCollection(), clean);
   invalidateFeedCache();
@@ -521,7 +532,7 @@ export async function createShadowStrikeFeedEvent(
   for (const [k, v] of Object.entries(data)) {
     if (v !== undefined) clean[k] = v;
   }
-  if (profile.photoUrl) clean.photoUrl = profile.photoUrl;
+  await enrichWithProfileFields(clean, profile);
 
   await addDoc(feedCollection(), clean);
   invalidateFeedCache();
@@ -572,7 +583,7 @@ export async function createBladeDashFeedEvent(
   for (const [k, v] of Object.entries(data)) {
     if (v !== undefined) clean[k] = v;
   }
-  if (profile.photoUrl) clean.photoUrl = profile.photoUrl;
+  await enrichWithProfileFields(clean, profile);
 
   await addDoc(feedCollection(), clean);
   invalidateFeedCache();
@@ -679,7 +690,7 @@ export async function createFaBdokuCardFeedEvent(
   for (const [k, v] of Object.entries(data)) {
     if (v !== undefined) clean[k] = v;
   }
-  if (profile.photoUrl) clean.photoUrl = profile.photoUrl;
+  await enrichWithProfileFields(clean, profile);
   if (uniquenessScore !== undefined) clean.uniquenessScore = uniquenessScore;
 
   await addDoc(feedCollection(), clean);
@@ -929,7 +940,7 @@ export async function createRampageFeedEvent(
   for (const [k, v] of Object.entries(data)) {
     if (v !== undefined) clean[k] = v;
   }
-  if (profile.photoUrl) clean.photoUrl = profile.photoUrl;
+  await enrichWithProfileFields(clean, profile);
 
   await addDoc(feedCollection(), clean);
   invalidateFeedCache();
@@ -978,7 +989,7 @@ export async function createKnockoutFeedEvent(
   for (const [k, v] of Object.entries(data)) {
     if (v !== undefined) clean[k] = v;
   }
-  if (profile.photoUrl) clean.photoUrl = profile.photoUrl;
+  await enrichWithProfileFields(clean, profile);
 
   await addDoc(feedCollection(), clean);
   invalidateFeedCache();
@@ -1031,7 +1042,7 @@ export async function createBrawlFeedEvent(
   for (const [k, v] of Object.entries(data)) {
     if (v !== undefined) clean[k] = v;
   }
-  if (profile.photoUrl) clean.photoUrl = profile.photoUrl;
+  await enrichWithProfileFields(clean, profile);
 
   await addDoc(feedCollection(), clean);
   invalidateFeedCache();
@@ -1084,7 +1095,7 @@ export async function createNinjaComboFeedEvent(
   for (const [k, v] of Object.entries(data)) {
     if (v !== undefined) clean[k] = v;
   }
-  if (profile.photoUrl) clean.photoUrl = profile.photoUrl;
+  await enrichWithProfileFields(clean, profile);
 
   await addDoc(feedCollection(), clean);
   invalidateFeedCache();
