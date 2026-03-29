@@ -8,10 +8,7 @@ import {
   PLACEMENT_TEXT,
   col,
   glowFilter,
-  ShieldBadge,
-  MedalIcon,
-  TrophyIcon,
-  MarbleIcon,
+  renderTrophyDesign,
 } from "@/components/profile/TrophyCase";
 import { FINISH_THEMES, type FinishTheme } from "@/components/profile/BestFinishCard";
 import { CornerFiligree, OrnamentalDivider, CardBackgroundPattern, AccentTopBar, InnerVignette } from "@/components/share/CardOrnaments";
@@ -61,31 +58,10 @@ function LargeBadge({ finish, theme }: { finish: PlayoffFinish; theme: FinishThe
   // Scale up: render the SVG badges at 3-4x normal size for the share card
   const wrapperClass = "flex items-center justify-center";
 
-  if (tier === "trophy") {
-    return (
-      <div className={wrapperClass} style={{ transform: "scale(3)", transformOrigin: "center" }}>
-        <TrophyIcon type={finish.type} id={id} />
-      </div>
-    );
-  }
-  if (tier === "medal") {
-    return (
-      <div className={wrapperClass} style={{ transform: "scale(3)", transformOrigin: "center" }}>
-        <MedalIcon type={finish.type} id={id} />
-      </div>
-    );
-  }
-  if (tier === "marble") {
-    return (
-      <div className={wrapperClass} style={{ transform: "scale(3.5)", transformOrigin: "center" }}>
-        <MarbleIcon type={finish.type} id={id} idx={0} />
-      </div>
-    );
-  }
-  // badge (shield)
+  const scale = tier === "marble" ? "scale(3.5)" : "scale(3)";
   return (
-    <div className={wrapperClass} style={{ transform: "scale(3)", transformOrigin: "center" }}>
-      <ShieldBadge type={finish.type} id={id} />
+    <div className={wrapperClass} style={{ transform: scale, transformOrigin: "center" }}>
+      {renderTrophyDesign(finish.eventType, 0, finish.type, id, 0)}
     </div>
   );
 }
