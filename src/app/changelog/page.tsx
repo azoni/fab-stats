@@ -33,6 +33,23 @@ const badgeLabels: Record<ChangeType, string> = {
 
 const changelog: Entry[] = [
   {
+    date: "March 29, 2026",
+    id: "mar-29",
+    changes: [
+      { type: "new", text: "Teams — create a team with custom icon, background image, and accent color. Invite players or set to open join." },
+      { type: "new", text: "Team page at fabstats.net/team/yourteam — aggregate stats, trophy case, recent accomplishments, hero breakdown, armory garden, and full roster with individual stats" },
+      { type: "new", text: "Team badge appears next to your name on leaderboard, profiles, and activity feed" },
+      { type: "new", text: "Shareable team card — themed image card with stats, roster, and tournament results" },
+      { type: "new", text: "Team roles (Owner, Admin, Member) with invite, kick, promote/demote, and ownership transfer" },
+      { type: "new", text: "Team page filters — filter all team stats by format, event type, hero, and tier" },
+      { type: "new", text: "Tournament page pagination with auto-linking players to FaB Stats profiles by display name" },
+      { type: "new", text: "Tournament players show profile pic, team badge, hero shield badge, and card border decoration" },
+      { type: "improved", text: "Social links on profile — inputs always visible for owners with icon labels instead of hidden pencil toggle" },
+      { type: "improved", text: "Tournaments navbar link now goes to /tournaments instead of /tournament-stats" },
+      { type: "fixed", text: "Share card image capture — CORS and CSP fixes for Google profile photos and Firebase Storage team images" },
+    ],
+  },
+  {
     date: "March 24, 2026",
     id: "mar-24",
     changes: [

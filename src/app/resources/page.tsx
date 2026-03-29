@@ -8,14 +8,6 @@ export const metadata: Metadata = {
 
 const RESOURCE_LINKS = [
   {
-    title: "Roadmap",
-    description: "See what's planned and what's coming next for FaB Stats.",
-    href: "/roadmap",
-    color: "text-green-400",
-    bgColor: "bg-green-400/10",
-    ringColor: "ring-green-400/20",
-  },
-  {
     title: "Changelog",
     description: "Recent updates, fixes, and new features.",
     href: "/changelog",
