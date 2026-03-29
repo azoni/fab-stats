@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import dynamic from "next/dynamic";
 const FeedbackModal = dynamic(() => import("@/components/feedback/FeedbackModal").then(m => ({ default: m.FeedbackModal })), { ssr: false });
+import { SmartSearch } from "@/components/search/SmartSearch";
 
 const navLinks: { href: string; label: string; icon: ReactNode; color: string; bg: string; authOnly?: boolean; iconOnly?: boolean; subItems?: { href: string; label: string; adminOnly?: boolean; badge?: string; icon?: ReactNode }[] }[] = [
   { href: "/matches", label: "Matches", icon: <SwordsIcon className="w-4 h-4" />, color: "text-red-400", bg: "bg-red-400/10", authOnly: true, subItems: [
@@ -153,7 +154,12 @@ export function Navbar() {
                         </Link>
                         {hasSubs && (
                           <div className="absolute left-0 top-full pt-1 hidden group-hover/nav:block z-50">
-                            <div className="w-48 bg-fab-surface border border-fab-border rounded-lg shadow-xl overflow-hidden">
+                            <div className={`bg-fab-surface border border-fab-border rounded-lg shadow-xl overflow-hidden ${link.href === "/community" ? "w-64" : "w-48"}`}>
+                              {link.href === "/community" && (
+                                <div className="px-2 pt-2 pb-1">
+                                  <SmartSearch placeholder="Search players or teams..." className="text-xs" />
+                                </div>
+                              )}
                               {visibleSubs.map((sub) => {
                                 const isExternal = sub.href.startsWith("http");
                                 const trackKey = sub.href.includes("amazon") ? "amazon" : sub.href.includes("tcgplayer") ? "tcgplayer" : sub.href.includes("sponsors") ? "github_sponsors" : sub.href.includes("ko-fi") ? "kofi" : undefined;
