@@ -3,6 +3,7 @@ import { useState, useMemo } from "react";
 import Link from "next/link";
 import { useMatches } from "@/hooks/useMatches";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTeamOnce } from "@/hooks/useTeam";
 import dynamic from "next/dynamic";
 import { computeEventStats, computeTournamentAnalytics, type TournamentAnalytics } from "@/lib/stats";
 
@@ -59,6 +60,7 @@ const EVENT_TYPE_OPTIONS = [
 export default function TournamentStatsPage() {
   const { matches, isLoaded } = useMatches();
   const { user, profile } = useAuth();
+  const { team: myTeam } = useTeamOnce(profile?.teamId || null);
   const [filterEventType, setFilterEventType] = useState("rated");
   const [filterFormat, setFilterFormat] = useState("all");
   const [filterHero, setFilterHero] = useState("all");
@@ -263,6 +265,8 @@ export default function TournamentStatsPage() {
             finalistCount: analytics.finalistCount,
             top4Count: analytics.top4Count,
             submarineCount: analytics.submarineCount,
+            teamName: myTeam?.name,
+            teamIconUrl: myTeam?.iconUrl,
           }}
           onClose={() => setShareOpen(false)}
         />

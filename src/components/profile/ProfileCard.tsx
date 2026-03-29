@@ -48,6 +48,8 @@ export interface ProfileCardData {
   isSiteCreator?: boolean;
   selectedBadgeIds?: string[];
   filterLabel?: string;
+  teamName?: string;
+  teamIconUrl?: string;
 }
 
 // ── Fantasy-themed profile card themes ──
@@ -355,6 +357,15 @@ export function ProfileCard({ data, theme }: { data: ProfileCardData; theme?: Ca
             <div className="min-w-0">
               <div className="flex items-center gap-1.5">
                 <p style={{ color: t.text }} className="text-xl font-black truncate leading-tight">{playerName}</p>
+                {data.teamName && (
+                  data.teamIconUrl ? (
+                    <img src={data.teamIconUrl} alt={data.teamName} title={data.teamName} className="w-5 h-5 rounded-full object-cover border border-white/20 shrink-0" />
+                  ) : (
+                    <span title={data.teamName} className="w-5 h-5 rounded-full flex items-center justify-center text-[7px] font-bold shrink-0 border border-white/10 bg-amber-500/60 text-white">
+                      {data.teamName.slice(0, 2).toUpperCase()}
+                    </span>
+                  )
+                )}
                 {data.talentEmblemId && EMBLEM_COMPONENTS[data.talentEmblemId] && (() => {
                   const Icon = EMBLEM_COMPONENTS[data.talentEmblemId!];
                   const colors = EMBLEM_COLORS[data.talentEmblemId!];
