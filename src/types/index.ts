@@ -393,6 +393,7 @@ export interface LeaderboardEntry {
   teamId?: string;
   teamName?: string;
   teamIconUrl?: string;
+  teamVisibility?: "public" | "private";
   createdAt?: string;
   updatedAt: string;
 }

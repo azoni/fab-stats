@@ -128,7 +128,7 @@ export function TournamentCard({ event, entryMap, nameMap, fullImage }: Tourname
               const badges = lbEntry ? (
                 <div className="flex items-center gap-1 shrink-0">
                   {lbEntry.teamName && (
-                    <TeamBadge teamName={lbEntry.teamName} teamIconUrl={lbEntry.teamIconUrl} size="xs" linkToTeam={false} />
+                    <TeamBadge teamName={lbEntry.teamName} teamIconUrl={lbEntry.teamIconUrl} size="xs" linkToTeam={false} isPrivate={lbEntry.teamVisibility === "private"} />
                   )}
                   {lbEntry.bothHeroesCompletionPct > 0 && (
                     <HeroShieldBadge pct={lbEntry.bothHeroesCompletionPct} size="sm" />

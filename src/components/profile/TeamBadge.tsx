@@ -8,6 +8,10 @@ interface TeamBadgeProps {
   teamIconUrl?: string;
   size?: "xs" | "sm" | "md";
   linkToTeam?: boolean;
+  /** If true, team is private — hidden for non-admins, red border for admins */
+  isPrivate?: boolean;
+  /** If true, viewer is site admin — sees private teams with red border */
+  isSiteAdmin?: boolean;
 }
 
 const SIZES = {
@@ -26,23 +30,32 @@ function teamColor(name: string): string {
   return `hsl(${hue}, 55%, 55%)`;
 }
 
-function TeamBadgeInner({ teamName, teamNameLower, teamIconUrl, size = "sm", linkToTeam = true }: TeamBadgeProps) {
+function TeamBadgeInner({ teamName, teamNameLower, teamIconUrl, size = "sm", linkToTeam = true, isPrivate, isSiteAdmin }: TeamBadgeProps) {
+  // Private teams hidden from non-admins
+  if (isPrivate && !isSiteAdmin) return null;
+
   const s = SIZES[size];
   const abbr = teamName.slice(0, 2).toUpperCase();
   const slug = teamNameLower || teamName.toLowerCase().replace(/[^a-z0-9]/g, "");
+  const privateBorder = isPrivate && isSiteAdmin;
 
   const badge = teamIconUrl ? (
     <img
       src={teamIconUrl}
       alt={teamName}
       title={teamName}
-      className={`${s.box} rounded-full object-cover border border-fab-border shrink-0`}
+      className={`${s.box} rounded-full object-cover shrink-0`}
+      style={{ border: privateBorder ? "2px solid #ef4444" : "1px solid var(--color-fab-border)" }}
     />
   ) : (
     <span
       title={teamName}
-      className={`${s.box} rounded-full flex items-center justify-center font-bold ${s.text} shrink-0 border border-white/10`}
-      style={{ backgroundColor: teamColor(teamName), color: "#fff" }}
+      className={`${s.box} rounded-full flex items-center justify-center font-bold ${s.text} shrink-0`}
+      style={{
+        backgroundColor: teamColor(teamName),
+        color: "#fff",
+        border: privateBorder ? "2px solid #ef4444" : "1px solid rgba(255,255,255,0.1)",
+      }}
     >
       {abbr}
     </span>

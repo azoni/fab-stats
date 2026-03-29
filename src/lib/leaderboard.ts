@@ -359,6 +359,7 @@ export async function updateLeaderboardEntry(
         clean.teamId = profile.teamId;
         clean.teamName = teamData.name;
         if (teamData.iconUrl) clean.teamIconUrl = teamData.iconUrl;
+        if (teamData.visibility) clean.teamVisibility = teamData.visibility;
       }
     } catch { /* skip if team fetch fails */ }
   }
