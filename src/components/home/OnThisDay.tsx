@@ -412,6 +412,7 @@ function OnThisDayShareModal({
   const [themeQuery, setThemeQuery] = useState("");
   const [themePage, setThemePage] = useState(1);
   const [shareStatus, setShareStatus] = useState<"idle" | "sharing" | "copied" | "text-copied">("idle");
+  const [hideOpponents, setHideOpponents] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
 
   const filteredThemes = useMemo(() => {
@@ -470,7 +471,7 @@ function OnThisDayShareModal({
         {/* Card preview */}
         <div className="p-4 flex justify-center overflow-x-auto">
           <div ref={cardRef}>
-            <OnThisDayCard data={data} theme={selectedTheme} />
+            <OnThisDayCard data={data} theme={selectedTheme} hideOpponents={hideOpponents} />
           </div>
         </div>
 
@@ -544,7 +545,18 @@ function OnThisDayShareModal({
           </div>
         </div>
 
-        {/* Copy + Download buttons */}
+        {/* Hide opponents toggle + Copy + Download */}
+        <div className="px-4 pb-2">
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={hideOpponents}
+              onChange={(e) => setHideOpponents(e.target.checked)}
+              className="rounded border-fab-border bg-fab-bg text-fab-gold focus:ring-fab-gold/30 w-3.5 h-3.5"
+            />
+            <span className="text-xs text-fab-muted">Hide opponent names</span>
+          </label>
+        </div>
         <div className="px-4 pb-4 flex gap-2">
           <button onClick={handleCopy} disabled={shareStatus === "sharing"} className="flex-1 py-2.5 rounded-lg text-sm font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors disabled:opacity-50">
             {shareStatus === "sharing" ? "Capturing..." : shareStatus === "copied" ? "Image Copied!" : shareStatus === "text-copied" ? "Link Copied" : "Copy Image"}
