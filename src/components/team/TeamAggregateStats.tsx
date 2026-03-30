@@ -103,13 +103,18 @@ export function TeamAggregateStats({ entries, accentColor = "#d4a843", filteredM
     return computeFromLeaderboard(entries);
   }, [entries, filteredMatches]);
 
-  // Event types that have top 8 playoffs (tier 2+)
-  const TOP8_EVENT_TYPES = new Set(["Skirmish", "ProQuest", "Battlegrounds", "Road to Nationals", "Showdown", "Battle Hardened", "The Calling", "Nationals", "Pro Tour", "Worlds"]);
-
   // Always compute top 8s from leaderboard entries (top8Heroes has event metadata for filtering)
   const top8Stats = useMemo(() => {
     let totalTop8s = 0;
-    // Count unique competitive events across all members for conversion denominator
+    // Build set of event types that actually have top 8 finishes in our data
+    const eventTypesWithTop8s = new Set<string>();
+    for (const e of entries) {
+      if (e.top8Heroes) {
+        for (const t8 of e.top8Heroes) eventTypesWithTop8s.add(t8.eventType);
+      }
+    }
+
+    // Count unique events for conversion denominator — only event types that have top 8s
     const competitiveEventKeys = new Set<string>();
     for (const e of entries) {
       // Count top 8 finishes
@@ -121,10 +126,10 @@ export function TeamAggregateStats({ entries, accentColor = "#d4a843", filteredM
           totalTop8s++;
         }
       }
-      // Count competitive events from heroBreakdownDetailed (unique event keys with tier 2+ types)
+      // Count events from event types that have top 8s
       if (e.heroBreakdownDetailed) {
         for (const hb of e.heroBreakdownDetailed) {
-          if (!TOP8_EVENT_TYPES.has(hb.eventType)) continue;
+          if (!eventTypesWithTop8s.has(hb.eventType)) continue;
           if (filterEventType && filterEventType !== "all" && hb.eventType !== filterEventType) continue;
           if (filterFormat && filterFormat !== "all" && hb.format !== filterFormat) continue;
           if (filterHero && filterHero !== "all" && hb.hero !== filterHero) continue;
