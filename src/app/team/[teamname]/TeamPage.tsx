@@ -28,7 +28,7 @@ type PageState = "loading" | "not_found" | "loaded";
 export default function TeamPage() {
   const pathname = usePathname();
   const teamname = decodeURIComponent(pathname.split("/").pop() || "");
-  const { user, profile, isAdmin: isSiteAdmin } = useAuth();
+  const { user, profile, isAdmin: isSiteAdmin, refreshProfile } = useAuth();
 
   const [state, setState] = useState<PageState>("loading");
   const [team, setTeam] = useState<Team | null>(null);
@@ -151,6 +151,7 @@ export default function TeamPage() {
     setJoining(true);
     try {
       await joinTeam(team.id, profile);
+      await refreshProfile();
       toast.success("You joined the team!");
       const m = await getTeamMembers(team.id);
       setMembers(m);
@@ -165,6 +166,7 @@ export default function TeamPage() {
     setLeaving(true);
     try {
       await leaveTeam(team.id, user.uid);
+      await refreshProfile();
       toast.success("You left the team.");
       const m = await getTeamMembers(team.id);
       setMembers(m);

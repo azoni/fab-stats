@@ -225,6 +225,7 @@ export interface TeamInvite {
   inviterUid: string;
   inviterName: string;
   targetUid: string;
+  targetUsername?: string;
   status: "pending" | "accepted" | "declined";
   createdAt: string;
 }

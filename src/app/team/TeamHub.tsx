@@ -169,6 +169,7 @@ export default function TeamHub() {
     if (!profile) return;
     try {
       await acceptTeamInvite(invite.id, profile);
+      await refreshProfile();
       toast.success(`Joined ${invite.teamName}!`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to accept.");
@@ -179,8 +180,8 @@ export default function TeamHub() {
     try {
       await declineTeamInvite(invite.id);
       toast.success("Invite declined.");
-    } catch {
-      toast.error("Failed to decline.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to decline.");
     }
   }
 

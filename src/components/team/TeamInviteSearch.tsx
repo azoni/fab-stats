@@ -46,10 +46,10 @@ export function TeamInviteSearch({
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
   }, [query]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  async function handleInvite(userId: string) {
+  async function handleInvite(userId: string, username?: string) {
     setSending(userId);
     try {
-      await sendTeamInvite(teamId, teamName, teamIconUrl, inviter, userId);
+      await sendTeamInvite(teamId, teamName, teamIconUrl, inviter, userId, username);
       toast.success("Invite sent!");
       onInviteSent();
     } catch (err) {
@@ -103,7 +103,7 @@ export function TeamInviteSearch({
                   <span className="text-[11px] text-fab-dim">Invite pending</span>
                 ) : (
                   <button
-                    onClick={() => handleInvite(r.userId)}
+                    onClick={() => handleInvite(r.userId, r.username)}
                     disabled={sending === r.userId}
                     className="text-[11px] px-2.5 py-1 rounded bg-fab-gold/15 text-fab-gold hover:bg-fab-gold/25 transition-colors disabled:opacity-50"
                   >
@@ -124,7 +124,7 @@ export function TeamInviteSearch({
             {pendingInvites.map((inv) => (
               <div key={inv.id} className="flex items-center justify-between py-2 px-3 rounded-lg bg-fab-bg border border-fab-border">
                 <div>
-                  <span className="text-sm text-fab-text">{inv.targetUid}</span>
+                  <span className="text-sm text-fab-text">{inv.targetUsername ? `@${inv.targetUsername}` : inv.targetUid}</span>
                   <span className="text-xs text-fab-dim ml-2">invited by {inv.inviterName}</span>
                 </div>
                 <button
