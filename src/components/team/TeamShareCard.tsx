@@ -226,7 +226,7 @@ function ShareCardInner({ data, theme }: { data: TeamShareData; theme: TeamTheme
             <span className="font-bold" style={{ color: t.win }}>{data.bestStreak}W</span>
           </div>
           <div className="flex justify-between">
-            <span style={{ color: t.text, opacity: 0.7 }}>Top 8 Conv.</span>
+            <span style={{ color: t.text, opacity: 0.7 }}>Top 8 Rate</span>
             <span className="font-bold" style={{ color: data.top8Conversion >= 20 ? t.win : t.text }}>{data.top8Conversion}%</span>
           </div>
         </div>

@@ -55,12 +55,12 @@ function computeFromMatches(matchMap: Map<string, MatchRecord[]>) {
       winRate: matches > 0 ? Math.round((wins / matches) * 100) : 0,
     }));
 
-  return { totalMatches, totalWins, totalLosses, totalDraws, winRate, totalEvents, totalTop8s: 0, top8Conversion: 0, topHeroes, bestStreak };
+  return { totalMatches, totalWins, totalLosses, totalDraws, winRate, totalEvents, topHeroes, bestStreak };
 }
 
 function computeFromLeaderboard(entries: LeaderboardEntry[]) {
   let totalMatches = 0, totalWins = 0, totalLosses = 0, totalDraws = 0, totalByes = 0;
-  let totalEvents = 0, totalTop8s = 0, bestStreak = 0;
+  let totalEvents = 0, bestStreak = 0;
   const heroMap = new Map<string, { matches: number; wins: number }>();
 
   for (const e of entries) {
@@ -70,7 +70,6 @@ function computeFromLeaderboard(entries: LeaderboardEntry[]) {
     totalDraws += e.totalDraws;
     totalByes += e.totalByes;
     totalEvents += e.eventsPlayed ?? 0;
-    totalTop8s += e.totalTop8s ?? 0;
     if (e.longestWinStreak > bestStreak) bestStreak = e.longestWinStreak;
 
     if (e.heroBreakdown) {
@@ -92,9 +91,8 @@ function computeFromLeaderboard(entries: LeaderboardEntry[]) {
       matches,
       winRate: matches > 0 ? Math.round((wins / matches) * 100) : 0,
     }));
-  const top8Conversion = totalEvents > 0 ? Math.round((totalTop8s / totalEvents) * 100) : 0;
 
-  return { totalMatches, totalWins, totalLosses, totalDraws, winRate, totalEvents, totalTop8s, top8Conversion, topHeroes, bestStreak };
+  return { totalMatches, totalWins, totalLosses, totalDraws, winRate, totalEvents, topHeroes, bestStreak };
 }
 
 export function TeamAggregateStats({ entries, accentColor = "#d4a843", filteredMatches, filterFormat, filterEventType, filterHero }: TeamAggregateStatsProps) {
@@ -104,8 +102,9 @@ export function TeamAggregateStats({ entries, accentColor = "#d4a843", filteredM
   }, [entries, filteredMatches]);
 
   // Compute top 8s from leaderboard entries
-  // Uses top8sByEventType + minorTop8sByEventType (which count ALL finishes, not just those with valid heroes)
-  // Uses top8Heroes only when format/hero filters are active (it has that metadata)
+  // Uses totalTop8s (from computePlayoffFinishes only — does NOT include minorTop8sByEventType
+  // which would double-count Skirmish/RTN/PQ finishes that are already in top8sByEventType)
+  // Uses top8Heroes when format/hero filters are active (it has that metadata)
   const top8Stats = useMemo(() => {
     const hasFormatFilter = filterFormat && filterFormat !== "all";
     const hasHeroFilter = filterHero && filterHero !== "all";
@@ -114,60 +113,30 @@ export function TeamAggregateStats({ entries, accentColor = "#d4a843", filteredM
 
     let totalTop8s = 0;
 
-    // Build set of event types that have top 8s (from both major and minor sources)
-    const eventTypesWithTop8s = new Set<string>();
-
-    for (const e of entries) {
-      if (needsDetailedFilter) {
-        // When filtering by format or hero, must use top8Heroes (has format/hero metadata)
+    if (needsDetailedFilter || hasEventTypeFilter) {
+      // When filtering, use top8Heroes for granular per-finish metadata
+      for (const e of entries) {
         if (e.top8Heroes) {
           for (const t8 of e.top8Heroes) {
             if (hasEventTypeFilter && t8.eventType !== filterEventType) continue;
             if (hasFormatFilter && t8.format !== filterFormat) continue;
             if (hasHeroFilter && t8.hero !== filterHero) continue;
             totalTop8s++;
-            eventTypesWithTop8s.add(t8.eventType);
-          }
-        }
-      } else {
-        // No format/hero filter — use the complete counts from top8sByEventType + minorTop8sByEventType
-        if (e.top8sByEventType) {
-          for (const [et, count] of Object.entries(e.top8sByEventType)) {
-            if (hasEventTypeFilter && et !== filterEventType) continue;
-            totalTop8s += count;
-            eventTypesWithTop8s.add(et);
-          }
-        }
-        if (e.minorTop8sByEventType) {
-          for (const [et, count] of Object.entries(e.minorTop8sByEventType)) {
-            if (hasEventTypeFilter && et !== filterEventType) continue;
-            totalTop8s += count;
-            eventTypesWithTop8s.add(et);
           }
         }
       }
-    }
-
-    // Count competitive events (only event types that have top 8s) for conversion denominator
-    const competitiveEventKeys = new Set<string>();
-    for (const e of entries) {
-      if (e.heroBreakdownDetailed) {
-        for (const hb of e.heroBreakdownDetailed) {
-          if (!eventTypesWithTop8s.has(hb.eventType)) continue;
-          if (hasEventTypeFilter && hb.eventType !== filterEventType) continue;
-          if (hasFormatFilter && hb.format !== filterFormat) continue;
-          if (hasHeroFilter && hb.hero !== filterHero) continue;
-          if (hb.eventKeys) {
-            for (const ek of hb.eventKeys) competitiveEventKeys.add(ek);
-          }
-        }
+    } else {
+      // No filters — use totalTop8s from leaderboard (canonical count from computePlayoffFinishes)
+      for (const e of entries) {
+        totalTop8s += e.totalTop8s ?? 0;
       }
     }
 
-    const competitiveEvents = competitiveEventKeys.size;
-    const top8Conversion = competitiveEvents > 0 ? Math.round((totalTop8s / competitiveEvents) * 100) : 0;
-    return { totalTop8s, top8Conversion, competitiveEvents };
-  }, [entries, filterEventType, filterFormat, filterHero]);
+    // Conversion: top 8 finishes / total events played
+    const totalEvents = stats.totalEvents;
+    const top8Conversion = totalEvents > 0 ? Math.round((totalTop8s / totalEvents) * 100) : 0;
+    return { totalTop8s, top8Conversion, totalEvents };
+  }, [entries, filterEventType, filterFormat, filterHero, stats.totalEvents]);
 
   if (stats.totalMatches === 0) return null;
 
@@ -176,7 +145,7 @@ export function TeamAggregateStats({ entries, accentColor = "#d4a843", filteredM
     { label: "Win Rate", value: `${stats.winRate}%`, sub: `${stats.totalWins}W ${stats.totalLosses}L ${stats.totalDraws}D`, icon: Target, color: stats.winRate >= 50 ? "var(--color-fab-win)" : "var(--color-fab-loss)" },
     { label: "Events", value: stats.totalEvents.toLocaleString(), icon: Star },
     { label: "Top 8s", value: top8Stats.totalTop8s.toLocaleString(), icon: Trophy, color: top8Stats.totalTop8s > 0 ? accentColor : undefined },
-    { label: "Conversion", value: `${top8Stats.top8Conversion}%`, sub: `${top8Stats.totalTop8s}/${top8Stats.competitiveEvents}`, icon: TrendingUp },
+    { label: "Top 8 Rate", value: `${top8Stats.top8Conversion}%`, sub: `${top8Stats.totalTop8s} in ${top8Stats.totalEvents} events`, icon: TrendingUp },
     { label: "Best Streak", value: `${stats.bestStreak}W`, icon: Flame, color: stats.bestStreak >= 5 ? "var(--color-fab-win)" : undefined },
   ];
 

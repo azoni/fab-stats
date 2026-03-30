@@ -350,10 +350,19 @@ const COMPETITIVE_EVENT_TYPES: [RegExp, string][] = [
   [/path to.*(pro tour)|convention.*5k|\bldxp\b/i, "Path to Pro Tour"],
 ];
 
-/** Find the lowest-prestige competitive event type that matches the text. */
+/** Find the lowest-prestige competitive event type that matches the text.
+ *  "Qualifier" events (e.g. "World Championship Qualifier") are NOT the actual
+ *  major tournament — they go to "Other" unless they match a lower-tier type. */
 function classifyCompetitiveEvent(text: string): string | null {
+  const isQualifier = /\bqualifier\b/i.test(text);
   for (const [pattern, type] of COMPETITIVE_EVENT_TYPES) {
-    if (pattern.test(text)) return type;
+    if (pattern.test(text)) {
+      // Qualifier events should not be classified as major tournament types
+      if (isQualifier && ["Worlds", "Pro Tour", "Nationals", "The Calling", "Battle Hardened", "Battlegrounds", "Path to Pro Tour"].includes(type)) {
+        continue;
+      }
+      return type;
+    }
   }
   return null;
 }

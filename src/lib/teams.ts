@@ -13,6 +13,7 @@ import {
   increment,
   writeBatch,
   limit,
+  deleteField,
   type Unsubscribe,
 } from "firebase/firestore";
 import { db } from "./firebase";
@@ -158,6 +159,28 @@ export async function updateTeam(
     updateData.name = trimmedName;
   }
 
+  if (updates.description !== undefined) {
+    if (updates.description.length > 500) {
+      throw new Error("Description must be 500 characters or less.");
+    }
+    if (updates.description && containsProfanity(updates.description)) {
+      throw new Error("Description contains inappropriate language.");
+    }
+    updateData.description = updates.description;
+  }
+
+  if (updates.joinMode !== undefined) {
+    updateData.joinMode = updates.joinMode;
+  }
+
+  if (updates.visibility !== undefined) {
+    updateData.visibility = updates.visibility;
+  }
+
+  if (updates.accentColor !== undefined) {
+    updateData.accentColor = updates.accentColor;
+  }
+
   if (newNameLower !== null) {
     if (!newNameLower || newNameLower.length < 2) {
       throw new Error("URL slug must be at least 2 characters.");
@@ -180,28 +203,6 @@ export async function updateTeam(
       await batch.commit();
       return;
     }
-  }
-
-  if (updates.description !== undefined) {
-    if (updates.description.length > 500) {
-      throw new Error("Description must be 500 characters or less.");
-    }
-    if (updates.description && containsProfanity(updates.description)) {
-      throw new Error("Description contains inappropriate language.");
-    }
-    updateData.description = updates.description;
-  }
-
-  if (updates.joinMode !== undefined) {
-    updateData.joinMode = updates.joinMode;
-  }
-
-  if (updates.visibility !== undefined) {
-    updateData.visibility = updates.visibility;
-  }
-
-  if (updates.accentColor !== undefined) {
-    updateData.accentColor = updates.accentColor;
   }
 
   await updateDoc(doc(db, "teams", teamId), updateData);
@@ -356,6 +357,26 @@ export async function transferOwnership(teamId: string, ownerUid: string, newOwn
   batch.update(doc(membersCollection(teamId), newOwnerUid), { role: "owner" });
   batch.update(doc(db, "teams", teamId), { ownerUid: newOwnerUid, updatedAt: now });
   await batch.commit();
+}
+
+export async function updateMemberTitle(
+  teamId: string,
+  updaterUid: string,
+  targetUid: string,
+  title: string
+): Promise<void> {
+  const updaterSnap = await getDoc(doc(membersCollection(teamId), updaterUid));
+  if (!updaterSnap.exists()) throw new Error("You are not a member of this team.");
+  const updater = updaterSnap.data() as TeamMember;
+  if (updater.role !== "owner" && updater.role !== "admin") {
+    throw new Error("Only owners and admins can set titles.");
+  }
+
+  const targetSnap = await getDoc(doc(membersCollection(teamId), targetUid));
+  if (!targetSnap.exists()) throw new Error("Member not found.");
+
+  const trimmed = title.trim().slice(0, 40);
+  await updateDoc(doc(membersCollection(teamId), targetUid), { title: trimmed || deleteField() });
 }
 
 // ── Admin Force-Add ──

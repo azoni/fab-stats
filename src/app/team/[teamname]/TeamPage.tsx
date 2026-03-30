@@ -315,7 +315,7 @@ export default function TeamPage() {
         top8s: allFinishes.filter((f) => f.type === "top8").length,
       },
     };
-  }, [team, lbEntries, members, leaderboardMap]);
+  }, [team, lbEntries, members, leaderboardMap, allFinishes]);
 
   if (state === "loading") {
     return (
@@ -413,7 +413,7 @@ export default function TeamPage() {
       )}
 
       {/* Roster */}
-      <TeamRoster members={members} leaderboardMap={leaderboardMap} accentColor={accent} filteredStats={filteredMemberStats} />
+      <TeamRoster members={members} leaderboardMap={leaderboardMap} accentColor={accent} filteredStats={filteredMemberStats} teamId={team?.id} viewerRole={viewerRole} viewerUid={user?.uid} onMemberUpdated={async () => { if (team) { const m = await getTeamMembers(team.id); setMembers(m); } }} />
     </div>
   );
 }

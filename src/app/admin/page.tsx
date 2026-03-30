@@ -102,6 +102,7 @@ export default function AdminPage() {
   const [backgroundCatalogProgress, setBackgroundCatalogProgress] = useState("");
   const [buildingHistorical, setBuildingHistorical] = useState(false);
   const [historicalProgress, setHistoricalProgress] = useState("");
+  const [gemIdCount, setGemIdCount] = useState<number | null>(null);
   // Poll: new poll form
   const [newPollQuestion, setNewPollQuestion] = useState("");
   const [newPollOptions, setNewPollOptions] = useState<string[]>(["", ""]);
@@ -220,6 +221,12 @@ export default function AdminPage() {
         setSupportClicks24h(sc24h.supportClicks);
         setSupportClicks7d(sc7d.supportClicks);
       }).catch(() => {});
+      // Lazy-load GEM ID count
+      import("firebase/firestore").then(({ collection: col, getCountFromServer: getCount }) =>
+        import("@/lib/firebase").then(({ db: fireDb }) =>
+          getCount(col(fireDb, "gemIds")).then((snap) => setGemIdCount(snap.data().count)).catch(() => {})
+        )
+      );
       setAllPolls(polls);
       setBadgeAssignments(badges);
       setMutedIds(new Set(muted));
@@ -616,6 +623,7 @@ export default function AdminPage() {
                   <MetricCard label="AI Chat Cost" value={aiCost.totalCost.toFixed(4)} prefix="$" subtext={`${aiCost.totalMessages} msgs · ${Object.keys(aiCost.users).length} users`} />
                 </button>
                 {deletedAccounts > 0 && <MetricCard label="Deleted Accounts" value={deletedAccounts} />}
+                {gemIdCount !== null && <MetricCard label="GEM IDs Linked" value={gemIdCount} subtext={`${activePlayers > 0 ? Math.round((gemIdCount / activePlayers) * 100) : 0}% of active players`} />}
               </div>
             );
           })()}

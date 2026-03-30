@@ -1,17 +1,17 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
-import type { TeamMember, LeaderboardEntry } from "@/types";
+import type { GroupMember, LeaderboardEntry } from "@/types";
 import { Crown, ShieldCheck, Pencil, Check, X } from "lucide-react";
-import { updateMemberTitle } from "@/lib/teams";
+import { updateMemberTitle } from "@/lib/groups";
 import { toast } from "sonner";
 
-interface TeamRosterProps {
-  members: TeamMember[];
+interface GroupRosterProps {
+  members: GroupMember[];
   leaderboardMap: Map<string, LeaderboardEntry>;
   accentColor?: string;
   filteredStats?: Map<string, { matches: number; wins: number; winRate: number }> | null;
-  teamId?: string;
+  groupId?: string;
   viewerRole?: "owner" | "admin" | "member" | null;
   viewerUid?: string;
   onMemberUpdated?: () => void;
@@ -22,7 +22,7 @@ const ROLE_CONFIG: Record<string, { label: string; cls: string; icon?: typeof Cr
   admin: { label: "Admin", cls: "text-violet-400", icon: ShieldCheck },
 };
 
-export function TeamRoster({ members, leaderboardMap, accentColor = "#d4a843", filteredStats, teamId, viewerRole, viewerUid, onMemberUpdated }: TeamRosterProps) {
+export function GroupRoster({ members, leaderboardMap, accentColor = "#d4a843", filteredStats, groupId, viewerRole, viewerUid, onMemberUpdated }: GroupRosterProps) {
   const [editingTitle, setEditingTitle] = useState<string | null>(null);
   const [titleDraft, setTitleDraft] = useState("");
   const [savingTitle, setSavingTitle] = useState(false);
@@ -39,10 +39,10 @@ export function TeamRoster({ members, leaderboardMap, accentColor = "#d4a843", f
   });
 
   async function handleSaveTitle(memberUid: string) {
-    if (!teamId || !viewerUid) return;
+    if (!groupId || !viewerUid) return;
     setSavingTitle(true);
     try {
-      await updateMemberTitle(teamId, viewerUid, memberUid, titleDraft);
+      await updateMemberTitle(groupId, viewerUid, memberUid, titleDraft);
       toast.success(titleDraft.trim() ? "Title updated" : "Title removed");
       setEditingTitle(null);
       onMemberUpdated?.();
