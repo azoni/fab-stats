@@ -381,7 +381,7 @@ export default function TeamPage() {
       )}
 
       {/* Team Stats */}
-      <TeamAggregateStats entries={lbEntries} accentColor={accent} filteredMatches={isFiltered ? filteredMatchesPerMember : undefined} />
+      <TeamAggregateStats entries={lbEntries} accentColor={accent} filteredMatches={isFiltered ? filteredMatchesPerMember : undefined} filterFormat={filterFormat} filterEventType={filterEventType} filterHero={filterHero} />
 
       {/* Recent Placements — the showcase highlight */}
       {matchDataLoaded && filteredFinishes.length > 0 && (
