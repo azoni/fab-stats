@@ -55,6 +55,18 @@
   to = "/team/_.html"
   status = 200
 
+# Serve group hub page at exact /group path
+[[redirects]]
+  from = "/group"
+  to = "/group.html"
+  status = 200
+
+# Serve pre-rendered group profile page for /group/* URLs
+[[redirects]]
+  from = "/group/*"
+  to = "/group/_.html"
+  status = 200
+
 # Serve pre-rendered inbox page for all /inbox/* URLs
 [[redirects]]
   from = "/inbox/*"
