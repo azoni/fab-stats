@@ -19,7 +19,7 @@ type Tab = "my-team" | "browse" | "create";
 
 export default function TeamHub() {
   const [mounted, setMounted] = useState(false);
-  const { user, profile, isAdmin: isSiteAdmin } = useAuth();
+  const { user, profile, isAdmin: isSiteAdmin, refreshProfile } = useAuth();
   const { team, members, myRole, loading } = useMyTeam();
   const { invites } = useTeamInvites();
 
@@ -106,6 +106,7 @@ export default function TeamHub() {
       await createTeam(profile, matchCount ?? 0, { name: name.trim(), slug: slug.trim() || undefined, description: description.trim() || undefined, joinMode });
       toast.success("Team created!");
       setName(""); setSlug(""); setDescription("");
+      await refreshProfile();
       setActiveTab("my-team");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to create team.");
