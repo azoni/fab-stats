@@ -135,7 +135,7 @@ export default function RootLayout({
           <div id="fab-bg-layer" aria-hidden="true" />
           <ProfileBackgroundController />
           <Navbar />
-          <main className="min-h-screen pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-8 md:pt-16">
+          <main className="min-h-screen pt-[calc(3.5rem+env(safe-area-inset-top))] md:pt-16 pb-8">
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 transparent-cards">
               <SiteBanner />
               <GuestBanner />

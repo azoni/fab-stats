@@ -130,6 +130,7 @@ function getNotifIcon(type: string): { bg: string; iconColor: string; icon: Reac
         ),
       };
     case "teamInvite":
+    case "groupInvite":
       return {
         bg: "bg-amber-500/15",
         iconColor: "text-amber-400",
@@ -166,9 +167,10 @@ function getNotifIcon(type: string): { bg: string; iconColor: string; icon: Reac
 function NotifAvatar({ n }: { n: UserNotification }) {
   const { bg, iconColor, icon } = getNotifIcon(n.type);
 
-  if (n.type === "teamInvite") {
-    return n.teamIconUrl ? (
-      <img src={n.teamIconUrl} alt="" className="w-9 h-9 rounded-full object-cover border border-fab-border" />
+  if (n.type === "teamInvite" || n.type === "groupInvite") {
+    const iconUrl = n.type === "teamInvite" ? n.teamIconUrl : n.groupIconUrl;
+    return iconUrl ? (
+      <img src={iconUrl} alt="" className="w-9 h-9 rounded-full object-cover border border-fab-border" />
     ) : (
       <div className={`w-9 h-9 rounded-full ${bg} flex items-center justify-center ${iconColor}`}>
         {icon}
@@ -299,7 +301,7 @@ export default function NotificationsPage() {
     } else if (n.type === "heroCorrection") {
       // Don't navigate — handled by inline Accept/Dismiss buttons
       await markAsRead(n.id);
-    } else if (n.type === "teamInvite") {
+    } else if (n.type === "teamInvite" || n.type === "groupInvite") {
       // Don't navigate — handled by inline Accept/Decline buttons
       await markAsRead(n.id);
     } else if (n.type === "feedbackStatus") {
@@ -520,6 +522,54 @@ export default function NotificationsPage() {
                                   try {
                                     const { declineTeamInvite } = await import("@/lib/teams");
                                     await declineTeamInvite(n.teamInviteId);
+                                    handleGroupDelete(group);
+                                    toast.success("Invite declined.");
+                                  } catch (err) {
+                                    toast.error("Failed to decline invite.");
+                                  }
+                                }}
+                                className="px-3 py-1 rounded-md text-xs font-medium text-fab-dim hover:text-fab-text transition-colors"
+                              >
+                                Decline
+                              </button>
+                            </div>
+                          </>
+                        ) : n.type === "groupInvite" ? (
+                          <>
+                            <p className="text-sm text-fab-text">
+                              <span className="font-semibold">{n.groupInviteFromName}</span>{" "}
+                              invited you to join the group{" "}
+                              <Link
+                                href={`/group/${(n.groupName || "").toLowerCase().replace(/[^a-z0-9]/g, "")}`}
+                                onClick={(e) => e.stopPropagation()}
+                                className="font-semibold text-amber-400 hover:text-amber-300 transition-colors"
+                              >{n.groupName}</Link>
+                            </p>
+                            <div className="flex items-center gap-2 mt-2">
+                              <button
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  if (!n.groupInviteId || !profile) return;
+                                  try {
+                                    const { acceptGroupInvite } = await import("@/lib/groups");
+                                    await acceptGroupInvite(n.groupInviteId, profile);
+                                    handleGroupDelete(group);
+                                    toast.success(`Joined ${n.groupName}!`);
+                                  } catch (err) {
+                                    toast.error(err instanceof Error ? err.message : "Failed to accept invite.");
+                                  }
+                                }}
+                                className="px-3 py-1 rounded-md text-xs font-medium bg-fab-win/20 text-fab-win hover:bg-fab-win/30 transition-colors"
+                              >
+                                Accept
+                              </button>
+                              <button
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  if (!n.groupInviteId) return;
+                                  try {
+                                    const { declineGroupInvite } = await import("@/lib/groups");
+                                    await declineGroupInvite(n.groupInviteId);
                                     handleGroupDelete(group);
                                     toast.success("Invite declined.");
                                   } catch (err) {

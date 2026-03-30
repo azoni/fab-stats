@@ -214,6 +214,7 @@ export interface TeamMember {
   displayName: string;
   photoUrl?: string;
   role: "owner" | "admin" | "member";
+  title?: string;
   joinedAt: string;
 }
 
@@ -222,6 +223,45 @@ export interface TeamInvite {
   teamId: string;
   teamName: string;
   teamIconUrl?: string;
+  inviterUid: string;
+  inviterName: string;
+  targetUid: string;
+  targetUsername?: string;
+  status: "pending" | "accepted" | "declined";
+  createdAt: string;
+}
+
+export interface Group {
+  id: string;
+  name: string;
+  nameLower: string;
+  description?: string;
+  iconUrl?: string;
+  iconThumbUrl?: string;
+  accentColor?: string;
+  ownerUid: string;
+  joinMode: "open" | "invite";
+  visibility: "public" | "private";
+  memberCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface GroupMember {
+  uid: string;
+  username: string;
+  displayName: string;
+  photoUrl?: string;
+  role: "owner" | "admin" | "member";
+  title?: string;
+  joinedAt: string;
+}
+
+export interface GroupInvite {
+  id: string;
+  groupId: string;
+  groupName: string;
+  groupIconUrl?: string;
   inviterUid: string;
   inviterName: string;
   targetUid: string;
@@ -280,7 +320,7 @@ export interface MatchComment {
 
 export interface UserNotification {
   id: string;
-  type: "comment" | "message" | "friendRequest" | "friendAccepted" | "badge" | "kudos" | "heroCorrection" | "feedbackStatus" | "teamInvite";
+  type: "comment" | "message" | "friendRequest" | "friendAccepted" | "badge" | "kudos" | "heroCorrection" | "feedbackStatus" | "teamInvite" | "groupInvite";
   // Comment fields
   matchId?: string;
   matchOwnerUid?: string;
@@ -326,6 +366,13 @@ export interface UserNotification {
   teamIconUrl?: string;
   teamInviteFromUid?: string;
   teamInviteFromName?: string;
+  // Group invite fields
+  groupInviteId?: string;
+  groupId?: string;
+  groupName?: string;
+  groupIconUrl?: string;
+  groupInviteFromUid?: string;
+  groupInviteFromName?: string;
   // Common
   createdAt: string;
   read: boolean;

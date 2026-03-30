@@ -23,6 +23,7 @@ import { Switch } from "@/components/ui/switch";
 import { Collapsible } from "@/components/ui/collapsible";
 import { BackgroundChooser } from "@/components/profile/BackgroundChooser";
 import { Settings, CheckCircle, Camera, ChevronRight, ExternalLink } from "lucide-react";
+import { GroupSettings } from "./GroupSettings";
 import { toast } from "sonner";
 
 function resizeImage(file: File, maxSize: number): Promise<string> {
@@ -911,6 +912,14 @@ export default function SettingsPage() {
           </div>
           <p className="text-xs text-fab-dim mt-1">Create, manage, or browse teams</p>
         </Link>
+      )}
+
+      {/* Groups */}
+      {user && !isGuest && (
+        <div className="bg-fab-surface border border-fab-border rounded-lg mb-4 px-6 py-4">
+          <h2 className="text-sm font-semibold text-fab-text mb-3">Groups</h2>
+          <GroupSettings />
+        </div>
       )}
 
       {/* Account */}
