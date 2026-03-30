@@ -37,7 +37,7 @@ export interface OnThisDayData {
   memories: MemoryYear[];
 }
 
-export function OnThisDayCard({ data, theme }: { data: OnThisDayData; theme: CardTheme }) {
+export function OnThisDayCard({ data, theme, hideOpponents }: { data: OnThisDayData; theme: CardTheme; hideOpponents?: boolean }) {
   const t = theme;
   const { dateLabel, memories } = data;
 
@@ -53,7 +53,7 @@ export function OnThisDayCard({ data, theme }: { data: OnThisDayData; theme: Car
             loading="eager"
             decoding="async"
           onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
-          <div className="absolute inset-0" style={{ backgroundColor: `${t.surface}B8` }} />
+          <div className="absolute inset-0" style={{ backgroundColor: `${t.surface}D8` }} />
         </>
       )}
       {/* Header */}
@@ -113,14 +113,14 @@ export function OnThisDayCard({ data, theme }: { data: OnThisDayData; theme: Car
 
                 {/* Heroes */}
                 {mem.heroes.length > 0 && (
-                  <p style={{ color: t.muted }} className="text-[10px] mb-0.5">
-                    playing {mem.heroes.join(", ")}
+                  <p style={{ color: t.text, opacity: 0.7 }} className="text-[11px] font-medium mb-0.5">
+                    {mem.heroes.join(", ")}
                   </p>
                 )}
 
                 {/* Event */}
                 {mem.events.length > 0 && (
-                  <p style={{ color: t.dim }} className="text-[10px] mb-1.5 truncate">
+                  <p style={{ color: t.muted }} className="text-[11px] mb-1.5 truncate">
                     {mem.events.join(" / ")}
                   </p>
                 )}
@@ -141,15 +141,15 @@ export function OnThisDayCard({ data, theme }: { data: OnThisDayData; theme: Car
                         >
                           {resultLabel}
                         </span>
-                        <span style={{ color: t.text }} className="font-medium truncate">
-                          vs {m.opponentName || "Unknown"}
-                        </span>
-                        {m.opponentHero && m.opponentHero !== "Unknown" && (
-                          <span style={{ color: t.dim }} className="truncate">({m.opponentHero})</span>
-                        )}
-                        <span style={{ color: playoff ? "#c084fc" : t.dim, fontWeight: playoff ? 600 : undefined }} className="ml-auto shrink-0">
+                        <span style={{ color: playoff ? "#c084fc" : t.muted, fontWeight: playoff ? 700 : 600 }} className="shrink-0 text-[10px]">
                           {roundLabel}
                         </span>
+                        <span style={{ color: t.text }} className="font-medium truncate">
+                          {hideOpponents ? "Opponent" : (m.opponentName || "Unknown")}
+                        </span>
+                        {!hideOpponents && m.opponentHero && m.opponentHero !== "Unknown" && (
+                          <span style={{ color: t.muted }} className="truncate text-[10px]">{m.opponentHero}</span>
+                        )}
                       </div>
                     );
                   })}
