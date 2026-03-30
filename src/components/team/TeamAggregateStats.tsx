@@ -103,22 +103,41 @@ export function TeamAggregateStats({ entries, accentColor = "#d4a843", filteredM
     return computeFromLeaderboard(entries);
   }, [entries, filteredMatches]);
 
+  // Event types that have top 8 playoffs (tier 2+)
+  const TOP8_EVENT_TYPES = new Set(["ProQuest", "Battlegrounds", "Road to Nationals", "Showdown", "Battle Hardened", "The Calling", "Nationals", "Pro Tour", "Worlds"]);
+
   // Always compute top 8s from leaderboard entries (top8Heroes has event metadata for filtering)
   const top8Stats = useMemo(() => {
     let totalTop8s = 0;
+    // Count unique competitive events across all members for conversion denominator
+    const competitiveEventKeys = new Set<string>();
     for (const e of entries) {
-      if (!e.top8Heroes) continue;
-      for (const t8 of e.top8Heroes) {
-        if (filterEventType && filterEventType !== "all" && t8.eventType !== filterEventType) continue;
-        if (filterFormat && filterFormat !== "all" && t8.format !== filterFormat) continue;
-        if (filterHero && filterHero !== "all" && t8.hero !== filterHero) continue;
-        totalTop8s++;
+      // Count top 8 finishes
+      if (e.top8Heroes) {
+        for (const t8 of e.top8Heroes) {
+          if (filterEventType && filterEventType !== "all" && t8.eventType !== filterEventType) continue;
+          if (filterFormat && filterFormat !== "all" && t8.format !== filterFormat) continue;
+          if (filterHero && filterHero !== "all" && t8.hero !== filterHero) continue;
+          totalTop8s++;
+        }
+      }
+      // Count competitive events from heroBreakdownDetailed (unique event keys with tier 2+ types)
+      if (e.heroBreakdownDetailed) {
+        for (const hb of e.heroBreakdownDetailed) {
+          if (!TOP8_EVENT_TYPES.has(hb.eventType)) continue;
+          if (filterEventType && filterEventType !== "all" && hb.eventType !== filterEventType) continue;
+          if (filterFormat && filterFormat !== "all" && hb.format !== filterFormat) continue;
+          if (filterHero && filterHero !== "all" && hb.hero !== filterHero) continue;
+          if (hb.eventKeys) {
+            for (const ek of hb.eventKeys) competitiveEventKeys.add(ek);
+          }
+        }
       }
     }
-    const totalEvents = stats.totalEvents;
-    const top8Conversion = totalEvents > 0 ? Math.round((totalTop8s / totalEvents) * 100) : 0;
-    return { totalTop8s, top8Conversion };
-  }, [entries, stats.totalEvents, filterEventType, filterFormat, filterHero]);
+    const competitiveEvents = competitiveEventKeys.size;
+    const top8Conversion = competitiveEvents > 0 ? Math.round((totalTop8s / competitiveEvents) * 100) : 0;
+    return { totalTop8s, top8Conversion, competitiveEvents };
+  }, [entries, filterEventType, filterFormat, filterHero]);
 
   if (stats.totalMatches === 0) return null;
 
@@ -127,7 +146,7 @@ export function TeamAggregateStats({ entries, accentColor = "#d4a843", filteredM
     { label: "Win Rate", value: `${stats.winRate}%`, sub: `${stats.totalWins}W ${stats.totalLosses}L ${stats.totalDraws}D`, icon: Target, color: stats.winRate >= 50 ? "var(--color-fab-win)" : "var(--color-fab-loss)" },
     { label: "Events", value: stats.totalEvents.toLocaleString(), icon: Star },
     { label: "Top 8s", value: top8Stats.totalTop8s.toLocaleString(), icon: Trophy, color: top8Stats.totalTop8s > 0 ? accentColor : undefined },
-    { label: "Conversion", value: `${top8Stats.top8Conversion}%`, sub: `${top8Stats.totalTop8s}/${stats.totalEvents}`, icon: TrendingUp },
+    { label: "Conversion", value: `${top8Stats.top8Conversion}%`, sub: `${top8Stats.totalTop8s}/${top8Stats.competitiveEvents}`, icon: TrendingUp },
     { label: "Best Streak", value: `${stats.bestStreak}W`, icon: Flame, color: stats.bestStreak >= 5 ? "var(--color-fab-win)" : undefined },
   ];
 
