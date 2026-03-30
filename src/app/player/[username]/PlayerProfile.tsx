@@ -1097,9 +1097,10 @@ export default function PlayerProfile() {
               onDesignChange={isOwner ? async (eventType, designIndex) => {
                 const current = profile.trophyDesigns || {};
                 const updated = { ...current, [eventType]: designIndex };
-                // Remove default selections to keep storage clean
                 if (designIndex === 0) delete updated[eventType];
-                await updateProfile(profile.uid, { trophyDesigns: Object.keys(updated).length > 0 ? updated : undefined });
+                const newDesigns = Object.keys(updated).length > 0 ? updated : undefined;
+                await updateProfile(profile.uid, { trophyDesigns: newDesigns });
+                setState((prev) => prev.status === "loaded" ? { ...prev, profile: { ...prev.profile, trophyDesigns: newDesigns } } : prev);
               } : undefined}
             />
           )}
