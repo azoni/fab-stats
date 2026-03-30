@@ -103,42 +103,67 @@ export function TeamAggregateStats({ entries, accentColor = "#d4a843", filteredM
     return computeFromLeaderboard(entries);
   }, [entries, filteredMatches]);
 
-  // Always compute top 8s from leaderboard entries (top8Heroes has event metadata for filtering)
+  // Compute top 8s from leaderboard entries
+  // Uses top8sByEventType + minorTop8sByEventType (which count ALL finishes, not just those with valid heroes)
+  // Uses top8Heroes only when format/hero filters are active (it has that metadata)
   const top8Stats = useMemo(() => {
+    const hasFormatFilter = filterFormat && filterFormat !== "all";
+    const hasHeroFilter = filterHero && filterHero !== "all";
+    const hasEventTypeFilter = filterEventType && filterEventType !== "all";
+    const needsDetailedFilter = hasFormatFilter || hasHeroFilter;
+
     let totalTop8s = 0;
-    // Build set of event types that actually have top 8 finishes in our data
+
+    // Build set of event types that have top 8s (from both major and minor sources)
     const eventTypesWithTop8s = new Set<string>();
+
     for (const e of entries) {
-      if (e.top8Heroes) {
-        for (const t8 of e.top8Heroes) eventTypesWithTop8s.add(t8.eventType);
+      if (needsDetailedFilter) {
+        // When filtering by format or hero, must use top8Heroes (has format/hero metadata)
+        if (e.top8Heroes) {
+          for (const t8 of e.top8Heroes) {
+            if (hasEventTypeFilter && t8.eventType !== filterEventType) continue;
+            if (hasFormatFilter && t8.format !== filterFormat) continue;
+            if (hasHeroFilter && t8.hero !== filterHero) continue;
+            totalTop8s++;
+            eventTypesWithTop8s.add(t8.eventType);
+          }
+        }
+      } else {
+        // No format/hero filter — use the complete counts from top8sByEventType + minorTop8sByEventType
+        if (e.top8sByEventType) {
+          for (const [et, count] of Object.entries(e.top8sByEventType)) {
+            if (hasEventTypeFilter && et !== filterEventType) continue;
+            totalTop8s += count;
+            eventTypesWithTop8s.add(et);
+          }
+        }
+        if (e.minorTop8sByEventType) {
+          for (const [et, count] of Object.entries(e.minorTop8sByEventType)) {
+            if (hasEventTypeFilter && et !== filterEventType) continue;
+            totalTop8s += count;
+            eventTypesWithTop8s.add(et);
+          }
+        }
       }
     }
 
-    // Count unique events for conversion denominator — only event types that have top 8s
+    // Count competitive events (only event types that have top 8s) for conversion denominator
     const competitiveEventKeys = new Set<string>();
     for (const e of entries) {
-      // Count top 8 finishes
-      if (e.top8Heroes) {
-        for (const t8 of e.top8Heroes) {
-          if (filterEventType && filterEventType !== "all" && t8.eventType !== filterEventType) continue;
-          if (filterFormat && filterFormat !== "all" && t8.format !== filterFormat) continue;
-          if (filterHero && filterHero !== "all" && t8.hero !== filterHero) continue;
-          totalTop8s++;
-        }
-      }
-      // Count events from event types that have top 8s
       if (e.heroBreakdownDetailed) {
         for (const hb of e.heroBreakdownDetailed) {
           if (!eventTypesWithTop8s.has(hb.eventType)) continue;
-          if (filterEventType && filterEventType !== "all" && hb.eventType !== filterEventType) continue;
-          if (filterFormat && filterFormat !== "all" && hb.format !== filterFormat) continue;
-          if (filterHero && filterHero !== "all" && hb.hero !== filterHero) continue;
+          if (hasEventTypeFilter && hb.eventType !== filterEventType) continue;
+          if (hasFormatFilter && hb.format !== filterFormat) continue;
+          if (hasHeroFilter && hb.hero !== filterHero) continue;
           if (hb.eventKeys) {
             for (const ek of hb.eventKeys) competitiveEventKeys.add(ek);
           }
         }
       }
     }
+
     const competitiveEvents = competitiveEventKeys.size;
     const top8Conversion = competitiveEvents > 0 ? Math.round((totalTop8s / competitiveEvents) * 100) : 0;
     return { totalTop8s, top8Conversion, competitiveEvents };
