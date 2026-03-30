@@ -52,8 +52,8 @@ export async function createTeam(
   matchCount: number,
   opts: { name: string; slug?: string; description?: string; joinMode: "open" | "invite"; visibility?: "public" | "private" }
 ): Promise<string> {
-  if (matchCount < 25) {
-    throw new Error("You need at least 25 logged matches to create a team.");
+  if (matchCount < 15) {
+    throw new Error("You need at least 15 logged matches to create a team.");
   }
   if (profile.teamId) {
     throw new Error("You are already on a team. Leave your current team first.");
