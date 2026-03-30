@@ -272,25 +272,8 @@ export default function Dashboard() {
       {/* Has matches: profile + stats */}
       {hasMatches && (
         <div className="flex flex-col gap-6">
-          {/* Filters */}
-          <div className="section-reveal" style={{ '--stagger': 0 } as React.CSSProperties}>
-          <DashboardFilters
-            formats={allFormats}
-            eventTypes={allEventTypes}
-            heroes={allHeroes}
-            filterFormat={filterFormat}
-            filterEventType={filterEventType}
-            filterTier={filterTier}
-            filterHero={filterHero}
-            onFormatChange={setFilterFormat}
-            onEventTypeChange={setFilterEventType}
-            onTierChange={setFilterTier}
-            onHeroChange={setFilterHero}
-          />
-          </div>
-
           {/* Profile Card + My Stats — side by side */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 section-reveal" style={{ '--stagger': 1 } as React.CSSProperties}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 section-reveal" style={{ '--stagger': 0 } as React.CSSProperties}>
             {/* Profile Card */}
             <CardBorderWrapper cardBorder={cardBorder} borderStyle={profile?.borderStyle || "beam"} underline={underlineConfig} contentClassName="bg-fab-surface rounded-lg overflow-hidden">
               <div className="cursor-pointer" onClick={() => { if (profile?.username) router.push(`/player/${profile.username}`); }}>
@@ -455,6 +438,23 @@ export default function Dashboard() {
               )}
             </div>
           </div>
+          </div>
+
+          {/* Filters */}
+          <div className="section-reveal" style={{ '--stagger': 1 } as React.CSSProperties}>
+          <DashboardFilters
+            formats={allFormats}
+            eventTypes={allEventTypes}
+            heroes={allHeroes}
+            filterFormat={filterFormat}
+            filterEventType={filterEventType}
+            filterTier={filterTier}
+            filterHero={filterHero}
+            onFormatChange={setFilterFormat}
+            onEventTypeChange={setFilterEventType}
+            onTierChange={setFilterTier}
+            onHeroChange={setFilterHero}
+          />
           </div>
 
           {/* Tournament Stats Card */}
