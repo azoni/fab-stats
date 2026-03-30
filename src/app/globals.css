@@ -1123,10 +1123,10 @@ table thead tr {
    ═══════════════════════════════════════════════ */
 
 [data-theme="daylight"] {
-  --color-fab-bg: #f8f9fa;
-  --color-fab-surface: #ffffff;
-  --color-fab-surface-hover: #e9ecef;
-  --color-fab-border: #d1d5db;
+  --color-fab-bg: #eef0f3;
+  --color-fab-surface: #f7f8fa;
+  --color-fab-surface-hover: #e2e5ea;
+  --color-fab-border: #c5cad3;
   --color-fab-gold: #1d4ed8;
   --color-fab-gold-light: #3b82f6;
   --color-fab-gold-dark: #1e40af;
@@ -1136,9 +1136,9 @@ table thead tr {
   --color-fab-win: #15803d;
   --color-fab-loss: #dc2626;
   --color-fab-draw: #a16207;
-  --color-fab-text: #111827;
-  --color-fab-muted: #4b5563;
-  --color-fab-dim: #6b7280;
+  --color-fab-text: #0f172a;
+  --color-fab-muted: #374151;
+  --color-fab-dim: #4b5563;
   --radius-sm: 0.375rem;
   --radius-md: 0.5rem;
   --radius-lg: 0.625rem;

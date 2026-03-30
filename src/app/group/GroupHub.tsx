@@ -74,7 +74,10 @@ export default function GroupHub() {
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-fab-gold">Groups</h1>
+        <div>
+          <h1 className="text-2xl font-bold text-fab-gold">Groups</h1>
+          <p className="text-sm text-fab-muted mt-1">A casual version of teams — join as many groups as you want. Pool your stats, track heroes, and have fun together. No badge on your profile, just good vibes.</p>
+        </div>
       </div>
 
       {/* Tabs */}

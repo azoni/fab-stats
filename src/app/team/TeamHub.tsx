@@ -8,7 +8,7 @@ import { TeamMemberRow } from "@/components/team/TeamMemberRow";
 import { TeamInviteSearch } from "@/components/team/TeamInviteSearch";
 import { TeamImageUploader } from "@/components/team/TeamImageUploader";
 import { SmartSearch } from "@/components/search/SmartSearch";
-import { createTeam, updateTeam, disbandTeam, leaveTeam, kickMember, updateMemberRole, transferOwnership, getPendingInvites } from "@/lib/teams";
+import { createTeam, updateTeam, disbandTeam, leaveTeam, kickMember, updateMemberRole, updateMemberTitle, transferOwnership, getPendingInvites } from "@/lib/teams";
 import type { Team, TeamInvite as TeamInviteType, LeaderboardEntry } from "@/types";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
@@ -200,7 +200,10 @@ export default function TeamHub() {
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-fab-gold">Teams</h1>
+        <div>
+          <h1 className="text-2xl font-bold text-fab-gold">Teams</h1>
+          <p className="text-sm text-fab-muted mt-1">Represent your competitive squad. One team per player — your team badge shows on your profile and leaderboard.</p>
+        </div>
         {hasTeam && (
           <Link href={`/team/${team.nameLower}`} className="text-sm text-fab-gold hover:text-fab-gold-light transition-colors flex items-center gap-1">
             View Team Page <ChevronRight className="w-3.5 h-3.5" />
@@ -401,6 +404,7 @@ export default function TeamHub() {
                   onPromote={(uid) => { if (team && user) updateMemberRole(team.id, user.uid, uid, "admin").then(() => toast.success("Promoted.")).catch(() => toast.error("Failed.")); }}
                   onDemote={(uid) => { if (team && user) updateMemberRole(team.id, user.uid, uid, "member").then(() => toast.success("Demoted.")).catch(() => toast.error("Failed.")); }}
                   onKick={(uid) => { if (team && user) kickMember(team.id, user.uid, uid).then(() => toast.success("Removed.")).catch(() => toast.error("Failed.")); }}
+                  onTitleChange={async (uid, title) => { if (team && user) { await updateMemberTitle(team.id, user.uid, uid, title); toast.success(title.trim() ? "Title updated." : "Title removed."); } }}
                 />
               ))}
             </div>
