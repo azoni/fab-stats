@@ -87,14 +87,14 @@ export const SLIDES: Slide[] = [
     type: "stats",
     title: "By the Numbers",
     stats: [
-      { value: 65, suffix: "K", label: "Lines of TypeScript" },
-      { value: 1167, label: "Commits in 1 Month" },
-      { value: 12, suffix: "+", label: "Daily Minigames" },
+      { value: 106, suffix: "K", label: "Lines of TypeScript" },
+      { value: 1318, label: "Commits in 5 Weeks" },
+      { value: 241, label: "Merged PRs" },
       { value: 0, suffix: "", label: "Server Cost" },
     ],
     notes: [
-      "The 1,167 commits in 1 month is real — I was shipping features daily using Claude Code. Average ~38 commits/day.",
-      "The 65K lines includes: 446 TypeScript/TSX files, 60+ Next.js routes, Firestore security rules, Netlify serverless functions, and a Manifest V3 browser extension.",
+      "1,318 commits and 241 merged PRs in ~36 days — shipping features daily using Claude Code. Average ~37 commits/day, ~6.7 PRs/day.",
+      "106K lines across 492 TypeScript/TSX files, 60+ Next.js routes, Firestore security rules, Netlify serverless functions, Chrome extension, and a Discord bot.",
       "$0 server cost: Firebase Spark plan (free), Netlify free tier. The only cost is the domain name.",
     ],
   },
@@ -310,11 +310,14 @@ export const SLIDES: Slide[] = [
   {
     id: "hero-bugs",
     type: "hero",
-    title: "Three production bugs. Three different lessons.",
+    title: "Five production bugs. Five different lessons.",
     notes: [
-      "Pause here. Let the statement land. Then say: 'Let me walk through each one — they each taught me something different about building production software.'",
-      "The unsolvable FaBdoku puzzles bug: Puzzle generator sometimes created grids with no valid solution. Root cause: random category pairs could produce cells with zero valid heroes. Fix: added backtracking validation — every cell must have ≥3 valid answers. Added fallback cascade: retry with different category pairs if validation fails. Lesson: generative algorithms need constraint validation, not just randomness.",
-      "How FaBdoku works: It's a 3×3 grid where rows and columns are FaB categories (class, talent, age, stat, format). Each cell is the intersection of a row category and column category. Players must name a hero that satisfies both.",
+      "Pause here. Let the statement land. Then say: 'Let me walk through the key ones — they each taught me something different.'",
+      "The unsolvable FaBdoku puzzles bug: Puzzle generator sometimes created grids with no valid solution. Root cause: random category pairs could produce cells with zero valid heroes. Fix: added backtracking validation — every cell must have ≥3 valid answers. Lesson: generative algorithms need constraint validation.",
+      "Discord bot digest silently failing (PR #238): markDigestPosted was outside try/catch — failed posts marked as completed, never retried. Also missing embed batching (>10 embeds = Discord API error). Lesson: error handling placement matters — success-path-only side effects.",
+      "Team top 8 double-counting (PR #238): top8sByEventType + minorTop8sByEventType overlapped for Skirmish events. Trophy case showed correct count but stats card was inflated. Found by cross-referencing two displays of the same data. Lesson: denormalized data needs single source of truth.",
+      "updateTeam early return bug (PR #238): When slug changed, description/joinMode/visibility updates were silently dropped. Field assignments happened AFTER the early return. Found during code audit when building groups feature. Lesson: code that mirrors existing code inherits existing bugs — always audit the source.",
+      "Group pages showing home page (PR #239): Static export needs explicit Netlify redirect rules for dynamic routes. Missing /group/* redirect meant fallback to index.html. Lesson: infrastructure config is code too — mirror when you mirror features.",
     ],
   },
   {
@@ -710,12 +713,12 @@ function dateToSeed(dateStr: string): number {
     type: "hero",
     title: "Scope prompts narrowly. Review before the next.",
     notes: [
-      "Branch naming convention: feature/* for new features, fix/* for bug fixes, perf/* for performance, style/* for UI changes. We have 140+ branches total, showing a disciplined branching strategy.",
+      "Branch naming convention: feature/* for new features, fix/* for bug fixes, perf/* for performance, style/* for UI changes. 241 merged PRs in 36 days, showing a disciplined branching strategy.",
       "Narrow prompts are critical: If I say 'fix all date handling', Claude might touch 30 files and introduce regressions. If I say 'change getMonth() to getUTCMonth() in src/lib/fabdoku/puzzle-generator.ts', I get a precise 1-line change I can verify in seconds.",
       "Serial review: I don't batch prompt. I make one change, verify it works (tsc, build, manual check), then prompt the next change. This keeps each change small and means I can git bisect to find regressions easily.",
       "CLAUDE.md prevents scope creep in Claude's output too: Without it, Claude might 'helpfully' refactor nearby code or add error handling that isn't needed. The conventions in CLAUDE.md keep Claude focused on the task.",
       "If asked about PR review: 'Since I'm the only developer, there's no formal code review. But the branch → PR → merge workflow still adds value: it creates a record of each change, Netlify builds a deploy preview, and I can roll back by reverting a PR merge if something breaks.'",
-      "Result: 1,167 commits that are each small, focused, and reviewable. 70+ feature branches, 70+ fix branches.",
+      "Result: 1,318 commits and 241 PRs that are each small, focused, and reviewable. Feature branches for new work, fix branches for bugs.",
     ],
   },
   {
@@ -800,13 +803,57 @@ const dateStr = getTodayDateStr();
     ],
   },
 
+  {
+    id: "groups-feature",
+    type: "cards",
+    section: "Large Changes",
+    title: "Groups Feature — 16 Files, 3,400 Lines (PR #238)",
+    cards: [
+      {
+        icon: "📋",
+        title: "Plan Mode First",
+        description:
+          "Explored teams codebase → designed data model → user clarifications → approved plan before writing code",
+        mono: "plan → build",
+      },
+      {
+        icon: "🔀",
+        title: "Parallel Agents",
+        description:
+          "3 agents built lib/hooks/components simultaneously — types, groups.ts, useGroup.ts, 6 UI components, 4 pages",
+        mono: "3 agents",
+      },
+      {
+        icon: "🔍",
+        title: "Systematic Audit",
+        description:
+          "Launched 2 audit agents that found 5 bugs: batch overflow, early-return field loss, sort mutation, stale closure, missing membership check",
+        mono: "5 bugs caught",
+      },
+      {
+        icon: "🔧",
+        title: "Fix → Ship",
+        description:
+          "Fixed all bugs, type checked, committed. Then caught missing Netlify redirect in production — 4 PRs total",
+        mono: "PRs #238-241",
+      },
+    ],
+    notes: [
+      "This is the strongest example of the Claude Code workflow at scale. The groups feature mirrors the entire teams system but with key differences (unlimited membership, no profile badge, lighter stats).",
+      "Plan mode: I described the feature, Claude explored the 17 team-related files, asked 4 clarifying questions (join mode, stats depth, nav placement, create requirements), then wrote a detailed plan with all files listed.",
+      "Parallel execution: Three agents ran simultaneously — one created groups.ts (all CRUD), one created useGroup.ts (hooks), one created all 6 UI components + 4 page routes. This is where Claude Code shines — parallelizable work that would take a human developer hours happens in minutes.",
+      "The audit: After implementation, I launched 2 audit agents to review every file. They found: (1) disbandGroup batch size of 450 would overflow Firestore's 500 limit since each member needs 2 deletes, (2) updateGroup early return dropped fields when slug changed (same bug existed in teams!), (3) sort() mutating state arrays in render, (4) canJoin not checking existing membership, (5) unused addDoc import. All fixed before merge.",
+      "Post-merge fixes: Group pages showed the home page because netlify.toml was missing /group/* redirects. Then users couldn't manage groups because all management was in settings — moved inline to the hub page matching how teams work. This shows the value of real user testing even after code audit.",
+    ],
+  },
+
   // ── Closing ──────────────────────────────────────────────
   {
     id: "hero-velocity",
     type: "hero",
     title: "Solo-dev velocity is real with AI tooling.",
     notes: [
-      "The 65K lines number: This isn't generated boilerplate. It's 446 TypeScript files with meaningful business logic — puzzle generators, achievement systems, data pipelines, real-time features.",
+      "The 106K lines number: This isn't generated boilerplate. It's 492 TypeScript files with meaningful business logic — puzzle generators, achievement systems, data pipelines, real-time features, teams, groups, Discord bot.",
       "CLAUDE.md as a concept: Even if you're not using Claude Code, the idea of a 'machine-readable project convention file' is powerful. It could work with any LLM-powered tool. The key insight is: encode the rules that aren't obvious from the code itself.",
     ],
   },
@@ -820,8 +867,8 @@ const dateStr = getTodayDateStr();
         icon: "⚡",
         title: "AI-Powered Velocity",
         description:
-          "65K lines in one month — shipping features daily with Claude Code",
-        mono: "1,167 commits",
+          "106K lines in 5 weeks — 241 PRs merged, shipping features daily with Claude Code",
+        mono: "1,318 commits",
       },
       {
         icon: "🏗️",
