@@ -8,6 +8,10 @@ interface TeamAggregateStatsProps {
   accentColor?: string;
   /** When provided, stats are computed from these matches instead of leaderboard entries */
   filteredMatches?: Map<string, MatchRecord[]>;
+  /** Active filters — used to filter top 8 data from leaderboard entries when filteredMatches is active */
+  filterFormat?: string;
+  filterEventType?: string;
+  filterHero?: string;
 }
 
 function computeFromMatches(matchMap: Map<string, MatchRecord[]>) {
@@ -93,11 +97,28 @@ function computeFromLeaderboard(entries: LeaderboardEntry[]) {
   return { totalMatches, totalWins, totalLosses, totalDraws, winRate, totalEvents, totalTop8s, top8Conversion, topHeroes, bestStreak };
 }
 
-export function TeamAggregateStats({ entries, accentColor = "#d4a843", filteredMatches }: TeamAggregateStatsProps) {
+export function TeamAggregateStats({ entries, accentColor = "#d4a843", filteredMatches, filterFormat, filterEventType, filterHero }: TeamAggregateStatsProps) {
   const stats = useMemo(() => {
     if (filteredMatches) return computeFromMatches(filteredMatches);
     return computeFromLeaderboard(entries);
   }, [entries, filteredMatches]);
+
+  // Always compute top 8s from leaderboard entries (top8Heroes has event metadata for filtering)
+  const top8Stats = useMemo(() => {
+    let totalTop8s = 0;
+    for (const e of entries) {
+      if (!e.top8Heroes) continue;
+      for (const t8 of e.top8Heroes) {
+        if (filterEventType && filterEventType !== "all" && t8.eventType !== filterEventType) continue;
+        if (filterFormat && filterFormat !== "all" && t8.format !== filterFormat) continue;
+        if (filterHero && filterHero !== "all" && t8.hero !== filterHero) continue;
+        totalTop8s++;
+      }
+    }
+    const totalEvents = stats.totalEvents;
+    const top8Conversion = totalEvents > 0 ? Math.round((totalTop8s / totalEvents) * 100) : 0;
+    return { totalTop8s, top8Conversion };
+  }, [entries, stats.totalEvents, filterEventType, filterFormat, filterHero]);
 
   if (stats.totalMatches === 0) return null;
 
@@ -105,10 +126,8 @@ export function TeamAggregateStats({ entries, accentColor = "#d4a843", filteredM
     { label: "Matches", value: stats.totalMatches.toLocaleString(), icon: Swords },
     { label: "Win Rate", value: `${stats.winRate}%`, sub: `${stats.totalWins}W ${stats.totalLosses}L ${stats.totalDraws}D`, icon: Target, color: stats.winRate >= 50 ? "var(--color-fab-win)" : "var(--color-fab-loss)" },
     { label: "Events", value: stats.totalEvents.toLocaleString(), icon: Star },
-    ...(filteredMatches ? [] : [
-      { label: "Top 8s", value: stats.totalTop8s.toLocaleString(), icon: Trophy, color: stats.totalTop8s > 0 ? accentColor : undefined },
-      { label: "Conversion", value: `${stats.top8Conversion}%`, sub: `${stats.totalTop8s}/${stats.totalEvents}`, icon: TrendingUp },
-    ]),
+    { label: "Top 8s", value: top8Stats.totalTop8s.toLocaleString(), icon: Trophy, color: top8Stats.totalTop8s > 0 ? accentColor : undefined },
+    { label: "Conversion", value: `${top8Stats.top8Conversion}%`, sub: `${top8Stats.totalTop8s}/${stats.totalEvents}`, icon: TrendingUp },
     { label: "Best Streak", value: `${stats.bestStreak}W`, icon: Flame, color: stats.bestStreak >= 5 ? "var(--color-fab-win)" : undefined },
   ];
 
@@ -117,7 +136,7 @@ export function TeamAggregateStats({ entries, accentColor = "#d4a843", filteredM
       <h2 className="text-sm font-bold text-fab-text uppercase tracking-wider mb-4">Team Stats</h2>
 
       {/* Stat grid */}
-      <div className={`grid gap-2 mb-4 ${filteredMatches ? "grid-cols-2 md:grid-cols-4" : "grid-cols-3 md:grid-cols-6"}`}>
+      <div className="grid grid-cols-3 md:grid-cols-6 gap-2 mb-4">
         {statItems.map((s) => (
           <div key={s.label} className="bg-fab-surface border border-fab-border rounded-xl px-3 py-3 text-center">
             <s.icon className="w-3.5 h-3.5 mx-auto mb-1 text-fab-dim" />
