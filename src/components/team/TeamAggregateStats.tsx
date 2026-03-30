@@ -104,7 +104,7 @@ export function TeamAggregateStats({ entries, accentColor = "#d4a843", filteredM
   }, [entries, filteredMatches]);
 
   // Event types that have top 8 playoffs (tier 2+)
-  const TOP8_EVENT_TYPES = new Set(["ProQuest", "Battlegrounds", "Road to Nationals", "Showdown", "Battle Hardened", "The Calling", "Nationals", "Pro Tour", "Worlds"]);
+  const TOP8_EVENT_TYPES = new Set(["Skirmish", "ProQuest", "Battlegrounds", "Road to Nationals", "Showdown", "Battle Hardened", "The Calling", "Nationals", "Pro Tour", "Worlds"]);
 
   // Always compute top 8s from leaderboard entries (top8Heroes has event metadata for filtering)
   const top8Stats = useMemo(() => {
