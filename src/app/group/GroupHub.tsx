@@ -7,7 +7,7 @@ import { getAllGroups, createGroup } from "@/lib/groups";
 import { SmartSearch } from "@/components/search/SmartSearch";
 import type { Group } from "@/types";
 import { toast } from "sonner";
-import { Users, Globe, Shield, Plus, ChevronRight } from "lucide-react";
+import { Users, Globe, Shield, Plus, ChevronRight, Settings } from "lucide-react";
 
 type Tab = "my-groups" | "browse" | "create";
 
@@ -123,33 +123,42 @@ export default function GroupHub() {
           {myGroups.length > 0 && (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {[...myGroups].sort((a, b) => b.memberCount - a.memberCount).map((g) => (
-                <Link key={g.id} href={`/group/${g.nameLower}`}
-                  className="bg-fab-surface border border-fab-border rounded-xl p-4 hover:border-fab-gold/30 hover:bg-fab-surface-hover transition-colors group">
-                  <div className="flex items-center gap-3">
-                    {g.iconUrl ? (
-                      <img src={g.iconUrl} alt="" className="w-12 h-12 rounded-xl object-cover border border-fab-border shrink-0" />
-                    ) : (
-                      <div className="w-12 h-12 rounded-xl bg-fab-gold/15 border border-fab-gold/30 flex items-center justify-center shrink-0">
-                        <span className="text-sm font-bold text-fab-gold">{g.name.slice(0, 2).toUpperCase()}</span>
+                <div key={g.id} className="relative">
+                  <Link href={`/group/${g.nameLower}`}
+                    className="block bg-fab-surface border border-fab-border rounded-xl p-4 hover:border-fab-gold/30 hover:bg-fab-surface-hover transition-colors group">
+                    <div className="flex items-center gap-3">
+                      {g.iconUrl ? (
+                        <img src={g.iconUrl} alt="" className="w-12 h-12 rounded-xl object-cover border border-fab-border shrink-0" />
+                      ) : (
+                        <div className="w-12 h-12 rounded-xl bg-fab-gold/15 border border-fab-gold/30 flex items-center justify-center shrink-0">
+                          <span className="text-sm font-bold text-fab-gold">{g.name.slice(0, 2).toUpperCase()}</span>
+                        </div>
+                      )}
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className="font-semibold text-fab-text group-hover:text-fab-gold transition-colors truncate">{g.name}</p>
+                          <ChevronRight className="w-3.5 h-3.5 text-fab-dim group-hover:text-fab-gold transition-colors shrink-0" />
+                        </div>
+                        <div className="flex items-center gap-2 text-xs text-fab-dim mt-0.5">
+                          <span>{g.memberCount} member{g.memberCount !== 1 ? "s" : ""}</span>
+                          {g.joinMode === "open" ? (
+                            <span className="flex items-center gap-0.5"><Globe className="w-3 h-3" /> Open</span>
+                          ) : (
+                            <span className="flex items-center gap-0.5"><Shield className="w-3 h-3" /> Invite Only</span>
+                          )}
+                        </div>
+                        {g.description && <p className="text-xs text-fab-muted mt-1 line-clamp-1">{g.description}</p>}
                       </div>
-                    )}
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="font-semibold text-fab-text group-hover:text-fab-gold transition-colors truncate">{g.name}</p>
-                        <ChevronRight className="w-3.5 h-3.5 text-fab-dim group-hover:text-fab-gold transition-colors shrink-0" />
-                      </div>
-                      <div className="flex items-center gap-2 text-xs text-fab-dim mt-0.5">
-                        <span>{g.memberCount} member{g.memberCount !== 1 ? "s" : ""}</span>
-                        {g.joinMode === "open" ? (
-                          <span className="flex items-center gap-0.5"><Globe className="w-3 h-3" /> Open</span>
-                        ) : (
-                          <span className="flex items-center gap-0.5"><Shield className="w-3 h-3" /> Invite Only</span>
-                        )}
-                      </div>
-                      {g.description && <p className="text-xs text-fab-muted mt-1 line-clamp-1">{g.description}</p>}
                     </div>
-                  </div>
-                </Link>
+                  </Link>
+                  <Link
+                    href="/settings#groups"
+                    className="absolute top-3 right-3 p-1.5 rounded-lg text-fab-dim hover:text-fab-text hover:bg-fab-surface-hover transition-all"
+                    title="Manage group"
+                  >
+                    <Settings className="w-3.5 h-3.5" />
+                  </Link>
+                </div>
               ))}
             </div>
           )}
