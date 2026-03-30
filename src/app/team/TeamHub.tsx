@@ -90,7 +90,7 @@ export default function TeamHub() {
   }
 
   const isOwnerOrAdmin = myRole === "owner" || myRole === "admin";
-  const canCreate = matchCount !== null && matchCount >= 25 && !profile?.teamId;
+  const canCreate = matchCount !== null && matchCount >= 15 && !profile?.teamId;
 
   const sortedMembers = useMemo(() =>
     [...members].sort((a, b) => {
@@ -540,9 +540,9 @@ export default function TeamHub() {
             </div>
           )}
 
-          {user && matchCount !== null && matchCount < 25 && (
+          {user && matchCount !== null && matchCount < 15 && (
             <div className="bg-fab-draw/10 border border-fab-draw/30 rounded-lg p-3 text-sm text-fab-draw mb-4">
-              You need at least 25 logged matches to create a team. You have {matchCount}.
+              You need at least 15 logged matches to create a team. You have {matchCount}.
             </div>
           )}
 
