@@ -1,6 +1,7 @@
 "use client";
 import type { Group, GroupMember } from "@/types";
-import { Users, Shield, Globe, Calendar, EyeOff, Share2 } from "lucide-react";
+import { Users, Shield, Globe, Calendar, EyeOff, Share2, Settings } from "lucide-react";
+import Link from "next/link";
 
 interface GroupHeaderProps {
   group: Group;
@@ -97,6 +98,15 @@ export function GroupHeader({ group, members, viewerRole, onJoin, onLeave, onSha
 
           {/* Actions */}
           <div className="shrink-0 sm:self-center flex items-center gap-2">
+            {(viewerRole === "owner" || viewerRole === "admin") && (
+              <Link
+                href="/settings#groups"
+                className="p-2 rounded-xl bg-white/10 backdrop-blur border border-white/10 text-white/70 hover:text-white hover:bg-white/15 transition-all"
+                title="Manage group"
+              >
+                <Settings className="w-4 h-4" />
+              </Link>
+            )}
             {onShare && (
               <button
                 onClick={onShare}
