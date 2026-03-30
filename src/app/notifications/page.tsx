@@ -9,6 +9,7 @@ import { propagateHeroToOpponent } from "@/lib/match-linking";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import type { UserNotification, MatchRecord } from "@/types";
+import { toast } from "sonner";
 
 function timeAgo(dateStr: string): string {
   const now = Date.now();
@@ -496,8 +497,9 @@ export default function NotificationsPage() {
                                     const { acceptTeamInvite } = await import("@/lib/teams");
                                     await acceptTeamInvite(n.teamInviteId, profile);
                                     handleGroupDelete(group);
+                                    toast.success(`Joined ${n.teamName}!`);
                                   } catch (err) {
-                                    console.error("Failed to accept team invite:", err);
+                                    toast.error(err instanceof Error ? err.message : "Failed to accept invite.");
                                   }
                                 }}
                                 className="px-3 py-1 rounded-md text-xs font-medium bg-fab-win/20 text-fab-win hover:bg-fab-win/30 transition-colors"
@@ -512,8 +514,9 @@ export default function NotificationsPage() {
                                     const { declineTeamInvite } = await import("@/lib/teams");
                                     await declineTeamInvite(n.teamInviteId);
                                     handleGroupDelete(group);
+                                    toast.success("Invite declined.");
                                   } catch (err) {
-                                    console.error("Failed to decline team invite:", err);
+                                    toast.error("Failed to decline invite.");
                                   }
                                 }}
                                 className="px-3 py-1 rounded-md text-xs font-medium text-fab-dim hover:text-fab-text transition-colors"
