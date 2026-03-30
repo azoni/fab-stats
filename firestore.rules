@@ -863,15 +863,18 @@ service cloud.firestore {
     }
 
     match /teamInvites/{inviteId} {
-      allow read: if request.auth != null
-        && (resource.data.inviterUid == request.auth.uid
-            || resource.data.targetUid == request.auth.uid);
+      allow read: if request.auth != null;
       allow create: if request.auth != null
         && request.resource.data.inviterUid == request.auth.uid
         && request.resource.data.status == "pending";
       allow update: if request.auth != null
-        && resource.data.targetUid == request.auth.uid
-        && request.resource.data.status in ["accepted", "declined"];
+        && (
+          // Target can accept/decline
+          (resource.data.targetUid == request.auth.uid
+            && request.resource.data.status in ["accepted", "declined"])
+          // Any authenticated user can re-send (overwrite declined invite)
+          || request.resource.data.status == "pending"
+        );
       allow delete: if request.auth != null
         && (resource.data.inviterUid == request.auth.uid
             || resource.data.targetUid == request.auth.uid);
