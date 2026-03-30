@@ -808,6 +808,10 @@ service cloud.firestore {
         && request.resource.data.ownerUid == request.auth.uid
         && maxLen(request.resource.data.name, 50)
         && request.resource.data.memberCount is int;
+      // Any authenticated user can update memberCount + updatedAt only (for join/leave/accept)
+      allow update: if request.auth != null
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['memberCount', 'updatedAt']);
+      // Owner/admin can update any fields (except ownerUid unless owner)
       allow update: if request.auth != null
         && (
           resource.data.ownerUid == request.auth.uid
@@ -818,6 +822,9 @@ service cloud.firestore {
           !('ownerUid' in request.resource.data.diff(resource.data).affectedKeys())
           || resource.data.ownerUid == request.auth.uid
         );
+      // Allow any authed user to update only memberCount + updatedAt (for join/leave)
+      allow update: if request.auth != null
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["memberCount", "updatedAt"]);
       allow delete: if request.auth != null
         && resource.data.ownerUid == request.auth.uid;
 
