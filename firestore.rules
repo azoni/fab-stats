@@ -822,9 +822,6 @@ service cloud.firestore {
           !('ownerUid' in request.resource.data.diff(resource.data).affectedKeys())
           || resource.data.ownerUid == request.auth.uid
         );
-      // Allow any authed user to update only memberCount + updatedAt (for join/leave)
-      allow update: if request.auth != null
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["memberCount", "updatedAt"]);
       allow delete: if request.auth != null
         && resource.data.ownerUid == request.auth.uid;
 

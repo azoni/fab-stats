@@ -430,9 +430,16 @@ export async function sendTeamInvite(
   teamName: string,
   teamIconUrl: string | undefined,
   inviter: { uid: string; displayName: string },
-  targetUid: string
+  targetUid: string,
+  targetUsername?: string
 ): Promise<void> {
   const inviteId = getInviteId(teamId, targetUid);
+
+  // Check target isn't already a member
+  const existingMember = await getDoc(doc(membersCollection(teamId), targetUid));
+  if (existingMember.exists()) {
+    throw new Error("This user is already on your team.");
+  }
 
   // Check for existing pending invite
   const existingSnap = await getDoc(doc(db, "teamInvites", inviteId));
@@ -453,6 +460,7 @@ export async function sendTeamInvite(
     createdAt: now,
   };
   if (teamIconUrl) inviteData.teamIconUrl = teamIconUrl;
+  if (targetUsername) inviteData.targetUsername = targetUsername;
 
   // Create invite + notification
   const batch = writeBatch(db);
