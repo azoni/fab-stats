@@ -63,7 +63,7 @@ export function OnThisDayCard({ data, theme, hideOpponents }: { data: OnThisDayD
           <polyline points="12 6 12 12 16 14" />
         </svg>
         <p style={{ color: t.accent }} className="text-[11px] uppercase tracking-[0.2em] font-bold">On This Day</p>
-        <span style={{ color: t.muted }} className="text-[11px]">— {dateLabel}</span>
+        <span style={{ color: t.text, opacity: 0.7 }} className="text-[11px] font-medium">— {dateLabel}</span>
       </div>
 
       <div className="px-5 pt-4 pb-4 space-y-4 relative">
@@ -77,7 +77,7 @@ export function OnThisDayCard({ data, theme, hideOpponents }: { data: OnThisDayD
               {/* Year badge */}
               <div className="shrink-0 text-center w-12 pt-0.5">
                 <p style={{ color: t.accent }} className="text-lg font-bold">{mem.yearsAgo}</p>
-                <p style={{ color: t.dim }} className="text-[9px]">{mem.yearsAgo === 1 ? "year ago" : "years ago"}</p>
+                <p style={{ color: t.muted }} className="text-[9px] font-medium">{mem.yearsAgo === 1 ? "year ago" : "years ago"}</p>
               </div>
 
               <div className="flex-1 min-w-0" style={{ borderLeft: `1px solid ${t.border}`, paddingLeft: 12 }}>
@@ -113,14 +113,14 @@ export function OnThisDayCard({ data, theme, hideOpponents }: { data: OnThisDayD
 
                 {/* Heroes */}
                 {mem.heroes.length > 0 && (
-                  <p style={{ color: t.text, opacity: 0.7 }} className="text-[11px] font-medium mb-0.5">
+                  <p style={{ color: t.text, opacity: 0.85 }} className="text-[11px] font-semibold mb-0.5">
                     {mem.heroes.join(", ")}
                   </p>
                 )}
 
                 {/* Event */}
                 {mem.events.length > 0 && (
-                  <p style={{ color: t.muted }} className="text-[11px] mb-1.5 truncate">
+                  <p style={{ color: t.text, opacity: 0.6 }} className="text-[11px] mb-1.5 truncate">
                     {mem.events.join(" / ")}
                   </p>
                 )}
@@ -147,8 +147,8 @@ export function OnThisDayCard({ data, theme, hideOpponents }: { data: OnThisDayD
                         <span style={{ color: t.text }} className="font-medium truncate">
                           {hideOpponents ? "Opponent" : (m.opponentName || "Unknown")}
                         </span>
-                        {!hideOpponents && m.opponentHero && m.opponentHero !== "Unknown" && (
-                          <span style={{ color: t.muted }} className="truncate text-[10px]">{m.opponentHero}</span>
+                        {m.opponentHero && m.opponentHero !== "Unknown" && (
+                          <span style={{ color: t.text, opacity: 0.5 }} className="truncate text-[10px]">{m.opponentHero}</span>
                         )}
                       </div>
                     );
