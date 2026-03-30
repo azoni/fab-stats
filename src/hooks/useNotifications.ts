@@ -10,10 +10,11 @@ import {
 } from "@/lib/notifications";
 import type { UserNotification } from "@/types";
 
-export function useNotifications() {
+export function useNotifications(options?: { immediate?: boolean }) {
   const { user, isGuest, profile } = useAuth();
   const [notifications, setNotifications] = useState<UserNotification[]>([]);
   const [loaded, setLoaded] = useState(false);
+  const immediate = options?.immediate ?? false;
 
   // Default to true if not explicitly set
   const enabled = profile?.notificationsEnabled !== false;
@@ -21,6 +22,7 @@ export function useNotifications() {
   const unsubRef = useRef<(() => void) | null>(null);
 
   // Delay notification listener by 30s to avoid Firestore reads for bounce visits
+  // Skip delay when immediate=true (e.g. notifications page)
   useEffect(() => {
     if (isGuest || !user || !enabled) {
       setNotifications([]);
@@ -28,19 +30,26 @@ export function useNotifications() {
       return;
     }
 
-    const timer = setTimeout(() => {
-      unsubRef.current = subscribeToNotifications(user.uid, (data) => {
+    function subscribe() {
+      unsubRef.current = subscribeToNotifications(user!.uid, (data) => {
         setNotifications(data);
         setLoaded(true);
       });
-    }, 30_000);
+    }
+
+    if (immediate) {
+      subscribe();
+      return () => { unsubRef.current?.(); unsubRef.current = null; };
+    }
+
+    const timer = setTimeout(subscribe, 30_000);
 
     return () => {
       clearTimeout(timer);
       unsubRef.current?.();
       unsubRef.current = null;
     };
-  }, [user, isGuest, enabled]);
+  }, [user, isGuest, enabled, immediate]);
 
   // Unread count: group message notifications by sender (each sender = 1 count)
   const unreadCount = useMemo(() => {

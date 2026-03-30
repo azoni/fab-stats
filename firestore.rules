@@ -833,7 +833,11 @@ service cloud.firestore {
           && request.auth.uid == memberId
           && request.resource.data.role == "member"
           && get(/databases/$(database)/documents/teams/$(teamId)).data.joinMode == "open";
-        // Owner/admin can add members (invite acceptance)
+        // Self-add via invite acceptance (user adds themselves as member)
+        allow create: if request.auth != null
+          && request.auth.uid == memberId
+          && request.resource.data.role == "member";
+        // Owner/admin can add members
         allow create: if request.auth != null
           && exists(/databases/$(database)/documents/teams/$(teamId)/members/$(request.auth.uid))
           && get(/databases/$(database)/documents/teams/$(teamId)/members/$(request.auth.uid)).data.role in ["owner", "admin"];

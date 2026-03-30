@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
@@ -198,7 +198,7 @@ function NotifAvatar({ n }: { n: UserNotification }) {
 
 export default function NotificationsPage() {
   const { user, isGuest, profile, refreshProfile } = useAuth();
-  const { notifications, loaded, markAsRead, markAllAsRead, deleteNotification, clearMessagesFrom, unreadCount } = useNotifications();
+  const { notifications, loaded, markAsRead, markAllAsRead, deleteNotification, clearMessagesFrom, unreadCount } = useNotifications({ immediate: true });
   const router = useRouter();
   const [usernameCache, setUsernameCache] = useState<Record<string, string>>({});
   const [toggling, setToggling] = useState(false);
@@ -207,9 +207,11 @@ export default function NotificationsPage() {
   const groups = useMemo(() => groupNotifications(notifications), [notifications]);
 
   // Look up usernames for UIDs so we can navigate to profiles
+  const cacheRef = useRef(usernameCache);
+  cacheRef.current = usernameCache;
   useEffect(() => {
     const uids = [...new Set(notifications.map((n) => n.matchOwnerUid || n.senderUid || n.friendRequestFromUid || n.kudosGiverUid || n.requesterUid).filter(Boolean))] as string[];
-    const missing = uids.filter((uid) => !usernameCache[uid]);
+    const missing = uids.filter((uid) => !cacheRef.current[uid]);
     if (missing.length === 0) return;
 
     Promise.all(
@@ -226,7 +228,7 @@ export default function NotificationsPage() {
         setUsernameCache((prev) => ({ ...prev, ...updates }));
       }
     });
-  }, [notifications, usernameCache]);
+  }, [notifications]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function handleToggleNotifications() {
     if (!user) return;
