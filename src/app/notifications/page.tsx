@@ -488,7 +488,11 @@ export default function NotificationsPage() {
                             <p className="text-sm text-fab-text">
                               <span className="font-semibold">{n.teamInviteFromName}</span>{" "}
                               invited you to join{" "}
-                              <span className="font-semibold text-amber-400">{n.teamName}</span>
+                              <Link
+                                href={`/team/${(n.teamName || "").toLowerCase().replace(/[^a-z0-9]/g, "")}`}
+                                onClick={(e) => e.stopPropagation()}
+                                className="font-semibold text-amber-400 hover:text-amber-300 transition-colors"
+                              >{n.teamName}</Link>
                             </p>
                             <div className="flex items-center gap-2 mt-2">
                               <button
@@ -498,6 +502,7 @@ export default function NotificationsPage() {
                                   try {
                                     const { acceptTeamInvite } = await import("@/lib/teams");
                                     await acceptTeamInvite(n.teamInviteId, profile);
+                                    await refreshProfile();
                                     handleGroupDelete(group);
                                     toast.success(`Joined ${n.teamName}!`);
                                   } catch (err) {
