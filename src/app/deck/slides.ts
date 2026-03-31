@@ -226,70 +226,52 @@ export const SLIDES: Slide[] = [
     subtitle: "Real bugs I shipped, debugged, and fixed",
   },
   {
-    id: "bug-digest",
+    id: "bug-architecture",
     type: "content",
     section: "Prod Issue",
-    title: "Discord Bot Digests Silently Failing",
+    title: "Architecture-Level Bugs",
     bullets: [
-      "Daily community digests stopped posting — no errors, no alerts",
-      { text: "Root cause: markDigestPosted() was outside try/catch", sub: ["Failed sends were marked as completed → never retried"] },
-      { text: "Second issue: no embed batching", sub: ["Discord limits 10 embeds/message — large digests silently failed"] },
-      "Fix: moved mark-as-posted inside success path, added 10-embed chunking (PR #238)",
-    ],
-    notes: [
-      "Lesson: error handling placement matters. The function posted, caught errors, then always marked as done regardless. Classic 'success side-effect outside success path' bug.",
-      "Also: the bot source was fixed but dist/ wasn't rebuilt — Railway auto-deployed the old compiled code. Rebuild fixed it.",
-    ],
-  },
-  {
-    id: "bug-top8",
-    type: "content",
-    section: "Prod Issue",
-    title: "Team Top 8 Count Was Double",
-    bullets: [
-      "Team stats showed 2x the top 8 finishes compared to the trophy case",
-      { text: "Root cause: summing top8sByEventType + minorTop8sByEventType", sub: ["Both maps contained Skirmish/RTN/PQ finishes — they overlapped"] },
-      "Trophy case used computePlayoffFinishes (correct), stats card summed both maps (wrong)",
-      "Fix: use canonical totalTop8s field instead of summing breakdown maps (PR #238)",
-    ],
-    notes: [
-      "Lesson: denormalized data needs a single source of truth. When you have the same count stored two different ways, cross-reference them.",
-      "Found by literally comparing the trophy case count to the stats card on the same page.",
-    ],
-  },
-  {
-    id: "bug-qualifier",
-    type: "content",
-    section: "Prod Issue",
-    title: "Qualifiers Classified as Major Events",
-    bullets: [
-      "'World Championship Qualifier 2025 - Italy' was showing as Nationals",
-      { text: "Two-layer fix needed:", sub: [
-        "classifyCompetitiveEvent: skip major types when 'qualifier' in name",
-        "refineEventType: catch qualifier BEFORE falling through to GEM's eventType",
+      { text: "Firestore batch ordering crash on team creation", sub: [
+        "Security rules use get() which sees pre-batch state — team doc must exist before member doc",
+        "Required splitting a single batch into setDoc() then batch — 5 commits to get the permission model right",
       ] },
-      "GEM set eventType to 'Nationals' — our code trusted it without checking the name",
-      "Fix: qualifier check at both levels (PRs #238, #244)",
+      { text: "Performance death spiral on homepage", sub: [
+        "14 game-stat Firestore reads fired on every page load, blocking auth init",
+        "Fix: parallelized auth, deferred game reads to browser idle, added skeleton UI (PRs #180-182)",
+      ] },
+      { text: "OG images broken by CSP", sub: [
+        "Profile photos served from Firebase Storage were blocked by Content-Security-Policy",
+        "Had to add storage bucket to CSP connect-src and img-src in netlify.toml",
+      ] },
     ],
     notes: [
-      "First fix only caught names that matched competitive keywords. But this event's name didn't match — GEM just set the type directly. Had to add a second check in refineEventType.",
-      "Lesson: when you inherit data from an external system, validate it against all available signals, not just one.",
+      "Team creation permission cascade is the best architecture story: Firestore rules evaluate get() against the database state BEFORE the batch executes. If the team doc doesn't exist yet, the rule that checks 'is this user the team owner' fails. I had to split the operation: create team doc first (await), then batch the rest.",
+      "Performance: auth init was serialized with 14 Firestore reads. Users saw a blank page for 2-3 seconds. Fix: auth starts immediately, game stats deferred to requestIdleCallback, skeleton UI shows instantly.",
     ],
   },
   {
-    id: "bug-update",
+    id: "bug-data",
     type: "content",
     section: "Prod Issue",
-    title: "updateTeam Silently Dropping Fields",
+    title: "Data Integrity Bugs",
     bullets: [
-      "Changing a team's name + description at the same time → description change lost",
-      { text: "Root cause: early return when slug changed", sub: ["Description/joinMode/visibility were assigned AFTER the return statement"] },
-      "Found during code audit when building the Groups feature (mirrored the same code)",
-      "Fix: moved all field assignments before the slug-change branch (PR #238)",
+      { text: "Team top 8 count inflated 2x", sub: [
+        "Summing two overlapping breakdown maps — caught by comparing trophy case to stats card on same page",
+      ] },
+      { text: "Qualifier events classified as major tournaments", sub: [
+        "'World Championship Qualifier' → Nationals. GEM set the type, our code trusted it without checking the name",
+        "Required fixes at two layers: event name classification AND eventType fallback (PRs #238, #244)",
+      ] },
+      { text: "updateTeam silently dropping fields on slug change", sub: [
+        "Early return before field assignments — found during code audit, same bug propagated to groups",
+      ] },
+      { text: "Discord bot digests silently failing", sub: [
+        "markDigestPosted() outside try/catch — failed sends marked as completed, never retried",
+      ] },
     ],
     notes: [
-      "Lesson: code that mirrors existing code inherits existing bugs. Always audit the source when you copy a pattern.",
-      "This bug existed in production for weeks — nobody noticed because name and description are rarely changed together.",
+      "Qualifier bug is the best 'external data' story: first fix caught names with competitive keywords. But this event's name DIDN'T match — GEM just set eventType='Nationals' directly. Had to add a second check layer.",
+      "updateTeam bug: existed for weeks, found only when building Groups (copied the same code). Lesson: mirrored code inherits existing bugs.",
     ],
   },
 
