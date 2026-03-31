@@ -397,6 +397,9 @@ export function refineEventType(eventType: string, eventName: string): string {
   // Explicitly catch "Road to Nationals" / "RTN" before general classification,
   // even if the provided eventType says "Nationals"
   if (/road to national|\brtn\b/i.test(lower)) return "Road to Nationals";
+  // Qualifier events (e.g. "World Championship Qualifier") should not inherit
+  // the major event type from GEM — they're qualifying events, not the real thing
+  if (/\bqualifier\b/i.test(lower)) return "Other";
   // Competitive events — pick lowest prestige when multiple match
   const competitive = classifyCompetitiveEvent(lower);
   if (competitive) return competitive;
