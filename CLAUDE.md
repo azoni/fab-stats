@@ -2,6 +2,19 @@
 
 Flesh and Blood TCG stats tracker with daily minigames. Built for fabstats.net.
 
+## Quick Reference
+
+```bash
+npx tsc --noEmit          # Type check — run after every change
+npm run build             # Full build (extension zip + Next.js static export)
+npm run dev               # Dev server
+npm run lint              # ESLint
+npm run format            # Prettier — format all src files
+npm run format:check      # Check formatting without writing
+```
+
+**Path aliases:** `@/*` → `./src/*`
+
 ## Stack
 
 - Next.js 16 static export (`output: 'export'`), deployed on Netlify
@@ -9,55 +22,57 @@ Flesh and Blood TCG stats tracker with daily minigames. Built for fabstats.net.
 - Tailwind CSS v4, React 19
 - `@flesh-and-blood/cards` npm package for card data + images
 - OG images: satori + resvg-js in Netlify serverless functions
+- Discord bot companion: `fab-stats-bot/` (discord.js 14, separate repo)
 
-## Commands
+## Rules — Do This
 
-- `npx tsc --noEmit` — type check (run after changes)
-- `npm run build` — full build (extension + Next.js)
-- `npm run dev` — dev server
+- **Always use UTC for game dates.** `getTodayDateStr()` from `src/lib/fabdoku/puzzle-generator.ts` is canonical. Use `getUTCFullYear()`, `getUTCMonth()`, `getUTCDate()` — never local-time variants for game logic.
+- **Run `npx tsc --noEmit` after every change.** It catches most bugs in ~5 seconds.
+- **Use the ref pattern for callbacks in useEffect.** The deploy pipeline treats `react-hooks/exhaustive-deps` warnings as errors. If a callback is used inside a useEffect, access it via a ref:
+  ```tsx
+  const fnRef = useRef(fn);
+  fnRef.current = fn;
+  useEffect(() => { fnRef.current(); }, [dep]);
+  ```
+- **Keep PRs focused.** One feature or fix per branch. Branch naming: `feature/description` or `fix/description`.
+- **Check Netlify redirect rules** when adding new dynamic routes. Static export needs explicit `[[redirects]]` in `netlify.toml` for any `/route/*` pattern (see `/team/*`, `/group/*`, `/player/*` as examples).
 
-## Path Aliases
+## Rules — Don't Do This
 
-- `@/*` → `./src/*`
+- **NEVER commit directly to main.** Always use feature/fix branches → PR → merge.
+- **NEVER change the FaBdoku seeded random hash** in `src/lib/fabdoku/seeded-random.ts`. It uses the original Java-style hash. Changing it breaks all historical puzzles. Newer games use Fibonacci hashing in `src/lib/games/seeded-random.ts`.
+- **NEVER commit `.env` or credentials files.**
+- **Don't add features nobody asked for.** Check user feedback before building. The AI chatbot was removed because zero users requested it.
+- **Don't use `getFullYear()`, `getMonth()`, `getDate()`** for game dates — these return local timezone values and cause different puzzles for different timezones.
 
-## Key Architecture
+## Architecture
 
-### All Game Dates Use UTC
+### Data Model
 
-`getTodayDateStr()` from `src/lib/fabdoku/puzzle-generator.ts` is the canonical date source for FaBdoku. All games use UTC dates so puzzles reset at UTC midnight for all players. Countdown timers target UTC midnight. Never use local-time date methods (`getFullYear`, `getMonth`, `getDate`) for game dates — always use UTC variants.
+- **Public data:** `leaderboard/{userId}` — readable by anyone, used by OG image function
+- **Private data:** `users/{userId}/matches/{matchId}` — only readable by owner
+- **Teams:** `teams/{teamId}` + `teams/{teamId}/members/{uid}` + `teamnames/{slug}`
+- **Groups:** `groups/{groupId}` + `groups/{groupId}/members/{uid}` + `groupnames/{slug}` + `users/{uid}/groups/{groupId}` (membership tracking)
+- **Invites:** `teamInvites/{id}`, `groupInvites/{id}`
 
-### FaBdoku Modes
+### Import Pipeline
 
-Two isolated game modes sharing the FaBdoku page (`/fabdoku?mode=cards`):
+5 import methods all feed into `importMatchesFirestore()` with fingerprint-based dedup:
+1. **Browser Extension** (`content.js`) — scrapes GEM DOM, LZ-compresses, opens /import
+2. **Copy-Paste** (`gem-paste-import.ts`) — heuristic parsing with 20+ regex patterns
+3. **CSV** (`gem-import.ts`) — structured, most reliable
+4. **Single Event** (`single-event-import.ts`) — quick manual entry
+5. **Admin Auto-Sync** — serverless function with stored credentials
 
-| | Hero Mode | Card Mode |
-|---|---|---|
-| Pool | ~136 heroes | ~4,200 cards |
-| Seed | `dateToSeed(date)` | `dateToSeed(date) + 1_000_003` |
-| localStorage | `fabdoku-{date}` | `fabdoku-card-{date}` |
-| Firestore results | `fabdoku-results` | `fabdoku-card-results` |
-| Firestore picks | `fabdoku-picks` | `fabdoku-card-picks` |
-| Stats subcol | `fabdoku-stats` | `fabdoku-card-stats` |
-| Public stats | `fabdokuPlayerStats` | `fabdokuCardPlayerStats` |
-| Feed event type | `fabdoku` | `fabdoku-cards` |
-| Activity action | `fabdoku_share` | `fabdoku_card_share` |
+### Event Type Classification
 
-### Seeded Random
+`getEventType()` in `src/lib/stats.ts` determines event types. Pipeline:
+1. `match.eventTypeOverride` — user manual override (final)
+2. `refineEventType(eventType, eventName)` — checks name for keywords, validates against GEM type
+3. `guessEventTypeFromNotes(notes)` — parses from match notes
+4. Qualifier check: events with "qualifier" in name → "Other" (not the parent event type)
 
-FaBdoku and Crossword use the **original Java-style hash** in `src/lib/fabdoku/seeded-random.ts`. Newer games (connections, trivia, etc.) use Fibonacci hashing in `src/lib/games/seeded-random.ts`. Do NOT change the FaBdoku hash — it would break all historical puzzles.
-
-### Card Data Gotchas
-
-- `@flesh-and-blood/cards` uses lowercase "Go again" (not "Go Again")
-- Generic cards (601) are excluded from class categories to prevent trivial games
-- Pitch variants (Red/Yellow/Blue) are separate entries keyed by `cardIdentifier`
-- Card images: `https://d2wlb52bya4y8z.cloudfront.net/media/cards/large/{defaultImage}.webp`
-
-### Each Game Has Isolated Data
-
-Games have their own: Firestore collections, localStorage prefixes, feed event types, activity actions, achievements, and profile badges. When adding a new game mode, create all layers.
-
-## OG Image System (Netlify)
+### OG Image System
 
 - Serverless function: `netlify/functions/og-image.mts`
 - Edge functions: `netlify/edge-functions/og-rewrite.ts` (player), `og-rewrite-meta.ts` (meta)
@@ -65,12 +80,42 @@ Games have their own: Firestore collections, localStorage prefixes, feed event t
 - Domain: All URLs must use `www.fabstats.net` (bare domain 301-redirects)
 - `netlify.toml` must include `node_modules/@resvg/resvg-js-*/**` and fonts in `included_files`
 
-## Conventions
+## Game Data Isolation
 
-- Do not commit `.env` or credentials files
-- Achievements defined in `src/lib/achievements.ts`, profile badges in `src/lib/profile-badges.ts`
-- Feed events defined in `src/types/index.ts`, created in `src/lib/feed.ts`, rendered in `src/components/feed/FeedCard.tsx`
-- Activity logging in `src/lib/activity-log.ts`
+Each game has isolated: Firestore collections, localStorage prefixes, feed event types, activity actions, achievements, and profile badges. When adding a new game mode, create ALL layers.
+
+**FaBdoku example (Hero vs Card mode):**
+
+| | Hero Mode | Card Mode |
+|---|---|---|
+| Seed | `dateToSeed(date)` | `dateToSeed(date) + 1_000_003` |
+| localStorage | `fabdoku-{date}` | `fabdoku-card-{date}` |
+| Firestore | `fabdoku-results` | `fabdoku-card-results` |
+| Feed event | `fabdoku` | `fabdoku-cards` |
+
+## Key File Locations
+
+| What | Where |
+|------|-------|
+| Types | `src/types/index.ts` |
+| Stats computation | `src/lib/stats.ts` |
+| Leaderboard | `src/lib/leaderboard.ts` |
+| Teams CRUD | `src/lib/teams.ts` |
+| Groups CRUD | `src/lib/groups.ts` |
+| Achievements | `src/lib/achievements.ts` |
+| Profile badges | `src/lib/profile-badges.ts` |
+| Feed events | `src/lib/feed.ts` |
+| Activity logging | `src/lib/activity-log.ts` |
+| Nav links (shared) | `src/components/layout/nav-data.tsx` |
+| Firestore rules | `firestore.rules` |
+| Netlify config | `netlify.toml` |
+
+## Card Data Gotchas
+
+- `@flesh-and-blood/cards` uses lowercase "Go again" (not "Go Again")
+- Generic cards (601) excluded from class categories
+- Pitch variants (Red/Yellow/Blue) are separate entries by `cardIdentifier`
+- Card images: `https://d2wlb52bya4y8z.cloudfront.net/media/cards/large/{defaultImage}.webp`
 
 ## Git Workflow
 
