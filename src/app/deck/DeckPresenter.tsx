@@ -751,7 +751,7 @@ function NotesPanel({
       animate={{ x: 0 }}
       exit={{ x: "100%" }}
       transition={{ type: "spring", damping: 25, stiffness: 300 }}
-      className="fixed right-0 top-0 z-[150] flex h-full w-[420px] max-w-[90vw] flex-col border-l border-fab-border bg-fab-bg/98 shadow-2xl backdrop-blur-sm"
+      className="fixed right-0 top-0 bottom-0 z-[150] flex w-[420px] max-w-[40vw] flex-col border-l border-fab-border bg-fab-bg/98 shadow-2xl backdrop-blur-sm"
     >
       <div className="flex items-center justify-between border-b border-fab-border px-5 py-3">
         <h3 className="text-sm font-semibold uppercase tracking-wider text-fab-gold">
@@ -904,7 +904,9 @@ export function DeckPresenter() {
   }
 
   return (
-    <div className="fixed inset-0 z-[100] flex flex-col bg-fab-bg">
+    <div className="fixed inset-0 z-[100] flex bg-fab-bg">
+      {/* Slide + controls column */}
+      <div className={`flex flex-1 flex-col min-w-0 transition-all duration-300 ${showNotes && slide.notes ? "mr-[420px]" : ""}`}>
       {/* Slide area */}
       <div
         className="flex flex-1 cursor-pointer items-center justify-center overflow-hidden px-16 py-12"
@@ -992,6 +994,7 @@ export function DeckPresenter() {
           transition={{ duration: 0.3 }}
         />
       </div>
+      </div>{/* end slide + controls column */}
 
       {/* Notes panel */}
       <AnimatePresence>
