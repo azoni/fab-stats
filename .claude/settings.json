@@ -1,0 +1,39 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.command' | grep -q 'git commit' && { cd /Users/dustbunny/Documents/Meme/fab-stats && npx tsc --noEmit 2>&1 | tail -20; } || true",
+            "timeout": 120,
+            "statusMessage": "Type checking before commit..."
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_response.filePath // .tool_input.file_path' | { read -r f; cd /Users/dustbunny/Documents/Meme/fab-stats && npx prettier --write --ignore-unknown \"$f\"; } 2>/dev/null || true",
+            "timeout": 10,
+            "statusMessage": "Formatting..."
+          }
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "allow": [
+      "Bash(npx tsc:*)",
+      "Bash(npx prettier:*)",
+      "Bash(npm run:*)",
+      "Bash(git:*)",
+      "Bash(gh:*)"
+    ]
+  }
+}
