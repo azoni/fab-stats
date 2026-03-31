@@ -485,7 +485,7 @@ export default function Dashboard() {
                     <p className="text-[10px] text-fab-muted font-medium mt-1">Win R1</p>
                   </Link>
                   {/* Key stats */}
-                  <div className="flex-1 w-full grid grid-cols-3 sm:grid-cols-6 gap-x-3 gap-y-2.5 text-center sm:text-left">
+                  <div className="flex-1 w-full grid grid-cols-3 sm:grid-cols-6 gap-x-3 gap-y-2.5 text-center sm:text-left stagger-grid">
                     {/* Row 1: Overview */}
                     <div title="Total rated events played">
                       <p className="text-lg font-bold text-fab-text tabular-nums">{tournamentAnalytics.totalEvents}</p>

@@ -695,6 +695,133 @@ table thead tr {
 }
 
 /* ════════════════════════════════════════════════════════════
+   Visual Polish — Sitewide micro-interactions & depth
+   ════════════════════════════════════════════════════════════ */
+
+/* ── Card hover depth ── */
+[class*="bg-fab-surface"][class*="border-fab-border"]:not(nav):not(td):not(tr):not(thead) {
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.25s ease;
+}
+[class*="bg-fab-surface"][class*="border-fab-border"]:not(nav):not(td):not(tr):not(thead):hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.04);
+  border-color: color-mix(in srgb, var(--color-fab-gold) 15%, var(--color-fab-border));
+}
+
+/* ── Stat value glow (win/loss numbers pop) ── */
+.text-fab-win { text-shadow: 0 0 16px rgba(96,240,148,0.25); }
+.text-fab-loss { text-shadow: 0 0 16px rgba(255,136,136,0.25); }
+.text-fab-gold { text-shadow: 0 0 16px rgba(232,184,76,0.2); }
+
+/* ── Staggered fade-in for grids ── */
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.stagger-grid > * {
+  animation: fade-in-up 0.35s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+.stagger-grid > *:nth-child(1) { animation-delay: 0ms; }
+.stagger-grid > *:nth-child(2) { animation-delay: 40ms; }
+.stagger-grid > *:nth-child(3) { animation-delay: 80ms; }
+.stagger-grid > *:nth-child(4) { animation-delay: 120ms; }
+.stagger-grid > *:nth-child(5) { animation-delay: 160ms; }
+.stagger-grid > *:nth-child(6) { animation-delay: 200ms; }
+.stagger-grid > *:nth-child(7) { animation-delay: 240ms; }
+.stagger-grid > *:nth-child(8) { animation-delay: 280ms; }
+.stagger-grid > *:nth-child(9) { animation-delay: 320ms; }
+.stagger-grid > *:nth-child(10) { animation-delay: 360ms; }
+.stagger-grid > *:nth-child(11) { animation-delay: 400ms; }
+.stagger-grid > *:nth-child(12) { animation-delay: 440ms; }
+
+/* ── Input focus glow ── */
+input[class*="border-fab-border"]:focus,
+select[class*="border-fab-border"]:focus,
+textarea[class*="border-fab-border"]:focus {
+  border-color: var(--color-fab-gold) !important;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-fab-gold) 15%, transparent) !important;
+  outline: none;
+}
+
+/* ── Button press feedback ── */
+button:active:not(:disabled) {
+  transform: scale(0.97);
+  transition-duration: 0.08s;
+}
+
+/* ── Tab transitions ── */
+[class*="rounded-md"][class*="py-2"][class*="font-medium"] {
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* ── Tooltip entrance ── */
+@keyframes tooltip-in {
+  from { opacity: 0; transform: scale(0.96) translateY(2px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+[data-radix-popper-content-wrapper] {
+  animation: tooltip-in 0.12s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ── Badge/pill hover shimmer ── */
+@keyframes badge-shimmer {
+  from { background-position: -200% center; }
+  to { background-position: 200% center; }
+}
+.badge-shimmer:hover {
+  background-size: 200% 100%;
+  animation: badge-shimmer 1.5s ease-in-out;
+}
+
+/* ── Section header accent underline ── */
+.section-accent::after {
+  content: '';
+  display: block;
+  height: 2px;
+  margin-top: 6px;
+  width: 100%;
+  background: linear-gradient(90deg, var(--color-fab-gold), transparent 50%);
+  border-radius: 1px;
+  opacity: 0.4;
+}
+
+/* ── Leaderboard row hover ── */
+.lb-row {
+  transition: background-color 0.15s ease, transform 0.15s ease;
+}
+.lb-row:hover {
+  background: linear-gradient(90deg, color-mix(in srgb, var(--color-fab-gold) 5%, transparent), transparent 60%);
+}
+
+/* ── Match result badge glow ── */
+.result-w { box-shadow: 0 0 6px rgba(96,240,148,0.2); }
+.result-l { box-shadow: 0 0 6px rgba(255,136,136,0.2); }
+
+/* ── Trophy hover ── */
+.trophy-hover {
+  transition: transform 0.2s ease, filter 0.2s ease;
+}
+.trophy-hover:hover {
+  transform: scale(1.08);
+  filter: drop-shadow(0 0 6px currentColor);
+}
+
+/* ── Entrance animation for profile cards ── */
+@keyframes card-entrance {
+  from { opacity: 0; transform: translateY(16px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.card-entrance {
+  animation: card-entrance 0.4s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+/* ── Smooth scrollbar ── */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-fab-border) transparent;
+}
+
+/* ════════════════════════════════════════════════════════════
    Theme: Grimoire — Ancient Spellbook by Candlelight
    Warm leather-like surfaces, serif headings, gold ink glow,
    heavy page-shadow depth, centered ornamental dividers.
@@ -1118,6 +1245,16 @@ table thead tr {
   display: none;
 }
 
+/* Suppress polish effects — Rosetta is flat */
+[data-theme="rosetta"] .text-fab-win,
+[data-theme="rosetta"] .text-fab-loss,
+[data-theme="rosetta"] .text-fab-gold {
+  text-shadow: none;
+}
+[data-theme="rosetta"] [class*="bg-fab-surface"][class*="border-fab-border"]:hover {
+  transform: none;
+}
+
 /* ═══════════════════════════════════════════════
    DAYLIGHT — Clean white light theme
    ═══════════════════════════════════════════════ */
@@ -1287,6 +1424,13 @@ table thead tr {
 
 [data-theme="daylight"] ::-webkit-scrollbar-track {
   background: #f1f3f5;
+}
+
+/* Suppress dark-mode glows on light theme */
+[data-theme="daylight"] .text-fab-win,
+[data-theme="daylight"] .text-fab-loss,
+[data-theme="daylight"] .text-fab-gold {
+  text-shadow: none;
 }
 
 /* ═══════════════════════════════════════════════

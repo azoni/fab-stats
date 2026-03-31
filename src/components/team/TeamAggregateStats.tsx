@@ -154,7 +154,7 @@ export function TeamAggregateStats({ entries, accentColor = "#d4a843", filteredM
       <h2 className="text-sm font-bold text-fab-text uppercase tracking-wider mb-4">Team Stats</h2>
 
       {/* Stat grid */}
-      <div className="grid grid-cols-3 md:grid-cols-6 gap-2 mb-4">
+      <div className="grid grid-cols-3 md:grid-cols-6 gap-2 mb-4 stagger-grid">
         {statItems.map((s) => (
           <div key={s.label} className="bg-fab-surface border border-fab-border rounded-xl px-3 py-3 text-center">
             <s.icon className="w-3.5 h-3.5 mx-auto mb-1 text-fab-dim" />
