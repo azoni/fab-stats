@@ -68,6 +68,7 @@ const THEME_PREVIEWS: Record<ThemeName, { bg: string; surface: string; border: s
   thankful: { bg: "#0e0a06", surface: "#1c1508", border: "#3a2e14", accent: "#d97706", text: "#f0e8d0", muted: "#8b7a55", radius: "6px" },
   holly: { bg: "#0c0808", surface: "#1a1010", border: "#3a1818", accent: "#dc2626", text: "#f5e8e8", muted: "#9b7070", radius: "8px" },
   lunar: { bg: "#08060e", surface: "#100e1c", border: "#252040", accent: "#a78bfa", text: "#e8e4f5", muted: "#7b70aa", radius: "10px" },
+  fools: { bg: "#1a0a2e", surface: "#241540", border: "#4a2d7a", accent: "#a855f7", text: "#f0e6ff", muted: "#b8a0d8", radius: "10px" },
 };
 
 function ThemePicker() {
