@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef } from "react";
+import { usePathname } from "next/navigation";
 import { useAprilFools } from "@/contexts/AprilFoolsContext";
 
 /**
@@ -159,48 +160,34 @@ function scrambleAll() {
 export function FoolsScrambler() {
   const { isFoolsMode, isAprilFools } = useAprilFools();
   const observerRef = useRef<MutationObserver | null>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pathname = usePathname();
 
   useEffect(() => {
-    if (!isAprilFools) return;
-
-    if (isFoolsMode) {
-      // Initial scramble
-      const timer = setTimeout(() => scrambleAll(), 300);
-
-      // Watch for new content (route changes, lazy loads)
-      observerRef.current = new MutationObserver((mutations) => {
-        for (const m of mutations) {
-          for (const node of m.addedNodes) {
-            if (node.nodeType === Node.TEXT_NODE) {
-              processTextNode(node as Text);
-            } else if (node.nodeType === Node.ELEMENT_NODE) {
-              const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT);
-              let textNode: Text | null;
-              while ((textNode = walker.nextNode() as Text | null)) {
-                processTextNode(textNode);
-              }
-            }
-          }
-        }
-      });
-
-      observerRef.current.observe(document.body, { childList: true, subtree: true });
-
-      return () => {
-        clearTimeout(timer);
-        observerRef.current?.disconnect();
-      };
-    } else {
-      restoreAll();
+    if (!isAprilFools || !isFoolsMode) {
+      if (!isFoolsMode) restoreAll();
+      return;
     }
-  }, [isFoolsMode, isAprilFools]);
 
-  // Also re-scramble on route changes
-  useEffect(() => {
-    if (!isFoolsMode) return;
-    const timer = setTimeout(() => scrambleAll(), 500);
-    return () => clearTimeout(timer);
-  });
+    // Initial scramble after React finishes rendering
+    const timer = setTimeout(() => scrambleAll(), 400);
 
-  return null; // Invisible component — pure side effect
+    // Debounced scramble for new content — batches rapid DOM changes
+    function debouncedScramble() {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      debounceRef.current = setTimeout(() => scrambleAll(), 200);
+    }
+
+    // Watch for new content (lazy loads, state updates) — but debounced
+    observerRef.current = new MutationObserver(debouncedScramble);
+    observerRef.current.observe(document.body, { childList: true, subtree: true });
+
+    return () => {
+      clearTimeout(timer);
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      observerRef.current?.disconnect();
+    };
+  }, [isFoolsMode, isAprilFools, pathname]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  return null;
 }
