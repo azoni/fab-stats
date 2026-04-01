@@ -67,7 +67,7 @@ export function FoolsBanner() {
   if (!mounted || !isAprilFools) return null;
 
   return (
-    <div className="fools-banner fixed top-0 left-0 right-0 z-[60] flex items-center justify-center gap-3 px-4 py-2 text-center text-sm font-bold md:hidden-none">
+    <div className="fools-banner flex items-center justify-center gap-3 px-4 py-2 text-center text-sm font-bold">
       <span>
         {isFoolsMode
           ? "Happy April Fools! Your stats may be slightly... exaggerated. 🤡"
