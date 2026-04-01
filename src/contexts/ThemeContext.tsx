@@ -57,6 +57,7 @@ function getHolidayTheme(): ThemeName | null {
   if (m === 1 && d === 1) return "newyear";        // New Year's Day
   if (m === 2 && d === 14) return "valentine";      // Valentine's Day
   if (m === 3 && d === 17) return "shamrock";       // St. Patrick's Day
+  if (m === 4 && d === 1) return "fools";           // April Fools' Day
   const easter = computeEaster(y);
   if (m === easter.month && d === easter.day) return "pastel"; // Easter Sunday
   if (m === 7 && d === 4) return "firework";        // Independence Day

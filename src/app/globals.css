@@ -2165,3 +2165,126 @@ button:active:not(:disabled) {
 [data-theme="lunar"] .nav-btn:hover { transform: none; }
 [data-theme="lunar"] .nav-btn-log::before { background: linear-gradient(90deg, transparent, #a78bfa, #c4b5fd, #a78bfa, transparent); }
 [data-theme="lunar"] .nav-btn-log:hover { border-color: rgba(167, 139, 250, 0.35); box-shadow: 0 8px 30px -5px rgba(167, 139, 250, 0.2); }
+
+/* ═══════════════════════════════════════════════
+   APRIL FOOLS — Everything is fine. Trust your stats.
+   ═══════════════════════════════════════════════ */
+
+[data-theme="fools"] {
+  --color-fab-bg: #1a0a2e;
+  --color-fab-surface: #241540;
+  --color-fab-surface-hover: #2e1d50;
+  --color-fab-border: #4a2d7a;
+  --color-fab-gold: #a855f7;
+  --color-fab-gold-light: #c084fc;
+  --color-fab-gold-dark: #7c3aed;
+  --color-fab-red: #7a2020;
+  --color-fab-red-light: #a33030;
+  --color-fab-crimson: #5c1515;
+  --color-fab-win: #4ade80;
+  --color-fab-loss: #f472b6;
+  --color-fab-draw: #facc15;
+  --color-fab-text: #f0e6ff;
+  --color-fab-muted: #b8a0d8;
+  --color-fab-dim: #7a60a0;
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.25rem;
+}
+
+/* Comic Sans headings */
+[data-theme="fools"] h1,
+[data-theme="fools"] h2,
+[data-theme="fools"] h3 {
+  font-family: "Comic Sans MS", "Chalkboard SE", "Comic Neue", cursive !important;
+}
+
+/* Purple glow on accent text */
+[data-theme="fools"] .text-fab-gold {
+  text-shadow: 0 0 12px rgba(168, 85, 247, 0.4);
+}
+
+/* Rainbow nav border */
+@keyframes fools-rainbow {
+  0% { border-color: #ef4444; }
+  16% { border-color: #f97316; }
+  33% { border-color: #facc15; }
+  50% { border-color: #4ade80; }
+  66% { border-color: #3b82f6; }
+  83% { border-color: #a855f7; }
+  100% { border-color: #ef4444; }
+}
+[data-theme="fools"] nav[class*="border-b"] {
+  animation: fools-rainbow 3s linear infinite;
+  border-bottom-width: 3px;
+}
+
+/* Tilted cards */
+[data-theme="fools"] [class*="bg-fab-surface"][class*="border-fab-border"][class*="rounded"]:nth-child(odd) {
+  transform: rotate(-0.5deg);
+}
+[data-theme="fools"] [class*="bg-fab-surface"][class*="border-fab-border"][class*="rounded"]:nth-child(even) {
+  transform: rotate(0.4deg);
+}
+[data-theme="fools"] [class*="bg-fab-surface"][class*="border-fab-border"][class*="rounded"]:hover {
+  transform: rotate(0deg) scale(1.01) !important;
+}
+
+/* Upside-down logo text */
+[data-theme="fools"] nav .text-fab-gold.tracking-tight {
+  transform: scaleX(-1);
+  display: inline-block;
+}
+
+/* Wobble animation for stat values */
+@keyframes fools-wobble {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(1deg); }
+  75% { transform: rotate(-1deg); }
+}
+[data-theme="fools"] .tabular-nums {
+  animation: fools-wobble 2s ease-in-out infinite;
+  display: inline-block;
+}
+
+/* No noise texture */
+[data-theme="fools"] body::before { display: none; }
+
+/* Purple ambient glow */
+[data-theme="fools"] body::after {
+  background: radial-gradient(ellipse 80% 40% at 50% -5%, rgba(168, 85, 247, 0.08), transparent 70%);
+}
+
+/* Rainbow selection */
+[data-theme="fools"] ::selection {
+  background: rgba(168, 85, 247, 0.3);
+  color: #f0e6ff;
+}
+
+/* Suppress decorative effects */
+[data-theme="fools"] .nav-btn::before,
+[data-theme="fools"] .nav-btn::after { display: none; }
+[data-theme="fools"] .nav-btn:hover { transform: none; border-color: #7c3aed; }
+[data-theme="fools"] .spotlight-card::before,
+[data-theme="fools"] .spotlight-card::after { display: none; }
+
+/* Purple scrollbar */
+[data-theme="fools"] ::-webkit-scrollbar-thumb { background: rgba(168, 85, 247, 0.3); }
+[data-theme="fools"] ::-webkit-scrollbar-thumb:hover { background: rgba(168, 85, 247, 0.5); }
+[data-theme="fools"] ::-webkit-scrollbar-track { background: rgba(168, 85, 247, 0.05); }
+
+/* ── April Fools Banner ── */
+@keyframes fools-banner-gradient {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+.fools-banner {
+  background: linear-gradient(135deg, #ef4444, #a855f7, #3b82f6, #4ade80, #facc15, #ef4444);
+  background-size: 300% 300%;
+  animation: fools-banner-gradient 4s ease infinite;
+  color: white;
+  font-family: "Comic Sans MS", "Chalkboard SE", cursive;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+}

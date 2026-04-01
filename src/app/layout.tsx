@@ -17,6 +17,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { PageVisitTracker } from "@/components/PageVisitTracker";
 import { ScrollProgress } from "@/components/ui/ScrollProgress";
 import { AutoSyncRecompute } from "@/components/AutoSyncRecompute";
+import { AprilFoolsProvider, FoolsBanner } from "@/contexts/AprilFoolsContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -129,8 +130,10 @@ export default function RootLayout({
         <ThemeProvider>
         <AuthProvider>
         <ChatProvider>
+        <AprilFoolsProvider>
         <TooltipProvider>
           <ScrollProgress />
+          <FoolsBanner />
           <p className="hidden">Impact-Site-Verification: 9c661e6e-9cd9-451b-acbf-247741498db4</p>
           <div id="fab-bg-layer" aria-hidden="true" />
           <ProfileBackgroundController />
@@ -172,6 +175,7 @@ export default function RootLayout({
           <AutoSyncRecompute />
           <SonnerProvider />
         </TooltipProvider>
+        </AprilFoolsProvider>
         </ChatProvider>
         </AuthProvider>
         </ThemeProvider>

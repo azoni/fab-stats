@@ -1,7 +1,7 @@
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "./firebase";
 
-export type ThemeName = "grimoire" | "leyline" | "rosetta" | "daylight" | "shamrock" | "newyear" | "valentine" | "firework" | "spooky" | "holly" | "pastel" | "thankful" | "lunar";
+export type ThemeName = "grimoire" | "leyline" | "rosetta" | "daylight" | "shamrock" | "newyear" | "valentine" | "firework" | "spooky" | "holly" | "pastel" | "thankful" | "lunar" | "fools";
 
 export const THEME_OPTIONS: { value: ThemeName; label: string; description: string }[] = [
   { value: "grimoire", label: "Grimoire", description: "Ancient spellbook, warm leather & candlelight" },
@@ -17,6 +17,7 @@ export const THEME_OPTIONS: { value: ThemeName; label: string; description: stri
   { value: "thankful", label: "Thankful", description: "Thanksgiving — harvest amber & warm cider" },
   { value: "holly", label: "Holly", description: "Christmas — warm red, pine green & snow" },
   { value: "lunar", label: "Lunar", description: "New Year's Eve — midnight violet & starlight" },
+  { value: "fools", label: "April Fools", description: "Everything is fine. Nothing is wrong. Trust your stats." },
 ];
 
 const CACHE_KEY = "fab_theme_config";
