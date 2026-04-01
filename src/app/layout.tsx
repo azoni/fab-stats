@@ -133,12 +133,12 @@ export default function RootLayout({
         <AprilFoolsProvider>
         <TooltipProvider>
           <ScrollProgress />
-          <FoolsBanner />
           <p className="hidden">Impact-Site-Verification: 9c661e6e-9cd9-451b-acbf-247741498db4</p>
           <div id="fab-bg-layer" aria-hidden="true" />
           <ProfileBackgroundController />
           <Navbar />
           <main className="min-h-screen pt-[calc(3.5rem+env(safe-area-inset-top))] md:pt-16 pb-8">
+            <FoolsBanner />
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 transparent-cards">
               <SiteBanner />
               <GuestBanner />

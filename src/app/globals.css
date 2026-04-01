@@ -2193,10 +2193,9 @@ button:active:not(:disabled) {
   --radius-xl: 1.25rem;
 }
 
-/* Comic Sans headings */
-[data-theme="fools"] h1,
-[data-theme="fools"] h2,
-[data-theme="fools"] h3 {
+/* Comic Sans EVERYTHING */
+[data-theme="fools"],
+[data-theme="fools"] * {
   font-family: "Comic Sans MS", "Chalkboard SE", "Comic Neue", cursive !important;
 }
 
@@ -2220,15 +2219,18 @@ button:active:not(:disabled) {
   border-bottom-width: 3px;
 }
 
-/* Tilted cards */
+/* Tilted cards — more aggressive */
 [data-theme="fools"] [class*="bg-fab-surface"][class*="border-fab-border"][class*="rounded"]:nth-child(odd) {
-  transform: rotate(-0.5deg);
+  transform: rotate(-1.2deg);
 }
 [data-theme="fools"] [class*="bg-fab-surface"][class*="border-fab-border"][class*="rounded"]:nth-child(even) {
-  transform: rotate(0.4deg);
+  transform: rotate(1deg);
+}
+[data-theme="fools"] [class*="bg-fab-surface"][class*="border-fab-border"][class*="rounded"]:nth-child(3n) {
+  transform: rotate(1.5deg);
 }
 [data-theme="fools"] [class*="bg-fab-surface"][class*="border-fab-border"][class*="rounded"]:hover {
-  transform: rotate(0deg) scale(1.01) !important;
+  transform: rotate(0deg) scale(1.02) !important;
 }
 
 /* Upside-down logo text */
@@ -2275,16 +2277,9 @@ button:active:not(:disabled) {
 [data-theme="fools"] ::-webkit-scrollbar-track { background: rgba(168, 85, 247, 0.05); }
 
 /* ── April Fools Banner ── */
-@keyframes fools-banner-gradient {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-}
 .fools-banner {
-  background: linear-gradient(135deg, #ef4444, #a855f7, #3b82f6, #4ade80, #facc15, #ef4444);
-  background-size: 300% 300%;
-  animation: fools-banner-gradient 4s ease infinite;
-  color: white;
+  background: rgba(168, 85, 247, 0.15);
+  border-bottom: 1px solid rgba(168, 85, 247, 0.3);
+  color: #c084fc;
   font-family: "Comic Sans MS", "Chalkboard SE", cursive;
-  text-shadow: 0 1px 2px rgba(0,0,0,0.3);
 }
