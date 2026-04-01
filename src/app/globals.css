@@ -2253,6 +2253,15 @@ button:active:not(:disabled) {
 /* No noise texture */
 [data-theme="fools"] body::before { display: none; }
 
+/* Funny background override — overrides user profile backgrounds */
+[data-theme="fools"] #fab-bg-layer {
+  background-image: linear-gradient(180deg, rgba(26,10,46,0.7), rgba(26,10,46,0.7)), url('/fools-bg.jpg') !important;
+  background-size: cover, cover !important;
+  background-position: center, center !important;
+  opacity: 0.6;
+  max-width: none;
+}
+
 /* Purple ambient glow */
 [data-theme="fools"] body::after {
   background: radial-gradient(ellipse 80% 40% at 50% -5%, rgba(168, 85, 247, 0.08), transparent 70%);

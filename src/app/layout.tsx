@@ -18,6 +18,7 @@ import { PageVisitTracker } from "@/components/PageVisitTracker";
 import { ScrollProgress } from "@/components/ui/ScrollProgress";
 import { AutoSyncRecompute } from "@/components/AutoSyncRecompute";
 import { AprilFoolsProvider, FoolsBanner } from "@/contexts/AprilFoolsContext";
+import { FoolsScrambler } from "@/components/april-fools/FoolsScrambler";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -139,6 +140,7 @@ export default function RootLayout({
           <Navbar />
           <main className="min-h-screen pt-[calc(3.5rem+env(safe-area-inset-top))] md:pt-16 pb-8">
             <FoolsBanner />
+            <FoolsScrambler />
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 transparent-cards">
               <SiteBanner />
               <GuestBanner />
