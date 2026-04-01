@@ -8,7 +8,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { computeOverallStats, computeHeroStats, computeEventStats, computeOpponentStats, computeBestFinish, computePlayoffFinishes, computeMinorEventFinishes, computeTournamentAnalytics, getRoundNumber, getEventType, formatShortLabel } from "@/lib/stats";
 import { getEventTier, TIER_LABELS } from "@/lib/events";
 import { updateLeaderboardEntry } from "@/lib/leaderboard";
-import { useFoolify } from "@/hooks/useFoolify";
 import { useLeaderboard } from "@/hooks/useLeaderboard";
 import { computeUserRanks, getBestRank, rankBorderClass } from "@/lib/leaderboard-ranks";
 import { computeMetaStats } from "@/lib/meta-stats";
@@ -45,7 +44,6 @@ export default function Dashboard() {
   const router = useRouter();
   const { matches, isLoaded } = useMatches();
   const { user, profile, isAdmin, refreshProfile } = useAuth();
-  const fool = useFoolify(profile?.username || "anon");
   const { team: myTeam } = useTeamOnce(profile?.teamId || null);
   const { entries: lbEntries } = useLeaderboard(true);
   const [shareCopied, setShareCopied] = useState(false);
@@ -322,7 +320,7 @@ export default function Dashboard() {
                     <div className="flex items-center gap-2 shrink-0">
                       <HeroImg name={topHero.heroName} size="md" />
                       <div className="text-right">
-                        <p className="text-xs font-semibold text-fab-text">{fool.hero(topHero.heroName).split(",")[0]}</p>
+                        <p className="text-xs font-semibold text-fab-text">{topHero.heroName.split(",")[0]}</p>
                         <p className={`text-xs font-bold ${topHero.winRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>{topHero.winRate.toFixed(0)}%</p>
                       </div>
                     </div>
@@ -375,25 +373,24 @@ export default function Dashboard() {
                 <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
                   {/* Win Rate — large */}
                   <div className="text-center">
-                    <p className={`text-3xl font-black tabular-nums ${(fool.active ? fool.wr(overall.overallWinRate) : overall.overallWinRate) >= 50 ? "text-fab-win" : "text-fab-loss"}`}>
-                      {fool.active ? fool.wr(overall.overallWinRate).toFixed(1) : overall.overallWinRate.toFixed(1)}%
+                    <p className={`text-3xl font-black tabular-nums ${overall.overallWinRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>
+                      {overall.overallWinRate.toFixed(1)}%
                     </p>
                     <p className="text-[10px] text-fab-text/50 uppercase tracking-wider font-semibold">Win Rate</p>
                   </div>
                   {/* Record */}
                   <div className="text-center">
-                    {(() => { const r = fool.wld(overall.totalWins, overall.totalLosses, overall.totalDraws); return (
                     <p className="text-lg font-bold tabular-nums text-fab-text">
-                      <span className="text-fab-win">{r.w.toLocaleString()}</span>
+                      <span className="text-fab-win">{overall.totalWins}</span>
                       <span className="text-fab-dim">-</span>
-                      <span className="text-fab-loss">{r.l.toLocaleString()}</span>
-                      {r.d > 0 && <><span className="text-fab-dim">-</span><span className="text-fab-muted">{r.d.toLocaleString()}</span></>}
-                    </p>); })()}
+                      <span className="text-fab-loss">{overall.totalLosses}</span>
+                      {overall.totalDraws > 0 && <><span className="text-fab-dim">-</span><span className="text-fab-muted">{overall.totalDraws}</span></>}
+                    </p>
                     <p className="text-[10px] text-fab-text/50 uppercase tracking-wider font-semibold">Record</p>
                   </div>
                   {/* Matches */}
                   <div className="text-center">
-                    <p className="text-lg font-black tabular-nums text-fab-text">{fool.n(overall.totalMatches + overall.totalByes, 1).toLocaleString()}</p>
+                    <p className="text-lg font-black tabular-nums text-fab-text">{overall.totalMatches + overall.totalByes}</p>
                     <p className="text-[10px] text-fab-text/50 uppercase tracking-wider font-semibold">Matches</p>
                   </div>
                   {/* Byes */}
@@ -405,7 +402,7 @@ export default function Dashboard() {
                   )}
                   {/* Events */}
                   <div className="text-center">
-                    <p className="text-lg font-black tabular-nums text-fab-text">{fool.n(filteredEventStats.length, 2).toLocaleString()}</p>
+                    <p className="text-lg font-black tabular-nums text-fab-text">{filteredEventStats.length}</p>
                     <p className="text-[10px] text-fab-text/50 uppercase tracking-wider font-semibold">Events</p>
                   </div>
                   {/* Best Finish */}
