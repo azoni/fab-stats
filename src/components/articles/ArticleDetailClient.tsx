@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { ArrowLeft, Clock3, Eye, MessageCircle, Share2 } from "lucide-react";
 import { ArticleCard } from "./ArticleCard";
 import { ArticleComments } from "./ArticleComments";
@@ -22,13 +22,18 @@ function formatDate(isoString?: string): string {
   });
 }
 
-export function ArticleDetailClient({ slug }: { slug: string }) {
+export function ArticleDetailClient({ initialSlug }: { initialSlug?: string }) {
   const router = useRouter();
+  const pathname = usePathname();
   const { user } = useAuth();
   const [article, setArticle] = useState<ArticleRecord | null>(null);
   const [related, setRelated] = useState<ArticleRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [copyState, setCopyState] = useState<"idle" | "copied">("idle");
+  const slug = useMemo(() => {
+    const pathSlug = decodeURIComponent(pathname.split("/").pop() || "");
+    return pathSlug && pathSlug !== "_" ? pathSlug : (initialSlug || "");
+  }, [initialSlug, pathname]);
   const handleCommentCountChange = useCallback((count: number) => {
     setArticle((current) => current ? { ...current, commentCount: count } : current);
   }, []);

@@ -43,6 +43,12 @@
   to = "/player/_.html"
   status = 200
 
+# Serve pre-rendered article detail page for all /articles/* URLs
+[[redirects]]
+  from = "/articles/*"
+  to = "/articles/_.html"
+  status = 200
+
 # Serve team hub page at exact /team path
 [[redirects]]
   from = "/team"
