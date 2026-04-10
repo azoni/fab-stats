@@ -11,7 +11,7 @@ import { uploadArticleImage } from "@/lib/article-media";
 import { buildArticleSearchText, createArticleId, ensureUniqueArticleSlug, estimateReadingMinutes, getArticleById, saveArticle } from "@/lib/articles";
 import { createArticleFeedEvent } from "@/lib/feed";
 import { slugify } from "@/lib/seasons";
-import type { ArticleBlock, ArticleCalloutTone, ArticleImageWidth, ArticleRecord } from "@/types";
+import type { ArticleBlock, ArticleCalloutTone, ArticleGalleryImage, ArticleImageWidth, ArticleRecord } from "@/types";
 
 type ImageBlock = Extract<ArticleBlock, { type: "image" }> & { file?: File | null; localUrl?: string };
 type GalleryItem = { id: string; url: string; alt?: string; caption?: string; file?: File | null; localUrl?: string };
@@ -56,12 +56,17 @@ function previewBlock(block: EditorBlock): ArticleBlock | null {
     return items.length ? { ...block, items } : null;
   }
   if (block.type === "gallery") {
-    const images = block.images
-      .map((image) => {
-        const url = image.localUrl || image.url.trim();
-        return url ? { id: image.id, url, alt: image.alt?.trim() || undefined, caption: image.caption?.trim() || undefined } : null;
-      })
-      .filter((image): image is { id: string; url: string; alt?: string; caption?: string } => Boolean(image));
+    const images: ArticleGalleryImage[] = block.images.flatMap((image) => {
+      const url = image.localUrl || image.url.trim();
+      return url
+        ? [{
+            id: image.id,
+            url,
+            alt: image.alt?.trim() || undefined,
+            caption: image.caption?.trim() || undefined,
+          }]
+        : [];
+    });
     return images.length ? { id: block.id, type: "gallery", images, columns: block.columns === 3 ? 3 : 2 } : null;
   }
   if (block.type === "image") {
@@ -154,7 +159,9 @@ export function ArticleComposerGate() {
   const previewBlocks = useMemo(() => blocks.map(previewBlock).filter((block): block is ArticleBlock => Boolean(block)), [blocks]);
   const previewArticle = useMemo<ArticleRecord>(() => {
     const now = new Date().toISOString();
-    const contentBlocks = previewBlocks.length ? previewBlocks : [{ id: "preview", type: "paragraph", text: "Start writing. The live preview updates as the article comes together." }];
+    const contentBlocks: ArticleBlock[] = previewBlocks.length
+      ? previewBlocks
+      : [{ id: "preview", type: "paragraph", text: "Start writing. The live preview updates as the article comes together." }];
     return {
       id: existingArticle?.id || "preview",
       authorUid: profile?.uid || user?.uid || "",

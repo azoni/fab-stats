@@ -569,15 +569,17 @@ function ImportContent({ event, compact }: { event: ImportFeedEvent; compact?: b
 }
 
 function ArticleFeedContent({ event, compact }: { event: ArticleFeedEvent; compact?: boolean }) {
+  const heroTags = event.heroTags ?? [];
+
   if (compact) {
     return (
       <div className="mt-1">
         <p className="text-[11px] text-fab-muted">
           published <span className="font-semibold text-fab-text">{event.title}</span>
         </p>
-        {event.heroTags.length > 0 && (
+        {heroTags.length > 0 && (
           <div className="mt-1 flex flex-wrap gap-1">
-            {event.heroTags.slice(0, 3).map((tag) => (
+            {heroTags.slice(0, 3).map((tag) => (
               <HeroPill key={tag} hero={tag} compact />
             ))}
           </div>
@@ -605,9 +607,9 @@ function ArticleFeedContent({ event, compact }: { event: ArticleFeedEvent; compa
         </p>
         <p className="mt-1 text-sm leading-6 text-fab-dim">{event.excerpt}</p>
       </div>
-      {event.heroTags.length > 0 && (
+      {heroTags.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
-          {event.heroTags.slice(0, 4).map((tag) => (
+          {heroTags.slice(0, 4).map((tag) => (
             <HeroPill key={tag} hero={tag} />
           ))}
         </div>
