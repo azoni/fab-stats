@@ -65,6 +65,7 @@ export const exploreLinks = [
   { href: "/tier-list", label: "Tier List" },
   { href: "/tournaments", label: "Tournaments" },
   { href: "/compare", label: "Versus" },
+  { href: "/articles", label: "Articles" },
   { href: "/games", label: "Games" },
   { href: "/matchups", label: "Matchup Matrix" },
 ];

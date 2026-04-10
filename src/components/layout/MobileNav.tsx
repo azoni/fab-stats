@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { DashboardIcon, ImportIcon } from "@/components/icons/NavIcons";
+import { ImportIcon } from "@/components/icons/NavIcons";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { useAuth } from "@/contexts/AuthContext";
 import { trackSupportClick } from "@/lib/analytics";
@@ -10,11 +10,14 @@ import { useNotifications } from "@/hooks/useNotifications";
 import { useFriends } from "@/hooks/useFriends";
 import {
   ChevronRight, LogIn, ExternalLink,
-  AlignLeft, Puzzle, BookOpen, ClipboardList,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { navLinks, moreLinks, userMenuLinks, exploreLinks, resourceLinks } from "./nav-data";
 import type { NavLink } from "./nav-data";
+
+
+// Local icon function definitions removed — using Lucide imports above
+
 
 export function MobileNav() {
   const pathname = usePathname();

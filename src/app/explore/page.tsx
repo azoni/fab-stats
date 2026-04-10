@@ -16,6 +16,14 @@ const EXPLORE_LINKS = [
     ringColor: "ring-yellow-400/20",
   },
   {
+    title: "Articles",
+    description: "Read community articles, hero guides, and tournament writeups.",
+    href: "/articles",
+    color: "text-rose-400",
+    bgColor: "bg-rose-400/10",
+    ringColor: "ring-rose-400/20",
+  },
+  {
     title: "Tier List",
     description: "Community hero tier rankings based on recent tournament performance.",
     href: "/tier-list",

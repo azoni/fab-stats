@@ -622,7 +622,18 @@ export interface BladeDashFeedEvent extends FeedEventBase {
   wordsSolved: number;
 }
 
-export type FeedEvent = ImportFeedEvent | AchievementFeedEvent | PlacementFeedEvent | FaBdokuFeedEvent | FaBdokuCardFeedEvent | CrosswordFeedEvent | HeroGuesserFeedEvent | MatchupManiaFeedEvent | TriviaFeedEvent | TimelineFeedEvent | ConnectionsFeedEvent | RampageFeedEvent | KnockoutFeedEvent | BrawlFeedEvent | NinjaComboFeedEvent | ShadowStrikeFeedEvent | BladeDashFeedEvent;
+export interface ArticleFeedEvent extends FeedEventBase {
+  type: "article";
+  articleId: string;
+  slug: string;
+  title: string;
+  excerpt: string;
+  coverImageUrl?: string;
+  heroTags?: string[];
+  publishedAt: string;
+}
+
+export type FeedEvent = ImportFeedEvent | AchievementFeedEvent | PlacementFeedEvent | FaBdokuFeedEvent | FaBdokuCardFeedEvent | CrosswordFeedEvent | HeroGuesserFeedEvent | MatchupManiaFeedEvent | TriviaFeedEvent | TimelineFeedEvent | ConnectionsFeedEvent | RampageFeedEvent | KnockoutFeedEvent | BrawlFeedEvent | NinjaComboFeedEvent | ShadowStrikeFeedEvent | BladeDashFeedEvent | ArticleFeedEvent;
 
 export interface Creator {
   name: string;
@@ -724,6 +735,79 @@ export interface FeedbackItem {
   message: string;
   status: "new" | "reviewed" | "done";
   createdAt: string;
+}
+
+// Articles
+export type ArticleStatus = "draft" | "published" | "archived";
+export type ArticleImageWidth = "standard" | "wide" | "full";
+export type ArticleReactionKey = "fire" | "heart" | "insight";
+export type ArticleCalloutTone = "note" | "tip" | "warning";
+
+export interface ArticleGalleryImage {
+  id: string;
+  url: string;
+  alt?: string;
+  caption?: string;
+}
+
+export type ArticleBlock =
+  | { id: string; type: "paragraph"; text: string }
+  | { id: string; type: "heading"; level: 2 | 3; text: string }
+  | { id: string; type: "quote"; text: string }
+  | { id: string; type: "list"; style: "bullet" | "numbered"; items: string[] }
+  | { id: string; type: "divider" }
+  | { id: string; type: "image"; url: string; alt?: string; caption?: string; width?: ArticleImageWidth }
+  | { id: string; type: "gallery"; images: ArticleGalleryImage[]; columns?: 2 | 3 }
+  | { id: string; type: "callout"; tone: ArticleCalloutTone; title?: string; text: string }
+  | { id: string; type: "embed"; url: string; title?: string; caption?: string };
+
+export interface ArticleRecord {
+  id: string;
+  authorUid: string;
+  authorUsername: string;
+  authorDisplayName: string;
+  authorPhotoUrl?: string;
+  title: string;
+  slug: string;
+  excerpt: string;
+  coverImageUrl?: string;
+  contentBlocks: ArticleBlock[];
+  searchText: string;
+  heroTags: string[];
+  tags: string[];
+  status: ArticleStatus;
+  allowComments: boolean;
+  readingMinutes: number;
+  viewCount: number;
+  commentCount: number;
+  reactionCounts?: Partial<Record<ArticleReactionKey, number>>;
+  createdAt: string;
+  updatedAt: string;
+  publishedAt?: string;
+}
+
+export interface ArticleCommentAuthorDecor {
+  borderStyle?: "beam" | "glow";
+  borderEventType?: string;
+  borderPlacement?: string;
+  underlineEventType?: string;
+  underlinePlacement?: string;
+  selectedBadgeIds?: string[];
+}
+
+export interface ArticleComment {
+  id: string;
+  articleId: string;
+  authorUid: string;
+  authorUsername: string;
+  authorName: string;
+  authorPhoto?: string;
+  authorDecor?: ArticleCommentAuthorDecor;
+  text: string;
+  parentId?: string;
+  replyToName?: string;
+  createdAt: string;
+  editedAt?: string;
 }
 
 // Gamification

@@ -13,7 +13,7 @@ import type { FeedEventType } from "@/lib/feed";
 import type { FeedEvent } from "@/types";
 
 type ScopeTab = "community" | "friends";
-type TypeFilter = "all" | "import" | "placement" | "games" | "engagement";
+type TypeFilter = "all" | "import" | "placement" | "article" | "games" | "engagement";
 
 const GAME_EVENT_TYPES = new Set(["fabdoku", "fabdoku-cards", "crossword", "heroguesser", "matchupmania", "trivia", "timeline", "connections", "rampage", "kayosknockout", "brutebrawl", "ninjacombo", "shadowstrike", "bladedash"]);
 
@@ -21,6 +21,7 @@ const TYPE_FILTERS: { value: TypeFilter; label: string; adminOnly?: boolean }[] 
   { value: "all", label: "All" },
   { value: "import", label: "Imports" },
   { value: "placement", label: "Placements" },
+  { value: "article", label: "Articles" },
   { value: "games", label: "Games" },
   { value: "engagement", label: "Engagement", adminOnly: true },
 ];
@@ -48,6 +49,7 @@ function groupConsecutiveActivity(events: ActivityEvent[]): ActivityGroup[] {
 const TYPE_CAPS: Record<string, number> = {
   import: 20,
   placement: 20,
+  article: 20,
 };
 const SCOPE_KEY = "fab-feed-scope";
 const TYPE_KEY = "fab-feed-type";
@@ -64,7 +66,7 @@ export function ActivityFeed({ rankMap, eventTierMap, underlineTierMap, heroComp
   const { friends } = useFriends();
   const { favorites } = useFavorites();
   const [scope, _setScope] = useState<ScopeTab>(() => readStored(SCOPE_KEY, ["community", "friends"], "community"));
-  const [typeFilter, _setTypeFilter] = useState<TypeFilter>(() => readStored(TYPE_KEY, ["all", "import", "placement", "games", "engagement"], "placement"));
+  const [typeFilter, _setTypeFilter] = useState<TypeFilter>(() => readStored(TYPE_KEY, ["all", "import", "placement", "article", "games", "engagement"], "placement"));
   const feedTypeFilter: FeedEventType = (typeFilter === "engagement" || typeFilter === "games") ? "all" : typeFilter;
   const { events, loading } = useFeed(feedTypeFilter);
 
@@ -317,7 +319,12 @@ export function ActivityFeed({ rankMap, eventTierMap, underlineTierMap, heroComp
                     router.push("/games");
                     return;
                   }
-                  const t = group.events[0].type;
+                  const firstEvent = group.events[0];
+                  const t = firstEvent.type;
+                  if (firstEvent.type === "article") {
+                    router.push(`/articles/${firstEvent.slug}`);
+                    return;
+                  }
                   router.push(GAME_EVENT_TYPES.has(t) ? `/${t}` : t === "import" ? `/search?type=${t}` : `/search?type=${t}`);
                 }}
                 className="cursor-pointer"

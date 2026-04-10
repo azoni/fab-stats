@@ -85,6 +85,19 @@ service firebase.storage {
         );
     }
 
+    match /article-images/{userId}/{articleId}/{fileName} {
+      allow read: if true;
+      allow write: if isAdmin()
+        && (
+          request.resource == null
+          || (validBackgroundFileName(fileName) && validImageUpload(8 * 1024 * 1024))
+        );
+    }
+
+    match /article-images/{allPaths=**} {
+      allow read, write: if false;
+    }
+
     // Default deny for everything else in Storage.
     match /{allPaths=**} {
       allow read, write: if false;

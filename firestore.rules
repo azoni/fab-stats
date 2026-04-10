@@ -91,6 +91,26 @@ service cloud.firestore {
       && (!('updatedAt' in data) || maxLen(data.updatedAt, 40));
     }
 
+    function articleDocData(articleId) {
+      return get(/databases/$(database)/documents/articles/$(articleId)).data;
+    }
+
+    function articleIsPublished(articleId) {
+      return articleDocData(articleId).status == "published";
+    }
+
+    function articleAllowsComments(articleId) {
+      return articleDocData(articleId).allowComments != false;
+    }
+
+    function validArticleReactionCounts(counts) {
+      return counts is map
+        && counts.keys().hasOnly(['heart', 'fire', 'insight'])
+        && (!('heart' in counts) || (counts.heart is int && counts.heart >= 0))
+        && (!('fire' in counts) || (counts.fire is int && counts.fire >= 0))
+        && (!('insight' in counts) || (counts.insight is int && counts.insight >= 0));
+    }
+
     // ── User profiles ──
     match /users/{userId}/profile/{docId} {
       // Owner can read/write their own profile
@@ -288,6 +308,83 @@ service cloud.firestore {
     }
 
     // ── Leaderboard ──
+    // Articles
+    match /articles/{articleId} {
+      allow read: if resource.data.status == "published";
+      allow read: if isAdmin();
+
+      allow create: if isAdmin()
+        && request.auth != null
+        && request.resource.data.authorUid == request.auth.uid
+        && request.resource.data.status in ["draft", "published", "archived"]
+        && maxLen(request.resource.data.title, 180)
+        && maxLen(request.resource.data.slug, 180)
+        && maxLen(request.resource.data.excerpt, 600)
+        && maxLen(request.resource.data.searchText, 8000)
+        && request.resource.data.contentBlocks is list
+        && request.resource.data.heroTags is list
+        && request.resource.data.tags is list
+        && request.resource.data.viewCount is int
+        && request.resource.data.commentCount is int
+        && (!("reactionCounts" in request.resource.data) || validArticleReactionCounts(request.resource.data.reactionCounts));
+
+      allow update, delete: if isAdmin();
+
+      allow update: if request.auth != null
+        && articleIsPublished(articleId)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['viewCount'])
+        && request.resource.data.viewCount is int
+        && request.resource.data.viewCount >= resource.data.viewCount
+        && request.resource.data.viewCount <= resource.data.viewCount + 1;
+
+      allow update: if request.auth != null
+        && articleIsPublished(articleId)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['commentCount', 'updatedAt'])
+        && request.resource.data.commentCount is int
+        && request.resource.data.commentCount >= 0
+        && request.resource.data.commentCount >= resource.data.commentCount - 1
+        && request.resource.data.commentCount <= resource.data.commentCount + 1
+        && maxLen(request.resource.data.updatedAt, 40);
+
+      allow update: if request.auth != null
+        && articleIsPublished(articleId)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reactionCounts'])
+        && validArticleReactionCounts(request.resource.data.reactionCounts);
+
+      match /comments/{commentId} {
+        allow read: if articleIsPublished(articleId);
+
+        allow create: if request.auth != null
+          && articleIsPublished(articleId)
+          && articleAllowsComments(articleId)
+          && request.resource.data.authorUid == request.auth.uid
+          && maxLen(request.resource.data.authorName, 80)
+          && maxLen(request.resource.data.authorUsername, 50)
+          && maxLen(request.resource.data.text, 500)
+          && (!("replyToName" in request.resource.data) || maxLen(request.resource.data.replyToName, 80));
+
+        allow update: if request.auth != null
+          && (
+            (resource.data.authorUid == request.auth.uid
+              && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['text', 'editedAt'])
+              && maxLen(request.resource.data.text, 500))
+            || isAdmin()
+          );
+
+        allow delete: if request.auth != null
+          && (resource.data.authorUid == request.auth.uid || isAdmin());
+      }
+
+      match /reactions/{userId} {
+        allow read: if request.auth != null && request.auth.uid == userId;
+        allow create, update: if request.auth != null
+          && request.auth.uid == userId
+          && request.resource.data.key in ["heart", "fire", "insight"];
+        allow delete: if request.auth != null && request.auth.uid == userId;
+      }
+    }
+
+    // Leaderboard
     match /leaderboard/{userId} {
       // Authenticated users can read all entries; guests only see non-hidden entries
       allow read: if request.auth != null
@@ -309,7 +406,7 @@ service cloud.firestore {
       // Only public profiles can create feed events
       allow create: if request.auth != null
         && request.resource.data.userId == request.auth.uid
-        && request.resource.data.type in ["import", "achievement", "placement", "fabdoku", "fabdoku-cards", "crossword", "heroguesser", "matchupmania", "trivia", "timeline", "connections", "rampage", "kayosknockout", "brutebrawl", "ninjacombo", "shadowstrike", "bladedash"]
+        && request.resource.data.type in ["import", "achievement", "placement", "article", "fabdoku", "fabdoku-cards", "crossword", "heroguesser", "matchupmania", "trivia", "timeline", "connections", "rampage", "kayosknockout", "brutebrawl", "ninjacombo", "shadowstrike", "bladedash"]
         && request.resource.data.isPublic == true;
       // Reactions: any authenticated user can toggle reactions
       allow update: if request.auth != null
