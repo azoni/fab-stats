@@ -10,6 +10,7 @@ import { ArticleContent } from "./ArticleContent";
 import { ArticleReactionBar } from "./ArticleReactionBar";
 import { useAuth } from "@/contexts/AuthContext";
 import { articleHref, getArticleBySlug, getArticlesByAuthorUsername } from "@/lib/articles";
+import { getProfileByUsername } from "@/lib/firestore-storage";
 import { trackArticleView } from "@/lib/article-views";
 import type { ArticleRecord } from "@/types";
 
@@ -54,6 +55,13 @@ export function ArticleDetailClient({ initialSlug }: { initialSlug?: string }) {
         }
       }).catch(() => {});
 
+      if (!item.authorPhotoUrl) {
+        getProfileByUsername(item.authorUsername).then((authorProfile) => {
+          if (cancelled || !authorProfile?.photoUrl) return;
+          setArticle((current) => current ? { ...current, authorPhotoUrl: authorProfile.photoUrl } : current);
+        }).catch(() => {});
+      }
+
       trackArticleView(item.id, user?.uid).then((counted) => {
         if (!cancelled && counted) {
           setArticle((current) => current ? { ...current, viewCount: current.viewCount + 1 } : current);
@@ -74,11 +82,7 @@ export function ArticleDetailClient({ initialSlug }: { initialSlug?: string }) {
     if (!article) return;
     const absoluteUrl = typeof window !== "undefined" ? `${window.location.origin}${shareHref}` : shareHref;
     try {
-      if (navigator.share) {
-        await navigator.share({ title: article.title, url: absoluteUrl });
-      } else {
-        await navigator.clipboard.writeText(absoluteUrl);
-      }
+      await navigator.clipboard.writeText(absoluteUrl);
       setCopyState("copied");
       window.setTimeout(() => setCopyState("idle"), 1800);
     } catch {

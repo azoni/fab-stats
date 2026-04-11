@@ -7,6 +7,7 @@ import { PenSquare, Search } from "lucide-react";
 import { ArticleCard } from "./ArticleCard";
 import { useAuth } from "@/contexts/AuthContext";
 import { getPublishedArticles } from "@/lib/articles";
+import { getProfileByUsername } from "@/lib/firestore-storage";
 import type { ArticleRecord } from "@/types";
 
 export function ArticlesIndexClient() {
@@ -19,10 +20,35 @@ export function ArticlesIndexClient() {
   const [heroFilter, setHeroFilter] = useState(() => searchParams.get("hero") || "all");
 
   useEffect(() => {
+    let cancelled = false;
     getPublishedArticles(150).then((items) => {
+      if (cancelled) return;
       setArticles(items);
       setLoading(false);
+
+      const missing = Array.from(new Set(
+        items.filter((article) => !article.authorPhotoUrl).map((article) => article.authorUsername),
+      ));
+      if (missing.length === 0) return;
+
+      Promise.all(missing.map(async (username) => {
+        try {
+          const authorProfile = await getProfileByUsername(username);
+          return [username, authorProfile?.photoUrl] as const;
+        } catch {
+          return [username, undefined] as const;
+        }
+      })).then((entries) => {
+        if (cancelled) return;
+        const photoMap = new Map(entries.filter(([, url]) => Boolean(url)));
+        if (photoMap.size === 0) return;
+        setArticles((current) => current.map((article) =>
+          article.authorPhotoUrl || !photoMap.has(article.authorUsername)
+            ? article
+            : { ...article, authorPhotoUrl: photoMap.get(article.authorUsername) }));
+      });
     }).catch(() => setLoading(false));
+    return () => { cancelled = true; };
   }, []);
 
   const authorOptions = useMemo(() => {
@@ -57,47 +83,44 @@ export function ArticlesIndexClient() {
 
   return (
     <div className="mx-auto max-w-6xl space-y-6">
-      <div className="flex flex-col gap-4 rounded-lg border border-fab-border bg-fab-surface p-6">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <div className="inline-flex items-center gap-2 rounded-full bg-fab-gold/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-fab-gold">
-              Articles
-              <span className="rounded-full bg-fab-bg px-2 py-0.5 text-[10px] text-fab-dim">Beta</span>
+      <div className="flex flex-col gap-3 rounded-lg border border-fab-border bg-fab-surface p-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <h1 className="text-lg font-bold text-fab-text sm:text-xl">Articles</h1>
+              <span className="rounded-full bg-fab-gold/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-fab-gold">Beta</span>
             </div>
-            <h1 className="mt-3 text-3xl font-bold text-fab-text">Stories, tech, and tournament notes.</h1>
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-fab-muted">
-              Follow writer notes from around the community, filter by hero or author, and dig into the pieces worth sharing.
-            </p>
+            <p className="mt-0.5 truncate text-xs text-fab-dim">Stories, tech, and tournament notes from the community.</p>
           </div>
 
           <Link
             href="/articles/new"
-            className={`inline-flex items-center gap-2 rounded-md border px-4 py-2 text-sm font-semibold ${
+            className={`inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-semibold ${
               isAdmin
                 ? "border-fab-gold/35 bg-fab-gold/10 text-fab-gold hover:bg-fab-gold/15"
                 : "border-fab-border bg-fab-bg text-fab-dim"
             }`}
           >
-            <PenSquare className="w-4 h-4" />
+            <PenSquare className="w-3.5 h-3.5" />
             {isAdmin ? "Write Article" : "Composer Beta"}
           </Link>
         </div>
 
-        <div className="grid gap-3 md:grid-cols-[minmax(0,2fr),minmax(180px,1fr),minmax(180px,1fr)]">
-          <label className="relative block">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fab-dim" />
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <label className="relative block flex-1">
+            <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-fab-dim" />
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search titles, notes, heroes, and tags"
-              className="w-full rounded-md border border-fab-border bg-fab-bg px-10 py-2.5 text-sm text-fab-text outline-none focus:border-fab-gold/40"
+              placeholder="Search titles, notes, heroes, tags"
+              className="w-full rounded-md border border-fab-border bg-fab-bg px-8 py-1.5 text-xs text-fab-text outline-none focus:border-fab-gold/40"
             />
           </label>
 
           <select
             value={authorFilter}
             onChange={(e) => setAuthorFilter(e.target.value)}
-            className="rounded-md border border-fab-border bg-fab-bg px-3 py-2.5 text-sm text-fab-text outline-none focus:border-fab-gold/40"
+            className="rounded-md border border-fab-border bg-fab-bg px-2 py-1.5 text-xs text-fab-text outline-none focus:border-fab-gold/40 sm:w-44"
           >
             <option value="all">All authors</option>
             {authorOptions.map(([username, displayName]) => (
@@ -108,7 +131,7 @@ export function ArticlesIndexClient() {
           <select
             value={heroFilter}
             onChange={(e) => setHeroFilter(e.target.value)}
-            className="rounded-md border border-fab-border bg-fab-bg px-3 py-2.5 text-sm text-fab-text outline-none focus:border-fab-gold/40"
+            className="rounded-md border border-fab-border bg-fab-bg px-2 py-1.5 text-xs text-fab-text outline-none focus:border-fab-gold/40 sm:w-44"
           >
             <option value="all">All heroes</option>
             {heroOptions.map((hero) => (
