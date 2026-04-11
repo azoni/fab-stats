@@ -29,8 +29,10 @@ export function ArticleCard({
   showAuthor?: boolean;
 }) {
   const [copied, setCopied] = useState(false);
+  const [photoFailed, setPhotoFailed] = useState(false);
   const href = articleHref(article.slug);
   const imageUrl = getArticlePrimaryImage(article);
+  const showPhoto = Boolean(article.authorPhotoUrl) && !photoFailed;
   const reactionTotal = useMemo(() => totalReactions(article.reactionCounts), [article.reactionCounts]);
 
   async function handleShare() {
@@ -100,12 +102,14 @@ export function ArticleCard({
 
         {showAuthor && (
           <div className="mt-4 flex items-center gap-2">
-            {article.authorPhotoUrl ? (
+            {showPhoto ? (
               <img
                 src={article.authorPhotoUrl}
                 alt=""
                 className="h-8 w-8 rounded-full border border-fab-border object-cover"
                 loading="lazy"
+                referrerPolicy="no-referrer"
+                onError={() => setPhotoFailed(true)}
               />
             ) : (
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-fab-gold/15 text-xs font-bold text-fab-gold">

@@ -31,6 +31,7 @@ export function ArticleDetailClient({ initialSlug }: { initialSlug?: string }) {
   const [related, setRelated] = useState<ArticleRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [copyState, setCopyState] = useState<"idle" | "copied">("idle");
+  const [photoFailed, setPhotoFailed] = useState(false);
   const slug = useMemo(() => {
     const pathSlug = decodeURIComponent(pathname.split("/").pop() || "");
     return pathSlug && pathSlug !== "_" ? pathSlug : (initialSlug || "");
@@ -42,6 +43,7 @@ export function ArticleDetailClient({ initialSlug }: { initialSlug?: string }) {
   useEffect(() => {
     let cancelled = false;
 
+    setPhotoFailed(false);
     getArticleBySlug(slug).then((item) => {
       if (cancelled) return;
       setArticle(item);
@@ -153,8 +155,14 @@ export function ArticleDetailClient({ initialSlug }: { initialSlug?: string }) {
 
           <div className="flex flex-col gap-4 rounded-lg border border-fab-border bg-fab-bg p-4 md:flex-row md:items-center md:justify-between">
             <div className="flex items-center gap-3">
-              {article.authorPhotoUrl ? (
-                <img src={article.authorPhotoUrl} alt="" className="h-11 w-11 rounded-full border border-fab-border object-cover" />
+              {article.authorPhotoUrl && !photoFailed ? (
+                <img
+                  src={article.authorPhotoUrl}
+                  alt=""
+                  className="h-11 w-11 rounded-full border border-fab-border object-cover"
+                  referrerPolicy="no-referrer"
+                  onError={() => setPhotoFailed(true)}
+                />
               ) : (
                 <div className="flex h-11 w-11 items-center justify-center rounded-full bg-fab-gold/15 text-sm font-bold text-fab-gold">
                   {article.authorDisplayName.slice(0, 1).toUpperCase()}
