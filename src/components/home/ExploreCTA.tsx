@@ -36,14 +36,22 @@ const features = [
     color: "sky",
     icon: "M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z",
   },
+  {
+    href: "/articles",
+    label: "Articles",
+    desc: "Reads from the community — write your own",
+    color: "emerald",
+    icon: "M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25",
+  },
 ];
 
 const colorMap: Record<string, { bg: string; ring: string; text: string; hoverBorder: string }> = {
-  teal:   { bg: "bg-teal-500/10",   ring: "ring-teal-500/20",   text: "text-teal-400",   hoverBorder: "hover:border-teal-500/30" },
-  amber:  { bg: "bg-amber-500/10",  ring: "ring-amber-500/20",  text: "text-amber-400",  hoverBorder: "hover:border-amber-500/30" },
-  violet: { bg: "bg-violet-500/10", ring: "ring-violet-500/20", text: "text-violet-400", hoverBorder: "hover:border-violet-500/30" },
-  rose:   { bg: "bg-rose-500/10",   ring: "ring-rose-500/20",   text: "text-rose-400",   hoverBorder: "hover:border-rose-500/30" },
-  sky:    { bg: "bg-sky-500/10",    ring: "ring-sky-500/20",    text: "text-sky-400",    hoverBorder: "hover:border-sky-500/30" },
+  teal:    { bg: "bg-teal-500/10",    ring: "ring-teal-500/20",    text: "text-teal-400",    hoverBorder: "hover:border-teal-500/30" },
+  amber:   { bg: "bg-amber-500/10",   ring: "ring-amber-500/20",   text: "text-amber-400",   hoverBorder: "hover:border-amber-500/30" },
+  violet:  { bg: "bg-violet-500/10",  ring: "ring-violet-500/20",  text: "text-violet-400",  hoverBorder: "hover:border-violet-500/30" },
+  rose:    { bg: "bg-rose-500/10",    ring: "ring-rose-500/20",    text: "text-rose-400",    hoverBorder: "hover:border-rose-500/30" },
+  sky:     { bg: "bg-sky-500/10",     ring: "ring-sky-500/20",     text: "text-sky-400",     hoverBorder: "hover:border-sky-500/30" },
+  emerald: { bg: "bg-emerald-500/10", ring: "ring-emerald-500/20", text: "text-emerald-400", hoverBorder: "hover:border-emerald-500/30" },
 };
 
 export function ExploreCTA() {
@@ -53,7 +61,7 @@ export function ExploreCTA() {
         <h2 className="text-xs font-medium text-fab-muted tracking-wide uppercase">Explore More</h2>
         <div className="flex-1 h-px bg-fab-border/50" />
       </div>
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2.5">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2.5">
         {features.map((f) => {
           const c = colorMap[f.color];
           return (
