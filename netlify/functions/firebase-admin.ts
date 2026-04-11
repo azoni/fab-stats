@@ -21,5 +21,6 @@ export function getAdminDb(): Firestore {
   }
 
   _db = getFirestore();
+  _db.settings({ ignoreUndefinedProperties: true });
   return _db;
 }
