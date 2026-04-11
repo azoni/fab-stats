@@ -312,6 +312,7 @@ service cloud.firestore {
     match /articles/{articleId} {
       allow read: if resource.data.status == "published";
       allow read: if isAdmin();
+      allow read: if request.auth != null && resource.data.authorUid == request.auth.uid;
 
       allow create: if isAdmin()
         && request.auth != null
