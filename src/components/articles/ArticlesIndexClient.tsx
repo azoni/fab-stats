@@ -6,7 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { PenSquare, Search } from "lucide-react";
 import { ArticleCard } from "./ArticleCard";
 import { useAuth } from "@/contexts/AuthContext";
-import { getPublishedArticles } from "@/lib/articles";
+import { getPublishedArticles, isLikelyValidPhotoUrl } from "@/lib/articles";
 import { getProfileByUsername } from "@/lib/firestore-storage";
 import type { ArticleRecord } from "@/types";
 
@@ -27,14 +27,15 @@ export function ArticlesIndexClient() {
       setLoading(false);
 
       const missing = Array.from(new Set(
-        items.filter((article) => !article.authorPhotoUrl).map((article) => article.authorUsername),
+        items.filter((article) => !isLikelyValidPhotoUrl(article.authorPhotoUrl)).map((article) => article.authorUsername),
       ));
       if (missing.length === 0) return;
 
       Promise.all(missing.map(async (username) => {
         try {
           const authorProfile = await getProfileByUsername(username);
-          return [username, authorProfile?.photoUrl] as const;
+          const photoUrl = isLikelyValidPhotoUrl(authorProfile?.photoUrl) ? authorProfile!.photoUrl : undefined;
+          return [username, photoUrl] as const;
         } catch {
           return [username, undefined] as const;
         }
@@ -43,7 +44,7 @@ export function ArticlesIndexClient() {
         const photoMap = new Map(entries.filter(([, url]) => Boolean(url)));
         if (photoMap.size === 0) return;
         setArticles((current) => current.map((article) =>
-          article.authorPhotoUrl || !photoMap.has(article.authorUsername)
+          isLikelyValidPhotoUrl(article.authorPhotoUrl) || !photoMap.has(article.authorUsername)
             ? article
             : { ...article, authorPhotoUrl: photoMap.get(article.authorUsername) }));
       });

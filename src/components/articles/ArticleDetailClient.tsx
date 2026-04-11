@@ -9,7 +9,7 @@ import { ArticleComments } from "./ArticleComments";
 import { ArticleContent } from "./ArticleContent";
 import { ArticleReactionBar } from "./ArticleReactionBar";
 import { useAuth } from "@/contexts/AuthContext";
-import { articleHref, getArticleBySlug, getArticlesByAuthorUsername } from "@/lib/articles";
+import { articleHref, getArticleBySlug, getArticlesByAuthorUsername, isLikelyValidPhotoUrl } from "@/lib/articles";
 import { getProfileByUsername } from "@/lib/firestore-storage";
 import { trackArticleView } from "@/lib/article-views";
 import type { ArticleRecord } from "@/types";
@@ -57,10 +57,11 @@ export function ArticleDetailClient({ initialSlug }: { initialSlug?: string }) {
         }
       }).catch(() => {});
 
-      if (!item.authorPhotoUrl) {
+      if (!isLikelyValidPhotoUrl(item.authorPhotoUrl)) {
         getProfileByUsername(item.authorUsername).then((authorProfile) => {
-          if (cancelled || !authorProfile?.photoUrl) return;
-          setArticle((current) => current ? { ...current, authorPhotoUrl: authorProfile.photoUrl } : current);
+          if (cancelled || !isLikelyValidPhotoUrl(authorProfile?.photoUrl)) return;
+          setArticle((current) => current ? { ...current, authorPhotoUrl: authorProfile!.photoUrl } : current);
+          setPhotoFailed(false);
         }).catch(() => {});
       }
 
@@ -155,7 +156,7 @@ export function ArticleDetailClient({ initialSlug }: { initialSlug?: string }) {
 
           <div className="flex flex-col gap-4 rounded-lg border border-fab-border bg-fab-bg p-4 md:flex-row md:items-center md:justify-between">
             <div className="flex items-center gap-3">
-              {article.authorPhotoUrl && !photoFailed ? (
+              {isLikelyValidPhotoUrl(article.authorPhotoUrl) && !photoFailed ? (
                 <img
                   src={article.authorPhotoUrl}
                   alt=""
