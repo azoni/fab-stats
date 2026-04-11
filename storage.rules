@@ -87,7 +87,8 @@ service firebase.storage {
 
     match /article-images/{userId}/{articleId}/{fileName} {
       allow read: if true;
-      allow write: if isAdmin()
+      allow write: if request.auth != null
+        && request.auth.uid == userId
         && (
           request.resource == null
           || (validBackgroundFileName(fileName) && validImageUpload(8 * 1024 * 1024))
