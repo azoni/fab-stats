@@ -20,7 +20,7 @@ const INCLUDED_CARD_TYPES = new Set<string>([
 ]);
 
 type ArticleStatus = "draft" | "published" | "archived";
-type ArticleImageWidth = "standard" | "wide" | "full";
+type ArticleImageWidth = "small" | "standard" | "wide" | "full" | "inline-left" | "inline-right";
 type ArticleCalloutTone = "note" | "tip" | "warning";
 
 interface ArticleGalleryImage {
@@ -124,7 +124,7 @@ interface AdminAuthResult {
 }
 
 const STATUS_VALUES = new Set<ArticleStatus>(["draft", "published", "archived"]);
-const IMAGE_WIDTH_VALUES = new Set<ArticleImageWidth>(["standard", "wide", "full"]);
+const IMAGE_WIDTH_VALUES = new Set<ArticleImageWidth>(["small", "standard", "wide", "full", "inline-left", "inline-right"]);
 const CALLOUT_TONES = new Set<ArticleCalloutTone>(["note", "tip", "warning"]);
 
 const cardRecords: ResolvedCard[] = cards
@@ -518,7 +518,7 @@ function sanitizeBlocks(input: unknown): ArticleBlock[] {
         url: image.url,
         alt: image.alt,
         caption: image.caption,
-        width: parseImageWidth(rawBlock.width) || "standard",
+        width: parseImageWidth(rawBlock.width) || "inline-right",
       });
       continue;
     }

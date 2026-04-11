@@ -739,7 +739,7 @@ export interface FeedbackItem {
 
 // Articles
 export type ArticleStatus = "draft" | "published" | "archived";
-export type ArticleImageWidth = "standard" | "wide" | "full";
+export type ArticleImageWidth = "small" | "standard" | "wide" | "full" | "inline-left" | "inline-right";
 export type ArticleReactionKey = "fire" | "heart" | "insight";
 export type ArticleCalloutTone = "note" | "tip" | "warning";
 
