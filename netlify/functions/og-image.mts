@@ -690,12 +690,15 @@ function renderArticleCard(article: ArticleCardData | null): VNode {
 
   const gold = "#c9a84c";
   const textLight = "#f4e9c3";
-  const muted = "#d4d4d8";
+  const muted = "#a1a1aa";
   const hasCover = Boolean(article.coverImageUrl);
 
-  const title = truncate(article.title, 90);
-  const excerpt = truncate(article.excerpt, 160);
+  const title = truncate(article.title, 80);
+  const excerpt = truncate(article.excerpt, 180);
   const authorLine = article.authorDisplayName || article.authorUsername || "FaB Stats";
+
+  const COVER_WIDTH = 680;
+  const TEXT_WIDTH = 1200 - COVER_WIDTH;
 
   return {
     type: "div",
@@ -704,145 +707,160 @@ function renderArticleCard(article: ArticleCardData | null): VNode {
         width: 1200,
         height: 630,
         display: "flex",
-        flexDirection: "column" as const,
+        flexDirection: "row" as const,
         position: "relative" as const,
-        background: "linear-gradient(135deg, #0a0e17 0%, #161222 100%)",
+        background: "#0a0e17",
         fontFamily: "Inter",
       },
       children: [
-        // Background cover image (full-bleed)
-        hasCover && {
-          type: "img",
-          props: {
-            src: article.coverImageUrl,
-            style: {
-              position: "absolute" as const,
-              top: 0,
-              left: 0,
-              width: 1200,
-              height: 630,
-              objectFit: "cover" as const,
-            },
-          },
-        },
-        // Dark gradient overlay (bottom 70%) for text legibility
+        // Left: cover image (full bleed)
         {
           type: "div",
           props: {
             style: {
-              position: "absolute" as const,
-              top: 0,
-              left: 0,
-              width: 1200,
+              width: COVER_WIDTH,
               height: 630,
               display: "flex",
-              background: "linear-gradient(180deg, rgba(10,14,23,0.35) 0%, rgba(10,14,23,0.55) 40%, rgba(10,14,23,0.92) 100%)",
+              position: "relative" as const,
+              background: "linear-gradient(135deg, #1a1a2e 0%, #0a0e17 100%)",
             },
+            children: hasCover
+              ? [
+                  {
+                    type: "img",
+                    props: {
+                      src: article.coverImageUrl,
+                      style: {
+                        width: COVER_WIDTH,
+                        height: 630,
+                        objectFit: "cover" as const,
+                      },
+                    },
+                  },
+                  // Subtle right-edge shadow to blend into text panel
+                  {
+                    type: "div",
+                    props: {
+                      style: {
+                        position: "absolute" as const,
+                        top: 0,
+                        right: 0,
+                        width: 40,
+                        height: 630,
+                        display: "flex",
+                        background: "linear-gradient(90deg, rgba(10,14,23,0) 0%, rgba(10,14,23,0.9) 100%)",
+                      },
+                    },
+                  },
+                ]
+              : [],
           },
         },
-        // Gold top accent bar
+        // Right: dark text panel
         {
           type: "div",
           props: {
             style: {
-              position: "absolute" as const,
-              top: 0,
-              left: 0,
-              width: 1200,
-              height: 6,
-              display: "flex",
-              background: "linear-gradient(90deg, #c9a84c, #e8c860, #c9a84c)",
-            },
-          },
-        },
-        // Top-left brand chip
-        {
-          type: "div",
-          props: {
-            style: {
-              position: "absolute" as const,
-              top: 40,
-              left: 56,
-              display: "flex",
-              alignItems: "center",
-              gap: 14,
-              padding: "12px 22px",
-              borderRadius: 999,
-              background: "rgba(201, 168, 76, 0.18)",
-              border: "2px solid rgba(201, 168, 76, 0.55)",
-            },
-            children: [
-              {
-                type: "div",
-                props: {
-                  style: { width: 12, height: 12, borderRadius: 999, background: gold, display: "flex" },
-                },
-              },
-              {
-                type: "span",
-                props: {
-                  style: { fontSize: 18, fontWeight: 700, color: gold, letterSpacing: "0.15em" },
-                  children: "FAB STATS · ARTICLE",
-                },
-              },
-            ],
-          },
-        },
-        // Bottom text stack: title + excerpt + author row
-        {
-          type: "div",
-          props: {
-            style: {
-              position: "absolute" as const,
-              left: 56,
-              right: 56,
-              bottom: 48,
+              width: TEXT_WIDTH,
+              height: 630,
               display: "flex",
               flexDirection: "column" as const,
-              gap: 20,
+              justifyContent: "space-between",
+              padding: "48px 52px",
+              background: "linear-gradient(135deg, #0f1320 0%, #161222 100%)",
+              borderLeft: "2px solid rgba(201, 168, 76, 0.35)",
             },
             children: [
-              {
-                type: "div",
-                props: {
-                  style: {
-                    fontSize: title.length > 50 ? 58 : 72,
-                    fontWeight: 700,
-                    color: textLight,
-                    lineHeight: 1.05,
-                    letterSpacing: "-0.025em",
-                    display: "flex",
-                  },
-                  children: title,
-                },
-              },
-              excerpt && {
-                type: "div",
-                props: {
-                  style: {
-                    fontSize: 24,
-                    color: muted,
-                    lineHeight: 1.35,
-                    display: "flex",
-                  },
-                  children: excerpt,
-                },
-              },
+              // Top brand chip
               {
                 type: "div",
                 props: {
                   style: {
                     display: "flex",
                     alignItems: "center",
-                    justifyContent: "space-between",
-                    marginTop: 8,
+                    gap: 12,
+                    padding: "10px 18px",
+                    borderRadius: 999,
+                    background: "rgba(201, 168, 76, 0.15)",
+                    border: "2px solid rgba(201, 168, 76, 0.45)",
+                    alignSelf: "flex-start",
                   },
                   children: [
                     {
                       type: "div",
                       props: {
-                        style: { display: "flex", alignItems: "center", gap: 12, fontSize: 20, color: textLight },
+                        style: { width: 10, height: 10, borderRadius: 999, background: gold, display: "flex" },
+                      },
+                    },
+                    {
+                      type: "span",
+                      props: {
+                        style: { fontSize: 15, fontWeight: 700, color: gold, letterSpacing: "0.18em" },
+                        children: "FAB STATS · ARTICLE",
+                      },
+                    },
+                  ],
+                },
+              },
+              // Middle: title + excerpt
+              {
+                type: "div",
+                props: {
+                  style: {
+                    display: "flex",
+                    flexDirection: "column" as const,
+                    gap: 20,
+                    flex: 1,
+                    paddingTop: 36,
+                  },
+                  children: [
+                    {
+                      type: "div",
+                      props: {
+                        style: {
+                          fontSize: title.length > 50 ? 44 : title.length > 30 ? 52 : 60,
+                          fontWeight: 700,
+                          color: textLight,
+                          lineHeight: 1.08,
+                          letterSpacing: "-0.025em",
+                          display: "flex",
+                        },
+                        children: title,
+                      },
+                    },
+                    excerpt && {
+                      type: "div",
+                      props: {
+                        style: {
+                          fontSize: 20,
+                          color: muted,
+                          lineHeight: 1.4,
+                          display: "flex",
+                        },
+                        children: excerpt,
+                      },
+                    },
+                  ].filter(Boolean),
+                },
+              },
+              // Bottom: author + site
+              {
+                type: "div",
+                props: {
+                  style: {
+                    display: "flex",
+                    flexDirection: "column" as const,
+                    gap: 14,
+                    paddingTop: 20,
+                    borderTop: "1px solid rgba(201, 168, 76, 0.25)",
+                  },
+                  children: [
+                    {
+                      type: "div",
+                      props: {
+                        style: { display: "flex", alignItems: "center", gap: 10, fontSize: 18, color: textLight },
                         children: [
+                          { type: "span", props: { style: { color: muted }, children: "by" } },
                           { type: "span", props: { style: { fontWeight: 700 }, children: authorLine } },
                           { type: "span", props: { style: { color: muted }, children: "·" } },
                           { type: "span", props: { style: { color: muted }, children: `${article.readingMinutes} min read` } },
@@ -850,19 +868,21 @@ function renderArticleCard(article: ArticleCardData | null): VNode {
                       },
                     },
                     {
-                      type: "span",
+                      type: "div",
                       props: {
-                        style: { fontSize: 18, fontWeight: 700, color: gold, letterSpacing: "0.05em" },
-                        children: "fabstats.net",
+                        style: { display: "flex", alignItems: "center", gap: 8, fontSize: 16, fontWeight: 700, color: gold, letterSpacing: "0.08em" },
+                        children: [
+                          { type: "span", props: { children: "fabstats.net" } },
+                        ],
                       },
                     },
                   ],
                 },
               },
-            ].filter(Boolean),
+            ],
           },
         },
-      ].filter(Boolean),
+      ],
     },
   };
 }
