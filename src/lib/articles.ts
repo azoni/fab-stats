@@ -185,6 +185,16 @@ export async function getArticlesByAuthorUid(authorUid: string, limitCount = 12)
     .slice(0, limitCount);
 }
 
+export async function getArticleDraftsByAuthorUid(authorUid: string): Promise<ArticleRecord[]> {
+  const snapshot = await getDocs(query(articlesCollection(), where("authorUid", "==", authorUid)));
+  return snapshot.docs
+    .map((d) => cleanArticleRecord(d.data() as Record<string, unknown>, d.id))
+    .filter((article) => article.status !== "published")
+    .sort((a, b) =>
+      new Date(b.updatedAt || b.createdAt).getTime() - new Date(a.updatedAt || a.createdAt).getTime(),
+    );
+}
+
 export async function getArticlesByAuthorUsername(authorUsername: string, limitCount = 12): Promise<ArticleRecord[]> {
   const snapshot = await getDocs(query(articlesCollection(), where("authorUsername", "==", authorUsername)));
   return snapshot.docs

@@ -8,7 +8,7 @@ import { ArticleCard } from "./ArticleCard";
 import { ArticleContent } from "./ArticleContent";
 import { useAuth } from "@/contexts/AuthContext";
 import { uploadArticleImage } from "@/lib/article-media";
-import { buildArticleSearchText, createArticleId, ensureUniqueArticleSlug, estimateReadingMinutes, getArticleById, saveArticle } from "@/lib/articles";
+import { buildArticleSearchText, createArticleId, ensureUniqueArticleSlug, estimateReadingMinutes, getArticleById, getArticleDraftsByAuthorUid, saveArticle } from "@/lib/articles";
 import { createArticleFeedEvent } from "@/lib/feed";
 import { slugify } from "@/lib/seasons";
 import type { ArticleBlock, ArticleCalloutTone, ArticleGalleryImage, ArticleImageWidth, ArticleRecord } from "@/types";
@@ -117,6 +117,19 @@ export function ArticleComposerGate() {
   const [error, setError] = useState<string | null>(null);
   const [draggingBlockId, setDraggingBlockId] = useState<string | null>(null);
   const [dropTargetId, setDropTargetId] = useState<string | null>(null);
+  const [draftList, setDraftList] = useState<ArticleRecord[]>([]);
+  const [loadingDrafts, setLoadingDrafts] = useState(false);
+
+  useEffect(() => {
+    if (!canAccess || !user?.uid) return;
+    let cancelled = false;
+    setLoadingDrafts(true);
+    getArticleDraftsByAuthorUid(user.uid)
+      .then((list) => { if (!cancelled) setDraftList(list); })
+      .catch(() => { if (!cancelled) setDraftList([]); })
+      .finally(() => { if (!cancelled) setLoadingDrafts(false); });
+    return () => { cancelled = true; };
+  }, [canAccess, user?.uid, existingArticle?.id, notice]);
 
   useEffect(() => {
     if (!canAccess) return;
@@ -391,6 +404,43 @@ export function ArticleComposerGate() {
         {notice && <p className="mt-4 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-300">{notice}</p>}
         {error && <p className="mt-4 rounded-md border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-sm text-rose-300">{error}</p>}
       </div>
+
+      <section className={PANEL}>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <div className="flex items-center gap-2 text-sm font-semibold text-fab-text"><PenSquare className="h-4 w-4 text-fab-gold" />Your Drafts &amp; Unpublished</div>
+            <p className="mt-1 text-xs text-fab-dim">Pick up where you left off, or start a new post.</p>
+          </div>
+          <button type="button" onClick={() => router.push("/articles/new")} className="rounded-md border border-fab-border bg-fab-bg px-3 py-2 text-xs font-semibold text-fab-text hover:border-fab-gold/40"><Plus className="mr-1 inline h-3 w-3" />New Article</button>
+        </div>
+        {loadingDrafts ? (
+          <p className="mt-4 text-xs text-fab-dim">Loading drafts...</p>
+        ) : draftList.length === 0 ? (
+          <p className="mt-4 text-xs text-fab-dim">No drafts yet. Published articles live on <Link href="/articles" className="underline">the articles page</Link>.</p>
+        ) : (
+          <ul className="mt-4 divide-y divide-fab-border rounded-lg border border-fab-border bg-fab-bg">
+            {draftList.map((draft) => {
+              const isActive = draft.id === existingArticle?.id;
+              const updated = draft.updatedAt || draft.createdAt;
+              return (
+                <li key={draft.id} className={`flex flex-wrap items-center justify-between gap-3 px-4 py-3 text-sm ${isActive ? "bg-fab-gold/5" : ""}`}>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="truncate font-semibold text-fab-text">{draft.title || "Untitled draft"}</span>
+                      <span className="rounded-full border border-fab-border bg-fab-surface px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-fab-dim">{draft.status}</span>
+                      {isActive && <span className="rounded-full bg-fab-gold/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-fab-gold">Editing</span>}
+                    </div>
+                    <p className="mt-1 text-[11px] text-fab-dim">Updated {updated ? new Date(updated).toLocaleString() : "—"} · {draft.readingMinutes} min read</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button type="button" onClick={() => router.push(`/articles/new?id=${draft.id}`)} disabled={isActive} className="rounded-md border border-fab-border bg-fab-surface px-3 py-1.5 text-xs font-semibold text-fab-text hover:border-fab-gold/40 disabled:opacity-50">{isActive ? "Open" : "Edit"}</button>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr),minmax(340px,0.85fr)]">
         <div className="space-y-5">
