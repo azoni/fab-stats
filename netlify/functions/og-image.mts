@@ -612,22 +612,286 @@ function renderMetaCard(meta: MetaPageData | null): VNode {
   };
 }
 
+// ── Article card ──
+
+interface ArticleCardData {
+  title: string;
+  excerpt: string;
+  coverImageUrl: string;
+  authorDisplayName: string;
+  authorUsername: string;
+  authorPhotoUrl: string;
+  readingMinutes: number;
+  heroTags: string[];
+}
+
+async function fetchArticle(slug: string): Promise<ArticleCardData | null> {
+  const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+  const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
+  if (!projectId || !apiKey) return null;
+
+  try {
+    const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents:runQuery?key=${apiKey}`;
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        structuredQuery: {
+          from: [{ collectionId: "articles" }],
+          where: {
+            compositeFilter: {
+              op: "AND",
+              filters: [
+                { fieldFilter: { field: { fieldPath: "slug" }, op: "EQUAL", value: { stringValue: slug } } },
+                { fieldFilter: { field: { fieldPath: "status" }, op: "EQUAL", value: { stringValue: "published" } } },
+              ],
+            },
+          },
+          limit: 1,
+        },
+      }),
+    });
+
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (!data[0]?.document?.fields) return null;
+
+    const f = data[0].document.fields;
+    const heroTags: string[] = [];
+    const heroTagValues = f.heroTags?.arrayValue?.values;
+    if (Array.isArray(heroTagValues)) {
+      for (const v of heroTagValues) {
+        if (v.stringValue) heroTags.push(v.stringValue);
+      }
+    }
+
+    return {
+      title: f.title?.stringValue || "",
+      excerpt: f.excerpt?.stringValue || "",
+      coverImageUrl: f.coverImageUrl?.stringValue || "",
+      authorDisplayName: f.authorDisplayName?.stringValue || "",
+      authorUsername: f.authorUsername?.stringValue || "",
+      authorPhotoUrl: f.authorPhotoUrl?.stringValue || "",
+      readingMinutes: Number(f.readingMinutes?.integerValue || 1),
+      heroTags,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function truncate(s: string, max: number): string {
+  if (s.length <= max) return s;
+  return s.slice(0, max - 1).trimEnd() + "…";
+}
+
+function renderArticleCard(article: ArticleCardData | null): VNode {
+  if (!article) return renderGenericCard();
+
+  const gold = "#c9a84c";
+  const textLight = "#f4e9c3";
+  const muted = "#d4d4d8";
+  const hasCover = Boolean(article.coverImageUrl);
+
+  const title = truncate(article.title, 90);
+  const excerpt = truncate(article.excerpt, 160);
+  const authorLine = article.authorDisplayName || article.authorUsername || "FaB Stats";
+
+  return {
+    type: "div",
+    props: {
+      style: {
+        width: 1200,
+        height: 630,
+        display: "flex",
+        flexDirection: "column" as const,
+        position: "relative" as const,
+        background: "linear-gradient(135deg, #0a0e17 0%, #161222 100%)",
+        fontFamily: "Inter",
+      },
+      children: [
+        // Background cover image (full-bleed)
+        hasCover && {
+          type: "img",
+          props: {
+            src: article.coverImageUrl,
+            style: {
+              position: "absolute" as const,
+              top: 0,
+              left: 0,
+              width: 1200,
+              height: 630,
+              objectFit: "cover" as const,
+            },
+          },
+        },
+        // Dark gradient overlay (bottom 70%) for text legibility
+        {
+          type: "div",
+          props: {
+            style: {
+              position: "absolute" as const,
+              top: 0,
+              left: 0,
+              width: 1200,
+              height: 630,
+              display: "flex",
+              background: "linear-gradient(180deg, rgba(10,14,23,0.35) 0%, rgba(10,14,23,0.55) 40%, rgba(10,14,23,0.92) 100%)",
+            },
+          },
+        },
+        // Gold top accent bar
+        {
+          type: "div",
+          props: {
+            style: {
+              position: "absolute" as const,
+              top: 0,
+              left: 0,
+              width: 1200,
+              height: 6,
+              display: "flex",
+              background: "linear-gradient(90deg, #c9a84c, #e8c860, #c9a84c)",
+            },
+          },
+        },
+        // Top-left brand chip
+        {
+          type: "div",
+          props: {
+            style: {
+              position: "absolute" as const,
+              top: 40,
+              left: 56,
+              display: "flex",
+              alignItems: "center",
+              gap: 14,
+              padding: "12px 22px",
+              borderRadius: 999,
+              background: "rgba(201, 168, 76, 0.18)",
+              border: "2px solid rgba(201, 168, 76, 0.55)",
+            },
+            children: [
+              {
+                type: "div",
+                props: {
+                  style: { width: 12, height: 12, borderRadius: 999, background: gold, display: "flex" },
+                },
+              },
+              {
+                type: "span",
+                props: {
+                  style: { fontSize: 18, fontWeight: 700, color: gold, letterSpacing: "0.15em" },
+                  children: "FAB STATS · ARTICLE",
+                },
+              },
+            ],
+          },
+        },
+        // Bottom text stack: title + excerpt + author row
+        {
+          type: "div",
+          props: {
+            style: {
+              position: "absolute" as const,
+              left: 56,
+              right: 56,
+              bottom: 48,
+              display: "flex",
+              flexDirection: "column" as const,
+              gap: 20,
+            },
+            children: [
+              {
+                type: "div",
+                props: {
+                  style: {
+                    fontSize: title.length > 50 ? 58 : 72,
+                    fontWeight: 700,
+                    color: textLight,
+                    lineHeight: 1.05,
+                    letterSpacing: "-0.025em",
+                    display: "flex",
+                  },
+                  children: title,
+                },
+              },
+              excerpt && {
+                type: "div",
+                props: {
+                  style: {
+                    fontSize: 24,
+                    color: muted,
+                    lineHeight: 1.35,
+                    display: "flex",
+                  },
+                  children: excerpt,
+                },
+              },
+              {
+                type: "div",
+                props: {
+                  style: {
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    marginTop: 8,
+                  },
+                  children: [
+                    {
+                      type: "div",
+                      props: {
+                        style: { display: "flex", alignItems: "center", gap: 12, fontSize: 20, color: textLight },
+                        children: [
+                          { type: "span", props: { style: { fontWeight: 700 }, children: authorLine } },
+                          { type: "span", props: { style: { color: muted }, children: "·" } },
+                          { type: "span", props: { style: { color: muted }, children: `${article.readingMinutes} min read` } },
+                        ],
+                      },
+                    },
+                    {
+                      type: "span",
+                      props: {
+                        style: { fontSize: 18, fontWeight: 700, color: gold, letterSpacing: "0.05em" },
+                        children: "fabstats.net",
+                      },
+                    },
+                  ],
+                },
+              },
+            ].filter(Boolean),
+          },
+        },
+      ].filter(Boolean),
+    },
+  };
+}
+
 // ── Handler ──
 
 export default async function handler(req: Request) {
   const url = new URL(req.url);
   let type = url.searchParams.get("type") || "";
   let username = url.searchParams.get("username") || "";
+  let articleSlug = url.searchParams.get("slug") || "";
 
   // Netlify rewrites may pass the original URL path instead of query params.
-  // Parse username/type from the path as fallback: /og/player/:username.png, /og/meta.png
-  if (!username && !type) {
+  // Parse username/type/slug from the path as fallback: /og/player/:username.png,
+  // /og/meta.png, /og/article/:slug.png
+  if (!username && !type && !articleSlug) {
     const playerMatch = url.pathname.match(/\/og\/player\/([^/]+)\.png$/i);
+    const articleMatch = url.pathname.match(/\/og\/article\/([^/]+)\.png$/i);
     if (playerMatch) username = decodeURIComponent(playerMatch[1]);
-    else if (/\/og\/meta\.png$/i.test(url.pathname)) type = "meta";
+    else if (articleMatch) {
+      type = "article";
+      articleSlug = decodeURIComponent(articleMatch[1]);
+    } else if (/\/og\/meta\.png$/i.test(url.pathname)) type = "meta";
   }
 
-  if (!username && type !== "meta") {
+  if (type === "article" && !articleSlug) {
+    return new Response("Missing article slug", { status: 400 });
+  }
+  if (!username && type !== "meta" && type !== "article") {
     return new Response("Missing username", { status: 400 });
   }
 
@@ -637,6 +901,9 @@ export default async function handler(req: Request) {
     if (type === "meta") {
       const meta = await fetchMetaData();
       card = renderMetaCard(meta);
+    } else if (type === "article") {
+      const article = await fetchArticle(articleSlug);
+      card = renderArticleCard(article);
     } else {
       const player = await fetchPlayer(username);
       card = renderCard(player);

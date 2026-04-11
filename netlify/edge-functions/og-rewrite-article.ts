@@ -121,7 +121,7 @@ export default async function handler(
     descBits.push(`${article.readingMinutes} min read`);
     const desc = escapeHtml(descBits.join(" · "));
 
-    const ogImageUrl = article.coverImageUrl || "https://www.fabstats.net/og-image.png";
+    const ogImageUrl = `https://www.fabstats.net/og/article/${encodeURIComponent(slug)}.png`;
     const canonicalUrl = `https://www.fabstats.net/articles/${encodeURIComponent(slug)}`;
 
     html = html.replace(

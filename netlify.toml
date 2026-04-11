@@ -34,6 +34,11 @@
   to = "/.netlify/functions/og-image?type=meta"
   status = 200
 
+[[redirects]]
+  from = "/og/article/:slug.png"
+  to = "/.netlify/functions/og-image?type=article&slug=:slug"
+  status = 200
+
 # Force redirect from netlify subdomain to custom domain
 [[redirects]]
   from = "https://fabstats.netlify.app/*"
