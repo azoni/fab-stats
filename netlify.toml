@@ -18,6 +18,11 @@
   path = "/meta"
   function = "og-rewrite-meta"
 
+# Edge function rewrites OG meta tags for individual article pages
+[[edge_functions]]
+  path = "/articles/*"
+  function = "og-rewrite-article"
+
 # Proxy OG image function through clean URLs for crawler compatibility + CDN caching
 [[redirects]]
   from = "/og/player/:username.png"
