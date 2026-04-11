@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Clock3, Eye, MessageCircle, Share2 } from "lucide-react";
-import { articleHref, getArticlePrimaryImage } from "@/lib/articles";
+import { articleHref, getArticlePrimaryImage, isLikelyValidPhotoUrl } from "@/lib/articles";
 import type { ArticleReactionKey, ArticleRecord } from "@/types";
 
 function totalReactions(counts?: Partial<Record<ArticleReactionKey, number>>): number {
@@ -32,7 +32,7 @@ export function ArticleCard({
   const [photoFailed, setPhotoFailed] = useState(false);
   const href = articleHref(article.slug);
   const imageUrl = getArticlePrimaryImage(article);
-  const showPhoto = Boolean(article.authorPhotoUrl) && !photoFailed;
+  const showPhoto = isLikelyValidPhotoUrl(article.authorPhotoUrl) && !photoFailed;
   const reactionTotal = useMemo(() => totalReactions(article.reactionCounts), [article.reactionCounts]);
 
   async function handleShare() {

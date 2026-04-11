@@ -95,6 +95,25 @@ export function articleHref(slug: string): string {
   return `/articles/${encodeURIComponent(slug)}`;
 }
 
+// Reject obviously broken photo URLs (truncated/malformed data URLs, etc.)
+// so the UI can fall back to the letter avatar instead of triggering
+// net::ERR_INVALID_URL on a corrupt src.
+export function isLikelyValidPhotoUrl(url: string | undefined | null): boolean {
+  if (!url || typeof url !== "string") return false;
+  const trimmed = url.trim();
+  if (!trimmed) return false;
+  if (trimmed.startsWith("data:")) {
+    // Must be image/* and base64 with non-empty payload, no whitespace.
+    if (/\s/.test(trimmed)) return false;
+    const match = /^data:image\/[a-zA-Z0-9.+-]+;base64,([A-Za-z0-9+/=]+)$/.exec(trimmed);
+    if (!match) return false;
+    // Browsers reject extremely long data URLs; cap at ~1.5MB to be safe.
+    if (trimmed.length > 1_500_000) return false;
+    return match[1].length > 0;
+  }
+  return /^https?:\/\//i.test(trimmed);
+}
+
 export function getArticlePrimaryImage(article: Pick<ArticleRecord, "coverImageUrl" | "contentBlocks">): string | undefined {
   if (article.coverImageUrl) return article.coverImageUrl;
   for (const block of article.contentBlocks) {

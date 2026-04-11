@@ -397,6 +397,9 @@ export function ArticleComposerGate() {
             <p className="mt-2 max-w-3xl text-sm leading-6 text-fab-muted">Build the story in blocks, place images where they belong, save drafts, and publish straight into the article page and activity feed.</p>
           </div>
           <div className="flex flex-wrap gap-2">
+            {existingArticle?.slug && (
+              <Link href={`/articles/${existingArticle.slug}`} target="_blank" rel="noreferrer" className="rounded-md border border-fab-border bg-fab-bg px-4 py-2 text-sm font-semibold text-fab-text hover:border-fab-gold/40">View Article ↗</Link>
+            )}
             <button type="button" onClick={() => handleSave("draft")} disabled={saving !== null} className="rounded-md border border-fab-border bg-fab-bg px-4 py-2 text-sm font-semibold text-fab-text disabled:opacity-50">{saving === "draft" ? "Saving..." : existingArticle?.status === "published" ? "Save Changes" : "Save Draft"}</button>
             <button type="button" onClick={() => handleSave("publish")} disabled={saving !== null} className="rounded-md bg-fab-gold px-4 py-2 text-sm font-semibold text-fab-bg disabled:opacity-50">{saving === "publish" ? "Publishing..." : "Publish"}</button>
           </div>
@@ -524,7 +527,7 @@ export function ArticleComposerGate() {
                       <input value={block.url} onChange={(e) => updateBlock(block.id, (current) => current.type === "image" ? { ...current, url: e.target.value } : current)} placeholder="Image URL" className={INPUT} />
                       <div className="grid gap-3 md:grid-cols-2">
                         <input value={block.alt || ""} onChange={(e) => updateBlock(block.id, (current) => current.type === "image" ? { ...current, alt: e.target.value } : current)} placeholder="Alt text" className={INPUT} />
-                        <select value={block.width || "standard"} onChange={(e) => updateBlock(block.id, (current) => current.type === "image" ? { ...current, width: e.target.value as ArticleImageWidth } : current)} className={INPUT}><option value="standard">Standard</option><option value="wide">Wide</option><option value="full">Full</option></select>
+                        <select value={block.width || "standard"} onChange={(e) => updateBlock(block.id, (current) => current.type === "image" ? { ...current, width: e.target.value as ArticleImageWidth } : current)} className={INPUT}><option value="small">Small (centered)</option><option value="standard">Standard</option><option value="wide">Wide</option><option value="full">Full</option><option value="inline-left">Inline ← (text right)</option><option value="inline-right">Inline → (text left)</option></select>
                       </div>
                       <input value={block.caption || ""} onChange={(e) => updateBlock(block.id, (current) => current.type === "image" ? { ...current, caption: e.target.value } : current)} placeholder="Caption" className={INPUT} />
                     </div>

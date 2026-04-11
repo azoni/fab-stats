@@ -1,10 +1,13 @@
 import { ExternalLink } from "lucide-react";
 import type { ArticleBlock, ArticleCalloutTone } from "@/types";
 
-const IMAGE_WIDTH_CLASS: Record<"standard" | "wide" | "full", string> = {
-  standard: "max-w-3xl",
-  wide: "max-w-5xl",
-  full: "max-w-none",
+const IMAGE_WIDTH_CLASS: Record<"small" | "standard" | "wide" | "full" | "inline-left" | "inline-right", string> = {
+  small: "mx-auto max-w-[260px]",
+  standard: "mx-auto max-w-3xl",
+  wide: "mx-auto max-w-5xl",
+  full: "mx-auto max-w-none",
+  "inline-left": "float-left mr-5 mb-3 w-[200px] clear-left",
+  "inline-right": "float-right ml-5 mb-3 w-[200px] clear-right",
 };
 
 const GALLERY_COLUMN_CLASS: Record<2 | 3, string> = {
@@ -89,7 +92,7 @@ function describeEmbed(url: string): {
 
 export function ArticleContent({ blocks }: { blocks: ArticleBlock[] }) {
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 [&>*]:clear-none">
       {blocks.map((block) => {
         if (block.type === "paragraph") {
           return (
@@ -105,8 +108,8 @@ export function ArticleContent({ blocks }: { blocks: ArticleBlock[] }) {
             <Tag
               key={block.id}
               className={block.level === 2
-                ? "text-2xl font-semibold text-fab-text pt-3"
-                : "text-xl font-semibold text-fab-text pt-2"}
+                ? "clear-both text-2xl font-semibold text-fab-text pt-3"
+                : "clear-both text-xl font-semibold text-fab-text pt-2"}
             >
               {block.text}
             </Tag>
@@ -142,7 +145,7 @@ export function ArticleContent({ blocks }: { blocks: ArticleBlock[] }) {
 
         if (block.type === "divider") {
           return (
-            <div key={block.id} className="py-2">
+            <div key={block.id} className="clear-both py-2">
               <div className="h-px bg-gradient-to-r from-transparent via-fab-border to-transparent" />
             </div>
           );
@@ -230,11 +233,11 @@ export function ArticleContent({ blocks }: { blocks: ArticleBlock[] }) {
         }
 
         return (
-          <figure key={block.id} className={`mx-auto ${IMAGE_WIDTH_CLASS[block.width || "standard"]}`}>
+          <figure key={block.id} className={IMAGE_WIDTH_CLASS[block.width || "standard"]}>
             <img
               src={block.url}
               alt={block.alt || ""}
-              className="w-full rounded-lg border border-fab-border object-cover"
+              className="w-full rounded-lg border border-fab-border object-contain"
               loading="lazy"
             />
             {(block.caption || block.alt) && (
