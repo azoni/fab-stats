@@ -398,7 +398,14 @@ export function ArticleComposerGate() {
           </div>
           <div className="flex flex-wrap gap-2">
             {existingArticle?.slug && (
-              <Link href={`/articles/${existingArticle.slug}`} target="_blank" rel="noreferrer" className="rounded-md border border-fab-border bg-fab-bg px-4 py-2 text-sm font-semibold text-fab-text hover:border-fab-gold/40">View Article ↗</Link>
+              <Link
+                href={existingArticle.status === "published"
+                  ? `/articles/${existingArticle.slug}`
+                  : `/articles/${existingArticle.slug}?preview=${existingArticle.id}`}
+                target="_blank"
+                rel="noreferrer"
+                className="rounded-md border border-fab-border bg-fab-bg px-4 py-2 text-sm font-semibold text-fab-text hover:border-fab-gold/40"
+              >{existingArticle.status === "published" ? "View Live ↗" : "Preview Draft ↗"}</Link>
             )}
             <button type="button" onClick={() => handleSave("draft")} disabled={saving !== null} className="rounded-md border border-fab-border bg-fab-bg px-4 py-2 text-sm font-semibold text-fab-text disabled:opacity-50">{saving === "draft" ? "Saving..." : existingArticle?.status === "published" ? "Save Changes" : "Save Draft"}</button>
             <button type="button" onClick={() => handleSave("publish")} disabled={saving !== null} className="rounded-md bg-fab-gold px-4 py-2 text-sm font-semibold text-fab-bg disabled:opacity-50">{saving === "publish" ? "Publishing..." : "Publish"}</button>

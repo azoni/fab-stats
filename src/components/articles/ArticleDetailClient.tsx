@@ -2,14 +2,14 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, Clock3, Eye, MessageCircle, Share2 } from "lucide-react";
 import { ArticleCard } from "./ArticleCard";
 import { ArticleComments } from "./ArticleComments";
 import { ArticleContent } from "./ArticleContent";
 import { ArticleReactionBar } from "./ArticleReactionBar";
 import { useAuth } from "@/contexts/AuthContext";
-import { articleHref, getArticleBySlug, getArticlesByAuthorUsername, isLikelyValidPhotoUrl } from "@/lib/articles";
+import { articleHref, getArticleById, getArticleBySlug, getArticlesByAuthorUsername, isLikelyValidPhotoUrl } from "@/lib/articles";
 import { getProfileByUsername } from "@/lib/firestore-storage";
 import { trackArticleView } from "@/lib/article-views";
 import type { ArticleRecord } from "@/types";
@@ -26,12 +26,15 @@ function formatDate(isoString?: string): string {
 export function ArticleDetailClient({ initialSlug }: { initialSlug?: string }) {
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { user } = useAuth();
   const [article, setArticle] = useState<ArticleRecord | null>(null);
   const [related, setRelated] = useState<ArticleRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [copyState, setCopyState] = useState<"idle" | "copied">("idle");
   const [photoFailed, setPhotoFailed] = useState(false);
+  const previewId = searchParams.get("preview") || "";
+  const isPreview = Boolean(previewId);
   const slug = useMemo(() => {
     const pathSlug = decodeURIComponent(pathname.split("/").pop() || "");
     return pathSlug && pathSlug !== "_" ? pathSlug : (initialSlug || "");
@@ -44,7 +47,9 @@ export function ArticleDetailClient({ initialSlug }: { initialSlug?: string }) {
     let cancelled = false;
 
     setPhotoFailed(false);
-    getArticleBySlug(slug).then((item) => {
+    setLoading(true);
+    const loader = isPreview ? getArticleById(previewId) : getArticleBySlug(slug);
+    loader.then((item) => {
       if (cancelled) return;
       setArticle(item);
       setLoading(false);
@@ -65,11 +70,13 @@ export function ArticleDetailClient({ initialSlug }: { initialSlug?: string }) {
         }).catch(() => {});
       }
 
-      trackArticleView(item.id, user?.uid).then((counted) => {
-        if (!cancelled && counted) {
-          setArticle((current) => current ? { ...current, viewCount: current.viewCount + 1 } : current);
-        }
-      }).catch(() => {});
+      if (!isPreview) {
+        trackArticleView(item.id, user?.uid).then((counted) => {
+          if (!cancelled && counted) {
+            setArticle((current) => current ? { ...current, viewCount: current.viewCount + 1 } : current);
+          }
+        }).catch(() => {});
+      }
     }).catch(() => {
       if (!cancelled) setLoading(false);
     });
@@ -77,7 +84,7 @@ export function ArticleDetailClient({ initialSlug }: { initialSlug?: string }) {
     return () => {
       cancelled = true;
     };
-  }, [slug, user?.uid]);
+  }, [slug, previewId, isPreview, user?.uid]);
 
   const shareHref = useMemo(() => article ? articleHref(article.slug) : "", [article]);
 
@@ -116,6 +123,17 @@ export function ArticleDetailClient({ initialSlug }: { initialSlug?: string }) {
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
+      {isPreview && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm">
+          <div className="flex items-center gap-2">
+            <span className="rounded-full bg-amber-500/20 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-amber-300">Preview</span>
+            <span className="text-amber-100">You are viewing a draft preview. Published readers will not see this banner, view counters are paused, and comments are disabled.</span>
+          </div>
+          <Link href={`/articles/new?id=${previewId}`} className="text-xs font-semibold text-amber-200 hover:text-amber-100 underline">
+            Back to composer ↗
+          </Link>
+        </div>
+      )}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <button
           type="button"
@@ -201,11 +219,13 @@ export function ArticleDetailClient({ initialSlug }: { initialSlug?: string }) {
         </div>
       </article>
 
-      <ArticleComments
-        articleId={article.id}
-        allowComments={article.allowComments}
-        onCommentCountChange={handleCommentCountChange}
-      />
+      {!isPreview && (
+        <ArticleComments
+          articleId={article.id}
+          allowComments={article.allowComments}
+          onCommentCountChange={handleCommentCountChange}
+        />
+      )}
 
       {related.length > 0 && (
         <section className="space-y-4">
