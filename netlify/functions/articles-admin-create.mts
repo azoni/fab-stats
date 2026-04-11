@@ -127,10 +127,33 @@ const STATUS_VALUES = new Set<ArticleStatus>(["draft", "published", "archived"])
 const IMAGE_WIDTH_VALUES = new Set<ArticleImageWidth>(["small", "standard", "wide", "full", "inline-left", "inline-right"]);
 const CALLOUT_TONES = new Set<ArticleCalloutTone>(["note", "tip", "warning"]);
 
+// SDO (Silver Age Dorinthea Deck) and some other recent starter-set prints
+// are not yet uploaded to the card CDN. Prefer older reprints (e.g. History
+// Pack 1 "1HP***") when the `defaultImage` falls in a broken set.
+const BROKEN_IMAGE_PREFIXES = ["SDO"];
+
+function pickCardImage(card: { defaultImage?: string; printings?: Array<{ image?: string }> }): string {
+  const defaultId = card.defaultImage || "";
+  const isBroken = (id: string) => BROKEN_IMAGE_PREFIXES.some((prefix) => id.startsWith(prefix));
+
+  // If the default is fine, use it.
+  if (defaultId && !isBroken(defaultId)) return defaultId;
+
+  // Otherwise search printings for a non-broken image.
+  const printings = Array.isArray(card.printings) ? card.printings : [];
+  for (const printing of printings) {
+    const id = String(printing?.image || "");
+    if (id && !isBroken(id)) return id;
+  }
+
+  // Last resort: return the default even if broken (renders as broken icon).
+  return defaultId;
+}
+
 const cardRecords: ResolvedCard[] = cards
   .filter((card) => card.types.some((type) => INCLUDED_CARD_TYPES.has(String(type))))
   .map((card) => {
-    const imageId = card.defaultImage || "";
+    const imageId = pickCardImage(card);
     return {
       name: card.name,
       cardIdentifier: card.cardIdentifier,
