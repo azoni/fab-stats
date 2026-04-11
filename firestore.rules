@@ -314,8 +314,7 @@ service cloud.firestore {
       allow read: if isAdmin();
       allow read: if request.auth != null && resource.data.authorUid == request.auth.uid;
 
-      allow create: if isAdmin()
-        && request.auth != null
+      allow create: if request.auth != null
         && request.resource.data.authorUid == request.auth.uid
         && request.resource.data.status in ["draft", "published", "archived"]
         && maxLen(request.resource.data.title, 180)
@@ -329,6 +328,22 @@ service cloud.firestore {
         && request.resource.data.commentCount is int
         && (!("reactionCounts" in request.resource.data) || validArticleReactionCounts(request.resource.data.reactionCounts));
 
+      allow update: if request.auth != null
+        && resource.data.authorUid == request.auth.uid
+        && request.resource.data.authorUid == request.auth.uid
+        && request.resource.data.status in ["draft", "published", "archived"]
+        && maxLen(request.resource.data.title, 180)
+        && maxLen(request.resource.data.slug, 180)
+        && maxLen(request.resource.data.excerpt, 600)
+        && maxLen(request.resource.data.searchText, 8000)
+        && request.resource.data.contentBlocks is list
+        && request.resource.data.heroTags is list
+        && request.resource.data.tags is list
+        && request.resource.data.viewCount is int
+        && request.resource.data.commentCount is int
+        && (!("reactionCounts" in request.resource.data) || validArticleReactionCounts(request.resource.data.reactionCounts));
+
+      allow delete: if request.auth != null && resource.data.authorUid == request.auth.uid;
       allow update, delete: if isAdmin();
 
       allow update: if request.auth != null

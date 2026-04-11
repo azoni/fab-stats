@@ -180,7 +180,7 @@ export function MobileNav() {
                   .map((link) => {
                     const hasSubItems = link.subItems && link.subItems.length > 0;
                     const isExpanded = expandedSection === link.href;
-                    const visibleSubItems = link.subItems?.filter((sub) => !sub.adminOnly || isAdmin) || [];
+                    const visibleSubItems = link.subItems?.filter((sub) => (!sub.adminOnly || isAdmin) && (!sub.authOnly || isAuthenticated)) || [];
 
                     return (
                       <div key={link.href}>

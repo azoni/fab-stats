@@ -97,9 +97,9 @@ function readFilePreview(file: File) {
 export function ArticleComposerGate() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { user, profile, isAdmin, isGuest, loading } = useAuth();
+  const { user, profile, isGuest, loading } = useAuth();
   const articleId = searchParams.get("id") || "";
-  const canAccess = !!user && !isGuest && isAdmin;
+  const canAccess = !!user && !isGuest;
   const [existingArticle, setExistingArticle] = useState<ArticleRecord | null>(null);
   const [loadingDraft, setLoadingDraft] = useState(false);
   const [saving, setSaving] = useState<"draft" | "publish" | null>(null);
@@ -375,7 +375,7 @@ export function ArticleComposerGate() {
           <span className="rounded-full bg-fab-bg px-2 py-0.5 text-[10px] text-fab-dim">Beta</span>
         </div>
         <h1 className="mt-4 text-3xl font-bold text-fab-text">Write something worth passing around.</h1>
-        <p className="mt-3 text-sm leading-6 text-fab-muted">Rich article creation is live for admin publishing first while the flow settles in.</p>
+        <p className="mt-3 text-sm leading-6 text-fab-muted">Sign in to start a draft. The composer lets you build articles in blocks, save drafts, and publish straight to the article feed.</p>
         <div className="mt-6 flex flex-wrap gap-3">
           <Link href="/articles" className="rounded-md bg-fab-gold px-4 py-2 text-sm font-semibold text-fab-bg">Browse articles</Link>
           <Link href="/" className="rounded-md border border-fab-border px-4 py-2 text-sm font-medium text-fab-dim hover:text-fab-text">Back home</Link>
@@ -390,7 +390,7 @@ export function ArticleComposerGate() {
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
             <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-2 rounded-full bg-fab-gold/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-fab-gold"><Shield className="h-3.5 w-3.5" />Admin Composer</span>
+              <span className="inline-flex items-center gap-2 rounded-full bg-fab-gold/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-fab-gold"><Shield className="h-3.5 w-3.5" />Article Composer</span>
               <span className="rounded-full border border-fab-border bg-fab-bg px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-fab-dim">Beta</span>
             </div>
             <h1 className="mt-3 text-3xl font-bold text-fab-text">Compose a clean long-form post.</h1>

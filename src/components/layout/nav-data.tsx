@@ -2,10 +2,10 @@ import { SwordsIcon, TrendsIcon, TrophyIcon } from "@/components/icons/NavIcons"
 import type { ReactNode } from "react";
 import {
   Globe, Wrench, Mail, Star, Users, Settings, ShieldCheck,
-  Heart, MessageCircle, ShoppingCart, Coffee, Github,
+  Heart, MessageCircle, ShoppingCart, Coffee, Github, BookOpen,
 } from "lucide-react";
 
-export type NavSubItem = { href: string; label: string; adminOnly?: boolean; badge?: string; icon?: ReactNode };
+export type NavSubItem = { href: string; label: string; adminOnly?: boolean; authOnly?: boolean; badge?: string; icon?: ReactNode };
 export type NavLink = { href: string; label: string; icon: ReactNode; color: string; bg: string; authOnly?: boolean; iconOnly?: boolean; subItems?: NavSubItem[] };
 export type MoreLink = { href: string; label: string; icon: ReactNode; authOnly?: boolean; adminOnly?: boolean; badge?: string; divider?: boolean; sectionLabel?: string; subItems?: { href: string; label: string }[] };
 export type UserMenuLink = { href: string; label: string; icon: ReactNode; adminOnly?: boolean };
@@ -28,6 +28,10 @@ export const navLinks: NavLink[] = [
     { href: "/team", label: "Teams" },
     { href: "/group", label: "Groups" },
     { href: "/tournaments", label: "Tournaments" },
+  ] },
+  { href: "/articles", label: "Articles", icon: <BookOpen className="w-4 h-4" />, color: "text-emerald-400", bg: "bg-emerald-400/10", subItems: [
+    { href: "/articles", label: "Browse Articles" },
+    { href: "/articles/new", label: "Write / My Drafts", authOnly: true },
   ] },
   { href: "/support", label: "Support", icon: <Heart className="w-4 h-4" />, color: "text-pink-400", bg: "bg-pink-400/10", iconOnly: true, subItems: [
     { href: "https://www.amazon.com/?tag=oldwaystoda00-20", label: "Shop Amazon", badge: "Free", icon: <ShoppingCart className="w-3.5 h-3.5" /> },

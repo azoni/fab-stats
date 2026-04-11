@@ -87,7 +87,7 @@ export function Navbar() {
                 {/* Main nav links — hidden on mobile */}
                 <div className="hidden md:flex items-center gap-0.5">
                   {navLinks.filter((link) => !link.authOnly || isAuthenticated).map((link) => {
-                      const visibleSubs = link.subItems?.filter((s) => !s.adminOnly || isAdmin);
+                      const visibleSubs = link.subItems?.filter((s) => (!s.adminOnly || isAdmin) && (!s.authOnly || isAuthenticated));
                       const hasSubs = visibleSubs && visibleSubs.length > 0;
                       return (
                       <div key={link.href} className={`relative ${hasSubs ? "group/nav" : ""}`}>
