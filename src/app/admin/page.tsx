@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
-import { getAdminDashboardData, getChatGlobalStats, getAdminChatMessages, getDeletedAccountCount, backfillLeaderboard, backfillPlacementFeedEvents, broadcastMessage, fixMatchDates, backfillGemIds, backfillMatchLinking, backfillH2H, backfillHeroMatchups, adminGetUserEvents, adminOverrideEventType, adminResyncLeaderboard, type AdminDashboardData, type AdminUserStats, type ChatGlobalStats, type AdminEventSummary } from "@/lib/admin";
+import { getAdminDashboardData, getDeletedAccountCount, backfillLeaderboard, backfillPlacementFeedEvents, broadcastMessage, fixMatchDates, backfillGemIds, backfillMatchLinking, backfillH2H, backfillHeroMatchups, adminGetUserEvents, adminOverrideEventType, adminResyncLeaderboard, type AdminDashboardData, type AdminUserStats, type AdminEventSummary } from "@/lib/admin";
 import { getAllFeedback, updateFeedbackStatus } from "@/lib/feedback";
 import { getCreators, saveCreators } from "@/lib/creators";
 import { getEvents, saveEvents } from "@/lib/featured-events";
@@ -57,7 +57,7 @@ export default function AdminPage() {
   const [sortKey, setSortKey] = useState<SortKey>("lastActive");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [expandedUid, setExpandedUid] = useState<string | null>(null);
-  const [statusFilter, setStatusFilter] = useState<"all" | "public" | "private" | "chat">("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | "public" | "private">("all");
   const [feedback, setFeedback] = useState<FeedbackItem[]>([]);
   const [feedbackFilter, setFeedbackFilter] = useState<"all" | "new" | "reviewed" | "done">("new");
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
@@ -160,10 +160,6 @@ export default function AdminPage() {
   const [themesReset, setThemesReset] = useState(false);
   const [badgeAssignments, setBadgeAssignments] = useState<Record<string, string[]>>({});
   const [mutedIds, setMutedIds] = useState<Set<string>>(new Set());
-  const [aiCost, setAiCost] = useState<ChatGlobalStats>({ totalMessages: 0, totalCost: 0, users: {} });
-  const [chatLogUid, setChatLogUid] = useState<string | null>(null);
-  const [chatLogMessages, setChatLogMessages] = useState<any[]>([]);
-  const [chatLogLoading, setChatLogLoading] = useState(false);
   const [deletedAccounts, setDeletedAccounts] = useState(0);
   // Discord bot analytics
   const [botAnalytics, setBotAnalytics] = useState<BotAnalytics | null>(null);
@@ -199,9 +195,8 @@ export default function AdminPage() {
     setFetching(true);
     setError("");
     try {
-      const [result, fb, cr, ev, analytics, polls, bannerData, badges, muted, showcaseData, themeDefault, chatStats, seasonsData, deletedCount, importMethodData] = await Promise.all([getAdminDashboardData(), getAllFeedback(), getCreators(), getEvents(), getAnalytics(), getAllPolls(), getBanner(), getAllBadgeAssignments(), getMutedUserIds(), getEventShowcase(), getDefaultTheme(), getChatGlobalStats(), getSeasons(), getDeletedAccountCount(), getImportMethodStats()]);
+      const [result, fb, cr, ev, analytics, polls, bannerData, badges, muted, showcaseData, themeDefault, seasonsData, deletedCount, importMethodData] = await Promise.all([getAdminDashboardData(), getAllFeedback(), getCreators(), getEvents(), getAnalytics(), getAllPolls(), getBanner(), getAllBadgeAssignments(), getMutedUserIds(), getEventShowcase(), getDefaultTheme(), getSeasons(), getDeletedAccountCount(), getImportMethodStats()]);
       setData(result);
-      setAiCost(chatStats);
       setDeletedAccounts(deletedCount);
       setFeedback(fb);
       setCreatorsList(cr);
@@ -619,9 +614,6 @@ export default function AdminPage() {
                   if (withWr.length === 0) return 0;
                   return Math.round((withWr.reduce((s, u) => s + (u.winRate ?? 0), 0) / withWr.length) * 10) / 10;
                 })()} subtext="players with 10+ matches" suffix="%" />
-                <button onClick={() => { setActiveTab("users"); setStatusFilter("chat"); }} className="text-left">
-                  <MetricCard label="AI Chat Cost" value={aiCost.totalCost.toFixed(4)} prefix="$" subtext={`${aiCost.totalMessages} msgs · ${Object.keys(aiCost.users).length} users`} />
-                </button>
                 {deletedAccounts > 0 && <MetricCard label="Deleted Accounts" value={deletedAccounts} />}
                 {gemIdCount !== null && <MetricCard label="GEM IDs Linked" value={gemIdCount} subtext={`${activePlayers > 0 ? Math.round((gemIdCount / activePlayers) * 100) : 0}% of active players`} />}
               </div>
@@ -743,16 +735,6 @@ export default function AdminPage() {
                     {f !== "all" && ` (${data.users.filter((u) => f === "public" ? u.isPublic : !u.isPublic).length})`}
                   </button>
                 ))}
-                <button
-                  onClick={() => setStatusFilter("chat")}
-                  className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
-                    statusFilter === "chat"
-                      ? "bg-fab-gold/20 text-fab-gold"
-                      : "text-fab-muted hover:text-fab-text"
-                  }`}
-                >
-                  Chat {Object.keys(aiCost.users).length > 0 ? `(${Object.keys(aiCost.users).length})` : `(${aiCost.totalMessages})`}
-                </button>
               </div>
             </div>
             <div className="overflow-x-auto">
@@ -790,9 +772,6 @@ export default function AdminPage() {
                     >
                       Visits<SortArrow col="visits" />
                     </th>
-                    {statusFilter === "chat" && (
-                      <th className="px-4 py-2 font-medium text-right">Chat</th>
-                    )}
                     <th
                       className="px-4 py-2 font-medium cursor-pointer hover:text-fab-text select-none"
                       onClick={() => toggleSort("lastActive")}
@@ -809,7 +788,7 @@ export default function AdminPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {sortedUsers(data.users).filter((u) => statusFilter === "all" ? true : statusFilter === "chat" ? !!aiCost.users[u.uid] : statusFilter === "public" ? u.isPublic : !u.isPublic).map((u, i) => {
+                  {sortedUsers(data.users).filter((u) => statusFilter === "all" ? true : statusFilter === "public" ? u.isPublic : !u.isPublic).map((u, i) => {
                     const isExpanded = expandedUid === u.uid;
                     return (
                       <React.Fragment key={u.uid}>
@@ -844,27 +823,6 @@ export default function AdminPage() {
                           <td className="px-4 py-2 text-right font-mono">
                             <span className={`${(u.visitCount || 0) > 10 ? "text-fab-win" : (u.visitCount || 0) > 0 ? "text-fab-text" : "text-fab-dim"}`}>{u.visitCount || 0}</span>
                           </td>
-                          {statusFilter === "chat" && (() => {
-                            const cs = aiCost.users[u.uid];
-                            return (
-                              <td className="px-4 py-2 text-right font-mono">
-                                <span className="text-fab-text">{cs?.messages || 0}</span>
-                                {(cs?.cost || 0) > 0 && <div className="text-[10px] text-fab-dim">${cs.cost.toFixed(4)}</div>}
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    if (chatLogUid === u.uid) { setChatLogUid(null); return; }
-                                    setChatLogUid(u.uid);
-                                    setChatLogLoading(true);
-                                    getAdminChatMessages(u.uid).then((msgs) => { setChatLogMessages(msgs); setChatLogLoading(false); });
-                                  }}
-                                  className={`text-[10px] mt-0.5 font-medium transition-colors ${chatLogUid === u.uid ? "text-fab-gold" : "text-fab-dim hover:text-fab-gold"}`}
-                                >
-                                  {chatLogUid === u.uid ? "Hide" : "View"}
-                                </button>
-                              </td>
-                            );
-                          })()}
                           <td className="px-4 py-2">
                             {(() => { const ta = timeAgo(u.updatedAt); return <span className={`text-xs font-medium ${ta.color}`}>{ta.label}</span>; })()}
                           </td>
@@ -884,7 +842,7 @@ export default function AdminPage() {
                         </tr>
                         {isExpanded && (
                           <tr className="border-b border-fab-border/50 bg-fab-bg/50">
-                            <td colSpan={statusFilter === "chat" ? 10 : 9} className="px-4 py-3">
+                            <td colSpan={9} className="px-4 py-3">
                               <UserExpandedStats
                                 user={u}
                                 assignedBadgeIds={badgeAssignments[u.uid] || []}
@@ -923,75 +881,6 @@ export default function AdminPage() {
               </table>
             </div>
           </div>
-
-          {/* Chat Log Viewer */}
-          {/* Chat Log Viewer */}
-          {statusFilter === "chat" && (
-            <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden mt-4">
-              <div className="px-4 py-3 border-b border-fab-border flex items-center gap-3">
-                <h2 className="text-sm font-semibold text-fab-text shrink-0">Chat Log</h2>
-                <select
-                  value={chatLogUid || ""}
-                  onChange={(e) => {
-                    const uid = e.target.value;
-                    if (!uid) { setChatLogUid(null); return; }
-                    setChatLogUid(uid);
-                    setChatLogLoading(true);
-                    getAdminChatMessages(uid).then((msgs) => { setChatLogMessages(msgs); setChatLogLoading(false); });
-                  }}
-                  className="text-xs bg-fab-bg border border-fab-border rounded px-2 py-1 text-fab-text flex-1 max-w-xs"
-                >
-                  <option value="">Select a user...</option>
-                  {data.users
-                    .filter((u) => !!aiCost.users[u.uid])
-                    .sort((a, b) => (aiCost.users[b.uid]?.messages || 0) - (aiCost.users[a.uid]?.messages || 0))
-                    .map((u) => (
-                      <option key={u.uid} value={u.uid}>@{u.username} ({aiCost.users[u.uid]?.messages || 0} msgs)</option>
-                    ))
-                  }
-                  {/* If no tracked users, show all users as fallback */}
-                  {Object.keys(aiCost.users).length === 0 && data.users.slice(0, 50).map((u) => (
-                    <option key={u.uid} value={u.uid}>@{u.username}</option>
-                  ))}
-                </select>
-                {chatLogUid && (
-                  <span className="text-[10px] text-fab-dim">
-                    {chatLogMessages.length} messages
-                    {chatLogMessages.filter((m) => m.cost).reduce((s: number, m: any) => s + (m.cost || 0), 0) > 0 &&
-                      ` · $${chatLogMessages.filter((m) => m.cost).reduce((s: number, m: any) => s + (m.cost || 0), 0).toFixed(4)}`
-                    }
-                  </span>
-                )}
-              </div>
-              <div className="p-4 max-h-[500px] overflow-y-auto space-y-3">
-                {!chatLogUid ? (
-                  <p className="text-sm text-fab-dim">Select a user to view their chat messages.</p>
-                ) : chatLogLoading ? (
-                  <p className="text-sm text-fab-dim">Loading messages...</p>
-                ) : chatLogMessages.length === 0 ? (
-                  <p className="text-sm text-fab-dim">No messages found for this user.</p>
-                ) : (
-                  chatLogMessages.map((msg) => (
-                    <div key={msg.id} className={`flex flex-col ${msg.role === "user" ? "items-end" : "items-start"}`}>
-                      <div className={`max-w-[80%] rounded-lg px-3 py-2 text-sm ${
-                        msg.role === "user"
-                          ? "bg-fab-gold/10 border border-fab-gold/20 text-fab-text"
-                          : "bg-fab-bg border border-fab-border text-fab-text"
-                      }`}>
-                        <p className="whitespace-pre-wrap break-words">{msg.content}</p>
-                      </div>
-                      <div className="flex items-center gap-2 mt-0.5 text-[10px] text-fab-dim">
-                        <span>{msg.role === "user" ? "User" : "AI"}</span>
-                        <span>{new Date(msg.createdAt).toLocaleString()}</span>
-                        {msg.cost != null && msg.cost > 0 && <span>${msg.cost.toFixed(4)}</span>}
-                        {msg.inputTokens != null && <span>{msg.inputTokens + (msg.outputTokens || 0)} tok</span>}
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-          )}
 
           </>}
 

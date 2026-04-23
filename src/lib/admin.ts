@@ -238,48 +238,6 @@ export async function getDeletedAccountCount(): Promise<number> {
   }
 }
 
-export interface ChatGlobalStats {
-  totalMessages: number;
-  totalCost: number;
-  users: Record<string, { messages: number; cost: number }>;
-}
-
-/** Fetch global AI chat stats (single doc read — includes per-user breakdown) */
-export async function getChatGlobalStats(): Promise<ChatGlobalStats> {
-  try {
-    const snap = await getDoc(doc(db, "admin", "chatStats"));
-    if (!snap.exists()) return { totalMessages: 0, totalCost: 0, users: {} };
-    const d = snap.data();
-    const users: Record<string, { messages: number; cost: number }> = {};
-    if (d.users && typeof d.users === "object") {
-      for (const [uid, stats] of Object.entries(d.users as Record<string, any>)) {
-        users[uid] = { messages: stats.messages || 0, cost: stats.cost || 0 };
-      }
-    }
-    return {
-      totalMessages: (d.totalMessages as number) || 0,
-      totalCost: (d.totalCost as number) || 0,
-      users,
-    };
-  } catch {
-    return { totalMessages: 0, totalCost: 0, users: {} };
-  }
-}
-
-/** Fetch chat messages for a specific user (admin only) */
-export async function getAdminChatMessages(userId: string): Promise<{ id: string; role: string; content: string; createdAt: string; model?: string; inputTokens?: number; outputTokens?: number; cost?: number }[]> {
-  try {
-    const q = query(
-      collection(db, "users", userId, "chatMessages"),
-      orderBy("createdAt", "asc"),
-    );
-    const snap = await getDocs(q);
-    return snap.docs.map((d) => ({ id: d.id, ...d.data() })) as any;
-  } catch {
-    return [];
-  }
-}
-
 /** Backfill leaderboard entries for all users (re-computes nemesis, etc.) */
 export async function backfillLeaderboard(
   onProgress?: (done: number, total: number) => void
