@@ -35,7 +35,11 @@ type ImportMethod = "extension" | "bookmarklet" | "paste" | "csv" | null;
 /** Sentinel stored in heroOverrides when user explicitly acknowledges an unknown hero */
 const ACKNOWLEDGED_UNKNOWN = "__ACKNOWLEDGED_UNKNOWN__";
 
-export default function ImportPage() {
+interface ImportPageProps {
+  shareMode?: boolean;
+}
+
+export default function ImportPage({ shareMode = false }: ImportPageProps = {}) {
   const router = useRouter();
   const { user, profile, isGuest, isAdmin } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -91,8 +95,9 @@ export default function ImportPage() {
   }, []);
 
   // Auto-expand paste method on mobile (Browser Extension not available on phones)
+  // OR when invoked from /share (the focused post-event flow).
   useEffect(() => {
-    if (isMobile && method === null && !pasteResult && !csvMatches && !autoDetected) {
+    if ((isMobile || shareMode) && method === null && !pasteResult && !csvMatches && !autoDetected) {
       setMethod("paste");
     }
   }, [isMobile]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -791,13 +796,15 @@ export default function ImportPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-fab-gold mb-2">Import Your Matches</h1>
+      <h1 className="text-2xl font-bold text-fab-gold mb-2">{shareMode ? "Share your tournament result" : "Import Your Matches"}</h1>
       <p className="text-fab-muted text-sm mb-6">
-        Pull in your match history from{" "}
+        {shareMode ? "Paste your latest event from " : "Pull in your match history from "}
         <a href="https://gem.fabtcg.com/profile/history/" target="_blank" rel="noopener noreferrer" className="text-fab-gold hover:text-fab-gold-light underline">
           GEM
         </a>
-        {" "}— the official Flesh and Blood tournament site where your event results are recorded. Pick a method below to get started.
+        {shareMode
+          ? " and we'll generate a shareable recap card with your stats."
+          : " — the official Flesh and Blood tournament site where your event results are recorded. Pick a method below to get started."}
       </p>
 
       {!user && !isGuest && (
