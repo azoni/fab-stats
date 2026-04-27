@@ -1,4 +1,4 @@
-import { SwordsIcon, TrendsIcon, TrophyIcon } from "@/components/icons/NavIcons";
+import { SwordsIcon } from "@/components/icons/NavIcons";
 import type { ReactNode } from "react";
 import {
   Globe, Mail, Star, Users, Settings, ShieldCheck,
@@ -29,7 +29,6 @@ export const navLinks: NavLink[] = [
     { href: "/trends", label: "Trends" },
     { href: "/tournament-stats", label: "Tournament Stats" },
     { href: "/goals", label: "Goals" },
-    { href: "/wrapped", label: "Wrapped" },
   ] },
   { href: "/meta", label: "Meta", icon: <Globe className="w-4 h-4" />, color: "text-teal-400", bg: "bg-teal-400/10", subItems: [
     { href: "/meta", label: "Hero Stats" },
@@ -38,9 +37,6 @@ export const navLinks: NavLink[] = [
     { href: "/tier-list", label: "Tier List" },
     { href: "/compare", label: "Versus" },
     { href: "/tournaments", label: "Tournaments" },
-    { href: "/meta/snapshot", label: "Meta Snapshot", adminOnly: true },
-    { href: "/meta/matchup-spotlight", label: "Matchup Spotlight", adminOnly: true },
-    { href: "/meta/hot-takes", label: "Hot Takes", adminOnly: true },
   ] },
   { href: "/community", label: "Community", icon: <Users className="w-4 h-4" />, color: "text-indigo-400", bg: "bg-indigo-400/10", subItems: [
     { href: "/team", label: "Teams" },
@@ -59,13 +55,9 @@ export const navLinks: NavLink[] = [
   ] },
 ];
 
-// moreLinks remains for the navbar's expandable Stats section, but trimmed
-// to entries not already surfaced in the new Home bucket.
-export const moreLinks: MoreLink[] = [
-  { divider: true, sectionLabel: "My Stats", href: "", label: "", icon: null },
-  { href: "/trends", label: "Trends", icon: <TrendsIcon className="w-4 h-4" />, authOnly: true },
-  { href: "/tournament-stats", label: "Tournament Stats", icon: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M16.5 18.75h-9m9 0a3 3 0 013 3h-15a3 3 0 013-3m9 0v-3.375c0-.621-.503-1.125-1.125-1.125h-.871M7.5 18.75v-3.375c0-.621.504-1.125 1.125-1.125h.872m5.007 0H9.497m5.007 0a7.454 7.454 0 01-.982-3.172M9.497 14.25a7.454 7.454 0 00.981-3.172M5.25 4.236c-.982.143-1.954.317-2.916.52A6.003 6.003 0 007.73 9.728M5.25 4.236V4.5c0 2.108.966 3.99 2.48 5.228M5.25 4.236V2.721C7.456 2.41 9.71 2.25 12 2.25c2.291 0 4.545.16 6.75.47v1.516M18.75 4.236c.982.143 1.954.317 2.916.52A6.003 6.003 0 0016.27 9.728M18.75 4.236V4.5c0 2.108-.966 3.99-2.48 5.228m0 0a6.023 6.023 0 01-2.77.704 6.023 6.023 0 01-2.77-.704" /></svg>, authOnly: true },
-];
+// moreLinks emptied — Trends + Tournament Stats live in Home > subItems now.
+// MoreLink type kept for any external import that hasn't been cleaned.
+export const moreLinks: MoreLink[] = [];
 
 export const userMenuLinks: UserMenuLink[] = [
   { href: "/inbox", label: "Inbox", icon: <Mail className="w-4 h-4" /> },
@@ -77,16 +69,13 @@ export const userMenuLinks: UserMenuLink[] = [
 ];
 
 // Legacy export — kept so any component still importing it doesn't break,
-// but the Phase 2 navbar no longer renders an Explore dropdown. Remove in
-// a follow-up once the navbar is fully cleaned.
+// but the Phase 2 navbar no longer renders an Explore dropdown.
 export const exploreLinks: { href: string; label: string }[] = [];
 
+// Footer-only resource links (rendered in the desktop footer in layout.tsx).
 export const resourceLinks = [
-  { href: "/changelog", label: "Changelog" },
   { href: "/docs", label: "Docs" },
+  { href: "/changelog", label: "Changelog" },
   { href: "/privacy", label: "Privacy" },
   { href: "/terms", label: "Terms" },
 ];
-
-// Legacy: kept for the icon import warning suppression.
-void TrophyIcon;

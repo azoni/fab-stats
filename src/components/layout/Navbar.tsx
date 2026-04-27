@@ -5,27 +5,24 @@ import { usePathname } from "next/navigation";
 import { ImportIcon } from "@/components/icons/NavIcons";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { useAuth } from "@/contexts/AuthContext";
-import { useCreators } from "@/hooks/useCreators";
-import { trackPageView, trackCreatorClick, trackSupportClick, trackVisit, trackPresence, getOnlineStats } from "@/lib/analytics";
+import { trackPageView, trackSupportClick, trackVisit, trackPresence, getOnlineStats } from "@/lib/analytics";
 import { useCommunityStats } from "@/hooks/useCommunityStats";
 import { useFriends } from "@/hooks/useFriends";
 import type { ReactNode } from "react";
 import type { Creator } from "@/types";
 import {
-  Globe, BookOpen,
+  Globe,
   ChevronDown,
   Users, ExternalLink,
-  MoreVertical,
 } from "lucide-react";
 import dynamic from "next/dynamic";
 const FeedbackModal = dynamic(() => import("@/components/feedback/FeedbackModal").then(m => ({ default: m.FeedbackModal })), { ssr: false });
 import { SmartSearch } from "@/components/search/SmartSearch";
-import { navLinks, moreLinks, userMenuLinks } from "./nav-data";
+import { navLinks, userMenuLinks } from "./nav-data";
 
 export function Navbar() {
   const pathname = usePathname();
   const { user, profile, isGuest, isAdmin } = useAuth();
-  const creators = useCreators({ lazy: true });
   const [mounted, setMounted] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const { userCount, matchCount } = useCommunityStats();
@@ -177,13 +174,6 @@ export function Navbar() {
                       <span className="hidden xl:inline">Import</span>
                     </Link>
                   )}
-                  <MoreDropdown
-                    pathname={pathname}
-                    creators={creators}
-                    onCreatorsNeeded={creators.load}
-                    isAuthenticated={!!isAuthenticated}
-                    isAdmin={isAdmin}
-                  />
                 </div>
 
                 {/* Right side: bell + user menu */}
@@ -553,259 +543,3 @@ function CommunityStatsPopover({ userCount, matchCount }: { userCount: number; m
   );
 }
 
-function MoreDropdown({
-  pathname,
-  creators,
-  onCreatorsNeeded,
-  isAuthenticated,
-  isAdmin,
-}: {
-  pathname: string;
-  creators: Creator[];
-  onCreatorsNeeded?: () => void;
-  isAuthenticated?: boolean;
-  isAdmin?: boolean;
-}) {
-  const [expanded, setExpanded] = useState<Set<string>>(new Set(["games"]));
-  const ref = useRef<HTMLDivElement>(null);
-
-  const toggle = useCallback((section: string) => {
-    setExpanded((prev) => {
-      const next = new Set(prev);
-      if (next.has(section)) next.delete(section);
-      else next.add(section);
-      return next;
-    });
-  }, []);
-
-  // Parse moreLinks into sections by divider markers
-  const sections = useMemo(() => {
-    const result: { label: string; links: typeof moreLinks }[] = [];
-    let current: { label: string; links: typeof moreLinks } | null = null;
-    for (const item of moreLinks) {
-      if (item.divider) {
-        current = { label: item.sectionLabel || "", links: [] };
-        result.push(current);
-      } else if (current) {
-        current.links.push(item);
-      }
-    }
-    return result;
-  }, []);
-
-  const linkClass = (href: string) =>
-    `flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-      pathname === href
-        ? "text-fab-gold bg-fab-gold/10"
-        : "text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover"
-    }`;
-
-  return (
-    <div className="relative group/more" ref={ref} onMouseEnter={onCreatorsNeeded}>
-      <button
-        className="flex items-center gap-1.5 px-2.5 py-2 rounded-md text-sm font-medium transition-colors text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover group-hover/more:text-fab-gold group-hover/more:bg-fab-gold/10"
-      >
-        <MoreVertical className="w-4 h-4" />
-        <span className="hidden lg:inline">More</span>
-        <ChevronDown className="w-3 h-3 transition-transform group-hover/more:rotate-180" />
-      </button>
-
-      <div className="absolute top-full right-0 pt-1 hidden group-hover/more:block z-50">
-        <div className="w-64 bg-fab-surface border border-fab-border rounded-lg shadow-xl">
-          {/* Sections */}
-          {sections.map((section, sIdx) => {
-            const visible = section.links.filter((l) => (!l.authOnly || isAuthenticated) && (!l.adminOnly || isAdmin));
-            if (visible.length === 0) return null;
-            // First section renders flat, rest are collapsible
-            if (sIdx === 0) {
-              return (
-                <div key={section.label} className="p-1.5">
-                  {visible.map((link) => (
-                    <div key={link.href} className="group/sub relative">
-                      <Link href={link.href} className={`${linkClass(link.href)} justify-between`}>
-                        <span className="flex items-center gap-3">
-                          {link.icon}
-                          {link.label}
-                        </span>
-                        {link.badge && <span className="text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-teal-400/15 text-teal-400 border border-teal-400/25">{link.badge}</span>}
-                        {link.subItems && (
-                          <ChevronDown className="w-3 h-3 text-fab-dim -rotate-90" />
-                        )}
-                      </Link>
-                      {link.subItems && (
-                        <div className="absolute left-full top-0 pl-1 hidden group-hover/sub:block z-50">
-                          <div className="w-48 bg-fab-surface border border-fab-border rounded-lg shadow-xl overflow-hidden">
-                            {link.subItems.map((sub) => (
-                              <Link
-                                key={sub.href}
-                                href={sub.href}
-                                                               className={`block px-3 py-2 text-sm transition-colors ${
-                                  pathname === sub.href || (sub.href.includes("?") && pathname === sub.href.split("?")[0])
-                                    ? "text-fab-gold bg-fab-gold/10"
-                                    : "text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover"
-                                }`}
-                              >
-                                {sub.label}
-                              </Link>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              );
-            }
-            return (
-              <CollapsibleSection key={section.label} label={section.label} expanded={expanded.has(section.label.toLowerCase())} onToggle={() => toggle(section.label.toLowerCase())}>
-                {visible.map((link) => (
-                  <div key={link.href} className="group/sub relative">
-                    <Link href={link.href} className={`${linkClass(link.href)} justify-between`}>
-                      <span className="flex items-center gap-3">
-                        {link.icon}
-                        {link.label}
-                      </span>
-                      {link.badge && <span className="text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-teal-400/15 text-teal-400 border border-teal-400/25">{link.badge}</span>}
-                      {link.subItems && (
-                        <ChevronDown className="w-3 h-3 text-fab-dim -rotate-90" />
-                      )}
-                    </Link>
-                    {link.subItems && (
-                      <div className="absolute left-full top-0 pl-1 hidden group-hover/sub:block z-50">
-                        <div className="w-48 bg-fab-surface border border-fab-border rounded-lg shadow-xl overflow-hidden">
-                          {link.subItems.map((sub) => {
-                            const isExternal = sub.href.startsWith("http");
-                            const trackKey = sub.href.includes("tcgplayer") ? "tcgplayer" : sub.href.includes("sponsors") ? "github_sponsors" : sub.href.includes("ko-fi") ? "kofi" : undefined;
-                            if (isExternal) {
-                              return (
-                                <a
-                                  key={sub.href}
-                                  href={sub.href}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  onClick={() => { if (trackKey) trackSupportClick(trackKey); }}
-                                  className="flex items-center justify-between px-3 py-2 text-sm text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover transition-colors"
-                                >
-                                  {sub.label}
-                                  <ExternalLink className="w-3 h-3 text-fab-dim" />
-                                </a>
-                              );
-                            }
-                            return (
-                              <Link
-                                key={sub.href}
-                                href={sub.href}
-                                                               className={`block px-3 py-2 text-sm transition-colors ${
-                                  pathname === sub.href || (sub.href.includes("?") && pathname === sub.href.split("?")[0])
-                                    ? "text-fab-gold bg-fab-gold/10"
-                                    : "text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover"
-                                }`}
-                              >
-                                {sub.label}
-                              </Link>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </CollapsibleSection>
-            );
-          })}
-
-          {/* Featured Creators — collapsible */}
-          {creators.length > 0 && (
-            <CollapsibleSection label="Featured Creators" expanded={expanded.has("creators")} onToggle={() => toggle("creators")}>
-              {creators.map((creator) => (
-                <a
-                  key={creator.name}
-                  href={creator.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-fab-surface-hover transition-colors group"
-                  onClick={() => {
-                    trackCreatorClick(creator.name);
-                  }}
-                >
-                  {creator.imageUrl ? (
-                    <img src={creator.imageUrl} alt="" className="w-6 h-6 rounded-full object-cover shrink-0" loading="lazy" />
-                  ) : (
-                    platformIcons[creator.platform]
-                  )}
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-fab-text group-hover:text-fab-gold transition-colors truncate">
-                      {creator.name}
-                    </p>
-                    <p className="text-xs text-fab-dim truncate">{creator.description}</p>
-                  </div>
-                  <ExternalLink className="w-3.5 h-3.5 text-fab-dim shrink-0" />
-                </a>
-              ))}
-            </CollapsibleSection>
-          )}
-
-
-          {/* Resources — Phase 2 removed Explore (duplicates Meta sub-items) */}
-          <div className="border-t border-fab-border p-1.5 space-y-0.5">
-            {/* Resources */}
-            <div className="group/resources relative">
-              <Link href="/resources" className={`${linkClass("/resources")} justify-between`}>
-                <span className="flex items-center gap-3">
-                  <BookOpen className="w-4 h-4 text-blue-400" />
-                  Resources
-                </span>
-                <ChevronDown className="w-3 h-3 text-fab-dim -rotate-90" />
-              </Link>
-              <div className="absolute left-full top-0 pl-1 hidden group-hover/resources:block z-50">
-                <div className="w-48 bg-fab-surface border border-fab-border rounded-lg shadow-xl overflow-hidden">
-                  <Link href="/changelog" className={`block px-3 py-2 text-sm transition-colors ${pathname === "/changelog" ? "text-fab-gold bg-fab-gold/10" : "text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover"}`}>Changelog</Link>
-                  <Link href="/docs" className={`block px-3 py-2 text-sm transition-colors ${pathname === "/docs" ? "text-fab-gold bg-fab-gold/10" : "text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover"}`}>Docs</Link>
-                </div>
-              </div>
-            </div>
-
-          </div>
-
-          {/* Social — always visible at bottom */}
-          <div className="border-t border-fab-border">
-            <a
-              href="https://discord.gg/WPP5aqCUHY"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-3 px-4 py-2.5 hover:bg-fab-surface-hover transition-colors group"
-                         >
-              <svg className="w-4 h-4 text-indigo-400 shrink-0" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M20.317 4.37a19.791 19.791 0 00-4.885-1.515.074.074 0 00-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 00-5.487 0 12.64 12.64 0 00-.617-1.25.077.077 0 00-.079-.037A19.736 19.736 0 003.677 4.37a.07.07 0 00-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 00.031.057 19.9 19.9 0 005.993 3.03.078.078 0 00.084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 00-.041-.106 13.107 13.107 0 01-1.872-.892.077.077 0 01-.008-.128 10.2 10.2 0 00.372-.292.074.074 0 01.077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 01.078.01c.12.098.246.198.373.292a.077.077 0 01-.006.127 12.299 12.299 0 01-1.873.892.077.077 0 00-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 00.084.028 19.839 19.839 0 006.002-3.03.077.077 0 00.032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 00-.031-.03z" />
-              </svg>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium text-fab-text group-hover:text-fab-gold transition-colors">Join the Discord</p>
-                <p className="text-xs text-fab-dim">Community server &middot; <Link href="/docs#discord-bot" className="text-fab-gold/70 hover:text-fab-gold">Add Bot</Link></p>
-              </div>
-              <svg className="w-3.5 h-3.5 text-fab-dim shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
-              </svg>
-            </a>
-            <a
-              href="https://x.com/FabStats"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-3 px-4 py-2.5 hover:bg-fab-surface-hover transition-colors group"
-                         >
-              <svg className="w-4 h-4 text-fab-dim shrink-0" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-              </svg>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium text-fab-text group-hover:text-fab-gold transition-colors">Follow on X</p>
-                <p className="text-xs text-fab-dim">@FabStats</p>
-              </div>
-              <svg className="w-3.5 h-3.5 text-fab-dim shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
-              </svg>
-            </a>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
