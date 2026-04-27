@@ -1,7 +1,7 @@
 "use client";
 import { useState, useCallback } from "react";
 import Link from "next/link";
-import type { FeedEvent, ImportFeedEvent, FaBdokuFeedEvent, FaBdokuCardFeedEvent, CrosswordFeedEvent, HeroGuesserFeedEvent, MatchupManiaFeedEvent, TriviaFeedEvent, TimelineFeedEvent, ConnectionsFeedEvent, RampageFeedEvent, KnockoutFeedEvent, BrawlFeedEvent, NinjaComboFeedEvent, ShadowStrikeFeedEvent, BladeDashFeedEvent, ArticleFeedEvent } from "@/types";
+import type { FeedEvent, ImportFeedEvent, FaBdokuFeedEvent, FaBdokuCardFeedEvent, CrosswordFeedEvent, HeroGuesserFeedEvent, MatchupManiaFeedEvent, TriviaFeedEvent, TimelineFeedEvent, ConnectionsFeedEvent, RampageFeedEvent, KnockoutFeedEvent, BrawlFeedEvent, NinjaComboFeedEvent, ShadowStrikeFeedEvent, BladeDashFeedEvent } from "@/types";
 import { rankBorderClass } from "@/lib/leaderboard-ranks";
 import { playerHref } from "@/lib/constants";
 import { HeroShieldBadge } from "@/components/profile/HeroShieldBadge";
@@ -510,7 +510,6 @@ export function FeedCard({ event, compact, rankMap, eventTierMap, underlineTierM
           {event.type === "import" && <ImportContent event={event} compact={compact} />}
           {event.type === "achievement" && <AchievementContent event={event} compact={compact} />}
           {event.type === "placement" && <PlacementContent event={event} compact={compact} />}
-          {event.type === "article" && <ArticleFeedContent event={event} compact={compact} />}
           {event.type === "fabdoku" && <FaBdokuContent event={event} compact={compact} />}
           {event.type === "fabdoku-cards" && <FaBdokuCardContent event={event} compact={compact} />}
           {event.type === "crossword" && <CrosswordContent event={event} compact={compact} />}
@@ -568,55 +567,6 @@ function ImportContent({ event, compact }: { event: ImportFeedEvent; compact?: b
   );
 }
 
-function ArticleFeedContent({ event, compact }: { event: ArticleFeedEvent; compact?: boolean }) {
-  const heroTags = event.heroTags ?? [];
-
-  if (compact) {
-    return (
-      <div className="mt-1">
-        <p className="text-[11px] text-fab-muted">
-          published <span className="font-semibold text-fab-text">{event.title}</span>
-        </p>
-        {heroTags.length > 0 && (
-          <div className="mt-1 flex flex-wrap gap-1">
-            {heroTags.slice(0, 3).map((tag) => (
-              <HeroPill key={tag} hero={tag} compact />
-            ))}
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  return (
-    <div className="mt-2 space-y-3">
-      {event.coverImageUrl && (
-        <img
-          src={event.coverImageUrl}
-          alt={event.title}
-          className="h-44 w-full rounded-lg border border-fab-border object-cover"
-          loading="lazy"
-        />
-      )}
-      <div>
-        <p className="text-sm text-fab-muted">
-          published{" "}
-          <Link href={`/articles/${event.slug}`} onClick={(e) => e.stopPropagation()} className="font-semibold text-fab-text hover:text-fab-gold">
-            {event.title}
-          </Link>
-        </p>
-        <p className="mt-1 text-sm leading-6 text-fab-dim">{event.excerpt}</p>
-      </div>
-      {heroTags.length > 0 && (
-        <div className="flex flex-wrap gap-1.5">
-          {heroTags.slice(0, 4).map((tag) => (
-            <HeroPill key={tag} hero={tag} />
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
 
 function AchievementContent({ event, compact }: { event: FeedEvent & { type: "achievement" }; compact?: boolean }) {
   if (compact) {

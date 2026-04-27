@@ -17,7 +17,6 @@ import { LatestMatches } from "@/components/home/LatestMatches";
 import { DashboardInsights } from "@/components/home/DashboardInsights";
 import { DashboardFilters } from "@/components/home/DashboardFilters";
 import { OnThisDay } from "@/components/home/OnThisDay";
-import { ExploreCTA } from "@/components/home/ExploreCTA";
 import { BadgeStrip } from "@/components/profile/BadgeStrip";
 import { WinRateRing } from "@/components/charts/WinRateRing";
 import { getHeroByName } from "@/lib/heroes";
@@ -548,9 +547,6 @@ export default function Dashboard() {
             <DashboardInsights heroStats={heroStats} opponentStats={opponentStats} matches={filteredMatches} />
           </div>
 
-          <div className="section-reveal" style={{ '--stagger': 5 } as React.CSSProperties}>
-            <ExploreCTA />
-          </div>
         </div>
       )}
 

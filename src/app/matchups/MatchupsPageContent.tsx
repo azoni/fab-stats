@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { MetaMatchupMatrix } from "@/components/meta/MetaMatchupMatrix";
-import { MatchupMatrix } from "@/components/tools/MatchupMatrix";
+import { MatchupMatrix } from "@/components/matchups/MatchupMatrix";
 import { useAuth } from "@/contexts/AuthContext";
 import { useMatches } from "@/hooks/useMatches";
 import { useLeaderboard } from "@/hooks/useLeaderboard";

@@ -17,7 +17,7 @@ import {
   type QueryConstraint,
 } from "firebase/firestore";
 import { db } from "./firebase";
-import type { FeedEvent, ImportFeedEvent, AchievementFeedEvent, PlacementFeedEvent, FaBdokuFeedEvent, FaBdokuCardFeedEvent, CrosswordFeedEvent, HeroGuesserFeedEvent, MatchupManiaFeedEvent, TriviaFeedEvent, TimelineFeedEvent, ConnectionsFeedEvent, RampageFeedEvent, KnockoutFeedEvent, BrawlFeedEvent, NinjaComboFeedEvent, ShadowStrikeFeedEvent, BladeDashFeedEvent, ArticleFeedEvent, UserProfile, ImportSource, Achievement, MatchRecord } from "@/types";
+import type { FeedEvent, ImportFeedEvent, AchievementFeedEvent, PlacementFeedEvent, FaBdokuFeedEvent, FaBdokuCardFeedEvent, CrosswordFeedEvent, HeroGuesserFeedEvent, MatchupManiaFeedEvent, TriviaFeedEvent, TimelineFeedEvent, ConnectionsFeedEvent, RampageFeedEvent, KnockoutFeedEvent, BrawlFeedEvent, NinjaComboFeedEvent, ShadowStrikeFeedEvent, BladeDashFeedEvent, UserProfile, ImportSource, Achievement, MatchRecord } from "@/types";
 import type { PlayoffFinish } from "./stats";
 
 function feedCollection() {
@@ -154,55 +154,6 @@ export async function createPlacementFeedEvent(
   }
   await enrichWithProfileFields(clean, profile);
   if (hero && hero !== "Unknown") clean.hero = hero;
-
-  await addDoc(feedCollection(), clean);
-  invalidateFeedCache();
-}
-
-export async function createArticleFeedEvent(
-  profile: UserProfile,
-  article: {
-    id: string;
-    slug: string;
-    title: string;
-    excerpt: string;
-    coverImageUrl?: string;
-    heroTags?: string[];
-    publishedAt?: string;
-  },
-): Promise<void> {
-  if (!profile.isPublic || profile.hideFromFeed) return;
-
-  const dupCheck = query(
-    feedCollection(),
-    where("type", "==", "article"),
-    where("articleId", "==", article.id),
-    limit(1),
-  );
-  const existing = await getDocs(dupCheck);
-  if (!existing.empty) return;
-
-  const data: Omit<ArticleFeedEvent, "id"> = {
-    type: "article",
-    userId: profile.uid,
-    username: profile.username,
-    displayName: profile.displayName,
-    isPublic: profile.isPublic,
-    articleId: article.id,
-    slug: article.slug,
-    title: article.title,
-    excerpt: article.excerpt,
-    heroTags: article.heroTags || [],
-    publishedAt: article.publishedAt || new Date().toISOString(),
-    createdAt: article.publishedAt || new Date().toISOString(),
-  };
-
-  const clean: Record<string, unknown> = {};
-  for (const [key, value] of Object.entries(data)) {
-    if (value !== undefined) clean[key] = value;
-  }
-  if (profile.photoUrl) clean.photoUrl = profile.photoUrl;
-  if (article.coverImageUrl) clean.coverImageUrl = article.coverImageUrl;
 
   await addDoc(feedCollection(), clean);
   invalidateFeedCache();

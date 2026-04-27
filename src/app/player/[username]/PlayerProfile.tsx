@@ -80,9 +80,7 @@ import type { BladeDashStats } from "@/lib/bladedash/types";
 import { getTodayDateStr } from "@/lib/fabdoku/puzzle-generator";
 import { useCreators } from "@/hooks/useCreators";
 import { hasUserSubmittedFeedback } from "@/lib/feedback";
-import { ArticleCard } from "@/components/articles/ArticleCard";
-import { getArticlesByAuthorUid } from "@/lib/articles";
-import type { Creator, ArticleRecord } from "@/types";
+import type { Creator } from "@/types";
 
 const VALID_HERO_NAMES = new Set(knownHeroes.map((h) => h.name));
 
@@ -125,7 +123,6 @@ export default function PlayerProfile() {
   const [kudosGivenByMe, setKudosGivenByMe] = useState<Set<string>>(new Set());
   const [adminKudosGiven, setAdminKudosGiven] = useState<Set<string>>(new Set());
   const [fabdokuScore, setFabdokuScore] = useState<number | null>(null);
-  const [profileArticles, setProfileArticles] = useState<ArticleRecord[]>([]);
 
   // All game stats bundled into a single state to avoid 15 cascading re-renders on load
   interface GameStatsBundle {
@@ -426,14 +423,6 @@ export default function PlayerProfile() {
       const id = setTimeout(loadGameStats, 100);
       return () => clearTimeout(id);
     }
-  }, [profileUid]);
-
-  useEffect(() => {
-    if (!profileUid) {
-      setProfileArticles([]);
-      return;
-    }
-    getArticlesByAuthorUid(profileUid, 6).then(setProfileArticles).catch(() => setProfileArticles([]));
   }, [profileUid]);
 
   // Admin: fetch friend count for the viewed profile
@@ -1048,50 +1037,6 @@ export default function PlayerProfile() {
             )}
           </div>
         )}
-        {(profileArticles.length > 0 || isOwner || isAdmin) && (
-          <div className="space-y-3 rounded-lg border border-fab-border bg-fab-surface p-4">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <h2 className="text-base font-semibold text-fab-text">Articles</h2>
-                <p className="text-xs text-fab-dim">
-                  {profileArticles.length > 0
-                    ? `${profileArticles.length} published article${profileArticles.length === 1 ? "" : "s"}`
-                    : "No published articles yet."}
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <Link href={`/articles?author=${profile.username}`} className="text-xs font-medium text-fab-gold hover:text-fab-gold-light">
-                  View all
-                </Link>
-                {(isOwner || isAdmin) && (
-                  <Link
-                    href="/articles/new"
-                    className={`rounded-md border px-2.5 py-1 text-[11px] font-semibold ${
-                      isAdmin
-                        ? "border-fab-gold/30 bg-fab-gold/10 text-fab-gold"
-                        : "border-fab-border bg-fab-bg text-fab-dim"
-                    }`}
-                  >
-                    {isAdmin ? "Write Article" : "Composer Beta"}
-                  </Link>
-                )}
-              </div>
-            </div>
-
-            {profileArticles.length > 0 ? (
-              <div className="grid gap-3 xl:grid-cols-2">
-                {profileArticles.slice(0, 4).map((article) => (
-                  <ArticleCard key={article.id} article={article} compact showAuthor={false} />
-                ))}
-              </div>
-            ) : (
-              <div className="rounded-lg border border-dashed border-fab-border bg-fab-bg/70 px-4 py-5 text-sm text-fab-dim">
-                Nothing published here yet.
-              </div>
-            )}
-          </div>
-        )}
-
       </div>
 
       {/* Two-column grid: Showcases side by side on desktop, stacked on mobile */}

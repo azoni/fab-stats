@@ -18,11 +18,6 @@
   path = "/meta"
   function = "og-rewrite-meta"
 
-# Edge function rewrites OG meta tags for individual article pages
-[[edge_functions]]
-  path = "/articles/*"
-  function = "og-rewrite-article"
-
 # Proxy OG image function through clean URLs for crawler compatibility + CDN caching
 [[redirects]]
   from = "/og/player/:username.png"
@@ -32,11 +27,6 @@
 [[redirects]]
   from = "/og/meta.png"
   to = "/.netlify/functions/og-image?type=meta"
-  status = 200
-
-[[redirects]]
-  from = "/og/article/:slug.png"
-  to = "/.netlify/functions/og-image?type=article&slug=:slug"
   status = 200
 
 # Force redirect from netlify subdomain to custom domain
@@ -53,11 +43,17 @@
   to = "/player/_.html"
   status = 200
 
-# Serve pre-rendered article detail page for all /articles/* URLs
+# Articles UI was retired — redirect any inbound article URLs to home.
+# (Firestore article data is preserved; only the public-facing UI is gone.)
+[[redirects]]
+  from = "/articles"
+  to = "/"
+  status = 301
+
 [[redirects]]
   from = "/articles/*"
-  to = "/articles/_.html"
-  status = 200
+  to = "/"
+  status = 301
 
 # Serve team hub page at exact /team path
 [[redirects]]
