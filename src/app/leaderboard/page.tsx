@@ -123,18 +123,16 @@ interface Category {
   adminOnly?: boolean;
 }
 
+// Trimmed to ~10 core competitive leaderboards (Phase 0d).
+// Hidden categories (time/armory/fun/games/kudos/kudos_given) keep computing
+// in the background — the underlying Firestore docs are untouched, so a
+// future release can re-surface any of them without recomputing data.
 const allCategories: Category[] = [
-  { id: "overall", label: "Overall", tabs: ["elo", "winrate", "volume", "mostwins", "mostlosses"] },
-  { id: "time", label: "Weekly & Monthly", tabs: ["weeklymatches", "weeklywins", "monthlymatches", "monthlywins", "monthlywinrate"] },
-  { id: "events", label: "Events & Top 8s", tabs: ["events", "eventgrinder", "top8s", "top8s_skirmish", "top8s_pq", "top8s_bh", "top8s_rtn", "top8s_calling", "top8s_nationals", "earnings"] },
-  { id: "streaks", label: "Streaks", tabs: ["streaks", "hotstreak", "coldstreak"] },
-  { id: "heroes", label: "Heroes", tabs: ["heroes", "dedication", "loyaltyrate"] },
-  { id: "armory", label: "Armory", tabs: ["armorywinrate", "armoryattendance", "armorymatches"] },
-  { id: "rated", label: "Rated", tabs: ["rated", "ratedstreak"] },
-  { id: "fun", label: "Fun", tabs: ["uniqueopponents", "silvermedals", "lossstreak", "globetrotter", "leaderboardcount", "draws", "drawrate", "lowdrawrate", "fewestdraws", "byes", "byerate", "balanced"] },
-  { id: "games", label: "Games", tabs: ["games_total", "games_winrate", "games_streak", "games_variety", "games_fabdoku", "games_crossword", "games_heroguesser", "games_matchupmania", "games_trivia", "games_timeline", "games_connections", "games_rampage", "games_knockout", "games_brutebrawl", "games_ninjacombo"] },
-  { id: "kudos", label: "Kudos", tabs: ["kudos_total", "kudos_props", "kudos_good_sport", "kudos_skilled", "kudos_helpful"] },
-  { id: "kudos_given", label: "Kudos Given", tabs: ["kudos_given_total", "kudos_given_props", "kudos_given_good_sport", "kudos_given_skilled", "kudos_given_helpful"] },
+  { id: "overall", label: "Overall", tabs: ["elo", "winrate", "volume", "mostwins"] },
+  { id: "events", label: "Events & Top 8s", tabs: ["top8s", "rated"] },
+  { id: "streaks", label: "Streaks", tabs: ["streaks", "hotstreak"] },
+  { id: "heroes", label: "Heroes", tabs: ["heroes"] },
+  { id: "recent", label: "Recent", tabs: ["weeklymatches", "monthlywinrate"] },
   { id: "power", label: "Power Level", tabs: ["powerlevel"], adminOnly: true },
 ];
 
@@ -428,8 +426,9 @@ export default function LeaderboardPage() {
   const { matches } = useMatches();
   const searchParams = useSearchParams();
 
+  const visibleTabSet = new Set(allCategories.flatMap((c) => c.tabs));
   const initialTab = (searchParams.get("tab") as Tab) || "winrate";
-  const validInitialTab = tabs.some((t) => t.id === initialTab) ? initialTab : "winrate";
+  const validInitialTab = visibleTabSet.has(initialTab) && tabs.some((t) => t.id === initialTab) ? initialTab : "winrate";
 
   const [activeTab, setActiveTabRaw] = useState<Tab>(validInitialTab);
   const [activeCategory, setActiveCategory] = useState(categoryForTab(validInitialTab));
