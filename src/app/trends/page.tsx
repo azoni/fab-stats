@@ -904,7 +904,7 @@ export default function TrendsPage() {
       {/* Link to full matchup matrix */}
       {(opponentMatchups.best.length > 0 || opponentMatchups.worst.length > 0) && (
         <div className="flex justify-end -mt-3">
-          <Link href="/tools?tab=matrix" className="text-xs text-fab-gold hover:text-fab-gold-light transition-colors">
+          <Link href="/matchups" className="text-xs text-fab-gold hover:text-fab-gold-light transition-colors">
             See full matchup matrix →
           </Link>
         </div>

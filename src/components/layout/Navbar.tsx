@@ -12,7 +12,7 @@ import { useFriends } from "@/hooks/useFriends";
 import type { ReactNode } from "react";
 import type { Creator } from "@/types";
 import {
-  Globe, BookOpen, Zap,
+  Globe, BookOpen,
   ChevronDown,
   Users, ExternalLink,
   MoreVertical,
@@ -746,29 +746,8 @@ function MoreDropdown({
           )}
 
 
-          {/* Explore, Resources — always visible with hover sub-items */}
+          {/* Resources — Phase 2 removed Explore (duplicates Meta sub-items) */}
           <div className="border-t border-fab-border p-1.5 space-y-0.5">
-            {/* Explore */}
-            <div className="group/explore relative">
-              <Link href="/explore" className={`${linkClass("/explore")} justify-between`}>
-                <span className="flex items-center gap-3">
-                  <Zap className="w-4 h-4 text-yellow-400" />
-                  Explore
-                </span>
-                <ChevronDown className="w-3 h-3 text-fab-dim -rotate-90" />
-              </Link>
-              <div className="absolute left-full top-0 pl-1 hidden group-hover/explore:block z-50">
-                <div className="w-48 bg-fab-surface border border-fab-border rounded-lg shadow-xl overflow-hidden">
-                  <Link href="/matchups" className={`block px-3 py-2 text-sm transition-colors ${pathname === "/matchups" ? "text-fab-gold bg-fab-gold/10" : "text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover"}`}>Matchup Matrix</Link>
-                  <Link href="/compare" className={`block px-3 py-2 text-sm transition-colors ${pathname === "/compare" ? "text-fab-gold bg-fab-gold/10" : "text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover"}`}>Versus</Link>
-                  <Link href="/articles" className={`block px-3 py-2 text-sm transition-colors ${pathname.startsWith("/articles") ? "text-fab-gold bg-fab-gold/10" : "text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover"}`}>Articles</Link>
-                  <Link href="/tier-list" className={`block px-3 py-2 text-sm transition-colors ${pathname === "/tier-list" ? "text-fab-gold bg-fab-gold/10" : "text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover"}`}>Tier List</Link>
-                  <Link href="/tournaments" className={`block px-3 py-2 text-sm transition-colors ${pathname === "/tournaments" ? "text-fab-gold bg-fab-gold/10" : "text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover"}`}>Tournaments</Link>
-                  <Link href="/games" className={`block px-3 py-2 text-sm transition-colors ${pathname === "/games" ? "text-fab-gold bg-fab-gold/10" : "text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover"}`}>Games</Link>
-                </div>
-              </div>
-            </div>
-
             {/* Resources */}
             <div className="group/resources relative">
               <Link href="/resources" className={`${linkClass("/resources")} justify-between`}>

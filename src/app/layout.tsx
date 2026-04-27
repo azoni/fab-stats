@@ -2,7 +2,8 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Nunito } from "next/font/google";
 import "./globals.css";
 import { Navbar } from "@/components/layout/Navbar";
-import { MobileNav } from "@/components/layout/MobileNav";
+import { MobileTabBar } from "@/components/layout/MobileTabBar";
+import { MobileTopHeader } from "@/components/layout/MobileTopHeader";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { LayoutShell } from "@/components/auth/LayoutShell";
@@ -10,8 +11,6 @@ import { GuestBanner } from "@/components/auth/GuestBanner";
 import { SiteBanner } from "@/components/layout/SiteBanner";
 import { ProfileBackgroundController } from "@/components/layout/ProfileBackgroundController";
 import { SupportFab } from "@/components/support/SupportFab";
-import { ChatProvider } from "@/contexts/ChatContext";
-// import { ChatFab } from "@/components/chat/ChatFab";
 import { SonnerProvider } from "@/components/ui/sonner-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { PageVisitTracker } from "@/components/PageVisitTracker";
@@ -130,7 +129,6 @@ export default function RootLayout({
       >
         <ThemeProvider>
         <AuthProvider>
-        <ChatProvider>
         <AprilFoolsProvider>
         <TooltipProvider>
           <ScrollProgress />
@@ -138,7 +136,8 @@ export default function RootLayout({
           <div id="fab-bg-layer" aria-hidden="true" />
           <ProfileBackgroundController />
           <Navbar />
-          <main className="min-h-screen pt-[calc(3.5rem+env(safe-area-inset-top))] md:pt-16 pb-8">
+          <MobileTopHeader />
+          <main className="min-h-screen pt-[calc(3.5rem+env(safe-area-inset-top))] md:pt-16 pb-[calc(5rem+env(safe-area-inset-bottom))] md:pb-8">
             <FoolsBanner />
             <FoolsScrambler />
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 transparent-cards">
@@ -172,13 +171,12 @@ export default function RootLayout({
             </p>
           </footer>
           <SupportFab />
-          <MobileNav />
+          <MobileTabBar />
           <PageVisitTracker />
           <AutoSyncRecompute />
           <SonnerProvider />
         </TooltipProvider>
         </AprilFoolsProvider>
-        </ChatProvider>
         </AuthProvider>
         </ThemeProvider>
       </body>
