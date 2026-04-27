@@ -2,7 +2,7 @@ import { SwordsIcon, TrendsIcon, TrophyIcon } from "@/components/icons/NavIcons"
 import type { ReactNode } from "react";
 import {
   Globe, Mail, Star, Users, Settings, ShieldCheck,
-  Heart, MessageCircle, ShoppingCart, Coffee, Github,
+  Heart, MessageCircle, ShoppingCart, Coffee, Github, Gamepad2,
 } from "lucide-react";
 
 export type NavSubItem = { href: string; label: string; adminOnly?: boolean; authOnly?: boolean; badge?: string; icon?: ReactNode };
@@ -51,7 +51,7 @@ export const userMenuLinks: UserMenuLink[] = [
   { href: "/favorites", label: "Favorites", icon: <Star className="w-4 h-4" /> },
   { href: "/friends", label: "Friends", icon: <Users className="w-4 h-4" /> },
   { href: "/team", label: "Teams", icon: <Users className="w-4 h-4" /> },
-  { href: "/group", label: "Groups", icon: <Users className="w-4 h-4" /> },
+  { href: "/games", label: "Daily Games", icon: <Gamepad2 className="w-4 h-4" /> },
   { href: "/settings", label: "Settings", icon: <Settings className="w-4 h-4" /> },
   { href: "/admin", label: "Admin", adminOnly: true, icon: <ShieldCheck className="w-4 h-4" /> },
 ];
