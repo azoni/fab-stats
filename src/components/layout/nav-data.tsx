@@ -2,7 +2,7 @@ import { SwordsIcon, TrendsIcon, TrophyIcon } from "@/components/icons/NavIcons"
 import type { ReactNode } from "react";
 import {
   Globe, Mail, Star, Users, Settings, ShieldCheck,
-  Heart, MessageCircle, ShoppingCart, Coffee, Github, Gamepad2,
+  Heart, MessageCircle, ShoppingCart, Coffee, Github, Gamepad2, Home as HomeIcon,
 } from "lucide-react";
 
 export type NavSubItem = { href: string; label: string; adminOnly?: boolean; authOnly?: boolean; badge?: string; icon?: ReactNode };
@@ -10,24 +10,44 @@ export type NavLink = { href: string; label: string; icon: ReactNode; color: str
 export type MoreLink = { href: string; label: string; icon: ReactNode; authOnly?: boolean; adminOnly?: boolean; badge?: string; divider?: boolean; sectionLabel?: string; subItems?: { href: string; label: string }[] };
 export type UserMenuLink = { href: string; label: string; icon: ReactNode; adminOnly?: boolean };
 
+// ── 3-bucket primary nav (Phase 2 IA rethink) ──
+//
+// Identity: post-event share + personal repo. Three buckets only:
+//   Home      — your stats, your matches, your history (the repo job)
+//   Meta      — community-level competitive analysis
+//   Community — teams + people + search
+//
+// /share is the focal post-event-recap entry; mobile bottom-bar has a
+// dedicated [+] tab for it. Not surfaced as a primary nav item because
+// the prominent [+] does that job better than another link in a row.
 export const navLinks: NavLink[] = [
-  { href: "/matches", label: "Matches", icon: <SwordsIcon className="w-4 h-4" />, color: "text-red-400", bg: "bg-red-400/10", authOnly: true, subItems: [
+  { href: "/", label: "Home", icon: <HomeIcon className="w-4 h-4" />, color: "text-fab-gold", bg: "bg-fab-gold/10", authOnly: true, subItems: [
+    { href: "/", label: "Dashboard" },
     { href: "/matches", label: "Matches" },
     { href: "/events", label: "Events" },
     { href: "/opponents", label: "Opponents" },
-    { href: "/matchups", label: "Matchup Matrix" },
+    { href: "/trends", label: "Trends" },
+    { href: "/tournament-stats", label: "Tournament Stats" },
+    { href: "/goals", label: "Goals" },
+    { href: "/wrapped", label: "Wrapped" },
   ] },
   { href: "/meta", label: "Meta", icon: <Globe className="w-4 h-4" />, color: "text-teal-400", bg: "bg-teal-400/10", subItems: [
+    { href: "/meta", label: "Hero Stats" },
+    { href: "/leaderboard", label: "Rankings" },
     { href: "/matchups", label: "Matchup Matrix" },
+    { href: "/tier-list", label: "Tier List" },
+    { href: "/compare", label: "Versus" },
+    { href: "/tournaments", label: "Tournaments" },
     { href: "/meta/snapshot", label: "Meta Snapshot", adminOnly: true },
     { href: "/meta/matchup-spotlight", label: "Matchup Spotlight", adminOnly: true },
     { href: "/meta/hot-takes", label: "Hot Takes", adminOnly: true },
   ] },
-  { href: "/leaderboard", label: "Rankings", icon: <TrophyIcon className="w-4 h-4" />, color: "text-amber-400", bg: "bg-amber-400/10" },
   { href: "/community", label: "Community", icon: <Users className="w-4 h-4" />, color: "text-indigo-400", bg: "bg-indigo-400/10", subItems: [
     { href: "/team", label: "Teams" },
-    { href: "/tournaments", label: "Tournaments" },
+    { href: "/friends", label: "Friends", authOnly: true },
+    { href: "/search", label: "Search" },
   ] },
+  // Support kept as iconOnly affiliate hub; will move to footer in a follow-up.
   { href: "/support", label: "Support", icon: <Heart className="w-4 h-4" />, color: "text-pink-400", bg: "bg-pink-400/10", iconOnly: true, subItems: [
     { href: "https://www.amazon.com/?tag=oldwaystoda00-20", label: "Shop Amazon", badge: "Free", icon: <ShoppingCart className="w-3.5 h-3.5" /> },
     { href: "https://partner.tcgplayer.com/fabstats", label: "Shop TCGplayer", badge: "Free", icon: <ShoppingCart className="w-3.5 h-3.5" /> },
@@ -39,31 +59,34 @@ export const navLinks: NavLink[] = [
   ] },
 ];
 
+// moreLinks remains for the navbar's expandable Stats section, but trimmed
+// to entries not already surfaced in the new Home bucket.
 export const moreLinks: MoreLink[] = [
-  { divider: true, sectionLabel: "Your Stats", href: "", label: "", icon: null },
-  { href: "/trends", label: "My Stats", icon: <TrendsIcon className="w-4 h-4" />, authOnly: true },
+  { divider: true, sectionLabel: "My Stats", href: "", label: "", icon: null },
+  { href: "/trends", label: "Trends", icon: <TrendsIcon className="w-4 h-4" />, authOnly: true },
   { href: "/tournament-stats", label: "Tournament Stats", icon: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M16.5 18.75h-9m9 0a3 3 0 013 3h-15a3 3 0 013-3m9 0v-3.375c0-.621-.503-1.125-1.125-1.125h-.871M7.5 18.75v-3.375c0-.621.504-1.125 1.125-1.125h.872m5.007 0H9.497m5.007 0a7.454 7.454 0 01-.982-3.172M9.497 14.25a7.454 7.454 0 00.981-3.172M5.25 4.236c-.982.143-1.954.317-2.916.52A6.003 6.003 0 007.73 9.728M5.25 4.236V4.5c0 2.108.966 3.99 2.48 5.228M5.25 4.236V2.721C7.456 2.41 9.71 2.25 12 2.25c2.291 0 4.545.16 6.75.47v1.516M18.75 4.236c.982.143 1.954.317 2.916.52A6.003 6.003 0 0016.27 9.728M18.75 4.236V4.5c0 2.108-.966 3.99-2.48 5.228m0 0a6.023 6.023 0 01-2.77.704 6.023 6.023 0 01-2.77-.704" /></svg>, authOnly: true },
 ];
 
 export const userMenuLinks: UserMenuLink[] = [
   { href: "/inbox", label: "Inbox", icon: <Mail className="w-4 h-4" /> },
   { href: "/favorites", label: "Favorites", icon: <Star className="w-4 h-4" /> },
-  { href: "/friends", label: "Friends", icon: <Users className="w-4 h-4" /> },
-  { href: "/team", label: "Teams", icon: <Users className="w-4 h-4" /> },
+  { href: "/import", label: "Import", icon: <SwordsIcon className="w-4 h-4" /> },
   { href: "/games", label: "Daily Games", icon: <Gamepad2 className="w-4 h-4" /> },
   { href: "/settings", label: "Settings", icon: <Settings className="w-4 h-4" /> },
   { href: "/admin", label: "Admin", adminOnly: true, icon: <ShieldCheck className="w-4 h-4" /> },
 ];
 
-export const exploreLinks = [
-  { href: "/tier-list", label: "Tier List" },
-  { href: "/tournaments", label: "Tournaments" },
-  { href: "/compare", label: "Versus" },
-  { href: "/games", label: "Games" },
-  { href: "/matchups", label: "Matchup Matrix" },
-];
+// Legacy export — kept so any component still importing it doesn't break,
+// but the Phase 2 navbar no longer renders an Explore dropdown. Remove in
+// a follow-up once the navbar is fully cleaned.
+export const exploreLinks: { href: string; label: string }[] = [];
 
 export const resourceLinks = [
   { href: "/changelog", label: "Changelog" },
   { href: "/docs", label: "Docs" },
+  { href: "/privacy", label: "Privacy" },
+  { href: "/terms", label: "Terms" },
 ];
+
+// Legacy: kept for the icon import warning suppression.
+void TrophyIcon;
