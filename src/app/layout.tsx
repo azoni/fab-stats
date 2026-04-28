@@ -4,6 +4,7 @@ import "./globals.css";
 import { Navbar } from "@/components/layout/Navbar";
 import { MobileTabBar } from "@/components/layout/MobileTabBar";
 import { MobileTopHeader } from "@/components/layout/MobileTopHeader";
+import { BucketSubNavRouter } from "@/components/layout/BucketSubNav";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { LayoutShell } from "@/components/auth/LayoutShell";
@@ -143,6 +144,7 @@ export default function RootLayout({
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 transparent-cards">
               <SiteBanner />
               <GuestBanner />
+              <BucketSubNavRouter />
               <LayoutShell>{children}</LayoutShell>
             </div>
           </main>

@@ -3,9 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Home as HomeIcon, Globe, Users, Plus, User as UserIcon } from "lucide-react";
+import { Home as HomeIcon, Globe, Users, User as UserIcon } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { ShareSheet } from "./ShareSheet";
 import { ProfileSheet } from "./ProfileSheet";
 
 interface TabSpec {
@@ -40,18 +39,9 @@ export function MobileTabBar() {
   const pathname = usePathname() || "/";
   const router = useRouter();
   const { user, isGuest } = useAuth();
-  const [shareOpen, setShareOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
 
   const isAuthenticated = Boolean(user) && !isGuest;
-
-  const handleShareClick = () => {
-    if (!isAuthenticated) {
-      setShareOpen(true);
-      return;
-    }
-    setShareOpen(true);
-  };
 
   const handleProfileClick = () => {
     if (!isAuthenticated) {
@@ -70,7 +60,6 @@ export function MobileTabBar() {
         <div className="flex items-stretch justify-around">
           <TabLink tab={tabs[0]} active={tabs[0].match(pathname)} />
           <TabLink tab={tabs[1]} active={tabs[1].match(pathname)} />
-          <ShareTab onClick={handleShareClick} />
           <TabLink tab={tabs[2]} active={tabs[2].match(pathname)} />
           <ProfileTab
             active={pathname.startsWith("/settings") || pathname.startsWith("/inbox") || pathname.startsWith("/favorites")}
@@ -78,13 +67,6 @@ export function MobileTabBar() {
           />
         </div>
       </nav>
-      {shareOpen && (
-        <ShareSheet
-          open={shareOpen}
-          onClose={() => setShareOpen(false)}
-          isAuthenticated={isAuthenticated}
-        />
-      )}
       {profileOpen && (
         <ProfileSheet
           open={profileOpen}
@@ -106,22 +88,6 @@ function TabLink({ tab, active }: { tab: TabSpec; active: boolean }) {
       <span aria-hidden>{tab.icon}</span>
       <span className="text-[10px] font-medium">{tab.label}</span>
     </Link>
-  );
-}
-
-function ShareTab({ onClick }: { onClick: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label="Share recent event"
-      className="flex flex-col items-center justify-center px-3 -mt-4 flex-shrink-0"
-    >
-      <span className="flex items-center justify-center w-12 h-12 rounded-full bg-fab-gold text-fab-bg shadow-lg shadow-fab-gold/30 ring-2 ring-fab-bg">
-        <Plus className="w-6 h-6" strokeWidth={2.5} />
-      </span>
-      <span className="text-[10px] font-medium text-fab-muted mt-0.5">Share</span>
-    </button>
   );
 }
 

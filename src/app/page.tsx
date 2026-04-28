@@ -17,7 +17,6 @@ import { LatestMatches } from "@/components/home/LatestMatches";
 import { DashboardInsights } from "@/components/home/DashboardInsights";
 import { DashboardFilters } from "@/components/home/DashboardFilters";
 import { OnThisDay } from "@/components/home/OnThisDay";
-import { BadgeStrip } from "@/components/profile/BadgeStrip";
 import { WinRateRing } from "@/components/charts/WinRateRing";
 import { getHeroByName } from "@/lib/heroes";
 import { HeroImg } from "@/components/heroes/HeroImg";
@@ -313,7 +312,6 @@ export default function Dashboard() {
                       {myTeam && <TeamBadge teamName={myTeam.name} teamIconUrl={myTeam.iconUrl} teamNameLower={myTeam.nameLower} size="xs" isPrivate={myTeam.visibility === "private"} isSiteAdmin={isAdmin} />}
                       {heroCompletion && <HeroShieldBadge pct={heroCompletion.pct} withHero={heroCompletion.withHero} total={heroCompletion.total} />}
                     </div>
-                    <BadgeStrip selectedBadgeIds={profile?.selectedBadgeIds} className="mt-1" />
                   </div>
                   {topHero && (
                     <div className="flex items-center gap-2 shrink-0">
