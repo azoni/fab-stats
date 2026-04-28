@@ -70,6 +70,17 @@ export function ProfileBackgroundController() {
     };
 
     (async () => {
+      const viewedUsername = getViewedUsername(pathname);
+
+      // Profile backgrounds only render on /player/:username pages.
+      // Everywhere else: clear and use the default theme. (Per Discord
+      // feedback — the omens-style backgrounds were visually cluttering
+      // the home/leaderboard/meta pages.)
+      if (!viewedUsername) {
+        await applyProfileBackground(undefined);
+        return;
+      }
+
       // Load global default and user preference in parallel to avoid flash
       const [globalDefaultId] = await Promise.all([
         loadGlobalDefaultBackgroundId(),
@@ -80,13 +91,6 @@ export function ProfileBackgroundController() {
 
       const ownImage = resolveProfileBackgroundImage(profile?.siteBackgroundId, globalDefaultId);
       const ownPosition = resolveProfileBackgroundPosition(profile?.siteBackgroundId, globalDefaultId) || "center top";
-      const viewedUsername = getViewedUsername(pathname);
-
-      // Everywhere except /player/:username uses the viewer's own site background.
-      if (!viewedUsername) {
-        await applyProfileBackground(ownImage, ownPosition);
-        return;
-      }
 
       // Viewing your own profile.
       if (profile?.username && profile.username.toLowerCase() === viewedUsername.toLowerCase()) {
