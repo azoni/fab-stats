@@ -513,6 +513,30 @@ const EVENT_PRESTIGE: Record<string, number> = {
   "On Demand": 1,
 };
 
+/** Event types that count as a competitive tournament for analytics purposes,
+ *  even when the imported `rated` flag is missing/false (e.g. Silver Age
+ *  ProQuests sometimes lack the metadata line on import). */
+const TOURNAMENT_EVENT_TYPES = new Set([
+  "Worlds",
+  "Path to Pro Tour",
+  "Pro Tour",
+  "The Calling",
+  "Nationals",
+  "Battle Hardened",
+  "Battlegrounds",
+  "Showdown",
+  "Road to Nationals",
+  "ProQuest",
+  "Championship",
+  "Super Armory",
+  "Skirmish",
+]);
+
+export function isTournamentEvent(event: { rated?: boolean; eventType?: string }): boolean {
+  if (event.rated) return true;
+  return !!event.eventType && TOURNAMENT_EVENT_TYPES.has(event.eventType);
+}
+
 export function computeBestFinish(
   eventStats: EventStats[],
   overrides?: Record<string, PlayoffFinish["type"]>,

@@ -5,7 +5,7 @@ import { useMatches } from "@/hooks/useMatches";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTeamOnce } from "@/hooks/useTeam";
 import dynamic from "next/dynamic";
-import { computeEventStats, computeTournamentAnalytics, type TournamentAnalytics } from "@/lib/stats";
+import { computeEventStats, computeTournamentAnalytics, isTournamentEvent, type TournamentAnalytics } from "@/lib/stats";
 
 const TournamentShareModal = dynamic(() => import("@/components/tournament-stats/TournamentShareCard").then(m => ({ default: m.TournamentShareModal })), { ssr: false });
 import { WinRateRing } from "@/components/charts/WinRateRing";
@@ -80,7 +80,7 @@ export default function TournamentStatsPage() {
   const filteredEvents = useMemo(() => {
     let filtered = allEvents;
     if (filterEventType === "rated") {
-      filtered = filtered.filter(e => e.rated);
+      filtered = filtered.filter(isTournamentEvent);
     } else if (filterEventType !== "all") {
       filtered = filtered.filter(e => e.eventType === filterEventType);
     }

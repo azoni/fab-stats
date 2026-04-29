@@ -5,7 +5,7 @@ import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useMatches } from "@/hooks/useMatches";
 import { useAuth } from "@/contexts/AuthContext";
-import { computeOverallStats, computeHeroStats, computeEventStats, computeOpponentStats, computeBestFinish, computePlayoffFinishes, computeMinorEventFinishes, computeTournamentAnalytics, getRoundNumber, getEventType, formatShortLabel } from "@/lib/stats";
+import { computeOverallStats, computeHeroStats, computeEventStats, computeOpponentStats, computeBestFinish, computePlayoffFinishes, computeMinorEventFinishes, computeTournamentAnalytics, getRoundNumber, getEventType, formatShortLabel, isTournamentEvent } from "@/lib/stats";
 import { getEventTier, TIER_LABELS } from "@/lib/events";
 import { updateLeaderboardEntry } from "@/lib/leaderboard";
 import { useLeaderboard } from "@/hooks/useLeaderboard";
@@ -236,10 +236,11 @@ export default function Dashboard() {
     return { ...underlineStyle[best], placement: bestPlacement };
   }, [minorFinishes, profile?.underlineEventType, profile?.underlinePlacement]);
 
-  // Tournament analytics (from filtered rated events)
+  // Tournament analytics (rated events + recognized competitive event types,
+  // since some imports drop the `rated` flag for events like Silver Age ProQuests).
   const tournamentAnalytics = useMemo(() => {
-    const ratedEvents = filteredEventStats.filter(e => e.rated);
-    return ratedEvents.length > 0 ? computeTournamentAnalytics(ratedEvents) : null;
+    const tournamentEvents = filteredEventStats.filter(isTournamentEvent);
+    return tournamentEvents.length > 0 ? computeTournamentAnalytics(tournamentEvents) : null;
   }, [filteredEventStats]);
 
   // Community meta (compact — top 3 heroes for mini widget)
