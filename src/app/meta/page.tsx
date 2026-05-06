@@ -46,7 +46,7 @@ export default function MetaPage() {
   const [filterFormat, setFilterFormat] = useState(searchParams.get("format") || "all");
   const [filterEventType, setFilterEventType] = useState(searchParams.get("eventType") || "all");
   const [periodSelection, setPeriodSelection] = useState<PeriodSelection>(
-    (searchParams.get("period") as PeriodSelection) || "all"
+    (searchParams.get("period") as PeriodSelection) || "weekly"
   );
   const [customStart, setCustomStart] = useState(searchParams.get("from") || "");
   const [customEnd, setCustomEnd] = useState(searchParams.get("to") || "");

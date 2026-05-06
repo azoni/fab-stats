@@ -1443,6 +1443,191 @@ button:active:not(:disabled) {
 }
 
 /* ═══════════════════════════════════════════════
+   PARCHMENT — painted brand theme (default)
+   Cream/parchment background, oxblood + warm gold accents,
+   ink body text, Cinzel display headings. Modeled after daylight.
+   ═══════════════════════════════════════════════ */
+
+[data-theme="parchment"] {
+  --color-fab-bg: #efe5cc;
+  --color-fab-surface: #e8dab8;
+  --color-fab-surface-hover: #dfcfa3;
+  --color-fab-border: #c9b48a;
+  --color-fab-gold: #9c7e35;
+  --color-fab-gold-light: #c9a859;
+  --color-fab-gold-dark: #6e5824;
+  --color-fab-red: #a3242c;
+  --color-fab-red-light: #bf3a44;
+  --color-fab-crimson: #7a1a20;
+  --color-fab-win: #1a7a3a;
+  --color-fab-loss: #a3242c;
+  --color-fab-draw: #9c7e35;
+  --color-fab-text: #1a1410;
+  --color-fab-muted: #5c4f3e;
+  --color-fab-dim: #7d6f5b;
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.625rem;
+  --radius-xl: 0.75rem;
+}
+
+/* Subtle paper-grain noise stays — the painted brand likes texture */
+[data-theme="parchment"] body::before {
+  opacity: 0.06;
+}
+
+/* Warm gold ambient atmosphere instead of dark gold */
+[data-theme="parchment"] body::after {
+  background: radial-gradient(ellipse 80% 40% at 50% -5%, rgba(156, 126, 53, 0.10), transparent 70%);
+}
+
+/* No dark-mode text glow on the warm gold */
+[data-theme="parchment"] .text-fab-gold,
+[data-theme="parchment"] .text-fab-win,
+[data-theme="parchment"] .text-fab-loss {
+  text-shadow: none;
+}
+
+/* Display serif for headings — matches the Hala/Dawnblade brand type */
+[data-theme="parchment"] h1,
+[data-theme="parchment"] h2,
+[data-theme="parchment"] h3 {
+  font-family: var(--font-serif), Georgia, "Times New Roman", serif;
+  font-weight: 600;
+  letter-spacing: 0.005em;
+}
+
+/* Warm gold selection */
+[data-theme="parchment"] ::selection {
+  background: rgba(156, 126, 53, 0.20);
+  color: #1a1410;
+}
+
+/* Cards — soft parchment with a warm gold-tinted shadow */
+[data-theme="parchment"] [class*="bg-fab-surface"][class*="border-fab-border"]:not(nav):not(td):not(tr) {
+  box-shadow: 0 1px 2px rgba(122, 95, 40, 0.06), 0 1px 3px rgba(122, 95, 40, 0.04);
+  transition: box-shadow 0.2s, border-color 0.2s;
+}
+
+[data-theme="parchment"] [class*="bg-fab-surface"][class*="border-fab-border"]:not(nav):hover {
+  box-shadow: 0 4px 12px rgba(122, 95, 40, 0.10), 0 2px 4px rgba(122, 95, 40, 0.05);
+  border-color: #b09766;
+}
+
+[data-theme="parchment"] [class*="bg-fab-surface"][class*="shadow-xl"] {
+  box-shadow: 0 1px 3px rgba(122, 95, 40, 0.10);
+}
+
+/* Nav — solid parchment with warm border */
+[data-theme="parchment"] nav[class*="bg-fab-surface"] {
+  background-color: rgba(239, 229, 204, 0.96);
+  backdrop-filter: blur(8px);
+}
+
+[data-theme="parchment"] nav[class*="border-b"] {
+  border-bottom-width: 1px;
+  border-color: #c9b48a;
+}
+
+[data-theme="parchment"] nav[class*="border-t"] {
+  border-top-width: 1px;
+  border-color: #c9b48a;
+}
+
+/* Inputs — clean white-ish on parchment with a warm focus ring */
+[data-theme="parchment"] input[class*="border-fab-border"],
+[data-theme="parchment"] select[class*="border-fab-border"],
+[data-theme="parchment"] textarea[class*="border-fab-border"] {
+  border-width: 1px;
+  border-color: #c9b48a;
+  background-color: #f7f0dd;
+  color: #1a1410;
+}
+
+[data-theme="parchment"] input[class*="border-fab-border"]:focus,
+[data-theme="parchment"] select[class*="border-fab-border"]:focus,
+[data-theme="parchment"] textarea[class*="border-fab-border"]:focus {
+  border-color: #9c7e35;
+  box-shadow: 0 0 0 2px rgba(156, 126, 53, 0.18);
+}
+
+/* Primary buttons — warm gold solid with ink text */
+[data-theme="parchment"] .bg-fab-gold {
+  font-weight: 700;
+  box-shadow: 0 1px 2px rgba(122, 95, 40, 0.18);
+  color: #1a1410;
+}
+
+[data-theme="parchment"] .bg-fab-gold:hover {
+  box-shadow: 0 2px 6px rgba(122, 95, 40, 0.25);
+}
+
+/* Tailwind utility colors — bump for readability on cream */
+[data-theme="parchment"] .text-red-400 { color: #a3242c; }
+[data-theme="parchment"] .text-rose-400 { color: #a3242c; }
+[data-theme="parchment"] .text-amber-400 { color: #8b6e23; }
+[data-theme="parchment"] .text-yellow-400 { color: #8b6e23; }
+[data-theme="parchment"] .text-green-400 { color: #1a7a3a; }
+[data-theme="parchment"] .text-emerald-400 { color: #0d6e3c; }
+[data-theme="parchment"] .text-teal-400 { color: #0e7c6c; }
+[data-theme="parchment"] .text-blue-400 { color: #1e40af; }
+[data-theme="parchment"] .text-sky-400 { color: #1e6ea6; }
+[data-theme="parchment"] .text-indigo-400 { color: #4338ca; }
+[data-theme="parchment"] .text-violet-400 { color: #6c3aaf; }
+[data-theme="parchment"] .text-purple-400 { color: #6c3aaf; }
+[data-theme="parchment"] .text-pink-400 { color: #a23264; }
+[data-theme="parchment"] .text-fuchsia-400 { color: #a23264; }
+
+[data-theme="parchment"] .bg-red-400\/10 { background-color: rgba(163, 36, 44, 0.08); }
+[data-theme="parchment"] .bg-rose-500\/10 { background-color: rgba(163, 36, 44, 0.08); }
+[data-theme="parchment"] .bg-amber-400\/10 { background-color: rgba(139, 110, 35, 0.10); }
+[data-theme="parchment"] .bg-amber-500\/10 { background-color: rgba(139, 110, 35, 0.10); }
+[data-theme="parchment"] .bg-teal-500\/10 { background-color: rgba(14, 124, 108, 0.10); }
+[data-theme="parchment"] .bg-indigo-400\/10 { background-color: rgba(67, 56, 202, 0.10); }
+[data-theme="parchment"] .bg-violet-500\/10 { background-color: rgba(108, 58, 175, 0.10); }
+[data-theme="parchment"] .bg-pink-400\/10 { background-color: rgba(162, 50, 100, 0.10); }
+[data-theme="parchment"] .bg-sky-500\/10 { background-color: rgba(30, 110, 166, 0.10); }
+
+[data-theme="parchment"] .bg-fab-gold\/10 { background-color: rgba(156, 126, 53, 0.10); }
+[data-theme="parchment"] .bg-fab-gold\/15 { background-color: rgba(156, 126, 53, 0.14); }
+[data-theme="parchment"] .bg-fab-gold\/20 { background-color: rgba(156, 126, 53, 0.18); }
+[data-theme="parchment"] .bg-fab-gold\/25 { background-color: rgba(156, 126, 53, 0.22); }
+
+/* Suppress dark-mode decorative effects */
+[data-theme="parchment"] .nav-btn::before,
+[data-theme="parchment"] .nav-btn::after {
+  display: none;
+}
+
+[data-theme="parchment"] .nav-btn:hover {
+  transform: none;
+  border-color: #b09766;
+}
+
+[data-theme="parchment"] .nav-btn:hover .nav-icon {
+  filter: none;
+  transform: none;
+}
+
+[data-theme="parchment"] .spotlight-card::before,
+[data-theme="parchment"] .spotlight-card::after {
+  display: none;
+}
+
+/* Scrollbar — warm tan */
+[data-theme="parchment"] ::-webkit-scrollbar-thumb {
+  background: #c9b48a;
+}
+
+[data-theme="parchment"] ::-webkit-scrollbar-thumb:hover {
+  background: #a89065;
+}
+
+[data-theme="parchment"] ::-webkit-scrollbar-track {
+  background: #e8dab8;
+}
+
+/* ═══════════════════════════════════════════════
    SHAMROCK — St. Patrick's Day
    ═══════════════════════════════════════════════ */
 

@@ -55,6 +55,7 @@ function resizeImage(file: File, maxSize: number): Promise<string> {
 }
 
 const THEME_PREVIEWS: Record<ThemeName, { bg: string; surface: string; border: string; accent: string; text: string; muted: string; radius: string }> = {
+  parchment: { bg: "#efe5cc", surface: "#e8dab8", border: "#c9b48a", accent: "#a3242c", text: "#1a1410", muted: "#5c4f3e", radius: "6px" },
   grimoire: { bg: "#0e0c08", surface: "#1c1812", border: "#3e3528", accent: "#d4a54a", text: "#e6ddd0", muted: "#9a8e7a", radius: "4px" },
   leyline: { bg: "#08080f", surface: "#14142a", border: "#1e2050", accent: "#7b8fff", text: "#e0e4f0", muted: "#6b7094", radius: "10px" },
   rosetta: { bg: "#0a0a0a", surface: "#141414", border: "#262626", accent: "#f0f0f0", text: "#fafafa", muted: "#737373", radius: "2px" },
