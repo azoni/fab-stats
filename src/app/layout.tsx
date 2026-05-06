@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono, Nunito } from "next/font/google";
+import { Geist, Geist_Mono, Nunito, Cinzel } from "next/font/google";
 import "./globals.css";
 import { Navbar } from "@/components/layout/Navbar";
 import { MobileTabBar } from "@/components/layout/MobileTabBar";
@@ -34,6 +34,12 @@ const nunito = Nunito({
   variable: "--font-nunito",
   subsets: ["latin"],
   weight: ["700", "800", "900"],
+});
+
+const cinzel = Cinzel({
+  variable: "--font-cinzel",
+  subsets: ["latin"],
+  weight: ["500", "600", "700", "800"],
 });
 
 export const viewport: Viewport = {
@@ -125,7 +131,7 @@ export default function RootLayout({
         />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${nunito.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${nunito.variable} ${cinzel.variable} antialiased`}
         suppressHydrationWarning
       >
         <ThemeProvider>
