@@ -84,69 +84,113 @@ export function LoggedOutHome({ user, communityMeta, lbEntries }: LoggedOutHomeP
 
   return (
     <div className="space-y-10">
-      {/* ── Section 1: Hero Banner ── */}
-      <div className="relative bg-fab-surface border border-fab-border rounded-xl p-6 sm:p-8 overflow-hidden">
-        <div className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-fab-gold/50 to-transparent" />
-        <div className="absolute -top-20 -right-20 w-56 h-56 bg-fab-gold/5 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-16 -left-16 w-40 h-40 bg-amber-500/5 rounded-full blur-2xl pointer-events-none" />
+      {/* ── Section 1: Hero Banner — parchment brand treatment ── */}
+      <div className="relative bg-fab-parchment text-fab-ink rounded-xl overflow-hidden ring-1 ring-fab-warm-gold-deep/20 shadow-[0_2px_24px_-8px_rgba(0,0,0,0.4)]">
+        {/* Background art — warrior portrait, anchored to right edge.
+            We push the image right so the baked-in headline crops off-frame and
+            only the warrior is visible alongside our HTML headline. */}
+        <div
+          className="absolute inset-0 bg-no-repeat pointer-events-none"
+          style={{
+            backgroundImage: "url('/brand/hero-marquee.png')",
+            backgroundSize: "auto 110%",
+            backgroundPosition: "110% center",
+          }}
+        />
+        {/* Heavy parchment fade on left so any residual baked text is masked
+            and our HTML headline reads cleanly. */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background:
+              "linear-gradient(to right, var(--color-fab-parchment) 0%, var(--color-fab-parchment) 45%, rgba(239,229,204,0.6) 65%, transparent 90%)",
+          }}
+        />
+        {/* Subtle gold border accents */}
+        <div className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-fab-warm-gold to-transparent pointer-events-none" />
+        <div className="absolute bottom-0 inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-fab-warm-gold/60 to-transparent pointer-events-none" />
 
-        <div className="relative flex items-center gap-4 mb-5">
-          <div className="w-14 h-14 rounded-full bg-gradient-to-br from-fab-gold/30 to-amber-600/20 flex items-center justify-center shrink-0 ring-1 ring-fab-gold/20">
-            <ShieldIcon className="w-7 h-7 text-fab-gold" />
+        <div className="relative p-6 sm:p-10 lg:p-12 max-w-2xl">
+          {/* Logo + wordmark */}
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 rounded-md bg-fab-ink flex items-center justify-center shrink-0">
+              <ShieldIcon className="w-5 h-5 text-fab-oxblood" />
+            </div>
+            <div>
+              <h1 className="text-xl font-black tracking-tight text-fab-ink leading-none">
+                fab<span className="text-fab-oxblood">stats</span>
+              </h1>
+              <p className="text-[10px] uppercase tracking-[0.18em] text-fab-ink-muted font-semibold mt-1">
+                Flesh and Blood Player Tracker
+              </p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-fab-gold">FaB Stats</h1>
-            <p className="text-xs text-fab-dim">Flesh and Blood Tournament Tracker</p>
+
+          {/* Big display headline — stacked, with red accent on IMPROVE */}
+          <h2 className="font-black tracking-tight text-fab-ink leading-[0.92] text-5xl sm:text-6xl lg:text-7xl mb-5">
+            <span className="block">TRACK.</span>
+            <span className="block text-fab-oxblood">IMPROVE.</span>
+            <span className="block">VICTORY.</span>
+          </h2>
+
+          <p className="text-sm sm:text-base text-fab-ink-muted max-w-md mb-7 leading-relaxed">
+            Track matches, events, and performance so you can measure your progress
+            and focus on what matters — <span className="font-semibold text-fab-ink">winning</span>.
+          </p>
+
+          <div className="flex gap-3 flex-wrap mb-8">
+            {user ? (
+              <Link
+                href="/import"
+                className="px-6 py-3 rounded-md text-sm font-bold uppercase tracking-wider bg-fab-oxblood text-fab-parchment hover:bg-fab-oxblood-deep transition-colors shadow-md"
+              >
+                Import Your Matches
+              </Link>
+            ) : (
+              <Link
+                href="/login"
+                className="px-6 py-3 rounded-md text-sm font-bold uppercase tracking-wider bg-fab-oxblood text-fab-parchment hover:bg-fab-oxblood-deep transition-colors shadow-md"
+              >
+                Sign Up Free
+              </Link>
+            )}
+            <Link
+              href="/leaderboard"
+              className="px-6 py-3 rounded-md text-sm font-bold uppercase tracking-wider border-2 border-fab-ink/80 text-fab-ink hover:bg-fab-ink hover:text-fab-parchment transition-colors"
+            >
+              Browse Leaderboard
+            </Link>
           </div>
-        </div>
 
-        <h2 className="relative text-lg sm:text-xl font-bold text-fab-text mb-2">
-          Your Flesh and Blood Stats, Unlocked
-        </h2>
-        <p className="relative text-sm text-fab-muted mb-6 max-w-lg">
-          Track matches, analyze the meta, climb the leaderboard, and play daily games — all in one place.
-        </p>
-
-        <div className="relative flex gap-3 flex-wrap mb-6">
-          {user ? (
-            <Link
-              href="/import"
-              className="px-6 py-2.5 rounded-lg text-sm font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors"
-            >
-              Import Your Matches
-            </Link>
-          ) : (
-            <Link
-              href="/login"
-              className="px-6 py-2.5 rounded-lg text-sm font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors"
-            >
-              Sign Up Free
-            </Link>
+          {/* Community stats counters — parchment-themed */}
+          {overview.totalPlayers > 0 && (
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-lg">
+              {[
+                { value: overview.totalPlayers, label: "Players" },
+                { value: overview.totalMatches, label: "Matches" },
+                { value: overview.totalHeroes, label: "Heroes" },
+                { value: overview.totalEvents, label: "Events" },
+              ].map((s) => (
+                <div key={s.label} className="border-l-2 border-fab-warm-gold pl-3">
+                  <div className="text-xl font-black text-fab-ink tabular-nums leading-none">
+                    {s.value.toLocaleString()}
+                  </div>
+                  <div className="text-[10px] uppercase tracking-wider text-fab-ink-muted font-semibold mt-1">
+                    {s.label}
+                  </div>
+                </div>
+              ))}
+            </div>
           )}
-          <Link
-            href="/leaderboard"
-            className="px-6 py-2.5 rounded-lg text-sm font-semibold bg-fab-bg border border-fab-border text-fab-text hover:bg-fab-surface-hover transition-colors"
-          >
-            Browse Leaderboard
-          </Link>
         </div>
 
-        {/* Community stats counters */}
-        {overview.totalPlayers > 0 && (
-          <div className="relative grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {[
-              { value: overview.totalPlayers, label: "Players" },
-              { value: overview.totalMatches, label: "Matches Logged" },
-              { value: overview.totalHeroes, label: "Heroes in Meta" },
-              { value: overview.totalEvents, label: "Events Tracked" },
-            ].map((s) => (
-              <div key={s.label} className="bg-fab-bg/60 rounded-lg px-3 py-2 border border-fab-border/50">
-                <div className="text-lg font-bold text-fab-text tabular-nums">{s.value.toLocaleString()}</div>
-                <div className="text-[11px] text-fab-dim">{s.label}</div>
-              </div>
-            ))}
-          </div>
-        )}
+        {/* Bottom strip — tagline */}
+        <div className="relative bg-fab-ink px-6 sm:px-10 lg:px-12 py-3 flex items-center gap-3">
+          <ShieldIcon className="w-4 h-4 text-fab-oxblood shrink-0" />
+          <p className="text-xs sm:text-sm font-bold uppercase tracking-wider text-fab-parchment">
+            Your Journey. <span className="text-fab-oxblood">Your Stats.</span> Your Edge.
+          </p>
+        </div>
       </div>
 
       {/* ── Section 2: Meta Snapshot ── */}
