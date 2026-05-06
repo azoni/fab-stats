@@ -3,11 +3,10 @@ import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
 import { useMyTeam, useTeamInvites } from "@/hooks/useTeam";
-import { getAllTeams, acceptTeamInvite, declineTeamInvite } from "@/lib/teams";
+import { getAllTeams, acceptTeamInvite, declineTeamInvite, joinTeam, getProfileTeamIds } from "@/lib/teams";
 import { TeamMemberRow } from "@/components/team/TeamMemberRow";
 import { TeamInviteSearch } from "@/components/team/TeamInviteSearch";
 import { TeamImageUploader } from "@/components/team/TeamImageUploader";
-import { SmartSearch } from "@/components/search/SmartSearch";
 import { createTeam, updateTeam, disbandTeam, leaveTeam, kickMember, updateMemberRole, updateMemberTitle, transferOwnership, getPendingInvites } from "@/lib/teams";
 import type { Team, TeamInvite as TeamInviteType, LeaderboardEntry } from "@/types";
 import { doc, getDoc } from "firebase/firestore";
@@ -37,6 +36,9 @@ export default function TeamHub() {
   // Browse state
   const [allTeams, setAllTeams] = useState<Team[]>([]);
   const [teamsLoading, setTeamsLoading] = useState(false);
+  const [browseFilter, setBrowseFilter] = useState<"joinable" | "all" | "open" | "invite">("joinable");
+  const [browseQuery, setBrowseQuery] = useState("");
+  const [joiningId, setJoiningId] = useState<string | null>(null);
 
   // Create state
   const [name, setName] = useState("");
@@ -62,16 +64,17 @@ export default function TeamHub() {
   const [transferring, setTransferring] = useState(false);
   const [leaving, setLeaving] = useState(false);
 
-  // Load match count for create validation
+  // Load match count for create validation. Multi-team: this no longer
+  // depends on whether the user is already on a team.
   useEffect(() => {
-    if (!user || profile?.teamId) return;
+    if (!user) return;
     (async () => {
       try {
         const snap = await getDoc(doc(db, "leaderboard", user.uid));
         setMatchCount(snap.exists() ? ((snap.data() as LeaderboardEntry).totalMatches ?? 0) : 0);
       } catch { setMatchCount(0); }
     })();
-  }, [user, profile?.teamId]);
+  }, [user]);
 
   // Load teams for browse
   useEffect(() => {
@@ -90,7 +93,8 @@ export default function TeamHub() {
   }
 
   const isOwnerOrAdmin = myRole === "owner" || myRole === "admin";
-  const canCreate = matchCount !== null && matchCount >= 15 && !profile?.teamId;
+  // Multi-team: users on a team can still create another one.
+  const canCreate = matchCount !== null && matchCount >= 15;
 
   const sortedMembers = useMemo(() =>
     [...members].sort((a, b) => {
@@ -184,6 +188,50 @@ export default function TeamHub() {
       toast.error(err instanceof Error ? err.message : "Failed to decline.");
     }
   }
+
+  async function handleQuickJoin(t: Team) {
+    if (!profile) {
+      toast.error("Sign in to join a team.");
+      return;
+    }
+    setJoiningId(t.id);
+    try {
+      await joinTeam(t.id, profile);
+      await refreshProfile();
+      // Optimistic update so the card disappears from "Joinable" immediately.
+      setAllTeams((prev) => prev.map((x) => (x.id === t.id ? { ...x, memberCount: x.memberCount + 1 } : x)));
+      toast.success(`Joined ${t.name}!`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to join.");
+    } finally {
+      setJoiningId(null);
+    }
+  }
+
+  // Teams the viewer is already a member of — drives the "Joinable" filter
+  // and the per-card join button visibility.
+  const myTeamIds = useMemo(() => new Set(profile ? getProfileTeamIds(profile) : []), [profile]);
+
+  const visibleTeams = useMemo(() => {
+    let teams = allTeams;
+    if (browseFilter === "joinable") {
+      teams = teams.filter((t) => t.joinMode === "open" && !myTeamIds.has(t.id));
+    } else if (browseFilter === "open") {
+      teams = teams.filter((t) => t.joinMode === "open");
+    } else if (browseFilter === "invite") {
+      teams = teams.filter((t) => t.joinMode === "invite");
+    }
+    const q = browseQuery.trim().toLowerCase();
+    if (q) {
+      teams = teams.filter(
+        (t) =>
+          t.name.toLowerCase().includes(q) ||
+          t.nameLower.includes(q) ||
+          (t.description?.toLowerCase().includes(q) ?? false),
+      );
+    }
+    return [...teams].sort((a, b) => b.memberCount - a.memberCount);
+  }, [allTeams, browseFilter, browseQuery, myTeamIds]);
 
   if (!mounted || loading) {
     return (
@@ -481,7 +529,37 @@ export default function TeamHub() {
       {/* ── Browse tab ── */}
       {activeTab === "browse" && (
         <div className="space-y-4">
-          <SmartSearch placeholder="Search players or teams..." />
+          {/* Search input — local to the team browse, separate from global SmartSearch */}
+          <input
+            type="text"
+            value={browseQuery}
+            onChange={(e) => setBrowseQuery(e.target.value)}
+            placeholder="Search teams by name or description..."
+            className="w-full bg-fab-surface border border-fab-border rounded-lg px-3 py-2 text-sm text-fab-text placeholder:text-fab-dim focus:outline-none focus:border-fab-gold/50 transition-colors"
+          />
+
+          {/* Filter pills — Joinable first by default so users land on actionable teams. */}
+          <div className="flex flex-wrap gap-2">
+            {([
+              { id: "joinable", label: "Joinable", desc: "Open teams you're not on" },
+              { id: "open", label: "Open", desc: "All open-join teams" },
+              { id: "invite", label: "Invite Only", desc: "Teams that require an invite" },
+              { id: "all", label: "All", desc: "Every public team" },
+            ] as const).map((f) => (
+              <button
+                key={f.id}
+                onClick={() => setBrowseFilter(f.id)}
+                title={f.desc}
+                className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${
+                  browseFilter === f.id
+                    ? "bg-fab-gold/15 text-fab-gold border border-fab-gold/30"
+                    : "bg-fab-surface border border-fab-border text-fab-dim hover:text-fab-muted"
+                }`}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
 
           {teamsLoading && (
             <div className="space-y-2">
@@ -496,39 +574,76 @@ export default function TeamHub() {
             </div>
           )}
 
-          {!teamsLoading && allTeams.length > 0 && (
+          {!teamsLoading && allTeams.length > 0 && visibleTeams.length === 0 && (
+            <div className="text-center py-12 text-fab-dim">
+              <Users className="w-10 h-10 mx-auto mb-3 opacity-30" />
+              <p className="text-sm">No teams match those filters.</p>
+              {browseFilter === "joinable" && (
+                <button
+                  onClick={() => setBrowseFilter("all")}
+                  className="text-xs text-fab-gold hover:text-fab-gold-light transition-colors mt-2"
+                >
+                  Show all teams
+                </button>
+              )}
+            </div>
+          )}
+
+          {!teamsLoading && visibleTeams.length > 0 && (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {allTeams.sort((a, b) => b.memberCount - a.memberCount).map((t) => (
-                <Link key={t.id} href={`/team/${t.nameLower}`}
-                  className="bg-fab-surface border border-fab-border rounded-xl p-4 hover:border-fab-gold/30 hover:bg-fab-surface-hover transition-colors group">
-                  <div className="flex items-center gap-3">
-                    {t.iconUrl ? (
-                      <img src={t.iconUrl} alt="" className="w-12 h-12 rounded-xl object-cover border border-fab-border shrink-0" />
-                    ) : (
-                      <div className="w-12 h-12 rounded-xl bg-fab-gold/15 border border-fab-gold/30 flex items-center justify-center shrink-0">
-                        <span className="text-sm font-bold text-fab-gold">{t.name.slice(0, 2).toUpperCase()}</span>
-                      </div>
-                    )}
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="font-semibold text-fab-text group-hover:text-fab-gold transition-colors truncate">{t.name}</p>
-                        {isSiteAdmin && t.visibility === "private" && (
-                          <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-red-500/15 text-red-400 shrink-0">Private</span>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2 text-xs text-fab-dim mt-0.5">
-                        <span>{t.memberCount} member{t.memberCount !== 1 ? "s" : ""}</span>
-                        {t.joinMode === "open" ? (
-                          <span className="flex items-center gap-0.5"><Globe className="w-3 h-3" /> Open</span>
+              {visibleTeams.map((t) => {
+                const alreadyMember = myTeamIds.has(t.id);
+                const canQuickJoin = !!profile && !alreadyMember && t.joinMode === "open";
+                return (
+                  <div
+                    key={t.id}
+                    className="bg-fab-surface border border-fab-border rounded-xl p-4 hover:border-fab-gold/30 hover:bg-fab-surface-hover transition-colors group"
+                  >
+                    <div className="flex items-start gap-3">
+                      <Link href={`/team/${t.nameLower}`} className="shrink-0">
+                        {t.iconUrl ? (
+                          <img src={t.iconUrl} alt="" className="w-12 h-12 rounded-xl object-cover border border-fab-border" />
                         ) : (
-                          <span className="flex items-center gap-0.5"><Shield className="w-3 h-3" /> Invite Only</span>
+                          <div className="w-12 h-12 rounded-xl bg-fab-gold/15 border border-fab-gold/30 flex items-center justify-center">
+                            <span className="text-sm font-bold text-fab-gold">{t.name.slice(0, 2).toUpperCase()}</span>
+                          </div>
                         )}
+                      </Link>
+                      <div className="min-w-0 flex-1">
+                        <Link href={`/team/${t.nameLower}`} className="block">
+                          <div className="flex items-center gap-2">
+                            <p className="font-semibold text-fab-text group-hover:text-fab-gold transition-colors truncate">{t.name}</p>
+                            {alreadyMember && (
+                              <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-fab-gold/15 text-fab-gold shrink-0">Member</span>
+                            )}
+                            {isSiteAdmin && t.visibility === "private" && (
+                              <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-red-500/15 text-red-400 shrink-0">Private</span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2 text-xs text-fab-dim mt-0.5">
+                            <span>{t.memberCount} member{t.memberCount !== 1 ? "s" : ""}</span>
+                            {t.joinMode === "open" ? (
+                              <span className="flex items-center gap-0.5"><Globe className="w-3 h-3" /> Open</span>
+                            ) : (
+                              <span className="flex items-center gap-0.5"><Shield className="w-3 h-3" /> Invite Only</span>
+                            )}
+                          </div>
+                          {t.description && <p className="text-xs text-fab-muted mt-1 line-clamp-1">{t.description}</p>}
+                        </Link>
                       </div>
-                      {t.description && <p className="text-xs text-fab-muted mt-1 line-clamp-1">{t.description}</p>}
+                      {canQuickJoin && (
+                        <button
+                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleQuickJoin(t); }}
+                          disabled={joiningId === t.id}
+                          className="shrink-0 px-3 py-1.5 rounded-md bg-fab-gold text-fab-bg text-xs font-bold hover:bg-fab-gold-light transition-colors disabled:opacity-50"
+                        >
+                          {joiningId === t.id ? "Joining..." : "Join"}
+                        </button>
+                      )}
                     </div>
                   </div>
-                </Link>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
@@ -549,12 +664,6 @@ export default function TeamHub() {
           {user && matchCount !== null && matchCount < 15 && (
             <div className="bg-fab-draw/10 border border-fab-draw/30 rounded-lg p-3 text-sm text-fab-draw mb-4">
               You need at least 15 logged matches to create a team. You have {matchCount}.
-            </div>
-          )}
-
-          {user && profile?.teamId && (
-            <div className="bg-fab-draw/10 border border-fab-draw/30 rounded-lg p-3 text-sm text-fab-draw mb-4">
-              You&apos;re already on a team. Leave your current team first.
             </div>
           )}
 

@@ -57,7 +57,9 @@ export default function TeamPage() {
     return m?.role ?? null;
   }, [user, members]);
 
-  const canJoin = !!user && !!profile && !profile.teamId;
+  // Show Join button when the viewer is signed in and not already a member.
+  // Multi-team: no longer gated by `!profile.teamId`.
+  const canJoin = !!user && !!profile && viewerRole === null;
   const accent = team?.accentColor || "#d4a843";
 
   // ── Load team + members + leaderboard data ──
