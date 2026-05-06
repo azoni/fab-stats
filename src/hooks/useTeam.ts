@@ -7,6 +7,7 @@ import {
   subscribeToMyInvites,
   getTeam,
   getTeamMembers,
+  getProfilePrimaryTeamId,
 } from "@/lib/teams";
 import type { Team, TeamMember, TeamInvite } from "@/types";
 
@@ -40,10 +41,12 @@ export function useTeam(teamId?: string | null) {
   return { team, members, loading };
 }
 
-/** Get the current user's team (from profile.teamId) */
+/** Get the current user's primary team (the one shown on badges, /team default).
+ *  Falls back to legacy `teamId` for not-yet-migrated profiles. */
 export function useMyTeam() {
   const { profile } = useAuth();
-  const { team, members, loading } = useTeam(profile?.teamId || null);
+  const primaryTeamId = profile ? getProfilePrimaryTeamId(profile) : null;
+  const { team, members, loading } = useTeam(primaryTeamId);
 
   const myRole = profile?.uid && members.length > 0
     ? (members.find((m) => m.uid === profile.uid)?.role ?? null)
