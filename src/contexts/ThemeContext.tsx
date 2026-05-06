@@ -11,7 +11,7 @@ interface ThemeContextType {
 }
 
 const ThemeContext = createContext<ThemeContextType>({
-  theme: "parchment",
+  theme: "rosetta",
   setTheme: () => {},
   resetTheme: () => {},
   isCustom: false,
@@ -106,11 +106,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   })();
 
   const [theme, setThemeState] = useState<ThemeName>(() => {
-    if (typeof window === "undefined") return "parchment";
+    if (typeof window === "undefined") return "rosetta";
     // Holiday overrides everyone unless they dismissed it today
     if (holiday && !holidayDismissed) return holiday;
     const stored = migrateSlug(localStorage.getItem(USER_THEME_KEY));
-    return stored || "parchment";
+    return stored || "rosetta";
   });
   const [isCustom, setIsCustom] = useState(() => {
     if (typeof window === "undefined") return false;

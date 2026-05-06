@@ -42,14 +42,14 @@ export async function getThemeConfig(): Promise<{ theme: ThemeName; generation: 
   try {
     const snap = await getDoc(doc(db, "admin", "themeConfig"));
     const data = snap.exists() ? snap.data() : {};
-    const theme = (data.defaultTheme as ThemeName) || "parchment";
+    const theme = (data.defaultTheme as ThemeName) || "rosetta";
     const generation = (data.themeGeneration as number) ?? 0;
     try {
       localStorage.setItem(CACHE_KEY, JSON.stringify({ theme, generation, ts: Date.now() }));
     } catch {}
     return { theme, generation };
   } catch {
-    return { theme: "parchment", generation: 0 };
+    return { theme: "rosetta", generation: 0 };
   }
 }
 
@@ -71,7 +71,7 @@ export async function resetAllUserThemes(): Promise<void> {
   await setDoc(doc(db, "admin", "themeConfig"), { themeGeneration: next }, { merge: true });
   try {
     const cached = localStorage.getItem(CACHE_KEY);
-    const theme = cached ? (JSON.parse(cached).theme as ThemeName) || "parchment" : "parchment";
+    const theme = cached ? (JSON.parse(cached).theme as ThemeName) || "rosetta" : "rosetta";
     localStorage.setItem(CACHE_KEY, JSON.stringify({ theme, generation: next, ts: Date.now() }));
   } catch {}
 }
