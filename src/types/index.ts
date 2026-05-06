@@ -184,6 +184,17 @@ export interface UserProfile {
     matchesImported?: number;
   };
   needsRecompute?: boolean;
+  /** All teams the user belongs to. New (multi-team) field. */
+  teamIds?: string[];
+  /** The user's primary team — used for badges, trophies, /team default. Falls back
+   *  to teamIds[0] (or teamId during migration) when missing. */
+  primaryTeamId?: string;
+  /**
+   * Legacy single-team field. New code should use `teamIds` / `primaryTeamId`.
+   * Kept on the document for one release to avoid breaking older clients;
+   * the canonical primary value is mirrored here on every join/leave.
+   * @deprecated Use primaryTeamId.
+   */
   teamId?: string;
   trophyDesigns?: Record<string, number>;
 }

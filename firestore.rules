@@ -115,9 +115,12 @@ service cloud.firestore {
     match /users/{userId}/profile/{docId} {
       // Owner can read/write their own profile
       allow read, write: if request.auth != null && request.auth.uid == userId;
-      // Any authenticated user can update only the teamId field (for kick, disband, join, force-add)
+      // Any authenticated user can update only the team membership fields
+      // (for kick, disband, join, leave, force-add). teamIds is the canonical
+      // multi-team list; primaryTeamId is the active default; teamId is kept
+      // as a legacy mirror of primaryTeamId for one release.
       allow update: if request.auth != null
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['teamId']);
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['teamId', 'teamIds', 'primaryTeamId']);
       // Authenticated users can read public profiles
       allow read: if resource.data.isPublic == true
         && (request.auth != null || resource.data.get('hideFromGuests', false) == false);

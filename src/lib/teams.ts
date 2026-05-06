@@ -46,18 +46,80 @@ function getInviteId(teamId: string, targetUid: string): string {
   return `${teamId}_${targetUid}`;
 }
 
+// ── Multi-team helpers ──
+
+/** Read a profile's team list. Falls back to legacy single-team `teamId` for
+ *  profiles that haven't been touched since multi-team migration. */
+export function getProfileTeamIds(profile: Pick<UserProfile, "teamIds" | "teamId">): string[] {
+  if (profile.teamIds && profile.teamIds.length > 0) return profile.teamIds;
+  if (profile.teamId) return [profile.teamId];
+  return [];
+}
+
+/** Resolve the primary (default) team for badges, /team navigation, etc. */
+export function getProfilePrimaryTeamId(
+  profile: Pick<UserProfile, "primaryTeamId" | "teamId" | "teamIds">,
+): string | null {
+  if (profile.primaryTeamId) return profile.primaryTeamId;
+  if (profile.teamId) return profile.teamId;
+  if (profile.teamIds && profile.teamIds.length > 0) return profile.teamIds[0];
+  return null;
+}
+
+/** Field updates for a user profile when joining a team. Adds the team to
+ *  the membership array; if the user has no primary team, this team becomes
+ *  the primary (and the legacy `teamId` mirror is set so older code keeps
+ *  working until it's all migrated). */
+function joinTeamProfileUpdates(
+  profile: Pick<UserProfile, "primaryTeamId" | "teamId" | "teamIds">,
+  teamId: string,
+): Record<string, unknown> {
+  const currentTeams = getProfileTeamIds(profile);
+  const nextTeams = currentTeams.includes(teamId) ? currentTeams : [...currentTeams, teamId];
+  const updates: Record<string, unknown> = { teamIds: nextTeams };
+  const primary = getProfilePrimaryTeamId(profile);
+  if (!primary) {
+    updates.primaryTeamId = teamId;
+    updates.teamId = teamId; // legacy mirror
+  }
+  return updates;
+}
+
+/** Field updates when leaving a team. Removes from the membership array;
+ *  if the leaving team was the primary, promotes the next remaining team
+ *  (or clears the primary entirely if none are left). The legacy `teamId`
+ *  mirror tracks the primary so older code keeps working. */
+function leaveTeamProfileUpdates(
+  profile: Pick<UserProfile, "primaryTeamId" | "teamId" | "teamIds">,
+  teamId: string,
+): Record<string, unknown> {
+  const currentTeams = getProfileTeamIds(profile);
+  const remaining = currentTeams.filter((t) => t !== teamId);
+  const updates: Record<string, unknown> = { teamIds: remaining };
+  const wasPrimary = getProfilePrimaryTeamId(profile) === teamId;
+  if (wasPrimary) {
+    const nextPrimary = remaining[0] || "";
+    updates.primaryTeamId = nextPrimary;
+    updates.teamId = nextPrimary; // legacy mirror
+  }
+  return updates;
+}
+
 // ── CRUD ──
 
 export async function createTeam(
   profile: UserProfile,
   matchCount: number,
-  opts: { name: string; slug?: string; description?: string; joinMode: "open" | "invite"; visibility?: "public" | "private" }
+  opts: {
+    name: string;
+    slug?: string;
+    description?: string;
+    joinMode: "open" | "invite";
+    visibility?: "public" | "private";
+  },
 ): Promise<string> {
   if (matchCount < 15) {
     throw new Error("You need at least 15 logged matches to create a team.");
-  }
-  if (profile.teamId) {
-    throw new Error("You are already on a team. Leave your current team first.");
   }
   const trimmedName = opts.name.trim();
   if (!trimmedName || trimmedName.length > 50) {
@@ -73,9 +135,7 @@ export async function createTeam(
     throw new Error("Description contains inappropriate language.");
   }
 
-  const nameLower = opts.slug
-    ? opts.slug.toLowerCase().replace(/[^a-z0-9]/g, "")
-    : slugify(trimmedName);
+  const nameLower = opts.slug ? opts.slug.toLowerCase().replace(/[^a-z0-9]/g, "") : slugify(trimmedName);
   if (!nameLower || nameLower.length < 2) {
     throw new Error("URL slug must be at least 2 characters.");
   }
@@ -123,7 +183,10 @@ export async function createTeam(
   const batch = writeBatch(db);
   batch.set(doc(membersCollection(teamId), profile.uid), memberData);
   batch.set(doc(db, "teamnames", nameLower), { teamId, name: trimmedName });
-  batch.update(doc(db, "users", profile.uid, "profile", "main"), { teamId });
+  batch.update(
+    doc(db, "users", profile.uid, "profile", "main"),
+    joinTeamProfileUpdates(profile, teamId),
+  );
   await batch.commit();
 
   return teamId;
@@ -131,7 +194,7 @@ export async function createTeam(
 
 export async function updateTeam(
   teamId: string,
-  updates: Partial<Pick<Team, "name" | "description" | "joinMode" | "visibility" | "accentColor">> & { slug?: string }
+  updates: Partial<Pick<Team, "name" | "description" | "joinMode" | "visibility" | "accentColor">> & { slug?: string },
 ): Promise<void> {
   const updateData: Record<string, unknown> = {
     updatedAt: new Date().toISOString(),
@@ -214,18 +277,27 @@ export async function disbandTeam(teamId: string, ownerUid: string): Promise<voi
   const team = teamSnap.data() as Team;
   if (team.ownerUid !== ownerUid) throw new Error("Only the team owner can disband.");
 
-  // Get all members to clear their teamId
+  // Get all members to clear their team membership
   const membersSnap = await getDocs(membersCollection(teamId));
 
-  // Batch delete in groups of 450 (leaving room for other writes)
+  // Batch delete in groups of 450 (leaving room for other writes). For each
+  // member we read their profile first so leaveTeamProfileUpdates can pick
+  // a fresh primary if the disbanded team was theirs.
   const memberDocs = membersSnap.docs;
   for (let i = 0; i < memberDocs.length; i += 450) {
-    const batch = writeBatch(db);
     const chunk = memberDocs.slice(i, i + 450);
-    for (const memberDoc of chunk) {
+    const profileSnaps = await Promise.all(
+      chunk.map((m) => getDoc(doc(db, "users", m.id, "profile", "main"))),
+    );
+    const batch = writeBatch(db);
+    chunk.forEach((memberDoc, idx) => {
       batch.delete(memberDoc.ref);
-      batch.update(doc(db, "users", memberDoc.id, "profile", "main"), { teamId: "" });
-    }
+      const profile = (profileSnaps[idx].data() as UserProfile) || ({} as UserProfile);
+      batch.update(
+        doc(db, "users", memberDoc.id, "profile", "main"),
+        leaveTeamProfileUpdates(profile, teamId),
+      );
+    });
     if (i === 0) {
       batch.delete(doc(db, "teams", teamId));
       batch.delete(doc(db, "teamnames", team.nameLower));
@@ -243,7 +315,7 @@ export async function disbandTeam(teamId: string, ownerUid: string): Promise<voi
 
   // Clean up pending invites for this team
   const invitesSnap = await getDocs(
-    query(teamInvitesCollection(), where("teamId", "==", teamId), where("status", "==", "pending"))
+    query(teamInvitesCollection(), where("teamId", "==", teamId), where("status", "==", "pending")),
   );
   for (let i = 0; i < invitesSnap.docs.length; i += 500) {
     const batch = writeBatch(db);
@@ -255,8 +327,8 @@ export async function disbandTeam(teamId: string, ownerUid: string): Promise<voi
 // ── Members ──
 
 export async function joinTeam(teamId: string, profile: UserProfile): Promise<void> {
-  if (profile.teamId) {
-    throw new Error("You are already on a team.");
+  if (getProfileTeamIds(profile).includes(teamId)) {
+    throw new Error("You are already on this team.");
   }
   const teamSnap = await getDoc(doc(db, "teams", teamId));
   if (!teamSnap.exists()) throw new Error("Team not found.");
@@ -276,7 +348,10 @@ export async function joinTeam(teamId: string, profile: UserProfile): Promise<vo
   const batch = writeBatch(db);
   batch.set(doc(membersCollection(teamId), profile.uid), memberData);
   batch.update(doc(db, "teams", teamId), { memberCount: increment(1), updatedAt: now });
-  batch.update(doc(db, "users", profile.uid, "profile", "main"), { teamId });
+  batch.update(
+    doc(db, "users", profile.uid, "profile", "main"),
+    joinTeamProfileUpdates(profile, teamId),
+  );
   await batch.commit();
 }
 
@@ -288,11 +363,14 @@ export async function leaveTeam(teamId: string, uid: string): Promise<void> {
     throw new Error("The team owner cannot leave. Transfer ownership or disband the team.");
   }
 
+  const profileSnap = await getDoc(doc(db, "users", uid, "profile", "main"));
+  const profile = (profileSnap.data() as UserProfile) || ({} as UserProfile);
+
   const now = new Date().toISOString();
   const batch = writeBatch(db);
   batch.delete(doc(membersCollection(teamId), uid));
   batch.update(doc(db, "teams", teamId), { memberCount: increment(-1), updatedAt: now });
-  batch.update(doc(db, "users", uid, "profile", "main"), { teamId: "" });
+  batch.update(doc(db, "users", uid, "profile", "main"), leaveTeamProfileUpdates(profile, teamId));
   await batch.commit();
 }
 
@@ -311,11 +389,17 @@ export async function kickMember(teamId: string, kickerUid: string, targetUid: s
   const target = targetSnap.data() as TeamMember;
   if (target.role === "owner") throw new Error("Cannot kick the team owner.");
 
+  const targetProfileSnap = await getDoc(doc(db, "users", targetUid, "profile", "main"));
+  const targetProfile = (targetProfileSnap.data() as UserProfile) || ({} as UserProfile);
+
   const now = new Date().toISOString();
   const batch = writeBatch(db);
   batch.delete(doc(membersCollection(teamId), targetUid));
   batch.update(doc(db, "teams", teamId), { memberCount: increment(-1), updatedAt: now });
-  batch.update(doc(db, "users", targetUid, "profile", "main"), { teamId: "" });
+  batch.update(
+    doc(db, "users", targetUid, "profile", "main"),
+    leaveTeamProfileUpdates(targetProfile, teamId),
+  );
   await batch.commit();
 }
 
@@ -323,7 +407,7 @@ export async function updateMemberRole(
   teamId: string,
   updaterUid: string,
   targetUid: string,
-  newRole: "admin" | "member"
+  newRole: "admin" | "member",
 ): Promise<void> {
   const updaterSnap = await getDoc(doc(membersCollection(teamId), updaterUid));
   if (!updaterSnap.exists()) throw new Error("You are not a member of this team.");
@@ -363,7 +447,7 @@ export async function updateMemberTitle(
   teamId: string,
   updaterUid: string,
   targetUid: string,
-  title: string
+  title: string,
 ): Promise<void> {
   const updaterSnap = await getDoc(doc(membersCollection(teamId), updaterUid));
   if (!updaterSnap.exists()) throw new Error("You are not a member of this team.");
@@ -395,31 +479,19 @@ export async function forceAddMember(teamId: string, targetUid: string): Promise
   if (!targetProfileSnap.exists()) throw new Error("User not found.");
   const targetProfile = targetProfileSnap.data() as UserProfile;
 
-  // If user is already on this team, just ensure teamId is set on their profile
+  // If user is already on this team, just ensure their teamIds list contains it.
   const existingMember = await getDoc(doc(membersCollection(teamId), targetUid));
   if (existingMember.exists()) {
-    if (targetProfile.teamId !== teamId) {
-      await updateDoc(doc(db, "users", targetUid, "profile", "main"), { teamId });
+    if (!getProfileTeamIds(targetProfile).includes(teamId)) {
+      await updateDoc(
+        doc(db, "users", targetUid, "profile", "main"),
+        joinTeamProfileUpdates(targetProfile, teamId),
+      );
     }
     return;
   }
 
-  // If user is on another team, remove them first
-  if (targetProfile.teamId && targetProfile.teamId !== teamId) {
-    const oldMemberSnap = await getDoc(doc(membersCollection(targetProfile.teamId), targetUid));
-    if (oldMemberSnap.exists()) {
-      const oldMember = oldMemberSnap.data() as TeamMember;
-      if (oldMember.role === "owner") {
-        throw new Error("Cannot force-add a team owner. They must transfer ownership or disband first.");
-      }
-      const now = new Date().toISOString();
-      const removeBatch = writeBatch(db);
-      removeBatch.delete(doc(membersCollection(targetProfile.teamId), targetUid));
-      removeBatch.update(doc(db, "teams", targetProfile.teamId), { memberCount: increment(-1), updatedAt: now });
-      await removeBatch.commit();
-    }
-  }
-
+  // Multi-team: no need to remove from prior teams. Just add them to this one.
   const now = new Date().toISOString();
   const memberData: Record<string, unknown> = {
     uid: targetUid,
@@ -433,15 +505,38 @@ export async function forceAddMember(teamId: string, targetUid: string): Promise
   const batch = writeBatch(db);
   batch.set(doc(membersCollection(teamId), targetUid), memberData);
   batch.update(doc(db, "teams", teamId), { memberCount: increment(1), updatedAt: now });
-  batch.update(doc(db, "users", targetUid, "profile", "main"), { teamId });
+  batch.update(
+    doc(db, "users", targetUid, "profile", "main"),
+    joinTeamProfileUpdates(targetProfile, teamId),
+  );
   await batch.commit();
 }
 
-/** Repair: set teamId on a user's profile if they're already a member but missing it */
+/** Switch the user's primary team to one they're already a member of.
+ *  Updates `primaryTeamId` and the legacy `teamId` mirror. Throws if the
+ *  target team isn't in the user's `teamIds`. */
+export async function setPrimaryTeam(uid: string, teamId: string): Promise<void> {
+  const profileSnap = await getDoc(doc(db, "users", uid, "profile", "main"));
+  const profile = (profileSnap.data() as UserProfile) || ({} as UserProfile);
+  if (!getProfileTeamIds(profile).includes(teamId)) {
+    throw new Error("You are not a member of that team.");
+  }
+  await updateDoc(doc(db, "users", uid, "profile", "main"), {
+    primaryTeamId: teamId,
+    teamId,
+  });
+}
+
+/** Repair: ensure a user's profile reflects their team membership. */
 export async function repairMemberTeamId(teamId: string, targetUid: string): Promise<void> {
   const memberSnap = await getDoc(doc(membersCollection(teamId), targetUid));
   if (!memberSnap.exists()) throw new Error("User is not a member of this team.");
-  await updateDoc(doc(db, "users", targetUid, "profile", "main"), { teamId });
+  const profileSnap = await getDoc(doc(db, "users", targetUid, "profile", "main"));
+  const profile = (profileSnap.data() as UserProfile) || ({} as UserProfile);
+  await updateDoc(
+    doc(db, "users", targetUid, "profile", "main"),
+    joinTeamProfileUpdates(profile, teamId),
+  );
 }
 
 // ── Invites ──
@@ -452,7 +547,7 @@ export async function sendTeamInvite(
   teamIconUrl: string | undefined,
   inviter: { uid: string; displayName: string },
   targetUid: string,
-  targetUsername?: string
+  targetUsername?: string,
 ): Promise<void> {
   const inviteId = getInviteId(teamId, targetUid);
 
@@ -504,15 +599,15 @@ export async function sendTeamInvite(
 }
 
 export async function acceptTeamInvite(inviteId: string, profile: UserProfile): Promise<void> {
-  if (profile.teamId) {
-    throw new Error("Leave your current team before accepting this invite.");
-  }
-
   const inviteSnap = await getDoc(doc(db, "teamInvites", inviteId));
   if (!inviteSnap.exists()) throw new Error("Invite not found.");
   const invite = inviteSnap.data() as TeamInvite;
   if (invite.status !== "pending") throw new Error("This invite is no longer pending.");
   if (invite.targetUid !== profile.uid) throw new Error("This invite is not for you.");
+
+  if (getProfileTeamIds(profile).includes(invite.teamId)) {
+    throw new Error("You are already on this team.");
+  }
 
   const teamSnap = await getDoc(doc(db, "teams", invite.teamId));
   if (!teamSnap.exists()) throw new Error("Team no longer exists.");
@@ -531,7 +626,10 @@ export async function acceptTeamInvite(inviteId: string, profile: UserProfile): 
   batch.update(doc(db, "teamInvites", inviteId), { status: "accepted" });
   batch.set(doc(membersCollection(invite.teamId), profile.uid), memberData);
   batch.update(doc(db, "teams", invite.teamId), { memberCount: increment(1), updatedAt: now });
-  batch.update(doc(db, "users", profile.uid, "profile", "main"), { teamId: invite.teamId });
+  batch.update(
+    doc(db, "users", profile.uid, "profile", "main"),
+    joinTeamProfileUpdates(profile, invite.teamId),
+  );
   await batch.commit();
 }
 
@@ -569,21 +667,21 @@ export async function getTeamMembers(teamId: string): Promise<TeamMember[]> {
 
 export async function getPendingInvites(teamId: string): Promise<TeamInvite[]> {
   const snap = await getDocs(
-    query(teamInvitesCollection(), where("teamId", "==", teamId), where("status", "==", "pending"))
+    query(teamInvitesCollection(), where("teamId", "==", teamId), where("status", "==", "pending")),
   );
   return snap.docs.map((d) => d.data() as TeamInvite);
 }
 
 export async function getMyPendingInvites(uid: string): Promise<TeamInvite[]> {
   const snap = await getDocs(
-    query(teamInvitesCollection(), where("targetUid", "==", uid), where("status", "==", "pending"))
+    query(teamInvitesCollection(), where("targetUid", "==", uid), where("status", "==", "pending")),
   );
   return snap.docs.map((d) => d.data() as TeamInvite);
 }
 
 export async function searchTeams(
   prefix: string,
-  maxResults = 10
+  maxResults = 10,
 ): Promise<{ teamId: string; name: string; nameLower: string }[]> {
   if (!prefix.trim()) return [];
   const lower = prefix.toLowerCase().replace(/[^a-z0-9]/g, "");
@@ -591,12 +689,7 @@ export async function searchTeams(
   const end = lower.slice(0, -1) + String.fromCharCode(lower.charCodeAt(lower.length - 1) + 1);
 
   const snap = await getDocs(
-    query(
-      teamNamesCollection(),
-      where("__name__", ">=", lower),
-      where("__name__", "<", end),
-      limit(maxResults)
-    )
+    query(teamNamesCollection(), where("__name__", ">=", lower), where("__name__", "<", end), limit(maxResults)),
   );
 
   return snap.docs.map((d) => ({
@@ -625,6 +718,6 @@ export function subscribeToMyInvites(uid: string, cb: (invites: TeamInvite[]) =>
     query(teamInvitesCollection(), where("targetUid", "==", uid), where("status", "==", "pending")),
     (snap) => {
       cb(snap.docs.map((d) => d.data() as TeamInvite));
-    }
+    },
   );
 }
