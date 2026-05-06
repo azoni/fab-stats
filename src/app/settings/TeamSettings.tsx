@@ -38,9 +38,10 @@ export function TeamSettings() {
   const [disbanding, setDisbanding] = useState(false);
   const [leaving, setLeaving] = useState(false);
 
-  // Fetch match count for create validation
+  // Fetch match count for create validation. Multi-team: no longer gated
+  // by whether the user already has a team.
   useEffect(() => {
-    if (!user || profile?.teamId) return;
+    if (!user) return;
     (async () => {
       try {
         const snap = await getDoc(doc(db, "leaderboard", user.uid));
@@ -53,7 +54,7 @@ export function TeamSettings() {
         setMatchCount(0);
       }
     })();
-  }, [user, profile?.teamId]);
+  }, [user]);
 
   // Fetch pending invites when team loads
   useEffect(() => {
