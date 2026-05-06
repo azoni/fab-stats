@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   subscribeToTeam,
@@ -8,6 +8,7 @@ import {
   getTeam,
   getTeamMembers,
   getProfilePrimaryTeamId,
+  getProfileTeamIds,
 } from "@/lib/teams";
 import type { Team, TeamMember, TeamInvite } from "@/types";
 
@@ -53,6 +54,36 @@ export function useMyTeam() {
     : null;
 
   return { team, members, myRole, loading };
+}
+
+/** Get every team the current user belongs to, plus the primary team's id.
+ *  Used by the My Teams panel to render a switcher / management list. */
+export function useMyTeams(): { teams: Team[]; primaryTeamId: string | null; loading: boolean } {
+  const { profile } = useAuth();
+  const teamIds = useMemo(() => (profile ? getProfileTeamIds(profile) : []), [profile]);
+  const primaryTeamId = profile ? getProfilePrimaryTeamId(profile) : null;
+  const [teams, setTeams] = useState<Team[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (teamIds.length === 0) {
+      setTeams([]);
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    let cancelled = false;
+    (async () => {
+      const fetched = await Promise.all(teamIds.map((id) => getTeam(id)));
+      if (cancelled) return;
+      setTeams(fetched.filter((t): t is Team => t !== null));
+      setLoading(false);
+    })();
+    return () => { cancelled = true; };
+    // teamIds is a fresh array each render; stringify so we only re-fetch when contents change.
+  }, [teamIds.join(",")]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  return { teams, primaryTeamId, loading };
 }
 
 /** Subscribe to pending team invites for the current user */
