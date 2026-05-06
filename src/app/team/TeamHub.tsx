@@ -2,8 +2,8 @@
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
-import { useMyTeam, useTeamInvites } from "@/hooks/useTeam";
-import { getAllTeams, acceptTeamInvite, declineTeamInvite, joinTeam, getProfileTeamIds } from "@/lib/teams";
+import { useTeam, useMyTeams, useTeamInvites } from "@/hooks/useTeam";
+import { getAllTeams, acceptTeamInvite, declineTeamInvite, joinTeam, getProfileTeamIds, setPrimaryTeam } from "@/lib/teams";
 import { TeamMemberRow } from "@/components/team/TeamMemberRow";
 import { TeamInviteSearch } from "@/components/team/TeamInviteSearch";
 import { TeamImageUploader } from "@/components/team/TeamImageUploader";
@@ -19,19 +19,36 @@ type Tab = "my-team" | "browse" | "create";
 export default function TeamHub() {
   const [mounted, setMounted] = useState(false);
   const { user, profile, isAdmin: isSiteAdmin, refreshProfile } = useAuth();
-  const { team, members, myRole, loading } = useMyTeam();
+  const { teams: myTeams, primaryTeamId, loading: teamsListLoading } = useMyTeams();
   const { invites } = useTeamInvites();
 
   useEffect(() => { setMounted(true); }, []);
 
-  const hasTeam = !!team;
-  const [activeTab, setActiveTab] = useState<Tab>("browse");
-
-  // Sync tab when team loads
+  // The "My Team" tab can show any of the user's teams. Defaults to primary,
+  // user can switch via the team-switcher pills at the top of the tab.
+  const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
   useEffect(() => {
-    if (team) setActiveTab("my-team");
+    // Auto-select primary on first load. Re-select if the user leaves the
+    // currently-selected team (it disappears from myTeams).
+    if (selectedTeamId && myTeams.some((t) => t.id === selectedTeamId)) return;
+    setSelectedTeamId(primaryTeamId);
+  }, [primaryTeamId, myTeams, selectedTeamId]);
+
+  const { team, members, loading: teamLoading } = useTeam(selectedTeamId);
+  const myRole = profile?.uid && members.length > 0
+    ? (members.find((m) => m.uid === profile.uid)?.role ?? null)
+    : null;
+  const loading = teamsListLoading || (!!selectedTeamId && teamLoading);
+  const hasTeam = myTeams.length > 0;
+
+  const [activeTab, setActiveTab] = useState<Tab>("browse");
+  const [settingPrimaryId, setSettingPrimaryId] = useState<string | null>(null);
+
+  // Sync tab when team membership loads
+  useEffect(() => {
+    if (hasTeam) setActiveTab("my-team");
     else if (activeTab === "my-team") setActiveTab("browse");
-  }, [team]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [hasTeam]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Browse state
   const [allTeams, setAllTeams] = useState<Team[]>([]);
@@ -162,7 +179,8 @@ export default function TeamHub() {
     setLeaving(true);
     try {
       await leaveTeam(team.id, user.uid);
-      toast.success("You left the team.");
+      await refreshProfile();
+      toast.success(`Left ${team.name}.`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to leave.");
     }
@@ -186,6 +204,20 @@ export default function TeamHub() {
       toast.success("Invite declined.");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to decline.");
+    }
+  }
+
+  async function handleSetPrimary(teamId: string) {
+    if (!user) return;
+    setSettingPrimaryId(teamId);
+    try {
+      await setPrimaryTeam(user.uid, teamId);
+      await refreshProfile();
+      toast.success("Primary team updated.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to set primary team.");
+    } finally {
+      setSettingPrimaryId(null);
     }
   }
 
@@ -250,9 +282,9 @@ export default function TeamHub() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-fab-gold">Teams</h1>
-          <p className="text-sm text-fab-muted mt-1">Represent your competitive squad. One team per player — your team badge shows on your profile and leaderboard.</p>
+          <p className="text-sm text-fab-muted mt-1">Represent your competitive squads. Your primary team's badge shows on your profile and leaderboard.</p>
         </div>
-        {hasTeam && (
+        {team && (
           <Link href={`/team/${team.nameLower}`} className="text-sm text-fab-gold hover:text-fab-gold-light transition-colors flex items-center gap-1">
             View Team Page <ChevronRight className="w-3.5 h-3.5" />
           </Link>
@@ -322,6 +354,44 @@ export default function TeamHub() {
       {/* ── My Team tab ── */}
       {activeTab === "my-team" && team && (
         <div className="space-y-6">
+          {/* My Teams switcher — only when on multiple teams */}
+          {myTeams.length > 1 && (
+            <div className="bg-fab-surface border border-fab-border rounded-xl p-3">
+              <p className="text-[10px] uppercase tracking-wider font-semibold text-fab-dim mb-2 px-1">
+                My Teams ({myTeams.length})
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {myTeams.map((t) => {
+                  const isPrimary = t.id === primaryTeamId;
+                  const isSelected = t.id === selectedTeamId;
+                  return (
+                    <button
+                      key={t.id}
+                      onClick={() => setSelectedTeamId(t.id)}
+                      className={`flex items-center gap-2 px-2.5 py-1.5 rounded-md text-sm transition-colors border ${
+                        isSelected
+                          ? "bg-fab-gold/15 border-fab-gold/40 text-fab-gold"
+                          : "bg-fab-bg border-fab-border text-fab-muted hover:text-fab-text hover:border-fab-gold/30"
+                      }`}
+                    >
+                      {t.iconUrl ? (
+                        <img src={t.iconUrl} alt="" className="w-5 h-5 rounded object-cover" />
+                      ) : (
+                        <span className="w-5 h-5 rounded bg-fab-gold/20 flex items-center justify-center text-[9px] font-bold text-fab-gold">
+                          {t.name.slice(0, 2).toUpperCase()}
+                        </span>
+                      )}
+                      <span className="font-semibold truncate max-w-[140px]">{t.name}</span>
+                      {isPrimary && (
+                        <span className="text-[9px] uppercase tracking-wider font-bold text-fab-gold/80">★ Primary</span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {/* Header */}
           <div className="bg-fab-surface border border-fab-border rounded-xl p-6">
             <div className="flex items-start justify-between mb-4">
@@ -340,17 +410,32 @@ export default function TeamHub() {
                     <span className={`px-1.5 py-0.5 rounded text-[10px] ${
                       team.joinMode === "open" ? "bg-fab-win/10 text-fab-win" : "bg-fab-surface text-fab-dim border border-fab-border"
                     }`}>{team.joinMode === "open" ? "Open" : "Invite Only"}</span>
+                    {team.id === primaryTeamId && myTeams.length > 1 && (
+                      <span className="px-1.5 py-0.5 rounded text-[10px] bg-fab-gold/15 text-fab-gold font-semibold">★ Primary</span>
+                    )}
                   </div>
                 </div>
               </div>
-              {isOwnerOrAdmin && (
-                <button
-                  onClick={() => { setEditing(!editing); setEditName(team.name); setEditSlug(team.nameLower); setEditDesc(team.description || ""); setEditJoinMode(team.joinMode); setEditVisibility(team.visibility || "public"); setEditAccentColor(team.accentColor || "#d4a843"); }}
-                  className="text-xs text-fab-gold hover:text-fab-gold-light transition-colors"
-                >
-                  {editing ? "Cancel" : "Edit"}
-                </button>
-              )}
+              <div className="flex items-center gap-3">
+                {team.id !== primaryTeamId && myTeams.length > 1 && (
+                  <button
+                    onClick={() => handleSetPrimary(team.id)}
+                    disabled={settingPrimaryId === team.id}
+                    className="text-xs text-fab-muted hover:text-fab-gold transition-colors disabled:opacity-50"
+                    title="Use this team for badges, /team default, share cards"
+                  >
+                    {settingPrimaryId === team.id ? "Setting..." : "Set as Primary"}
+                  </button>
+                )}
+                {isOwnerOrAdmin && (
+                  <button
+                    onClick={() => { setEditing(!editing); setEditName(team.name); setEditSlug(team.nameLower); setEditDesc(team.description || ""); setEditJoinMode(team.joinMode); setEditVisibility(team.visibility || "public"); setEditAccentColor(team.accentColor || "#d4a843"); }}
+                    className="text-xs text-fab-gold hover:text-fab-gold-light transition-colors"
+                  >
+                    {editing ? "Cancel" : "Edit"}
+                  </button>
+                )}
+              </div>
             </div>
 
             {team.description && !editing && <p className="text-sm text-fab-muted">{team.description}</p>}
