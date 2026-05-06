@@ -53,7 +53,7 @@ export default function TeamHub() {
   // Browse state
   const [allTeams, setAllTeams] = useState<Team[]>([]);
   const [teamsLoading, setTeamsLoading] = useState(false);
-  const [browseFilter, setBrowseFilter] = useState<"joinable" | "all" | "open" | "invite">("joinable");
+  const [browseFilter, setBrowseFilter] = useState<"joinable" | "all" | "open" | "invite">("all");
   const [browseQuery, setBrowseQuery] = useState("");
   const [joiningId, setJoiningId] = useState<string | null>(null);
 
