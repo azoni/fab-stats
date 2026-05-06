@@ -1,5 +1,5 @@
 "use client";
-import { useState, useRef, useMemo, useEffect } from "react";
+import { useState, useRef, useMemo } from "react";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
 import { useMatches } from "@/hooks/useMatches";
@@ -13,17 +13,12 @@ import {
 } from "firebase/auth";
 import { deleteAllFeedEventsForUser, syncFeedEventsVisibility } from "@/lib/feed";
 import { SparklesIcon } from "@/components/icons/NavIcons";
-import { logActivity } from "@/lib/activity-log";
 import { FeedbackModal } from "@/components/feedback/FeedbackModal";
-import { useCreators } from "@/hooks/useCreators";
-import { platformIcons } from "@/components/layout/Navbar";
 import { useTheme } from "@/contexts/ThemeContext";
 import { THEME_OPTIONS, type ThemeName } from "@/lib/theme-config";
 import { Switch } from "@/components/ui/switch";
 import { Collapsible } from "@/components/ui/collapsible";
-import { BackgroundChooser } from "@/components/profile/BackgroundChooser";
-import { Settings, CheckCircle, Camera, ChevronRight, ExternalLink } from "lucide-react";
-import { GroupSettings } from "./GroupSettings";
+import { Settings, CheckCircle, Camera, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 
 function resizeImage(file: File, maxSize: number): Promise<string> {
@@ -55,21 +50,10 @@ function resizeImage(file: File, maxSize: number): Promise<string> {
 }
 
 const THEME_PREVIEWS: Record<ThemeName, { bg: string; surface: string; border: string; accent: string; text: string; muted: string; radius: string }> = {
-  parchment: { bg: "#efe5cc", surface: "#e8dab8", border: "#c9b48a", accent: "#a3242c", text: "#1a1410", muted: "#5c4f3e", radius: "6px" },
-  grimoire: { bg: "#0e0c08", surface: "#1c1812", border: "#3e3528", accent: "#d4a54a", text: "#e6ddd0", muted: "#9a8e7a", radius: "4px" },
   leyline: { bg: "#08080f", surface: "#14142a", border: "#1e2050", accent: "#7b8fff", text: "#e0e4f0", muted: "#6b7094", radius: "10px" },
-  rosetta: { bg: "#0a0a0a", surface: "#141414", border: "#262626", accent: "#f0f0f0", text: "#fafafa", muted: "#737373", radius: "2px" },
   daylight: { bg: "#f5f5f5", surface: "#ffffff", border: "#e0e0e0", accent: "#2563eb", text: "#1a1a1a", muted: "#6b7280", radius: "6px" },
-  shamrock: { bg: "#071207", surface: "#0f1f0f", border: "#1e3a1e", accent: "#22c55e", text: "#d4edda", muted: "#6b9b6b", radius: "8px" },
-  newyear: { bg: "#0a0814", surface: "#141028", border: "#2a2050", accent: "#f5c542", text: "#eee8f5", muted: "#8b7faa", radius: "8px" },
-  valentine: { bg: "#140810", surface: "#1f0f1a", border: "#3d1a30", accent: "#f472b6", text: "#f5e0ed", muted: "#9b6b88", radius: "12px" },
-  pastel: { bg: "#0e0c14", surface: "#18152a", border: "#2e2850", accent: "#c4b5fd", text: "#ede8f5", muted: "#8b80aa", radius: "12px" },
-  firework: { bg: "#0a0c14", surface: "#101828", border: "#1e2a50", accent: "#ef4444", text: "#e8ecf5", muted: "#7b8baa", radius: "6px" },
-  spooky: { bg: "#0d0a08", surface: "#1a1410", border: "#3a2a18", accent: "#f97316", text: "#f0e6d8", muted: "#8b7a60", radius: "6px" },
-  thankful: { bg: "#0e0a06", surface: "#1c1508", border: "#3a2e14", accent: "#d97706", text: "#f0e8d0", muted: "#8b7a55", radius: "6px" },
-  holly: { bg: "#0c0808", surface: "#1a1010", border: "#3a1818", accent: "#dc2626", text: "#f5e8e8", muted: "#9b7070", radius: "8px" },
-  lunar: { bg: "#08060e", surface: "#100e1c", border: "#252040", accent: "#a78bfa", text: "#e8e4f5", muted: "#7b70aa", radius: "10px" },
-  fools: { bg: "#1a0a2e", surface: "#241540", border: "#4a2d7a", accent: "#a855f7", text: "#f0e6ff", muted: "#b8a0d8", radius: "10px" },
+  rosetta: { bg: "#0a0a0a", surface: "#141414", border: "#262626", accent: "#f0f0f0", text: "#fafafa", muted: "#737373", radius: "2px" },
+  grimoire: { bg: "#0e0c08", surface: "#1c1812", border: "#3e3528", accent: "#d4a54a", text: "#e6ddd0", muted: "#9a8e7a", radius: "4px" },
 };
 
 function ThemePicker() {
@@ -191,9 +175,8 @@ function YearInReview() {
 }
 
 export default function SettingsPage() {
-  const { user, profile, signOut, isGuest, isAdmin, refreshProfile } = useAuth();
+  const { user, profile, signOut, isGuest, refreshProfile } = useAuth();
   const { refreshMatches } = useMatches();
-  const creators = useCreators();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [displayName, setDisplayName] = useState(profile?.displayName || "");
@@ -223,26 +206,23 @@ export default function SettingsPage() {
   const [togglingFeed, setTogglingFeed] = useState(false);
   const [hideFromGuests, setHideFromGuests] = useState(profile?.hideFromGuests ?? false);
   const [togglingGuests, setTogglingGuests] = useState(false);
-  const [siteBackgroundId, setSiteBackgroundId] = useState(profile?.siteBackgroundId || "none");
-  const [savingBackground, setSavingBackground] = useState(false);
   const [appearanceOpen, setAppearanceOpen] = useState(false);
-  const [backgroundOpen, setBackgroundOpen] = useState(false);
   const [confirmClear, setConfirmClear] = useState(false);
   const [clearing, setClearing] = useState(false);
   const [clearConfirmText, setClearConfirmText] = useState("");
-
-  useEffect(() => {
-    setSiteBackgroundId(profile?.siteBackgroundId || "none");
-  }, [profile?.siteBackgroundId]);
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
     if (!user || !displayName.trim()) return;
     setError("");
+    const trimmedGemId = gemId.trim();
+    if (!trimmedGemId) {
+      toast.error("GEM ID is required.");
+      return;
+    }
     setSaving(true);
     try {
       const searchName = [firstName, lastName, displayName].filter(Boolean).join(" ").toLowerCase();
-      const trimmedGemId = gemId.trim();
       const oldGemId = profile?.gemId;
 
       await updateProfile(user.uid, {
@@ -251,7 +231,7 @@ export default function SettingsPage() {
         lastName: lastName.trim() || undefined,
         searchName: searchName || undefined,
         earnings: earnings ? parseFloat(earnings) : undefined,
-        gemId: trimmedGemId || undefined,
+        gemId: trimmedGemId,
       });
 
       // Update gemIds lookup collection if GEM ID changed
@@ -291,24 +271,6 @@ export default function SettingsPage() {
     }
     setUploading(false);
     toast.success("Photo updated");
-  }
-
-  async function handleBackgroundChange(nextId: string) {
-    if (!user || savingBackground) return;
-    const previousId = siteBackgroundId;
-    setSiteBackgroundId(nextId);
-    setSavingBackground(true);
-    try {
-      await updateProfile(user.uid, { siteBackgroundId: nextId });
-      await refreshProfile();
-      logActivity("background_change", nextId);
-      toast.success("Background updated");
-    } catch {
-      setSiteBackgroundId(previousId);
-      toast.error("Failed to update background.");
-    } finally {
-      setSavingBackground(false);
-    }
   }
 
   if (isGuest) {
@@ -423,35 +385,6 @@ export default function SettingsPage() {
         )}
       </div>
 
-      {/* Profile background — collapsible */}
-      <div id="background" className="bg-fab-surface border border-fab-border rounded-lg mb-4">
-        <button onClick={() => setBackgroundOpen(!backgroundOpen)} className="flex items-center justify-between w-full px-6 py-4 text-left">
-          <div className="flex items-center gap-2">
-            <h2 className="text-sm font-semibold text-fab-text">Profile Background</h2>
-            {isAdmin && (
-              <span className="text-[10px] px-2 py-0.5 rounded bg-fab-gold/15 text-fab-gold">Admin: full FaB art library</span>
-            )}
-          </div>
-          <svg className={`w-4 h-4 text-fab-dim transition-transform duration-200 ${backgroundOpen ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-          </svg>
-        </button>
-        {backgroundOpen && (
-          <div className="px-6 pb-6 -mt-1">
-            <p className="text-xs text-fab-dim mb-3">
-              This background is shown across your site view and on your public profile. When viewing another player&apos;s profile, their selected background is used.
-            </p>
-            <BackgroundChooser
-              selectedId={siteBackgroundId}
-              isAdmin={isAdmin}
-              onSelect={handleBackgroundChange}
-              disabled={savingBackground}
-            />
-            <p className="text-[10px] text-fab-dim mt-2">{savingBackground ? "Saving background..." : "Tip: You can also change this directly from your profile page."}</p>
-          </div>
-        )}
-      </div>
-
       {/* Profile info */}
       <form onSubmit={handleSave} className="bg-fab-surface border border-fab-border rounded-lg p-6 mb-4">
         <h2 className="text-sm font-semibold text-fab-text mb-4">Profile Info</h2>
@@ -536,19 +469,20 @@ export default function SettingsPage() {
 
         <div className="mb-4">
           <label htmlFor="gemId" className="block text-sm text-fab-muted mb-1">
-            GEM ID <span className="text-fab-dim">(optional)</span>
+            GEM ID
           </label>
           <input
             id="gemId"
             type="text"
             inputMode="numeric"
-            pattern="[0-9]*"
+            pattern="[0-9]+"
+            required
             value={gemId}
             onChange={(e) => setGemId(e.target.value.replace(/\D/g, ""))}
             placeholder="e.g. 12345678"
             className="w-full bg-fab-bg border border-fab-border text-fab-text rounded-lg px-3 py-2 focus:outline-none focus:border-fab-gold"
           />
-          <p className="text-xs text-fab-dim mt-1">Your GEM player ID. Used to link matches with opponents on the platform.</p>
+          <p className="text-xs text-fab-dim mt-1">Your GEM player ID. Usually filled from your first import.</p>
         </div>
 
         <div className="mb-4">
@@ -560,7 +494,7 @@ export default function SettingsPage() {
 
         <button
           type="submit"
-          disabled={saving || !displayName.trim()}
+          disabled={saving || !displayName.trim() || !gemId.trim()}
           className="px-6 py-2 rounded-lg font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors disabled:opacity-50"
         >
           {saving ? "Saving..." : "Save Changes"}
@@ -569,7 +503,7 @@ export default function SettingsPage() {
 
       {/* Privacy */}
       <div className="bg-fab-surface border border-fab-border rounded-lg p-6 mb-4">
-        <Collapsible title={<h2 className="text-sm font-semibold text-fab-text">Privacy</h2>} defaultOpen>
+        <Collapsible title={<h2 className="text-sm font-semibold text-fab-text">Privacy</h2>}>
           <div className="mt-4">
             <div>
               <p className="text-sm text-fab-text mb-1">Profile Visibility</p>
@@ -749,39 +683,6 @@ export default function SettingsPage() {
         </button>
       </div>
 
-      {/* Creators */}
-      {creators.length > 0 && (
-        <div className="bg-fab-surface border border-fab-border rounded-lg p-6 mb-4">
-          <Collapsible title={<h2 className="text-sm font-semibold text-fab-text">Featured Creators</h2>}>
-            <div className="mt-4">
-              <p className="text-xs text-fab-dim mb-3">Check out these FaB content creators.</p>
-              <div className="space-y-2">
-                {creators.map((c) => (
-                  <a
-                    key={c.name}
-                    href={c.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-3 p-3 rounded-lg bg-fab-bg hover:bg-fab-gold/10 border border-fab-border hover:border-fab-gold/30 transition-colors group"
-                  >
-                    {c.imageUrl ? (
-                      <img src={c.imageUrl} alt="" className="w-8 h-8 rounded-full object-cover shrink-0" />
-                    ) : (
-                      <span className="shrink-0">{platformIcons[c.platform]}</span>
-                    )}
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium text-fab-text group-hover:text-fab-gold transition-colors truncate">{c.name}</p>
-                      <p className="text-xs text-fab-dim truncate">{c.description}</p>
-                    </div>
-                    <ExternalLink className="w-3.5 h-3.5 text-fab-dim shrink-0" />
-                  </a>
-                ))}
-              </div>
-            </div>
-          </Collapsible>
-        </div>
-      )}
-
       {/* Changelog */}
       <div className="bg-fab-surface border border-fab-border rounded-lg p-6 mb-4">
         <h2 className="text-sm font-semibold text-fab-text mb-2">Changelog</h2>
@@ -798,131 +699,115 @@ export default function SettingsPage() {
       {/* Your Data */}
       <div className="bg-fab-surface border border-fab-border rounded-lg p-6 mb-4">
         <h2 className="text-sm font-semibold text-fab-text mb-2">Your Data</h2>
-        <p className="text-xs text-fab-dim mb-3">Download all your data in JSON format (profile, matches, statistics).</p>
-        <button
-          onClick={async () => {
-            if (!user) return;
-            setExporting(true);
-            try {
-              const allMatches = await getMatchesByUserId(user.uid);
-              const exportData = {
-                exportedAt: new Date().toISOString(),
-                  profile: {
-                    uid: profile.uid,
-                    username: profile.username,
-                    displayName: profile.displayName,
-                    firstName: profile.firstName,
-                    lastName: profile.lastName,
-                    isPublic: profile.isPublic,
-                    createdAt: profile.createdAt,
-                    siteBackgroundId: profile.siteBackgroundId,
-                  },
-                matches: allMatches.map(({ id, ...m }) => ({ id, ...m })),
-                totalMatches: allMatches.length,
-              };
-              const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: "application/json" });
-              const url = URL.createObjectURL(blob);
-              const a = document.createElement("a");
-              a.href = url;
-              a.download = `fabstats-${profile.username}-${new Date().toISOString().split("T")[0]}.json`;
-              a.click();
-              URL.revokeObjectURL(url);
-            } catch {
-              setError("Failed to export data. Please try again.");
-            } finally {
-              setExporting(false);
-            }
-          }}
-          disabled={exporting}
-          className="px-4 py-2 rounded-lg text-sm font-semibold bg-fab-surface border border-fab-border text-fab-muted hover:text-fab-text hover:border-fab-gold/30 transition-colors disabled:opacity-50"
-        >
-          {exporting ? "Exporting..." : "Download My Data"}
-        </button>
-      </div>
-
-      {/* Clear All Data */}
-      <div className="bg-fab-surface border border-fab-border rounded-lg p-6 mb-4">
-        <h2 className="text-sm font-semibold text-fab-text mb-2">Clear All Match Data</h2>
-        <p className="text-xs text-fab-dim mb-3">
-          Delete all your match history. Your profile and account will be kept. You can re-import afterwards.
-        </p>
-        {!confirmClear ? (
-          <button
-            onClick={() => setConfirmClear(true)}
-            className="px-4 py-2 rounded-lg text-sm font-semibold bg-fab-surface border border-fab-loss/30 text-fab-loss hover:bg-fab-loss/10 transition-colors"
-          >
-            Clear All Matches...
-          </button>
-        ) : (
-          <div className="bg-fab-loss/10 border border-fab-loss/30 rounded-lg p-4">
-            <p className="text-sm text-fab-loss font-semibold mb-2">
-              This will permanently delete all your match history.
-            </p>
-            <p className="text-xs text-fab-muted mb-2">
-              Type <strong className="text-fab-loss">clear</strong> to confirm:
-            </p>
-            <input
-              type="text"
-              value={clearConfirmText}
-              onChange={(e) => setClearConfirmText(e.target.value)}
-              placeholder="clear"
-              className="w-full bg-fab-bg border border-fab-border text-fab-text rounded-lg px-3 py-2 mb-3 focus:outline-none focus:border-fab-loss text-sm"
-            />
-            <div className="flex gap-2">
-              <button
-                onClick={async () => {
-                  if (!user) return;
-                  setClearing(true);
-                  setError("");
-                  try {
-                    await clearAllMatchesFirestore(user.uid);
-                    await deleteAllFeedEventsForUser(user.uid);
-                    await refreshMatches();
-                    setConfirmClear(false);
-                    setClearConfirmText("");
-                  } catch {
-                    setError("Failed to clear data. Please try again.");
-                  } finally {
-                    setClearing(false);
-                  }
-                }}
-                disabled={clearing || clearConfirmText !== "clear"}
-                className="px-4 py-2 rounded-md text-sm font-semibold bg-fab-loss text-white hover:bg-fab-loss/80 transition-colors disabled:opacity-50"
-              >
-                {clearing ? "Clearing..." : "Clear All Matches"}
-              </button>
-              <button
-                onClick={() => {
-                  setConfirmClear(false);
-                  setClearConfirmText("");
-                }}
-                className="px-4 py-2 rounded-md text-sm font-semibold bg-fab-surface border border-fab-border text-fab-muted hover:text-fab-text transition-colors"
-              >
-                Cancel
-              </button>
-            </div>
+        <div className="space-y-5">
+          <div>
+            <p className="text-xs text-fab-dim mb-3">Download all your data in JSON format (profile, matches, statistics).</p>
+            <button
+              onClick={async () => {
+                if (!user) return;
+                setExporting(true);
+                try {
+                  const allMatches = await getMatchesByUserId(user.uid);
+                  const exportData = {
+                    exportedAt: new Date().toISOString(),
+                    profile: {
+                      uid: profile.uid,
+                      username: profile.username,
+                      displayName: profile.displayName,
+                      firstName: profile.firstName,
+                      lastName: profile.lastName,
+                      isPublic: profile.isPublic,
+                      createdAt: profile.createdAt,
+                      siteBackgroundId: profile.siteBackgroundId,
+                    },
+                    matches: allMatches.map(({ id, ...m }) => ({ id, ...m })),
+                    totalMatches: allMatches.length,
+                  };
+                  const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: "application/json" });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement("a");
+                  a.href = url;
+                  a.download = `fabstats-${profile.username}-${new Date().toISOString().split("T")[0]}.json`;
+                  a.click();
+                  URL.revokeObjectURL(url);
+                } catch {
+                  setError("Failed to export data. Please try again.");
+                } finally {
+                  setExporting(false);
+                }
+              }}
+              disabled={exporting}
+              className="px-4 py-2 rounded-lg text-sm font-semibold bg-fab-surface border border-fab-border text-fab-muted hover:text-fab-text hover:border-fab-gold/30 transition-colors disabled:opacity-50"
+            >
+              {exporting ? "Exporting..." : "Download My Data"}
+            </button>
           </div>
-        )}
-      </div>
 
-      {/* Team */}
-      {user && !isGuest && (
-        <Link href="/team" className="block bg-fab-surface border border-fab-border rounded-lg mb-4 px-6 py-4 hover:bg-fab-surface-hover transition-colors">
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-fab-text">Team</h2>
-            <span className="text-xs text-fab-gold">Manage &rarr;</span>
+          <div className="pt-5 border-t border-fab-border">
+            <h3 className="text-sm font-semibold text-fab-loss mb-2">Clear All Match Data</h3>
+            <p className="text-xs text-fab-dim mb-3">
+              Delete all your match history. Your profile and account will be kept. You can re-import afterwards.
+            </p>
+            {!confirmClear ? (
+              <button
+                onClick={() => setConfirmClear(true)}
+                className="px-4 py-2 rounded-lg text-sm font-semibold bg-fab-surface border border-fab-loss/30 text-fab-loss hover:bg-fab-loss/10 transition-colors"
+              >
+                Clear All Matches...
+              </button>
+            ) : (
+              <div className="bg-fab-loss/10 border border-fab-loss/30 rounded-lg p-4">
+                <p className="text-sm text-fab-loss font-semibold mb-2">
+                  This will permanently delete all your match history.
+                </p>
+                <p className="text-xs text-fab-muted mb-2">
+                  Type <strong className="text-fab-loss">clear</strong> to confirm:
+                </p>
+                <input
+                  type="text"
+                  value={clearConfirmText}
+                  onChange={(e) => setClearConfirmText(e.target.value)}
+                  placeholder="clear"
+                  className="w-full bg-fab-bg border border-fab-border text-fab-text rounded-lg px-3 py-2 mb-3 focus:outline-none focus:border-fab-loss text-sm"
+                />
+                <div className="flex gap-2">
+                  <button
+                    onClick={async () => {
+                      if (!user) return;
+                      setClearing(true);
+                      setError("");
+                      try {
+                        await clearAllMatchesFirestore(user.uid);
+                        await deleteAllFeedEventsForUser(user.uid);
+                        await refreshMatches();
+                        setConfirmClear(false);
+                        setClearConfirmText("");
+                      } catch {
+                        setError("Failed to clear data. Please try again.");
+                      } finally {
+                        setClearing(false);
+                      }
+                    }}
+                    disabled={clearing || clearConfirmText !== "clear"}
+                    className="px-4 py-2 rounded-md text-sm font-semibold bg-fab-loss text-white hover:bg-fab-loss/80 transition-colors disabled:opacity-50"
+                  >
+                    {clearing ? "Clearing..." : "Clear All Matches"}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setConfirmClear(false);
+                      setClearConfirmText("");
+                    }}
+                    className="px-4 py-2 rounded-md text-sm font-semibold bg-fab-surface border border-fab-border text-fab-muted hover:text-fab-text transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
-          <p className="text-xs text-fab-dim mt-1">Create, manage, or browse teams</p>
-        </Link>
-      )}
-
-      {/* Groups */}
-      {user && !isGuest && (
-        <div className="bg-fab-surface border border-fab-border rounded-lg mb-4 px-6 py-4">
-          <h2 className="text-sm font-semibold text-fab-text mb-3">Groups</h2>
-          <GroupSettings />
         </div>
-      )}
+      </div>
 
       {/* Account */}
       <div className="bg-fab-surface border border-fab-border rounded-lg p-6">

@@ -126,7 +126,7 @@ export default function RootLayout({
       <head>
         <script
           dangerouslySetInnerHTML={{
-            __html: `try{var t=localStorage.getItem('fab-theme');if(t){var m={arcana:'grimoire',ironheart:'grimoire',chromatic:'rosetta'};if(m[t]){t=m[t];localStorage.setItem('fab-theme',t)}document.documentElement.setAttribute('data-theme',t)}else{document.documentElement.setAttribute('data-theme','rosetta')}}catch(e){}`,
+            __html: `try{var t=localStorage.getItem('fab-theme');var m={arcana:'grimoire',ironheart:'grimoire',chromatic:'rosetta'};if(m[t]){t=m[t];localStorage.setItem('fab-theme',t)}var ok={grimoire:1,leyline:1,rosetta:1,daylight:1};if(!ok[t]){localStorage.removeItem('fab-theme');t='rosetta'}document.documentElement.setAttribute('data-theme',t)}catch(e){document.documentElement.setAttribute('data-theme','rosetta')}`,
           }}
         />
       </head>

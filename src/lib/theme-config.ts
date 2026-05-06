@@ -1,25 +1,23 @@
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "./firebase";
 
-export type ThemeName = "parchment" | "grimoire" | "leyline" | "rosetta" | "daylight" | "shamrock" | "newyear" | "valentine" | "firework" | "spooky" | "holly" | "pastel" | "thankful" | "lunar" | "fools";
+export type ThemeName = "grimoire" | "leyline" | "rosetta" | "daylight";
 
 export const THEME_OPTIONS: { value: ThemeName; label: string; description: string }[] = [
-  { value: "parchment", label: "Parchment", description: "Painted brand — cream, warm gold & oxblood, serif headings" },
-  { value: "grimoire", label: "Grimoire", description: "Ancient spellbook, warm leather & candlelight" },
-  { value: "leyline", label: "Leyline", description: "Arcane glass observatory, luminous & floating" },
-  { value: "rosetta", label: "Rosetta", description: "Pure data terminal, sharp & monochrome" },
-  { value: "daylight", label: "Daylight", description: "Clean & bright — light backgrounds, easy on the eyes" },
-  { value: "shamrock", label: "Shamrock", description: "St. Patrick's Day — luck of the Irish" },
-  { value: "newyear", label: "New Year", description: "Midnight champagne & golden sparkle" },
-  { value: "valentine", label: "Valentine", description: "Roses, blush & heartfelt pink" },
-  { value: "pastel", label: "Pastel", description: "Easter — spring pastels & soft lavender" },
-  { value: "firework", label: "Firework", description: "Fourth of July — red, white & blue" },
-  { value: "spooky", label: "Spooky", description: "Halloween — pumpkin orange & midnight purple" },
-  { value: "thankful", label: "Thankful", description: "Thanksgiving — harvest amber & warm cider" },
-  { value: "holly", label: "Holly", description: "Christmas — warm red, pine green & snow" },
-  { value: "lunar", label: "Lunar", description: "New Year's Eve — midnight violet & starlight" },
-  { value: "fools", label: "April Fools", description: "Everything is fine. Nothing is wrong. Trust your stats." },
+  { value: "leyline", label: "Leyline", description: "Arcane glass observatory, luminous and floating" },
+  { value: "daylight", label: "Daylight", description: "Clean and bright, easy on the eyes" },
+  { value: "rosetta", label: "Rosetta", description: "Pure data terminal, sharp and monochrome" },
+  { value: "grimoire", label: "Grimoire", description: "Ancient spellbook, warm leather and candlelight" },
 ];
+
+const DEFAULT_THEME: ThemeName = "rosetta";
+const VALID_THEME_VALUES = new Set<ThemeName>(THEME_OPTIONS.map((o) => o.value));
+
+export function normalizeThemeName(value: unknown): ThemeName {
+  return typeof value === "string" && VALID_THEME_VALUES.has(value as ThemeName)
+    ? (value as ThemeName)
+    : DEFAULT_THEME;
+}
 
 const CACHE_KEY = "fab_theme_config";
 const CACHE_TTL = 10 * 60 * 1000; // 10 minutes
@@ -35,21 +33,23 @@ export async function getThemeConfig(): Promise<{ theme: ThemeName; generation: 
     const cached = localStorage.getItem(CACHE_KEY);
     if (cached) {
       const { theme, generation, ts } = JSON.parse(cached);
-      if (Date.now() - ts < CACHE_TTL) return { theme, generation: generation ?? 0 };
+      if (Date.now() - ts < CACHE_TTL) {
+        return { theme: normalizeThemeName(theme), generation: generation ?? 0 };
+      }
     }
   } catch {}
 
   try {
     const snap = await getDoc(doc(db, "admin", "themeConfig"));
     const data = snap.exists() ? snap.data() : {};
-    const theme = (data.defaultTheme as ThemeName) || "rosetta";
+    const theme = normalizeThemeName(data.defaultTheme);
     const generation = (data.themeGeneration as number) ?? 0;
     try {
       localStorage.setItem(CACHE_KEY, JSON.stringify({ theme, generation, ts: Date.now() }));
     } catch {}
     return { theme, generation };
   } catch {
-    return { theme: "rosetta", generation: 0 };
+    return { theme: DEFAULT_THEME, generation: 0 };
   }
 }
 
@@ -63,7 +63,7 @@ export async function saveDefaultTheme(theme: ThemeName): Promise<void> {
   } catch {}
 }
 
-/** Bump the theme generation — forces all users back to admin default on next visit */
+/** Bump the theme generation; forces all users back to admin default on next visit. */
 export async function resetAllUserThemes(): Promise<void> {
   const snap = await getDoc(doc(db, "admin", "themeConfig"));
   const current = snap.exists() ? (snap.data().themeGeneration as number) ?? 0 : 0;
@@ -71,7 +71,7 @@ export async function resetAllUserThemes(): Promise<void> {
   await setDoc(doc(db, "admin", "themeConfig"), { themeGeneration: next }, { merge: true });
   try {
     const cached = localStorage.getItem(CACHE_KEY);
-    const theme = cached ? (JSON.parse(cached).theme as ThemeName) || "rosetta" : "rosetta";
+    const theme = cached ? normalizeThemeName(JSON.parse(cached).theme) : DEFAULT_THEME;
     localStorage.setItem(CACHE_KEY, JSON.stringify({ theme, generation: next, ts: Date.now() }));
   } catch {}
 }
