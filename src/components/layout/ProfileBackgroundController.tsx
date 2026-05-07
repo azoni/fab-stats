@@ -41,8 +41,8 @@ async function applyProfileBackground(imageUrl?: string, focusPosition = "center
 
   const safeUrl = optimizedUrl.replace(/'/g, "\\'");
   root.style.setProperty("--fab-user-bg-image", `url('${safeUrl}')`);
-  root.style.setProperty("--fab-user-bg-overlay", "rgba(9, 8, 7, 0.86)");
-  root.style.setProperty("--fab-user-bg-opacity", "0.52");
+  root.style.setProperty("--fab-user-bg-overlay", "rgba(9, 8, 7, 0.62)");
+  root.style.setProperty("--fab-user-bg-opacity", "1");
   root.style.setProperty("--fab-user-bg-position", focusPosition);
   root.dataset.profileBg = "on";
 }

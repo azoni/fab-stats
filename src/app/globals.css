@@ -53,7 +53,7 @@ body {
   inset: 0;
   z-index: -2;
   height: min(46rem, 74vh);
-  /* Constrain background image to content width for better quality */
+  /* Mobile uses the full viewport; desktop is aligned to the content lane beside the sidebar. */
   max-width: 80rem; /* matches max-w-7xl */
   margin-inline: auto;
   opacity: var(--fab-user-bg-opacity);
@@ -70,12 +70,12 @@ body {
 
 @media (min-width: 768px) {
   #fab-bg-layer {
-    left: calc(50vw + 8rem);
-    right: auto;
-    width: min(80rem, calc(100vw - 16rem));
+    left: 16rem;
+    right: 0;
+    width: auto;
     max-width: none;
     margin-inline: 0;
-    transform: translateX(-50%);
+    transform: none;
   }
 }
 

@@ -79,7 +79,7 @@ export function Navbar() {
 
   return (<>
     <nav className="hidden md:flex fixed inset-y-0 left-0 z-50 w-64 flex-col bg-fab-surface/95 backdrop-blur-md border-r border-fab-border">
-      <div className="h-16 px-4 border-b border-fab-border flex items-center justify-between gap-2">
+      <div className="shrink-0 px-4 py-3 border-b border-fab-border">
         <Link href="/" className="flex items-center gap-2.5 min-w-0">
           <svg className="w-8 h-8 shrink-0" viewBox="0 0 24 24" fill="none">
             <rect x="5" y="2" width="14" height="20" rx="2" stroke="#D9A05B" strokeWidth="2" />
@@ -87,7 +87,7 @@ export function Navbar() {
             <rect x="11" y="10" width="2" height="6" fill="#FBC02D" />
             <rect x="14.5" y="6" width="2" height="10" fill="#1E88E5" />
           </svg>
-          <span className="text-xl font-bold text-fab-gold tracking-tight truncate">FaB Stats</span>
+          <span className="text-xl font-bold text-fab-gold tracking-tight">FaB Stats</span>
         </Link>
         {(userCount > 0 || matchCount > 0) && (
           <CommunityStatsPopover userCount={userCount} matchCount={matchCount} />
@@ -428,10 +428,10 @@ function CommunityStatsPopover({ userCount, matchCount }: { userCount: number; m
   const heroPct = heroStats ? Math.round(heroStats.withHero / heroStats.totalMatches * 100) : 0;
 
   return (
-    <div className="hidden xl:flex relative group/stats ml-1.5" onMouseEnter={loadStats}>
-      <div className="flex flex-col leading-tight px-2 py-1 rounded-md border border-fab-border/50 hover:border-fab-gold/30 hover:bg-fab-surface-hover transition-colors cursor-default">
-        {userCount > 0 && <span className="text-[10px] text-fab-muted font-medium tabular-nums">{userCount.toLocaleString()} players</span>}
-        {matchCount > 0 && <span className="text-[10px] text-fab-dim font-medium tabular-nums">{matchCount.toLocaleString()} matches</span>}
+    <div className="relative group/stats mt-1.5 pl-[42px]" onMouseEnter={loadStats}>
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 leading-tight text-[10px] cursor-default">
+        {userCount > 0 && <span className="text-fab-muted font-medium tabular-nums">{userCount.toLocaleString()} players</span>}
+        {matchCount > 0 && <span className="text-fab-dim font-medium tabular-nums">{matchCount.toLocaleString()} matches</span>}
       </div>
       <div className="absolute left-0 top-full pt-1 hidden group-hover/stats:block z-50">
         <div className="w-64 bg-fab-surface border border-fab-border rounded-lg shadow-xl p-3">
