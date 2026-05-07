@@ -26,6 +26,7 @@ async function applyProfileBackground(imageUrl?: string, focusPosition = "center
   if (!imageUrl) {
     root.style.removeProperty("--fab-user-bg-image");
     root.style.removeProperty("--fab-user-bg-overlay");
+    root.style.removeProperty("--fab-user-bg-opacity");
     root.style.removeProperty("--fab-user-bg-position");
     delete root.dataset.profileBg;
     return;
@@ -40,7 +41,8 @@ async function applyProfileBackground(imageUrl?: string, focusPosition = "center
 
   const safeUrl = optimizedUrl.replace(/'/g, "\\'");
   root.style.setProperty("--fab-user-bg-image", `url('${safeUrl}')`);
-  root.style.setProperty("--fab-user-bg-overlay", "rgba(6, 8, 10, 0.72)");
+  root.style.setProperty("--fab-user-bg-overlay", "rgba(9, 8, 7, 0.86)");
+  root.style.setProperty("--fab-user-bg-opacity", "0.52");
   root.style.setProperty("--fab-user-bg-position", focusPosition);
   root.dataset.profileBg = "on";
 }
@@ -81,7 +83,6 @@ export function ProfileBackgroundController() {
         return;
       }
 
-      // Load global default and user preference in parallel to avoid flash
       const [globalDefaultId] = await Promise.all([
         loadGlobalDefaultBackgroundId(),
         profile?.siteBackgroundId ? ensureBackgroundResolved(profile.siteBackgroundId) : Promise.resolve(),

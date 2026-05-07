@@ -35,6 +35,7 @@
   --font-serif: var(--font-cinzel), Georgia, "Times New Roman", serif;
   --fab-user-bg-image: none;
   --fab-user-bg-overlay: rgba(0, 0, 0, 0);
+  --fab-user-bg-opacity: 1;
   --fab-user-bg-position: center top;
 }
 
@@ -51,16 +52,31 @@ body {
   position: fixed;
   inset: 0;
   z-index: -2;
+  height: min(46rem, 74vh);
   /* Constrain background image to content width for better quality */
   max-width: 80rem; /* matches max-w-7xl */
   margin-inline: auto;
+  opacity: var(--fab-user-bg-opacity);
   background-image:
     linear-gradient(180deg, var(--fab-user-bg-overlay), var(--fab-user-bg-overlay)),
     var(--fab-user-bg-image);
   background-size: cover, cover;
   background-position: center, var(--fab-user-bg-position);
   background-repeat: no-repeat, no-repeat;
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 42%, rgba(0, 0, 0, 0.65) 66%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 0%, #000 42%, rgba(0, 0, 0, 0.65) 66%, transparent 100%);
   pointer-events: none;
+}
+
+@media (min-width: 768px) {
+  #fab-bg-layer {
+    left: calc(50vw + 8rem);
+    right: auto;
+    width: min(80rem, calc(100vw - 16rem));
+    max-width: none;
+    margin-inline: 0;
+    transform: translateX(-50%);
+  }
 }
 
 html[data-profile-bg="on"] body::after {
@@ -557,6 +573,10 @@ textarea[class*="border-fab-border"] {
 /* Dashboard cards — semi-transparent to show background */
 .transparent-cards [class*="bg-fab-surface"][class*="border-fab-border"]:not(nav):not(td):not(tr) {
   background-color: color-mix(in srgb, var(--color-fab-surface) 80%, transparent);
+}
+
+html[data-profile-bg="on"] .transparent-cards [class*="bg-fab-surface"][class*="border-fab-border"]:not(nav):not(td):not(tr) {
+  background-color: color-mix(in srgb, var(--color-fab-surface) 90%, transparent);
 }
 
 /* Card depth — universal shadow + inner highlight */
