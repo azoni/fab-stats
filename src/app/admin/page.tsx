@@ -2260,6 +2260,7 @@ const ROUTE_LABELS: Record<string, string> = {
   inbox: "Inbox",
   privacy: "Privacy",
   feedback: "Feedback",
+  social: "Social",
   compare: "Versus",
   tools: "Player Tools",
   friends: "Friends",
