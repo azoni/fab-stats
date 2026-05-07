@@ -116,26 +116,47 @@ export function Navbar() {
           <div className="space-y-4">
             {visibleNavLinks.map((link) => {
               const parentActive = isActiveRoute(pathname, link.href) || link.visibleSubs.some((sub) => !sub.href.startsWith("http") && isActiveRoute(pathname, sub.href));
+              const isParentExternal = link.href.startsWith("http");
+              const parentTrackKey = getExternalTrackKey(link.href);
+              const parentClassName = `flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-semibold transition-colors ${
+                parentActive
+                  ? `${link.color} ${link.bg}`
+                  : "text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover"
+              }`;
+              const parentContent = (
+                <>
+                  <span className="shrink-0">{link.icon}</span>
+                  <span className="truncate">{link.label}</span>
+                  {isParentExternal && <ExternalLink className="w-3 h-3 text-fab-dim shrink-0 ml-auto" />}
+                </>
+              );
               return (
                 <section key={link.href} className="space-y-1">
-                  <Link
-                    href={link.href}
-                    onClick={link.href === "/support" ? () => trackSupportClick("navbar") : undefined}
-                    className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-semibold transition-colors ${
-                      parentActive
-                        ? `${link.color} ${link.bg}`
-                        : "text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover"
-                    }`}
-                  >
-                    <span className="shrink-0">{link.icon}</span>
-                    <span className="truncate">{link.label}</span>
-                  </Link>
+                  {isParentExternal ? (
+                    <a
+                      href={link.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() => { if (parentTrackKey) trackSupportClick(parentTrackKey); }}
+                      className={parentClassName}
+                    >
+                      {parentContent}
+                    </a>
+                  ) : (
+                    <Link
+                      href={link.href}
+                      onClick={link.href === "/support" ? () => trackSupportClick("navbar") : undefined}
+                      className={parentClassName}
+                    >
+                      {parentContent}
+                    </Link>
+                  )}
 
                   {link.visibleSubs.length > 0 && (
                     <div className="ml-4 pl-3 border-l border-fab-border/70 space-y-0.5">
                       {link.visibleSubs.map((sub) => {
                         const isExternal = sub.href.startsWith("http");
-                        const trackKey = sub.href.includes("amazon") ? "amazon" : sub.href.includes("tcgplayer") ? "tcgplayer" : sub.href.includes("sponsors") ? "github_sponsors" : sub.href.includes("ko-fi") ? "kofi" : undefined;
+                        const trackKey = getExternalTrackKey(sub.href);
 
                         if (isExternal) {
                           return (
@@ -291,7 +312,19 @@ export function Navbar() {
 
 function isActiveRoute(pathname: string, href: string): boolean {
   if (href === "/") return pathname === "/";
+  if (href.startsWith("http")) return false;
   return pathname === href || pathname.startsWith(`${href}/`);
+}
+
+function getExternalTrackKey(href: string): string | undefined {
+  if (href.includes("discord.com/oauth2/authorize")) return "discord_bot";
+  if (href.includes("discord.gg") || href.includes("discord.com")) return "discord";
+  if (href.includes("x.com") || href.includes("twitter.com")) return "twitter";
+  if (href.includes("amazon")) return "amazon";
+  if (href.includes("tcgplayer")) return "tcgplayer";
+  if (href.includes("sponsors")) return "github_sponsors";
+  if (href.includes("ko-fi")) return "kofi";
+  return undefined;
 }
 
 export const platformIcons: Record<Creator["platform"], ReactNode> = {

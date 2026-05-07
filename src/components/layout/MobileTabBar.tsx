@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Home as HomeIcon, Globe, Users, User as UserIcon } from "lucide-react";
@@ -43,12 +43,16 @@ export function MobileTabBar() {
 
   const isAuthenticated = Boolean(user) && !isGuest;
 
+  useEffect(() => {
+    setProfileOpen(false);
+  }, [pathname]);
+
   const handleProfileClick = () => {
     if (!isAuthenticated) {
       router.push("/login");
       return;
     }
-    setProfileOpen(true);
+    setProfileOpen((open) => !open);
   };
 
   return (

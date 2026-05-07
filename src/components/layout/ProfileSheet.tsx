@@ -49,9 +49,9 @@ export function ProfileSheet({ open, onClose }: ProfileSheetProps) {
   return (
     <div
       role="dialog"
-      aria-modal="true"
+      aria-modal={false}
       aria-label="Profile menu"
-      className="md:hidden fixed inset-0 z-[60] flex flex-col bg-fab-bg pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]"
+      className="md:hidden fixed inset-x-0 top-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom))] z-[45] flex flex-col bg-fab-bg pt-[env(safe-area-inset-top)] shadow-2xl"
     >
       <header className="flex items-center justify-between px-4 py-3 border-b border-fab-border">
         <h2 className="text-base font-semibold text-fab-text">Profile</h2>
