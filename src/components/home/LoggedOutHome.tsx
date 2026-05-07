@@ -130,25 +130,25 @@ export function LoggedOutHome({ user, communityMeta, lbEntries }: LoggedOutHomeP
             and focus on what matters — <span className="font-semibold text-fab-ink">winning</span>.
           </p>
 
-          <div className="flex gap-3 flex-wrap mb-8">
+          <div className="flex flex-col sm:flex-row gap-3 mb-8">
             {user ? (
               <Link
                 href="/import"
-                className="px-6 py-3 rounded-md text-sm font-bold uppercase tracking-wider bg-fab-oxblood text-fab-parchment hover:bg-fab-oxblood-deep transition-colors shadow-md"
+                className="w-full sm:w-auto text-center px-6 py-3 rounded-md text-sm font-bold uppercase tracking-wider bg-fab-oxblood text-fab-parchment hover:bg-fab-oxblood-deep transition-colors shadow-md"
               >
                 Import Your Matches
               </Link>
             ) : (
               <Link
                 href="/login"
-                className="px-6 py-3 rounded-md text-sm font-bold uppercase tracking-wider bg-fab-oxblood text-fab-parchment hover:bg-fab-oxblood-deep transition-colors shadow-md"
+                className="w-full sm:w-auto text-center px-6 py-3 rounded-md text-sm font-bold uppercase tracking-wider bg-fab-oxblood text-fab-parchment hover:bg-fab-oxblood-deep transition-colors shadow-md"
               >
                 Sign Up Free
               </Link>
             )}
             <Link
               href="/leaderboard"
-              className="px-6 py-3 rounded-md text-sm font-bold uppercase tracking-wider border-2 border-fab-ink/80 text-fab-ink hover:bg-fab-ink hover:text-fab-parchment transition-colors"
+              className="w-full sm:w-auto text-center px-6 py-3 rounded-md text-sm font-bold uppercase tracking-wider border-2 border-fab-ink/80 text-fab-ink hover:bg-fab-ink hover:text-fab-parchment transition-colors"
             >
               Browse Leaderboard
             </Link>

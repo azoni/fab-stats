@@ -1,7 +1,7 @@
 "use client";
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { ImportIcon } from "@/components/icons/NavIcons";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { useAuth } from "@/contexts/AuthContext";
@@ -10,11 +10,7 @@ import { useCommunityStats } from "@/hooks/useCommunityStats";
 import { useFriends } from "@/hooks/useFriends";
 import type { ReactNode } from "react";
 import type { Creator } from "@/types";
-import {
-  Globe,
-  ChevronDown,
-  Users, ExternalLink,
-} from "lucide-react";
+import { ExternalLink, LogOut } from "lucide-react";
 import dynamic from "next/dynamic";
 const FeedbackModal = dynamic(() => import("@/components/feedback/FeedbackModal").then(m => ({ default: m.FeedbackModal })), { ssr: false });
 import { SmartSearch } from "@/components/search/SmartSearch";
@@ -22,7 +18,8 @@ import { navLinks, userMenuLinks } from "./nav-data";
 
 export function Navbar() {
   const pathname = usePathname();
-  const { user, profile, isGuest, isAdmin } = useAuth();
+  const router = useRouter();
+  const { user, profile, isGuest, isAdmin, signOut } = useAuth();
   const [mounted, setMounted] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const { userCount, matchCount } = useCommunityStats();
@@ -57,299 +54,244 @@ export function Navbar() {
     return () => { cancelled = true; clearInterval(interval); };
   }, [mounted, isAdmin]);
 
-  const isAuthenticated = user && !isGuest;
+  const isAuthenticated = Boolean(user) && !isGuest;
+  const visibleNavLinks = useMemo(() => (
+    navLinks
+      .filter((link) => !link.authOnly || isAuthenticated)
+      .map((link) => ({
+        ...link,
+        visibleSubs: link.subItems?.filter((s) => (!s.adminOnly || isAdmin) && (!s.authOnly || isAuthenticated)) || [],
+      }))
+  ), [isAdmin, isAuthenticated]);
+  const displayName = profile?.displayName || profile?.username || user?.email || "My Account";
+  const profileHref = profile?.username ? `/player/${profile.username}` : "/settings";
+  const initial = displayName.charAt(0).toUpperCase();
+  const visibleUserLinks = userMenuLinks.filter((l) => !l.adminOnly || isAdmin);
+
+  const handleSignOut = useCallback(async () => {
+    try {
+      await signOut();
+      router.push("/login");
+    } catch {
+      // Auth listener will reconcile if sign-out fails transiently.
+    }
+  }, [router, signOut]);
 
   return (<>
-    <nav className="hidden md:block md:fixed md:top-0 md:left-0 md:right-0 z-50 bg-fab-surface/95 backdrop-blur-md border-b border-fab-border">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="flex h-14 items-center justify-between">
-          <div className="flex items-center gap-2.5 shrink-0">
-            <Link href="/" className="flex items-center gap-2.5">
-              <svg className="w-7 h-7" viewBox="0 0 24 24" fill="none">
-                <rect x="5" y="2" width="14" height="20" rx="2" stroke="#D9A05B" strokeWidth="2" />
-                <rect x="7.5" y="13" width="2" height="3" fill="#E53935" />
-                <rect x="11" y="10" width="2" height="6" fill="#FBC02D" />
-                <rect x="14.5" y="6" width="2" height="10" fill="#1E88E5" />
-              </svg>
-              <span className="text-xl font-bold text-fab-gold tracking-tight">FaB Stats</span>
-            </Link>
-            {(userCount > 0 || matchCount > 0) && (
-              <CommunityStatsPopover userCount={userCount} matchCount={matchCount} />
-            )}
-          </div>
+    <nav className="hidden md:flex fixed inset-y-0 left-0 z-50 w-64 flex-col bg-fab-surface/95 backdrop-blur-md border-r border-fab-border">
+      <div className="h-16 px-4 border-b border-fab-border flex items-center justify-between gap-2">
+        <Link href="/" className="flex items-center gap-2.5 min-w-0">
+          <svg className="w-8 h-8 shrink-0" viewBox="0 0 24 24" fill="none">
+            <rect x="5" y="2" width="14" height="20" rx="2" stroke="#D9A05B" strokeWidth="2" />
+            <rect x="7.5" y="13" width="2" height="3" fill="#E53935" />
+            <rect x="11" y="10" width="2" height="6" fill="#FBC02D" />
+            <rect x="14.5" y="6" width="2" height="10" fill="#1E88E5" />
+          </svg>
+          <span className="text-xl font-bold text-fab-gold tracking-tight truncate">FaB Stats</span>
+        </Link>
+        {(userCount > 0 || matchCount > 0) && (
+          <CommunityStatsPopover userCount={userCount} matchCount={matchCount} />
+        )}
+      </div>
 
-          <div className="flex items-center gap-1">
-            {mounted && (
+      <div className="px-3 py-3 border-b border-fab-border space-y-2">
+        <SmartSearch placeholder="Search players or teams..." className="text-xs" />
+        {mounted && isAuthenticated && (
+          <Link
+            href="/import"
+            className={`flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold transition-colors ${
+              pathname === "/import"
+                ? "bg-fab-gold text-fab-bg"
+                : "bg-fab-gold/15 text-fab-gold hover:bg-fab-gold/25 border border-fab-gold/30"
+            }`}
+          >
+            <ImportIcon className="w-4 h-4" />
+            Import Matches
+          </Link>
+        )}
+      </div>
+
+      <div className="flex-1 overflow-y-auto px-2 py-3">
+        {mounted && (
+          <div className="space-y-4">
+            {visibleNavLinks.map((link) => {
+              const parentActive = isActiveRoute(pathname, link.href) || link.visibleSubs.some((sub) => !sub.href.startsWith("http") && isActiveRoute(pathname, sub.href));
+              return (
+                <section key={link.href} className="space-y-1">
+                  <Link
+                    href={link.href}
+                    onClick={link.href === "/support" ? () => trackSupportClick("navbar") : undefined}
+                    className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-semibold transition-colors ${
+                      parentActive
+                        ? `${link.color} ${link.bg}`
+                        : "text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover"
+                    }`}
+                  >
+                    <span className="shrink-0">{link.icon}</span>
+                    <span className="truncate">{link.label}</span>
+                  </Link>
+
+                  {link.visibleSubs.length > 0 && (
+                    <div className="ml-4 pl-3 border-l border-fab-border/70 space-y-0.5">
+                      {link.visibleSubs.map((sub) => {
+                        const isExternal = sub.href.startsWith("http");
+                        const trackKey = sub.href.includes("amazon") ? "amazon" : sub.href.includes("tcgplayer") ? "tcgplayer" : sub.href.includes("sponsors") ? "github_sponsors" : sub.href.includes("ko-fi") ? "kofi" : undefined;
+
+                        if (isExternal) {
+                          return (
+                            <a
+                              key={sub.href}
+                              href={sub.href}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={() => { if (trackKey) trackSupportClick(trackKey); }}
+                              className="flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover transition-colors"
+                            >
+                              {sub.icon && <span className="text-fab-dim shrink-0">{sub.icon}</span>}
+                              <span className="flex-1 truncate">{sub.label}</span>
+                              {sub.badge && <span className="text-[8px] font-bold uppercase tracking-wider text-emerald-400 bg-emerald-400/15 px-1.5 py-0.5 rounded-full">{sub.badge}</span>}
+                              <ExternalLink className="w-3 h-3 text-fab-dim shrink-0" />
+                            </a>
+                          );
+                        }
+
+                        if (sub.href === "/feedback") {
+                          return (
+                            <button
+                              key={sub.href}
+                              onClick={() => setFeedbackOpen(true)}
+                              className="flex items-center gap-2 w-full text-left px-3 py-1.5 rounded-md text-xs font-medium text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover transition-colors"
+                            >
+                              {sub.icon && <span className="text-fab-dim shrink-0">{sub.icon}</span>}
+                              <span className="truncate">{sub.label}</span>
+                            </button>
+                          );
+                        }
+
+                        return (
+                          <Link
+                            key={sub.href}
+                            href={sub.href}
+                            className={`block px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                              isActiveRoute(pathname, sub.href)
+                                ? "text-fab-gold bg-fab-gold/10"
+                                : "text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover"
+                            }`}
+                          >
+                            {sub.label}
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  )}
+                </section>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      <div className="border-t border-fab-border p-3 space-y-3">
+        {mounted && (
+          <>
+            {isAdmin && onlineStats && (
+              <Link
+                href="/admin"
+                className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg text-xs font-medium bg-fab-bg border border-fab-border hover:border-fab-gold/30 transition-colors"
+                title={`${onlineStats.onlineNow} online now, ${onlineStats.activeToday} active today`}
+              >
+                <span className="flex items-center gap-2 text-fab-muted">
+                  <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse shrink-0" />
+                  Online
+                </span>
+                <span className="text-green-400 font-bold">{onlineStats.onlineNow}</span>
+                <span className="text-fab-dim">{onlineStats.activeToday} today</span>
+              </Link>
+            )}
+
+            {!user && !isGuest ? (
+              <Link
+                href="/login"
+                className="block w-full text-center px-4 py-2 rounded-lg text-sm font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors"
+              >
+                Sign In
+              </Link>
+            ) : isGuest ? (
+              <Link
+                href="/login"
+                className="block w-full text-center px-4 py-2 rounded-lg text-sm font-semibold bg-fab-gold/20 text-fab-gold hover:bg-fab-gold/30 transition-colors"
+              >
+                Sign Up
+              </Link>
+            ) : (
               <>
-                {/* Main nav links — hidden on mobile */}
-                <div className="hidden md:flex items-center gap-0.5">
-                  {navLinks.filter((link) => !link.authOnly || isAuthenticated).map((link) => {
-                      const visibleSubs = link.subItems?.filter((s) => (!s.adminOnly || isAdmin) && (!s.authOnly || isAuthenticated));
-                      const hasSubs = visibleSubs && visibleSubs.length > 0;
-                      return (
-                      <div key={link.href} className={`relative ${hasSubs ? "group/nav" : ""}`}>
-                        <Link
-                          href={link.href}
-                          onClick={link.href === "/support" ? () => trackSupportClick("navbar") : undefined}
-                          className={`flex items-center gap-1.5 px-2.5 py-2 rounded-md text-sm font-medium transition-colors ${
-                            pathname === link.href || visibleSubs?.some((s) => pathname === s.href)
-                              ? `${link.color} ${link.bg}`
-                              : "text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover"
-                          }`}
-                        >
-                          {link.icon}
-                          {!link.iconOnly && <span className="hidden xl:inline">{link.label}</span>}
-                          {hasSubs && !link.iconOnly && <ChevronDown className="w-3 h-3 text-fab-dim hidden xl:block" />}
-                        </Link>
-                        {hasSubs && (
-                          <div className="absolute left-0 top-full pt-1 hidden group-hover/nav:block z-50">
-                            <div className={`bg-fab-surface border border-fab-border rounded-lg shadow-xl ${link.href === "/community" ? "w-64 overflow-visible" : "w-48 overflow-hidden"}`}>
-                              {link.href === "/community" && (
-                                <div className="px-2 pt-2 pb-1 relative">
-                                  <SmartSearch placeholder="Search players or teams..." className="text-xs" />
-                                </div>
-                              )}
-                              {visibleSubs.map((sub) => {
-                                const isExternal = sub.href.startsWith("http");
-                                const trackKey = sub.href.includes("amazon") ? "amazon" : sub.href.includes("tcgplayer") ? "tcgplayer" : sub.href.includes("sponsors") ? "github_sponsors" : sub.href.includes("ko-fi") ? "kofi" : undefined;
-                                if (isExternal) {
-                                  return (
-                                    <a
-                                      key={sub.href}
-                                      href={sub.href}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      onClick={() => { if (trackKey) trackSupportClick(trackKey); }}
-                                      className="flex items-center gap-2 px-3 py-2 text-sm text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover transition-colors"
-                                    >
-                                      {sub.icon && <span className="text-fab-dim shrink-0">{sub.icon}</span>}
-                                      <span className="flex-1">{sub.label}</span>
-                                      {sub.badge && <span className="text-[8px] font-bold uppercase tracking-wider text-emerald-400 bg-emerald-400/15 px-1.5 py-0.5 rounded-full">{sub.badge}</span>}
-                                      <ExternalLink className="w-3 h-3 text-fab-dim shrink-0" />
-                                    </a>
-                                  );
-                                }
-                                if (sub.href === "/feedback") {
-                                  return (
-                                    <button
-                                      key={sub.href}
-                                      onClick={() => setFeedbackOpen(true)}
-                                      className="flex items-center gap-2 w-full text-left px-3 py-2 text-sm text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover transition-colors"
-                                    >
-                                      {sub.icon && <span className="text-fab-dim shrink-0">{sub.icon}</span>}
-                                      {sub.label}
-                                    </button>
-                                  );
-                                }
-                                return (
-                                  <Link
-                                    key={sub.href}
-                                    href={sub.href}
-                                    className={`block px-3 py-2 text-sm transition-colors ${
-                                      pathname === sub.href
-                                        ? "text-fab-gold bg-fab-gold/10"
-                                        : "text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover"
-                                    }`}
-                                  >
-                                    {sub.label}
-                                  </Link>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                      );
-                  })}
-                  {isAuthenticated && (
+                <div className="flex items-center gap-2">
+                  <Link
+                    href={profileHref}
+                    className={`flex min-w-0 flex-1 items-center gap-2 p-2 rounded-lg transition-colors ${
+                      isActiveRoute(pathname, profileHref)
+                        ? "bg-fab-gold/15 text-fab-gold"
+                        : "bg-fab-bg text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover"
+                    }`}
+                  >
+                    {profile?.photoUrl ? (
+                      <img src={profile.photoUrl} alt="Your profile photo" className="w-8 h-8 rounded-full object-cover shrink-0" loading="lazy" />
+                    ) : (
+                      <span className="w-8 h-8 rounded-full bg-fab-gold/20 flex items-center justify-center text-fab-gold text-xs font-bold shrink-0">{initial}</span>
+                    )}
+                    <span className="min-w-0">
+                      <span className="block text-sm font-semibold truncate">{displayName}</span>
+                      {profile?.username && <span className="block text-[10px] text-fab-dim truncate">@{profile.username}</span>}
+                    </span>
+                  </Link>
+                  <NotificationBell />
+                </div>
+
+                <div className="grid grid-cols-2 gap-1">
+                  {visibleUserLinks.map((link) => (
                     <Link
-                      href="/import"
-                      className={`flex items-center gap-1.5 px-2.5 py-1.5 ml-0.5 rounded-lg text-sm font-semibold transition-colors ${
-                        pathname === "/import"
-                          ? "bg-fab-gold text-fab-bg"
-                          : "bg-fab-gold/15 text-fab-gold hover:bg-fab-gold/25 border border-fab-gold/30"
+                      key={link.href}
+                      href={link.href}
+                      className={`relative flex items-center gap-2 px-2 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                        isActiveRoute(pathname, link.href)
+                          ? "text-fab-gold bg-fab-gold/10"
+                          : "text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover"
                       }`}
                     >
-                      <ImportIcon className="w-4 h-4" />
-                      <span className="hidden xl:inline">Import</span>
+                      {link.icon}
+                      <span className="truncate">{link.label}</span>
+                      {link.href === "/friends" && incomingCount > 0 && (
+                        <span className="absolute right-1.5 top-1 px-1.5 py-0.5 text-[9px] font-bold rounded-full bg-fab-loss text-white">
+                          {incomingCount}
+                        </span>
+                      )}
                     </Link>
-                  )}
+                  ))}
                 </div>
 
-                {/* Right side: bell + user menu */}
-                <div className="hidden md:flex items-center gap-1 ml-2 pl-2 border-l border-fab-border">
-                  {!user && !isGuest ? (
-                    <Link
-                      href="/login"
-                      className="px-4 py-2 rounded-lg text-sm font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors"
-                    >
-                      Sign In
-                    </Link>
-                  ) : isGuest ? (
-                    <Link
-                      href="/login"
-                      className="px-4 py-2 rounded-lg text-sm font-semibold bg-fab-gold/20 text-fab-gold hover:bg-fab-gold/30 transition-colors"
-                    >
-                      Sign Up
-                    </Link>
-                  ) : (
-                    <>
-                      {isAdmin && onlineStats && (
-                        <Link
-                          href="/admin"
-                          className="flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] font-medium bg-fab-bg border border-fab-border hover:border-fab-gold/30 transition-colors"
-                          title={`${onlineStats.onlineNow} online now, ${onlineStats.activeToday} active today`}
-                        >
-                          <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse shrink-0" />
-                          <span className="text-green-400 font-bold">{onlineStats.onlineNow}</span>
-                          <span className="text-fab-dim">·</span>
-                          <span className="text-fab-muted">{onlineStats.activeToday} today</span>
-                        </Link>
-                      )}
-                      <NotificationBell />
-                      <UserMenu
-                        pathname={pathname}
-                        profile={profile}
-                        user={user}
-                        isAdmin={isAdmin}
-                        incomingFriendRequests={incomingCount}
-                      />
-                    </>
-                  )}
-                </div>
+                <button
+                  type="button"
+                  onClick={handleSignOut}
+                  className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-fab-border text-xs font-medium text-fab-muted hover:text-fab-loss hover:border-fab-loss/40 hover:bg-fab-loss/5 transition-colors"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  Sign Out
+                </button>
               </>
             )}
-          </div>
-        </div>
+          </>
+        )}
       </div>
     </nav>
+
     {feedbackOpen && <FeedbackModal open={feedbackOpen} onClose={() => setFeedbackOpen(false)} />}
   </>
   );
 }
 
-function UserMenu({
-  pathname,
-  profile,
-  user,
-  isAdmin,
-  incomingFriendRequests,
-}: {
-  pathname: string;
-  profile: { username: string; displayName?: string; photoUrl?: string } | null;
-  user: { email?: string | null } | null;
-  isAdmin: boolean;
-  incomingFriendRequests: number;
-}) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    function handleClick(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    }
-    if (open) document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, [open]);
-
-  // Close on route change
-  useEffect(() => {
-    setOpen(false);
-  }, [pathname]);
-
-  const initial = (profile?.displayName || profile?.username || user?.email || "U").charAt(0).toUpperCase();
-  const visibleLinks = userMenuLinks.filter((l) => !l.adminOnly || isAdmin);
-  const isMenuActive = visibleLinks.some((l) => pathname === l.href);
-  const hasBadge = incomingFriendRequests > 0;
-
-  const profileHref = profile?.username ? `/player/${profile.username}` : "/settings";
-
-  return (
-    <div className="relative flex items-center" ref={ref}>
-      {/* Avatar — links directly to profile */}
-      <Link
-        href={profileHref}
-        className={`relative flex items-center gap-1.5 pl-0.5 pr-1.5 py-0.5 rounded-l-full transition-all ${
-          pathname === profileHref
-            ? "ring-2 ring-fab-gold bg-fab-gold/20 text-fab-gold"
-            : "bg-fab-surface-hover text-fab-muted hover:text-fab-text hover:ring-1 hover:ring-fab-border"
-        }`}
-        title="View profile"
-      >
-        {profile?.photoUrl ? (
-          <img src={profile.photoUrl} alt="Your profile photo" className="w-7 h-7 rounded-full object-cover shrink-0" loading="lazy" />
-        ) : (
-          <span className="w-7 h-7 rounded-full bg-fab-gold/20 flex items-center justify-center text-fab-gold text-xs font-bold shrink-0">{initial}</span>
-        )}
-        {hasBadge && (
-          <span className="absolute top-0 left-5 w-2.5 h-2.5 rounded-full bg-fab-loss ring-2 ring-fab-surface" />
-        )}
-      </Link>
-      {/* Chevron — opens dropdown menu */}
-      <button
-        onClick={() => setOpen(!open)}
-        className={`flex items-center px-1.5 py-2 rounded-r-full transition-all -ml-px ${
-          open || isMenuActive
-            ? "bg-fab-gold/20 text-fab-gold"
-            : "bg-fab-surface-hover text-fab-muted hover:text-fab-text"
-        }`}
-        title="Account menu"
-      >
-        <ChevronDown className={`w-3 h-3 transition-transform ${open ? "rotate-180" : ""}`} />
-      </button>
-
-      {open && (
-        <div className="absolute top-full right-0 mt-1.5 w-56 bg-fab-surface border border-fab-border rounded-lg shadow-xl overflow-hidden z-50">
-          {/* Profile header */}
-          <Link
-            href={profile?.username ? `/player/${profile.username}` : "/settings"}
-                       className="flex items-center gap-3 px-4 py-3 hover:bg-fab-surface-hover transition-colors border-b border-fab-border"
-          >
-            {profile?.photoUrl ? (
-              <img src={profile.photoUrl} alt="Your profile photo" className="w-9 h-9 rounded-full object-cover shrink-0" loading="lazy" />
-            ) : (
-              <div className="w-9 h-9 rounded-full bg-fab-gold/20 flex items-center justify-center text-fab-gold font-bold text-sm shrink-0">
-                {initial}
-              </div>
-            )}
-            <div className="min-w-0">
-              <p className="text-sm font-semibold text-fab-text truncate">
-                {profile?.displayName || profile?.username || "My Account"}
-              </p>
-              {profile?.username && (
-                <p className="text-xs text-fab-dim truncate">@{profile.username}</p>
-              )}
-            </div>
-          </Link>
-
-          {/* Menu links */}
-          <div className="p-1.5">
-            {visibleLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                               className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                  pathname === link.href
-                    ? "text-fab-gold bg-fab-gold/10"
-                    : "text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover"
-                }`}
-              >
-                {link.icon}
-                {link.label}
-                {link.href === "/friends" && incomingFriendRequests > 0 && (
-                  <span className="ml-auto px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-fab-loss text-white">
-                    {incomingFriendRequests}
-                  </span>
-                )}
-              </Link>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
+function isActiveRoute(pathname: string, href: string): boolean {
+  if (href === "/") return pathname === "/";
+  return pathname === href || pathname.startsWith(`${href}/`);
 }
 
 export const platformIcons: Record<Creator["platform"], ReactNode> = {
@@ -374,34 +316,6 @@ export const platformIcons: Record<Creator["platform"], ReactNode> = {
     </svg>
   ),
 };
-
-function CollapsibleSection({
-  label,
-  children,
-  expanded,
-  onToggle,
-  borderTop = true,
-}: {
-  label: string;
-  children: ReactNode;
-  expanded: boolean;
-  onToggle: () => void;
-  borderTop?: boolean;
-}) {
-  return (
-    <>
-      {borderTop && <div className="border-t border-fab-border" />}
-      <button
-        onClick={onToggle}
-        className="flex items-center justify-between w-full px-4 py-2 hover:bg-fab-surface-hover transition-colors"
-      >
-        <span className="text-xs text-fab-dim font-medium uppercase tracking-wider">{label}</span>
-        <ChevronDown className={`w-3 h-3 text-fab-dim transition-transform ${expanded ? "rotate-180" : ""}`} />
-      </button>
-      {expanded && <div className="px-1.5 pb-1.5">{children}</div>}
-    </>
-  );
-}
 
 const SHIELD_TIERS = [
   { min: 100, color: "#fbbf24", label: "Gold", req: "100%" },
