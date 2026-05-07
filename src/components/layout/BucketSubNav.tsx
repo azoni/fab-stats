@@ -80,28 +80,24 @@ export const HOME_BUCKET: BucketSubNavItem[] = [
   { href: "/opponents", label: "Opponents" },
   { href: "/trends", label: "Trends" },
   { href: "/tournament-stats", label: "Tournament Stats" },
-  { href: "/goals", label: "Goals" },
 ];
 
 export const META_BUCKET: BucketSubNavItem[] = [
   { href: "/meta", label: "Hero Stats" },
   { href: "/leaderboard", label: "Rankings" },
   { href: "/matchups", label: "Matchup Matrix" },
-  { href: "/tier-list", label: "Tier List" },
   { href: "/compare", label: "Versus" },
-  { href: "/tournaments", label: "Tournaments" },
 ];
 
 export const COMMUNITY_BUCKET: BucketSubNavItem[] = [
   { href: "/community", label: "Community" },
   { href: "/team", label: "Teams" },
   { href: "/friends", label: "Friends", authOnly: true },
-  { href: "/search", label: "Search" },
 ];
 
-const HOME_PATHS = ["/", "/matches", "/events", "/opponents", "/trends", "/tournament-stats", "/goals", "/wrapped"];
-const META_PATHS = ["/meta", "/leaderboard", "/matchups", "/tier-list", "/compare", "/tournaments"];
-const COMMUNITY_PATHS = ["/community", "/team", "/group", "/friends", "/search"];
+const HOME_PATHS = ["/", "/matches", "/events", "/opponents", "/trends", "/tournament-stats", "/wrapped"];
+const META_PATHS = ["/meta", "/leaderboard", "/matchups", "/compare"];
+const COMMUNITY_PATHS = ["/community", "/team", "/group", "/friends"];
 
 function pathInBucket(pathname: string, bucket: string[]): boolean {
   return bucket.some((p) => pathname === p || (p !== "/" && pathname.startsWith(p + "/")));

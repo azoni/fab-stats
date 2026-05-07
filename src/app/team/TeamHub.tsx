@@ -24,7 +24,7 @@ export default function TeamHub() {
 
   useEffect(() => { setMounted(true); }, []);
 
-  // The "My Team" tab can show any of the user's teams. Defaults to primary,
+  // The "My Teams" tab can show any of the user's teams. Defaults to primary,
   // user can switch via the team-switcher pills at the top of the tab.
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
   useEffect(() => {
@@ -44,11 +44,10 @@ export default function TeamHub() {
   const [activeTab, setActiveTab] = useState<Tab>("browse");
   const [settingPrimaryId, setSettingPrimaryId] = useState<string | null>(null);
 
-  // Sync tab when team membership loads
+  // Keep users without teams out of the My Teams tab, but let Browse stay the default.
   useEffect(() => {
-    if (hasTeam) setActiveTab("my-team");
-    else if (activeTab === "my-team") setActiveTab("browse");
-  }, [hasTeam]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (!hasTeam && activeTab === "my-team") setActiveTab("browse");
+  }, [hasTeam, activeTab]);
 
   // Browse state
   const [allTeams, setAllTeams] = useState<Team[]>([]);
@@ -295,9 +294,6 @@ export default function TeamHub() {
       {invites.length > 0 && (
         <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 space-y-3">
           <h2 className="text-sm font-semibold text-amber-400">Team Invites</h2>
-          {hasTeam && (
-            <p className="text-xs text-amber-400/70">Leave your current team to accept an invite.</p>
-          )}
           {invites.map((inv) => (
             <div key={inv.id} className="flex items-center justify-between bg-fab-surface rounded-lg p-3">
               <div>
@@ -305,11 +301,9 @@ export default function TeamHub() {
                 <p className="text-xs text-fab-dim">Invited by {inv.inviterName}</p>
               </div>
               <div className="flex gap-2">
-                {!hasTeam && (
-                  <button onClick={() => handleAcceptInvite(inv)} className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-fab-win/20 text-fab-win hover:bg-fab-win/30 transition-colors">
-                    Accept
-                  </button>
-                )}
+                <button onClick={() => handleAcceptInvite(inv)} className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-fab-win/20 text-fab-win hover:bg-fab-win/30 transition-colors">
+                  Accept
+                </button>
                 <button onClick={() => handleDeclineInvite(inv)} className="px-3 py-1.5 rounded-lg text-xs font-semibold text-fab-dim hover:text-fab-muted transition-colors">
                   Decline
                 </button>
@@ -321,16 +315,6 @@ export default function TeamHub() {
 
       {/* Tabs */}
       <div className="flex gap-1 bg-fab-surface border border-fab-border rounded-lg p-1">
-        {hasTeam && (
-          <button
-            onClick={() => setActiveTab("my-team")}
-            className={`flex-1 py-2 rounded-md text-sm font-medium transition-colors ${
-              activeTab === "my-team" ? "bg-fab-gold/15 text-fab-gold" : "text-fab-dim hover:text-fab-muted"
-            }`}
-          >
-            <Settings className="w-3.5 h-3.5 inline mr-1.5" />My Team
-          </button>
-        )}
         <button
           onClick={() => setActiveTab("browse")}
           className={`flex-1 py-2 rounded-md text-sm font-medium transition-colors ${
@@ -339,6 +323,16 @@ export default function TeamHub() {
         >
           <Users className="w-3.5 h-3.5 inline mr-1.5" />Browse Teams
         </button>
+        {hasTeam && (
+          <button
+            onClick={() => setActiveTab("my-team")}
+            className={`flex-1 py-2 rounded-md text-sm font-medium transition-colors ${
+              activeTab === "my-team" ? "bg-fab-gold/15 text-fab-gold" : "text-fab-dim hover:text-fab-muted"
+            }`}
+          >
+            <Settings className="w-3.5 h-3.5 inline mr-1.5" />My Teams
+          </button>
+        )}
         {!hasTeam && (
           <button
             onClick={() => setActiveTab("create")}
@@ -351,7 +345,7 @@ export default function TeamHub() {
         )}
       </div>
 
-      {/* ── My Team tab ── */}
+      {/* My Teams tab */}
       {activeTab === "my-team" && team && (
         <div className="space-y-6">
           {/* My Teams switcher — only when on multiple teams */}

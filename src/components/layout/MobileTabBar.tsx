@@ -19,13 +19,13 @@ const tabs: TabSpec[] = [
     href: "/",
     label: "Home",
     icon: <HomeIcon className="w-5 h-5" />,
-    match: (p) => p === "/" || p.startsWith("/matches") || p.startsWith("/events") || p.startsWith("/opponents") || p.startsWith("/trends") || p.startsWith("/tournament-stats") || p.startsWith("/goals") || p.startsWith("/wrapped"),
+    match: (p) => p === "/" || p.startsWith("/matches") || p.startsWith("/events") || p.startsWith("/opponents") || p.startsWith("/trends") || p.startsWith("/tournament-stats") || p.startsWith("/wrapped"),
   },
   {
     href: "/meta",
     label: "Meta",
     icon: <Globe className="w-5 h-5" />,
-    match: (p) => p.startsWith("/meta") || p.startsWith("/leaderboard") || p.startsWith("/matchups") || p.startsWith("/tier-list") || p.startsWith("/compare") || p.startsWith("/tournaments"),
+    match: (p) => p.startsWith("/meta") || p.startsWith("/leaderboard") || p.startsWith("/matchups") || p.startsWith("/compare"),
   },
   {
     href: "/community",

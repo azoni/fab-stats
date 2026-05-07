@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { X, Bell, Search as SearchIcon, LogOut, Mail, Star, Settings as SettingsIcon, ShieldCheck, Gamepad2, Heart, User as UserIcon, Sword } from "lucide-react";
+import { X, Bell, Search as SearchIcon, LogOut, Mail, Star, Settings as SettingsIcon, ShieldCheck, Gamepad2, Heart, User as UserIcon, Sword, Users } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface ProfileSheetProps {
@@ -99,6 +99,7 @@ export function ProfileSheet({ open, onClose }: ProfileSheetProps) {
         {/* Menu */}
         <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden">
           <SheetRow icon={<Mail className="w-5 h-5" />} label="Inbox" onClick={() => go("/inbox")} />
+          <SheetRow icon={<Users className="w-5 h-5" />} label="Friends" onClick={() => go("/friends")} />
           <SheetRow icon={<Star className="w-5 h-5" />} label="Favorites" onClick={() => go("/favorites")} />
           <SheetRow icon={<Sword className="w-5 h-5" />} label="Import history" onClick={() => go("/import")} />
           <SheetRow icon={<UserIcon className="w-5 h-5" />} label="My profile" onClick={() => username ? go(`/player/${username}`) : go("/settings")} />

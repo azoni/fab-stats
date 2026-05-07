@@ -197,6 +197,44 @@ export async function getDailyPageViewTrend(days = 30): Promise<{ date: string; 
 }
 
 export type AnalyticsTimeRange = "1h" | "12h" | "24h" | "7d" | "all";
+export type PageViewTimeRange = "1h" | "24h" | "7d" | "all";
+
+/** Read page views only, scoped to the ranges shown in the admin overview. */
+export async function getPageViews(range: PageViewTimeRange = "all"): Promise<Record<string, number>> {
+  if (range === "all") {
+    const snap = await getDoc(doc(db, "analytics", "pageViews"));
+    return (snap.data() as Record<string, number>) || {};
+  }
+
+  const now = new Date();
+  const docIds: string[] = [];
+
+  if (range === "1h" || range === "24h") {
+    const hours = range === "1h" ? 1 : 24;
+    for (let i = 0; i < hours; i++) {
+      const d = new Date(now.getTime() - i * 3600000);
+      docIds.push(`pv_h_${hourKey(d)}`);
+    }
+  } else {
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(now.getTime() - i * 86400000);
+      docIds.push(`pv_d_${dayKey(d)}`);
+    }
+  }
+
+  const snaps = await Promise.all(docIds.map((id) => getDoc(doc(db, "analytics", id))));
+  const pageViews: Record<string, number> = {};
+
+  for (const snap of snaps) {
+    const data = snap.data() as Record<string, number> | undefined;
+    if (!data) continue;
+    for (const [key, count] of Object.entries(data)) {
+      pageViews[key] = (pageViews[key] || 0) + count;
+    }
+  }
+
+  return pageViews;
+}
 
 /** Read analytics data, optionally filtered by time range (admin only) */
 export async function getAnalytics(range: AnalyticsTimeRange = "all"): Promise<{
