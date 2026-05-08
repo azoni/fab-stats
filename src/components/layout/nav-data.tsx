@@ -1,4 +1,5 @@
-import type { ReactNode } from "react";
+"use client";
+import { useState, type ReactNode } from "react";
 import {
   Bot,
   Gamepad2,
@@ -7,6 +8,7 @@ import {
   Settings,
   ShoppingCart,
   Star,
+  Trophy,
   Users,
   Award,
 } from "lucide-react";
@@ -16,10 +18,33 @@ export type NavLink = { href: string; label: string; icon: ReactNode; color: str
 export type MoreLink = { href: string; label: string; icon: ReactNode; authOnly?: boolean; adminOnly?: boolean; badge?: string; divider?: boolean; sectionLabel?: string; subItems?: { href: string; label: string }[] };
 export type UserMenuLink = { href: string; label: string; icon: ReactNode; adminOnly?: boolean };
 
-function NavAssetIcon({ name }: { name: "home" | "meta" | "community" | "support" }) {
+/** Renders the painted-style nav icon if the PNG exists at
+ *  `/nav-icons/nav-{name}.png`. If it's missing (404), falls back to the
+ *  provided lucide-style ReactNode so new nav slots stay readable until
+ *  custom art is dropped in. */
+function NavAssetIcon({
+  name,
+  fallback,
+}: {
+  name: "home" | "meta" | "community" | "support" | "teams" | "achievements" | "rankings";
+  fallback?: ReactNode;
+}) {
+  const [failed, setFailed] = useState(false);
+  if (failed && fallback) {
+    return (
+      <span className="nav-icon-frame" aria-hidden="true">
+        {fallback}
+      </span>
+    );
+  }
   return (
     <span className="nav-icon-frame" aria-hidden="true">
-      <img src={`/nav-icons/nav-${name}.png`} alt="" className="nav-asset-icon" />
+      <img
+        src={`/nav-icons/nav-${name}.png`}
+        alt=""
+        className="nav-asset-icon"
+        onError={() => setFailed(true)}
+      />
     </span>
   );
 }
@@ -54,12 +79,12 @@ function XIcon() {
 export const navLinks: NavLink[] = [
   { href: "/", label: "Home", icon: <NavAssetIcon name="home" />, color: "text-fab-gold", bg: "bg-fab-gold/10", authOnly: true },
   { href: "/meta", label: "Meta", icon: <NavAssetIcon name="meta" />, color: "text-teal-400", bg: "bg-teal-400/10", subItems: [
-    { href: "/leaderboard", label: "Rankings" },
     { href: "/matchups", label: "Matchup Matrix" },
   ] },
+  { href: "/leaderboard", label: "Rankings", icon: <NavAssetIcon name="rankings" fallback={<Trophy className="w-4 h-4 text-current" />} />, color: "text-amber-400", bg: "bg-amber-400/10" },
   { href: "/activity", label: "Activity", icon: <NavAssetIcon name="community" />, color: "text-indigo-400", bg: "bg-indigo-400/10" },
-  { href: "/team", label: "Teams", icon: <span className="nav-icon-frame" aria-hidden="true"><Users className="w-4 h-4 text-current" /></span>, color: "text-sky-400", bg: "bg-sky-400/10" },
-  { href: "/achievements", label: "Achievements", icon: <span className="nav-icon-frame" aria-hidden="true"><Award className="w-4 h-4 text-current" /></span>, color: "text-amber-400", bg: "bg-amber-400/10" },
+  { href: "/team", label: "Teams", icon: <NavAssetIcon name="teams" fallback={<Users className="w-4 h-4 text-current" />} />, color: "text-sky-400", bg: "bg-sky-400/10" },
+  { href: "/achievements", label: "Achievements", icon: <NavAssetIcon name="achievements" fallback={<Award className="w-4 h-4 text-current" />} />, color: "text-yellow-400", bg: "bg-yellow-400/10" },
   { href: "/support", label: "Support", icon: <NavAssetIcon name="support" />, color: "text-pink-400", bg: "bg-pink-400/10", iconOnly: true, subItems: [
     { href: "https://discord.gg/WPP5aqCUHY", label: "Join Discord", icon: <DiscordIcon /> },
     { href: "https://discord.com/oauth2/authorize?client_id=1478583612537573479&permissions=0&scope=bot+applications.commands", label: "Add Discord Bot", icon: <Bot className="w-3.5 h-3.5" /> },
