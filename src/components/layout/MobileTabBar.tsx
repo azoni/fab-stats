@@ -42,10 +42,10 @@ const tabs: TabSpec[] = [
     match: (p) => p.startsWith("/activity") || p.startsWith("/community") || p.startsWith("/teams") || p.startsWith("/group") || p.startsWith("/friends") || p.startsWith("/search") || p.startsWith("/feed") || p.startsWith("/player"),
   },
   {
-    href: "/games",
+    href: "/extras",
     label: "Extras",
     icon: <NavAssetIcon name="extras" />,
-    match: (p) => p.startsWith("/games") || p.startsWith("/achievements") || p.startsWith("/compare") || p.startsWith("/docs") || p.startsWith("/changelog") || p.startsWith("/fabdoku") || p.startsWith("/crossword") || p.startsWith("/heroguesser") || p.startsWith("/matchupmania") || p.startsWith("/connections") || p.startsWith("/timeline") || p.startsWith("/trivia") || p.startsWith("/rhinarsrampage") || p.startsWith("/kayosknockout") || p.startsWith("/brutebrawl") || p.startsWith("/ninjacombo") || p.startsWith("/shadowstrike") || p.startsWith("/bladedash"),
+    match: (p) => p.startsWith("/extras") || p.startsWith("/games") || p.startsWith("/achievements") || p.startsWith("/compare") || p.startsWith("/docs") || p.startsWith("/changelog") || p.startsWith("/fabdoku") || p.startsWith("/crossword") || p.startsWith("/heroguesser") || p.startsWith("/matchupmania") || p.startsWith("/connections") || p.startsWith("/timeline") || p.startsWith("/trivia") || p.startsWith("/rhinarsrampage") || p.startsWith("/kayosknockout") || p.startsWith("/brutebrawl") || p.startsWith("/ninjacombo") || p.startsWith("/shadowstrike") || p.startsWith("/bladedash"),
   },
 ];
 
@@ -62,7 +62,7 @@ export function MobileTabBar() {
   }, [pathname]);
 
   const handleProfileClick = () => {
-    if (!isAuthenticated) {
+    if (!isAuthenticated && !isGuest) {
       router.push("/login");
       return;
     }

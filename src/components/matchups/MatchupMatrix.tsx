@@ -1,6 +1,6 @@
 "use client";
 import { useState, useMemo, useEffect, useCallback } from "react";
-import { computeHeroStats } from "@/lib/stats";
+import { computeHeroStats, getEventType } from "@/lib/stats";
 import { getAvailableFormats } from "@/lib/meta-stats";
 import { getHeroByName, resolveHeroName } from "@/lib/heroes";
 
@@ -51,6 +51,7 @@ interface MatchupMatrixProps {
 export function MatchupMatrix({ matches, entries, isLoaded }: MatchupMatrixProps) {
   const [mode, setMode] = useState<Mode>("personal");
   const [format, setFormat] = useState<string>("");
+  const [eventType, setEventType] = useState<string>("");
   const [ratedFilter, setRatedFilter] = useState<"all" | "rated" | "unrated">("all");
   const [selectedCell, setSelectedCell] = useState<{ hero: string; opp: string } | null>(null);
   const [ageFilter, setAgeFilter] = useState<AgeFilter>("adult");
@@ -69,7 +70,12 @@ export function MatchupMatrix({ matches, entries, isLoaded }: MatchupMatrixProps
 
   // Formats for personal data
   const personalFormats = useMemo(() => {
-    const set = new Set(matches.map((m) => m.format));
+    const set = new Set(matches.map((m) => m.format).filter(Boolean));
+    return [...set].sort();
+  }, [matches]);
+
+  const personalEventTypes = useMemo(() => {
+    const set = new Set(matches.map((m) => getEventType(m)).filter((t) => t && t !== "Unknown"));
     return [...set].sort();
   }, [matches]);
 
@@ -82,6 +88,7 @@ export function MatchupMatrix({ matches, entries, isLoaded }: MatchupMatrixProps
   const filteredMatches = useMemo(() => {
     let m = matches;
     if (format) m = m.filter((match) => match.format === format);
+    if (eventType) m = m.filter((match) => getEventType(match) === eventType);
     if (ratedFilter === "rated") m = m.filter((match) => match.rated === true);
     else if (ratedFilter === "unrated") m = m.filter((match) => match.rated !== true);
     if (period === "30d") {
@@ -98,7 +105,7 @@ export function MatchupMatrix({ matches, entries, isLoaded }: MatchupMatrixProps
       m = m.filter((match) => match.date >= customStart && match.date <= customEnd);
     }
     return m;
-  }, [matches, format, ratedFilter, period, customStart, customEnd]);
+  }, [matches, format, eventType, ratedFilter, period, customStart, customEnd]);
 
   // Personal hero stats
   const heroStats = useMemo(
@@ -108,7 +115,7 @@ export function MatchupMatrix({ matches, entries, isLoaded }: MatchupMatrixProps
 
   const allOpponents = useMemo(
     () =>
-      [...new Set(filteredMatches.map((m) => m.opponentHero).filter((h) => h !== "Unknown"))].sort(),
+      [...new Set(filteredMatches.map((m) => m.opponentHero).filter((h): h is string => Boolean(h) && h !== "Unknown"))].sort(),
     [filteredMatches]
   );
 
@@ -200,6 +207,30 @@ export function MatchupMatrix({ matches, entries, isLoaded }: MatchupMatrixProps
             </button>
           ))}
         </div>
+
+        {mode === "personal" && personalEventTypes.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            <button
+              onClick={() => setEventType("")}
+              className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
+                !eventType ? "bg-fab-gold/15 text-fab-gold" : "bg-fab-surface text-fab-muted hover:text-fab-text border border-fab-border"
+              }`}
+            >
+              All Event Types
+            </button>
+            {personalEventTypes.map((type) => (
+              <button
+                key={type}
+                onClick={() => setEventType(type)}
+                className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
+                  eventType === type ? "bg-fab-gold/15 text-fab-gold" : "bg-fab-surface text-fab-muted hover:text-fab-text border border-fab-border"
+                }`}
+              >
+                {type}
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* Rated filter */}
         <div className="flex gap-1.5">

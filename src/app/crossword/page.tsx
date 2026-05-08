@@ -14,13 +14,14 @@ import {
   saveGameState,
   cleanupOldStates,
 } from "@/lib/crossword/game-state";
+import { countCrosswordSolvedWords, crosswordWordKey } from "@/lib/crossword/solved-words";
 import { saveResult, loadStats, markShared } from "@/lib/crossword/firestore";
 import { createCrosswordFeedEvent } from "@/lib/feed";
 import { logActivity } from "@/lib/activity-log";
 import { detectTierUp } from "@/lib/badge-tiers";
 import { BadgeTierUpPopup } from "@/components/profile/BadgeTierUpPopup";
 import { syncAchievementsAfterGame } from "@/lib/achievement-tracking";
-import type { CrosswordGameState, CrosswordStats, Direction, CrosswordPuzzle } from "@/lib/crossword/types";
+import type { CrosswordGameState, CrosswordStats, Direction, CrosswordPuzzle, SolvedWordId } from "@/lib/crossword/types";
 
 function formatTime(seconds: number): string {
   const m = Math.floor(seconds / 60);
@@ -42,8 +43,8 @@ function findWordAt(puzzle: CrosswordPuzzle, row: number, col: number, dir: Dire
 }
 
 /** Check which words are fully and correctly solved. */
-function checkSolvedWords(puzzle: CrosswordPuzzle, cells: CrosswordGameState["cells"]): number[] {
-  const solved: number[] = [];
+function checkSolvedWords(puzzle: CrosswordPuzzle, cells: CrosswordGameState["cells"]): SolvedWordId[] {
+  const solved: SolvedWordId[] = [];
   for (const w of puzzle.words) {
     const dr = w.direction === "down" ? 1 : 0;
     const dc = w.direction === "across" ? 1 : 0;
@@ -56,7 +57,7 @@ function checkSolvedWords(puzzle: CrosswordPuzzle, cells: CrosswordGameState["ce
         break;
       }
     }
-    if (allCorrect) solved.push(w.number);
+    if (allCorrect) solved.push(crosswordWordKey(w));
   }
   return solved;
 }
@@ -95,7 +96,7 @@ export default function CrosswordPage() {
           "shared",
           gs.date,
           gs.won,
-          gs.solvedWords.length,
+          countCrosswordSolvedWords(gs.solvedWords, puzzle),
           puzzle.words.length,
           gs.elapsedSeconds,
           gs.checksUsed,
@@ -103,7 +104,7 @@ export default function CrosswordPage() {
         ).catch(() => {});
       }
     },
-    [user?.uid, profile, puzzle.words.length]
+    [user?.uid, profile, puzzle]
   );
 
   // Timer
@@ -192,7 +193,7 @@ export default function CrosswordPage() {
           elapsedSeconds: gs.elapsedSeconds,
           checksUsed: gs.checksUsed,
           revealsUsed: gs.revealsUsed,
-          wordsFound: gs.solvedWords.length,
+          wordsFound: countCrosswordSolvedWords(gs.solvedWords, puzzle),
           totalWords: puzzle.words.length,
           timestamp: Date.now(),
         };
@@ -216,7 +217,7 @@ export default function CrosswordPage() {
           "completed",
           gs.date,
           gs.won,
-          gs.solvedWords.length,
+          countCrosswordSolvedWords(gs.solvedWords, puzzle),
           puzzle.words.length,
           gs.elapsedSeconds,
           gs.checksUsed,
@@ -224,7 +225,7 @@ export default function CrosswordPage() {
         ).catch((err) => console.error("Crossword feed event failed:", err));
       }
     },
-    [user?.uid, profile, puzzle.words.length]
+    [user?.uid, profile, puzzle, stats?.gamesPlayed]
   );
 
   const handleLetterInput = useCallback(
@@ -514,7 +515,6 @@ export default function CrosswordPage() {
           puzzle={puzzle}
           stats={stats}
           onShare={() => setShowShare(true)}
-          onCopy={() => triggerShared(gameState)}
         />
       )}
 

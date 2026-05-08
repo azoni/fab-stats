@@ -47,6 +47,7 @@ export function PostEventRecap({ recap, onViewOpponents, onDashboard, onImportMo
   const [shareFinish, setShareFinish] = useState<PlayoffFinish | null>(null);
   const [autoOpened, setAutoOpened] = useState(false);
   const [visiblePlacements, setVisiblePlacements] = useState(3);
+  const [showAllAchievements, setShowAllAchievements] = useState(false);
 
   useEffect(() => {
     if (hasPlacement && !autoOpened && playerName) {
@@ -290,6 +291,7 @@ export function PostEventRecap({ recap, onViewOpponents, onDashboard, onImportMo
           </h2>
           {[...newAchievements]
             .sort((a, b) => rarityOrder[a.rarity] - rarityOrder[b.rarity])
+            .slice(0, showAllAchievements ? newAchievements.length : 4)
             .map((achievement) => {
               const colors = rarityColors[achievement.rarity];
               return (
@@ -312,6 +314,15 @@ export function PostEventRecap({ recap, onViewOpponents, onDashboard, onImportMo
                 </div>
               );
             })}
+          {newAchievements.length > 4 && (
+            <button
+              type="button"
+              onClick={() => setShowAllAchievements((value) => !value)}
+              className="text-xs font-semibold text-fab-gold hover:text-fab-gold-light transition-colors"
+            >
+              {showAllAchievements ? "Show fewer" : `View ${newAchievements.length - 4} more`}
+            </button>
+          )}
         </div>
       )}
 

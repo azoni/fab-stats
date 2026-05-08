@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { countCrosswordSolvedWords } from "@/lib/crossword/solved-words";
 import type { CrosswordGameState, CrosswordPuzzle, CrosswordStats } from "@/lib/crossword/types";
 
 interface CrosswordResultProps {
@@ -8,7 +9,6 @@ interface CrosswordResultProps {
   puzzle: CrosswordPuzzle;
   stats: CrosswordStats | null;
   onShare: () => void;
-  onCopy?: () => void;
 }
 
 function formatTime(seconds: number): string {
@@ -17,12 +17,11 @@ function formatTime(seconds: number): string {
   return `${m}:${String(s).padStart(2, "0")}`;
 }
 
-export function CrosswordResult({ gameState, puzzle, stats, onShare, onCopy }: CrosswordResultProps) {
-  const [copied, setCopied] = useState(false);
+export function CrosswordResult({ gameState, puzzle, stats, onShare }: CrosswordResultProps) {
   const [countdown, setCountdown] = useState("");
 
   const totalWords = puzzle.words.length;
-  const wordsFound = gameState.solvedWords.length;
+  const wordsFound = countCrosswordSolvedWords(gameState.solvedWords, puzzle);
 
   useEffect(() => {
     function updateCountdown() {
@@ -40,25 +39,6 @@ export function CrosswordResult({ gameState, puzzle, stats, onShare, onCopy }: C
     const interval = setInterval(updateCountdown, 1000);
     return () => clearInterval(interval);
   }, []);
-
-  function generateShareText() {
-    const status = gameState.won ? "Solved!" : `${wordsFound}/${totalWords}`;
-    const time = gameState.won ? ` in ${formatTime(gameState.elapsedSeconds)}` : "";
-    const aids =
-      gameState.checksUsed + gameState.revealsUsed > 0
-        ? `\n${gameState.checksUsed} checks, ${gameState.revealsUsed} reveals`
-        : "\nNo hints used!";
-    return `FaB Crossword ${gameState.date}\n${status}${time}${aids}\n\nfabstats.net/crossword`;
-  }
-
-  async function handleCopy() {
-    try {
-      await navigator.clipboard.writeText(generateShareText());
-      setCopied(true);
-      onCopy?.();
-      setTimeout(() => setCopied(false), 2000);
-    } catch {}
-  }
 
   return (
     <div className="bg-fab-surface border border-fab-border rounded-xl p-5 mt-4 max-w-[400px] mx-auto">
@@ -140,26 +120,6 @@ export function CrosswordResult({ gameState, puzzle, stats, onShare, onCopy }: C
 
       {/* Actions */}
       <div className="flex gap-2">
-        <button
-          onClick={handleCopy}
-          className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-fab-surface-hover border border-fab-border rounded-lg text-sm font-medium text-fab-text hover:text-fab-gold transition-colors"
-        >
-          {copied ? (
-            <>
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-              </svg>
-              Copied!
-            </>
-          ) : (
-            <>
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15.666 3.888A2.25 2.25 0 0013.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 01-.75.75H9.75a.75.75 0 01-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 01-2.25 2.25H6.75A2.25 2.25 0 014.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 011.927-.184" />
-              </svg>
-              Copy
-            </>
-          )}
-        </button>
         <button
           onClick={onShare}
           className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-fab-gold text-fab-bg rounded-lg text-sm font-semibold hover:brightness-110 transition-all"

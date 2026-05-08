@@ -51,6 +51,16 @@ const COMMUNITY_LINKS: SupportLink[] = [
 
 const SHOP_LINKS: SupportLink[] = [
   {
+    title: "Metafy Membership",
+    description: "Support the project directly through Metafy and help keep community tools moving.",
+    href: "https://mfy.gg/@azoni/members?membershipId=99383fe4-b403-4f05-a041-c3212bd7ea30",
+    trackKey: "metafy",
+    color: "text-fab-gold",
+    bgColor: "bg-fab-gold/10",
+    ringColor: "ring-fab-gold/20",
+    icon: <HeartHandshake className="h-5 w-5" />,
+  },
+  {
     title: "Shop Amazon",
     description: "Start Amazon shopping here. You pay the same price and Amazon sends a small percentage to FaB Stats.",
     href: "https://www.amazon.com/?tag=oldwaystoda00-20",
@@ -70,14 +80,15 @@ const SHOP_LINKS: SupportLink[] = [
     bgColor: "bg-blue-400/10",
     ringColor: "ring-blue-400/20",
     icon: <ShoppingCart className="h-5 w-5" />,
+    badge: "Free",
   },
 ];
 
 export default function SupportPageContent() {
   return (
     <div className="mx-auto max-w-5xl space-y-6">
-      <section className="relative overflow-hidden rounded-2xl border border-fab-border/80 bg-[linear-gradient(135deg,rgba(25,23,18,0.96),rgba(14,15,14,0.95)_60%,rgba(17,24,22,0.92))] p-5 shadow-[0_22px_70px_rgba(0,0,0,0.28)] sm:p-6">
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_12%_0%,rgba(245,179,57,0.17),transparent_30%),radial-gradient(circle_at_86%_20%,rgba(38,211,177,0.12),transparent_28%)]" />
+      <section className="relative overflow-hidden rounded-lg border border-fab-border/80 bg-fab-surface/95 p-5 shadow-[0_18px_52px_rgba(0,0,0,0.22)] sm:p-6">
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-fab-gold/45" />
         <div className="relative grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-center">
           <div>
             <div className="inline-flex items-center gap-2 rounded-full border border-fab-border/80 bg-fab-bg/55 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-fab-gold">

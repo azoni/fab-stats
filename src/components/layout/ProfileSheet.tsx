@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Bell, Heart, Mail, Search as SearchIcon, Settings as SettingsIcon, ShieldCheck, Star, User as UserIcon, Users, X } from "lucide-react";
+import { Bell, Heart, Import, Mail, Search as SearchIcon, Settings as SettingsIcon, ShieldCheck, Star, User as UserIcon, Users, X } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface ProfileSheetProps {
@@ -13,7 +13,7 @@ interface ProfileSheetProps {
 
 export function ProfileSheet({ open, onClose }: ProfileSheetProps) {
   const router = useRouter();
-  const { user, profile, isAdmin } = useAuth();
+  const { user, profile, isGuest, isAdmin, signOut } = useAuth();
 
   useEffect(() => {
     if (!open) return;
@@ -29,7 +29,7 @@ export function ProfileSheet({ open, onClose }: ProfileSheetProps) {
   }, [open, onClose]);
 
   const username = profile?.username || "";
-  const displayName = profile?.displayName || profile?.username || user?.email || "User";
+  const displayName = isGuest ? "Guest Mode" : profile?.displayName || profile?.username || user?.email || "User";
 
   const go = (href: string) => {
     onClose();
@@ -66,7 +66,11 @@ export function ProfileSheet({ open, onClose }: ProfileSheetProps) {
           )}
           <div className="min-w-0 flex-1">
             <div className="text-sm font-semibold text-fab-text truncate">{displayName}</div>
-            {username && <div className="text-xs text-fab-dim truncate">@{username}</div>}
+            {isGuest ? (
+              <div className="text-xs text-fab-dim truncate">Local browser data</div>
+            ) : username && (
+              <div className="text-xs text-fab-dim truncate">@{username}</div>
+            )}
           </div>
           {username && (
             <Link
@@ -80,17 +84,36 @@ export function ProfileSheet({ open, onClose }: ProfileSheetProps) {
         </div>
 
         <div className="grid grid-cols-2 gap-2">
-          <SheetButton icon={<Bell className="w-5 h-5" />} label="Notifications" onClick={() => go("/notifications")} />
-          <SheetButton icon={<SearchIcon className="w-5 h-5" />} label="Search" onClick={() => go("/search")} />
+          {isGuest ? (
+            <>
+              <SheetButton icon={<Import className="w-5 h-5" />} label="Import" onClick={() => go("/import")} />
+              <SheetButton icon={<SettingsIcon className="w-5 h-5" />} label="Settings" onClick={() => go("/settings")} />
+            </>
+          ) : (
+            <>
+              <SheetButton icon={<Bell className="w-5 h-5" />} label="Notifications" onClick={() => go("/notifications")} />
+              <SheetButton icon={<SearchIcon className="w-5 h-5" />} label="Search" onClick={() => go("/search")} />
+            </>
+          )}
         </div>
 
         <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden">
-          <SheetRow icon={<Mail className="w-5 h-5" />} label="Inbox" onClick={() => go("/inbox")} />
-          <SheetRow icon={<Users className="w-5 h-5" />} label="Friends" onClick={() => go("/friends")} />
-          <SheetRow icon={<Star className="w-5 h-5" />} label="Favorites" onClick={() => go("/favorites")} />
-          <SheetRow icon={<UserIcon className="w-5 h-5" />} label="My profile" onClick={() => username ? go(`/player/${username}`) : go("/settings")} />
-          <SheetRow icon={<SettingsIcon className="w-5 h-5" />} label="Settings" onClick={() => go("/settings")} />
+          {!isGuest && (
+            <>
+              <SheetRow icon={<Mail className="w-5 h-5" />} label="Inbox" onClick={() => go("/inbox")} />
+              <SheetRow icon={<Users className="w-5 h-5" />} label="Friends" onClick={() => go("/friends")} />
+              <SheetRow icon={<Star className="w-5 h-5" />} label="Favorites" onClick={() => go("/favorites")} />
+              <SheetRow icon={<UserIcon className="w-5 h-5" />} label="My profile" onClick={() => username ? go(`/player/${username}`) : go("/settings")} />
+              <SheetRow icon={<SettingsIcon className="w-5 h-5" />} label="Settings" onClick={() => go("/settings")} />
+            </>
+          )}
           <SheetRow icon={<Heart className="w-5 h-5" />} label="Support" onClick={() => go("/support")} />
+          {isGuest && (
+            <>
+              <SheetRow icon={<UserIcon className="w-5 h-5" />} label="Create Account" onClick={() => go("/login")} />
+              <SheetRow icon={<X className="w-5 h-5" />} label="Exit Guest Mode" onClick={() => { onClose(); signOut(); router.push("/login"); }} />
+            </>
+          )}
           {isAdmin && (
             <SheetRow icon={<ShieldCheck className="w-5 h-5" />} label="Admin" onClick={() => go("/admin")} />
           )}

@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { copyCardImage, downloadCardImage } from "@/lib/share-image";
+import { countCrosswordSolvedWords } from "@/lib/crossword/solved-words";
 import type { CrosswordGameState, CrosswordPuzzle } from "@/lib/crossword/types";
 
 interface CrosswordShareCardProps {
@@ -22,7 +23,7 @@ export function CrosswordShareCard({ gameState, puzzle, onClose, onShared }: Cro
   const [status, setStatus] = useState<"idle" | "copying" | "copied" | "downloaded">("idle");
 
   const totalWords = puzzle.words.length;
-  const wordsFound = gameState.solvedWords.length;
+  const wordsFound = countCrosswordSolvedWords(gameState.solvedWords, puzzle);
 
   async function handleCopy() {
     setStatus("copying");

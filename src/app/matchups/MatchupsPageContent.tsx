@@ -6,6 +6,7 @@ import { MatchupMatrix } from "@/components/matchups/MatchupMatrix";
 import { useAuth } from "@/contexts/AuthContext";
 import { useMatches } from "@/hooks/useMatches";
 import { useLeaderboard } from "@/hooks/useLeaderboard";
+import { getAvailableEventTypes } from "@/lib/meta-stats";
 
 const FORMATS = ["", "Classic Constructed", "Blitz", "Living Legend"] as const;
 const FORMAT_LABELS: Record<string, string> = {
@@ -37,6 +38,7 @@ type Tab = "community" | "personal";
 export default function MatchupsPageContent() {
   const [tab, setTab] = useState<Tab>("community");
   const [format, setFormat] = useState("");
+  const [eventType, setEventType] = useState("");
   const [ratedFilter, setRatedFilter] = useState<"" | "rated" | "unrated">("");
   const [timePreset, setTimePreset] = useState("all");
   const { user, isGuest } = useAuth();
@@ -46,6 +48,7 @@ export default function MatchupsPageContent() {
   const isAuthenticated = !!user && !isGuest;
   const selectedTime = TIME_PRESETS.find((t) => t.id === timePreset) || TIME_PRESETS[0];
   const { since, until } = getDateRange("daysAgo" in selectedTime ? selectedTime.daysAgo : undefined);
+  const eventTypes = getAvailableEventTypes(entries);
 
   return (
     <div className="max-w-7xl mx-auto">
@@ -110,6 +113,29 @@ export default function MatchupsPageContent() {
                 </button>
               ))}
             </div>
+            {eventTypes.length > 1 && (
+              <div className="flex rounded-lg border border-fab-border overflow-hidden overflow-x-auto scrollbar-hide">
+                <button
+                  onClick={() => setEventType("")}
+                  className={`px-2.5 py-1 text-xs font-medium transition-colors ${
+                    eventType === "" ? "bg-fab-gold/15 text-fab-gold" : "text-fab-muted hover:text-fab-text"
+                  }`}
+                >
+                  All Types
+                </button>
+                {eventTypes.map((type) => (
+                  <button
+                    key={type}
+                    onClick={() => setEventType(type)}
+                    className={`px-2.5 py-1 text-xs font-medium transition-colors whitespace-nowrap border-l border-fab-border ${
+                      eventType === type ? "bg-fab-gold/15 text-fab-gold" : "text-fab-muted hover:text-fab-text"
+                    }`}
+                  >
+                    {type}
+                  </button>
+                ))}
+              </div>
+            )}
             <div className="flex rounded-lg border border-fab-border overflow-hidden">
               {TIME_PRESETS.map((t, i) => (
                 <button
@@ -127,7 +153,7 @@ export default function MatchupsPageContent() {
             </div>
           </div>
 
-          <MetaMatchupMatrix format={format || undefined} sinceDate={since} untilDate={until} rated={ratedFilter || undefined} />
+          <MetaMatchupMatrix format={format || undefined} eventType={eventType || undefined} sinceDate={since} untilDate={until} rated={ratedFilter || undefined} />
         </>
       )}
 

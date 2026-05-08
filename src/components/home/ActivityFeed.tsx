@@ -64,7 +64,7 @@ export function ActivityFeed({ rankMap, eventTierMap, underlineTierMap, heroComp
   const { friends } = useFriends();
   const { favorites } = useFavorites();
   const [scope, _setScope] = useState<ScopeTab>(() => readStored(SCOPE_KEY, ["community", "friends"], "community"));
-  const [typeFilter, _setTypeFilter] = useState<TypeFilter>(() => readStored(TYPE_KEY, ["all", "import", "placement", "games", "engagement"], "placement"));
+  const [typeFilter, _setTypeFilter] = useState<TypeFilter>("all");
   const feedTypeFilter: FeedEventType = (typeFilter === "engagement" || typeFilter === "games") ? "all" : typeFilter;
   const { events, loading } = useFeed(feedTypeFilter);
 

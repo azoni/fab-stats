@@ -872,36 +872,33 @@ export default function LeaderboardPage() {
       </div>
 
       {/* ── Category tabs — flat segmented control with active bottom border. */}
-      <div className="flex gap-0 overflow-x-auto mb-3 border-b border-fab-border/70 scrollbar-hide">
+      <div className="flex gap-1 overflow-x-auto rounded-lg border border-fab-border bg-fab-surface/90 p-1.5 mb-3 scrollbar-hide">
         {categories.map((cat) => (
           <button
             key={cat.id}
             onClick={() => selectCategory(cat.id)}
-            className={`relative px-4 py-2.5 text-sm font-semibold whitespace-nowrap transition-colors ${
+            className={`relative rounded-md px-4 py-3 text-sm font-bold whitespace-nowrap transition-colors ${
               activeCategory === cat.id
-                ? "text-fab-gold"
-                : "text-fab-muted hover:text-fab-text"
+                ? "bg-fab-gold/15 text-fab-gold"
+                : "text-fab-muted hover:bg-fab-bg/70 hover:text-fab-text"
             }`}
           >
             {cat.label}
-            {activeCategory === cat.id && (
-              <span className="absolute -bottom-px inset-x-3 h-[2px] bg-fab-gold rounded-t" />
-            )}
           </button>
         ))}
       </div>
 
       {/* ── Sub-tabs for selected category ── */}
       {activeCategoryObj.tabs.length > 1 && (
-        <div className="flex gap-1 overflow-x-auto pb-2 mb-4 scrollbar-hide">
+        <div className="flex gap-2 overflow-x-auto pb-2 mb-4 scrollbar-hide">
           {activeCategoryObj.tabs.map((tabId) => (
             <button
               key={tabId}
               onClick={() => selectTab(tabId)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${
+              className={`px-3.5 py-2 rounded-lg border text-xs font-bold whitespace-nowrap transition-colors ${
                 activeTab === tabId
-                  ? "bg-fab-gold/15 text-fab-gold"
-                  : "text-fab-muted hover:text-fab-text"
+                  ? "border-fab-gold/35 bg-fab-gold/15 text-fab-gold"
+                  : "border-fab-border bg-fab-surface/85 text-fab-muted hover:text-fab-text"
               }`}
             >
               {tabMap[tabId]?.label || tabId}

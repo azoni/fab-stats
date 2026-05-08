@@ -7,6 +7,8 @@ export interface WordEntry {
 
 export type Direction = "across" | "down";
 
+export type SolvedWordId = `${number}:${Direction}` | number;
+
 /** A placed word on the grid. */
 export interface PlacedWord {
   word: string;
@@ -39,7 +41,7 @@ export interface CrosswordGameState {
   cells: CellState[][];
   completed: boolean;
   won: boolean;
-  solvedWords: number[];
+  solvedWords: SolvedWordId[];
   elapsedSeconds: number;
   checksUsed: number;
   revealsUsed: number;

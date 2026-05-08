@@ -28,12 +28,13 @@ function isYoungHero(name: string): boolean {
 
 interface MetaMatchupMatrixProps {
   format?: string;
+  eventType?: string;
   sinceDate?: string;
   untilDate?: string;
   rated?: "rated" | "unrated";
 }
 
-export function MetaMatchupMatrix({ format, sinceDate, untilDate, rated }: MetaMatchupMatrixProps) {
+export function MetaMatchupMatrix({ format, eventType, sinceDate, untilDate, rated }: MetaMatchupMatrixProps) {
   const [data, setData] = useState<CommunityMatchupCell[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedCell, setSelectedCell] = useState<{ hero: string; opp: string } | null>(null);
@@ -53,14 +54,14 @@ export function MetaMatchupMatrix({ format, sinceDate, untilDate, rated }: MetaM
         preset = `custom:${sinceDate}:${untilDate}`;
       }
       const months = getMonthsForPreset(preset);
-      const result = await getCommunityHeroMatchups(months, format || undefined, rated);
+      const result = await getCommunityHeroMatchups(months, format || undefined, rated, eventType || undefined);
       setData(result);
     } catch {
       setData([]);
     } finally {
       setLoading(false);
     }
-  }, [format, sinceDate, untilDate, rated]);
+  }, [format, eventType, sinceDate, untilDate, rated]);
 
   useEffect(() => {
     fetchData();

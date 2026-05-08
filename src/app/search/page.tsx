@@ -128,7 +128,6 @@ function SearchContent() {
       <PageHero
         eyebrow="Discover"
         title="Find players and teams"
-        description="Search public profiles, team pages, and community records without guessing which section they live in."
         icon={<SearchIcon className="h-4 w-4" />}
         metrics={[
           { label: "Players", value: results.length, sub: searched ? "matching search" : "ready" },

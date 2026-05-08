@@ -7,6 +7,7 @@ import { importMatchesFirestore, clearAllMatchesFirestore, updateProfile, regist
 import { importMatchesLocal } from "@/lib/storage";
 import { createImportFeedEvent, createPlacementFeedEvent, deleteAllFeedEventsForUser } from "@/lib/feed";
 import { detectNewAchievements } from "@/lib/achievement-tracking";
+import { loadKudosCounts } from "@/lib/kudos";
 import { evaluateAchievements } from "@/lib/achievements";
 import { computeOverallStats, computeHeroStats, computeOpponentStats, computeEventStats, computePlayoffFinishes, getEventName, type PlayoffFinish } from "@/lib/stats";
 import { linkMatchesWithOpponents } from "@/lib/match-linking";
@@ -454,7 +455,8 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
           const overall = computeOverallStats(afterMatches);
           const heroStats = computeHeroStats(afterMatches);
           const oppStats = computeOpponentStats(afterMatches);
-          const earned = evaluateAchievements(afterMatches, overall, heroStats, oppStats);
+          const kudosCounts = await loadKudosCounts(user.uid).catch(() => ({}));
+          const earned = evaluateAchievements(afterMatches, overall, heroStats, oppStats, kudosCounts);
           detectedNew = await detectNewAchievements(user.uid, earned);
           setNewAchievements(detectedNew);
 

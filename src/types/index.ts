@@ -822,7 +822,7 @@ export interface ArticleComment {
 }
 
 // Gamification
-export type AchievementCategory = "milestone" | "streak" | "mastery" | "exploration" | "fun" | "special" | "social";
+export type AchievementCategory = "milestone" | "streak" | "mastery" | "exploration" | "fun" | "games" | "special" | "social";
 
 export interface Achievement {
   id: string;
@@ -936,5 +936,7 @@ export interface HeroMatchupDoc {
   total: number;
   byFormat?: Record<string, { hero1Wins: number; hero2Wins: number; draws: number; total: number }>;
   byRated?: Record<string, { hero1Wins: number; hero2Wins: number; draws: number; total: number }>;
+  byEventType?: Record<string, { hero1Wins: number; hero2Wins: number; draws: number; total: number }>;
+  byFormatEventType?: Record<string, Record<string, { hero1Wins: number; hero2Wins: number; draws: number; total: number }>>;
   updatedAt: string;
 }

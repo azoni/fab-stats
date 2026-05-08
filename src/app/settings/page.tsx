@@ -19,7 +19,7 @@ import { THEME_OPTIONS, type ThemeName } from "@/lib/theme-config";
 import { Switch } from "@/components/ui/switch";
 import { Collapsible } from "@/components/ui/collapsible";
 import { PageHero } from "@/components/ui/PageHero";
-import { Camera, CheckCircle, ChevronRight, Database, Palette, Settings, Shield, UserRound } from "lucide-react";
+import { Camera, CheckCircle, ChevronRight, Settings } from "lucide-react";
 import { toast } from "sonner";
 
 function resizeImage(file: File, maxSize: number): Promise<string> {
@@ -174,48 +174,6 @@ function YearInReview() {
   );
 }
 
-function SettingsRail({ gemId, profileVisibility }: { gemId: string; profileVisibility: string }) {
-  const items = [
-    { href: "#profile", label: "Profile", icon: <UserRound className="h-4 w-4" /> },
-    { href: "#appearance", label: "Appearance", icon: <Palette className="h-4 w-4" /> },
-    { href: "#privacy", label: "Privacy", icon: <Shield className="h-4 w-4" /> },
-    { href: "#data", label: "Data", icon: <Database className="h-4 w-4" /> },
-  ];
-
-  return (
-    <aside className="space-y-3 lg:sticky lg:top-6 lg:self-start">
-      <div className="rounded-lg border border-fab-border bg-fab-surface/95 p-3">
-        <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.14em] text-fab-dim">Settings</p>
-        <nav className="space-y-1">
-          {items.map((item) => (
-            <a
-              key={item.href}
-              href={item.href}
-              className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-semibold text-fab-muted transition-colors hover:bg-fab-surface-hover hover:text-fab-text"
-            >
-              <span className="text-fab-gold/75">{item.icon}</span>
-              {item.label}
-            </a>
-          ))}
-        </nav>
-      </div>
-      <div className="rounded-lg border border-fab-border bg-fab-surface/95 p-4">
-        <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-fab-dim">Account Health</p>
-        <div className="mt-3 space-y-2 text-sm">
-          <div className="flex items-center justify-between gap-3">
-            <span className="text-fab-muted">GEM ID</span>
-            <span className={gemId ? "font-semibold text-fab-win" : "font-semibold text-fab-loss"}>{gemId ? "Linked" : "Required"}</span>
-          </div>
-          <div className="flex items-center justify-between gap-3">
-            <span className="text-fab-muted">Profile</span>
-            <span className="font-semibold capitalize text-fab-text">{profileVisibility}</span>
-          </div>
-        </div>
-      </div>
-    </aside>
-  );
-}
-
 export default function SettingsPage() {
   const { user, profile, signOut, isGuest, refreshProfile } = useAuth();
   const { refreshMatches } = useMatches();
@@ -248,7 +206,7 @@ export default function SettingsPage() {
   const [togglingFeed, setTogglingFeed] = useState(false);
   const [hideFromGuests, setHideFromGuests] = useState(profile?.hideFromGuests ?? false);
   const [togglingGuests, setTogglingGuests] = useState(false);
-  const [appearanceOpen, setAppearanceOpen] = useState(false);
+  const [appearanceOpen, setAppearanceOpen] = useState(true);
   const [confirmClear, setConfirmClear] = useState(false);
   const [clearing, setClearing] = useState(false);
   const [clearConfirmText, setClearConfirmText] = useState("");
@@ -320,17 +278,27 @@ export default function SettingsPage() {
       <div className="max-w-4xl mx-auto space-y-5">
         <PageHero
           eyebrow="Account"
-          title="Settings"
-          description="Choose an appearance now. Create an account to save your profile, GEM ID, privacy preferences, and match data."
+          title="Guest Settings"
+          description="Guest mode is local to this browser. You can import matches now and create an account when you are ready to sync."
           icon={<Settings className="h-4 w-4" />}
         />
-        <div className="bg-fab-surface border border-fab-border rounded-lg p-6 text-center mb-4">
-          <ThemePicker />
-          <div className="my-5 border-t border-fab-border" />
-          <p className="text-fab-muted mb-4">Sign up to customize your profile, set a display name, and upload a profile photo.</p>
-          <a href="/login" className="inline-block px-6 py-2.5 rounded-lg font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors">
-            Sign Up
-          </a>
+        <div className="grid gap-4 lg:grid-cols-[1fr_18rem]">
+          <div className="bg-fab-surface border border-fab-border rounded-lg p-6">
+            <h2 className="mb-4 text-sm font-semibold text-fab-text">Appearance</h2>
+            <ThemePicker />
+          </div>
+          <div className="bg-fab-surface border border-fab-border rounded-lg p-5">
+            <h2 className="text-sm font-semibold text-fab-text">Next steps</h2>
+            <p className="mt-2 text-sm leading-6 text-fab-muted">Import locally, then create an account to save a profile, GEM ID, privacy settings, friends, inbox, and cross-device sync.</p>
+            <div className="mt-4 grid gap-2">
+              <Link href="/import" className="rounded-lg bg-fab-gold px-4 py-2 text-center text-sm font-bold text-fab-bg transition-colors hover:bg-fab-gold-light">
+                Import Matches
+              </Link>
+              <Link href="/login" className="rounded-lg border border-fab-border bg-fab-bg px-4 py-2 text-center text-sm font-semibold text-fab-muted transition-colors hover:text-fab-text">
+                Create Account
+              </Link>
+            </div>
+          </div>
         </div>
         <YearInReview />
       </div>
@@ -354,11 +322,11 @@ export default function SettingsPage() {
 
   return (
     <>
-    <div className="max-w-6xl mx-auto space-y-5">
+    <div className="max-w-5xl mx-auto space-y-5">
       <PageHero
         eyebrow="Account"
         title="Settings"
-        description="Manage your profile identity, required GEM ID, privacy, theme, exported data, and account controls from one calmer workspace."
+        description="Profile, privacy, appearance, data export, and account controls in one place."
         icon={<Settings className="h-4 w-4" />}
         metrics={[
           { label: "Username", value: `@${profile.username}`, sub: "profile URL" },
@@ -367,9 +335,35 @@ export default function SettingsPage() {
         ]}
       />
 
-      <div className="grid gap-5 lg:grid-cols-[18rem_minmax(0,1fr)]">
-        <SettingsRail gemId={gemId.trim()} profileVisibility={profileVisibility} />
-        <div className="space-y-4">
+      <section className="rounded-lg border border-fab-border bg-fab-surface/95 p-4">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3">
+            {profile.photoUrl ? (
+              <img src={profile.photoUrl} alt="" className="h-12 w-12 rounded-full object-cover border border-fab-border" />
+            ) : (
+              <div className="flex h-12 w-12 items-center justify-center rounded-full border border-fab-border bg-fab-bg text-sm font-bold text-fab-gold">
+                {initials}
+              </div>
+            )}
+            <div>
+              <p className="text-base font-bold text-fab-text">{displayName || profile.displayName}</p>
+              <p className="text-xs text-fab-dim">@{profile.username}</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-2 sm:min-w-[22rem]">
+            <div className="rounded-md border border-fab-border bg-fab-bg/70 px-3 py-2">
+              <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-fab-dim">GEM ID</p>
+              <p className={gemId.trim() ? "text-sm font-bold text-fab-win" : "text-sm font-bold text-fab-loss"}>{gemId.trim() ? "Linked" : "Required"}</p>
+            </div>
+            <div className="rounded-md border border-fab-border bg-fab-bg/70 px-3 py-2">
+              <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-fab-dim">Visibility</p>
+              <p className="text-sm font-bold capitalize text-fab-text">{profileVisibility}</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div className="grid gap-4 lg:grid-cols-2">
 
       {/* Profile photo */}
       <div id="profile" className="bg-fab-surface border border-fab-border rounded-lg p-6">
@@ -432,6 +426,7 @@ export default function SettingsPage() {
             <ThemePicker />
           </div>
         )}
+      </div>
       </div>
 
       {/* Profile info */}
@@ -984,8 +979,6 @@ export default function SettingsPage() {
               </div>
             )}
           </div>
-        </div>
-      </div>
         </div>
       </div>
     </div>

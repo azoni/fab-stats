@@ -251,11 +251,11 @@ export default function LoginPage() {
         <button
           onClick={() => {
             enterGuestMode();
-            router.push("/");
+            router.push("/import");
           }}
           className="w-full py-2.5 rounded-lg font-semibold bg-fab-surface border border-fab-gold/30 text-fab-text hover:bg-fab-gold/10 hover:border-fab-gold/50 transition-colors"
         >
-          Continue as Guest
+          Try Import as Guest
         </button>
         <p className="text-xs text-fab-dim text-center mt-2">
           No account needed — start importing right away. Your data stays in this browser. You can sign up later to sync across devices.

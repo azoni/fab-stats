@@ -6,6 +6,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useConversations } from "@/hooks/useConversations";
 import { getAdminUid } from "@/lib/admin";
 import { InboxIcon as InboxHeaderIcon } from "@/components/icons/NavIcons";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { PageHero } from "@/components/ui/PageHero";
+import { MessageCircle } from "lucide-react";
 
 function formatTime(iso: string): string {
   const d = new Date(iso);
@@ -32,40 +35,43 @@ export default function InboxPage() {
 
   if (!user || isGuest) {
     return (
-      <div className="text-center py-16">
-        <p className="text-fab-muted mb-1">Inbox</p>
-        <p className="text-fab-dim text-sm mb-6">Sign in to view your messages.</p>
-        <Link href="/login" className="inline-block px-6 py-2.5 rounded-lg font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors">
-          Sign In
-        </Link>
+      <div className="mx-auto max-w-3xl space-y-5">
+        <PageHero
+          eyebrow="Inbox"
+          title="Messages need an account"
+          description="Sign in to use conversations, friend messages, and admin support threads."
+          icon={<MessageCircle className="h-4 w-4" />}
+          actions={(
+            <Link href="/login" className="inline-flex rounded-lg bg-fab-gold px-5 py-2.5 text-sm font-bold text-fab-bg transition-colors hover:bg-fab-gold-light">
+              Sign In
+            </Link>
+          )}
+        />
       </div>
     );
   }
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-sky-500/10 flex items-center justify-center ring-1 ring-inset ring-sky-500/20">
-            <InboxHeaderIcon className="w-4 h-4 text-sky-400" />
-          </div>
-          <div>
-            <h1 className="text-lg font-bold text-fab-text leading-tight">Inbox</h1>
-            <p className="text-xs text-fab-muted leading-tight">Your conversations</p>
-          </div>
-        </div>
-        {adminUid && !isAdmin && (
+    <div className="mx-auto max-w-4xl space-y-5">
+      <PageHero
+        eyebrow="Inbox"
+        title="Conversations"
+        description="Friend messages, kudos notifications, and support threads in one focused view."
+        icon={<InboxHeaderIcon className="h-4 w-4 text-fab-gold" />}
+        actions={adminUid && !isAdmin ? (
           <button
             onClick={() => router.push(`/inbox/${adminUid}`)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-fab-surface border border-fab-border text-fab-muted hover:text-fab-gold hover:border-fab-gold/30 transition-colors"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-fab-border bg-fab-bg px-3 py-2 text-sm font-semibold text-fab-muted transition-colors hover:border-fab-gold/30 hover:text-fab-gold"
           >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-            </svg>
+            <MessageCircle className="h-4 w-4" />
             Message Admin
           </button>
-        )}
-      </div>
+        ) : undefined}
+        metrics={[
+          { label: "Threads", value: conversations.length },
+          { label: "Status", value: loaded ? "Loaded" : "Loading" },
+        ]}
+      />
 
       {!loaded && (
         <div className="space-y-2">
@@ -76,17 +82,15 @@ export default function InboxPage() {
       )}
 
       {loaded && conversations.length === 0 && (
-        <div className="text-center py-16">
-          <InboxIcon className="w-14 h-14 text-fab-muted mb-4 mx-auto" />
-          <h2 className="text-lg font-semibold text-fab-text mb-2">No messages yet</h2>
-          <p className="text-fab-muted text-sm">
-            When you receive a message, it will appear here.
-          </p>
-        </div>
+        <EmptyState
+          title="No messages yet"
+          subtitle="When someone messages you, the thread will show up here."
+          icon={<InboxIcon className="w-10 h-10" />}
+        />
       )}
 
       {loaded && conversations.length > 0 && (
-        <div className="space-y-2">
+        <div className="overflow-hidden rounded-lg border border-fab-border bg-fab-surface/95">
           {conversations.map((conv) => {
             const otherUid = conv.participants.find((p) => p !== user.uid) || "";
             const other = conv.participantInfo?.[otherUid];
@@ -96,7 +100,7 @@ export default function InboxPage() {
               <Link
                 key={conv.id}
                 href={`/inbox/${otherUid}`}
-                className="flex items-center gap-3 bg-fab-surface border border-fab-border rounded-lg p-4 hover:border-fab-gold/30 transition-colors"
+                className="flex items-center gap-3 border-b border-fab-border/70 p-4 transition-colors last:border-b-0 hover:bg-fab-surface-hover/75"
               >
                 {other?.photoUrl ? (
                   <img src={other.photoUrl} alt="" className="w-10 h-10 rounded-full shrink-0" loading="lazy" />

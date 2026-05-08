@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useEffect, useCallback } from "react";
+import { isCrosswordWordSolved } from "@/lib/crossword/solved-words";
 import type { CrosswordPuzzle, CrosswordGameState, Direction } from "@/lib/crossword/types";
 
 interface CrosswordGridProps {
@@ -144,9 +145,8 @@ export function CrosswordGrid({
               bgClass = "bg-fab-gold/10";
             }
 
-            const isSolved = gameState.solvedWords.some((num) => {
-              const w = puzzle.words.find((pw) => pw.number === num);
-              if (!w) return false;
+            const isSolved = puzzle.words.some((w) => {
+              if (!isCrosswordWordSolved(gameState.solvedWords, w)) return false;
               const dr = w.direction === "down" ? 1 : 0;
               const dc = w.direction === "across" ? 1 : 0;
               for (let i = 0; i < w.word.length; i++) {

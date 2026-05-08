@@ -148,6 +148,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signOut = useCallback(async () => {
+    localStorage.removeItem(GUEST_KEY);
+    setIsGuest(false);
+    isGuestRef.current = false;
     await firebaseSignOut(auth);
   }, []);
 

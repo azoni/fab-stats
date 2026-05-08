@@ -3,7 +3,8 @@ import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTeam, useMyTeams, useTeamInvites } from "@/hooks/useTeam";
-import { getAllTeams, acceptTeamInvite, declineTeamInvite, joinTeam, getProfileTeamIds, setPrimaryTeam } from "@/lib/teams";
+import { getAllTeams, acceptTeamInvite, declineTeamInvite, joinTeam, getProfileTeamIds, setPrimaryTeam, getTeamMembers } from "@/lib/teams";
+import { useLeaderboard } from "@/hooks/useLeaderboard";
 import { TeamMemberRow } from "@/components/team/TeamMemberRow";
 import { TeamInviteSearch } from "@/components/team/TeamInviteSearch";
 import { TeamImageUploader } from "@/components/team/TeamImageUploader";
@@ -12,7 +13,7 @@ import type { Team, TeamInvite as TeamInviteType, LeaderboardEntry } from "@/typ
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { toast } from "sonner";
-import { ArrowUpRight, Globe, LayoutGrid, Plus, Search, Settings, Shield, Sparkles, Users } from "lucide-react";
+import { Globe, LayoutGrid, Plus, Search, Settings, Shield, Sparkles, Trophy, Users } from "lucide-react";
 
 type Tab = "my-team" | "browse" | "create";
 
@@ -40,11 +41,57 @@ function TeamMetric({ label, value, tone = "gold" }: { label: string; value: str
   );
 }
 
+const TEAM_FINISH_RANK: Record<string, number> = {
+  Armory: 1,
+  Skirmish: 2,
+  "Road to Nationals": 3,
+  ProQuest: 4,
+  "Battle Hardened": 5,
+  "The Calling": 6,
+  Nationals: 7,
+  "Pro Tour": 8,
+  Worlds: 9,
+};
+
+const TEAM_FINISH_STYLE: Record<string, { label: string; border: string; shadow: string }> = {
+  Armory: { label: "Armory finish", border: "#d4975a", shadow: "0 0 8px rgba(212,151,90,0.18)" },
+  Skirmish: { label: "Skirmish finish", border: "#93c5fd", shadow: "0 0 8px rgba(147,197,253,0.18)" },
+  "Road to Nationals": { label: "RTN finish", border: "#fca5a5", shadow: "0 0 8px rgba(252,165,165,0.18)" },
+  ProQuest: { label: "PQ finish", border: "#c4b5fd", shadow: "0 0 8px rgba(196,181,253,0.2)" },
+  "Battle Hardened": { label: "Battle Hardened", border: "#cd7f32", shadow: "0 0 10px rgba(205,127,50,0.22)" },
+  "The Calling": { label: "Calling finish", border: "#60a5fa", shadow: "0 0 10px rgba(96,165,250,0.22)" },
+  Nationals: { label: "Nationals finish", border: "#f87171", shadow: "0 0 10px rgba(248,113,113,0.22)" },
+  "Pro Tour": { label: "Pro Tour finish", border: "#a78bfa", shadow: "0 0 12px rgba(167,139,250,0.25)" },
+  Worlds: { label: "Worlds finish", border: "#fbbf24", shadow: "0 0 12px rgba(251,191,36,0.28)" },
+};
+
+function bestFinishForEntry(entry?: LeaderboardEntry) {
+  if (!entry) return null;
+  let bestType: string | null = null;
+  let bestRank = 0;
+  for (const eventType of Object.keys(entry.minorTop8sByEventType || {})) {
+    const rank = TEAM_FINISH_RANK[eventType] || 0;
+    if (rank > bestRank) {
+      bestType = eventType;
+      bestRank = rank;
+    }
+  }
+  for (const eventType of Object.keys(entry.top8sByEventType || {})) {
+    const rank = TEAM_FINISH_RANK[eventType] || 0;
+    if (rank > bestRank) {
+      bestType = eventType;
+      bestRank = rank;
+    }
+  }
+  return bestType ? { ...TEAM_FINISH_STYLE[bestType], rank: bestRank } : null;
+}
+
 export default function TeamHub() {
   const [mounted, setMounted] = useState(false);
   const { user, profile, isAdmin: isSiteAdmin, refreshProfile } = useAuth();
   const { teams: myTeams, primaryTeamId, loading: teamsListLoading } = useMyTeams();
   const { invites } = useTeamInvites();
+  const { entries: leaderboardEntries } = useLeaderboard(true);
 
   useEffect(() => { setMounted(true); }, []);
 
@@ -80,6 +127,7 @@ export default function TeamHub() {
   const [browseQuery, setBrowseQuery] = useState("");
   const [browseSort, setBrowseSort] = useState<"members" | "newest" | "alpha">("members");
   const [joiningId, setJoiningId] = useState<string | null>(null);
+  const [teamMemberUids, setTeamMemberUids] = useState<Record<string, string[]>>({});
 
   // Create state
   const [name, setName] = useState("");
@@ -309,6 +357,43 @@ export default function TeamHub() {
     return sorted;
   }, [allTeams, browseFilter, browseQuery, browseSort, myTeamIds]);
 
+  useEffect(() => {
+    if (activeTab !== "browse" || visibleTeams.length === 0) return;
+    let cancelled = false;
+    const missing = visibleTeams.filter((t) => !teamMemberUids[t.id]).slice(0, 30);
+    if (missing.length === 0) return;
+    Promise.all(
+      missing.map(async (t) => {
+        const members = await getTeamMembers(t.id).catch(() => []);
+        return [t.id, members.map((m) => m.uid)] as const;
+      }),
+    ).then((rows) => {
+      if (cancelled) return;
+      setTeamMemberUids((prev) => {
+        const next = { ...prev };
+        for (const [teamId, uids] of rows) next[teamId] = uids;
+        return next;
+      });
+    });
+    return () => { cancelled = true; };
+  }, [activeTab, visibleTeams, teamMemberUids]);
+
+  const teamFinishStyles = useMemo(() => {
+    const entryByUid = new Map(leaderboardEntries.map((entry) => [entry.userId, entry]));
+    const styles: Record<string, { label: string; border: string; shadow: string } | null> = {};
+    for (const t of allTeams) {
+      const uids = teamMemberUids[t.id] || [];
+      let best: { label: string; border: string; shadow: string; rank: number } | null = null;
+      for (const uid of uids) {
+        const finish = bestFinishForEntry(entryByUid.get(uid));
+        if (!finish) continue;
+        if (!best || finish.rank > best.rank) best = finish;
+      }
+      styles[t.id] = best ? { label: best.label, border: best.border, shadow: best.shadow } : null;
+    }
+    return styles;
+  }, [allTeams, leaderboardEntries, teamMemberUids]);
+
   if (!mounted || loading) {
     return (
       <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
@@ -342,11 +427,6 @@ export default function TeamHub() {
             {allTeams.length === 0 && <> Your primary team's badge shows on your profile and leaderboard.</>}
           </p>
         </div>
-        {team && (
-          <Link href={`/teams/${team.nameLower}`} className="text-sm text-fab-gold hover:text-fab-gold-light transition-colors flex items-center gap-1">
-            View Team Page <ArrowUpRight className="w-3.5 h-3.5" />
-          </Link>
-        )}
         </div>
         <div className="relative mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
           <TeamMetric label="Public" value={formatCompact(teamStats.publicTeams)} />
@@ -770,10 +850,12 @@ export default function TeamHub() {
               {visibleTeams.map((t) => {
                 const alreadyMember = myTeamIds.has(t.id);
                 const canQuickJoin = !!profile && !alreadyMember && t.joinMode === "open";
+                const finishStyle = teamFinishStyles[t.id];
                 return (
                   <div
                     key={t.id}
                     className="group rounded-xl border border-fab-border/80 bg-fab-surface/85 p-4 shadow-[0_12px_36px_rgba(0,0,0,0.14)] transition-colors hover:border-fab-gold/50 hover:bg-fab-gold/10"
+                    style={finishStyle ? { borderColor: finishStyle.border, boxShadow: finishStyle.shadow } : undefined}
                   >
                     <div className="flex items-start gap-3">
                       <Link href={`/teams/${t.nameLower}`} className="shrink-0">
@@ -812,6 +894,22 @@ export default function TeamHub() {
                           <p className={`text-xs mt-1 line-clamp-1 ${t.description ? "text-fab-muted" : "text-fab-dim/60 italic"}`}>
                             {t.description || "No description"}
                           </p>
+                          <div className="mt-3 flex flex-wrap items-center gap-2">
+                            <span className="inline-flex items-center gap-1 rounded-md border border-fab-border bg-fab-bg/70 px-2 py-1 text-[10px] font-bold uppercase tracking-[0.08em] text-fab-dim">
+                              <Users className="h-3 w-3" />
+                              {t.memberCount === 1 ? "Solo roster" : `${t.memberCount} players`}
+                            </span>
+                            {finishStyle ? (
+                              <span className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-[10px] font-bold uppercase tracking-[0.08em]" style={{ borderColor: finishStyle.border, color: finishStyle.border }}>
+                                <Trophy className="h-3 w-3" />
+                                {finishStyle.label}
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 rounded-md border border-fab-border bg-fab-bg/70 px-2 py-1 text-[10px] font-bold uppercase tracking-[0.08em] text-fab-dim">
+                                Building resume
+                              </span>
+                            )}
+                          </div>
                         </Link>
                       </div>
                       {canQuickJoin && (

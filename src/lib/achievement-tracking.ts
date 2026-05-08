@@ -13,6 +13,8 @@ import { loadStats as loadRampageStats } from "./rhinarsrampage/firestore";
 import { loadStats as loadKnockoutStats } from "./kayosknockout/firestore";
 import { loadStats as loadBrawlStats } from "./brutebrawl/firestore";
 import { loadStats as loadNinjaComboStats } from "./ninjacombo/firestore";
+import { loadStats as loadShadowStrikeStats } from "./shadowstrike/firestore";
+import { loadStats as loadBladeDashStats } from "./bladedash/firestore";
 import type { Achievement, OverallStats } from "@/types";
 
 /**
@@ -61,7 +63,7 @@ export async function syncAchievementsAfterGame(userId: string): Promise<void> {
   const snap = await getDoc(ref);
   if (!snap.exists()) return; // Not bootstrapped yet — import page handles that
 
-  const [fabdoku, fabdokuCard, crossword, heroGuesser, matchupMania, trivia, timeline, connections, rampage, knockout, brawl, ninjaCombo] = await Promise.all([
+  const [fabdoku, fabdokuCard, crossword, heroGuesser, matchupMania, trivia, timeline, connections, rampage, knockout, brawl, ninjaCombo, shadowStrike, bladeDash] = await Promise.all([
     loadFabdokuStats(userId).catch(() => null),
     loadFabdokuCardStats(userId).catch(() => null),
     loadCrosswordStats(userId).catch(() => null),
@@ -74,6 +76,8 @@ export async function syncAchievementsAfterGame(userId: string): Promise<void> {
     loadKnockoutStats(userId).catch(() => null),
     loadBrawlStats(userId).catch(() => null),
     loadNinjaComboStats(userId).catch(() => null),
+    loadShadowStrikeStats(userId).catch(() => null),
+    loadBladeDashStats(userId).catch(() => null),
   ]);
 
   const earned = evaluateAchievements(
@@ -83,8 +87,26 @@ export async function syncAchievementsAfterGame(userId: string): Promise<void> {
     trivia ?? undefined, timeline ?? undefined, connections ?? undefined,
     fabdokuCard ?? undefined, rampage ?? undefined, knockout ?? undefined,
     brawl ?? undefined, ninjaCombo ?? undefined, crossword ?? undefined,
+    shadowStrike ?? undefined, bladeDash ?? undefined,
   );
 
+  const storedIds = new Set<string>((snap.data().ids as string[]) || []);
+  const newIds = earned.map((a) => a.id).filter((id) => !storedIds.has(id));
+  if (newIds.length > 0) {
+    await setDoc(ref, { ids: [...storedIds, ...newIds] });
+  }
+}
+
+/** Merge kudos-driven achievement IDs after a player receives kudos. */
+export async function syncKudosAchievements(
+  userId: string,
+  kudosCounts: Record<string, number>,
+): Promise<void> {
+  const ref = doc(db, "users", userId, "earnedAchievements", "main");
+  const snap = await getDoc(ref);
+  if (!snap.exists()) return;
+
+  const earned = evaluateAchievements([], EMPTY_OVERALL, [], [], kudosCounts);
   const storedIds = new Set<string>((snap.data().ids as string[]) || []);
   const newIds = earned.map((a) => a.id).filter((id) => !storedIds.has(id));
   if (newIds.length > 0) {

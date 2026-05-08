@@ -19,7 +19,7 @@ import { navLinks, userMenuLinks } from "./nav-data";
 
 export function Navbar() {
   const pathname = usePathname();
-  const { user, profile, isGuest, isAdmin } = useAuth();
+  const { user, profile, isGuest, isAdmin, signOut } = useAuth();
   const [mounted, setMounted] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const { userCount, matchCount } = useCommunityStats();
@@ -220,12 +220,50 @@ export function Navbar() {
                 Sign In
               </Link>
             ) : isGuest ? (
-              <Link
-                href="/login"
-                className="block w-full text-center px-4 py-2 rounded-lg text-sm font-semibold bg-fab-gold/20 text-fab-gold hover:bg-fab-gold/30 transition-colors"
-              >
-                Sign Up
-              </Link>
+              <div className="space-y-2">
+                <div className="rounded-lg border border-fab-border/70 bg-fab-bg/70 p-3">
+                  <p className="text-sm font-bold text-fab-text">Guest Mode</p>
+                  <p className="mt-0.5 text-[10px] leading-4 text-fab-dim">Local browser data. Create an account when you want sync and profile tools.</p>
+                </div>
+                <div className="grid grid-cols-2 gap-1">
+                  <Link
+                    href="/import"
+                    className={`flex items-center gap-2 px-2 py-1.5 rounded-md border text-xs font-medium transition-colors ${
+                      pathname === "/import"
+                        ? "text-fab-text bg-fab-surface-hover/75 border-fab-border/70"
+                        : "text-fab-muted border-transparent hover:text-fab-text hover:bg-fab-surface-hover hover:border-fab-border/60"
+                    }`}
+                  >
+                    <ImportIcon className="w-4 h-4" />
+                    <span>Import</span>
+                  </Link>
+                  <Link
+                    href="/settings"
+                    className={`flex items-center gap-2 px-2 py-1.5 rounded-md border text-xs font-medium transition-colors ${
+                      pathname === "/settings"
+                        ? "text-fab-text bg-fab-surface-hover/75 border-fab-border/70"
+                        : "text-fab-muted border-transparent hover:text-fab-text hover:bg-fab-surface-hover hover:border-fab-border/60"
+                    }`}
+                  >
+                    <span>Settings</span>
+                  </Link>
+                </div>
+                <div className="grid grid-cols-2 gap-1">
+                  <Link
+                    href="/login"
+                    className="block rounded-md bg-fab-gold/20 px-3 py-1.5 text-center text-xs font-bold text-fab-gold transition-colors hover:bg-fab-gold/30"
+                  >
+                    Sign Up
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => signOut()}
+                    className="rounded-md border border-fab-border/70 px-3 py-1.5 text-xs font-semibold text-fab-dim transition-colors hover:text-fab-text hover:bg-fab-surface-hover"
+                  >
+                    Exit
+                  </button>
+                </div>
+              </div>
             ) : (
               <>
                 <div className="flex items-center gap-1.5">
@@ -309,6 +347,7 @@ function getExternalTrackKey(href: string): string | undefined {
   if (href.includes("x.com") || href.includes("twitter.com")) return "twitter";
   if (href.includes("amazon")) return "amazon";
   if (href.includes("tcgplayer")) return "tcgplayer";
+  if (href.includes("mfy.gg")) return "metafy";
   if (href.includes("sponsors")) return "github_sponsors";
   if (href.includes("ko-fi")) return "kofi";
   return undefined;

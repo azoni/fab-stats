@@ -1,10 +1,12 @@
 "use client";
 
 import type { CrosswordPuzzle, Direction } from "@/lib/crossword/types";
+import { isCrosswordWordSolved } from "@/lib/crossword/solved-words";
+import type { SolvedWordId } from "@/lib/crossword/types";
 
 interface CrosswordCluesProps {
   puzzle: CrosswordPuzzle;
-  solvedWords: number[];
+  solvedWords: SolvedWordId[];
   activeClueNumber: number | null;
   activeDirection: Direction;
   onClueClick: (number: number, direction: Direction) => void;
@@ -32,7 +34,7 @@ export function CrosswordClues({
         </h4>
         <div className="space-y-1">
           {across.map((w) => {
-            const solved = solvedWords.includes(w.number);
+            const solved = isCrosswordWordSolved(solvedWords, w);
             const isActive = activeClueNumber === w.number && activeDirection === "across";
             return (
               <button
@@ -59,7 +61,7 @@ export function CrosswordClues({
         </h4>
         <div className="space-y-1">
           {down.map((w) => {
-            const solved = solvedWords.includes(w.number);
+            const solved = isCrosswordWordSolved(solvedWords, w);
             const isActive = activeClueNumber === w.number && activeDirection === "down";
             return (
               <button

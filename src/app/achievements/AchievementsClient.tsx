@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Trophy, Lock } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -16,7 +16,35 @@ import {
   getAllAchievements,
   rarityColors,
 } from "@/lib/achievements";
+import { loadKudosCounts } from "@/lib/kudos";
+import { loadStats as loadFabdokuStats } from "@/lib/fabdoku/firestore";
+import { loadCardStats as loadFabdokuCardStats } from "@/lib/fabdoku/card-firestore";
+import { loadStats as loadCrosswordStats } from "@/lib/crossword/firestore";
+import { loadStats as loadHeroGuesserStats } from "@/lib/heroguesser/firestore";
+import { loadStats as loadMatchupManiaStats } from "@/lib/matchupmania/firestore";
+import { loadStats as loadTriviaStats } from "@/lib/trivia/firestore";
+import { loadStats as loadTimelineStats } from "@/lib/timeline/firestore";
+import { loadStats as loadConnectionsStats } from "@/lib/connections/firestore";
+import { loadStats as loadRampageStats } from "@/lib/rhinarsrampage/firestore";
+import { loadStats as loadKnockoutStats } from "@/lib/kayosknockout/firestore";
+import { loadStats as loadBrawlStats } from "@/lib/brutebrawl/firestore";
+import { loadStats as loadNinjaComboStats } from "@/lib/ninjacombo/firestore";
+import { loadStats as loadShadowStrikeStats } from "@/lib/shadowstrike/firestore";
+import { loadStats as loadBladeDashStats } from "@/lib/bladedash/firestore";
 import { AchievementIcon } from "@/components/gamification/AchievementIcons";
+import type { FaBdokuStats } from "@/lib/fabdoku/types";
+import type { CrosswordStats } from "@/lib/crossword/types";
+import type { HeroGuesserStats } from "@/lib/heroguesser/types";
+import type { MatchupManiaStats } from "@/lib/matchupmania/types";
+import type { TriviaStats } from "@/lib/trivia/types";
+import type { TimelineStats } from "@/lib/timeline/types";
+import type { ConnectionsStats } from "@/lib/connections/types";
+import type { RampageStats } from "@/lib/rhinarsrampage/types";
+import type { KnockoutStats } from "@/lib/kayosknockout/types";
+import type { BrawlStats } from "@/lib/brutebrawl/types";
+import type { NinjaComboStats } from "@/lib/ninjacombo/types";
+import type { ShadowStrikeStats } from "@/lib/shadowstrike/types";
+import type { BladeDashStats } from "@/lib/bladedash/types";
 import type { Achievement, AchievementCategory } from "@/types";
 
 const CATEGORY_COPY: Record<AchievementCategory, { label: string; description: string }> = {
@@ -24,13 +52,33 @@ const CATEGORY_COPY: Record<AchievementCategory, { label: string; description: s
   streak: { label: "Streaks", description: "Rewards for sustained runs and strong recent form." },
   mastery: { label: "Mastery", description: "Hero loyalty, win-rate benchmarks, and high-skill progression." },
   exploration: { label: "Exploration", description: "Trying more heroes, formats, and ways to play." },
-  fun: { label: "Daily Games", description: "Puzzle and mini-game achievements across the daily game suite." },
+  fun: { label: "Match Variety", description: "Format volume, rivalries, draws, rated matches, and other table stories." },
+  games: { label: "Daily Games", description: "Puzzle and mini-game achievements across the daily game suite." },
   social: { label: "Community", description: "Kudos and community recognition from other FaB Stats players." },
   special: { label: "Special", description: "Limited or manually granted badges for special site moments." },
 };
 
-const CATEGORY_ORDER: AchievementCategory[] = ["milestone", "mastery", "streak", "exploration", "fun", "social", "special"];
+const CATEGORY_ORDER: AchievementCategory[] = ["milestone", "mastery", "streak", "exploration", "fun", "games", "social", "special"];
 const RARITY_ORDER: Achievement["rarity"][] = ["legendary", "epic", "rare", "uncommon", "common"];
+
+type CategoryFilter = AchievementCategory | "all";
+
+interface GameAchievementStats {
+  fabdokuStats?: FaBdokuStats | null;
+  fabdokuCardStats?: FaBdokuStats | null;
+  crosswordStats?: CrosswordStats | null;
+  heroGuesserStats?: HeroGuesserStats | null;
+  matchupManiaStats?: MatchupManiaStats | null;
+  triviaStats?: TriviaStats | null;
+  timelineStats?: TimelineStats | null;
+  connectionsStats?: ConnectionsStats | null;
+  rampageStats?: RampageStats | null;
+  knockoutStats?: KnockoutStats | null;
+  brawlStats?: BrawlStats | null;
+  ninjaComboStats?: NinjaComboStats | null;
+  shadowStrikeStats?: ShadowStrikeStats | null;
+  bladeDashStats?: BladeDashStats | null;
+}
 
 function sortAchievement(a: Achievement, b: Achievement) {
   const groupCompare = (a.group || a.id).localeCompare(b.group || b.id);
@@ -42,6 +90,10 @@ export function AchievementsClient() {
   const { user, isGuest } = useAuth();
   const { matches, isLoaded } = useMatches();
   const isAuthed = !!user && !isGuest;
+  const [kudosCounts, setKudosCounts] = useState<Record<string, number>>({});
+  const [gameStats, setGameStats] = useState<GameAchievementStats>({});
+  const [gameStatsLoaded, setGameStatsLoaded] = useState(false);
+  const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>("all");
 
   const allAchievements = useMemo(() => getAllAchievements(), []);
 
@@ -52,17 +104,132 @@ export function AchievementsClient() {
   const heroStats = useMemo(() => computeHeroStats(matches), [matches]);
   const opponentStats = useMemo(() => computeOpponentStats(matches), [matches]);
 
+  useEffect(() => {
+    if (!isAuthed || !user) {
+      setKudosCounts({});
+      return;
+    }
+    loadKudosCounts(user.uid).then(setKudosCounts).catch(() => setKudosCounts({}));
+  }, [isAuthed, user]);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!isAuthed || !user) {
+      setGameStats({});
+      setGameStatsLoaded(false);
+      return;
+    }
+
+    setGameStatsLoaded(false);
+    Promise.all([
+      loadFabdokuStats(user.uid).catch(() => null),
+      loadFabdokuCardStats(user.uid).catch(() => null),
+      loadCrosswordStats(user.uid).catch(() => null),
+      loadHeroGuesserStats(user.uid).catch(() => null),
+      loadMatchupManiaStats(user.uid).catch(() => null),
+      loadTriviaStats(user.uid).catch(() => null),
+      loadTimelineStats(user.uid).catch(() => null),
+      loadConnectionsStats(user.uid).catch(() => null),
+      loadRampageStats(user.uid).catch(() => null),
+      loadKnockoutStats(user.uid).catch(() => null),
+      loadBrawlStats(user.uid).catch(() => null),
+      loadNinjaComboStats(user.uid).catch(() => null),
+      loadShadowStrikeStats(user.uid).catch(() => null),
+      loadBladeDashStats(user.uid).catch(() => null),
+    ]).then(([
+      fabdokuStats,
+      fabdokuCardStats,
+      crosswordStats,
+      heroGuesserStats,
+      matchupManiaStats,
+      triviaStats,
+      timelineStats,
+      connectionsStats,
+      rampageStats,
+      knockoutStats,
+      brawlStats,
+      ninjaComboStats,
+      shadowStrikeStats,
+      bladeDashStats,
+    ]) => {
+      if (cancelled) return;
+      setGameStats({
+        fabdokuStats,
+        fabdokuCardStats,
+        crosswordStats,
+        heroGuesserStats,
+        matchupManiaStats,
+        triviaStats,
+        timelineStats,
+        connectionsStats,
+        rampageStats,
+        knockoutStats,
+        brawlStats,
+        ninjaComboStats,
+        shadowStrikeStats,
+        bladeDashStats,
+      });
+      setGameStatsLoaded(true);
+    }).catch(() => {
+      if (!cancelled) setGameStatsLoaded(true);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthed, user]);
+
   const earned = useMemo(() => {
     if (!isAuthed) return [] as Achievement[];
-    return evaluateAchievements(matches, overall, heroStats, opponentStats);
-  }, [isAuthed, matches, overall, heroStats, opponentStats]);
+    return evaluateAchievements(
+      matches,
+      overall,
+      heroStats,
+      opponentStats,
+      kudosCounts,
+      gameStats.fabdokuStats ?? undefined,
+      gameStats.heroGuesserStats ?? undefined,
+      gameStats.matchupManiaStats ?? undefined,
+      gameStats.triviaStats ?? undefined,
+      gameStats.timelineStats ?? undefined,
+      gameStats.connectionsStats ?? undefined,
+      gameStats.fabdokuCardStats ?? undefined,
+      gameStats.rampageStats ?? undefined,
+      gameStats.knockoutStats ?? undefined,
+      gameStats.brawlStats ?? undefined,
+      gameStats.ninjaComboStats ?? undefined,
+      gameStats.crosswordStats ?? undefined,
+      gameStats.shadowStrikeStats ?? undefined,
+      gameStats.bladeDashStats ?? undefined,
+    );
+  }, [isAuthed, matches, overall, heroStats, opponentStats, kudosCounts, gameStats]);
 
   const earnedSet = useMemo(() => new Set(earned.map((a) => a.id)), [earned]);
 
   const progress = useMemo(() => {
     if (!isAuthed) return {} as Record<string, { current: number; target: number }>;
-    return getAchievementProgress(matches, overall, heroStats, opponentStats);
-  }, [isAuthed, matches, overall, heroStats, opponentStats]);
+    return getAchievementProgress(
+      matches,
+      overall,
+      heroStats,
+      opponentStats,
+      kudosCounts,
+      gameStats.fabdokuStats ?? undefined,
+      gameStats.heroGuesserStats ?? undefined,
+      gameStats.matchupManiaStats ?? undefined,
+      gameStats.triviaStats ?? undefined,
+      gameStats.timelineStats ?? undefined,
+      gameStats.connectionsStats ?? undefined,
+      gameStats.fabdokuCardStats ?? undefined,
+      gameStats.rampageStats ?? undefined,
+      gameStats.knockoutStats ?? undefined,
+      gameStats.brawlStats ?? undefined,
+      gameStats.ninjaComboStats ?? undefined,
+      gameStats.crosswordStats ?? undefined,
+      gameStats.shadowStrikeStats ?? undefined,
+      gameStats.bladeDashStats ?? undefined,
+    );
+  }, [isAuthed, matches, overall, heroStats, opponentStats, kudosCounts, gameStats]);
 
   const totalCount = allAchievements.length;
   const earnedCount = earned.length;
@@ -101,6 +268,16 @@ export function AchievementsClient() {
     return map;
   }, [allAchievements]);
 
+  const categorySummaries = useMemo(() => {
+    return CATEGORY_ORDER.map((category) => {
+      const items = grouped[category] || [];
+      const earned = isAuthed ? items.filter((a) => earnedSet.has(a.id)).length : 0;
+      return { category, total: items.length, earned };
+    }).filter((summary) => summary.total > 0);
+  }, [grouped, earnedSet, isAuthed]);
+
+  const visibleCategories: AchievementCategory[] = categoryFilter === "all" ? CATEGORY_ORDER : [categoryFilter];
+
   return (
     <div className="space-y-8">
       {/* Hero — progress summary */}
@@ -123,7 +300,7 @@ export function AchievementsClient() {
               {isAuthed ? (
                 <>
                   Earned badges appear on your profile and can be pinned in your badge strip.
-                  {!isLoaded && " Loading your latest progress…"}
+                  {(!isLoaded || !gameStatsLoaded) && " Loading your latest progress..."}
                 </>
               ) : (
                 <>
@@ -214,9 +391,45 @@ export function AchievementsClient() {
         </section>
       )}
 
+      <section className="rounded-xl border border-fab-border bg-fab-surface/95 p-3 sm:p-4">
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setCategoryFilter("all")}
+            className={`rounded-lg border px-3 py-2 text-xs font-bold transition-colors ${
+              categoryFilter === "all"
+                ? "border-fab-gold/45 bg-fab-gold/15 text-fab-gold"
+                : "border-fab-border bg-fab-bg/45 text-fab-muted hover:text-fab-text"
+            }`}
+          >
+            All
+            <span className="ml-2 text-fab-dim">{isAuthed ? `${earnedCount}/${totalCount}` : totalCount}</span>
+          </button>
+          {categorySummaries.map(({ category, total, earned }) => {
+            const copy = CATEGORY_COPY[category];
+            const active = categoryFilter === category;
+            return (
+              <button
+                key={category}
+                type="button"
+                onClick={() => setCategoryFilter(category)}
+                className={`rounded-lg border px-3 py-2 text-xs font-bold transition-colors ${
+                  active
+                    ? "border-fab-gold/45 bg-fab-gold/15 text-fab-gold"
+                    : "border-fab-border bg-fab-bg/45 text-fab-muted hover:text-fab-text"
+                }`}
+              >
+                {copy.label}
+                <span className="ml-2 text-fab-dim">{isAuthed ? `${earned}/${total}` : total}</span>
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
       {/* All achievements by category */}
       <div className="space-y-6">
-        {CATEGORY_ORDER.map((category) => {
+        {visibleCategories.map((category) => {
           const items = [...(grouped[category] || [])].sort(sortAchievement);
           if (items.length === 0) return null;
           const copy = CATEGORY_COPY[category];

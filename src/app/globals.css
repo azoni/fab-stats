@@ -47,9 +47,7 @@
 body {
   background-color: var(--color-fab-bg);
   background-image:
-    radial-gradient(circle at 14% -8%, rgba(240, 189, 85, 0.06), transparent 26rem),
-    radial-gradient(circle at 86% 6%, rgba(37, 126, 132, 0.07), transparent 24rem),
-    linear-gradient(180deg, color-mix(in srgb, var(--color-fab-bg) 88%, #000 12%), var(--color-fab-bg));
+    linear-gradient(180deg, color-mix(in srgb, var(--color-fab-surface) 24%, var(--color-fab-bg)), var(--color-fab-bg) 22rem);
   color: var(--color-fab-text);
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
   min-height: 100vh;
@@ -113,8 +111,7 @@ body::after {
   pointer-events: none;
   z-index: 0;
   background:
-    radial-gradient(ellipse 80% 42% at 50% -8%, rgba(240, 189, 85, 0.045), transparent 70%),
-    radial-gradient(ellipse 44% 32% at 96% 12%, rgba(38, 126, 132, 0.04), transparent 70%);
+    linear-gradient(180deg, color-mix(in srgb, var(--color-fab-gold) 2%, transparent), transparent 18rem);
 }
 
 /* Gold accent glow for headings */
@@ -125,7 +122,6 @@ body::after {
 /* Navigation shell */
 .fab-sidebar {
   background:
-    radial-gradient(circle at 50% -8%, color-mix(in srgb, var(--color-fab-gold) 3%, transparent), transparent 14rem),
     linear-gradient(180deg, color-mix(in srgb, var(--color-fab-surface) 84%, #090909 16%), color-mix(in srgb, var(--color-fab-bg) 90%, #000 10%));
   box-shadow:
     inset -1px 0 0 rgba(255, 255, 255, 0.03),
@@ -2995,9 +2991,8 @@ button:active:not(:disabled) {
   inset: 0;
   pointer-events: none;
   background:
-    radial-gradient(circle at 8% -20%, color-mix(in srgb, var(--color-fab-gold) 8%, transparent), transparent 14rem),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0));
-  opacity: 0.88;
+    linear-gradient(180deg, rgba(255, 255, 255, 0.028), rgba(255, 255, 255, 0));
+  opacity: 0.7;
 }
 
 .fab-page-hero > *,

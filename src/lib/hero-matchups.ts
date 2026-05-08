@@ -29,6 +29,23 @@ function getMonth(dateStr: string): string {
   return dateStr.slice(0, 7); // "YYYY-MM"
 }
 
+function getMatchEventType(match: MatchRecord): string {
+  return match.eventTypeOverride || match.eventType || "Unknown";
+}
+
+function addTally(group: { hero1Wins: number; hero2Wins: number; draws: number; total: number }, result: MatchResult, isHero1: boolean) {
+  if (result === MatchResult.Win) {
+    if (isHero1) group.hero1Wins++;
+    else group.hero2Wins++;
+  } else if (result === MatchResult.Loss) {
+    if (isHero1) group.hero2Wins++;
+    else group.hero1Wins++;
+  } else if (result === MatchResult.Draw) {
+    group.draws++;
+  }
+  group.total++;
+}
+
 /** Convert a preset to a list of month strings. */
 export function getMonthsForPreset(preset: string): string[] {
   const now = new Date();
@@ -104,7 +121,7 @@ export async function updateCommunityHeroMatchups(
   type TallyGroup = { hero1Wins: number; hero2Wins: number; draws: number; total: number };
   const groups = new Map<
     string,
-    { hero1: string; hero2: string; month: string; hero1Wins: number; hero2Wins: number; draws: number; total: number; byFormat: Map<string, TallyGroup>; byRated: Map<string, TallyGroup> }
+    { hero1: string; hero2: string; month: string; hero1Wins: number; hero2Wins: number; draws: number; total: number; byFormat: Map<string, TallyGroup>; byRated: Map<string, TallyGroup>; byEventType: Map<string, TallyGroup>; byFormatEventType: Map<string, Map<string, TallyGroup>> }
   >();
 
   for (const m of linked) {
@@ -132,6 +149,8 @@ export async function updateCommunityHeroMatchups(
         total: 0,
         byFormat: new Map(),
         byRated: new Map(),
+        byEventType: new Map(),
+        byFormatEventType: new Map(),
       };
       groups.set(key, group);
     }
@@ -163,6 +182,27 @@ export async function updateCommunityHeroMatchups(
       else fmtGroup.hero1Wins++;
     } else if (m.result === MatchResult.Draw) fmtGroup.draws++;
     fmtGroup.total++;
+
+    // Event type breakdown
+    const eventType = getMatchEventType(m);
+    let eventGroup = group.byEventType.get(eventType);
+    if (!eventGroup) {
+      eventGroup = { hero1Wins: 0, hero2Wins: 0, draws: 0, total: 0 };
+      group.byEventType.set(eventType, eventGroup);
+    }
+    addTally(eventGroup, m.result, isHero1);
+
+    let formatEventMap = group.byFormatEventType.get(fmt);
+    if (!formatEventMap) {
+      formatEventMap = new Map();
+      group.byFormatEventType.set(fmt, formatEventMap);
+    }
+    let formatEventGroup = formatEventMap.get(eventType);
+    if (!formatEventGroup) {
+      formatEventGroup = { hero1Wins: 0, hero2Wins: 0, draws: 0, total: 0 };
+      formatEventMap.set(eventType, formatEventGroup);
+    }
+    addTally(formatEventGroup, m.result, isHero1);
 
     // Rated breakdown
     const ratedKey = m.rated ? "rated" : "unrated";
@@ -219,6 +259,22 @@ export async function updateCommunityHeroMatchups(
       nestedData[`${prefix}.draws`] = increment(rData.draws);
       nestedData[`${prefix}.total`] = increment(rData.total);
     }
+    for (const [eventType, eData] of g.byEventType) {
+      const prefix = `byEventType.${eventType}`;
+      nestedData[`${prefix}.hero1Wins`] = increment(eData.hero1Wins);
+      nestedData[`${prefix}.hero2Wins`] = increment(eData.hero2Wins);
+      nestedData[`${prefix}.draws`] = increment(eData.draws);
+      nestedData[`${prefix}.total`] = increment(eData.total);
+    }
+    for (const [fmt, eventMap] of g.byFormatEventType) {
+      for (const [eventType, feData] of eventMap) {
+        const prefix = `byFormatEventType.${fmt}.${eventType}`;
+        nestedData[`${prefix}.hero1Wins`] = increment(feData.hero1Wins);
+        nestedData[`${prefix}.hero2Wins`] = increment(feData.hero2Wins);
+        nestedData[`${prefix}.draws`] = increment(feData.draws);
+        nestedData[`${prefix}.total`] = increment(feData.total);
+      }
+    }
     if (Object.keys(nestedData).length > 0) {
       formatUpdates.push({ ref, data: nestedData });
     }
@@ -263,7 +319,7 @@ export async function decrementCommunityHeroMatchups(
   // Group by (hero pair, month) — same grouping logic as update
   const groups = new Map<
     string,
-    { hero1: string; hero2: string; month: string; hero1Wins: number; hero2Wins: number; draws: number; total: number; byFormat: Map<string, { hero1Wins: number; hero2Wins: number; draws: number; total: number }> }
+    { hero1: string; hero2: string; month: string; hero1Wins: number; hero2Wins: number; draws: number; total: number; byFormat: Map<string, { hero1Wins: number; hero2Wins: number; draws: number; total: number }>; byEventType: Map<string, { hero1Wins: number; hero2Wins: number; draws: number; total: number }>; byFormatEventType: Map<string, Map<string, { hero1Wins: number; hero2Wins: number; draws: number; total: number }>> }
   >();
 
   for (const m of linked) {
@@ -279,7 +335,7 @@ export async function decrementCommunityHeroMatchups(
 
     let group = groups.get(key);
     if (!group) {
-      group = { hero1: sorted[0], hero2: sorted[1], month, hero1Wins: 0, hero2Wins: 0, draws: 0, total: 0, byFormat: new Map() };
+      group = { hero1: sorted[0], hero2: sorted[1], month, hero1Wins: 0, hero2Wins: 0, draws: 0, total: 0, byFormat: new Map(), byEventType: new Map(), byFormatEventType: new Map() };
       groups.set(key, group);
     }
 
@@ -308,6 +364,26 @@ export async function decrementCommunityHeroMatchups(
       else fmtGroup.hero1Wins++;
     } else if (m.result === MatchResult.Draw) fmtGroup.draws++;
     fmtGroup.total++;
+
+    const eventType = getMatchEventType(m);
+    let eventGroup = group.byEventType.get(eventType);
+    if (!eventGroup) {
+      eventGroup = { hero1Wins: 0, hero2Wins: 0, draws: 0, total: 0 };
+      group.byEventType.set(eventType, eventGroup);
+    }
+    addTally(eventGroup, m.result, isHero1);
+
+    let formatEventMap = group.byFormatEventType.get(fmt);
+    if (!formatEventMap) {
+      formatEventMap = new Map();
+      group.byFormatEventType.set(fmt, formatEventMap);
+    }
+    let formatEventGroup = formatEventMap.get(eventType);
+    if (!formatEventGroup) {
+      formatEventGroup = { hero1Wins: 0, hero2Wins: 0, draws: 0, total: 0 };
+      formatEventMap.set(eventType, formatEventGroup);
+    }
+    addTally(formatEventGroup, m.result, isHero1);
   }
 
   if (groups.size === 0) return;
@@ -334,6 +410,22 @@ export async function decrementCommunityHeroMatchups(
       data[`${prefix}.hero2Wins`] = increment(-fData.hero2Wins);
       data[`${prefix}.draws`] = increment(-fData.draws);
       data[`${prefix}.total`] = increment(-fData.total);
+    }
+    for (const [eventType, eData] of g.byEventType) {
+      const prefix = `byEventType.${eventType}`;
+      data[`${prefix}.hero1Wins`] = increment(-eData.hero1Wins);
+      data[`${prefix}.hero2Wins`] = increment(-eData.hero2Wins);
+      data[`${prefix}.draws`] = increment(-eData.draws);
+      data[`${prefix}.total`] = increment(-eData.total);
+    }
+    for (const [fmt, eventMap] of g.byFormatEventType) {
+      for (const [eventType, feData] of eventMap) {
+        const prefix = `byFormatEventType.${fmt}.${eventType}`;
+        data[`${prefix}.hero1Wins`] = increment(-feData.hero1Wins);
+        data[`${prefix}.hero2Wins`] = increment(-feData.hero2Wins);
+        data[`${prefix}.draws`] = increment(-feData.draws);
+        data[`${prefix}.total`] = increment(-feData.total);
+      }
     }
 
     batch.update(ref, data);
@@ -367,6 +459,7 @@ export async function adjustHeroMatchupOnEdit(
   const opponentHero = match.opponentHero!;
   const month = getMonth(match.date);
   const fmt = match.format || "Unknown";
+  const eventType = getMatchEventType(match);
 
   // Skip mirror match adjustments when no opponentGemId or userId is not the counting side
   const oldIsMirror = oldHero === opponentHero;
@@ -388,6 +481,14 @@ export async function adjustHeroMatchupOnEdit(
       [`byFormat.${fmt}.hero2Wins`]: increment(h2Win),
       [`byFormat.${fmt}.draws`]: increment(draw),
       [`byFormat.${fmt}.total`]: increment(-1),
+      [`byEventType.${eventType}.hero1Wins`]: increment(h1Win),
+      [`byEventType.${eventType}.hero2Wins`]: increment(h2Win),
+      [`byEventType.${eventType}.draws`]: increment(draw),
+      [`byEventType.${eventType}.total`]: increment(-1),
+      [`byFormatEventType.${fmt}.${eventType}.hero1Wins`]: increment(h1Win),
+      [`byFormatEventType.${fmt}.${eventType}.hero2Wins`]: increment(h2Win),
+      [`byFormatEventType.${fmt}.${eventType}.draws`]: increment(draw),
+      [`byFormatEventType.${fmt}.${eventType}.total`]: increment(-1),
     }).catch(() => {}); // doc might not exist if data was never aggregated
   }
 
@@ -408,6 +509,14 @@ export async function adjustHeroMatchupOnEdit(
       [`byFormat.${fmt}.hero2Wins`]: increment(h2Win),
       [`byFormat.${fmt}.draws`]: increment(draw),
       [`byFormat.${fmt}.total`]: increment(1),
+      [`byEventType.${eventType}.hero1Wins`]: increment(h1Win),
+      [`byEventType.${eventType}.hero2Wins`]: increment(h2Win),
+      [`byEventType.${eventType}.draws`]: increment(draw),
+      [`byEventType.${eventType}.total`]: increment(1),
+      [`byFormatEventType.${fmt}.${eventType}.hero1Wins`]: increment(h1Win),
+      [`byFormatEventType.${fmt}.${eventType}.hero2Wins`]: increment(h2Win),
+      [`byFormatEventType.${fmt}.${eventType}.draws`]: increment(draw),
+      [`byFormatEventType.${fmt}.${eventType}.total`]: increment(1),
     }).catch(() => {});
   }
 
@@ -432,6 +541,7 @@ export async function adjustOpponentHeroMatchupOnEdit(
   const heroPlayed = match.heroPlayed;
   const month = getMonth(match.date);
   const fmt = match.format || "Unknown";
+  const eventType = getMatchEventType(match);
 
   // Decrement old pairing (only if old opponent was a real hero)
   if (oldOpponentHero && oldOpponentHero !== "Unknown") {
@@ -450,6 +560,14 @@ export async function adjustOpponentHeroMatchupOnEdit(
         [`byFormat.${fmt}.hero2Wins`]: increment(h2Win),
         [`byFormat.${fmt}.draws`]: increment(draw),
         [`byFormat.${fmt}.total`]: increment(-1),
+        [`byEventType.${eventType}.hero1Wins`]: increment(h1Win),
+        [`byEventType.${eventType}.hero2Wins`]: increment(h2Win),
+        [`byEventType.${eventType}.draws`]: increment(draw),
+        [`byEventType.${eventType}.total`]: increment(-1),
+        [`byFormatEventType.${fmt}.${eventType}.hero1Wins`]: increment(h1Win),
+        [`byFormatEventType.${fmt}.${eventType}.hero2Wins`]: increment(h2Win),
+        [`byFormatEventType.${fmt}.${eventType}.draws`]: increment(draw),
+        [`byFormatEventType.${fmt}.${eventType}.total`]: increment(-1),
       }).catch(() => {});
     }
   }
@@ -474,6 +592,14 @@ export async function adjustOpponentHeroMatchupOnEdit(
         [`byFormat.${fmt}.hero2Wins`]: increment(h2Win),
         [`byFormat.${fmt}.draws`]: increment(draw),
         [`byFormat.${fmt}.total`]: increment(1),
+        [`byEventType.${eventType}.hero1Wins`]: increment(h1Win),
+        [`byEventType.${eventType}.hero2Wins`]: increment(h2Win),
+        [`byEventType.${eventType}.draws`]: increment(draw),
+        [`byEventType.${eventType}.total`]: increment(1),
+        [`byFormatEventType.${fmt}.${eventType}.hero1Wins`]: increment(h1Win),
+        [`byFormatEventType.${fmt}.${eventType}.hero2Wins`]: increment(h2Win),
+        [`byFormatEventType.${fmt}.${eventType}.draws`]: increment(draw),
+        [`byFormatEventType.${fmt}.${eventType}.total`]: increment(1),
       }).catch(() => {});
     }
   }
@@ -515,8 +641,9 @@ export async function getCommunityHeroMatchups(
   months: string[],
   format?: string,
   rated?: "rated" | "unrated",
+  eventType?: string,
 ): Promise<CommunityMatchupCell[]> {
-  const cacheKey = `${months.join(",")}_${format || ""}_${rated || ""}`;
+  const cacheKey = `${months.join(",")}_${format || ""}_${rated || ""}_${eventType || ""}`;
   if (cachedData && cachedData.key === cacheKey && Date.now() - cachedData.ts < CACHE_TTL) {
     return cachedData.data;
   }
@@ -553,7 +680,11 @@ export async function getCommunityHeroMatchups(
 
     // Determine the source stats based on format and rated filters
     let src: { hero1Wins: number; hero2Wins: number; draws: number; total: number } | null = null;
-    if (format && rated) {
+    if (format && eventType) {
+      src = d.byFormatEventType?.[format]?.[eventType] || null;
+    } else if (eventType) {
+      src = d.byEventType?.[eventType] || null;
+    } else if (format && rated) {
       // Both filters: no pre-computed intersection, skip (would need byFormatRated)
       // Fall back to format-only for now
       src = d.byFormat?.[format] || null;

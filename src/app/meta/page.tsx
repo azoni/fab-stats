@@ -15,7 +15,7 @@ import { MiniDonut, DONUT_COLORS } from "@/components/charts/MiniDonut";
 import { WinRateRing } from "@/components/charts/WinRateRing";
 import { SegmentedBar } from "@/components/charts/SegmentedBar";
 import { StatCard } from "@/components/ui/StatCard";
-import { FilterToolbar, PageHero } from "@/components/ui/PageHero";
+import { FilterToolbar } from "@/components/ui/PageHero";
 import { Users, Swords, Shield, Trophy, Grid3X3, CalendarDays } from "lucide-react";
 
 type SortKey = "usage" | "winrate";
@@ -188,18 +188,25 @@ export default function MetaPage() {
 
   return (
     <div className="space-y-5">
-      <PageHero
-        eyebrow="Community Meta"
-        title={activeSeason ? activeSeason.name : "Read the room before you register"}
-        description={`Aggregated from ${overview.totalPlayers} public player${overview.totalPlayers === 1 ? "" : "s"} and ${overview.totalMatches.toLocaleString()} matches. Use filters to compare hero popularity, conversion, and matchup confidence.`}
-        icon={<Shield className="h-4 w-4" />}
-        metrics={[
-          { label: "Players", value: overview.totalPlayers },
-          { label: "Matches", value: overview.totalMatches.toLocaleString() },
-          { label: "Events", value: overview.totalEvents },
-          { label: "Heroes", value: overview.totalHeroes },
-        ]}
-      />
+      <section className="rounded-lg border border-fab-border bg-fab-surface/95 p-3 sm:p-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <div className="flex items-center gap-2">
+              <Shield className="h-4 w-4 text-fab-gold" />
+              <h1 className="text-lg font-black text-fab-text sm:text-xl">{activeSeason ? activeSeason.name : "Community Meta"}</h1>
+              <span className="rounded bg-fab-gold/15 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-fab-gold">Beta</span>
+            </div>
+            <p className="mt-1 text-[11px] text-fab-muted sm:text-xs">
+              {overview.totalPlayers} public players · {overview.totalMatches.toLocaleString()} matches · {overview.totalHeroes} heroes
+            </p>
+          </div>
+          {(effectiveFormat || effectiveEventType) && (
+            <p className="text-xs font-semibold text-fab-gold">
+              {[effectiveFormat, effectiveEventType].filter(Boolean).join(" · ")}
+            </p>
+          )}
+        </div>
+      </section>
       <div className="hidden">
         <img src="/assets/icons/globe.webp" alt="" className="absolute right-0 top-1/2 -translate-y-1/2 w-20 h-20 object-contain opacity-[0.12] pointer-events-none" />
         <div className="w-8 h-8 rounded-lg bg-teal-500/10 flex items-center justify-center ring-1 ring-inset ring-teal-500/20">
@@ -364,6 +371,58 @@ export default function MetaPage() {
           </div>
         );
       })()}
+
+      {!activeSeason && (allFormats.length > 1 || allEventTypes.length > 1) && (
+        <FilterToolbar className="mb-4">
+          <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-fab-dim">Filters</span>
+          {allFormats.length > 1 && (
+            <div className="flex gap-0.5 bg-fab-bg rounded-lg p-0.5 border border-fab-border">
+              <button
+                onClick={() => setFormatWithUrl("all")}
+                className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${
+                  filterFormat === "all" ? "bg-fab-surface text-fab-text shadow-sm" : "text-fab-dim hover:text-fab-muted"
+                }`}
+              >
+                All Formats
+              </button>
+              {allFormats.map((f) => (
+                <button
+                  key={f}
+                  onClick={() => setFormatWithUrl(f)}
+                  className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors whitespace-nowrap ${
+                    filterFormat === f ? "bg-fab-surface text-fab-text shadow-sm" : "text-fab-dim hover:text-fab-muted"
+                  }`}
+                >
+                  {f === "Classic Constructed" ? "CC" : f}
+                </button>
+              ))}
+            </div>
+          )}
+          {allEventTypes.length > 1 && (
+            <div className="flex gap-0.5 bg-fab-bg rounded-lg p-0.5 border border-fab-border overflow-x-auto scrollbar-hide">
+              <button
+                onClick={() => setEventTypeWithUrl("all")}
+                className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${
+                  filterEventType === "all" ? "bg-fab-surface text-fab-text shadow-sm" : "text-fab-dim hover:text-fab-muted"
+                }`}
+              >
+                All Events
+              </button>
+              {allEventTypes.map((t) => (
+                <button
+                  key={t}
+                  onClick={() => setEventTypeWithUrl(t)}
+                  className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors whitespace-nowrap ${
+                    filterEventType === t ? "bg-fab-surface text-fab-text shadow-sm" : "text-fab-dim hover:text-fab-muted"
+                  }`}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
+          )}
+        </FilterToolbar>
+      )}
 
       {/* Community Overview */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
@@ -554,56 +613,6 @@ export default function MetaPage() {
           className="bg-fab-surface border border-fab-border rounded-md px-3 py-1.5 text-fab-text text-sm placeholder:text-fab-dim focus:outline-none focus:border-fab-gold w-40"
         />
 
-        {/* Format pills (hidden when season auto-sets format) */}
-        {allFormats.length > 1 && !activeSeason && (
-          <div className="flex gap-0.5 bg-fab-bg rounded-lg p-0.5 border border-fab-border">
-            <button
-              onClick={() => setFormatWithUrl("all")}
-              className={`px-2 py-0.5 rounded-md text-[11px] font-medium transition-colors ${
-                filterFormat === "all" ? "bg-fab-surface text-fab-text shadow-sm" : "text-fab-dim hover:text-fab-muted"
-              }`}
-            >
-              All
-            </button>
-            {allFormats.map((f) => (
-              <button
-                key={f}
-                onClick={() => setFormatWithUrl(f)}
-                className={`px-2 py-0.5 rounded-md text-[11px] font-medium transition-colors whitespace-nowrap ${
-                  filterFormat === f ? "bg-fab-surface text-fab-text shadow-sm" : "text-fab-dim hover:text-fab-muted"
-                }`}
-              >
-                {f === "Classic Constructed" ? "CC" : f}
-              </button>
-            ))}
-          </div>
-        )}
-
-        {/* Event type pills (hidden when season auto-sets event type) */}
-        {allEventTypes.length > 1 && !activeSeason && (
-          <div className="flex gap-0.5 bg-fab-bg rounded-lg p-0.5 border border-fab-border overflow-x-auto scrollbar-hide">
-            <button
-              onClick={() => setEventTypeWithUrl("all")}
-              className={`px-2 py-0.5 rounded-md text-[11px] font-medium transition-colors ${
-                filterEventType === "all" ? "bg-fab-surface text-fab-text shadow-sm" : "text-fab-dim hover:text-fab-muted"
-              }`}
-            >
-              All
-            </button>
-            {allEventTypes.map((t) => (
-              <button
-                key={t}
-                onClick={() => setEventTypeWithUrl(t)}
-                className={`px-2 py-0.5 rounded-md text-[11px] font-medium transition-colors whitespace-nowrap ${
-                  filterEventType === t ? "bg-fab-surface text-fab-text shadow-sm" : "text-fab-dim hover:text-fab-muted"
-                }`}
-              >
-                {t}
-              </button>
-            ))}
-          </div>
-        )}
-
         {/* Sort toggle */}
         <div className="flex gap-1 ml-auto">
           {([
@@ -684,6 +693,7 @@ export default function MetaPage() {
         </p>
         <MetaMatchupMatrix
           format={effectiveFormat}
+          eventType={effectiveEventType}
           sinceDate={sinceDate}
           untilDate={untilDate}
         />
