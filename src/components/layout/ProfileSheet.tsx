@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Bell, Heart, Import, Mail, Search as SearchIcon, Settings as SettingsIcon, ShieldCheck, Star, User as UserIcon, Users, X } from "lucide-react";
+import { Bell, Heart, Import, Mail, Settings as SettingsIcon, ShieldCheck, Star, User as UserIcon, Users, X } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface ProfileSheetProps {
@@ -92,7 +92,7 @@ export function ProfileSheet({ open, onClose }: ProfileSheetProps) {
           ) : (
             <>
               <SheetButton icon={<Bell className="w-5 h-5" />} label="Notifications" onClick={() => go("/notifications")} />
-              <SheetButton icon={<SearchIcon className="w-5 h-5" />} label="Search" onClick={() => go("/search")} />
+              <SheetButton icon={<Import className="w-5 h-5" />} label="Import" onClick={() => go("/import")} />
             </>
           )}
         </div>

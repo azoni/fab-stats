@@ -164,7 +164,7 @@ export default function PlayerProfile() {
   const [editingSocials, setEditingSocials] = useState(false);
   const [editingBorder, setEditingBorder] = useState(false);
   const [editingUnderline, setEditingUnderline] = useState(false);
-  const [socialDraft, setSocialDraft] = useState<{ twitter: string; discord: string; fabrary: string; fabraryName: string }>({ twitter: "", discord: "", fabrary: "", fabraryName: "" });
+  const [socialDraft, setSocialDraft] = useState<{ twitter: string; discord: string; fabrary: string; fabraryName: string; metafy: string; metafyTitle: string }>({ twitter: "", discord: "", fabrary: "", fabraryName: "", metafy: "", metafyTitle: "" });
   const [discordCopied, setDiscordCopied] = useState(false);
 
   // Auto-expand achievements if navigated with #achievements hash
@@ -318,6 +318,8 @@ export default function PlayerProfile() {
               discord: profile.socialLinks?.discord || "",
               fabrary: profile.socialLinks?.fabrary || "",
               fabraryName: profile.socialLinks?.fabraryName || "",
+              metafy: profile.socialLinks?.metafy || "",
+              metafyTitle: profile.socialLinks?.metafyTitle || "",
             });
           }
 
@@ -791,18 +793,33 @@ export default function PlayerProfile() {
                           className="w-20 bg-transparent text-[11px] text-fab-text placeholder:text-fab-dim focus:outline-none" />
                       </div>
                     )}
+                    <div className="flex items-center gap-1 bg-fab-bg border border-fab-border rounded-lg px-2 py-1">
+                      <svg className="w-3 h-3 text-fab-dim shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3l7 4v10l-7 4-7-4V7l7-4z"/><path d="M12 7v10"/><path d="M8.5 9.5l3.5 2 3.5-2"/></svg>
+                      <input type="text" placeholder="Metafy URL" value={socialDraft.metafy} onChange={(e) => setSocialDraft((d) => ({ ...d, metafy: e.target.value }))}
+                        className="w-24 bg-transparent text-[11px] text-fab-text placeholder:text-fab-dim focus:outline-none" />
+                    </div>
+                    {socialDraft.metafy.trim() && (
+                      <div className="flex items-center gap-1 bg-fab-bg border border-fab-border rounded-lg px-2 py-1">
+                        <input type="text" placeholder="Guide title" value={socialDraft.metafyTitle} onChange={(e) => setSocialDraft((d) => ({ ...d, metafyTitle: e.target.value }))}
+                          className="w-24 bg-transparent text-[11px] text-fab-text placeholder:text-fab-dim focus:outline-none" />
+                      </div>
+                    )}
                   </div>
                   {(socialDraft.twitter !== (profile.socialLinks?.twitter || "") ||
                     socialDraft.discord !== (profile.socialLinks?.discord || "") ||
                     socialDraft.fabrary !== (profile.socialLinks?.fabrary || "") ||
-                    socialDraft.fabraryName !== (profile.socialLinks?.fabraryName || "")) && (
+                    socialDraft.fabraryName !== (profile.socialLinks?.fabraryName || "") ||
+                    socialDraft.metafy !== (profile.socialLinks?.metafy || "") ||
+                    socialDraft.metafyTitle !== (profile.socialLinks?.metafyTitle || "")) && (
                     <button
                       onClick={async () => {
-                        const links: { twitter?: string; discord?: string; fabrary?: string; fabraryName?: string } = {};
+                        const links: { twitter?: string; discord?: string; fabrary?: string; fabraryName?: string; metafy?: string; metafyTitle?: string } = {};
                         if (socialDraft.twitter.trim()) links.twitter = socialDraft.twitter.trim().replace(/^@/, "");
                         if (socialDraft.discord.trim()) links.discord = socialDraft.discord.trim();
                         if (socialDraft.fabrary.trim()) links.fabrary = socialDraft.fabrary.trim();
                         if (socialDraft.fabraryName.trim()) links.fabraryName = socialDraft.fabraryName.trim();
+                        if (socialDraft.metafy.trim()) links.metafy = socialDraft.metafy.trim();
+                        if (socialDraft.metafyTitle.trim()) links.metafyTitle = socialDraft.metafyTitle.trim();
                         await updateProfile(profile.uid, { socialLinks: Object.keys(links).length > 0 ? links : undefined });
                         setState((prev) => prev.status === "loaded" ? { ...prev, profile: { ...prev.profile, socialLinks: Object.keys(links).length > 0 ? links : undefined } } : prev);
                       }}
@@ -812,7 +829,7 @@ export default function PlayerProfile() {
                     </button>
                   )}
                 </div>
-              ) : (profile.socialLinks?.twitter || profile.socialLinks?.discord || profile.socialLinks?.fabrary) ? (
+              ) : (profile.socialLinks?.twitter || profile.socialLinks?.discord || profile.socialLinks?.fabrary || profile.socialLinks?.metafy) ? (
                 <div className="flex items-center gap-2 mt-1 flex-wrap">
                   {profile.socialLinks?.twitter && (
                     <a href={`https://x.com/${profile.socialLinks.twitter.replace(/^@/, "")}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-[11px] text-fab-muted hover:text-fab-text transition-colors">
@@ -834,6 +851,12 @@ export default function PlayerProfile() {
                     <a href={profile.socialLinks.fabrary.startsWith("http") ? profile.socialLinks.fabrary : `https://fabrary.net/decks/${profile.socialLinks.fabrary}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-[11px] text-fab-muted hover:text-fab-text transition-colors">
                       <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
                       <span>{profile.socialLinks.fabraryName || "Deck"}</span>
+                    </a>
+                  )}
+                  {profile.socialLinks?.metafy && (
+                    <a href={profile.socialLinks.metafy.startsWith("http") ? profile.socialLinks.metafy : `https://${profile.socialLinks.metafy}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-[11px] text-fab-muted hover:text-fab-text transition-colors">
+                      <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3l7 4v10l-7 4-7-4V7l7-4z"/><path d="M12 7v10"/><path d="M8.5 9.5l3.5 2 3.5-2"/></svg>
+                      <span>{profile.socialLinks.metafyTitle || "Metafy"}</span>
                     </a>
                   )}
                 </div>

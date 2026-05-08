@@ -1,5 +1,6 @@
 import {
   collection,
+  collectionGroup,
   doc,
   addDoc,
   getDoc,
@@ -357,6 +358,27 @@ export async function searchUsernames(
   }
 
   return results.slice(0, maxResults);
+}
+
+export async function getDiscoverProfiles(maxResults = 180): Promise<UserProfile[]> {
+  const snap = await getDocs(
+    query(
+      collectionGroup(db, "profile"),
+      where("isPublic", "==", true),
+      limit(maxResults)
+    )
+  );
+
+  return snap.docs
+    .map((d) => d.data() as UserProfile)
+    .filter((profile) => {
+      if (!profile.uid || !profile.username) return false;
+      if (profile.profileVisibility && profile.profileVisibility !== "public") return false;
+      if (profile.hideFromGuests || profile.hideFromSpotlight) return false;
+      const links = profile.socialLinks;
+      return Boolean(links?.twitter || links?.fabrary || links?.metafy || links?.discord);
+    })
+    .sort((a, b) => (a.displayName || a.username).localeCompare(b.displayName || b.username));
 }
 
 export async function updateProfile(

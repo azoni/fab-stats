@@ -39,7 +39,7 @@ const tabs: TabSpec[] = [
     href: "/activity",
     label: "Activity",
     icon: <NavAssetIcon name="activity" />,
-    match: (p) => p.startsWith("/activity") || p.startsWith("/community") || p.startsWith("/teams") || p.startsWith("/group") || p.startsWith("/friends") || p.startsWith("/search") || p.startsWith("/feed") || p.startsWith("/player"),
+    match: (p) => p.startsWith("/activity") || p.startsWith("/discover") || p.startsWith("/community") || p.startsWith("/teams") || p.startsWith("/group") || p.startsWith("/friends") || p.startsWith("/search") || p.startsWith("/feed") || p.startsWith("/player"),
   },
   {
     href: "/extras",

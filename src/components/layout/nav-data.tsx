@@ -2,6 +2,7 @@
 import type { ReactNode } from "react";
 import {
   Bot,
+  Compass,
   Gamepad2,
   Mail,
   MessageCircle,
@@ -47,6 +48,7 @@ export const navLinks: NavLink[] = [
     { href: "/matchups", label: "Matchup Matrix" },
   ] },
   { href: "/leaderboard", label: "Rankings", icon: <NavAssetIcon name="rankings" />, color: "text-amber-400", bg: "bg-amber-400/10" },
+  { href: "/discover", label: "Discover", icon: <Compass className="h-4 w-4" />, color: "text-emerald-400", bg: "bg-emerald-400/10" },
   { href: "/activity", label: "Activity", icon: <NavAssetIcon name="activity" />, color: "text-indigo-400", bg: "bg-indigo-400/10" },
   { href: "/teams", label: "Teams", icon: <NavAssetIcon name="teams" />, color: "text-sky-400", bg: "bg-sky-400/10" },
   { href: "/achievements", label: "Achievements", icon: <NavAssetIcon name="achievements" />, color: "text-yellow-400", bg: "bg-yellow-400/10" },

@@ -22,7 +22,7 @@ function formatCompact(value: number) {
   return new Intl.NumberFormat("en-US", { notation: value >= 10000 ? "compact" : "standard", maximumFractionDigits: 1 }).format(value);
 }
 
-function ActivityStat({ label, value, tone = "gold" }: { label: string; value: string; tone?: "gold" | "green" | "blue" | "rose" }) {
+function ActivityStat({ label, value, tone = "gold", className = "" }: { label: string; value: string; tone?: "gold" | "green" | "blue" | "rose"; className?: string }) {
   const toneClass = {
     gold: "text-fab-gold",
     green: "text-emerald-300",
@@ -31,9 +31,9 @@ function ActivityStat({ label, value, tone = "gold" }: { label: string; value: s
   }[tone];
 
   return (
-    <div className="rounded-xl border border-fab-border/70 bg-fab-bg/45 px-4 py-3 shadow-inner shadow-black/10">
-      <p className={`text-xl font-black leading-none ${toneClass}`}>{value}</p>
-      <p className="mt-1 text-[10px] font-bold uppercase tracking-[0.16em] text-fab-dim">{label}</p>
+    <div className={`rounded-xl border border-fab-border/70 bg-fab-bg/45 px-3 py-2.5 shadow-inner shadow-black/10 sm:px-4 sm:py-3 ${className}`}>
+      <p className={`text-lg font-black leading-none sm:text-xl ${toneClass}`}>{value}</p>
+      <p className="mt-1 text-[9px] font-bold uppercase tracking-[0.14em] text-fab-dim sm:text-[10px] sm:tracking-[0.16em]">{label}</p>
     </div>
   );
 }
@@ -150,27 +150,27 @@ export default function ActivityPage() {
 
       <section className="relative overflow-hidden rounded-2xl border border-fab-border/80 bg-[linear-gradient(135deg,rgba(25,23,18,0.96),rgba(14,15,14,0.94)_58%,rgba(17,24,22,0.92))] shadow-[0_22px_70px_rgba(0,0,0,0.28)]">
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_82%_20%,rgba(38,211,177,0.12),transparent_30%),radial-gradient(circle_at_16%_0%,rgba(245,179,57,0.16),transparent_28%)]" />
-        <div className="relative grid gap-6 p-5 sm:p-6 xl:grid-cols-[minmax(0,1fr)_420px]">
+        <div className="relative grid gap-4 p-4 sm:gap-6 sm:p-6 xl:grid-cols-[minmax(0,1fr)_420px]">
           <div className="min-w-0">
             <div className="inline-flex items-center gap-2 rounded-full border border-fab-border/80 bg-fab-bg/55 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-fab-gold">
               <Sparkles className="h-3.5 w-3.5" />
               Community pulse
             </div>
-            <h1 className="mt-4 max-w-2xl text-3xl font-black tracking-normal text-fab-text sm:text-4xl">Activity</h1>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-fab-muted sm:text-base">
+            <h1 className="mt-3 max-w-2xl text-2xl font-black tracking-normal text-fab-text sm:mt-4 sm:text-4xl">Activity</h1>
+            <p className="mt-3 hidden max-w-2xl text-sm leading-6 text-fab-muted sm:block sm:text-base">
               Follow the latest imports, event finishes, daily games, and player updates from across FaB Stats.
             </p>
-            <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3">
+            <div className="mt-4 grid grid-cols-3 gap-2 sm:mt-5 sm:gap-3">
               <ActivityStat label="Players" value={formatCompact(pulseStats.players)} />
               <ActivityStat label="Matches" value={formatCompact(pulseStats.matches)} tone="green" />
               <ActivityStat label="This Week" value={formatCompact(pulseStats.recentMatches)} tone="blue" />
-              <ActivityStat label="Public" value={formatCompact(pulseStats.publicProfiles)} tone="green" />
-              <ActivityStat label="Ranked" value={formatCompact(pulseStats.rankedPlayers)} tone="gold" />
-              <ActivityStat label="Top 8s" value={formatCompact(pulseStats.totalTop8s)} tone="rose" />
+              <ActivityStat label="Public" value={formatCompact(pulseStats.publicProfiles)} tone="green" className="hidden sm:block" />
+              <ActivityStat label="Ranked" value={formatCompact(pulseStats.rankedPlayers)} tone="gold" className="hidden sm:block" />
+              <ActivityStat label="Top 8s" value={formatCompact(pulseStats.totalTop8s)} tone="rose" className="hidden sm:block" />
             </div>
           </div>
 
-          <div className="rounded-xl border border-fab-border/80 bg-fab-bg/45 p-4 shadow-inner shadow-black/20">
+          <div className="hidden rounded-xl border border-fab-border/80 bg-fab-bg/45 p-4 shadow-inner shadow-black/20 sm:block">
             <div className="mb-3 flex items-center gap-2">
               <span className="flex h-8 w-8 items-center justify-center rounded-lg border border-fab-border/70 bg-fab-surface/70 text-fab-gold">
                 <Search className="h-4 w-4" />

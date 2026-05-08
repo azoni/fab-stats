@@ -31,6 +31,14 @@ interface NotificationGroup {
   messageCount: number;
 }
 
+type NotificationFilter = "all" | "unread" | "read";
+
+const FILTERS: { id: NotificationFilter; label: string }[] = [
+  { id: "all", label: "All" },
+  { id: "unread", label: "Unread" },
+  { id: "read", label: "Read" },
+];
+
 /** Group message notifications by sender. Other types pass through as-is. */
 function groupNotifications(notifications: UserNotification[]): NotificationGroup[] {
   const groups: NotificationGroup[] = [];
@@ -204,9 +212,23 @@ export default function NotificationsPage() {
   const router = useRouter();
   const [usernameCache, setUsernameCache] = useState<Record<string, string>>({});
   const [toggling, setToggling] = useState(false);
+  const [filter, setFilter] = useState<NotificationFilter>("all");
+  const [markingAll, setMarkingAll] = useState(false);
 
   const notificationsEnabled = profile?.notificationsEnabled !== false;
   const groups = useMemo(() => groupNotifications(notifications), [notifications]);
+  const unreadGroups = useMemo(() => groups.filter((g) => g.isUnread), [groups]);
+  const readGroups = useMemo(() => groups.filter((g) => !g.isUnread), [groups]);
+  const visibleGroups = useMemo(() => {
+    if (filter === "unread") return unreadGroups;
+    if (filter === "read") return readGroups;
+    return groups;
+  }, [filter, groups, readGroups, unreadGroups]);
+  const messageGroups = useMemo(() => groups.filter((g) => g.latest.type === "message").length, [groups]);
+  const actionGroups = useMemo(
+    () => groups.filter((g) => ["friendRequest", "teamInvite", "groupInvite", "heroCorrection"].includes(g.latest.type)).length,
+    [groups],
+  );
 
   // Look up usernames for UIDs so we can navigate to profiles
   const cacheRef = useRef(usernameCache);
@@ -242,6 +264,20 @@ export default function NotificationsPage() {
       // silently fail
     }
     setToggling(false);
+  }
+
+  async function handleMarkAllAsRead() {
+    if (unreadCount === 0) return;
+    setMarkingAll(true);
+    try {
+      await markAllAsRead();
+      setFilter("read");
+      toast.success("Marked all notifications as read.");
+    } catch {
+      toast.error("Could not mark notifications as read.");
+    } finally {
+      setMarkingAll(false);
+    }
   }
 
   if (!user || isGuest) {
@@ -332,10 +368,10 @@ export default function NotificationsPage() {
   }
 
   return (
-    <div>
+    <div className="space-y-5">
       {/* Header with toggle */}
-      <div className="bg-fab-surface border border-fab-border rounded-xl p-4 mb-5">
-        <div className="flex items-center justify-between">
+      <div className="overflow-hidden rounded-xl border border-fab-border bg-fab-surface/95">
+        <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-start sm:justify-between sm:p-5">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center ring-1 ring-inset ring-amber-500/20">
               <svg className="w-5 h-5 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -343,38 +379,53 @@ export default function NotificationsPage() {
               </svg>
             </div>
             <div>
-              <h1 className="text-lg font-bold text-fab-text leading-tight">Notifications</h1>
-              <p className="text-xs text-fab-muted leading-tight">
-                {!notificationsEnabled ? "Notifications are paused" : unreadCount > 0 ? `${unreadCount} unread` : groups.length > 0 ? "All caught up" : "No notifications yet"}
+              <p className="text-[10px] font-black uppercase tracking-[0.16em] text-fab-gold">Inbox</p>
+              <h1 className="text-xl font-black text-fab-text leading-tight">Notifications</h1>
+              <p className="mt-1 text-sm text-fab-muted leading-tight">
+                {!notificationsEnabled ? "Notifications are paused" : unreadCount > 0 ? `${unreadCount} unread update${unreadCount === 1 ? "" : "s"} waiting` : groups.length > 0 ? "All caught up. Read items stay here." : "No notifications yet"}
               </p>
             </div>
           </div>
 
-          {/* Toggle switch */}
-          <button
-            onClick={handleToggleNotifications}
-            disabled={toggling}
-            className="flex items-center gap-2.5 group"
-            title={notificationsEnabled ? "Pause notifications" : "Resume notifications"}
-          >
-            <span className="text-xs text-fab-muted group-hover:text-fab-text transition-colors hidden sm:block">
-              {notificationsEnabled ? "On" : "Off"}
-            </span>
-            <div className={`relative w-11 h-6 rounded-full transition-colors ${notificationsEnabled ? "bg-fab-gold" : "bg-fab-border"} ${toggling ? "opacity-50" : ""}`}>
-              <div className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${notificationsEnabled ? "translate-x-5" : "translate-x-0"}`} />
-            </div>
-          </button>
+          <div className="flex items-center gap-2">
+            {notificationsEnabled && unreadCount > 0 && (
+              <button
+                onClick={handleMarkAllAsRead}
+                disabled={markingAll}
+                className="rounded-lg border border-fab-gold/35 bg-fab-gold/10 px-3 py-2 text-xs font-bold text-fab-gold transition-colors hover:bg-fab-gold/20 disabled:opacity-50"
+              >
+                {markingAll ? "Marking..." : "Mark all read"}
+              </button>
+            )}
+            <button
+              onClick={handleToggleNotifications}
+              disabled={toggling}
+              className="flex items-center gap-2.5 rounded-lg border border-fab-border bg-fab-bg/45 px-3 py-2"
+              title={notificationsEnabled ? "Pause notifications" : "Resume notifications"}
+            >
+              <span className="text-xs font-bold text-fab-muted">
+                {notificationsEnabled ? "On" : "Off"}
+              </span>
+              <div className={`relative h-5 w-9 rounded-full transition-colors ${notificationsEnabled ? "bg-fab-gold" : "bg-fab-border"} ${toggling ? "opacity-50" : ""}`}>
+                <div className={`absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${notificationsEnabled ? "translate-x-4" : "translate-x-0"}`} />
+              </div>
+            </button>
+          </div>
         </div>
 
-        {/* Mark all as read — only when enabled + has unread */}
-        {notificationsEnabled && unreadCount > 0 && (
-          <div className="mt-3 pt-3 border-t border-fab-border flex justify-end">
-            <button
-              onClick={markAllAsRead}
-              className="text-xs text-fab-gold hover:text-fab-gold-light transition-colors font-medium"
-            >
-              Mark all as read
-            </button>
+        {notificationsEnabled && (
+          <div className="grid grid-cols-2 border-t border-fab-border md:grid-cols-4">
+            {[
+              { label: "Unread", value: unreadGroups.length },
+              { label: "History", value: readGroups.length },
+              { label: "Messages", value: messageGroups },
+              { label: "Needs Action", value: actionGroups },
+            ].map((item) => (
+              <div key={item.label} className="border-r border-fab-border/70 px-4 py-3 last:border-r-0">
+                <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-fab-dim">{item.label}</p>
+                <p className="mt-1 text-lg font-black text-fab-text tabular-nums">{item.value}</p>
+              </div>
+            ))}
           </div>
         )}
       </div>
@@ -398,18 +449,45 @@ export default function NotificationsPage() {
       {/* Active content */}
       {notificationsEnabled && (
         <>
-          {groups.length === 0 ? (
+          {groups.length > 0 && (
+            <div className="flex gap-1 overflow-x-auto rounded-lg border border-fab-border bg-fab-surface/90 p-1">
+              {FILTERS.map((item) => {
+                const count = item.id === "all" ? groups.length : item.id === "unread" ? unreadGroups.length : readGroups.length;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => setFilter(item.id)}
+                    className={`rounded-md px-3 py-2 text-xs font-bold transition-colors ${
+                      filter === item.id
+                        ? "bg-fab-gold/15 text-fab-gold"
+                        : "text-fab-muted hover:bg-fab-bg/70 hover:text-fab-text"
+                    }`}
+                  >
+                    {item.label}
+                    <span className="ml-2 text-fab-dim">{count}</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {visibleGroups.length === 0 ? (
             <div className="text-center py-16 text-fab-dim">
-              <p className="text-lg mb-1">No notifications yet</p>
+              <p className="text-lg mb-1">
+                {groups.length === 0 ? "No notifications yet" : filter === "unread" ? "Nothing unread" : "No read history yet"}
+              </p>
               <p className="text-sm">
-                When someone messages you, sends a friend request, or interacts with your matches, you&apos;ll see it here.
+                {groups.length === 0
+                  ? "When someone messages you, sends a friend request, or interacts with your matches, you'll see it here."
+                  : filter === "unread"
+                    ? "Read notifications are still available in the All or Read tabs."
+                    : "Read something first and it will stay here until you delete it."}
               </p>
             </div>
           ) : (
             <div className="space-y-1.5">
-              {groups.map((group) => {
+              {visibleGroups.map((group) => {
                 const n = group.latest;
-                const { bg: typeBg } = getNotifIcon(n.type);
 
                 return (
                   <div

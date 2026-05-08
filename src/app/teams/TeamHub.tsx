@@ -53,16 +53,18 @@ const TEAM_FINISH_RANK: Record<string, number> = {
   Worlds: 9,
 };
 
-const TEAM_FINISH_STYLE: Record<string, { label: string; border: string; shadow: string }> = {
-  Armory: { label: "Armory finish", border: "#d4975a", shadow: "0 0 8px rgba(212,151,90,0.18)" },
-  Skirmish: { label: "Skirmish finish", border: "#93c5fd", shadow: "0 0 8px rgba(147,197,253,0.18)" },
-  "Road to Nationals": { label: "RTN finish", border: "#fca5a5", shadow: "0 0 8px rgba(252,165,165,0.18)" },
-  ProQuest: { label: "PQ finish", border: "#c4b5fd", shadow: "0 0 8px rgba(196,181,253,0.2)" },
-  "Battle Hardened": { label: "Battle Hardened", border: "#cd7f32", shadow: "0 0 10px rgba(205,127,50,0.22)" },
-  "The Calling": { label: "Calling finish", border: "#60a5fa", shadow: "0 0 10px rgba(96,165,250,0.22)" },
-  Nationals: { label: "Nationals finish", border: "#f87171", shadow: "0 0 10px rgba(248,113,113,0.22)" },
-  "Pro Tour": { label: "Pro Tour finish", border: "#a78bfa", shadow: "0 0 12px rgba(167,139,250,0.25)" },
-  Worlds: { label: "Worlds finish", border: "#fbbf24", shadow: "0 0 12px rgba(251,191,36,0.28)" },
+type TeamFinishStyle = { label: string; border: string; shadow: string; variant: "border" | "underline" };
+
+const TEAM_FINISH_STYLE: Record<string, TeamFinishStyle> = {
+  Armory: { label: "Armory finish", border: "#d4975a", shadow: "0 0 8px rgba(212,151,90,0.18)", variant: "underline" },
+  Skirmish: { label: "Skirmish finish", border: "#93c5fd", shadow: "0 0 8px rgba(147,197,253,0.18)", variant: "underline" },
+  "Road to Nationals": { label: "RTN finish", border: "#fca5a5", shadow: "0 0 8px rgba(252,165,165,0.18)", variant: "underline" },
+  ProQuest: { label: "PQ finish", border: "#c4b5fd", shadow: "0 0 8px rgba(196,181,253,0.2)", variant: "underline" },
+  "Battle Hardened": { label: "Battle Hardened", border: "#cd7f32", shadow: "0 0 10px rgba(205,127,50,0.22)", variant: "border" },
+  "The Calling": { label: "Calling finish", border: "#60a5fa", shadow: "0 0 10px rgba(96,165,250,0.22)", variant: "border" },
+  Nationals: { label: "Nationals finish", border: "#f87171", shadow: "0 0 10px rgba(248,113,113,0.22)", variant: "border" },
+  "Pro Tour": { label: "Pro Tour finish", border: "#a78bfa", shadow: "0 0 12px rgba(167,139,250,0.25)", variant: "border" },
+  Worlds: { label: "Worlds finish", border: "#fbbf24", shadow: "0 0 12px rgba(251,191,36,0.28)", variant: "border" },
 };
 
 function bestFinishForEntry(entry?: LeaderboardEntry) {
@@ -380,16 +382,16 @@ export default function TeamHub() {
 
   const teamFinishStyles = useMemo(() => {
     const entryByUid = new Map(leaderboardEntries.map((entry) => [entry.userId, entry]));
-    const styles: Record<string, { label: string; border: string; shadow: string } | null> = {};
+    const styles: Record<string, TeamFinishStyle | null> = {};
     for (const t of allTeams) {
       const uids = teamMemberUids[t.id] || [];
-      let best: { label: string; border: string; shadow: string; rank: number } | null = null;
+      let best: (TeamFinishStyle & { rank: number }) | null = null;
       for (const uid of uids) {
         const finish = bestFinishForEntry(entryByUid.get(uid));
         if (!finish) continue;
         if (!best || finish.rank > best.rank) best = finish;
       }
-      styles[t.id] = best ? { label: best.label, border: best.border, shadow: best.shadow } : null;
+      styles[t.id] = best;
     }
     return styles;
   }, [allTeams, leaderboardEntries, teamMemberUids]);
@@ -854,9 +856,12 @@ export default function TeamHub() {
                 return (
                   <div
                     key={t.id}
-                    className="group rounded-xl border border-fab-border/80 bg-fab-surface/85 p-4 shadow-[0_12px_36px_rgba(0,0,0,0.14)] transition-colors hover:border-fab-gold/50 hover:bg-fab-gold/10"
-                    style={finishStyle ? { borderColor: finishStyle.border, boxShadow: finishStyle.shadow } : undefined}
+                    className="group relative overflow-hidden rounded-xl border border-fab-border/80 bg-fab-surface/85 p-4 shadow-[0_12px_36px_rgba(0,0,0,0.14)] transition-colors hover:border-fab-gold/50 hover:bg-fab-gold/10"
+                    style={finishStyle?.variant === "border" ? { borderColor: finishStyle.border, boxShadow: finishStyle.shadow } : undefined}
                   >
+                    {finishStyle?.variant === "underline" && (
+                      <span className="pointer-events-none absolute inset-x-0 bottom-0 h-1 opacity-80" style={{ background: finishStyle.border, boxShadow: finishStyle.shadow }} />
+                    )}
                     <div className="flex items-start gap-3">
                       <Link href={`/teams/${t.nameLower}`} className="shrink-0">
                         {t.iconUrl ? (

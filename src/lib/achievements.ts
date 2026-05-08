@@ -49,18 +49,11 @@ interface AchievementDef extends Achievement {
 
 // ── Category game count helpers ──
 function puzzleCount(ctx: CheckContext): number {
-  return (ctx.fabdokuStats?.gamesPlayed ?? 0) + (ctx.fabdokuCardStats?.gamesPlayed ?? 0) + (ctx.connectionsStats?.gamesPlayed ?? 0) + (ctx.crosswordStats?.gamesPlayed ?? 0);
+  return (ctx.fabdokuStats?.gamesPlayed ?? 0) + (ctx.connectionsStats?.gamesPlayed ?? 0) + (ctx.crosswordStats?.gamesPlayed ?? 0);
 }
 function knowledgeCount(ctx: CheckContext): number {
   return (ctx.heroGuesserStats?.gamesPlayed ?? 0) + (ctx.matchupManiaStats?.gamesPlayed ?? 0) + (ctx.triviaStats?.gamesPlayed ?? 0) + (ctx.timelineStats?.gamesPlayed ?? 0);
 }
-function diceCount(ctx: CheckContext): number {
-  return (ctx.rampageStats?.gamesPlayed ?? 0) + (ctx.knockoutStats?.gamesPlayed ?? 0) + (ctx.brawlStats?.gamesPlayed ?? 0);
-}
-function ninjaCount(ctx: CheckContext): number {
-  return (ctx.ninjaComboStats?.gamesPlayed ?? 0) + (ctx.shadowStrikeStats?.gamesPlayed ?? 0) + (ctx.bladeDashStats?.gamesPlayed ?? 0);
-}
-
 const TIER_THRESHOLDS = [1, 5, 10, 25, 50, 100, 250, 500, 1000] as const;
 const TIER_RARITIES: Achievement["rarity"][] = ["common", "common", "uncommon", "uncommon", "rare", "rare", "epic", "legendary", "legendary"];
 
@@ -2009,17 +2002,11 @@ const CORE_ACHIEVEMENTS: AchievementDef[] = [
     progress: (ctx) => ({ current: ctx.kudosCounts?.helpful ?? 0, target: 50 }),
   },
 
-  // ── Category: Puzzle games (FaBdoku, FaBdoku Cards, Crossword, Connections) ──
+  // ── Category: Puzzle games (FaBdoku, Crossword, Connections) ──
   ...tieredGameAchievements("puzzle", "Puzzle", "puzzle game", "grid", "puzzle_games", puzzleCount),
 
   // ── Category: Knowledge games (Hero Guesser, Matchup Mania, Trivia, Timeline) ──
   ...tieredGameAchievements("knowledge", "Knowledge", "knowledge game", "brain", "knowledge_games", knowledgeCount),
-
-  // ── Category: Brute Dice games (Rhinar's Rampage, Kayo's Knockout, Brute Brawl) ──
-  ...tieredGameAchievements("dice", "Brute", "Brute Dice game", "dice", "dice_games", diceCount),
-
-  // ── Category: Ninja games (Katsu's Combo) ──
-  ...tieredGameAchievements("ninja", "Ninja", "Ninja game", "zap", "ninja_games", ninjaCount),
 ];
 
 const TOTAL_TIERS: [number, Achievement["rarity"], string][] = [

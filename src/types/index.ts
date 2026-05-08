@@ -168,7 +168,7 @@ export interface UserProfile {
   selectedEmblem?: string;
   selectedClassEmblem?: string;
   notificationsEnabled?: boolean;
-  socialLinks?: { twitter?: string; discord?: string; fabrary?: string; fabraryName?: string };
+  socialLinks?: { twitter?: string; discord?: string; fabrary?: string; fabraryName?: string; metafy?: string; metafyTitle?: string };
   borderStyle?: "beam" | "glow";
   borderEventType?: string;
   borderPlacement?: string;

@@ -12,6 +12,7 @@ import {
 import { db } from "@/lib/firebase";
 import { MatchResult, type MatchRecord, type HeroMatchupDoc } from "@/types";
 import { getHeroByName, resolveHeroName } from "@/lib/heroes";
+import { getEventType, refineEventType } from "@/lib/stats";
 
 // ── Helpers ──
 
@@ -30,7 +31,7 @@ function getMonth(dateStr: string): string {
 }
 
 function getMatchEventType(match: MatchRecord): string {
-  return match.eventTypeOverride || match.eventType || "Unknown";
+  return getEventType(match);
 }
 
 function addTally(group: { hero1Wins: number; hero2Wins: number; draws: number; total: number }, result: MatchResult, isHero1: boolean) {
@@ -627,6 +628,53 @@ export interface CommunityMatchupCell {
   total: number;
 }
 
+type MatchupTally = { hero1Wins: number; hero2Wins: number; draws: number; total: number };
+
+const EVENT_TYPE_ALIASES: Record<string, string> = {
+  calling: "The Calling",
+  "the calling": "The Calling",
+  rtn: "Road to Nationals",
+  "road to national": "Road to Nationals",
+  "road to nationals": "Road to Nationals",
+  pq: "ProQuest",
+  proquest: "ProQuest",
+  "pro quest": "ProQuest",
+  "battle hardened": "Battle Hardened",
+  "pro tour": "Pro Tour",
+  worlds: "Worlds",
+  "world championship": "Worlds",
+};
+
+function normalizeEventTypeLabel(value: string): string {
+  const trimmed = value.trim();
+  const lower = trimmed.toLowerCase();
+  return EVENT_TYPE_ALIASES[lower] || refineEventType(trimmed, trimmed);
+}
+
+function findEventTypeStats(
+  map: Record<string, MatchupTally> | undefined,
+  target: string,
+): MatchupTally | null {
+  if (!map) return null;
+  if (map[target]) return map[target];
+  const normalizedTarget = normalizeEventTypeLabel(target);
+  for (const [key, stats] of Object.entries(map)) {
+    if (key === target || key.toLowerCase() === target.toLowerCase()) return stats;
+    if (normalizeEventTypeLabel(key) === normalizedTarget) return stats;
+  }
+  return null;
+}
+
+function findFormatEventTypeStats(
+  map: Record<string, Record<string, MatchupTally>> | undefined,
+  format: string,
+  eventType: string,
+): MatchupTally | null {
+  if (!map) return null;
+  const formatMap = map[format] || Object.entries(map).find(([key]) => key.toLowerCase() === format.toLowerCase())?.[1];
+  return findEventTypeStats(formatMap, eventType);
+}
+
 // Simple in-memory cache
 let cachedData: { key: string; data: CommunityMatchupCell[]; ts: number } | null = null;
 const CACHE_TTL = 15 * 60_000; // 15 minutes
@@ -679,11 +727,11 @@ export async function getCommunityHeroMatchups(
     }
 
     // Determine the source stats based on format and rated filters
-    let src: { hero1Wins: number; hero2Wins: number; draws: number; total: number } | null = null;
+    let src: MatchupTally | null = null;
     if (format && eventType) {
-      src = d.byFormatEventType?.[format]?.[eventType] || null;
+      src = findFormatEventTypeStats(d.byFormatEventType, format, eventType) || findEventTypeStats(d.byEventType, eventType);
     } else if (eventType) {
-      src = d.byEventType?.[eventType] || null;
+      src = findEventTypeStats(d.byEventType, eventType);
     } else if (format && rated) {
       // Both filters: no pre-computed intersection, skip (would need byFormatRated)
       // Fall back to format-only for now

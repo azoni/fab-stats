@@ -23,7 +23,7 @@ import { PageHero } from "@/components/ui/PageHero";
 
 const SITE_CREATOR = "azoni";
 
-type Tab = "elo" | "winrate" | "volume" | "mostwins" | "mostlosses" | "streaks" | "draws" | "drawrate" | "lowdrawrate" | "fewestdraws" | "byes" | "byerate" | "balanced" | "events" | "eventgrinder" | "rated" | "ratedstreak" | "heroes" | "dedication" | "loyaltyrate" | "hotstreak" | "coldstreak" | "weeklymatches" | "weeklywins" | "monthlymatches" | "monthlywins" | "monthlywinrate" | "earnings" | "armorywinrate" | "armoryattendance" | "armorymatches" | "top8s" | "top8s_skirmish" | "top8s_pq" | "top8s_bh" | "top8s_rtn" | "top8s_calling" | "top8s_nationals" | "powerlevel" | "uniqueopponents" | "silvermedals" | "lossstreak" | "globetrotter" | "leaderboardcount" | "kudos_total" | "kudos_props" | "kudos_good_sport" | "kudos_skilled" | "kudos_helpful" | "kudos_given_total" | "kudos_given_props" | "kudos_given_good_sport" | "kudos_given_skilled" | "kudos_given_helpful" | "games_total" | "games_winrate" | "games_streak" | "games_variety" | "games_fabdoku" | "games_crossword" | "games_heroguesser" | "games_matchupmania" | "games_trivia" | "games_timeline" | "games_connections" | "games_rampage" | "games_knockout" | "games_brutebrawl" | "games_ninjacombo";
+type Tab = "elo" | "winrate" | "volume" | "mostwins" | "mostlosses" | "streaks" | "draws" | "drawrate" | "lowdrawrate" | "fewestdraws" | "byes" | "byerate" | "balanced" | "events" | "eventgrinder" | "rated" | "ratedstreak" | "heroes" | "dedication" | "loyaltyrate" | "hotstreak" | "coldstreak" | "weeklymatches" | "weeklywins" | "monthlymatches" | "monthlywins" | "monthlywinrate" | "earnings" | "armorywinrate" | "armoryattendance" | "armorymatches" | "top8s" | "top8s_superarmory" | "top8s_skirmish" | "top8s_pq" | "top8s_rtn" | "top8s_showdown" | "top8s_bh" | "top8s_battlegrounds" | "top8s_calling" | "top8s_nationals" | "top8s_protour" | "top8s_worlds" | "top8s_path" | "powerlevel" | "uniqueopponents" | "silvermedals" | "lossstreak" | "globetrotter" | "leaderboardcount" | "kudos_total" | "kudos_props" | "kudos_good_sport" | "kudos_skilled" | "kudos_helpful" | "kudos_given_total" | "kudos_given_props" | "kudos_given_good_sport" | "kudos_given_skilled" | "kudos_given_helpful" | "games_total" | "games_winrate" | "games_streak" | "games_variety" | "games_fabdoku" | "games_crossword" | "games_heroguesser" | "games_matchupmania" | "games_trivia" | "games_timeline" | "games_connections" | "games_rampage" | "games_knockout" | "games_brutebrawl" | "games_ninjacombo";
 
 function isKudosTab(tab: Tab): boolean {
   return tab.startsWith("kudos_") && !tab.startsWith("kudos_given_");
@@ -57,12 +57,18 @@ const tabs: { id: Tab; label: string; description: string }[] = [
   { id: "events", label: "Event Wins", description: "Most event tournament victories." },
   { id: "eventgrinder", label: "Event Grinder", description: "Most events attended." },
   { id: "top8s", label: "Top 8s", description: "Most playoff finishes (Top 8 or better) across all events." },
+  { id: "top8s_superarmory", label: "Super Armory", description: "Most Top 8+ or undefeated finishes at Super Armory events." },
   { id: "top8s_skirmish", label: "Skirmish", description: "Most Top 8+ finishes at Skirmish events." },
   { id: "top8s_pq", label: "ProQuest", description: "Most Top 8+ finishes at ProQuest events." },
-  { id: "top8s_bh", label: "Battle Hardened", description: "Most Top 8+ finishes at Battle Hardened events." },
   { id: "top8s_rtn", label: "RTN", description: "Most Top 8+ finishes at Road to Nationals events." },
+  { id: "top8s_showdown", label: "Showdown", description: "Most Top 8+ finishes at Showdown events." },
+  { id: "top8s_bh", label: "Battle Hardened", description: "Most Top 8+ finishes at Battle Hardened events." },
+  { id: "top8s_battlegrounds", label: "Battlegrounds", description: "Most Top 8+ finishes at Battlegrounds events." },
   { id: "top8s_calling", label: "Calling", description: "Most Top 8+ finishes at The Calling events." },
   { id: "top8s_nationals", label: "Nationals", description: "Most Top 8+ finishes at Nationals events." },
+  { id: "top8s_protour", label: "Pro Tour", description: "Most Top 8+ finishes at Pro Tour events." },
+  { id: "top8s_worlds", label: "Worlds", description: "Most Top 8+ finishes at World Championship events." },
+  { id: "top8s_path", label: "Path to PT", description: "Most Top 8+ finishes at Path to Pro Tour events." },
   { id: "earnings", label: "Earnings", description: "Highest lifetime prize earnings." },
   { id: "streaks", label: "Best Streak", description: "Longest win streak of all time." },
   { id: "hotstreak", label: "Hot Streak", description: "Longest active win streak right now." },
@@ -126,16 +132,19 @@ interface Category {
   adminOnly?: boolean;
 }
 
-// Trimmed to ~10 core competitive leaderboards (Phase 0d).
-// Hidden categories (time/armory/fun/games/kudos/kudos_given) keep computing
-// in the background — the underlying Firestore docs are untouched, so a
-// future release can re-surface any of them without recomputing data.
+// Keep the richer leaderboard set available while grouping it into scannable sections.
 const allCategories: Category[] = [
-  { id: "overall", label: "Overall", tabs: ["elo", "winrate", "volume", "mostwins"] },
-  { id: "events", label: "Events & Top 8s", tabs: ["top8s", "rated"] },
-  { id: "streaks", label: "Streaks", tabs: ["streaks", "hotstreak"] },
-  { id: "heroes", label: "Heroes", tabs: ["heroes"] },
-  { id: "recent", label: "Recent", tabs: ["weeklymatches", "monthlywinrate"] },
+  { id: "overall", label: "Overall", tabs: ["elo", "winrate", "volume", "mostwins", "mostlosses"] },
+  { id: "recent", label: "Recent", tabs: ["weeklymatches", "weeklywins", "monthlymatches", "monthlywins", "monthlywinrate"] },
+  { id: "events", label: "Events & Top 8s", tabs: ["events", "eventgrinder", "top8s", "top8s_superarmory", "top8s_skirmish", "top8s_pq", "top8s_rtn", "top8s_showdown", "top8s_bh", "top8s_battlegrounds", "top8s_calling", "top8s_nationals", "top8s_protour", "top8s_worlds", "top8s_path"] },
+  { id: "rated", label: "Rated", tabs: ["rated", "ratedstreak"] },
+  { id: "armory", label: "Armory", tabs: ["armorywinrate", "armoryattendance", "armorymatches"] },
+  { id: "streaks", label: "Streaks", tabs: ["streaks", "hotstreak", "coldstreak", "lossstreak"] },
+  { id: "heroes", label: "Heroes", tabs: ["heroes", "dedication", "loyaltyrate"] },
+  { id: "table", label: "Table Stories", tabs: ["draws", "drawrate", "lowdrawrate", "fewestdraws", "byes", "byerate", "balanced", "uniqueopponents", "silvermedals", "globetrotter", "leaderboardcount", "earnings"] },
+  { id: "kudos", label: "Kudos", tabs: ["kudos_total", "kudos_props", "kudos_good_sport", "kudos_skilled", "kudos_helpful"] },
+  { id: "kudos_given", label: "Kudos Given", tabs: ["kudos_given_total", "kudos_given_props", "kudos_given_good_sport", "kudos_given_skilled", "kudos_given_helpful"] },
+  { id: "games", label: "Daily Games", tabs: ["games_total", "games_winrate", "games_streak", "games_variety", "games_fabdoku", "games_crossword", "games_heroguesser", "games_matchupmania", "games_trivia", "games_timeline", "games_connections", "games_rampage", "games_knockout", "games_brutebrawl", "games_ninjacombo"] },
   { id: "power", label: "Power Level", tabs: ["powerlevel"], adminOnly: true },
 ];
 
@@ -146,17 +155,23 @@ function categoryForTab(tab: Tab): string {
 // ── Helpers ──
 
 const TOP8_EVENT_TYPE_MAP: Record<string, string> = {
+  top8s_superarmory: "Super Armory",
   top8s_skirmish: "Skirmish",
   top8s_pq: "ProQuest",
-  top8s_bh: "Battle Hardened",
   top8s_rtn: "Road to Nationals",
+  top8s_showdown: "Showdown",
+  top8s_bh: "Battle Hardened",
+  top8s_battlegrounds: "Battlegrounds",
   top8s_calling: "The Calling",
   top8s_nationals: "Nationals",
+  top8s_protour: "Pro Tour",
+  top8s_worlds: "Worlds",
+  top8s_path: "Path to Pro Tour",
 };
 
 function getTop8Count(entry: LeaderboardEntry, eventType?: string): number {
   if (!eventType) return entry.totalTop8s ?? 0;
-  return entry.top8sByEventType?.[eventType] ?? 0;
+  return Math.max(entry.top8sByEventType?.[eventType] ?? 0, entry.minorTop8sByEventType?.[eventType] ?? 0);
 }
 
 function formatRate(rate: number): string {
@@ -604,12 +619,18 @@ export default function LeaderboardPage() {
         });
       case "top8s":
         return [...visibleEntries].filter((e) => (e.totalTop8s ?? 0) > 0).sort((a, b) => (b.totalTop8s ?? 0) - (a.totalTop8s ?? 0) || b.eventWins - a.eventWins);
+      case "top8s_superarmory":
       case "top8s_skirmish":
       case "top8s_pq":
-      case "top8s_bh":
       case "top8s_rtn":
+      case "top8s_showdown":
+      case "top8s_bh":
+      case "top8s_battlegrounds":
       case "top8s_calling":
-      case "top8s_nationals": {
+      case "top8s_nationals":
+      case "top8s_protour":
+      case "top8s_worlds":
+      case "top8s_path": {
         const eventType = TOP8_EVENT_TYPE_MAP[activeTab];
         return [...visibleEntries].filter((e) => getTop8Count(e, eventType) > 0).sort((a, b) => getTop8Count(b, eventType) - getTop8Count(a, eventType) || (b.totalTop8s ?? 0) - (a.totalTop8s ?? 0));
       }
