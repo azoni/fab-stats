@@ -737,7 +737,11 @@ export default function TeamHub() {
                               <span className="flex items-center gap-0.5"><Shield className="w-3 h-3" /> Invite Only</span>
                             )}
                           </div>
-                          {t.description && <p className="text-xs text-fab-muted mt-1 line-clamp-1">{t.description}</p>}
+                          {/* Reserved 1-line description slot keeps every card
+                              the same height even when descriptions are missing. */}
+                          <p className={`text-xs mt-1 line-clamp-1 ${t.description ? "text-fab-muted" : "text-fab-dim/60 italic"}`}>
+                            {t.description || "No description"}
+                          </p>
                         </Link>
                       </div>
                       {canQuickJoin && (
