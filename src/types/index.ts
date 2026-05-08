@@ -162,6 +162,7 @@ export interface UserProfile {
   hideFromFeed?: boolean;
   profileVisibility?: "public" | "friends" | "private";
   gemId?: string;
+  hasDiscoverLinks?: boolean;
   unlockedCans?: string[];
   showcase?: ShowcaseCard[];
   showcaseSecondary?: ShowcaseCard[];

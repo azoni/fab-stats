@@ -360,7 +360,18 @@ export async function searchUsernames(
   return results.slice(0, maxResults);
 }
 
-export async function getDiscoverProfiles(maxResults = 180): Promise<UserProfile[]> {
+function hasDiscoverableLinks(links?: UserProfile["socialLinks"] | null): boolean {
+  return Boolean(
+    links?.twitter ||
+    links?.fabrary ||
+    links?.metafy ||
+    links?.metafyGuide ||
+    links?.metafyProfile ||
+    links?.discord
+  );
+}
+
+export async function getDiscoverProfiles(maxResults = 5000): Promise<UserProfile[]> {
   const snap = await getDocs(
     query(
       collectionGroup(db, "profile"),
@@ -374,22 +385,24 @@ export async function getDiscoverProfiles(maxResults = 180): Promise<UserProfile
     .filter((profile) => {
       if (!profile.uid || !profile.username) return false;
       if (profile.profileVisibility && profile.profileVisibility !== "public") return false;
-      if (profile.hideFromGuests || profile.hideFromSpotlight) return false;
-      const links = profile.socialLinks;
-      return Boolean(links?.twitter || links?.fabrary || links?.metafy || links?.metafyGuide || links?.metafyProfile || links?.discord);
+      if (profile.hideFromGuests) return false;
+      return hasDiscoverableLinks(profile.socialLinks);
     })
     .sort((a, b) => (a.displayName || a.username).localeCompare(b.displayName || b.username));
 }
 
 export async function updateProfile(
   userId: string,
-  updates: Partial<Pick<UserProfile, "displayName" | "photoUrl" | "isPublic" | "profileVisibility" | "firstName" | "lastName" | "searchName" | "earnings" | "showNameOnProfiles" | "hideFromSpotlight" | "hideFromFeed" | "hideFromGuests" | "gemId" | "unlockedCans" | "showcase" | "showcaseSecondary" | "selectedEmblem" | "selectedClassEmblem" | "notificationsEnabled" | "socialLinks" | "borderStyle" | "borderEventType" | "borderPlacement" | "underlineEventType" | "underlinePlacement" | "selectedBadgeIds" | "siteBackgroundId" | "needsRecompute" | "trophyDesigns">>
+  updates: Partial<Pick<UserProfile, "displayName" | "photoUrl" | "isPublic" | "profileVisibility" | "firstName" | "lastName" | "searchName" | "earnings" | "showNameOnProfiles" | "hideFromSpotlight" | "hideFromFeed" | "hideFromGuests" | "gemId" | "hasDiscoverLinks" | "unlockedCans" | "showcase" | "showcaseSecondary" | "selectedEmblem" | "selectedClassEmblem" | "notificationsEnabled" | "socialLinks" | "borderStyle" | "borderEventType" | "borderPlacement" | "underlineEventType" | "underlinePlacement" | "selectedBadgeIds" | "siteBackgroundId" | "needsRecompute" | "trophyDesigns">>
 ): Promise<void> {
   const profileRef = doc(db, "users", userId, "profile", "main");
   // Strip undefined values — Firestore rejects them
   const clean: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(updates)) {
     if (v !== undefined) clean[k] = v;
+  }
+  if ("socialLinks" in updates) {
+    clean.hasDiscoverLinks = hasDiscoverableLinks(updates.socialLinks);
   }
   await updateDoc(profileRef, clean);
 
