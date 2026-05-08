@@ -83,7 +83,7 @@ export const navLinks: NavLink[] = [
   ] },
   { href: "/leaderboard", label: "Rankings", icon: <NavAssetIcon name="rankings" fallback={<Trophy className="w-4 h-4 text-current" />} />, color: "text-amber-400", bg: "bg-amber-400/10" },
   { href: "/activity", label: "Activity", icon: <NavAssetIcon name="community" />, color: "text-indigo-400", bg: "bg-indigo-400/10" },
-  { href: "/team", label: "Teams", icon: <NavAssetIcon name="teams" fallback={<Users className="w-4 h-4 text-current" />} />, color: "text-sky-400", bg: "bg-sky-400/10" },
+  { href: "/teams", label: "Teams", icon: <NavAssetIcon name="teams" fallback={<Users className="w-4 h-4 text-current" />} />, color: "text-sky-400", bg: "bg-sky-400/10" },
   { href: "/achievements", label: "Achievements", icon: <NavAssetIcon name="achievements" fallback={<Award className="w-4 h-4 text-current" />} />, color: "text-yellow-400", bg: "bg-yellow-400/10" },
   { href: "/support", label: "Support", icon: <NavAssetIcon name="support" />, color: "text-pink-400", bg: "bg-pink-400/10", iconOnly: true, subItems: [
     { href: "https://discord.gg/WPP5aqCUHY", label: "Join Discord", icon: <DiscordIcon /> },

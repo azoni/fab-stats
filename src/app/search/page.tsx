@@ -176,7 +176,7 @@ function SearchContent() {
             {teamResults.map((t) => (
               <Link
                 key={t.teamId}
-                href={`/team/${t.nameLower}`}
+                href={`/teams/${t.nameLower}`}
                 className="block bg-fab-surface border border-fab-border rounded-lg p-4 hover:bg-fab-surface-hover transition-colors"
               >
                 <div className="flex items-center gap-3">

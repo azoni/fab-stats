@@ -284,7 +284,7 @@ export default function TeamHub() {
           <p className="text-sm text-fab-muted mt-1">Represent your competitive squads. Your primary team's badge shows on your profile and leaderboard.</p>
         </div>
         {team && (
-          <Link href={`/team/${team.nameLower}`} className="text-sm text-fab-gold hover:text-fab-gold-light transition-colors flex items-center gap-1">
+          <Link href={`/teams/${team.nameLower}`} className="text-sm text-fab-gold hover:text-fab-gold-light transition-colors flex items-center gap-1">
             View Team Page <ChevronRight className="w-3.5 h-3.5" />
           </Link>
         )}
@@ -321,7 +321,7 @@ export default function TeamHub() {
             activeTab === "browse" ? "bg-fab-gold/15 text-fab-gold" : "text-fab-dim hover:text-fab-muted"
           }`}
         >
-          <Users className="w-3.5 h-3.5 inline mr-1.5" />Browse Teams
+          <Users className="w-3.5 h-3.5 inline mr-1.5" />Browse
         </button>
         {hasTeam && (
           <button
@@ -331,16 +331,21 @@ export default function TeamHub() {
             }`}
           >
             <Settings className="w-3.5 h-3.5 inline mr-1.5" />My Teams
+            {myTeams.length > 1 && (
+              <span className="ml-1.5 text-[10px] font-bold tabular-nums opacity-75">{myTeams.length}</span>
+            )}
           </button>
         )}
-        {!hasTeam && (
+        {/* Multi-team: Create is always available to authed users — they can
+            captain multiple teams. Stay hidden for guests/unauthed. */}
+        {user && (
           <button
             onClick={() => setActiveTab("create")}
             className={`flex-1 py-2 rounded-md text-sm font-medium transition-colors ${
               activeTab === "create" ? "bg-fab-gold/15 text-fab-gold" : "text-fab-dim hover:text-fab-muted"
             }`}
           >
-            <Plus className="w-3.5 h-3.5 inline mr-1.5" />Create Team
+            <Plus className="w-3.5 h-3.5 inline mr-1.5" />Create
           </button>
         )}
       </div>
@@ -679,7 +684,7 @@ export default function TeamHub() {
                     className="bg-fab-surface border border-fab-border rounded-xl p-4 hover:border-fab-gold/30 hover:bg-fab-surface-hover transition-colors group"
                   >
                     <div className="flex items-start gap-3">
-                      <Link href={`/team/${t.nameLower}`} className="shrink-0">
+                      <Link href={`/teams/${t.nameLower}`} className="shrink-0">
                         {t.iconUrl ? (
                           <img src={t.iconUrl} alt="" className="w-12 h-12 rounded-xl object-cover border border-fab-border" />
                         ) : (
@@ -689,7 +694,7 @@ export default function TeamHub() {
                         )}
                       </Link>
                       <div className="min-w-0 flex-1">
-                        <Link href={`/team/${t.nameLower}`} className="block">
+                        <Link href={`/teams/${t.nameLower}`} className="block">
                           <div className="flex items-center gap-2">
                             <p className="font-semibold text-fab-text group-hover:text-fab-gold transition-colors truncate">{t.name}</p>
                             {alreadyMember && (
