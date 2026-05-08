@@ -47,7 +47,7 @@ export default function ActivityPage() {
     <div className="relative space-y-6">
       <div className="pointer-events-none absolute inset-x-0 -top-24 h-72 bg-[radial-gradient(ellipse_60%_50%_at_50%_-10%,rgba(201,168,76,0.06),transparent)]" />
 
-      <h1 className="text-2xl font-bold text-fab-gold">Community</h1>
+      <h1 className="text-2xl font-bold text-fab-gold">Activity</h1>
 
       <SmartSearch />
 
