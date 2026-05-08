@@ -323,24 +323,24 @@ export function AchievementsClient() {
   const visibleCategories: AchievementCategory[] = categoryFilter === "all" ? CATEGORY_ORDER : [categoryFilter];
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-4 sm:space-y-8">
       {/* Hero — progress summary */}
-      <section className="relative overflow-hidden rounded-xl border border-fab-border bg-fab-surface p-5 sm:p-6">
+      <section className="relative overflow-hidden rounded-xl border border-fab-border bg-fab-surface p-3 sm:p-6">
         <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-fab-gold/45 to-transparent" />
-        <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+        <div className="flex flex-col gap-3 sm:gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-2xl">
-            <div className="mb-4 inline-flex items-center gap-2 rounded-lg border border-fab-border/70 bg-fab-bg/70 px-3 py-2">
+            <div className="mb-3 inline-flex items-center gap-2 rounded-lg border border-fab-border/70 bg-fab-bg/70 px-2.5 py-1.5 sm:mb-4 sm:px-3 sm:py-2">
               <Trophy className="h-4 w-4 text-fab-gold" />
-              <span className="text-[11px] font-bold uppercase tracking-[0.16em] text-fab-muted">
+              <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-fab-muted sm:text-[11px] sm:tracking-[0.16em]">
                 {isAuthed ? "Your Achievements" : "Achievements"}
               </span>
             </div>
-            <h1 className="text-3xl font-black leading-tight text-fab-text sm:text-4xl">
+            <h1 className="text-xl font-black leading-tight text-fab-text sm:text-4xl">
               {isAuthed
                 ? `${earnedCount} of ${totalCount} unlocked`
                 : `${totalCount} achievements to chase`}
             </h1>
-            <p className="mt-3 text-sm leading-6 text-fab-muted">
+            <p className="mt-3 hidden text-sm leading-6 text-fab-muted sm:block">
               {isAuthed ? (
                 <>
                   Earned badges appear on your profile and can be pinned in your badge strip.
@@ -356,7 +356,7 @@ export function AchievementsClient() {
 
             {/* Big progress bar */}
             {isAuthed && (
-              <div className="mt-5">
+              <div className="mt-3 sm:mt-5">
                 <div className="flex items-center justify-between text-xs text-fab-muted mb-1.5">
                   <span className="font-bold tracking-wider uppercase text-[10px] text-fab-dim">Overall</span>
                   <span className="font-bold tabular-nums text-fab-text">{completionPct}%</span>
@@ -372,17 +372,17 @@ export function AchievementsClient() {
           </div>
 
           {/* Rarity breakdown */}
-          <div className="grid grid-cols-5 gap-2 lg:w-[28rem]">
+          <div className="grid grid-cols-5 gap-1.5 sm:gap-2 lg:w-[28rem]">
             {rarityBreakdown.map(({ rarity, total, earned }) => {
               const colors = rarityColors[rarity];
               const pct = total > 0 ? Math.round((earned / total) * 100) : 0;
               return (
-                <div key={rarity} className={`rounded-lg border ${colors.border} ${colors.bg} px-2 py-2.5 text-center`}>
-                  <p className={`text-lg font-black tabular-nums ${colors.text}`}>
+                <div key={rarity} className={`rounded-lg border ${colors.border} ${colors.bg} px-1.5 py-2 text-center sm:px-2 sm:py-2.5`}>
+                  <p className={`text-sm font-black tabular-nums sm:text-lg ${colors.text}`}>
                     {isAuthed ? earned : total}
-                    {isAuthed && <span className="text-fab-dim font-bold text-xs">/{total}</span>}
+                    {isAuthed && <span className="text-fab-dim font-bold text-[10px] sm:text-xs">/{total}</span>}
                   </p>
-                  <p className={`mt-0.5 text-[9px] font-bold uppercase tracking-wider ${colors.text}`}>
+                  <p className={`mt-0.5 truncate text-[8px] font-bold uppercase tracking-normal sm:text-[9px] sm:tracking-wider ${colors.text}`}>
                     {rarity}
                   </p>
                   {isAuthed && total > 0 && (

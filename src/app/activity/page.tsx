@@ -148,7 +148,7 @@ export default function ActivityPage() {
     <div className="relative space-y-6">
       <div className="pointer-events-none absolute inset-x-0 -top-28 h-80 bg-[radial-gradient(ellipse_55%_45%_at_50%_0%,rgba(245,179,57,0.12),transparent_68%)]" />
 
-      <section className="relative overflow-hidden rounded-2xl border border-fab-border/80 bg-[linear-gradient(135deg,rgba(25,23,18,0.96),rgba(14,15,14,0.94)_58%,rgba(17,24,22,0.92))] shadow-[0_22px_70px_rgba(0,0,0,0.28)]">
+      <section className="relative hidden overflow-hidden rounded-2xl border border-fab-border/80 bg-[linear-gradient(135deg,rgba(25,23,18,0.96),rgba(14,15,14,0.94)_58%,rgba(17,24,22,0.92))] shadow-[0_22px_70px_rgba(0,0,0,0.28)] sm:block">
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_82%_20%,rgba(38,211,177,0.12),transparent_30%),radial-gradient(circle_at_16%_0%,rgba(245,179,57,0.16),transparent_28%)]" />
         <div className="relative grid gap-4 p-4 sm:gap-6 sm:p-6 xl:grid-cols-[minmax(0,1fr)_420px]">
           <div className="min-w-0">

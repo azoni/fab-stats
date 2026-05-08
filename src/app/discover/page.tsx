@@ -159,19 +159,19 @@ export default function DiscoverPage() {
 
   return (
     <div className="mx-auto max-w-6xl space-y-5">
-      <section className="rounded-xl border border-fab-border bg-fab-surface/95 p-5">
+      <section className="rounded-xl border border-fab-border bg-fab-surface/95 p-3 sm:p-5">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-2xl">
-            <div className="inline-flex items-center gap-2 rounded-lg border border-fab-border/70 bg-fab-bg/70 px-3 py-2 text-[11px] font-black uppercase tracking-[0.16em] text-fab-gold">
+            <div className="inline-flex items-center gap-2 rounded-lg border border-fab-border/70 bg-fab-bg/70 px-2.5 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-fab-gold sm:px-3 sm:py-2 sm:text-[11px] sm:tracking-[0.16em]">
               <Compass className="h-4 w-4" />
               Discover
             </div>
-            <h1 className="mt-4 text-3xl font-black text-fab-text sm:text-4xl">Find players, guides, and decks</h1>
-            <p className="mt-3 text-sm leading-6 text-fab-muted">
+            <h1 className="mt-3 text-xl font-black text-fab-text sm:mt-4 sm:text-4xl">Find players, guides, and decks</h1>
+            <p className="mt-3 hidden text-sm leading-6 text-fab-muted sm:block">
               Browse public profiles that have shared Metafy guides, coaching profiles, Fabrary decklists, or X handles.
             </p>
           </div>
-          <div className="grid grid-cols-2 gap-2 sm:min-w-[28rem] sm:grid-cols-4">
+          <div className="grid grid-cols-4 gap-1.5 sm:min-w-[28rem] sm:gap-2">
             <Metric label="Profiles" value={counts.all.toString()} />
             <Metric label="Guides" value={counts["metafy-guide"].toString()} tone="green" />
             <Metric label="Coaches" value={counts["metafy-profile"].toString()} tone="green" />
@@ -296,9 +296,9 @@ export default function DiscoverPage() {
 function Metric({ label, value, tone = "gold" }: { label: string; value: string; tone?: "gold" | "green" | "blue" }) {
   const color = tone === "green" ? "text-emerald-300" : tone === "blue" ? "text-sky-300" : "text-fab-gold";
   return (
-    <div className="rounded-lg border border-fab-border bg-fab-bg/65 px-3 py-2">
-      <p className={`text-lg font-black leading-none ${color}`}>{value}</p>
-      <p className="mt-1 text-[10px] font-bold uppercase tracking-[0.12em] text-fab-dim">{label}</p>
+    <div className="rounded-lg border border-fab-border bg-fab-bg/65 px-2 py-2 sm:px-3">
+      <p className={`text-base font-black leading-none sm:text-lg ${color}`}>{value}</p>
+      <p className="mt-1 truncate text-[9px] font-bold uppercase tracking-[0.08em] text-fab-dim sm:text-[10px] sm:tracking-[0.12em]">{label}</p>
     </div>
   );
 }

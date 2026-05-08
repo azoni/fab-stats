@@ -5,7 +5,15 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Bell } from "lucide-react";
 import { Tooltip } from "@/components/ui/tooltip";
 
-export function NotificationBell() {
+export function NotificationBell({
+  className = "relative p-1 rounded text-fab-muted hover:text-fab-text transition-colors",
+  iconClassName = "w-4 h-4",
+  tooltipSide = "top",
+}: {
+  className?: string;
+  iconClassName?: string;
+  tooltipSide?: "top" | "right" | "bottom" | "left";
+}) {
   const { user, isGuest } = useAuth();
   const { unreadCount } = useNotifications();
 
@@ -16,13 +24,13 @@ export function NotificationBell() {
     : "Notifications";
 
   return (
-    <Tooltip content={tooltipText} side="top">
+    <Tooltip content={tooltipText} side={tooltipSide}>
       <Link
         href="/notifications"
-        className="relative p-1 rounded text-fab-muted hover:text-fab-text transition-colors"
+        className={className}
         aria-label={tooltipText}
       >
-        <Bell className="w-4 h-4" />
+        <Bell className={iconClassName} />
         {unreadCount > 0 && (
           <span className="absolute -top-1 -right-1 min-w-[16px] h-4 flex items-center justify-center rounded-full bg-fab-loss text-white text-[10px] font-bold px-1">
             {unreadCount > 99 ? "99+" : unreadCount}
