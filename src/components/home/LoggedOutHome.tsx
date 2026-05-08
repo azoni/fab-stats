@@ -69,8 +69,12 @@ export function LoggedOutHome({ user, communityMeta, lbEntries, communityCounts 
 
   return (
     <div className="space-y-8">
+      {/* Hero banner — overlay is hardcoded dark on every theme so the
+          painted warrior reads. Inside the banner we use theme-independent
+          light text (zinc-*) and frosted-dark chrome so it stays readable
+          on daylight, where fab-text would otherwise be dark ink. */}
       <section
-        className="relative min-h-[420px] overflow-hidden rounded-xl border border-fab-border/80 bg-fab-bg shadow-[0_24px_60px_-48px_rgba(0,0,0,0.95)]"
+        className="relative min-h-[420px] overflow-hidden rounded-xl border border-white/10 bg-zinc-950 shadow-[0_24px_60px_-48px_rgba(0,0,0,0.95)]"
         style={{
           backgroundImage:
             "linear-gradient(90deg, rgba(18,16,12,0.98) 0%, rgba(18,16,12,0.9) 44%, rgba(18,16,12,0.58) 72%, rgba(18,16,12,0.86) 100%), url('/brand/hero-marquee.png')",
@@ -79,22 +83,22 @@ export function LoggedOutHome({ user, communityMeta, lbEntries, communityCounts 
           backgroundSize: "cover, auto 118%",
         }}
       >
-        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-fab-gold/45 to-transparent" />
-        <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-teal-400/25 to-transparent" />
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-amber-300/50 to-transparent" />
+        <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-teal-300/25 to-transparent" />
 
         <div className="relative flex min-h-[420px] max-w-3xl flex-col justify-center px-5 py-8 sm:px-8 lg:px-10">
-          <div className="mb-5 inline-flex w-fit items-center gap-2 rounded-lg border border-fab-border/70 bg-fab-surface/70 px-3 py-2 backdrop-blur">
-            <ShieldIcon className="h-4 w-4 text-fab-gold" />
-            <span className="text-[11px] font-bold uppercase tracking-[0.16em] text-fab-muted">
+          <div className="mb-5 inline-flex w-fit items-center gap-2 rounded-lg border border-white/15 bg-zinc-900/70 px-3 py-2 backdrop-blur">
+            <ShieldIcon className="h-4 w-4 text-amber-300" />
+            <span className="text-[11px] font-bold uppercase tracking-[0.16em] text-zinc-300">
               Flesh and Blood Match Tracker
             </span>
           </div>
 
-          <h1 className="max-w-2xl text-4xl font-black leading-[0.96] tracking-tight text-fab-text sm:text-5xl lg:text-6xl">
+          <h1 className="max-w-2xl text-4xl font-black leading-[0.96] tracking-tight text-zinc-50 sm:text-5xl lg:text-6xl">
             Know your record before the next round.
           </h1>
 
-          <p className="mt-5 max-w-xl text-sm leading-6 text-fab-muted sm:text-base">
+          <p className="mt-5 max-w-xl text-sm leading-6 text-zinc-300 sm:text-base">
             FaB Stats turns match history into a tournament-ready view of your win rate,
             event finishes, opponent records, hero trends, and community meta.
           </p>
@@ -102,13 +106,13 @@ export function LoggedOutHome({ user, communityMeta, lbEntries, communityCounts 
           <div className="mt-7 flex flex-col gap-3 sm:flex-row">
             <Link
               href={user ? "/import" : "/login"}
-              className="inline-flex min-h-[44px] items-center justify-center rounded-lg bg-fab-gold px-5 py-2.5 text-sm font-bold text-fab-bg transition-colors hover:bg-fab-gold-light"
+              className="inline-flex min-h-[44px] items-center justify-center rounded-lg bg-amber-300 px-5 py-2.5 text-sm font-bold text-zinc-950 transition-colors hover:bg-amber-200"
             >
               {user ? "Import Matches" : "Start Tracking Free"}
             </Link>
             <Link
               href="/leaderboard"
-              className="inline-flex min-h-[44px] items-center justify-center rounded-lg border border-fab-border/80 bg-fab-surface/70 px-5 py-2.5 text-sm font-semibold text-fab-text transition-colors hover:border-fab-gold/35 hover:bg-fab-surface-hover"
+              className="inline-flex min-h-[44px] items-center justify-center rounded-lg border border-white/20 bg-zinc-900/60 px-5 py-2.5 text-sm font-semibold text-zinc-100 transition-colors hover:border-amber-300/40 hover:bg-zinc-900/80"
             >
               Browse Community Data
             </Link>
@@ -122,9 +126,9 @@ export function LoggedOutHome({ user, communityMeta, lbEntries, communityCounts 
                 { value: overview.totalHeroes, label: "Heroes" },
                 { value: overview.totalEvents, label: "Events" },
               ].map((stat) => (
-                <div key={stat.label} className="rounded-lg border border-fab-border/60 bg-fab-surface/55 px-3 py-2.5 backdrop-blur">
-                  <p className="text-xl font-black leading-none text-fab-text tabular-nums">{formatCount(stat.value)}</p>
-                  <p className="mt-1 text-[10px] font-bold uppercase tracking-[0.12em] text-fab-dim">{stat.label}</p>
+                <div key={stat.label} className="rounded-lg border border-white/10 bg-zinc-900/55 px-3 py-2.5 backdrop-blur">
+                  <p className="text-xl font-black leading-none text-zinc-50 tabular-nums">{formatCount(stat.value)}</p>
+                  <p className="mt-1 text-[10px] font-bold uppercase tracking-[0.12em] text-zinc-400">{stat.label}</p>
                 </div>
               ))}
             </div>
