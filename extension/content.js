@@ -87,7 +87,7 @@
     const cleaned = text.replace(/,?\s*\d{1,2}:\d{2}\s*(AM|PM)?\s*$/i, "").trim();
     // Remove period after month abbreviation
     const normalized = cleaned.replace(/(\w{3})\.\s/, "$1 ");
-    const d = new Date(normalized);
+    const d = new Date(normalized + " UTC");
     if (!isNaN(d.getTime())) {
       return d.toISOString().split("T")[0];
     }
@@ -756,7 +756,7 @@
 
   // ── Quick Sync Selector ─────────────────────────────────────
 
-  // Sync mode: "latest" (last 4 events) or "pages" (N pages)
+  // Sync mode: "latest" (first GEM history page) or "pages" (N pages)
   const stored = JSON.parse(localStorage.getItem("fab-stats-quick-opts") || "null");
   let syncMode = (stored && stored.mode) || "latest";
   let syncCount = (stored && stored.count) || 1;
@@ -768,7 +768,7 @@
   }
 
   function getSyncOpts() {
-    if (syncMode === "latest") return { maxEvents: 4 };
+    if (syncMode === "latest") return { maxPages: 1 };
     return { maxPages: syncCount };
   }
 
@@ -1117,7 +1117,7 @@
 
         '<div style="font-size:12px;color:#e8e0cc;font-weight:700;margin-bottom:4px;">Sync Options</div>' +
         '<div style="font-size:11px;color:#aaa;margin-bottom:12px;line-height:1.6;">' +
-          '<span style="color:#60a5fa;">Latest</span> \u2014 Syncs your 4 most recent events. Best for staying up to date after a tournament.<br>' +
+          '<span style="color:#60a5fa;">Latest</span> \u2014 Syncs your most recent GEM history page (~10 events). Best for staying up to date after a tournament.<br>' +
           '<span style="color:#60a5fa;">Pages</span> \u2014 Sync by GEM history pages (~10 events per page). Enter how many pages to fetch.' +
         '</div>' +
 
