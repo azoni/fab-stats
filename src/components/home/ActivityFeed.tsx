@@ -158,59 +158,68 @@ export function ActivityFeed({ rankMap, eventTierMap, underlineTierMap, heroComp
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex items-center gap-2 mb-2">
-        <div className="w-7 h-7 rounded-lg bg-fab-gold/10 flex items-center justify-center ring-1 ring-inset ring-fab-gold/20">
-          <svg className="w-4 h-4 text-fab-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
-          </svg>
-        </div>
-        <h2 className="text-lg font-semibold text-fab-text leading-tight">Activity Feed</h2>
-      </div>
-
-      {/* Filter row */}
-      <div className="flex items-center gap-2 mb-3 flex-wrap">
-        {/* Type filters */}
-        <div className="flex gap-0.5 bg-fab-bg rounded-lg p-0.5 border border-fab-border">
-          {TYPE_FILTERS.filter((f) => !f.adminOnly || isAdmin).map((f) => (
-            <button
-              key={f.value}
-              onClick={() => setTypeFilter(f.value)}
-              className={`px-2 py-0.5 rounded-md text-[11px] font-medium transition-colors ${
-                typeFilter === f.value
-                  ? "bg-fab-surface text-fab-text shadow-sm"
-                  : "text-fab-dim hover:text-fab-muted"
-              }`}
-            >
-              {f.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Scope toggle */}
-        {user && (
-          <div className="flex gap-0.5 bg-fab-bg rounded-lg p-0.5 border border-fab-border ml-auto">
-            <button
-              onClick={() => setScope("community")}
-              className={`px-2 py-0.5 rounded-md text-[11px] font-medium transition-colors ${
-                scope === "community"
-                  ? "bg-fab-surface text-fab-text shadow-sm"
-                  : "text-fab-dim hover:text-fab-muted"
-              }`}
-            >
-              Community
-            </button>
-            <button
-              onClick={() => setScope("friends")}
-              className={`px-2 py-0.5 rounded-md text-[11px] font-medium transition-colors ${
-                scope === "friends"
-                  ? "bg-fab-surface text-fab-text shadow-sm"
-                  : "text-fab-dim hover:text-fab-muted"
-              }`}
-            >
-              Friends
-            </button>
+      <div className="mb-4 flex flex-col gap-3 border-b border-fab-border/70 pb-4 lg:flex-row lg:items-start lg:justify-between">
+        <div className="flex min-w-0 items-start gap-3">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-fab-gold/25 bg-fab-gold/10 text-fab-gold">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
+            </svg>
           </div>
-        )}
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="text-lg font-black text-fab-text leading-tight">Activity Feed</h2>
+              {!loading && (
+                <span className="rounded-full border border-fab-border/70 bg-fab-bg/55 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-fab-dim">
+                  {allGroups.length} updates
+                </span>
+              )}
+            </div>
+            <p className="mt-1 text-sm text-fab-muted">Recent imports, finishes, games, and community reactions.</p>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex gap-0.5 rounded-lg border border-fab-border/80 bg-fab-bg/65 p-0.5">
+            {TYPE_FILTERS.filter((f) => !f.adminOnly || isAdmin).map((f) => (
+              <button
+                key={f.value}
+                onClick={() => setTypeFilter(f.value)}
+                className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-colors ${
+                  typeFilter === f.value
+                    ? "bg-fab-gold/15 text-fab-gold shadow-sm"
+                    : "text-fab-dim hover:text-fab-muted"
+                }`}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+
+          {user && (
+            <div className="flex gap-0.5 rounded-lg border border-fab-border/80 bg-fab-bg/65 p-0.5">
+              <button
+                onClick={() => setScope("community")}
+                className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-colors ${
+                  scope === "community"
+                    ? "bg-fab-surface text-fab-text shadow-sm"
+                    : "text-fab-dim hover:text-fab-muted"
+                }`}
+              >
+                Community
+              </button>
+              <button
+                onClick={() => setScope("friends")}
+                className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-colors ${
+                  scope === "friends"
+                    ? "bg-fab-surface text-fab-text shadow-sm"
+                    : "text-fab-dim hover:text-fab-muted"
+                }`}
+              >
+                Friends
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Feed list */}
