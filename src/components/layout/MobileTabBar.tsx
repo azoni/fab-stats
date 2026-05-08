@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Sparkles, User as UserIcon } from "lucide-react";
+import { User as UserIcon } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { ProfileSheet } from "./ProfileSheet";
 
@@ -14,10 +14,10 @@ interface TabSpec {
   match: (pathname: string) => boolean;
 }
 
-function NavAssetIcon({ name }: { name: "home" | "meta" | "community" }) {
+function NavAssetIcon({ name }: { name: "home" | "meta" | "activity" | "extras" }) {
   return (
     <span className="nav-icon-frame" aria-hidden="true">
-      <img src={`/nav-icons/nav-${name}.png`} alt="" className="nav-asset-icon" />
+      <img src={`/nav-icons/nav-${name}.svg`} alt="" className="nav-asset-icon" />
     </span>
   );
 }
@@ -38,13 +38,13 @@ const tabs: TabSpec[] = [
   {
     href: "/activity",
     label: "Activity",
-    icon: <NavAssetIcon name="community" />,
+    icon: <NavAssetIcon name="activity" />,
     match: (p) => p.startsWith("/activity") || p.startsWith("/community") || p.startsWith("/teams") || p.startsWith("/group") || p.startsWith("/friends") || p.startsWith("/search") || p.startsWith("/feed") || p.startsWith("/player"),
   },
   {
     href: "/games",
     label: "Extras",
-    icon: <Sparkles className="w-5 h-5" />,
+    icon: <NavAssetIcon name="extras" />,
     match: (p) => p.startsWith("/games") || p.startsWith("/achievements") || p.startsWith("/compare") || p.startsWith("/docs") || p.startsWith("/changelog") || p.startsWith("/fabdoku") || p.startsWith("/crossword") || p.startsWith("/heroguesser") || p.startsWith("/matchupmania") || p.startsWith("/connections") || p.startsWith("/timeline") || p.startsWith("/trivia") || p.startsWith("/rhinarsrampage") || p.startsWith("/kayosknockout") || p.startsWith("/brutebrawl") || p.startsWith("/ninjacombo") || p.startsWith("/shadowstrike") || p.startsWith("/bladedash"),
   },
 ];

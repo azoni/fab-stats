@@ -1,5 +1,5 @@
 "use client";
-import { useState, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import {
   Bot,
   Gamepad2,
@@ -8,9 +8,7 @@ import {
   Settings,
   ShoppingCart,
   Star,
-  Trophy,
   Users,
-  Award,
 } from "lucide-react";
 
 export type NavSubItem = { href: string; label: string; adminOnly?: boolean; authOnly?: boolean; badge?: string; icon?: ReactNode };
@@ -18,44 +16,11 @@ export type NavLink = { href: string; label: string; icon: ReactNode; color: str
 export type MoreLink = { href: string; label: string; icon: ReactNode; authOnly?: boolean; adminOnly?: boolean; badge?: string; divider?: boolean; sectionLabel?: string; subItems?: { href: string; label: string }[] };
 export type UserMenuLink = { href: string; label: string; icon: ReactNode; adminOnly?: boolean };
 
-/** Renders the painted-style nav icon if the PNG exists at
- *  `/nav-icons/nav-{name}.png`. If it's missing (404), falls back to the
- *  provided lucide-style ReactNode so new nav slots stay readable until
- *  custom art is dropped in. */
-function NavAssetIcon({
-  name,
-  fallback,
-}: {
-  name: "home" | "meta" | "community" | "support" | "teams" | "achievements" | "rankings";
-  fallback?: ReactNode;
-}) {
-  const [failed, setFailed] = useState(false);
-  if (failed && fallback) {
-    return (
-      <span className="nav-icon-frame" aria-hidden="true">
-        {fallback}
-      </span>
-    );
-  }
+/** Renders the custom sharp SVG mark for each sidebar destination. */
+function NavAssetIcon({ name }: { name: "home" | "meta" | "activity" | "support" | "extras" | "teams" | "achievements" | "rankings" }) {
   return (
     <span className="nav-icon-frame" aria-hidden="true">
-      <img
-        src={`/nav-icons/nav-${name}.png`}
-        alt=""
-        className="nav-asset-icon"
-        onError={() => setFailed(true)}
-      />
-    </span>
-  );
-}
-
-function ExtrasIcon() {
-  return (
-    <span className="nav-icon-frame" aria-hidden="true">
-      <svg className="w-4 h-4 text-current" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M12 3l1.55 4.7L18.5 9l-4.95 1.3L12 15l-1.55-4.7L5.5 9l4.95-1.3L12 3z" />
-        <path strokeLinecap="round" strokeLinejoin="round" d="M19 15l.9 2.7L22.5 19l-2.6.7L19 22.5l-.9-2.8-2.6-.7 2.6-1.3L19 15zM5 14l.75 2.25L8 17l-2.25.75L5 20l-.75-2.25L2 17l2.25-.75L5 14z" />
-      </svg>
+      <img src={`/nav-icons/nav-${name}.svg`} alt="" className="nav-asset-icon" />
     </span>
   );
 }
@@ -81,10 +46,10 @@ export const navLinks: NavLink[] = [
   { href: "/meta", label: "Meta", icon: <NavAssetIcon name="meta" />, color: "text-teal-400", bg: "bg-teal-400/10", subItems: [
     { href: "/matchups", label: "Matchup Matrix" },
   ] },
-  { href: "/leaderboard", label: "Rankings", icon: <NavAssetIcon name="rankings" fallback={<Trophy className="w-4 h-4 text-current" />} />, color: "text-amber-400", bg: "bg-amber-400/10" },
-  { href: "/activity", label: "Activity", icon: <NavAssetIcon name="community" />, color: "text-indigo-400", bg: "bg-indigo-400/10" },
-  { href: "/teams", label: "Teams", icon: <NavAssetIcon name="teams" fallback={<Users className="w-4 h-4 text-current" />} />, color: "text-sky-400", bg: "bg-sky-400/10" },
-  { href: "/achievements", label: "Achievements", icon: <NavAssetIcon name="achievements" fallback={<Award className="w-4 h-4 text-current" />} />, color: "text-yellow-400", bg: "bg-yellow-400/10" },
+  { href: "/leaderboard", label: "Rankings", icon: <NavAssetIcon name="rankings" />, color: "text-amber-400", bg: "bg-amber-400/10" },
+  { href: "/activity", label: "Activity", icon: <NavAssetIcon name="activity" />, color: "text-indigo-400", bg: "bg-indigo-400/10" },
+  { href: "/teams", label: "Teams", icon: <NavAssetIcon name="teams" />, color: "text-sky-400", bg: "bg-sky-400/10" },
+  { href: "/achievements", label: "Achievements", icon: <NavAssetIcon name="achievements" />, color: "text-yellow-400", bg: "bg-yellow-400/10" },
   { href: "/support", label: "Support", icon: <NavAssetIcon name="support" />, color: "text-pink-400", bg: "bg-pink-400/10", iconOnly: true, subItems: [
     { href: "https://discord.gg/WPP5aqCUHY", label: "Join Discord", icon: <DiscordIcon /> },
     { href: "https://discord.com/oauth2/authorize?client_id=1478583612537573479&permissions=0&scope=bot+applications.commands", label: "Add Discord Bot", icon: <Bot className="w-3.5 h-3.5" /> },
@@ -93,7 +58,7 @@ export const navLinks: NavLink[] = [
     { href: "https://partner.tcgplayer.com/fabstats", label: "Shop TCGplayer", badge: "Free", icon: <ShoppingCart className="w-3.5 h-3.5" /> },
     { href: "/feedback", label: "Send Feedback", icon: <MessageCircle className="w-3.5 h-3.5" /> },
   ] },
-  { href: "/games", label: "Extras", icon: <ExtrasIcon />, color: "text-violet-400", bg: "bg-violet-400/10", subItems: [
+  { href: "/games", label: "Extras", icon: <NavAssetIcon name="extras" />, color: "text-violet-400", bg: "bg-violet-400/10", subItems: [
     { href: "/games", label: "Daily Games", icon: <Gamepad2 className="w-3.5 h-3.5" /> },
     { href: "/compare", label: "Versus" },
     { href: "/docs", label: "Docs" },

@@ -227,11 +227,11 @@ body::after {
 }
 
 .nav-asset-icon {
-  width: 1rem;
-  height: 1rem;
+  width: 1.1rem;
+  height: 1.1rem;
   object-fit: contain;
   opacity: 0.98;
-  filter: brightness(1.22) contrast(1.04) saturate(0.82);
+  filter: drop-shadow(0 0 2px rgba(240, 189, 85, 0.18));
 }
 
 .fab-sidebar-link:hover .nav-icon-frame,
@@ -343,11 +343,11 @@ body::after {
 }
 
 [data-theme="daylight"] .nav-asset-icon {
-  filter: contrast(1.18) saturate(1.08);
+  filter: none;
 }
 
 [data-theme="rosetta"] .nav-asset-icon {
-  filter: grayscale(0.35) brightness(1.45) contrast(1.2);
+  filter: drop-shadow(0 0 2px rgba(240, 189, 85, 0.18));
 }
 
 .fab-card {
@@ -2943,7 +2943,7 @@ button:active:not(:disabled) {
 }
 
 [data-theme="rosetta"] .nav-asset-icon {
-  filter: brightness(1.72) contrast(1.12) saturate(1.16) drop-shadow(0 0 4px rgba(240, 189, 85, 0.34));
+  filter: drop-shadow(0 0 2px rgba(240, 189, 85, 0.18));
 }
 
 [data-theme="rosetta"] ::-webkit-scrollbar {
