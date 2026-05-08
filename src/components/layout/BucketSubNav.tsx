@@ -86,15 +86,8 @@ export const META_BUCKET: BucketSubNavItem[] = [
   { href: "/matchups", label: "Matchup Matrix" },
 ];
 
-export const COMMUNITY_BUCKET: BucketSubNavItem[] = [
-  { href: "/community", label: "Community" },
-  { href: "/team", label: "Teams" },
-  { href: "/friends", label: "Friends", authOnly: true },
-];
-
 export const EXTRAS_BUCKET: BucketSubNavItem[] = [
   { href: "/games", label: "Daily Games" },
-  { href: "/achievements", label: "Achievements" },
   { href: "/compare", label: "Versus" },
   { href: "/docs", label: "Docs" },
   { href: "/changelog", label: "Changelog" },
@@ -102,10 +95,8 @@ export const EXTRAS_BUCKET: BucketSubNavItem[] = [
 
 const HOME_PATHS = ["/", "/matches", "/events", "/opponents", "/trends", "/tournament-stats", "/wrapped"];
 const META_PATHS = ["/meta", "/leaderboard", "/matchups"];
-const COMMUNITY_PATHS = ["/community", "/team", "/group", "/friends"];
 const EXTRAS_PATHS = [
   "/games",
-  "/achievements",
   "/compare",
   "/docs",
   "/changelog",
@@ -142,7 +133,6 @@ function BucketSubNavRouterInner() {
   if (!pathname) return null;
   if (pathInBucket(pathname, HOME_PATHS)) return null;
   if (pathInBucket(pathname, META_PATHS)) return <BucketSubNav items={META_BUCKET} />;
-  if (pathInBucket(pathname, COMMUNITY_PATHS)) return <BucketSubNav items={COMMUNITY_BUCKET} />;
   if (pathInBucket(pathname, EXTRAS_PATHS)) return <BucketSubNav items={EXTRAS_BUCKET} />;
   return null;
 }

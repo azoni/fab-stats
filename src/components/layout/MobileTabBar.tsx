@@ -36,10 +36,10 @@ const tabs: TabSpec[] = [
     match: (p) => p.startsWith("/meta") || p.startsWith("/leaderboard") || p.startsWith("/matchups"),
   },
   {
-    href: "/community",
-    label: "Community",
+    href: "/activity",
+    label: "Activity",
     icon: <NavAssetIcon name="community" />,
-    match: (p) => p.startsWith("/community") || p.startsWith("/team") || p.startsWith("/group") || p.startsWith("/friends") || p.startsWith("/search") || p.startsWith("/feed") || p.startsWith("/player"),
+    match: (p) => p.startsWith("/activity") || p.startsWith("/community") || p.startsWith("/team") || p.startsWith("/group") || p.startsWith("/friends") || p.startsWith("/search") || p.startsWith("/feed") || p.startsWith("/player"),
   },
   {
     href: "/games",

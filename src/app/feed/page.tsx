@@ -6,7 +6,7 @@ export default function FeedPage() {
   const router = useRouter();
 
   useEffect(() => {
-    router.replace("/community");
+    router.replace("/activity");
   }, [router]);
 
   return (

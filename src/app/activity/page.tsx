@@ -14,7 +14,7 @@ import { EventShowcase } from "@/components/home/EventShowcase";
 import { SmartSearch } from "@/components/search/SmartSearch";
 import type { Poll, EventShowcaseConfig } from "@/types";
 
-export default function CommunityPage() {
+export default function ActivityPage() {
   const { user } = useAuth();
   const { matches } = useMatches();
   const { entries: lbEntries } = useLeaderboard(true);

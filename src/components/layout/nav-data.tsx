@@ -7,8 +7,8 @@ import {
   Settings,
   ShoppingCart,
   Star,
-  Trophy,
   Users,
+  Award,
 } from "lucide-react";
 
 export type NavSubItem = { href: string; label: string; adminOnly?: boolean; authOnly?: boolean; badge?: string; icon?: ReactNode };
@@ -57,10 +57,9 @@ export const navLinks: NavLink[] = [
     { href: "/leaderboard", label: "Rankings" },
     { href: "/matchups", label: "Matchup Matrix" },
   ] },
-  { href: "/community", label: "Community", icon: <NavAssetIcon name="community" />, color: "text-indigo-400", bg: "bg-indigo-400/10", subItems: [
-    { href: "/team", label: "Teams" },
-    { href: "/friends", label: "Friends", authOnly: true },
-  ] },
+  { href: "/activity", label: "Activity", icon: <NavAssetIcon name="community" />, color: "text-indigo-400", bg: "bg-indigo-400/10" },
+  { href: "/team", label: "Teams", icon: <span className="nav-icon-frame" aria-hidden="true"><Users className="w-4 h-4 text-current" /></span>, color: "text-sky-400", bg: "bg-sky-400/10" },
+  { href: "/achievements", label: "Achievements", icon: <span className="nav-icon-frame" aria-hidden="true"><Award className="w-4 h-4 text-current" /></span>, color: "text-amber-400", bg: "bg-amber-400/10" },
   { href: "/support", label: "Support", icon: <NavAssetIcon name="support" />, color: "text-pink-400", bg: "bg-pink-400/10", iconOnly: true, subItems: [
     { href: "https://discord.gg/WPP5aqCUHY", label: "Join Discord", icon: <DiscordIcon /> },
     { href: "https://discord.com/oauth2/authorize?client_id=1478583612537573479&permissions=0&scope=bot+applications.commands", label: "Add Discord Bot", icon: <Bot className="w-3.5 h-3.5" /> },
@@ -71,7 +70,6 @@ export const navLinks: NavLink[] = [
   ] },
   { href: "/games", label: "Extras", icon: <ExtrasIcon />, color: "text-violet-400", bg: "bg-violet-400/10", subItems: [
     { href: "/games", label: "Daily Games", icon: <Gamepad2 className="w-3.5 h-3.5" /> },
-    { href: "/achievements", label: "Achievements", icon: <Trophy className="w-3.5 h-3.5" /> },
     { href: "/compare", label: "Versus" },
     { href: "/docs", label: "Docs" },
     { href: "/changelog", label: "Changelog" },
