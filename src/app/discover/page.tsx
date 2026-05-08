@@ -2,9 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { BookOpen, Compass, ExternalLink, GraduationCap, Search, UserCircle, Users } from "lucide-react";
+import { BookOpen, Compass, ExternalLink, GraduationCap, Search, Settings, UserCircle, Users } from "lucide-react";
 import { getDiscoverProfiles } from "@/lib/firestore-storage";
 import { useLeaderboard } from "@/hooks/useLeaderboard";
+import { useAuth } from "@/contexts/AuthContext";
 import type { LeaderboardEntry, UserProfile } from "@/types";
 
 type LinkFilter = "all" | "metafy-guide" | "metafy-profile" | "fabrary" | "twitter";
@@ -26,6 +27,16 @@ const FILTERS: { id: LinkFilter; label: string }[] = [
 
 function withProtocol(value: string): string {
   return /^https?:\/\//i.test(value) ? value : `https://${value}`;
+}
+
+function twitterHref(value: string): { label: string; href: string } {
+  const trimmed = value.trim();
+  const urlMatch = trimmed.match(/(?:x|twitter)\.com\/([^/?#]+)/i);
+  const handle = (urlMatch?.[1] || trimmed).replace(/^@/, "");
+  return {
+    label: `@${handle}`,
+    href: /^https?:\/\//i.test(trimmed) ? trimmed : `https://x.com/${handle}`,
+  };
 }
 
 function profileLinks(profile: UserProfile): DiscoverLink[] {
@@ -63,16 +74,22 @@ function profileLinks(profile: UserProfile): DiscoverLink[] {
   }
 
   if (links.twitter) {
-    const handle = links.twitter.replace(/^@/, "");
+    const twitter = twitterHref(links.twitter);
     out.push({
       type: "twitter",
-      label: `@${handle}`,
-      href: `https://x.com/${handle}`,
+      label: twitter.label,
+      href: twitter.href,
       meta: "Social",
     });
   }
 
   return out;
+}
+
+function hasDiscoverInfo(profile: UserProfile): boolean {
+  const links = profile.socialLinks;
+  if (!links) return false;
+  return profileLinks(profile).length > 0 || Boolean(links.discord) || (links.discoverTags?.length ?? 0) > 0;
 }
 
 function linkIcon(type: DiscoverLink["type"]) {
@@ -97,6 +114,7 @@ function formatMatches(entry?: LeaderboardEntry): string {
 }
 
 export default function DiscoverPage() {
+  const { profile } = useAuth();
   const [profiles, setProfiles] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<LinkFilter>("all");
@@ -122,12 +140,17 @@ export default function DiscoverPage() {
   }, []);
 
   const entryByUid = useMemo(() => new Map(entries.map((entry) => [entry.userId, entry])), [entries]);
+  const discoverProfiles = useMemo(() => {
+    const merged = new Map(profiles.map((item) => [item.uid, item]));
+    if (profile?.uid && hasDiscoverInfo(profile)) merged.set(profile.uid, profile);
+    return Array.from(merged.values());
+  }, [profile, profiles]);
 
   const rows = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return profiles
+    return discoverProfiles
       .map((profile) => ({ profile, links: profileLinks(profile), entry: entryByUid.get(profile.uid) }))
-      .filter((row) => row.links.length > 0)
+      .filter((row) => hasDiscoverInfo(row.profile))
       .filter((row) => filter === "all" || row.links.some((link) => link.type === filter))
       .filter((row) => {
         if (!q) return true;
@@ -135,7 +158,11 @@ export default function DiscoverPage() {
           row.profile.displayName,
           row.profile.username,
           row.profile.socialLinks?.twitter,
+          row.profile.socialLinks?.discord,
+          row.profile.socialLinks?.fabrary,
           row.profile.socialLinks?.fabraryName,
+          row.profile.socialLinks?.metafy,
+          row.profile.socialLinks?.metafyGuide,
           row.profile.socialLinks?.metafyTitle,
           row.profile.socialLinks?.metafyGuideTitle,
           row.profile.socialLinks?.metafyProfile,
@@ -144,38 +171,47 @@ export default function DiscoverPage() {
         return haystack.includes(q);
       })
       .sort((a, b) => (b.entry?.totalMatches ?? 0) - (a.entry?.totalMatches ?? 0));
-  }, [entryByUid, filter, profiles, query]);
+  }, [discoverProfiles, entryByUid, filter, query]);
 
   const counts = useMemo(() => {
     const base: Record<LinkFilter, number> = { all: 0, "metafy-guide": 0, "metafy-profile": 0, fabrary: 0, twitter: 0 };
-    for (const profile of profiles) {
+    for (const profile of discoverProfiles) {
       const links = profileLinks(profile);
-      if (links.length === 0) continue;
+      if (!hasDiscoverInfo(profile)) continue;
       base.all += 1;
       for (const type of new Set(links.map((link) => link.type))) base[type] += 1;
     }
     return base;
-  }, [profiles]);
+  }, [discoverProfiles]);
 
   return (
     <div className="mx-auto max-w-6xl space-y-5">
       <section className="rounded-xl border border-fab-border bg-fab-surface/95 p-3 sm:p-5">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-2xl">
-            <div className="inline-flex items-center gap-2 rounded-lg border border-fab-border/70 bg-fab-bg/70 px-2.5 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-fab-gold sm:px-3 sm:py-2 sm:text-[11px] sm:tracking-[0.16em]">
-              <Compass className="h-4 w-4" />
-              Discover
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="inline-flex items-center gap-2 rounded-lg border border-fab-border/70 bg-fab-bg/70 px-2.5 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-fab-gold sm:px-3 sm:py-2 sm:text-[11px] sm:tracking-[0.16em]">
+                <Compass className="h-4 w-4" />
+                Discover
+              </div>
+              <Link
+                href="/settings#discover"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-fab-border/70 bg-fab-bg/60 px-2.5 py-1.5 text-[10px] font-bold text-fab-muted transition-colors hover:border-fab-gold/45 hover:text-fab-gold sm:px-3 sm:py-2 sm:text-xs"
+              >
+                <Settings className="h-3.5 w-3.5" />
+                Edit links
+              </Link>
             </div>
             <h1 className="mt-3 text-xl font-black text-fab-text sm:mt-4 sm:text-4xl">Find players, guides, and decks</h1>
             <p className="mt-3 hidden text-sm leading-6 text-fab-muted sm:block">
-              Browse public profiles that have shared Metafy guides, coaching profiles, Fabrary decklists, or X handles.
+              Browse public profiles that have shared Metafy resources, Fabrary decklists, X handles, Discord names, or tags.
             </p>
           </div>
           <div className="grid grid-cols-4 gap-1.5 sm:min-w-[28rem] sm:gap-2">
             <Metric label="Profiles" value={counts.all.toString()} />
             <Metric label="Guides" value={counts["metafy-guide"].toString()} tone="green" />
-            <Metric label="Coaches" value={counts["metafy-profile"].toString()} tone="green" />
             <Metric label="Decks" value={counts.fabrary.toString()} tone="blue" />
+            <Metric label="X" value={counts.twitter.toString()} tone="blue" />
           </div>
         </div>
       </section>
@@ -221,6 +257,9 @@ export default function DiscoverPage() {
           <Users className="mx-auto h-10 w-10 text-fab-dim" />
           <p className="mt-3 text-sm font-bold text-fab-text">No profiles found</p>
           <p className="mt-1 text-sm text-fab-muted">Try a different filter or search term.</p>
+          <Link href="/settings#discover" className="mt-4 inline-flex items-center justify-center rounded-lg border border-fab-border bg-fab-bg px-4 py-2 text-sm font-bold text-fab-muted transition-colors hover:border-fab-gold/45 hover:text-fab-gold">
+            Edit your Discover links
+          </Link>
         </div>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
@@ -268,22 +307,32 @@ export default function DiscoverPage() {
               </div>
 
               <div className="mt-4 space-y-2">
-                {links.filter((link) => filter === "all" || link.type === filter).map((link) => (
-                  <a
-                    key={`${profile.uid}-${link.type}-${link.href}`}
-                    href={link.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2 rounded-lg border border-fab-border bg-fab-bg/65 px-3 py-2 text-sm transition-colors hover:border-fab-gold/45 hover:text-fab-gold"
+                {links.filter((link) => filter === "all" || link.type === filter).length > 0 ? (
+                  links.filter((link) => filter === "all" || link.type === filter).map((link) => (
+                    <a
+                      key={`${profile.uid}-${link.type}-${link.href}`}
+                      href={link.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 rounded-lg border border-fab-border bg-fab-bg/65 px-3 py-2 text-sm transition-colors hover:border-fab-gold/45 hover:text-fab-gold"
+                    >
+                      <span className="text-fab-gold">{linkIcon(link.type)}</span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate font-bold text-fab-text">{link.label}</span>
+                        <span className="block text-[10px] font-bold uppercase tracking-[0.12em] text-fab-dim">{link.meta}</span>
+                      </span>
+                      <ExternalLink className="h-3.5 w-3.5 shrink-0 text-fab-dim" />
+                    </a>
+                  ))
+                ) : (
+                  <Link
+                    href={`/player/${profile.username}`}
+                    className="flex items-center justify-between rounded-lg border border-fab-border bg-fab-bg/65 px-3 py-2 text-sm font-bold text-fab-muted transition-colors hover:border-fab-gold/45 hover:text-fab-gold"
                   >
-                    <span className="text-fab-gold">{linkIcon(link.type)}</span>
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate font-bold text-fab-text">{link.label}</span>
-                      <span className="block text-[10px] font-bold uppercase tracking-[0.12em] text-fab-dim">{link.meta}</span>
-                    </span>
+                    View profile
                     <ExternalLink className="h-3.5 w-3.5 shrink-0 text-fab-dim" />
-                  </a>
-                ))}
+                  </Link>
+                )}
               </div>
             </article>
           ))}

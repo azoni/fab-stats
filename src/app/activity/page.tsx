@@ -1,7 +1,7 @@
 "use client";
 import { useMemo, useEffect, useState, type ComponentType } from "react";
 import Link from "next/link";
-import { Activity, CalendarDays, Gamepad2, Search, Sparkles, Trophy, Users } from "lucide-react";
+import { Activity, CalendarDays, Gamepad2, Users } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCommunityStats } from "@/hooks/useCommunityStats";
 import { useLeaderboard } from "@/hooks/useLeaderboard";
@@ -14,7 +14,6 @@ import { getEventShowcase } from "@/lib/event-showcase";
 import { ActivityFeed } from "@/components/home/ActivityFeed";
 import { CommunityHighlights } from "@/components/home/CommunityHighlights";
 import { EventShowcase } from "@/components/home/EventShowcase";
-import { SmartSearch } from "@/components/search/SmartSearch";
 import type { Poll, EventShowcaseConfig } from "@/types";
 
 function formatCompact(value: number) {
@@ -148,44 +147,15 @@ export default function ActivityPage() {
     <div className="relative space-y-6">
       <div className="pointer-events-none absolute inset-x-0 -top-28 h-80 bg-[radial-gradient(ellipse_55%_45%_at_50%_0%,rgba(245,179,57,0.12),transparent_68%)]" />
 
-      <section className="relative hidden overflow-hidden rounded-2xl border border-fab-border/80 bg-[linear-gradient(135deg,rgba(25,23,18,0.96),rgba(14,15,14,0.94)_58%,rgba(17,24,22,0.92))] shadow-[0_22px_70px_rgba(0,0,0,0.28)] sm:block">
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_82%_20%,rgba(38,211,177,0.12),transparent_30%),radial-gradient(circle_at_16%_0%,rgba(245,179,57,0.16),transparent_28%)]" />
-        <div className="relative grid gap-4 p-4 sm:gap-6 sm:p-6 xl:grid-cols-[minmax(0,1fr)_420px]">
-          <div className="min-w-0">
-            <div className="inline-flex items-center gap-2 rounded-full border border-fab-border/80 bg-fab-bg/55 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-fab-gold">
-              <Sparkles className="h-3.5 w-3.5" />
-              Community pulse
-            </div>
-            <h1 className="mt-3 max-w-2xl text-2xl font-black tracking-normal text-fab-text sm:mt-4 sm:text-4xl">Activity</h1>
-            <p className="mt-3 hidden max-w-2xl text-sm leading-6 text-fab-muted sm:block sm:text-base">
-              Follow the latest imports, event finishes, daily games, and player updates from across FaB Stats.
-            </p>
-            <div className="mt-4 grid grid-cols-3 gap-2 sm:mt-5 sm:gap-3">
-              <ActivityStat label="Players" value={formatCompact(pulseStats.players)} />
-              <ActivityStat label="Matches" value={formatCompact(pulseStats.matches)} tone="green" />
-              <ActivityStat label="This Week" value={formatCompact(pulseStats.recentMatches)} tone="blue" />
-              <ActivityStat label="Public" value={formatCompact(pulseStats.publicProfiles)} tone="green" className="hidden sm:block" />
-              <ActivityStat label="Ranked" value={formatCompact(pulseStats.rankedPlayers)} tone="gold" className="hidden sm:block" />
-              <ActivityStat label="Top 8s" value={formatCompact(pulseStats.totalTop8s)} tone="rose" className="hidden sm:block" />
-            </div>
-          </div>
-
-          <div className="hidden rounded-xl border border-fab-border/80 bg-fab-bg/45 p-4 shadow-inner shadow-black/20 sm:block">
-            <div className="mb-3 flex items-center gap-2">
-              <span className="flex h-8 w-8 items-center justify-center rounded-lg border border-fab-border/70 bg-fab-surface/70 text-fab-gold">
-                <Search className="h-4 w-4" />
-              </span>
-              <div>
-                <p className="text-sm font-bold text-fab-text">Find the table</p>
-                <p className="text-xs text-fab-muted">Search players or teams without leaving the feed.</p>
-              </div>
-            </div>
-            <SmartSearch placeholder="Search players or teams..." />
-            <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
-              <QuickLink href="/leaderboard" icon={Trophy} title="Rankings" text="See who is moving up." />
-              <QuickLink href="/teams" icon={Users} title="Teams" text="Browse community groups." />
-            </div>
-          </div>
+      <section className="relative hidden items-center justify-between gap-4 rounded-xl border border-fab-border/80 bg-fab-surface/80 p-4 shadow-[0_16px_48px_rgba(0,0,0,0.18)] backdrop-blur sm:flex">
+        <div className="min-w-0">
+          <p className="text-[10px] font-black uppercase tracking-[0.16em] text-fab-gold">Community pulse</p>
+          <h1 className="mt-1 text-2xl font-black tracking-normal text-fab-text">Activity</h1>
+        </div>
+        <div className="grid min-w-[22rem] grid-cols-3 gap-2 lg:min-w-[28rem]">
+          <ActivityStat label="Players" value={formatCompact(pulseStats.players)} />
+          <ActivityStat label="Matches" value={formatCompact(pulseStats.matches)} tone="green" />
+          <ActivityStat label="This Week" value={formatCompact(pulseStats.recentMatches)} tone="blue" />
         </div>
       </section>
 

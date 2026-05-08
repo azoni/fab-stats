@@ -34,8 +34,8 @@ function TeamMetric({ label, value, tone = "gold" }: { label: string; value: str
   }[tone];
 
   return (
-    <div className="rounded-xl border border-fab-border/70 bg-fab-bg/45 px-2 py-2 shadow-inner shadow-black/10 sm:px-4 sm:py-3">
-      <p className={`text-base font-black leading-none sm:text-xl ${color}`}>{value}</p>
+    <div className="rounded-lg border border-fab-border/70 bg-fab-bg/45 px-2 py-1.5 shadow-inner shadow-black/10 sm:px-3 sm:py-2">
+      <p className={`text-sm font-black leading-none sm:text-lg ${color}`}>{value}</p>
       <p className="mt-1 truncate text-[8px] font-bold uppercase tracking-[0.08em] text-fab-dim sm:text-[10px] sm:tracking-[0.16em]">{label}</p>
     </div>
   );
@@ -414,27 +414,60 @@ export default function TeamHub() {
 
   return (
     <div className="mx-auto max-w-6xl space-y-4 px-0 py-0 sm:space-y-6 sm:px-6 sm:py-8 lg:px-8">
-      <section className="relative overflow-hidden rounded-2xl border border-fab-border/80 bg-[linear-gradient(135deg,rgba(25,23,18,0.96),rgba(14,15,14,0.95)_58%,rgba(17,24,22,0.92))] p-3 shadow-[0_22px_70px_rgba(0,0,0,0.28)] sm:p-6">
+      <section className="relative overflow-hidden rounded-xl border border-fab-border/80 bg-fab-surface/90 p-3 shadow-[0_16px_48px_rgba(0,0,0,0.18)] sm:p-4">
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_12%_0%,rgba(245,179,57,0.16),transparent_30%),radial-gradient(circle_at_86%_18%,rgba(38,211,177,0.11),transparent_28%)]" />
-        <div className="relative flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-        <div>
-          <div className="inline-flex items-center gap-2 rounded-full border border-fab-border/80 bg-fab-bg/55 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-fab-gold">
-            <Sparkles className="h-3.5 w-3.5" />
-            Community squads
+        <div className="relative flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+          <div className="min-w-0">
+            <div className="inline-flex items-center gap-2 rounded-lg border border-fab-border/80 bg-fab-bg/55 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-fab-gold">
+              <Sparkles className="h-3.5 w-3.5" />
+              Community squads
+            </div>
+            <h1 className="mt-2 text-2xl font-black text-fab-text sm:text-3xl">Teams</h1>
+            <p className="mt-1 hidden max-w-2xl text-sm leading-6 text-fab-muted md:block">
+              Browse groups, join open rosters, or manage the badge that represents you on profiles and leaderboards.
+            </p>
           </div>
-          <h1 className="mt-3 text-2xl font-black text-fab-text sm:mt-4 sm:text-4xl">Teams</h1>
-          <p className="mt-3 hidden max-w-2xl text-sm leading-6 text-fab-muted sm:block sm:text-base">
-            Browse competitive groups, join open rosters, or manage the badge that represents you on profiles and leaderboards.
-            {allTeams.length > 0 && <> <span className="text-fab-text font-semibold tabular-nums">{allTeams.length}</span> public team{allTeams.length === 1 ? "" : "s"} · your primary team's badge shows on profile and leaderboard.</>}
-            {allTeams.length === 0 && <> Your primary team's badge shows on your profile and leaderboard.</>}
-          </p>
+
+          <div className="grid grid-cols-4 gap-1.5 sm:min-w-[28rem] sm:gap-2">
+            <TeamMetric label="Public" value={formatCompact(teamStats.publicTeams)} />
+            <TeamMetric label="Members" value={formatCompact(teamStats.totalMembers)} tone="green" />
+            <TeamMetric label="Open" value={formatCompact(teamStats.openTeams)} tone="blue" />
+            <TeamMetric label="My Teams" value={formatCompact(myTeams.length)} tone="rose" />
+          </div>
         </div>
-        </div>
-        <div className="relative mt-4 grid grid-cols-4 gap-1.5 sm:mt-5 sm:gap-3">
-          <TeamMetric label="Public" value={formatCompact(teamStats.publicTeams)} />
-          <TeamMetric label="Members" value={formatCompact(teamStats.totalMembers)} tone="green" />
-          <TeamMetric label="Open" value={formatCompact(teamStats.openTeams)} tone="blue" />
-          <TeamMetric label="My Teams" value={formatCompact(myTeams.length)} tone="rose" />
+
+        <div className="relative mt-3 flex gap-1 rounded-lg border border-fab-border/80 bg-fab-bg/55 p-1 shadow-inner shadow-black/10">
+          <button
+            onClick={() => setActiveTab("browse")}
+            className={`flex-1 rounded-md px-2 py-2 text-xs font-bold transition-colors sm:text-sm ${
+              activeTab === "browse" ? "bg-fab-gold/15 text-fab-gold" : "text-fab-dim hover:bg-fab-bg/60 hover:text-fab-muted"
+            }`}
+          >
+            <LayoutGrid className="mr-1.5 inline h-3.5 w-3.5" />Browse
+          </button>
+          {hasTeam && (
+            <button
+              onClick={() => setActiveTab("my-team")}
+              className={`flex-1 rounded-md px-2 py-2 text-xs font-bold transition-colors sm:text-sm ${
+                activeTab === "my-team" ? "bg-fab-gold/15 text-fab-gold" : "text-fab-dim hover:bg-fab-bg/60 hover:text-fab-muted"
+              }`}
+            >
+              <Settings className="mr-1.5 inline h-3.5 w-3.5" />My Teams
+              {myTeams.length > 1 && (
+                <span className="ml-1.5 text-[10px] font-bold tabular-nums opacity-75">{myTeams.length}</span>
+              )}
+            </button>
+          )}
+          {user && (
+            <button
+              onClick={() => setActiveTab("create")}
+              className={`flex-1 rounded-md px-2 py-2 text-xs font-bold transition-colors sm:text-sm ${
+                activeTab === "create" ? "bg-fab-gold/15 text-fab-gold" : "text-fab-dim hover:bg-fab-bg/60 hover:text-fab-muted"
+              }`}
+            >
+              <Plus className="mr-1.5 inline h-3.5 w-3.5" />Create
+            </button>
+          )}
         </div>
       </section>
 
@@ -460,43 +493,6 @@ export default function TeamHub() {
           ))}
         </div>
       )}
-
-      {/* Tabs */}
-      <div className="flex gap-1 rounded-xl border border-fab-border/80 bg-fab-surface/85 p-1.5 shadow-[0_12px_36px_rgba(0,0,0,0.14)]">
-        <button
-          onClick={() => setActiveTab("browse")}
-          className={`flex-1 rounded-lg px-3 py-2.5 text-sm font-bold transition-colors ${
-            activeTab === "browse" ? "bg-fab-gold/15 text-fab-gold" : "text-fab-dim hover:bg-fab-bg/60 hover:text-fab-muted"
-          }`}
-        >
-          <LayoutGrid className="w-3.5 h-3.5 inline mr-1.5" />Browse
-        </button>
-        {hasTeam && (
-          <button
-            onClick={() => setActiveTab("my-team")}
-            className={`flex-1 rounded-lg px-3 py-2.5 text-sm font-bold transition-colors ${
-              activeTab === "my-team" ? "bg-fab-gold/15 text-fab-gold" : "text-fab-dim hover:bg-fab-bg/60 hover:text-fab-muted"
-            }`}
-          >
-            <Settings className="w-3.5 h-3.5 inline mr-1.5" />My Teams
-            {myTeams.length > 1 && (
-              <span className="ml-1.5 text-[10px] font-bold tabular-nums opacity-75">{myTeams.length}</span>
-            )}
-          </button>
-        )}
-        {/* Multi-team: Create is always available to authed users — they can
-            captain multiple teams. Stay hidden for guests/unauthed. */}
-        {user && (
-          <button
-            onClick={() => setActiveTab("create")}
-            className={`flex-1 rounded-lg px-3 py-2.5 text-sm font-bold transition-colors ${
-              activeTab === "create" ? "bg-fab-gold/15 text-fab-gold" : "text-fab-dim hover:bg-fab-bg/60 hover:text-fab-muted"
-            }`}
-          >
-            <Plus className="w-3.5 h-3.5 inline mr-1.5" />Create
-          </button>
-        )}
-      </div>
 
       {/* My Teams tab */}
       {activeTab === "my-team" && team && (

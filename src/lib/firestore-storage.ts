@@ -367,7 +367,8 @@ function hasDiscoverableLinks(links?: UserProfile["socialLinks"] | null): boolea
     links?.metafy ||
     links?.metafyGuide ||
     links?.metafyProfile ||
-    links?.discord
+    links?.discord ||
+    (links?.discoverTags?.length ?? 0) > 0
   );
 }
 
@@ -384,7 +385,11 @@ export async function getDiscoverProfiles(maxResults = 5000): Promise<UserProfil
     .map((d) => d.data() as UserProfile)
     .filter((profile) => {
       if (!profile.uid || !profile.username) return false;
-      if (profile.profileVisibility && profile.profileVisibility !== "public") return false;
+      if (profile.profileVisibility) {
+        if (profile.profileVisibility !== "public") return false;
+      } else if (!profile.isPublic) {
+        return false;
+      }
       if (profile.hideFromGuests) return false;
       return hasDiscoverableLinks(profile.socialLinks);
     })

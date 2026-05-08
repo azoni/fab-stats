@@ -365,7 +365,10 @@ export default function SettingsPage() {
 
     setDiscoverSaving(true);
     try {
-      await updateProfile(user.uid, { socialLinks: Object.keys(links).length > 0 ? (links as NonNullable<typeof profile.socialLinks>) : {} });
+      await updateProfile(user.uid, {
+        socialLinks: Object.keys(links).length > 0 ? (links as NonNullable<typeof profile.socialLinks>) : {},
+        ...(profileVisibility === "public" ? { isPublic: true } : {}),
+      });
       await refreshProfile();
       toast.success("Discover links saved");
     } catch {
