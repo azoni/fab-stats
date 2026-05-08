@@ -49,7 +49,7 @@ const COMMUNITY_LINKS: SupportLink[] = [
   },
 ];
 
-const SHOP_LINKS: SupportLink[] = [
+const DIRECT_SUPPORT_LINKS: SupportLink[] = [
   {
     title: "Metafy Membership",
     description: "Support the project directly through Metafy and help keep community tools moving.",
@@ -60,6 +60,9 @@ const SHOP_LINKS: SupportLink[] = [
     ringColor: "ring-fab-gold/20",
     icon: <HeartHandshake className="h-5 w-5" />,
   },
+];
+
+const SHOP_LINKS: SupportLink[] = [
   {
     title: "Shop Amazon",
     description: "Start Amazon shopping here. You pay the same price and Amazon sends a small percentage to FaB Stats.",
@@ -98,12 +101,12 @@ export default function SupportPageContent() {
             <h1 className="mt-4 text-3xl font-black text-fab-text sm:text-4xl">Support FaB Stats</h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-fab-muted sm:text-base">
               FaB Stats is a free community project. The most useful support is simple: join the Discord,
-              add the bot, share what is working, and use affiliate links when you were already shopping.
+              add the bot, share what is working, support directly, or use affiliate links when you were already shopping.
             </p>
             <div className="mt-5 grid gap-3 sm:grid-cols-3">
               <SupportMetric label="Project" value="Free" />
               <SupportMetric label="Best feedback" value="Discord" tone="blue" />
-              <SupportMetric label="Shopping cost" value="$0 extra" tone="green" />
+              <SupportMetric label="Direct support" value="Metafy" tone="green" />
             </div>
           </div>
 
@@ -126,7 +129,7 @@ export default function SupportPageContent() {
         </div>
       </section>
 
-      <div className="grid gap-5 lg:grid-cols-2">
+      <div className="grid gap-5 lg:grid-cols-3">
         <section className="rounded-xl border border-fab-border/80 bg-fab-surface/85 p-4 shadow-[0_16px_48px_rgba(0,0,0,0.18)] sm:p-5">
           <SectionHeader
             icon={<Megaphone className="h-4 w-4" />}
@@ -135,6 +138,19 @@ export default function SupportPageContent() {
           />
           <div className="mt-4 space-y-3">
             {COMMUNITY_LINKS.map((link) => (
+              <SupportLinkCard key={link.title} link={link} />
+            ))}
+          </div>
+        </section>
+
+        <section className="rounded-xl border border-fab-border/80 bg-fab-surface/85 p-4 shadow-[0_16px_48px_rgba(0,0,0,0.18)] sm:p-5">
+          <SectionHeader
+            icon={<HeartHandshake className="h-4 w-4" />}
+            title="Direct Support"
+            text="Optional support that goes directly toward the project."
+          />
+          <div className="mt-4 space-y-3">
+            {DIRECT_SUPPORT_LINKS.map((link) => (
               <SupportLinkCard key={link.title} link={link} />
             ))}
           </div>

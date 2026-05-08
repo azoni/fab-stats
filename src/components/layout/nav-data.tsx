@@ -2,7 +2,6 @@
 import type { ReactNode } from "react";
 import {
   Bot,
-  Compass,
   Gamepad2,
   Mail,
   MessageCircle,
@@ -18,7 +17,7 @@ export type MoreLink = { href: string; label: string; icon: ReactNode; authOnly?
 export type UserMenuLink = { href: string; label: string; icon: ReactNode; adminOnly?: boolean };
 
 /** Renders the custom sharp SVG mark for each sidebar destination. */
-function NavAssetIcon({ name }: { name: "home" | "meta" | "activity" | "support" | "extras" | "teams" | "achievements" | "rankings" }) {
+function NavAssetIcon({ name }: { name: "home" | "meta" | "activity" | "support" | "extras" | "teams" | "achievements" | "rankings" | "discover" }) {
   return (
     <span className="nav-icon-frame" aria-hidden="true">
       <img src={`/nav-icons/nav-${name}.svg`} alt="" className="nav-asset-icon" />
@@ -48,7 +47,7 @@ export const navLinks: NavLink[] = [
     { href: "/matchups", label: "Matchup Matrix" },
   ] },
   { href: "/leaderboard", label: "Rankings", icon: <NavAssetIcon name="rankings" />, color: "text-amber-400", bg: "bg-amber-400/10" },
-  { href: "/discover", label: "Discover", icon: <Compass className="h-4 w-4" />, color: "text-emerald-400", bg: "bg-emerald-400/10" },
+  { href: "/discover", label: "Discover", icon: <NavAssetIcon name="discover" />, color: "text-emerald-400", bg: "bg-emerald-400/10" },
   { href: "/activity", label: "Activity", icon: <NavAssetIcon name="activity" />, color: "text-indigo-400", bg: "bg-indigo-400/10" },
   { href: "/teams", label: "Teams", icon: <NavAssetIcon name="teams" />, color: "text-sky-400", bg: "bg-sky-400/10" },
   { href: "/achievements", label: "Achievements", icon: <NavAssetIcon name="achievements" />, color: "text-yellow-400", bg: "bg-yellow-400/10" },
@@ -56,7 +55,7 @@ export const navLinks: NavLink[] = [
     { href: "https://discord.gg/WPP5aqCUHY", label: "Join Discord", icon: <DiscordIcon /> },
     { href: "https://discord.com/oauth2/authorize?client_id=1478583612537573479&permissions=0&scope=bot+applications.commands", label: "Add Discord Bot", icon: <Bot className="w-3.5 h-3.5" /> },
     { href: "https://x.com/FabStats", label: "Follow on X", icon: <XIcon /> },
-    { href: "https://mfy.gg/@azoni/members?membershipId=99383fe4-b403-4f05-a041-c3212bd7ea30", label: "Metafy", icon: <Users className="w-3.5 h-3.5" /> },
+    { href: "https://mfy.gg/@azoni/members?membershipId=99383fe4-b403-4f05-a041-c3212bd7ea30", label: "Metafy Membership", icon: <Users className="w-3.5 h-3.5" /> },
     { href: "https://www.amazon.com/?tag=oldwaystoda00-20", label: "Shop Amazon", badge: "Free", icon: <ShoppingCart className="w-3.5 h-3.5" /> },
     { href: "https://partner.tcgplayer.com/fabstats", label: "Shop TCGplayer", badge: "Free", icon: <ShoppingCart className="w-3.5 h-3.5" /> },
     { href: "/feedback", label: "Send Feedback", icon: <MessageCircle className="w-3.5 h-3.5" /> },

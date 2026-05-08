@@ -286,6 +286,17 @@ export default function Dashboard() {
                   <p className="mt-0.5 text-base font-bold tracking-tight text-fab-text">My Profile</p>
                 </div>
                 <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                  <a
+                    href="https://gem.fabtcg.com/profile/player/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-fab-muted border border-fab-border hover:bg-fab-surface-hover hover:border-fab-gold/40 hover:text-fab-gold px-2.5 py-1 rounded-md transition-colors"
+                  >
+                    GEM
+                    <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H18m0 0v4.5M18 6l-8.25 8.25M6 7.5v10.5h10.5" />
+                    </svg>
+                  </a>
                   {profile?.username && (
                     <button onClick={() => setProfileShareOpen(true)} className="inline-flex items-center gap-1.5 text-xs font-semibold text-fab-gold border border-fab-gold/30 hover:bg-fab-gold/10 hover:border-fab-gold/50 px-2.5 py-1 rounded-md transition-colors">
                       <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

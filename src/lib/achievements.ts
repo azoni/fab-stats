@@ -49,10 +49,39 @@ interface AchievementDef extends Achievement {
 
 // ── Category game count helpers ──
 function puzzleCount(ctx: CheckContext): number {
-  return (ctx.fabdokuStats?.gamesPlayed ?? 0) + (ctx.connectionsStats?.gamesPlayed ?? 0) + (ctx.crosswordStats?.gamesPlayed ?? 0);
+  return (
+    (ctx.fabdokuStats?.gamesPlayed ?? 0) +
+    (ctx.fabdokuCardStats?.gamesPlayed ?? 0) +
+    (ctx.connectionsStats?.gamesPlayed ?? 0) +
+    (ctx.crosswordStats?.gamesPlayed ?? 0)
+  );
 }
 function knowledgeCount(ctx: CheckContext): number {
   return (ctx.heroGuesserStats?.gamesPlayed ?? 0) + (ctx.matchupManiaStats?.gamesPlayed ?? 0) + (ctx.triviaStats?.gamesPlayed ?? 0) + (ctx.timelineStats?.gamesPlayed ?? 0);
+}
+function fabdokuCount(ctx: CheckContext): number {
+  return ctx.fabdokuStats?.gamesPlayed ?? 0;
+}
+function fabdokuCardCount(ctx: CheckContext): number {
+  return ctx.fabdokuCardStats?.gamesPlayed ?? 0;
+}
+function crosswordCount(ctx: CheckContext): number {
+  return ctx.crosswordStats?.gamesPlayed ?? 0;
+}
+function connectionsCount(ctx: CheckContext): number {
+  return ctx.connectionsStats?.gamesPlayed ?? 0;
+}
+function heroGuesserCount(ctx: CheckContext): number {
+  return ctx.heroGuesserStats?.gamesPlayed ?? 0;
+}
+function matchupManiaCount(ctx: CheckContext): number {
+  return ctx.matchupManiaStats?.gamesPlayed ?? 0;
+}
+function triviaCount(ctx: CheckContext): number {
+  return ctx.triviaStats?.gamesPlayed ?? 0;
+}
+function timelineCount(ctx: CheckContext): number {
+  return ctx.timelineStats?.gamesPlayed ?? 0;
 }
 const TIER_THRESHOLDS = [1, 5, 10, 25, 50, 100, 250, 500, 1000] as const;
 const TIER_RARITIES: Achievement["rarity"][] = ["common", "common", "uncommon", "uncommon", "rare", "rare", "epic", "legendary", "legendary"];
@@ -2002,11 +2031,19 @@ const CORE_ACHIEVEMENTS: AchievementDef[] = [
     progress: (ctx) => ({ current: ctx.kudosCounts?.helpful ?? 0, target: 50 }),
   },
 
-  // ── Category: Puzzle games (FaBdoku, Crossword, Connections) ──
+  // ── Category: Puzzle games (FaBdoku, Card FaBdoku, Crossword, Connections) ──
   ...tieredGameAchievements("puzzle", "Puzzle", "puzzle game", "grid", "puzzle_games", puzzleCount),
+  ...tieredGameAchievements("fabdoku", "FaBdoku", "FaBdoku puzzle", "grid", "fabdoku_games", fabdokuCount),
+  ...tieredGameAchievements("fabdoku_card", "Card FaBdoku", "Card FaBdoku puzzle", "cards", "fabdoku_card_games", fabdokuCardCount),
+  ...tieredGameAchievements("crossword", "Crossword", "crossword", "book", "crossword_games", crosswordCount),
+  ...tieredGameAchievements("connections", "Connections", "Connections board", "shuffle", "connections_games", connectionsCount),
 
   // ── Category: Knowledge games (Hero Guesser, Matchup Mania, Trivia, Timeline) ──
   ...tieredGameAchievements("knowledge", "Knowledge", "knowledge game", "brain", "knowledge_games", knowledgeCount),
+  ...tieredGameAchievements("hero_guesser", "Hero Guesser", "Hero Guesser run", "people", "hero_guesser_games", heroGuesserCount),
+  ...tieredGameAchievements("matchup_mania", "Matchup Mania", "Matchup Mania run", "versus", "matchup_mania_games", matchupManiaCount),
+  ...tieredGameAchievements("trivia", "Trivia", "trivia round", "lightbulb", "trivia_games", triviaCount),
+  ...tieredGameAchievements("timeline", "Timeline", "Timeline run", "scroll", "timeline_games", timelineCount),
 ];
 
 const TOTAL_TIERS: [number, Achievement["rarity"], string][] = [

@@ -236,6 +236,14 @@ const icons: Record<string, ReactNode> = {
       <path d="M12 2a7 7 0 00-4 12.73V17h8v-2.27A7 7 0 0012 2z" fill="currentColor" fillOpacity="0.15" />
     </svg>
   ),
+  brain: (
+    <svg className={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M8.5 4.5A3.5 3.5 0 005 8c0 .74.23 1.43.62 2A4.5 4.5 0 006 18.7V19a2 2 0 004 0V5.5a3 3 0 00-1.5-1z" fill="currentColor" fillOpacity="0.12" />
+      <path d="M15.5 4.5A3.5 3.5 0 0119 8c0 .74-.23 1.43-.62 2A4.5 4.5 0 0118 18.7V19a2 2 0 01-4 0V5.5a3 3 0 011.5-1z" fill="currentColor" fillOpacity="0.12" />
+      <path d="M10 7H8.5A2.5 2.5 0 006 9.5M14 7h1.5A2.5 2.5 0 0118 9.5M10 13H8.5A2.5 2.5 0 006 15.5M14 13h1.5A2.5 2.5 0 0118 15.5" />
+      <path d="M12 5v14" />
+    </svg>
+  ),
   book: (
     <svg className={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
       <path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z" fill="currentColor" fillOpacity="0.15" />

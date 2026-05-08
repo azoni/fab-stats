@@ -3,7 +3,7 @@ import SupportPageContent from "./SupportPageContent";
 
 export const metadata: Metadata = {
   title: "Support FaB Stats",
-  description: "Join the FaB Stats community, add the Discord bot, follow updates, or support the site through affiliate links.",
+  description: "Join the FaB Stats community, add the Discord bot, follow updates, or support the site directly and through affiliate links.",
 };
 
 export default function SupportPage() {

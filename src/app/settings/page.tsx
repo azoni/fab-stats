@@ -1,5 +1,5 @@
 "use client";
-import { useState, useRef, useMemo } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
 import { useMatches } from "@/hooks/useMatches";
@@ -19,7 +19,7 @@ import { THEME_OPTIONS, type ThemeName } from "@/lib/theme-config";
 import { Switch } from "@/components/ui/switch";
 import { Collapsible } from "@/components/ui/collapsible";
 import { PageHero } from "@/components/ui/PageHero";
-import { Camera, CheckCircle, ChevronRight, Settings } from "lucide-react";
+import { Camera, CheckCircle, ChevronRight, Compass, Save, Settings } from "lucide-react";
 import { toast } from "sonner";
 
 function resizeImage(file: File, maxSize: number): Promise<string> {
@@ -123,6 +123,31 @@ function ThemePicker() {
   );
 }
 
+function Field({
+  label,
+  value,
+  onChange,
+  placeholder,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+}) {
+  return (
+    <label className="block">
+      <span className="mb-1 block text-sm text-fab-muted">{label}</span>
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="w-full rounded-lg border border-fab-border bg-fab-bg px-3 py-2 text-sm text-fab-text placeholder:text-fab-dim focus:border-fab-gold focus:outline-none"
+      />
+    </label>
+  );
+}
+
 function YearInReview() {
   const { matches } = useMatches();
 
@@ -210,6 +235,27 @@ export default function SettingsPage() {
   const [confirmClear, setConfirmClear] = useState(false);
   const [clearing, setClearing] = useState(false);
   const [clearConfirmText, setClearConfirmText] = useState("");
+  const [discoverSaving, setDiscoverSaving] = useState(false);
+  const [discoverTwitter, setDiscoverTwitter] = useState(profile?.socialLinks?.twitter || "");
+  const [discoverDiscord, setDiscoverDiscord] = useState(profile?.socialLinks?.discord || "");
+  const [discoverFabrary, setDiscoverFabrary] = useState(profile?.socialLinks?.fabrary || "");
+  const [discoverFabraryName, setDiscoverFabraryName] = useState(profile?.socialLinks?.fabraryName || "");
+  const [discoverMetafyGuide, setDiscoverMetafyGuide] = useState(profile?.socialLinks?.metafyGuide || profile?.socialLinks?.metafy || "");
+  const [discoverMetafyGuideTitle, setDiscoverMetafyGuideTitle] = useState(profile?.socialLinks?.metafyGuideTitle || profile?.socialLinks?.metafyTitle || "");
+  const [discoverMetafyProfile, setDiscoverMetafyProfile] = useState(profile?.socialLinks?.metafyProfile || "");
+  const [discoverTags, setDiscoverTags] = useState((profile?.socialLinks?.discoverTags || []).join(", "));
+
+  useEffect(() => {
+    const links = profile?.socialLinks;
+    setDiscoverTwitter(links?.twitter || "");
+    setDiscoverDiscord(links?.discord || "");
+    setDiscoverFabrary(links?.fabrary || "");
+    setDiscoverFabraryName(links?.fabraryName || "");
+    setDiscoverMetafyGuide(links?.metafyGuide || links?.metafy || "");
+    setDiscoverMetafyGuideTitle(links?.metafyGuideTitle || links?.metafyTitle || "");
+    setDiscoverMetafyProfile(links?.metafyProfile || "");
+    setDiscoverTags((links?.discoverTags || []).join(", "));
+  }, [profile?.uid, profile?.socialLinks]);
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
@@ -271,6 +317,62 @@ export default function SettingsPage() {
     }
     setUploading(false);
     toast.success("Photo updated");
+  }
+
+  async function handleSaveDiscover(e: React.FormEvent) {
+    e.preventDefault();
+    if (!user || !profile) return;
+
+    const links: Record<string, string | string[]> = { ...(profile.socialLinks || {}) };
+    const setText = (key: string, value: string) => {
+      const trimmed = value.trim();
+      if (trimmed) links[key] = trimmed;
+      else delete links[key];
+    };
+
+    setText("twitter", discoverTwitter.trim().replace(/^@/, ""));
+    setText("discord", discoverDiscord);
+    setText("fabrary", discoverFabrary);
+    setText("fabraryName", discoverFabraryName);
+
+    const guide = discoverMetafyGuide.trim();
+    if (guide) {
+      links.metafy = guide;
+      links.metafyGuide = guide;
+    } else {
+      delete links.metafy;
+      delete links.metafyGuide;
+    }
+
+    const guideTitle = discoverMetafyGuideTitle.trim();
+    if (guideTitle) {
+      links.metafyTitle = guideTitle;
+      links.metafyGuideTitle = guideTitle;
+    } else {
+      delete links.metafyTitle;
+      delete links.metafyGuideTitle;
+    }
+
+    setText("metafyProfile", discoverMetafyProfile);
+
+    const tags = discoverTags
+      .split(",")
+      .map((tag) => tag.trim())
+      .filter(Boolean)
+      .slice(0, 8);
+    if (tags.length > 0) links.discoverTags = [...new Set(tags)];
+    else delete links.discoverTags;
+
+    setDiscoverSaving(true);
+    try {
+      await updateProfile(user.uid, { socialLinks: Object.keys(links).length > 0 ? (links as NonNullable<typeof profile.socialLinks>) : {} });
+      await refreshProfile();
+      toast.success("Discover links saved");
+    } catch {
+      toast.error("Failed to save discover links.");
+    } finally {
+      setDiscoverSaving(false);
+    }
   }
 
   if (isGuest) {
@@ -516,6 +618,98 @@ export default function SettingsPage() {
           {saving ? "Saving..." : "Save Changes"}
         </button>
       </form>
+
+      {/* Discover */}
+      <div id="discover" className="bg-fab-surface border border-fab-border rounded-lg p-6">
+        <Collapsible
+          title={
+            <div className="flex items-center gap-3">
+              <span className="flex h-9 w-9 items-center justify-center rounded-lg border border-fab-border bg-fab-bg text-fab-gold">
+                <Compass className="h-4 w-4" />
+              </span>
+              <div>
+                <h2 className="text-sm font-semibold text-fab-text">Discover Links</h2>
+                <p className="text-xs text-fab-dim">Share ways other players can find your decks, guides, coaching, and socials.</p>
+              </div>
+            </div>
+          }
+        >
+          <form onSubmit={handleSaveDiscover} className="mt-5 space-y-5">
+            <div className="grid gap-4 lg:grid-cols-2">
+              <Field
+                label="X Handle"
+                value={discoverTwitter}
+                onChange={setDiscoverTwitter}
+                placeholder="@FabStats"
+              />
+              <Field
+                label="Discord"
+                value={discoverDiscord}
+                onChange={setDiscoverDiscord}
+                placeholder="username or server nickname"
+              />
+              <Field
+                label="Fabrary Deck"
+                value={discoverFabrary}
+                onChange={setDiscoverFabrary}
+                placeholder="deck URL or deck ID"
+              />
+              <Field
+                label="Deck Title"
+                value={discoverFabraryName}
+                onChange={setDiscoverFabraryName}
+                placeholder="e.g. Azalea CC testing list"
+              />
+              <Field
+                label="Metafy Guide"
+                value={discoverMetafyGuide}
+                onChange={setDiscoverMetafyGuide}
+                placeholder="guide, article, or membership URL"
+              />
+              <Field
+                label="Guide Title"
+                value={discoverMetafyGuideTitle}
+                onChange={setDiscoverMetafyGuideTitle}
+                placeholder="e.g. ProQuest sideboard notes"
+              />
+              <Field
+                label="Metafy Profile"
+                value={discoverMetafyProfile}
+                onChange={setDiscoverMetafyProfile}
+                placeholder="https://mfy.gg/@yourname"
+              />
+              <Field
+                label="Tags"
+                value={discoverTags}
+                onChange={setDiscoverTags}
+                placeholder="coach, ranger, deck tech, CC"
+              />
+            </div>
+
+            <div className="flex flex-col gap-3 border-t border-fab-border pt-4 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-xs leading-5 text-fab-muted">
+                Tags are comma separated and searchable on Discover. Your Discord stays on the profile card so people can connect without turning it into a public link.
+              </p>
+              <div className="flex shrink-0 gap-2">
+                <Link
+                  href="/discover"
+                  className="inline-flex items-center justify-center rounded-lg border border-fab-border bg-fab-bg px-4 py-2 text-sm font-semibold text-fab-muted transition-colors hover:border-fab-gold/40 hover:text-fab-text"
+                >
+                  View Discover
+                </Link>
+                <button
+                  type="submit"
+                  disabled={discoverSaving}
+                  className="inline-flex items-center justify-center gap-2 rounded-lg bg-fab-gold px-4 py-2 text-sm font-bold text-fab-bg transition-colors hover:bg-fab-gold-light disabled:opacity-50"
+                >
+                  <Save className="h-4 w-4" />
+                  {discoverSaving ? "Saving..." : "Save"}
+                </button>
+              </div>
+            </div>
+          </form>
+        </Collapsible>
+      </div>
 
       {/* Privacy */}
       <div id="privacy" className="bg-fab-surface border border-fab-border rounded-lg p-6">

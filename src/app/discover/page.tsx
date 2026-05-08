@@ -2,12 +2,12 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { BookOpen, Compass, ExternalLink, GraduationCap, Search, Users } from "lucide-react";
+import { BookOpen, Compass, ExternalLink, GraduationCap, Search, UserCircle, Users } from "lucide-react";
 import { getDiscoverProfiles } from "@/lib/firestore-storage";
 import { useLeaderboard } from "@/hooks/useLeaderboard";
 import type { LeaderboardEntry, UserProfile } from "@/types";
 
-type LinkFilter = "all" | "metafy" | "fabrary" | "twitter";
+type LinkFilter = "all" | "metafy-guide" | "metafy-profile" | "fabrary" | "twitter";
 
 interface DiscoverLink {
   type: Exclude<LinkFilter, "all">;
@@ -18,7 +18,8 @@ interface DiscoverLink {
 
 const FILTERS: { id: LinkFilter; label: string }[] = [
   { id: "all", label: "All" },
-  { id: "metafy", label: "Metafy" },
+  { id: "metafy-guide", label: "Guides" },
+  { id: "metafy-profile", label: "Metafy Profiles" },
   { id: "fabrary", label: "Decklists" },
   { id: "twitter", label: "X" },
 ];
@@ -31,13 +32,24 @@ function profileLinks(profile: UserProfile): DiscoverLink[] {
   const links = profile.socialLinks;
   if (!links) return [];
   const out: DiscoverLink[] = [];
+  const metafyGuide = links.metafyGuide || links.metafy;
+  const metafyGuideTitle = links.metafyGuideTitle || links.metafyTitle;
 
-  if (links.metafy) {
+  if (metafyGuide) {
     out.push({
-      type: "metafy",
-      label: links.metafyTitle || "Metafy guide",
-      href: withProtocol(links.metafy),
-      meta: "Coaching and guides",
+      type: "metafy-guide",
+      label: metafyGuideTitle || "Metafy guide",
+      href: withProtocol(metafyGuide),
+      meta: "Guide or coaching resource",
+    });
+  }
+
+  if (links.metafyProfile) {
+    out.push({
+      type: "metafy-profile",
+      label: "Metafy profile",
+      href: withProtocol(links.metafyProfile),
+      meta: "Coach profile",
     });
   }
 
@@ -64,7 +76,8 @@ function profileLinks(profile: UserProfile): DiscoverLink[] {
 }
 
 function linkIcon(type: DiscoverLink["type"]) {
-  if (type === "metafy") return <GraduationCap className="h-3.5 w-3.5" />;
+  if (type === "metafy-guide") return <GraduationCap className="h-3.5 w-3.5" />;
+  if (type === "metafy-profile") return <UserCircle className="h-3.5 w-3.5" />;
   if (type === "fabrary") return <BookOpen className="h-3.5 w-3.5" />;
   return (
     <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -124,6 +137,9 @@ export default function DiscoverPage() {
           row.profile.socialLinks?.twitter,
           row.profile.socialLinks?.fabraryName,
           row.profile.socialLinks?.metafyTitle,
+          row.profile.socialLinks?.metafyGuideTitle,
+          row.profile.socialLinks?.metafyProfile,
+          ...(row.profile.socialLinks?.discoverTags || []),
         ].filter(Boolean).join(" ").toLowerCase();
         return haystack.includes(q);
       })
@@ -131,7 +147,7 @@ export default function DiscoverPage() {
   }, [entryByUid, filter, profiles, query]);
 
   const counts = useMemo(() => {
-    const base: Record<LinkFilter, number> = { all: 0, metafy: 0, fabrary: 0, twitter: 0 };
+    const base: Record<LinkFilter, number> = { all: 0, "metafy-guide": 0, "metafy-profile": 0, fabrary: 0, twitter: 0 };
     for (const profile of profiles) {
       const links = profileLinks(profile);
       if (links.length === 0) continue;
@@ -152,12 +168,13 @@ export default function DiscoverPage() {
             </div>
             <h1 className="mt-4 text-3xl font-black text-fab-text sm:text-4xl">Find players, guides, and decks</h1>
             <p className="mt-3 text-sm leading-6 text-fab-muted">
-              Browse public profiles that have shared Metafy guides, Fabrary decklists, or X handles.
+              Browse public profiles that have shared Metafy guides, coaching profiles, Fabrary decklists, or X handles.
             </p>
           </div>
-          <div className="grid grid-cols-3 gap-2 sm:min-w-[24rem]">
+          <div className="grid grid-cols-2 gap-2 sm:min-w-[28rem] sm:grid-cols-4">
             <Metric label="Profiles" value={counts.all.toString()} />
-            <Metric label="Guides" value={counts.metafy.toString()} tone="green" />
+            <Metric label="Guides" value={counts["metafy-guide"].toString()} tone="green" />
+            <Metric label="Coaches" value={counts["metafy-profile"].toString()} tone="green" />
             <Metric label="Decks" value={counts.fabrary.toString()} tone="blue" />
           </div>
         </div>
@@ -226,6 +243,15 @@ export default function DiscoverPage() {
                   </Link>
                   {profile.socialLinks?.discord && (
                     <p className="mt-1 truncate text-[11px] text-fab-muted">Discord: {profile.socialLinks.discord}</p>
+                  )}
+                  {profile.socialLinks?.discoverTags && profile.socialLinks.discoverTags.length > 0 && (
+                    <div className="mt-2 flex flex-wrap gap-1">
+                      {profile.socialLinks.discoverTags.slice(0, 4).map((tag) => (
+                        <span key={tag} className="rounded-full border border-fab-border bg-fab-bg/70 px-2 py-0.5 text-[10px] font-semibold text-fab-muted">
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
                   )}
                 </div>
               </div>

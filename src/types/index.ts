@@ -168,7 +168,18 @@ export interface UserProfile {
   selectedEmblem?: string;
   selectedClassEmblem?: string;
   notificationsEnabled?: boolean;
-  socialLinks?: { twitter?: string; discord?: string; fabrary?: string; fabraryName?: string; metafy?: string; metafyTitle?: string };
+  socialLinks?: {
+    twitter?: string;
+    discord?: string;
+    fabrary?: string;
+    fabraryName?: string;
+    metafy?: string;
+    metafyTitle?: string;
+    metafyGuide?: string;
+    metafyGuideTitle?: string;
+    metafyProfile?: string;
+    discoverTags?: string[];
+  };
   borderStyle?: "beam" | "glow";
   borderEventType?: string;
   borderPlacement?: string;

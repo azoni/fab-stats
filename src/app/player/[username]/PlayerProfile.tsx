@@ -813,15 +813,35 @@ export default function PlayerProfile() {
                     socialDraft.metafyTitle !== (profile.socialLinks?.metafyTitle || "")) && (
                     <button
                       onClick={async () => {
-                        const links: { twitter?: string; discord?: string; fabrary?: string; fabraryName?: string; metafy?: string; metafyTitle?: string } = {};
-                        if (socialDraft.twitter.trim()) links.twitter = socialDraft.twitter.trim().replace(/^@/, "");
-                        if (socialDraft.discord.trim()) links.discord = socialDraft.discord.trim();
-                        if (socialDraft.fabrary.trim()) links.fabrary = socialDraft.fabrary.trim();
-                        if (socialDraft.fabraryName.trim()) links.fabraryName = socialDraft.fabraryName.trim();
-                        if (socialDraft.metafy.trim()) links.metafy = socialDraft.metafy.trim();
-                        if (socialDraft.metafyTitle.trim()) links.metafyTitle = socialDraft.metafyTitle.trim();
-                        await updateProfile(profile.uid, { socialLinks: Object.keys(links).length > 0 ? links : undefined });
-                        setState((prev) => prev.status === "loaded" ? { ...prev, profile: { ...prev.profile, socialLinks: Object.keys(links).length > 0 ? links : undefined } } : prev);
+                        const links: Record<string, string | string[]> = { ...(profile.socialLinks || {}) };
+                        const setText = (key: string, value: string) => {
+                          const trimmed = value.trim();
+                          if (trimmed) links[key] = trimmed;
+                          else delete links[key];
+                        };
+                        setText("twitter", socialDraft.twitter.trim().replace(/^@/, ""));
+                        setText("discord", socialDraft.discord);
+                        setText("fabrary", socialDraft.fabrary);
+                        setText("fabraryName", socialDraft.fabraryName);
+                        const metafy = socialDraft.metafy.trim();
+                        if (metafy) {
+                          links.metafy = metafy;
+                          links.metafyGuide = metafy;
+                        } else {
+                          delete links.metafy;
+                          delete links.metafyGuide;
+                        }
+                        const metafyTitle = socialDraft.metafyTitle.trim();
+                        if (metafyTitle) {
+                          links.metafyTitle = metafyTitle;
+                          links.metafyGuideTitle = metafyTitle;
+                        } else {
+                          delete links.metafyTitle;
+                          delete links.metafyGuideTitle;
+                        }
+                        const nextLinks = Object.keys(links).length > 0 ? (links as NonNullable<typeof profile.socialLinks>) : {};
+                        await updateProfile(profile.uid, { socialLinks: nextLinks });
+                        setState((prev) => prev.status === "loaded" ? { ...prev, profile: { ...prev.profile, socialLinks: nextLinks } } : prev);
                       }}
                       className="px-2.5 py-1 rounded-lg text-[11px] font-medium bg-fab-gold/20 text-fab-gold hover:bg-fab-gold/30 transition-colors"
                     >
@@ -829,7 +849,7 @@ export default function PlayerProfile() {
                     </button>
                   )}
                 </div>
-              ) : (profile.socialLinks?.twitter || profile.socialLinks?.discord || profile.socialLinks?.fabrary || profile.socialLinks?.metafy) ? (
+              ) : (profile.socialLinks?.twitter || profile.socialLinks?.discord || profile.socialLinks?.fabrary || profile.socialLinks?.metafy || profile.socialLinks?.metafyGuide || profile.socialLinks?.metafyProfile) ? (
                 <div className="flex items-center gap-2 mt-1 flex-wrap">
                   {profile.socialLinks?.twitter && (
                     <a href={`https://x.com/${profile.socialLinks.twitter.replace(/^@/, "")}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-[11px] text-fab-muted hover:text-fab-text transition-colors">
@@ -853,10 +873,16 @@ export default function PlayerProfile() {
                       <span>{profile.socialLinks.fabraryName || "Deck"}</span>
                     </a>
                   )}
-                  {profile.socialLinks?.metafy && (
-                    <a href={profile.socialLinks.metafy.startsWith("http") ? profile.socialLinks.metafy : `https://${profile.socialLinks.metafy}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-[11px] text-fab-muted hover:text-fab-text transition-colors">
+                  {(profile.socialLinks?.metafyGuide || profile.socialLinks?.metafy) && (
+                    <a href={(profile.socialLinks.metafyGuide || profile.socialLinks.metafy)!.startsWith("http") ? (profile.socialLinks.metafyGuide || profile.socialLinks.metafy)! : `https://${profile.socialLinks.metafyGuide || profile.socialLinks.metafy}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-[11px] text-fab-muted hover:text-fab-text transition-colors">
                       <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3l7 4v10l-7 4-7-4V7l7-4z"/><path d="M12 7v10"/><path d="M8.5 9.5l3.5 2 3.5-2"/></svg>
-                      <span>{profile.socialLinks.metafyTitle || "Metafy"}</span>
+                      <span>{profile.socialLinks.metafyGuideTitle || profile.socialLinks.metafyTitle || "Metafy Guide"}</span>
+                    </a>
+                  )}
+                  {profile.socialLinks?.metafyProfile && (
+                    <a href={profile.socialLinks.metafyProfile.startsWith("http") ? profile.socialLinks.metafyProfile : `https://${profile.socialLinks.metafyProfile}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-[11px] text-fab-muted hover:text-fab-text transition-colors">
+                      <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0116 0"/></svg>
+                      <span>Metafy Profile</span>
                     </a>
                   )}
                 </div>

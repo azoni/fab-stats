@@ -376,7 +376,7 @@ export async function getDiscoverProfiles(maxResults = 180): Promise<UserProfile
       if (profile.profileVisibility && profile.profileVisibility !== "public") return false;
       if (profile.hideFromGuests || profile.hideFromSpotlight) return false;
       const links = profile.socialLinks;
-      return Boolean(links?.twitter || links?.fabrary || links?.metafy || links?.discord);
+      return Boolean(links?.twitter || links?.fabrary || links?.metafy || links?.metafyGuide || links?.metafyProfile || links?.discord);
     })
     .sort((a, b) => (a.displayName || a.username).localeCompare(b.displayName || b.username));
 }

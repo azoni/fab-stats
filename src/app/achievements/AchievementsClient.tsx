@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Trophy, Lock } from "lucide-react";
+import { ChevronDown, Lock, Trophy } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useMatches } from "@/hooks/useMatches";
 import {
@@ -84,6 +84,50 @@ function sortAchievement(a: Achievement, b: Achievement) {
   const groupCompare = (a.group || a.id).localeCompare(b.group || b.id);
   if (groupCompare !== 0) return groupCompare;
   return (a.tier || 0) - (b.tier || 0);
+}
+
+interface AchievementStack {
+  id: string;
+  achievements: Achievement[];
+  earnedAchievements: Achievement[];
+  current?: Achievement;
+  next?: Achievement;
+  display: Achievement;
+  nextProgress?: { current: number; target: number };
+  pct: number;
+}
+
+function buildAchievementStacks(
+  items: Achievement[],
+  earnedSet: Set<string>,
+  progress: Record<string, { current: number; target: number }>,
+  isAuthed: boolean,
+): AchievementStack[] {
+  const map = new Map<string, Achievement[]>();
+  for (const achievement of items) {
+    const key = achievement.group || achievement.id;
+    const achievements = map.get(key) || [];
+    achievements.push(achievement);
+    map.set(key, achievements);
+  }
+
+  return [...map.entries()]
+    .map(([id, achievements]) => {
+      const sorted = [...achievements].sort(sortAchievement);
+      const earnedAchievements = isAuthed ? sorted.filter((achievement) => earnedSet.has(achievement.id)) : [];
+      const current = earnedAchievements[earnedAchievements.length - 1];
+      const next = isAuthed ? sorted.find((achievement) => !earnedSet.has(achievement.id)) : sorted[0];
+      const display = current || next || sorted[0]!;
+      const nextProgress = next ? progress[next.id] : undefined;
+      const pct = nextProgress?.target
+        ? Math.min(100, Math.round((nextProgress.current / nextProgress.target) * 100))
+        : current && !next
+          ? 100
+          : 0;
+
+      return { id, achievements: sorted, earnedAchievements, current, next, display, nextProgress, pct };
+    })
+    .sort((a, b) => sortAchievement(a.achievements[0]!, b.achievements[0]!));
 }
 
 export function AchievementsClient() {
@@ -249,11 +293,11 @@ export function AchievementsClient() {
   // how close they are to unlocking. Only shown when authed.
   const inProgress = useMemo(() => {
     if (!isAuthed) return [] as { achievement: Achievement; current: number; target: number; pct: number }[];
-    return allAchievements
-      .filter((a) => !earnedSet.has(a.id) && progress[a.id] && progress[a.id].target > 0 && progress[a.id].current > 0)
-      .map((a) => {
-        const p = progress[a.id];
-        return { achievement: a, current: p.current, target: p.target, pct: Math.min(100, Math.round((p.current / p.target) * 100)) };
+    return buildAchievementStacks(allAchievements, earnedSet, progress, isAuthed)
+      .filter((stack) => stack.next && stack.nextProgress && stack.nextProgress.target > 0 && stack.nextProgress.current > 0)
+      .map((stack) => {
+        const p = stack.nextProgress!;
+        return { achievement: stack.next!, current: p.current, target: p.target, pct: stack.pct };
       })
       .sort((a, b) => b.pct - a.pct)
       .slice(0, 6);
@@ -434,25 +478,27 @@ export function AchievementsClient() {
           if (items.length === 0) return null;
           const copy = CATEGORY_COPY[category];
           const categoryEarned = isAuthed ? items.filter((a) => earnedSet.has(a.id)).length : 0;
+          const stacks = buildAchievementStacks(items, earnedSet, progress, isAuthed);
           return (
             <section key={category} className="rounded-xl border border-fab-border bg-fab-surface p-4 sm:p-5">
               <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
                 <div>
                   <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-fab-dim">
-                    {isAuthed ? `${categoryEarned} / ${items.length} unlocked` : `${items.length} achievements`}
+                    {isAuthed
+                      ? `${categoryEarned} / ${items.length} unlocked across ${stacks.length} paths`
+                      : `${items.length} achievements across ${stacks.length} paths`}
                   </p>
                   <h2 className="text-lg font-bold text-fab-text">{copy.label}</h2>
                 </div>
                 <p className="max-w-xl text-xs leading-5 text-fab-muted">{copy.description}</p>
               </div>
               <div className="grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-3">
-                {items.map((achievement) => (
-                  <AchievementCard
-                    key={achievement.id}
-                    achievement={achievement}
-                    earned={isAuthed && earnedSet.has(achievement.id)}
-                    progress={isAuthed ? progress[achievement.id] : undefined}
-                    locked={isAuthed && !earnedSet.has(achievement.id)}
+                {stacks.map((stack) => (
+                  <AchievementStackCard
+                    key={stack.id}
+                    stack={stack}
+                    earnedSet={earnedSet}
+                    isAuthed={isAuthed}
                   />
                 ))}
               </div>
@@ -503,36 +549,48 @@ function ProgressCard({
   );
 }
 
-function AchievementCard({
-  achievement,
-  earned,
-  locked,
-  progress,
+function AchievementStackCard({
+  stack,
+  earnedSet,
+  isAuthed,
 }: {
-  achievement: Achievement;
-  earned: boolean;
-  locked: boolean;
-  progress?: { current: number; target: number };
+  stack: AchievementStack;
+  earnedSet: Set<string>;
+  isAuthed: boolean;
 }) {
-  const colors = rarityColors[achievement.rarity];
-  const dimmed = locked;
+  const { achievements, current, next, display, nextProgress, pct } = stack;
+  const completed = isAuthed && achievements.length > 0 && stack.earnedAchievements.length === achievements.length;
+  const untouched = isAuthed && stack.earnedAchievements.length === 0;
+  const colors = rarityColors[display.rarity];
+  const progressColors = rarityColors[(next || display).rarity];
+  const tierLabel = achievements.length > 1
+    ? completed
+      ? "Complete path"
+      : current
+        ? "Current tier"
+        : "Next tier"
+    : completed
+      ? "Unlocked"
+      : "Achievement";
+  const description = next && !completed ? next.description : display.description;
+
   return (
     <div
-      className={`rounded-lg border p-3 transition-opacity ${
-        earned ? `${colors.border} bg-fab-bg/55` : "border-fab-border/60 bg-fab-bg/30"
+      className={`rounded-lg border p-3 transition-colors ${
+        completed || current ? `${colors.border} bg-fab-bg/55` : "border-fab-border/60 bg-fab-bg/30"
       }`}
     >
       <div className="flex items-start gap-3">
         <div
           className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border relative ${
-            earned ? `${colors.border} ${colors.bg}` : "border-fab-border/50 bg-fab-bg/40"
+            completed || current ? `${colors.border} ${colors.bg}` : "border-fab-border/50 bg-fab-bg/40"
           }`}
         >
           <AchievementIcon
-            icon={achievement.icon}
-            className={`h-5 w-5 ${earned ? colors.text : "text-fab-dim"} ${dimmed ? "opacity-70" : ""}`}
+            icon={display.icon}
+            className={`h-5 w-5 ${completed || current ? colors.text : "text-fab-dim"} ${untouched ? "opacity-70" : ""}`}
           />
-          {locked && (
+          {untouched && (
             <span className="absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-fab-bg border border-fab-border/60">
               <Lock className="h-2.5 w-2.5 text-fab-dim" />
             </span>
@@ -540,33 +598,99 @@ function AchievementCard({
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
-            <h3 className={`text-sm font-bold truncate ${earned ? "text-fab-text" : "text-fab-muted"}`}>
-              {achievement.name}
-            </h3>
+            <div className="min-w-0">
+              <p className={`text-[9px] font-bold uppercase tracking-[0.14em] ${completed || current ? colors.text : "text-fab-dim"}`}>
+                {tierLabel}
+              </p>
+              <h3 className={`mt-0.5 text-sm font-bold truncate ${completed || current ? "text-fab-text" : "text-fab-muted"}`}>
+                {display.name}
+              </h3>
+            </div>
             <span
               className={`shrink-0 rounded px-1.5 py-0.5 text-[9px] font-bold uppercase ${
-                earned ? `${colors.bg} ${colors.text}` : "bg-fab-bg/60 text-fab-dim border border-fab-border/40"
+                completed || current ? `${colors.bg} ${colors.text}` : "bg-fab-bg/60 text-fab-dim border border-fab-border/40"
               }`}
             >
-              {achievement.rarity}
+              {display.rarity}
             </span>
           </div>
-          <p className={`mt-1 text-xs leading-5 ${earned ? "text-fab-muted" : "text-fab-dim"} line-clamp-2`}>
-            {achievement.description}
+          <p className={`mt-1 text-xs leading-5 ${completed || current ? "text-fab-muted" : "text-fab-dim"} line-clamp-2`}>
+            {description}
           </p>
-          {/* Show progress bar when locked + we have progress data with non-zero target */}
-          {locked && progress && progress.target > 0 && (
-            <div className="mt-2 flex items-center gap-2">
+
+          {achievements.length > 1 && (
+            <div className="mt-3 grid grid-cols-[repeat(auto-fit,minmax(1.35rem,1fr))] gap-1">
+              {achievements.map((achievement, index) => {
+                const tierEarned = isAuthed && earnedSet.has(achievement.id);
+                const tierColors = rarityColors[achievement.rarity];
+                return (
+                  <div
+                    key={achievement.id}
+                    title={`${achievement.name}: ${achievement.description}`}
+                    aria-label={`${achievement.name}: ${tierEarned ? "unlocked" : "locked"}`}
+                    className={`h-6 rounded border text-center text-[10px] font-black leading-6 tabular-nums ${
+                      tierEarned
+                        ? `${tierColors.border} ${tierColors.bg} ${tierColors.text}`
+                        : "border-fab-border/45 bg-fab-bg/35 text-fab-dim"
+                    }`}
+                  >
+                    {achievement.tier || index + 1}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {isAuthed && next && nextProgress && nextProgress.target > 0 && (
+            <div className="mt-3 flex items-center gap-2">
               <div className="flex-1 h-1 rounded-full bg-fab-bg overflow-hidden">
                 <div
-                  className="h-full rounded-full bg-fab-dim"
-                  style={{ width: `${Math.min(100, (progress.current / progress.target) * 100)}%` }}
+                  className={`h-full rounded-full ${progressColors.text.replace("text-", "bg-")}`}
+                  style={{ width: `${pct}%`, opacity: 0.85 }}
                 />
               </div>
               <span className="text-[10px] tabular-nums text-fab-dim font-semibold whitespace-nowrap">
-                {progress.current.toLocaleString()}/{progress.target.toLocaleString()}
+                {nextProgress.current.toLocaleString()}/{nextProgress.target.toLocaleString()}
               </span>
             </div>
+          )}
+
+          {completed && achievements.length > 1 && (
+            <div className="mt-3 h-1 rounded-full bg-fab-bg overflow-hidden">
+              <div className={`h-full rounded-full ${colors.text.replace("text-", "bg-")}`} style={{ width: "100%", opacity: 0.9 }} />
+            </div>
+          )}
+
+          {achievements.length > 1 && (
+            <details className="group mt-3 border-t border-fab-border/40 pt-2">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-2 text-[10px] font-bold uppercase tracking-[0.12em] text-fab-dim transition-colors hover:text-fab-muted">
+                <span>
+                  {isAuthed
+                    ? `${stack.earnedAchievements.length}/${achievements.length} tiers unlocked`
+                    : `${achievements.length} tiers`}
+                </span>
+                <ChevronDown className="h-3.5 w-3.5 transition-transform group-open:rotate-180" />
+              </summary>
+              <div className="mt-2 space-y-1.5">
+                {achievements.map((achievement) => {
+                  const tierEarned = isAuthed && earnedSet.has(achievement.id);
+                  const tierColors = rarityColors[achievement.rarity];
+                  return (
+                    <div key={achievement.id} className="flex items-center justify-between gap-3 rounded-md bg-fab-bg/35 px-2 py-1.5">
+                      <div className="min-w-0">
+                        <p className={`truncate text-xs font-bold ${tierEarned ? "text-fab-text" : "text-fab-muted"}`}>
+                          {achievement.name}
+                        </p>
+                        <p className="truncate text-[10px] text-fab-dim">{achievement.description}</p>
+                      </div>
+                      <span className={`shrink-0 rounded px-1.5 py-0.5 text-[9px] font-bold uppercase ${tierEarned ? `${tierColors.bg} ${tierColors.text}` : "text-fab-dim"}`}>
+                        {achievement.rarity}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </details>
           )}
         </div>
       </div>
