@@ -120,12 +120,15 @@ export default function ActivityPage() {
   const pulseStats = useMemo(() => {
     const activePlayers = lbEntries.filter((e) => e.weeklyMatches > 0 || e.monthlyMatches > 0).length;
     const publicProfiles = lbEntries.filter((e) => e.isPublic).length;
+    const rankedPlayers = lbEntries.filter((e) => (e.ratedMatches ?? 0) >= 20 || (e.totalMatches ?? 0) >= 20).length;
     const recentMatches = lbEntries.reduce((sum, e) => sum + (e.weeklyMatches ?? 0), 0);
     const totalTop8s = lbEntries.reduce((sum, e) => sum + (e.totalTop8s ?? 0), 0);
 
     return {
       players: userCount || publicProfiles,
       matches: matchCount || lbEntries.reduce((sum, e) => sum + (e.totalMatches ?? 0), 0),
+      publicProfiles,
+      rankedPlayers,
       activePlayers,
       recentMatches,
       totalTop8s,
@@ -157,10 +160,12 @@ export default function ActivityPage() {
             <p className="mt-3 max-w-2xl text-sm leading-6 text-fab-muted sm:text-base">
               Follow the latest imports, event finishes, daily games, and player updates from across FaB Stats.
             </p>
-            <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3">
               <ActivityStat label="Players" value={formatCompact(pulseStats.players)} />
               <ActivityStat label="Matches" value={formatCompact(pulseStats.matches)} tone="green" />
-              <ActivityStat label="Active Now" value={formatCompact(pulseStats.activePlayers)} tone="blue" />
+              <ActivityStat label="This Week" value={formatCompact(pulseStats.recentMatches)} tone="blue" />
+              <ActivityStat label="Public" value={formatCompact(pulseStats.publicProfiles)} tone="green" />
+              <ActivityStat label="Ranked" value={formatCompact(pulseStats.rankedPlayers)} tone="gold" />
               <ActivityStat label="Top 8s" value={formatCompact(pulseStats.totalTop8s)} tone="rose" />
             </div>
           </div>

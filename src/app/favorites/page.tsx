@@ -1,19 +1,48 @@
 "use client";
+
+import { useMemo, useState } from "react";
 import Link from "next/link";
+import { ExternalLink, Search, Star, UserPlus } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useFavorites } from "@/hooks/useFavorites";
+import type { FavoriteEntry } from "@/lib/favorites";
+
+function timeAgo(dateStr?: string): string {
+  if (!dateStr) return "recently";
+  const then = new Date(dateStr).getTime();
+  if (!Number.isFinite(then)) return "recently";
+  const diff = Math.max(0, Math.floor((Date.now() - then) / 1000));
+  if (diff < 60) return "just now";
+  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+  if (diff < 604800) return `${Math.floor(diff / 86400)}d ago`;
+  return new Date(dateStr).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
 
 export default function FavoritesPage() {
   const { user, isGuest } = useAuth();
   const { favorites, isLoaded } = useFavorites();
+  const [query, setQuery] = useState("");
+
+  const filteredFavorites = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return favorites;
+    return favorites.filter((fav) =>
+      fav.targetDisplayName.toLowerCase().includes(q) || fav.targetUsername.toLowerCase().includes(q)
+    );
+  }, [favorites, query]);
 
   if (!user || isGuest) {
     return (
-      <div className="text-center py-16">
-        <p className="text-fab-muted mb-4">Sign in to favorite player profiles.</p>
+      <div className="mx-auto max-w-md py-16 text-center">
+        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-xl border border-fab-border bg-fab-surface text-fab-gold">
+          <Star className="h-6 w-6" />
+        </div>
+        <h1 className="text-2xl font-black text-fab-text">Favorites</h1>
+        <p className="mt-2 text-sm leading-6 text-fab-muted">Sign in to build a quick-access list of player profiles.</p>
         <Link
           href="/login"
-          className="inline-block px-6 py-3 rounded-md font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors"
+          className="mt-6 inline-flex items-center justify-center rounded-lg bg-fab-gold px-5 py-2.5 text-sm font-bold text-fab-bg transition-colors hover:bg-fab-gold-light"
         >
           Sign In
         </Link>
@@ -23,62 +52,129 @@ export default function FavoritesPage() {
 
   if (!isLoaded) {
     return (
-      <div className="space-y-4">
-        <div className="h-8 w-40 bg-fab-surface rounded animate-pulse" />
-        {[...Array(3)].map((_, i) => (
-          <div key={i} className="bg-fab-surface border border-fab-border rounded-lg p-4 h-16 animate-pulse" />
-        ))}
+      <div className="mx-auto max-w-5xl space-y-5">
+        <div className="h-40 rounded-2xl border border-fab-border bg-fab-surface animate-pulse" />
+        <div className="grid gap-3 sm:grid-cols-2">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="h-24 rounded-xl border border-fab-border bg-fab-surface animate-pulse" />
+          ))}
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center ring-1 ring-inset ring-amber-500/20">
-          <svg className="w-4 h-4 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
-          </svg>
-        </div>
-        <div>
-          <h1 className="text-lg font-bold text-fab-text leading-tight">Favorites</h1>
-          <p className="text-xs text-fab-muted leading-tight">Players you&apos;ve starred</p>
-        </div>
-      </div>
+    <div className="mx-auto max-w-5xl space-y-6">
+      <section className="relative overflow-hidden rounded-2xl border border-fab-border/80 bg-[linear-gradient(135deg,rgba(25,23,18,0.96),rgba(14,15,14,0.95)_58%,rgba(17,24,22,0.92))] p-5 shadow-[0_22px_70px_rgba(0,0,0,0.28)] sm:p-6">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_14%_0%,rgba(245,179,57,0.16),transparent_30%),radial-gradient(circle_at_88%_22%,rgba(38,211,177,0.1),transparent_28%)]" />
+        <div className="relative flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <div className="inline-flex items-center gap-2 rounded-full border border-fab-border/80 bg-fab-bg/55 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-fab-gold">
+              <Star className="h-3.5 w-3.5" />
+              Saved profiles
+            </div>
+            <h1 className="mt-4 text-3xl font-black text-fab-text sm:text-4xl">Favorites</h1>
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-fab-muted sm:text-base">
+              Keep your most-watched players close for quick profile checks, trends, and matchup prep.
+            </p>
+          </div>
 
-      {favorites.length === 0 ? (
-        <div className="text-center py-16">
-          <svg className="w-12 h-12 text-fab-dim mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
-          </svg>
-          <p className="text-fab-muted mb-2">No favorites yet</p>
-          <p className="text-fab-dim text-sm">Visit a player&apos;s profile and tap the star to add them here.</p>
+          <div className="grid grid-cols-2 gap-3 sm:min-w-80">
+            <FavoriteMetric label="Saved" value={favorites.length.toLocaleString()} />
+            <FavoriteMetric label="Visible" value={filteredFavorites.length.toLocaleString()} tone="green" />
+          </div>
         </div>
+      </section>
+
+      <section className="overflow-hidden rounded-xl border border-fab-border/80 bg-fab-surface/85 shadow-[0_16px_48px_rgba(0,0,0,0.18)]">
+        <div className="flex flex-col gap-3 border-b border-fab-border/70 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-sm font-black uppercase tracking-[0.12em] text-fab-text">Watchlist</h2>
+            <p className="text-xs text-fab-muted">Players you have starred from profile pages.</p>
+          </div>
+          <div className="relative w-full sm:w-80">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fab-dim" />
+            <input
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search favorites..."
+              className="w-full rounded-lg border border-fab-border/80 bg-fab-bg/70 py-2 pl-9 pr-3 text-sm text-fab-text shadow-inner shadow-black/10 placeholder:text-fab-dim focus:border-fab-gold/50 focus:bg-fab-surface/95 focus:outline-none"
+            />
+          </div>
+        </div>
+
+        {filteredFavorites.length === 0 ? (
+          <EmptyFavorites hasFavorites={favorites.length > 0} query={query} />
+        ) : (
+          <div className="grid gap-3 p-4 sm:grid-cols-2">
+            {filteredFavorites.map((fav) => (
+              <FavoriteCard key={fav.targetUserId} favorite={fav} />
+            ))}
+          </div>
+        )}
+      </section>
+    </div>
+  );
+}
+
+function FavoriteMetric({ label, value, tone = "gold" }: { label: string; value: string; tone?: "gold" | "green" }) {
+  return (
+    <div className="rounded-xl border border-fab-border/70 bg-fab-bg/45 px-4 py-3 shadow-inner shadow-black/10">
+      <p className={`text-xl font-black leading-none ${tone === "green" ? "text-emerald-300" : "text-fab-gold"}`}>{value}</p>
+      <p className="mt-1 text-[10px] font-bold uppercase tracking-[0.16em] text-fab-dim">{label}</p>
+    </div>
+  );
+}
+
+function FavoriteCard({ favorite }: { favorite: FavoriteEntry }) {
+  return (
+    <Link
+      href={`/player/${favorite.targetUsername}`}
+      className="group flex items-center gap-3 rounded-xl border border-fab-border/80 bg-fab-bg/40 p-3 transition-colors hover:border-fab-gold/50 hover:bg-fab-gold/10"
+    >
+      {favorite.targetPhotoUrl ? (
+        <img
+          src={favorite.targetPhotoUrl}
+          alt=""
+          className="h-12 w-12 shrink-0 rounded-full border border-fab-border/80 object-cover"
+          loading="lazy"
+        />
       ) : (
-        <div className="space-y-2">
-          {favorites.map((fav) => (
-            <Link
-              key={fav.targetUserId}
-              href={`/player/${fav.targetUsername}`}
-              className="flex items-center gap-3 bg-fab-surface border border-fab-border rounded-lg p-3 hover:bg-fab-surface-hover transition-colors"
-            >
-              {fav.targetPhotoUrl ? (
-                <img src={fav.targetPhotoUrl} alt="" className="w-10 h-10 rounded-full" loading="lazy" />
-              ) : (
-                <div className="w-10 h-10 rounded-full bg-fab-gold/20 flex items-center justify-center text-fab-gold font-bold">
-                  {fav.targetDisplayName.charAt(0).toUpperCase()}
-                </div>
-              )}
-              <div className="min-w-0">
-                <div className="font-medium text-fab-text truncate">{fav.targetDisplayName}</div>
-                <div className="text-xs text-fab-dim">@{fav.targetUsername}</div>
-              </div>
-              <svg className="w-4 h-4 text-fab-gold ml-auto shrink-0" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
-              </svg>
-            </Link>
-          ))}
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-fab-gold/25 bg-fab-gold/15 text-base font-black text-fab-gold">
+          {favorite.targetDisplayName.charAt(0).toUpperCase()}
         </div>
+      )}
+      <div className="min-w-0 flex-1">
+        <div className="truncate font-bold text-fab-text transition-colors group-hover:text-fab-gold">{favorite.targetDisplayName}</div>
+        <div className="text-xs text-fab-dim">@{favorite.targetUsername}</div>
+        <div className="mt-1 text-[11px] text-fab-muted">Saved {timeAgo(favorite.createdAt)}</div>
+      </div>
+      <ExternalLink className="h-4 w-4 shrink-0 text-fab-dim transition-colors group-hover:text-fab-gold" />
+    </Link>
+  );
+}
+
+function EmptyFavorites({ hasFavorites, query }: { hasFavorites: boolean; query: string }) {
+  return (
+    <div className="px-4 py-16 text-center">
+      <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-xl border border-fab-border bg-fab-bg text-fab-dim">
+        {hasFavorites ? <Search className="h-6 w-6" /> : <Star className="h-6 w-6" />}
+      </div>
+      <p className="font-bold text-fab-text">{hasFavorites ? "No matching favorites" : "No favorites yet"}</p>
+      <p className="mx-auto mt-1 max-w-sm text-sm leading-6 text-fab-dim">
+        {hasFavorites
+          ? `No saved players match "${query.trim()}".`
+          : "Visit a player profile and tap the star to add them to this watchlist."}
+      </p>
+      {!hasFavorites && (
+        <Link
+          href="/search"
+          className="mt-5 inline-flex items-center gap-2 rounded-lg border border-fab-border bg-fab-bg px-3 py-2 text-sm font-bold text-fab-muted transition-colors hover:border-fab-gold/50 hover:text-fab-gold"
+        >
+          <UserPlus className="h-4 w-4" />
+          Find Players
+        </Link>
       )}
     </div>
   );

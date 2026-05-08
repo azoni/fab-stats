@@ -1,9 +1,22 @@
 "use client";
 
-import { Bot, MessageCircle, ShoppingCart } from "lucide-react";
+import { type ReactNode } from "react";
+import { Bot, ExternalLink, HeartHandshake, MessageCircle, Megaphone, ShoppingCart, Sparkles } from "lucide-react";
 import { trackSupportClick } from "@/lib/analytics";
 
-const SUPPORT_LINKS = [
+type SupportLink = {
+  title: string;
+  description: string;
+  href: string;
+  trackKey: string;
+  color: string;
+  bgColor: string;
+  ringColor: string;
+  icon: ReactNode;
+  badge?: string;
+};
+
+const COMMUNITY_LINKS: SupportLink[] = [
   {
     title: "Join Discord",
     description: "Chat with other players, report bugs, suggest features, and follow what is being worked on.",
@@ -34,6 +47,9 @@ const SUPPORT_LINKS = [
     ringColor: "ring-fab-border",
     icon: <XIcon />,
   },
+];
+
+const SHOP_LINKS: SupportLink[] = [
   {
     title: "Shop Amazon",
     description: "Start Amazon shopping here. You pay the same price and Amazon sends a small percentage to FaB Stats.",
@@ -43,6 +59,7 @@ const SUPPORT_LINKS = [
     bgColor: "bg-orange-400/10",
     ringColor: "ring-orange-400/20",
     icon: <ShoppingCart className="h-5 w-5" />,
+    badge: "Free",
   },
   {
     title: "Shop TCGplayer",
@@ -58,70 +75,150 @@ const SUPPORT_LINKS = [
 
 export default function SupportPageContent() {
   return (
-    <div className="mx-auto max-w-2xl">
-      <div className="mb-8 text-center">
-        <h1 className="mb-2 text-2xl font-bold text-fab-text">Support FaB Stats</h1>
-        <p className="mx-auto max-w-md text-sm leading-relaxed text-fab-muted">
-          FaB Stats is a free community project. The best ways to help are joining the community,
-          adding the Discord bot, sharing updates, or using affiliate links when you already planned to shop.
-        </p>
-      </div>
-
-      <div className="mb-3">
-        <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-fab-gold">Community</p>
-        <p className="text-xs text-fab-muted">The social and Discord links live here now so the main navigation stays cleaner.</p>
-      </div>
-
-      <div className="space-y-3">
-        {SUPPORT_LINKS.map((link, index) => (
-          <a
-            key={link.title}
-            href={link.href}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="group flex items-start gap-4 rounded-xl border border-fab-border bg-fab-surface p-4 transition-all hover:border-fab-muted"
-            onClick={() => trackSupportClick(link.trackKey)}
-          >
-            <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${link.bgColor} ${link.color} ring-1 ring-inset ${link.ringColor}`}>
-              {link.icon}
+    <div className="mx-auto max-w-5xl space-y-6">
+      <section className="relative overflow-hidden rounded-2xl border border-fab-border/80 bg-[linear-gradient(135deg,rgba(25,23,18,0.96),rgba(14,15,14,0.95)_60%,rgba(17,24,22,0.92))] p-5 shadow-[0_22px_70px_rgba(0,0,0,0.28)] sm:p-6">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_12%_0%,rgba(245,179,57,0.17),transparent_30%),radial-gradient(circle_at_86%_20%,rgba(38,211,177,0.12),transparent_28%)]" />
+        <div className="relative grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-center">
+          <div>
+            <div className="inline-flex items-center gap-2 rounded-full border border-fab-border/80 bg-fab-bg/55 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-fab-gold">
+              <HeartHandshake className="h-3.5 w-3.5" />
+              Community backed
             </div>
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2">
-                <p className="text-sm font-semibold text-fab-text transition-colors group-hover:text-fab-gold">
-                  {link.title}
-                </p>
-                {index === 3 && (
-                  <span className="rounded-full bg-fab-gold/10 px-1.5 py-0.5 text-[9px] font-bold uppercase text-fab-gold">
-                    Free
-                  </span>
-                )}
+            <h1 className="mt-4 text-3xl font-black text-fab-text sm:text-4xl">Support FaB Stats</h1>
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-fab-muted sm:text-base">
+              FaB Stats is a free community project. The most useful support is simple: join the Discord,
+              add the bot, share what is working, and use affiliate links when you were already shopping.
+            </p>
+            <div className="mt-5 grid gap-3 sm:grid-cols-3">
+              <SupportMetric label="Project" value="Free" />
+              <SupportMetric label="Best feedback" value="Discord" tone="blue" />
+              <SupportMetric label="Shopping cost" value="$0 extra" tone="green" />
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-fab-border/80 bg-fab-bg/45 p-4 shadow-inner shadow-black/20">
+            <div className="flex items-center gap-3">
+              <span className="flex h-10 w-10 items-center justify-center rounded-lg border border-fab-gold/25 bg-fab-gold/10 text-fab-gold">
+                <Sparkles className="h-5 w-5" />
+              </span>
+              <div>
+                <p className="text-sm font-black uppercase tracking-[0.12em] text-fab-text">Best ways to help</p>
+                <p className="text-xs text-fab-muted">Low effort, high signal.</p>
               </div>
-              <p className="mt-0.5 text-xs leading-relaxed text-fab-muted">{link.description}</p>
             </div>
-            <ExternalIcon />
-          </a>
-        ))}
+            <div className="mt-4 space-y-3">
+              <HelpRow title="Invite players" text="More imports make the meta and matchup data better." />
+              <HelpRow title="Report rough edges" text="Screenshots and examples make fixes much faster." />
+              <HelpRow title="Use the bot" text="Discord lookups help the site meet players where they are." />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div className="grid gap-5 lg:grid-cols-2">
+        <section className="rounded-xl border border-fab-border/80 bg-fab-surface/85 p-4 shadow-[0_16px_48px_rgba(0,0,0,0.18)] sm:p-5">
+          <SectionHeader
+            icon={<Megaphone className="h-4 w-4" />}
+            title="Community"
+            text="Discord, bot commands, and update channels."
+          />
+          <div className="mt-4 space-y-3">
+            {COMMUNITY_LINKS.map((link) => (
+              <SupportLinkCard key={link.title} link={link} />
+            ))}
+          </div>
+        </section>
+
+        <section className="rounded-xl border border-fab-border/80 bg-fab-surface/85 p-4 shadow-[0_16px_48px_rgba(0,0,0,0.18)] sm:p-5">
+          <SectionHeader
+            icon={<ShoppingCart className="h-4 w-4" />}
+            title="Affiliate Support"
+            text="Only use these if you were already planning to shop."
+          />
+          <div className="mt-4 space-y-3">
+            {SHOP_LINKS.map((link) => (
+              <SupportLinkCard key={link.title} link={link} />
+            ))}
+          </div>
+        </section>
       </div>
 
-      <div className="mt-8 rounded-xl border border-fab-border bg-fab-surface p-4">
+      <section className="rounded-xl border border-fab-border/80 bg-fab-surface/85 p-5 shadow-[0_16px_48px_rgba(0,0,0,0.16)]">
         <div className="flex items-start gap-3">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-fab-gold/10 text-fab-gold ring-1 ring-inset ring-fab-gold/20">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-fab-gold/10 text-fab-gold ring-1 ring-inset ring-fab-gold/20">
             <MessageCircle className="h-4 w-4" />
           </div>
-          <div>
-            <h2 className="text-sm font-semibold text-fab-text">Feedback</h2>
-            <p className="mt-1 text-xs leading-5 text-fab-muted">
-              Use the Send Feedback option in the Support sidebar menu or Settings if something feels broken,
-              confusing, or worth improving.
+          <div className="min-w-0">
+            <h2 className="text-sm font-bold text-fab-text">Feedback keeps the site sharp</h2>
+            <p className="mt-1 text-sm leading-6 text-fab-muted">
+              Use Send Feedback from the Support sidebar menu or Settings when something feels broken,
+              confusing, too slow, or worth improving.
             </p>
           </div>
         </div>
-      </div>
-
-      <p className="mt-8 text-center text-xs text-fab-dim">
-        Thank you for helping keep the project alive.
-      </p>
+      </section>
     </div>
+  );
+}
+
+function SupportMetric({ label, value, tone = "gold" }: { label: string; value: string; tone?: "gold" | "blue" | "green" }) {
+  const color = tone === "blue" ? "text-sky-300" : tone === "green" ? "text-emerald-300" : "text-fab-gold";
+  return (
+    <div className="rounded-xl border border-fab-border/70 bg-fab-bg/45 px-4 py-3 shadow-inner shadow-black/10">
+      <p className={`text-lg font-black leading-none ${color}`}>{value}</p>
+      <p className="mt-1 text-[10px] font-bold uppercase tracking-[0.16em] text-fab-dim">{label}</p>
+    </div>
+  );
+}
+
+function HelpRow({ title, text }: { title: string; text: string }) {
+  return (
+    <div className="rounded-lg border border-fab-border/70 bg-fab-surface/60 p-3">
+      <p className="text-sm font-bold text-fab-text">{title}</p>
+      <p className="mt-0.5 text-xs leading-5 text-fab-muted">{text}</p>
+    </div>
+  );
+}
+
+function SectionHeader({ icon, title, text }: { icon: ReactNode; title: string; text: string }) {
+  return (
+    <div className="flex items-center gap-3 border-b border-fab-border/70 pb-4">
+      <span className="flex h-9 w-9 items-center justify-center rounded-lg border border-fab-border/70 bg-fab-bg/60 text-fab-gold">
+        {icon}
+      </span>
+      <div>
+        <h2 className="text-sm font-black uppercase tracking-[0.12em] text-fab-text">{title}</h2>
+        <p className="text-xs text-fab-muted">{text}</p>
+      </div>
+    </div>
+  );
+}
+
+function SupportLinkCard({ link }: { link: SupportLink }) {
+  return (
+    <a
+      href={link.href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="group flex items-start gap-4 rounded-xl border border-fab-border/80 bg-fab-bg/40 p-4 transition-colors hover:border-fab-gold/50 hover:bg-fab-gold/10"
+      onClick={() => trackSupportClick(link.trackKey)}
+    >
+      <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${link.bgColor} ${link.color} ring-1 ring-inset ${link.ringColor}`}>
+        {link.icon}
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <p className="text-sm font-bold text-fab-text transition-colors group-hover:text-fab-gold">{link.title}</p>
+          {link.badge && (
+            <span className="rounded-full bg-emerald-400/10 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-[0.08em] text-emerald-300">
+              {link.badge}
+            </span>
+          )}
+        </div>
+        <p className="mt-1 text-xs leading-relaxed text-fab-muted">{link.description}</p>
+      </div>
+      <ExternalLink className="mt-1 h-4 w-4 shrink-0 text-fab-dim transition-colors group-hover:text-fab-gold" />
+    </a>
   );
 }
 
@@ -137,16 +234,6 @@ function XIcon() {
   return (
     <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
       <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-    </svg>
-  );
-}
-
-function ExternalIcon() {
-  return (
-    <svg className="mt-1 h-4 w-4 shrink-0 text-fab-dim" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
-      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-      <polyline points="15 3 21 3 21 9" />
-      <line x1="10" y1="14" x2="21" y2="3" />
     </svg>
   );
 }
