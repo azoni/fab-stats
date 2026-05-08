@@ -5,7 +5,6 @@ import {
   Mail,
   MessageCircle,
   Settings,
-  ShieldCheck,
   ShoppingCart,
   Star,
   Trophy,
@@ -86,7 +85,6 @@ export const userMenuLinks: UserMenuLink[] = [
   { href: "/friends", label: "Friends", icon: <Users className="w-4 h-4" /> },
   { href: "/favorites", label: "Favorites", icon: <Star className="w-4 h-4" /> },
   { href: "/settings", label: "Settings", icon: <Settings className="w-4 h-4" /> },
-  { href: "/admin", label: "Admin", adminOnly: true, icon: <ShieldCheck className="w-4 h-4" /> },
 ];
 
 export const exploreLinks: { href: string; label: string }[] = [];
