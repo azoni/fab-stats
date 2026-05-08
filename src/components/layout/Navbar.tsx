@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ImportIcon } from "@/components/icons/NavIcons";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
+import { Tooltip } from "@/components/ui/tooltip";
 import { useAuth } from "@/contexts/AuthContext";
 import { trackPageView, trackSupportClick, trackVisit, trackPresence, getOnlineStats } from "@/lib/analytics";
 import { useCommunityStats } from "@/hooks/useCommunityStats";
@@ -246,18 +247,19 @@ export function Navbar() {
                       {profile?.username && <span className="block text-[10px] text-fab-dim truncate">@{profile.username}</span>}
                     </span>
                   </Link>
-                  <Link
-                    href="/import"
-                    title="Import matches"
-                    aria-label="Import matches"
-                    className={`shrink-0 flex items-center justify-center w-9 h-9 rounded-lg border transition-colors ${
-                      pathname === "/import"
-                        ? "bg-fab-surface-hover text-fab-gold border-fab-gold/40"
-                        : "bg-fab-bg/70 text-fab-gold border-fab-border/60 hover:bg-fab-surface-hover hover:border-fab-gold/35"
-                    }`}
-                  >
-                    <ImportIcon className="w-4 h-4" />
-                  </Link>
+                  <Tooltip content="Import matches" side="top">
+                    <Link
+                      href="/import"
+                      aria-label="Import matches"
+                      className={`shrink-0 flex items-center justify-center w-9 h-9 rounded-lg border transition-colors ${
+                        pathname === "/import"
+                          ? "bg-fab-surface-hover text-fab-gold border-fab-gold/40"
+                          : "bg-fab-bg/70 text-fab-gold border-fab-border/60 hover:bg-fab-surface-hover hover:border-fab-gold/35"
+                      }`}
+                    >
+                      <ImportIcon className="w-4 h-4" />
+                    </Link>
+                  </Tooltip>
                   <NotificationBell />
                 </div>
 
