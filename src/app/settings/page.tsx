@@ -18,7 +18,8 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { THEME_OPTIONS, type ThemeName } from "@/lib/theme-config";
 import { Switch } from "@/components/ui/switch";
 import { Collapsible } from "@/components/ui/collapsible";
-import { Settings, CheckCircle, Camera, ChevronRight } from "lucide-react";
+import { PageHero } from "@/components/ui/PageHero";
+import { Camera, CheckCircle, ChevronRight, Database, Palette, Settings, Shield, UserRound } from "lucide-react";
 import { toast } from "sonner";
 
 function resizeImage(file: File, maxSize: number): Promise<string> {
@@ -51,8 +52,8 @@ function resizeImage(file: File, maxSize: number): Promise<string> {
 
 const THEME_PREVIEWS: Record<ThemeName, { bg: string; surface: string; border: string; accent: string; text: string; muted: string; radius: string }> = {
   leyline: { bg: "#08080f", surface: "#14142a", border: "#1e2050", accent: "#7b8fff", text: "#e0e4f0", muted: "#6b7094", radius: "10px" },
-  daylight: { bg: "#f5f5f5", surface: "#ffffff", border: "#e0e0e0", accent: "#2563eb", text: "#1a1a1a", muted: "#6b7280", radius: "6px" },
-  rosetta: { bg: "#12100c", surface: "#211b14", border: "#4b3d2b", accent: "#f0bd55", text: "#f8f1e6", muted: "#d4c3a8", radius: "8px" },
+  daylight: { bg: "#eef0f3", surface: "#ffffff", border: "#c5cad3", accent: "#1d4ed8", text: "#0f172a", muted: "#4b5563", radius: "8px" },
+  rosetta: { bg: "#050605", surface: "#12110f", border: "#3c3020", accent: "#f0bd55", text: "#f8f1e6", muted: "#cdbb9e", radius: "8px" },
 };
 
 function ThemePicker() {
@@ -173,6 +174,48 @@ function YearInReview() {
   );
 }
 
+function SettingsRail({ gemId, profileVisibility }: { gemId: string; profileVisibility: string }) {
+  const items = [
+    { href: "#profile", label: "Profile", icon: <UserRound className="h-4 w-4" /> },
+    { href: "#appearance", label: "Appearance", icon: <Palette className="h-4 w-4" /> },
+    { href: "#privacy", label: "Privacy", icon: <Shield className="h-4 w-4" /> },
+    { href: "#data", label: "Data", icon: <Database className="h-4 w-4" /> },
+  ];
+
+  return (
+    <aside className="space-y-3 lg:sticky lg:top-6 lg:self-start">
+      <div className="rounded-lg border border-fab-border bg-fab-surface/95 p-3">
+        <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.14em] text-fab-dim">Settings</p>
+        <nav className="space-y-1">
+          {items.map((item) => (
+            <a
+              key={item.href}
+              href={item.href}
+              className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-semibold text-fab-muted transition-colors hover:bg-fab-surface-hover hover:text-fab-text"
+            >
+              <span className="text-fab-gold/75">{item.icon}</span>
+              {item.label}
+            </a>
+          ))}
+        </nav>
+      </div>
+      <div className="rounded-lg border border-fab-border bg-fab-surface/95 p-4">
+        <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-fab-dim">Account Health</p>
+        <div className="mt-3 space-y-2 text-sm">
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-fab-muted">GEM ID</span>
+            <span className={gemId ? "font-semibold text-fab-win" : "font-semibold text-fab-loss"}>{gemId ? "Linked" : "Required"}</span>
+          </div>
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-fab-muted">Profile</span>
+            <span className="font-semibold capitalize text-fab-text">{profileVisibility}</span>
+          </div>
+        </div>
+      </div>
+    </aside>
+  );
+}
+
 export default function SettingsPage() {
   const { user, profile, signOut, isGuest, refreshProfile } = useAuth();
   const { refreshMatches } = useMatches();
@@ -274,15 +317,16 @@ export default function SettingsPage() {
 
   if (isGuest) {
     return (
-      <div className="max-w-lg mx-auto">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-8 h-8 rounded-lg bg-slate-500/10 flex items-center justify-center ring-1 ring-inset ring-slate-500/20">
-            <Settings className="w-4 h-4 text-slate-400" />
-          </div>
-          <h1 className="text-lg font-bold text-fab-text leading-tight">Settings</h1>
-        </div>
-        <ThemePicker />
+      <div className="max-w-4xl mx-auto space-y-5">
+        <PageHero
+          eyebrow="Account"
+          title="Settings"
+          description="Choose an appearance now. Create an account to save your profile, GEM ID, privacy preferences, and match data."
+          icon={<Settings className="h-4 w-4" />}
+        />
         <div className="bg-fab-surface border border-fab-border rounded-lg p-6 text-center mb-4">
+          <ThemePicker />
+          <div className="my-5 border-t border-fab-border" />
           <p className="text-fab-muted mb-4">Sign up to customize your profile, set a display name, and upload a profile photo.</p>
           <a href="/login" className="inline-block px-6 py-2.5 rounded-lg font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors">
             Sign Up
@@ -310,19 +354,25 @@ export default function SettingsPage() {
 
   return (
     <>
-    <div className="max-w-lg mx-auto">
-      <div className="flex items-center gap-3 mb-6">
-        <div className="w-8 h-8 rounded-lg bg-slate-500/10 flex items-center justify-center ring-1 ring-inset ring-slate-500/20">
-          <svg className="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281z" />
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-          </svg>
-        </div>
-        <h1 className="text-lg font-bold text-fab-text leading-tight">Settings</h1>
-      </div>
+    <div className="max-w-6xl mx-auto space-y-5">
+      <PageHero
+        eyebrow="Account"
+        title="Settings"
+        description="Manage your profile identity, required GEM ID, privacy, theme, exported data, and account controls from one calmer workspace."
+        icon={<Settings className="h-4 w-4" />}
+        metrics={[
+          { label: "Username", value: `@${profile.username}`, sub: "profile URL" },
+          { label: "GEM ID", value: gemId.trim() ? "Linked" : "Required", sub: gemId.trim() || "add before saving" },
+          { label: "Visibility", value: profileVisibility, sub: "profile privacy" },
+        ]}
+      />
+
+      <div className="grid gap-5 lg:grid-cols-[18rem_minmax(0,1fr)]">
+        <SettingsRail gemId={gemId.trim()} profileVisibility={profileVisibility} />
+        <div className="space-y-4">
 
       {/* Profile photo */}
-      <div className="bg-fab-surface border border-fab-border rounded-lg p-6 mb-4">
+      <div id="profile" className="bg-fab-surface border border-fab-border rounded-lg p-6">
         <h2 className="text-sm font-semibold text-fab-text mb-4">Profile Photo</h2>
         <div className="flex items-center gap-4">
           <button
@@ -370,7 +420,7 @@ export default function SettingsPage() {
       </div>
 
       {/* Appearance — collapsible */}
-      <div className="bg-fab-surface border border-fab-border rounded-lg mb-4">
+      <div id="appearance" className="bg-fab-surface border border-fab-border rounded-lg">
         <button onClick={() => setAppearanceOpen(!appearanceOpen)} className="flex items-center justify-between w-full px-6 py-4 text-left">
           <h2 className="text-sm font-semibold text-fab-text">Appearance</h2>
           <svg className={`w-4 h-4 text-fab-dim transition-transform duration-200 ${appearanceOpen ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -385,7 +435,7 @@ export default function SettingsPage() {
       </div>
 
       {/* Profile info */}
-      <form onSubmit={handleSave} className="bg-fab-surface border border-fab-border rounded-lg p-6 mb-4">
+      <form onSubmit={handleSave} className="bg-fab-surface border border-fab-border rounded-lg p-6">
         <h2 className="text-sm font-semibold text-fab-text mb-4">Profile Info</h2>
 
         <div className="mb-4">
@@ -468,7 +518,7 @@ export default function SettingsPage() {
 
         <div className="mb-4">
           <label htmlFor="gemId" className="block text-sm text-fab-muted mb-1">
-            GEM ID
+            GEM ID <span className="ml-1 rounded bg-fab-gold/15 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-fab-gold">Required</span>
           </label>
           <input
             id="gemId"
@@ -481,7 +531,7 @@ export default function SettingsPage() {
             placeholder="e.g. 12345678"
             className="w-full bg-fab-bg border border-fab-border text-fab-text rounded-lg px-3 py-2 focus:outline-none focus:border-fab-gold"
           />
-          <p className="text-xs text-fab-dim mt-1">Your GEM player ID. Usually filled from your first import.</p>
+          <p className="text-xs text-fab-dim mt-1">Your GEM player ID connects imports, profiles, and duplicate protection. It is usually filled from your first import.</p>
         </div>
 
         <div className="mb-4">
@@ -501,7 +551,7 @@ export default function SettingsPage() {
       </form>
 
       {/* Privacy */}
-      <div className="bg-fab-surface border border-fab-border rounded-lg p-6 mb-4">
+      <div id="privacy" className="bg-fab-surface border border-fab-border rounded-lg p-6">
         <Collapsible title={<h2 className="text-sm font-semibold text-fab-text">Privacy</h2>}>
           <div className="mt-4">
             <div>
@@ -671,7 +721,7 @@ export default function SettingsPage() {
       <YearInReview />
 
       {/* Feedback */}
-      <div className="bg-fab-surface border border-fab-border rounded-lg p-6 mb-4">
+      <div className="bg-fab-surface border border-fab-border rounded-lg p-6">
         <h2 className="text-sm font-semibold text-fab-text mb-2">Feedback</h2>
         <p className="text-xs text-fab-dim mb-3">Found a bug or have a feature idea? Let us know.</p>
         <button
@@ -683,7 +733,7 @@ export default function SettingsPage() {
       </div>
 
       {/* Changelog */}
-      <div className="bg-fab-surface border border-fab-border rounded-lg p-6 mb-4">
+      <div className="bg-fab-surface border border-fab-border rounded-lg p-6">
         <h2 className="text-sm font-semibold text-fab-text mb-2">Changelog</h2>
         <p className="text-xs text-fab-dim mb-3">See what&apos;s new, improved, and fixed.</p>
         <Link
@@ -696,7 +746,7 @@ export default function SettingsPage() {
       </div>
 
       {/* Your Data */}
-      <div className="bg-fab-surface border border-fab-border rounded-lg p-6 mb-4">
+      <div id="data" className="bg-fab-surface border border-fab-border rounded-lg p-6">
         <h2 className="text-sm font-semibold text-fab-text mb-2">Your Data</h2>
         <div className="space-y-5">
           <div>
@@ -934,6 +984,8 @@ export default function SettingsPage() {
               </div>
             )}
           </div>
+        </div>
+      </div>
         </div>
       </div>
     </div>

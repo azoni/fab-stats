@@ -19,6 +19,7 @@ import type { LeaderboardEntry, OpponentStats } from "@/types";
 import { WinRateRing } from "@/components/charts/WinRateRing";
 import { HeroImg } from "@/components/heroes/HeroImg";
 import { Tooltip } from "@/components/ui/tooltip";
+import { PageHero } from "@/components/ui/PageHero";
 
 const SITE_CREATOR = "azoni";
 
@@ -814,9 +815,35 @@ export default function LeaderboardPage() {
   const totalPages = Math.ceil(totalFiltered / PAGE_SIZE);
 
   return (
-    <div>
+    <div className="space-y-5">
+      <PageHero
+        eyebrow="Rankings"
+        title="Community leaderboards"
+        description="Competitive records, event finishes, recent form, and hero variety from public FaB Stats profiles."
+        icon={<TrophyIcon className="h-4 w-4 text-fab-gold" />}
+        actions={(
+          <div className="relative w-full sm:w-72">
+            <svg className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fab-dim pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <circle cx="11" cy="11" r="8" />
+              <path d="M21 21l-4.35-4.35" strokeLinecap="round" />
+            </svg>
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => { setSearch(e.target.value); setPage(0); }}
+              placeholder="Search players..."
+              className="w-full rounded-md border border-fab-border bg-fab-bg py-2.5 pl-9 pr-3 text-sm text-fab-text placeholder:text-fab-dim focus:border-fab-gold/50 focus:outline-none"
+            />
+          </div>
+        )}
+        metrics={[
+          { label: "Ranked", value: ranked.length, sub: `${tabLabel || "current"} board` },
+          { label: "Category", value: activeCategoryObj.label },
+          { label: "Search", value: search.trim() ? "Filtered" : "All", sub: search.trim() || "all players" },
+        ]}
+      />
       {/* ── Header ── */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6 relative overflow-hidden">
+      <div className="hidden">
         <img src="/assets/icons/podium.webp" alt="" className="absolute right-0 top-1/2 -translate-y-1/2 w-20 h-20 object-contain opacity-[0.12] pointer-events-none" />
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center ring-1 ring-inset ring-amber-500/20">

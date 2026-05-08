@@ -27,6 +27,8 @@ import { PostEventRecap } from "@/components/import/PostEventRecap";
 import { getAllMatches as getLocalMatches } from "@/lib/storage";
 import { detectTierUp, type BadgeTierInfo } from "@/lib/badge-tiers";
 import { GemAutoSync } from "@/components/import/GemAutoSync";
+import { PageHero } from "@/components/ui/PageHero";
+import { ClipboardPaste, FileText, MousePointerClick, Sparkles, UploadCloud } from "lucide-react";
 
 const BOOKMARKLET_HREF = `javascript:void((async function(){var els=document.querySelectorAll('a,button,summary,span,div,[role=button]');var n=0;for(var i=0;i<els.length;i++){var t=(els[i].textContent||'').trim();if(t.match(/View Results/i)&&t.length<30){els[i].click();n++;await new Promise(function(r){setTimeout(r,600)})}}alert('Expanded '+n+' events. Press Ctrl+A, Ctrl+C to copy.')})())`;
 
@@ -34,6 +36,39 @@ type ImportMethod = "extension" | "bookmarklet" | "paste" | "csv" | null;
 
 /** Sentinel stored in heroOverrides when user explicitly acknowledges an unknown hero */
 const ACKNOWLEDGED_UNKNOWN = "__ACKNOWLEDGED_UNKNOWN__";
+
+function ImportFlowDiagram({ activeStep }: { activeStep: number }) {
+  const steps = [
+    { label: "Pull", detail: "export from GEM" },
+    { label: "Review", detail: "check events" },
+    { label: "Fix", detail: "add heroes" },
+    { label: "Import", detail: "save history" },
+  ];
+
+  return (
+    <div className="grid gap-2 sm:grid-cols-4">
+      {steps.map((step, index) => (
+        <div
+          key={step.label}
+          data-active={index <= activeStep}
+          className="fab-step-card rounded-lg px-3 py-3"
+        >
+          <div className="flex items-center gap-2">
+            <span className={`flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-black ${
+              index <= activeStep ? "bg-fab-gold text-fab-bg" : "bg-fab-bg text-fab-dim"
+            }`}>
+              {index + 1}
+            </span>
+            <div className="min-w-0">
+              <p className="text-sm font-bold text-fab-text">{step.label}</p>
+              <p className="text-[10px] text-fab-dim">{step.detail}</p>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 interface ImportPageProps {
   shareMode?: boolean;
@@ -794,10 +829,33 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
 
   // ── Main Import Page ───────────────────────────────────────────
 
+  const flowStep = imported ? 3 : hasResults ? (missingHeroEvents.all.length > 0 ? 2 : 1) : 0;
+
   return (
-    <div>
-      <h1 className="text-2xl font-bold text-fab-gold mb-2">{shareMode ? "Share your tournament result" : "Import Your Matches"}</h1>
-      <p className="text-fab-muted text-sm mb-6">
+    <div className="mx-auto max-w-6xl space-y-6">
+      <PageHero
+        eyebrow={shareMode ? "Event Recap" : "GEM Import"}
+        title={shareMode ? "Share your tournament result" : "Import your matches"}
+        description={shareMode
+          ? "Paste your latest GEM event and turn it into a clean recap card with your record, finish, and hero."
+          : "Bring your official GEM history into FaB Stats with a guided review step, duplicate protection, and clearer hero cleanup before anything is saved."}
+        icon={<UploadCloud className="h-4 w-4" />}
+        actions={(
+          <a href="https://gem.fabtcg.com/profile/history/" target="_blank" rel="noopener noreferrer" className="inline-flex min-h-10 items-center rounded-md border border-fab-border bg-fab-bg px-4 text-sm font-semibold text-fab-text hover:border-fab-gold/40 hover:text-fab-gold">
+            Open GEM
+          </a>
+        )}
+        metrics={[
+          { label: "Best Path", value: "Extension", sub: "auto hero detection" },
+          { label: "Fallback", value: "Paste", sub: "works anywhere" },
+          { label: "Review", value: "Before Save", sub: "you stay in control" },
+          { label: "Duplicates", value: "Skipped", sub: "automatically" },
+        ]}
+      />
+      <ImportFlowDiagram activeStep={flowStep} />
+
+      <h1 className="sr-only">{shareMode ? "Share your tournament result" : "Import Your Matches"}</h1>
+      <p className="sr-only">
         {shareMode ? "Paste your latest event from " : "Pull in your match history from "}
         <a href="https://gem.fabtcg.com/profile/history/" target="_blank" rel="noopener noreferrer" className="text-fab-gold hover:text-fab-gold-light underline">
           GEM
@@ -828,6 +886,60 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
       {user && !isGuest && !hasResults && (
         <div className="mb-6">
           <GemAutoSync />
+        </div>
+      )}
+
+      {!hasResults && (
+        <div className="grid gap-3 lg:grid-cols-4">
+          {[
+            {
+              id: "extension" as ImportMethod,
+              title: "Fastest and cleanest",
+              text: "Install once, export from GEM, and keep hero data intact.",
+              icon: <Sparkles className="h-5 w-5" />,
+              badge: "Recommended",
+            },
+            {
+              id: "bookmarklet" as ImportMethod,
+              title: "Mobile quick sync",
+              text: "Set up a bookmarklet when extensions are not available.",
+              icon: <MousePointerClick className="h-5 w-5" />,
+              badge: "Mobile",
+            },
+            {
+              id: "paste" as ImportMethod,
+              title: "No install fallback",
+              text: "Copy your GEM history page and paste it for a guided review.",
+              icon: <ClipboardPaste className="h-5 w-5" />,
+              badge: "Fallback",
+            },
+            {
+              id: "csv" as ImportMethod,
+              title: "Advanced upload",
+              text: "Use a file when you already have exported match data.",
+              icon: <FileText className="h-5 w-5" />,
+              badge: "Advanced",
+            },
+          ].map((option) => (
+            <button
+              key={option.id}
+              type="button"
+              onClick={() => setMethod(option.id)}
+              className={`fab-step-card rounded-lg p-4 text-left transition-colors ${method === option.id ? "border-fab-gold/50" : "hover:border-fab-gold/30"}`}
+              data-active={method === option.id}
+            >
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <span className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-fab-border bg-fab-bg text-fab-gold">
+                  {option.icon}
+                </span>
+                <span className="rounded-full border border-fab-border bg-fab-bg px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-fab-muted">
+                  {option.badge}
+                </span>
+              </div>
+              <p className="font-bold text-fab-text">{option.title}</p>
+              <p className="mt-1 text-sm leading-5 text-fab-muted">{option.text}</p>
+            </button>
+          ))}
         </div>
       )}
 

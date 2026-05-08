@@ -4,9 +4,9 @@ import { db } from "./firebase";
 export type ThemeName = "leyline" | "rosetta" | "daylight";
 
 export const THEME_OPTIONS: { value: ThemeName; label: string; description: string }[] = [
-  { value: "leyline", label: "Leyline", description: "Arcane glass observatory, luminous and floating" },
-  { value: "daylight", label: "Daylight", description: "Clean and bright, easy on the eyes" },
-  { value: "rosetta", label: "Rosetta", description: "Polished tournament dark, warm gold and teal accents" },
+  { value: "rosetta", label: "Rosetta", description: "Default tournament dark with warm gold and teal accents" },
+  { value: "daylight", label: "Daylight", description: "Bright, high-contrast workspace for daytime use" },
+  { value: "leyline", label: "Leyline", description: "Arcane glass variant with cooler magical accents" },
 ];
 
 const DEFAULT_THEME: ThemeName = "rosetta";

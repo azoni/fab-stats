@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useFriends } from "@/hooks/useFriends";
+import { PageHero } from "@/components/ui/PageHero";
 import type { Friendship } from "@/types";
 
 function timeAgo(dateStr: string): string {
@@ -104,21 +105,26 @@ export default function FriendsPage() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-5">
-      <header className="flex flex-col gap-4 border-b border-fab-border/70 pb-5 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-fab-text">Friends</h1>
-          <p className="mt-1 text-sm text-fab-muted">
-            {friends.length} {friends.length === 1 ? "friend" : "friends"} / {incomingRequests.length} incoming / {outgoingRequests.length} sent
-          </p>
-        </div>
-        <Link
-          href="/search"
-          className="inline-flex w-fit items-center gap-2 rounded-md border border-fab-border bg-fab-surface px-3 py-2 text-sm font-semibold text-fab-text hover:border-fab-gold/50 hover:text-fab-gold"
-        >
-          <UserPlus className="h-4 w-4" />
-          Find Players
-        </Link>
-      </header>
+      <PageHero
+        eyebrow="Social"
+        title="Friends"
+        description="Keep a clean roster of players you know, jump to their profiles, and manage requests without digging through search."
+        icon={<Users className="h-4 w-4" />}
+        actions={(
+          <Link
+            href="/search"
+            className="inline-flex min-h-10 items-center gap-2 rounded-md bg-fab-gold px-4 text-sm font-semibold text-fab-bg hover:bg-fab-gold-light"
+          >
+            <UserPlus className="h-4 w-4" />
+            Find Players
+          </Link>
+        )}
+        metrics={[
+          { label: "Friends", value: friends.length, sub: "connected" },
+          { label: "Incoming", value: incomingRequests.length, sub: "waiting on you" },
+          { label: "Sent", value: outgoingRequests.length, sub: "pending" },
+        ]}
+      />
 
       <div className="grid gap-4 lg:grid-cols-[16rem_minmax(0,1fr)]">
         <aside className="space-y-3">

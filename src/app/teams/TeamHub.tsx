@@ -12,9 +12,33 @@ import type { Team, TeamInvite as TeamInviteType, LeaderboardEntry } from "@/typ
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { toast } from "sonner";
-import { Users, Shield, Globe, Plus, Settings, ChevronRight } from "lucide-react";
+import { ArrowUpRight, Globe, LayoutGrid, Plus, Search, Settings, Shield, Sparkles, Users } from "lucide-react";
 
 type Tab = "my-team" | "browse" | "create";
+
+function formatCompact(value: number) {
+  if (!Number.isFinite(value) || value <= 0) return "0";
+  return new Intl.NumberFormat("en-US", {
+    notation: value >= 10000 ? "compact" : "standard",
+    maximumFractionDigits: 1,
+  }).format(value);
+}
+
+function TeamMetric({ label, value, tone = "gold" }: { label: string; value: string; tone?: "gold" | "green" | "blue" | "rose" }) {
+  const color = {
+    gold: "text-fab-gold",
+    green: "text-emerald-300",
+    blue: "text-sky-300",
+    rose: "text-rose-300",
+  }[tone];
+
+  return (
+    <div className="rounded-xl border border-fab-border/70 bg-fab-bg/45 px-4 py-3 shadow-inner shadow-black/10">
+      <p className={`text-xl font-black leading-none ${color}`}>{value}</p>
+      <p className="mt-1 text-[10px] font-bold uppercase tracking-[0.16em] text-fab-dim">{label}</p>
+    </div>
+  );
+}
 
 export default function TeamHub() {
   const [mounted, setMounted] = useState(false);
@@ -244,6 +268,18 @@ export default function TeamHub() {
   // and the per-card join button visibility.
   const myTeamIds = useMemo(() => new Set(profile ? getProfileTeamIds(profile) : []), [profile]);
 
+  const teamStats = useMemo(() => {
+    const openTeams = allTeams.filter((t) => t.joinMode === "open").length;
+    const joinableTeams = allTeams.filter((t) => t.joinMode === "open" && !myTeamIds.has(t.id)).length;
+    const totalMembers = allTeams.reduce((sum, t) => sum + (t.memberCount ?? 0), 0);
+    return {
+      publicTeams: allTeams.length,
+      openTeams,
+      joinableTeams,
+      totalMembers,
+    };
+  }, [allTeams, myTeamIds]);
+
   const visibleTeams = useMemo(() => {
     let teams = allTeams;
     if (browseFilter === "joinable") {
@@ -275,33 +311,50 @@ export default function TeamHub() {
 
   if (!mounted || loading) {
     return (
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="animate-pulse space-y-4">
-          <div className="h-8 w-32 bg-fab-surface rounded" />
-          <div className="h-12 bg-fab-surface rounded-lg" />
-          <div className="h-64 bg-fab-surface rounded-lg" />
+      <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
+        <div className="animate-pulse space-y-5">
+          <div className="h-52 rounded-2xl border border-fab-border bg-fab-surface" />
+          <div className="h-14 rounded-xl border border-fab-border bg-fab-surface" />
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="h-32 rounded-xl border border-fab-border bg-fab-surface" />
+            ))}
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8 space-y-6">
+      <section className="relative overflow-hidden rounded-2xl border border-fab-border/80 bg-[linear-gradient(135deg,rgba(25,23,18,0.96),rgba(14,15,14,0.95)_58%,rgba(17,24,22,0.92))] p-5 shadow-[0_22px_70px_rgba(0,0,0,0.28)] sm:p-6">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_12%_0%,rgba(245,179,57,0.16),transparent_30%),radial-gradient(circle_at_86%_18%,rgba(38,211,177,0.11),transparent_28%)]" />
+        <div className="relative flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-fab-gold">Teams</h1>
-          <p className="text-sm text-fab-muted mt-1">
-            Represent your competitive squads.
+          <div className="inline-flex items-center gap-2 rounded-full border border-fab-border/80 bg-fab-bg/55 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-fab-gold">
+            <Sparkles className="h-3.5 w-3.5" />
+            Community squads
+          </div>
+          <h1 className="mt-4 text-3xl font-black text-fab-text sm:text-4xl">Teams</h1>
+          <p className="mt-3 max-w-2xl text-sm leading-6 text-fab-muted sm:text-base">
+            Browse competitive groups, join open rosters, or manage the badge that represents you on profiles and leaderboards.
             {allTeams.length > 0 && <> <span className="text-fab-text font-semibold tabular-nums">{allTeams.length}</span> public team{allTeams.length === 1 ? "" : "s"} · your primary team's badge shows on profile and leaderboard.</>}
             {allTeams.length === 0 && <> Your primary team's badge shows on your profile and leaderboard.</>}
           </p>
         </div>
         {team && (
           <Link href={`/teams/${team.nameLower}`} className="text-sm text-fab-gold hover:text-fab-gold-light transition-colors flex items-center gap-1">
-            View Team Page <ChevronRight className="w-3.5 h-3.5" />
+            View Team Page <ArrowUpRight className="w-3.5 h-3.5" />
           </Link>
         )}
-      </div>
+        </div>
+        <div className="relative mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <TeamMetric label="Public" value={formatCompact(teamStats.publicTeams)} />
+          <TeamMetric label="Members" value={formatCompact(teamStats.totalMembers)} tone="green" />
+          <TeamMetric label="Open" value={formatCompact(teamStats.openTeams)} tone="blue" />
+          <TeamMetric label="My Teams" value={formatCompact(myTeams.length)} tone="rose" />
+        </div>
+      </section>
 
       {/* Pending invites */}
       {invites.length > 0 && (
@@ -327,20 +380,20 @@ export default function TeamHub() {
       )}
 
       {/* Tabs */}
-      <div className="flex gap-1 bg-fab-surface border border-fab-border rounded-lg p-1">
+      <div className="flex gap-1 rounded-xl border border-fab-border/80 bg-fab-surface/85 p-1.5 shadow-[0_12px_36px_rgba(0,0,0,0.14)]">
         <button
           onClick={() => setActiveTab("browse")}
-          className={`flex-1 py-2 rounded-md text-sm font-medium transition-colors ${
-            activeTab === "browse" ? "bg-fab-gold/15 text-fab-gold" : "text-fab-dim hover:text-fab-muted"
+          className={`flex-1 rounded-lg px-3 py-2.5 text-sm font-bold transition-colors ${
+            activeTab === "browse" ? "bg-fab-gold/15 text-fab-gold" : "text-fab-dim hover:bg-fab-bg/60 hover:text-fab-muted"
           }`}
         >
-          <Users className="w-3.5 h-3.5 inline mr-1.5" />Browse
+          <LayoutGrid className="w-3.5 h-3.5 inline mr-1.5" />Browse
         </button>
         {hasTeam && (
           <button
             onClick={() => setActiveTab("my-team")}
-            className={`flex-1 py-2 rounded-md text-sm font-medium transition-colors ${
-              activeTab === "my-team" ? "bg-fab-gold/15 text-fab-gold" : "text-fab-dim hover:text-fab-muted"
+            className={`flex-1 rounded-lg px-3 py-2.5 text-sm font-bold transition-colors ${
+              activeTab === "my-team" ? "bg-fab-gold/15 text-fab-gold" : "text-fab-dim hover:bg-fab-bg/60 hover:text-fab-muted"
             }`}
           >
             <Settings className="w-3.5 h-3.5 inline mr-1.5" />My Teams
@@ -354,8 +407,8 @@ export default function TeamHub() {
         {user && (
           <button
             onClick={() => setActiveTab("create")}
-            className={`flex-1 py-2 rounded-md text-sm font-medium transition-colors ${
-              activeTab === "create" ? "bg-fab-gold/15 text-fab-gold" : "text-fab-dim hover:text-fab-muted"
+            className={`flex-1 rounded-lg px-3 py-2.5 text-sm font-bold transition-colors ${
+              activeTab === "create" ? "bg-fab-gold/15 text-fab-gold" : "text-fab-dim hover:bg-fab-bg/60 hover:text-fab-muted"
             }`}
           >
             <Plus className="w-3.5 h-3.5 inline mr-1.5" />Create
@@ -625,14 +678,28 @@ export default function TeamHub() {
 
       {/* ── Browse tab ── */}
       {activeTab === "browse" && (
-        <div className="space-y-4">
+        <div className="space-y-5">
+          <div className="rounded-xl border border-fab-border/80 bg-fab-surface/85 p-4 shadow-[0_16px_48px_rgba(0,0,0,0.16)]">
+            <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <h2 className="inline-flex items-center gap-2 text-sm font-black uppercase tracking-[0.12em] text-fab-text">
+                  <Search className="h-4 w-4 text-fab-gold" />
+                  Browse Teams
+                </h2>
+                <p className="text-xs text-fab-muted">
+                  Showing {visibleTeams.length} of {allTeams.length} teams. {teamStats.joinableTeams} open team{teamStats.joinableTeams === 1 ? "" : "s"} available to join.
+                </p>
+              </div>
+              <p className="text-xs font-bold text-fab-gold">{browseSort === "members" ? "Sorted by members" : browseSort === "newest" ? "Newest first" : "A to Z"}</p>
+            </div>
+          </div>
           {/* Search input — local to the team browse, separate from global SmartSearch */}
           <input
             type="text"
             value={browseQuery}
             onChange={(e) => setBrowseQuery(e.target.value)}
             placeholder="Search teams by name or description..."
-            className="w-full bg-fab-surface border border-fab-border rounded-lg px-3 py-2 text-sm text-fab-text placeholder:text-fab-dim focus:outline-none focus:border-fab-gold/50 transition-colors"
+            className="w-full rounded-xl border border-fab-border/80 bg-fab-surface/85 px-4 py-3 text-sm text-fab-text shadow-inner shadow-black/10 placeholder:text-fab-dim focus:border-fab-gold/50 focus:outline-none"
           />
 
           {/* Filter + sort row */}
@@ -647,10 +714,10 @@ export default function TeamHub() {
                 key={f.id}
                 onClick={() => setBrowseFilter(f.id)}
                 title={f.desc}
-                className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${
+                className={`rounded-lg px-3 py-1.5 text-xs font-bold transition-colors ${
                   browseFilter === f.id
-                    ? "bg-fab-gold/15 text-fab-gold border border-fab-gold/30"
-                    : "bg-fab-surface border border-fab-border text-fab-dim hover:text-fab-muted"
+                    ? "border border-fab-gold/35 bg-fab-gold/15 text-fab-gold"
+                    : "border border-fab-border/80 bg-fab-surface/85 text-fab-dim hover:text-fab-muted"
                 }`}
               >
                 {f.label}
@@ -661,7 +728,7 @@ export default function TeamHub() {
               <select
                 value={browseSort}
                 onChange={(e) => setBrowseSort(e.target.value as typeof browseSort)}
-                className="bg-fab-surface border border-fab-border rounded-md px-2 py-1.5 text-xs font-semibold text-fab-text focus:outline-none focus:border-fab-gold/50"
+                className="rounded-lg border border-fab-border/80 bg-fab-surface/85 px-2.5 py-1.5 text-xs font-bold text-fab-text focus:border-fab-gold/50 focus:outline-none"
               >
                 <option value="members">Members</option>
                 <option value="newest">Newest</option>
@@ -699,14 +766,14 @@ export default function TeamHub() {
           )}
 
           {!teamsLoading && visibleTeams.length > 0 && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
               {visibleTeams.map((t) => {
                 const alreadyMember = myTeamIds.has(t.id);
                 const canQuickJoin = !!profile && !alreadyMember && t.joinMode === "open";
                 return (
                   <div
                     key={t.id}
-                    className="bg-fab-surface border border-fab-border rounded-xl p-4 hover:border-fab-gold/30 hover:bg-fab-surface-hover transition-colors group"
+                    className="group rounded-xl border border-fab-border/80 bg-fab-surface/85 p-4 shadow-[0_12px_36px_rgba(0,0,0,0.14)] transition-colors hover:border-fab-gold/50 hover:bg-fab-gold/10"
                   >
                     <div className="flex items-start gap-3">
                       <Link href={`/teams/${t.nameLower}`} className="shrink-0">
@@ -767,13 +834,24 @@ export default function TeamHub() {
 
       {/* ── Create tab ── */}
       {activeTab === "create" && (
-        <div className="bg-fab-surface border border-fab-border rounded-xl p-6">
-          <h2 className="text-sm font-semibold text-fab-text mb-4">Create a Team</h2>
+        <div className="overflow-hidden rounded-xl border border-fab-border/80 bg-fab-surface/85 shadow-[0_16px_48px_rgba(0,0,0,0.18)]">
+          <div className="border-b border-fab-border/70 bg-fab-bg/35 p-5">
+            <div className="flex items-start gap-3">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-fab-gold/25 bg-fab-gold/10 text-fab-gold">
+                <Plus className="h-5 w-5" />
+              </span>
+              <div>
+                <h2 className="text-lg font-black text-fab-text">Create a Team</h2>
+                <p className="mt-1 text-sm text-fab-muted">Start a public or invite-only roster once you have 15 logged matches.</p>
+              </div>
+            </div>
+          </div>
+          <div className="p-5 sm:p-6">
 
           {!user && (
             <div className="text-center py-8">
               <p className="text-sm text-fab-dim mb-3">Sign in to create a team.</p>
-              <Link href="/settings" className="text-sm text-fab-gold hover:text-fab-gold-light transition-colors">Go to Settings</Link>
+              <Link href="/login" className="text-sm font-bold text-fab-gold transition-colors hover:text-fab-gold-light">Sign In</Link>
             </div>
           )}
 
@@ -826,6 +904,7 @@ export default function TeamHub() {
               </button>
             </div>
           )}
+          </div>
         </div>
       )}
     </div>

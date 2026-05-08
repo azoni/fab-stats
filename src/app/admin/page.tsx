@@ -19,6 +19,7 @@ import { loadBotAnalytics, loadDailyUsage, loadCommandLog, type BotAnalytics, ty
 import { ADMIN_BADGES } from "@/lib/badges";
 import { BackgroundCatalogManager } from "@/components/admin/BackgroundCatalogManager";
 import { EventTypeManager } from "@/components/admin/EventTypeManager";
+import { PageHero } from "@/components/ui/PageHero";
 import { GameFormat } from "@/types";
 import type { Season } from "@/types";
 import type { FeedbackItem, UserProfile } from "@/types";
@@ -276,20 +277,30 @@ export default function AdminPage() {
   const userPageEnd = Math.min(userCurrentPage * USERS_PAGE_SIZE, filteredUsers.length);
 
   return (
-    <div className="max-w-5xl mx-auto">
-      <div className="flex items-center justify-between mb-4">
-        <h1 className="text-2xl font-bold text-fab-gold">Admin Dashboard</h1>
-        <button
-          onClick={fetchData}
-          disabled={fetching}
-          className="px-4 py-2 rounded-lg text-sm font-semibold bg-fab-surface border border-fab-border text-fab-text hover:border-fab-gold transition-colors disabled:opacity-50"
-        >
-          {fetching ? "Loading..." : "Refresh"}
-        </button>
-      </div>
+    <div className="max-w-6xl mx-auto space-y-5">
+      <PageHero
+        eyebrow="Operations"
+        title="Admin Dashboard"
+        description="A lighter control room for users, content, feedback, analytics, and maintenance jobs."
+        actions={(
+          <button
+            onClick={fetchData}
+            disabled={fetching}
+            className="inline-flex min-h-10 items-center rounded-md border border-fab-border bg-fab-bg px-4 text-sm font-semibold text-fab-text hover:border-fab-gold/40 disabled:opacity-50"
+          >
+            {fetching ? "Loading..." : "Refresh"}
+          </button>
+        )}
+        metrics={data ? [
+          { label: "Users", value: data.totalUsers },
+          { label: "Matches", value: data.totalMatches.toLocaleString() },
+          { label: "Feedback", value: feedback.filter((f) => f.status === "new").length, sub: "new" },
+          { label: "Tab", value: activeTab },
+        ] : undefined}
+      />
 
       {/* Tab Navigation */}
-      <div className="flex gap-1 mb-6 overflow-x-auto pb-1">
+      <div className="flex gap-1 overflow-x-auto rounded-lg border border-fab-border bg-fab-surface/90 p-1">
         {([
           { id: "overview", label: "Overview" },
           { id: "users", label: "Users" },

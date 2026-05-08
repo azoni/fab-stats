@@ -39,7 +39,7 @@ export function ProfileSheet({ open, onClose }: ProfileSheetProps) {
   return (
     <div
       role="dialog"
-      aria-modal={false}
+      aria-modal={true}
       aria-label="Profile menu"
       className="md:hidden fixed inset-x-0 top-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom))] z-[45] flex flex-col bg-fab-bg pt-[env(safe-area-inset-top)] shadow-2xl"
     >
@@ -56,7 +56,7 @@ export function ProfileSheet({ open, onClose }: ProfileSheetProps) {
       </header>
 
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
-        <div className="flex items-center gap-3 p-3 bg-fab-surface border border-fab-border rounded-lg">
+        <div className="fab-page-header flex items-center gap-3 p-3 bg-fab-surface border border-fab-border rounded-lg">
           {profile?.photoUrl ? (
             <img src={profile.photoUrl} alt="" className="w-12 h-12 rounded-full object-cover" />
           ) : (

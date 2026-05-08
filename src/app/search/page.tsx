@@ -1,12 +1,14 @@
 "use client";
-import { Suspense, useState, useEffect } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { Search as SearchIcon, Users } from "lucide-react";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { PageHero } from "@/components/ui/PageHero";
 import { searchUsernames, getProfile } from "@/lib/firestore-storage";
 import { searchTeams, getTeam } from "@/lib/teams";
 import { playerHref } from "@/lib/constants";
 import { useAuth } from "@/contexts/AuthContext";
-import { Users } from "lucide-react";
 import type { UserProfile, Team } from "@/types";
 
 interface SearchResult {
@@ -31,12 +33,9 @@ export default function SearchPage() {
 
 function SearchSkeleton() {
   return (
-    <div>
-      <div className="h-8 w-48 bg-fab-surface rounded animate-pulse mb-6" />
-      <div className="flex gap-3 mb-8">
-        <div className="flex-1 h-11 bg-fab-surface border border-fab-border rounded-lg animate-pulse" />
-        <div className="w-24 h-11 bg-fab-surface rounded-lg animate-pulse" />
-      </div>
+    <div className="mx-auto max-w-5xl space-y-5">
+      <div className="h-40 rounded-lg border border-fab-border bg-fab-surface animate-pulse" />
+      <div className="h-16 rounded-lg border border-fab-border bg-fab-surface animate-pulse" />
     </div>
   );
 }
@@ -71,7 +70,7 @@ function SearchContent() {
       usernames.map(async (u) => ({
         username: u.username,
         profile: await getProfile(u.userId),
-      }))
+      })),
     );
 
     const filtered = withProfiles.filter((r) => {
@@ -84,7 +83,7 @@ function SearchContent() {
       teams.map(async (t) => ({
         ...t,
         team: await getTeam(t.teamId),
-      }))
+      })),
     );
 
     if (autoRedirect && filtered.length === 1 && teamsWithData.length === 0) {
@@ -108,6 +107,7 @@ function SearchContent() {
     if (query === initialQuery) return;
     if (!query.trim()) {
       setResults([]);
+      setTeamResults([]);
       setSearched(false);
       return;
     }
@@ -121,132 +121,143 @@ function SearchContent() {
     doSearch(query);
   }
 
-  return (
-    <div>
-      <div className="flex items-center gap-3 mb-6">
-        <div className="w-8 h-8 rounded-lg bg-cyan-500/10 flex items-center justify-center ring-1 ring-inset ring-cyan-500/20">
-          <svg className="w-4 h-4 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
-          </svg>
-        </div>
-        <div>
-          <h1 className="text-lg font-bold text-fab-text leading-tight">Search</h1>
-          <p className="text-xs text-fab-muted leading-tight">Find players or teams</p>
-        </div>
-      </div>
+  const resultCount = results.length + teamResults.length;
 
-      <form onSubmit={handleSearch} className="flex gap-3 mb-8">
-        <input
-          type="text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search by name or username..."
-          className="flex-1 bg-fab-surface border border-fab-border text-fab-text rounded-lg px-4 py-2.5 focus:outline-none focus:border-fab-gold"
-        />
+  return (
+    <div className="mx-auto max-w-5xl space-y-5">
+      <PageHero
+        eyebrow="Discover"
+        title="Find players and teams"
+        description="Search public profiles, team pages, and community records without guessing which section they live in."
+        icon={<SearchIcon className="h-4 w-4" />}
+        metrics={[
+          { label: "Players", value: results.length, sub: searched ? "matching search" : "ready" },
+          { label: "Teams", value: teamResults.length, sub: searched ? "matching search" : "ready" },
+          { label: "Results", value: resultCount, sub: loading ? "searching" : "current view" },
+        ]}
+      />
+
+      <form onSubmit={handleSearch} className="rounded-lg border border-fab-border bg-fab-surface/95 p-3 sm:flex sm:gap-3">
+        <div className="relative flex-1">
+          <SearchIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fab-dim" />
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search by player, username, or team..."
+            className="w-full rounded-md border border-fab-border bg-fab-bg px-10 py-3 text-sm text-fab-text placeholder:text-fab-dim focus:border-fab-gold focus:outline-none"
+          />
+          {query && (
+            <button
+              type="button"
+              onClick={() => setQuery("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-fab-dim transition-colors hover:text-fab-text"
+              aria-label="Clear search"
+            >
+              &times;
+            </button>
+          )}
+        </div>
         <button
           type="submit"
           disabled={loading || !query.trim()}
-          className="px-6 py-2.5 rounded-lg font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors disabled:opacity-50"
+          className="mt-3 min-h-11 rounded-md bg-fab-gold px-6 text-sm font-semibold text-fab-bg transition-colors hover:bg-fab-gold-light disabled:opacity-50 sm:mt-0"
         >
           {loading ? "..." : "Search"}
         </button>
       </form>
 
-      {/* Search results */}
       {loading && (
-        <div className="space-y-3">
-          {[...Array(3)].map((_, i) => (
-            <div key={i} className="bg-fab-surface border border-fab-border rounded-lg p-4 h-16 animate-pulse" />
+        <div className="grid gap-2 sm:grid-cols-2">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="h-20 rounded-lg border border-fab-border bg-fab-surface p-4 animate-pulse" />
           ))}
         </div>
       )}
 
       {!loading && searched && results.length === 0 && teamResults.length === 0 && (
-        <div className="text-center py-16 text-fab-dim">
-          <p className="text-lg mb-1">No results found</p>
-          <p className="text-sm">No players or teams matching &quot;{query}&quot; — try a different search.</p>
-        </div>
+        <EmptyState
+          icon={<SearchIcon className="h-5 w-5" />}
+          title="No results found"
+          description={`No players or teams matching "${query}". Try a username, display name, or team name.`}
+        />
       )}
 
-      {/* Team results */}
       {!loading && teamResults.length > 0 && (
-        <div className="mb-6">
-          <h2 className="text-xs font-semibold text-fab-muted uppercase tracking-wider mb-2">Teams</h2>
-          <div className="space-y-2">
+        <section>
+          <h2 className="mb-2 text-xs font-bold uppercase tracking-[0.14em] text-fab-muted">Teams</h2>
+          <div className="grid gap-2 sm:grid-cols-2">
             {teamResults.map((t) => (
               <Link
                 key={t.teamId}
                 href={`/teams/${t.nameLower}`}
-                className="block bg-fab-surface border border-fab-border rounded-lg p-4 hover:bg-fab-surface-hover transition-colors"
+                className="block rounded-lg border border-fab-border bg-fab-surface/95 p-4 transition-colors hover:border-fab-gold/30 hover:bg-fab-surface-hover"
               >
                 <div className="flex items-center gap-3">
                   {t.team?.iconUrl ? (
-                    <img src={t.team.iconUrl} alt="" className="w-10 h-10 rounded-lg object-cover border border-fab-border" />
+                    <img src={t.team.iconUrl} alt="" className="h-11 w-11 rounded-lg border border-fab-border object-cover" />
                   ) : (
-                    <div className="w-10 h-10 rounded-lg bg-amber-500/15 flex items-center justify-center">
-                      <Users className="w-5 h-5 text-amber-400" />
+                    <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-amber-500/15">
+                      <Users className="h-5 w-5 text-amber-400" />
                     </div>
                   )}
-                  <div>
-                    <p className="font-semibold text-fab-text">{t.name}</p>
+                  <div className="min-w-0">
+                    <p className="truncate font-semibold text-fab-text">{t.name}</p>
                     <div className="flex items-center gap-2 text-sm text-fab-dim">
                       {t.team && <span>{t.team.memberCount} member{t.team.memberCount !== 1 ? "s" : ""}</span>}
-                      {t.team && <span className="text-[10px] px-1.5 py-0.5 rounded bg-fab-bg border border-fab-border">{t.team.joinMode === "open" ? "Open" : "Invite Only"}</span>}
+                      {t.team && <span className="rounded border border-fab-border bg-fab-bg px-1.5 py-0.5 text-[10px]">{t.team.joinMode === "open" ? "Open" : "Invite Only"}</span>}
                     </div>
                   </div>
                 </div>
               </Link>
             ))}
           </div>
-        </div>
+        </section>
       )}
 
-      {/* Player results */}
       {!loading && results.length > 0 && (
-        <div>
-          {teamResults.length > 0 && <h2 className="text-xs font-semibold text-fab-muted uppercase tracking-wider mb-2">Players</h2>}
-          <div className="space-y-2">
-          {results.map((r) => (
-            <Link
-              key={r.username}
-              href={playerHref(r.username)}
-              className="block bg-fab-surface border border-fab-border rounded-lg p-4 hover:bg-fab-surface-hover transition-colors"
-            >
-              <div className="flex items-center gap-3">
-                {r.profile?.photoUrl ? (
-                  <img src={r.profile.photoUrl} alt="" className="w-10 h-10 rounded-full" loading="lazy" />
-                ) : (
-                  <div className="w-10 h-10 rounded-full bg-fab-gold/20 flex items-center justify-center text-fab-gold font-bold">
-                    {(r.profile?.displayName || r.username).charAt(0).toUpperCase()}
-                  </div>
-                )}
-                <div>
-                  <p className="font-semibold text-fab-text">{r.profile?.displayName || r.username}</p>
-                  <div className="flex items-center gap-2">
-                    <p className="text-sm text-fab-dim">@{r.username}</p>
-                    {!r.profile?.isPublic && <span className="text-[9px] px-1.5 py-0.5 rounded bg-fab-dim/10 text-fab-dim">Private</span>}
-                    {r.profile?.firstName && (
-                      <p className="text-sm text-fab-muted">
-                        {r.profile.firstName}{r.profile.lastName ? ` ${r.profile.lastName}` : ""}
-                      </p>
-                    )}
+        <section>
+          {teamResults.length > 0 && <h2 className="mb-2 text-xs font-bold uppercase tracking-[0.14em] text-fab-muted">Players</h2>}
+          <div className="grid gap-2 sm:grid-cols-2">
+            {results.map((r) => (
+              <Link
+                key={r.username}
+                href={playerHref(r.username)}
+                className="block rounded-lg border border-fab-border bg-fab-surface/95 p-4 transition-colors hover:border-fab-gold/30 hover:bg-fab-surface-hover"
+              >
+                <div className="flex items-center gap-3">
+                  {r.profile?.photoUrl ? (
+                    <img src={r.profile.photoUrl} alt="" className="h-11 w-11 rounded-full object-cover" loading="lazy" />
+                  ) : (
+                    <div className="flex h-11 w-11 items-center justify-center rounded-full bg-fab-gold/20 font-bold text-fab-gold">
+                      {(r.profile?.displayName || r.username).charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                  <div className="min-w-0">
+                    <p className="truncate font-semibold text-fab-text">{r.profile?.displayName || r.username}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm text-fab-dim">@{r.username}</p>
+                      {!r.profile?.isPublic && <span className="rounded bg-fab-dim/10 px-1.5 py-0.5 text-[9px] text-fab-dim">Private</span>}
+                      {r.profile?.firstName && (
+                        <p className="truncate text-sm text-fab-muted">
+                          {r.profile.firstName}{r.profile.lastName ? ` ${r.profile.lastName}` : ""}
+                        </p>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            </Link>
-          ))}
+              </Link>
+            ))}
           </div>
-        </div>
+        </section>
       )}
 
-      {/* Prompt when no search is active */}
       {!query.trim() && !searched && (
-        <div className="text-center py-16 text-fab-dim">
-          <svg className="w-12 h-12 mx-auto mb-3 text-fab-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
-          </svg>
-          <p className="text-sm">Type a name or username above to find players.</p>
-        </div>
+        <EmptyState
+          icon={<SearchIcon className="h-5 w-5" />}
+          title="Start with a name"
+          description="Type a display name, username, or team name to search across FaB Stats."
+        />
       )}
     </div>
   );

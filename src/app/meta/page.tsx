@@ -15,6 +15,7 @@ import { MiniDonut, DONUT_COLORS } from "@/components/charts/MiniDonut";
 import { WinRateRing } from "@/components/charts/WinRateRing";
 import { SegmentedBar } from "@/components/charts/SegmentedBar";
 import { StatCard } from "@/components/ui/StatCard";
+import { FilterToolbar, PageHero } from "@/components/ui/PageHero";
 import { Users, Swords, Shield, Trophy, Grid3X3, CalendarDays } from "lucide-react";
 
 type SortKey = "usage" | "winrate";
@@ -186,8 +187,20 @@ export default function MetaPage() {
   }
 
   return (
-    <div>
-      <div className="flex items-center gap-3 mb-6 relative overflow-hidden">
+    <div className="space-y-5">
+      <PageHero
+        eyebrow="Community Meta"
+        title={activeSeason ? activeSeason.name : "Read the room before you register"}
+        description={`Aggregated from ${overview.totalPlayers} public player${overview.totalPlayers === 1 ? "" : "s"} and ${overview.totalMatches.toLocaleString()} matches. Use filters to compare hero popularity, conversion, and matchup confidence.`}
+        icon={<Shield className="h-4 w-4" />}
+        metrics={[
+          { label: "Players", value: overview.totalPlayers },
+          { label: "Matches", value: overview.totalMatches.toLocaleString() },
+          { label: "Events", value: overview.totalEvents },
+          { label: "Heroes", value: overview.totalHeroes },
+        ]}
+      />
+      <div className="hidden">
         <img src="/assets/icons/globe.webp" alt="" className="absolute right-0 top-1/2 -translate-y-1/2 w-20 h-20 object-contain opacity-[0.12] pointer-events-none" />
         <div className="w-8 h-8 rounded-lg bg-teal-500/10 flex items-center justify-center ring-1 ring-inset ring-teal-500/20">
           <svg className="w-4 h-4 text-teal-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -532,7 +545,7 @@ export default function MetaPage() {
       )}
 
       {/* Filters + Sort + Search */}
-      <div className="flex flex-wrap items-center gap-2 mb-4">
+      <FilterToolbar className="mb-4">
         <input
           type="text"
           value={search}
@@ -610,7 +623,7 @@ export default function MetaPage() {
             </button>
           ))}
         </div>
-      </div>
+      </FilterToolbar>
 
       {/* Hero List */}
       {sortedHeroes.length === 0 ? (
