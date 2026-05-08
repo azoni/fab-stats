@@ -358,22 +358,26 @@ export default function MetaPage() {
         <StatCard label="Total Matches" value={overview.totalMatches.toLocaleString()} icon={<Swords className="w-3.5 h-3.5" />} />
         <StatCard label="Total Events" value={overview.totalEvents} icon={<CalendarDays className="w-3.5 h-3.5" />} />
         <StatCard label="Heroes Played" value={overview.totalHeroes} icon={<Shield className="w-3.5 h-3.5" />} />
-        <StatCard
-          label="Most Played"
-          value={topHero?.hero || "—"}
-          sub={topHero ? `${topHero.uniqueEvents} events` : undefined}
-          icon={<Trophy className="w-3.5 h-3.5" />}
-          chart={topHero ? (
-            <MiniDonut
-              segments={[
-                { value: topHero.metaShare, color: "var(--color-fab-gold)" },
-                { value: 100 - topHero.metaShare, color: "var(--color-fab-border)" },
-              ]}
-              size={36}
-              strokeWidth={5}
-            />
-          ) : undefined}
-        />
+        {/* Custom Most Played tile — hero portrait + truncated single-line
+            name so long heroes like "Ira, Crimson Haze" don't wrap to three
+            lines like they did with the StatCard's text-lg value slot. */}
+        <div className="fab-card bg-fab-surface/95 border border-fab-border rounded-lg px-3 py-2.5">
+          <div className="flex items-center gap-1.5 mb-1">
+            <Trophy className="w-3.5 h-3.5 text-fab-dim" />
+            <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-fab-muted">Most Played</p>
+          </div>
+          {topHero ? (
+            <div className="flex items-center gap-2.5">
+              <HeroImg name={topHero.hero} size="md" />
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-bold text-fab-text truncate" title={topHero.hero}>{topHero.hero}</p>
+                <p className="text-[10px] text-fab-dim tabular-nums">{topHero.uniqueEvents} events · {topHero.metaShare.toFixed(0)}%</p>
+              </div>
+            </div>
+          ) : (
+            <p className="text-sm text-fab-dim">—</p>
+          )}
+        </div>
       </div>
 
       {/* Overview share modal */}

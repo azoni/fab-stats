@@ -17,6 +17,8 @@ import { loadAllKudosCounts, loadAllKudosGivenCounts, KUDOS_TYPES, type KudosCou
 import { loadAllGameStats, type GameLeaderboardEntry } from "@/lib/game-leaderboard";
 import type { LeaderboardEntry, OpponentStats } from "@/types";
 import { WinRateRing } from "@/components/charts/WinRateRing";
+import { HeroImg } from "@/components/heroes/HeroImg";
+import { Tooltip } from "@/components/ui/tooltip";
 
 const SITE_CREATOR = "azoni";
 
@@ -842,19 +844,22 @@ export default function LeaderboardPage() {
         </div>
       </div>
 
-      {/* ── Category pills ── */}
-      <div className="flex gap-1.5 overflow-x-auto pb-2 mb-3 scrollbar-hide">
+      {/* ── Category tabs — flat segmented control with active bottom border. */}
+      <div className="flex gap-0 overflow-x-auto mb-3 border-b border-fab-border/70 scrollbar-hide">
         {categories.map((cat) => (
           <button
             key={cat.id}
             onClick={() => selectCategory(cat.id)}
-            className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${
+            className={`relative px-4 py-2.5 text-sm font-semibold whitespace-nowrap transition-colors ${
               activeCategory === cat.id
-                ? "bg-fab-gold text-fab-bg"
-                : "bg-fab-surface text-fab-muted hover:text-fab-text border border-fab-border"
+                ? "text-fab-gold"
+                : "text-fab-muted hover:text-fab-text"
             }`}
           >
             {cat.label}
+            {activeCategory === cat.id && (
+              <span className="absolute -bottom-px inset-x-3 h-[2px] bg-fab-gold rounded-t" />
+            )}
           </button>
         ))}
       </div>
@@ -883,10 +888,21 @@ export default function LeaderboardPage() {
         </div>
       )}
 
-      {/* ── Description ── */}
-      <p className="text-fab-muted text-sm mb-5">
-        {tabMap[activeTab]?.description}
-      </p>
+      {/* ── Description + min-matches gate badge ── */}
+      {(() => {
+        const desc = tabMap[activeTab]?.description || "";
+        const minMatchMatch = desc.match(/at least (\d+) matches/i);
+        return (
+          <div className="mb-5 flex flex-wrap items-center gap-2">
+            <p className="text-fab-muted text-sm">{desc}</p>
+            {minMatchMatch && (
+              <span className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-fab-gold/15 text-fab-gold border border-fab-gold/30">
+                Min {minMatchMatch[1]} matches
+              </span>
+            )}
+          </div>
+        );
+      })()}
 
       {/* ── My Rankings ── */}
       {user && myRanks.length > 0 && !loading && (
@@ -1225,9 +1241,11 @@ function LeaderboardRow({
           <p className="font-semibold text-fab-text text-sm truncate">{entry.displayName}</p>
           <HeroShieldBadge pct={entry.heroCompletionPct ?? 0} />
           {entry.topHero && entry.topHero !== "—" && entry.topHero !== "Unknown" && (
-            <span className="hidden sm:inline text-[10px] px-1.5 py-0.5 rounded bg-fab-bg text-fab-dim border border-fab-border/50 truncate max-w-[100px]">
-              {entry.topHero}
-            </span>
+            <Tooltip content={entry.topHero} side="top">
+              <span className="hidden sm:inline-flex shrink-0 cursor-help">
+                <HeroImg name={entry.topHero} size="sm" />
+              </span>
+            </Tooltip>
           )}
         </div>
         <div className="flex items-center gap-2">
