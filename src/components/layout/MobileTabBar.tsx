@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Home as HomeIcon, Globe, Users, User as UserIcon } from "lucide-react";
+import { User as UserIcon } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { ProfileSheet } from "./ProfileSheet";
 
@@ -14,23 +14,27 @@ interface TabSpec {
   match: (pathname: string) => boolean;
 }
 
+function NavAssetIcon({ name }: { name: "home" | "meta" | "community" }) {
+  return <img src={`/nav-icons/nav-${name}.png`} alt="" aria-hidden="true" className="w-5 h-5 object-contain" />;
+}
+
 const tabs: TabSpec[] = [
   {
     href: "/",
     label: "Home",
-    icon: <HomeIcon className="w-5 h-5" />,
+    icon: <NavAssetIcon name="home" />,
     match: (p) => p === "/" || p.startsWith("/matches") || p.startsWith("/events") || p.startsWith("/opponents") || p.startsWith("/trends") || p.startsWith("/tournament-stats") || p.startsWith("/wrapped"),
   },
   {
     href: "/meta",
     label: "Meta",
-    icon: <Globe className="w-5 h-5" />,
+    icon: <NavAssetIcon name="meta" />,
     match: (p) => p.startsWith("/meta") || p.startsWith("/leaderboard") || p.startsWith("/matchups") || p.startsWith("/compare"),
   },
   {
     href: "/community",
     label: "Community",
-    icon: <Users className="w-5 h-5" />,
+    icon: <NavAssetIcon name="community" />,
     match: (p) => p.startsWith("/community") || p.startsWith("/team") || p.startsWith("/group") || p.startsWith("/friends") || p.startsWith("/search") || p.startsWith("/feed") || p.startsWith("/player"),
   },
 ];

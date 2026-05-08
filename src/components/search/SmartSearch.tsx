@@ -1,15 +1,18 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { searchUsernames } from "@/lib/firestore-storage";
-import { searchTeams } from "@/lib/teams";
+import { getProfile, searchUsernames } from "@/lib/firestore-storage";
+import { getTeam, searchTeams } from "@/lib/teams";
 import { Search, X, Users } from "lucide-react";
 import Link from "next/link";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface PlayerResult {
   type: "player";
   username: string;
   userId: string;
+  displayName?: string;
+  photoUrl?: string;
 }
 
 interface TeamResult {
@@ -17,6 +20,8 @@ interface TeamResult {
   teamId: string;
   name: string;
   nameLower: string;
+  iconUrl?: string;
+  memberCount?: number;
 }
 
 type SearchResult = PlayerResult | TeamResult;
@@ -29,6 +34,7 @@ interface SmartSearchProps {
 
 export function SmartSearch({ placeholder = "Search players or teams...", className = "", autoFocus = false }: SmartSearchProps) {
   const router = useRouter();
+  const { user, isAdmin } = useAuth();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [searching, setSearching] = useState(false);
@@ -57,6 +63,7 @@ export function SmartSearch({ placeholder = "Search players or teams...", classN
       return;
     }
 
+    let cancelled = false;
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(async () => {
       setSearching(true);
@@ -66,23 +73,58 @@ export function SmartSearch({ placeholder = "Search players or teams...", classN
           searchTeams(query.trim(), 5).catch(() => []),
         ]);
 
+        const [playersWithProfiles, teamsWithData] = await Promise.all([
+          Promise.all(
+            players.map(async (p): Promise<PlayerResult | null> => {
+              const profile = await getProfile(p.userId).catch(() => null);
+              if (profile && !isAdmin && profile.uid !== user?.uid) {
+                if (!profile.isPublic) return null;
+                if (profile.hideFromGuests && !user) return null;
+              }
+              return {
+                type: "player",
+                username: p.username,
+                userId: p.userId,
+                displayName: profile?.displayName,
+                photoUrl: profile?.photoUrl,
+              };
+            }),
+          ),
+          Promise.all(
+            teams.map(async (t): Promise<TeamResult> => {
+              const team = await getTeam(t.teamId).catch(() => null);
+              return {
+                type: "team",
+                ...t,
+                iconUrl: team?.iconThumbUrl || team?.iconUrl,
+                memberCount: team?.memberCount,
+              };
+            }),
+          ),
+        ]);
+
         const combined: SearchResult[] = [
-          ...teams.map((t): TeamResult => ({ type: "team", ...t })),
-          ...players.map((p): PlayerResult => ({ type: "player", ...p })),
+          ...teamsWithData,
+          ...playersWithProfiles.filter((p): p is PlayerResult => Boolean(p)),
         ];
 
+        if (cancelled) return;
         setResults(combined);
         setIsOpen(combined.length > 0);
         setHighlighted(-1);
       } catch (err) {
+        if (cancelled) return;
         console.error("[SmartSearch] Search failed:", err);
         setResults([]);
       }
-      setSearching(false);
+      if (!cancelled) setSearching(false);
     }, 200);
 
-    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
-  }, [query]);
+    return () => {
+      cancelled = true;
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [query, isAdmin, user]);
 
   function navigate(result: SearchResult) {
     if (result.type === "player") {
@@ -170,12 +212,18 @@ export function SmartSearch({ placeholder = "Search players or teams...", classN
                     isHighlighted ? "bg-fab-gold/10" : "hover:bg-fab-surface-hover"
                   }`}
                 >
-                  <div className="w-8 h-8 rounded-lg bg-amber-500/15 flex items-center justify-center shrink-0">
-                    <Users className="w-4 h-4 text-amber-400" />
-                  </div>
+                  {r.iconUrl ? (
+                    <img src={r.iconUrl} alt="" className="w-8 h-8 rounded-lg object-cover border border-fab-border shrink-0" loading="lazy" />
+                  ) : (
+                    <div className="w-8 h-8 rounded-lg bg-amber-500/15 flex items-center justify-center shrink-0">
+                      <Users className="w-4 h-4 text-amber-400" />
+                    </div>
+                  )}
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-fab-text truncate">{r.name}</p>
-                    <p className="text-[10px] text-fab-dim">Team</p>
+                    <p className="text-[10px] text-fab-dim">
+                      Team{typeof r.memberCount === "number" ? ` - ${r.memberCount} member${r.memberCount === 1 ? "" : "s"}` : ""}
+                    </p>
                   </div>
                 </Link>
               );
@@ -190,12 +238,16 @@ export function SmartSearch({ placeholder = "Search players or teams...", classN
                   isHighlighted ? "bg-fab-gold/10" : "hover:bg-fab-surface-hover"
                 }`}
               >
-                <div className="w-8 h-8 rounded-full bg-fab-gold/15 flex items-center justify-center shrink-0">
-                  <span className="text-xs font-bold text-fab-gold">{r.username.charAt(0).toUpperCase()}</span>
-                </div>
+                {r.photoUrl ? (
+                  <img src={r.photoUrl} alt="" className="w-8 h-8 rounded-full object-cover border border-fab-border shrink-0" loading="lazy" />
+                ) : (
+                  <div className="w-8 h-8 rounded-full bg-fab-gold/15 flex items-center justify-center shrink-0">
+                    <span className="text-xs font-bold text-fab-gold">{(r.displayName || r.username).charAt(0).toUpperCase()}</span>
+                  </div>
+                )}
                 <div className="min-w-0">
-                  <p className="text-sm font-medium text-fab-text truncate">@{r.username}</p>
-                  <p className="text-[10px] text-fab-dim">Player</p>
+                  <p className="text-sm font-medium text-fab-text truncate">{r.displayName || `@${r.username}`}</p>
+                  <p className="text-[10px] text-fab-dim">@{r.username}</p>
                 </div>
               </Link>
             );
