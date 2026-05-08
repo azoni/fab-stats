@@ -43,6 +43,17 @@
   to = "/player/_.html"
   status = 200
 
+# /community renamed to /activity — preserve old links/bookmarks.
+[[redirects]]
+  from = "/community"
+  to = "/activity"
+  status = 301
+
+[[redirects]]
+  from = "/community/*"
+  to = "/activity/:splat"
+  status = 301
+
 # Articles UI was retired — redirect any inbound article URLs to home.
 # (Firestore article data is preserved; only the public-facing UI is gone.)
 [[redirects]]
