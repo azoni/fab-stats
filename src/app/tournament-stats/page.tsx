@@ -135,9 +135,45 @@ export default function TournamentStatsPage() {
 
   if (!user) {
     return (
-      <div className="text-center py-16 text-fab-muted">
-        <p className="text-lg mb-2">Sign in to view your tournament stats</p>
-        <Link href="/login" className="text-fab-gold hover:underline">Sign in</Link>
+      <div className="space-y-6 py-4">
+        {/* Header */}
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-lg bg-amber-500/10 flex items-center justify-center ring-1 ring-inset ring-amber-500/20">
+            <svg className="w-5 h-5 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 18.75h-9m9 0a3 3 0 013 3h-15a3 3 0 013-3m9 0v-3.375c0-.621-.503-1.125-1.125-1.125h-.871M7.5 18.75v-3.375c0-.621.504-1.125 1.125-1.125h.872m5.007 0H9.497m5.007 0a7.454 7.454 0 01-.982-3.172M9.497 14.25a7.454 7.454 0 00.981-3.172M5.25 4.236c-.982.143-1.954.317-2.916.52A6.003 6.003 0 007.73 9.728M5.25 4.236V4.5c0 2.108.966 3.99 2.48 5.228M5.25 4.236V2.721C7.456 2.41 9.71 2.25 12 2.25c2.291 0 4.545.16 6.75.47v1.516M18.75 4.236c.982.143 1.954.317 2.916.52A6.003 6.003 0 0016.27 9.728M18.75 4.236V4.5c0 2.108-.966 3.99-2.48 5.228m0 0a6.023 6.023 0 01-2.77.704 6.023 6.023 0 01-2.77-.704" />
+            </svg>
+          </div>
+          <div>
+            <h1 className="text-lg font-bold text-fab-text leading-tight">Tournament Stats</h1>
+            <p className="text-xs text-fab-muted leading-tight">Sign in to track your own tournament performance.</p>
+          </div>
+        </div>
+
+        {/* Preview — what you'd see */}
+        <div className="bg-fab-surface border border-fab-border rounded-xl p-5">
+          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-amber-400/80 mb-2">What's tracked</p>
+          <h2 className="text-base font-bold text-fab-text mb-3">Your tournament performance, all in one place</h2>
+          <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-sm text-fab-muted mb-5">
+            <li className="flex gap-2"><span className="text-fab-gold shrink-0">•</span><span>Round-by-round win rates and streak runs</span></li>
+            <li className="flex gap-2"><span className="text-fab-gold shrink-0">•</span><span>Top 8 finishes broken down by event tier</span></li>
+            <li className="flex gap-2"><span className="text-fab-gold shrink-0">•</span><span>Hero performance per format and event type</span></li>
+            <li className="flex gap-2"><span className="text-fab-gold shrink-0">•</span><span>Submarines, comebacks, undefeated swiss runs</span></li>
+            <li className="flex gap-2"><span className="text-fab-gold shrink-0">•</span><span>R1 win rate, after-bye record, closer record</span></li>
+            <li className="flex gap-2"><span className="text-fab-gold shrink-0">•</span><span>Event timeline + monthly volume chart</span></li>
+          </ul>
+          <div className="flex flex-wrap gap-2">
+            <Link href="/login" className="inline-flex items-center justify-center px-5 py-2.5 rounded-lg bg-fab-gold text-fab-bg text-sm font-bold hover:bg-fab-gold-light transition-colors">
+              Sign in
+            </Link>
+            <Link href="/leaderboard" className="inline-flex items-center justify-center px-5 py-2.5 rounded-lg border border-fab-border text-fab-text text-sm font-semibold hover:border-fab-gold/40 hover:bg-fab-surface-hover transition-colors">
+              Browse top players
+            </Link>
+          </div>
+        </div>
+
+        <p className="text-xs text-fab-dim text-center">
+          Want a peek? Open any public profile from the <Link href="/leaderboard" className="text-fab-gold hover:text-fab-gold-light">leaderboard</Link> — every player has their own tournament stats live there.
+        </p>
       </div>
     );
   }
