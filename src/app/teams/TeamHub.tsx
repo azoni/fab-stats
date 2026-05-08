@@ -54,6 +54,7 @@ export default function TeamHub() {
   const [teamsLoading, setTeamsLoading] = useState(false);
   const [browseFilter, setBrowseFilter] = useState<"joinable" | "all" | "open" | "invite">("all");
   const [browseQuery, setBrowseQuery] = useState("");
+  const [browseSort, setBrowseSort] = useState<"members" | "newest" | "alpha">("members");
   const [joiningId, setJoiningId] = useState<string | null>(null);
 
   // Create state
@@ -261,8 +262,16 @@ export default function TeamHub() {
           (t.description?.toLowerCase().includes(q) ?? false),
       );
     }
-    return [...teams].sort((a, b) => b.memberCount - a.memberCount);
-  }, [allTeams, browseFilter, browseQuery, myTeamIds]);
+    const sorted = [...teams];
+    if (browseSort === "members") {
+      sorted.sort((a, b) => b.memberCount - a.memberCount);
+    } else if (browseSort === "newest") {
+      sorted.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+    } else if (browseSort === "alpha") {
+      sorted.sort((a, b) => a.name.localeCompare(b.name));
+    }
+    return sorted;
+  }, [allTeams, browseFilter, browseQuery, browseSort, myTeamIds]);
 
   if (!mounted || loading) {
     return (
@@ -281,7 +290,11 @@ export default function TeamHub() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-fab-gold">Teams</h1>
-          <p className="text-sm text-fab-muted mt-1">Represent your competitive squads. Your primary team's badge shows on your profile and leaderboard.</p>
+          <p className="text-sm text-fab-muted mt-1">
+            Represent your competitive squads.
+            {allTeams.length > 0 && <> <span className="text-fab-text font-semibold tabular-nums">{allTeams.length}</span> public team{allTeams.length === 1 ? "" : "s"} · your primary team's badge shows on profile and leaderboard.</>}
+            {allTeams.length === 0 && <> Your primary team's badge shows on your profile and leaderboard.</>}
+          </p>
         </div>
         {team && (
           <Link href={`/teams/${team.nameLower}`} className="text-sm text-fab-gold hover:text-fab-gold-light transition-colors flex items-center gap-1">
@@ -622,8 +635,8 @@ export default function TeamHub() {
             className="w-full bg-fab-surface border border-fab-border rounded-lg px-3 py-2 text-sm text-fab-text placeholder:text-fab-dim focus:outline-none focus:border-fab-gold/50 transition-colors"
           />
 
-          {/* Filter pills — Joinable first by default so users land on actionable teams. */}
-          <div className="flex flex-wrap gap-2">
+          {/* Filter + sort row */}
+          <div className="flex flex-wrap items-center gap-2">
             {([
               { id: "joinable", label: "Joinable", desc: "Open teams you're not on" },
               { id: "open", label: "Open", desc: "All open-join teams" },
@@ -643,6 +656,18 @@ export default function TeamHub() {
                 {f.label}
               </button>
             ))}
+            <div className="ml-auto flex items-center gap-2 text-xs">
+              <span className="text-fab-dim">Sort</span>
+              <select
+                value={browseSort}
+                onChange={(e) => setBrowseSort(e.target.value as typeof browseSort)}
+                className="bg-fab-surface border border-fab-border rounded-md px-2 py-1.5 text-xs font-semibold text-fab-text focus:outline-none focus:border-fab-gold/50"
+              >
+                <option value="members">Members</option>
+                <option value="newest">Newest</option>
+                <option value="alpha">A → Z</option>
+              </select>
+            </div>
           </div>
 
           {teamsLoading && (
