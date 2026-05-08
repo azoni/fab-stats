@@ -65,6 +65,16 @@ service firebase.storage {
       allow read, write: if false;
     }
 
+    // Group icons: public read, authenticated write with size limits
+    match /group-images/icons/{groupId}/{fileName} {
+      allow read: if true;
+      allow write: if signedIn()
+        && (
+          request.resource == null
+          || validImageUpload(2 * 1024 * 1024)
+        );
+    }
+
     // Team icons: public read, authenticated write with size limits
     match /team-images/icons/{teamId}/{fileName} {
       allow read: if true;

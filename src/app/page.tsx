@@ -280,8 +280,11 @@ export default function Dashboard() {
             {/* Profile Card */}
             <CardBorderWrapper cardBorder={cardBorder} borderStyle={profile?.borderStyle || "beam"} underline={underlineConfig} contentClassName="bg-fab-surface rounded-lg overflow-hidden">
               <div className="cursor-pointer" onClick={() => { if (profile?.username) router.push(`/player/${profile.username}`); }}>
-              <div className="flex items-center justify-between px-4 py-2.5 border-b border-fab-border/50">
-                <p className="text-sm font-semibold text-fab-text">My Profile</p>
+              <div className="flex items-center justify-between px-4 py-3 border-b border-fab-border/50">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-fab-gold/80">Personal Record</p>
+                  <p className="mt-0.5 text-base font-bold tracking-tight text-fab-text">My Profile</p>
+                </div>
                 <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                   {profile?.username && (
                     <button onClick={() => setProfileShareOpen(true)} className="inline-flex items-center gap-1.5 text-xs font-semibold text-fab-gold border border-fab-gold/30 hover:bg-fab-gold/10 hover:border-fab-gold/50 px-2.5 py-1 rounded-md transition-colors">
@@ -353,9 +356,10 @@ export default function Dashboard() {
 
             {/* My Stats */}
             <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden cursor-pointer hover:border-fab-gold/20 transition-colors" onClick={() => router.push("/trends")}>
-              <div className="flex items-center justify-between px-4 py-2.5 border-b border-fab-border/50">
-                <Link href="/trends" onClick={(e) => e.stopPropagation()} className="text-sm font-semibold text-fab-text hover:text-fab-gold transition-colors">
-                  My Stats <span className="text-fab-dim">&rarr;</span>
+              <div className="flex items-center justify-between px-4 py-3 border-b border-fab-border/50">
+                <Link href="/trends" onClick={(e) => e.stopPropagation()} className="block hover:opacity-90 transition-opacity">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-teal-400/80">Match Performance</p>
+                  <p className="mt-0.5 text-base font-bold tracking-tight text-fab-text hover:text-fab-gold transition-colors">My Stats <span className="text-fab-dim">&rarr;</span></p>
                 </Link>
                 {profile && (
                   <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
@@ -463,8 +467,11 @@ export default function Dashboard() {
           {tournamentAnalytics && tournamentAnalytics.totalEvents >= 3 && (
             <div className="section-reveal" style={{ '--stagger': 2 } as React.CSSProperties}>
               <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden cursor-pointer hover:border-fab-gold/20 transition-colors" onClick={() => router.push("/tournament-stats")}>
-                <Link href="/tournament-stats" className="flex items-center justify-between px-4 py-2.5 border-b border-fab-border/50 hover:bg-fab-surface-hover transition-colors">
-                  <p className="text-sm font-semibold text-fab-text">Tournament Stats</p>
+                <Link href="/tournament-stats" className="flex items-center justify-between px-4 py-3 border-b border-fab-border/50 hover:bg-fab-surface-hover transition-colors">
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-amber-400/80">Tournament Record</p>
+                    <p className="mt-0.5 text-base font-bold tracking-tight text-fab-text">Tournament Stats</p>
+                  </div>
                   <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                     <button
                       onClick={(e) => { e.preventDefault(); e.stopPropagation(); setTournamentShareOpen(true); }}

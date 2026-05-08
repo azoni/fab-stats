@@ -1391,16 +1391,19 @@ button:active:not(:disabled) {
   color: #fff;
 }
 
-/* Flat cards — no shadows, no inner highlights, 1px borders */
+/* Cards — match the logged-out home's lit-from-above chrome so inner
+   pages feel as polished. Same gradient + inset highlight as `.fab-card`,
+   applied automatically to every fab-surface + fab-border card. */
 [data-theme="rosetta"] [class*="bg-fab-surface"][class*="border-fab-border"]:not(nav):not(td):not(tr) {
   border-width: 1px;
-  box-shadow: none;
-  transition: border-color 0.15s, background-color 0.15s;
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  transition: border-color 0.2s, background-color 0.2s, box-shadow 0.2s;
 }
 
 [data-theme="rosetta"] [class*="bg-fab-surface"][class*="shadow-xl"] {
   border-width: 1px;
-  box-shadow: none;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 8px 28px -20px rgba(0, 0, 0, 0.8);
 }
 
 [data-theme="rosetta"] nav[class*="border-b"] {

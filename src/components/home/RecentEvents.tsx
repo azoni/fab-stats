@@ -62,8 +62,11 @@ export const RecentEvents = memo(function RecentEvents({ eventStats, playerName 
   return (
     <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden relative">
       {/* Header */}
-      <Link href="/events" className="flex items-center justify-between px-4 py-2.5 border-b border-fab-border/50 hover:bg-fab-surface-hover transition-colors">
-        <p className="text-sm font-semibold text-fab-text">Recent Events</p>
+      <Link href="/events" className="flex items-center justify-between px-4 py-3 border-b border-fab-border/50 hover:bg-fab-surface-hover transition-colors">
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-amber-400/80">Event History</p>
+          <p className="mt-0.5 text-base font-bold tracking-tight text-fab-text">Recent Events</p>
+        </div>
         <span className="text-xs font-semibold text-fab-gold border border-fab-gold/30 hover:bg-fab-gold/10 hover:border-fab-gold/50 px-2.5 py-1 rounded-md transition-colors">
           View all events &rarr;
         </span>
