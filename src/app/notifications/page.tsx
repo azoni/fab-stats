@@ -491,7 +491,7 @@ export default function NotificationsPage() {
                               <span className="font-semibold">{n.teamInviteFromName}</span>{" "}
                               invited you to join{" "}
                               <Link
-                                href={`/team/${(n.teamName || "").toLowerCase().replace(/[^a-z0-9]/g, "")}`}
+                                href={`/teams/${(n.teamName || "").toLowerCase().replace(/[^a-z0-9]/g, "")}`}
                                 onClick={(e) => e.stopPropagation()}
                                 className="font-semibold text-amber-400 hover:text-amber-300 transition-colors"
                               >{n.teamName}</Link>

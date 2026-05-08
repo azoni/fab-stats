@@ -130,7 +130,7 @@ export function SmartSearch({ placeholder = "Search players or teams...", classN
     if (result.type === "player") {
       router.push(`/player/${result.username}`);
     } else {
-      router.push(`/team/${result.nameLower}`);
+      router.push(`/teams/${result.nameLower}`);
     }
     setQuery("");
     setResults([]);
@@ -206,7 +206,7 @@ export function SmartSearch({ placeholder = "Search players or teams...", classN
               return (
                 <Link
                   key={`team-${r.teamId}`}
-                  href={`/team/${r.nameLower}`}
+                  href={`/teams/${r.nameLower}`}
                   onClick={() => { setQuery(""); setIsOpen(false); }}
                   className={`flex items-center gap-3 px-3 py-2.5 transition-colors ${
                     isHighlighted ? "bg-fab-gold/10" : "hover:bg-fab-surface-hover/85"

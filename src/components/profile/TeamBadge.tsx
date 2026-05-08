@@ -63,7 +63,7 @@ function TeamBadgeInner({ teamName, teamNameLower, teamIconUrl, size = "sm", lin
 
   if (linkToTeam) {
     return (
-      <Link href={`/team/${slug}`} className="inline-flex hover:opacity-80 transition-opacity">
+      <Link href={`/teams/${slug}`} className="inline-flex hover:opacity-80 transition-opacity">
         {badge}
       </Link>
     );

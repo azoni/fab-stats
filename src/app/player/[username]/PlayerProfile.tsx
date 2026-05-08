@@ -1467,7 +1467,7 @@ function ProfileHeader({ profile, bestRank, isAdmin, isOwner, isFavorited, onTog
           {!profile.isPublic && <span className="ml-1.5 text-[9px] px-1.5 py-0.5 rounded bg-fab-dim/10 text-fab-dim">Private</span>}
         </p>
         {profileTeam && (
-          <Link href={`/team/${profileTeam.nameLower}`} className="inline-flex items-center gap-1.5 text-xs text-fab-muted hover:text-fab-gold transition-colors mb-1">
+          <Link href={`/teams/${profileTeam.nameLower}`} className="inline-flex items-center gap-1.5 text-xs text-fab-muted hover:text-fab-gold transition-colors mb-1">
             <TeamBadge teamName={profileTeam.name} teamIconUrl={profileTeam.iconUrl} size="xs" linkToTeam={false} isPrivate={profileTeam.visibility === "private"} isSiteAdmin={isAdmin} />
             {profileTeam.name}
           </Link>

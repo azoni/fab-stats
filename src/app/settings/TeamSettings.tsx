@@ -262,7 +262,7 @@ export function TeamSettings() {
               </div>
             )}
             <div>
-              <Link href={`/team/${team.nameLower}`} className="text-sm font-semibold text-fab-text hover:text-fab-gold transition-colors">
+              <Link href={`/teams/${team.nameLower}`} className="text-sm font-semibold text-fab-text hover:text-fab-gold transition-colors">
                 {team.name}
               </Link>
               <div className="flex items-center gap-2 text-xs text-fab-dim">
