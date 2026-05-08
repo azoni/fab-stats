@@ -736,6 +736,9 @@ export default function TeamHub() {
                             ) : (
                               <span className="flex items-center gap-0.5"><Shield className="w-3 h-3" /> Invite Only</span>
                             )}
+                            {t.createdAt && (
+                              <span>· Est. {new Date(t.createdAt).toLocaleDateString("en-US", { month: "short", year: "numeric" })}</span>
+                            )}
                           </div>
                           {/* Reserved 1-line description slot keeps every card
                               the same height even when descriptions are missing. */}
