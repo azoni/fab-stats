@@ -84,21 +84,8 @@ export function Navbar() {
         )}
       </div>
 
-      <div className="fab-sidebar-actions px-3 py-3 border-b border-fab-border/70 space-y-2">
+      <div className="fab-sidebar-actions px-3 py-3 border-b border-fab-border/70">
         <SmartSearch placeholder="Search players or teams..." className="text-xs" />
-        {mounted && isAuthenticated && (
-          <Link
-            href="/import"
-            className={`flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold transition-colors ${
-              pathname === "/import"
-                ? "bg-fab-surface-hover text-fab-gold border border-fab-gold/35"
-                : "bg-fab-surface-hover/70 text-fab-gold hover:bg-fab-surface-hover border border-fab-border/85 hover:border-fab-gold/35"
-            }`}
-          >
-            <ImportIcon className="w-4 h-4" />
-            Import Matches
-          </Link>
-        )}
       </div>
 
       <div className="fab-sidebar-nav flex-1 overflow-y-auto px-2 py-3">
@@ -240,7 +227,7 @@ export function Navbar() {
               </Link>
             ) : (
               <>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5">
                   <Link
                     href={profileHref}
                     className={`flex min-w-0 flex-1 items-center gap-2 p-2 rounded-lg border transition-colors ${
@@ -258,6 +245,18 @@ export function Navbar() {
                       <span className="block text-sm font-semibold truncate">{displayName}</span>
                       {profile?.username && <span className="block text-[10px] text-fab-dim truncate">@{profile.username}</span>}
                     </span>
+                  </Link>
+                  <Link
+                    href="/import"
+                    title="Import matches"
+                    aria-label="Import matches"
+                    className={`shrink-0 flex items-center justify-center w-9 h-9 rounded-lg border transition-colors ${
+                      pathname === "/import"
+                        ? "bg-fab-surface-hover text-fab-gold border-fab-gold/40"
+                        : "bg-fab-bg/70 text-fab-gold border-fab-border/60 hover:bg-fab-surface-hover hover:border-fab-gold/35"
+                    }`}
+                  >
+                    <ImportIcon className="w-4 h-4" />
                   </Link>
                   <NotificationBell />
                 </div>
