@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useTeamOnce } from "@/hooks/useTeam";
 import dynamic from "next/dynamic";
 import { computeEventStats, computeTournamentAnalytics, isTournamentEvent, type TournamentAnalytics } from "@/lib/stats";
+import { HomeTabs } from "@/components/home/HomeTabs";
 
 const TournamentShareModal = dynamic(() => import("@/components/tournament-stats/TournamentShareCard").then(m => ({ default: m.TournamentShareModal })), { ssr: false });
 import { WinRateRing } from "@/components/charts/WinRateRing";
@@ -145,6 +146,8 @@ export default function TournamentStatsPage() {
 
   return (
     <div className="space-y-6">
+      <HomeTabs />
+
       {/* Header */}
       <div className="flex items-center gap-3">
         <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center ring-1 ring-inset ring-amber-500/20">

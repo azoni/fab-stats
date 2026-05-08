@@ -15,9 +15,10 @@ const TABS = [
 
 interface StatsHubProps {
   defaultTab: "matches" | "events" | "opponents";
+  showTabs?: boolean;
 }
 
-export function StatsHub({ defaultTab }: StatsHubProps) {
+export function StatsHub({ defaultTab, showTabs = true }: StatsHubProps) {
   const router = useRouter();
   const pathname = usePathname();
   const { matches, isLoaded, updateMatch, refreshMatches, batchUpdateHero, batchUpdateFormat, batchUpdateEventType, batchDeleteMatches } = useMatches();
@@ -47,7 +48,7 @@ export function StatsHub({ defaultTab }: StatsHubProps) {
   return (
     <div>
       {/* Tab bar */}
-      <div className="flex gap-1 bg-fab-surface/50 border border-fab-border rounded-lg p-1 mb-6">
+      {showTabs && <div className="flex gap-1 bg-fab-surface/50 border border-fab-border rounded-lg p-1 mb-6">
         {TABS.map((tab) => {
           const isActive = tab.id === activeTab;
           return (
@@ -67,7 +68,7 @@ export function StatsHub({ defaultTab }: StatsHubProps) {
             </button>
           );
         })}
-      </div>
+      </div>}
 
       {/* Tab content */}
       {activeTab === "matches" && (

@@ -1,10 +1,10 @@
 @import "tailwindcss";
 
 @theme inline {
-  --color-fab-bg: #12100c;
-  --color-fab-surface: #211b14;
-  --color-fab-surface-hover: #2d251a;
-  --color-fab-border: #4b3d2b;
+  --color-fab-bg: #050605;
+  --color-fab-surface: #12110f;
+  --color-fab-surface-hover: #1b1813;
+  --color-fab-border: #3c3020;
   --color-fab-gold: #f0bd55;
   --color-fab-gold-light: #ffdc82;
   --color-fab-gold-dark: #b9852b;
@@ -15,8 +15,8 @@
   --color-fab-loss: #ff8888;
   --color-fab-draw: #facc15;
   --color-fab-text: #f8f1e6;
-  --color-fab-muted: #d4c3a8;
-  --color-fab-dim: #9b8a71;
+  --color-fab-muted: #cdbb9e;
+  --color-fab-dim: #8e7d65;
   --color-fab-parchment: #efe5cc;
   --color-fab-parchment-deep: #e3d4b0;
   --color-fab-ink: #1a1410;
@@ -42,8 +42,8 @@
 body {
   background-color: var(--color-fab-bg);
   background-image:
-    radial-gradient(circle at 14% -8%, rgba(240, 189, 85, 0.08), transparent 26rem),
-    radial-gradient(circle at 86% 6%, rgba(37, 126, 132, 0.08), transparent 24rem),
+    radial-gradient(circle at 14% -8%, rgba(240, 189, 85, 0.06), transparent 26rem),
+    radial-gradient(circle at 86% 6%, rgba(37, 126, 132, 0.07), transparent 24rem),
     linear-gradient(180deg, color-mix(in srgb, var(--color-fab-bg) 88%, #000 12%), var(--color-fab-bg));
   color: var(--color-fab-text);
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
@@ -2777,10 +2777,10 @@ button:active:not(:disabled) {
 
 /* Rosetta refresh - make the default app skin match the polished public home. */
 [data-theme="rosetta"] {
-  --color-fab-bg: #12100c;
-  --color-fab-surface: #211b14;
-  --color-fab-surface-hover: #2d251a;
-  --color-fab-border: #4b3d2b;
+  --color-fab-bg: #050605;
+  --color-fab-surface: #12110f;
+  --color-fab-surface-hover: #1b1813;
+  --color-fab-border: #3c3020;
   --color-fab-gold: #f0bd55;
   --color-fab-gold-light: #ffdc82;
   --color-fab-gold-dark: #b9852b;
@@ -2788,8 +2788,8 @@ button:active:not(:disabled) {
   --color-fab-loss: #ff8888;
   --color-fab-draw: #facc15;
   --color-fab-text: #f8f1e6;
-  --color-fab-muted: #d4c3a8;
-  --color-fab-dim: #9b8a71;
+  --color-fab-muted: #cdbb9e;
+  --color-fab-dim: #8e7d65;
   --radius-sm: 0.375rem;
   --radius-md: 0.5rem;
   --radius-lg: 0.625rem;
@@ -2804,7 +2804,7 @@ button:active:not(:disabled) {
 [data-theme="rosetta"] body::after {
   display: block;
   background:
-    radial-gradient(ellipse 80% 42% at 50% -8%, rgba(240, 189, 85, 0.045), transparent 70%),
+    radial-gradient(ellipse 80% 42% at 50% -8%, rgba(240, 189, 85, 0.035), transparent 70%),
     radial-gradient(ellipse 44% 32% at 96% 12%, rgba(38, 126, 132, 0.04), transparent 70%);
 }
 

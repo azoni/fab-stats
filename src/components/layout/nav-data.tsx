@@ -53,13 +53,7 @@ function XIcon() {
 }
 
 export const navLinks: NavLink[] = [
-  { href: "/", label: "Home", icon: <NavAssetIcon name="home" />, color: "text-fab-gold", bg: "bg-fab-gold/10", authOnly: true, subItems: [
-    { href: "/matches", label: "Matches" },
-    { href: "/events", label: "Events" },
-    { href: "/opponents", label: "Opponents" },
-    { href: "/trends", label: "Trends" },
-    { href: "/tournament-stats", label: "Tournament Stats" },
-  ] },
+  { href: "/", label: "Home", icon: <NavAssetIcon name="home" />, color: "text-fab-gold", bg: "bg-fab-gold/10", authOnly: true },
   { href: "/meta", label: "Meta", icon: <NavAssetIcon name="meta" />, color: "text-teal-400", bg: "bg-teal-400/10", subItems: [
     { href: "/leaderboard", label: "Rankings" },
     { href: "/matchups", label: "Matchup Matrix" },

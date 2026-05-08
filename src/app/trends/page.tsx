@@ -36,6 +36,7 @@ import {
 import { localDate } from "@/lib/constants";
 import { TrendsIcon } from "@/components/icons/NavIcons";
 import { TrendsShareModal } from "@/components/trends/TrendsShareCard";
+import { HomeTabs } from "@/components/home/HomeTabs";
 
 const COLORS = {
   gold: "#c9a84c",
@@ -543,6 +544,8 @@ export default function TrendsPage() {
 
   return (
     <div className="space-y-6">
+      <HomeTabs />
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">

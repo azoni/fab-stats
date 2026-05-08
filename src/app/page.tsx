@@ -30,6 +30,7 @@ import { CardBorderWrapper } from "@/components/profile/CardBorderWrapper";
 import type { UnderlineConfig } from "@/components/profile/CardBorderWrapper";
 import { updateProfile } from "@/lib/firestore-storage";
 import { LoggedOutHome } from "@/components/home/LoggedOutHome";
+import { HomeTabs } from "@/components/home/HomeTabs";
 
 // Modals — lazy-loaded (only rendered when opened)
 const BestFinishShareModal = dynamic(() => import("@/components/profile/BestFinishCard").then(m => ({ default: m.BestFinishShareModal })), { ssr: false });
@@ -264,6 +265,7 @@ export default function Dashboard() {
         <LoggedOutHome user={user} communityMeta={communityMeta} lbEntries={lbEntries} />
       )}
 
+      {hasMatches && <HomeTabs />}
 
       {/* On This Day — above profile card */}
       {hasMatches && <OnThisDay matches={matches} />}

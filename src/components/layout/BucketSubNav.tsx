@@ -140,7 +140,7 @@ export function BucketSubNavRouter() {
 function BucketSubNavRouterInner() {
   const pathname = usePathnameSafe();
   if (!pathname) return null;
-  if (pathInBucket(pathname, HOME_PATHS)) return <BucketSubNav items={HOME_BUCKET} />;
+  if (pathInBucket(pathname, HOME_PATHS)) return null;
   if (pathInBucket(pathname, META_PATHS)) return <BucketSubNav items={META_BUCKET} />;
   if (pathInBucket(pathname, COMMUNITY_PATHS)) return <BucketSubNav items={COMMUNITY_BUCKET} />;
   if (pathInBucket(pathname, EXTRAS_PATHS)) return <BucketSubNav items={EXTRAS_BUCKET} />;
