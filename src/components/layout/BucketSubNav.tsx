@@ -42,7 +42,7 @@ export function BucketSubNav({ items, className = "" }: BucketSubNavProps) {
   return (
     <nav
       aria-label="Section navigation"
-      className={`md:hidden relative -mx-4 sm:-mx-6 mb-4 ${className}`}
+      className={`fab-bucket-subnav relative -mx-4 sm:-mx-6 mb-4 ${className}`}
     >
       <div className="overflow-x-auto scrollbar-hide snap-x snap-mandatory">
         <ul className="flex gap-2 px-4 sm:px-6">
@@ -93,6 +93,8 @@ export const COMMUNITY_BUCKET: BucketSubNavItem[] = [
 ];
 
 export const EXTRAS_BUCKET: BucketSubNavItem[] = [
+  { href: "/games", label: "Daily Games" },
+  { href: "/achievements", label: "Achievements" },
   { href: "/compare", label: "Versus" },
   { href: "/docs", label: "Docs" },
   { href: "/changelog", label: "Changelog" },
@@ -101,7 +103,26 @@ export const EXTRAS_BUCKET: BucketSubNavItem[] = [
 const HOME_PATHS = ["/", "/matches", "/events", "/opponents", "/trends", "/tournament-stats", "/wrapped"];
 const META_PATHS = ["/meta", "/leaderboard", "/matchups"];
 const COMMUNITY_PATHS = ["/community", "/team", "/group", "/friends"];
-const EXTRAS_PATHS = ["/compare", "/docs", "/changelog"];
+const EXTRAS_PATHS = [
+  "/games",
+  "/achievements",
+  "/compare",
+  "/docs",
+  "/changelog",
+  "/fabdoku",
+  "/crossword",
+  "/heroguesser",
+  "/matchupmania",
+  "/connections",
+  "/timeline",
+  "/trivia",
+  "/rhinarsrampage",
+  "/kayosknockout",
+  "/brutebrawl",
+  "/ninjacombo",
+  "/shadowstrike",
+  "/bladedash",
+];
 
 function pathInBucket(pathname: string, bucket: string[]): boolean {
   return bucket.some((p) => pathname === p || (p !== "/" && pathname.startsWith(p + "/")));

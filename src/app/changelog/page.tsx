@@ -3,7 +3,7 @@ import { SparklesIcon } from "@/components/icons/NavIcons";
 
 export const metadata: Metadata = {
   title: "Changelog",
-  description: "FaB Stats changelog — see what's new, improved, and fixed.",
+  description: "FaB Stats changelog with recent navigation, design, feature, and cleanup updates.",
 };
 
 type ChangeType = "new" | "improved" | "fixed";
@@ -33,380 +33,161 @@ const badgeLabels: Record<ChangeType, string> = {
 
 const changelog: Entry[] = [
   {
-    date: "March 29, 2026",
-    id: "mar-29",
+    date: "May 2026",
+    id: "may-2026",
     changes: [
-      { type: "new", text: "Teams — create a team with custom icon, background image, and accent color. Invite players or set to open join." },
-      { type: "new", text: "Team page at fabstats.net/team/yourteam — aggregate stats, trophy case, recent accomplishments, hero breakdown, armory garden, and full roster with individual stats" },
-      { type: "new", text: "Team badge appears next to your name on leaderboard, profiles, and activity feed" },
-      { type: "new", text: "Shareable team card — themed image card with stats, roster, and tournament results" },
-      { type: "new", text: "Team roles (Owner, Admin, Member) with invite, kick, promote/demote, and ownership transfer" },
-      { type: "new", text: "Team page filters — filter all team stats by format, event type, hero, and tier" },
-      { type: "new", text: "Tournament page pagination with auto-linking players to FaB Stats profiles by display name" },
-      { type: "new", text: "Tournament players show profile pic, team badge, hero shield badge, and card border decoration" },
-      { type: "improved", text: "Social links on profile — inputs always visible for owners with icon labels instead of hidden pencil toggle" },
-      { type: "improved", text: "Tournaments navbar link now goes to /tournaments instead of /tournament-stats" },
-      { type: "fixed", text: "Share card image capture — CORS and CSP fixes for Google profile photos and Firebase Storage team images" },
+      { type: "improved", text: "Sidebar navigation simplified into Home, Meta, Community, Support, and Extras." },
+      { type: "improved", text: "Social links moved into Support above the shop links to make the sidebar less confusing." },
+      { type: "new", text: "Extras now contains Daily Games, Achievements, Versus, Docs, and Changelog." },
+      { type: "new", text: "Achievements catalog page added so players can browse match, mastery, game, kudos, and special badges." },
+      { type: "improved", text: "Profile menu cleaned up by removing Import, Daily Games, and Sign Out. Sign out remains in Settings." },
+      { type: "improved", text: "Docs refreshed to match the current site structure and explain what each section offers." },
+      { type: "improved", text: "Rosetta is the default visual direction, Grimoire was removed from appearance options, and Daylight readability was repaired." },
+      { type: "improved", text: "Compact desktop sidebar now hides child links on tighter screens and uses the section subnav instead." },
     ],
   },
   {
-    date: "March 24, 2026",
-    id: "mar-24",
+    date: "Spring 2026",
+    id: "spring-2026",
     changes: [
-      { type: "new", text: "Hero Data Shield badges — 5 color-coded tiers (Gold/Purple/Red/Blue/Bronze) showing hero data completion next to player names everywhere" },
-      { type: "new", text: "Hero selection required for imports from Feb 24, 2026 onward — \"Unknown\" is valid but must be an explicit choice" },
-      { type: "new", text: "Sticky import bar — floating bottom bar with match count so you don't scroll through dozens of events" },
-      { type: "new", text: "Hero completion progress bar on profile card with link to matches page" },
-      { type: "improved", text: "Navbar — Matches promoted to first item with hover submenu (Matches/Events/Opponents/Matchup Matrix)" },
-      { type: "improved", text: "Navbar — Support is now icon-only (heart) with expanded hover dropdown including Feedback, Discord, and X" },
-      { type: "improved", text: "Navbar — More dropdown opens on hover instead of click" },
-      { type: "improved", text: "Player/match counts stacked vertically next to logo for cleaner layout" },
-      { type: "improved", text: "Support FAB includes Discord, X, and Send Feedback with icons" },
-      { type: "improved", text: "Share card player names increased from text-sm to text-lg for better readability" },
-      { type: "improved", text: "All tooltips use fast Radix tooltips (100ms delay) instead of slow browser native titles" },
-      { type: "improved", text: "Performance: single-pass stats counting, batched analytics writes, lazy chat/notification listeners, React.memo on dashboard components" },
-      { type: "improved", text: "Performance: PNG/JPEG assets converted to WebP (~38MB saved), background image preload removed" },
-      { type: "improved", text: "Performance: framer-motion replaced with CSS transitions in dialog/collapsible" },
-      { type: "improved", text: "Performance: game timers isolated to prevent full board re-renders, profile stats batched into single load" },
-      { type: "fixed", text: "Share cards now respect dashboard filters for event counts and stats" },
-      { type: "fixed", text: "FaBdoku puzzle generator validates solvability with distinct heroes and requires ≥3 heroes per cell" },
-      { type: "fixed", text: "Discord bot digest scheduler no longer marks failed posts as completed" },
-      { type: "fixed", text: "Achievement badge tooltip text no longer overflows the container" },
-      { type: "fixed", text: "Admin crown restored on home page profile card" },
+      { type: "new", text: "Friends page and profile menu access added so players can view friends, requests, and favorites more easily." },
+      { type: "new", text: "Support page added with feedback, affiliate links, Discord, Discord bot, and X links." },
+      { type: "improved", text: "Dashboard and public home received a visual polish pass with warmer Rosetta colors and cleaner card styling." },
+      { type: "improved", text: "Profile background handling adjusted for the sidebar layout so profile art fills the content area more naturally." },
+      { type: "improved", text: "Search results now support richer player and team rows, including profile images where available." },
+      { type: "improved", text: "Settings were simplified by removing teams/groups settings, profile background chooser, extra themes, featured creators, and redundant data actions." },
+      { type: "fixed", text: "Admin page performance improved by removing unused activity, poll, social, sitemap, and showcase management sections." },
     ],
   },
   {
-    date: "March 7, 2026",
-    id: "mar-7",
+    date: "March 2026",
+    id: "march-2026",
     changes: [
-      { type: "new", text: "WinRateRing component — circular progress gauge for win rates, goal progress, and stat visualization across all pages" },
-      { type: "new", text: "MiniDonut component — multi-segment donut charts for W/L/D splits, meta shares, goal completion, and tier distributions" },
-      { type: "new", text: "SegmentedBar component — enhanced proportional bars replacing thin progress indicators throughout the app" },
-      { type: "new", text: "SparkLine component — inline trend lines for recent form and rolling stats" },
-      { type: "new", text: "RadarChart component — multi-axis comparison chart on the Versus page (Win Rate, Volume, Streaks, Events, Heroes, Top 8s)" },
-      { type: "new", text: "Tier List score composition bars — see how Win Rate, Play Rate, and Top 8 Rate contribute to each hero's tier score" },
-      { type: "new", text: "Tier distribution donut — visual breakdown of hero counts per tier (S/A/B/C/D) at the top of the Tier List" },
-      { type: "new", text: "Goals completion summary — donut chart showing completed vs active goals with progress tracking" },
-      { type: "improved", text: "Dashboard QuickStats — win rate ring, W/L/D donut, and segmented bar replace raw numbers" },
-      { type: "improved", text: "Dashboard MetaSnapshot — hero meta share donut and per-hero win rate rings" },
-      { type: "improved", text: "Meta page — hero distribution donut (top 10), win rate rings on hero rows, and enhanced overview stat cards" },
-      { type: "improved", text: "Matches page — visual summary strip with win rate ring and W/L/D segmented bar" },
-      { type: "improved", text: "Leaderboard — win rate rings on rate-based tabs, proportional bars on count-based tabs" },
-      { type: "improved", text: "Versus page — radar chart, H2H donut, and win rate rings on common opponents and hero rosters" },
-      { type: "improved", text: "Goals page — progress rings on each goal card, segmented progress bars, completion donut" },
-      { type: "improved", text: "Share Stats page — win rate ring, W/L/D donut, segmented bars, and visual recent form section" },
-      { type: "fixed", text: "Goals page 'insufficient permissions' error — deployed missing Firestore security rules for goals subcollection" },
+      { type: "new", text: "Teams added with public team pages, roster stats, icons, backgrounds, roles, trophy cases, and shareable team cards." },
+      { type: "new", text: "Hero Data Shield badges added to show how complete a player's hero data is." },
+      { type: "new", text: "Kudos, friends-only profiles, profile showcase cards, and docs search added." },
+      { type: "new", text: "Daily game suite expanded with FaBdoku, Crossword, Hero Guesser, Matchup Mania, Connections, Timeline, Trivia, Brute games, Ninja games, and word games." },
+      { type: "improved", text: "Performance improved through memoized dashboard components, lazy listeners, lighter assets, and more focused admin queries." },
+      { type: "fixed", text: "Share card capture, profile images, achievement tooltips, and game puzzle validation received stability fixes." },
     ],
   },
   {
-    date: "March 4, 2026",
-    id: "mar-4",
+    date: "February 2026",
+    id: "february-2026",
     changes: [
-      { type: "new", text: "Weekly Armory Recaps — Discord bot posts automated weekly armory stat rankings every Sunday to a configured channel" },
-      { type: "new", text: "/armory-subscribe — opt in or out of weekly armory recaps per server (requires /link)" },
-      { type: "new", text: "/armory-channel — set the channel for weekly armory posts (admin)" },
-      { type: "new", text: "/manage-link — admins and bot owner can view, set, or remove any player's Discord–FaB Stats link" },
-      { type: "improved", text: "Share cards redesigned with ornamental accents — corner filigrees, decorative dividers, geometric background patterns, and accent top bars" },
-    ],
-  },
-  {
-    date: "March 3, 2026",
-    id: "mar-3",
-    changes: [
-      { type: "new", text: "Inline navbar search — search players directly from the navbar with autocomplete dropdown (desktop)" },
-      { type: "new", text: "Kudos system — give Props, Good Sport, Skilled, and Helpful kudos to other players (10/day limit)" },
-      { type: "new", text: "Kudos leaderboards — received and given categories on the Rankings page" },
-      { type: "new", text: "Admin kudos endorsement — admin-given kudos display a glowing border on profiles" },
-      { type: "new", text: "FaBdoku score badges — profile cards now show your FaBdoku score and games played" },
-      { type: "new", text: "Friends-only profile visibility — set your profile to friends-only in Settings" },
-      { type: "new", text: "Leaderboard Rankings showcase card — show your current leaderboard positions on your profile" },
-      { type: "new", text: "Docs search — quickly find topics in the growing documentation" },
-      { type: "new", text: "Technical Architecture section in docs — detailed breakdown of design decisions for the curious" },
-      { type: "improved", text: "Discover page replaced with cleaner Search page and inline navbar search" },
-      { type: "improved", text: "Kudos buttons simplified — show received count only, removed confusing fraction display" },
-      { type: "improved", text: "Kudos boxes all same size with clearer filled icons" },
-      { type: "improved", text: "Privacy settings expanded by default and now includes Public / Friends / Private selector" },
-      { type: "improved", text: "Meta results donut chart now shows total players count and Most Wins section with top 5 heroes" },
-      { type: "improved", text: "Documentation updated with Kudos, FaBdoku, Showcase, and Friends-only visibility sections" },
-      { type: "improved", text: "Codebase cleanup — removed 15 dead files (unused components, hooks, libs, and default template assets)" },
-      { type: "fixed", text: "Activity feed placements no longer disappear — now uses upload time (30 days) instead of event date (2 weeks)" },
-      { type: "fixed", text: "FaBdoku stats now load from a publicly-readable collection, fixing cross-user profile badge display" },
-    ],
-  },
-  {
-    date: "March 2, 2026",
-    id: "mar-2",
-    changes: [
-      { type: "new", text: "Roadmap page — public todo list for planned features and known issues, accessible from the More menu" },
-      { type: "improved", text: "Activity feed now sorted by upload time instead of event date — newly imported placements appear at the top" },
-      { type: "improved", text: "Event date displayed above placement cards in the activity feed for better scannability" },
-      { type: "improved", text: "On This Day moved above profile card on homepage" },
-      { type: "improved", text: "Share profile card now shows site creator crown, content creator badge, first-match badge, and talent/class emblems" },
-      { type: "improved", text: "Engagement tab shows 10 items per page (up from 5)" },
-      { type: "fixed", text: "Event dates no longer shift back a day due to timezone parsing — dates now parsed in UTC" },
-    ],
-  },
-  {
-    date: "March 1, 2026",
-    id: "mar-1",
-    changes: [
-      { type: "new", text: "Player Spotlight back on homepage — 6 community standouts in a responsive grid, refreshed each page load" },
-      { type: "new", text: "On This Day placement detection — infers QF/SF/F from unnumbered playoff matches, shows Champion, Finalist, Top 4, or Top 8 badges" },
-      { type: "new", text: "Profile card stats — homepage profile card now shows match count, win rate, events, and top hero at a glance" },
-      { type: "improved", text: "Navbar profile button — clicking your avatar now goes directly to your profile; separate chevron opens the account menu" },
-      { type: "improved", text: "On This Day rounds sorted correctly by round number — swiss first, then playoffs in order (QF, SF, F)" },
-      { type: "improved", text: "Playoff rounds labeled as QF, SF, F instead of showing the format name, highlighted in purple" },
-      { type: "improved", text: "On This Day collapsed view shows placement badge alongside match count" },
-      { type: "improved", text: "FaB-inspired homepage styling — pitch strip accents, ambient gold glow, icon containers for section headers, section dividers, and refined card aesthetics" },
-      { type: "improved", text: "Quick nav buttons redesigned — larger tiles with themed gradients, icon containers, colored accents, and hover lift" },
-      { type: "improved", text: "Versus moved from main navbar to quick nav buttons and More dropdown" },
-      { type: "fixed", text: "Activity feed items no longer disappear at midnight — replaced 24-hour import cutoff with per-type caps (10 imports, 15 achievements, 20 placements)" },
-      { type: "fixed", text: "Community Meta 'This Month' showing empty — fixed timezone bug in month start date calculation" },
-    ],
-  },
-  {
-    date: "February 27, 2026",
-    id: "feb-27",
-    changes: [
-      { type: "new", text: "Versus page — redesigned Compare into a head-to-head showdown with weighted dominance scoring, H2H record, and shareable verdict cards" },
-      { type: "new", text: "Activity Feed on homepage — achievements, placements, and imports with type filters, community/friends toggle, and pagination" },
-      { type: "new", text: "Player Spotlight — 6 featured profiles using 9 spotlight algorithms, shown alongside the Activity Feed" },
-      { type: "new", text: "Friends system — add friends, send requests, filter the Activity Feed to friends and favorites" },
-      { type: "new", text: "On This Day widget — collapsible, shareable match memories with horizontal card layout" },
-      { type: "new", text: "Quick Nav buttons on dashboard — fast access to Import, Compare, Events, and more" },
-      { type: "new", text: "Armory Garden on profile — flowers that grow as you attend armories, with watering can tiers and interactive effects" },
-      { type: "new", text: "Trophy Case on profile — marble icons for Champion, Finalist, Top 4, Top 8, and Other finishes by event type" },
-      { type: "new", text: "Shareable profile cards — capture your stats as an image with tier borders, rank rings, trophies, and armory garden" },
-      { type: "new", text: "Community Polls — vote on community questions with results history" },
-      { type: "new", text: "Bulk tournament import — admin tool to import tournament results with auto player-linking" },
-      { type: "new", text: "Hide from Guests privacy toggle — opt-in to hide your profile from visitors who aren't logged in" },
-      { type: "new", text: "Clear all match data — delete all your imported matches from Settings" },
-      { type: "new", text: "GEM extension v2 — structured CSS-selector parsing with Quick Sync button" },
-      { type: "new", text: "Paginated Discover page — browse the full community activity feed with type filtering and infinite scroll" },
-      { type: "improved", text: "Navbar redesigned — consolidated icon buttons into a user avatar dropdown with chevron indicator" },
-      { type: "improved", text: "Byes excluded from match counts and win rate calculations for more accurate stats" },
-      { type: "improved", text: "Performance — cached activity feed, trimmed leaderboard documents" },
-      { type: "improved", text: "Security hardened — auth on serverless functions, tighter Firestore rules, improved CSP headers" },
-      { type: "improved", text: "Profile page streamlined — collapsible sections, quick nav, event dates on placement cards" },
-      { type: "improved", text: "Opponents tab redesigned with rivalry highlights and improved layout" },
-      { type: "improved", text: "Spotlight and Activity Feed hidden from guests for a cleaner landing page" },
-      { type: "fixed", text: "H2H comparisons now use bidirectional matching with GEM ID and name fallback" },
-      { type: "fixed", text: "Hero no longer bleeds across events during import" },
-      { type: "fixed", text: "Private profile owner view now works correctly" },
-      { type: "fixed", text: "Photo upload CSP violation resolved" },
-      { type: "fixed", text: "Paste import now detects playoff sections and extracts hero from decklists" },
-    ],
-  },
-  {
-    date: "February 26, 2026",
-    id: "feb-26",
-    changes: [
-      { type: "new", text: "Favorite players — star any player to keep them at the top of your Opponents list" },
-      { type: "new", text: "Quick Match Log — log a single match result after it happens without a full import" },
-      { type: "new", text: "Shareable H2H rivalry cards — share your head-to-head record from the Opponents page" },
-      { type: "new", text: "Monthly leaderboard categories — Monthly Matches, Monthly Wins, and Monthly Win Rate tabs" },
-      { type: "new", text: "Community Meta page (beta) — see the most popular and best-performing heroes across all players" },
-      { type: "new", text: "Hero Mastery expanded to 8 tiers — Grandmaster, Legend, and Mythic for dedicated hero mains" },
-      { type: "new", text: "Edit hero on your matches — expand any event and set the hero you played" },
-      { type: "new", text: "BYEs tracked as a separate result type — imported from GEM instead of being skipped, with a Byes leaderboard tab" },
-      { type: "new", text: "Tournaments page — browse all featured tournaments with format filtering" },
-      { type: "new", text: "Shareable best finish cards — share your top event placement from your homepage" },
-      { type: "new", text: "Nemesis and best friend cards now show active filters (format, rated, hero)" },
-      { type: "improved", text: "Homepage redesign — cleaner welcome card, recent tournaments, your event history, and meta snapshot" },
-      { type: "improved", text: "Featured tournaments now visible to all visitors, not just logged-in users" },
-      { type: "improved", text: "Cleaner event match tables — hero column only shows when you played multiple heroes in an event" },
-      { type: "fixed", text: "Weekly and monthly leaderboard stats no longer inflated by bulk imports with incorrect dates" },
-      { type: "fixed", text: "World Premiere events no longer misclassified as Worlds" },
-      { type: "fixed", text: "Streak leaderboard sort is now stable when matches share the same date" },
-      { type: "fixed", text: "Venue parsing no longer picks up days of the week or prize descriptions as venue names" },
-    ],
-  },
-  {
-    date: "February 25, 2026",
-    id: "feb-25",
-    changes: [
-      { type: "new", text: "Weekly Matches and Weekly Wins leaderboard tabs — see who's grinding this week" },
-      { type: "new", text: "5-tier ranked border system — Grandmaster (prismatic), Diamond (cyan), Gold, Silver, Bronze for top 5 on every leaderboard" },
-      { type: "new", text: "Creator crown on azoni's profile — site admin/creator badge" },
-      { type: "new", text: "Clickable opponent names — tap any opponent to find their profile" },
-      { type: "improved", text: "Opponents tab promoted to main navbar on desktop and mobile" },
-      { type: "improved", text: "Leaderboard card borders now have animated rotating gradients for top 5 ranks" },
-      { type: "fixed", text: "Messaging permission errors when starting a new conversation" },
-      { type: "fixed", text: "SEO: corrected domain across robots.txt and sitemap, added page metadata" },
-    ],
-  },
-  {
-    date: "February 23, 2026",
-    id: "feb-23",
-    changes: [
-      { type: "new", text: "Public/private profile toggle in Settings — control who can see your profile" },
-      { type: "new", text: "Hero selection per event during import — set your hero before importing" },
-      { type: "new", text: "Head-to-head record badges on Leaderboard — see your record vs other players" },
-      { type: "new", text: "Changelog page — you're looking at it" },
-      { type: "fixed", text: "Better error message when importing events with no match results (e.g. teaching events)" },
-      { type: "improved", text: "Opponents page accepts deep links from Leaderboard H2H badges" },
-    ],
-  },
-  {
-    date: "February 22, 2026",
-    id: "feb-22",
-    changes: [
-      { type: "new", text: "Achievement system — 30 unlockable badges across 5 categories with custom icons" },
-      { type: "new", text: "Hero Mastery tiers — track your progression from Novice to Master for each hero" },
-      { type: "improved", text: "Navbar consolidated into 4 core links + More dropdown for cleaner navigation" },
-      { type: "improved", text: "Dashboard renamed to Profile with avatar header and achievement badges" },
-      { type: "improved", text: "Achievements and Hero Mastery sections default to collapsed" },
-      { type: "improved", text: "Admin panel users table is now collapsible" },
-    ],
-  },
-  {
-    date: "February 21, 2026",
-    id: "feb-21",
-    changes: [
-      { type: "new", text: "Feedback system — submit bug reports and feature requests from Settings or the navbar" },
-      { type: "new", text: "Featured Creators section — discover FaB content creators" },
-      { type: "new", text: "Opponent name obfuscation on public profiles — protect opponent privacy" },
-      { type: "improved", text: "Admin panel with feedback review, status filters, and creator management" },
-    ],
-  },
-  {
-    date: "Earlier updates",
-    id: "earlier",
-    changes: [
-      { type: "new", text: "Year in Review / Wrapped pages — see your annual stats summary" },
-      { type: "new", text: "Opponent stats with head-to-head breakdowns, streaks, and match history" },
-      { type: "new", text: "Chrome Extension for one-click GEM import with automatic hero detection" },
-      { type: "new", text: "Activity feed showing recent imports across the community" },
-      { type: "new", text: "Leaderboard with Win Rate, Most Matches, Streaks, Draws, Events, Rated, and Nemesis tabs" },
-      { type: "new", text: "Event tracking with format detection, venue parsing, and rated/unrated filtering" },
-      { type: "new", text: "CSV import support for FaB History Scraper users" },
-      { type: "new", text: "Copy & paste import from GEM History page with bookmarklet helper" },
-      { type: "new", text: "Player search and public profiles" },
+      { type: "new", text: "Core match tracking launched with GEM imports, match history, event tracking, opponent records, profile pages, and leaderboards." },
+      { type: "new", text: "Achievements, hero mastery, best finish cards, On This Day, trophy case, armory garden, and profile share cards added." },
+      { type: "new", text: "Versus page, rivalry cards, activity feed, favorite players, public/private profiles, and Discord bot features added." },
+      { type: "improved", text: "Byes, playoff detection, event type detection, venue parsing, and weekly/monthly rankings were refined." },
+      { type: "fixed", text: "Import parsing, public profile permissions, social preview metadata, and timezone handling received early fixes." },
     ],
   },
 ];
 
 function countByType(changes: Change[], type: ChangeType): number {
-  return changes.filter((c) => c.type === type).length;
+  return changes.filter((change) => change.type === type).length;
 }
 
 export default function ChangelogPage() {
   return (
     <div>
-      <div className="flex items-center gap-3 mb-6">
-        <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center ring-1 ring-inset ring-amber-500/20">
-          <SparklesIcon className="w-4 h-4 text-amber-400" />
+      <div className="mb-6 flex items-center gap-3">
+        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/10 ring-1 ring-inset ring-amber-500/20">
+          <SparklesIcon className="h-4 w-4 text-amber-400" />
         </div>
         <div>
-          <h1 className="text-lg font-bold text-fab-text leading-tight">Changelog</h1>
-          <p className="text-xs text-fab-muted leading-tight">See what&apos;s new, improved, and fixed in FaB Stats</p>
+          <h1 className="text-lg font-bold leading-tight text-fab-text">Changelog</h1>
+          <p className="text-xs leading-tight text-fab-muted">Current and recent changes in FaB Stats</p>
         </div>
       </div>
 
-      <div className="max-w-5xl mx-auto flex gap-10">
-      {/* Sidebar TOC */}
-      <nav className="hidden lg:block shrink-0 w-48 sticky top-20 self-start max-h-[calc(100vh-6rem)] overflow-y-auto">
-        <p className="text-xs font-semibold text-fab-muted uppercase tracking-wider mb-3">Releases</p>
-        <ul className="space-y-1">
-          {changelog.map((entry) => (
-            <li key={entry.id}>
-              <a
-                href={`#${entry.id}`}
-                className="block text-sm text-fab-muted hover:text-fab-text transition-colors py-0.5"
-              >
-                {entry.date}
-              </a>
-            </li>
-          ))}
-        </ul>
-
-        {/* Legend */}
-        <div className="mt-6 pt-4 border-t border-fab-border">
-          <p className="text-xs font-semibold text-fab-muted uppercase tracking-wider mb-2">Legend</p>
-          <div className="space-y-1.5">
-            {(["new", "improved", "fixed"] as ChangeType[]).map((type) => (
-              <div key={type} className="flex items-center gap-2">
-                <span className={`w-2 h-2 rounded-full ${badgeStyles[type].dot}`} />
-                <span className="text-xs text-fab-dim">{badgeLabels[type]}</span>
-              </div>
+      <div className="mx-auto flex max-w-5xl gap-10">
+        <nav className="hidden max-h-[calc(100vh-6rem)] w-48 shrink-0 self-start overflow-y-auto lg:sticky lg:top-20 lg:block">
+          <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-fab-muted">Releases</p>
+          <ul className="space-y-1">
+            {changelog.map((entry) => (
+              <li key={entry.id}>
+                <a href={`#${entry.id}`} className="block py-0.5 text-sm text-fab-muted transition-colors hover:text-fab-text">
+                  {entry.date}
+                </a>
+              </li>
             ))}
+          </ul>
+
+          <div className="mt-6 border-t border-fab-border pt-4">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-fab-muted">Legend</p>
+            <div className="space-y-1.5">
+              {(["new", "improved", "fixed"] as ChangeType[]).map((type) => (
+                <div key={type} className="flex items-center gap-2">
+                  <span className={`h-2 w-2 rounded-full ${badgeStyles[type].dot}`} />
+                  <span className="text-xs text-fab-dim">{badgeLabels[type]}</span>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
-      </nav>
+        </nav>
 
-      {/* Main content */}
-      <div className="flex-1 min-w-0">
-        <div className="space-y-0">
-          {changelog.map((entry, entryIdx) => {
-            const newCount = countByType(entry.changes, "new");
-            const improvedCount = countByType(entry.changes, "improved");
-            const fixedCount = countByType(entry.changes, "fixed");
+        <div className="min-w-0 flex-1">
+          <div>
+            {changelog.map((entry, entryIdx) => {
+              const newCount = countByType(entry.changes, "new");
+              const improvedCount = countByType(entry.changes, "improved");
+              const fixedCount = countByType(entry.changes, "fixed");
 
-            return (
-              <section key={entry.id} id={entry.id} className="relative pb-10">
-                {/* Timeline connector */}
-                {entryIdx < changelog.length - 1 && (
-                  <div className="absolute left-[7px] top-[28px] bottom-0 w-px bg-fab-border hidden sm:block" />
-                )}
+              return (
+                <section key={entry.id} id={entry.id} className="relative pb-10">
+                  {entryIdx < changelog.length - 1 && (
+                    <div className="absolute bottom-0 left-[7px] top-[28px] hidden w-px bg-fab-border sm:block" />
+                  )}
 
-                {/* Date header row */}
-                <div className="flex items-start gap-4 mb-4">
-                  {/* Timeline dot */}
-                  <div className="hidden sm:flex shrink-0 w-[15px] h-[15px] mt-1 rounded-full border-2 border-fab-gold bg-fab-bg z-10" />
-
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-baseline gap-3 flex-wrap">
-                      <h2 className="text-xl font-semibold text-fab-text">{entry.date}</h2>
-                      {/* Summary pills */}
-                      <div className="flex gap-1.5">
-                        {newCount > 0 && (
-                          <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-fab-win/10 text-fab-win">
-                            {newCount} new
-                          </span>
-                        )}
-                        {improvedCount > 0 && (
-                          <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-fab-gold/10 text-fab-gold">
-                            {improvedCount} improved
-                          </span>
-                        )}
-                        {fixedCount > 0 && (
-                          <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-fab-loss/10 text-fab-loss">
-                            {fixedCount} fixed
-                          </span>
-                        )}
+                  <div className="mb-4 flex items-start gap-4">
+                    <div className="z-10 mt-1 hidden h-[15px] w-[15px] shrink-0 rounded-full border-2 border-fab-gold bg-fab-bg sm:flex" />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-baseline gap-3">
+                        <h2 className="text-xl font-semibold text-fab-text">{entry.date}</h2>
+                        <div className="flex gap-1.5">
+                          {newCount > 0 && <SummaryPill type="new" count={newCount} />}
+                          {improvedCount > 0 && <SummaryPill type="improved" count={improvedCount} />}
+                          {fixedCount > 0 && <SummaryPill type="fixed" count={fixedCount} />}
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
 
-                {/* Changes card */}
-                <div className="sm:ml-[31px]">
-                  <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden">
-                    <div className="divide-y divide-fab-border">
-                      {entry.changes.map((change, i) => (
-                        <div key={i} className="flex items-start gap-3 px-4 py-2.5">
-                          <span className={`shrink-0 mt-0.5 text-[10px] font-bold uppercase px-1.5 py-0.5 rounded ${badgeStyles[change.type].bg}`}>
-                            {badgeLabels[change.type]}
-                          </span>
-                          <span className="text-sm text-fab-muted leading-relaxed">{change.text}</span>
-                        </div>
-                      ))}
+                  <div className="sm:ml-[31px]">
+                    <div className="overflow-hidden rounded-lg border border-fab-border bg-fab-surface">
+                      <div className="divide-y divide-fab-border">
+                        {entry.changes.map((change, index) => (
+                          <div key={index} className="flex items-start gap-3 px-4 py-2.5">
+                            <span className={`mt-0.5 shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase ${badgeStyles[change.type].bg}`}>
+                              {badgeLabels[change.type]}
+                            </span>
+                            <span className="text-sm leading-relaxed text-fab-muted">{change.text}</span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </div>
-                </div>
-              </section>
-            );
-          })}
-        </div>
+                </section>
+              );
+            })}
+          </div>
 
-        {/* Back to top */}
-        <div className="mt-4 pt-6 border-t border-fab-border text-center">
-          <a href="#" className="text-xs text-fab-muted hover:text-fab-text transition-colors">
-            Back to top
-          </a>
+          <div className="mt-4 border-t border-fab-border pt-6 text-center">
+            <a href="#" className="text-xs text-fab-muted transition-colors hover:text-fab-text">
+              Back to top
+            </a>
+          </div>
         </div>
-      </div>
       </div>
     </div>
+  );
+}
+
+function SummaryPill({ type, count }: { type: ChangeType; count: number }) {
+  return (
+    <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-medium ${badgeStyles[type].bg}`}>
+      {count} {type}
+    </span>
   );
 }

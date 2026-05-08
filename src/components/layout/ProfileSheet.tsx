@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { X, Bell, Search as SearchIcon, LogOut, Mail, Star, Settings as SettingsIcon, ShieldCheck, Gamepad2, Heart, User as UserIcon, Sword, Users } from "lucide-react";
+import { Bell, Heart, Mail, Search as SearchIcon, Settings as SettingsIcon, ShieldCheck, Star, User as UserIcon, Users, X } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface ProfileSheetProps {
@@ -13,7 +13,7 @@ interface ProfileSheetProps {
 
 export function ProfileSheet({ open, onClose }: ProfileSheetProps) {
   const router = useRouter();
-  const { user, profile, isAdmin, signOut } = useAuth();
+  const { user, profile, isAdmin } = useAuth();
 
   useEffect(() => {
     if (!open) return;
@@ -36,16 +36,6 @@ export function ProfileSheet({ open, onClose }: ProfileSheetProps) {
     router.push(href);
   };
 
-  const handleSignOut = async () => {
-    onClose();
-    try {
-      await signOut();
-      router.push("/login");
-    } catch {
-      // ignore — UI state will catch up via auth listener
-    }
-  };
-
   return (
     <div
       role="dialog"
@@ -66,7 +56,6 @@ export function ProfileSheet({ open, onClose }: ProfileSheetProps) {
       </header>
 
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
-        {/* Avatar / identity row */}
         <div className="flex items-center gap-3 p-3 bg-fab-surface border border-fab-border rounded-lg">
           {profile?.photoUrl ? (
             <img src={profile.photoUrl} alt="" className="w-12 h-12 rounded-full object-cover" />
@@ -85,40 +74,27 @@ export function ProfileSheet({ open, onClose }: ProfileSheetProps) {
               onClick={onClose}
               className="text-xs font-medium text-fab-gold hover:text-fab-gold-light"
             >
-              View →
+              View -&gt;
             </Link>
           )}
         </div>
 
-        {/* Quick actions */}
         <div className="grid grid-cols-2 gap-2">
           <SheetButton icon={<Bell className="w-5 h-5" />} label="Notifications" onClick={() => go("/notifications")} />
           <SheetButton icon={<SearchIcon className="w-5 h-5" />} label="Search" onClick={() => go("/search")} />
         </div>
 
-        {/* Menu */}
         <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden">
           <SheetRow icon={<Mail className="w-5 h-5" />} label="Inbox" onClick={() => go("/inbox")} />
           <SheetRow icon={<Users className="w-5 h-5" />} label="Friends" onClick={() => go("/friends")} />
           <SheetRow icon={<Star className="w-5 h-5" />} label="Favorites" onClick={() => go("/favorites")} />
-          <SheetRow icon={<Sword className="w-5 h-5" />} label="Import history" onClick={() => go("/import")} />
           <SheetRow icon={<UserIcon className="w-5 h-5" />} label="My profile" onClick={() => username ? go(`/player/${username}`) : go("/settings")} />
           <SheetRow icon={<SettingsIcon className="w-5 h-5" />} label="Settings" onClick={() => go("/settings")} />
-          <SheetRow icon={<Gamepad2 className="w-5 h-5" />} label="Daily games" onClick={() => go("/games")} />
           <SheetRow icon={<Heart className="w-5 h-5" />} label="Support" onClick={() => go("/support")} />
           {isAdmin && (
             <SheetRow icon={<ShieldCheck className="w-5 h-5" />} label="Admin" onClick={() => go("/admin")} />
           )}
         </div>
-
-        <button
-          type="button"
-          onClick={handleSignOut}
-          className="w-full flex items-center justify-center gap-2 p-3 rounded-lg border border-fab-border text-fab-muted hover:text-fab-loss hover:border-fab-loss/40 hover:bg-fab-loss/5 transition-colors min-h-[48px]"
-        >
-          <LogOut className="w-4 h-4" />
-          <span className="text-sm font-medium">Sign out</span>
-        </button>
       </div>
     </div>
   );

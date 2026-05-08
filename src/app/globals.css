@@ -264,6 +264,54 @@ body::after {
   opacity: 0.75;
 }
 
+.fab-bucket-subnav {
+  display: block;
+}
+
+@media (min-width: 768px) {
+  .fab-bucket-subnav {
+    display: none;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1180px), (min-width: 768px) and (max-height: 820px) {
+  .fab-sidebar-subnav {
+    display: none;
+  }
+
+  .fab-sidebar-link {
+    min-height: 2.625rem;
+  }
+
+  .fab-sidebar-brand,
+  .fab-sidebar-actions,
+  .fab-sidebar-account {
+    padding-top: 0.625rem !important;
+    padding-bottom: 0.625rem !important;
+  }
+
+  .fab-sidebar-nav {
+    padding-top: 0.625rem !important;
+    padding-bottom: 0.625rem !important;
+  }
+
+  .fab-sidebar-nav section + section {
+    margin-top: 0.5rem !important;
+  }
+
+  .fab-bucket-subnav {
+    display: block;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+
+  .fab-bucket-subnav ul {
+    flex-wrap: wrap;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+}
+
 [data-theme="daylight"] .nav-asset-icon {
   filter: contrast(1.18) saturate(1.08);
 }
@@ -1501,6 +1549,13 @@ button:active:not(:disabled) {
   display: none;
 }
 
+[data-theme="daylight"] body {
+  background-image:
+    radial-gradient(circle at 12% -10%, rgba(37, 99, 235, 0.07), transparent 24rem),
+    radial-gradient(circle at 88% 4%, rgba(13, 148, 136, 0.07), transparent 24rem),
+    linear-gradient(180deg, #f8fafc 0%, var(--color-fab-bg) 72%);
+}
+
 /* No accent glow on text */
 [data-theme="daylight"] .text-fab-gold {
   text-shadow: none;
@@ -1552,6 +1607,34 @@ button:active:not(:disabled) {
 }
 
 /* Input borders — visible on white */
+[data-theme="daylight"] .fab-sidebar,
+[data-theme="daylight"] .fab-topbar,
+[data-theme="daylight"] .fab-mobile-shell {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(246, 248, 251, 0.98));
+  box-shadow:
+    inset -1px 0 0 rgba(15, 23, 42, 0.04),
+    18px 0 36px -34px rgba(15, 23, 42, 0.45);
+}
+
+[data-theme="daylight"] .fab-mobile-shell {
+  box-shadow: 0 -14px 30px -26px rgba(15, 23, 42, 0.35);
+}
+
+[data-theme="daylight"] .fab-sidebar-link:hover,
+[data-theme="daylight"] .fab-sidebar-subitem:hover,
+[data-theme="daylight"] .fab-mobile-tab:hover {
+  background: rgba(15, 23, 42, 0.04);
+}
+
+[data-theme="daylight"] .fab-sidebar-link[data-active="true"],
+[data-theme="daylight"] .fab-mobile-tab[data-active="true"],
+[data-theme="daylight"] .fab-sidebar-subitem[data-active="true"] {
+  background: rgba(29, 78, 216, 0.08);
+  border-color: rgba(29, 78, 216, 0.22);
+}
+
+/* Input borders on the light theme */
 [data-theme="daylight"] input[class*="border-fab-border"],
 [data-theme="daylight"] select[class*="border-fab-border"],
 [data-theme="daylight"] textarea[class*="border-fab-border"] {
@@ -1585,9 +1668,12 @@ button:active:not(:disabled) {
 [data-theme="daylight"] .text-indigo-400 { color: #4338ca; }
 [data-theme="daylight"] .text-pink-400 { color: #be185d; }
 [data-theme="daylight"] .text-blue-400 { color: #2563eb; }
+[data-theme="daylight"] .text-sky-400 { color: #0369a1; }
 [data-theme="daylight"] .text-yellow-400 { color: #a16207; }
 [data-theme="daylight"] .text-green-400 { color: #15803d; }
 [data-theme="daylight"] .text-purple-400 { color: #7c3aed; }
+[data-theme="daylight"] .text-violet-400 { color: #6d28d9; }
+[data-theme="daylight"] .text-rose-400 { color: #be123c; }
 
 /* bg-*-400/10 tints — make visible on white */
 [data-theme="daylight"] .bg-red-400\/10 { background-color: rgba(220, 38, 38, 0.08); }
@@ -1595,6 +1681,8 @@ button:active:not(:disabled) {
 [data-theme="daylight"] .bg-amber-400\/10 { background-color: rgba(180, 83, 9, 0.08); }
 [data-theme="daylight"] .bg-indigo-400\/10 { background-color: rgba(67, 56, 202, 0.08); }
 [data-theme="daylight"] .bg-pink-400\/10 { background-color: rgba(190, 24, 93, 0.08); }
+[data-theme="daylight"] .bg-sky-400\/10 { background-color: rgba(3, 105, 161, 0.08); }
+[data-theme="daylight"] .bg-violet-400\/10 { background-color: rgba(109, 40, 217, 0.08); }
 
 /* fab-gold opacity tints — ensure visibility on white */
 [data-theme="daylight"] .bg-fab-gold\/10 { background-color: rgba(29, 78, 216, 0.07); }

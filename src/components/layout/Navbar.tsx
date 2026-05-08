@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { ImportIcon } from "@/components/icons/NavIcons";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { useAuth } from "@/contexts/AuthContext";
@@ -10,7 +10,7 @@ import { useCommunityStats } from "@/hooks/useCommunityStats";
 import { useFriends } from "@/hooks/useFriends";
 import type { ReactNode } from "react";
 import type { Creator } from "@/types";
-import { ExternalLink, LogOut } from "lucide-react";
+import { ExternalLink } from "lucide-react";
 import dynamic from "next/dynamic";
 const FeedbackModal = dynamic(() => import("@/components/feedback/FeedbackModal").then(m => ({ default: m.FeedbackModal })), { ssr: false });
 import { SmartSearch } from "@/components/search/SmartSearch";
@@ -18,8 +18,7 @@ import { navLinks, userMenuLinks } from "./nav-data";
 
 export function Navbar() {
   const pathname = usePathname();
-  const router = useRouter();
-  const { user, profile, isGuest, isAdmin, signOut } = useAuth();
+  const { user, profile, isGuest, isAdmin } = useAuth();
   const [mounted, setMounted] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const { userCount, matchCount } = useCommunityStats();
@@ -68,18 +67,9 @@ export function Navbar() {
   const initial = displayName.charAt(0).toUpperCase();
   const visibleUserLinks = userMenuLinks.filter((l) => !l.adminOnly || isAdmin);
 
-  const handleSignOut = useCallback(async () => {
-    try {
-      await signOut();
-      router.push("/login");
-    } catch {
-      // Auth listener will reconcile if sign-out fails transiently.
-    }
-  }, [router, signOut]);
-
   return (<>
     <nav className="fab-sidebar hidden md:flex fixed inset-y-0 left-0 z-50 w-64 flex-col bg-fab-surface/95 backdrop-blur-md border-r border-fab-border/80">
-      <div className="shrink-0 px-4 py-3 border-b border-fab-border/70">
+      <div className="fab-sidebar-brand shrink-0 px-4 py-3 border-b border-fab-border/70">
         <Link href="/" className="flex items-center gap-2.5 min-w-0 rounded-lg -mx-1 px-1 py-1 transition-colors hover:bg-fab-surface-hover/60">
           <svg className="w-8 h-8 shrink-0" viewBox="0 0 24 24" fill="none">
             <rect x="5" y="2" width="14" height="20" rx="2" stroke="#D9A05B" strokeWidth="2" />
@@ -94,7 +84,7 @@ export function Navbar() {
         )}
       </div>
 
-      <div className="px-3 py-3 border-b border-fab-border/70 space-y-2">
+      <div className="fab-sidebar-actions px-3 py-3 border-b border-fab-border/70 space-y-2">
         <SmartSearch placeholder="Search players or teams..." className="text-xs" />
         {mounted && isAuthenticated && (
           <Link
@@ -111,7 +101,7 @@ export function Navbar() {
         )}
       </div>
 
-      <div className="flex-1 overflow-y-auto px-2 py-3">
+      <div className="fab-sidebar-nav flex-1 overflow-y-auto px-2 py-3">
         {mounted && (
           <div className="space-y-4">
             {visibleNavLinks.map((link) => {
@@ -216,7 +206,7 @@ export function Navbar() {
         )}
       </div>
 
-      <div className="border-t border-fab-border/70 p-3 space-y-3">
+      <div className="fab-sidebar-account border-t border-fab-border/70 p-3 space-y-3">
         {mounted && (
           <>
             {isAdmin && onlineStats && (
@@ -294,14 +284,6 @@ export function Navbar() {
                   ))}
                 </div>
 
-                <button
-                  type="button"
-                  onClick={handleSignOut}
-                  className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-fab-border/70 text-xs font-medium text-fab-muted hover:text-fab-loss hover:border-fab-loss/40 hover:bg-fab-loss/5 transition-colors"
-                >
-                  <LogOut className="w-3.5 h-3.5" />
-                  Sign Out
-                </button>
               </>
             )}
           </>

@@ -96,7 +96,7 @@ export default function AdminPage() {
   const [savingSeasons, setSavingSeasons] = useState(false);
   const [seasonsSaved, setSeasonsSaved] = useState(false);
   // Default theme
-  const [defaultTheme, setDefaultTheme] = useState<ThemeName>("grimoire");
+  const [defaultTheme, setDefaultTheme] = useState<ThemeName>("rosetta");
   const [savingTheme, setSavingTheme] = useState(false);
   const [themeSaved, setThemeSaved] = useState(false);
   const [resettingThemes, setResettingThemes] = useState(false);

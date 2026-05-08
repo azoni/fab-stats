@@ -21,9 +21,10 @@ const USER_THEME_KEY = "fab-theme";
 const USER_THEME_GEN_KEY = "fab-theme-gen";
 
 const SLUG_MIGRATION: Record<string, ThemeName> = {
-  arcana: "grimoire",
-  ironheart: "grimoire",
+  arcana: "rosetta",
+  ironheart: "rosetta",
   chromatic: "rosetta",
+  grimoire: "rosetta",
 };
 
 const VALID_THEMES = new Set(THEME_OPTIONS.map((o) => o.value));
