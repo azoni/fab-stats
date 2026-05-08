@@ -1,6 +1,11 @@
 @import "tailwindcss";
 
-@theme inline {
+/* Theme tokens. NOT `@theme inline` — that bakes color values into utility
+   classes as literals at build time, which silently breaks every
+   `[data-theme="..."]` override (the override changes the CSS variable but
+   the utility classes never look at it). With plain `@theme`, utilities
+   compile to `color: var(--color-fab-gold)` and respond to theme switches. */
+@theme {
   --color-fab-bg: #050605;
   --color-fab-surface: #12110f;
   --color-fab-surface-hover: #1b1813;
