@@ -153,10 +153,18 @@ export function TeamAggregateStats({ entries, accentColor = "#d4a843", filteredM
     <div>
       <h2 className="text-sm font-bold text-fab-text uppercase tracking-wider mb-4">Team Stats</h2>
 
-      {/* Stat grid */}
+      {/* Stat grid — top border tinted with the team accent color so each
+          team's stat row feels distinct rather than generic. */}
       <div className="grid grid-cols-3 md:grid-cols-6 gap-2 mb-4 stagger-grid">
         {statItems.map((s) => (
-          <div key={s.label} className="bg-fab-surface border border-fab-border rounded-xl px-3 py-3 text-center">
+          <div
+            key={s.label}
+            className="relative bg-fab-surface border border-fab-border rounded-xl px-3 py-3 text-center overflow-hidden"
+          >
+            <span
+              className="absolute inset-x-0 top-0 h-[2px] rounded-t-xl"
+              style={{ background: `linear-gradient(90deg, transparent, ${accentColor}cc, transparent)` }}
+            />
             <s.icon className="w-3.5 h-3.5 mx-auto mb-1 text-fab-dim" />
             <p className="text-lg font-black tabular-nums leading-none" style={s.color ? { color: s.color } : undefined}>
               {s.value}

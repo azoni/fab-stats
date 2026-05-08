@@ -385,6 +385,9 @@ export default function TeamPage() {
       {/* Team Stats */}
       <TeamAggregateStats entries={lbEntries} accentColor={accent} filteredMatches={isFiltered ? filteredMatchesPerMember : undefined} filterFormat={filterFormat} filterEventType={filterEventType} filterHero={filterHero} />
 
+      {/* Roster — surfaced near the top so members are visible without scrolling. */}
+      <TeamRoster members={members} leaderboardMap={leaderboardMap} accentColor={accent} filteredStats={filteredMemberStats} teamId={team?.id} viewerRole={viewerRole} viewerUid={user?.uid} onMemberUpdated={async () => { if (team) { const m = await getTeamMembers(team.id); setMembers(m); } }} />
+
       {/* Recent Placements — the showcase highlight */}
       {matchDataLoaded && filteredFinishes.length > 0 && (
         <TeamRecentPlacements finishes={filteredFinishes} accentColor={accent} />
@@ -413,9 +416,6 @@ export default function TeamPage() {
           <ArmoryGarden eventStats={allArmoryStats} ownerProfile={dummyProfile} />
         </div>
       )}
-
-      {/* Roster */}
-      <TeamRoster members={members} leaderboardMap={leaderboardMap} accentColor={accent} filteredStats={filteredMemberStats} teamId={team?.id} viewerRole={viewerRole} viewerUid={user?.uid} onMemberUpdated={async () => { if (team) { const m = await getTeamMembers(team.id); setMembers(m); } }} />
     </div>
   );
 }
