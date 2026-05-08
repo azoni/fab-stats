@@ -1,13 +1,12 @@
 "use client";
+
 import { useMemo } from "react";
 import Link from "next/link";
 import type { User } from "firebase/auth";
 import type { LeaderboardEntry } from "@/types";
 import type { HeroMetaStats, CommunityOverview } from "@/lib/meta-stats";
-import { selectFeaturedProfiles } from "@/lib/featured-profiles";
 import { VISIBLE_GAMES as GAMES } from "@/lib/games";
-import { MetaSnapshot } from "@/components/home/MetaSnapshot";
-import { FeaturedProfiles } from "@/components/home/FeaturedProfiles";
+import { HeroImg } from "@/components/heroes/HeroImg";
 import { ShieldIcon } from "@/components/icons/NavIcons";
 
 interface LoggedOutHomeProps {
@@ -16,341 +15,266 @@ interface LoggedOutHomeProps {
   lbEntries: LeaderboardEntry[];
 }
 
-const FEATURES = [
+const PRODUCT_PATHS = [
   {
     href: "/login",
-    label: "Match Tracking",
-    desc: "Import matches and track your win rate, streaks, and trends over time.",
-    color: "text-fab-gold",
-    bgColor: "bg-fab-gold/10 ring-fab-gold/20",
-    icon: "M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z",
+    label: "Track Matches",
+    eyebrow: "Personal record",
+    desc: "Import GEM results and keep a clean history of heroes, events, opponents, and finishes.",
+    accent: "text-fab-gold",
   },
   {
     href: "/meta",
-    label: "Community Meta",
-    desc: "See which heroes dominate and their real community win rates.",
-    color: "text-teal-400",
-    bgColor: "bg-teal-500/10 ring-teal-500/20",
-    icon: "M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z",
-  },
-  {
-    href: "/leaderboard",
-    label: "Leaderboard",
-    desc: "90+ rankings: ELO, win rate, streaks, events, kudos, and more.",
-    color: "text-amber-400",
-    bgColor: "bg-amber-500/10 ring-amber-500/20",
-    icon: "M16.5 18.75h-9m9 0a3 3 0 013 3h-15a3 3 0 013-3m9 0v-3.375c0-.621-.503-1.125-1.125-1.125h-.871M7.5 18.75v-3.375c0-.621.504-1.125 1.125-1.125h.872m5.007 0H9.497m5.007 0a7.454 7.454 0 01-.982-3.172M9.497 14.25a7.454 7.454 0 00.981-3.172M5.25 4.236c-.982.143-1.954.317-2.916.52A6.003 6.003 0 007.73 9.728M5.25 4.236V4.5c0 2.108.966 3.99 2.48 5.228M5.25 4.236V2.721C7.456 2.41 9.71 2.25 12 2.25c2.291 0 4.545.16 6.75.47v1.516M18.75 4.236c.982.143 1.954.317 2.916.52A6.003 6.003 0 0016.27 9.728M18.75 4.236V4.5c0 2.108-.966 3.99-2.48 5.228m0 0a6.023 6.023 0 01-2.77.704 6.023 6.023 0 01-2.77-.704",
+    label: "Read the Meta",
+    eyebrow: "Community data",
+    desc: "See which heroes are actually converting across tracked events and leaderboard profiles.",
+    accent: "text-teal-400",
   },
   {
     href: "/games",
-    label: "Daily Games",
-    desc: "14 daily mini-games: FaBdoku, Hero Guesser, Trivia, Crossword, and more.",
-    color: "text-rose-400",
-    bgColor: "bg-rose-500/10 ring-rose-500/20",
-    icon: "M14.25 6.087c0-.355.186-.676.401-.959.221-.29.349-.634.349-1.003 0-1.036-1.007-1.875-2.25-1.875s-2.25.84-2.25 1.875c0 .369.128.713.349 1.003.215.283.401.604.401.959v0a.64.64 0 01-.657.643 48.39 48.39 0 01-4.163-.3c.186 1.613.293 3.25.315 4.907a.656.656 0 01-.658.663v0c-.355 0-.676-.186-.959-.401a1.647 1.647 0 00-1.003-.349c-1.036 0-1.875 1.007-1.875 2.25s.84 2.25 1.875 2.25c.369 0 .713-.128 1.003-.349.283-.215.604-.401.959-.401v0c.31 0 .555.26.532.57a48.039 48.039 0 01-.642 5.056c1.518.19 3.058.309 4.616.354a.64.64 0 00.657-.643v0c0-.355-.186-.676-.401-.959a1.647 1.647 0 01-.349-1.003c0-1.035 1.008-1.875 2.25-1.875 1.243 0 2.25.84 2.25 1.875 0 .369-.128.713-.349 1.003-.215.283-.4.604-.4.959v0c0 .333.277.599.61.58a48.1 48.1 0 005.427-.63 48.05 48.05 0 00.582-4.717.532.532 0 00-.533-.57v0c-.355 0-.676.186-.959.401-.29.221-.634.349-1.003.349-1.035 0-1.875-1.007-1.875-2.25s.84-2.25 1.875-2.25c.37 0 .713.128 1.003.349.283.215.604.401.959.401v0a.656.656 0 00.658-.663 48.422 48.422 0 00-.37-5.36c-1.886.342-3.81.574-5.766.689a.578.578 0 01-.61-.58v0z",
-  },
-  {
-    href: "/compare",
-    label: "Head to Head",
-    desc: "Compare your stats against any player side by side.",
-    color: "text-violet-400",
-    bgColor: "bg-violet-500/10 ring-violet-500/20",
-    icon: "M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5",
+    label: "Play Daily Games",
+    eyebrow: "Warm up",
+    desc: "Quick Flesh and Blood puzzles for hero knowledge, trivia, matchups, and pattern recognition.",
+    accent: "text-rose-400",
   },
 ];
+
+function formatCount(value: number): string {
+  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(value >= 10_000_000 ? 0 : 1)}M`;
+  if (value >= 10_000) return `${Math.round(value / 1_000)}k`;
+  return value.toLocaleString();
+}
+
+function displayPlayerName(player: LeaderboardEntry): string {
+  return player.displayName || player.username || "Player";
+}
 
 export function LoggedOutHome({ user, communityMeta, lbEntries }: LoggedOutHomeProps) {
   const { overview, heroStats } = communityMeta;
 
-  const featuredProfiles = useMemo(() => selectFeaturedProfiles(lbEntries), [lbEntries]);
-
   const topPlayers = useMemo(() =>
     lbEntries
-      .filter((e) => e.isPublic && e.username && e.totalMatches >= 20)
+      .filter((entry) => entry.isPublic && entry.username && entry.totalMatches >= 20)
       .sort((a, b) => (b.eloRating ?? 0) - (a.eloRating ?? 0))
-      .slice(0, 5),
+      .slice(0, 6),
     [lbEntries],
   );
 
+  const topHeroes = useMemo(() => heroStats.slice(0, 6), [heroStats]);
+  const maxMetaShare = Math.max(1, ...topHeroes.map((hero) => hero.metaShare));
   const featuredGames = useMemo(() => GAMES.slice(0, 6), []);
 
   return (
-    <div className="space-y-10">
-      {/* ── Section 1: Hero Banner — parchment brand treatment ── */}
-      <div className="relative bg-fab-parchment text-fab-ink rounded-xl overflow-hidden ring-1 ring-fab-warm-gold-deep/20 shadow-[0_2px_24px_-8px_rgba(0,0,0,0.4)]">
-        {/* Background art — warrior portrait, anchored to right edge.
-            We push the image right so the baked-in headline crops off-frame and
-            only the warrior is visible alongside our HTML headline. */}
-        <div
-          className="absolute inset-0 bg-no-repeat pointer-events-none"
-          style={{
-            backgroundImage: "url('/brand/hero-marquee.png')",
-            backgroundSize: "auto 110%",
-            backgroundPosition: "110% center",
-          }}
-        />
-        {/* Heavy parchment fade on left so any residual baked text is masked
-            and our HTML headline reads cleanly. */}
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            background:
-              "linear-gradient(to right, var(--color-fab-parchment) 0%, var(--color-fab-parchment) 45%, rgba(239,229,204,0.6) 65%, transparent 90%)",
-          }}
-        />
-        {/* Subtle gold border accents */}
-        <div className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-fab-warm-gold to-transparent pointer-events-none" />
-        <div className="absolute bottom-0 inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-fab-warm-gold/60 to-transparent pointer-events-none" />
+    <div className="space-y-8">
+      <section
+        className="relative min-h-[420px] overflow-hidden rounded-xl border border-fab-border/80 bg-fab-bg shadow-[0_24px_60px_-48px_rgba(0,0,0,0.95)]"
+        style={{
+          backgroundImage:
+            "linear-gradient(90deg, rgba(18,16,12,0.98) 0%, rgba(18,16,12,0.9) 44%, rgba(18,16,12,0.58) 72%, rgba(18,16,12,0.86) 100%), url('/brand/hero-marquee.png')",
+          backgroundPosition: "center, 112% center",
+          backgroundRepeat: "no-repeat, no-repeat",
+          backgroundSize: "cover, auto 118%",
+        }}
+      >
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-fab-gold/45 to-transparent" />
+        <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-teal-400/25 to-transparent" />
 
-        <div className="relative p-6 sm:p-10 lg:p-12 max-w-2xl">
-          {/* Logo + wordmark */}
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 rounded-md bg-fab-ink flex items-center justify-center shrink-0">
-              <ShieldIcon className="w-5 h-5 text-fab-oxblood" />
-            </div>
-            <div>
-              <h1 className="text-xl font-black tracking-tight text-fab-ink leading-none">
-                fab<span className="text-fab-oxblood">stats</span>
-              </h1>
-              <p className="text-[10px] uppercase tracking-[0.18em] text-fab-ink-muted font-semibold mt-1">
-                Flesh and Blood Player Tracker
-              </p>
-            </div>
+        <div className="relative flex min-h-[420px] max-w-3xl flex-col justify-center px-5 py-8 sm:px-8 lg:px-10">
+          <div className="mb-5 inline-flex w-fit items-center gap-2 rounded-lg border border-fab-border/70 bg-fab-surface/70 px-3 py-2 backdrop-blur">
+            <ShieldIcon className="h-4 w-4 text-fab-gold" />
+            <span className="text-[11px] font-bold uppercase tracking-[0.16em] text-fab-muted">
+              Flesh and Blood Match Tracker
+            </span>
           </div>
 
-          {/* Big display headline — stacked, with red accent on IMPROVE */}
-          <h2 className="font-black tracking-tight text-fab-ink leading-[0.92] text-5xl sm:text-6xl lg:text-7xl mb-5">
-            <span className="block">TRACK.</span>
-            <span className="block text-fab-oxblood">IMPROVE.</span>
-            <span className="block">VICTORY.</span>
-          </h2>
+          <h1 className="max-w-2xl text-4xl font-black leading-[0.96] tracking-tight text-fab-text sm:text-5xl lg:text-6xl">
+            Know your record before the next round.
+          </h1>
 
-          <p className="text-sm sm:text-base text-fab-ink-muted max-w-md mb-7 leading-relaxed">
-            Track matches, events, and performance so you can measure your progress
-            and focus on what matters — <span className="font-semibold text-fab-ink">winning</span>.
+          <p className="mt-5 max-w-xl text-sm leading-6 text-fab-muted sm:text-base">
+            FaB Stats turns match history into a tournament-ready view of your win rate,
+            event finishes, opponent records, hero trends, and community meta.
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-3 mb-8">
-            {user ? (
-              <Link
-                href="/import"
-                className="w-full sm:w-auto text-center px-6 py-3 rounded-md text-sm font-bold uppercase tracking-wider bg-fab-oxblood text-fab-parchment hover:bg-fab-oxblood-deep transition-colors shadow-md"
-              >
-                Import Your Matches
-              </Link>
-            ) : (
-              <Link
-                href="/login"
-                className="w-full sm:w-auto text-center px-6 py-3 rounded-md text-sm font-bold uppercase tracking-wider bg-fab-oxblood text-fab-parchment hover:bg-fab-oxblood-deep transition-colors shadow-md"
-              >
-                Sign Up Free
-              </Link>
-            )}
+          <div className="mt-7 flex flex-col gap-3 sm:flex-row">
+            <Link
+              href={user ? "/import" : "/login"}
+              className="inline-flex min-h-[44px] items-center justify-center rounded-lg bg-fab-gold px-5 py-2.5 text-sm font-bold text-fab-bg transition-colors hover:bg-fab-gold-light"
+            >
+              {user ? "Import Matches" : "Start Tracking Free"}
+            </Link>
             <Link
               href="/leaderboard"
-              className="w-full sm:w-auto text-center px-6 py-3 rounded-md text-sm font-bold uppercase tracking-wider border-2 border-fab-ink/80 text-fab-ink hover:bg-fab-ink hover:text-fab-parchment transition-colors"
+              className="inline-flex min-h-[44px] items-center justify-center rounded-lg border border-fab-border/80 bg-fab-surface/70 px-5 py-2.5 text-sm font-semibold text-fab-text transition-colors hover:border-fab-gold/35 hover:bg-fab-surface-hover"
             >
-              Browse Leaderboard
+              Browse Community Data
             </Link>
           </div>
 
-          {/* Community stats counters — parchment-themed */}
           {overview.totalPlayers > 0 && (
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-lg">
+            <div className="mt-8 grid max-w-2xl grid-cols-2 gap-3 sm:grid-cols-4">
               {[
                 { value: overview.totalPlayers, label: "Players" },
                 { value: overview.totalMatches, label: "Matches" },
                 { value: overview.totalHeroes, label: "Heroes" },
                 { value: overview.totalEvents, label: "Events" },
-              ].map((s) => (
-                <div key={s.label} className="border-l-2 border-fab-warm-gold pl-3">
-                  <div className="text-xl font-black text-fab-ink tabular-nums leading-none">
-                    {s.value.toLocaleString()}
-                  </div>
-                  <div className="text-[10px] uppercase tracking-wider text-fab-ink-muted font-semibold mt-1">
-                    {s.label}
-                  </div>
+              ].map((stat) => (
+                <div key={stat.label} className="rounded-lg border border-fab-border/60 bg-fab-surface/55 px-3 py-2.5 backdrop-blur">
+                  <p className="text-xl font-black leading-none text-fab-text tabular-nums">{formatCount(stat.value)}</p>
+                  <p className="mt-1 text-[10px] font-bold uppercase tracking-[0.12em] text-fab-dim">{stat.label}</p>
                 </div>
               ))}
             </div>
           )}
         </div>
+      </section>
 
-        {/* Bottom strip — tagline */}
-        <div className="relative bg-fab-ink px-6 sm:px-10 lg:px-12 py-3 flex items-center gap-3">
-          <ShieldIcon className="w-4 h-4 text-fab-oxblood shrink-0" />
-          <p className="text-xs sm:text-sm font-bold uppercase tracking-wider text-fab-parchment">
-            Your Journey. <span className="text-fab-oxblood">Your Stats.</span> Your Edge.
-          </p>
-        </div>
-      </div>
-
-      {/* ── Section 2: Meta Snapshot ── */}
-      {heroStats.length > 0 && (
-        <MetaSnapshot topHeroes={heroStats.slice(0, 5)} />
-      )}
-
-      {/* ── Section 3: Feature Showcase Grid ── */}
-      <div>
-        <h3 className="text-sm font-semibold text-fab-text mb-3">Everything You Need</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {FEATURES.map((f) => (
-            <Link
-              key={f.label}
-              href={f.href}
-              className="group bg-fab-surface border border-fab-border rounded-lg p-4 hover:border-fab-gold/30 transition-colors"
-            >
-              <div className="flex items-start gap-3">
-                <div className={`w-8 h-8 rounded-lg ${f.bgColor} flex items-center justify-center ring-1 ring-inset shrink-0`}>
-                  <svg className={`w-4 h-4 ${f.color}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d={f.icon} />
-                  </svg>
-                </div>
-                <div className="min-w-0">
-                  <div className="text-sm font-semibold text-fab-text group-hover:text-fab-gold transition-colors">{f.label}</div>
-                  <p className="text-xs text-fab-dim mt-0.5">{f.desc}</p>
-                </div>
-              </div>
-            </Link>
-          ))}
-        </div>
-      </div>
-
-      {/* ── Section 4: Leaderboard Preview ── */}
-      {topPlayers.length > 0 && (
-        <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-fab-border/50">
-            <div className="flex items-center gap-2">
-              <div className="w-6 h-6 rounded-md bg-amber-500/10 flex items-center justify-center ring-1 ring-inset ring-amber-500/20">
-                <svg className="w-3.5 h-3.5 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 18.75h-9m9 0a3 3 0 013 3h-15a3 3 0 013-3m9 0v-3.375c0-.621-.503-1.125-1.125-1.125h-.871M7.5 18.75v-3.375c0-.621.504-1.125 1.125-1.125h.872m5.007 0H9.497m5.007 0a7.454 7.454 0 01-.982-3.172M9.497 14.25a7.454 7.454 0 00.981-3.172M5.25 4.236c-.982.143-1.954.317-2.916.52A6.003 6.003 0 007.73 9.728M5.25 4.236V4.5c0 2.108.966 3.99 2.48 5.228M5.25 4.236V2.721C7.456 2.41 9.71 2.25 12 2.25c2.291 0 4.545.16 6.75.47v1.516M18.75 4.236c.982.143 1.954.317 2.916.52A6.003 6.003 0 0016.27 9.728M18.75 4.236V4.5c0 2.108-.966 3.99-2.48 5.228m0 0a6.023 6.023 0 01-2.77.704 6.023 6.023 0 01-2.77-.704" />
-                </svg>
-              </div>
-              <h3 className="text-sm font-semibold text-fab-text">Top Players</h3>
+      <section className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_380px]">
+        <div className="fab-card rounded-xl border border-fab-border bg-fab-surface/95 p-4 sm:p-5">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-teal-400/80">Community Meta</p>
+              <h2 className="mt-1 text-lg font-bold tracking-tight text-fab-text">Most Played Heroes</h2>
             </div>
-            <Link href="/leaderboard" className="text-xs text-fab-gold hover:text-fab-gold-light transition-colors font-medium">
-              View All
+            <Link href="/meta" className="text-xs font-semibold text-fab-gold transition-colors hover:text-fab-gold-light">
+              Full meta
             </Link>
           </div>
-          <div className="divide-y divide-fab-border/30">
-            {topPlayers.map((p, i) => (
-              <Link
-                key={p.userId}
-                href={`/player/${p.username}`}
-                className="flex items-center gap-3 px-4 py-2.5 hover:bg-fab-bg/50 transition-colors"
-              >
-                <span className={`w-5 text-xs font-bold tabular-nums ${i < 3 ? "text-fab-gold" : "text-fab-dim"}`}>
-                  {i + 1}
-                </span>
-                {p.photoUrl ? (
-                  <img src={p.photoUrl} alt="" className="w-7 h-7 rounded-full" />
-                ) : (
-                  <div className="w-7 h-7 rounded-full bg-fab-gold/15 flex items-center justify-center text-fab-gold text-xs font-bold">
-                    {p.displayName.charAt(0).toUpperCase()}
+
+          {topHeroes.length > 0 ? (
+            <div className="space-y-2">
+              {topHeroes.map((hero, index) => (
+                <Link
+                  key={hero.hero}
+                  href="/meta"
+                  className="group grid grid-cols-[2rem_2.25rem_minmax(0,1fr)_4.75rem] items-center gap-3 rounded-lg border border-transparent px-2 py-2 transition-colors hover:border-fab-gold/20 hover:bg-fab-surface-hover/70"
+                >
+                  <span className={`text-center text-sm font-black tabular-nums ${index === 0 ? "text-fab-gold" : "text-fab-dim"}`}>
+                    {index + 1}
+                  </span>
+                  <HeroImg name={hero.hero} size="sm" />
+                  <div className="min-w-0">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className={`truncate text-sm font-semibold ${index === 0 ? "text-fab-gold" : "text-fab-text group-hover:text-fab-gold"}`}>
+                        {hero.hero}
+                      </p>
+                      <p className="shrink-0 text-xs font-bold text-fab-muted tabular-nums">
+                        {hero.metaShare.toFixed(1)}%
+                      </p>
+                    </div>
+                    <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-fab-bg">
+                      <div
+                        className="h-full rounded-full bg-gradient-to-r from-teal-400 to-fab-gold"
+                        style={{ width: `${Math.max(8, (hero.metaShare / maxMetaShare) * 100)}%` }}
+                      />
+                    </div>
                   </div>
-                )}
-                <div className="flex-1 min-w-0">
-                  <span className="text-sm font-medium text-fab-text truncate block">{p.displayName}</span>
-                </div>
-                <span className={`text-xs font-semibold tabular-nums ${p.winRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>
-                  {p.winRate.toFixed(1)}%
-                </span>
-                <span className="text-xs text-fab-dim tabular-nums">{p.totalMatches}m</span>
-              </Link>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* ── Section 5: Daily Games Teaser ── */}
-      <div>
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-md bg-rose-500/10 flex items-center justify-center ring-1 ring-inset ring-rose-500/20">
-              <svg className="w-3.5 h-3.5 text-rose-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M14.25 6.087c0-.355.186-.676.401-.959.221-.29.349-.634.349-1.003 0-1.036-1.007-1.875-2.25-1.875s-2.25.84-2.25 1.875c0 .369.128.713.349 1.003.215.283.401.604.401.959v0a.64.64 0 01-.657.643 48.39 48.39 0 01-4.163-.3c.186 1.613.293 3.25.315 4.907a.656.656 0 01-.658.663v0c-.355 0-.676-.186-.959-.401a1.647 1.647 0 00-1.003-.349c-1.036 0-1.875 1.007-1.875 2.25s.84 2.25 1.875 2.25c.369 0 .713-.128 1.003-.349.283-.215.604-.401.959-.401v0c.31 0 .555.26.532.57a48.039 48.039 0 01-.642 5.056c1.518.19 3.058.309 4.616.354a.64.64 0 00.657-.643v0c0-.355-.186-.676-.401-.959a1.647 1.647 0 01-.349-1.003c0-1.035 1.008-1.875 2.25-1.875 1.243 0 2.25.84 2.25 1.875 0 .369-.128.713-.349 1.003-.215.283-.4.604-.4.959v0c0 .333.277.599.61.58a48.1 48.1 0 005.427-.63 48.05 48.05 0 00.582-4.717.532.532 0 00-.533-.57v0c-.355 0-.676.186-.959.401-.29.221-.634.349-1.003.349-1.035 0-1.875-1.007-1.875-2.25s.84-2.25 1.875-2.25c.37 0 .713.128 1.003.349.283.215.604.401.959.401v0a.656.656 0 00.658-.663 48.422 48.422 0 00-.37-5.36c-1.886.342-3.81.574-5.766.689a.578.578 0 01-.61-.58v0z" />
-              </svg>
+                  <div className="text-right">
+                    <p className={`text-sm font-black tabular-nums ${hero.avgWinRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>
+                      {hero.avgWinRate.toFixed(0)}%
+                    </p>
+                    <p className="text-[10px] font-semibold uppercase tracking-wide text-fab-dim">Win</p>
+                  </div>
+                </Link>
+              ))}
             </div>
-            <h3 className="text-sm font-semibold text-fab-text">Daily Mini-Games</h3>
-          </div>
-          <Link href="/games" className="text-xs text-fab-gold hover:text-fab-gold-light transition-colors font-medium">
-            Play All 14
-          </Link>
-        </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
-          {featuredGames.map((g) => (
-            <Link
-              key={g.slug}
-              href={g.href}
-              className="group bg-fab-surface border border-fab-border rounded-lg px-3 py-2.5 hover:border-fab-gold/30 transition-colors text-center"
-            >
-              <div className="flex justify-center mb-1.5">
-                <svg className={`w-5 h-5 ${g.color}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d={g.iconPath} />
-                </svg>
-              </div>
-              <div className="text-xs font-semibold text-fab-text group-hover:text-fab-gold transition-colors">{g.label}</div>
-              <div className="text-[10px] text-fab-dim mt-0.5">{g.subtitle}</div>
-            </Link>
-          ))}
-        </div>
-      </div>
-
-      {/* ── Section 6: Player Spotlights ── */}
-      {featuredProfiles.length > 0 && (
-        <FeaturedProfiles profiles={featuredProfiles} grid />
-      )}
-
-      {/* ── Section 7: Closing CTA ── */}
-      <div className="relative bg-fab-surface border border-fab-border rounded-lg p-6 text-center overflow-hidden">
-        <div className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-fab-gold/30 to-transparent" />
-        <h3 className="text-lg font-bold text-fab-text mb-1">Ready to track your journey?</h3>
-        {overview.totalPlayers > 0 && (
-          <p className="text-sm text-fab-muted mb-4">
-            Join {overview.totalPlayers.toLocaleString()} players already tracking their stats.
-          </p>
-        )}
-        <div className="flex justify-center gap-3 flex-wrap mb-5">
-          {user ? (
-            <Link
-              href="/import"
-              className="px-6 py-2.5 rounded-lg text-sm font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors"
-            >
-              Import Your Matches
-            </Link>
           ) : (
-            <Link
-              href="/login"
-              className="px-6 py-2.5 rounded-lg text-sm font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors"
-            >
-              Sign Up Free
-            </Link>
+            <p className="rounded-lg border border-fab-border/70 bg-fab-bg/60 p-4 text-sm text-fab-muted">
+              Meta data will appear as more public match records are tracked.
+            </p>
           )}
+        </div>
+
+        <div className="fab-card rounded-xl border border-fab-border bg-fab-surface/95 p-4 sm:p-5">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-amber-400/80">Leaderboard</p>
+              <h2 className="mt-1 text-lg font-bold tracking-tight text-fab-text">Players to Watch</h2>
+            </div>
+            <Link href="/leaderboard" className="text-xs font-semibold text-fab-gold transition-colors hover:text-fab-gold-light">
+              Rankings
+            </Link>
+          </div>
+
+          {topPlayers.length > 0 ? (
+            <div className="divide-y divide-fab-border/35">
+              {topPlayers.map((player, index) => (
+                <Link
+                  key={player.userId}
+                  href={`/player/${player.username}`}
+                  className="flex items-center gap-3 py-2.5 transition-colors hover:text-fab-gold"
+                >
+                  <span className={`w-5 text-center text-xs font-black tabular-nums ${index < 3 ? "text-fab-gold" : "text-fab-dim"}`}>
+                    {index + 1}
+                  </span>
+                  {player.photoUrl ? (
+                    <img src={player.photoUrl} alt="" className="h-8 w-8 rounded-full border border-fab-border/80 object-cover" loading="lazy" />
+                  ) : (
+                    <span className="flex h-8 w-8 items-center justify-center rounded-full border border-fab-border/80 bg-fab-gold/15 text-xs font-bold text-fab-gold">
+                      {displayPlayerName(player).charAt(0).toUpperCase()}
+                    </span>
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold text-fab-text">{displayPlayerName(player)}</p>
+                    <p className="text-[10px] font-medium text-fab-dim">@{player.username}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className={`text-xs font-black tabular-nums ${player.winRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>
+                      {player.winRate.toFixed(1)}%
+                    </p>
+                    <p className="text-[10px] text-fab-dim tabular-nums">{player.totalMatches} matches</p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <p className="rounded-lg border border-fab-border/70 bg-fab-bg/60 p-4 text-sm text-fab-muted">
+              Public leaderboard entries will appear here once players have enough tracked matches.
+            </p>
+          )}
+        </div>
+      </section>
+
+      <section className="grid grid-cols-1 gap-3 lg:grid-cols-3">
+        {PRODUCT_PATHS.map((path) => (
           <Link
-            href="/leaderboard"
-            className="px-6 py-2.5 rounded-lg text-sm font-semibold bg-fab-bg border border-fab-border text-fab-text hover:bg-fab-surface-hover transition-colors"
+            key={path.label}
+            href={user && path.href === "/login" ? "/import" : path.href}
+            className="fab-card group rounded-xl border border-fab-border bg-fab-surface/95 p-4 transition-colors hover:border-fab-gold/30 hover:bg-fab-surface-hover"
           >
-            Browse as Guest
+            <p className={`text-[10px] font-bold uppercase tracking-[0.16em] ${path.accent}`}>{path.eyebrow}</p>
+            <h3 className="mt-2 text-base font-bold text-fab-text transition-colors group-hover:text-fab-gold">{path.label}</h3>
+            <p className="mt-1.5 text-sm leading-5 text-fab-muted">{path.desc}</p>
+          </Link>
+        ))}
+      </section>
+
+      <section>
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-rose-400/80">Daily Games</p>
+            <h2 className="mt-1 text-lg font-bold tracking-tight text-fab-text">Quick FaB Warmups</h2>
+          </div>
+          <Link href="/games" className="text-xs font-semibold text-fab-gold transition-colors hover:text-fab-gold-light">
+            All games
           </Link>
         </div>
-        <div className="flex items-center justify-center gap-4">
-          {[
-            { href: "/docs", label: "Docs", icon: "M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" },
-            { href: "/changelog", label: "Changelog", icon: "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" },
-          ].map((link) => (
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+          {featuredGames.map((game) => (
             <Link
-              key={link.href}
-              href={link.href}
-              className="flex items-center gap-1.5 text-xs text-fab-dim hover:text-fab-muted transition-colors"
+              key={game.slug}
+              href={game.href}
+              className="group rounded-xl border border-fab-border bg-fab-surface/90 px-3 py-3 text-left transition-colors hover:border-fab-gold/30 hover:bg-fab-surface-hover"
             >
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d={link.icon} />
+              <svg className={`mb-2 h-5 w-5 ${game.color}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.6}>
+                <path strokeLinecap="round" strokeLinejoin="round" d={game.iconPath} />
               </svg>
-              {link.label}
+              <p className="truncate text-xs font-bold text-fab-text transition-colors group-hover:text-fab-gold">{game.label}</p>
+              <p className="mt-0.5 truncate text-[10px] text-fab-dim">{game.subtitle}</p>
             </Link>
           ))}
         </div>
-      </div>
+      </section>
     </div>
   );
 }

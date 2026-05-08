@@ -78,9 +78,9 @@ export function Navbar() {
   }, [router, signOut]);
 
   return (<>
-    <nav className="hidden md:flex fixed inset-y-0 left-0 z-50 w-64 flex-col bg-fab-surface/95 backdrop-blur-md border-r border-fab-border">
-      <div className="shrink-0 px-4 py-3 border-b border-fab-border">
-        <Link href="/" className="flex items-center gap-2.5 min-w-0">
+    <nav className="fab-sidebar hidden md:flex fixed inset-y-0 left-0 z-50 w-64 flex-col bg-fab-surface/95 backdrop-blur-md border-r border-fab-border/80">
+      <div className="shrink-0 px-4 py-3 border-b border-fab-border/70">
+        <Link href="/" className="flex items-center gap-2.5 min-w-0 rounded-lg -mx-1 px-1 py-1 transition-colors hover:bg-fab-surface-hover/60">
           <svg className="w-8 h-8 shrink-0" viewBox="0 0 24 24" fill="none">
             <rect x="5" y="2" width="14" height="20" rx="2" stroke="#D9A05B" strokeWidth="2" />
             <rect x="7.5" y="13" width="2" height="3" fill="#E53935" />
@@ -94,7 +94,7 @@ export function Navbar() {
         )}
       </div>
 
-      <div className="px-3 py-3 border-b border-fab-border space-y-2">
+      <div className="px-3 py-3 border-b border-fab-border/70 space-y-2">
         <SmartSearch placeholder="Search players or teams..." className="text-xs" />
         {mounted && isAuthenticated && (
           <Link
@@ -118,14 +118,14 @@ export function Navbar() {
               const parentActive = isActiveRoute(pathname, link.href) || link.visibleSubs.some((sub) => !sub.href.startsWith("http") && isActiveRoute(pathname, sub.href));
               const isParentExternal = link.href.startsWith("http");
               const parentTrackKey = getExternalTrackKey(link.href);
-              const parentClassName = `flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-semibold transition-colors ${
+              const parentClassName = `fab-sidebar-link flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-semibold transition-all ${
                 parentActive
                   ? `${link.color} ${link.bg}`
-                  : "text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover"
+                  : "text-fab-muted hover:text-fab-text"
               }`;
               const parentContent = (
                 <>
-                  <span className="shrink-0">{link.icon}</span>
+                  <span className="shrink-0 flex items-center justify-center">{link.icon}</span>
                   <span className="truncate">{link.label}</span>
                   {isParentExternal && <ExternalLink className="w-3 h-3 text-fab-dim shrink-0 ml-auto" />}
                 </>
@@ -138,6 +138,7 @@ export function Navbar() {
                       target="_blank"
                       rel="noopener noreferrer"
                       onClick={() => { if (parentTrackKey) trackSupportClick(parentTrackKey); }}
+                      data-active={parentActive}
                       className={parentClassName}
                     >
                       {parentContent}
@@ -146,6 +147,7 @@ export function Navbar() {
                     <Link
                       href={link.href}
                       onClick={link.href === "/support" ? () => trackSupportClick("navbar") : undefined}
+                      data-active={parentActive}
                       className={parentClassName}
                     >
                       {parentContent}
@@ -153,7 +155,7 @@ export function Navbar() {
                   )}
 
                   {link.visibleSubs.length > 0 && (
-                    <div className="ml-4 pl-3 border-l border-fab-border/70 space-y-0.5">
+                    <div className="fab-sidebar-subnav ml-4 pl-3 border-l space-y-0.5">
                       {link.visibleSubs.map((sub) => {
                         const isExternal = sub.href.startsWith("http");
                         const trackKey = getExternalTrackKey(sub.href);
@@ -166,7 +168,7 @@ export function Navbar() {
                               target="_blank"
                               rel="noopener noreferrer"
                               onClick={() => { if (trackKey) trackSupportClick(trackKey); }}
-                              className="flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover transition-colors"
+                              className="fab-sidebar-subitem flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium text-fab-muted hover:text-fab-text transition-colors"
                             >
                               {sub.icon && <span className="text-fab-dim shrink-0">{sub.icon}</span>}
                               <span className="flex-1 truncate">{sub.label}</span>
@@ -181,7 +183,7 @@ export function Navbar() {
                             <button
                               key={sub.href}
                               onClick={() => setFeedbackOpen(true)}
-                              className="flex items-center gap-2 w-full text-left px-3 py-1.5 rounded-md text-xs font-medium text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover transition-colors"
+                              className="fab-sidebar-subitem flex items-center gap-2 w-full text-left px-3 py-1.5 rounded-md text-xs font-medium text-fab-muted hover:text-fab-text transition-colors"
                             >
                               {sub.icon && <span className="text-fab-dim shrink-0">{sub.icon}</span>}
                               <span className="truncate">{sub.label}</span>
@@ -189,14 +191,16 @@ export function Navbar() {
                           );
                         }
 
+                        const active = isActiveRoute(pathname, sub.href);
                         return (
                           <Link
                             key={sub.href}
                             href={sub.href}
-                            className={`block px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
-                              isActiveRoute(pathname, sub.href)
+                            data-active={active}
+                            className={`fab-sidebar-subitem block px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                              active
                                 ? "text-fab-gold bg-fab-gold/10"
-                                : "text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover"
+                                : "text-fab-muted hover:text-fab-text"
                             }`}
                           >
                             {sub.label}
@@ -212,13 +216,13 @@ export function Navbar() {
         )}
       </div>
 
-      <div className="border-t border-fab-border p-3 space-y-3">
+      <div className="border-t border-fab-border/70 p-3 space-y-3">
         {mounted && (
           <>
             {isAdmin && onlineStats && (
               <Link
                 href="/admin"
-                className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg text-xs font-medium bg-fab-bg border border-fab-border hover:border-fab-gold/30 transition-colors"
+                className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg text-xs font-medium bg-fab-bg/70 border border-fab-border/70 hover:border-fab-gold/30 transition-colors"
                 title={`${onlineStats.onlineNow} online now, ${onlineStats.activeToday} active today`}
               >
                 <span className="flex items-center gap-2 text-fab-muted">
@@ -249,10 +253,10 @@ export function Navbar() {
                 <div className="flex items-center gap-2">
                   <Link
                     href={profileHref}
-                    className={`flex min-w-0 flex-1 items-center gap-2 p-2 rounded-lg transition-colors ${
+                    className={`flex min-w-0 flex-1 items-center gap-2 p-2 rounded-lg border transition-colors ${
                       isActiveRoute(pathname, profileHref)
-                        ? "bg-fab-gold/15 text-fab-gold"
-                        : "bg-fab-bg text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover"
+                        ? "bg-fab-gold/15 text-fab-gold border-fab-gold/20"
+                        : "bg-fab-bg/70 text-fab-muted border-fab-border/60 hover:text-fab-text hover:bg-fab-surface-hover"
                     }`}
                   >
                     {profile?.photoUrl ? (
@@ -273,10 +277,10 @@ export function Navbar() {
                     <Link
                       key={link.href}
                       href={link.href}
-                      className={`relative flex items-center gap-2 px-2 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                      className={`relative flex items-center gap-2 px-2 py-1.5 rounded-md border text-xs font-medium transition-colors ${
                         isActiveRoute(pathname, link.href)
-                          ? "text-fab-gold bg-fab-gold/10"
-                          : "text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover"
+                          ? "text-fab-gold bg-fab-gold/10 border-fab-gold/20"
+                          : "text-fab-muted border-transparent hover:text-fab-text hover:bg-fab-surface-hover hover:border-fab-border/60"
                       }`}
                     >
                       {link.icon}
@@ -293,7 +297,7 @@ export function Navbar() {
                 <button
                   type="button"
                   onClick={handleSignOut}
-                  className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-fab-border text-xs font-medium text-fab-muted hover:text-fab-loss hover:border-fab-loss/40 hover:bg-fab-loss/5 transition-colors"
+                  className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-fab-border/70 text-xs font-medium text-fab-muted hover:text-fab-loss hover:border-fab-loss/40 hover:bg-fab-loss/5 transition-colors"
                 >
                   <LogOut className="w-3.5 h-3.5" />
                   Sign Out

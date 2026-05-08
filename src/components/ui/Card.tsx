@@ -22,10 +22,10 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(function Card(
   ref,
 ) {
   const classes = [
-    "bg-fab-surface border border-fab-border rounded-lg",
+    "fab-card bg-fab-surface/95 border border-fab-border rounded-lg",
     paddingClass[padding],
     interactive
-      ? "transition-colors cursor-pointer hover:border-fab-muted hover:bg-fab-surface-hover"
+      ? "transition-all cursor-pointer hover:border-fab-gold/30 hover:bg-fab-surface-hover"
       : "",
     className,
   ]

@@ -11,7 +11,11 @@ export type MoreLink = { href: string; label: string; icon: ReactNode; authOnly?
 export type UserMenuLink = { href: string; label: string; icon: ReactNode; adminOnly?: boolean };
 
 function NavAssetIcon({ name }: { name: "home" | "meta" | "community" | "social" | "support" }) {
-  return <img src={`/nav-icons/nav-${name}.png`} alt="" aria-hidden="true" className="w-4 h-4 object-contain shrink-0" />;
+  return (
+    <span className="nav-icon-frame" aria-hidden="true">
+      <img src={`/nav-icons/nav-${name}.png`} alt="" className="nav-asset-icon" />
+    </span>
+  );
 }
 
 // ── 3-bucket primary nav (Phase 2 IA rethink) ──

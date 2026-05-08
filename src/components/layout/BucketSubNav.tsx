@@ -55,10 +55,10 @@ export function BucketSubNav({ items, className = "" }: BucketSubNavProps) {
               <li key={item.href} className="flex-shrink-0 snap-start">
                 <Link
                   href={item.href}
-                  className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium border whitespace-nowrap transition-colors min-h-[32px] ${
+                  className={`inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-semibold border whitespace-nowrap transition-colors min-h-[32px] ${
                     isActive
                       ? "bg-fab-gold text-fab-bg border-fab-gold"
-                      : "bg-fab-surface text-fab-muted border-fab-border hover:text-fab-text hover:border-fab-muted"
+                      : "bg-fab-surface/90 text-fab-muted border-fab-border/80 hover:text-fab-text hover:border-fab-gold/30"
                   }`}
                 >
                   {item.label}

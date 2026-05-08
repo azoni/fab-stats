@@ -179,7 +179,7 @@ export function SmartSearch({ placeholder = "Search players or teams...", classN
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
           autoFocus={autoFocus}
-          className="w-full pl-9 pr-8 py-2 rounded-lg bg-fab-surface border border-fab-border text-sm text-fab-text placeholder:text-fab-dim focus:outline-none focus:border-fab-gold/40 transition-colors"
+          className="w-full pl-9 pr-8 py-2 rounded-lg bg-fab-bg/70 border border-fab-border/80 text-sm text-fab-text placeholder:text-fab-dim shadow-inner shadow-black/10 focus:outline-none focus:border-fab-gold/50 focus:bg-fab-surface/95 transition-colors"
         />
         {query && (
           <button
@@ -198,7 +198,7 @@ export function SmartSearch({ placeholder = "Search players or teams...", classN
 
       {/* Dropdown */}
       {isOpen && results.length > 0 && (
-        <div className="absolute z-50 w-full mt-1 bg-fab-surface border border-fab-border rounded-lg shadow-xl overflow-hidden max-h-80 overflow-y-auto">
+        <div className="absolute z-50 w-full mt-2 bg-fab-surface/95 backdrop-blur border border-fab-border/80 rounded-lg shadow-xl overflow-hidden max-h-80 overflow-y-auto">
           {results.map((r, i) => {
             const isHighlighted = i === highlighted;
 
@@ -209,11 +209,11 @@ export function SmartSearch({ placeholder = "Search players or teams...", classN
                   href={`/team/${r.nameLower}`}
                   onClick={() => { setQuery(""); setIsOpen(false); }}
                   className={`flex items-center gap-3 px-3 py-2.5 transition-colors ${
-                    isHighlighted ? "bg-fab-gold/10" : "hover:bg-fab-surface-hover"
+                    isHighlighted ? "bg-fab-gold/10" : "hover:bg-fab-surface-hover/85"
                   }`}
                 >
                   {r.iconUrl ? (
-                    <img src={r.iconUrl} alt="" className="w-8 h-8 rounded-lg object-cover border border-fab-border shrink-0" loading="lazy" />
+                    <img src={r.iconUrl} alt="" className="w-8 h-8 rounded-lg object-cover border border-fab-border/80 shrink-0" loading="lazy" />
                   ) : (
                     <div className="w-8 h-8 rounded-lg bg-amber-500/15 flex items-center justify-center shrink-0">
                       <Users className="w-4 h-4 text-amber-400" />
@@ -235,11 +235,11 @@ export function SmartSearch({ placeholder = "Search players or teams...", classN
                 href={`/player/${r.username}`}
                 onClick={() => { setQuery(""); setIsOpen(false); }}
                 className={`flex items-center gap-3 px-3 py-2.5 transition-colors ${
-                  isHighlighted ? "bg-fab-gold/10" : "hover:bg-fab-surface-hover"
+                    isHighlighted ? "bg-fab-gold/10" : "hover:bg-fab-surface-hover/85"
                 }`}
               >
                 {r.photoUrl ? (
-                  <img src={r.photoUrl} alt="" className="w-8 h-8 rounded-full object-cover border border-fab-border shrink-0" loading="lazy" />
+                  <img src={r.photoUrl} alt="" className="w-8 h-8 rounded-full object-cover border border-fab-border/80 shrink-0" loading="lazy" />
                 ) : (
                   <div className="w-8 h-8 rounded-full bg-fab-gold/15 flex items-center justify-center shrink-0">
                     <span className="text-xs font-bold text-fab-gold">{(r.displayName || r.username).charAt(0).toUpperCase()}</span>
@@ -257,7 +257,7 @@ export function SmartSearch({ placeholder = "Search players or teams...", classN
           <Link
             href={`/search?q=${encodeURIComponent(query.trim())}`}
             onClick={() => { setQuery(""); setIsOpen(false); }}
-            className="flex items-center justify-center gap-1.5 px-3 py-2 text-xs text-fab-gold hover:bg-fab-surface-hover transition-colors border-t border-fab-border"
+            className="flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium text-fab-gold hover:bg-fab-surface-hover/85 transition-colors border-t border-fab-border/80"
           >
             <Search className="w-3 h-3" />
             See all results for &quot;{query.trim()}&quot;

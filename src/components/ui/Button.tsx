@@ -7,7 +7,7 @@ const variantClass: Record<Variant, string> = {
   primary:
     "bg-fab-gold text-fab-bg hover:bg-fab-gold-light active:bg-fab-gold-light disabled:bg-fab-gold/40 disabled:text-fab-bg/60",
   secondary:
-    "bg-fab-surface border border-fab-border text-fab-text hover:bg-fab-surface-hover hover:border-fab-muted disabled:opacity-50",
+    "bg-fab-surface border border-fab-border/80 text-fab-text hover:bg-fab-surface-hover hover:border-fab-gold/30 disabled:opacity-50",
   ghost:
     "text-fab-muted hover:text-fab-text hover:bg-fab-surface-hover disabled:opacity-50",
   danger:
@@ -56,7 +56,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       type={type}
       className={[
         "inline-flex items-center justify-center gap-2",
-        "rounded-md font-semibold transition-colors",
+        "rounded-md font-semibold transition-all",
         "disabled:cursor-not-allowed",
         "focus:outline-none focus-visible:ring-2 focus-visible:ring-fab-gold/60",
         iconOnly ? iconOnlyClass[size] : sizeClass[size],

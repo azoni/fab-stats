@@ -15,7 +15,11 @@ interface TabSpec {
 }
 
 function NavAssetIcon({ name }: { name: "home" | "meta" | "community" }) {
-  return <img src={`/nav-icons/nav-${name}.png`} alt="" aria-hidden="true" className="w-5 h-5 object-contain" />;
+  return (
+    <span className="nav-icon-frame" aria-hidden="true">
+      <img src={`/nav-icons/nav-${name}.png`} alt="" className="nav-asset-icon" />
+    </span>
+  );
 }
 
 const tabs: TabSpec[] = [
@@ -63,9 +67,9 @@ export function MobileTabBar() {
     <>
       <nav
         aria-label="Primary"
-        className="md:hidden fixed bottom-0 inset-x-0 z-50 bg-fab-bg/95 backdrop-blur border-t border-fab-border pb-[env(safe-area-inset-bottom)]"
+        className="fab-mobile-shell md:hidden fixed bottom-0 inset-x-0 z-50 bg-fab-bg/95 backdrop-blur border-t border-fab-border pb-[env(safe-area-inset-bottom)]"
       >
-        <div className="flex items-stretch justify-around">
+        <div className="flex items-stretch justify-around px-1">
           <TabLink tab={tabs[0]} active={tabs[0].match(pathname)} />
           <TabLink tab={tabs[1]} active={tabs[1].match(pathname)} />
           <TabLink tab={tabs[2]} active={tabs[2].match(pathname)} />
@@ -89,7 +93,8 @@ function TabLink({ tab, active }: { tab: TabSpec; active: boolean }) {
   return (
     <Link
       href={tab.href}
-      className={`flex flex-col items-center justify-center gap-0.5 py-2 px-3 min-h-[56px] flex-1 transition-colors ${
+      data-active={active}
+      className={`fab-mobile-tab flex flex-col items-center justify-center gap-0.5 py-2 px-3 min-h-[56px] flex-1 transition-colors ${
         active ? "text-fab-gold" : "text-fab-muted hover:text-fab-text"
       }`}
     >
@@ -105,7 +110,8 @@ function ProfileTab({ active, onClick }: { active: boolean; onClick: () => void 
       type="button"
       onClick={onClick}
       aria-label="Profile menu"
-      className={`flex flex-col items-center justify-center gap-0.5 py-2 px-3 min-h-[56px] flex-1 transition-colors ${
+      data-active={active}
+      className={`fab-mobile-tab flex flex-col items-center justify-center gap-0.5 py-2 px-3 min-h-[56px] flex-1 transition-colors ${
         active ? "text-fab-gold" : "text-fab-muted hover:text-fab-text"
       }`}
     >

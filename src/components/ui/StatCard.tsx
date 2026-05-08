@@ -18,12 +18,12 @@ export function StatCard({
   className = "",
 }: StatCardProps) {
   return (
-    <div className={`bg-fab-surface border border-fab-border rounded-lg px-3 py-2.5 ${className}`}>
+    <div className={`fab-card bg-fab-surface/95 border border-fab-border rounded-lg px-3 py-2.5 ${className}`}>
       <div className="flex items-center justify-between gap-2">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5">
             {icon && <span className="text-fab-dim shrink-0">{icon}</span>}
-            <p className="text-[10px] text-fab-muted truncate">{label}</p>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-fab-muted truncate">{label}</p>
           </div>
           <p className="text-lg font-bold tabular-nums leading-tight mt-0.5" style={color ? { color } : undefined}>
             {value}
