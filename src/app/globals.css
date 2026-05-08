@@ -120,8 +120,8 @@ body::after {
 /* Navigation shell */
 .fab-sidebar {
   background:
-    radial-gradient(circle at 50% -8%, color-mix(in srgb, var(--color-fab-gold) 8%, transparent), transparent 14rem),
-    linear-gradient(180deg, color-mix(in srgb, var(--color-fab-surface) 92%, #050403 8%), color-mix(in srgb, var(--color-fab-bg) 88%, #000 12%));
+    radial-gradient(circle at 50% -8%, color-mix(in srgb, var(--color-fab-gold) 3%, transparent), transparent 14rem),
+    linear-gradient(180deg, color-mix(in srgb, var(--color-fab-surface) 84%, #090909 16%), color-mix(in srgb, var(--color-fab-bg) 90%, #000 10%));
   box-shadow:
     inset -1px 0 0 rgba(255, 255, 255, 0.03),
     18px 0 36px -32px rgba(0, 0, 0, 0.9);
@@ -159,14 +159,14 @@ body::after {
 
 .fab-sidebar-link:hover {
   background: color-mix(in srgb, var(--color-fab-surface-hover) 82%, transparent);
-  border-color: color-mix(in srgb, var(--color-fab-gold) 15%, var(--color-fab-border));
+  border-color: color-mix(in srgb, var(--color-fab-border) 86%, #fff 14%);
 }
 
 .fab-sidebar-link[data-active="true"] {
-  border-color: color-mix(in srgb, currentColor 24%, transparent);
+  border-color: color-mix(in srgb, var(--color-fab-border) 88%, #fff 12%);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.06),
-    0 12px 22px -20px color-mix(in srgb, currentColor 70%, transparent);
+    0 14px 24px -22px rgba(0, 0, 0, 0.95);
 }
 
 .fab-sidebar-link[data-active="true"]::before {
@@ -189,8 +189,8 @@ body::after {
 }
 
 .fab-sidebar-subitem[data-active="true"] {
-  background: color-mix(in srgb, var(--color-fab-gold) 11%, transparent);
-  border-color: color-mix(in srgb, var(--color-fab-gold) 22%, transparent);
+  background: color-mix(in srgb, var(--color-fab-surface-hover) 86%, transparent);
+  border-color: color-mix(in srgb, var(--color-fab-border) 82%, #fff 10%);
 }
 
 .fab-sidebar-subitem[data-active="true"]::before {
@@ -213,11 +213,11 @@ body::after {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  border: 1px solid color-mix(in srgb, var(--color-fab-gold) 22%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-fab-border) 80%, #fff 10%);
   border-radius: 0.375rem;
   background:
-    radial-gradient(circle at 35% 20%, rgba(255, 255, 255, 0.12), transparent 48%),
-    color-mix(in srgb, var(--color-fab-gold) 10%, transparent);
+    radial-gradient(circle at 35% 20%, rgba(255, 255, 255, 0.08), transparent 48%),
+    color-mix(in srgb, var(--color-fab-surface-hover) 78%, transparent);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
@@ -226,7 +226,7 @@ body::after {
   height: 1rem;
   object-fit: contain;
   opacity: 0.98;
-  filter: brightness(1.72) contrast(1.12) saturate(1.16) drop-shadow(0 0 4px rgba(240, 189, 85, 0.34));
+  filter: brightness(1.22) contrast(1.04) saturate(0.82);
 }
 
 .fab-sidebar-link:hover .nav-icon-frame,
@@ -235,8 +235,8 @@ body::after {
 .fab-mobile-tab[data-active="true"] .nav-icon-frame {
   border-color: color-mix(in srgb, currentColor 34%, transparent);
   background:
-    radial-gradient(circle at 35% 20%, rgba(255, 255, 255, 0.16), transparent 48%),
-    color-mix(in srgb, currentColor 16%, transparent);
+    radial-gradient(circle at 35% 20%, rgba(255, 255, 255, 0.12), transparent 48%),
+    color-mix(in srgb, currentColor 8%, var(--color-fab-surface-hover));
 }
 
 .fab-mobile-tab {
@@ -247,8 +247,8 @@ body::after {
 }
 
 .fab-mobile-tab[data-active="true"] {
-  background: color-mix(in srgb, var(--color-fab-gold) 11%, transparent);
-  border-color: color-mix(in srgb, var(--color-fab-gold) 18%, transparent);
+  background: color-mix(in srgb, var(--color-fab-surface-hover) 86%, transparent);
+  border-color: color-mix(in srgb, var(--color-fab-border) 82%, #fff 10%);
 }
 
 .fab-mobile-tab[data-active="true"]::before {

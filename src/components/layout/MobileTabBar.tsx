@@ -102,7 +102,7 @@ function TabLink({ tab, active }: { tab: TabSpec; active: boolean }) {
       href={tab.href}
       data-active={active}
       className={`fab-mobile-tab flex flex-col items-center justify-center gap-0.5 py-2 px-2 min-h-[56px] flex-1 transition-colors ${
-        active ? "text-fab-gold" : "text-fab-muted hover:text-fab-text"
+        active ? "text-fab-text" : "text-fab-muted hover:text-fab-text"
       }`}
     >
       <span aria-hidden>{tab.icon}</span>
@@ -119,7 +119,7 @@ function ProfileTab({ active, onClick }: { active: boolean; onClick: () => void 
       aria-label="Profile menu"
       data-active={active}
       className={`fab-mobile-tab flex flex-col items-center justify-center gap-0.5 py-2 px-2 min-h-[56px] flex-1 transition-colors ${
-        active ? "text-fab-gold" : "text-fab-muted hover:text-fab-text"
+        active ? "text-fab-text" : "text-fab-muted hover:text-fab-text"
       }`}
     >
       <UserIcon className="w-5 h-5" />

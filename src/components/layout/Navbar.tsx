@@ -91,8 +91,8 @@ export function Navbar() {
             href="/import"
             className={`flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold transition-colors ${
               pathname === "/import"
-                ? "bg-fab-gold text-fab-bg"
-                : "bg-fab-gold/15 text-fab-gold hover:bg-fab-gold/25 border border-fab-gold/30"
+                ? "bg-fab-surface-hover text-fab-gold border border-fab-gold/35"
+                : "bg-fab-surface-hover/70 text-fab-gold hover:bg-fab-surface-hover border border-fab-border/85 hover:border-fab-gold/35"
             }`}
           >
             <ImportIcon className="w-4 h-4" />
@@ -110,7 +110,7 @@ export function Navbar() {
               const parentTrackKey = getExternalTrackKey(link.href);
               const parentClassName = `fab-sidebar-link flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-semibold transition-all ${
                 parentActive
-                  ? `${link.color} ${link.bg}`
+                  ? "text-fab-text bg-fab-surface-hover/80 border-fab-border/75"
                   : "text-fab-muted hover:text-fab-text"
               }`;
               const parentContent = (
@@ -189,7 +189,7 @@ export function Navbar() {
                             data-active={active}
                             className={`fab-sidebar-subitem block px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
                               active
-                                ? "text-fab-gold bg-fab-gold/10"
+                                ? "text-fab-text bg-fab-surface-hover/75 border-fab-border/70"
                                 : "text-fab-muted hover:text-fab-text"
                             }`}
                           >
@@ -245,7 +245,7 @@ export function Navbar() {
                     href={profileHref}
                     className={`flex min-w-0 flex-1 items-center gap-2 p-2 rounded-lg border transition-colors ${
                       isActiveRoute(pathname, profileHref)
-                        ? "bg-fab-gold/15 text-fab-gold border-fab-gold/20"
+                        ? "bg-fab-surface-hover/80 text-fab-text border-fab-border/75"
                         : "bg-fab-bg/70 text-fab-muted border-fab-border/60 hover:text-fab-text hover:bg-fab-surface-hover"
                     }`}
                   >
@@ -269,7 +269,7 @@ export function Navbar() {
                       href={link.href}
                       className={`relative flex items-center gap-2 px-2 py-1.5 rounded-md border text-xs font-medium transition-colors ${
                         isActiveRoute(pathname, link.href)
-                          ? "text-fab-gold bg-fab-gold/10 border-fab-gold/20"
+                          ? "text-fab-text bg-fab-surface-hover/75 border-fab-border/70"
                           : "text-fab-muted border-transparent hover:text-fab-text hover:bg-fab-surface-hover hover:border-fab-border/60"
                       }`}
                     >
