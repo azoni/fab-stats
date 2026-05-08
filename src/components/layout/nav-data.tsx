@@ -18,6 +18,17 @@ function NavAssetIcon({ name }: { name: "home" | "meta" | "community" | "social"
   );
 }
 
+function ExtrasIcon() {
+  return (
+    <span className="nav-icon-frame" aria-hidden="true">
+      <svg className="w-4 h-4 text-current" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 3l1.55 4.7L18.5 9l-4.95 1.3L12 15l-1.55-4.7L5.5 9l4.95-1.3L12 3z" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M19 15l.9 2.7L22.5 19l-2.6.7L19 22.5l-.9-2.8-2.6-.7 2.6-1.3L19 15zM5 14l.75 2.25L8 17l-2.25.75L5 20l-.75-2.25L2 17l2.25-.75L5 14z" />
+      </svg>
+    </span>
+  );
+}
+
 // ── 3-bucket primary nav (Phase 2 IA rethink) ──
 //
 // Identity: post-event share + personal repo. Three buckets only:
@@ -30,7 +41,6 @@ function NavAssetIcon({ name }: { name: "home" | "meta" | "community" | "social"
 // the prominent [+] does that job better than another link in a row.
 export const navLinks: NavLink[] = [
   { href: "/", label: "Home", icon: <NavAssetIcon name="home" />, color: "text-fab-gold", bg: "bg-fab-gold/10", authOnly: true, subItems: [
-    { href: "/", label: "Dashboard" },
     { href: "/matches", label: "Matches" },
     { href: "/events", label: "Events" },
     { href: "/opponents", label: "Opponents" },
@@ -38,10 +48,8 @@ export const navLinks: NavLink[] = [
     { href: "/tournament-stats", label: "Tournament Stats" },
   ] },
   { href: "/meta", label: "Meta", icon: <NavAssetIcon name="meta" />, color: "text-teal-400", bg: "bg-teal-400/10", subItems: [
-    { href: "/meta", label: "Hero Stats" },
     { href: "/leaderboard", label: "Rankings" },
     { href: "/matchups", label: "Matchup Matrix" },
-    { href: "/compare", label: "Versus" },
   ] },
   { href: "/community", label: "Community", icon: <NavAssetIcon name="community" />, color: "text-indigo-400", bg: "bg-indigo-400/10", subItems: [
     { href: "/team", label: "Teams" },
@@ -57,6 +65,11 @@ export const navLinks: NavLink[] = [
     { href: "https://www.amazon.com/?tag=oldwaystoda00-20", label: "Shop Amazon", badge: "Free", icon: <ShoppingCart className="w-3.5 h-3.5" /> },
     { href: "https://partner.tcgplayer.com/fabstats", label: "Shop TCGplayer", badge: "Free", icon: <ShoppingCart className="w-3.5 h-3.5" /> },
     { href: "/feedback", label: "Send Feedback", icon: <MessageCircle className="w-3.5 h-3.5" /> },
+  ] },
+  { href: "/compare", label: "Extras", icon: <ExtrasIcon />, color: "text-violet-400", bg: "bg-violet-400/10", subItems: [
+    { href: "/compare", label: "Versus" },
+    { href: "/docs", label: "Docs" },
+    { href: "/changelog", label: "Changelog" },
   ] },
 ];
 

@@ -74,7 +74,6 @@ export function BucketSubNav({ items, className = "" }: BucketSubNavProps) {
 
 // Pre-defined bucket configs so callers don't have to repeat the lists.
 export const HOME_BUCKET: BucketSubNavItem[] = [
-  { href: "/", label: "Dashboard" },
   { href: "/matches", label: "Matches" },
   { href: "/events", label: "Events" },
   { href: "/opponents", label: "Opponents" },
@@ -83,10 +82,8 @@ export const HOME_BUCKET: BucketSubNavItem[] = [
 ];
 
 export const META_BUCKET: BucketSubNavItem[] = [
-  { href: "/meta", label: "Hero Stats" },
   { href: "/leaderboard", label: "Rankings" },
   { href: "/matchups", label: "Matchup Matrix" },
-  { href: "/compare", label: "Versus" },
 ];
 
 export const COMMUNITY_BUCKET: BucketSubNavItem[] = [
@@ -95,9 +92,16 @@ export const COMMUNITY_BUCKET: BucketSubNavItem[] = [
   { href: "/friends", label: "Friends", authOnly: true },
 ];
 
+export const EXTRAS_BUCKET: BucketSubNavItem[] = [
+  { href: "/compare", label: "Versus" },
+  { href: "/docs", label: "Docs" },
+  { href: "/changelog", label: "Changelog" },
+];
+
 const HOME_PATHS = ["/", "/matches", "/events", "/opponents", "/trends", "/tournament-stats", "/wrapped"];
-const META_PATHS = ["/meta", "/leaderboard", "/matchups", "/compare"];
+const META_PATHS = ["/meta", "/leaderboard", "/matchups"];
 const COMMUNITY_PATHS = ["/community", "/team", "/group", "/friends"];
+const EXTRAS_PATHS = ["/compare", "/docs", "/changelog"];
 
 function pathInBucket(pathname: string, bucket: string[]): boolean {
   return bucket.some((p) => pathname === p || (p !== "/" && pathname.startsWith(p + "/")));
@@ -118,6 +122,7 @@ function BucketSubNavRouterInner() {
   if (pathInBucket(pathname, HOME_PATHS)) return <BucketSubNav items={HOME_BUCKET} />;
   if (pathInBucket(pathname, META_PATHS)) return <BucketSubNav items={META_BUCKET} />;
   if (pathInBucket(pathname, COMMUNITY_PATHS)) return <BucketSubNav items={COMMUNITY_BUCKET} />;
+  if (pathInBucket(pathname, EXTRAS_PATHS)) return <BucketSubNav items={EXTRAS_BUCKET} />;
   return null;
 }
 

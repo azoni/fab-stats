@@ -6,7 +6,7 @@ export type ThemeName = "grimoire" | "leyline" | "rosetta" | "daylight";
 export const THEME_OPTIONS: { value: ThemeName; label: string; description: string }[] = [
   { value: "leyline", label: "Leyline", description: "Arcane glass observatory, luminous and floating" },
   { value: "daylight", label: "Daylight", description: "Clean and bright, easy on the eyes" },
-  { value: "rosetta", label: "Rosetta", description: "Pure data terminal, sharp and monochrome" },
+  { value: "rosetta", label: "Rosetta", description: "Polished tournament dark, warm gold and teal accents" },
   { value: "grimoire", label: "Grimoire", description: "Ancient spellbook, warm leather and candlelight" },
 ];
 

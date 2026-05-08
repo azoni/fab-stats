@@ -33,7 +33,7 @@ const tabs: TabSpec[] = [
     href: "/meta",
     label: "Meta",
     icon: <NavAssetIcon name="meta" />,
-    match: (p) => p.startsWith("/meta") || p.startsWith("/leaderboard") || p.startsWith("/matchups") || p.startsWith("/compare"),
+    match: (p) => p.startsWith("/meta") || p.startsWith("/leaderboard") || p.startsWith("/matchups"),
   },
   {
     href: "/community",
