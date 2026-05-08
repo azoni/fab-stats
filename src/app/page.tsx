@@ -4,6 +4,7 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useMatches } from "@/hooks/useMatches";
+import { useCommunityStats } from "@/hooks/useCommunityStats";
 import { useAuth } from "@/contexts/AuthContext";
 import { computeOverallStats, computeHeroStats, computeEventStats, computeOpponentStats, computeBestFinish, computePlayoffFinishes, computeMinorEventFinishes, computeTournamentAnalytics, getRoundNumber, getEventType, formatShortLabel, isTournamentEvent } from "@/lib/stats";
 import { getEventTier, TIER_LABELS } from "@/lib/events";
@@ -45,6 +46,7 @@ export default function Dashboard() {
   const { user, profile, isAdmin, refreshProfile } = useAuth();
   const { team: myTeam } = useTeamOnce(profile?.teamId || null);
   const { entries: lbEntries } = useLeaderboard(true);
+  const communityCounts = useCommunityStats();
   const [shareCopied, setShareCopied] = useState(false);
   const [bestFinishShareOpen, setBestFinishShareOpen] = useState(false);
   const [profileShareOpen, setProfileShareOpen] = useState(false);
@@ -262,7 +264,7 @@ export default function Dashboard() {
 
       {/* No matches: logged-out / new user landing page */}
       {!hasMatches && (
-        <LoggedOutHome user={user} communityMeta={communityMeta} lbEntries={lbEntries} />
+        <LoggedOutHome user={user} communityMeta={communityMeta} lbEntries={lbEntries} communityCounts={communityCounts} />
       )}
 
       {hasMatches && <HomeTabs />}

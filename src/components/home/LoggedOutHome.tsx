@@ -13,6 +13,7 @@ interface LoggedOutHomeProps {
   user: User | null;
   communityMeta: { overview: CommunityOverview; heroStats: HeroMetaStats[] };
   lbEntries: LeaderboardEntry[];
+  communityCounts?: { userCount: number; matchCount: number };
 }
 
 const PRODUCT_PATHS = [
@@ -49,8 +50,10 @@ function displayPlayerName(player: LeaderboardEntry): string {
   return player.displayName || player.username || "Player";
 }
 
-export function LoggedOutHome({ user, communityMeta, lbEntries }: LoggedOutHomeProps) {
+export function LoggedOutHome({ user, communityMeta, lbEntries, communityCounts }: LoggedOutHomeProps) {
   const { overview, heroStats } = communityMeta;
+  const totalPlayers = Math.max(overview.totalPlayers, communityCounts?.userCount ?? 0);
+  const totalMatches = Math.max(overview.totalMatches, communityCounts?.matchCount ?? 0);
 
   const topPlayers = useMemo(() =>
     lbEntries
@@ -111,11 +114,11 @@ export function LoggedOutHome({ user, communityMeta, lbEntries }: LoggedOutHomeP
             </Link>
           </div>
 
-          {overview.totalPlayers > 0 && (
+          {totalPlayers > 0 && (
             <div className="mt-8 grid max-w-2xl grid-cols-2 gap-3 sm:grid-cols-4">
               {[
-                { value: overview.totalPlayers, label: "Players" },
-                { value: overview.totalMatches, label: "Matches" },
+                { value: totalPlayers, label: "Players" },
+                { value: totalMatches, label: "Matches" },
                 { value: overview.totalHeroes, label: "Heroes" },
                 { value: overview.totalEvents, label: "Events" },
               ].map((stat) => (
