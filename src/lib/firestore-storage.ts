@@ -424,7 +424,8 @@ export async function getDiscoverProfiles(maxResults = 5000): Promise<UserProfil
       } else if (!profile.isPublic) {
         return false;
       }
-      if (profile.hideFromGuests) return false;
+      // Firestore rules already hide `hideFromGuests` profiles from logged-out
+      // visitors. Authenticated Discover users should still see public profiles.
       return hasDiscoverableLinks(profile.socialLinks);
     })
     .sort((a, b) => (a.displayName || a.username).localeCompare(b.displayName || b.username));
