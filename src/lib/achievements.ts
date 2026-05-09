@@ -15,6 +15,7 @@ interface CheckContext {
   heroStats: HeroStats[];
   opponentStats: OpponentStats[];
   kudosCounts?: Record<string, number>;
+  kudosGivenCounts?: Record<string, number>;
   fabdokuStats?: FaBdokuStats;
   fabdokuCardStats?: FaBdokuStats;
   crosswordStats?: CrosswordStats;
@@ -70,6 +71,11 @@ function triviaCount(ctx: CheckContext): number {
 }
 function timelineCount(ctx: CheckContext): number {
   return ctx.timelineStats?.gamesPlayed ?? 0;
+}
+function kudosGivenTotal(ctx: CheckContext): number {
+  const counts = ctx.kudosGivenCounts || {};
+  if (typeof counts.total === "number") return counts.total;
+  return (counts.props || 0) + (counts.good_sport || 0) + (counts.skilled || 0) + (counts.helpful || 0);
 }
 const TIER_THRESHOLDS = [1, 5, 10, 25, 50, 100, 250, 500, 1000] as const;
 const TIER_RARITIES: Achievement["rarity"][] = ["common", "common", "uncommon", "uncommon", "rare", "rare", "epic", "legendary", "legendary"];
@@ -1774,6 +1780,67 @@ const CORE_ACHIEVEMENTS: AchievementDef[] = [
   // ══════════════════════════════════════════
   // KUDOS (peer endorsements — tiered per type)
   // ══════════════════════════════════════════
+  // Given
+  {
+    id: "kudos_given_1",
+    name: "First Compliment",
+    description: "Give your first kudos",
+    category: "social",
+    icon: "megaphone",
+    rarity: "common",
+    group: "kudos_given",
+    tier: 1,
+    check: (ctx) => kudosGivenTotal(ctx) >= 1,
+    progress: (ctx) => ({ current: kudosGivenTotal(ctx), target: 1 }),
+  },
+  {
+    id: "kudos_given_10",
+    name: "Table Cheerleader",
+    description: "Give 10 kudos",
+    category: "social",
+    icon: "megaphone",
+    rarity: "uncommon",
+    group: "kudos_given",
+    tier: 2,
+    check: (ctx) => kudosGivenTotal(ctx) >= 10,
+    progress: (ctx) => ({ current: kudosGivenTotal(ctx), target: 10 }),
+  },
+  {
+    id: "kudos_given_25",
+    name: "Hype Builder",
+    description: "Give 25 kudos",
+    category: "social",
+    icon: "megaphone",
+    rarity: "rare",
+    group: "kudos_given",
+    tier: 3,
+    check: (ctx) => kudosGivenTotal(ctx) >= 25,
+    progress: (ctx) => ({ current: kudosGivenTotal(ctx), target: 25 }),
+  },
+  {
+    id: "kudos_given_50",
+    name: "Community Booster",
+    description: "Give 50 kudos",
+    category: "social",
+    icon: "megaphone",
+    rarity: "epic",
+    group: "kudos_given",
+    tier: 4,
+    check: (ctx) => kudosGivenTotal(ctx) >= 50,
+    progress: (ctx) => ({ current: kudosGivenTotal(ctx), target: 50 }),
+  },
+  {
+    id: "kudos_given_100",
+    name: "Praise Legend",
+    description: "Give 100 kudos",
+    category: "social",
+    icon: "megaphone",
+    rarity: "legendary",
+    group: "kudos_given",
+    tier: 5,
+    check: (ctx) => kudosGivenTotal(ctx) >= 100,
+    progress: (ctx) => ({ current: kudosGivenTotal(ctx), target: 100 }),
+  },
   // Props
   {
     id: "kudos_props_1",
@@ -2073,8 +2140,9 @@ export function evaluateAchievements(
   connectionsStats?: ConnectionsStats,
   fabdokuCardStats?: FaBdokuStats,
   crosswordStats?: CrosswordStats,
+  kudosGivenCounts?: Record<string, number>,
 ): Achievement[] {
-  const ctx: CheckContext = { matches, overall, heroStats, opponentStats, kudosCounts, fabdokuStats, fabdokuCardStats, crosswordStats, heroGuesserStats, matchupManiaStats, triviaStats, timelineStats, connectionsStats };
+  const ctx: CheckContext = { matches, overall, heroStats, opponentStats, kudosCounts, kudosGivenCounts, fabdokuStats, fabdokuCardStats, crosswordStats, heroGuesserStats, matchupManiaStats, triviaStats, timelineStats, connectionsStats };
   return ACHIEVEMENTS.filter((a) => a.check(ctx)).map(({ check: _, progress: _p, ...rest }) => rest);
 }
 
@@ -2098,8 +2166,9 @@ export function getAchievementProgress(
   connectionsStats?: ConnectionsStats,
   fabdokuCardStats?: FaBdokuStats,
   crosswordStats?: CrosswordStats,
+  kudosGivenCounts?: Record<string, number>,
 ): Record<string, { current: number; target: number }> {
-  const ctx: CheckContext = { matches, overall, heroStats, opponentStats, kudosCounts, fabdokuStats, fabdokuCardStats, crosswordStats, heroGuesserStats, matchupManiaStats, triviaStats, timelineStats, connectionsStats };
+  const ctx: CheckContext = { matches, overall, heroStats, opponentStats, kudosCounts, kudosGivenCounts, fabdokuStats, fabdokuCardStats, crosswordStats, heroGuesserStats, matchupManiaStats, triviaStats, timelineStats, connectionsStats };
   const result: Record<string, { current: number; target: number }> = {};
   for (const a of ACHIEVEMENTS) {
     if (a.progress) {

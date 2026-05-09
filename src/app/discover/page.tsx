@@ -361,7 +361,7 @@ export default function DiscoverPage() {
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    getDiscoverProfiles(250)
+    getDiscoverProfiles()
       .then((items) => {
         if (!cancelled) setProfiles(items);
       })

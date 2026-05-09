@@ -3,7 +3,7 @@
 import { useState, useCallback } from "react";
 import { KUDOS_TYPES, giveKudos, revokeKudos, isOnCooldown, getCooldownRemaining, getRemainingKudos } from "@/lib/kudos";
 import { logActivity } from "@/lib/activity-log";
-import { syncKudosAchievements } from "@/lib/achievement-tracking";
+import { syncKudosAchievements, syncKudosGivenAchievements } from "@/lib/achievement-tracking";
 import type { KudosId } from "@/lib/kudos";
 import { toast } from "sonner";
 
@@ -109,13 +109,27 @@ export function KudosSection({
         newCounts.total = (newCounts.total || 0) + 1;
         onUpdate(newCounts, newGiven);
         giveKudos(currentUserId, currentDisplayName, recipientId, kudosType, { skipLimits: isAdmin })
-          .then(() => syncKudosAchievements(recipientId, newCounts))
-          .then((newAchievements) => {
-            const kudosUnlocks = newAchievements.filter((achievement) => achievement.id.startsWith(`kudos_${kudosType}_`));
-            if (kudosUnlocks.length === 0) return;
-            const achievement = kudosUnlocks[kudosUnlocks.length - 1];
-            toast.success(`New kudos tier: ${achievement.name}`, {
-              description: achievement.description,
+          .then(async () => {
+            const [receivedUnlocks, givenUnlocks] = await Promise.all([
+              syncKudosAchievements(recipientId, newCounts),
+              syncKudosGivenAchievements(currentUserId),
+            ]);
+            return { receivedUnlocks, givenUnlocks };
+          })
+          .then(({ receivedUnlocks, givenUnlocks }) => {
+            const kudosUnlocks = receivedUnlocks.filter((achievement) => achievement.id.startsWith(`kudos_${kudosType}_`));
+            if (kudosUnlocks.length > 0) {
+              const achievement = kudosUnlocks[kudosUnlocks.length - 1];
+              toast.success(`New kudos tier: ${achievement.name}`, {
+                description: achievement.description,
+              });
+            }
+
+            const givenKudosUnlocks = givenUnlocks.filter((achievement) => achievement.id.startsWith("kudos_given_"));
+            if (givenKudosUnlocks.length === 0) return;
+            const givenAchievement = givenKudosUnlocks[givenKudosUnlocks.length - 1];
+            toast.success(`Community tier: ${givenAchievement.name}`, {
+              description: givenAchievement.description,
             });
           })
           .catch(() => {});

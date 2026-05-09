@@ -9,6 +9,7 @@ import { loadStats as loadMatchupManiaStats } from "./matchupmania/firestore";
 import { loadStats as loadTriviaStats } from "./trivia/firestore";
 import { loadStats as loadTimelineStats } from "./timeline/firestore";
 import { loadStats as loadConnectionsStats } from "./connections/firestore";
+import { loadKudosGivenCounts } from "./kudos";
 import type { Achievement, OverallStats } from "@/types";
 
 /**
@@ -92,6 +93,35 @@ export async function syncKudosAchievements(
   const snap = await getDoc(ref);
 
   const earned = evaluateAchievements([], EMPTY_OVERALL, [], [], kudosCounts);
+  if (!snap.exists()) {
+    await setDoc(ref, { ids: earned.map((a) => a.id) });
+    return earned;
+  }
+
+  const storedIds = new Set<string>((snap.data().ids as string[]) || []);
+  const newAchievements = earned.filter((a) => !storedIds.has(a.id));
+  if (newAchievements.length > 0) {
+    await setDoc(ref, { ids: [...storedIds, ...newAchievements.map((a) => a.id)] });
+  }
+  return newAchievements;
+}
+
+/** Merge kudos-given achievement IDs after a player gives kudos. */
+export async function syncKudosGivenAchievements(
+  userId: string,
+  kudosGivenCounts?: Record<string, number>,
+): Promise<Achievement[]> {
+  const ref = doc(db, "users", userId, "earnedAchievements", "main");
+  const snap = await getDoc(ref);
+  const counts = kudosGivenCounts || (await loadKudosGivenCounts(userId).catch(() => ({})));
+
+  const earned = evaluateAchievements(
+    [], EMPTY_OVERALL, [], [],
+    undefined,
+    undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined,
+    counts,
+  );
+
   if (!snap.exists()) {
     await setDoc(ref, { ids: earned.map((a) => a.id) });
     return earned;

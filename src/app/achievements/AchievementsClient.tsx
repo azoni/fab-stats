@@ -16,7 +16,9 @@ import {
   getAllAchievements,
   rarityColors,
 } from "@/lib/achievements";
-import { loadKudosCounts } from "@/lib/kudos";
+import { loadKudosCounts, loadKudosGivenCounts } from "@/lib/kudos";
+import { getUserBadgeIds } from "@/lib/badge-service";
+import { getBadgesForIds } from "@/lib/badges";
 import { loadStats as loadFabdokuStats } from "@/lib/fabdoku/firestore";
 import { loadCardStats as loadFabdokuCardStats } from "@/lib/fabdoku/card-firestore";
 import { loadStats as loadCrosswordStats } from "@/lib/crossword/firestore";
@@ -42,7 +44,7 @@ const CATEGORY_COPY: Record<AchievementCategory, { label: string; description: s
   exploration: { label: "Exploration", description: "Trying more heroes, formats, and ways to play." },
   fun: { label: "Match Variety", description: "Format volume, rivalries, draws, rated matches, and other table stories." },
   games: { label: "Daily Games", description: "Puzzle and mini-game achievements across the daily game suite." },
-  social: { label: "Community", description: "Kudos and community recognition from other FaB Stats players." },
+  social: { label: "Community", description: "Kudos you give, kudos you receive, and community recognition." },
   special: { label: "Special", description: "Limited or manually granted badges for special site moments." },
 };
 
@@ -117,11 +119,14 @@ export function AchievementsClient() {
   const { matches, isLoaded } = useMatches();
   const isAuthed = !!user && !isGuest;
   const [kudosCounts, setKudosCounts] = useState<Record<string, number>>({});
+  const [kudosGivenCounts, setKudosGivenCounts] = useState<Record<string, number>>({});
+  const [manualBadges, setManualBadges] = useState<Achievement[]>([]);
   const [gameStats, setGameStats] = useState<GameAchievementStats>({});
   const [gameStatsLoaded, setGameStatsLoaded] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>("all");
 
-  const allAchievements = useMemo(() => getAllAchievements(), []);
+  const baseAchievements = useMemo(() => getAllAchievements(), []);
+  const allAchievements = useMemo(() => [...baseAchievements, ...manualBadges], [baseAchievements, manualBadges]);
 
   // Stats computed from imported matches. Daily-game stats are intentionally
   // omitted — those achievements will show as locked here, which is fine
@@ -133,9 +138,39 @@ export function AchievementsClient() {
   useEffect(() => {
     if (!isAuthed || !user) {
       setKudosCounts({});
+      setKudosGivenCounts({});
       return;
     }
-    loadKudosCounts(user.uid).then(setKudosCounts).catch(() => setKudosCounts({}));
+    Promise.all([
+      loadKudosCounts(user.uid).catch(() => ({})),
+      loadKudosGivenCounts(user.uid).catch(() => ({})),
+    ]).then(([received, given]) => {
+      setKudosCounts(received);
+      setKudosGivenCounts(given);
+    }).catch(() => {
+      setKudosCounts({});
+      setKudosGivenCounts({});
+    });
+  }, [isAuthed, user]);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!isAuthed || !user) {
+      setManualBadges([]);
+      return;
+    }
+
+    getUserBadgeIds(user.uid)
+      .then((ids) => {
+        if (!cancelled) setManualBadges(getBadgesForIds(ids));
+      })
+      .catch(() => {
+        if (!cancelled) setManualBadges([]);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [isAuthed, user]);
 
   useEffect(() => {
@@ -203,10 +238,13 @@ export function AchievementsClient() {
       gameStats.connectionsStats ?? undefined,
       gameStats.fabdokuCardStats ?? undefined,
       gameStats.crosswordStats ?? undefined,
+      kudosGivenCounts,
     );
-  }, [isAuthed, matches, overall, heroStats, opponentStats, kudosCounts, gameStats]);
+  }, [isAuthed, matches, overall, heroStats, opponentStats, kudosCounts, kudosGivenCounts, gameStats]);
 
-  const earnedSet = useMemo(() => new Set(earned.map((a) => a.id)), [earned]);
+  const earnedWithManualBadges = useMemo(() => [...earned, ...manualBadges], [earned, manualBadges]);
+
+  const earnedSet = useMemo(() => new Set(earnedWithManualBadges.map((a) => a.id)), [earnedWithManualBadges]);
 
   const progress = useMemo(() => {
     if (!isAuthed) return {} as Record<string, { current: number; target: number }>;
@@ -224,21 +262,22 @@ export function AchievementsClient() {
       gameStats.connectionsStats ?? undefined,
       gameStats.fabdokuCardStats ?? undefined,
       gameStats.crosswordStats ?? undefined,
+      kudosGivenCounts,
     );
-  }, [isAuthed, matches, overall, heroStats, opponentStats, kudosCounts, gameStats]);
+  }, [isAuthed, matches, overall, heroStats, opponentStats, kudosCounts, kudosGivenCounts, gameStats]);
 
   const totalCount = allAchievements.length;
-  const earnedCount = earned.length;
+  const earnedCount = earnedWithManualBadges.length;
   const completionPct = totalCount > 0 ? Math.round((earnedCount / totalCount) * 100) : 0;
 
   const rarityBreakdown = useMemo(
     () =>
       RARITY_ORDER.map((rarity) => {
         const total = allAchievements.filter((a) => a.rarity === rarity).length;
-        const earnedInRarity = earned.filter((a) => a.rarity === rarity).length;
+        const earnedInRarity = earnedWithManualBadges.filter((a) => a.rarity === rarity).length;
         return { rarity, total, earned: earnedInRarity };
       }),
-    [allAchievements, earned],
+    [allAchievements, earnedWithManualBadges],
   );
 
   // In-progress: tiered achievements the user hasn't earned yet, ranked by
