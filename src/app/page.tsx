@@ -3,28 +3,27 @@ import { useMemo, useEffect, useRef, useState, useCallback, useDeferredValue } f
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
+import { ExternalLink, PlusCircle, UploadCloud, UserRound } from "lucide-react";
 import { useMatches } from "@/hooks/useMatches";
 import { useCommunityStats } from "@/hooks/useCommunityStats";
 import { useAuth } from "@/contexts/AuthContext";
-import { computeOverallStats, computeHeroStats, computeEventStats, computeOpponentStats, computeBestFinish, computePlayoffFinishes, computeMinorEventFinishes, computeTournamentAnalytics, getRoundNumber, getEventType, formatShortLabel, isTournamentEvent } from "@/lib/stats";
+import { computeOverallStats, computeHeroStats, computeEventStats, computeOpponentStats, computeBestFinish, computePlayoffFinishes, computeMinorEventFinishes, computeTournamentAnalytics, getRoundNumber, getEventType, isTournamentEvent, type TournamentAnalytics } from "@/lib/stats";
 import { getEventTier, TIER_LABELS } from "@/lib/events";
 import { updateLeaderboardEntry } from "@/lib/leaderboard";
 import { useLeaderboard } from "@/hooks/useLeaderboard";
 import { computeUserRanks, getBestRank, rankBorderClass } from "@/lib/leaderboard-ranks";
 import { computeMetaStats } from "@/lib/meta-stats";
 import { RecentEvents } from "@/components/home/RecentEvents";
-import { StatCards } from "@/components/home/StatCards";
 import { LatestMatches } from "@/components/home/LatestMatches";
 import { DashboardInsights } from "@/components/home/DashboardInsights";
 import { DashboardFilters } from "@/components/home/DashboardFilters";
 import { OnThisDay } from "@/components/home/OnThisDay";
 import { WinRateRing } from "@/components/charts/WinRateRing";
-import { getHeroByName } from "@/lib/heroes";
 import { HeroImg } from "@/components/heroes/HeroImg";
 import { HeroShieldBadge } from "@/components/profile/HeroShieldBadge";
 import { TeamBadge } from "@/components/profile/TeamBadge";
 import { useTeamOnce } from "@/hooks/useTeam";
-import { MatchResult } from "@/types";
+import { MatchResult, type MatchRecord, type OverallStats } from "@/types";
 import { Tooltip } from "@/components/ui/tooltip";
 import { loadKudosCounts } from "@/lib/kudos";
 import { CardBorderWrapper } from "@/components/profile/CardBorderWrapper";
@@ -34,7 +33,6 @@ import { LoggedOutHome } from "@/components/home/LoggedOutHome";
 import { HomeTabs } from "@/components/home/HomeTabs";
 
 // Modals — lazy-loaded (only rendered when opened)
-const BestFinishShareModal = dynamic(() => import("@/components/profile/BestFinishCard").then(m => ({ default: m.BestFinishShareModal })), { ssr: false });
 const ProfileShareModal = dynamic(() => import("@/components/profile/ProfileCard").then(m => ({ default: m.ProfileShareModal })), { ssr: false });
 const BackgroundChooser = dynamic(() => import("@/components/profile/BackgroundChooser").then(m => ({ default: m.BackgroundChooser })), { ssr: false });
 const TournamentShareModal = dynamic(() => import("@/components/tournament-stats/TournamentShareCard").then(m => ({ default: m.TournamentShareModal })), { ssr: false });
@@ -47,8 +45,6 @@ export default function Dashboard() {
   const { team: myTeam } = useTeamOnce(profile?.teamId || null);
   const { entries: lbEntries } = useLeaderboard(true);
   const communityCounts = useCommunityStats();
-  const [shareCopied, setShareCopied] = useState(false);
-  const [bestFinishShareOpen, setBestFinishShareOpen] = useState(false);
   const [profileShareOpen, setProfileShareOpen] = useState(false);
   const [showBackgroundPicker, setShowBackgroundPicker] = useState(false);
   const [savingBackground, setSavingBackground] = useState(false);
@@ -129,7 +125,6 @@ export default function Dashboard() {
 
   // Defer heavy stat computations so the profile card renders immediately
   const deferredMatches = useDeferredValue(filteredMatches);
-  const isStatsStale = deferredMatches !== filteredMatches;
 
   // Stats (filtered — uses deferred matches for lower-priority computation)
   const activeFilterLabel = useMemo(() => {
@@ -269,6 +264,16 @@ export default function Dashboard() {
 
       {hasMatches && <HomeTabs />}
 
+      {hasMatches && (
+        <HomeCommandCenter
+          profileUsername={profile?.username}
+          overall={overall}
+          latestMatch={latestMatches[0]}
+          eventCount={filteredEventStats.length}
+          heroCompletionPct={heroCompletion?.pct}
+        />
+      )}
+
       {/* On This Day — above profile card */}
       {hasMatches && <OnThisDay matches={matches} />}
 
@@ -290,9 +295,9 @@ export default function Dashboard() {
                     href="https://gem.fabtcg.com/profile/player/"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-fab-muted border border-fab-border hover:bg-fab-surface-hover hover:border-fab-gold/40 hover:text-fab-gold px-2.5 py-1 rounded-md transition-colors"
+                    className="inline-flex items-center gap-1.5 text-xs font-bold text-fab-bg border border-fab-gold/50 bg-fab-gold hover:bg-fab-gold-light px-2.5 py-1 rounded-md transition-colors"
                   >
-                    GEM
+                    Open GEM
                     <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H18m0 0v4.5M18 6l-8.25 8.25M6 7.5v10.5h10.5" />
                     </svg>
@@ -471,116 +476,36 @@ export default function Dashboard() {
             onEventTypeChange={setFilterEventType}
             onTierChange={setFilterTier}
             onHeroChange={setFilterHero}
+            showHeader
+            onReset={() => {
+              setFilterFormat("all");
+              setFilterEventType("all");
+              setFilterTier("all");
+              setFilterHero("all");
+            }}
           />
+          </div>
+
+          {/* Recent Events + Opponents */}
+          <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.75fr)] section-reveal" style={{ '--stagger': 2 } as React.CSSProperties}>
+            <RecentEvents eventStats={filteredEventStats} playerName={profile?.displayName} />
+            <div className="space-y-4">
+              <DashboardInsights heroStats={heroStats} opponentStats={opponentStats} matches={filteredMatches} />
+              <LatestMatches matches={latestMatches} />
+            </div>
           </div>
 
           {/* Tournament Stats Card */}
           {tournamentAnalytics && tournamentAnalytics.totalEvents >= 3 && (
-            <div className="section-reveal" style={{ '--stagger': 2 } as React.CSSProperties}>
-              <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden cursor-pointer hover:border-fab-gold/20 transition-colors" onClick={() => router.push("/tournament-stats")}>
-                <Link href="/tournament-stats" className="flex items-center justify-between px-4 py-3 border-b border-fab-border/50 hover:bg-fab-surface-hover transition-colors">
-                  <div>
-                    <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-amber-400/80">Tournament Record</p>
-                    <p className="mt-0.5 text-base font-bold tracking-tight text-fab-text">Tournament Stats</p>
-                  </div>
-                  <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                    <button
-                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); setTournamentShareOpen(true); }}
-                      className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-fab-gold/15 text-fab-gold text-xs font-semibold hover:bg-fab-gold/25 transition-colors"
-                    >
-                      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0 0a2.25 2.25 0 103.935 2.186 2.25 2.25 0 00-3.935-2.186zm0-12.814a2.25 2.25 0 103.933-2.185 2.25 2.25 0 00-3.933 2.185z" />
-                      </svg>
-                      Share
-                    </button>
-                    <span className="text-xs font-semibold text-fab-gold border border-fab-gold/30 hover:bg-fab-gold/10 hover:border-fab-gold/50 px-2.5 py-1 rounded-md transition-colors">
-                      Tournament stats &rarr;
-                    </span>
-                  </div>
-                </Link>
-                <div className="p-4 flex flex-col sm:flex-row items-center gap-4 sm:gap-5">
-                  {/* R1 Win Rate Ring */}
-                  <Link href="/tournament-stats" className="shrink-0 text-center hover:opacity-80 transition-opacity" title="Your win rate in Round 1 of rated events">
-                    <WinRateRing value={tournamentAnalytics.r1WinRate} size={56} strokeWidth={5} label={`${Math.round(tournamentAnalytics.r1WinRate)}%`} />
-                    <p className="text-[10px] text-fab-muted font-medium mt-1">Win R1</p>
-                  </Link>
-                  {/* Key stats */}
-                  <div className="flex-1 w-full grid grid-cols-3 sm:grid-cols-6 gap-x-3 gap-y-2.5 text-center sm:text-left stagger-grid">
-                    {/* Row 1: Overview */}
-                    <div title="Total rated events played">
-                      <p className="text-lg font-bold text-fab-text tabular-nums">{tournamentAnalytics.totalEvents}</p>
-                      <p className="text-[10px] text-fab-muted">Events</p>
-                    </div>
-                    <div title={`${tournamentAnalytics.totalMatches} matches across all rated events`}>
-                      <p className={`text-lg font-bold tabular-nums ${tournamentAnalytics.overallWinRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>{tournamentAnalytics.overallWinRate.toFixed(1)}%</p>
-                      <p className="text-[10px] text-fab-muted">Win Rate</p>
-                    </div>
-                    <div title="Tournament wins (champion)">
-                      <p className="text-lg font-bold text-fab-gold tabular-nums">{tournamentAnalytics.championCount || <span className="text-fab-dim">N/A</span>}</p>
-                      <p className="text-[10px] text-fab-muted">Wins</p>
-                    </div>
-                    <div title="Events where you reached the finals">
-                      <p className="text-lg font-bold text-fab-text tabular-nums">{tournamentAnalytics.finalistCount || <span className="text-fab-dim">N/A</span>}</p>
-                      <p className="text-[10px] text-fab-muted">Finals</p>
-                    </div>
-                    <div title="Top 4 finishes">
-                      <p className="text-lg font-bold text-fab-text tabular-nums">{tournamentAnalytics.top4Count || <span className="text-fab-dim">N/A</span>}</p>
-                      <p className="text-[10px] text-fab-muted">Top 4s</p>
-                    </div>
-                    <div title={`Made top 8 in ${tournamentAnalytics.top8Count} of ${tournamentAnalytics.totalEvents} events (${Math.round(tournamentAnalytics.top8Rate)}%)`}>
-                      <p className="text-lg font-bold text-fab-text tabular-nums">{tournamentAnalytics.top8Count}</p>
-                      <p className="text-[10px] text-fab-muted">Top 8s</p>
-                    </div>
-                    {/* Row 2: Deep stats */}
-                    <div title="Most consecutive match wins across all events">
-                      <p className="text-lg font-bold text-fab-text tabular-nums">{tournamentAnalytics.longestCrossEventWinStreak || <span className="text-fab-dim">N/A</span>}</p>
-                      <p className="text-[10px] text-fab-muted">Best Win Streak</p>
-                    </div>
-                    <div title={`Went undefeated through swiss ${tournamentAnalytics.undefeatedSwissCount} time${tournamentAnalytics.undefeatedSwissCount === 1 ? "" : "s"}`}>
-                      <p className={`text-lg font-bold tabular-nums ${tournamentAnalytics.undefeatedSwissCount > 0 ? "text-fab-win" : "text-fab-dim"}`}>{tournamentAnalytics.undefeatedSwissCount || <span className="text-fab-dim">N/A</span>}</p>
-                      <p className="text-[10px] text-fab-muted">Undefeated Swiss</p>
-                    </div>
-                    <div title="Lost Round 1 but still made top 8">
-                      <p className="text-lg font-bold text-fab-text tabular-nums">{tournamentAnalytics.submarineCount || <span className="text-fab-dim">N/A</span>}</p>
-                      <p className="text-[10px] text-fab-muted">Submarines</p>
-                    </div>
-                    <div title="Most consecutive events making top 8">
-                      <p className="text-lg font-bold text-fab-text tabular-nums">{tournamentAnalytics.consecutiveTop8s || <span className="text-fab-dim">N/A</span>}</p>
-                      <p className="text-[10px] text-fab-muted">Consec. Top 8s</p>
-                    </div>
-                    <div title="Most consecutive tournament wins (champion)">
-                      <p className="text-lg font-bold text-fab-gold tabular-nums">{tournamentAnalytics.consecutiveEventWins || <span className="text-fab-dim">N/A</span>}</p>
-                      <p className="text-[10px] text-fab-muted">Consec. Wins</p>
-                    </div>
-                    <div title={`You make top 8 in ${Math.round(tournamentAnalytics.top8Rate)}% of your events`}>
-                      <p className="text-lg font-bold text-fab-text tabular-nums">{Math.round(tournamentAnalytics.top8Rate)}%</p>
-                      <p className="text-[10px] text-fab-muted">Top 8 Rate</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
+            <div className="section-reveal" style={{ '--stagger': 3 } as React.CSSProperties}>
+              <TournamentSummaryCard
+                analytics={tournamentAnalytics}
+                onShare={() => setTournamentShareOpen(true)}
+              />
             </div>
           )}
 
-          {/* RecentEvents + Opponents */}
-          <div className="grid grid-cols-1 md:grid-cols-[3fr_2fr] gap-4 section-reveal" style={{ '--stagger': 3 } as React.CSSProperties}>
-            <RecentEvents eventStats={filteredEventStats} playerName={profile?.displayName} />
-            <DashboardInsights heroStats={heroStats} opponentStats={opponentStats} matches={filteredMatches} />
-          </div>
-
         </div>
-      )}
-
-      {/* Best Finish share modal */}
-      {bestFinishShareOpen && bestFinish && profile && (
-        <BestFinishShareModal
-          playerName={profile.displayName}
-          bestFinish={bestFinish}
-          totalMatches={overall.totalMatches}
-          winRate={overall.overallWinRate}
-          topHero={topHero?.heroName}
-          onClose={() => setBestFinishShareOpen(false)}
-        />
       )}
 
       {profileShareOpen && profile && (
@@ -704,6 +629,167 @@ export default function Dashboard() {
           onClose={() => setStatsShareOpen(false)}
         />
       )}
+    </div>
+  );
+}
+
+function formatHomeDate(match?: MatchRecord): string {
+  if (!match?.date) return "No recent match";
+  const date = new Date(`${match.date}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return match.date;
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
+function HomeCommandMetric({ label, value, tone = "text-fab-text" }: { label: string; value: string; tone?: string }) {
+  return (
+    <div className="rounded-lg border border-fab-border/70 bg-fab-bg/55 px-3 py-2">
+      <p className={`text-sm font-black leading-none tabular-nums sm:text-base ${tone}`}>{value}</p>
+      <p className="mt-1 text-[9px] font-bold uppercase tracking-[0.12em] text-fab-dim">{label}</p>
+    </div>
+  );
+}
+
+function HomeCommandCenter({
+  profileUsername,
+  overall,
+  latestMatch,
+  eventCount,
+  heroCompletionPct,
+}: {
+  profileUsername?: string;
+  overall: OverallStats;
+  latestMatch?: MatchRecord;
+  eventCount: number;
+  heroCompletionPct?: number;
+}) {
+  const totalMatches = overall.totalMatches + overall.totalByes;
+  const record = `${overall.totalWins}-${overall.totalLosses}${overall.totalDraws > 0 ? `-${overall.totalDraws}` : ""}`;
+  const profileHref = profileUsername ? `/player/${profileUsername}` : "/settings";
+
+  return (
+    <section className="section-reveal relative overflow-hidden rounded-xl border border-fab-border/80 bg-[linear-gradient(135deg,rgba(25,23,18,0.96),rgba(14,15,14,0.95)_58%,rgba(17,24,22,0.92))] p-3 shadow-[0_18px_54px_rgba(0,0,0,0.24)] sm:p-4" style={{ "--stagger": 0 } as React.CSSProperties}>
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_16%_0%,rgba(245,179,57,0.16),transparent_30%),radial-gradient(circle_at_86%_20%,rgba(38,211,177,0.11),transparent_28%)]" />
+      <div className="relative grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(420px,0.9fr)] xl:items-center">
+        <div className="min-w-0">
+          <p className="text-[10px] font-black uppercase tracking-[0.16em] text-fab-gold">Match command center</p>
+          <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <h2 className="text-2xl font-black tracking-tight text-fab-text sm:text-3xl">Ready for the next round.</h2>
+              <p className="mt-1 text-sm leading-6 text-fab-muted">
+                Open GEM, import the newest event, or log a one-off match without hunting through the app.
+              </p>
+            </div>
+          </div>
+          <div className="mt-4 grid grid-cols-3 gap-2">
+            <HomeCommandMetric label="Record" value={record} tone={overall.overallWinRate >= 50 ? "text-fab-win" : "text-fab-loss"} />
+            <HomeCommandMetric label="Events" value={String(eventCount)} tone="text-fab-gold" />
+            <HomeCommandMetric label="Latest" value={formatHomeDate(latestMatch)} />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 xl:grid-cols-2">
+          <a
+            href="https://gem.fabtcg.com/profile/player/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group col-span-2 flex min-h-[58px] items-center justify-between gap-3 rounded-lg border border-fab-gold/55 bg-fab-gold px-4 py-3 text-fab-bg shadow-[0_14px_34px_rgba(245,179,57,0.18)] transition-colors hover:bg-fab-gold-light sm:col-span-2 xl:col-span-1"
+          >
+            <span className="min-w-0">
+              <span className="block text-sm font-black">Open GEM</span>
+              <span className="block truncate text-[11px] font-semibold opacity-80">Grab your latest event results</span>
+            </span>
+            <ExternalLink className="h-5 w-5 shrink-0 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+          </a>
+          <Link
+            href="/import"
+            className="group col-span-2 flex min-h-[58px] items-center justify-between gap-3 rounded-lg border border-emerald-400/35 bg-emerald-400/12 px-4 py-3 text-emerald-300 transition-colors hover:border-emerald-300/55 hover:bg-emerald-400/18 sm:col-span-2 xl:col-span-1"
+          >
+            <span className="min-w-0">
+              <span className="block text-sm font-black">Import Matches</span>
+              <span className="block truncate text-[11px] font-semibold text-fab-muted">{totalMatches.toLocaleString()} tracked</span>
+            </span>
+            <UploadCloud className="h-5 w-5 shrink-0 transition-transform group-hover:-translate-y-0.5" />
+          </Link>
+          <Link
+            href="/matches/new"
+            className="flex min-h-[48px] items-center justify-center gap-2 rounded-lg border border-fab-border bg-fab-bg/65 px-3 py-2 text-sm font-bold text-fab-muted transition-colors hover:border-fab-gold/40 hover:text-fab-gold"
+          >
+            <PlusCircle className="h-4 w-4" />
+            Add Match
+          </Link>
+          <Link
+            href={profileHref}
+            className="flex min-h-[48px] items-center justify-center gap-2 rounded-lg border border-fab-border bg-fab-bg/65 px-3 py-2 text-sm font-bold text-fab-muted transition-colors hover:border-fab-gold/40 hover:text-fab-gold"
+          >
+            <UserRound className="h-4 w-4" />
+            Profile
+          </Link>
+          {heroCompletionPct !== undefined && (
+            <Link
+              href="/matches"
+              className="col-span-2 flex min-h-[48px] items-center justify-between gap-3 rounded-lg border border-fab-border bg-fab-bg/65 px-3 py-2 text-sm font-bold text-fab-muted transition-colors hover:border-fab-gold/40 hover:text-fab-text"
+            >
+              <span>Hero data</span>
+              <span className={heroCompletionPct >= 90 ? "text-fab-win" : heroCompletionPct >= 70 ? "text-fab-gold" : "text-fab-loss"}>
+                {heroCompletionPct}%
+              </span>
+            </Link>
+          )}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function TournamentSummaryCard({ analytics, onShare }: { analytics: TournamentAnalytics; onShare: () => void }) {
+  const keyMetrics = [
+    { label: "Events", value: String(analytics.totalEvents), tone: "text-fab-text" },
+    { label: "Win Rate", value: `${analytics.overallWinRate.toFixed(1)}%`, tone: analytics.overallWinRate >= 50 ? "text-fab-win" : "text-fab-loss" },
+    { label: "Top 8 Rate", value: `${Math.round(analytics.top8Rate)}%`, tone: "text-fab-gold" },
+    { label: "Best Streak", value: analytics.longestCrossEventWinStreak ? String(analytics.longestCrossEventWinStreak) : "N/A", tone: "text-fab-text" },
+    { label: "Undef. Swiss", value: analytics.undefeatedSwissCount ? String(analytics.undefeatedSwissCount) : "N/A", tone: analytics.undefeatedSwissCount > 0 ? "text-fab-win" : "text-fab-dim" },
+    { label: "Wins", value: analytics.championCount ? String(analytics.championCount) : "N/A", tone: analytics.championCount > 0 ? "text-fab-gold" : "text-fab-dim" },
+  ];
+
+  return (
+    <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden hover:border-fab-gold/20 transition-colors">
+      <Link href="/tournament-stats" className="flex items-center justify-between gap-3 px-4 py-3 border-b border-fab-border/50 hover:bg-fab-surface-hover transition-colors">
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-amber-400/80">Tournament Record</p>
+          <p className="mt-0.5 text-base font-bold tracking-tight text-fab-text">Tournament Stats</p>
+        </div>
+        <div className="flex shrink-0 items-center gap-2" onClick={(e) => e.stopPropagation()}>
+          <button
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); onShare(); }}
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-fab-gold/15 text-fab-gold text-xs font-semibold hover:bg-fab-gold/25 transition-colors"
+          >
+            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0 0a2.25 2.25 0 103.935 2.186 2.25 2.25 0 00-3.935-2.186zm0-12.814a2.25 2.25 0 103.933-2.185 2.25 2.25 0 00-3.933 2.185z" />
+            </svg>
+            Share
+          </button>
+          <span className="hidden text-xs font-semibold text-fab-gold border border-fab-gold/30 px-2.5 py-1 rounded-md sm:inline-flex">
+            Details &rarr;
+          </span>
+        </div>
+      </Link>
+      <div className="grid gap-4 p-4 lg:grid-cols-[auto_minmax(0,1fr)] lg:items-center">
+        <Link href="/tournament-stats" className="flex items-center gap-3 rounded-lg border border-fab-border bg-fab-bg/45 p-3 transition-colors hover:border-fab-gold/40">
+          <WinRateRing value={analytics.r1WinRate} size={58} strokeWidth={5} label={`${Math.round(analytics.r1WinRate)}%`} />
+          <div>
+            <p className="text-sm font-black text-fab-text">Round 1 readiness</p>
+            <p className="text-xs text-fab-muted">{analytics.r1Wins}W-{analytics.r1Losses}L in tournament openers</p>
+          </div>
+        </Link>
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+          {keyMetrics.map((metric) => (
+            <div key={metric.label} className="rounded-lg border border-fab-border/70 bg-fab-bg/45 px-3 py-2">
+              <p className={`text-lg font-black tabular-nums ${metric.tone}`}>{metric.value}</p>
+              <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-fab-dim">{metric.label}</p>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
