@@ -355,13 +355,13 @@ export default function DiscoverPage() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<LinkFilter>("all");
   const [query, setQuery] = useState("");
-  const { entries } = useLeaderboard(true);
-  const creators = useCreators();
+  const { entries } = useLeaderboard(false);
+  const creators = useCreators({ lazy: true }) as Creator[] & { load: () => void };
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    getDiscoverProfiles()
+    getDiscoverProfiles(250)
       .then((items) => {
         if (!cancelled) setProfiles(items);
       })
@@ -375,6 +375,10 @@ export default function DiscoverPage() {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    if (!loading && profiles.length > 0) creators.load();
+  }, [creators, loading, profiles.length]);
 
   const entryByUid = useMemo(() => new Map(entries.map((entry) => [entry.userId, entry])), [entries]);
   const rankMap = useMemo(() => computeRankMap(entries), [entries]);
@@ -435,9 +439,9 @@ export default function DiscoverPage() {
   }, [discoverProfiles]);
 
   return (
-    <div className="mx-auto max-w-6xl space-y-5">
-      <section className="rounded-xl border border-fab-border bg-fab-surface/95 p-3 sm:p-5">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+    <div className="mx-auto max-w-6xl space-y-4">
+      <section className="rounded-xl border border-fab-border bg-fab-surface/95 p-3 sm:p-4">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-2xl">
             <div className="flex flex-wrap items-center gap-2">
               <div className="inline-flex items-center gap-2 rounded-lg border border-fab-border/70 bg-fab-bg/70 px-2.5 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-fab-gold sm:px-3 sm:py-2 sm:text-[11px] sm:tracking-[0.16em]">
@@ -452,8 +456,8 @@ export default function DiscoverPage() {
                 Edit links
               </Link>
             </div>
-            <h1 className="mt-3 text-xl font-black text-fab-text sm:mt-4 sm:text-4xl">Find players, guides, and decks</h1>
-            <p className="mt-3 hidden text-sm leading-6 text-fab-muted sm:block">
+            <h1 className="mt-2 text-lg font-black text-fab-text sm:mt-3 sm:text-3xl">Find players, guides, and decks</h1>
+            <p className="mt-2 hidden text-sm leading-6 text-fab-muted sm:block">
               Browse public profiles that have shared Metafy resources, Fabrary decklists, X handles, Discord names, or tags.
             </p>
           </div>

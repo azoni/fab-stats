@@ -218,9 +218,24 @@ export async function updateLeaderboardEntry(
     minorTop8sByEventType[f.eventType] = (minorTop8sByEventType[f.eventType] || 0) + 1;
   }
 
-  // Top 8 heroes — which hero was played at each playoff finish
-  const top8Heroes = playoffFinishes
-    .filter((f) => f.hero && isValidHeroName(f.hero))
+  // Top 8 heroes - which hero was played at each playoff/minor competitive finish
+  const top8HeroKeys = new Set<string>();
+  const top8Heroes = [
+    ...playoffFinishes,
+    ...minorEventFinishes
+      .filter((f) => ["Skirmish", "Road to Nationals", "ProQuest", "Showdown"].includes(f.eventType))
+      .map((f) => ({
+        ...f,
+        type: f.type === "undefeated" ? "champion" as const : f.type,
+      })),
+  ]
+    .filter((f) => {
+      if (!f.hero || !isValidHeroName(f.hero)) return false;
+      const key = `${f.eventName}|${f.eventDate}|${f.eventType}|${f.hero}|${f.type}`;
+      if (top8HeroKeys.has(key)) return false;
+      top8HeroKeys.add(key);
+      return true;
+    })
     .map((f) => ({
       hero: f.hero!,
       eventType: f.eventType,

@@ -207,11 +207,28 @@ export function computeMetaStats(
   };
 }
 
+function breakdownInDateRange(
+  hb: { dates?: string[] },
+  sinceDateStr?: string,
+  untilDateStr?: string,
+): boolean {
+  if (!sinceDateStr) return true;
+  if (!hb.dates || hb.dates.length === 0) return false;
+  return hb.dates.some((d) => d >= sinceDateStr && (!untilDateStr || d <= untilDateStr));
+}
+
 /** Extract available formats from leaderboard entries' detailed breakdowns */
-export function getAvailableFormats(entries: LeaderboardEntry[]): string[] {
+export function getAvailableFormats(
+  entries: LeaderboardEntry[],
+  filterEventType?: string,
+  sinceDateStr?: string,
+  untilDateStr?: string,
+): string[] {
   const formats = new Set<string>();
   for (const entry of entries) {
     for (const hb of entry.heroBreakdownDetailed || []) {
+      if (filterEventType && hb.eventType !== filterEventType) continue;
+      if (!breakdownInDateRange(hb, sinceDateStr, untilDateStr)) continue;
       formats.add(hb.format);
     }
   }
@@ -219,10 +236,17 @@ export function getAvailableFormats(entries: LeaderboardEntry[]): string[] {
 }
 
 /** Extract available event types from leaderboard entries' detailed breakdowns */
-export function getAvailableEventTypes(entries: LeaderboardEntry[]): string[] {
+export function getAvailableEventTypes(
+  entries: LeaderboardEntry[],
+  filterFormat?: string,
+  sinceDateStr?: string,
+  untilDateStr?: string,
+): string[] {
   const types = new Set<string>();
   for (const entry of entries) {
     for (const hb of entry.heroBreakdownDetailed || []) {
+      if (filterFormat && hb.format !== filterFormat) continue;
+      if (!breakdownInDateRange(hb, sinceDateStr, untilDateStr)) continue;
       types.add(hb.eventType);
     }
   }
@@ -251,7 +275,7 @@ export function computeTop8HeroMeta(
   untilDateStr?: string,
 ): Top8HeroMeta[] {
   const heroAgg = new Map<string, { count: number; champions: number; finalists: number; top4: number; top8: number }>();
-  const isDateRange = !!sinceDateStr && !!untilDateStr;
+  const isDateRange = !!sinceDateStr;
 
   // Count event entries per hero (for the "Played" column)
   const heroEventCount = new Map<string, number>();
@@ -276,7 +300,7 @@ export function computeTop8HeroMeta(
         if (filterFormat && hb.format !== filterFormat) continue;
         // Count dates that fall within the range; if no dates backfilled, count as 1 entry
         if (hb.dates && hb.dates.length > 0) {
-          const datesInRange = hb.dates.filter(d => d >= sinceDateStr! && d <= untilDateStr!).length;
+          const datesInRange = hb.dates.filter(d => d >= sinceDateStr! && (!untilDateStr || d <= untilDateStr)).length;
           if (datesInRange > 0) {
             heroEventCount.set(hb.hero, (heroEventCount.get(hb.hero) || 0) + datesInRange);
           }

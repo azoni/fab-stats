@@ -372,27 +372,54 @@ function hasDiscoverableLinks(links?: UserProfile["socialLinks"] | null): boolea
   );
 }
 
-export async function getDiscoverProfiles(maxResults = 5000): Promise<UserProfile[]> {
-  const profileQueries = [
-    query(collectionGroup(db, "profile"), where("isPublic", "==", true), limit(maxResults)),
-    query(collectionGroup(db, "profile"), where("profileVisibility", "==", "public"), limit(maxResults)),
-  ];
-  const settled = await Promise.allSettled(profileQueries.map((q) => getDocs(q)));
+let discoverProfilesCache: { profiles: UserProfile[]; ts: number; maxResults: number } | null = null;
+const DISCOVER_PROFILES_CACHE_TTL = 5 * 60_000;
+
+export async function getDiscoverProfiles(maxResults = 250): Promise<UserProfile[]> {
+  if (
+    discoverProfilesCache &&
+    discoverProfilesCache.maxResults >= maxResults &&
+    Date.now() - discoverProfilesCache.ts < DISCOVER_PROFILES_CACHE_TTL
+  ) {
+    return discoverProfilesCache.profiles.slice(0, maxResults);
+  }
 
   const profiles = new Map<string, UserProfile>();
-  for (const result of settled) {
-    if (result.status !== "fulfilled") continue;
-    for (const docSnap of result.value.docs) {
+
+  const mergeSnap = (snap: Awaited<ReturnType<typeof getDocs>>) => {
+    for (const docSnap of snap.docs) {
       const profile = docSnap.data() as UserProfile;
       const key = profile.uid || docSnap.ref.parent.parent?.id || docSnap.id;
       profiles.set(key, profile);
+    }
+  };
+
+  // Fast path: recent profile saves maintain hasDiscoverLinks, so this avoids
+  // scanning every public profile before filtering client-side.
+  const fastQueries = [
+    query(collectionGroup(db, "profile"), where("hasDiscoverLinks", "==", true), limit(maxResults)),
+  ];
+  const fastSettled = await Promise.allSettled(fastQueries.map((q) => getDocs(q)));
+  for (const result of fastSettled) {
+    if (result.status === "fulfilled") mergeSnap(result.value);
+  }
+
+  // Backfill path for older profile docs that predate hasDiscoverLinks.
+  if (profiles.size < 12) {
+    const profileQueries = [
+      query(collectionGroup(db, "profile"), where("isPublic", "==", true), limit(maxResults)),
+      query(collectionGroup(db, "profile"), where("profileVisibility", "==", "public"), limit(maxResults)),
+    ];
+    const settled = await Promise.allSettled(profileQueries.map((q) => getDocs(q)));
+    for (const result of settled) {
+      if (result.status === "fulfilled") mergeSnap(result.value);
     }
   }
 
   // Fallback for browsers hitting older rules/indexes where collectionGroup
   // profile reads are denied. Direct profile reads are already supported by
   // the player pages, and the leaderboard gives us public user ids to sample.
-  if (profiles.size < 12) {
+  if (profiles.size < 8) {
     try {
       const fallbackLimit = Math.min(maxResults, 1000);
       const lbSnap = await getDocs(query(collection(db, "leaderboard"), where("isPublic", "==", true), limit(fallbackLimit)));
@@ -416,7 +443,7 @@ export async function getDiscoverProfiles(maxResults = 5000): Promise<UserProfil
     }
   }
 
-  return Array.from(profiles.values())
+  const filtered = Array.from(profiles.values())
     .filter((profile) => {
       if (!profile.uid || !profile.username) return false;
       if (profile.profileVisibility) {
@@ -429,6 +456,9 @@ export async function getDiscoverProfiles(maxResults = 5000): Promise<UserProfil
       return hasDiscoverableLinks(profile.socialLinks);
     })
     .sort((a, b) => (a.displayName || a.username).localeCompare(b.displayName || b.username));
+
+  discoverProfilesCache = { profiles: filtered, ts: Date.now(), maxResults };
+  return filtered.slice(0, maxResults);
 }
 
 export async function updateProfile(

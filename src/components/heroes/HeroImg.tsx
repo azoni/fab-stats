@@ -1,10 +1,11 @@
 "use client";
 import { useState } from "react";
-import { getHeroByName, getHeroPortraitUrl } from "@/lib/heroes";
+import { getHeroByName, getHeroPortraitUrl, resolveHeroName } from "@/lib/heroes";
 
 export function HeroImg({ name, size = "sm" }: { name: string; size?: "sm" | "md" | "lg" }) {
-  const hero = getHeroByName(name);
-  const portrait = getHeroPortraitUrl(name);
+  const canonicalName = resolveHeroName(name) || name;
+  const hero = getHeroByName(canonicalName);
+  const portrait = getHeroPortraitUrl(canonicalName);
   const [portraitFailed, setPortraitFailed] = useState(false);
   const dim = size === "lg" ? "w-10 h-10" : size === "md" ? "w-7 h-7" : "w-5 h-5";
 
@@ -21,7 +22,7 @@ export function HeroImg({ name, size = "sm" }: { name: string; size?: "sm" | "md
   return (
     <img
       src={imgUrl}
-      alt={name}
+      alt={canonicalName}
       className={`${dim} rounded-full object-cover object-top shrink-0 border border-fab-border`}
       loading="lazy"
       onError={portrait && !portraitFailed ? () => setPortraitFailed(true) : undefined}

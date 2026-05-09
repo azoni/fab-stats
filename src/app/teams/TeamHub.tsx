@@ -13,7 +13,7 @@ import type { Team, TeamInvite as TeamInviteType, LeaderboardEntry } from "@/typ
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { toast } from "sonner";
-import { Globe, LayoutGrid, Plus, Search, Settings, Shield, Sparkles, Trophy, Users } from "lucide-react";
+import { Globe, LayoutGrid, Plus, Settings, Shield, Sparkles, Trophy, Users } from "lucide-react";
 
 type Tab = "my-team" | "browse" | "create";
 
@@ -422,7 +422,7 @@ export default function TeamHub() {
               <Sparkles className="h-3.5 w-3.5" />
               Community squads
             </div>
-            <h1 className="mt-2 text-2xl font-black text-fab-text sm:text-3xl">Teams</h1>
+            <h1 className="mt-2 text-xl font-black text-fab-text sm:text-2xl">Teams</h1>
             <p className="mt-1 hidden max-w-2xl text-sm leading-6 text-fab-muted md:block">
               Browse groups, join open rosters, or manage the badge that represents you on profiles and leaderboards.
             </p>
@@ -756,21 +756,7 @@ export default function TeamHub() {
 
       {/* ── Browse tab ── */}
       {activeTab === "browse" && (
-        <div className="space-y-5">
-          <div className="rounded-xl border border-fab-border/80 bg-fab-surface/85 p-4 shadow-[0_16px_48px_rgba(0,0,0,0.16)]">
-            <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
-              <div>
-                <h2 className="inline-flex items-center gap-2 text-sm font-black uppercase tracking-[0.12em] text-fab-text">
-                  <Search className="h-4 w-4 text-fab-gold" />
-                  Browse Teams
-                </h2>
-                <p className="text-xs text-fab-muted">
-                  Showing {visibleTeams.length} of {allTeams.length} teams. {teamStats.joinableTeams} open team{teamStats.joinableTeams === 1 ? "" : "s"} available to join.
-                </p>
-              </div>
-              <p className="text-xs font-bold text-fab-gold">{browseSort === "members" ? "Sorted by members" : browseSort === "newest" ? "Newest first" : "A to Z"}</p>
-            </div>
-          </div>
+        <div className="space-y-3">
           {/* Search input — local to the team browse, separate from global SmartSearch */}
           <input
             type="text"

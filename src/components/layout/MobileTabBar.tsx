@@ -10,7 +10,7 @@ interface TabSpec {
   match: (pathname: string) => boolean;
 }
 
-function NavAssetIcon({ name }: { name: "home" | "meta" | "activity" | "extras" | "discover" | "teams" | "achievements" }) {
+function NavAssetIcon({ name }: { name: "home" | "meta" | "activity" | "extras" | "discover" | "teams" }) {
   return (
     <span className="nav-icon-frame" aria-hidden="true">
       <img src={`/nav-icons/nav-${name}.svg`} alt="" className="nav-asset-icon" />
@@ -50,16 +50,10 @@ const tabs: TabSpec[] = [
     match: (p) => p.startsWith("/teams") || p.startsWith("/group"),
   },
   {
-    href: "/achievements",
-    label: "Achievements",
-    icon: <NavAssetIcon name="achievements" />,
-    match: (p) => p.startsWith("/achievements"),
-  },
-  {
     href: "/extras",
     label: "Extras",
     icon: <NavAssetIcon name="extras" />,
-    match: (p) => p.startsWith("/extras") || p.startsWith("/games") || p.startsWith("/compare") || p.startsWith("/docs") || p.startsWith("/changelog") || p.startsWith("/fabdoku") || p.startsWith("/crossword") || p.startsWith("/heroguesser") || p.startsWith("/matchupmania") || p.startsWith("/connections") || p.startsWith("/timeline") || p.startsWith("/trivia") || p.startsWith("/rhinarsrampage") || p.startsWith("/kayosknockout") || p.startsWith("/brutebrawl") || p.startsWith("/ninjacombo") || p.startsWith("/shadowstrike") || p.startsWith("/bladedash"),
+    match: (p) => p.startsWith("/extras") || p.startsWith("/achievements") || p.startsWith("/games") || p.startsWith("/compare") || p.startsWith("/docs") || p.startsWith("/changelog") || p.startsWith("/fabdoku") || p.startsWith("/crossword") || p.startsWith("/heroguesser") || p.startsWith("/matchupmania") || p.startsWith("/connections") || p.startsWith("/timeline") || p.startsWith("/trivia") || p.startsWith("/rhinarsrampage") || p.startsWith("/kayosknockout") || p.startsWith("/brutebrawl") || p.startsWith("/ninjacombo") || p.startsWith("/shadowstrike") || p.startsWith("/bladedash"),
   },
 ];
 
@@ -71,7 +65,7 @@ export function MobileTabBar() {
       aria-label="Primary"
       className="fab-mobile-shell md:hidden fixed bottom-0 inset-x-0 z-50 bg-fab-bg/95 backdrop-blur border-t border-fab-border pb-[env(safe-area-inset-bottom)]"
     >
-      <div className="grid grid-cols-7 items-stretch px-0.5">
+      <div className="grid grid-cols-6 items-stretch px-0.5">
         {tabs.map((tab) => (
           <TabLink key={tab.href} tab={tab} active={tab.match(pathname)} />
         ))}

@@ -33,6 +33,7 @@ export function MatchList({ matches, matchOwnerUid, enableComments, editable, on
   const [filterResult, setFilterResult] = useState<string>("all");
   const [filterFormat, setFilterFormat] = useState<string>("all");
   const [filterHero, setFilterHero] = useState<string>("all");
+  const [filterOpponentHero, setFilterOpponentHero] = useState<string>("all");
   const [filterMissing, setFilterMissing] = useState<string>("all");
   const [filterEventType, setFilterEventType] = useState<string>("all");
   const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
@@ -42,7 +43,7 @@ export function MatchList({ matches, matchOwnerUid, enableComments, editable, on
   // Reset to page 1 when filters/search/sort change
   useEffect(() => {
     setPage(1);
-  }, [filterResult, filterFormat, filterHero, filterMissing, filterEventType, sortOrder, search]);
+  }, [filterResult, filterFormat, filterHero, filterOpponentHero, filterMissing, filterEventType, sortOrder, search]);
 
   const allFormats = useMemo(() => {
     return [...new Set(matches.map((m) => m.format))].sort();
@@ -50,6 +51,11 @@ export function MatchList({ matches, matchOwnerUid, enableComments, editable, on
 
   const allHeroes = useMemo(() => {
     const heroes = new Set(matches.map((m) => m.heroPlayed).filter((h) => h && VALID_HERO_NAMES.has(h)));
+    return Array.from(heroes).sort();
+  }, [matches]);
+
+  const allOpponentHeroes = useMemo(() => {
+    const heroes = new Set(matches.map((m) => m.opponentHero).filter((h) => h && VALID_HERO_NAMES.has(h)));
     return Array.from(heroes).sort();
   }, [matches]);
 
@@ -85,6 +91,9 @@ export function MatchList({ matches, matchOwnerUid, enableComments, editable, on
       result = result.filter((m) => !m.heroPlayed || m.heroPlayed === "Unknown");
     } else if (filterHero !== "all") {
       result = result.filter((m) => m.heroPlayed === filterHero);
+    }
+    if (filterOpponentHero !== "all") {
+      result = result.filter((m) => m.opponentHero === filterOpponentHero);
     }
     if (filterMissing === "no-hero") {
       result = result.filter((m) => !m.heroPlayed || m.heroPlayed === "Unknown");
@@ -127,7 +136,7 @@ export function MatchList({ matches, matchOwnerUid, enableComments, editable, on
     });
 
     return result;
-  }, [matches, filterResult, filterFormat, filterHero, filterMissing, filterEventType, sortOrder, search]);
+  }, [matches, filterResult, filterFormat, filterHero, filterOpponentHero, filterMissing, filterEventType, sortOrder, search]);
 
   // Stats from filtered matches (reflects current view)
   const stats = useMemo(() => {
@@ -190,9 +199,22 @@ export function MatchList({ matches, matchOwnerUid, enableComments, editable, on
               onChange={(e) => setFilterHero(e.target.value)}
               className="bg-fab-surface border border-fab-border rounded-md px-3 py-1.5 text-fab-text text-sm outline-none"
             >
-              <option value="all">All Heroes</option>
+              <option value="all">All Your Heroes</option>
               {allHeroes.map((h) => (
                 <option key={h} value={h}>{h}</option>
+              ))}
+            </select>
+          )}
+
+          {allOpponentHeroes.length > 0 && (
+            <select
+              value={filterOpponentHero}
+              onChange={(e) => setFilterOpponentHero(e.target.value)}
+              className="bg-fab-surface border border-fab-border rounded-md px-3 py-1.5 text-fab-text text-sm outline-none"
+            >
+              <option value="all">All Opp. Heroes</option>
+              {allOpponentHeroes.map((h) => (
+                <option key={h} value={h}>vs {h}</option>
               ))}
             </select>
           )}

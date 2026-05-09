@@ -49,22 +49,22 @@ export default function GamesPage() {
   );
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6">
-      <section className="relative overflow-hidden rounded-2xl border border-fab-border/80 bg-[linear-gradient(135deg,rgba(25,23,18,0.96),rgba(14,15,14,0.95)_58%,rgba(17,24,22,0.92))] p-5 shadow-[0_22px_70px_rgba(0,0,0,0.28)] sm:p-6">
+    <div className="mx-auto max-w-6xl space-y-5">
+      <section className="relative overflow-hidden rounded-xl border border-fab-border/80 bg-[linear-gradient(135deg,rgba(25,23,18,0.96),rgba(14,15,14,0.95)_58%,rgba(17,24,22,0.92))] p-3 shadow-[0_16px_48px_rgba(0,0,0,0.22)] sm:p-5">
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_12%_0%,rgba(245,179,57,0.16),transparent_30%),radial-gradient(circle_at_86%_18%,rgba(38,211,177,0.11),transparent_28%)]" />
-        <div className="relative flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+        <div className="relative flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-fab-border/80 bg-fab-bg/55 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-fab-gold">
+            <div className="inline-flex items-center gap-2 rounded-lg border border-fab-border/80 bg-fab-bg/55 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-fab-gold">
               <Sparkles className="h-3.5 w-3.5" />
               Daily warmups
             </div>
-            <h1 className="mt-4 text-3xl font-black text-fab-text sm:text-4xl">Daily Games</h1>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-fab-muted sm:text-base">
+            <h1 className="mt-2 text-xl font-black text-fab-text sm:text-3xl">Daily Games</h1>
+            <p className="mt-1 hidden max-w-2xl text-sm leading-6 text-fab-muted sm:block">
               Quick FaB puzzles for hero knowledge, matchups, trivia, pattern recognition, and between-round brain reps.
             </p>
           </div>
 
-          <div className="grid grid-cols-3 gap-3 sm:min-w-[28rem]">
+          <div className="grid grid-cols-3 gap-1.5 sm:min-w-[24rem] sm:gap-2">
             <GameMetric label="Games" value={VISIBLE_GAMES.length.toString()} />
             <GameMetric label="Done" value={completed.toString()} tone="green" />
             <GameMetric label="Left" value={remaining.toString()} tone="blue" />
@@ -147,9 +147,9 @@ export default function GamesPage() {
 function GameMetric({ label, value, tone = "gold" }: { label: string; value: string; tone?: "gold" | "green" | "blue" }) {
   const color = tone === "green" ? "text-emerald-300" : tone === "blue" ? "text-sky-300" : "text-fab-gold";
   return (
-    <div className="rounded-xl border border-fab-border/70 bg-fab-bg/45 px-4 py-3 shadow-inner shadow-black/10">
-      <p className={`text-xl font-black leading-none ${color}`}>{value}</p>
-      <p className="mt-1 text-[10px] font-bold uppercase tracking-[0.16em] text-fab-dim">{label}</p>
+    <div className="rounded-lg border border-fab-border/70 bg-fab-bg/45 px-3 py-2 shadow-inner shadow-black/10">
+      <p className={`text-lg font-black leading-none sm:text-xl ${color}`}>{value}</p>
+      <p className="mt-1 text-[9px] font-bold uppercase tracking-[0.12em] text-fab-dim sm:text-[10px]">{label}</p>
     </div>
   );
 }

@@ -25,12 +25,6 @@ import { loadStats as loadMatchupManiaStats } from "@/lib/matchupmania/firestore
 import { loadStats as loadTriviaStats } from "@/lib/trivia/firestore";
 import { loadStats as loadTimelineStats } from "@/lib/timeline/firestore";
 import { loadStats as loadConnectionsStats } from "@/lib/connections/firestore";
-import { loadStats as loadRampageStats } from "@/lib/rhinarsrampage/firestore";
-import { loadStats as loadKnockoutStats } from "@/lib/kayosknockout/firestore";
-import { loadStats as loadBrawlStats } from "@/lib/brutebrawl/firestore";
-import { loadStats as loadNinjaComboStats } from "@/lib/ninjacombo/firestore";
-import { loadStats as loadShadowStrikeStats } from "@/lib/shadowstrike/firestore";
-import { loadStats as loadBladeDashStats } from "@/lib/bladedash/firestore";
 import { AchievementIcon } from "@/components/gamification/AchievementIcons";
 import type { FaBdokuStats } from "@/lib/fabdoku/types";
 import type { CrosswordStats } from "@/lib/crossword/types";
@@ -39,12 +33,6 @@ import type { MatchupManiaStats } from "@/lib/matchupmania/types";
 import type { TriviaStats } from "@/lib/trivia/types";
 import type { TimelineStats } from "@/lib/timeline/types";
 import type { ConnectionsStats } from "@/lib/connections/types";
-import type { RampageStats } from "@/lib/rhinarsrampage/types";
-import type { KnockoutStats } from "@/lib/kayosknockout/types";
-import type { BrawlStats } from "@/lib/brutebrawl/types";
-import type { NinjaComboStats } from "@/lib/ninjacombo/types";
-import type { ShadowStrikeStats } from "@/lib/shadowstrike/types";
-import type { BladeDashStats } from "@/lib/bladedash/types";
 import type { Achievement, AchievementCategory } from "@/types";
 
 const CATEGORY_COPY: Record<AchievementCategory, { label: string; description: string }> = {
@@ -72,12 +60,6 @@ interface GameAchievementStats {
   triviaStats?: TriviaStats | null;
   timelineStats?: TimelineStats | null;
   connectionsStats?: ConnectionsStats | null;
-  rampageStats?: RampageStats | null;
-  knockoutStats?: KnockoutStats | null;
-  brawlStats?: BrawlStats | null;
-  ninjaComboStats?: NinjaComboStats | null;
-  shadowStrikeStats?: ShadowStrikeStats | null;
-  bladeDashStats?: BladeDashStats | null;
 }
 
 function sortAchievement(a: Achievement, b: Achievement) {
@@ -174,12 +156,6 @@ export function AchievementsClient() {
       loadTriviaStats(user.uid).catch(() => null),
       loadTimelineStats(user.uid).catch(() => null),
       loadConnectionsStats(user.uid).catch(() => null),
-      loadRampageStats(user.uid).catch(() => null),
-      loadKnockoutStats(user.uid).catch(() => null),
-      loadBrawlStats(user.uid).catch(() => null),
-      loadNinjaComboStats(user.uid).catch(() => null),
-      loadShadowStrikeStats(user.uid).catch(() => null),
-      loadBladeDashStats(user.uid).catch(() => null),
     ]).then(([
       fabdokuStats,
       fabdokuCardStats,
@@ -189,12 +165,6 @@ export function AchievementsClient() {
       triviaStats,
       timelineStats,
       connectionsStats,
-      rampageStats,
-      knockoutStats,
-      brawlStats,
-      ninjaComboStats,
-      shadowStrikeStats,
-      bladeDashStats,
     ]) => {
       if (cancelled) return;
       setGameStats({
@@ -206,12 +176,6 @@ export function AchievementsClient() {
         triviaStats,
         timelineStats,
         connectionsStats,
-        rampageStats,
-        knockoutStats,
-        brawlStats,
-        ninjaComboStats,
-        shadowStrikeStats,
-        bladeDashStats,
       });
       setGameStatsLoaded(true);
     }).catch(() => {
@@ -238,13 +202,7 @@ export function AchievementsClient() {
       gameStats.timelineStats ?? undefined,
       gameStats.connectionsStats ?? undefined,
       gameStats.fabdokuCardStats ?? undefined,
-      gameStats.rampageStats ?? undefined,
-      gameStats.knockoutStats ?? undefined,
-      gameStats.brawlStats ?? undefined,
-      gameStats.ninjaComboStats ?? undefined,
       gameStats.crosswordStats ?? undefined,
-      gameStats.shadowStrikeStats ?? undefined,
-      gameStats.bladeDashStats ?? undefined,
     );
   }, [isAuthed, matches, overall, heroStats, opponentStats, kudosCounts, gameStats]);
 
@@ -265,13 +223,7 @@ export function AchievementsClient() {
       gameStats.timelineStats ?? undefined,
       gameStats.connectionsStats ?? undefined,
       gameStats.fabdokuCardStats ?? undefined,
-      gameStats.rampageStats ?? undefined,
-      gameStats.knockoutStats ?? undefined,
-      gameStats.brawlStats ?? undefined,
-      gameStats.ninjaComboStats ?? undefined,
       gameStats.crosswordStats ?? undefined,
-      gameStats.shadowStrikeStats ?? undefined,
-      gameStats.bladeDashStats ?? undefined,
     );
   }, [isAuthed, matches, overall, heroStats, opponentStats, kudosCounts, gameStats]);
 
@@ -323,19 +275,19 @@ export function AchievementsClient() {
   const visibleCategories: AchievementCategory[] = categoryFilter === "all" ? CATEGORY_ORDER : [categoryFilter];
 
   return (
-    <div className="space-y-4 sm:space-y-8">
+    <div className="space-y-4 sm:space-y-6">
       {/* Hero — progress summary */}
-      <section className="relative overflow-hidden rounded-xl border border-fab-border bg-fab-surface p-3 sm:p-6">
+      <section className="relative overflow-hidden rounded-xl border border-fab-border bg-fab-surface p-3 sm:p-5">
         <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-fab-gold/45 to-transparent" />
-        <div className="flex flex-col gap-3 sm:gap-5 lg:flex-row lg:items-end lg:justify-between">
+        <div className="flex flex-col gap-3 sm:gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-2xl">
-            <div className="mb-3 inline-flex items-center gap-2 rounded-lg border border-fab-border/70 bg-fab-bg/70 px-2.5 py-1.5 sm:mb-4 sm:px-3 sm:py-2">
+            <div className="mb-2 inline-flex items-center gap-2 rounded-lg border border-fab-border/70 bg-fab-bg/70 px-2.5 py-1 sm:mb-3">
               <Trophy className="h-4 w-4 text-fab-gold" />
               <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-fab-muted sm:text-[11px] sm:tracking-[0.16em]">
                 {isAuthed ? "Your Achievements" : "Achievements"}
               </span>
             </div>
-            <h1 className="text-xl font-black leading-tight text-fab-text sm:text-4xl">
+            <h1 className="text-lg font-black leading-tight text-fab-text sm:text-3xl">
               {isAuthed
                 ? `${earnedCount} of ${totalCount} unlocked`
                 : `${totalCount} achievements to chase`}

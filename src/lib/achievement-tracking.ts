@@ -9,12 +9,6 @@ import { loadStats as loadMatchupManiaStats } from "./matchupmania/firestore";
 import { loadStats as loadTriviaStats } from "./trivia/firestore";
 import { loadStats as loadTimelineStats } from "./timeline/firestore";
 import { loadStats as loadConnectionsStats } from "./connections/firestore";
-import { loadStats as loadRampageStats } from "./rhinarsrampage/firestore";
-import { loadStats as loadKnockoutStats } from "./kayosknockout/firestore";
-import { loadStats as loadBrawlStats } from "./brutebrawl/firestore";
-import { loadStats as loadNinjaComboStats } from "./ninjacombo/firestore";
-import { loadStats as loadShadowStrikeStats } from "./shadowstrike/firestore";
-import { loadStats as loadBladeDashStats } from "./bladedash/firestore";
 import type { Achievement, OverallStats } from "@/types";
 
 /**
@@ -56,14 +50,14 @@ const EMPTY_OVERALL: OverallStats = {
 /**
  * Load all game stats and sync earned achievements to Firestore.
  * Called after game completion so game-related achievements are persisted.
- * Only merges new IDs — never removes existing ones.
+ * Only merges new IDs; never removes existing ones.
  */
 export async function syncAchievementsAfterGame(userId: string): Promise<void> {
   const ref = doc(db, "users", userId, "earnedAchievements", "main");
   const snap = await getDoc(ref);
-  if (!snap.exists()) return; // Not bootstrapped yet — import page handles that
+  if (!snap.exists()) return; // Not bootstrapped yet; import page handles that
 
-  const [fabdoku, fabdokuCard, crossword, heroGuesser, matchupMania, trivia, timeline, connections, rampage, knockout, brawl, ninjaCombo, shadowStrike, bladeDash] = await Promise.all([
+  const [fabdoku, fabdokuCard, crossword, heroGuesser, matchupMania, trivia, timeline, connections] = await Promise.all([
     loadFabdokuStats(userId).catch(() => null),
     loadFabdokuCardStats(userId).catch(() => null),
     loadCrosswordStats(userId).catch(() => null),
@@ -72,12 +66,6 @@ export async function syncAchievementsAfterGame(userId: string): Promise<void> {
     loadTriviaStats(userId).catch(() => null),
     loadTimelineStats(userId).catch(() => null),
     loadConnectionsStats(userId).catch(() => null),
-    loadRampageStats(userId).catch(() => null),
-    loadKnockoutStats(userId).catch(() => null),
-    loadBrawlStats(userId).catch(() => null),
-    loadNinjaComboStats(userId).catch(() => null),
-    loadShadowStrikeStats(userId).catch(() => null),
-    loadBladeDashStats(userId).catch(() => null),
   ]);
 
   const earned = evaluateAchievements(
@@ -85,9 +73,7 @@ export async function syncAchievementsAfterGame(userId: string): Promise<void> {
     undefined,
     fabdoku ?? undefined, heroGuesser ?? undefined, matchupMania ?? undefined,
     trivia ?? undefined, timeline ?? undefined, connections ?? undefined,
-    fabdokuCard ?? undefined, rampage ?? undefined, knockout ?? undefined,
-    brawl ?? undefined, ninjaCombo ?? undefined, crossword ?? undefined,
-    shadowStrike ?? undefined, bladeDash ?? undefined,
+    fabdokuCard ?? undefined, crossword ?? undefined,
   );
 
   const storedIds = new Set<string>((snap.data().ids as string[]) || []);
@@ -101,15 +87,20 @@ export async function syncAchievementsAfterGame(userId: string): Promise<void> {
 export async function syncKudosAchievements(
   userId: string,
   kudosCounts: Record<string, number>,
-): Promise<void> {
+): Promise<Achievement[]> {
   const ref = doc(db, "users", userId, "earnedAchievements", "main");
   const snap = await getDoc(ref);
-  if (!snap.exists()) return;
 
   const earned = evaluateAchievements([], EMPTY_OVERALL, [], [], kudosCounts);
-  const storedIds = new Set<string>((snap.data().ids as string[]) || []);
-  const newIds = earned.map((a) => a.id).filter((id) => !storedIds.has(id));
-  if (newIds.length > 0) {
-    await setDoc(ref, { ids: [...storedIds, ...newIds] });
+  if (!snap.exists()) {
+    await setDoc(ref, { ids: earned.map((a) => a.id) });
+    return earned;
   }
+
+  const storedIds = new Set<string>((snap.data().ids as string[]) || []);
+  const newAchievements = earned.filter((a) => !storedIds.has(a.id));
+  if (newAchievements.length > 0) {
+    await setDoc(ref, { ids: [...storedIds, ...newAchievements.map((a) => a.id)] });
+  }
+  return newAchievements;
 }

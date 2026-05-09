@@ -8,12 +8,6 @@ import type { TriviaStats } from "@/lib/trivia/types";
 import type { TimelineStats } from "@/lib/timeline/types";
 import type { CrosswordStats } from "@/lib/crossword/types";
 import type { ConnectionsStats } from "@/lib/connections/types";
-import type { RampageStats } from "@/lib/rhinarsrampage/types";
-import type { KnockoutStats } from "@/lib/kayosknockout/types";
-import type { BrawlStats } from "@/lib/brutebrawl/types";
-import type { NinjaComboStats } from "@/lib/ninjacombo/types";
-import type { ShadowStrikeStats } from "@/lib/shadowstrike/types";
-import type { BladeDashStats } from "@/lib/bladedash/types";
 
 interface CheckContext {
   matches: MatchRecord[];
@@ -29,12 +23,6 @@ interface CheckContext {
   triviaStats?: TriviaStats;
   timelineStats?: TimelineStats;
   connectionsStats?: ConnectionsStats;
-  rampageStats?: RampageStats;
-  knockoutStats?: KnockoutStats;
-  brawlStats?: BrawlStats;
-  ninjaComboStats?: NinjaComboStats;
-  shadowStrikeStats?: ShadowStrikeStats;
-  bladeDashStats?: BladeDashStats;
 }
 
 interface AchievementProgress {
@@ -2084,15 +2072,9 @@ export function evaluateAchievements(
   timelineStats?: TimelineStats,
   connectionsStats?: ConnectionsStats,
   fabdokuCardStats?: FaBdokuStats,
-  rampageStats?: RampageStats,
-  knockoutStats?: KnockoutStats,
-  brawlStats?: BrawlStats,
-  ninjaComboStats?: NinjaComboStats,
   crosswordStats?: CrosswordStats,
-  shadowStrikeStats?: ShadowStrikeStats,
-  bladeDashStats?: BladeDashStats,
 ): Achievement[] {
-  const ctx: CheckContext = { matches, overall, heroStats, opponentStats, kudosCounts, fabdokuStats, fabdokuCardStats, crosswordStats, heroGuesserStats, matchupManiaStats, triviaStats, timelineStats, connectionsStats, rampageStats, knockoutStats, brawlStats, ninjaComboStats, shadowStrikeStats, bladeDashStats };
+  const ctx: CheckContext = { matches, overall, heroStats, opponentStats, kudosCounts, fabdokuStats, fabdokuCardStats, crosswordStats, heroGuesserStats, matchupManiaStats, triviaStats, timelineStats, connectionsStats };
   return ACHIEVEMENTS.filter((a) => a.check(ctx)).map(({ check: _, progress: _p, ...rest }) => rest);
 }
 
@@ -2115,15 +2097,9 @@ export function getAchievementProgress(
   timelineStats?: TimelineStats,
   connectionsStats?: ConnectionsStats,
   fabdokuCardStats?: FaBdokuStats,
-  rampageStats?: RampageStats,
-  knockoutStats?: KnockoutStats,
-  brawlStats?: BrawlStats,
-  ninjaComboStats?: NinjaComboStats,
   crosswordStats?: CrosswordStats,
-  shadowStrikeStats?: ShadowStrikeStats,
-  bladeDashStats?: BladeDashStats,
 ): Record<string, { current: number; target: number }> {
-  const ctx: CheckContext = { matches, overall, heroStats, opponentStats, kudosCounts, fabdokuStats, fabdokuCardStats, crosswordStats, heroGuesserStats, matchupManiaStats, triviaStats, timelineStats, connectionsStats, rampageStats, knockoutStats, brawlStats, ninjaComboStats, shadowStrikeStats, bladeDashStats };
+  const ctx: CheckContext = { matches, overall, heroStats, opponentStats, kudosCounts, fabdokuStats, fabdokuCardStats, crosswordStats, heroGuesserStats, matchupManiaStats, triviaStats, timelineStats, connectionsStats };
   const result: Record<string, { current: number; target: number }> = {};
   for (const a of ACHIEVEMENTS) {
     if (a.progress) {

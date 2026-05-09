@@ -61,17 +61,28 @@ export default function MetaPage() {
   // URL-synced filter setters
   const setFormatWithUrl = (v: string) => { setFilterFormat(v); updateMetaUrl({ format: v, period: periodSelection, eventType: filterEventType }); };
   const setEventTypeWithUrl = (v: string) => { setFilterEventType(v); updateMetaUrl({ format: filterFormat, period: periodSelection, eventType: v }); };
-  const setPeriodWithUrl = (v: PeriodSelection) => { setPeriodSelection(v); updateMetaUrl({ format: filterFormat, period: v, eventType: filterEventType }); };
+  const setPeriodWithUrl = (v: PeriodSelection) => {
+    setPeriodSelection(v);
+    const season = v.startsWith("season:") ? seasons.find((s) => s.id === v.slice(7)) : null;
+    const nextFormat = season?.format || filterFormat;
+    const nextEventType = season?.eventType || filterEventType;
+    if (season?.format) setFilterFormat(season.format);
+    if (season?.eventType) setFilterEventType(season.eventType);
+    updateMetaUrl({ format: nextFormat, period: v, eventType: nextEventType });
+  };
 
-  // Default to most recent season when seasons load (only if no URL period param)
+  // Default to the active competitive season when seasons load (only if no URL period param).
   useEffect(() => {
-    if (seasons.length > 0 && periodSelection === "all" && !searchParams.get("period")) {
-      const sorted = [...seasons].sort(
+    if (seasons.length > 0 && !searchParams.get("period")) {
+      const current = seasons.find((s) => s.active) || [...seasons].sort(
         (a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime()
-      );
-      const seasonId = `season:${sorted[0].id}` as PeriodSelection;
+      )[0];
+      if (!current) return;
+      const seasonId = `season:${current.id}` as PeriodSelection;
       setPeriodSelection(seasonId);
-      updateMetaUrl({ period: seasonId });
+      if (current.format) setFilterFormat(current.format);
+      if (current.eventType) setFilterEventType(current.eventType);
+      updateMetaUrl({ period: seasonId, format: current.format || "all", eventType: current.eventType || "all" });
     }
   }, [seasons]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -89,9 +100,10 @@ export default function MetaPage() {
     return seasons.find((s) => s.id === id) || null;
   }, [periodSelection, seasons]);
 
-  // Effective format/eventType (season overrides manual filter)
-  const effectiveFormat = activeSeason ? activeSeason.format : filterFormat !== "all" ? filterFormat : undefined;
-  const effectiveEventType = activeSeason ? activeSeason.eventType : filterEventType !== "all" ? filterEventType : undefined;
+  // Effective format/eventType. Seasons set sensible defaults, but the visible
+  // filters still control the actual query so mobile users can change them.
+  const effectiveFormat = filterFormat !== "all" ? filterFormat : undefined;
+  const effectiveEventType = filterEventType !== "all" ? filterEventType : undefined;
 
   // Always use "all" as the base period — date-range filtering via sinceDate/untilDate
   // is more accurate than the pre-computed weekly/monthly breakdowns on leaderboard entries
@@ -115,8 +127,22 @@ export default function MetaPage() {
     return { sinceDate: undefined, untilDate: undefined };
   }, [periodSelection, activeSeason, customStart, customEnd]);
 
-  const allFormats = useMemo(() => getAvailableFormats(entries), [entries]);
-  const allEventTypes = useMemo(() => getAvailableEventTypes(entries), [entries]);
+  const allFormats = useMemo(
+    () => getAvailableFormats(entries, effectiveEventType, sinceDate, untilDate),
+    [entries, effectiveEventType, sinceDate, untilDate],
+  );
+  const allEventTypes = useMemo(
+    () => getAvailableEventTypes(entries, effectiveFormat, sinceDate, untilDate),
+    [entries, effectiveFormat, sinceDate, untilDate],
+  );
+  const formatOptions = useMemo(
+    () => filterFormat !== "all" && !allFormats.includes(filterFormat) ? [filterFormat, ...allFormats] : allFormats,
+    [allFormats, filterFormat],
+  );
+  const eventTypeOptions = useMemo(
+    () => filterEventType !== "all" && !allEventTypes.includes(filterEventType) ? [filterEventType, ...allEventTypes] : allEventTypes,
+    [allEventTypes, filterEventType],
+  );
 
   const { overview, heroStats } = useMemo(
     () => computeMetaStats(
@@ -372,11 +398,33 @@ export default function MetaPage() {
         );
       })()}
 
-      {!activeSeason && (allFormats.length > 1 || allEventTypes.length > 1) && (
+      {(formatOptions.length > 0 || eventTypeOptions.length > 0 || filterFormat !== "all" || filterEventType !== "all") && (
         <FilterToolbar className="mb-4">
           <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-fab-dim">Filters</span>
-          {allFormats.length > 1 && (
-            <div className="flex gap-0.5 bg-fab-bg rounded-lg p-0.5 border border-fab-border">
+          <div className="grid w-full grid-cols-2 gap-2 sm:hidden">
+            <select
+              value={filterFormat}
+              onChange={(e) => setFormatWithUrl(e.target.value)}
+              className="min-w-0 rounded-lg border border-fab-border bg-fab-bg px-2.5 py-2 text-xs font-bold text-fab-text focus:border-fab-gold/50 focus:outline-none"
+            >
+              <option value="all">All Formats</option>
+              {formatOptions.map((f) => (
+                <option key={f} value={f}>{f === "Classic Constructed" ? "CC" : f}</option>
+              ))}
+            </select>
+            <select
+              value={filterEventType}
+              onChange={(e) => setEventTypeWithUrl(e.target.value)}
+              className="min-w-0 rounded-lg border border-fab-border bg-fab-bg px-2.5 py-2 text-xs font-bold text-fab-text focus:border-fab-gold/50 focus:outline-none"
+            >
+              <option value="all">All Events</option>
+              {eventTypeOptions.map((t) => (
+                <option key={t} value={t}>{t}</option>
+              ))}
+            </select>
+          </div>
+          {formatOptions.length > 0 && (
+            <div className="hidden gap-0.5 bg-fab-bg rounded-lg p-0.5 border border-fab-border sm:flex">
               <button
                 onClick={() => setFormatWithUrl("all")}
                 className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${
@@ -385,7 +433,7 @@ export default function MetaPage() {
               >
                 All Formats
               </button>
-              {allFormats.map((f) => (
+              {formatOptions.map((f) => (
                 <button
                   key={f}
                   onClick={() => setFormatWithUrl(f)}
@@ -398,8 +446,8 @@ export default function MetaPage() {
               ))}
             </div>
           )}
-          {allEventTypes.length > 1 && (
-            <div className="flex gap-0.5 bg-fab-bg rounded-lg p-0.5 border border-fab-border overflow-x-auto scrollbar-hide">
+          {eventTypeOptions.length > 0 && (
+            <div className="hidden gap-0.5 bg-fab-bg rounded-lg p-0.5 border border-fab-border overflow-x-auto scrollbar-hide sm:flex">
               <button
                 onClick={() => setEventTypeWithUrl("all")}
                 className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${
@@ -408,7 +456,7 @@ export default function MetaPage() {
               >
                 All Events
               </button>
-              {allEventTypes.map((t) => (
+              {eventTypeOptions.map((t) => (
                 <button
                   key={t}
                   onClick={() => setEventTypeWithUrl(t)}
@@ -599,7 +647,7 @@ export default function MetaPage() {
       {/* Season/custom disclaimer for hero win-rate data */}
       {(activeSeason || (periodSelection === "custom" && customStart && customEnd)) && (
         <p className="text-[10px] text-fab-dim mb-3 italic">
-          Top 8 data is filtered to the selected date range. Hero win rates below are based on all-time data.
+          Top 8 data and hero win rates are filtered to the selected dates when imported event dates are available.
         </p>
       )}
 

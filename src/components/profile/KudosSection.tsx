@@ -3,7 +3,6 @@
 import { useState, useCallback } from "react";
 import { KUDOS_TYPES, giveKudos, revokeKudos, isOnCooldown, getCooldownRemaining, getRemainingKudos } from "@/lib/kudos";
 import { logActivity } from "@/lib/activity-log";
-import { getAllAchievements } from "@/lib/achievements";
 import { syncKudosAchievements } from "@/lib/achievement-tracking";
 import type { KudosId } from "@/lib/kudos";
 import { toast } from "sonner";
@@ -38,14 +37,6 @@ function KudosIcon({ type, className }: { type: string; className?: string }) {
     default:
       return null;
   }
-}
-
-const KUDOS_THRESHOLDS = [1, 5, 15, 30, 50];
-
-function getUnlockedKudosAchievement(kudosType: KudosId, before: number, after: number) {
-  const threshold = KUDOS_THRESHOLDS.find((value) => before < value && after >= value);
-  if (!threshold) return null;
-  return getAllAchievements().find((achievement) => achievement.id === `kudos_${kudosType}_${threshold}`) ?? null;
 }
 
 interface KudosSectionProps {
@@ -112,23 +103,23 @@ export function KudosSection({
         onUpdate(newCounts, newGiven);
         revokeKudos(currentUserId, recipientId, kudosType).catch(() => {});
       } else {
-        const previousCount = counts[kudosType] || 0;
         const newGiven = new Set(givenByMe);
         newGiven.add(kudosType);
         const newCounts = { ...counts, [kudosType]: (counts[kudosType] || 0) + 1 };
         newCounts.total = (newCounts.total || 0) + 1;
         onUpdate(newCounts, newGiven);
         giveKudos(currentUserId, currentDisplayName, recipientId, kudosType, { skipLimits: isAdmin })
-          .then(() => syncKudosAchievements(recipientId, newCounts).catch(() => {}))
+          .then(() => syncKudosAchievements(recipientId, newCounts))
+          .then((newAchievements) => {
+            const kudosUnlocks = newAchievements.filter((achievement) => achievement.id.startsWith(`kudos_${kudosType}_`));
+            if (kudosUnlocks.length === 0) return;
+            const achievement = kudosUnlocks[kudosUnlocks.length - 1];
+            toast.success(`New kudos tier: ${achievement.name}`, {
+              description: achievement.description,
+            });
+          })
           .catch(() => {});
         logActivity("kudos_given", kudosType);
-
-        const achievement = getUnlockedKudosAchievement(kudosType, previousCount, newCounts[kudosType] || 0);
-        if (achievement) {
-          toast.success(`Achievement unlocked: ${achievement.name}`, {
-            description: achievement.description,
-          });
-        }
 
         if (!isAdmin) {
           const remaining = getRemainingKudos();

@@ -50,8 +50,9 @@ export function MetaMatchupMatrix({ format, eventType, sinceDate, untilDate, rat
     setLoading(true);
     try {
       let preset = "all";
-      if (sinceDate && untilDate) {
-        preset = `custom:${sinceDate}:${untilDate}`;
+      if (sinceDate) {
+        const end = untilDate || new Date().toISOString().slice(0, 10);
+        preset = `custom:${sinceDate}:${end}`;
       }
       const months = getMonthsForPreset(preset);
       const result = await getCommunityHeroMatchups(months, format || undefined, rated, eventType || undefined);
