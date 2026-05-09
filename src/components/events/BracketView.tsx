@@ -16,6 +16,7 @@ interface BracketNode {
 interface BracketViewProps {
   matches: MatchRecord[];
   playerName?: string;
+  hideOpponentNames?: boolean;
 }
 
 const ROUND_ORDER: Record<string, number> = {
@@ -61,7 +62,7 @@ function extractRoundInfo(notes: string | undefined): string | null {
   return null;
 }
 
-export function BracketView({ matches, playerName }: BracketViewProps) {
+export function BracketView({ matches, playerName, hideOpponentNames = false }: BracketViewProps) {
   const nodes = useMemo(() => {
     const playoff: BracketNode[] = [];
     for (const m of matches) {
@@ -72,14 +73,14 @@ export function BracketView({ matches, playerName }: BracketViewProps) {
 
       playoff.push({
         round: getRoundLabel(roundInfo),
-        opponentName: m.opponentName || "Unknown",
+        opponentName: hideOpponentNames ? "Opponent" : m.opponentName || "Unknown",
         opponentHero: m.opponentHero || "",
         heroPlayed: m.heroPlayed || "",
         result: m.result as MatchResult,
       });
     }
     return playoff.sort((a, b) => getRoundOrder(a.round) - getRoundOrder(b.round));
-  }, [matches]);
+  }, [matches, hideOpponentNames]);
 
   if (nodes.length === 0) {
     return (

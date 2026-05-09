@@ -13,9 +13,10 @@ interface MatchesTabProps {
   user: User | null;
   profile: UserProfile | null;
   updateMatch: (id: string, updates: Partial<Omit<MatchRecord, "id" | "createdAt">>) => Promise<void>;
+  hideOpponentNames?: boolean;
 }
 
-export function MatchesTab({ matches, user, profile, updateMatch }: MatchesTabProps) {
+export function MatchesTab({ matches, user, profile, updateMatch, hideOpponentNames = false }: MatchesTabProps) {
   const handleUpdateMatch = useCallback(
     async (id: string, updates: Partial<Omit<MatchRecord, "id" | "createdAt">>) => {
       await updateMatch(id, updates);
@@ -88,7 +89,7 @@ export function MatchesTab({ matches, user, profile, updateMatch }: MatchesTabPr
           </div>
         </div>
       ) : (
-        <MatchList matches={matches} matchOwnerUid={user?.uid} enableComments editable={!!user} onUpdateMatch={handleUpdateMatch} missingGemId={!!user && !profile?.gemId} />
+        <MatchList matches={matches} matchOwnerUid={user?.uid} enableComments editable={!!user} onUpdateMatch={handleUpdateMatch} missingGemId={!!user && !profile?.gemId} obfuscateOpponents={hideOpponentNames} />
       )}
     </div>
   );

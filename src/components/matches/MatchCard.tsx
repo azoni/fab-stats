@@ -74,6 +74,8 @@ export function MatchCard({ match, matchOwnerUid, enableComments = false, obfusc
   const hasOppHero = match.opponentHero && match.opponentHero !== "Unknown";
   const heroInfo = hasHero ? getHeroByName(match.heroPlayed!) : null;
   const oppHeroInfo = hasOppHero ? getHeroByName(match.opponentHero!) : null;
+  const hideOpponentName = obfuscateOpponents && !(match.opponentName && visibleOpponents?.has(match.opponentName));
+  const opponentDisplayName = hideOpponentName ? "opponent" : match.opponentName || "opponent";
 
   const dateStr = localDate(match.date).toLocaleDateString("en-US", { month: "short", day: "numeric" });
 
@@ -151,7 +153,7 @@ export function MatchCard({ match, matchOwnerUid, enableComments = false, obfusc
       setCorrectionSent(true);
       setSuggestingHero(false);
       setSuggestedHeroValue("");
-      toast.success(`Suggestion sent to ${match.opponentName || "opponent"}`);
+      toast.success(`Suggestion sent to ${opponentDisplayName}`);
     } finally {
       setSendingCorrection(false);
     }
@@ -173,7 +175,7 @@ export function MatchCard({ match, matchOwnerUid, enableComments = false, obfusc
             {match.opponentName ? (
               <>
                 <span className="text-fab-dim text-xs">vs</span>
-                {obfuscateOpponents && !(visibleOpponents?.has(match.opponentName!)) ? (
+                {hideOpponentName ? (
                   <span className="font-semibold text-fab-dim text-sm">Opponent</span>
                 ) : (
                   <Link
@@ -416,10 +418,10 @@ export function MatchCard({ match, matchOwnerUid, enableComments = false, obfusc
       {suggestingHero && (
         <div className="px-3 pb-3 pt-2 border-t border-fab-border/30 space-y-2">
           <p className="text-xs text-fab-muted">
-            What hero did <span className="text-fab-text font-medium">{match.opponentName || "your opponent"}</span> play?
+            What hero did <span className="text-fab-text font-medium">{hideOpponentName ? "your opponent" : match.opponentName || "your opponent"}</span> play?
           </p>
           <p className="text-[11px] text-fab-dim">
-            This will send {match.opponentName || "them"} a notification suggesting what hero they played.
+            This will send {hideOpponentName ? "them" : match.opponentName || "them"} a notification suggesting what hero they played.
           </p>
           <HeroSelect value={suggestedHeroValue} onChange={setSuggestedHeroValue} label="Suggested hero" format={match.format} />
           <div className="flex items-center gap-2">

@@ -27,9 +27,10 @@ interface MatchListProps {
   editable?: boolean;
   onUpdateMatch?: (id: string, updates: Partial<Omit<MatchRecord, "id" | "createdAt">>) => Promise<void>;
   missingGemId?: boolean;
+  obfuscateOpponents?: boolean;
 }
 
-export function MatchList({ matches, matchOwnerUid, enableComments, editable, onUpdateMatch, missingGemId }: MatchListProps) {
+export function MatchList({ matches, matchOwnerUid, enableComments, editable, onUpdateMatch, missingGemId, obfuscateOpponents = false }: MatchListProps) {
   const [filterResult, setFilterResult] = useState<string>("all");
   const [filterFormat, setFilterFormat] = useState<string>("all");
   const [filterHero, setFilterHero] = useState<string>("all");
@@ -351,6 +352,7 @@ export function MatchList({ matches, matchOwnerUid, enableComments, editable, on
                     editable={editable}
                     onUpdateMatch={onUpdateMatch}
                     missingGemId={missingGemId}
+                    obfuscateOpponents={obfuscateOpponents}
                   />
                 </div>
               );

@@ -1,4 +1,5 @@
 "use client";
+import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useMatches } from "@/hooks/useMatches";
 import { useAuth } from "@/contexts/AuthContext";
@@ -23,9 +24,22 @@ export function StatsHub({ defaultTab, showTabs = true }: StatsHubProps) {
   const pathname = usePathname();
   const { matches, isLoaded, updateMatch, refreshMatches, batchUpdateHero, batchUpdateFormat, batchUpdateEventType, batchDeleteMatches } = useMatches();
   const { user, profile } = useAuth();
+  const [hideOpponentNames, setHideOpponentNames] = useState(false);
+  const [privacyPrefLoaded, setPrivacyPrefLoaded] = useState(false);
 
   // Determine active tab from current pathname (handles direct navigation)
   const activeTab = TABS.find((t) => t.path === pathname)?.id ?? defaultTab;
+  const showPrivacyToggle = activeTab === "matches" || activeTab === "events";
+
+  useEffect(() => {
+    setHideOpponentNames(window.localStorage.getItem("fab-stats-hide-opponent-names") === "true");
+    setPrivacyPrefLoaded(true);
+  }, []);
+
+  useEffect(() => {
+    if (!privacyPrefLoaded) return;
+    window.localStorage.setItem("fab-stats-hide-opponent-names", String(hideOpponentNames));
+  }, [hideOpponentNames, privacyPrefLoaded]);
 
   if (!isLoaded) {
     return (
@@ -70,9 +84,23 @@ export function StatsHub({ defaultTab, showTabs = true }: StatsHubProps) {
         })}
       </div>}
 
+      {showPrivacyToggle && matches.length > 0 && (
+        <div className="mb-4 flex items-center justify-end">
+          <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-fab-border bg-fab-surface px-3 py-2 text-xs font-semibold text-fab-muted transition-colors hover:border-fab-gold/40 hover:text-fab-text">
+            <input
+              type="checkbox"
+              checked={hideOpponentNames}
+              onChange={(e) => setHideOpponentNames(e.target.checked)}
+              className="h-4 w-4 rounded border-fab-border bg-fab-bg accent-fab-gold"
+            />
+            Hide opponent names
+          </label>
+        </div>
+      )}
+
       {/* Tab content */}
       {activeTab === "matches" && (
-        <MatchesTab matches={matches} user={user} profile={profile} updateMatch={updateMatch} />
+        <MatchesTab matches={matches} user={user} profile={profile} updateMatch={updateMatch} hideOpponentNames={hideOpponentNames} />
       )}
       {activeTab === "events" && (
         <EventsTab
@@ -85,6 +113,7 @@ export function StatsHub({ defaultTab, showTabs = true }: StatsHubProps) {
           batchUpdateFormat={batchUpdateFormat}
           batchUpdateEventType={batchUpdateEventType}
           batchDeleteMatches={batchDeleteMatches}
+          hideOpponentNames={hideOpponentNames}
         />
       )}
       {activeTab === "opponents" && (

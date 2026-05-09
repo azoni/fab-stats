@@ -63,28 +63,15 @@ export default function MetaPage() {
   const setEventTypeWithUrl = (v: string) => { setFilterEventType(v); updateMetaUrl({ format: filterFormat, period: periodSelection, eventType: v }); };
   const setPeriodWithUrl = (v: PeriodSelection) => {
     setPeriodSelection(v);
-    const season = v.startsWith("season:") ? seasons.find((s) => s.id === v.slice(7)) : null;
-    const nextFormat = season?.format || filterFormat;
-    const nextEventType = season?.eventType || filterEventType;
-    if (season?.format) setFilterFormat(season.format);
-    if (season?.eventType) setFilterEventType(season.eventType);
+    const isSeason = v.startsWith("season:");
+    const leavingSeason = periodSelection.startsWith("season:") && !isSeason;
+    const season = isSeason ? seasons.find((s) => s.id === v.slice(7)) : null;
+    const nextFormat = season?.format || (leavingSeason ? "all" : filterFormat);
+    const nextEventType = season?.eventType || (leavingSeason ? "all" : filterEventType);
+    setFilterFormat(nextFormat);
+    setFilterEventType(nextEventType);
     updateMetaUrl({ format: nextFormat, period: v, eventType: nextEventType });
   };
-
-  // Default to the active competitive season when seasons load (only if no URL period param).
-  useEffect(() => {
-    if (seasons.length > 0 && !searchParams.get("period")) {
-      const current = seasons.find((s) => s.active) || [...seasons].sort(
-        (a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime()
-      )[0];
-      if (!current) return;
-      const seasonId = `season:${current.id}` as PeriodSelection;
-      setPeriodSelection(seasonId);
-      if (current.format) setFilterFormat(current.format);
-      if (current.eventType) setFilterEventType(current.eventType);
-      updateMetaUrl({ period: seasonId, format: current.format || "all", eventType: current.eventType || "all" });
-    }
-  }, [seasons]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Build dynamic period tabs: base tabs + "Seasons" (if any exist) + "Custom"
   const periodTabs = useMemo(() => {

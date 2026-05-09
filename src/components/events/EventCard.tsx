@@ -579,7 +579,7 @@ export function EventCard({ event, playerName, obfuscateOpponents = false, visib
           {showBracket && bestPlayoff && (
             <div className="px-4 py-3 border-t border-fab-border/50 bg-fab-bg/30">
               <h4 className="text-xs font-bold text-fab-text mb-2">Playoff Bracket</h4>
-              <BracketView matches={event.matches} playerName={playerName} />
+              <BracketView matches={event.matches} playerName={playerName} hideOpponentNames={obfuscateOpponents} />
             </div>
           )}
 
