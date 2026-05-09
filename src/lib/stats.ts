@@ -375,6 +375,7 @@ export function guessEventTypeFromNotes(notes: string): string {
   if (/super armory|super armorys/i.test(lower)) return "Super Armory";
   if (lower.includes("armory")) return "Armory";
   if (lower.includes("on demand")) return "On Demand";
+  if (lower.includes("practice")) return "Practice";
   // Competitive events — pick lowest prestige when multiple match
   const competitive = classifyCompetitiveEvent(lower);
   if (competitive) return competitive;

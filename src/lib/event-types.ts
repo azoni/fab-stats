@@ -14,6 +14,7 @@ export const EVENT_TYPES = [
   "Worlds",
   "Pre-Release",
   "On Demand",
+  "Practice",
   "Championship",
   "Other",
 ] as const;

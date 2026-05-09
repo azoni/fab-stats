@@ -36,6 +36,7 @@ export const EVENT_TIER_MAP: Record<string, number> = {
   "Nationals": 3, "The Calling": 3, "Battle Hardened": 3,
   "Road to Nationals": 2, "Battlegrounds": 2, "Showdown": 2, "ProQuest": 2,
   "Skirmish": 1, "Super Armory": 1, "Armory": 1, "On Demand": 1, "Pre-Release": 1,
+  "Practice": 0,
 };
 
 export function getEventTier(eventType: string): number {

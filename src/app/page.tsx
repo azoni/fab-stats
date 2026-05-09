@@ -263,9 +263,7 @@ export default function Dashboard() {
       {hasMatches && <HomeTabs />}
 
       {hasMatches && (
-        <HomeCommandCenter
-          heroCompletionPct={heroCompletion?.pct}
-        />
+        <HomeCommandCenter />
       )}
 
       {/* On This Day — above profile card */}
@@ -613,15 +611,11 @@ export default function Dashboard() {
   );
 }
 
-function HomeCommandCenter({
-  heroCompletionPct,
-}: {
-  heroCompletionPct?: number;
-}) {
+function HomeCommandCenter() {
   return (
     <section className="section-reveal relative overflow-hidden rounded-xl border border-fab-border/80 bg-[linear-gradient(135deg,rgba(25,23,18,0.96),rgba(14,15,14,0.95)_58%,rgba(17,24,22,0.92))] p-3 shadow-[0_18px_54px_rgba(0,0,0,0.24)] sm:p-4" style={{ "--stagger": 0 } as React.CSSProperties}>
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_16%_0%,rgba(245,179,57,0.16),transparent_30%),radial-gradient(circle_at_86%_20%,rgba(38,211,177,0.11),transparent_28%)]" />
-      <div className="relative grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(420px,0.9fr)] xl:items-center">
+      <div className="relative grid gap-4 xl:grid-cols-[minmax(0,0.8fr)_minmax(520px,1fr)] xl:items-center">
         <div className="min-w-0">
           <p className="text-[10px] font-black uppercase tracking-[0.16em] text-fab-gold">Match command center</p>
           <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
@@ -634,12 +628,12 @@ function HomeCommandCenter({
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 xl:grid-cols-2">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
           <a
             href="https://gem.fabtcg.com/profile/player/"
             target="_blank"
             rel="noopener noreferrer"
-            className="group col-span-2 flex min-h-[68px] items-center justify-between gap-3 rounded-lg border border-fab-gold/55 bg-fab-gold px-4 py-3 text-fab-bg shadow-[0_14px_34px_rgba(245,179,57,0.18)] transition-colors hover:bg-fab-gold-light sm:col-span-2 xl:col-span-1"
+            className="group flex min-h-[72px] items-center justify-between gap-3 rounded-lg border border-fab-gold/55 bg-fab-gold px-4 py-3 text-fab-bg shadow-[0_14px_34px_rgba(245,179,57,0.18)] transition-colors hover:bg-fab-gold-light"
           >
             <span className="min-w-0">
               <span className="block text-base font-black">Open GEM</span>
@@ -649,7 +643,7 @@ function HomeCommandCenter({
           </a>
           <Link
             href="/import"
-            className="group col-span-2 flex min-h-[68px] items-center justify-between gap-3 rounded-lg border border-emerald-400/35 bg-emerald-400/12 px-4 py-3 text-emerald-300 transition-colors hover:border-emerald-300/55 hover:bg-emerald-400/18 sm:col-span-2 xl:col-span-1"
+            className="group flex min-h-[72px] items-center justify-between gap-3 rounded-lg border border-emerald-400/35 bg-emerald-400/12 px-4 py-3 text-emerald-300 transition-colors hover:border-emerald-300/55 hover:bg-emerald-400/18"
           >
             <span className="min-w-0">
               <span className="block text-base font-black">Import Matches</span>
@@ -659,22 +653,16 @@ function HomeCommandCenter({
           </Link>
           <Link
             href="/matches/new"
-            className="flex min-h-[48px] items-center justify-center gap-2 rounded-lg border border-fab-border bg-fab-bg/65 px-3 py-2 text-sm font-bold text-fab-muted transition-colors hover:border-fab-gold/40 hover:text-fab-gold"
+            className="group flex min-h-[72px] items-center justify-between gap-3 rounded-lg border border-fab-border bg-fab-bg/70 px-4 py-3 text-fab-muted transition-colors hover:border-fab-gold/45 hover:bg-fab-surface-hover hover:text-fab-gold"
           >
-            <PlusCircle className="h-4 w-4" />
-            Add Match
+            <span className="min-w-0">
+              <span className="block text-base font-black text-fab-text group-hover:text-fab-gold">Add Match</span>
+              <span className="block truncate text-[11px] font-semibold text-fab-muted">Quick practice log</span>
+            </span>
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-fab-border bg-fab-bg transition-colors group-hover:border-fab-gold/45">
+              <PlusCircle className="h-4 w-4" />
+            </span>
           </Link>
-          {heroCompletionPct !== undefined && (
-            <Link
-              href="/matches"
-              className="flex min-h-[48px] items-center justify-between gap-3 rounded-lg border border-fab-border bg-fab-bg/65 px-3 py-2 text-sm font-bold text-fab-muted transition-colors hover:border-fab-gold/40 hover:text-fab-text"
-            >
-              <span>Hero data</span>
-              <span className={heroCompletionPct >= 90 ? "text-fab-win" : heroCompletionPct >= 70 ? "text-fab-gold" : "text-fab-loss"}>
-                {heroCompletionPct}%
-              </span>
-            </Link>
-          )}
         </div>
       </div>
     </section>
