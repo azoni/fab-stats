@@ -133,6 +133,14 @@ service cloud.firestore {
     }
 
     // ── Match records ──
+    // Profile collection group reads for Discover. This mirrors the public profile read
+    // rule above so collectionGroup(db, "profile") can return public profiles.
+    match /{path=**}/profile/{docId} {
+      allow read: if isPublicProfileData(resource.data)
+        && (request.auth != null || resource.data.get('hideFromGuests', false) == false);
+      allow read: if isAdmin();
+    }
+
     match /users/{userId}/matches/{matchId} {
       // Owner can read their own matches
       allow read: if request.auth != null && request.auth.uid == userId;

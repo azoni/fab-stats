@@ -9,7 +9,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useCreators } from "@/hooks/useCreators";
 import { HeroShieldBadge } from "@/components/profile/HeroShieldBadge";
 import { TeamBadge } from "@/components/profile/TeamBadge";
-import { BadgeStrip } from "@/components/profile/BadgeStrip";
 import { EMBLEM_COMPONENTS, EMBLEM_COLORS } from "@/components/profile/EmblemIcons";
 import { computeRankMap, rankBorderClass } from "@/lib/leaderboard-ranks";
 import type { Creator, LeaderboardEntry, UserProfile } from "@/types";
@@ -119,6 +118,72 @@ function formatMatches(entry?: LeaderboardEntry): string {
   return new Intl.NumberFormat("en-US", { notation: entry.totalMatches >= 10000 ? "compact" : "standard", maximumFractionDigits: 1 }).format(entry.totalMatches);
 }
 
+function linkDomain(href: string): string {
+  try {
+    return new URL(withProtocol(href)).hostname.replace(/^www\./, "");
+  } catch {
+    return href.replace(/^https?:\/\//i, "").split("/")[0] || href;
+  }
+}
+
+const LINK_TONES: Record<DiscoverLink["type"], { label: string; border: string; bg: string; text: string; icon: string }> = {
+  "metafy-guide": {
+    label: "Guide",
+    border: "border-emerald-400/35 hover:border-emerald-300/60",
+    bg: "bg-emerald-400/10",
+    text: "text-emerald-300",
+    icon: "text-emerald-300 bg-emerald-400/12 border-emerald-400/25",
+  },
+  "metafy-profile": {
+    label: "Metafy",
+    border: "border-fab-gold/35 hover:border-fab-gold/65",
+    bg: "bg-fab-gold/10",
+    text: "text-fab-gold",
+    icon: "text-fab-gold bg-fab-gold/12 border-fab-gold/25",
+  },
+  fabrary: {
+    label: "Decklist",
+    border: "border-sky-400/35 hover:border-sky-300/60",
+    bg: "bg-sky-400/10",
+    text: "text-sky-300",
+    icon: "text-sky-300 bg-sky-400/12 border-sky-400/25",
+  },
+  twitter: {
+    label: "X",
+    border: "border-zinc-300/25 hover:border-zinc-100/45",
+    bg: "bg-zinc-300/10",
+    text: "text-zinc-200",
+    icon: "text-zinc-200 bg-zinc-300/12 border-zinc-300/20",
+  },
+};
+
+function LinkPreview({ link, featured = false }: { link: DiscoverLink; featured?: boolean }) {
+  const tone = LINK_TONES[link.type];
+  return (
+    <a
+      href={link.href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={`group flex ${featured ? "min-h-[110px] flex-col items-stretch justify-between p-4" : "items-center gap-2 px-3 py-2"} rounded-lg border bg-fab-bg/65 transition-colors ${tone.border} ${featured ? tone.bg : "hover:bg-fab-surface-hover/70"}`}
+    >
+      <span className={`flex items-center ${featured ? "justify-between" : "gap-2"}`}>
+        <span className={`inline-flex items-center gap-1.5 rounded-full ${featured ? "border px-2.5 py-1" : ""} text-[10px] font-black uppercase tracking-[0.12em] ${featured ? tone.icon : tone.text}`}>
+          {linkIcon(link.type)}
+          {tone.label}
+        </span>
+        {featured && <ExternalLink className="h-4 w-4 text-fab-dim transition-colors group-hover:text-fab-gold" />}
+      </span>
+      <span className={featured ? "mt-4 block min-w-0" : "min-w-0 flex-1"}>
+        <span className={`block truncate font-black text-fab-text ${featured ? "text-lg" : "text-sm"}`}>{link.label}</span>
+        <span className="mt-1 block truncate text-[10px] font-bold uppercase tracking-[0.12em] text-fab-dim">
+          {featured ? linkDomain(link.href) : link.meta}
+        </span>
+      </span>
+      {!featured && <ExternalLink className="h-3.5 w-3.5 shrink-0 text-fab-dim transition-colors group-hover:text-fab-gold" />}
+    </a>
+  );
+}
+
 function playerInitial(profile: UserProfile): string {
   return (profile.displayName || profile.username || "?").charAt(0).toUpperCase();
 }
@@ -170,6 +235,87 @@ function MiniEmblems({ profile }: { profile: UserProfile }) {
           </span>
         );
       })}
+    </div>
+  );
+}
+
+function DiscoverProfileHeader({
+  profile,
+  entry,
+  creator,
+  avatarBorder,
+  shieldPct,
+  teamName,
+  isAdmin,
+  isSiteAdmin,
+  compact = false,
+}: {
+  profile: UserProfile;
+  entry?: LeaderboardEntry;
+  creator?: Creator;
+  avatarBorder: string;
+  shieldPct: number;
+  teamName?: string;
+  isAdmin: boolean;
+  isSiteAdmin: boolean;
+  compact?: boolean;
+}) {
+  const avatarSize = compact ? "h-9 w-9" : "h-11 w-11";
+
+  return (
+    <div className="flex min-w-0 items-center gap-3">
+      <Link href={`/player/${profile.username}`} className="relative shrink-0">
+        {isSiteAdmin && (
+          <Crown className="absolute -top-2 left-1/2 z-10 h-4 w-4 -translate-x-1/2 fill-current text-fab-gold drop-shadow-[0_0_6px_rgba(201,168,76,0.6)]" />
+        )}
+        {profile.photoUrl ? (
+          <img src={profile.photoUrl} alt="" className={`${avatarSize} rounded-full border border-fab-border object-cover ${avatarBorder}`} />
+        ) : (
+          <span className={`${avatarSize} flex items-center justify-center rounded-full border border-fab-border bg-fab-bg text-sm font-black text-fab-gold ${avatarBorder}`}>
+            {playerInitial(profile)}
+          </span>
+        )}
+      </Link>
+      <div className="min-w-0 flex-1">
+        <div className="flex min-w-0 items-center gap-1.5">
+          <Link href={`/player/${profile.username}`} className="min-w-0">
+            <h2 className={`${compact ? "text-sm" : "text-base"} truncate font-black text-fab-text transition-colors hover:text-fab-gold`}>{profile.displayName}</h2>
+          </Link>
+          {teamName && (
+            <TeamBadge
+              teamName={teamName}
+              teamIconUrl={entry?.teamIconUrl}
+              size="sm"
+              isPrivate={entry?.teamVisibility === "private"}
+              isSiteAdmin={isAdmin}
+            />
+          )}
+          {shieldPct >= 35 && <HeroShieldBadge pct={shieldPct} />}
+        </div>
+        <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-fab-dim">
+          <span>@{profile.username}</span>
+          {entry && (
+            <>
+              <span className="text-fab-border">/</span>
+              <span>{formatWinRate(entry)} WR</span>
+              <span className="text-fab-border">/</span>
+              <span>{formatMatches(entry)} matches</span>
+            </>
+          )}
+          {isSiteAdmin && (
+            <span className="inline-flex items-center gap-1 rounded-full border border-fab-gold/35 bg-fab-gold/10 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-[0.08em] text-fab-gold">
+              <Crown className="h-2.5 w-2.5 fill-current" />
+              Admin
+            </span>
+          )}
+          {creator && <CreatorChip creator={creator} />}
+        </div>
+        {!compact && (
+          <div className="mt-2">
+            <MiniEmblems profile={profile} />
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -335,117 +481,81 @@ export default function DiscoverPage() {
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {rows.map(({ profile, links, entry }) => {
             const creator = creatorByUsername.get(profile.username.toLowerCase());
-            const shieldPct = entry?.bothHeroesCompletionPct ?? entry?.heroCompletionPct ?? 0;
+            const shieldPct = entry?.heroCompletionPct ?? entry?.bothHeroesCompletionPct ?? 0;
             const avatarBorder = rankBorderClass(rankMap.get(profile.uid));
             const teamName = entry?.teamName;
             const isSiteAdmin = isSiteAdminProfile(profile);
+            const visibleLinks = links.filter((link) => filter === "all" || link.type === filter);
+            const focusedContent = filter !== "all";
 
             return (
-              <article key={profile.uid} className="rounded-xl border border-fab-border bg-fab-surface/90 p-4 transition-colors hover:border-fab-gold/45 hover:bg-fab-surface-hover/80">
-                <div className="flex items-start gap-3">
-                  <Link href={`/player/${profile.username}`} className="relative shrink-0">
-                    {isSiteAdmin && (
-                      <Crown className="absolute -top-3 left-1/2 z-10 h-5 w-5 -translate-x-1/2 fill-current text-fab-gold drop-shadow-[0_0_6px_rgba(201,168,76,0.6)]" />
-                    )}
-                    {profile.photoUrl ? (
-                      <img src={profile.photoUrl} alt="" className={`h-12 w-12 rounded-full border border-fab-border object-cover ${avatarBorder}`} />
-                    ) : (
-                      <span className={`flex h-12 w-12 items-center justify-center rounded-full border border-fab-border bg-fab-bg text-sm font-black text-fab-gold ${avatarBorder}`}>
-                        {playerInitial(profile)}
-                      </span>
-                    )}
-                  </Link>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex min-w-0 items-center gap-1.5">
-                      <Link href={`/player/${profile.username}`} className="min-w-0">
-                        <h2 className="truncate text-base font-black text-fab-text transition-colors hover:text-fab-gold">{profile.displayName}</h2>
-                      </Link>
-                      {teamName && (
-                        <TeamBadge
-                          teamName={teamName}
-                          teamIconUrl={entry?.teamIconUrl}
-                          size="sm"
-                          isPrivate={entry?.teamVisibility === "private"}
-                          isSiteAdmin={isAdmin}
-                        />
-                      )}
-                      {shieldPct >= 35 && <HeroShieldBadge pct={shieldPct} />}
+              <article key={profile.uid} className="rounded-xl border border-fab-border bg-fab-surface/90 p-3 transition-colors hover:border-fab-gold/45 hover:bg-fab-surface-hover/80">
+                {focusedContent ? (
+                  <>
+                    <div className="space-y-2">
+                      {visibleLinks.map((link) => (
+                        <LinkPreview key={`${profile.uid}-${link.type}-${link.href}`} link={link} featured />
+                      ))}
                     </div>
-                    <div className="mt-1 flex flex-wrap items-center gap-1.5">
-                      <p className="text-xs text-fab-dim">@{profile.username}</p>
-                      {isSiteAdmin && (
-                        <span className="inline-flex items-center gap-1 rounded-full border border-fab-gold/35 bg-fab-gold/10 px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.08em] text-fab-gold">
-                          <Crown className="h-3 w-3 fill-current" />
-                          Admin
-                        </span>
-                      )}
-                      {creator && <CreatorChip creator={creator} />}
+                    <div className="mt-3 border-t border-fab-border/60 pt-3">
+                      <DiscoverProfileHeader
+                        profile={profile}
+                        entry={entry}
+                        creator={creator}
+                        avatarBorder={avatarBorder}
+                        shieldPct={shieldPct}
+                        teamName={teamName}
+                        isAdmin={isAdmin}
+                        isSiteAdmin={isSiteAdmin}
+                        compact
+                      />
                     </div>
-                    <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                      <MiniEmblems profile={profile} />
-                      <BadgeStrip selectedBadgeIds={profile.selectedBadgeIds} />
-                    </div>
-                    {profile.socialLinks?.discord && (
-                      <p className="mt-1 truncate text-[11px] text-fab-muted">Discord: {profile.socialLinks.discord}</p>
-                    )}
-                    {profile.socialLinks?.discoverTags && profile.socialLinks.discoverTags.length > 0 && (
-                      <div className="mt-2 flex flex-wrap gap-1">
-                        {profile.socialLinks.discoverTags.slice(0, 4).map((tag) => (
+                  </>
+                ) : (
+                  <>
+                    <DiscoverProfileHeader
+                      profile={profile}
+                      entry={entry}
+                      creator={creator}
+                      avatarBorder={avatarBorder}
+                      shieldPct={shieldPct}
+                      teamName={teamName}
+                      isAdmin={isAdmin}
+                      isSiteAdmin={isSiteAdmin}
+                    />
+
+                    {(profile.socialLinks?.discord || (profile.socialLinks?.discoverTags?.length ?? 0) > 0) && (
+                      <div className="mt-3 flex flex-wrap gap-1.5">
+                        {profile.socialLinks?.discord && (
+                          <span className="rounded-full border border-fab-border bg-fab-bg/70 px-2 py-0.5 text-[10px] font-semibold text-fab-muted">
+                            Discord: {profile.socialLinks.discord}
+                          </span>
+                        )}
+                        {profile.socialLinks?.discoverTags?.slice(0, 3).map((tag) => (
                           <span key={tag} className="rounded-full border border-fab-border bg-fab-bg/70 px-2 py-0.5 text-[10px] font-semibold text-fab-muted">
                             {tag}
                           </span>
                         ))}
                       </div>
                     )}
-                  </div>
-                </div>
 
-                {teamName && (
-                  <Link href={`/teams/${teamName.toLowerCase().replace(/[^a-z0-9]/g, "")}`} className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-fab-muted transition-colors hover:text-fab-gold">
-                    <TeamBadge teamName={teamName} teamIconUrl={entry?.teamIconUrl} size="xs" linkToTeam={false} isPrivate={entry?.teamVisibility === "private"} isSiteAdmin={isAdmin} />
-                    {teamName}
-                  </Link>
+                    <div className="mt-3 space-y-2">
+                      {visibleLinks.length > 0 ? (
+                        visibleLinks.map((link) => (
+                          <LinkPreview key={`${profile.uid}-${link.type}-${link.href}`} link={link} />
+                        ))
+                      ) : (
+                        <Link
+                          href={`/player/${profile.username}`}
+                          className="flex items-center justify-between rounded-lg border border-fab-border bg-fab-bg/65 px-3 py-2 text-sm font-bold text-fab-muted transition-colors hover:border-fab-gold/45 hover:text-fab-gold"
+                        >
+                          View profile
+                          <ExternalLink className="h-3.5 w-3.5 shrink-0 text-fab-dim" />
+                        </Link>
+                      )}
+                    </div>
+                  </>
                 )}
-
-                <div className="mt-4 grid grid-cols-2 gap-2">
-                  <div className="rounded-lg border border-fab-border bg-fab-bg/65 px-3 py-2">
-                    <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-fab-dim">Win Rate</p>
-                    <p className="text-sm font-black text-fab-text">{formatWinRate(entry)}</p>
-                  </div>
-                  <div className="rounded-lg border border-fab-border bg-fab-bg/65 px-3 py-2">
-                    <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-fab-dim">Matches</p>
-                    <p className="text-sm font-black text-fab-text">{formatMatches(entry)}</p>
-                  </div>
-                </div>
-
-                <div className="mt-4 space-y-2">
-                  {links.filter((link) => filter === "all" || link.type === filter).length > 0 ? (
-                    links.filter((link) => filter === "all" || link.type === filter).map((link) => (
-                      <a
-                        key={`${profile.uid}-${link.type}-${link.href}`}
-                        href={link.href}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-2 rounded-lg border border-fab-border bg-fab-bg/65 px-3 py-2 text-sm transition-colors hover:border-fab-gold/45 hover:text-fab-gold"
-                      >
-                        <span className="text-fab-gold">{linkIcon(link.type)}</span>
-                        <span className="min-w-0 flex-1">
-                          <span className="block truncate font-bold text-fab-text">{link.label}</span>
-                          <span className="block text-[10px] font-bold uppercase tracking-[0.12em] text-fab-dim">{link.meta}</span>
-                        </span>
-                        <ExternalLink className="h-3.5 w-3.5 shrink-0 text-fab-dim" />
-                      </a>
-                    ))
-                  ) : (
-                    <Link
-                      href={`/player/${profile.username}`}
-                      className="flex items-center justify-between rounded-lg border border-fab-border bg-fab-bg/65 px-3 py-2 text-sm font-bold text-fab-muted transition-colors hover:border-fab-gold/45 hover:text-fab-gold"
-                    >
-                      View profile
-                      <ExternalLink className="h-3.5 w-3.5 shrink-0 text-fab-dim" />
-                    </Link>
-                  )}
-                </div>
               </article>
             );
           })}

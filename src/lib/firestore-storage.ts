@@ -379,11 +379,6 @@ export async function getDiscoverProfiles(maxResults = 5000): Promise<UserProfil
   ];
   const settled = await Promise.allSettled(profileQueries.map((q) => getDocs(q)));
 
-  if (!settled.some((item) => item.status === "fulfilled")) {
-    const rejected = settled.find((item): item is PromiseRejectedResult => item.status === "rejected");
-    throw rejected?.reason || new Error("Failed to load discover profiles");
-  }
-
   const profiles = new Map<string, UserProfile>();
   for (const result of settled) {
     if (result.status !== "fulfilled") continue;
@@ -391,6 +386,33 @@ export async function getDiscoverProfiles(maxResults = 5000): Promise<UserProfil
       const profile = docSnap.data() as UserProfile;
       const key = profile.uid || docSnap.ref.parent.parent?.id || docSnap.id;
       profiles.set(key, profile);
+    }
+  }
+
+  // Fallback for browsers hitting older rules/indexes where collectionGroup
+  // profile reads are denied. Direct profile reads are already supported by
+  // the player pages, and the leaderboard gives us public user ids to sample.
+  if (profiles.size < 12) {
+    try {
+      const fallbackLimit = Math.min(maxResults, 1000);
+      const lbSnap = await getDocs(query(collection(db, "leaderboard"), where("isPublic", "==", true), limit(fallbackLimit)));
+      const userIds = lbSnap.docs
+        .map((d) => (d.data() as { userId?: string }).userId || d.id)
+        .filter((uid) => uid && !profiles.has(uid));
+
+      for (let i = 0; i < userIds.length; i += 25) {
+        const chunk = userIds.slice(i, i + 25);
+        const profileSnaps = await Promise.allSettled(
+          chunk.map((uid) => getDoc(doc(db, "users", uid, "profile", "main")))
+        );
+        for (const snap of profileSnaps) {
+          if (snap.status !== "fulfilled" || !snap.value.exists()) continue;
+          const profile = snap.value.data() as UserProfile;
+          if (profile.uid || profile.username) profiles.set(profile.uid || snap.value.ref.parent.parent?.id || snap.value.id, profile);
+        }
+      }
+    } catch {
+      // Keep the collection-group result if the fallback is unavailable.
     }
   }
 
