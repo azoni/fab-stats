@@ -2,11 +2,17 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { BookOpen, Compass, ExternalLink, GraduationCap, Search, Settings, UserCircle, Users } from "lucide-react";
+import { BookOpen, Compass, Crown, ExternalLink, GraduationCap, Search, Settings, Sparkles, UserCircle, Users } from "lucide-react";
 import { getDiscoverProfiles } from "@/lib/firestore-storage";
 import { useLeaderboard } from "@/hooks/useLeaderboard";
 import { useAuth } from "@/contexts/AuthContext";
-import type { LeaderboardEntry, UserProfile } from "@/types";
+import { useCreators } from "@/hooks/useCreators";
+import { HeroShieldBadge } from "@/components/profile/HeroShieldBadge";
+import { TeamBadge } from "@/components/profile/TeamBadge";
+import { BadgeStrip } from "@/components/profile/BadgeStrip";
+import { EMBLEM_COMPONENTS, EMBLEM_COLORS } from "@/components/profile/EmblemIcons";
+import { computeRankMap, rankBorderClass } from "@/lib/leaderboard-ranks";
+import type { Creator, LeaderboardEntry, UserProfile } from "@/types";
 
 type LinkFilter = "all" | "metafy-guide" | "metafy-profile" | "fabrary" | "twitter";
 
@@ -113,13 +119,69 @@ function formatMatches(entry?: LeaderboardEntry): string {
   return new Intl.NumberFormat("en-US", { notation: entry.totalMatches >= 10000 ? "compact" : "standard", maximumFractionDigits: 1 }).format(entry.totalMatches);
 }
 
+function playerInitial(profile: UserProfile): string {
+  return (profile.displayName || profile.username || "?").charAt(0).toUpperCase();
+}
+
+function isSiteAdminProfile(profile: UserProfile): boolean {
+  return profile.username?.toLowerCase() === "azoni";
+}
+
+function CreatorChip({ creator }: { creator: Creator }) {
+  const tone = creator.platform === "youtube"
+    ? "border-red-500/30 bg-red-500/10 text-red-300"
+    : creator.platform === "twitch"
+    ? "border-purple-500/30 bg-purple-500/10 text-purple-300"
+    : creator.platform === "twitter"
+    ? "border-sky-500/30 bg-sky-500/10 text-sky-300"
+    : "border-emerald-500/30 bg-emerald-500/10 text-emerald-300";
+
+  return (
+    <a
+      href={creator.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.08em] transition-colors hover:border-fab-gold/45 hover:text-fab-gold ${tone}`}
+      title={creator.description}
+    >
+      <Sparkles className="h-3 w-3" />
+      Creator
+    </a>
+  );
+}
+
+function MiniEmblems({ profile }: { profile: UserProfile }) {
+  const emblems = [profile.selectedEmblem, profile.selectedClassEmblem].filter(Boolean) as string[];
+  if (emblems.length === 0) return null;
+
+  return (
+    <div className="flex items-center gap-1">
+      {emblems.map((id) => {
+        const Icon = EMBLEM_COMPONENTS[id];
+        const colors = EMBLEM_COLORS[id];
+        if (!Icon) return null;
+        return (
+          <span
+            key={id}
+            className={`inline-flex h-6 w-6 items-center justify-center rounded-full border border-fab-border bg-fab-bg/70 ${colors?.text || "text-fab-gold"}`}
+            title="Selected emblem"
+          >
+            <Icon className="h-5 w-5" />
+          </span>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function DiscoverPage() {
-  const { profile } = useAuth();
+  const { profile, isAdmin } = useAuth();
   const [profiles, setProfiles] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<LinkFilter>("all");
   const [query, setQuery] = useState("");
   const { entries } = useLeaderboard(true);
+  const creators = useCreators();
 
   useEffect(() => {
     let cancelled = false;
@@ -140,6 +202,14 @@ export default function DiscoverPage() {
   }, []);
 
   const entryByUid = useMemo(() => new Map(entries.map((entry) => [entry.userId, entry])), [entries]);
+  const rankMap = useMemo(() => computeRankMap(entries), [entries]);
+  const creatorByUsername = useMemo(() => {
+    const map = new Map<string, Creator>();
+    for (const creator of creators) {
+      if (creator.username) map.set(creator.username.toLowerCase(), creator);
+    }
+    return map;
+  }, [creators]);
   const discoverProfiles = useMemo(() => {
     const merged = new Map(profiles.map((item) => [item.uid, item]));
     if (profile?.uid && hasDiscoverInfo(profile)) merged.set(profile.uid, profile);
@@ -263,79 +333,122 @@ export default function DiscoverPage() {
         </div>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          {rows.map(({ profile, links, entry }) => (
-            <article key={profile.uid} className="rounded-xl border border-fab-border bg-fab-surface/90 p-4 transition-colors hover:border-fab-gold/45 hover:bg-fab-surface-hover/80">
-              <div className="flex items-start gap-3">
-                <Link href={`/player/${profile.username}`} className="shrink-0">
-                  {profile.photoUrl ? (
-                    <img src={profile.photoUrl} alt="" className="h-12 w-12 rounded-full border border-fab-border object-cover" />
-                  ) : (
-                    <span className="flex h-12 w-12 items-center justify-center rounded-full border border-fab-border bg-fab-bg text-sm font-black text-fab-gold">
-                      {(profile.displayName || profile.username).charAt(0).toUpperCase()}
-                    </span>
-                  )}
-                </Link>
-                <div className="min-w-0 flex-1">
-                  <Link href={`/player/${profile.username}`} className="block">
-                    <h2 className="truncate text-base font-black text-fab-text transition-colors hover:text-fab-gold">{profile.displayName}</h2>
-                    <p className="text-xs text-fab-dim">@{profile.username}</p>
-                  </Link>
-                  {profile.socialLinks?.discord && (
-                    <p className="mt-1 truncate text-[11px] text-fab-muted">Discord: {profile.socialLinks.discord}</p>
-                  )}
-                  {profile.socialLinks?.discoverTags && profile.socialLinks.discoverTags.length > 0 && (
-                    <div className="mt-2 flex flex-wrap gap-1">
-                      {profile.socialLinks.discoverTags.slice(0, 4).map((tag) => (
-                        <span key={tag} className="rounded-full border border-fab-border bg-fab-bg/70 px-2 py-0.5 text-[10px] font-semibold text-fab-muted">
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
+          {rows.map(({ profile, links, entry }) => {
+            const creator = creatorByUsername.get(profile.username.toLowerCase());
+            const shieldPct = entry?.bothHeroesCompletionPct ?? entry?.heroCompletionPct ?? 0;
+            const avatarBorder = rankBorderClass(rankMap.get(profile.uid));
+            const teamName = entry?.teamName;
+            const isSiteAdmin = isSiteAdminProfile(profile);
 
-              <div className="mt-4 grid grid-cols-2 gap-2">
-                <div className="rounded-lg border border-fab-border bg-fab-bg/65 px-3 py-2">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-fab-dim">Win Rate</p>
-                  <p className="text-sm font-black text-fab-text">{formatWinRate(entry)}</p>
-                </div>
-                <div className="rounded-lg border border-fab-border bg-fab-bg/65 px-3 py-2">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-fab-dim">Matches</p>
-                  <p className="text-sm font-black text-fab-text">{formatMatches(entry)}</p>
-                </div>
-              </div>
-
-              <div className="mt-4 space-y-2">
-                {links.filter((link) => filter === "all" || link.type === filter).length > 0 ? (
-                  links.filter((link) => filter === "all" || link.type === filter).map((link) => (
-                    <a
-                      key={`${profile.uid}-${link.type}-${link.href}`}
-                      href={link.href}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-2 rounded-lg border border-fab-border bg-fab-bg/65 px-3 py-2 text-sm transition-colors hover:border-fab-gold/45 hover:text-fab-gold"
-                    >
-                      <span className="text-fab-gold">{linkIcon(link.type)}</span>
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate font-bold text-fab-text">{link.label}</span>
-                        <span className="block text-[10px] font-bold uppercase tracking-[0.12em] text-fab-dim">{link.meta}</span>
+            return (
+              <article key={profile.uid} className="rounded-xl border border-fab-border bg-fab-surface/90 p-4 transition-colors hover:border-fab-gold/45 hover:bg-fab-surface-hover/80">
+                <div className="flex items-start gap-3">
+                  <Link href={`/player/${profile.username}`} className="relative shrink-0">
+                    {isSiteAdmin && (
+                      <Crown className="absolute -top-3 left-1/2 z-10 h-5 w-5 -translate-x-1/2 fill-current text-fab-gold drop-shadow-[0_0_6px_rgba(201,168,76,0.6)]" />
+                    )}
+                    {profile.photoUrl ? (
+                      <img src={profile.photoUrl} alt="" className={`h-12 w-12 rounded-full border border-fab-border object-cover ${avatarBorder}`} />
+                    ) : (
+                      <span className={`flex h-12 w-12 items-center justify-center rounded-full border border-fab-border bg-fab-bg text-sm font-black text-fab-gold ${avatarBorder}`}>
+                        {playerInitial(profile)}
                       </span>
-                      <ExternalLink className="h-3.5 w-3.5 shrink-0 text-fab-dim" />
-                    </a>
-                  ))
-                ) : (
-                  <Link
-                    href={`/player/${profile.username}`}
-                    className="flex items-center justify-between rounded-lg border border-fab-border bg-fab-bg/65 px-3 py-2 text-sm font-bold text-fab-muted transition-colors hover:border-fab-gold/45 hover:text-fab-gold"
-                  >
-                    View profile
-                    <ExternalLink className="h-3.5 w-3.5 shrink-0 text-fab-dim" />
+                    )}
+                  </Link>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex min-w-0 items-center gap-1.5">
+                      <Link href={`/player/${profile.username}`} className="min-w-0">
+                        <h2 className="truncate text-base font-black text-fab-text transition-colors hover:text-fab-gold">{profile.displayName}</h2>
+                      </Link>
+                      {teamName && (
+                        <TeamBadge
+                          teamName={teamName}
+                          teamIconUrl={entry?.teamIconUrl}
+                          size="sm"
+                          isPrivate={entry?.teamVisibility === "private"}
+                          isSiteAdmin={isAdmin}
+                        />
+                      )}
+                      {shieldPct >= 35 && <HeroShieldBadge pct={shieldPct} />}
+                    </div>
+                    <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                      <p className="text-xs text-fab-dim">@{profile.username}</p>
+                      {isSiteAdmin && (
+                        <span className="inline-flex items-center gap-1 rounded-full border border-fab-gold/35 bg-fab-gold/10 px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.08em] text-fab-gold">
+                          <Crown className="h-3 w-3 fill-current" />
+                          Admin
+                        </span>
+                      )}
+                      {creator && <CreatorChip creator={creator} />}
+                    </div>
+                    <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                      <MiniEmblems profile={profile} />
+                      <BadgeStrip selectedBadgeIds={profile.selectedBadgeIds} />
+                    </div>
+                    {profile.socialLinks?.discord && (
+                      <p className="mt-1 truncate text-[11px] text-fab-muted">Discord: {profile.socialLinks.discord}</p>
+                    )}
+                    {profile.socialLinks?.discoverTags && profile.socialLinks.discoverTags.length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-1">
+                        {profile.socialLinks.discoverTags.slice(0, 4).map((tag) => (
+                          <span key={tag} className="rounded-full border border-fab-border bg-fab-bg/70 px-2 py-0.5 text-[10px] font-semibold text-fab-muted">
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {teamName && (
+                  <Link href={`/teams/${teamName.toLowerCase().replace(/[^a-z0-9]/g, "")}`} className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-fab-muted transition-colors hover:text-fab-gold">
+                    <TeamBadge teamName={teamName} teamIconUrl={entry?.teamIconUrl} size="xs" linkToTeam={false} isPrivate={entry?.teamVisibility === "private"} isSiteAdmin={isAdmin} />
+                    {teamName}
                   </Link>
                 )}
-              </div>
-            </article>
-          ))}
+
+                <div className="mt-4 grid grid-cols-2 gap-2">
+                  <div className="rounded-lg border border-fab-border bg-fab-bg/65 px-3 py-2">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-fab-dim">Win Rate</p>
+                    <p className="text-sm font-black text-fab-text">{formatWinRate(entry)}</p>
+                  </div>
+                  <div className="rounded-lg border border-fab-border bg-fab-bg/65 px-3 py-2">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-fab-dim">Matches</p>
+                    <p className="text-sm font-black text-fab-text">{formatMatches(entry)}</p>
+                  </div>
+                </div>
+
+                <div className="mt-4 space-y-2">
+                  {links.filter((link) => filter === "all" || link.type === filter).length > 0 ? (
+                    links.filter((link) => filter === "all" || link.type === filter).map((link) => (
+                      <a
+                        key={`${profile.uid}-${link.type}-${link.href}`}
+                        href={link.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 rounded-lg border border-fab-border bg-fab-bg/65 px-3 py-2 text-sm transition-colors hover:border-fab-gold/45 hover:text-fab-gold"
+                      >
+                        <span className="text-fab-gold">{linkIcon(link.type)}</span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate font-bold text-fab-text">{link.label}</span>
+                          <span className="block text-[10px] font-bold uppercase tracking-[0.12em] text-fab-dim">{link.meta}</span>
+                        </span>
+                        <ExternalLink className="h-3.5 w-3.5 shrink-0 text-fab-dim" />
+                      </a>
+                    ))
+                  ) : (
+                    <Link
+                      href={`/player/${profile.username}`}
+                      className="flex items-center justify-between rounded-lg border border-fab-border bg-fab-bg/65 px-3 py-2 text-sm font-bold text-fab-muted transition-colors hover:border-fab-gold/45 hover:text-fab-gold"
+                    >
+                      View profile
+                      <ExternalLink className="h-3.5 w-3.5 shrink-0 text-fab-dim" />
+                    </Link>
+                  )}
+                </div>
+              </article>
+            );
+          })}
         </div>
       )}
     </div>
