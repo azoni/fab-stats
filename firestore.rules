@@ -34,6 +34,10 @@ service cloud.firestore {
       return field is string && field.size() <= len;
     }
 
+    function isPublicProfileData(data) {
+      return data.isPublic == true || data.get('profileVisibility', '') == 'public';
+    }
+
     // Profile background catalog validation guards
     function validBackgroundKind(kind) {
       return kind in ["key-art", "playmat", "hero-art"];
@@ -122,7 +126,7 @@ service cloud.firestore {
       allow update: if request.auth != null
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['teamId', 'teamIds', 'primaryTeamId']);
       // Authenticated users can read public profiles
-      allow read: if resource.data.isPublic == true
+      allow read: if isPublicProfileData(resource.data)
         && (request.auth != null || resource.data.get('hideFromGuests', false) == false);
       // Admin can read all profiles
       allow read: if isAdmin();
@@ -153,7 +157,7 @@ service cloud.firestore {
       // Admin can update/delete any user's matches (for data fixes)
       allow update, delete: if isAdmin();
       // Public read: if the user's profile is public (and not hidden from guests)
-      allow read: if get(/databases/$(database)/documents/users/$(userId)/profile/main).data.isPublic == true
+      allow read: if isPublicProfileData(get(/databases/$(database)/documents/users/$(userId)/profile/main).data)
         && (request.auth != null || get(/databases/$(database)/documents/users/$(userId)/profile/main).data.get('hideFromGuests', false) == false);
       // Admin can read all matches (for aggregate stats)
       allow read: if isAdmin();
@@ -172,7 +176,7 @@ service cloud.firestore {
       match /comments/{commentId} {
         allow read: if request.auth != null && (
           request.auth.uid == userId ||
-          get(/databases/$(database)/documents/users/$(userId)/profile/main).data.isPublic == true
+          isPublicProfileData(get(/databases/$(database)/documents/users/$(userId)/profile/main).data)
         );
         allow create: if request.auth != null
           && request.resource.data.authorUid == request.auth.uid

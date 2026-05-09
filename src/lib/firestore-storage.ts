@@ -373,16 +373,28 @@ function hasDiscoverableLinks(links?: UserProfile["socialLinks"] | null): boolea
 }
 
 export async function getDiscoverProfiles(maxResults = 5000): Promise<UserProfile[]> {
-  const snap = await getDocs(
-    query(
-      collectionGroup(db, "profile"),
-      where("isPublic", "==", true),
-      limit(maxResults)
-    )
-  );
+  const profileQueries = [
+    query(collectionGroup(db, "profile"), where("isPublic", "==", true), limit(maxResults)),
+    query(collectionGroup(db, "profile"), where("profileVisibility", "==", "public"), limit(maxResults)),
+  ];
+  const settled = await Promise.allSettled(profileQueries.map((q) => getDocs(q)));
 
-  return snap.docs
-    .map((d) => d.data() as UserProfile)
+  if (!settled.some((item) => item.status === "fulfilled")) {
+    const rejected = settled.find((item): item is PromiseRejectedResult => item.status === "rejected");
+    throw rejected?.reason || new Error("Failed to load discover profiles");
+  }
+
+  const profiles = new Map<string, UserProfile>();
+  for (const result of settled) {
+    if (result.status !== "fulfilled") continue;
+    for (const docSnap of result.value.docs) {
+      const profile = docSnap.data() as UserProfile;
+      const key = profile.uid || docSnap.ref.parent.parent?.id || docSnap.id;
+      profiles.set(key, profile);
+    }
+  }
+
+  return Array.from(profiles.values())
     .filter((profile) => {
       if (!profile.uid || !profile.username) return false;
       if (profile.profileVisibility) {

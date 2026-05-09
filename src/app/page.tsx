@@ -3,7 +3,7 @@ import { useMemo, useEffect, useRef, useState, useCallback, useDeferredValue } f
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
-import { ExternalLink, PlusCircle, UploadCloud, UserRound } from "lucide-react";
+import { ExternalLink, PlusCircle, UploadCloud } from "lucide-react";
 import { useMatches } from "@/hooks/useMatches";
 import { useCommunityStats } from "@/hooks/useCommunityStats";
 import { useAuth } from "@/contexts/AuthContext";
@@ -14,7 +14,6 @@ import { useLeaderboard } from "@/hooks/useLeaderboard";
 import { computeUserRanks, getBestRank, rankBorderClass } from "@/lib/leaderboard-ranks";
 import { computeMetaStats } from "@/lib/meta-stats";
 import { RecentEvents } from "@/components/home/RecentEvents";
-import { LatestMatches } from "@/components/home/LatestMatches";
 import { DashboardInsights } from "@/components/home/DashboardInsights";
 import { DashboardFilters } from "@/components/home/DashboardFilters";
 import { OnThisDay } from "@/components/home/OnThisDay";
@@ -23,7 +22,7 @@ import { HeroImg } from "@/components/heroes/HeroImg";
 import { HeroShieldBadge } from "@/components/profile/HeroShieldBadge";
 import { TeamBadge } from "@/components/profile/TeamBadge";
 import { useTeamOnce } from "@/hooks/useTeam";
-import { MatchResult, type MatchRecord, type OverallStats } from "@/types";
+import { MatchResult } from "@/types";
 import { Tooltip } from "@/components/ui/tooltip";
 import { loadKudosCounts } from "@/lib/kudos";
 import { CardBorderWrapper } from "@/components/profile/CardBorderWrapper";
@@ -165,7 +164,6 @@ export default function Dashboard() {
     [deferredMatches]
   );
   const last30 = useMemo(() => sortedByDateDesc.slice(0, 30).reverse(), [sortedByDateDesc]);
-  const latestMatches = useMemo(() => sortedByDateDesc.slice(0, 6), [sortedByDateDesc]);
   const playoffFinishes = useMemo(() => computePlayoffFinishes(filteredEventStats), [filteredEventStats]);
   const cardBorder = useMemo(() => {
     const tierRank: Record<string, number> = { "Battle Hardened": 1, "The Calling": 2, Nationals: 3, "Pro Tour": 4, Worlds: 5 };
@@ -266,10 +264,6 @@ export default function Dashboard() {
 
       {hasMatches && (
         <HomeCommandCenter
-          profileUsername={profile?.username}
-          overall={overall}
-          latestMatch={latestMatches[0]}
-          eventCount={filteredEventStats.length}
           heroCompletionPct={heroCompletion?.pct}
         />
       )}
@@ -291,17 +285,6 @@ export default function Dashboard() {
                   <p className="mt-0.5 text-base font-bold tracking-tight text-fab-text">My Profile</p>
                 </div>
                 <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                  <a
-                    href="https://gem.fabtcg.com/profile/player/"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 text-xs font-bold text-fab-bg border border-fab-gold/50 bg-fab-gold hover:bg-fab-gold-light px-2.5 py-1 rounded-md transition-colors"
-                  >
-                    Open GEM
-                    <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H18m0 0v4.5M18 6l-8.25 8.25M6 7.5v10.5h10.5" />
-                    </svg>
-                  </a>
                   {profile?.username && (
                     <button onClick={() => setProfileShareOpen(true)} className="inline-flex items-center gap-1.5 text-xs font-semibold text-fab-gold border border-fab-gold/30 hover:bg-fab-gold/10 hover:border-fab-gold/50 px-2.5 py-1 rounded-md transition-colors">
                       <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -489,10 +472,7 @@ export default function Dashboard() {
           {/* Recent Events + Opponents */}
           <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.75fr)] section-reveal" style={{ '--stagger': 2 } as React.CSSProperties}>
             <RecentEvents eventStats={filteredEventStats} playerName={profile?.displayName} />
-            <div className="space-y-4">
-              <DashboardInsights heroStats={heroStats} opponentStats={opponentStats} matches={filteredMatches} />
-              <LatestMatches matches={latestMatches} />
-            </div>
+            <DashboardInsights heroStats={heroStats} opponentStats={opponentStats} matches={filteredMatches} />
           </div>
 
           {/* Tournament Stats Card */}
@@ -633,39 +613,11 @@ export default function Dashboard() {
   );
 }
 
-function formatHomeDate(match?: MatchRecord): string {
-  if (!match?.date) return "No recent match";
-  const date = new Date(`${match.date}T00:00:00`);
-  if (Number.isNaN(date.getTime())) return match.date;
-  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-}
-
-function HomeCommandMetric({ label, value, tone = "text-fab-text" }: { label: string; value: string; tone?: string }) {
-  return (
-    <div className="rounded-lg border border-fab-border/70 bg-fab-bg/55 px-3 py-2">
-      <p className={`text-sm font-black leading-none tabular-nums sm:text-base ${tone}`}>{value}</p>
-      <p className="mt-1 text-[9px] font-bold uppercase tracking-[0.12em] text-fab-dim">{label}</p>
-    </div>
-  );
-}
-
 function HomeCommandCenter({
-  profileUsername,
-  overall,
-  latestMatch,
-  eventCount,
   heroCompletionPct,
 }: {
-  profileUsername?: string;
-  overall: OverallStats;
-  latestMatch?: MatchRecord;
-  eventCount: number;
   heroCompletionPct?: number;
 }) {
-  const totalMatches = overall.totalMatches + overall.totalByes;
-  const record = `${overall.totalWins}-${overall.totalLosses}${overall.totalDraws > 0 ? `-${overall.totalDraws}` : ""}`;
-  const profileHref = profileUsername ? `/player/${profileUsername}` : "/settings";
-
   return (
     <section className="section-reveal relative overflow-hidden rounded-xl border border-fab-border/80 bg-[linear-gradient(135deg,rgba(25,23,18,0.96),rgba(14,15,14,0.95)_58%,rgba(17,24,22,0.92))] p-3 shadow-[0_18px_54px_rgba(0,0,0,0.24)] sm:p-4" style={{ "--stagger": 0 } as React.CSSProperties}>
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_16%_0%,rgba(245,179,57,0.16),transparent_30%),radial-gradient(circle_at_86%_20%,rgba(38,211,177,0.11),transparent_28%)]" />
@@ -676,14 +628,9 @@ function HomeCommandCenter({
             <div>
               <h2 className="text-2xl font-black tracking-tight text-fab-text sm:text-3xl">Ready for the next round.</h2>
               <p className="mt-1 text-sm leading-6 text-fab-muted">
-                Open GEM, import the newest event, or log a one-off match without hunting through the app.
+                Jump straight to GEM, bring the event back here, or log a quick match.
               </p>
             </div>
-          </div>
-          <div className="mt-4 grid grid-cols-3 gap-2">
-            <HomeCommandMetric label="Record" value={record} tone={overall.overallWinRate >= 50 ? "text-fab-win" : "text-fab-loss"} />
-            <HomeCommandMetric label="Events" value={String(eventCount)} tone="text-fab-gold" />
-            <HomeCommandMetric label="Latest" value={formatHomeDate(latestMatch)} />
           </div>
         </div>
 
@@ -692,21 +639,21 @@ function HomeCommandCenter({
             href="https://gem.fabtcg.com/profile/player/"
             target="_blank"
             rel="noopener noreferrer"
-            className="group col-span-2 flex min-h-[58px] items-center justify-between gap-3 rounded-lg border border-fab-gold/55 bg-fab-gold px-4 py-3 text-fab-bg shadow-[0_14px_34px_rgba(245,179,57,0.18)] transition-colors hover:bg-fab-gold-light sm:col-span-2 xl:col-span-1"
+            className="group col-span-2 flex min-h-[68px] items-center justify-between gap-3 rounded-lg border border-fab-gold/55 bg-fab-gold px-4 py-3 text-fab-bg shadow-[0_14px_34px_rgba(245,179,57,0.18)] transition-colors hover:bg-fab-gold-light sm:col-span-2 xl:col-span-1"
           >
             <span className="min-w-0">
-              <span className="block text-sm font-black">Open GEM</span>
+              <span className="block text-base font-black">Open GEM</span>
               <span className="block truncate text-[11px] font-semibold opacity-80">Grab your latest event results</span>
             </span>
             <ExternalLink className="h-5 w-5 shrink-0 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
           </a>
           <Link
             href="/import"
-            className="group col-span-2 flex min-h-[58px] items-center justify-between gap-3 rounded-lg border border-emerald-400/35 bg-emerald-400/12 px-4 py-3 text-emerald-300 transition-colors hover:border-emerald-300/55 hover:bg-emerald-400/18 sm:col-span-2 xl:col-span-1"
+            className="group col-span-2 flex min-h-[68px] items-center justify-between gap-3 rounded-lg border border-emerald-400/35 bg-emerald-400/12 px-4 py-3 text-emerald-300 transition-colors hover:border-emerald-300/55 hover:bg-emerald-400/18 sm:col-span-2 xl:col-span-1"
           >
             <span className="min-w-0">
-              <span className="block text-sm font-black">Import Matches</span>
-              <span className="block truncate text-[11px] font-semibold text-fab-muted">{totalMatches.toLocaleString()} tracked</span>
+              <span className="block text-base font-black">Import Matches</span>
+              <span className="block truncate text-[11px] font-semibold text-fab-muted">Paste or sync your GEM export</span>
             </span>
             <UploadCloud className="h-5 w-5 shrink-0 transition-transform group-hover:-translate-y-0.5" />
           </Link>
@@ -717,17 +664,10 @@ function HomeCommandCenter({
             <PlusCircle className="h-4 w-4" />
             Add Match
           </Link>
-          <Link
-            href={profileHref}
-            className="flex min-h-[48px] items-center justify-center gap-2 rounded-lg border border-fab-border bg-fab-bg/65 px-3 py-2 text-sm font-bold text-fab-muted transition-colors hover:border-fab-gold/40 hover:text-fab-gold"
-          >
-            <UserRound className="h-4 w-4" />
-            Profile
-          </Link>
           {heroCompletionPct !== undefined && (
             <Link
               href="/matches"
-              className="col-span-2 flex min-h-[48px] items-center justify-between gap-3 rounded-lg border border-fab-border bg-fab-bg/65 px-3 py-2 text-sm font-bold text-fab-muted transition-colors hover:border-fab-gold/40 hover:text-fab-text"
+              className="flex min-h-[48px] items-center justify-between gap-3 rounded-lg border border-fab-border bg-fab-bg/65 px-3 py-2 text-sm font-bold text-fab-muted transition-colors hover:border-fab-gold/40 hover:text-fab-text"
             >
               <span>Hero data</span>
               <span className={heroCompletionPct >= 90 ? "text-fab-win" : heroCompletionPct >= 70 ? "text-fab-gold" : "text-fab-loss"}>
