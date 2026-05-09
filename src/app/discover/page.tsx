@@ -30,6 +30,18 @@ const FILTERS: { id: LinkFilter; label: string }[] = [
   { id: "twitter", label: "X" },
 ];
 
+const SITE_CREATOR_USERNAME = "azoni";
+const SITE_CREATOR_DISCOVER_LINKS: NonNullable<UserProfile["socialLinks"]> = {
+  twitter: "azoniNFT",
+  discord: "azonii",
+  metafyGuide: "https://mfy.gg/@azoni/members?membershipId=99383fe4-b403-4f05-a041-c3212bd7ea30",
+  metafyGuideTitle: "Azoni's Competitive Hala",
+  metafyProfile: "https://mfy.gg/@azoni",
+  fabrary: "https://fabrary.net/decks?search=Azoni%27s%20Competitive%20Dori",
+  fabraryName: "Azoni's Competitive Dori",
+  discoverTags: ["warrior"],
+};
+
 function withProtocol(value: string): string {
   return /^https?:\/\//i.test(value) ? value : `https://${value}`;
 }
@@ -95,6 +107,23 @@ function hasDiscoverInfo(profile: UserProfile): boolean {
   const links = profile.socialLinks;
   if (!links) return false;
   return profileLinks(profile).length > 0 || Boolean(links.discord) || (links.discoverTags?.length ?? 0) > 0;
+}
+
+function profileKey(profile: UserProfile): string {
+  return (profile.username || profile.uid).toLowerCase();
+}
+
+function makeSiteCreatorProfile(entry?: LeaderboardEntry): UserProfile {
+  return {
+    uid: entry?.userId || "site-creator-azoni",
+    username: SITE_CREATOR_USERNAME,
+    displayName: entry?.displayName || "azoni",
+    photoUrl: entry?.photoUrl,
+    createdAt: entry?.createdAt || "2024-01-01T00:00:00.000Z",
+    isPublic: true,
+    profileVisibility: "public",
+    socialLinks: SITE_CREATOR_DISCOVER_LINKS,
+  };
 }
 
 function linkIcon(type: DiscoverLink["type"]) {
@@ -357,10 +386,15 @@ export default function DiscoverPage() {
     return map;
   }, [creators]);
   const discoverProfiles = useMemo(() => {
-    const merged = new Map(profiles.map((item) => [item.uid, item]));
-    if (profile?.uid && hasDiscoverInfo(profile)) merged.set(profile.uid, profile);
+    const merged = new Map<string, UserProfile>();
+    const siteCreatorEntry = entries.find((entry) => entry.username?.toLowerCase() === SITE_CREATOR_USERNAME);
+    const siteCreator = makeSiteCreatorProfile(siteCreatorEntry);
+
+    merged.set(profileKey(siteCreator), siteCreator);
+    for (const item of profiles) merged.set(profileKey(item), item);
+    if (profile?.uid && hasDiscoverInfo(profile)) merged.set(profileKey(profile), profile);
     return Array.from(merged.values());
-  }, [profile, profiles]);
+  }, [entries, profile, profiles]);
 
   const rows = useMemo(() => {
     const q = query.trim().toLowerCase();

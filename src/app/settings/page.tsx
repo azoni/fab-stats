@@ -367,8 +367,10 @@ export default function SettingsPage() {
     try {
       await updateProfile(user.uid, {
         socialLinks: Object.keys(links).length > 0 ? (links as NonNullable<typeof profile.socialLinks>) : {},
-        ...(profileVisibility === "public" ? { isPublic: true } : {}),
+        isPublic: true,
+        profileVisibility: "public",
       });
+      setProfileVisibility("public");
       await refreshProfile();
       toast.success("Discover links saved");
     } catch {
