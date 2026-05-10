@@ -76,8 +76,9 @@ export function computeMetaStats(
         totalWins += hb.wins;
       }
       if (hasMatchingData) playersWithData.add(entry.userId);
-    } else if ((isFiltered || isDateRange) && entry.heroBreakdownDetailed) {
-      // When filtering by format/eventType/date range, use heroBreakdownDetailed
+    } else if (entry.heroBreakdownDetailed?.length) {
+      // Use heroBreakdownDetailed for both All Formats and explicit filters so
+      // totals reconcile across format buckets.
       let hasMatchingData = false;
       for (const hb of entry.heroBreakdownDetailed) {
         if (!validHeroNames.has(hb.hero)) continue;
@@ -101,19 +102,22 @@ export function computeMetaStats(
         cur.players.add(entry.userId);
         cur.matches += effectiveMatches;
         cur.wins += effectiveWins;
-        // Track unique player-date pairs for this hero (each player's date = 1 event)
+        // Track unique player-format-event/date pairs so All Formats matches
+        // the sum of explicit format buckets.
         if (hb.dates) {
           const datesToAdd = isDateRange
             ? hb.dates.filter(d => d >= sinceDateStr! && (!untilDateStr || d <= untilDateStr))
             : hb.dates;
-          for (const d of datesToAdd) cur.playerDates.add(`${entry.userId}|${d}`);
+          for (const d of datesToAdd) cur.playerDates.add(`${entry.userId}|${hb.format}|${hb.eventType}|${d}`);
+        } else if (!isDateRange) {
+          cur.playerDates.add(`${entry.userId}|${hb.format}|${hb.eventType}|${hb.hero}`);
         }
         // Track unique events by event name + date for community total
         if (hb.eventKeys) {
           for (const ek of hb.eventKeys) {
             const ekDate = ek.split("|").pop() || "";
             if (!isDateRange || (ekDate >= sinceDateStr! && (!untilDateStr || ekDate <= untilDateStr))) {
-              communityEventKeys.add(ek);
+              communityEventKeys.add(`${hb.format}|${hb.eventType}|${ek}`);
             }
           }
         } else if (hb.dates) {
@@ -121,7 +125,9 @@ export function computeMetaStats(
           const datesToAdd = isDateRange
             ? hb.dates.filter(d => d >= sinceDateStr! && (!untilDateStr || d <= untilDateStr))
             : hb.dates;
-          for (const d of datesToAdd) communityEventKeys.add(`${entry.userId}|${d}`);
+          for (const d of datesToAdd) communityEventKeys.add(`${entry.userId}|${hb.format}|${hb.eventType}|${d}`);
+        } else if (!isDateRange) {
+          communityEventKeys.add(`${entry.userId}|${hb.format}|${hb.eventType}|${hb.hero}`);
         }
         heroAgg.set(hb.hero, cur);
 
@@ -129,39 +135,14 @@ export function computeMetaStats(
         totalWins += effectiveWins;
       }
       if (hasMatchingData) playersWithData.add(entry.userId);
-    } else if (!isFiltered) {
-      // Unfiltered: use overall totals for overview stats
+    } else if (!isFiltered && !isDateRange) {
+      // Legacy all-time entries without detailed format data cannot be split by
+      // format, so they only contribute to the unfiltered all-time overview.
       totalMatches += entry.totalMatches;
       totalWins += entry.totalWins;
       playersWithData.add(entry.userId);
 
-      // Prefer heroBreakdownDetailed for hero data (heroBreakdown is top-5 only)
-      if (entry.heroBreakdownDetailed && entry.heroBreakdownDetailed.length > 0) {
-        // Aggregate across all formats/eventTypes per hero
-        const heroTotals = new Map<string, { matches: number; wins: number; dates: Set<string> }>();
-        for (const hb of entry.heroBreakdownDetailed) {
-          if (!validHeroNames.has(hb.hero)) continue;
-          const cur = heroTotals.get(hb.hero) || { matches: 0, wins: 0, dates: new Set<string>() };
-          cur.matches += hb.matches;
-          cur.wins += hb.wins;
-          if (hb.dates) for (const d of hb.dates) cur.dates.add(d);
-          // Collect event keys for community total
-          if (hb.eventKeys) {
-            for (const ek of hb.eventKeys) communityEventKeys.add(ek);
-          } else if (hb.dates) {
-            for (const d of hb.dates) communityEventKeys.add(`${entry.userId}|${d}`);
-          }
-          heroTotals.set(hb.hero, cur);
-        }
-        for (const [hero, data] of heroTotals) {
-          const cur = heroAgg.get(hero) || { players: new Set<string>(), matches: 0, wins: 0, playerDates: new Set<string>() };
-          cur.players.add(entry.userId);
-          cur.matches += data.matches;
-          cur.wins += data.wins;
-          for (const d of data.dates) cur.playerDates.add(`${entry.userId}|${d}`);
-          heroAgg.set(hero, cur);
-        }
-      } else if (entry.heroBreakdown) {
+      if (entry.heroBreakdown) {
         for (const hb of entry.heroBreakdown) {
           if (!validHeroNames.has(hb.hero)) continue;
           const cur = heroAgg.get(hb.hero) || { players: new Set<string>(), matches: 0, wins: 0, playerDates: new Set<string>() };

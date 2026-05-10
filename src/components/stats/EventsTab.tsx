@@ -1,5 +1,6 @@
 "use client";
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { computeEventStats, computeOverallStats, computePlayoffFinishes, computeBestFinish } from "@/lib/stats";
@@ -28,9 +29,10 @@ interface EventsTabProps {
   batchUpdateEventType: (matchIds: string[], eventTypeOverride: string) => Promise<void>;
   batchDeleteMatches: (matchIds: string[]) => Promise<void>;
   hideOpponentNames?: boolean;
+  privacyControl?: ReactNode;
 }
 
-export function EventsTab({ matches, user, profile, updateMatch, refreshMatches, batchUpdateHero, batchUpdateFormat, batchUpdateEventType, batchDeleteMatches, hideOpponentNames = false }: EventsTabProps) {
+export function EventsTab({ matches, user, profile, updateMatch, refreshMatches, batchUpdateHero, batchUpdateFormat, batchUpdateEventType, batchDeleteMatches, hideOpponentNames = false, privacyControl }: EventsTabProps) {
   const searchParams = useSearchParams();
   const [filterFormat, setFilterFormat] = useState("all");
   const [filterEventType, setFilterEventType] = useState("all");
@@ -243,33 +245,34 @@ export function EventsTab({ matches, user, profile, updateMatch, refreshMatches,
     <div className="space-y-6">
       {/* Action bar */}
       <div className="flex items-center justify-end gap-3 flex-wrap">
-          <div className="flex bg-fab-surface border border-fab-border rounded-lg overflow-hidden">
-            <button
-              onClick={() => setView("timeline")}
-              className={`px-3 py-1.5 text-sm font-medium transition-colors ${
-                view === "timeline" ? "bg-fab-gold/15 text-fab-gold" : "text-fab-muted hover:text-fab-text"
-              }`}
-            >
-              Timeline
-            </button>
-            <button
-              onClick={() => setView("standings")}
-              className={`px-3 py-1.5 text-sm font-medium transition-colors ${
-                view === "standings" ? "bg-fab-gold/15 text-fab-gold" : "text-fab-muted hover:text-fab-text"
-              }`}
-            >
-              Standings
-            </button>
-          </div>
+        {privacyControl}
+        <div className="flex bg-fab-surface border border-fab-border rounded-lg overflow-hidden">
           <button
-            onClick={() => setImportModalOpen(true)}
-            className="flex items-center gap-1.5 bg-fab-surface border border-fab-border text-fab-text text-sm font-medium rounded-lg px-3 py-1.5 hover:bg-fab-surface-hover transition-colors"
+            onClick={() => setView("timeline")}
+            className={`px-3 py-1.5 text-sm font-medium transition-colors ${
+              view === "timeline" ? "bg-fab-gold/15 text-fab-gold" : "text-fab-muted hover:text-fab-text"
+            }`}
           >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-            </svg>
-            Import Event
+            Timeline
           </button>
+          <button
+            onClick={() => setView("standings")}
+            className={`px-3 py-1.5 text-sm font-medium transition-colors ${
+              view === "standings" ? "bg-fab-gold/15 text-fab-gold" : "text-fab-muted hover:text-fab-text"
+            }`}
+          >
+            Standings
+          </button>
+        </div>
+        <button
+          onClick={() => setImportModalOpen(true)}
+          className="flex items-center gap-1.5 bg-fab-surface border border-fab-border text-fab-text text-sm font-medium rounded-lg px-3 py-1.5 hover:bg-fab-surface-hover transition-colors"
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+          </svg>
+          Import Event
+        </button>
       </div>
 
       {/* Summary Stats */}

@@ -1,5 +1,6 @@
 "use client";
 import { useCallback } from "react";
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { MatchList } from "@/components/matches/MatchList";
 import { updateLeaderboardEntry } from "@/lib/leaderboard";
@@ -14,9 +15,10 @@ interface MatchesTabProps {
   profile: UserProfile | null;
   updateMatch: (id: string, updates: Partial<Omit<MatchRecord, "id" | "createdAt">>) => Promise<void>;
   hideOpponentNames?: boolean;
+  privacyControl?: ReactNode;
 }
 
-export function MatchesTab({ matches, user, profile, updateMatch, hideOpponentNames = false }: MatchesTabProps) {
+export function MatchesTab({ matches, user, profile, updateMatch, hideOpponentNames = false, privacyControl }: MatchesTabProps) {
   const handleUpdateMatch = useCallback(
     async (id: string, updates: Partial<Omit<MatchRecord, "id" | "createdAt">>) => {
       await updateMatch(id, updates);
@@ -44,14 +46,17 @@ export function MatchesTab({ matches, user, profile, updateMatch, hideOpponentNa
 
   return (
     <div>
-      {user && matches.length > 0 && (
-        <div className="flex justify-end mb-4">
-          <Link
-            href="/matches/new"
-            className="px-4 py-2 rounded-md text-sm font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors shrink-0"
-          >
-            + Log Match
-          </Link>
+      {matches.length > 0 && (user || privacyControl) && (
+        <div className="flex flex-wrap items-center justify-end gap-2 mb-4">
+          {privacyControl}
+          {user && (
+            <Link
+              href="/matches/new"
+              className="inline-flex h-9 items-center rounded-md bg-fab-gold px-4 text-sm font-semibold text-fab-bg transition-colors hover:bg-fab-gold-light shrink-0"
+            >
+              + Log Match
+            </Link>
+          )}
         </div>
       )}
 
