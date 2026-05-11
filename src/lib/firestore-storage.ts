@@ -372,7 +372,20 @@ function hasDiscoverableLinks(links?: UserProfile["socialLinks"] | null): boolea
   );
 }
 
+const DISCOVER_PROFILES_CACHE_TTL = 10 * 60 * 1000;
+let cachedDiscoverProfiles: UserProfile[] | null = null;
+let cachedDiscoverProfilesAt = 0;
+
+export function invalidateDiscoverProfilesCache() {
+  cachedDiscoverProfiles = null;
+  cachedDiscoverProfilesAt = 0;
+}
+
 export async function getDiscoverProfiles(maxResults = 5000): Promise<UserProfile[]> {
+  const useCache = maxResults === 5000;
+  if (useCache && cachedDiscoverProfiles && Date.now() - cachedDiscoverProfilesAt < DISCOVER_PROFILES_CACHE_TTL) {
+    return cachedDiscoverProfiles;
+  }
   const profiles = new Map<string, UserProfile>();
 
   const mergeSnap = (snap: Awaited<ReturnType<typeof getDocs>>) => {
@@ -419,7 +432,7 @@ export async function getDiscoverProfiles(maxResults = 5000): Promise<UserProfil
     }
   }
 
-  return Array.from(profiles.values())
+  const result = Array.from(profiles.values())
     .filter((profile) => {
       if (!profile.uid || !profile.username) return false;
       if (profile.profileVisibility) {
@@ -432,6 +445,11 @@ export async function getDiscoverProfiles(maxResults = 5000): Promise<UserProfil
       return hasDiscoverableLinks(profile.socialLinks);
     })
     .sort((a, b) => (a.displayName || a.username).localeCompare(b.displayName || b.username));
+  if (useCache) {
+    cachedDiscoverProfiles = result;
+    cachedDiscoverProfilesAt = Date.now();
+  }
+  return result;
 }
 
 export async function updateProfile(
@@ -448,6 +466,11 @@ export async function updateProfile(
     clean.hasDiscoverLinks = hasDiscoverableLinks(updates.socialLinks);
   }
   await updateDoc(profileRef, clean);
+
+  const DISCOVER_FIELDS = ["isPublic", "profileVisibility", "hideFromGuests", "socialLinks", "displayName", "photoUrl", "selectedEmblem", "selectedClassEmblem", "borderStyle", "borderEventType", "borderPlacement", "underlineEventType", "underlinePlacement", "selectedBadgeIds", "trophyDesigns"] as const;
+  if (DISCOVER_FIELDS.some((field) => field in updates)) {
+    invalidateDiscoverProfilesCache();
+  }
 
   // Sync searchable fields to usernames collection for name search
   if (updates.displayName || updates.searchName) {

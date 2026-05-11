@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { BookOpen, Compass, Crown, ExternalLink, GraduationCap, Search, Settings, Sparkles, UserCircle, Users } from "lucide-react";
 import { getDiscoverProfiles } from "@/lib/firestore-storage";
@@ -355,6 +355,8 @@ export default function DiscoverPage() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<LinkFilter>("all");
   const [query, setQuery] = useState("");
+  const [visibleCount, setVisibleCount] = useState(24);
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
   const { entries } = useLeaderboard(false);
   const creators = useCreators({ lazy: true }) as Creator[] & { load: () => void };
 
@@ -380,8 +382,13 @@ export default function DiscoverPage() {
     if (!loading && profiles.length > 0) creators.load();
   }, [creators, loading, profiles.length]);
 
+  useEffect(() => {
+    setVisibleCount(24);
+  }, [filter, query]);
+
   const entryByUid = useMemo(() => new Map(entries.map((entry) => [entry.userId, entry])), [entries]);
-  const rankMap = useMemo(() => computeRankMap(entries), [entries]);
+  const deferredEntries = useDeferredValue(entries);
+  const rankMap = useMemo(() => computeRankMap(deferredEntries), [deferredEntries]);
   const creatorByUsername = useMemo(() => {
     const map = new Map<string, Creator>();
     for (const creator of creators) {
@@ -389,22 +396,26 @@ export default function DiscoverPage() {
     }
     return map;
   }, [creators]);
-  const discoverProfiles = useMemo(() => {
+  const discoverRows = useMemo(() => {
     const merged = new Map<string, UserProfile>();
     const siteCreatorEntry = entries.find((entry) => entry.username?.toLowerCase() === SITE_CREATOR_USERNAME);
     const siteCreator = makeSiteCreatorProfile(siteCreatorEntry);
 
     merged.set(profileKey(siteCreator), siteCreator);
     for (const item of profiles) merged.set(profileKey(item), item);
-    if (profile?.uid && hasDiscoverInfo(profile)) merged.set(profileKey(profile), profile);
-    return Array.from(merged.values());
+    if (profile?.uid) merged.set(profileKey(profile), profile);
+
+    const result: { profile: UserProfile; links: DiscoverLink[] }[] = [];
+    for (const p of merged.values()) {
+      if (!hasDiscoverInfo(p)) continue;
+      result.push({ profile: p, links: profileLinks(p) });
+    }
+    return result;
   }, [entries, profile, profiles]);
 
   const rows = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return discoverProfiles
-      .map((profile) => ({ profile, links: profileLinks(profile), entry: entryByUid.get(profile.uid) }))
-      .filter((row) => hasDiscoverInfo(row.profile))
+    return discoverRows
       .filter((row) => filter === "all" || row.links.some((link) => link.type === filter))
       .filter((row) => {
         if (!q) return true;
@@ -424,19 +435,30 @@ export default function DiscoverPage() {
         ].filter(Boolean).join(" ").toLowerCase();
         return haystack.includes(q);
       })
+      .map((row) => ({ ...row, entry: entryByUid.get(row.profile.uid) }))
       .sort((a, b) => (b.entry?.totalMatches ?? 0) - (a.entry?.totalMatches ?? 0));
-  }, [discoverProfiles, entryByUid, filter, query]);
+  }, [discoverRows, entryByUid, filter, query]);
 
   const counts = useMemo(() => {
     const base: Record<LinkFilter, number> = { all: 0, "metafy-guide": 0, "metafy-profile": 0, fabrary: 0, twitter: 0 };
-    for (const profile of discoverProfiles) {
-      const links = profileLinks(profile);
-      if (!hasDiscoverInfo(profile)) continue;
+    for (const row of discoverRows) {
       base.all += 1;
-      for (const type of new Set(links.map((link) => link.type))) base[type] += 1;
+      for (const type of new Set(row.links.map((link) => link.type))) base[type] += 1;
     }
     return base;
-  }, [discoverProfiles]);
+  }, [discoverRows]);
+
+  useEffect(() => {
+    const node = sentinelRef.current;
+    if (!node || typeof IntersectionObserver === "undefined") return;
+    const observer = new IntersectionObserver((entries) => {
+      if (entries.some((e) => e.isIntersecting)) {
+        setVisibleCount((n) => n + 24);
+      }
+    }, { rootMargin: "400px" });
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [visibleCount, rows.length]);
 
   return (
     <div className="mx-auto max-w-6xl space-y-4">
@@ -516,8 +538,9 @@ export default function DiscoverPage() {
           </Link>
         </div>
       ) : (
+        <>
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          {rows.map(({ profile, links, entry }) => {
+          {rows.slice(0, visibleCount).map(({ profile, links, entry }) => {
             const creator = creatorByUsername.get(profile.username.toLowerCase());
             const shieldPct = entry?.heroCompletionPct ?? entry?.bothHeroesCompletionPct ?? 0;
             const avatarBorder = rankBorderClass(rankMap.get(profile.uid));
@@ -598,6 +621,19 @@ export default function DiscoverPage() {
             );
           })}
         </div>
+        {visibleCount < rows.length && (
+          <div ref={sentinelRef} className="flex flex-col items-center gap-2 py-4 text-xs text-fab-muted">
+            <span>Showing {visibleCount} of {rows.length}</span>
+            <button
+              type="button"
+              onClick={() => setVisibleCount((n) => n + 24)}
+              className="rounded-lg border border-fab-border bg-fab-bg px-4 py-2 text-sm font-bold text-fab-muted transition-colors hover:border-fab-gold/45 hover:text-fab-gold"
+            >
+              Load more
+            </button>
+          </div>
+        )}
+        </>
       )}
     </div>
   );
