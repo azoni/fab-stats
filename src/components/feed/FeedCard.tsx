@@ -6,7 +6,8 @@ import { rankBorderClass } from "@/lib/leaderboard-ranks";
 import { playerHref } from "@/lib/constants";
 import { HeroShieldBadge } from "@/components/profile/HeroShieldBadge";
 import { TeamBadge } from "@/components/profile/TeamBadge";
-import { FEED_REACTIONS, addFeedReaction, removeFeedReaction, deleteFeedEvent } from "@/lib/feed";
+import { FEED_REACTIONS, addFeedReaction, removeFeedReaction, deleteFeedEvent, type ReactionContext } from "@/lib/feed";
+import { useAuth } from "@/contexts/AuthContext";
 
 export interface FeedGroup {
   events: FeedEvent[];
@@ -238,6 +239,7 @@ function ReactionIcon({ reactionKey, className }: { reactionKey: string; classNa
 }
 
 function ReactionBar({ event, userId, compact }: { event: FeedEvent; userId?: string; compact?: boolean }) {
+  const { profile } = useAuth();
   const [localReactions, setLocalReactions] = useState<Record<string, string[]>>(event.reactions || {});
   const [busy, setBusy] = useState(false);
 
@@ -256,11 +258,18 @@ function ReactionBar({ event, userId, compact }: { event: FeedEvent; userId?: st
       };
     });
 
+    const ctx: ReactionContext = {
+      ownerUid: event.userId,
+      reacterName: profile?.displayName || profile?.username || "",
+      reacterPhoto: profile?.photoUrl,
+      eventType: event.type,
+    };
+
     try {
       if (hasReacted) {
-        await removeFeedReaction(event.id, key, userId);
+        await removeFeedReaction(event.id, key, userId, ctx);
       } else {
-        await addFeedReaction(event.id, key, userId);
+        await addFeedReaction(event.id, key, userId, ctx);
       }
     } catch {
       // Revert on error
@@ -271,7 +280,7 @@ function ReactionBar({ event, userId, compact }: { event: FeedEvent; userId?: st
     } finally {
       setBusy(false);
     }
-  }, [userId, busy, localReactions, event.id]);
+  }, [userId, busy, localReactions, event.id, event.userId, event.type, profile?.displayName, profile?.username, profile?.photoUrl]);
 
   const totalReactions = Object.values(localReactions).reduce((sum, arr) => sum + arr.length, 0);
 

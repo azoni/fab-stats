@@ -212,6 +212,14 @@ service cloud.firestore {
       allow delete: if request.auth != null
         && resource.data.type == "kudos"
         && resource.data.kudosGiverUid == request.auth.uid;
+      // Allow feed reacter to delete their reaction notification (when un-reacting)
+      allow delete: if request.auth != null
+        && resource.data.type == "reaction"
+        && resource.data.reacterUid == request.auth.uid;
+      // Allow feed reacter to overwrite their own reaction notification (toggle on→off→on)
+      allow update: if request.auth != null
+        && resource.data.type == "reaction"
+        && resource.data.reacterUid == request.auth.uid;
     }
 
     // ── Favorites ──

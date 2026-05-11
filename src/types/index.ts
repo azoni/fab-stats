@@ -343,7 +343,7 @@ export interface MatchComment {
 
 export interface UserNotification {
   id: string;
-  type: "comment" | "message" | "friendRequest" | "friendAccepted" | "badge" | "kudos" | "heroCorrection" | "feedbackStatus" | "teamInvite" | "groupInvite";
+  type: "comment" | "message" | "friendRequest" | "friendAccepted" | "badge" | "kudos" | "reaction" | "heroCorrection" | "feedbackStatus" | "teamInvite" | "groupInvite";
   // Comment fields
   matchId?: string;
   matchOwnerUid?: string;
@@ -378,6 +378,15 @@ export interface UserNotification {
   kudosType?: string;
   kudosGiverUid?: string;
   kudosGiverName?: string;
+  // Reaction fields (activity feed)
+  reactionKey?: string;
+  reactionLabel?: string;
+  reacterUid?: string;
+  reacterName?: string;
+  reacterPhoto?: string;
+  feedEventId?: string;
+  feedEventType?: string;
+  feedEventSummary?: string;
   // Feedback status fields
   feedbackType?: "bug" | "feature";
   newStatus?: "reviewed" | "done";

@@ -106,6 +106,16 @@ function getNotifIcon(type: string): { bg: string; iconColor: string; icon: Reac
           </svg>
         ),
       };
+    case "reaction":
+      return {
+        bg: "bg-rose-500/15",
+        iconColor: "text-rose-300",
+        icon: (
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z" />
+          </svg>
+        ),
+      };
     case "feedbackStatus":
       return {
         bg: "bg-teal-500/15",
@@ -194,8 +204,8 @@ function NotifAvatar({ n }: { n: UserNotification }) {
     );
   }
 
-  const photo = n.type === "message" ? n.senderPhoto : n.type === "friendRequest" || n.type === "friendAccepted" ? n.friendRequestFromPhoto : n.commentAuthorPhoto;
-  const name = n.type === "message" ? (n.senderName || "?") : n.type === "friendRequest" || n.type === "friendAccepted" ? (n.friendRequestFromName || "?") : (n.commentAuthorName || "?");
+  const photo = n.type === "message" ? n.senderPhoto : n.type === "friendRequest" || n.type === "friendAccepted" ? n.friendRequestFromPhoto : n.type === "reaction" ? n.reacterPhoto : n.commentAuthorPhoto;
+  const name = n.type === "message" ? (n.senderName || "?") : n.type === "friendRequest" || n.type === "friendAccepted" ? (n.friendRequestFromName || "?") : n.type === "reaction" ? (n.reacterName || "?") : (n.commentAuthorName || "?");
 
   return photo ? (
     <img src={photo} alt="" className="w-9 h-9 rounded-full" loading="lazy" />
@@ -334,6 +344,9 @@ export default function NotificationsPage() {
       await markAsRead(n.id);
       const username = usernameCache[n.kudosGiverUid];
       if (username) router.push(`/player/${username}`);
+    } else if (n.type === "reaction") {
+      await markAsRead(n.id);
+      router.push("/activity");
     } else if (n.type === "heroCorrection") {
       // Don't navigate — handled by inline Accept/Dismiss buttons
       await markAsRead(n.id);
@@ -548,6 +561,11 @@ export default function NotificationsPage() {
                           <p className="text-sm text-fab-text">
                             <span className="font-semibold">{n.kudosGiverName}</span>{" "}
                             gave you <span className="font-semibold text-fab-gold">{n.kudosType === "good_sport" ? "Good Sport" : n.kudosType === "props" ? "Props" : n.kudosType === "skilled" ? "Skilled" : n.kudosType === "helpful" ? "Helpful" : n.kudosType}</span> kudos
+                          </p>
+                        ) : n.type === "reaction" ? (
+                          <p className="text-sm text-fab-text">
+                            <span className="font-semibold">{n.reacterName || "Someone"}</span>{" "}
+                            reacted <span className="font-semibold text-rose-300">{n.reactionLabel || n.reactionKey}</span> to your activity
                           </p>
                         ) : n.type === "feedbackStatus" ? (
                           <>

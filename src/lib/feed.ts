@@ -5,6 +5,7 @@ import {
   getDocs,
   deleteDoc,
   doc,
+  setDoc,
   updateDoc,
   arrayUnion,
   arrayRemove,
@@ -1110,18 +1111,64 @@ export const FEED_REACTIONS = [
 
 export type FeedReactionKey = (typeof FEED_REACTIONS)[number]["key"];
 
-export async function addFeedReaction(eventId: string, reactionKey: string, userId: string): Promise<void> {
+function reactionNotifId(eventId: string, reacterUid: string, reactionKey: string): string {
+  return `reaction_${eventId}_${reacterUid}_${reactionKey}`;
+}
+
+export interface ReactionContext {
+  ownerUid?: string;
+  reacterName?: string;
+  reacterPhoto?: string;
+  eventType?: string;
+  eventSummary?: string;
+}
+
+export async function addFeedReaction(
+  eventId: string,
+  reactionKey: string,
+  userId: string,
+  ctx?: ReactionContext,
+): Promise<void> {
   const docRef = doc(db, "feedEvents", eventId);
   await updateDoc(docRef, {
     [`reactions.${reactionKey}`]: arrayUnion(userId),
   });
   invalidateFeedCache();
+
+  if (ctx?.ownerUid && ctx.ownerUid !== userId) {
+    const label = FEED_REACTIONS.find((r) => r.key === reactionKey)?.label ?? reactionKey;
+    const notifRef = doc(db, "users", ctx.ownerUid, "notifications", reactionNotifId(eventId, userId, reactionKey));
+    const payload: Record<string, unknown> = {
+      type: "reaction",
+      reactionKey,
+      reactionLabel: label,
+      reacterUid: userId,
+      reacterName: ctx.reacterName ?? "",
+      feedEventId: eventId,
+      createdAt: new Date().toISOString(),
+      read: false,
+    };
+    if (ctx.reacterPhoto) payload.reacterPhoto = ctx.reacterPhoto;
+    if (ctx.eventType) payload.feedEventType = ctx.eventType;
+    if (ctx.eventSummary) payload.feedEventSummary = ctx.eventSummary;
+    await setDoc(notifRef, payload).catch(() => {});
+  }
 }
 
-export async function removeFeedReaction(eventId: string, reactionKey: string, userId: string): Promise<void> {
+export async function removeFeedReaction(
+  eventId: string,
+  reactionKey: string,
+  userId: string,
+  ctx?: ReactionContext,
+): Promise<void> {
   const docRef = doc(db, "feedEvents", eventId);
   await updateDoc(docRef, {
     [`reactions.${reactionKey}`]: arrayRemove(userId),
   });
   invalidateFeedCache();
+
+  if (ctx?.ownerUid && ctx.ownerUid !== userId) {
+    const notifRef = doc(db, "users", ctx.ownerUid, "notifications", reactionNotifId(eventId, userId, reactionKey));
+    await deleteDoc(notifRef).catch(() => {});
+  }
 }
