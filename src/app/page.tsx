@@ -3,7 +3,7 @@ import { useMemo, useEffect, useRef, useState, useCallback, useDeferredValue } f
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
-import { ExternalLink, PlusCircle, Puzzle, UploadCloud } from "lucide-react";
+import { ChevronDown, ExternalLink, PlusCircle, Puzzle, UploadCloud } from "lucide-react";
 import { useMatches } from "@/hooks/useMatches";
 import { useCommunityStats } from "@/hooks/useCommunityStats";
 import { useAuth } from "@/contexts/AuthContext";
@@ -612,6 +612,7 @@ export default function Dashboard() {
 }
 
 function HomeCommandCenter() {
+  const [showActions, setShowActions] = useState(false);
   return (
     <section className="section-reveal relative overflow-hidden rounded-xl border border-fab-border/80 bg-[linear-gradient(135deg,rgba(25,23,18,0.96),rgba(14,15,14,0.95)_58%,rgba(17,24,22,0.92))] p-3 shadow-[0_18px_54px_rgba(0,0,0,0.24)] sm:p-4" style={{ "--stagger": 0 } as React.CSSProperties}>
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_16%_0%,rgba(245,179,57,0.16),transparent_30%),radial-gradient(circle_at_86%_20%,rgba(38,211,177,0.11),transparent_28%)]" />
@@ -628,17 +629,26 @@ function HomeCommandCenter() {
                 href="https://chromewebstore.google.com/detail/fab-stats-gem-exporter/kcaaaibikofempdbphoeeljdbjakhmjh"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mt-3 inline-flex items-center gap-2 rounded-lg border border-fab-border/70 bg-fab-bg/60 px-3 py-1.5 text-xs font-bold text-fab-muted transition-colors hover:border-fab-gold/45 hover:bg-fab-gold/10 hover:text-fab-gold"
+                className="mt-3 hidden items-center gap-2 rounded-lg border border-fab-border/70 bg-fab-bg/60 px-3 py-1.5 text-xs font-bold text-fab-muted transition-colors hover:border-fab-gold/45 hover:bg-fab-gold/10 hover:text-fab-gold sm:inline-flex"
               >
                 <Puzzle className="h-3.5 w-3.5" />
                 <span>Get the Chrome extension</span>
                 <ExternalLink className="h-3 w-3 opacity-60" />
               </a>
+              <button
+                type="button"
+                onClick={() => setShowActions((v) => !v)}
+                aria-expanded={showActions}
+                className="mt-3 flex w-full items-center justify-between gap-2 rounded-lg border border-fab-border/70 bg-fab-bg/60 px-3 py-2 text-xs font-bold text-fab-muted transition-colors hover:border-fab-gold/45 hover:text-fab-gold sm:hidden"
+              >
+                <span>{showActions ? "Hide quick actions" : "Show quick actions"}</span>
+                <ChevronDown className={`h-4 w-4 transition-transform ${showActions ? "rotate-180" : ""}`} />
+              </button>
             </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+        <div className={`${showActions ? "grid" : "hidden"} grid-cols-1 gap-2 sm:!grid sm:grid-cols-3`}>
           <a
             href="https://gem.fabtcg.com/profile/player/"
             target="_blank"
