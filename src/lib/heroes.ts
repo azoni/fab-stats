@@ -74,7 +74,7 @@ const PORTRAIT_OVERRIDES: Record<string, string> = {
   "Florian, Rotwood Harbinger": `${PORTRAIT_CDN}/Florian%2C%20Rotwood%20Harbringer.jpg`,
   "Gravy Bones": `${PORTRAIT_CDN}/Gravy_Bones_Shipwrecked_Looter.jpg`,
   "Gravy Bones, Shipwrecked Looter": `${PORTRAIT_CDN}/Gravy_Bones_Shipwrecked_Looter.jpg`,
-  "Hala, Bladesaint of the Vow": "/brand/hala-bladesaint.png",
+  "Hala, Bladesaint of the Vow": `${PORTRAIT_CDN}/Hala_Bladesaint_of_the_Vow.jpg`,
   "Jarl Vetreiði": `${PORTRAIT_CDN}/Jarl%20Vetrei%C4%91i.jpg`,
   "Kassai of the Golden Sand": `${PORTRAIT_CDN}/Kassai%2C%20of%20the%20Golden%20Sand.jpg`,
   "Kayo, Armed and Dangerous": `${PORTRAIT_CDN}/Kayo_Armed_and_Dangerous.jpg`,
