@@ -565,7 +565,8 @@ export default function NotificationsPage() {
                         ) : n.type === "reaction" ? (
                           <p className="text-sm text-fab-text">
                             <span className="font-semibold">{n.reacterName || "Someone"}</span>{" "}
-                            reacted <span className="font-semibold text-rose-300">{n.reactionLabel || n.reactionKey}</span> to your activity
+                            reacted <span className="font-semibold text-rose-300">{n.reactionLabel || n.reactionKey}</span>{" "}
+                            to your <span className="text-fab-text">{n.feedEventSummary || "activity"}</span>
                           </p>
                         ) : n.type === "feedbackStatus" ? (
                           <>

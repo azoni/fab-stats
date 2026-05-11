@@ -6,7 +6,7 @@ import { rankBorderClass } from "@/lib/leaderboard-ranks";
 import { playerHref } from "@/lib/constants";
 import { HeroShieldBadge } from "@/components/profile/HeroShieldBadge";
 import { TeamBadge } from "@/components/profile/TeamBadge";
-import { FEED_REACTIONS, addFeedReaction, removeFeedReaction, deleteFeedEvent, type ReactionContext } from "@/lib/feed";
+import { FEED_REACTIONS, addFeedReaction, removeFeedReaction, deleteFeedEvent, summarizeFeedEvent, type ReactionContext } from "@/lib/feed";
 import { useAuth } from "@/contexts/AuthContext";
 
 export interface FeedGroup {
@@ -263,6 +263,7 @@ function ReactionBar({ event, userId, compact }: { event: FeedEvent; userId?: st
       reacterName: profile?.displayName || profile?.username || "",
       reacterPhoto: profile?.photoUrl,
       eventType: event.type,
+      eventSummary: summarizeFeedEvent(event),
     };
 
     try {

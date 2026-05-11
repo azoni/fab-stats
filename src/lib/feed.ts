@@ -1115,6 +1115,49 @@ function reactionNotifId(eventId: string, reacterUid: string, reactionKey: strin
   return `reaction_${eventId}_${reacterUid}_${reactionKey}`;
 }
 
+const PLACEMENT_LABELS: Record<string, string> = {
+  champion: "win",
+  finalist: "finalist finish",
+  top4: "Top 4",
+  top8: "Top 8",
+};
+
+/** Short, human-readable summary of a feed event suitable for use after the word "your". */
+export function summarizeFeedEvent(event: FeedEvent): string {
+  switch (event.type) {
+    case "import": {
+      const n = event.matchCount;
+      return `import of ${n} match${n === 1 ? "" : "es"}`;
+    }
+    case "achievement": {
+      const n = event.achievements.length;
+      if (n === 1) return `achievement "${event.achievements[0].name}"`;
+      return `${n} new achievements`;
+    }
+    case "placement": {
+      const label = PLACEMENT_LABELS[event.placementType] ?? event.placementType;
+      const eventName = event.eventName?.trim();
+      return eventName ? `${label} at ${eventName}` : label;
+    }
+    case "fabdoku": return "FaBdoku solve";
+    case "fabdoku-cards": return "FaBdoku Cards solve";
+    case "crossword": return "Crossword solve";
+    case "heroguesser": return "Hero Guesser run";
+    case "matchupmania": return "Matchup Mania score";
+    case "trivia": return "Trivia score";
+    case "timeline": return "Timeline run";
+    case "connections": return "Connections result";
+    case "rampage": return "Rampage run";
+    case "kayosknockout": return "Kayo's Knockout";
+    case "brutebrawl": return "Brute Brawl";
+    case "ninjacombo": return "Ninja Combo";
+    case "shadowstrike": return "Shadow Strike";
+    case "bladedash": return "Blade Dash";
+    case "article": return `article "${event.title}"`;
+    default: return "activity";
+  }
+}
+
 export interface ReactionContext {
   ownerUid?: string;
   reacterName?: string;
