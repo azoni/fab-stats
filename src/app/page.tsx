@@ -3,7 +3,7 @@ import { useMemo, useEffect, useRef, useState, useCallback, useDeferredValue } f
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
-import { ExternalLink, PlusCircle, UploadCloud } from "lucide-react";
+import { ExternalLink, PlusCircle, Puzzle, UploadCloud } from "lucide-react";
 import { useMatches } from "@/hooks/useMatches";
 import { useCommunityStats } from "@/hooks/useCommunityStats";
 import { useAuth } from "@/contexts/AuthContext";
@@ -624,6 +624,16 @@ function HomeCommandCenter() {
               <p className="mt-1 text-sm leading-6 text-fab-muted">
                 Jump straight to GEM, bring the event back here, or log a quick match.
               </p>
+              <a
+                href="https://chromewebstore.google.com/detail/fab-stats-gem-exporter/kcaaaibikofempdbphoeeljdbjakhmjh"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-3 inline-flex items-center gap-2 rounded-lg border border-fab-border/70 bg-fab-bg/60 px-3 py-1.5 text-xs font-bold text-fab-muted transition-colors hover:border-fab-gold/45 hover:bg-fab-gold/10 hover:text-fab-gold"
+              >
+                <Puzzle className="h-3.5 w-3.5" />
+                <span>Get the Chrome extension</span>
+                <ExternalLink className="h-3 w-3 opacity-60" />
+              </a>
             </div>
           </div>
         </div>
