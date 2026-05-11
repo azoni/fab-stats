@@ -839,8 +839,12 @@ export default function LeaderboardPage() {
     <div className="space-y-5">
       <PageHero
         eyebrow="Rankings"
-        title="Community leaderboards"
-        description="Competitive records, event finishes, recent form, and hero variety from public FaB Stats profiles."
+        title={(
+          <span className="inline-flex flex-wrap items-baseline gap-x-3 gap-y-1">
+            <span>Community leaderboards</span>
+            <span className="text-xs font-bold uppercase tracking-[0.12em] text-fab-muted">{ranked.length} ranked</span>
+          </span>
+        )}
         icon={<TrophyIcon className="h-4 w-4 text-fab-gold" />}
         actions={(
           <div className="relative w-full sm:w-72">
@@ -857,11 +861,6 @@ export default function LeaderboardPage() {
             />
           </div>
         )}
-        metrics={[
-          { label: "Ranked", value: ranked.length, sub: `${tabLabel || "current"} board` },
-          { label: "Category", value: activeCategoryObj.label },
-          { label: "Search", value: search.trim() ? "Filtered" : "All", sub: search.trim() || "all players" },
-        ]}
       />
       {/* ── Header ── */}
       <div className="hidden">
