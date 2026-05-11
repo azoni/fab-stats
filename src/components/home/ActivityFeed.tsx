@@ -25,7 +25,7 @@ const TYPE_FILTERS: { value: TypeFilter; label: string; adminOnly?: boolean }[] 
   { value: "engagement", label: "Engagement", adminOnly: true },
 ];
 
-const PAGE_SIZE = 5;
+const PAGE_SIZE = 8;
 const ENGAGEMENT_PAGE_SIZE = 10;
 
 interface ActivityGroup {

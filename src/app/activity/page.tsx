@@ -1,7 +1,7 @@
 "use client";
-import { useMemo, useEffect, useState, type ComponentType } from "react";
+import { useMemo, useEffect, useState } from "react";
 import Link from "next/link";
-import { Activity, CalendarDays, Gamepad2, Users } from "lucide-react";
+import { Activity } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCommunityStats } from "@/hooks/useCommunityStats";
 import { useLeaderboard } from "@/hooks/useLeaderboard";
@@ -34,23 +34,6 @@ function ActivityStat({ label, value, tone = "gold", className = "" }: { label: 
       <p className={`text-lg font-black leading-none sm:text-xl ${toneClass}`}>{value}</p>
       <p className="mt-1 text-[9px] font-bold uppercase tracking-[0.14em] text-fab-dim sm:text-[10px] sm:tracking-[0.16em]">{label}</p>
     </div>
-  );
-}
-
-function QuickLink({ href, icon: Icon, title, text }: { href: string; icon: ComponentType<{ className?: string }>; title: string; text: string }) {
-  return (
-    <Link
-      href={href}
-      className="group flex items-center gap-3 rounded-xl border border-fab-border/70 bg-fab-bg/35 p-3 transition-colors hover:border-fab-gold/50 hover:bg-fab-gold/10"
-    >
-      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-fab-border/70 bg-fab-surface/80 text-fab-gold transition-colors group-hover:border-fab-gold/50">
-        <Icon className="h-4 w-4" />
-      </span>
-      <span className="min-w-0">
-        <span className="block text-sm font-bold text-fab-text">{title}</span>
-        <span className="block truncate text-xs text-fab-muted">{text}</span>
-      </span>
-    </Link>
   );
 }
 
@@ -169,28 +152,6 @@ export default function ActivityPage() {
         </section>
 
         <aside className="space-y-5">
-          <section className="rounded-xl border border-fab-border/80 bg-fab-surface/80 p-4 shadow-[0_16px_48px_rgba(0,0,0,0.18)] backdrop-blur">
-            <div className="flex items-center gap-3">
-              <span className="flex h-9 w-9 items-center justify-center rounded-lg border border-fab-border/70 bg-fab-bg/60 text-fab-gold">
-                <CalendarDays className="h-4 w-4" />
-              </span>
-              <div>
-                <h2 className="text-sm font-black uppercase tracking-[0.12em] text-fab-text">Jump Back In</h2>
-                <p className="text-xs text-fab-muted">Fast paths for the stuff people check most.</p>
-              </div>
-            </div>
-            <div className="mt-4 space-y-2">
-              <QuickLink href="/events" icon={CalendarDays} title="Events" text="Review recent tournament logs." />
-              <QuickLink href="/friends" icon={Users} title="Friends" text="Keep your circle close." />
-              <QuickLink href="/games" icon={Gamepad2} title="Daily Games" text="Warm up between rounds." />
-            </div>
-            <div className="mt-4 rounded-lg border border-fab-border/70 bg-fab-bg/45 p-3">
-              <p className="text-[10px] font-black uppercase tracking-[0.16em] text-fab-dim">This Week</p>
-              <p className="mt-1 text-2xl font-black text-emerald-300">{formatCompact(pulseStats.recentMatches)}</p>
-              <p className="text-xs text-fab-muted">matches added by active players</p>
-            </div>
-          </section>
-
           {showcaseConfig?.active && (
             <section className="rounded-xl border border-fab-border/80 bg-fab-surface/80 p-4 shadow-[0_16px_48px_rgba(0,0,0,0.18)] backdrop-blur">
               <EventShowcase
