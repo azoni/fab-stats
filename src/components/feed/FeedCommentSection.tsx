@@ -48,7 +48,8 @@ export function FeedCommentSection({ event, currentUserId, compact }: { event: F
     }
   }, [event.id, loaded, loading]);
 
-  const toggle = useCallback(async () => {
+  const toggle = useCallback(async (e?: React.MouseEvent) => {
+    e?.stopPropagation();
     const next = !expanded;
     setExpanded(next);
     if (next) await ensureLoaded();
@@ -84,14 +85,20 @@ export function FeedCommentSection({ event, currentUserId, compact }: { event: F
 
   const remove = useCallback(async (commentId: string) => {
     if (!confirm("Delete this comment?")) return;
-    const previous = comments;
-    setComments((prev) => prev.filter((c) => c.id !== commentId));
+    let removed: WallComment | undefined;
+    setComments((prev) => {
+      removed = prev.find((c) => c.id === commentId);
+      return prev.filter((c) => c.id !== commentId);
+    });
     try {
       await deleteFeedComment(event.id, commentId);
     } catch {
-      setComments(previous);
+      if (removed) {
+        const restored = removed;
+        setComments((prev) => (prev.some((c) => c.id === commentId) ? prev : [...prev, restored].sort((a, b) => a.createdAt.localeCompare(b.createdAt))));
+      }
     }
-  }, [comments, event.id]);
+  }, [event.id]);
 
   const count = loaded ? comments.length : null;
   const padded = compact ? "px-2" : "px-3";
@@ -100,7 +107,7 @@ export function FeedCommentSection({ event, currentUserId, compact }: { event: F
     <div className={`mt-2 border-t border-fab-border/60 pt-2 ${compact ? "text-[12px]" : "text-sm"}`}>
       <button
         type="button"
-        onClick={toggle}
+        onClick={(e) => { void toggle(e); }}
         aria-expanded={expanded}
         className={`flex w-full items-center justify-between gap-2 rounded-md py-1.5 ${padded} text-xs font-bold text-fab-muted transition-colors hover:bg-fab-bg/40 hover:text-fab-text`}
       >
@@ -142,7 +149,7 @@ export function FeedCommentSection({ event, currentUserId, compact }: { event: F
                         {canDelete && (
                           <button
                             type="button"
-                            onClick={() => remove(c.id)}
+                            onClick={(e) => { e.stopPropagation(); remove(c.id); }}
                             className="ml-auto text-fab-dim hover:text-rose-400"
                             aria-label="Delete comment"
                           >
@@ -162,9 +169,12 @@ export function FeedCommentSection({ event, currentUserId, compact }: { event: F
             <div className="flex items-end gap-2 pt-1">
               <textarea
                 value={input}
-                onChange={(e) => setInput(e.target.value)}
+                onChange={(e) => {
+                  setInput(e.target.value);
+                  if (errorMsg) setErrorMsg(null);
+                }}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
+                  if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
                     e.preventDefault();
                     submit();
                   }
@@ -176,8 +186,8 @@ export function FeedCommentSection({ event, currentUserId, compact }: { event: F
               />
               <button
                 type="button"
-                onClick={submit}
-                disabled={posting || !input.trim()}
+                onClick={(e) => { e.stopPropagation(); submit(); }}
+                disabled={posting || !input.trim() || !profile}
                 className="flex h-[34px] items-center gap-1 rounded-md bg-fab-gold px-3 text-xs font-bold text-fab-bg transition-opacity hover:bg-fab-gold-light disabled:opacity-50"
               >
                 <Send className="h-3 w-3" />
