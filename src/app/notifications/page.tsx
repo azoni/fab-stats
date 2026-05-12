@@ -116,6 +116,16 @@ function getNotifIcon(type: string): { bg: string; iconColor: string; icon: Reac
           </svg>
         ),
       };
+    case "feedComment":
+      return {
+        bg: "bg-emerald-500/15",
+        iconColor: "text-emerald-400",
+        icon: (
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12.76c0 1.6 1.123 2.994 2.707 3.227 1.068.157 2.148.279 3.238.364.466.037.893.281 1.153.671L12 21l2.652-3.978c.26-.39.687-.634 1.153-.67 1.09-.086 2.17-.208 3.238-.365 1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0 0 12 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018Z" />
+          </svg>
+        ),
+      };
     case "feedbackStatus":
       return {
         bg: "bg-teal-500/15",
@@ -347,6 +357,9 @@ export default function NotificationsPage() {
     } else if (n.type === "reaction") {
       await markAsRead(n.id);
       router.push("/activity");
+    } else if (n.type === "feedComment") {
+      await markAsRead(n.id);
+      router.push("/activity");
     } else if (n.type === "heroCorrection") {
       // Don't navigate — handled by inline Accept/Dismiss buttons
       await markAsRead(n.id);
@@ -568,6 +581,18 @@ export default function NotificationsPage() {
                             reacted <span className="font-semibold text-rose-300">{n.reactionLabel || n.reactionKey}</span>{" "}
                             to your <span className="text-fab-text">{n.feedEventSummary || "activity"}</span>
                           </p>
+                        ) : n.type === "feedComment" ? (
+                          <>
+                            <p className="text-sm text-fab-text">
+                              <span className="font-semibold">{n.commentAuthorName || "Someone"}</span>{" "}
+                              commented on your <span className="text-fab-text">{n.feedEventSummary || "activity"}</span>
+                            </p>
+                            {n.commentPreview && (
+                              <p className="text-xs text-fab-dim mt-0.5 truncate">
+                                &quot;{n.commentPreview}&quot;
+                              </p>
+                            )}
+                          </>
                         ) : n.type === "feedbackStatus" ? (
                           <>
                             <p className="text-sm text-fab-text">

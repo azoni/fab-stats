@@ -343,7 +343,7 @@ export interface MatchComment {
 
 export interface UserNotification {
   id: string;
-  type: "comment" | "message" | "friendRequest" | "friendAccepted" | "badge" | "kudos" | "reaction" | "heroCorrection" | "feedbackStatus" | "teamInvite" | "groupInvite";
+  type: "comment" | "feedComment" | "message" | "friendRequest" | "friendAccepted" | "badge" | "kudos" | "reaction" | "heroCorrection" | "feedbackStatus" | "teamInvite" | "groupInvite";
   // Comment fields
   matchId?: string;
   matchOwnerUid?: string;

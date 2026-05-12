@@ -216,6 +216,10 @@ service cloud.firestore {
       allow delete: if request.auth != null
         && resource.data.type == "reaction"
         && resource.data.reacterUid == request.auth.uid;
+      // Allow feed comment author to delete their notification (when deleting the comment)
+      allow delete: if request.auth != null
+        && resource.data.type == "feedComment"
+        && resource.data.commentAuthorUid == request.auth.uid;
       // Allow feed reacter to overwrite their own reaction notification (toggle on→off→on)
       allow update: if request.auth != null
         && resource.data.type == "reaction"
@@ -453,6 +457,28 @@ service cloud.firestore {
       // Owner or admin can delete feed events
       allow delete: if request.auth != null
         && (resource.data.userId == request.auth.uid || isAdmin());
+
+      // ── Comments on a feed event ──
+      match /comments/{commentId} {
+        // Anyone authenticated can read
+        allow read: if request.auth != null;
+        // Author posts their own comment, text capped at 500 chars
+        allow create: if request.auth != null
+          && request.resource.data.authorUid == request.auth.uid
+          && maxLen(request.resource.data.text, 500);
+        // Author can edit their own text/editedAt
+        allow update: if request.auth != null
+          && resource.data.authorUid == request.auth.uid
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['text', 'editedAt'])
+          && maxLen(request.resource.data.text, 500);
+        // Comment author OR feed-event owner OR admin can delete
+        allow delete: if request.auth != null
+          && (
+            resource.data.authorUid == request.auth.uid
+            || get(/databases/$(database)/documents/feedEvents/$(eventId)).data.userId == request.auth.uid
+            || isAdmin()
+          );
+      }
     }
 
     // ── Earned achievements tracking (per user) ──

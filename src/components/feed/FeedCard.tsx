@@ -7,6 +7,7 @@ import { playerHref } from "@/lib/constants";
 import { HeroShieldBadge } from "@/components/profile/HeroShieldBadge";
 import { TeamBadge } from "@/components/profile/TeamBadge";
 import { FEED_REACTIONS, addFeedReaction, removeFeedReaction, deleteFeedEvent, summarizeFeedEvent, type ReactionContext } from "@/lib/feed";
+import { FeedCommentSection } from "@/components/feed/FeedCommentSection";
 import { useAuth } from "@/contexts/AuthContext";
 
 export interface FeedGroup {
@@ -281,7 +282,7 @@ function ReactionBar({ event, userId, compact }: { event: FeedEvent; userId?: st
     } finally {
       setBusy(false);
     }
-  }, [userId, busy, localReactions, event.id, event.userId, event.type, profile?.displayName, profile?.username, profile?.photoUrl]);
+  }, [userId, busy, localReactions, event, profile?.displayName, profile?.username, profile?.photoUrl]);
 
   const totalReactions = Object.values(localReactions).reduce((sum, arr) => sum + arr.length, 0);
 
@@ -535,6 +536,7 @@ export function FeedCard({ event, compact, rankMap, eventTierMap, underlineTierM
           {event.type === "shadowstrike" && <ShadowStrikeContent event={event} compact={compact} />}
           {event.type === "bladedash" && <BladeDashContent event={event} compact={compact} />}
           <ReactionBar event={event} userId={userId} compact={compact} />
+          <FeedCommentSection event={event} currentUserId={userId} compact={compact} />
         </div>
       </div>
     </div>
@@ -1226,6 +1228,7 @@ export function GroupedFeedCard({ group, compact, rankMap, eventTierMap, underli
                     </button>
                   )}
                   <ReactionBar event={first} userId={userId} compact />
+                  <FeedCommentSection event={first} currentUserId={userId} compact />
                 </>
               ) : (
                 <>
@@ -1246,6 +1249,7 @@ export function GroupedFeedCard({ group, compact, rankMap, eventTierMap, underli
                     </button>
                   )}
                   <ReactionBar event={first} userId={userId} />
+                  <FeedCommentSection event={first} currentUserId={userId} />
                 </>
               );
             })()
@@ -1264,6 +1268,7 @@ export function GroupedFeedCard({ group, compact, rankMap, eventTierMap, underli
                 )}
               </p>
               <ReactionBar event={first} userId={userId} compact />
+              <FeedCommentSection event={first} currentUserId={userId} compact />
             </>
           ) : (
             /* ── Grouped imports (full) ── */
@@ -1306,6 +1311,7 @@ export function GroupedFeedCard({ group, compact, rankMap, eventTierMap, underli
               )}
 
               <ReactionBar event={first} userId={userId} />
+              <FeedCommentSection event={first} currentUserId={userId} />
             </>
           )}
         </div>
