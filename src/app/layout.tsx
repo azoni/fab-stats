@@ -19,6 +19,7 @@ import { ScrollProgress } from "@/components/ui/ScrollProgress";
 import { AutoSyncRecompute } from "@/components/AutoSyncRecompute";
 import { AprilFoolsProvider, FoolsBanner } from "@/contexts/AprilFoolsContext";
 import { FoolsScrambler } from "@/components/april-fools/FoolsScrambler";
+import { websiteJsonLd, renderJsonLdScript } from "@/lib/kg/json-ld";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -128,6 +129,11 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{
             __html: `try{var t=localStorage.getItem('fab-theme');var m={arcana:'rosetta',ironheart:'rosetta',chromatic:'rosetta',grimoire:'rosetta'};if(m[t]){t=m[t];localStorage.setItem('fab-theme',t)}var ok={leyline:1,rosetta:1,daylight:1};if(!ok[t]){localStorage.removeItem('fab-theme');t='rosetta'}document.documentElement.setAttribute('data-theme',t)}catch(e){document.documentElement.setAttribute('data-theme','rosetta')}`,
           }}
+        />
+        {/* Site-wide JSON-LD: WebSite + SearchAction. Earns SERP "sitelinks search box". */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: renderJsonLdScript(websiteJsonLd()) }}
         />
       </head>
       <body

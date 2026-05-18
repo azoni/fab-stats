@@ -29,6 +29,36 @@
   to = "/.netlify/functions/og-image?type=meta"
   status = 200
 
+# JSON-LD endpoint — exposes KG entities as schema.org structured data
+[[redirects]]
+  from = "/api/jsonld/:type/:id"
+  to = "/.netlify/functions/jsonld?type=:type&id=:id"
+  status = 200
+
+# Semantic player search (vector + hybrid)
+[[redirects]]
+  from = "/api/kg-search"
+  to = "/.netlify/functions/kg-search"
+  status = 200
+
+# KG visualizer graph data
+[[redirects]]
+  from = "/api/kg-graph"
+  to = "/.netlify/functions/kg-graph"
+  status = 200
+
+# KG overview stats (lab console)
+[[redirects]]
+  from = "/api/kg-stats"
+  to = "/.netlify/functions/kg-stats"
+  status = 200
+
+# Internal /lab console data (server-side, bypasses Firestore rules)
+[[redirects]]
+  from = "/api/lab-data"
+  to = "/.netlify/functions/lab-data"
+  status = 200
+
 # Force redirect from netlify subdomain to custom domain
 [[redirects]]
   from = "https://fabstats.netlify.app/*"
