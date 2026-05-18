@@ -56,7 +56,23 @@ export async function buildMetaArticleDraft(): Promise<MetaArticleDraft> {
 
   const now = new Date().toISOString();
   const slug = slugify(generation.title, insights.weekLabel);
-  const text = plainText(generation.contentBlocks);
+
+  // Provenance gate: every generated article opens with a visible disclaimer.
+  // The underlying numbers are community-tracked (self-selected sample), not
+  // official results — labeling the origin wherever it renders is the honest
+  // minimum. Combined with status:"draft" (no auto-publish), this is the
+  // quality gate. A numeric publish-threshold could come later but would be
+  // speculative now.
+  const disclaimer: ArticleBlock = {
+    id: Math.random().toString(36).slice(2, 10),
+    type: "callout",
+    tone: "warning",
+    title: "Auto-generated · community-tracked data",
+    text: "Written automatically from fabstats community-logged matches (a self-selected sample), not official tournament results. Review before publishing.",
+  };
+  const contentBlocks: ArticleBlock[] = [disclaimer, ...generation.contentBlocks];
+
+  const text = plainText(contentBlocks);
   const words = text.split(/\s+/).filter(Boolean).length;
 
   const article: ArticleRecord = {
@@ -67,13 +83,13 @@ export async function buildMetaArticleDraft(): Promise<MetaArticleDraft> {
     title: generation.title,
     slug,
     excerpt: generation.excerpt,
-    contentBlocks: generation.contentBlocks,
+    contentBlocks,
     searchText: `${generation.title} ${generation.excerpt} ${text}`
       .toLowerCase()
       .slice(0, 8000),
     heroTags: generation.heroTags,
     tags: ["meta-report", "auto-generated"],
-    status: "draft", // human review before publish — quality gate
+    status: "draft", // never auto-publish; disclaimer block + draft = the gate
     allowComments: true,
     readingMinutes: Math.max(1, Math.round(words / 200)),
     viewCount: 0,

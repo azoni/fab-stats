@@ -18,7 +18,6 @@ import {
   playerJsonLd,
   heroJsonLd,
   eventJsonLd,
-  articleJsonLd,
   teamJsonLd,
   withContext,
   type JsonLd,
@@ -75,37 +74,11 @@ async function lookupPlayer(id: string): Promise<JsonLd | null> {
   });
 }
 
-async function lookupArticle(slug: string): Promise<JsonLd | null> {
-  const db = getAdminDb();
-  // Slug-based lookup
-  const snap = await db.collection("articles").where("slug", "==", slug).limit(1).get();
-  if (snap.empty) {
-    // Fall back to id lookup
-    const byId = await db.collection("articles").doc(slug).get();
-    if (!byId.exists) return null;
-    return articleFromDoc(byId.id, byId.data()!);
-  }
-  const doc = snap.docs[0];
-  return articleFromDoc(doc.id, doc.data());
-}
-
-function articleFromDoc(id: string, d: Record<string, unknown>): JsonLd {
-  return articleJsonLd({
-    id,
-    slug: (d.slug as string) ?? id,
-    title: (d.title as string) ?? "",
-    excerpt: (d.excerpt as string) ?? "",
-    coverImageUrl: (d.coverImageUrl as string) ?? undefined,
-    author: {
-      id: (d.authorUid as string) ?? "",
-      displayName: (d.authorDisplayName as string) ?? "",
-      username: (d.authorUsername as string) ?? "",
-    },
-    publishedAt: (d.publishedAt as string) ?? (d.createdAt as string) ?? "",
-    updatedAt: (d.updatedAt as string) ?? undefined,
-    heroTags: (d.heroTags as string[]) ?? undefined,
-  });
-}
+// NOTE: no `article` handler on purpose. `/articles/*` 301-redirects to `/`
+// (netlify.toml), so an Article schema would describe a page that doesn't
+// render — structured data must match a real, indexable page or Google treats
+// it as a quality violation. Generated articles live in the admin-only
+// /lab/content review surface, which needs no public structured data.
 
 async function lookupEvent(id: string): Promise<JsonLd | null> {
   const db = getAdminDb();
@@ -160,7 +133,6 @@ function lookupHero(name: string): JsonLd | null {
 
 const HANDLERS: Record<string, (id: string) => Promise<JsonLd | null> | JsonLd | null> = {
   player: lookupPlayer,
-  article: lookupArticle,
   event: lookupEvent,
   team: lookupTeam,
   hero: lookupHero,
