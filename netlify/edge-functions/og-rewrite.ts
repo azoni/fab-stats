@@ -65,6 +65,31 @@ function escapeHtml(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
+/**
+ * Build schema.org Person JSON-LD for a player. Inlined here (rather than
+ * imported from src/lib/kg/json-ld.ts) because edge functions run on Deno,
+ * not Node — they can't import the Next.js-aliased src/ tree directly. The
+ * canonical generator is at src/lib/kg/json-ld.ts; keep this in sync.
+ */
+function playerJsonLdScript(username: string, player: PlayerData): string {
+  const personUri = `https://www.fabstats.net/player/${encodeURIComponent(username)}`;
+  const obj: Record<string, unknown> = {
+    "@context": "https://schema.org",
+    "@type": "Person",
+    "@id": personUri,
+    name: player.displayName || player.username,
+    alternateName: player.username,
+    identifier: player.username,
+    url: personUri,
+    description:
+      `${player.winRate.toFixed(1)}% win rate across ${player.totalMatches} matches in Flesh and Blood TCG.` +
+      (player.topHero ? ` Most-played hero: ${player.topHero}.` : "") +
+      (player.totalTop8s > 0 ? ` ${player.totalTop8s} Top 8 finish${player.totalTop8s !== 1 ? "es" : ""}.` : ""),
+  };
+  // Defensive: prevent "</script>" sequences breaking out of the script tag.
+  return JSON.stringify(obj).replace(/<\//g, "<\\/");
+}
+
 export default async function handler(
   request: Request,
   context: { next: () => Promise<Response> }
@@ -187,6 +212,16 @@ export default async function handler(
     html = html.replace(
       '</head>',
       `<meta property="og:url" content="${canonicalUrl}"/>\n</head>`
+    );
+  }
+
+  // Inject Person JSON-LD if we have real player data. Skipped for unknown
+  // usernames so we don't ship broken structured data.
+  if (player) {
+    const jsonLd = playerJsonLdScript(username, player);
+    html = html.replace(
+      '</head>',
+      `<script type="application/ld+json">${jsonLd}</script>\n</head>`
     );
   }
 

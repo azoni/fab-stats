@@ -12,6 +12,7 @@
     "format:check": "prettier --check \"src/**/*.{ts,tsx}\""
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.96.0",
     "@flesh-and-blood/cards": "^3.6.222",
     "@flesh-and-blood/types": "^3.6.217",
     "@radix-ui/react-collapsible": "^1.1.12",
@@ -19,15 +20,18 @@
     "@radix-ui/react-switch": "^1.2.6",
     "@radix-ui/react-tooltip": "^1.2.8",
     "@resvg/resvg-js": "^2.6.2",
+    "@xenova/transformers": "^2.17.2",
     "cheerio": "^1.2.0",
     "firebase": "^12.9.0",
     "firebase-admin": "^13.7.0",
     "framer-motion": "^12.35.0",
     "html-to-image": "^1.11.13",
     "lucide-react": "^0.577.0",
+    "neo4j-driver": "^6.0.1",
     "next": "16.1.6",
     "react": "19.2.3",
     "react-dom": "19.2.3",
+    "react-force-graph-2d": "^1.29.1",
     "recharts": "^3.7.0",
     "satori": "^0.19.2",
     "sonner": "^2.0.7"
@@ -41,6 +45,7 @@
     "eslint-config-next": "16.1.6",
     "prettier": "^3.8.1",
     "tailwindcss": "^4",
+    "tsx": "^4.22.0",
     "typescript": "^5"
   }
 }
