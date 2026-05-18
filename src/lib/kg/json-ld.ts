@@ -245,7 +245,10 @@ export function websiteJsonLd(): JsonLd {
       "@type": "SearchAction",
       target: {
         "@type": "EntryPoint",
-        urlTemplate: "https://www.fabstats.net/discover?q={search_term_string}",
+        // Must point at a route that actually consumes ?q= — /search reads
+        // useSearchParams().get("q"); /discover does NOT, so the box would be
+        // invalid there.
+        urlTemplate: "https://www.fabstats.net/search?q={search_term_string}",
       },
       "query-input": "required name=search_term_string",
     },
