@@ -232,7 +232,9 @@ async function syncArticles() {
     }
     if (Array.isArray(d.heroTags)) {
       for (const hero of d.heroTags) {
-        await upsertNode("Hero", hero, { name: hero });
+        // No upsertNode here: heroTags can hold nav/slug junk ("fabstats",
+        // "guide"). upsertRelation MATCHes (doesn't create) the Hero, so this
+        // links only to real heroes from syncMatchups (runs first); junk drops.
         await upsertRelation("Article", doc.id, "MENTIONS_HERO", "Hero", hero, {});
       }
     }
