@@ -72,6 +72,12 @@ interface DirectoryEntry {
 
 const FULL_SYNC_INTERVAL_MS = 24 * 60 * 60 * 1000;
 const MAX_PLAYERS_PER_STORE = 100;
+// Stores below this threshold are still aggregated (per-store docs are tiny)
+// but skipped from the listed _directory doc. Without this, the directory
+// blows past Firestore's 1MB doc limit at a few thousand stores and tanks
+// page load with a multi-megabyte download.
+const DIRECTORY_MIN_MATCHES = 3;
+const DIRECTORY_MAX_STORES = 1500;
 
 function slugifyStoreName(raw: string): string {
   return raw.toLowerCase().replace(/[^a-z0-9]/g, "");
@@ -252,9 +258,12 @@ async function rebuildDirectoryFromAggregates(): Promise<number> {
   const db = getAdminDb();
   const snap = await db.collection("storeAggregates").get();
   const entries: DirectoryEntry[] = [];
+  let totalAggregated = 0;
   for (const doc of snap.docs) {
     if (doc.id.startsWith("_")) continue;
+    totalAggregated++;
     const data = doc.data() as StoreAggregate;
+    if (data.totalMatches < DIRECTORY_MIN_MATCHES) continue;
     entries.push({
       slug: data.slug,
       name: data.name,
@@ -263,12 +272,16 @@ async function rebuildDirectoryFromAggregates(): Promise<number> {
     });
   }
   entries.sort((a, b) => b.totalMatches - a.totalMatches);
+  // Cap to keep the directory doc well under Firestore's 1MB limit.
+  const capped = entries.slice(0, DIRECTORY_MAX_STORES);
   await db.collection("storeAggregates").doc("_directory").set({
-    stores: entries,
-    count: entries.length,
+    stores: capped,
+    count: capped.length,
+    totalAggregated,
+    minMatches: DIRECTORY_MIN_MATCHES,
     updatedAt: new Date().toISOString(),
   });
-  return entries.length;
+  return capped.length;
 }
 
 async function runFull(): Promise<{ stores: number; written: number; deleted: number; ms: number }> {
