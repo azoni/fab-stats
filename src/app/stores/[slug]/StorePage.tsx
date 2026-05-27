@@ -10,6 +10,31 @@ import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { ArrowLeft, Crown, Flame, Store as StoreIcon, Trophy, Users } from "lucide-react";
 
+/** Best-effort: turn "mishrasworkshop" into something display-worthy.
+ *  Used only as a placeholder while real data loads. */
+function humanizeSlug(slug: string): string {
+  if (!slug) return "Store";
+  return slug.charAt(0).toUpperCase() + slug.slice(1);
+}
+
+function SkeletonTable({ rows }: { rows: number }) {
+  return (
+    <Card padding="none" className="overflow-hidden">
+      <div className="border-b border-fab-border/60 bg-fab-bg/50 px-3 py-2">
+        <div className="h-4 w-40 animate-pulse rounded bg-fab-border/40" />
+      </div>
+      <div className="divide-y divide-fab-border/30">
+        {Array.from({ length: rows }).map((_, i) => (
+          <div key={i} className="flex items-center justify-between px-3 py-2.5">
+            <div className="h-3 w-32 animate-pulse rounded bg-fab-border/30" />
+            <div className="h-3 w-16 animate-pulse rounded bg-fab-border/30" />
+          </div>
+        ))}
+      </div>
+    </Card>
+  );
+}
+
 function StatusBadge({ status }: { status: League["status"] }) {
   const variant: Record<League["status"], "muted" | "win" | "default"> = {
     draft: "muted",
@@ -54,14 +79,7 @@ export default function StorePage() {
     };
   }, [slug]);
 
-  if (loading) {
-    return (
-      <div className="mx-auto max-w-5xl px-3 py-10 text-sm text-fab-muted sm:px-4">
-        Loading store…
-      </div>
-    );
-  }
-  if (notFound || !stats) {
+  if (notFound) {
     return (
       <div className="mx-auto max-w-5xl px-3 py-10 sm:px-4">
         <Card padding="md">
@@ -77,8 +95,12 @@ export default function StorePage() {
     );
   }
 
-  const mostActive = stats.topByActivity[0];
-  const bestWinRate = stats.topByWinRate[0];
+  // Render the page chrome immediately. Show real data when it arrives;
+  // until then, derive a friendly placeholder name from the slug so the page
+  // never looks completely blank.
+  const displayName = stats?.name || humanizeSlug(slug);
+  const mostActive = stats?.topByActivity[0];
+  const bestWinRate = stats?.topByWinRate[0];
 
   return (
     <div className="mx-auto max-w-5xl space-y-5 px-3 py-5 sm:px-4">
@@ -91,32 +113,47 @@ export default function StorePage() {
 
       <PageHero
         eyebrow={<><Badge variant="gold" size="xs">Store</Badge></>}
-        title={stats.name}
+        title={displayName}
         description="Stats are aggregated from imported match data. Refreshes whenever players sync new matches."
         icon={<StoreIcon className="h-4 w-4" />}
         metrics={[
-          { label: "Total matches", value: stats.totalMatches.toLocaleString() },
-          { label: "Players logged", value: stats.uniquePlayers.toLocaleString() },
-          { label: "Leagues", value: leagues.length.toString() },
+          { label: "Total matches", value: stats ? stats.totalMatches.toLocaleString() : "…" },
+          { label: "Players logged", value: stats ? stats.uniquePlayers.toLocaleString() : "…" },
+          { label: "Leagues", value: stats ? leagues.length.toString() : "…" },
         ]}
       />
 
+      {loading && !stats && (
+        <Card padding="sm" className="text-center">
+          <p className="text-xs text-fab-muted">Crunching the numbers from imported matches…</p>
+        </Card>
+      )}
+
       <div className="grid gap-5 lg:grid-cols-3">
         <div className="space-y-5 lg:col-span-2">
-          <TopPlayersTable
-            title="Top players by activity"
-            icon={<Flame className="h-4 w-4 text-rose-300" />}
-            entries={stats.topByActivity}
-            highlight="matches"
-          />
-          <TopPlayersTable
-            title="Top players by win rate"
-            icon={<Crown className="h-4 w-4 text-fab-gold" />}
-            entries={stats.topByWinRate}
-            highlight="winRate"
-            note="Minimum 5 matches at this store."
-          />
-          {stats.players.length > 10 && <AllPlayersTable players={stats.players} />}
+          {stats ? (
+            <>
+              <TopPlayersTable
+                title="Top players by activity"
+                icon={<Flame className="h-4 w-4 text-rose-300" />}
+                entries={stats.topByActivity}
+                highlight="matches"
+              />
+              <TopPlayersTable
+                title="Top players by win rate"
+                icon={<Crown className="h-4 w-4 text-fab-gold" />}
+                entries={stats.topByWinRate}
+                highlight="winRate"
+                note="Minimum 5 matches at this store."
+              />
+              {stats.players.length > 10 && <AllPlayersTable players={stats.players} />}
+            </>
+          ) : (
+            <>
+              <SkeletonTable rows={5} />
+              <SkeletonTable rows={5} />
+            </>
+          )}
         </div>
 
         <aside className="space-y-5">

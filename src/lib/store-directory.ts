@@ -50,14 +50,20 @@ type DirectoryAcc = {
 // ── Cache layer ─────────────────────────────────────────────────────────────
 // Two tiers:
 //   1. In-memory cache — fast within a single page lifecycle.
-//   2. sessionStorage cache — persists across hard refresh / browser-back in
-//      the same tab, so the user doesn't pay the leaderboard fetch cost again.
-// Both expire after 15 minutes. Schema-versioned so a code change can bust
-// any stale cached payloads cleanly.
+//   2. localStorage cache — persists across hard refresh, tab close, and
+//      browser restart, so the user only pays the cold leaderboard fetch
+//      once until the TTL is up.
+//
+// Stale-while-revalidate (SWR) semantics:
+//   - If a cache entry exists at all, return it immediately (even stale).
+//   - If past TTL, kick off a background refresh so the next page load has
+//      fresh data.
+// Schema-versioned so a code change can bust any stale cached payloads.
 let cachedMap: Map<string, DirectoryAcc> | null = null;
 let cachedMapAt = 0;
+let refreshInFlight = false;
 const CACHE_TTL_MS = 15 * 60_000;
-const SESSION_KEY = "fabstats.store-directory.v2";
+const STORAGE_KEY = "fabstats.store-directory.v3";
 
 interface SerializedAcc {
   slug: string;
@@ -72,36 +78,34 @@ interface SerializedCache {
   buckets: SerializedAcc[];
 }
 
-function clearStoreDirectoryCacheIfStale(now: number) {
-  if (cachedMap && now - cachedMapAt > CACHE_TTL_MS) {
-    cachedMap = null;
-  }
-}
-
-function readSessionCache(now: number): Map<string, DirectoryAcc> | null {
+function readStorage(): SerializedCache | null {
   if (typeof window === "undefined") return null;
   try {
-    const raw = window.sessionStorage.getItem(SESSION_KEY);
+    const raw = window.localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
-    const parsed = JSON.parse(raw) as SerializedCache;
-    if (!parsed?.at || now - parsed.at > CACHE_TTL_MS) return null;
-    const map = new Map<string, DirectoryAcc>();
-    for (const b of parsed.buckets) {
-      map.set(b.slug, {
-        slug: b.slug,
-        nameVariants: new Map(b.nv),
-        totalMatches: b.tm,
-        players: new Map(b.pl),
-      });
-    }
-    cachedMapAt = parsed.at;
-    return map;
+    return JSON.parse(raw) as SerializedCache;
   } catch {
     return null;
   }
 }
 
-function writeSessionCache(map: Map<string, DirectoryAcc>, at: number) {
+function hydrateFromStorage(): Map<string, DirectoryAcc> | null {
+  const parsed = readStorage();
+  if (!parsed?.buckets) return null;
+  const map = new Map<string, DirectoryAcc>();
+  for (const b of parsed.buckets) {
+    map.set(b.slug, {
+      slug: b.slug,
+      nameVariants: new Map(b.nv),
+      totalMatches: b.tm,
+      players: new Map(b.pl),
+    });
+  }
+  cachedMapAt = parsed.at || 0;
+  return map;
+}
+
+function writeStorage(map: Map<string, DirectoryAcc>, at: number) {
   if (typeof window === "undefined") return;
   try {
     const buckets: SerializedAcc[] = [];
@@ -114,7 +118,7 @@ function writeSessionCache(map: Map<string, DirectoryAcc>, at: number) {
       });
     }
     const payload: SerializedCache = { at, buckets };
-    window.sessionStorage.setItem(SESSION_KEY, JSON.stringify(payload));
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
   } catch {
     // Quota exceeded or storage disabled — fall back to in-memory only.
   }
@@ -125,7 +129,7 @@ export function invalidateStoreDirectoryCache() {
   cachedMapAt = 0;
   if (typeof window !== "undefined") {
     try {
-      window.sessionStorage.removeItem(SESSION_KEY);
+      window.localStorage.removeItem(STORAGE_KEY);
     } catch {
       /* noop */
     }
@@ -189,25 +193,48 @@ function pickCanonicalName(variants: Map<string, number>): string {
   return best;
 }
 
-async function getDirectoryMap(): Promise<Map<string, DirectoryAcc>> {
-  const now = Date.now();
-  clearStoreDirectoryCacheIfStale(now);
-  if (cachedMap) return cachedMap;
-
-  // Try sessionStorage hydration before paying the leaderboard fetch cost.
-  const fromSession = readSessionCache(now);
-  if (fromSession) {
-    cachedMap = fromSession;
-    return cachedMap;
-  }
-
+async function fetchAndCache(): Promise<Map<string, DirectoryAcc>> {
   const entries = await getLeaderboardEntries(false, true).catch(() =>
     getLeaderboardEntries(false, false).catch(() => [] as LeaderboardEntry[]),
   );
-  cachedMap = buildDirectoryFromEntries(entries);
-  cachedMapAt = now;
-  writeSessionCache(cachedMap, now);
-  return cachedMap;
+  const built = buildDirectoryFromEntries(entries);
+  const at = Date.now();
+  cachedMap = built;
+  cachedMapAt = at;
+  writeStorage(built, at);
+  return built;
+}
+
+function maybeBackgroundRefresh() {
+  if (refreshInFlight) return;
+  refreshInFlight = true;
+  fetchAndCache()
+    .catch(() => {})
+    .finally(() => {
+      refreshInFlight = false;
+    });
+}
+
+async function getDirectoryMap(): Promise<Map<string, DirectoryAcc>> {
+  const now = Date.now();
+
+  // 1. In-memory cache hit — instant.
+  if (cachedMap) {
+    if (now - cachedMapAt > CACHE_TTL_MS) maybeBackgroundRefresh();
+    return cachedMap;
+  }
+
+  // 2. localStorage hydration — also instant after first fetch ever.
+  const fromStorage = hydrateFromStorage();
+  if (fromStorage) {
+    cachedMap = fromStorage;
+    // Stale-while-revalidate: serve cached data NOW, refresh in background.
+    if (now - cachedMapAt > CACHE_TTL_MS) maybeBackgroundRefresh();
+    return cachedMap;
+  }
+
+  // 3. Cold start — pay the full cost.
+  return fetchAndCache();
 }
 
 /** Fetch the public auto-directory of stores derived from match venue data. */

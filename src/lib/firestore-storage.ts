@@ -373,34 +373,32 @@ function hasDiscoverableLinks(links?: UserProfile["socialLinks"] | null): boolea
 }
 
 const DISCOVER_PROFILES_CACHE_TTL = 10 * 60 * 1000;
-const DISCOVER_SESSION_KEY = "fabstats.discover-profiles.v1";
+const DISCOVER_STORAGE_KEY = "fabstats.discover-profiles.v2";
 let cachedDiscoverProfiles: UserProfile[] | null = null;
 let cachedDiscoverProfilesAt = 0;
+let discoverRefreshInFlight = false;
 
-interface DiscoverSessionPayload {
+interface DiscoverStoragePayload {
   at: number;
   profiles: UserProfile[];
 }
 
-function readDiscoverSession(now: number): UserProfile[] | null {
+function readDiscoverStorage(): DiscoverStoragePayload | null {
   if (typeof window === "undefined") return null;
   try {
-    const raw = window.sessionStorage.getItem(DISCOVER_SESSION_KEY);
+    const raw = window.localStorage.getItem(DISCOVER_STORAGE_KEY);
     if (!raw) return null;
-    const parsed = JSON.parse(raw) as DiscoverSessionPayload;
-    if (!parsed?.at || now - parsed.at > DISCOVER_PROFILES_CACHE_TTL) return null;
-    cachedDiscoverProfilesAt = parsed.at;
-    return parsed.profiles || null;
+    return JSON.parse(raw) as DiscoverStoragePayload;
   } catch {
     return null;
   }
 }
 
-function writeDiscoverSession(profiles: UserProfile[], at: number) {
+function writeDiscoverStorage(profiles: UserProfile[], at: number) {
   if (typeof window === "undefined") return;
   try {
-    const payload: DiscoverSessionPayload = { at, profiles };
-    window.sessionStorage.setItem(DISCOVER_SESSION_KEY, JSON.stringify(payload));
+    const payload: DiscoverStoragePayload = { at, profiles };
+    window.localStorage.setItem(DISCOVER_STORAGE_KEY, JSON.stringify(payload));
   } catch {
     // Quota exceeded — in-memory cache still works.
   }
@@ -411,25 +409,48 @@ export function invalidateDiscoverProfilesCache() {
   cachedDiscoverProfilesAt = 0;
   if (typeof window !== "undefined") {
     try {
-      window.sessionStorage.removeItem(DISCOVER_SESSION_KEY);
+      window.localStorage.removeItem(DISCOVER_STORAGE_KEY);
     } catch {
       /* noop */
     }
   }
 }
 
-export async function getDiscoverProfiles(maxResults = 5000): Promise<UserProfile[]> {
-  const useCache = maxResults === 5000;
+function maybeBackgroundRefreshDiscover() {
+  if (discoverRefreshInFlight) return;
+  discoverRefreshInFlight = true;
+  // Re-enter getDiscoverProfiles with cache disabled to force a fresh fetch.
+  getDiscoverProfiles(5000, { forceFresh: true })
+    .catch(() => {})
+    .finally(() => {
+      discoverRefreshInFlight = false;
+    });
+}
+
+export async function getDiscoverProfiles(
+  maxResults = 5000,
+  opts: { forceFresh?: boolean } = {},
+): Promise<UserProfile[]> {
+  const useCache = maxResults === 5000 && !opts.forceFresh;
   const now = Date.now();
-  if (useCache && cachedDiscoverProfiles && now - cachedDiscoverProfilesAt < DISCOVER_PROFILES_CACHE_TTL) {
+  if (useCache && cachedDiscoverProfiles) {
+    // Stale-while-revalidate: serve in-memory cache immediately; refresh in
+    // background if past TTL.
+    if (now - cachedDiscoverProfilesAt > DISCOVER_PROFILES_CACHE_TTL) {
+      maybeBackgroundRefreshDiscover();
+    }
     return cachedDiscoverProfiles;
   }
-  // Hydrate from sessionStorage before paying the collection-group fetch cost.
+  // Hydrate from localStorage before paying the collection-group fetch cost.
   if (useCache) {
-    const fromSession = readDiscoverSession(now);
-    if (fromSession) {
-      cachedDiscoverProfiles = fromSession;
-      return fromSession;
+    const fromStorage = readDiscoverStorage();
+    if (fromStorage?.profiles) {
+      cachedDiscoverProfiles = fromStorage.profiles;
+      cachedDiscoverProfilesAt = fromStorage.at;
+      if (now - fromStorage.at > DISCOVER_PROFILES_CACHE_TTL) {
+        maybeBackgroundRefreshDiscover();
+      }
+      return fromStorage.profiles;
     }
   }
   const profiles = new Map<string, UserProfile>();
@@ -491,11 +512,11 @@ export async function getDiscoverProfiles(maxResults = 5000): Promise<UserProfil
       return hasDiscoverableLinks(profile.socialLinks);
     })
     .sort((a, b) => (a.displayName || a.username).localeCompare(b.displayName || b.username));
-  if (useCache) {
+  if (maxResults === 5000) {
     const at = Date.now();
     cachedDiscoverProfiles = result;
     cachedDiscoverProfilesAt = at;
-    writeDiscoverSession(result, at);
+    writeDiscoverStorage(result, at);
   }
   return result;
 }
