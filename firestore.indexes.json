@@ -9,6 +9,14 @@
       ]
     },
     {
+      "collectionGroup": "leaderboard",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "isPublic", "order": "ASCENDING" },
+        { "fieldPath": "updatedAt", "order": "ASCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "profile",
       "queryScope": "COLLECTION_GROUP",
       "fields": [
