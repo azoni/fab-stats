@@ -175,13 +175,15 @@ export function Navbar() {
                             key={sub.href}
                             href={sub.href}
                             data-active={active}
-                            className={`fab-sidebar-subitem block px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                            className={`fab-sidebar-subitem flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
                               active
                                 ? "text-fab-text bg-fab-surface-hover/75 border-fab-border/70"
                                 : "text-fab-muted hover:text-fab-text"
                             }`}
                           >
-                            {sub.label}
+                            {sub.icon && <span className="text-fab-dim shrink-0">{sub.icon}</span>}
+                            <span className="flex-1 truncate">{sub.label}</span>
+                            {sub.badge && <span className="text-[8px] font-bold uppercase tracking-wider text-emerald-400 bg-emerald-400/15 px-1.5 py-0.5 rounded-full">{sub.badge}</span>}
                           </Link>
                         );
                       })}
