@@ -48,12 +48,29 @@ type DirectoryAcc = {
 };
 
 // ── Cache layer ─────────────────────────────────────────────────────────────
-// Memoize the aggregated venue map so successive /stores and /stores/[slug]
-// navigations don't rebuild it from scratch. Tied to the same 15-min TTL as
-// the underlying leaderboard cache.
+// Two tiers:
+//   1. In-memory cache — fast within a single page lifecycle.
+//   2. sessionStorage cache — persists across hard refresh / browser-back in
+//      the same tab, so the user doesn't pay the leaderboard fetch cost again.
+// Both expire after 15 minutes. Schema-versioned so a code change can bust
+// any stale cached payloads cleanly.
 let cachedMap: Map<string, DirectoryAcc> | null = null;
 let cachedMapAt = 0;
 const CACHE_TTL_MS = 15 * 60_000;
+const SESSION_KEY = "fabstats.store-directory.v2";
+
+interface SerializedAcc {
+  slug: string;
+  // [name, count] pairs (Map serialization-friendly)
+  nv: Array<[string, number]>;
+  tm: number;
+  // [userId, StorePlayerStat] pairs
+  pl: Array<[string, StorePlayerStat]>;
+}
+interface SerializedCache {
+  at: number;
+  buckets: SerializedAcc[];
+}
 
 function clearStoreDirectoryCacheIfStale(now: number) {
   if (cachedMap && now - cachedMapAt > CACHE_TTL_MS) {
@@ -61,9 +78,58 @@ function clearStoreDirectoryCacheIfStale(now: number) {
   }
 }
 
+function readSessionCache(now: number): Map<string, DirectoryAcc> | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.sessionStorage.getItem(SESSION_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as SerializedCache;
+    if (!parsed?.at || now - parsed.at > CACHE_TTL_MS) return null;
+    const map = new Map<string, DirectoryAcc>();
+    for (const b of parsed.buckets) {
+      map.set(b.slug, {
+        slug: b.slug,
+        nameVariants: new Map(b.nv),
+        totalMatches: b.tm,
+        players: new Map(b.pl),
+      });
+    }
+    cachedMapAt = parsed.at;
+    return map;
+  } catch {
+    return null;
+  }
+}
+
+function writeSessionCache(map: Map<string, DirectoryAcc>, at: number) {
+  if (typeof window === "undefined") return;
+  try {
+    const buckets: SerializedAcc[] = [];
+    for (const acc of map.values()) {
+      buckets.push({
+        slug: acc.slug,
+        nv: [...acc.nameVariants.entries()],
+        tm: acc.totalMatches,
+        pl: [...acc.players.entries()],
+      });
+    }
+    const payload: SerializedCache = { at, buckets };
+    window.sessionStorage.setItem(SESSION_KEY, JSON.stringify(payload));
+  } catch {
+    // Quota exceeded or storage disabled — fall back to in-memory only.
+  }
+}
+
 export function invalidateStoreDirectoryCache() {
   cachedMap = null;
   cachedMapAt = 0;
+  if (typeof window !== "undefined") {
+    try {
+      window.sessionStorage.removeItem(SESSION_KEY);
+    } catch {
+      /* noop */
+    }
+  }
 }
 
 function buildDirectoryFromEntries(entries: LeaderboardEntry[]): Map<string, DirectoryAcc> {
@@ -128,11 +194,19 @@ async function getDirectoryMap(): Promise<Map<string, DirectoryAcc>> {
   clearStoreDirectoryCacheIfStale(now);
   if (cachedMap) return cachedMap;
 
+  // Try sessionStorage hydration before paying the leaderboard fetch cost.
+  const fromSession = readSessionCache(now);
+  if (fromSession) {
+    cachedMap = fromSession;
+    return cachedMap;
+  }
+
   const entries = await getLeaderboardEntries(false, true).catch(() =>
     getLeaderboardEntries(false, false).catch(() => [] as LeaderboardEntry[]),
   );
   cachedMap = buildDirectoryFromEntries(entries);
   cachedMapAt = now;
+  writeSessionCache(cachedMap, now);
   return cachedMap;
 }
 

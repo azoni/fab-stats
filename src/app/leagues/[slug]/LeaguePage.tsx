@@ -715,7 +715,7 @@ function OrganizerEditor({
       <div className="mt-3 grid gap-3 sm:grid-cols-2">
         <EditField label="Name">
           <input
-            className="edit-input"
+            className="w-full rounded-md border border-fab-border bg-fab-bg px-3 py-2 text-sm text-fab-text placeholder:text-fab-dim focus:border-fab-gold/60 focus:outline-none focus:ring-2 focus:ring-fab-gold/30"
             value={name}
             onChange={(e) => setName(e.target.value)}
             maxLength={80}
@@ -723,7 +723,7 @@ function OrganizerEditor({
         </EditField>
         <EditField label="Status">
           <select
-            className="edit-input"
+            className="w-full rounded-md border border-fab-border bg-fab-bg px-3 py-2 text-sm text-fab-text placeholder:text-fab-dim focus:border-fab-gold/60 focus:outline-none focus:ring-2 focus:ring-fab-gold/30"
             value={status}
             onChange={(e) => setStatus(e.target.value as League["status"])}
           >
@@ -737,14 +737,14 @@ function OrganizerEditor({
         </EditField>
         <EditField label="Region">
           <input
-            className="edit-input"
+            className="w-full rounded-md border border-fab-border bg-fab-bg px-3 py-2 text-sm text-fab-text placeholder:text-fab-dim focus:border-fab-gold/60 focus:outline-none focus:ring-2 focus:ring-fab-gold/30"
             value={region}
             onChange={(e) => setRegion(e.target.value)}
           />
         </EditField>
         <EditField label="Country">
           <input
-            className="edit-input"
+            className="w-full rounded-md border border-fab-border bg-fab-bg px-3 py-2 text-sm text-fab-text placeholder:text-fab-dim focus:border-fab-gold/60 focus:outline-none focus:ring-2 focus:ring-fab-gold/30"
             value={country}
             onChange={(e) => setCountry(e.target.value)}
           />
@@ -752,7 +752,7 @@ function OrganizerEditor({
         <EditField label="Start date">
           <input
             type="date"
-            className="edit-input"
+            className="w-full rounded-md border border-fab-border bg-fab-bg px-3 py-2 text-sm text-fab-text placeholder:text-fab-dim focus:border-fab-gold/60 focus:outline-none focus:ring-2 focus:ring-fab-gold/30"
             value={startDate}
             onChange={(e) => setStartDate(e.target.value)}
           />
@@ -760,14 +760,14 @@ function OrganizerEditor({
         <EditField label="End date">
           <input
             type="date"
-            className="edit-input"
+            className="w-full rounded-md border border-fab-border bg-fab-bg px-3 py-2 text-sm text-fab-text placeholder:text-fab-dim focus:border-fab-gold/60 focus:outline-none focus:ring-2 focus:ring-fab-gold/30"
             value={endDate}
             onChange={(e) => setEndDate(e.target.value)}
           />
         </EditField>
         <EditField label="Description" className="sm:col-span-2">
           <textarea
-            className="edit-input min-h-[70px]"
+            className="w-full min-h-[70px] rounded-md border border-fab-border bg-fab-bg px-3 py-2 text-sm text-fab-text placeholder:text-fab-dim focus:border-fab-gold/60 focus:outline-none focus:ring-2 focus:ring-fab-gold/30"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             maxLength={1000}
@@ -777,7 +777,7 @@ function OrganizerEditor({
         <EditField label="Points per win">
           <input
             type="number"
-            className="edit-input"
+            className="w-full rounded-md border border-fab-border bg-fab-bg px-3 py-2 text-sm text-fab-text placeholder:text-fab-dim focus:border-fab-gold/60 focus:outline-none focus:ring-2 focus:ring-fab-gold/30"
             value={pointsWin}
             onChange={(e) => setPointsWin(Number(e.target.value))}
           />
@@ -785,7 +785,7 @@ function OrganizerEditor({
         <EditField label="Points per loss">
           <input
             type="number"
-            className="edit-input"
+            className="w-full rounded-md border border-fab-border bg-fab-bg px-3 py-2 text-sm text-fab-text placeholder:text-fab-dim focus:border-fab-gold/60 focus:outline-none focus:ring-2 focus:ring-fab-gold/30"
             value={pointsLoss}
             onChange={(e) => setPointsLoss(Number(e.target.value))}
           />
@@ -793,7 +793,7 @@ function OrganizerEditor({
         <EditField label="Points per draw">
           <input
             type="number"
-            className="edit-input"
+            className="w-full rounded-md border border-fab-border bg-fab-bg px-3 py-2 text-sm text-fab-text placeholder:text-fab-dim focus:border-fab-gold/60 focus:outline-none focus:ring-2 focus:ring-fab-gold/30"
             value={pointsDraw}
             onChange={(e) => setPointsDraw(Number(e.target.value))}
           />
@@ -801,7 +801,7 @@ function OrganizerEditor({
         <EditField label="Points per bye">
           <input
             type="number"
-            className="edit-input"
+            className="w-full rounded-md border border-fab-border bg-fab-bg px-3 py-2 text-sm text-fab-text placeholder:text-fab-dim focus:border-fab-gold/60 focus:outline-none focus:ring-2 focus:ring-fab-gold/30"
             value={pointsBye}
             onChange={(e) => setPointsBye(Number(e.target.value))}
           />
@@ -809,7 +809,7 @@ function OrganizerEditor({
         <EditField label="Participation bonus">
           <input
             type="number"
-            className="edit-input"
+            className="w-full rounded-md border border-fab-border bg-fab-bg px-3 py-2 text-sm text-fab-text placeholder:text-fab-dim focus:border-fab-gold/60 focus:outline-none focus:ring-2 focus:ring-fab-gold/30"
             value={pointsPerMatch}
             onChange={(e) => setPointsPerMatch(Number(e.target.value))}
           />
@@ -928,17 +928,6 @@ function OrganizerEditor({
         </button>
       </div>
 
-      <style jsx>{`
-        :global(.edit-input) {
-          width: 100%;
-          border-radius: 6px;
-          border: 1px solid rgb(var(--fab-border) / 0.7);
-          background: rgb(var(--fab-bg) / 0.6);
-          color: rgb(var(--fab-text));
-          padding: 6px 10px;
-          font-size: 14px;
-        }
-      `}</style>
     </div>
   );
 }

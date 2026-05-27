@@ -373,18 +373,64 @@ function hasDiscoverableLinks(links?: UserProfile["socialLinks"] | null): boolea
 }
 
 const DISCOVER_PROFILES_CACHE_TTL = 10 * 60 * 1000;
+const DISCOVER_SESSION_KEY = "fabstats.discover-profiles.v1";
 let cachedDiscoverProfiles: UserProfile[] | null = null;
 let cachedDiscoverProfilesAt = 0;
+
+interface DiscoverSessionPayload {
+  at: number;
+  profiles: UserProfile[];
+}
+
+function readDiscoverSession(now: number): UserProfile[] | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.sessionStorage.getItem(DISCOVER_SESSION_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as DiscoverSessionPayload;
+    if (!parsed?.at || now - parsed.at > DISCOVER_PROFILES_CACHE_TTL) return null;
+    cachedDiscoverProfilesAt = parsed.at;
+    return parsed.profiles || null;
+  } catch {
+    return null;
+  }
+}
+
+function writeDiscoverSession(profiles: UserProfile[], at: number) {
+  if (typeof window === "undefined") return;
+  try {
+    const payload: DiscoverSessionPayload = { at, profiles };
+    window.sessionStorage.setItem(DISCOVER_SESSION_KEY, JSON.stringify(payload));
+  } catch {
+    // Quota exceeded — in-memory cache still works.
+  }
+}
 
 export function invalidateDiscoverProfilesCache() {
   cachedDiscoverProfiles = null;
   cachedDiscoverProfilesAt = 0;
+  if (typeof window !== "undefined") {
+    try {
+      window.sessionStorage.removeItem(DISCOVER_SESSION_KEY);
+    } catch {
+      /* noop */
+    }
+  }
 }
 
 export async function getDiscoverProfiles(maxResults = 5000): Promise<UserProfile[]> {
   const useCache = maxResults === 5000;
-  if (useCache && cachedDiscoverProfiles && Date.now() - cachedDiscoverProfilesAt < DISCOVER_PROFILES_CACHE_TTL) {
+  const now = Date.now();
+  if (useCache && cachedDiscoverProfiles && now - cachedDiscoverProfilesAt < DISCOVER_PROFILES_CACHE_TTL) {
     return cachedDiscoverProfiles;
+  }
+  // Hydrate from sessionStorage before paying the collection-group fetch cost.
+  if (useCache) {
+    const fromSession = readDiscoverSession(now);
+    if (fromSession) {
+      cachedDiscoverProfiles = fromSession;
+      return fromSession;
+    }
   }
   const profiles = new Map<string, UserProfile>();
 
@@ -446,8 +492,10 @@ export async function getDiscoverProfiles(maxResults = 5000): Promise<UserProfil
     })
     .sort((a, b) => (a.displayName || a.username).localeCompare(b.displayName || b.username));
   if (useCache) {
+    const at = Date.now();
     cachedDiscoverProfiles = result;
-    cachedDiscoverProfilesAt = Date.now();
+    cachedDiscoverProfilesAt = at;
+    writeDiscoverSession(result, at);
   }
   return result;
 }

@@ -86,7 +86,7 @@ export default function StoresHub() {
           <div className="relative min-w-[200px] flex-1">
             <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-fab-dim" />
             <input
-              className="store-search"
+              className="w-full rounded-md border border-fab-border bg-fab-bg py-2.5 pl-9 pr-3 text-sm text-fab-text placeholder:text-fab-dim focus:border-fab-gold/60 focus:outline-none focus:ring-2 focus:ring-fab-gold/30"
               placeholder="Search stores by name…"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
@@ -188,26 +188,6 @@ export default function StoresHub() {
         </>
       )}
 
-      <style jsx>{`
-        :global(.store-search) {
-          width: 100%;
-          border-radius: 6px;
-          border: 1px solid rgb(var(--fab-border));
-          background: rgb(var(--fab-bg));
-          color: rgb(var(--fab-text));
-          padding: 8px 10px 8px 32px;
-          font-size: 14px;
-          font-weight: 500;
-        }
-        :global(.store-search::placeholder) {
-          color: rgb(var(--fab-dim));
-        }
-        :global(.store-search:focus) {
-          outline: 2px solid rgb(var(--fab-gold) / 0.6);
-          outline-offset: -1px;
-          border-color: rgb(var(--fab-gold) / 0.7);
-        }
-      `}</style>
     </div>
   );
 }

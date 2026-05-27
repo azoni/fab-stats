@@ -171,7 +171,9 @@ export default function LeagueHub() {
 
   const filteredDirectory = useMemo(() => {
     const q = storeSearch.trim().toLowerCase();
-    if (!q) return directory;
+    // Don't show any stores until the user actually types — the directory has
+    // potentially thousands of entries and picking is sparse.
+    if (!q) return [];
     return directory.filter((d) => d.name.toLowerCase().includes(q));
   }, [directory, storeSearch]);
 
@@ -417,7 +419,7 @@ export default function LeagueHub() {
             <div className="mt-3 grid gap-3 sm:grid-cols-2">
               <Field label="League name" required error={errors.name}>
                 <input
-                  className="lg-input"
+                  className="w-full rounded-md border border-fab-border bg-fab-bg px-3 py-2 text-sm text-fab-text placeholder:text-fab-dim focus:border-fab-gold/60 focus:outline-none focus:ring-2 focus:ring-fab-gold/30 aria-invalid:border-fab-red/70"
                   placeholder="e.g. Santiago Armory League — Autumn 2026"
                   value={form.name}
                   onChange={(e) => update("name", e.target.value)}
@@ -427,7 +429,7 @@ export default function LeagueHub() {
               </Field>
               <Field label="City">
                 <input
-                  className="lg-input"
+                  className="w-full rounded-md border border-fab-border bg-fab-bg px-3 py-2 text-sm text-fab-text placeholder:text-fab-dim focus:border-fab-gold/60 focus:outline-none focus:ring-2 focus:ring-fab-gold/30 aria-invalid:border-fab-red/70"
                   placeholder="Santiago"
                   value={form.city}
                   onChange={(e) => update("city", e.target.value)}
@@ -435,7 +437,7 @@ export default function LeagueHub() {
               </Field>
               <Field label="Region / State">
                 <input
-                  className="lg-input"
+                  className="w-full rounded-md border border-fab-border bg-fab-bg px-3 py-2 text-sm text-fab-text placeholder:text-fab-dim focus:border-fab-gold/60 focus:outline-none focus:ring-2 focus:ring-fab-gold/30 aria-invalid:border-fab-red/70"
                   placeholder="Región Metropolitana"
                   value={form.region}
                   onChange={(e) => update("region", e.target.value)}
@@ -443,7 +445,7 @@ export default function LeagueHub() {
               </Field>
               <Field label="Country">
                 <input
-                  className="lg-input"
+                  className="w-full rounded-md border border-fab-border bg-fab-bg px-3 py-2 text-sm text-fab-text placeholder:text-fab-dim focus:border-fab-gold/60 focus:outline-none focus:ring-2 focus:ring-fab-gold/30 aria-invalid:border-fab-red/70"
                   placeholder="Chile"
                   value={form.country}
                   onChange={(e) => update("country", e.target.value)}
@@ -452,7 +454,7 @@ export default function LeagueHub() {
               <Field label="Start date" required error={errors.startDate}>
                 <input
                   type="date"
-                  className="lg-input"
+                  className="w-full rounded-md border border-fab-border bg-fab-bg px-3 py-2 text-sm text-fab-text placeholder:text-fab-dim focus:border-fab-gold/60 focus:outline-none focus:ring-2 focus:ring-fab-gold/30 aria-invalid:border-fab-red/70"
                   value={form.startDate}
                   onChange={(e) => update("startDate", e.target.value)}
                   aria-invalid={!!errors.startDate}
@@ -461,7 +463,7 @@ export default function LeagueHub() {
               <Field label="End date" required error={errors.endDate}>
                 <input
                   type="date"
-                  className="lg-input"
+                  className="w-full rounded-md border border-fab-border bg-fab-bg px-3 py-2 text-sm text-fab-text placeholder:text-fab-dim focus:border-fab-gold/60 focus:outline-none focus:ring-2 focus:ring-fab-gold/30 aria-invalid:border-fab-red/70"
                   value={form.endDate}
                   onChange={(e) => update("endDate", e.target.value)}
                   aria-invalid={!!errors.endDate}
@@ -474,7 +476,7 @@ export default function LeagueHub() {
                 hint={`${form.description.length}/1000`}
               >
                 <textarea
-                  className="lg-input min-h-[80px]"
+                  className="w-full min-h-[80px] rounded-md border border-fab-border bg-fab-bg px-3 py-2 text-sm text-fab-text placeholder:text-fab-dim focus:border-fab-gold/60 focus:outline-none focus:ring-2 focus:ring-fab-gold/30"
                   placeholder="What is this league? Any extra rules players should know?"
                   value={form.description}
                   onChange={(e) => update("description", e.target.value)}
@@ -495,7 +497,7 @@ export default function LeagueHub() {
               <Field label="Points per win">
                 <input
                   type="number"
-                  className="lg-input"
+                  className="w-full rounded-md border border-fab-border bg-fab-bg px-3 py-2 text-sm text-fab-text placeholder:text-fab-dim focus:border-fab-gold/60 focus:outline-none focus:ring-2 focus:ring-fab-gold/30 aria-invalid:border-fab-red/70"
                   value={form.pointsWin}
                   onChange={(e) => update("pointsWin", Number(e.target.value))}
                 />
@@ -503,7 +505,7 @@ export default function LeagueHub() {
               <Field label="Points per loss">
                 <input
                   type="number"
-                  className="lg-input"
+                  className="w-full rounded-md border border-fab-border bg-fab-bg px-3 py-2 text-sm text-fab-text placeholder:text-fab-dim focus:border-fab-gold/60 focus:outline-none focus:ring-2 focus:ring-fab-gold/30 aria-invalid:border-fab-red/70"
                   value={form.pointsLoss}
                   onChange={(e) => update("pointsLoss", Number(e.target.value))}
                 />
@@ -511,7 +513,7 @@ export default function LeagueHub() {
               <Field label="Points per draw">
                 <input
                   type="number"
-                  className="lg-input"
+                  className="w-full rounded-md border border-fab-border bg-fab-bg px-3 py-2 text-sm text-fab-text placeholder:text-fab-dim focus:border-fab-gold/60 focus:outline-none focus:ring-2 focus:ring-fab-gold/30 aria-invalid:border-fab-red/70"
                   value={form.pointsDraw}
                   onChange={(e) => update("pointsDraw", Number(e.target.value))}
                 />
@@ -522,7 +524,7 @@ export default function LeagueHub() {
               >
                 <input
                   type="number"
-                  className="lg-input"
+                  className="w-full rounded-md border border-fab-border bg-fab-bg px-3 py-2 text-sm text-fab-text placeholder:text-fab-dim focus:border-fab-gold/60 focus:outline-none focus:ring-2 focus:ring-fab-gold/30 aria-invalid:border-fab-red/70"
                   value={form.pointsBye}
                   onChange={(e) => update("pointsBye", Number(e.target.value))}
                 />
@@ -533,7 +535,7 @@ export default function LeagueHub() {
               >
                 <input
                   type="number"
-                  className="lg-input"
+                  className="w-full rounded-md border border-fab-border bg-fab-bg px-3 py-2 text-sm text-fab-text placeholder:text-fab-dim focus:border-fab-gold/60 focus:outline-none focus:ring-2 focus:ring-fab-gold/30 aria-invalid:border-fab-red/70"
                   value={form.pointsPerMatch}
                   onChange={(e) => update("pointsPerMatch", Number(e.target.value))}
                 />
@@ -628,7 +630,7 @@ export default function LeagueHub() {
             <div className="relative mt-3">
               <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-fab-dim" />
               <input
-                className="lg-input pl-9"
+                className="w-full rounded-md border border-fab-border bg-fab-bg px-3 py-2 pl-9 text-sm text-fab-text placeholder:text-fab-dim focus:border-fab-gold/60 focus:outline-none focus:ring-2 focus:ring-fab-gold/30"
                 placeholder="Search the store directory…"
                 value={storeSearch}
                 onChange={(e) => setStoreSearch(e.target.value)}
@@ -638,12 +640,14 @@ export default function LeagueHub() {
             <div className="mt-3">
               {directoryLoading ? (
                 <p className="text-sm text-fab-muted">Loading store directory…</p>
-              ) : filteredDirectory.length === 0 ? (
-                <p className="text-sm text-fab-muted">
-                  {storeSearch
-                    ? "No stores match that search."
-                    : "No stores in the directory yet."}
+              ) : !storeSearch.trim() ? (
+                <p className="rounded-md border border-dashed border-fab-border bg-fab-bg/40 px-3 py-4 text-center text-xs text-fab-muted">
+                  Type a store name above to search the directory of{" "}
+                  <span className="font-semibold text-fab-text">{directory.length}</span>{" "}
+                  known stores.
                 </p>
+              ) : filteredDirectory.length === 0 ? (
+                <p className="text-sm text-fab-muted">No stores match that search.</p>
               ) : (
                 <ul className="grid max-h-72 gap-1 overflow-y-auto rounded-md border border-fab-border/60 bg-fab-bg/40 p-1.5 sm:grid-cols-2">
                   {filteredDirectory.slice(0, 200).map((s) => {
@@ -705,30 +709,6 @@ export default function LeagueHub() {
         </section>
       )}
 
-      <style jsx>{`
-        :global(.lg-input) {
-          width: 100%;
-          border-radius: 6px;
-          border: 1px solid rgb(var(--fab-border));
-          background: rgb(var(--fab-bg));
-          color: rgb(var(--fab-text));
-          padding: 8px 10px;
-          font-size: 14px;
-          font-weight: 500;
-        }
-        :global(.lg-input::placeholder) {
-          color: rgb(var(--fab-dim));
-          font-weight: 400;
-        }
-        :global(.lg-input:focus) {
-          outline: 2px solid rgb(var(--fab-gold) / 0.6);
-          outline-offset: -1px;
-          border-color: rgb(var(--fab-gold) / 0.7);
-        }
-        :global(.lg-input[aria-invalid="true"]) {
-          border-color: rgb(var(--fab-red) / 0.7);
-        }
-      `}</style>
     </div>
   );
 }
