@@ -463,13 +463,40 @@ export async function getDiscoverProfiles(
     }
   };
 
-  const profileQueries = [
-    query(collectionGroup(db, "profile"), where("isPublic", "==", true), limit(maxResults)),
-    query(collectionGroup(db, "profile"), where("profileVisibility", "==", "public"), limit(maxResults)),
+  // Fast path: filter on `hasDiscoverLinks` server-side. Profiles updated
+  // since this field was introduced have it set; older profiles get caught
+  // by the broader fallback below.
+  const fastQueries = [
+    query(
+      collectionGroup(db, "profile"),
+      where("isPublic", "==", true),
+      where("hasDiscoverLinks", "==", true),
+      limit(maxResults),
+    ),
+    query(
+      collectionGroup(db, "profile"),
+      where("profileVisibility", "==", "public"),
+      where("hasDiscoverLinks", "==", true),
+      limit(maxResults),
+    ),
   ];
-  const settled = await Promise.allSettled(profileQueries.map((q) => getDocs(q)));
-  for (const result of settled) {
+  const fastSettled = await Promise.allSettled(fastQueries.map((q) => getDocs(q)));
+  for (const result of fastSettled) {
     if (result.status === "fulfilled") mergeSnap(result.value);
+  }
+
+  // Fallback for old profiles missing `hasDiscoverLinks` — only run if the
+  // fast path returned few results (suggesting either rare adoption or
+  // missing indexes).
+  if (profiles.size < 12) {
+    const profileQueries = [
+      query(collectionGroup(db, "profile"), where("isPublic", "==", true), limit(maxResults)),
+      query(collectionGroup(db, "profile"), where("profileVisibility", "==", "public"), limit(maxResults)),
+    ];
+    const settled = await Promise.allSettled(profileQueries.map((q) => getDocs(q)));
+    for (const result of settled) {
+      if (result.status === "fulfilled") mergeSnap(result.value);
+    }
   }
 
   // Fallback for browsers hitting older rules/indexes where collectionGroup

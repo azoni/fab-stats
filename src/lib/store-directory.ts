@@ -1,3 +1,5 @@
+import { collection, getDocs, query, where, limit as fLimit } from "firebase/firestore";
+import { db } from "./firebase";
 import type { LeaderboardEntry } from "@/types";
 import { getLeaderboardEntries } from "./leaderboard";
 
@@ -253,29 +255,74 @@ export async function getStoreDirectory(): Promise<StoreDirectoryEntry[]> {
   return directory;
 }
 
-/** Fetch detailed stats for a single store. Uses the same cached aggregation
- *  as the directory, so navigating /stores → /stores/[slug] is instant. */
+/** Fast path: query just the players who logged at this venue via the
+ *  top-level `venueSlugs` array on each leaderboard doc. Avoids reading
+ *  the entire leaderboard collection for a single store page. Returns
+ *  null when no entries are tagged with this slug (older entries written
+ *  before the field existed will be picked up by the directory fallback). */
+async function getStoreStatsViaIndex(slug: string): Promise<StoreStats | null> {
+  try {
+    const snap = await getDocs(
+      query(
+        collection(db, "leaderboard"),
+        where("isPublic", "==", true),
+        where("venueSlugs", "array-contains", slug),
+        fLimit(500),
+      ),
+    );
+    if (snap.empty) return null;
+    const entries = snap.docs.map((d) => d.data() as LeaderboardEntry);
+    const map = buildDirectoryFromEntries(entries);
+    const acc = map.get(slug);
+    if (!acc) return null;
+
+    const allPlayers = [...acc.players.values()].sort((a, b) => b.matches - a.matches);
+    return {
+      slug,
+      name: pickCanonicalName(acc.nameVariants),
+      totalMatches: acc.totalMatches,
+      uniquePlayers: acc.players.size,
+      players: allPlayers,
+      topByActivity: allPlayers.slice(0, 10),
+      topByWinRate: [...allPlayers]
+        .filter((p) => p.matches >= 5)
+        .sort((a, b) => b.winRate - a.winRate)
+        .slice(0, 10),
+    };
+  } catch {
+    // Missing index, rule denial, or any other failure → let the caller
+    // fall back to the full-directory path.
+    return null;
+  }
+}
+
+/** Fetch detailed stats for a single store. Tries the venueSlugs index first
+ *  (cheap), then falls back to the cached full directory map (which itself is
+ *  cached client-side). */
 export async function getStoreStats(slug: string): Promise<StoreStats | null> {
   const normalizedSlug = slugifyStoreName(slug);
   if (!normalizedSlug) return null;
+
+  // Fast path: query only players who logged at this venue.
+  const fromIndex = await getStoreStatsViaIndex(normalizedSlug);
+  if (fromIndex) return fromIndex;
+
+  // Fallback: scan the full leaderboard. Slow on cold cache, instant after.
   const map = await getDirectoryMap();
   const acc = map.get(normalizedSlug);
   if (!acc) return null;
 
   const allPlayers = [...acc.players.values()].sort((a, b) => b.matches - a.matches);
-  const topByActivity = allPlayers.slice(0, 10);
-  const topByWinRate = [...allPlayers]
-    .filter((p) => p.matches >= 5)
-    .sort((a, b) => b.winRate - a.winRate)
-    .slice(0, 10);
-
   return {
     slug: normalizedSlug,
     name: pickCanonicalName(acc.nameVariants),
     totalMatches: acc.totalMatches,
     uniquePlayers: acc.players.size,
     players: allPlayers,
-    topByWinRate,
-    topByActivity,
+    topByActivity: allPlayers.slice(0, 10),
+    topByWinRate: [...allPlayers]
+      .filter((p) => p.matches >= 5)
+      .sort((a, b) => b.winRate - a.winRate)
+      .slice(0, 10),
   };
 }

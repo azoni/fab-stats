@@ -547,6 +547,9 @@ export interface LeaderboardEntry {
   longestLossStreak?: number;
   uniqueVenues?: number;
   venueBreakdown?: { venue: string; matches: number; wins: number; winRate: number }[];
+  /** Flat slugified venue list — top-level for fast `array-contains` queries.
+   *  Mirrors the venues in `venueBreakdown`. */
+  venueSlugs?: string[];
   eloRating?: number;
   teamId?: string;
   teamName?: string;

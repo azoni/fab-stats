@@ -296,6 +296,17 @@ export async function updateLeaderboardEntry(
       winRate: data.matches > 0 ? Math.round((data.wins / data.matches) * 1000) / 10 : 0,
     }));
 
+  // Flat slugified venue list for store-directory lookups. Lets us query
+  // `where("venueSlugs", "array-contains", slug)` instead of scanning the
+  // entire leaderboard collection to find one store's players.
+  const venueSlugs = [
+    ...new Set(
+      venueBreakdown
+        .map((v) => v.venue.toLowerCase().replace(/[^a-z0-9]/g, ""))
+        .filter((s) => s.length >= 2),
+    ),
+  ];
+
   const entry: Omit<LeaderboardEntry, never> = {
     userId: profile.uid,
     username: profile.username,
@@ -354,6 +365,7 @@ export async function updateLeaderboardEntry(
     longestLossStreak,
     uniqueVenues: venueNames.size,
     venueBreakdown,
+    venueSlugs,
     eloRating: computeEloRating(matches),
     createdAt: profile.createdAt,
     updatedAt: new Date().toISOString(),
