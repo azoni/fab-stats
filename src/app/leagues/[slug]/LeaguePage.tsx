@@ -334,7 +334,7 @@ export default function LeaguePage() {
               )}
             </div>
           </div>
-          <StandingsTable standings={standings} />
+          <StandingsTable standings={standings} league={league} />
         </div>
 
         <aside className="space-y-5">
@@ -354,7 +354,18 @@ export default function LeaguePage() {
   );
 }
 
-function StandingsTable({ standings }: { standings: LeagueStandingEntry[] | null }) {
+function StandingsTable({
+  standings,
+  league,
+}: {
+  standings: LeagueStandingEntry[] | null;
+  league: League;
+}) {
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const isFuture = league.startDate > todayIso;
+  const isPast = league.endDate < todayIso;
+  const isDraft = league.status === "draft";
+
   if (!standings) {
     return (
       <div className="rounded-lg border border-fab-border/70 bg-fab-bg/45 p-4 text-sm text-fab-dim">
@@ -364,16 +375,53 @@ function StandingsTable({ standings }: { standings: LeagueStandingEntry[] | null
     );
   }
   if (standings.length === 0) {
+    let message: React.ReactNode;
+    if (isDraft) {
+      message = (
+        <>
+          This league is still in <strong>draft</strong>. The organizer can mark it active
+          from the edit panel — standings will populate once it&apos;s active and players
+          start logging matches.
+        </>
+      );
+    } else if (isFuture) {
+      message = (
+        <>
+          League hasn&apos;t started yet. Matches played at the participating stores from{" "}
+          <strong>{league.startDate}</strong> onward will count.
+        </>
+      );
+    } else if (isPast) {
+      message = "League ended without any qualifying matches being recorded.";
+    } else {
+      message = (
+        <>
+          No qualifying matches yet. Once players join and import matches at the participating
+          stores during the date window, they&apos;ll appear here.
+        </>
+      );
+    }
     return (
-      <div className="rounded-lg border border-fab-border/70 bg-fab-bg/45 p-4 text-sm text-fab-dim">
-        No qualifying matches yet. Once players join and import matches at the participating
-        stores during the date window, they&apos;ll show up here.
+      <div className="rounded-lg border border-fab-border/70 bg-fab-bg/45 p-4 text-sm text-fab-muted">
+        {message}
       </div>
     );
   }
   const showByes = standings.some((e) => (e.byes || 0) > 0);
   return (
     <div className="overflow-hidden rounded-lg border border-fab-border/70 bg-fab-bg/45">
+      <div className="flex items-center justify-between gap-2 border-b border-fab-border/40 bg-fab-bg/30 px-3 py-2 text-[10px] text-fab-dim">
+        <span className="font-bold uppercase tracking-[0.12em]">
+          {standings.length} player{standings.length === 1 ? "" : "s"} ranked
+        </span>
+        <span
+          title="Tie-breakers: 1) Points, 2) Win rate, 3) Wins, 4) Fewer matches first"
+          className="cursor-help underline decoration-dotted underline-offset-2"
+        >
+          tie-breakers ⓘ
+        </span>
+      </div>
+      <div className="overflow-x-auto">
       <table className="w-full text-sm">
         <thead className="bg-fab-bg/60 text-xs uppercase tracking-wider text-fab-dim">
           <tr>
@@ -417,6 +465,7 @@ function StandingsTable({ standings }: { standings: LeagueStandingEntry[] | null
           ))}
         </tbody>
       </table>
+      </div>
     </div>
   );
 }
@@ -660,6 +709,33 @@ function OrganizerEditor({
   }, [directory, storeSearch]);
 
   async function handleSave() {
+    // Pre-flight validation — same checks as the create form so an organizer
+    // can't accidentally save a league with bad dates / no stores.
+    if (!name.trim()) {
+      toast.error("League name is required.");
+      return;
+    }
+    if (!startDate || !endDate) {
+      toast.error("Start and end dates are required.");
+      return;
+    }
+    if (startDate > endDate) {
+      toast.error("End date must be after start date.");
+      return;
+    }
+    if (storeSlugs.length === 0) {
+      toast.error("Add at least one store to the league.");
+      return;
+    }
+
+    // Confirm if marking the league completed — that's a meaningful change
+    // that hides it from active views.
+    if (status === "completed" && league.status !== "completed") {
+      if (!confirm("Mark this league as completed? Players can still view standings, but new matches won't be counted.")) {
+        return;
+      }
+    }
+
     setSaving(true);
     try {
       const scoringRules: LeagueScoringRules = {
@@ -698,6 +774,7 @@ function OrganizerEditor({
     "Draft",
     "Living Legend",
     "Clash",
+    "Ultimate Pit Fight",
   ];
   const EVENT_TYPE_OPTIONS = [
     "Armory",
@@ -733,7 +810,7 @@ function OrganizerEditor({
           </select>
         </EditField>
         <EditField label="City">
-          <input className="edit-input" value={city} onChange={(e) => setCity(e.target.value)} />
+          <input className="w-full rounded-md border border-fab-border bg-fab-bg px-3 py-2 text-sm text-fab-text placeholder:text-fab-dim focus:border-fab-gold/60 focus:outline-none focus:ring-2 focus:ring-fab-gold/30" value={city} onChange={(e) => setCity(e.target.value)} />
         </EditField>
         <EditField label="Region">
           <input
@@ -865,26 +942,58 @@ function OrganizerEditor({
       </div>
 
       <div className="mt-4">
-        <p className="text-xs font-bold uppercase tracking-wider text-fab-dim">
-          Participating stores
-        </p>
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-xs font-bold uppercase tracking-wider text-fab-dim">
+            Participating stores
+          </p>
+          <span className="text-[11px] text-fab-muted">{storeSlugs.length} selected</span>
+        </div>
+
+        {/* Currently selected chips — surface what's already in the league. */}
+        {storeSlugs.length > 0 && (
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {storeSlugs.map((slug) => {
+              const entry = directory.find((d) => d.slug === slug);
+              const label = entry?.name || slug;
+              return (
+                <button
+                  key={slug}
+                  type="button"
+                  onClick={() =>
+                    setStoreSlugs((prev) => prev.filter((x) => x !== slug))
+                  }
+                  className="inline-flex items-center gap-1.5 rounded-full border border-fab-gold/40 bg-fab-gold/15 px-2.5 py-1 text-xs font-semibold text-fab-gold hover:bg-fab-gold/25"
+                  title="Click to remove"
+                >
+                  {label}
+                  <span className="text-[14px] leading-none">×</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+
         <input
-          className="edit-input mt-2"
-          placeholder="Search store directory…"
+          className="mt-2 w-full rounded-md border border-fab-border bg-fab-bg px-3 py-2 text-sm text-fab-text placeholder:text-fab-dim focus:border-fab-gold/60 focus:outline-none focus:ring-2 focus:ring-fab-gold/30"
+          placeholder="Search store directory to add or remove…"
           value={storeSearch}
           onChange={(e) => setStoreSearch(e.target.value)}
         />
-        {filteredDirectory.length === 0 ? (
-          <p className="mt-2 text-xs text-fab-dim">No stores match the search.</p>
+        {!storeSearch.trim() ? (
+          <p className="mt-2 rounded-md border border-dashed border-fab-border bg-fab-bg/40 px-3 py-3 text-center text-[11px] text-fab-muted">
+            Type to search the directory of {directory.length} stores.
+          </p>
+        ) : filteredDirectory.length === 0 ? (
+          <p className="mt-2 text-xs text-fab-dim">No stores match that search.</p>
         ) : (
-          <ul className="mt-2 grid max-h-64 gap-1 overflow-y-auto sm:grid-cols-2">
+          <ul className="mt-2 grid max-h-64 gap-1 overflow-y-auto rounded-md border border-fab-border/60 bg-fab-bg/40 p-1.5 sm:grid-cols-2">
             {filteredDirectory.slice(0, 200).map((s) => {
               const active = storeSlugs.includes(s.slug);
               return (
                 <li key={s.slug}>
                   <label
-                    className={`flex cursor-pointer items-center gap-2 rounded-md border px-2 py-1.5 text-sm ${
-                      active ? "border-fab-gold bg-fab-gold/10" : "border-fab-border/60 bg-fab-bg/60"
+                    className={`flex cursor-pointer items-start gap-2 rounded-md border px-2 py-1.5 text-sm transition-colors ${
+                      active ? "border-fab-gold/50 bg-fab-gold/10" : "border-transparent hover:border-fab-border hover:bg-fab-bg/80"
                     }`}
                   >
                     <input
@@ -895,11 +1004,13 @@ function OrganizerEditor({
                           prev.includes(s.slug) ? prev.filter((x) => x !== s.slug) : [...prev, s.slug],
                         )
                       }
+                      className="mt-1 accent-fab-gold"
                     />
-                    <span className="truncate flex-1 min-w-0">
-                      <span className="block truncate">{s.name}</span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate font-semibold text-fab-text">{s.name}</span>
                       <span className="block truncate text-[10px] text-fab-dim">
-                        {s.totalMatches} matches · {s.uniquePlayers} players
+                        {s.totalMatches} matches · {s.uniquePlayers} player
+                        {s.uniquePlayers === 1 ? "" : "s"}
                       </span>
                     </span>
                   </label>

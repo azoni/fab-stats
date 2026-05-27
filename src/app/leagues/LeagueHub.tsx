@@ -113,12 +113,34 @@ function validateForm(form: CreateFormState): Record<string, string> {
   return errors;
 }
 
+type BrowseFilter = "all" | "active" | "upcoming" | "completed";
+
+function timeRemainingLabel(league: League): { label: string; tone: "gold" | "muted" | "win" | "default" } | null {
+  const todayIso = new Date().toISOString().slice(0, 10);
+  if (league.status === "completed") return null;
+  if (league.startDate > todayIso) {
+    const days = Math.ceil(
+      (new Date(league.startDate).getTime() - new Date(todayIso).getTime()) / 86_400_000,
+    );
+    return { label: days <= 0 ? "Starts today" : `Starts in ${days}d`, tone: "muted" };
+  }
+  if (league.endDate < todayIso) return { label: "Ended", tone: "muted" };
+  const days = Math.ceil(
+    (new Date(league.endDate).getTime() - new Date(todayIso).getTime()) / 86_400_000,
+  );
+  if (days <= 0) return { label: "Ends today", tone: "gold" };
+  if (days <= 7) return { label: `${days}d left`, tone: "gold" };
+  return { label: `${days}d left`, tone: "win" };
+}
+
 export default function LeagueHub() {
   const { user, profile } = useAuth();
 
   const [activeTab, setActiveTab] = useState<Tab>("about");
   const [leagues, setLeagues] = useState<League[]>([]);
   const [loading, setLoading] = useState(true);
+  const [browseFilter, setBrowseFilter] = useState<BrowseFilter>("all");
+  const [browseSearch, setBrowseSearch] = useState("");
 
   const [form, setForm] = useState<CreateFormState>(INITIAL_FORM);
   const [submitAttempted, setSubmitAttempted] = useState(false);
@@ -315,7 +337,39 @@ export default function LeagueHub() {
       {activeTab === "about" && <AboutPanel />}
 
       {activeTab === "browse" && (
-        <section>
+        <section className="space-y-3">
+          {!loading && leagues.length > 0 && (
+            <Card padding="sm">
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="relative min-w-[180px] flex-1">
+                  <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-fab-dim" />
+                  <input
+                    className="w-full rounded-md border border-fab-border bg-fab-bg px-3 py-1.5 pl-8 text-sm text-fab-text placeholder:text-fab-dim focus:border-fab-gold/60 focus:outline-none focus:ring-2 focus:ring-fab-gold/30"
+                    placeholder="Search leagues…"
+                    value={browseSearch}
+                    onChange={(e) => setBrowseSearch(e.target.value)}
+                  />
+                </div>
+                <div className="flex flex-wrap items-center gap-1 text-xs">
+                  {(["all", "active", "upcoming", "completed"] as BrowseFilter[]).map((f) => (
+                    <button
+                      key={f}
+                      type="button"
+                      onClick={() => setBrowseFilter(f)}
+                      className={`rounded-md border px-2.5 py-1 font-semibold transition-colors ${
+                        browseFilter === f
+                          ? "border-fab-gold/50 bg-fab-gold/10 text-fab-gold"
+                          : "border-fab-border bg-fab-bg text-fab-muted hover:text-fab-text"
+                      }`}
+                    >
+                      {f.charAt(0).toUpperCase() + f.slice(1)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </Card>
+          )}
+
           {loading ? (
             <Card padding="md">
               <p className="text-sm text-fab-muted">Loading leagues…</p>
@@ -333,65 +387,100 @@ export default function LeagueHub() {
                 Create a league
               </Button>
             </Card>
-          ) : (
-            <ul className="space-y-2.5">
-              {leagues.map((l) => (
-                <li key={l.id}>
-                  <Card padding="sm" interactive>
-                    <Link href={`/leagues/${l.slug}`} className="block">
-                      <div className="flex flex-wrap items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <h3 className="text-base font-bold text-fab-text hover:text-fab-gold">
-                              {l.name}
-                            </h3>
-                            <StatusBadge status={l.status} />
+          ) : (() => {
+            const todayIso = new Date().toISOString().slice(0, 10);
+            const q = browseSearch.trim().toLowerCase();
+            const filtered = leagues.filter((l) => {
+              // Status filter
+              if (browseFilter === "active" && !(l.status === "active" && l.startDate <= todayIso && l.endDate >= todayIso)) return false;
+              if (browseFilter === "upcoming" && !(l.status !== "completed" && l.startDate > todayIso)) return false;
+              if (browseFilter === "completed" && !(l.status === "completed" || l.endDate < todayIso)) return false;
+              // Search
+              if (q) {
+                const blob = `${l.name} ${l.city || ""} ${l.region || ""} ${l.country || ""}`.toLowerCase();
+                if (!blob.includes(q)) return false;
+              }
+              return true;
+            });
+
+            if (filtered.length === 0) {
+              return (
+                <Card padding="md">
+                  <p className="text-sm text-fab-muted">
+                    No leagues match {q ? <>&ldquo;{browseSearch}&rdquo;</> : "that filter"}.
+                  </p>
+                </Card>
+              );
+            }
+
+            return (
+              <ul className="space-y-2.5">
+                {filtered.map((l) => {
+                  const timeBadge = timeRemainingLabel(l);
+                  return (
+                    <li key={l.id}>
+                      <Card padding="sm" interactive>
+                        <Link href={`/leagues/${l.slug}`} className="block">
+                          <div className="flex flex-wrap items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <h3 className="text-base font-bold text-fab-text hover:text-fab-gold">
+                                  {l.name}
+                                </h3>
+                                <StatusBadge status={l.status} />
+                                {timeBadge && (
+                                  <Badge variant={timeBadge.tone} size="xs">
+                                    {timeBadge.label}
+                                  </Badge>
+                                )}
+                              </div>
+                              {(l.city || l.region || l.country) && (
+                                <p className="mt-0.5 flex items-center gap-1 text-[11px] text-fab-muted">
+                                  <MapPin className="h-3 w-3" />
+                                  {[l.city, l.region, l.country].filter(Boolean).join(", ")}
+                                </p>
+                              )}
+                              <p className="mt-0.5 flex items-center gap-1 text-[11px] text-fab-muted">
+                                <CalendarDays className="h-3 w-3" />
+                                {formatDateRange(l.startDate, l.endDate)}
+                              </p>
+                              {l.description && (
+                                <p className="mt-2 line-clamp-2 text-xs text-fab-muted">
+                                  {l.description}
+                                </p>
+                              )}
+                            </div>
+                            <div className="flex flex-col items-end gap-1.5">
+                              <div className="flex gap-1.5">
+                                <Badge size="xs" variant="muted">
+                                  <Users className="h-3 w-3" /> {l.memberCount}
+                                </Badge>
+                                <Badge size="xs" variant="muted">
+                                  <StoreIcon className="h-3 w-3" /> {l.storeSlugs.length}
+                                </Badge>
+                              </div>
+                              <Button
+                                variant="primary"
+                                size="sm"
+                                disabled={joiningId === l.id || !user}
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  handleJoin(l);
+                                }}
+                              >
+                                {joiningId === l.id ? "Joining…" : "Join"}
+                              </Button>
+                            </div>
                           </div>
-                          {(l.city || l.region || l.country) && (
-                            <p className="mt-0.5 flex items-center gap-1 text-[11px] text-fab-muted">
-                              <MapPin className="h-3 w-3" />
-                              {[l.city, l.region, l.country].filter(Boolean).join(", ")}
-                            </p>
-                          )}
-                          <p className="mt-0.5 flex items-center gap-1 text-[11px] text-fab-muted">
-                            <CalendarDays className="h-3 w-3" />
-                            {formatDateRange(l.startDate, l.endDate)}
-                          </p>
-                          {l.description && (
-                            <p className="mt-2 line-clamp-2 text-xs text-fab-muted">
-                              {l.description}
-                            </p>
-                          )}
-                        </div>
-                        <div className="flex flex-col items-end gap-1.5">
-                          <div className="flex gap-1.5">
-                            <Badge size="xs" variant="muted">
-                              <Users className="h-3 w-3" /> {l.memberCount}
-                            </Badge>
-                            <Badge size="xs" variant="muted">
-                              <StoreIcon className="h-3 w-3" /> {l.storeSlugs.length}
-                            </Badge>
-                          </div>
-                          <Button
-                            variant="primary"
-                            size="sm"
-                            disabled={joiningId === l.id || !user}
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              handleJoin(l);
-                            }}
-                          >
-                            {joiningId === l.id ? "Joining…" : "Join"}
-                          </Button>
-                        </div>
-                      </div>
-                    </Link>
-                  </Card>
-                </li>
-              ))}
-            </ul>
-          )}
+                        </Link>
+                      </Card>
+                    </li>
+                  );
+                })}
+              </ul>
+            );
+          })()}
         </section>
       )}
 
@@ -847,6 +936,10 @@ function AboutPanel() {
             league can read their matches.
           </li>
           <li>Byes only count if the league sets a bye payout.</li>
+          <li>
+            <span className="text-fab-text">Dates are inclusive and use UTC.</span>{" "}
+            A match on the start or end date both count.
+          </li>
           <li>
             If GEM uses a slightly different venue name than the registered one, both
             names show up as separate stores. The league can include both.
