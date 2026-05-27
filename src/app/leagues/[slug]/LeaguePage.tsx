@@ -50,7 +50,7 @@ function formatDateRange(start: string, end: string) {
 export default function LeaguePage() {
   const params = useParams<{ slug: string }>();
   const slug = params?.slug || "";
-  const { user, profile } = useAuth();
+  const { user, profile, isAdmin } = useAuth();
 
   const [leagueId, setLeagueId] = useState<string | null>(null);
   const [league, setLeague] = useState<League | null>(null);
@@ -119,10 +119,14 @@ export default function LeaguePage() {
   const storeRows = useMemo(() => {
     if (!league) return [];
     const bySlug = new Map(directory.map((d) => [d.slug, d]));
-    return league.storeSlugs.map((slug) => bySlug.get(slug) || { slug, name: slug, totalMatches: 0, totalWins: 0, uniquePlayers: 0 });
+    return league.storeSlugs.map(
+      (slug) => bySlug.get(slug) || { slug, name: slug, totalMatches: 0, uniquePlayers: 0 },
+    );
   }, [league, directory]);
 
   const isOrganizer = !!user && !!league && user.uid === league.organizerUid;
+  // Site admins get organizer-equivalent powers for moderation.
+  const canEdit = isOrganizer || (!!user && isAdmin && !!league);
   const isMember = useMemo(
     () => !!user && members.some((m) => m.uid === user.uid),
     [user, members],
@@ -268,20 +272,21 @@ export default function LeaguePage() {
                 Leave league
               </button>
             )}
-            {isOrganizer && (
+            {canEdit && (
               <button
                 type="button"
                 onClick={() => setEditing((v) => !v)}
                 className="inline-flex items-center gap-1 rounded-md border border-fab-gold/60 bg-fab-gold/10 px-3 py-1.5 text-xs font-bold text-fab-gold hover:bg-fab-gold/20"
               >
                 <Settings className="h-3.5 w-3.5" /> {editing ? "Close editor" : "Edit league"}
+                {!isOrganizer && isAdmin && <span className="ml-1 text-[10px]">(admin)</span>}
               </button>
             )}
           </div>
         </div>
       </header>
 
-      {isOrganizer && editing && (
+      {canEdit && editing && (
         <OrganizerEditor
           league={league}
           directory={directory}
@@ -342,7 +347,7 @@ export default function LeaguePage() {
             isOrganizer={isOrganizer}
             onKick={handleKick}
           />
-          {isOrganizer && <DisbandPanel leagueId={league.id} ownerUid={league.organizerUid} />}
+          {canEdit && <DisbandPanel leagueId={league.id} ownerUid={league.organizerUid} />}
         </aside>
       </section>
     </div>
@@ -366,6 +371,7 @@ function StandingsTable({ standings }: { standings: LeagueStandingEntry[] | null
       </div>
     );
   }
+  const showByes = standings.some((e) => (e.byes || 0) > 0);
   return (
     <div className="overflow-hidden rounded-lg border border-fab-border/70 bg-fab-bg/45">
       <table className="w-full text-sm">
@@ -377,6 +383,7 @@ function StandingsTable({ standings }: { standings: LeagueStandingEntry[] | null
             <th className="px-2 py-2 text-right">W</th>
             <th className="px-2 py-2 text-right">L</th>
             <th className="px-2 py-2 text-right">D</th>
+            {showByes && <th className="px-2 py-2 text-right">B</th>}
             <th className="px-2 py-2 text-right">Mch</th>
             <th className="px-2 py-2 text-right">Stores</th>
           </tr>
@@ -387,7 +394,7 @@ function StandingsTable({ standings }: { standings: LeagueStandingEntry[] | null
               key={e.uid}
               className={`border-t border-fab-border/40 ${i < 3 ? "bg-fab-gold/[0.04]" : ""}`}
             >
-              <td className="px-3 py-2 font-bold text-fab-dim">{i + 1}</td>
+              <td className="px-3 py-2 font-bold text-fab-dim tabular-nums">{i + 1}</td>
               <td className="px-3 py-2">
                 <Link
                   href={`/player/${e.username}`}
@@ -397,12 +404,15 @@ function StandingsTable({ standings }: { standings: LeagueStandingEntry[] | null
                 </Link>
                 <p className="text-[11px] text-fab-dim">@{e.username}</p>
               </td>
-              <td className="px-2 py-2 text-right font-black text-fab-gold">{e.points}</td>
-              <td className="px-2 py-2 text-right text-emerald-300">{e.wins}</td>
-              <td className="px-2 py-2 text-right text-rose-300">{e.losses}</td>
-              <td className="px-2 py-2 text-right text-sky-300">{e.draws}</td>
-              <td className="px-2 py-2 text-right text-fab-text">{e.matches}</td>
-              <td className="px-2 py-2 text-right text-fab-text">{e.storesPlayed}</td>
+              <td className="px-2 py-2 text-right font-black text-fab-gold tabular-nums">{e.points}</td>
+              <td className="px-2 py-2 text-right text-emerald-300 tabular-nums">{e.wins}</td>
+              <td className="px-2 py-2 text-right text-rose-300 tabular-nums">{e.losses}</td>
+              <td className="px-2 py-2 text-right text-sky-300 tabular-nums">{e.draws}</td>
+              {showByes && (
+                <td className="px-2 py-2 text-right text-fab-muted tabular-nums">{e.byes || 0}</td>
+              )}
+              <td className="px-2 py-2 text-right text-fab-text tabular-nums">{e.matches}</td>
+              <td className="px-2 py-2 text-right text-fab-text tabular-nums">{e.storesPlayed}</td>
             </tr>
           ))}
         </tbody>
@@ -412,38 +422,51 @@ function StandingsTable({ standings }: { standings: LeagueStandingEntry[] | null
 }
 
 function ScoringSummary({ scoringRules }: { scoringRules: LeagueScoringRules }) {
+  const hasBye = (scoringRules.pointsPerBye || 0) > 0;
+  const hasParticipation = (scoringRules.pointsPerMatch || 0) > 0;
   return (
     <div className="rounded-lg border border-fab-border/70 bg-fab-bg/45 p-4">
       <h3 className="text-sm font-bold uppercase tracking-wider text-fab-dim">Scoring</h3>
-      <div className="mt-2 grid grid-cols-3 gap-2 text-center">
+      <div className={`mt-2 grid gap-2 text-center ${hasBye ? "grid-cols-4" : "grid-cols-3"}`}>
         <div>
-          <p className="text-xl font-black text-emerald-300">{scoringRules.pointsPerWin}</p>
+          <p className="text-lg font-black text-emerald-300 tabular-nums">{scoringRules.pointsPerWin}</p>
           <p className="text-[10px] uppercase tracking-wider text-fab-dim">Win</p>
         </div>
         <div>
-          <p className="text-xl font-black text-rose-300">{scoringRules.pointsPerLoss}</p>
+          <p className="text-lg font-black text-rose-300 tabular-nums">{scoringRules.pointsPerLoss}</p>
           <p className="text-[10px] uppercase tracking-wider text-fab-dim">Loss</p>
         </div>
         <div>
-          <p className="text-xl font-black text-sky-300">{scoringRules.pointsPerDraw}</p>
+          <p className="text-lg font-black text-sky-300 tabular-nums">{scoringRules.pointsPerDraw}</p>
           <p className="text-[10px] uppercase tracking-wider text-fab-dim">Draw</p>
         </div>
+        {hasBye && (
+          <div>
+            <p className="text-lg font-black text-fab-text tabular-nums">{scoringRules.pointsPerBye}</p>
+            <p className="text-[10px] uppercase tracking-wider text-fab-dim">Bye</p>
+          </div>
+        )}
       </div>
+      {hasParticipation && (
+        <p className="mt-2 text-[11px] text-fab-muted">
+          +{scoringRules.pointsPerMatch} participation bonus per W/L/D match
+        </p>
+      )}
       {(scoringRules.eligibleEventTypes?.length || 0) > 0 && (
-        <p className="mt-3 text-[11px] text-fab-dim">
-          <span className="font-bold text-fab-text">Event types:</span>{" "}
+        <p className="mt-3 text-[11px] text-fab-muted">
+          <span className="font-semibold text-fab-text">Event types:</span>{" "}
           {scoringRules.eligibleEventTypes!.join(", ")}
         </p>
       )}
       {(scoringRules.eligibleFormats?.length || 0) > 0 && (
-        <p className="mt-1 text-[11px] text-fab-dim">
-          <span className="font-bold text-fab-text">Formats:</span>{" "}
+        <p className="mt-1 text-[11px] text-fab-muted">
+          <span className="font-semibold text-fab-text">Formats:</span>{" "}
           {scoringRules.eligibleFormats!.join(", ")}
         </p>
       )}
       {scoringRules.formatMultipliers && (
-        <p className="mt-1 text-[11px] text-fab-dim">
-          <span className="font-bold text-fab-text">Multipliers:</span>{" "}
+        <p className="mt-1 text-[11px] text-fab-muted">
+          <span className="font-semibold text-fab-text">Multipliers:</span>{" "}
           {Object.entries(scoringRules.formatMultipliers)
             .map(([f, m]) => `${f} ×${m}`)
             .join(", ")}
@@ -614,6 +637,8 @@ function OrganizerEditor({
   const [pointsWin, setPointsWin] = useState(league.scoringRules.pointsPerWin);
   const [pointsLoss, setPointsLoss] = useState(league.scoringRules.pointsPerLoss);
   const [pointsDraw, setPointsDraw] = useState(league.scoringRules.pointsPerDraw);
+  const [pointsBye, setPointsBye] = useState(league.scoringRules.pointsPerBye || 0);
+  const [pointsPerMatch, setPointsPerMatch] = useState(league.scoringRules.pointsPerMatch || 0);
   const [eligibleEventTypes, setEligibleEventTypes] = useState<string[]>(
     league.scoringRules.eligibleEventTypes || [],
   );
@@ -641,6 +666,8 @@ function OrganizerEditor({
         pointsPerWin: pointsWin,
         pointsPerLoss: pointsLoss,
         pointsPerDraw: pointsDraw,
+        pointsPerBye: pointsBye > 0 ? pointsBye : undefined,
+        pointsPerMatch: pointsPerMatch > 0 ? pointsPerMatch : undefined,
         eligibleEventTypes: eligibleEventTypes.length > 0 ? eligibleEventTypes : undefined,
         eligibleFormats: eligibleFormats.length > 0 ? eligibleFormats : undefined,
       };
@@ -769,6 +796,22 @@ function OrganizerEditor({
             className="edit-input"
             value={pointsDraw}
             onChange={(e) => setPointsDraw(Number(e.target.value))}
+          />
+        </EditField>
+        <EditField label="Points per bye">
+          <input
+            type="number"
+            className="edit-input"
+            value={pointsBye}
+            onChange={(e) => setPointsBye(Number(e.target.value))}
+          />
+        </EditField>
+        <EditField label="Participation bonus">
+          <input
+            type="number"
+            className="edit-input"
+            value={pointsPerMatch}
+            onChange={(e) => setPointsPerMatch(Number(e.target.value))}
           />
         </EditField>
       </div>

@@ -37,19 +37,26 @@ export function matchQualifiesForLeague(
     if (!eligibleFormats.includes(match.format)) return false;
   }
 
-  // Byes don't count as W/L — exclude entirely
-  if (match.result === MatchResult.Bye) return false;
+  // Byes only count if the league opted in via pointsPerBye > 0
+  if (match.result === MatchResult.Bye) {
+    return (league.scoringRules.pointsPerBye || 0) > 0;
+  }
 
   return true;
 }
 
 function pointsForMatch(match: MatchRecord, league: League): number {
   const r = league.scoringRules;
+  // Byes use their own flat value — no participation bonus or format multipliers.
+  if (match.result === MatchResult.Bye) return r.pointsPerBye || 0;
+
   let base = 0;
   if (match.result === MatchResult.Win) base = r.pointsPerWin;
   else if (match.result === MatchResult.Loss) base = r.pointsPerLoss;
   else if (match.result === MatchResult.Draw) base = r.pointsPerDraw;
   else return 0;
+
+  base += r.pointsPerMatch || 0;
 
   const mult = r.formatMultipliers?.[match.format];
   return typeof mult === "number" ? base * mult : base;
@@ -77,6 +84,7 @@ export async function computeLeagueStandings(leagueId: string): Promise<LeagueSt
       let wins = 0;
       let losses = 0;
       let draws = 0;
+      let byes = 0;
       let points = 0;
       const storeSlugsPlayed = new Set<string>();
 
@@ -84,6 +92,7 @@ export async function computeLeagueStandings(leagueId: string): Promise<LeagueSt
         if (m.result === MatchResult.Win) wins++;
         else if (m.result === MatchResult.Loss) losses++;
         else if (m.result === MatchResult.Draw) draws++;
+        else if (m.result === MatchResult.Bye) byes++;
         points += pointsForMatch(m, league);
         if (m.venue) storeSlugsPlayed.add(slugifyStoreName(m.venue));
       }
@@ -97,6 +106,7 @@ export async function computeLeagueStandings(leagueId: string): Promise<LeagueSt
         wins,
         losses,
         draws,
+        byes,
         points,
         storesPlayed: storeSlugsPlayed.size,
       };

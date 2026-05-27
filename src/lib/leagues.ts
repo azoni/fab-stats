@@ -38,8 +38,9 @@ export function slugifyLeague(name: string): string {
 
 export const DEFAULT_SCORING_RULES: LeagueScoringRules = {
   pointsPerWin: 3,
-  pointsPerLoss: 0,
+  pointsPerLoss: 1,
   pointsPerDraw: 1,
+  pointsPerMatch: 0,
   eligibleEventTypes: ["Armory"],
 };
 

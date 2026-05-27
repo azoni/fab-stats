@@ -15,14 +15,8 @@ function normalizeForDisplay(raw: string): string {
 
 export interface StoreDirectoryEntry {
   slug: string;
-  /** Most common display variant of the name. */
   name: string;
-  /** Aggregate match count across all players who have played here. */
   totalMatches: number;
-  /** Aggregate wins across all players who have played here (their wins,
-   *  not match outcomes from the venue's perspective). */
-  totalWins: number;
-  /** Number of distinct players who have logged a match at this venue. */
   uniquePlayers: number;
 }
 
@@ -40,25 +34,38 @@ export interface StoreStats {
   slug: string;
   name: string;
   totalMatches: number;
-  totalWins: number;
   uniquePlayers: number;
-  /** All players who logged matches here, sorted by matches desc. */
   players: StorePlayerStat[];
-  /** Top players by win-rate (min 5 matches at this venue). */
   topByWinRate: StorePlayerStat[];
-  /** Top players by raw match count. */
   topByActivity: StorePlayerStat[];
 }
 
 type DirectoryAcc = {
   slug: string;
-  nameVariants: Map<string, number>; // display string -> count
+  nameVariants: Map<string, number>;
   totalMatches: number;
-  totalWins: number;
   players: Map<string, StorePlayerStat>;
 };
 
-/** Internal: scan all leaderboard entries and build the venue → aggregate map. */
+// ── Cache layer ─────────────────────────────────────────────────────────────
+// Memoize the aggregated venue map so successive /stores and /stores/[slug]
+// navigations don't rebuild it from scratch. Tied to the same 15-min TTL as
+// the underlying leaderboard cache.
+let cachedMap: Map<string, DirectoryAcc> | null = null;
+let cachedMapAt = 0;
+const CACHE_TTL_MS = 15 * 60_000;
+
+function clearStoreDirectoryCacheIfStale(now: number) {
+  if (cachedMap && now - cachedMapAt > CACHE_TTL_MS) {
+    cachedMap = null;
+  }
+}
+
+export function invalidateStoreDirectoryCache() {
+  cachedMap = null;
+  cachedMapAt = 0;
+}
+
 function buildDirectoryFromEntries(entries: LeaderboardEntry[]): Map<string, DirectoryAcc> {
   const map = new Map<string, DirectoryAcc>();
   for (const entry of entries) {
@@ -75,18 +82,14 @@ function buildDirectoryFromEntries(entries: LeaderboardEntry[]): Map<string, Dir
           slug,
           nameVariants: new Map(),
           totalMatches: 0,
-          totalWins: 0,
           players: new Map(),
         };
         map.set(slug, acc);
       }
       acc.nameVariants.set(displayName, (acc.nameVariants.get(displayName) || 0) + 1);
       acc.totalMatches += v.matches;
-      acc.totalWins += v.wins;
 
-      // Per-player accumulation
       const existing = acc.players.get(entry.userId);
-      const photoUrl = entry.photoUrl;
       if (existing) {
         existing.matches += v.matches;
         existing.wins += v.wins;
@@ -97,7 +100,7 @@ function buildDirectoryFromEntries(entries: LeaderboardEntry[]): Map<string, Dir
           userId: entry.userId,
           username: entry.username,
           displayName: entry.displayName,
-          photoUrl,
+          photoUrl: entry.photoUrl,
           matches: v.matches,
           wins: v.wins,
           winRate: v.winRate,
@@ -120,19 +123,28 @@ function pickCanonicalName(variants: Map<string, number>): string {
   return best;
 }
 
-/** Fetch the public auto-directory of stores derived from match venue data. */
-export async function getStoreDirectory(): Promise<StoreDirectoryEntry[]> {
+async function getDirectoryMap(): Promise<Map<string, DirectoryAcc>> {
+  const now = Date.now();
+  clearStoreDirectoryCacheIfStale(now);
+  if (cachedMap) return cachedMap;
+
   const entries = await getLeaderboardEntries(false, true).catch(() =>
     getLeaderboardEntries(false, false).catch(() => [] as LeaderboardEntry[]),
   );
-  const map = buildDirectoryFromEntries(entries);
+  cachedMap = buildDirectoryFromEntries(entries);
+  cachedMapAt = now;
+  return cachedMap;
+}
+
+/** Fetch the public auto-directory of stores derived from match venue data. */
+export async function getStoreDirectory(): Promise<StoreDirectoryEntry[]> {
+  const map = await getDirectoryMap();
   const directory: StoreDirectoryEntry[] = [];
   for (const acc of map.values()) {
     directory.push({
       slug: acc.slug,
       name: pickCanonicalName(acc.nameVariants),
       totalMatches: acc.totalMatches,
-      totalWins: acc.totalWins,
       uniquePlayers: acc.players.size,
     });
   }
@@ -140,16 +152,12 @@ export async function getStoreDirectory(): Promise<StoreDirectoryEntry[]> {
   return directory;
 }
 
-/** Fetch detailed stats for a single store. Reads from the same leaderboard
- *  source as the directory and returns null if no venue matches the slug. */
+/** Fetch detailed stats for a single store. Uses the same cached aggregation
+ *  as the directory, so navigating /stores → /stores/[slug] is instant. */
 export async function getStoreStats(slug: string): Promise<StoreStats | null> {
   const normalizedSlug = slugifyStoreName(slug);
   if (!normalizedSlug) return null;
-
-  const entries = await getLeaderboardEntries(false, true).catch(() =>
-    getLeaderboardEntries(false, false).catch(() => [] as LeaderboardEntry[]),
-  );
-  const map = buildDirectoryFromEntries(entries);
+  const map = await getDirectoryMap();
   const acc = map.get(normalizedSlug);
   if (!acc) return null;
 
@@ -164,17 +172,9 @@ export async function getStoreStats(slug: string): Promise<StoreStats | null> {
     slug: normalizedSlug,
     name: pickCanonicalName(acc.nameVariants),
     totalMatches: acc.totalMatches,
-    totalWins: acc.totalWins,
     uniquePlayers: acc.players.size,
     players: allPlayers,
     topByWinRate,
     topByActivity,
   };
-}
-
-/** Lightweight slug lookup against the directory — used by league create UX
- *  to validate that a selected slug actually corresponds to a real venue. */
-export async function venueSlugExists(slug: string): Promise<boolean> {
-  const dir = await getStoreDirectory();
-  return dir.some((d) => d.slug === slugifyStoreName(slug));
 }

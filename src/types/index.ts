@@ -299,6 +299,13 @@ export interface LeagueScoringRules {
   pointsPerWin: number;
   pointsPerLoss: number;
   pointsPerDraw: number;
+  /** Optional bye payout — a bye isn't really a win, so leagues can value
+   *  it differently (or 0 / undefined to skip byes entirely). Multipliers
+   *  and `pointsPerMatch` do not apply to byes. */
+  pointsPerBye?: number;
+  /** Flat bonus added to every qualifying W/L/D match regardless of result.
+   *  Doesn't apply to byes. Defaults to 0. */
+  pointsPerMatch?: number;
   /** Optional multipliers keyed by GameFormat string (e.g. "Classic Constructed": 1.5).
    *  When unset, all formats score equally. */
   formatMultipliers?: Record<string, number>;
@@ -353,6 +360,7 @@ export interface LeagueStandingEntry {
   wins: number;
   losses: number;
   draws: number;
+  byes: number;
   points: number;
   storesPlayed: number;
 }

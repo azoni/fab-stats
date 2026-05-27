@@ -1144,6 +1144,8 @@ service cloud.firestore {
           !('organizerUid' in request.resource.data.diff(resource.data).affectedKeys())
           || resource.data.organizerUid == request.auth.uid
         );
+      // Site admin can update/delete any league (moderation)
+      allow update, delete: if isAdmin();
       allow delete: if request.auth != null
         && resource.data.organizerUid == request.auth.uid;
 
