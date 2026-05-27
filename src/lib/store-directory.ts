@@ -242,14 +242,28 @@ async function getDirectoryMap(): Promise<Map<string, DirectoryAcc>> {
 /** Fast path: read the precomputed directory doc written by the
  *  store-aggregator Netlify function. Single doc read, instant. Returns
  *  null when the doc doesn't exist yet (e.g., on a fresh deploy before
- *  the aggregator has run). */
+ *  the aggregator has run). Supports both v1 (verbose field names) and
+ *  v2 (compact short field names) payloads. */
 async function getStoreDirectoryFromAggregate(): Promise<StoreDirectoryEntry[] | null> {
   try {
     const snap = await getDoc(doc(db, "storeAggregates", "_directory"));
     if (!snap.exists()) return null;
-    const data = snap.data() as { stores?: StoreDirectoryEntry[] };
+    const data = snap.data() as {
+      v?: number;
+      stores?: unknown[];
+    };
     if (!data.stores || !Array.isArray(data.stores)) return null;
-    return data.stores;
+    // v2: compact { s, n, m, p } shape
+    if (data.v === 2) {
+      return (data.stores as Array<{ s: string; n: string; m: number; p: number }>).map((e) => ({
+        slug: e.s,
+        name: e.n,
+        totalMatches: e.m,
+        uniquePlayers: e.p,
+      }));
+    }
+    // v1 fallback: verbose field names
+    return data.stores as StoreDirectoryEntry[];
   } catch {
     return null;
   }

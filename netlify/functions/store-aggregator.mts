@@ -63,21 +63,26 @@ interface StoreAggregate {
   players: PlayerStat[];
 }
 
-interface DirectoryEntry {
-  slug: string;
-  name: string;
-  totalMatches: number;
-  uniquePlayers: number;
+/** Compact directory entry — short field names to keep the listing doc
+ *  under Firestore's 1MB limit even with thousands of stores. The client
+ *  expands these back to full names on read. */
+interface CompactDirectoryEntry {
+  s: string; // slug
+  n: string; // name
+  m: number; // totalMatches
+  p: number; // uniquePlayers
 }
 
 const FULL_SYNC_INTERVAL_MS = 24 * 60 * 60 * 1000;
 const MAX_PLAYERS_PER_STORE = 100;
-// Stores below this threshold are still aggregated (per-store docs are tiny)
-// but skipped from the listed _directory doc. Without this, the directory
-// blows past Firestore's 1MB doc limit at a few thousand stores and tanks
-// page load with a multi-megabyte download.
-const DIRECTORY_MIN_MATCHES = 3;
-const DIRECTORY_MAX_STORES = 1500;
+// Single-match "stores" are usually one-off venues or typos. Skip them
+// from the directory listing only — per-store docs are still written for
+// everything, so direct /stores/[slug] URLs work for the long tail.
+const DIRECTORY_MIN_MATCHES = 2;
+// Hard cap to keep us well under Firestore's 1MB doc size limit even
+// in worst-case future growth. With compact field names below, each
+// directory entry is ~70 bytes, so 8000 entries = ~600KB. Plenty of headroom.
+const DIRECTORY_MAX_STORES = 8000;
 
 function slugifyStoreName(raw: string): string {
   return raw.toLowerCase().replace(/[^a-z0-9]/g, "");
@@ -257,7 +262,7 @@ async function writeAggregates(
 async function rebuildDirectoryFromAggregates(): Promise<number> {
   const db = getAdminDb();
   const snap = await db.collection("storeAggregates").get();
-  const entries: DirectoryEntry[] = [];
+  const entries: CompactDirectoryEntry[] = [];
   let totalAggregated = 0;
   for (const doc of snap.docs) {
     if (doc.id.startsWith("_")) continue;
@@ -265,16 +270,18 @@ async function rebuildDirectoryFromAggregates(): Promise<number> {
     const data = doc.data() as StoreAggregate;
     if (data.totalMatches < DIRECTORY_MIN_MATCHES) continue;
     entries.push({
-      slug: data.slug,
-      name: data.name,
-      totalMatches: data.totalMatches,
-      uniquePlayers: data.uniquePlayers,
+      s: data.slug,
+      n: data.name,
+      m: data.totalMatches,
+      p: data.uniquePlayers,
     });
   }
-  entries.sort((a, b) => b.totalMatches - a.totalMatches);
+  entries.sort((a, b) => b.m - a.m);
   // Cap to keep the directory doc well under Firestore's 1MB limit.
   const capped = entries.slice(0, DIRECTORY_MAX_STORES);
   await db.collection("storeAggregates").doc("_directory").set({
+    // Tagged with v2 so the client knows to decode compact field names.
+    v: 2,
     stores: capped,
     count: capped.length,
     totalAggregated,
