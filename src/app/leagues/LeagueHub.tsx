@@ -419,61 +419,58 @@ export default function LeagueHub() {
                   const timeBadge = timeRemainingLabel(l);
                   return (
                     <li key={l.id}>
-                      <Card padding="sm" interactive>
-                        <Link href={`/leagues/${l.slug}`} className="block">
-                          <div className="flex flex-wrap items-start justify-between gap-3">
-                            <div className="min-w-0">
-                              <div className="flex flex-wrap items-center gap-2">
-                                <h3 className="text-base font-bold text-fab-text hover:text-fab-gold">
-                                  {l.name}
-                                </h3>
-                                <StatusBadge status={l.status} />
-                                {timeBadge && (
-                                  <Badge variant={timeBadge.tone} size="xs">
-                                    {timeBadge.label}
-                                  </Badge>
-                                )}
-                              </div>
-                              {(l.city || l.region || l.country) && (
-                                <p className="mt-0.5 flex items-center gap-1 text-[11px] text-fab-muted">
-                                  <MapPin className="h-3 w-3" />
-                                  {[l.city, l.region, l.country].filter(Boolean).join(", ")}
-                                </p>
-                              )}
-                              <p className="mt-0.5 flex items-center gap-1 text-[11px] text-fab-muted">
-                                <CalendarDays className="h-3 w-3" />
-                                {formatDateRange(l.startDate, l.endDate)}
-                              </p>
-                              {l.description && (
-                                <p className="mt-2 line-clamp-2 text-xs text-fab-muted">
-                                  {l.description}
-                                </p>
-                              )}
-                            </div>
-                            <div className="flex flex-col items-end gap-1.5">
-                              <div className="flex gap-1.5">
-                                <Badge size="xs" variant="muted">
-                                  <Users className="h-3 w-3" /> {l.memberCount}
-                                </Badge>
-                                <Badge size="xs" variant="muted">
-                                  <StoreIcon className="h-3 w-3" /> {l.storeSlugs.length}
-                                </Badge>
-                              </div>
-                              <Button
-                                variant="primary"
-                                size="sm"
-                                disabled={joiningId === l.id || !user}
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  handleJoin(l);
-                                }}
+                      <Card padding="sm">
+                        <div className="flex flex-wrap items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <Link
+                                href={`/leagues/${l.slug}`}
+                                className="text-base font-bold text-fab-text hover:text-fab-gold"
                               >
-                                {joiningId === l.id ? "Joining…" : "Join"}
-                              </Button>
+                                {l.name}
+                              </Link>
+                              <StatusBadge status={l.status} />
+                              {timeBadge && (
+                                <Badge variant={timeBadge.tone} size="xs">
+                                  {timeBadge.label}
+                                </Badge>
+                              )}
                             </div>
+                            {(l.city || l.region || l.country) && (
+                              <p className="mt-0.5 flex items-center gap-1 text-[11px] text-fab-muted">
+                                <MapPin className="h-3 w-3" />
+                                {[l.city, l.region, l.country].filter(Boolean).join(", ")}
+                              </p>
+                            )}
+                            <p className="mt-0.5 flex items-center gap-1 text-[11px] text-fab-muted">
+                              <CalendarDays className="h-3 w-3" />
+                              {formatDateRange(l.startDate, l.endDate)}
+                            </p>
+                            {l.description && (
+                              <p className="mt-2 line-clamp-2 text-xs text-fab-muted">
+                                {l.description}
+                              </p>
+                            )}
                           </div>
-                        </Link>
+                          <div className="flex flex-col items-end gap-1.5">
+                            <div className="flex gap-1.5">
+                              <Badge size="xs" variant="muted">
+                                <Users className="h-3 w-3" /> {l.memberCount}
+                              </Badge>
+                              <Badge size="xs" variant="muted">
+                                <StoreIcon className="h-3 w-3" /> {l.storeSlugs.length}
+                              </Badge>
+                            </div>
+                            <Button
+                              variant="primary"
+                              size="sm"
+                              disabled={joiningId === l.id || !user}
+                              onClick={() => handleJoin(l)}
+                            >
+                              {joiningId === l.id ? "Joining…" : "Join"}
+                            </Button>
+                          </div>
+                        </div>
                       </Card>
                     </li>
                   );
