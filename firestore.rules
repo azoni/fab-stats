@@ -1185,5 +1185,15 @@ service cloud.firestore {
         && resource.data.leagueId != null
         && get(/databases/$(database)/documents/leagues/$(resource.data.leagueId)).data.organizerUid == request.auth.uid;
     }
+
+    // ── Store Aggregates (written by store-aggregator Netlify function only) ──
+    // Public read so /stores and /stores/[slug] can fetch precomputed
+    // directory + per-store stats with a single doc read instead of scanning
+    // the entire leaderboard collection. Writes go through firebase-admin
+    // which bypasses these rules.
+    match /storeAggregates/{docId} {
+      allow read: if true;
+      allow write: if false;
+    }
   }
 }

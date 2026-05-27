@@ -1,4 +1,4 @@
-import { collection, getDocs, query, where, limit as fLimit } from "firebase/firestore";
+import { collection, doc, getDoc, getDocs, query, where, limit as fLimit } from "firebase/firestore";
 import { db } from "./firebase";
 import type { LeaderboardEntry } from "@/types";
 import { getLeaderboardEntries } from "./leaderboard";
@@ -239,8 +239,30 @@ async function getDirectoryMap(): Promise<Map<string, DirectoryAcc>> {
   return fetchAndCache();
 }
 
-/** Fetch the public auto-directory of stores derived from match venue data. */
+/** Fast path: read the precomputed directory doc written by the
+ *  store-aggregator Netlify function. Single doc read, instant. Returns
+ *  null when the doc doesn't exist yet (e.g., on a fresh deploy before
+ *  the aggregator has run). */
+async function getStoreDirectoryFromAggregate(): Promise<StoreDirectoryEntry[] | null> {
+  try {
+    const snap = await getDoc(doc(db, "storeAggregates", "_directory"));
+    if (!snap.exists()) return null;
+    const data = snap.data() as { stores?: StoreDirectoryEntry[] };
+    if (!data.stores || !Array.isArray(data.stores)) return null;
+    return data.stores;
+  } catch {
+    return null;
+  }
+}
+
+/** Fetch the public auto-directory of stores derived from match venue data.
+ *  Tries the precomputed aggregate first; falls back to live aggregation
+ *  from the leaderboard collection (slow on cold cache, instant after). */
 export async function getStoreDirectory(): Promise<StoreDirectoryEntry[]> {
+  const fromAggregate = await getStoreDirectoryFromAggregate();
+  if (fromAggregate) return fromAggregate;
+
+  // Fallback: live aggregation (cached via localStorage + SWR).
   const map = await getDirectoryMap();
   const directory: StoreDirectoryEntry[] = [];
   for (const acc of map.values()) {
@@ -296,18 +318,52 @@ async function getStoreStatsViaIndex(slug: string): Promise<StoreStats | null> {
   }
 }
 
-/** Fetch detailed stats for a single store. Tries the venueSlugs index first
- *  (cheap), then falls back to the cached full directory map (which itself is
- *  cached client-side). */
+/** Fastest path: read the precomputed per-store aggregate doc written by
+ *  the store-aggregator Netlify function. Single doc read. */
+async function getStoreStatsFromAggregate(slug: string): Promise<StoreStats | null> {
+  try {
+    const snap = await getDoc(doc(db, "storeAggregates", slug));
+    if (!snap.exists()) return null;
+    const data = snap.data() as {
+      slug: string;
+      name: string;
+      totalMatches: number;
+      uniquePlayers: number;
+      players?: StorePlayerStat[];
+    };
+    const players = data.players || [];
+    return {
+      slug: data.slug,
+      name: data.name,
+      totalMatches: data.totalMatches,
+      uniquePlayers: data.uniquePlayers,
+      players,
+      topByActivity: players.slice(0, 10),
+      topByWinRate: [...players]
+        .filter((p) => p.matches >= 5)
+        .sort((a, b) => b.winRate - a.winRate)
+        .slice(0, 10),
+    };
+  } catch {
+    return null;
+  }
+}
+
+/** Fetch detailed stats for a single store. Three-tier fallback:
+ *  1. Precomputed aggregate doc (one read, instant) — the happy path.
+ *  2. venueSlugs array-contains query (small read, fast).
+ *  3. Full leaderboard scan via the cached directory map (slow on cold).
+ */
 export async function getStoreStats(slug: string): Promise<StoreStats | null> {
   const normalizedSlug = slugifyStoreName(slug);
   if (!normalizedSlug) return null;
 
-  // Fast path: query only players who logged at this venue.
+  const fromAggregate = await getStoreStatsFromAggregate(normalizedSlug);
+  if (fromAggregate) return fromAggregate;
+
   const fromIndex = await getStoreStatsViaIndex(normalizedSlug);
   if (fromIndex) return fromIndex;
 
-  // Fallback: scan the full leaderboard. Slow on cold cache, instant after.
   const map = await getDirectoryMap();
   const acc = map.get(normalizedSlug);
   if (!acc) return null;
