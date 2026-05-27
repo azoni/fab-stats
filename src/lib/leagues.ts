@@ -1,0 +1,354 @@
+import {
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  setDoc,
+  updateDoc,
+  onSnapshot,
+  query,
+  where,
+  increment,
+  writeBatch,
+  limit,
+  orderBy,
+  arrayUnion,
+  arrayRemove,
+  type Unsubscribe,
+} from "firebase/firestore";
+import { db } from "./firebase";
+import { containsProfanity } from "./profanity-filter";
+import type { League, LeagueMember, LeagueScoringRules, UserProfile } from "@/types";
+
+function leaguesCollection() {
+  return collection(db, "leagues");
+}
+
+function leagueMembersCollection(leagueId: string) {
+  return collection(db, "leagues", leagueId, "members");
+}
+
+export function slugifyLeague(name: string): string {
+  return name
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+export const DEFAULT_SCORING_RULES: LeagueScoringRules = {
+  pointsPerWin: 3,
+  pointsPerLoss: 0,
+  pointsPerDraw: 1,
+  eligibleEventTypes: ["Armory"],
+};
+
+// ── CRUD ──
+
+export async function createLeague(
+  profile: UserProfile,
+  opts: {
+    name: string;
+    slug?: string;
+    description?: string;
+    city?: string;
+    region?: string;
+    country?: string;
+    startDate: string;
+    endDate: string;
+    storeSlugs: string[];
+    scoringRules?: LeagueScoringRules;
+    accentColor?: string;
+  },
+): Promise<string> {
+  const trimmedName = opts.name.trim();
+  if (!trimmedName || trimmedName.length > 80) {
+    throw new Error("League name must be 1-80 characters.");
+  }
+  if (containsProfanity(trimmedName)) {
+    throw new Error("League name contains inappropriate language.");
+  }
+  if (opts.description && opts.description.length > 1000) {
+    throw new Error("Description must be 1000 characters or less.");
+  }
+  if (opts.description && containsProfanity(opts.description)) {
+    throw new Error("Description contains inappropriate language.");
+  }
+  if (!opts.startDate || !opts.endDate) {
+    throw new Error("Start date and end date are required.");
+  }
+  if (opts.startDate > opts.endDate) {
+    throw new Error("End date must be after start date.");
+  }
+  if (!opts.storeSlugs || opts.storeSlugs.length === 0) {
+    throw new Error("Add at least one store to the league.");
+  }
+  // De-dupe and ensure slug shape
+  opts.storeSlugs = Array.from(new Set(opts.storeSlugs.filter(Boolean)));
+
+  const slugBase = opts.slug ? slugifyLeague(opts.slug) : slugifyLeague(trimmedName);
+  if (!slugBase || slugBase.length < 2) {
+    throw new Error("URL slug must be at least 2 characters.");
+  }
+  if (slugBase.length > 50) {
+    throw new Error("URL slug must be 50 characters or less.");
+  }
+  const slugTaken = await getDoc(doc(db, "leaguenames", slugBase));
+  if (slugTaken.exists()) {
+    throw new Error("This league URL slug is already taken.");
+  }
+
+  const now = new Date().toISOString();
+  const leagueRef = doc(leaguesCollection());
+  const leagueId = leagueRef.id;
+
+  const scoringRules: LeagueScoringRules = opts.scoringRules || DEFAULT_SCORING_RULES;
+
+  const leagueData: Record<string, unknown> = {
+    id: leagueId,
+    name: trimmedName,
+    slug: slugBase,
+    organizerUid: profile.uid,
+    organizerName: profile.displayName,
+    startDate: opts.startDate,
+    endDate: opts.endDate,
+    storeSlugs: opts.storeSlugs,
+    scoringRules,
+    status: "active",
+    memberCount: 1,
+    createdAt: now,
+    updatedAt: now,
+  };
+  if (opts.description) leagueData.description = opts.description;
+  if (opts.city) leagueData.city = opts.city.trim();
+  if (opts.region) leagueData.region = opts.region.trim();
+  if (opts.country) leagueData.country = opts.country.trim();
+  if (opts.accentColor) leagueData.accentColor = opts.accentColor;
+
+  const memberData: Record<string, unknown> = {
+    uid: profile.uid,
+    username: profile.username,
+    displayName: profile.displayName,
+    role: "organizer",
+    joinedAt: now,
+  };
+  if (profile.photoUrl) memberData.photoUrl = profile.photoUrl;
+
+  await setDoc(leagueRef, leagueData);
+
+  const batch = writeBatch(db);
+  batch.set(doc(leagueMembersCollection(leagueId), profile.uid), memberData);
+  batch.set(doc(db, "leaguenames", slugBase), { leagueId, name: trimmedName });
+  await batch.commit();
+
+  return leagueId;
+}
+
+export async function updateLeague(
+  leagueId: string,
+  updates: Partial<
+    Pick<
+      League,
+      | "name"
+      | "description"
+      | "city"
+      | "region"
+      | "country"
+      | "startDate"
+      | "endDate"
+      | "storeSlugs"
+      | "scoringRules"
+      | "status"
+      | "accentColor"
+    >
+  >,
+): Promise<void> {
+  const updateData: Record<string, unknown> = {
+    updatedAt: new Date().toISOString(),
+  };
+
+  if (updates.name !== undefined) {
+    const trimmed = updates.name.trim();
+    if (!trimmed || trimmed.length > 80) throw new Error("League name must be 1-80 characters.");
+    if (containsProfanity(trimmed)) throw new Error("League name contains inappropriate language.");
+    updateData.name = trimmed;
+  }
+  if (updates.description !== undefined) {
+    if (updates.description.length > 1000) {
+      throw new Error("Description must be 1000 characters or less.");
+    }
+    if (updates.description && containsProfanity(updates.description)) {
+      throw new Error("Description contains inappropriate language.");
+    }
+    updateData.description = updates.description;
+  }
+  if (updates.city !== undefined) updateData.city = updates.city.trim();
+  if (updates.region !== undefined) updateData.region = updates.region.trim();
+  if (updates.country !== undefined) updateData.country = updates.country.trim();
+  if (updates.startDate !== undefined) updateData.startDate = updates.startDate;
+  if (updates.endDate !== undefined) updateData.endDate = updates.endDate;
+  if (updates.storeSlugs !== undefined) updateData.storeSlugs = updates.storeSlugs;
+  if (updates.scoringRules !== undefined) updateData.scoringRules = updates.scoringRules;
+  if (updates.status !== undefined) updateData.status = updates.status;
+  if (updates.accentColor !== undefined) updateData.accentColor = updates.accentColor;
+
+  if (
+    updateData.startDate &&
+    updateData.endDate &&
+    (updateData.startDate as string) > (updateData.endDate as string)
+  ) {
+    throw new Error("End date must be after start date.");
+  }
+
+  await updateDoc(doc(db, "leagues", leagueId), updateData);
+}
+
+export async function addStoreToLeague(leagueId: string, storeSlug: string): Promise<void> {
+  await updateDoc(doc(db, "leagues", leagueId), {
+    storeSlugs: arrayUnion(storeSlug),
+    updatedAt: new Date().toISOString(),
+  });
+}
+
+export async function removeStoreFromLeague(leagueId: string, storeSlug: string): Promise<void> {
+  await updateDoc(doc(db, "leagues", leagueId), {
+    storeSlugs: arrayRemove(storeSlug),
+    updatedAt: new Date().toISOString(),
+  });
+}
+
+export async function disbandLeague(leagueId: string, organizerUid: string): Promise<void> {
+  const leagueSnap = await getDoc(doc(db, "leagues", leagueId));
+  if (!leagueSnap.exists()) throw new Error("League not found.");
+  const league = leagueSnap.data() as League;
+  if (league.organizerUid !== organizerUid) {
+    throw new Error("Only the organizer can disband the league.");
+  }
+
+  const membersSnap = await getDocs(leagueMembersCollection(leagueId));
+  const memberDocs = membersSnap.docs;
+  for (let i = 0; i < memberDocs.length; i += 450) {
+    const chunk = memberDocs.slice(i, i + 450);
+    const batch = writeBatch(db);
+    chunk.forEach((m) => batch.delete(m.ref));
+    if (i === 0) {
+      batch.delete(doc(db, "leagues", leagueId));
+      batch.delete(doc(db, "leaguenames", league.slug));
+      batch.delete(doc(db, "leagues", leagueId, "standings", "current"));
+    }
+    await batch.commit();
+  }
+
+  if (memberDocs.length === 0) {
+    const batch = writeBatch(db);
+    batch.delete(doc(db, "leagues", leagueId));
+    batch.delete(doc(db, "leaguenames", league.slug));
+    batch.delete(doc(db, "leagues", leagueId, "standings", "current"));
+    await batch.commit();
+  }
+}
+
+// ── Members (open join) ──
+
+export async function joinLeague(leagueId: string, profile: UserProfile): Promise<void> {
+  const memberRef = doc(leagueMembersCollection(leagueId), profile.uid);
+  const existing = await getDoc(memberRef);
+  if (existing.exists()) return;
+
+  const now = new Date().toISOString();
+  const memberData: Record<string, unknown> = {
+    uid: profile.uid,
+    username: profile.username,
+    displayName: profile.displayName,
+    role: "player",
+    joinedAt: now,
+  };
+  if (profile.photoUrl) memberData.photoUrl = profile.photoUrl;
+
+  const batch = writeBatch(db);
+  batch.set(memberRef, memberData);
+  batch.update(doc(db, "leagues", leagueId), { memberCount: increment(1), updatedAt: now });
+  await batch.commit();
+}
+
+export async function leaveLeague(leagueId: string, uid: string): Promise<void> {
+  const memberSnap = await getDoc(doc(leagueMembersCollection(leagueId), uid));
+  if (!memberSnap.exists()) throw new Error("You are not in this league.");
+  const member = memberSnap.data() as LeagueMember;
+  if (member.role === "organizer") {
+    throw new Error("The organizer cannot leave. Transfer organizer role or disband the league.");
+  }
+
+  const now = new Date().toISOString();
+  const batch = writeBatch(db);
+  batch.delete(doc(leagueMembersCollection(leagueId), uid));
+  batch.update(doc(db, "leagues", leagueId), { memberCount: increment(-1), updatedAt: now });
+  await batch.commit();
+}
+
+export async function kickLeagueMember(
+  leagueId: string,
+  organizerUid: string,
+  targetUid: string,
+): Promise<void> {
+  const league = await getLeague(leagueId);
+  if (!league) throw new Error("League not found.");
+  if (league.organizerUid !== organizerUid) {
+    throw new Error("Only the organizer can remove members.");
+  }
+  if (targetUid === organizerUid) throw new Error("Cannot remove the organizer.");
+
+  const now = new Date().toISOString();
+  const batch = writeBatch(db);
+  batch.delete(doc(leagueMembersCollection(leagueId), targetUid));
+  batch.update(doc(db, "leagues", leagueId), { memberCount: increment(-1), updatedAt: now });
+  await batch.commit();
+}
+
+// ── Queries ──
+
+export async function getAllLeagues(): Promise<League[]> {
+  const snap = await getDocs(query(leaguesCollection(), orderBy("createdAt", "desc"), limit(100)));
+  return snap.docs.map((d) => d.data() as League);
+}
+
+export async function getLeague(leagueId: string): Promise<League | null> {
+  const snap = await getDoc(doc(db, "leagues", leagueId));
+  return snap.exists() ? (snap.data() as League) : null;
+}
+
+export async function getLeagueBySlug(slug: string): Promise<League | null> {
+  const nameSnap = await getDoc(doc(db, "leaguenames", slug));
+  if (!nameSnap.exists()) return null;
+  const { leagueId } = nameSnap.data() as { leagueId: string };
+  return getLeague(leagueId);
+}
+
+export async function getLeagueMembers(leagueId: string): Promise<LeagueMember[]> {
+  const snap = await getDocs(leagueMembersCollection(leagueId));
+  return snap.docs.map((d) => d.data() as LeagueMember);
+}
+
+export async function getLeaguesForStore(storeSlug: string): Promise<League[]> {
+  const snap = await getDocs(
+    query(leaguesCollection(), where("storeSlugs", "array-contains", storeSlug), limit(50)),
+  );
+  return snap.docs.map((d) => d.data() as League);
+}
+
+// ── Subscriptions ──
+
+export function subscribeToLeague(leagueId: string, cb: (league: League | null) => void): Unsubscribe {
+  return onSnapshot(doc(db, "leagues", leagueId), (snap) => {
+    cb(snap.exists() ? (snap.data() as League) : null);
+  });
+}
+
+export function subscribeToLeagueMembers(
+  leagueId: string,
+  cb: (members: LeagueMember[]) => void,
+): Unsubscribe {
+  return onSnapshot(leagueMembersCollection(leagueId), (snap) => {
+    cb(snap.docs.map((d) => d.data() as LeagueMember));
+  });
+}

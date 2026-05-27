@@ -1124,5 +1124,64 @@ service cloud.firestore {
         && (resource.data.inviterUid == request.auth.uid
             || resource.data.targetUid == request.auth.uid);
     }
+
+    // ── Leagues ──
+
+    match /leagues/{leagueId} {
+      allow read: if true;
+      allow create: if request.auth != null
+        && request.resource.data.organizerUid == request.auth.uid
+        && maxLen(request.resource.data.name, 80)
+        && request.resource.data.memberCount is int
+        && request.resource.data.storeSlugs is list;
+      // Any authenticated user can update memberCount + updatedAt (for join/leave)
+      allow update: if request.auth != null
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['memberCount', 'updatedAt']);
+      // Organizer can update everything except changing organizerUid (transfer not supported v1)
+      allow update: if request.auth != null
+        && resource.data.organizerUid == request.auth.uid
+        && (
+          !('organizerUid' in request.resource.data.diff(resource.data).affectedKeys())
+          || resource.data.organizerUid == request.auth.uid
+        );
+      allow delete: if request.auth != null
+        && resource.data.organizerUid == request.auth.uid;
+
+      match /members/{memberId} {
+        allow read: if true;
+        // Organizer self-add on league creation
+        allow create: if request.auth != null
+          && request.auth.uid == memberId
+          && request.resource.data.role == "organizer"
+          && get(/databases/$(database)/documents/leagues/$(leagueId)).data.organizerUid == request.auth.uid;
+        // Self-join (leagues are open join)
+        allow create: if request.auth != null
+          && request.auth.uid == memberId
+          && request.resource.data.role == "player";
+        // Self-leave or organizer-kick
+        allow delete: if request.auth != null
+          && (request.auth.uid == memberId
+              || get(/databases/$(database)/documents/leagues/$(leagueId)).data.organizerUid == request.auth.uid);
+        // Organizer can update roles (none in v1, but reserved)
+        allow update: if request.auth != null
+          && get(/databases/$(database)/documents/leagues/$(leagueId)).data.organizerUid == request.auth.uid;
+      }
+
+      // Standings: readable by anyone, writable by any league member (so the
+      // "Refresh" button works for organizers and players alike).
+      match /standings/{standingsId} {
+        allow read: if true;
+        allow write: if request.auth != null
+          && exists(/databases/$(database)/documents/leagues/$(leagueId)/members/$(request.auth.uid));
+      }
+    }
+
+    match /leaguenames/{slug} {
+      allow read: if true;
+      allow create: if request.auth != null;
+      allow delete: if request.auth != null
+        && resource.data.leagueId != null
+        && get(/databases/$(database)/documents/leagues/$(resource.data.leagueId)).data.organizerUid == request.auth.uid;
+    }
   }
 }

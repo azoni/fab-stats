@@ -8,6 +8,8 @@ import {
   Settings,
   ShoppingCart,
   Star,
+  Store,
+  Trophy,
   Users,
 } from "lucide-react";
 
@@ -62,6 +64,8 @@ export const navLinks: NavLink[] = [
   ] },
   { href: "/extras", label: "Extras", icon: <NavAssetIcon name="extras" />, color: "text-violet-400", bg: "bg-violet-400/10", subItems: [
     { href: "/games", label: "Daily Games", icon: <Gamepad2 className="w-3.5 h-3.5" /> },
+    { href: "/leagues", label: "Leagues", badge: "New", icon: <Trophy className="w-3.5 h-3.5" /> },
+    { href: "/stores", label: "Stores", badge: "New", icon: <Store className="w-3.5 h-3.5" /> },
     { href: "/compare", label: "Versus" },
     { href: "/docs", label: "Docs" },
     { href: "/changelog", label: "Changelog" },

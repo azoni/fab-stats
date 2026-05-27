@@ -1,0 +1,920 @@
+"use client";
+import { useEffect, useMemo, useState } from "react";
+import { useParams } from "next/navigation";
+import Link from "next/link";
+import { useAuth } from "@/contexts/AuthContext";
+import {
+  disbandLeague,
+  getLeagueBySlug,
+  joinLeague,
+  kickLeagueMember,
+  leaveLeague,
+  subscribeToLeague,
+  subscribeToLeagueMembers,
+  updateLeague,
+} from "@/lib/leagues";
+import { getStoreDirectory, type StoreDirectoryEntry } from "@/lib/store-directory";
+import { computeLeagueStandings, recomputeAndStoreStandings } from "@/lib/leagues-scoring";
+import { doc, onSnapshot } from "firebase/firestore";
+import { db } from "@/lib/firebase";
+import type {
+  League,
+  LeagueMember,
+  LeagueScoringRules,
+  LeagueStandingEntry,
+} from "@/types";
+import { toast } from "sonner";
+import {
+  ArrowLeft,
+  CalendarDays,
+  MapPin,
+  RefreshCw,
+  Settings,
+  Store as StoreIcon,
+  Trophy,
+  UserMinus,
+  Users,
+} from "lucide-react";
+
+function formatDateRange(start: string, end: string) {
+  const fmt = (s: string) =>
+    new Date(s + "T00:00:00Z").toLocaleDateString(undefined, {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      timeZone: "UTC",
+    });
+  return `${fmt(start)} → ${fmt(end)}`;
+}
+
+export default function LeaguePage() {
+  const params = useParams<{ slug: string }>();
+  const slug = params?.slug || "";
+  const { user, profile } = useAuth();
+
+  const [leagueId, setLeagueId] = useState<string | null>(null);
+  const [league, setLeague] = useState<League | null>(null);
+  const [members, setMembers] = useState<LeagueMember[]>([]);
+  const [directory, setDirectory] = useState<StoreDirectoryEntry[]>([]);
+  const [standings, setStandings] = useState<LeagueStandingEntry[] | null>(null);
+  const [standingsAt, setStandingsAt] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
+
+  const [recomputing, setRecomputing] = useState(false);
+  const [editing, setEditing] = useState(false);
+
+  useEffect(() => {
+    if (!slug || slug === "_") return;
+    let cancelled = false;
+    (async () => {
+      const found = await getLeagueBySlug(slug);
+      if (cancelled) return;
+      if (!found) {
+        setNotFound(true);
+        setLoading(false);
+        return;
+      }
+      setLeagueId(found.id);
+      setLeague(found);
+      setLoading(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [slug]);
+
+  // Subscribe to league + members + standings
+  useEffect(() => {
+    if (!leagueId) return;
+    const unsubL = subscribeToLeague(leagueId, (l) => setLeague(l));
+    const unsubM = subscribeToLeagueMembers(leagueId, (m) => setMembers(m));
+    const unsubS = onSnapshot(doc(db, "leagues", leagueId, "standings", "current"), (snap) => {
+      if (snap.exists()) {
+        const data = snap.data() as { entries: LeagueStandingEntry[]; computedAt: string };
+        setStandings(data.entries);
+        setStandingsAt(data.computedAt);
+      }
+    });
+    return () => {
+      unsubL();
+      unsubM();
+      unsubS();
+    };
+  }, [leagueId]);
+
+  // Resolve store names from the directory
+  useEffect(() => {
+    let cancelled = false;
+    getStoreDirectory()
+      .then((d) => {
+        if (!cancelled) setDirectory(d);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const storeRows = useMemo(() => {
+    if (!league) return [];
+    const bySlug = new Map(directory.map((d) => [d.slug, d]));
+    return league.storeSlugs.map((slug) => bySlug.get(slug) || { slug, name: slug, totalMatches: 0, totalWins: 0, uniquePlayers: 0 });
+  }, [league, directory]);
+
+  const isOrganizer = !!user && !!league && user.uid === league.organizerUid;
+  const isMember = useMemo(
+    () => !!user && members.some((m) => m.uid === user.uid),
+    [user, members],
+  );
+
+  async function handleRecompute() {
+    if (!league) return;
+    setRecomputing(true);
+    try {
+      const entries = await recomputeAndStoreStandings(league.id);
+      setStandings(entries);
+      toast.success("Standings refreshed.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to refresh standings.");
+    }
+    setRecomputing(false);
+  }
+
+  async function handlePreviewMyStandings() {
+    if (!league) return;
+    setRecomputing(true);
+    try {
+      const entries = await computeLeagueStandings(league.id);
+      setStandings(entries);
+      toast.success("Standings computed (local preview).");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to compute standings.");
+    }
+    setRecomputing(false);
+  }
+
+  async function handleJoin() {
+    if (!user || !profile || !league) {
+      toast.error("Sign in to join the league.");
+      return;
+    }
+    try {
+      await joinLeague(league.id, profile);
+      toast.success(`Joined ${league.name}.`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to join.");
+    }
+  }
+
+  async function handleLeave() {
+    if (!user || !league) return;
+    try {
+      await leaveLeague(league.id, user.uid);
+      toast.success("Left the league.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to leave.");
+    }
+  }
+
+  async function handleKick(uid: string) {
+    if (!user || !league) return;
+    if (!confirm("Remove this member from the league?")) return;
+    try {
+      await kickLeagueMember(league.id, user.uid, uid);
+      toast.success("Member removed.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to remove member.");
+    }
+  }
+
+  if (loading) {
+    return <div className="mx-auto max-w-5xl px-4 py-10 text-fab-dim">Loading league…</div>;
+  }
+  if (notFound || !league) {
+    return (
+      <div className="mx-auto max-w-5xl px-4 py-10">
+        <p className="text-fab-text">
+          League not found. <Link href="/leagues" className="text-fab-gold underline">Back to leagues</Link>.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6">
+      <div className="mb-3">
+        <Link
+          href="/leagues"
+          className="inline-flex items-center gap-1 text-xs text-fab-dim hover:text-fab-text"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" /> All leagues
+        </Link>
+      </div>
+
+      <header
+        className="rounded-lg border border-fab-border/70 bg-fab-bg/45 p-5"
+        style={league.accentColor ? { borderColor: league.accentColor + "60" } : undefined}
+      >
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <h1 className="flex flex-wrap items-center gap-2 text-2xl font-black text-fab-gold sm:text-3xl">
+              <Trophy className="inline h-6 w-6" /> {league.name}
+            </h1>
+            <p className="mt-1 text-xs text-fab-dim">
+              Organized by <span className="font-bold text-fab-text">{league.organizerName}</span>
+            </p>
+            <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-fab-dim">
+              <span className="inline-flex items-center gap-1">
+                <CalendarDays className="h-3.5 w-3.5" /> {formatDateRange(league.startDate, league.endDate)}
+              </span>
+              {(league.city || league.region || league.country) && (
+                <span className="inline-flex items-center gap-1">
+                  <MapPin className="h-3.5 w-3.5" />
+                  {[league.city, league.region, league.country].filter(Boolean).join(", ")}
+                </span>
+              )}
+              <span className="inline-flex items-center gap-1">
+                <Users className="h-3.5 w-3.5" /> {league.memberCount} players
+              </span>
+              <span className="inline-flex items-center gap-1">
+                <StoreIcon className="h-3.5 w-3.5" /> {league.storeSlugs.length} stores
+              </span>
+            </div>
+            {league.description && (
+              <p className="mt-3 max-w-3xl whitespace-pre-line text-sm text-fab-text">
+                {league.description}
+              </p>
+            )}
+          </div>
+
+          <div className="flex flex-col gap-2">
+            {!isMember && (
+              <button
+                type="button"
+                onClick={handleJoin}
+                disabled={!user}
+                className="rounded-md bg-fab-gold px-3 py-1.5 text-sm font-bold text-black hover:bg-fab-gold/80 disabled:opacity-50"
+              >
+                Join league
+              </button>
+            )}
+            {isMember && !isOrganizer && (
+              <button
+                type="button"
+                onClick={handleLeave}
+                className="rounded-md border border-fab-border bg-fab-bg/60 px-3 py-1.5 text-xs font-bold text-fab-dim hover:text-rose-300"
+              >
+                Leave league
+              </button>
+            )}
+            {isOrganizer && (
+              <button
+                type="button"
+                onClick={() => setEditing((v) => !v)}
+                className="inline-flex items-center gap-1 rounded-md border border-fab-gold/60 bg-fab-gold/10 px-3 py-1.5 text-xs font-bold text-fab-gold hover:bg-fab-gold/20"
+              >
+                <Settings className="h-3.5 w-3.5" /> {editing ? "Close editor" : "Edit league"}
+              </button>
+            )}
+          </div>
+        </div>
+      </header>
+
+      {isOrganizer && editing && (
+        <OrganizerEditor
+          league={league}
+          directory={directory}
+          onClose={() => setEditing(false)}
+        />
+      )}
+
+      <section className="mt-6 grid gap-6 lg:grid-cols-3">
+        <div className="lg:col-span-2">
+          <div className="mb-2 flex items-center justify-between">
+            <h2 className="text-lg font-bold text-fab-gold">Standings</h2>
+            <div className="flex items-center gap-2 text-xs text-fab-dim">
+              {standingsAt && (
+                <span>
+                  Updated{" "}
+                  {new Date(standingsAt).toLocaleString(undefined, {
+                    year: "numeric",
+                    month: "short",
+                    day: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </span>
+              )}
+              {isMember || isOrganizer ? (
+                <button
+                  type="button"
+                  onClick={handleRecompute}
+                  disabled={recomputing}
+                  className="inline-flex items-center gap-1 rounded-md border border-fab-border/60 bg-fab-bg/60 px-2 py-1 text-fab-text hover:text-fab-gold disabled:opacity-50"
+                >
+                  <RefreshCw className={`h-3 w-3 ${recomputing ? "animate-spin" : ""}`} />
+                  Refresh
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handlePreviewMyStandings}
+                  disabled={recomputing}
+                  className="inline-flex items-center gap-1 rounded-md border border-fab-border/60 bg-fab-bg/60 px-2 py-1 text-fab-text hover:text-fab-gold disabled:opacity-50"
+                >
+                  <RefreshCw className={`h-3 w-3 ${recomputing ? "animate-spin" : ""}`} />
+                  Preview
+                </button>
+              )}
+            </div>
+          </div>
+          <StandingsTable standings={standings} />
+        </div>
+
+        <aside className="space-y-5">
+          <ScoringSummary scoringRules={league.scoringRules} />
+          <StoresList stores={storeRows} />
+          <MembersList
+            members={members}
+            currentUid={user?.uid || null}
+            organizerUid={league.organizerUid}
+            isOrganizer={isOrganizer}
+            onKick={handleKick}
+          />
+          {isOrganizer && <DisbandPanel leagueId={league.id} ownerUid={league.organizerUid} />}
+        </aside>
+      </section>
+    </div>
+  );
+}
+
+function StandingsTable({ standings }: { standings: LeagueStandingEntry[] | null }) {
+  if (!standings) {
+    return (
+      <div className="rounded-lg border border-fab-border/70 bg-fab-bg/45 p-4 text-sm text-fab-dim">
+        Standings haven&apos;t been computed yet. Click <strong>Refresh</strong> (organizer / member)
+        or <strong>Preview</strong> (guest) to compute from imported matches.
+      </div>
+    );
+  }
+  if (standings.length === 0) {
+    return (
+      <div className="rounded-lg border border-fab-border/70 bg-fab-bg/45 p-4 text-sm text-fab-dim">
+        No qualifying matches yet. Once players join and import matches at the participating
+        stores during the date window, they&apos;ll show up here.
+      </div>
+    );
+  }
+  return (
+    <div className="overflow-hidden rounded-lg border border-fab-border/70 bg-fab-bg/45">
+      <table className="w-full text-sm">
+        <thead className="bg-fab-bg/60 text-xs uppercase tracking-wider text-fab-dim">
+          <tr>
+            <th className="px-3 py-2 text-left">#</th>
+            <th className="px-3 py-2 text-left">Player</th>
+            <th className="px-2 py-2 text-right">Pts</th>
+            <th className="px-2 py-2 text-right">W</th>
+            <th className="px-2 py-2 text-right">L</th>
+            <th className="px-2 py-2 text-right">D</th>
+            <th className="px-2 py-2 text-right">Mch</th>
+            <th className="px-2 py-2 text-right">Stores</th>
+          </tr>
+        </thead>
+        <tbody>
+          {standings.map((e, i) => (
+            <tr
+              key={e.uid}
+              className={`border-t border-fab-border/40 ${i < 3 ? "bg-fab-gold/[0.04]" : ""}`}
+            >
+              <td className="px-3 py-2 font-bold text-fab-dim">{i + 1}</td>
+              <td className="px-3 py-2">
+                <Link
+                  href={`/player/${e.username}`}
+                  className="font-bold text-fab-text hover:text-fab-gold"
+                >
+                  {e.displayName}
+                </Link>
+                <p className="text-[11px] text-fab-dim">@{e.username}</p>
+              </td>
+              <td className="px-2 py-2 text-right font-black text-fab-gold">{e.points}</td>
+              <td className="px-2 py-2 text-right text-emerald-300">{e.wins}</td>
+              <td className="px-2 py-2 text-right text-rose-300">{e.losses}</td>
+              <td className="px-2 py-2 text-right text-sky-300">{e.draws}</td>
+              <td className="px-2 py-2 text-right text-fab-text">{e.matches}</td>
+              <td className="px-2 py-2 text-right text-fab-text">{e.storesPlayed}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function ScoringSummary({ scoringRules }: { scoringRules: LeagueScoringRules }) {
+  return (
+    <div className="rounded-lg border border-fab-border/70 bg-fab-bg/45 p-4">
+      <h3 className="text-sm font-bold uppercase tracking-wider text-fab-dim">Scoring</h3>
+      <div className="mt-2 grid grid-cols-3 gap-2 text-center">
+        <div>
+          <p className="text-xl font-black text-emerald-300">{scoringRules.pointsPerWin}</p>
+          <p className="text-[10px] uppercase tracking-wider text-fab-dim">Win</p>
+        </div>
+        <div>
+          <p className="text-xl font-black text-rose-300">{scoringRules.pointsPerLoss}</p>
+          <p className="text-[10px] uppercase tracking-wider text-fab-dim">Loss</p>
+        </div>
+        <div>
+          <p className="text-xl font-black text-sky-300">{scoringRules.pointsPerDraw}</p>
+          <p className="text-[10px] uppercase tracking-wider text-fab-dim">Draw</p>
+        </div>
+      </div>
+      {(scoringRules.eligibleEventTypes?.length || 0) > 0 && (
+        <p className="mt-3 text-[11px] text-fab-dim">
+          <span className="font-bold text-fab-text">Event types:</span>{" "}
+          {scoringRules.eligibleEventTypes!.join(", ")}
+        </p>
+      )}
+      {(scoringRules.eligibleFormats?.length || 0) > 0 && (
+        <p className="mt-1 text-[11px] text-fab-dim">
+          <span className="font-bold text-fab-text">Formats:</span>{" "}
+          {scoringRules.eligibleFormats!.join(", ")}
+        </p>
+      )}
+      {scoringRules.formatMultipliers && (
+        <p className="mt-1 text-[11px] text-fab-dim">
+          <span className="font-bold text-fab-text">Multipliers:</span>{" "}
+          {Object.entries(scoringRules.formatMultipliers)
+            .map(([f, m]) => `${f} ×${m}`)
+            .join(", ")}
+        </p>
+      )}
+    </div>
+  );
+}
+
+function StoresList({ stores }: { stores: StoreDirectoryEntry[] }) {
+  return (
+    <div className="rounded-lg border border-fab-border/70 bg-fab-bg/45 p-4">
+      <h3 className="text-sm font-bold uppercase tracking-wider text-fab-dim">
+        Participating stores ({stores.length})
+      </h3>
+      {stores.length === 0 ? (
+        <p className="mt-2 text-xs text-fab-dim">No stores yet.</p>
+      ) : (
+        <ul className="mt-2 space-y-1">
+          {stores.map((s) => (
+            <li key={s.slug} className="text-sm">
+              <Link
+                href={`/stores/${s.slug}`}
+                className="font-bold text-fab-text hover:text-fab-gold"
+              >
+                {s.name}
+              </Link>
+              {s.totalMatches > 0 && (
+                <span className="ml-1 text-[11px] text-fab-dim">
+                  · {s.totalMatches} matches · {s.uniquePlayers} player
+                  {s.uniquePlayers === 1 ? "" : "s"}
+                </span>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function MembersList({
+  members,
+  currentUid,
+  organizerUid,
+  isOrganizer,
+  onKick,
+}: {
+  members: LeagueMember[];
+  currentUid: string | null;
+  organizerUid: string;
+  isOrganizer: boolean;
+  onKick: (uid: string) => void;
+}) {
+  return (
+    <div className="rounded-lg border border-fab-border/70 bg-fab-bg/45 p-4">
+      <h3 className="text-sm font-bold uppercase tracking-wider text-fab-dim">
+        Players ({members.length})
+      </h3>
+      <ul className="mt-2 space-y-1.5 text-sm">
+        {members.map((m) => {
+          const isOrg = m.uid === organizerUid;
+          const isSelf = currentUid && m.uid === currentUid;
+          return (
+            <li key={m.uid} className="flex items-center justify-between gap-2">
+              <Link
+                href={`/player/${m.username}`}
+                className="min-w-0 flex-1 truncate text-fab-text hover:text-fab-gold"
+              >
+                {m.displayName}
+                {isOrg && (
+                  <span className="ml-1 rounded bg-fab-gold/15 px-1 text-[10px] font-bold text-fab-gold">
+                    organizer
+                  </span>
+                )}
+                {isSelf && !isOrg && (
+                  <span className="ml-1 text-[10px] text-fab-dim">(you)</span>
+                )}
+              </Link>
+              {isOrganizer && !isOrg && (
+                <button
+                  type="button"
+                  onClick={() => onKick(m.uid)}
+                  className="rounded p-1 text-fab-dim hover:text-rose-300"
+                  title="Remove member"
+                >
+                  <UserMinus className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
+function DisbandPanel({ leagueId, ownerUid }: { leagueId: string; ownerUid: string }) {
+  const [confirming, setConfirming] = useState(false);
+  const [working, setWorking] = useState(false);
+  return (
+    <div className="rounded-lg border border-rose-500/30 bg-rose-500/[0.04] p-4">
+      <h3 className="text-sm font-bold uppercase tracking-wider text-rose-300">Danger zone</h3>
+      {!confirming ? (
+        <button
+          type="button"
+          onClick={() => setConfirming(true)}
+          className="mt-2 text-xs font-bold text-rose-300 underline hover:text-rose-200"
+        >
+          Disband league
+        </button>
+      ) : (
+        <div className="mt-2 space-y-2 text-xs">
+          <p className="text-rose-200">
+            This will delete the league, its standings, and all member records. Match data is
+            unaffected.
+          </p>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              disabled={working}
+              onClick={async () => {
+                setWorking(true);
+                try {
+                  await disbandLeague(leagueId, ownerUid);
+                  toast.success("League disbanded.");
+                  window.location.href = "/leagues";
+                } catch (err) {
+                  toast.error(err instanceof Error ? err.message : "Failed to disband.");
+                  setWorking(false);
+                }
+              }}
+              className="rounded-md bg-rose-500/80 px-2 py-1 font-bold text-white hover:bg-rose-500 disabled:opacity-50"
+            >
+              {working ? "Disbanding…" : "Yes, disband"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setConfirming(false)}
+              className="rounded-md border border-fab-border/60 px-2 py-1 text-fab-text"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function OrganizerEditor({
+  league,
+  directory,
+  onClose,
+}: {
+  league: League;
+  directory: StoreDirectoryEntry[];
+  onClose: () => void;
+}) {
+  const [name, setName] = useState(league.name);
+  const [description, setDescription] = useState(league.description || "");
+  const [city, setCity] = useState(league.city || "");
+  const [region, setRegion] = useState(league.region || "");
+  const [country, setCountry] = useState(league.country || "");
+  const [startDate, setStartDate] = useState(league.startDate);
+  const [endDate, setEndDate] = useState(league.endDate);
+  const [status, setStatus] = useState<League["status"]>(league.status);
+  const [pointsWin, setPointsWin] = useState(league.scoringRules.pointsPerWin);
+  const [pointsLoss, setPointsLoss] = useState(league.scoringRules.pointsPerLoss);
+  const [pointsDraw, setPointsDraw] = useState(league.scoringRules.pointsPerDraw);
+  const [eligibleEventTypes, setEligibleEventTypes] = useState<string[]>(
+    league.scoringRules.eligibleEventTypes || [],
+  );
+  const [eligibleFormats, setEligibleFormats] = useState<string[]>(
+    league.scoringRules.eligibleFormats || [],
+  );
+  const [storeSlugs, setStoreSlugs] = useState<string[]>(league.storeSlugs);
+  const [storeSearch, setStoreSearch] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  function toggleArrayItem(arr: string[], item: string, setter: (v: string[]) => void) {
+    setter(arr.includes(item) ? arr.filter((x) => x !== item) : [...arr, item]);
+  }
+
+  const filteredDirectory = useMemo(() => {
+    const q = storeSearch.trim().toLowerCase();
+    if (!q) return directory;
+    return directory.filter((d) => d.name.toLowerCase().includes(q));
+  }, [directory, storeSearch]);
+
+  async function handleSave() {
+    setSaving(true);
+    try {
+      const scoringRules: LeagueScoringRules = {
+        pointsPerWin: pointsWin,
+        pointsPerLoss: pointsLoss,
+        pointsPerDraw: pointsDraw,
+        eligibleEventTypes: eligibleEventTypes.length > 0 ? eligibleEventTypes : undefined,
+        eligibleFormats: eligibleFormats.length > 0 ? eligibleFormats : undefined,
+      };
+      await updateLeague(league.id, {
+        name: name.trim(),
+        description: description.trim(),
+        city: city.trim(),
+        region: region.trim(),
+        country: country.trim(),
+        startDate,
+        endDate,
+        storeSlugs,
+        scoringRules,
+        status,
+      });
+      toast.success("League updated.");
+      onClose();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to update.");
+    }
+    setSaving(false);
+  }
+
+  const FORMAT_OPTIONS = [
+    "Classic Constructed",
+    "Blitz",
+    "Sealed",
+    "Draft",
+    "Living Legend",
+    "Clash",
+  ];
+  const EVENT_TYPE_OPTIONS = [
+    "Armory",
+    "Skirmish",
+    "Road to Nationals",
+    "ProQuest",
+    "Battle Hardened",
+    "The Calling",
+    "Nationals",
+  ];
+
+  return (
+    <div className="mt-4 rounded-lg border border-fab-gold/40 bg-fab-gold/[0.04] p-4">
+      <h2 className="text-base font-bold text-fab-gold">Edit league</h2>
+      <div className="mt-3 grid gap-3 sm:grid-cols-2">
+        <EditField label="Name">
+          <input
+            className="edit-input"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            maxLength={80}
+          />
+        </EditField>
+        <EditField label="Status">
+          <select
+            className="edit-input"
+            value={status}
+            onChange={(e) => setStatus(e.target.value as League["status"])}
+          >
+            <option value="active">Active</option>
+            <option value="draft">Draft</option>
+            <option value="completed">Completed</option>
+          </select>
+        </EditField>
+        <EditField label="City">
+          <input className="edit-input" value={city} onChange={(e) => setCity(e.target.value)} />
+        </EditField>
+        <EditField label="Region">
+          <input
+            className="edit-input"
+            value={region}
+            onChange={(e) => setRegion(e.target.value)}
+          />
+        </EditField>
+        <EditField label="Country">
+          <input
+            className="edit-input"
+            value={country}
+            onChange={(e) => setCountry(e.target.value)}
+          />
+        </EditField>
+        <EditField label="Start date">
+          <input
+            type="date"
+            className="edit-input"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+          />
+        </EditField>
+        <EditField label="End date">
+          <input
+            type="date"
+            className="edit-input"
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+          />
+        </EditField>
+        <EditField label="Description" className="sm:col-span-2">
+          <textarea
+            className="edit-input min-h-[70px]"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            maxLength={1000}
+          />
+        </EditField>
+
+        <EditField label="Points per win">
+          <input
+            type="number"
+            className="edit-input"
+            value={pointsWin}
+            onChange={(e) => setPointsWin(Number(e.target.value))}
+          />
+        </EditField>
+        <EditField label="Points per loss">
+          <input
+            type="number"
+            className="edit-input"
+            value={pointsLoss}
+            onChange={(e) => setPointsLoss(Number(e.target.value))}
+          />
+        </EditField>
+        <EditField label="Points per draw">
+          <input
+            type="number"
+            className="edit-input"
+            value={pointsDraw}
+            onChange={(e) => setPointsDraw(Number(e.target.value))}
+          />
+        </EditField>
+      </div>
+
+      <div className="mt-4">
+        <p className="text-xs font-bold uppercase tracking-wider text-fab-dim">
+          Eligible event types
+        </p>
+        <div className="mt-2 flex flex-wrap gap-2">
+          {EVENT_TYPE_OPTIONS.map((t) => {
+            const active = eligibleEventTypes.includes(t);
+            return (
+              <button
+                key={t}
+                type="button"
+                onClick={() => toggleArrayItem(eligibleEventTypes, t, setEligibleEventTypes)}
+                className={`rounded-full border px-3 py-1 text-xs font-bold transition-colors ${
+                  active
+                    ? "border-fab-gold bg-fab-gold/15 text-fab-gold"
+                    : "border-fab-border/60 bg-fab-bg/60 text-fab-dim"
+                }`}
+              >
+                {t}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="mt-4">
+        <p className="text-xs font-bold uppercase tracking-wider text-fab-dim">Eligible formats</p>
+        <div className="mt-2 flex flex-wrap gap-2">
+          {FORMAT_OPTIONS.map((f) => {
+            const active = eligibleFormats.includes(f);
+            return (
+              <button
+                key={f}
+                type="button"
+                onClick={() => toggleArrayItem(eligibleFormats, f, setEligibleFormats)}
+                className={`rounded-full border px-3 py-1 text-xs font-bold transition-colors ${
+                  active
+                    ? "border-fab-gold bg-fab-gold/15 text-fab-gold"
+                    : "border-fab-border/60 bg-fab-bg/60 text-fab-dim"
+                }`}
+              >
+                {f}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="mt-4">
+        <p className="text-xs font-bold uppercase tracking-wider text-fab-dim">
+          Participating stores
+        </p>
+        <input
+          className="edit-input mt-2"
+          placeholder="Search store directory…"
+          value={storeSearch}
+          onChange={(e) => setStoreSearch(e.target.value)}
+        />
+        {filteredDirectory.length === 0 ? (
+          <p className="mt-2 text-xs text-fab-dim">No stores match the search.</p>
+        ) : (
+          <ul className="mt-2 grid max-h-64 gap-1 overflow-y-auto sm:grid-cols-2">
+            {filteredDirectory.slice(0, 200).map((s) => {
+              const active = storeSlugs.includes(s.slug);
+              return (
+                <li key={s.slug}>
+                  <label
+                    className={`flex cursor-pointer items-center gap-2 rounded-md border px-2 py-1.5 text-sm ${
+                      active ? "border-fab-gold bg-fab-gold/10" : "border-fab-border/60 bg-fab-bg/60"
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={active}
+                      onChange={() =>
+                        setStoreSlugs((prev) =>
+                          prev.includes(s.slug) ? prev.filter((x) => x !== s.slug) : [...prev, s.slug],
+                        )
+                      }
+                    />
+                    <span className="truncate flex-1 min-w-0">
+                      <span className="block truncate">{s.name}</span>
+                      <span className="block truncate text-[10px] text-fab-dim">
+                        {s.totalMatches} matches · {s.uniquePlayers} players
+                      </span>
+                    </span>
+                  </label>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </div>
+
+      <div className="mt-4 flex justify-end gap-2">
+        <button
+          type="button"
+          onClick={onClose}
+          className="rounded-md border border-fab-border/60 px-3 py-1.5 text-sm text-fab-text"
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={saving}
+          className="rounded-md bg-fab-gold px-3 py-1.5 text-sm font-bold text-black hover:bg-fab-gold/80 disabled:opacity-50"
+        >
+          {saving ? "Saving…" : "Save changes"}
+        </button>
+      </div>
+
+      <style jsx>{`
+        :global(.edit-input) {
+          width: 100%;
+          border-radius: 6px;
+          border: 1px solid rgb(var(--fab-border) / 0.7);
+          background: rgb(var(--fab-bg) / 0.6);
+          color: rgb(var(--fab-text));
+          padding: 6px 10px;
+          font-size: 14px;
+        }
+      `}</style>
+    </div>
+  );
+}
+
+function EditField({
+  label,
+  children,
+  className = "",
+}: {
+  label: string;
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <label className={`block ${className}`}>
+      <span className="mb-1 block text-xs font-bold uppercase tracking-wider text-fab-dim">
+        {label}
+      </span>
+      {children}
+    </label>
+  );
+}

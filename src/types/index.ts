@@ -293,6 +293,76 @@ export interface GroupInvite {
   createdAt: string;
 }
 
+// ── Leagues ──
+
+export interface LeagueScoringRules {
+  pointsPerWin: number;
+  pointsPerLoss: number;
+  pointsPerDraw: number;
+  /** Optional multipliers keyed by GameFormat string (e.g. "Classic Constructed": 1.5).
+   *  When unset, all formats score equally. */
+  formatMultipliers?: Record<string, number>;
+  /** Event types that count (e.g. ["Armory"]). Empty/undefined = any event type. */
+  eligibleEventTypes?: string[];
+  /** Formats that count (e.g. ["Classic Constructed"]). Empty/undefined = any format. */
+  eligibleFormats?: string[];
+}
+
+export interface League {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  iconUrl?: string;
+  accentColor?: string;
+  city?: string;
+  region?: string;
+  country?: string;
+  organizerUid: string;
+  organizerName: string;
+  /** ISO date string YYYY-MM-DD (inclusive) */
+  startDate: string;
+  /** ISO date string YYYY-MM-DD (inclusive) */
+  endDate: string;
+  /** Slugified venue names — matches resolve against `slugify(match.venue)`.
+   *  Slugs come from the auto-derived store directory. */
+  storeSlugs: string[];
+  scoringRules: LeagueScoringRules;
+  status: "draft" | "active" | "completed";
+  memberCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface LeagueMember {
+  uid: string;
+  username: string;
+  displayName: string;
+  photoUrl?: string;
+  /** organizer = league owner with edit rights; player = competing member */
+  role: "organizer" | "player";
+  joinedAt: string;
+}
+
+export interface LeagueStandingEntry {
+  uid: string;
+  username: string;
+  displayName: string;
+  photoUrl?: string;
+  matches: number;
+  wins: number;
+  losses: number;
+  draws: number;
+  points: number;
+  storesPlayed: number;
+}
+
+export interface LeagueStandings {
+  leagueId: string;
+  entries: LeagueStandingEntry[];
+  computedAt: string;
+}
+
 export interface ShowcaseCard {
   type: "featuredMatch" | "heroSpotlight" | "bestFinish" | "rivalry" | "eventRecap" | "achievements" | "statHighlight" | "formatMastery" | "eventTypeMastery" | "venueMastery" | "streakShowcase" | "recentForm" | "leaderboardRank" | "customImage";
   matchId?: string;

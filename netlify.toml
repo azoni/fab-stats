@@ -131,6 +131,30 @@
   to = "/group/_.html"
   status = 200
 
+# Serve leagues hub at exact /leagues path
+[[redirects]]
+  from = "/leagues"
+  to = "/leagues.html"
+  status = 200
+
+# Serve pre-rendered league detail page for /leagues/* URLs
+[[redirects]]
+  from = "/leagues/*"
+  to = "/leagues/_.html"
+  status = 200
+
+# Serve stores hub at exact /stores path
+[[redirects]]
+  from = "/stores"
+  to = "/stores.html"
+  status = 200
+
+# Serve pre-rendered store detail page for /stores/* URLs
+[[redirects]]
+  from = "/stores/*"
+  to = "/stores/_.html"
+  status = 200
+
 # Serve pre-rendered inbox page for all /inbox/* URLs
 [[redirects]]
   from = "/inbox/*"
