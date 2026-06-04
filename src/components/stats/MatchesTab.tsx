@@ -14,11 +14,12 @@ interface MatchesTabProps {
   user: User | null;
   profile: UserProfile | null;
   updateMatch: (id: string, updates: Partial<Omit<MatchRecord, "id" | "createdAt">>) => Promise<void>;
+  deleteMatch?: (id: string) => Promise<void>;
   hideOpponentNames?: boolean;
   privacyControl?: ReactNode;
 }
 
-export function MatchesTab({ matches, user, profile, updateMatch, hideOpponentNames = false, privacyControl }: MatchesTabProps) {
+export function MatchesTab({ matches, user, profile, updateMatch, deleteMatch, hideOpponentNames = false, privacyControl }: MatchesTabProps) {
   const handleUpdateMatch = useCallback(
     async (id: string, updates: Partial<Omit<MatchRecord, "id" | "createdAt">>) => {
       await updateMatch(id, updates);
@@ -42,6 +43,20 @@ export function MatchesTab({ matches, user, profile, updateMatch, hideOpponentNa
       }
     },
     [updateMatch, profile, matches, user]
+  );
+
+  const handleDeleteMatch = useCallback(
+    async (id: string) => {
+      if (!deleteMatch) return;
+      await deleteMatch(id);
+      // useMatches.deleteMatch already handles community-hero-matchup decrement.
+      // Recompute the user's leaderboard entry against the post-delete match set.
+      if (profile) {
+        const remaining = matches.filter((m) => m.id !== id);
+        updateLeaderboardEntry(profile, remaining).catch(() => {});
+      }
+    },
+    [deleteMatch, profile, matches],
   );
 
   return (
@@ -94,7 +109,7 @@ export function MatchesTab({ matches, user, profile, updateMatch, hideOpponentNa
           </div>
         </div>
       ) : (
-        <MatchList matches={matches} matchOwnerUid={user?.uid} enableComments editable={!!user} onUpdateMatch={handleUpdateMatch} missingGemId={!!user && !profile?.gemId} obfuscateOpponents={hideOpponentNames} />
+        <MatchList matches={matches} matchOwnerUid={user?.uid} enableComments editable={!!user} onUpdateMatch={handleUpdateMatch} onDeleteMatch={deleteMatch ? handleDeleteMatch : undefined} missingGemId={!!user && !profile?.gemId} obfuscateOpponents={hideOpponentNames} />
       )}
     </div>
   );

@@ -19,6 +19,7 @@ interface MatchCardProps {
   visibleOpponents?: Set<string>;
   editable?: boolean;
   onUpdateMatch?: (id: string, updates: Partial<Omit<MatchRecord, "id" | "createdAt">>) => Promise<void>;
+  onDeleteMatch?: (id: string) => Promise<void>;
   missingGemId?: boolean;
 }
 
@@ -45,7 +46,28 @@ function getPlayoffBadge(roundInfo: string | undefined): { label: string; bg: st
   return null;
 }
 
-export function MatchCard({ match, matchOwnerUid, enableComments = false, obfuscateOpponents = false, visibleOpponents, editable = false, onUpdateMatch, missingGemId }: MatchCardProps) {
+/** Compact relative-time label used only for the "edited" tooltip. Avoids
+ *  hydration mismatches by being called at render time on already-loaded
+ *  data (no SSR-time computation). */
+function formatRelativeTime(iso: string): string {
+  const then = new Date(iso).getTime();
+  if (!Number.isFinite(then)) return "recently";
+  const diffMs = Date.now() - then;
+  const sec = Math.round(diffMs / 1000);
+  if (sec < 60) return "just now";
+  const min = Math.round(sec / 60);
+  if (min < 60) return `${min} minute${min === 1 ? "" : "s"} ago`;
+  const hr = Math.round(min / 60);
+  if (hr < 24) return `${hr} hour${hr === 1 ? "" : "s"} ago`;
+  const day = Math.round(hr / 24);
+  if (day < 30) return `${day} day${day === 1 ? "" : "s"} ago`;
+  const mo = Math.round(day / 30);
+  if (mo < 12) return `${mo} month${mo === 1 ? "" : "s"} ago`;
+  const yr = Math.round(mo / 12);
+  return `${yr} year${yr === 1 ? "" : "s"} ago`;
+}
+
+export function MatchCard({ match, matchOwnerUid, enableComments = false, obfuscateOpponents = false, visibleOpponents, editable = false, onUpdateMatch, onDeleteMatch, missingGemId }: MatchCardProps) {
   const { user, profile } = useAuth();
   const [showNotes, setShowNotes] = useState(false);
   const [noteText, setNoteText] = useState(match.matchNotes || "");
@@ -54,9 +76,11 @@ export function MatchCard({ match, matchOwnerUid, enableComments = false, obfusc
   const [editing, setEditing] = useState(false);
   const [editHero, setEditHero] = useState(match.heroPlayed || "");
   const [editOppHero, setEditOppHero] = useState(match.opponentHero || "");
+  const [editResult, setEditResult] = useState<MatchResult>(match.result);
   const [editWinCondition, setEditWinCondition] = useState<MatchRecord["winCondition"]>(match.winCondition);
   const [editGoingFirst, setEditGoingFirst] = useState<boolean | undefined>(match.goingFirst);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [showGemNudge, setShowGemNudge] = useState(false);
   const [suggestingHero, setSuggestingHero] = useState(false);
   const [suggestedHeroValue, setSuggestedHeroValue] = useState("");
@@ -94,9 +118,12 @@ export function MatchCard({ match, matchOwnerUid, enableComments = false, obfusc
       const updates: Partial<MatchRecord> = {};
       if (editHero !== (match.heroPlayed || "")) updates.heroPlayed = editHero || "Unknown";
       if (editOppHero !== (match.opponentHero || "")) updates.opponentHero = editOppHero || undefined;
+      if (editResult !== match.result) updates.result = editResult;
       if (editWinCondition !== match.winCondition) updates.winCondition = editWinCondition || undefined;
       if (editGoingFirst !== match.goingFirst) updates.goingFirst = editGoingFirst;
       if (Object.keys(updates).length > 0) {
+        // Stamp the edit timestamp so the UI can show a transparency badge.
+        updates.editedAt = new Date().toISOString();
         await onUpdateMatch(match.id, updates);
         if (missingGemId) setShowGemNudge(true);
       }
@@ -106,9 +133,23 @@ export function MatchCard({ match, matchOwnerUid, enableComments = false, obfusc
     }
   }
 
+  async function handleDeleteMatch() {
+    if (!onDeleteMatch) return;
+    const summary = match.opponentName ? `your ${match.result} vs ${match.opponentName}` : `this ${match.result}`;
+    if (!confirm(`Delete ${summary}? This can't be undone.`)) return;
+    setDeleting(true);
+    try {
+      await onDeleteMatch(match.id);
+      // The parent will re-fetch / remove the row from the list; nothing else to do here.
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   function startEditing() {
     setEditHero(match.heroPlayed || "");
     setEditOppHero(match.opponentHero || "");
+    setEditResult(match.result);
     setEditWinCondition(match.winCondition);
     setEditGoingFirst(match.goingFirst);
     setEditing(true);
@@ -298,6 +339,17 @@ export function MatchCard({ match, matchOwnerUid, enableComments = false, obfusc
             )}
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
+            {match.editedAt && (
+              <span
+                className="text-fab-dim/70"
+                title={`Edited ${formatRelativeTime(match.editedAt)}`}
+                aria-label={`This match was edited ${formatRelativeTime(match.editedAt)}`}
+              >
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                </svg>
+              </span>
+            )}
             <span className="text-fab-dim">{dateStr}</span>
             <span className="text-[10px] px-1.5 py-0.5 rounded border border-fab-border/50 text-fab-dim">{match.format}</span>
           </div>
@@ -348,6 +400,32 @@ export function MatchCard({ match, matchOwnerUid, enableComments = false, obfusc
       {/* Inline hero edit */}
       {editing && (
         <div className="px-3 pb-3 pt-2 border-t border-fab-border/30 space-y-2">
+          {/* Result selector — flip the match outcome. Useful for cases like
+              conceding for tix, TO double-loss, or being paired after dropping. */}
+          <div>
+            <label className="text-[11px] text-fab-dim mb-1 block">Result</label>
+            <div className="flex gap-1">
+              {([
+                { value: MatchResult.Win, label: "Win", cls: "bg-fab-win/20 text-fab-win ring-1 ring-fab-win/40" },
+                { value: MatchResult.Loss, label: "Loss", cls: "bg-fab-loss/20 text-fab-loss ring-1 ring-fab-loss/40" },
+                { value: MatchResult.Draw, label: "Draw", cls: "bg-fab-draw/20 text-fab-draw ring-1 ring-fab-draw/40" },
+                { value: MatchResult.Bye, label: "Bye", cls: "bg-fab-muted/15 text-fab-dim ring-1 ring-fab-border" },
+              ] as const).map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setEditResult(opt.value)}
+                  className={`flex-1 px-2 py-1 rounded text-[11px] font-bold uppercase tracking-wide transition-colors ${
+                    editResult === opt.value
+                      ? opt.cls
+                      : "bg-fab-bg text-fab-dim border border-fab-border/50 hover:text-fab-text"
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <HeroSelect value={editHero} onChange={setEditHero} label="Your Hero" format={match.format} />
             <HeroSelect value={editOppHero} onChange={setEditOppHero} label="Opponent's Hero" format={match.format} />
@@ -398,18 +476,28 @@ export function MatchCard({ match, matchOwnerUid, enableComments = false, obfusc
           <div className="flex items-center gap-2">
             <button
               onClick={handleSaveHeroes}
-              disabled={saving}
+              disabled={saving || deleting}
               className="px-3 py-1 rounded text-xs font-medium bg-fab-gold text-fab-bg hover:bg-fab-gold-light disabled:opacity-50 transition-colors"
             >
               {saving ? "Saving..." : "Save"}
             </button>
             <button
               onClick={() => setEditing(false)}
-              disabled={saving}
+              disabled={saving || deleting}
               className="px-3 py-1 rounded text-xs font-medium text-fab-muted hover:text-fab-text transition-colors"
             >
               Cancel
             </button>
+            {onDeleteMatch && (
+              <button
+                onClick={handleDeleteMatch}
+                disabled={saving || deleting}
+                className="ml-auto px-3 py-1 rounded text-xs font-medium text-fab-loss/70 hover:text-fab-loss hover:bg-fab-loss/10 disabled:opacity-50 transition-colors"
+                title="Permanently delete this match"
+              >
+                {deleting ? "Deleting..." : "Delete match"}
+              </button>
+            )}
           </div>
         </div>
       )}

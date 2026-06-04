@@ -24,6 +24,7 @@ interface EventCardProps {
   onBatchUpdateEventType?: (matchIds: string[], eventTypeOverride: string) => Promise<void>;
   onDeleteEvent?: (matchIds: string[], eventName: string, eventDate: string) => Promise<void>;
   onUpdateMatch?: (id: string, updates: Partial<Omit<MatchRecord, "id" | "createdAt">>) => Promise<void>;
+  onDeleteMatch?: (id: string) => Promise<void>;
   missingGemId?: boolean;
 }
 
@@ -50,7 +51,7 @@ interface HeroSegment {
   toRound: string;
 }
 
-export function EventCard({ event, playerName, obfuscateOpponents = false, visibleOpponents, editable = false, onBatchUpdateHero, onBatchUpdateFormat, onBatchUpdateEventType, onDeleteEvent, onUpdateMatch, missingGemId }: EventCardProps) {
+export function EventCard({ event, playerName, obfuscateOpponents = false, visibleOpponents, editable = false, onBatchUpdateHero, onBatchUpdateFormat, onBatchUpdateEventType, onDeleteEvent, onUpdateMatch, onDeleteMatch, missingGemId }: EventCardProps) {
   const [expanded, setExpanded] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [editingEventType, setEditingEventType] = useState(false);
@@ -567,7 +568,42 @@ export function EventCard({ event, playerName, obfuscateOpponents = false, visib
                       })()}
                     </td>
                     <td className={`px-4 py-2.5 text-right font-bold ${resultColors[match.result]}`}>
-                      {resultLabels[match.result]}
+                      <div className="inline-flex items-center gap-1.5">
+                        {match.editedAt && (
+                          <span
+                            className="text-fab-dim/60"
+                            title={`Edited ${new Date(match.editedAt).toLocaleString()}`}
+                            aria-label="This match was edited"
+                          >
+                            <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                            </svg>
+                          </span>
+                        )}
+                        <span>{resultLabels[match.result]}</span>
+                        {editable && onDeleteMatch && (
+                          <button
+                            type="button"
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              const desc = match.opponentName ? `your ${match.result} vs ${match.opponentName}` : `this ${match.result}`;
+                              if (!confirm(`Delete ${desc}? This can't be undone.`)) return;
+                              try {
+                                await onDeleteMatch(match.id);
+                              } catch {
+                                toast.error("Failed to delete match.");
+                              }
+                            }}
+                            className="text-fab-dim/50 hover:text-fab-loss transition-colors ml-0.5"
+                            title="Delete this match"
+                            aria-label="Delete this match"
+                          >
+                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3" />
+                            </svg>
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr></Fragment>
                 );

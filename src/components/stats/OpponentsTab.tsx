@@ -1,5 +1,6 @@
 "use client";
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useCallback, useState, useMemo, useEffect, useRef } from "react";
+import { updateLeaderboardEntry } from "@/lib/leaderboard";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { logActivity } from "@/lib/activity-log";
@@ -38,10 +39,24 @@ interface OpponentsTabProps {
   user: User | null;
   profile: UserProfile | null;
   updateMatch?: (id: string, updates: Partial<Omit<MatchRecord, "id" | "createdAt">>) => Promise<void>;
+  deleteMatch?: (id: string) => Promise<void>;
 }
 
-export function OpponentsTab({ matches, user, profile, updateMatch }: OpponentsTabProps) {
+export function OpponentsTab({ matches, user, profile, updateMatch, deleteMatch }: OpponentsTabProps) {
   const searchParams = useSearchParams();
+
+  const handleDeleteMatch = useCallback(
+    async (id: string) => {
+      if (!deleteMatch) return;
+      await deleteMatch(id);
+      if (profile) {
+        const remaining = matches.filter((m) => m.id !== id);
+        updateLeaderboardEntry(profile, remaining).catch(() => {});
+      }
+    },
+    [deleteMatch, profile, matches],
+  );
+
   const [expanded, setExpanded] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<"matches" | "winRate" | "name" | "recent">("matches");
   const [filterFormat, setFilterFormat] = useState("all");
@@ -456,6 +471,7 @@ export function OpponentsTab({ matches, user, profile, updateMatch }: OpponentsT
                 matchOwnerUid={user?.uid}
                 playerName={profile?.displayName}
                 updateMatch={updateMatch}
+                deleteMatch={deleteMatch ? handleDeleteMatch : undefined}
               />
             ))}
           </div>
@@ -488,7 +504,7 @@ export function OpponentsTab({ matches, user, profile, updateMatch }: OpponentsT
   );
 }
 
-function OpponentRow({ opp, isExpanded, onToggle, matchOwnerUid, playerName, updateMatch }: { opp: OpponentStats; isExpanded: boolean; onToggle: () => void; matchOwnerUid?: string; playerName?: string; updateMatch?: (id: string, updates: Partial<Omit<MatchRecord, "id" | "createdAt">>) => Promise<void> }) {
+function OpponentRow({ opp, isExpanded, onToggle, matchOwnerUid, playerName, updateMatch, deleteMatch }: { opp: OpponentStats; isExpanded: boolean; onToggle: () => void; matchOwnerUid?: string; playerName?: string; updateMatch?: (id: string, updates: Partial<Omit<MatchRecord, "id" | "createdAt">>) => Promise<void>; deleteMatch?: (id: string) => Promise<void> }) {
   const [shareStatus, setShareStatus] = useState<"idle" | "copied" | "text-copied" | "sharing">("idle");
   const [showShareModal, setShowShareModal] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
@@ -657,7 +673,7 @@ function OpponentRow({ opp, isExpanded, onToggle, matchOwnerUid, playerName, upd
             <p className="text-xs text-fab-muted mb-2">Match History ({sortedMatches.length})</p>
             <div className="space-y-2">
               {sortedMatches.map((match) => (
-                <MatchCard key={match.id} match={match} matchOwnerUid={matchOwnerUid} onUpdateMatch={updateMatch} editable />
+                <MatchCard key={match.id} match={match} matchOwnerUid={matchOwnerUid} onUpdateMatch={updateMatch} onDeleteMatch={deleteMatch} editable />
               ))}
             </div>
           </div>

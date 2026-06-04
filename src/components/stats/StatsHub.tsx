@@ -22,7 +22,7 @@ interface StatsHubProps {
 export function StatsHub({ defaultTab, showTabs = true }: StatsHubProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const { matches, isLoaded, updateMatch, refreshMatches, batchUpdateHero, batchUpdateFormat, batchUpdateEventType, batchDeleteMatches } = useMatches();
+  const { matches, isLoaded, updateMatch, deleteMatch, refreshMatches, batchUpdateHero, batchUpdateFormat, batchUpdateEventType, batchDeleteMatches } = useMatches();
   const { user, profile } = useAuth();
   const [hideOpponentNames, setHideOpponentNames] = useState(false);
   const [privacyPrefLoaded, setPrivacyPrefLoaded] = useState(false);
@@ -97,7 +97,7 @@ export function StatsHub({ defaultTab, showTabs = true }: StatsHubProps) {
 
       {/* Tab content */}
       {activeTab === "matches" && (
-        <MatchesTab matches={matches} user={user} profile={profile} updateMatch={updateMatch} hideOpponentNames={hideOpponentNames} privacyControl={privacyControl} />
+        <MatchesTab matches={matches} user={user} profile={profile} updateMatch={updateMatch} deleteMatch={deleteMatch} hideOpponentNames={hideOpponentNames} privacyControl={privacyControl} />
       )}
       {activeTab === "events" && (
         <EventsTab
@@ -105,6 +105,7 @@ export function StatsHub({ defaultTab, showTabs = true }: StatsHubProps) {
           user={user}
           profile={profile}
           updateMatch={updateMatch}
+          deleteMatch={deleteMatch}
           refreshMatches={refreshMatches}
           batchUpdateHero={batchUpdateHero}
           batchUpdateFormat={batchUpdateFormat}
@@ -115,7 +116,7 @@ export function StatsHub({ defaultTab, showTabs = true }: StatsHubProps) {
         />
       )}
       {activeTab === "opponents" && (
-        <OpponentsTab matches={matches} user={user} profile={profile} updateMatch={updateMatch} />
+        <OpponentsTab matches={matches} user={user} profile={profile} updateMatch={updateMatch} deleteMatch={deleteMatch} />
       )}
     </div>
   );

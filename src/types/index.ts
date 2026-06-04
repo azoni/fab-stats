@@ -20,6 +20,12 @@ export interface MatchRecord {
   extensionVersion?: string;
   gemEventId?: string;
   heroSuggestionSent?: string;
+  /** ISO timestamp of the last user-initiated edit. Set automatically by
+   *  the edit handler in the UI whenever a user manually changes match
+   *  fields (e.g. flipping a result, deleting an event). Programmatic
+   *  edits (opponent-hero propagation, leaderboard recompute) do NOT set
+   *  this. Used to display a subtle "edited" indicator for transparency. */
+  editedAt?: string;
   createdAt: string;
 }
 
