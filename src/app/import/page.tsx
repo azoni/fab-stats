@@ -7,7 +7,6 @@ import { importMatchesFirestore, clearAllMatchesFirestore, updateProfile, regist
 import { importMatchesLocal } from "@/lib/storage";
 import { createImportFeedEvent, createPlacementFeedEvent, deleteAllFeedEventsForUser } from "@/lib/feed";
 import { detectNewAchievements } from "@/lib/achievement-tracking";
-import { loadKudosCounts } from "@/lib/kudos";
 import { evaluateAchievements } from "@/lib/achievements";
 import { computeOverallStats, computeHeroStats, computeOpponentStats, computeEventStats, computePlayoffFinishes, getEventName, type PlayoffFinish } from "@/lib/stats";
 import { linkMatchesWithOpponents } from "@/lib/match-linking";
@@ -37,6 +36,64 @@ type ImportMethod = "extension" | "bookmarklet" | "paste" | "csv" | null;
 
 /** Sentinel stored in heroOverrides when user explicitly acknowledges an unknown hero */
 const ACKNOWLEDGED_UNKNOWN = "__ACKNOWLEDGED_UNKNOWN__";
+
+type ImportMatchDraft = Omit<MatchRecord, "id" | "createdAt">;
+
+function importFingerprint(match: Pick<ImportMatchDraft, "date" | "opponentName" | "notes" | "result">): string {
+  return `${match.date}|${(match.opponentName || "").toLowerCase()}|${match.notes ? normalizeNotes(match.notes) : ""}|${match.result}`;
+}
+
+function formatImportCount(matches: ImportMatchDraft[]): string {
+  const byes = matches.filter((m) => m.result === MatchResult.Bye).length;
+  const played = matches.length - byes;
+  const parts: string[] = [];
+  if (played > 0) parts.push(`${played} match${played === 1 ? "" : "es"}`);
+  if (byes > 0) parts.push(`${byes} bye${byes === 1 ? "" : "s"}`);
+  return parts.join(" + ") || "0 matches";
+}
+
+function evaluateImportAchievements(matches: MatchRecord[]): Achievement[] {
+  const overall = computeOverallStats(matches);
+  const heroStats = computeHeroStats(matches);
+  const oppStats = computeOpponentStats(matches);
+  return evaluateAchievements(matches, overall, heroStats, oppStats);
+}
+
+function TurnOrderPicker({ value, onChange }: { value: boolean | undefined; onChange: (value: boolean | undefined) => void }) {
+  return (
+    <div>
+      <span className="mb-1 block text-xs font-medium text-fab-muted">Turn Order</span>
+      <div className="flex flex-wrap items-center gap-1">
+        {[
+          { label: "First", value: true },
+          { label: "Second", value: false },
+        ].map((option) => (
+          <button
+            key={option.label}
+            type="button"
+            onClick={() => onChange(option.value)}
+            className={`rounded-md border px-2 py-1 text-xs font-semibold transition-colors ${
+              value === option.value
+                ? "border-fab-gold/50 bg-fab-gold/15 text-fab-gold"
+                : "border-fab-border bg-fab-bg text-fab-dim hover:text-fab-text"
+            }`}
+          >
+            {option.label}
+          </button>
+        ))}
+        {value !== undefined && (
+          <button
+            type="button"
+            onClick={() => onChange(undefined)}
+            className="rounded-md border border-transparent px-2 py-1 text-xs font-semibold text-fab-dim transition-colors hover:text-fab-muted"
+          >
+            Clear
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
 
 function ImportFlowDiagram({ activeStep }: { activeStep: number }) {
   const steps = [
@@ -104,6 +161,11 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
   const [cleared, setCleared] = useState(false);
   const [heroOverrides, setHeroOverrides] = useState<Record<number, string>>({});
   const [opponentHeroOverrides, setOpponentHeroOverrides] = useState<Record<string, string>>({});
+  const [matchNotesOverrides, setMatchNotesOverrides] = useState<Record<string, string>>({});
+  // Snapshot of the matches array taken when the user clicks Import. Used by
+  // the loader so the count text never disagrees with what the preview showed
+  // (defensive: avoids a useMemo recompute desync between click + paint).
+  const [importingMatches, setImportingMatches] = useState<ImportMatchDraft[] | null>(null);
   const [quickPreviewReady, setQuickPreviewReady] = useState(false);
   const [quickConfirmImport, setQuickConfirmImport] = useState(false);
   const [existingFingerprints, setExistingFingerprints] = useState<Set<string> | null>(null);
@@ -120,6 +182,7 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
   const [heroRequiredHard, setHeroRequiredHard] = useState(false);
   const [showOtherBrowsers, setShowOtherBrowsers] = useState(false);
   const [visibleEventCount, setVisibleEventCount] = useState(10);
+  const [turnOrderOverrides, setTurnOrderOverrides] = useState<Record<string, boolean>>({});
 
   // Detect mobile viewport
   useEffect(() => {
@@ -177,9 +240,7 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
           } else {
             existing = getLocalMatches();
           }
-          const fps = new Set(existing.map((m) =>
-            `${m.date}|${(m.opponentName || "").toLowerCase()}|${m.notes ? normalizeNotes(m.notes) : ""}|${m.result}`
-          ));
+          const fps = new Set(existing.map(importFingerprint));
           setExistingFingerprints(fps);
         } catch {
           setExistingFingerprints(new Set());
@@ -201,19 +262,28 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
       });
   }, [pasteResult, filterFormat, filterEventType]);
 
+  const applyImportOverrides = useCallback((match: ImportMatchDraft, origIdx: number, matchIdx: number): ImportMatchDraft => {
+    const hero = heroOverrides[origIdx];
+    const key = `${origIdx}-${matchIdx}`;
+    const oppHero = opponentHeroOverrides[key];
+    const hasTurnOrder = Object.prototype.hasOwnProperty.call(turnOrderOverrides, key);
+    const hasNote = Object.prototype.hasOwnProperty.call(matchNotesOverrides, key);
+    let updated = { ...match };
+    if (hero && hero !== ACKNOWLEDGED_UNKNOWN) updated = { ...updated, heroPlayed: hero };
+    if (oppHero) updated = { ...updated, opponentHero: oppHero };
+    if (hasTurnOrder) updated = { ...updated, goingFirst: turnOrderOverrides[key] };
+    if (hasNote) {
+      const trimmed = (matchNotesOverrides[key] || "").trim();
+      updated = { ...updated, matchNotes: trimmed || undefined };
+    }
+    return updated;
+  }, [heroOverrides, opponentHeroOverrides, turnOrderOverrides, matchNotesOverrides]);
+
   const filteredMatches = useMemo(() => {
     return filteredEvents.flatMap(({ event, origIdx }) =>
-      event.matches.map((m, matchIdx) => {
-        const hero = heroOverrides[origIdx];
-        const oppHeroKey = `${origIdx}-${matchIdx}`;
-        const oppHero = opponentHeroOverrides[oppHeroKey];
-        let updated = m;
-        if (hero && hero !== ACKNOWLEDGED_UNKNOWN) updated = { ...updated, heroPlayed: hero };
-        if (oppHero) updated = { ...updated, opponentHero: oppHero };
-        return updated;
-      })
+      event.matches.map((m, matchIdx) => applyImportOverrides(m, origIdx, matchIdx))
     );
-  }, [filteredEvents, heroOverrides, opponentHeroOverrides]);
+  }, [filteredEvents, applyImportOverrides]);
 
   // Events missing hero selection (for validation + UI)
   const missingHeroEvents = useMemo(() => {
@@ -248,11 +318,21 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
     if (!quickMode || !existingFingerprints) return filteredEvents;
     return filteredEvents.filter(({ event }) =>
       event.matches.some((m) => {
-        const fp = `${m.date}|${(m.opponentName || "").toLowerCase()}|${m.notes ? normalizeNotes(m.notes) : ""}|${m.result}`;
-        return !existingFingerprints.has(fp);
+        return !existingFingerprints.has(importFingerprint(m));
       })
     );
   }, [quickMode, existingFingerprints, filteredEvents]);
+
+  const quickImportMatches = useMemo(() => {
+    if (!quickMode || !existingFingerprints) return filteredMatches;
+    return filteredEvents.flatMap(({ event, origIdx }) =>
+      event.matches.flatMap((m, matchIdx) =>
+        existingFingerprints.has(importFingerprint(m))
+          ? []
+          : [applyImportOverrides(m, origIdx, matchIdx)]
+      )
+    );
+  }, [quickMode, existingFingerprints, filteredEvents, filteredMatches, applyImportOverrides]);
 
   // In quick mode, use the filtered (non-duplicate) events for display
   const displayEvents = quickMode ? quickFilteredEvents : filteredEvents;
@@ -341,13 +421,11 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
   }
 
   function handleImportClick() {
-    const matches = pasteResult ? filteredMatches : csvMatches;
+    const matches = pasteResult ? (quickMode ? quickImportMatches : filteredMatches) : csvMatches;
     if (!matches) return;
 
     // For post-cutoff matches, check if hero was auto-detected or user explicitly chose one
-    const hasPostCutoffMissing = pasteResult
-      ? missingHeroEvents.postCutoff.length > 0
-      : matches.some((m) => m.heroPlayed === "Unknown" && m.date >= HERO_REQUIRED_CUTOFF);
+    const hasPostCutoffMissing = matches.some((m) => m.heroPlayed === "Unknown" && m.date >= HERO_REQUIRED_CUTOFF);
 
     const hasAnyMissing = matches.some((m) => m.heroPlayed === "Unknown");
 
@@ -363,8 +441,12 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
   }
 
   async function handleImport() {
-    const matches = pasteResult ? filteredMatches : csvMatches;
+    const matches = pasteResult ? (quickMode ? quickImportMatches : filteredMatches) : csvMatches;
     if (!matches || (!user && !isGuest)) return;
+    // Snapshot the matches we're about to import so the loader text always
+    // matches what the user just confirmed on the preview — even if a
+    // useMemo dependency causes quickImportMatches to recompute mid-import.
+    setImportingMatches(matches);
     setImporting(true);
 
     // Clear existing data first if requested
@@ -375,41 +457,45 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
 
     // Capture matches before import for recap
     let beforeMatches: MatchRecord[] = [];
+    let beforeMatchesLoaded = false;
     try {
       if (user) {
         beforeMatches = await getMatchesByUserId(user.uid);
       } else {
         beforeMatches = getLocalMatches();
       }
+      beforeMatchesLoaded = true;
     } catch {
       // If we can't get before matches, recap will still work with empty array
     }
 
     // Enrich matches with opponent heroes from coverage data
     let coverageHeroCount = 0;
-    try {
-      const { getAllCoverageMatches } = await import("@/lib/sitemap-scraper");
-      const { buildCoverageIndex, findOpponentHero } = await import("@/lib/coverage-lookup");
-      const coverageMatches = await getAllCoverageMatches();
-      if (coverageMatches.length > 0) {
-        const index = buildCoverageIndex(coverageMatches);
-        for (const m of matches) {
-          if (m.opponentHero && m.opponentHero !== "Unknown") continue;
-          if (!m.opponentName) continue;
-          const lookup = findOpponentHero(
-            m.opponentName,
-            m.date,
-            m.notes || "",
-            index
-          );
-          if (lookup && lookup.confidence === "exact") {
-            (m as Record<string, unknown>).opponentHero = lookup.hero;
-            coverageHeroCount++;
+    if (!quickMode) {
+      try {
+        const { getAllCoverageMatches } = await import("@/lib/sitemap-scraper");
+        const { buildCoverageIndex, findOpponentHero } = await import("@/lib/coverage-lookup");
+        const coverageMatches = await getAllCoverageMatches();
+        if (coverageMatches.length > 0) {
+          const index = buildCoverageIndex(coverageMatches);
+          for (const m of matches) {
+            if (m.opponentHero && m.opponentHero !== "Unknown") continue;
+            if (!m.opponentName) continue;
+            const lookup = findOpponentHero(
+              m.opponentName,
+              m.date,
+              m.notes || "",
+              index
+            );
+            if (lookup && lookup.confidence === "exact") {
+              (m as Record<string, unknown>).opponentHero = lookup.hero;
+              coverageHeroCount++;
+            }
           }
         }
+      } catch {
+        // Coverage enrichment is best-effort; don't block import.
       }
-    } catch {
-      // Coverage enrichment is best-effort — don't block import
     }
 
     let count: number;
@@ -452,12 +538,17 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
       // Compute achievements & placements (only for signed-in users with profile)
       if (user && profile && afterMatches.length > 0) {
         try {
-          const overall = computeOverallStats(afterMatches);
-          const heroStats = computeHeroStats(afterMatches);
-          const oppStats = computeOpponentStats(afterMatches);
-          const kudosCounts = await loadKudosCounts(user.uid).catch(() => ({}));
-          const earned = evaluateAchievements(afterMatches, overall, heroStats, oppStats, kudosCounts);
-          detectedNew = await detectNewAchievements(user.uid, earned);
+          const beforeEarnedIds = beforeMatchesLoaded
+            ? new Set(evaluateImportAchievements(beforeMatches).map((a) => a.id))
+            : new Set<string>();
+          const earned = evaluateImportAchievements(afterMatches);
+          const sessionNewIds = new Set(
+            earned.filter((a) => !beforeEarnedIds.has(a.id)).map((a) => a.id)
+          );
+          const storedNew = await detectNewAchievements(user.uid, earned);
+          detectedNew = beforeMatchesLoaded
+            ? storedNew.filter((a) => sessionNewIds.has(a.id))
+            : [];
           setNewAchievements(detectedNew);
 
           const eventStats = computeEventStats(afterMatches);
@@ -543,6 +634,8 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
     setMethod(null);
     setAutoDetected(false);
     setHeroOverrides({});
+    setOpponentHeroOverrides({});
+    setTurnOrderOverrides({});
     setSessionRecap(null);
     setNewAchievements([]);
     setNewPlacements([]);
@@ -564,8 +657,105 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
   }
 
   const hasResults = pasteResult || csvMatches;
-  const totalToImport = pasteResult ? filteredMatches.length : (csvMatches?.length ?? 0);
-  const allMatches = pasteResult ? filteredMatches : (csvMatches ?? []);
+  const pendingImportMatches = pasteResult ? (quickMode ? quickImportMatches : filteredMatches) : (csvMatches ?? []);
+  const totalToImport = pendingImportMatches.length;
+  const allMatches = pasteResult ? (quickMode ? quickImportMatches : filteredMatches) : (csvMatches ?? []);
+
+  // Shared "Heroes missing!" modal. Rendered both in the Quick Sync branch
+  // (which has an early return) and in the main return, so the warning
+  // fires correctly when Quick Sync users click Import without a hero.
+  const renderHeroWarningModal = () => {
+    if (!showHeroWarning) return null;
+    return (
+      <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => { setShowHeroWarning(false); setConfirmSkipHero(false); }} />
+        <div className="relative bg-fab-bg border border-fab-border rounded-xl shadow-2xl w-full max-w-md p-6">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-10 h-10 rounded-full bg-fab-loss/15 flex items-center justify-center shrink-0">
+              <svg className="w-5 h-5 text-fab-loss" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-bold text-fab-text">Heroes Missing!</h3>
+          </div>
+          {heroRequiredHard ? (
+            <>
+              <p className="text-sm text-fab-muted mb-2">
+                {missingHeroEvents.postCutoff.length} event{missingHeroEvents.postCutoff.length !== 1 ? "s" : ""} from Feb 24, 2026 onward {missingHeroEvents.postCutoff.length === 1 ? "needs" : "need"} a hero selection before importing:
+              </p>
+              <ul className="text-sm mb-3 space-y-1">
+                {missingHeroEvents.postCutoff.map(({ event, origIdx }) => (
+                  <li key={origIdx} className="flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-fab-loss shrink-0" />
+                    <span className="text-fab-text">{event.eventName}</span>
+                    <span className="text-fab-dim text-xs">({event.eventDate})</span>
+                  </li>
+                ))}
+              </ul>
+              <p className="text-sm text-fab-muted mb-2">
+                Set the hero for {missingHeroEvents.postCutoff.length === 1 ? "that event" : "those events"} — use &quot;No hero (clear)&quot; if you don&apos;t remember.
+                {missingHeroEvents.preCutoff > 0 && ` Your ${missingHeroEvents.preCutoff} older event${missingHeroEvents.preCutoff !== 1 ? "s" : ""} can still import without a hero.`}
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="text-sm text-fab-muted mb-2">
+                {pasteResult
+                  ? `${missingHeroEvents.all.length} of your ${filteredEvents.length} event${filteredEvents.length !== 1 ? "s" : ""} ${missingHeroEvents.all.length === 1 ? "is" : "are"} missing hero information.`
+                  : "Your matches are missing hero information."}
+              </p>
+              <p className="text-sm text-fab-muted mb-2">
+                Without heroes, your stats will be incomplete and your placements will show without a hero on the feed.
+              </p>
+              <p className="text-sm text-fab-muted mb-5">
+                Set heroes per event in the preview above, or use the Browser Extension for automatic detection.
+              </p>
+            </>
+          )}
+          <div className="flex flex-col gap-2">
+            <button
+              onClick={() => {
+                setShowHeroWarning(false);
+                setConfirmSkipHero(false);
+                setHeroRequiredHard(false);
+                const first = missingHeroEvents.postCutoff[0] ?? missingHeroEvents.all[0];
+                if (first) {
+                  const displayIdx = filteredEvents.findIndex((e) => e.origIdx === first.origIdx);
+                  if (displayIdx >= 0) {
+                    if (displayIdx >= visibleEventCount) setVisibleEventCount(displayIdx + 1);
+                    setExpandedEvent(displayIdx);
+                    requestAnimationFrame(() => {
+                      eventCardRefs.current[displayIdx]?.scrollIntoView({ behavior: "smooth", block: "center" });
+                    });
+                  }
+                }
+              }}
+              className="w-full min-h-[44px] py-2.5 rounded-lg font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors text-sm"
+            >
+              Go Back &amp; Add Heroes
+            </button>
+            {!heroRequiredHard && (
+              !confirmSkipHero ? (
+                <button
+                  onClick={() => setConfirmSkipHero(true)}
+                  className="w-full min-h-[44px] py-2.5 rounded-lg font-semibold bg-fab-surface border border-fab-border text-fab-dim hover:text-fab-muted transition-colors text-xs"
+                >
+                  Import without heroes...
+                </button>
+              ) : (
+                <button
+                  onClick={() => { setShowHeroWarning(false); setConfirmSkipHero(false); handleImport(); }}
+                  className="w-full min-h-[44px] py-2.5 rounded-lg font-semibold bg-fab-loss/20 border border-fab-loss/30 text-fab-loss hover:bg-fab-loss/30 transition-colors text-sm"
+                >
+                  Yes, import without heroes
+                </button>
+              )
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   // ── Quick Mode Preview Screen ──────────────────────────────────
 
@@ -577,7 +767,7 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
           <div className="w-12 h-12 border-4 border-fab-border border-t-fab-gold rounded-full animate-spin mx-auto mb-6" />
           <h1 className="text-2xl font-bold text-fab-gold mb-2">{importing ? "Importing..." : "Quick Syncing..."}</h1>
           <p className="text-fab-muted">
-            {importing ? `Importing ${filteredMatches.length} matches` : "Checking for new events"}
+            {importing ? `Importing ${formatImportCount(importingMatches ?? pendingImportMatches)}` : "Checking for new events"}
           </p>
         </div>
       );
@@ -601,24 +791,27 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
     }
 
     // Has new events — show preview
-    const quickNewMatchCount = quickFilteredEvents.reduce((sum, { event }) => sum + event.matches.length, 0);
-    const quickHasMissingHeroes = quickFilteredEvents.some(({ event }) =>
-      event.matches.every((m) => m.heroPlayed === "Unknown") && !heroOverrides[quickFilteredEvents.indexOf(quickFilteredEvents.find(e => e.event === event)!)]
-    );
+    const getQuickReviewMatches = (event: PasteImportResult["events"][number]) =>
+      event.matches
+        .map((match, matchIdx) => ({ match, matchIdx }))
+        .filter(({ match }) => !existingFingerprints?.has(importFingerprint(match)));
+    const quickNewMatchLabel = formatImportCount(quickImportMatches);
 
     return (
+      <>
       <div className="space-y-6">
         <div>
           <h1 className="text-2xl font-bold text-fab-gold mb-1">Quick Sync</h1>
           <p className="text-fab-muted text-sm">
-            {quickFilteredEvents.length} new event{quickFilteredEvents.length === 1 ? "" : "s"} found ({quickNewMatchCount} matches). Review and confirm.
+            {quickFilteredEvents.length} new event{quickFilteredEvents.length === 1 ? "" : "s"} found ({quickNewMatchLabel}). Review and confirm.
           </p>
         </div>
 
         {/* Hero warning */}
-        {quickFilteredEvents.some(({ event, origIdx }) =>
-          !heroOverrides[origIdx] && event.matches.every((m) => m.heroPlayed === "Unknown")
-        ) && (
+        {quickFilteredEvents.some(({ event, origIdx }) => {
+          const reviewMatches = getQuickReviewMatches(event);
+          return !heroOverrides[origIdx] && reviewMatches.every(({ match }) => match.heroPlayed === "Unknown");
+        }) && (
           <div className="bg-fab-draw/10 border border-fab-draw/30 rounded-lg p-4 text-sm">
             <p className="text-fab-draw font-medium mb-1">Some events are missing hero info</p>
             <p className="text-fab-muted">Expand events below to set your hero. You can also edit after importing.</p>
@@ -628,12 +821,13 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
         {/* Events list */}
         <div className="space-y-2">
           {quickFilteredEvents.map(({ event, origIdx }, i) => {
-            const wins = event.matches.filter((m) => m.result === MatchResult.Win).length;
-            const losses = event.matches.filter((m) => m.result === MatchResult.Loss).length;
+            const reviewMatches = getQuickReviewMatches(event);
+            const wins = reviewMatches.filter(({ match }) => match.result === MatchResult.Win).length;
+            const losses = reviewMatches.filter(({ match }) => match.result === MatchResult.Loss).length;
             const isExpanded = expandedEvent === i;
             const rawOverride = heroOverrides[origIdx];
-            const heroValue = rawOverride === ACKNOWLEDGED_UNKNOWN ? "" : (rawOverride || event.matches[0]?.heroPlayed || "");
-            const needsHero = !heroOverrides[origIdx] && event.matches.every((m) => m.heroPlayed === "Unknown");
+            const heroValue = rawOverride === ACKNOWLEDGED_UNKNOWN ? "" : (rawOverride || reviewMatches[0]?.match.heroPlayed || "");
+            const needsHero = !heroOverrides[origIdx] && reviewMatches.every(({ match }) => match.heroPlayed === "Unknown");
 
             return (
               <div key={i} ref={(el) => { eventCardRefs.current[i] = el; }} className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden">
@@ -679,16 +873,18 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
                     </div>
                     {/* Matches with opponent hero editing */}
                     <div className="space-y-2">
-                      {event.matches.map((match, j) => {
-                        const oppKey = `${origIdx}-${j}`;
+                      {reviewMatches.map(({ match, matchIdx }) => {
+                        const oppKey = `${origIdx}-${matchIdx}`;
                         const oppHero = opponentHeroOverrides[oppKey] || match.opponentHero || "";
+                        const hasTurnOrder = Object.prototype.hasOwnProperty.call(turnOrderOverrides, oppKey);
+                        const turnOrder = hasTurnOrder ? turnOrderOverrides[oppKey] : match.goingFirst;
                         const roundInfo = match.notes?.split(" | ")[1]?.trim() || "";
                         const style = match.result === MatchResult.Win ? "border-l-fab-win bg-fab-win/[0.03]" :
                                       match.result === MatchResult.Loss ? "border-l-fab-loss bg-fab-loss/[0.03]" :
                                       match.result === MatchResult.Draw ? "border-l-fab-draw bg-fab-draw/[0.03]" :
                                       "border-l-fab-dim bg-fab-muted/[0.02]";
                         return (
-                          <div key={j} className={`border-l-2 ${style} rounded-r-lg px-3 py-2`}>
+                          <div key={matchIdx} className={`border-l-2 ${style} rounded-r-lg px-3 py-2`}>
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-2 min-w-0">
                                 <span className={`text-xs font-bold ${
@@ -703,7 +899,7 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
                               </div>
                             </div>
                             {match.result !== MatchResult.Bye && (
-                              <div className="mt-1.5" onClick={(e) => e.stopPropagation()}>
+                              <div className="mt-1.5 space-y-2" onClick={(e) => e.stopPropagation()}>
                                 <HeroSelect
                                   value={oppHero === "Unknown" ? "" : oppHero}
                                   onChange={(val) => {
@@ -713,6 +909,37 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
                                   format={event.format}
                                   allowClear
                                 />
+                                <div className="grid gap-2 sm:grid-cols-[auto_minmax(0,1fr)] sm:items-start">
+                                  <TurnOrderPicker
+                                    value={turnOrder}
+                                    onChange={(value) => {
+                                      setTurnOrderOverrides((prev) => {
+                                        if (value === undefined) {
+                                          const { [oppKey]: _, ...rest } = prev;
+                                          return rest;
+                                        }
+                                        return { ...prev, [oppKey]: value };
+                                      });
+                                    }}
+                                  />
+                                  <div>
+                                    <label className="mb-1 block text-xs font-medium text-fab-muted" htmlFor={`import-notes-${oppKey}`}>
+                                      Notes
+                                    </label>
+                                    <textarea
+                                      id={`import-notes-${oppKey}`}
+                                      rows={1}
+                                      maxLength={2000}
+                                      placeholder="Optional — e.g. 'mulligan'd to 0', 'opp on first', etc."
+                                      value={matchNotesOverrides[oppKey] ?? match.matchNotes ?? ""}
+                                      onChange={(e) => {
+                                        const v = e.target.value;
+                                        setMatchNotesOverrides((prev) => ({ ...prev, [oppKey]: v }));
+                                      }}
+                                      className="w-full resize-y rounded-md border border-fab-border bg-fab-bg px-2 py-1.5 text-xs text-fab-text placeholder:text-fab-dim focus:border-fab-gold/60 focus:outline-none focus:ring-2 focus:ring-fab-gold/30"
+                                    />
+                                  </div>
+                                </div>
                               </div>
                             )}
                           </div>
@@ -728,7 +955,7 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
 
         {/* Light opponent hero warning — only while there are still unknown opponents */}
         {quickConfirmImport && quickFilteredEvents.some(({ event, origIdx }) =>
-          event.matches.some((m, j) => m.result !== "bye" && (!m.opponentHero || m.opponentHero === "Unknown") && !opponentHeroOverrides[`${origIdx}-${j}`])
+          getQuickReviewMatches(event).some(({ match, matchIdx }) => match.result !== MatchResult.Bye && (!match.opponentHero || match.opponentHero === "Unknown") && !opponentHeroOverrides[`${origIdx}-${matchIdx}`])
         ) && (
           <div className="bg-fab-surface border border-fab-draw/30 rounded-lg p-3 text-sm flex items-start gap-2">
             <svg className="w-4 h-4 text-fab-draw shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -743,23 +970,25 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
         {/* Import button */}
         {(() => {
           const hasUnknownOpp = quickFilteredEvents.some(({ event, origIdx }) =>
-            event.matches.some((m, j) => m.result !== "bye" && (!m.opponentHero || m.opponentHero === "Unknown") && !opponentHeroOverrides[`${origIdx}-${j}`])
+            getQuickReviewMatches(event).some(({ match, matchIdx }) => match.result !== MatchResult.Bye && (!match.opponentHero || match.opponentHero === "Unknown") && !opponentHeroOverrides[`${origIdx}-${matchIdx}`])
           );
           const showConfirm = hasUnknownOpp && !quickConfirmImport;
           return (
             <button
               onClick={() => {
                 if (showConfirm) { setQuickConfirmImport(true); return; }
-                handleImport();
+                handleImportClick();
               }}
               disabled={importing}
               className="w-full py-3 rounded-md font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors disabled:opacity-50"
             >
-              {importing ? "Importing..." : `Import ${quickNewMatchCount} Matches`}
+              {importing ? "Importing..." : `Import ${quickNewMatchLabel}`}
             </button>
           );
         })()}
       </div>
+      {renderHeroWarningModal()}
+      </>
     );
   }
 
@@ -1529,6 +1758,8 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
                             {event.matches.map((match, j) => {
                               const oppKey = `${origIdx}-${j}`;
                               const oppHero = opponentHeroOverrides[oppKey] || match.opponentHero || "";
+                              const hasTurnOrder = Object.prototype.hasOwnProperty.call(turnOrderOverrides, oppKey);
+                              const turnOrder = hasTurnOrder ? turnOrderOverrides[oppKey] : match.goingFirst;
                               const roundInfo = match.notes?.split(" | ")[1]?.trim() || "";
                               const mStyle = match.result === MatchResult.Win ? "border-l-fab-win bg-fab-win/[0.03]" :
                                              match.result === MatchResult.Loss ? "border-l-fab-loss bg-fab-loss/[0.03]" :
@@ -1550,7 +1781,7 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
                                     </div>
                                   </div>
                                   {match.result !== MatchResult.Bye && (
-                                    <div className="mt-1.5" onClick={(e) => e.stopPropagation()}>
+                                    <div className="mt-1.5 grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]" onClick={(e) => e.stopPropagation()}>
                                       <HeroSelect
                                         value={oppHero === "Unknown" ? "" : oppHero}
                                         onChange={(val) => {
@@ -1559,6 +1790,18 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
                                         label="Opp Hero"
                                         format={event.format}
                                         allowClear
+                                      />
+                                      <TurnOrderPicker
+                                        value={turnOrder}
+                                        onChange={(value) => {
+                                          setTurnOrderOverrides((prev) => {
+                                            if (value === undefined) {
+                                              const { [oppKey]: _, ...rest } = prev;
+                                              return rest;
+                                            }
+                                            return { ...prev, [oppKey]: value };
+                                          });
+                                        }}
                                       />
                                     </div>
                                   )}
@@ -1662,95 +1905,7 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
       )}
 
       {/* Hero Warning Dialog */}
-      {showHeroWarning && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => { setShowHeroWarning(false); setConfirmSkipHero(false); }} />
-          <div className="relative bg-fab-bg border border-fab-border rounded-xl shadow-2xl w-full max-w-md p-6">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 rounded-full bg-fab-loss/15 flex items-center justify-center shrink-0">
-                <svg className="w-5 h-5 text-fab-loss" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
-                </svg>
-              </div>
-              <h3 className="text-lg font-bold text-fab-text">Heroes Missing!</h3>
-            </div>
-            {heroRequiredHard ? (
-              <>
-                <p className="text-sm text-fab-muted mb-2">
-                  {missingHeroEvents.postCutoff.length} event{missingHeroEvents.postCutoff.length !== 1 ? "s" : ""} from Feb 24, 2026 onward {missingHeroEvents.postCutoff.length === 1 ? "needs" : "need"} a hero selection before importing:
-                </p>
-                <ul className="text-sm mb-3 space-y-1">
-                  {missingHeroEvents.postCutoff.map(({ event, origIdx }) => (
-                    <li key={origIdx} className="flex items-center gap-2">
-                      <span className="w-1.5 h-1.5 rounded-full bg-fab-loss shrink-0" />
-                      <span className="text-fab-text">{event.eventName}</span>
-                      <span className="text-fab-dim text-xs">({event.eventDate})</span>
-                    </li>
-                  ))}
-                </ul>
-                <p className="text-sm text-fab-muted mb-2">
-                  Set the hero for {missingHeroEvents.postCutoff.length === 1 ? "that event" : "those events"} — use &quot;No hero (clear)&quot; if you don&apos;t remember.
-                  {missingHeroEvents.preCutoff > 0 && ` Your ${missingHeroEvents.preCutoff} older event${missingHeroEvents.preCutoff !== 1 ? "s" : ""} can still import without a hero.`}
-                </p>
-              </>
-            ) : (
-              <>
-                <p className="text-sm text-fab-muted mb-2">
-                  {pasteResult
-                    ? `${missingHeroEvents.all.length} of your ${filteredEvents.length} event${filteredEvents.length !== 1 ? "s" : ""} ${missingHeroEvents.all.length === 1 ? "is" : "are"} missing hero information.`
-                    : "Your matches are missing hero information."}
-                </p>
-                <p className="text-sm text-fab-muted mb-2">
-                  Without heroes, your stats will be incomplete and your placements will show without a hero on the feed.
-                </p>
-                <p className="text-sm text-fab-muted mb-5">
-                  Set heroes per event in the preview above, or use the Browser Extension for automatic detection.
-                </p>
-              </>
-            )}
-            <div className="flex flex-col gap-2">
-              <button
-                onClick={() => {
-                  setShowHeroWarning(false);
-                  setConfirmSkipHero(false);
-                  setHeroRequiredHard(false);
-                  const first = missingHeroEvents.postCutoff[0] ?? missingHeroEvents.all[0];
-                  if (first) {
-                    const displayIdx = filteredEvents.findIndex((e) => e.origIdx === first.origIdx);
-                    if (displayIdx >= 0) {
-                      if (displayIdx >= visibleEventCount) setVisibleEventCount(displayIdx + 1);
-                      setExpandedEvent(displayIdx);
-                      requestAnimationFrame(() => {
-                        eventCardRefs.current[displayIdx]?.scrollIntoView({ behavior: "smooth", block: "center" });
-                      });
-                    }
-                  }
-                }}
-                className="w-full min-h-[44px] py-2.5 rounded-lg font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors text-sm"
-              >
-                Go Back &amp; Add Heroes
-              </button>
-              {!heroRequiredHard && (
-                !confirmSkipHero ? (
-                  <button
-                    onClick={() => setConfirmSkipHero(true)}
-                    className="w-full min-h-[44px] py-2.5 rounded-lg font-semibold bg-fab-surface border border-fab-border text-fab-dim hover:text-fab-muted transition-colors text-xs"
-                  >
-                    Import without heroes...
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => { setShowHeroWarning(false); setConfirmSkipHero(false); handleImport(); }}
-                    className="w-full min-h-[44px] py-2.5 rounded-lg font-semibold bg-fab-loss/20 border border-fab-loss/30 text-fab-loss hover:bg-fab-loss/30 transition-colors text-sm"
-                  >
-                    Yes, import without heroes
-                  </button>
-                )
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+      {renderHeroWarningModal()}
     </div>
   );
 }
