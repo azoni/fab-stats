@@ -27,13 +27,14 @@ interface EventsTabProps {
   refreshMatches: () => Promise<void>;
   batchUpdateHero: (matchIds: string[], hero: string) => Promise<void>;
   batchUpdateFormat: (matchIds: string[], format: GameFormat) => Promise<void>;
+  batchUpdateDay2?: (matchIds: string[], day2: boolean) => Promise<void>;
   batchUpdateEventType: (matchIds: string[], eventTypeOverride: string) => Promise<void>;
   batchDeleteMatches: (matchIds: string[]) => Promise<void>;
   hideOpponentNames?: boolean;
   privacyControl?: ReactNode;
 }
 
-export function EventsTab({ matches, user, profile, updateMatch, deleteMatch, refreshMatches, batchUpdateHero, batchUpdateFormat, batchUpdateEventType, batchDeleteMatches, hideOpponentNames = false, privacyControl }: EventsTabProps) {
+export function EventsTab({ matches, user, profile, updateMatch, deleteMatch, refreshMatches, batchUpdateHero, batchUpdateFormat, batchUpdateEventType, batchUpdateDay2, batchDeleteMatches, hideOpponentNames = false, privacyControl }: EventsTabProps) {
   const searchParams = useSearchParams();
   const [filterFormat, setFilterFormat] = useState("all");
   const [filterEventType, setFilterEventType] = useState("all");
@@ -43,6 +44,7 @@ export function EventsTab({ matches, user, profile, updateMatch, deleteMatch, re
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [filterTop8, setFilterTop8] = useState(false);
+  const [filterDay2, setFilterDay2] = useState(false);
   const [importModalOpen, setImportModalOpen] = useState(false);
 
   const handleBatchUpdateHero = useCallback(
@@ -78,6 +80,15 @@ export function EventsTab({ matches, user, profile, updateMatch, deleteMatch, re
       }
     },
     [batchUpdateFormat, profile, matches]
+  );
+
+  const handleBatchUpdateDay2 = useCallback(
+    async (matchIds: string[], day2: boolean) => {
+      if (!batchUpdateDay2) return;
+      await batchUpdateDay2(matchIds, day2);
+      // Day 2 doesn't affect leaderboard stats, so no recompute needed.
+    },
+    [batchUpdateDay2]
   );
 
   const handleBatchUpdateEventType = useCallback(
@@ -172,7 +183,7 @@ export function EventsTab({ matches, user, profile, updateMatch, deleteMatch, re
   // Reset to page 1 when filters/search/sort change
   useEffect(() => {
     setPage(1);
-  }, [filterFormat, filterEventType, filterHero, filterTop8, search, sortBy]);
+  }, [filterFormat, filterEventType, filterHero, filterTop8, filterDay2, search, sortBy]);
 
   const eventStats = useMemo(() => computeEventStats(matches), [matches]);
 
@@ -203,6 +214,14 @@ export function EventsTab({ matches, user, profile, updateMatch, deleteMatch, re
     return new Set(finishes.map((f) => `${f.eventName}|${f.eventDate}`));
   }, [eventStats]);
 
+  const day2EventKeys = useMemo(() => {
+    return new Set(
+      eventStats
+        .filter((e) => e.matches.some((m) => m.day2))
+        .map((e) => `${e.eventName}|${e.eventDate}`),
+    );
+  }, [eventStats]);
+
   const filtered = useMemo(() => {
     let result = eventStats;
     if (filterFormat !== "all") {
@@ -219,6 +238,9 @@ export function EventsTab({ matches, user, profile, updateMatch, deleteMatch, re
     if (filterTop8) {
       result = result.filter((e) => playoffEventKeys.has(`${e.eventName}|${e.eventDate}`));
     }
+    if (filterDay2) {
+      result = result.filter((e) => day2EventKeys.has(`${e.eventName}|${e.eventDate}`));
+    }
     const q = search.trim().toLowerCase();
     if (q) {
       result = result.filter((e) => {
@@ -230,7 +252,7 @@ export function EventsTab({ matches, user, profile, updateMatch, deleteMatch, re
       });
     }
     return result;
-  }, [eventStats, filterFormat, filterEventType, filterHero, filterTop8, playoffEventKeys, getEventHero, search]);
+  }, [eventStats, filterFormat, filterEventType, filterHero, filterTop8, filterDay2, playoffEventKeys, day2EventKeys, getEventHero, search]);
 
   const filteredMatches = useMemo(() => filtered.flatMap((e) => e.matches), [filtered]);
   const summaryStats = useMemo(() => computeOverallStats(filteredMatches), [filteredMatches]);
@@ -433,6 +455,19 @@ export function EventsTab({ matches, user, profile, updateMatch, deleteMatch, re
           </button>
         )}
 
+        {day2EventKeys.size > 0 && (
+          <button
+            onClick={() => setFilterDay2((v) => !v)}
+            className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors border ${
+              filterDay2
+                ? "bg-indigo-500/15 text-indigo-300 border-indigo-500/40"
+                : "bg-fab-surface text-fab-dim border-fab-border hover:text-fab-muted"
+            }`}
+          >
+            Day 2
+          </button>
+        )}
+
         <div className="flex gap-1 ml-auto">
           {([
             { id: "newest", label: "Newest" },
@@ -481,7 +516,7 @@ export function EventsTab({ matches, user, profile, updateMatch, deleteMatch, re
           </p>
           <div className="space-y-2">
             {pageEvents.map((event) => (
-              <EventCard key={`${event.eventName}-${event.eventDate}`} event={event} playerName={profile?.displayName || profile?.username} editable={!!user} onBatchUpdateHero={handleBatchUpdateHero} onBatchUpdateFormat={handleBatchUpdateFormat} onBatchUpdateEventType={handleBatchUpdateEventType} onDeleteEvent={handleDeleteEvent} onUpdateMatch={handleUpdateMatch} onDeleteMatch={deleteMatch ? handleDeleteMatch : undefined} missingGemId={!!user && !profile?.gemId} obfuscateOpponents={hideOpponentNames} />
+              <EventCard key={`${event.eventName}-${event.eventDate}`} event={event} playerName={profile?.displayName || profile?.username} editable={!!user} onBatchUpdateHero={handleBatchUpdateHero} onBatchUpdateFormat={handleBatchUpdateFormat} onBatchUpdateEventType={handleBatchUpdateEventType} onBatchUpdateDay2={batchUpdateDay2 ? handleBatchUpdateDay2 : undefined} onDeleteEvent={handleDeleteEvent} onUpdateMatch={handleUpdateMatch} onDeleteMatch={deleteMatch ? handleDeleteMatch : undefined} missingGemId={!!user && !profile?.gemId} obfuscateOpponents={hideOpponentNames} />
             ))}
           </div>
         </>

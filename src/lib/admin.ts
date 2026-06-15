@@ -16,7 +16,7 @@ import { computeH2HForUser } from "./h2h";
 import { updateCommunityHeroMatchups } from "./hero-matchups";
 import { getOrCreateConversation, sendMessage, sendMessageNotification } from "./messages";
 import { getUserVisitData } from "./analytics";
-import { computeEventStats, getEventType } from "./stats";
+import { computeEventStats, getEventType, computeDay2Boundary, getRoundNumber } from "./stats";
 import { batchUpdateMatchesFirestore } from "./firestore-storage";
 import type { UserProfile, MatchRecord } from "@/types";
 
@@ -288,6 +288,76 @@ export async function backfillLeaderboard(
   }
 
   return { updated, skipped, failed };
+}
+
+/**
+ * One-time backfill: flag day-2 matches across all users using the
+ * >10-swiss-round heuristic. Idempotent — skips any event that already has a
+ * day-2 match, so it never clobbers a manual edit and can be re-run safely.
+ */
+export async function backfillDay2(
+  onProgress?: (done: number, total: number) => void
+): Promise<{ usersUpdated: number; eventsFlagged: number; matchesFlagged: number; skipped: number; failed: number }> {
+  const usernamesSnap = await getDocs(collection(db, "usernames"));
+  const userEntries = usernamesSnap.docs.map((d) => ({
+    userId: (d.data() as { userId: string }).userId,
+  }));
+
+  let usersUpdated = 0;
+  let eventsFlagged = 0;
+  let matchesFlagged = 0;
+  let skipped = 0;
+  let failed = 0;
+  let done = 0;
+
+  const BATCH_SIZE = 25;
+  for (let i = 0; i < userEntries.length; i += BATCH_SIZE) {
+    const batch = userEntries.slice(i, i + BATCH_SIZE);
+    const results = await Promise.allSettled(
+      batch.map(async ({ userId }) => {
+        const matchesSnap = await getDocs(collection(db, "users", userId, "matches"));
+        const matches = matchesSnap.docs.map((d) => ({ id: d.id, ...d.data() })) as MatchRecord[];
+        if (matches.length === 0) return { flaggedEvents: 0, flaggedMatches: 0 };
+
+        const events = computeEventStats(matches);
+        const idsToFlag: string[] = [];
+        let flaggedEvents = 0;
+        for (const ev of events) {
+          // Skip events already touched (manual edit or prior backfill).
+          if (ev.matches.some((m) => m.day2)) continue;
+          const boundary = computeDay2Boundary(ev.matches);
+          if (boundary == null) continue;
+          const day2Ids = ev.matches.filter((m) => getRoundNumber(m) >= boundary).map((m) => m.id);
+          if (day2Ids.length > 0) {
+            idsToFlag.push(...day2Ids);
+            flaggedEvents++;
+          }
+        }
+        if (idsToFlag.length > 0) {
+          await batchUpdateMatchesFirestore(userId, idsToFlag, { day2: true });
+        }
+        return { flaggedEvents, flaggedMatches: idsToFlag.length };
+      })
+    );
+
+    for (const r of results) {
+      done++;
+      if (r.status === "fulfilled") {
+        if (r.value.flaggedMatches > 0) {
+          usersUpdated++;
+          eventsFlagged += r.value.flaggedEvents;
+          matchesFlagged += r.value.flaggedMatches;
+        } else {
+          skipped++;
+        }
+      } else {
+        failed++;
+      }
+    }
+    onProgress?.(done, userEntries.length);
+  }
+
+  return { usersUpdated, eventsFlagged, matchesFlagged, skipped, failed };
 }
 
 /** Backfill placement feed events for all public users who have playoff finishes. */

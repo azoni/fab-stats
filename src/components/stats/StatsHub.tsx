@@ -22,7 +22,7 @@ interface StatsHubProps {
 export function StatsHub({ defaultTab, showTabs = true }: StatsHubProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const { matches, isLoaded, updateMatch, deleteMatch, refreshMatches, batchUpdateHero, batchUpdateFormat, batchUpdateEventType, batchDeleteMatches } = useMatches();
+  const { matches, isLoaded, updateMatch, deleteMatch, refreshMatches, batchUpdateHero, batchUpdateFormat, batchUpdateEventType, batchUpdateDay2, batchDeleteMatches } = useMatches();
   const { user, profile } = useAuth();
   const [hideOpponentNames, setHideOpponentNames] = useState(false);
   const [privacyPrefLoaded, setPrivacyPrefLoaded] = useState(false);
@@ -110,6 +110,7 @@ export function StatsHub({ defaultTab, showTabs = true }: StatsHubProps) {
           batchUpdateHero={batchUpdateHero}
           batchUpdateFormat={batchUpdateFormat}
           batchUpdateEventType={batchUpdateEventType}
+          batchUpdateDay2={batchUpdateDay2}
           batchDeleteMatches={batchDeleteMatches}
           hideOpponentNames={hideOpponentNames}
           privacyControl={privacyControl}

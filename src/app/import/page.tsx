@@ -8,7 +8,7 @@ import { importMatchesLocal } from "@/lib/storage";
 import { createImportFeedEvent, createPlacementFeedEvent, deleteAllFeedEventsForUser } from "@/lib/feed";
 import { detectNewAchievements } from "@/lib/achievement-tracking";
 import { evaluateAchievements } from "@/lib/achievements";
-import { computeOverallStats, computeHeroStats, computeOpponentStats, computeEventStats, computePlayoffFinishes, getEventName, type PlayoffFinish } from "@/lib/stats";
+import { computeOverallStats, computeHeroStats, computeOpponentStats, computeEventStats, computePlayoffFinishes, getEventName, getRoundNumber, computeDay2Boundary, type PlayoffFinish } from "@/lib/stats";
 import { linkMatchesWithOpponents } from "@/lib/match-linking";
 import { computeH2HForUser } from "@/lib/h2h";
 import { updateCommunityHeroMatchups } from "@/lib/hero-matchups";
@@ -91,6 +91,48 @@ function TurnOrderPicker({ value, onChange }: { value: boolean | undefined; onCh
           </button>
         )}
       </div>
+    </div>
+  );
+}
+
+/** Day-2 boundary control shown on multi-day events in the import preview.
+ *  `boundary` is the effective day-2 start round, or null when turned off. */
+function Day2Control({ boundary, onSetRound, onTurnOff, onTurnOn }: {
+  boundary: number | null;
+  onSetRound: (n: number) => void;
+  onTurnOff: () => void;
+  onTurnOn: () => void;
+}) {
+  return (
+    <div onClick={(e) => e.stopPropagation()} className="rounded-lg border border-indigo-500/30 bg-indigo-500/[0.06] p-3">
+      {boundary != null ? (
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+          <span className="text-xs font-bold uppercase tracking-wide text-indigo-300">Day 2 detected</span>
+          <label className="flex items-center gap-1.5 text-xs text-fab-muted">
+            starts at round
+            <input
+              type="number"
+              min={2}
+              value={boundary}
+              onChange={(e) => {
+                const n = parseInt(e.target.value, 10);
+                if (Number.isFinite(n) && n >= 2) onSetRound(n);
+              }}
+              className="w-16 rounded-md border border-fab-border bg-fab-bg px-2 py-1 text-xs text-fab-text focus:border-fab-gold/60 focus:outline-none"
+            />
+          </label>
+          <button type="button" onClick={onTurnOff} className="ml-auto text-xs font-semibold text-fab-dim hover:text-fab-loss">
+            Not a Day 2
+          </button>
+        </div>
+      ) : (
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-xs text-fab-muted">Day 2 turned off for this event.</span>
+          <button type="button" onClick={onTurnOn} className="text-xs font-semibold text-indigo-300 hover:text-indigo-200">
+            Mark as Day 2
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -183,6 +225,9 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
   const [showOtherBrowsers, setShowOtherBrowsers] = useState(false);
   const [visibleEventCount, setVisibleEventCount] = useState(10);
   const [turnOrderOverrides, setTurnOrderOverrides] = useState<Record<string, boolean>>({});
+  // Per-event day-2 boundary override, keyed by origIdx. "off" disables day 2;
+  // a number sets the round where day 2 starts; absent → use the auto heuristic.
+  const [day2BoundaryOverrides, setDay2BoundaryOverrides] = useState<Record<number, number | "off">>({});
 
   // Detect mobile viewport
   useEffect(() => {
@@ -268,6 +313,19 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
       });
   }, [pasteResult, filterFormat, filterEventType]);
 
+  // Per-event day-2 boundary (round number where day 2 starts, or null).
+  // Honors the user's override; falls back to the auto heuristic.
+  const day2Boundaries = useMemo(() => {
+    const map = new Map<number, number | null>();
+    (pasteResult?.events ?? []).forEach((e, i) => {
+      const ov = day2BoundaryOverrides[i];
+      if (ov === "off") map.set(i, null);
+      else if (typeof ov === "number") map.set(i, ov);
+      else map.set(i, computeDay2Boundary(e.matches as MatchRecord[]));
+    });
+    return map;
+  }, [pasteResult, day2BoundaryOverrides]);
+
   const applyImportOverrides = useCallback((match: ImportMatchDraft, origIdx: number, matchIdx: number): ImportMatchDraft => {
     const hero = heroOverrides[origIdx];
     const key = `${origIdx}-${matchIdx}`;
@@ -282,8 +340,12 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
       const trimmed = (matchNotesOverrides[key] || "").trim();
       updated = { ...updated, matchNotes: trimmed || undefined };
     }
+    const day2Start = day2Boundaries.get(origIdx);
+    if (day2Start != null && getRoundNumber(match as MatchRecord) >= day2Start) {
+      updated = { ...updated, day2: true };
+    }
     return updated;
-  }, [heroOverrides, opponentHeroOverrides, turnOrderOverrides, matchNotesOverrides]);
+  }, [heroOverrides, opponentHeroOverrides, turnOrderOverrides, matchNotesOverrides, day2Boundaries]);
 
   const filteredMatches = useMemo(() => {
     return filteredEvents.flatMap(({ event, origIdx }) =>
@@ -642,6 +704,7 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
     setHeroOverrides({});
     setOpponentHeroOverrides({});
     setTurnOrderOverrides({});
+    setDay2BoundaryOverrides({});
     setSessionRecap(null);
     setNewAchievements([]);
     setNewPlacements([]);
@@ -834,6 +897,8 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
             const rawOverride = heroOverrides[origIdx];
             const heroValue = rawOverride === ACKNOWLEDGED_UNKNOWN ? "" : (rawOverride || reviewMatches[0]?.match.heroPlayed || "");
             const needsHero = !heroOverrides[origIdx] && reviewMatches.every(({ match }) => match.heroPlayed === "Unknown");
+            const qDay2Boundary = day2Boundaries.get(origIdx) ?? null;
+            const qDay2Auto = computeDay2Boundary(event.matches as MatchRecord[]);
 
             return (
               <div key={i} ref={(el) => { eventCardRefs.current[i] = el; }} className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden">
@@ -847,6 +912,7 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
                         <span className="font-semibold text-fab-text">{event.eventName}</span>
                         {event.rated && <span className="px-1.5 py-0.5 rounded bg-fab-gold/15 text-fab-gold text-xs">Rated</span>}
                         {needsHero && <span className="px-1.5 py-0.5 rounded bg-fab-draw/15 text-fab-draw text-xs">Missing Hero</span>}
+                        {qDay2Boundary != null && <span className="px-1.5 py-0.5 rounded bg-indigo-500/15 text-indigo-300 text-xs font-bold">Day 2</span>}
                       </div>
                       <div className="flex items-center gap-2 mt-1 text-xs text-fab-dim">
                         <span>{event.eventDate}</span>
@@ -877,6 +943,15 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
                         allowClear
                       />
                     </div>
+                    {/* Day 2 control */}
+                    {(qDay2Auto != null || day2BoundaryOverrides[origIdx] != null) && (
+                      <Day2Control
+                        boundary={qDay2Boundary}
+                        onSetRound={(n) => setDay2BoundaryOverrides((prev) => ({ ...prev, [origIdx]: n }))}
+                        onTurnOff={() => setDay2BoundaryOverrides((prev) => ({ ...prev, [origIdx]: "off" }))}
+                        onTurnOn={() => setDay2BoundaryOverrides((prev) => { const { [origIdx]: _, ...rest } = prev; return rest; })}
+                      />
+                    )}
                     {/* Matches with opponent hero editing */}
                     <div className="space-y-2">
                       {reviewMatches.map(({ match, matchIdx }) => {
@@ -1691,6 +1766,12 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
                   const rawOverride = heroOverrides[origIdx];
                   const heroValue = rawOverride === ACKNOWLEDGED_UNKNOWN ? "" : (rawOverride || event.matches[0]?.heroPlayed || "");
                   const needsHero = !heroOverrides[origIdx] && event.matches.every((m) => m.heroPlayed === "Unknown");
+                  // Post-cutoff events hard-block import without a hero, so the
+                  // field must read "required" — not "optional" — for them.
+                  const eventIsPostCutoff = event.matches.some((m) => m.date >= HERO_REQUIRED_CUTOFF);
+
+                  const day2Boundary = day2Boundaries.get(origIdx) ?? null;
+                  const day2Auto = computeDay2Boundary(event.matches as MatchRecord[]);
 
                   // Detect playoff placement from match round labels
                   const playoffRanks: Record<string, number> = { "Finals": 4, "Top 4": 3, "Top 8": 2, "Playoff": 2 };
@@ -1731,6 +1812,9 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
                                     : "bg-fab-draw/15 text-fab-draw"
                                 }`}>Missing Hero</span>
                               )}
+                              {day2Boundary != null && (
+                                <span className="px-1.5 py-0.5 rounded bg-indigo-500/15 text-indigo-300 text-xs font-bold">Day 2</span>
+                              )}
                             </div>
                             <div className="flex items-center gap-2 mt-1 text-xs text-fab-dim">
                               <span>{event.eventDate}</span>
@@ -1755,11 +1839,20 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
                               onChange={(val) => {
                                 setHeroOverrides((prev) => val && val !== "Unknown" && val !== "" ? { ...prev, [origIdx]: val } : { ...prev, [origIdx]: ACKNOWLEDGED_UNKNOWN });
                               }}
-                              label={needsHero ? "Hero (optional)" : "Hero"}
+                              label={eventIsPostCutoff ? "Hero (required)" : "Hero (optional)"}
                               format={event.format}
                               allowClear
                             />
                           </div>
+                          {/* Day 2 control — shown for multi-day events (>10 swiss rounds) */}
+                          {(day2Auto != null || day2BoundaryOverrides[origIdx] != null) && (
+                            <Day2Control
+                              boundary={day2Boundary}
+                              onSetRound={(n) => setDay2BoundaryOverrides((prev) => ({ ...prev, [origIdx]: n }))}
+                              onTurnOff={() => setDay2BoundaryOverrides((prev) => ({ ...prev, [origIdx]: "off" }))}
+                              onTurnOn={() => setDay2BoundaryOverrides((prev) => { const { [origIdx]: _, ...rest } = prev; return rest; })}
+                            />
+                          )}
                           <div className="space-y-2">
                             {event.matches.map((match, j) => {
                               const oppKey = `${origIdx}-${j}`;

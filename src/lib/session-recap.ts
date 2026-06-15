@@ -15,11 +15,32 @@ export interface SessionRecap {
   bestStreak: number;
   /** Hero insights: win rate changes, tier ups */
   heroInsights: HeroInsight[];
+  /** Opponents faced this session never seen before the import */
+  newOpponents: NewOpponent[];
+  /** Your hero-vs-hero record from this session (known heroes only) */
+  sessionMatchups: SessionMatchup[];
+  /** Session matches missing an opponent hero — drives the "fill to unlock" nudge */
+  missingOpponentHeroCount: number;
+  /** Distinct events imported this session (drives full-vs-compact recap) */
+  eventCount: number;
   /** Overall stats after import */
   newOverallWinRate: number;
   newTotalMatches: number;
   /** Streak info after import */
   currentStreak: { type: "win" | "loss"; count: number } | null;
+}
+
+export interface NewOpponent {
+  name: string;
+  hero?: string;
+}
+
+export interface SessionMatchup {
+  heroPlayed: string;
+  opponentHero: string;
+  wins: number;
+  losses: number;
+  draws: number;
 }
 
 export interface HeroInsight {
@@ -106,6 +127,51 @@ export function computeSessionRecap(
     return b.sessionMatches - a.sessionMatches;
   });
 
+  // New opponents — opponents in the session never seen before this import.
+  const normalizeName = (n?: string) => (n || "").trim().toLowerCase();
+  const beforeOpponents = new Set(
+    beforeMatches.map((m) => normalizeName(m.opponentName)).filter(Boolean),
+  );
+  const newOpponentsMap = new Map<string, NewOpponent>();
+  for (const m of sessionMatches) {
+    const key = normalizeName(m.opponentName);
+    if (!key || beforeOpponents.has(key) || newOpponentsMap.has(key)) continue;
+    newOpponentsMap.set(key, {
+      name: m.opponentName!.trim(),
+      hero: m.opponentHero && m.opponentHero !== "Unknown" ? m.opponentHero : undefined,
+    });
+  }
+  const newOpponents = [...newOpponentsMap.values()];
+
+  // Session hero-vs-hero matchups (both heroes known).
+  const matchupMap = new Map<string, SessionMatchup>();
+  for (const m of sessionMatches) {
+    if (!m.heroPlayed || m.heroPlayed === "Unknown") continue;
+    if (!m.opponentHero || m.opponentHero === "Unknown") continue;
+    const key = `${m.heroPlayed}|${m.opponentHero}`;
+    const cur = matchupMap.get(key) ?? { heroPlayed: m.heroPlayed, opponentHero: m.opponentHero, wins: 0, losses: 0, draws: 0 };
+    if (m.result === MatchResult.Win) cur.wins++;
+    else if (m.result === MatchResult.Loss) cur.losses++;
+    else if (m.result === MatchResult.Draw) cur.draws++;
+    matchupMap.set(key, cur);
+  }
+  const sessionMatchups = [...matchupMap.values()].sort(
+    (a, b) => (b.wins + b.losses + b.draws) - (a.wins + a.losses + a.draws),
+  );
+
+  // Matches missing an opponent hero (non-bye) — the data-driving nudge.
+  const missingOpponentHeroCount = sessionMatches.filter(
+    (m) => m.result !== MatchResult.Bye && (!m.opponentHero || m.opponentHero === "Unknown"),
+  ).length;
+
+  // Distinct events imported (eventName|date), drives full-vs-compact recap.
+  const eventCount = new Set(
+    sessionMatches.map((m) => {
+      const eventName = m.notes?.split(" | ")[0]?.trim() || `${m.date}-${m.format}`;
+      return `${eventName}|${m.date}`;
+    }),
+  ).size;
+
   // Overall stats after
   const afterOverall = computeOverallStats(afterMatches);
   const afterStreaks = computeStreaks(
@@ -120,6 +186,10 @@ export function computeSessionRecap(
     winRate,
     bestStreak,
     heroInsights,
+    newOpponents,
+    sessionMatchups,
+    missingOpponentHeroCount,
+    eventCount,
     newOverallWinRate: afterOverall.overallWinRate,
     newTotalMatches: afterOverall.totalMatches,
     currentStreak: afterStreaks.currentStreak

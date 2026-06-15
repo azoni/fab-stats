@@ -45,13 +45,29 @@ for (const card of heroCards) {
   }
 }
 
-// Override format data for heroes where the card package is out of date
+// Override format data for heroes where the card package is out of date.
+// LL_OVERRIDES *replaces* the legal-format list entirely.
 const LL_OVERRIDES: Record<string, string[]> = {
   "Verdance, Thorn of the Rose": ["Living Legend", "Open"],
 };
 for (const [name, formats] of Object.entries(LL_OVERRIDES)) {
   const hero = heroMap.get(name);
   if (hero) hero.legalFormats = formats;
+}
+
+// FORMAT_ADD_OVERRIDES *appends* formats the @flesh-and-blood/cards package
+// omits. Blaze, Firemind is a young hero legal in Silver Age, but the package
+// data doesn't list it, so she gets filtered out of Silver Age hero pickers.
+const FORMAT_ADD_OVERRIDES: Record<string, string[]> = {
+  "Blaze, Firemind": ["Silver Age"],
+};
+for (const [name, formats] of Object.entries(FORMAT_ADD_OVERRIDES)) {
+  const hero = heroMap.get(name);
+  if (hero) {
+    for (const f of formats) {
+      if (!hero.legalFormats.includes(f)) hero.legalFormats.push(f);
+    }
+  }
 }
 
 export const allHeroes: HeroInfo[] = Array.from(heroMap.values()).sort(

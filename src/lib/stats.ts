@@ -816,6 +816,32 @@ export function getRoundNumber(match: MatchRecord): number {
   return 0;
 }
 
+/** Above this many swiss rounds, an event is assumed to span two days.
+ *  GEM continues swiss numbering across days (no reset), so a round-11 match
+ *  means the player advanced to day two. */
+export const DAY2_SWISS_THRESHOLD = 10;
+
+/**
+ * Returns the round number (getRoundNumber value) at which day two begins for
+ * an event, or null if the event is single-day. Day-1 swiss for FaB majors is
+ * almost always 8-9 rounds, so day two starts at round 10. Playoff rounds
+ * (getRoundNumber >= 1000) always exceed the swiss boundary, so they fall into
+ * day two automatically.
+ *
+ * Edge cases: an event with a Top 8 but <=10 swiss rounds is a normal one-day
+ * event (returns null). Events with no parseable rounds return null (no false
+ * positives). The boundary is format-agnostic, so multi-format days split
+ * correctly.
+ */
+export function computeDay2Boundary(eventMatches: MatchRecord[]): number | null {
+  const rounds = eventMatches.map(getRoundNumber).filter((r) => r > 0);
+  if (rounds.length === 0) return null;
+  const swiss = rounds.filter((r) => r < 1000);
+  const maxSwiss = swiss.length ? Math.max(...swiss) : 0;
+  if (maxSwiss <= DAY2_SWISS_THRESHOLD) return null;
+  return Math.min(10, maxSwiss);
+}
+
 /** Check if the match has an explicit event name (from GEM/notes) vs a generated fallback. */
 function hasExplicitEventName(match: MatchRecord): boolean {
   return !!(match.notes?.split(" | ")[0]?.trim());

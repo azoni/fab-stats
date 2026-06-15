@@ -240,6 +240,34 @@ export function useMatches() {
     [user, isGuest]
   );
 
+  const batchUpdateDay2 = useCallback(
+    async (matchIds: string[], day2: boolean) => {
+      // `false` → undefined so batchUpdateMatchesFirestore clears the field
+      // (deleteField), keeping day-1 matches clean.
+      const value = day2 ? true : undefined;
+      if (isGuest) {
+        for (const id of matchIds) storageUpdateMatch(id, { day2: value });
+        setMatches(getAllMatches());
+        return;
+      }
+      if (!user) return;
+      try {
+        setError(null);
+        await batchUpdateMatchesFirestore(user.uid, matchIds, { day2: value });
+        const idSet = new Set(matchIds);
+        const updated = (cachedMatches || []).map((m) => (idSet.has(m.id) ? { ...m, day2: value } : m));
+        updateCache(user.uid, updated);
+        setMatches(updated);
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : "Failed to update Day 2";
+        console.error("batchUpdateDay2 failed:", e);
+        setError(msg);
+        throw e;
+      }
+    },
+    [user, isGuest]
+  );
+
   const batchDeleteMatches = useCallback(
     async (matchIds: string[]) => {
       if (isGuest) {
@@ -282,5 +310,5 @@ export function useMatches() {
 
   const clearError = useCallback(() => setError(null), []);
 
-  return { matches, isLoaded, error, clearError, addMatch, deleteMatch, updateMatch, batchUpdateHero, batchUpdateFormat, batchUpdateEventType, batchDeleteMatches, refreshMatches };
+  return { matches, isLoaded, error, clearError, addMatch, deleteMatch, updateMatch, batchUpdateHero, batchUpdateFormat, batchUpdateEventType, batchUpdateDay2, batchDeleteMatches, refreshMatches };
 }

@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import type { SessionRecap } from "@/lib/session-recap";
 import type { Achievement } from "@/types";
 import type { PlayoffFinish } from "@/lib/stats";
@@ -7,7 +8,9 @@ import type { BadgeTierInfo } from "@/lib/badge-tiers";
 import { TIER_VISUALS } from "@/lib/badge-tiers";
 import { tierConfig } from "@/lib/mastery";
 import { rarityColors } from "@/lib/achievements";
+import { getCommunityMatchups } from "@/lib/hero-matchups";
 import { AchievementIcon } from "@/components/gamification/AchievementIcons";
+import { HeroImg } from "@/components/heroes/HeroImg";
 import { BADGE_ICON_MAP } from "@/components/profile/BadgeIcons";
 import { BadgeTierWrapper } from "@/components/profile/BadgeTierWrapper";
 import { PlacementShareModal } from "./PlacementShareCard";
@@ -37,8 +40,12 @@ interface Props {
 }
 
 export function PostEventRecap({ recap, onViewOpponents, onDashboard, onImportMore, skippedCount, newAchievements, newPlacements, playerName, matchBadgeTierUp, quickMode }: Props) {
-  const { wins, losses, draws, winRate, bestStreak, heroInsights, newOverallWinRate, newTotalMatches, currentStreak } = recap;
+  const { wins, losses, draws, winRate, bestStreak, heroInsights, newOpponents, sessionMatchups, missingOpponentHeroCount, eventCount, newOverallWinRate, newTotalMatches, currentStreak } = recap;
   const total = wins + losses + draws;
+
+  // Big imports (a new user dumping years of history) get a compact recap so
+  // the celebration isn't a mile long. ≤10 events → full recap.
+  const compact = eventCount > 10;
 
   const hasPlacement = newPlacements && newPlacements.length > 0;
   const hasNewAchievements = newAchievements && newAchievements.length > 0;
@@ -48,6 +55,17 @@ export function PostEventRecap({ recap, onViewOpponents, onDashboard, onImportMo
   const [autoOpened, setAutoOpened] = useState(false);
   const [visiblePlacements, setVisiblePlacements] = useState(3);
   const [showAllAchievements, setShowAllAchievements] = useState(false);
+
+  // Community win-rate context for the session's matchups (best-effort).
+  const [communityMatchups, setCommunityMatchups] = useState<Map<string, { winRate: number; total: number }>>(new Map());
+  useEffect(() => {
+    if (compact || sessionMatchups.length === 0) return;
+    let cancelled = false;
+    getCommunityMatchups(sessionMatchups.map((m) => ({ heroPlayed: m.heroPlayed, opponentHero: m.opponentHero })))
+      .then((map) => { if (!cancelled) setCommunityMatchups(map); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [compact, sessionMatchups]);
 
   useEffect(() => {
     if (hasPlacement && !autoOpened && playerName) {
@@ -180,8 +198,8 @@ export function PostEventRecap({ recap, onViewOpponents, onDashboard, onImportMo
         </div>
       )}
 
-      {/* Insight Pills — hidden in quick mode */}
-      {!quickMode && (heroInsights.length > 0 || currentStreak) && (
+      {/* Insight Pills — hidden in quick mode + compact (large) imports */}
+      {!quickMode && !compact && (heroInsights.length > 0 || currentStreak) && (
         <div className="space-y-2">
           {/* Tier-ups */}
           {heroInsights.filter((h) => h.tierUp).map((h) => {
@@ -256,6 +274,89 @@ export function PostEventRecap({ recap, onViewOpponents, onDashboard, onImportMo
             </div>
           )}
         </div>
+      )}
+
+      {/* Compact summary line for large imports */}
+      {compact && (
+        <div className="bg-fab-surface border border-fab-border rounded-lg p-4 text-center">
+          <p className="text-sm text-fab-muted">
+            Imported <span className="font-semibold text-fab-text">{total}</span> matches across{" "}
+            <span className="font-semibold text-fab-text">{eventCount}</span> events
+            {newOpponents.length > 0 && (
+              <> · <span className="font-semibold text-fab-text">{newOpponents.length}</span> new opponents</>
+            )}
+            .
+          </p>
+        </div>
+      )}
+
+      {/* New opponents — full recap only */}
+      {!compact && !quickMode && newOpponents.length > 0 && (
+        <div className="bg-fab-surface border border-fab-border rounded-lg p-5">
+          <h2 className="text-xs font-semibold text-fab-dim uppercase tracking-wider mb-3">
+            {newOpponents.length} New Opponent{newOpponents.length === 1 ? "" : "s"} Faced
+          </h2>
+          <div className="flex flex-wrap gap-2">
+            {newOpponents.slice(0, 12).map((o) => (
+              <span key={o.name} className="inline-flex items-center gap-1.5 rounded-full border border-fab-border bg-fab-bg px-2.5 py-1 text-xs text-fab-text">
+                {o.hero && <HeroImg name={o.hero} size="sm" />}
+                {o.name}
+              </span>
+            ))}
+            {newOpponents.length > 12 && (
+              <span className="inline-flex items-center rounded-full border border-fab-border bg-fab-bg px-2.5 py-1 text-xs text-fab-dim">
+                +{newOpponents.length - 12} more
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Session matchups with community context — full recap only */}
+      {!compact && !quickMode && sessionMatchups.length > 0 && (
+        <div className="bg-fab-surface border border-fab-border rounded-lg p-5">
+          <h2 className="text-xs font-semibold text-fab-dim uppercase tracking-wider mb-3">Your Matchups This Session</h2>
+          <div className="space-y-2">
+            {sessionMatchups.slice(0, 8).map((m) => {
+              const community = communityMatchups.get(`${m.heroPlayed}|${m.opponentHero}`);
+              const mTotal = m.wins + m.losses + m.draws;
+              return (
+                <div key={`${m.heroPlayed}|${m.opponentHero}`} className="flex items-center gap-2 rounded-lg bg-fab-bg/60 p-2.5">
+                  <HeroImg name={m.heroPlayed} size="sm" />
+                  <span className="text-xs text-fab-dim">vs</span>
+                  <HeroImg name={m.opponentHero} size="sm" />
+                  <span className="ml-1 min-w-0 flex-1 truncate text-xs text-fab-muted">
+                    {m.heroPlayed.split(",")[0]} <span className="text-fab-dim">into</span> {m.opponentHero.split(",")[0]}
+                  </span>
+                  <span className={`text-sm font-bold tabular-nums ${m.wins >= m.losses ? "text-fab-win" : "text-fab-loss"}`}>
+                    {m.wins}-{m.losses}{m.draws > 0 ? `-${m.draws}` : ""}
+                  </span>
+                  {community && community.total >= 5 && (
+                    <span className="hidden sm:inline text-[11px] text-fab-dim whitespace-nowrap" title={`${community.total} community matches`}>
+                      · community {community.winRate}%
+                    </span>
+                  )}
+                  <span className="sr-only">{mTotal} matches</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Fill-the-gaps nudge — encourage adding opponent heroes to unlock data */}
+      {!quickMode && missingOpponentHeroCount > 0 && (
+        <Link
+          href="/matches"
+          className="block rounded-lg border border-fab-gold/40 bg-fab-gold/[0.06] p-4 transition-colors hover:border-fab-gold/60 hover:bg-fab-gold/10"
+        >
+          <p className="text-sm font-semibold text-fab-gold">
+            {missingOpponentHeroCount} match{missingOpponentHeroCount === 1 ? "" : "es"} missing opponent heroes
+          </p>
+          <p className="mt-0.5 text-xs text-fab-muted">
+            Add them on the Matches page to unlock matchup win rates and richer stats →
+          </p>
+        </Link>
       )}
 
       {/* Badge Tier Up */}

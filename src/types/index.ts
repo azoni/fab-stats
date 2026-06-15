@@ -26,6 +26,10 @@ export interface MatchRecord {
    *  edits (opponent-hero propagation, leaderboard recompute) do NOT set
    *  this. Used to display a subtle "edited" indicator for transparency. */
   editedAt?: string;
+  /** True when this match belongs to day two of a multi-day event. Undefined
+   *  (omitted) for day-one matches. Set on import via the >10-swiss-round
+   *  heuristic (user-adjustable) and editable per-event afterward. */
+  day2?: boolean;
   createdAt: string;
 }
 

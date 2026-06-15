@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
-import { getAdminDashboardData, getDeletedAccountCount, backfillLeaderboard, backfillPlacementFeedEvents, broadcastMessage, fixMatchDates, backfillGemIds, backfillMatchLinking, backfillH2H, backfillHeroMatchups, adminGetUserEvents, adminOverrideEventType, adminResyncLeaderboard, type AdminDashboardData, type AdminUserStats, type AdminEventSummary } from "@/lib/admin";
+import { getAdminDashboardData, getDeletedAccountCount, backfillLeaderboard, backfillPlacementFeedEvents, backfillDay2, broadcastMessage, fixMatchDates, backfillGemIds, backfillMatchLinking, backfillH2H, backfillHeroMatchups, adminGetUserEvents, adminOverrideEventType, adminResyncLeaderboard, type AdminDashboardData, type AdminUserStats, type AdminEventSummary } from "@/lib/admin";
 import { getAllFeedback, updateFeedbackStatus } from "@/lib/feedback";
 import { getOrCreateConversation, sendMessage, sendMessageNotification } from "@/lib/messages";
 import { getAnalytics, getDailyPageViewTrend, getImportMethodStats, getPageViews, type PageViewTimeRange } from "@/lib/analytics";
@@ -78,6 +78,8 @@ export default function AdminPage() {
   const [matchupProgress, setMatchupProgress] = useState("");
   const [backfillingPlacements, setBackfillingPlacements] = useState(false);
   const [placementProgress, setPlacementProgress] = useState("");
+  const [backfillingDay2, setBackfillingDay2] = useState(false);
+  const [day2Progress, setDay2Progress] = useState("");
   const [syncingBackgroundCatalog, setSyncingBackgroundCatalog] = useState(false);
   const [backgroundCatalogProgress, setBackgroundCatalogProgress] = useState("");
   const [buildingHistorical, setBuildingHistorical] = useState(false);
@@ -121,7 +123,7 @@ export default function AdminPage() {
   const [forceAddResult, setForceAddResult] = useState("");
   const [userSearch, setUserSearch] = useState("");
   const [userPage, setUserPage] = useState(1);
-  const anyToolRunning = fixingDates || backfilling || backfillingGemIds || linkingMatches || resyncingH2H || backfillingMatchups || backfillingPlacements || syncingBackgroundCatalog || buildingHistorical;
+  const anyToolRunning = fixingDates || backfilling || backfillingGemIds || linkingMatches || resyncingH2H || backfillingMatchups || backfillingPlacements || backfillingDay2 || syncingBackgroundCatalog || buildingHistorical;
   const [activeTab, setActiveTab] = useState<"overview" | "users" | "feedback" | "content" | "tools" | "discord" | "games">(() => {
     if (typeof window !== "undefined") {
       const hash = window.location.hash.replace("#", "");
@@ -474,6 +476,26 @@ export default function AdminPage() {
             </button>
             <button
               onClick={async () => {
+                setBackfillingDay2(true);
+                setDay2Progress("Starting...");
+                try {
+                  const { usersUpdated, eventsFlagged, matchesFlagged, skipped, failed } = await backfillDay2((done, total) => {
+                    setDay2Progress(`${done}/${total} users`);
+                  });
+                  setDay2Progress(`Done: ${usersUpdated} users, ${eventsFlagged} events, ${matchesFlagged} matches flagged · ${skipped} skipped, ${failed} failed`);
+                } catch {
+                  setDay2Progress("Day 2 backfill failed");
+                } finally {
+                  setBackfillingDay2(false);
+                }
+              }}
+              disabled={anyToolRunning}
+              className="px-3 py-1.5 rounded text-xs font-medium bg-fab-bg border border-fab-border text-fab-muted hover:text-fab-text hover:border-fab-gold transition-colors disabled:opacity-50"
+            >
+              {backfillingDay2 ? "Backfilling..." : "Backfill Day 2"}
+            </button>
+            <button
+              onClick={async () => {
                 setSyncingBackgroundCatalog(true);
                 setBackgroundCatalogProgress("Starting...");
                 try {
@@ -519,8 +541,8 @@ export default function AdminPage() {
               {buildingHistorical ? "Building..." : "Build Historical Events"}
             </button>
           </div>
-          {(historicalProgress || backgroundCatalogProgress || backfillProgress || fixDatesProgress || linkProgress || gemIdProgress || h2hProgress || matchupProgress || placementProgress) && (
-            <p className="text-xs text-fab-dim">{historicalProgress || backgroundCatalogProgress || placementProgress || matchupProgress || h2hProgress || linkProgress || gemIdProgress || fixDatesProgress || backfillProgress}</p>
+          {(historicalProgress || backgroundCatalogProgress || backfillProgress || fixDatesProgress || linkProgress || gemIdProgress || h2hProgress || matchupProgress || placementProgress || day2Progress) && (
+            <p className="text-xs text-fab-dim">{historicalProgress || backgroundCatalogProgress || day2Progress || placementProgress || matchupProgress || h2hProgress || linkProgress || gemIdProgress || fixDatesProgress || backfillProgress}</p>
           )}
 
           <EventTypeManager />

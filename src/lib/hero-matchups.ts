@@ -685,6 +685,63 @@ const CACHE_TTL = 15 * 60_000; // 15 minutes
  * @param format — optional format filter
  * @param rated — optional "rated" | "unrated" filter
  */
+/**
+ * Targeted community matchup lookup for a small set of hero pairs (e.g. the
+ * matchups in a post-import recap). For each pair, queries the heroMatchups
+ * collection by the sorted hero1/hero2 fields and aggregates across all months.
+ * Returns a map keyed by `${heroPlayed}|${opponentHero}` with the community
+ * win rate from the player's perspective. Best-effort: failures yield an
+ * empty map so the recap still renders.
+ */
+export async function getCommunityMatchups(
+  pairs: { heroPlayed: string; opponentHero: string }[],
+): Promise<Map<string, { winRate: number; total: number }>> {
+  const out = new Map<string, { winRate: number; total: number }>();
+  if (pairs.length === 0) return out;
+
+  // Dedupe by canonical sorted pair so we run one query per distinct matchup.
+  const byCanonical = new Map<string, { heroPlayed: string; opponentHero: string }[]>();
+  for (const p of pairs) {
+    if (!p.heroPlayed || !p.opponentHero) continue;
+    const sorted = [p.heroPlayed, p.opponentHero].sort();
+    const canon = `${sorted[0]}___${sorted[1]}`;
+    const list = byCanonical.get(canon) ?? [];
+    list.push(p);
+    byCanonical.set(canon, list);
+  }
+
+  const col = collection(db, "heroMatchups");
+  await Promise.all(
+    [...byCanonical.entries()].map(async ([canon, originals]) => {
+      try {
+        const [h1, h2] = canon.split("___");
+        const snap = await getDocs(query(col, where("hero1", "==", h1), where("hero2", "==", h2)));
+        let hero1Wins = 0, hero2Wins = 0, draws = 0, total = 0;
+        for (const d of snap.docs) {
+          const data = d.data() as HeroMatchupDoc;
+          hero1Wins += data.hero1Wins || 0;
+          hero2Wins += data.hero2Wins || 0;
+          draws += data.draws || 0;
+          total += data.total || 0;
+        }
+        if (total === 0) return;
+        for (const p of originals) {
+          // Orient win rate to the player's hero.
+          const playerIsHero1 = p.heroPlayed === h1;
+          const playerWins = playerIsHero1 ? hero1Wins : hero2Wins;
+          out.set(`${p.heroPlayed}|${p.opponentHero}`, {
+            winRate: Math.round((playerWins / total) * 1000) / 10,
+            total,
+          });
+        }
+      } catch {
+        // Skip this pair on error.
+      }
+    }),
+  );
+  return out;
+}
+
 export async function getCommunityHeroMatchups(
   months: string[],
   format?: string,

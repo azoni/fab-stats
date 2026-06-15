@@ -11,6 +11,7 @@ import type { EventStats, MatchRecord } from "@/types";
 import { EventShareModal } from "@/components/events/EventShareCard";
 import { BracketView } from "@/components/events/BracketView";
 import { getAllowedEventTypes, getOriginalEventType } from "@/lib/event-types";
+import { getRoundNumber, computeDay2Boundary } from "@/lib/stats";
 import { toast } from "sonner";
 
 interface EventCardProps {
@@ -22,6 +23,7 @@ interface EventCardProps {
   onBatchUpdateHero?: (matchIds: string[], hero: string) => Promise<void>;
   onBatchUpdateFormat?: (matchIds: string[], format: GameFormat) => Promise<void>;
   onBatchUpdateEventType?: (matchIds: string[], eventTypeOverride: string) => Promise<void>;
+  onBatchUpdateDay2?: (matchIds: string[], day2: boolean) => Promise<void>;
   onDeleteEvent?: (matchIds: string[], eventName: string, eventDate: string) => Promise<void>;
   onUpdateMatch?: (id: string, updates: Partial<Omit<MatchRecord, "id" | "createdAt">>) => Promise<void>;
   onDeleteMatch?: (id: string) => Promise<void>;
@@ -51,7 +53,7 @@ interface HeroSegment {
   toRound: string;
 }
 
-export function EventCard({ event, playerName, obfuscateOpponents = false, visibleOpponents, editable = false, onBatchUpdateHero, onBatchUpdateFormat, onBatchUpdateEventType, onDeleteEvent, onUpdateMatch, onDeleteMatch, missingGemId }: EventCardProps) {
+export function EventCard({ event, playerName, obfuscateOpponents = false, visibleOpponents, editable = false, onBatchUpdateHero, onBatchUpdateFormat, onBatchUpdateEventType, onBatchUpdateDay2, onDeleteEvent, onUpdateMatch, onDeleteMatch, missingGemId }: EventCardProps) {
   const [expanded, setExpanded] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [editingEventType, setEditingEventType] = useState(false);
@@ -71,6 +73,15 @@ export function EventCard({ event, playerName, obfuscateOpponents = false, visib
   const [deleting, setDeleting] = useState(false);
   const [editingOppHeroId, setEditingOppHeroId] = useState<string | null>(null);
   const [savingOppHeroId, setSavingOppHeroId] = useState<string | null>(null);
+  const [savingDay2, setSavingDay2] = useState(false);
+  // Default day-2 boundary for the editor: the round of the first existing
+  // day-2 match, else the auto heuristic, else 10.
+  const day2DefaultRound = (() => {
+    const existing = event.matches.find((m) => m.day2);
+    if (existing) return getRoundNumber(existing);
+    return computeDay2Boundary(event.matches) ?? 10;
+  })();
+  const [day2RoundInput, setDay2RoundInput] = useState(String(day2DefaultRound));
   const [showBracket, setShowBracket] = useState(false);
 
   // Determine best playoff placement from match rounds
@@ -90,6 +101,8 @@ export function EventCard({ event, playerName, obfuscateOpponents = false, visib
   const heroes = new Set(event.matches.map((m) => m.heroPlayed).filter((h) => h && h !== "Unknown"));
   const sharedHero = heroes.size === 1 ? [...heroes][0]! : null;
   const sharedHeroInfo = sharedHero ? getHeroByName(sharedHero) : null;
+
+  const hasDay2 = event.matches.some((m) => m.day2);
 
   // Only show hero column when matches have different heroes (otherwise it's in the header)
   const showHeroColumn = heroes.size > 1;
@@ -186,6 +199,9 @@ export function EventCard({ event, playerName, obfuscateOpponents = false, visib
                   bestPlayoff === "Top 8" ? "bg-orange-500/15 text-orange-400" :
                   "bg-blue-500/15 text-blue-400"
                 }`}>{bestPlayoff}</span>
+              )}
+              {hasDay2 && (
+                <span className="px-1.5 py-0.5 rounded bg-indigo-500/15 text-indigo-300 text-xs font-bold">Day 2</span>
               )}
               {sharedHeroInfo && (
                 <div className="flex items-center gap-1">
@@ -424,6 +440,8 @@ export function EventCard({ event, playerName, obfuscateOpponents = false, visib
                 // Format divider: show when this match starts a new format segment
                 const segment = isMultiFormat ? formatSegments.find((s) => s.startIdx === i) : null;
                 const colSpan = 2 + (showHeroColumn ? 1 : 0) + 1 + 1;
+                // Day 2 divider: show before the first day-2 match
+                const isDay2Start = match.day2 && (i === 0 || !event.matches[i - 1].day2);
 
                 return (
                   <Fragment key={match.id}>{segment && (
@@ -432,6 +450,13 @@ export function EventCard({ event, playerName, obfuscateOpponents = false, visib
                         <span className="text-xs font-medium text-fab-muted">
                           {segment.format} (Rounds {segment.startIdx + 1}–{segment.endIdx + 1})
                         </span>
+                      </td>
+                    </tr>
+                  )}
+                  {isDay2Start && (
+                    <tr key={`day2-${i}`} className="border-t border-indigo-500/30 bg-indigo-500/[0.06]">
+                      <td colSpan={colSpan} className="px-4 py-1.5 text-center">
+                        <span className="text-xs font-bold uppercase tracking-wide text-indigo-300">— Day 2 —</span>
                       </td>
                     </tr>
                   )}
@@ -655,6 +680,64 @@ export function EventCard({ event, playerName, obfuscateOpponents = false, visib
                   })()}
                 </select>
                 {savingEventType && <span className="text-xs text-fab-dim">Saving...</span>}
+              </div>
+            </div>
+          )}
+
+          {/* Edit Day 2 — set or clear which rounds belong to day two */}
+          {editable && onBatchUpdateDay2 && (
+            <div className="px-4 py-3 border-t border-fab-border/50">
+              <div className="flex flex-wrap items-center gap-2">
+                <label className="text-xs font-medium text-fab-muted whitespace-nowrap">Day 2 starts at round</label>
+                <input
+                  type="number"
+                  min={2}
+                  value={day2RoundInput}
+                  onChange={(e) => setDay2RoundInput(e.target.value)}
+                  disabled={savingDay2}
+                  className="w-16 bg-fab-surface border border-fab-border rounded-md px-2 py-1.5 text-fab-text text-xs outline-none focus:border-fab-gold/50 disabled:opacity-50"
+                />
+                <button
+                  type="button"
+                  disabled={savingDay2}
+                  onClick={async () => {
+                    const n = parseInt(day2RoundInput, 10);
+                    if (!Number.isFinite(n) || n < 2) { toast.error("Enter a round number (2+)."); return; }
+                    setSavingDay2(true);
+                    try {
+                      const day2Ids = event.matches.filter((m) => getRoundNumber(m) >= n).map((m) => m.id);
+                      const dayOneIds = event.matches.filter((m) => getRoundNumber(m) < n).map((m) => m.id);
+                      if (day2Ids.length > 0) await onBatchUpdateDay2(day2Ids, true);
+                      if (dayOneIds.length > 0) await onBatchUpdateDay2(dayOneIds, false);
+                      toast.success("Day 2 updated.");
+                    } catch {
+                      toast.error("Failed to update Day 2.");
+                    }
+                    setSavingDay2(false);
+                  }}
+                  className="px-2.5 py-1 rounded-md text-xs font-semibold bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 hover:bg-indigo-500/25 disabled:opacity-50"
+                >
+                  {savingDay2 ? "Saving…" : "Apply"}
+                </button>
+                {event.matches.some((m) => m.day2) && (
+                  <button
+                    type="button"
+                    disabled={savingDay2}
+                    onClick={async () => {
+                      setSavingDay2(true);
+                      try {
+                        await onBatchUpdateDay2(event.matches.map((m) => m.id), false);
+                        toast.success("Day 2 cleared.");
+                      } catch {
+                        toast.error("Failed to clear Day 2.");
+                      }
+                      setSavingDay2(false);
+                    }}
+                    className="px-2.5 py-1 rounded-md text-xs font-semibold text-fab-dim hover:text-fab-loss disabled:opacity-50"
+                  >
+                    Clear
+                  </button>
+                )}
               </div>
             </div>
           )}
