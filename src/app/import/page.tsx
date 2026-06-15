@@ -19,7 +19,7 @@ import { getMatchesByUserId } from "@/lib/firestore-storage";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { CheckCircleIcon, FileIcon, ChevronDownIcon, ChevronUpIcon } from "@/components/icons/NavIcons";
-import { MatchResult, type MatchRecord, type Achievement } from "@/types";
+import { MatchResult, GameFormat, type MatchRecord, type Achievement } from "@/types";
 import { HERO_REQUIRED_CUTOFF } from "@/lib/constants";
 import { HeroSelect } from "@/components/heroes/HeroSelect";
 import { computeSessionRecap, type SessionRecap } from "@/lib/session-recap";
@@ -145,6 +145,108 @@ function Day2Control({ boundary, auto, onSetRound, onTurnOff, onEnable }: {
   );
 }
 
+/** Per-round hero + format editor for multi-format / multi-hero events on
+ *  import (draft re-picks, sealed→draft Callings, day-2 format changes).
+ *  Each segment assigns a hero + format to a round range; Apply writes the
+ *  per-match overrides in the parent. */
+function ImportSegmentEditor({ matchCount, defaultHero, defaultFormat, onApply }: {
+  matchCount: number;
+  defaultHero: string;
+  defaultFormat: string;
+  onApply: (assignments: { matchIdx: number; hero?: string; format?: string }[]) => void;
+}) {
+  type Seg = { hero: string; format: string; from: string; to: string };
+  const [segments, setSegments] = useState<Seg[]>([
+    { hero: defaultHero === "Unknown" ? "" : defaultHero, format: defaultFormat || "", from: "1", to: String(matchCount) },
+  ]);
+  const [applied, setApplied] = useState(false);
+
+  const clamp = (v: string) => {
+    const n = parseInt(v, 10);
+    if (!Number.isFinite(n)) return "1";
+    return String(Math.min(Math.max(n, 1), matchCount));
+  };
+  const update = (i: number, patch: Partial<Seg>) =>
+    setSegments((prev) => prev.map((s, idx) => (idx === i ? { ...s, ...patch } : s)));
+  const add = () =>
+    setSegments((prev) => {
+      const last = prev[prev.length - 1];
+      const nextFrom = Math.min(parseInt(last.to, 10) + 1 || 1, matchCount);
+      return [...prev, { hero: "", format: last.format || "", from: String(nextFrom), to: String(matchCount) }];
+    });
+  const remove = (i: number) => setSegments((prev) => prev.filter((_, idx) => idx !== i));
+
+  function apply() {
+    const assignments: { matchIdx: number; hero?: string; format?: string }[] = [];
+    for (const seg of segments) {
+      const from = parseInt(clamp(seg.from), 10);
+      const to = parseInt(clamp(seg.to), 10);
+      const lo = Math.min(from, to);
+      const hi = Math.max(from, to);
+      for (let round = lo; round <= hi; round++) {
+        assignments.push({
+          matchIdx: round - 1,
+          hero: seg.hero && seg.hero !== "Unknown" ? seg.hero : undefined,
+          format: seg.format || undefined,
+        });
+      }
+    }
+    onApply(assignments);
+    setApplied(true);
+    setTimeout(() => setApplied(false), 1500);
+  }
+
+  return (
+    <div onClick={(e) => e.stopPropagation()} className="rounded-lg border border-fab-border/60 bg-fab-bg/40 p-3 space-y-2">
+      <p className="text-[11px] text-fab-muted">
+        Set your hero &amp; format per round — for drafts (new hero each pod) or mixed events like the Calling (sealed, then draft).
+      </p>
+      {segments.map((seg, i) => (
+        <div key={i} className="flex flex-wrap items-end gap-2">
+          <div className="w-44">
+            <HeroSelect value={seg.hero} onChange={(v) => update(i, { hero: v })} label="Hero" format={seg.format} allowClear />
+          </div>
+          <select
+            value={seg.format}
+            onChange={(e) => update(i, { format: e.target.value })}
+            className="rounded-md border border-fab-border bg-fab-bg px-2 py-1.5 text-xs text-fab-text focus:border-fab-gold/60 focus:outline-none"
+          >
+            <option value="">Format</option>
+            {Object.values(GameFormat).map((f) => (
+              <option key={f} value={f}>{f}</option>
+            ))}
+          </select>
+          <div className="flex items-center gap-1 text-xs text-fab-muted">
+            <span>rounds</span>
+            <input type="number" min={1} max={matchCount} value={seg.from}
+              onChange={(e) => update(i, { from: e.target.value })} onBlur={() => update(i, { from: clamp(seg.from) })}
+              className="w-12 rounded-md border border-fab-border bg-fab-bg px-1.5 py-1 text-center text-xs text-fab-text focus:border-fab-gold/60 focus:outline-none" />
+            <span>–</span>
+            <input type="number" min={1} max={matchCount} value={seg.to}
+              onChange={(e) => update(i, { to: e.target.value })} onBlur={() => update(i, { to: clamp(seg.to) })}
+              className="w-12 rounded-md border border-fab-border bg-fab-bg px-1.5 py-1 text-center text-xs text-fab-text focus:border-fab-gold/60 focus:outline-none" />
+          </div>
+          {segments.length > 1 && (
+            <button type="button" onClick={() => remove(i)} className="px-1.5 py-1 text-fab-dim hover:text-fab-loss" title="Remove segment">
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
+        </div>
+      ))}
+      <div className="flex items-center gap-3">
+        <button type="button" onClick={add} className="text-xs font-semibold text-fab-gold hover:text-fab-gold-light">
+          + Add segment
+        </button>
+        <button type="button" onClick={apply} className="ml-auto rounded-md bg-fab-gold px-3 py-1 text-xs font-bold text-fab-bg hover:bg-fab-gold-light">
+          {applied ? "Applied ✓" : "Apply to rounds"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function ImportFlowDiagram({ activeStep }: { activeStep: number }) {
   const steps = [
     { label: "Pull", detail: "export from GEM" },
@@ -212,6 +314,13 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
   const [heroOverrides, setHeroOverrides] = useState<Record<number, string>>({});
   const [opponentHeroOverrides, setOpponentHeroOverrides] = useState<Record<string, string>>({});
   const [matchNotesOverrides, setMatchNotesOverrides] = useState<Record<string, string>>({});
+  // Per-match (round) hero + format overrides for multi-format / multi-hero
+  // events (draft re-picks, sealed→draft Callings, day-2 format changes).
+  // Keyed by `${origIdx}-${matchIdx}`. These win over the event-level hero.
+  const [matchHeroOverrides, setMatchHeroOverrides] = useState<Record<string, string>>({});
+  const [matchFormatOverrides, setMatchFormatOverrides] = useState<Record<string, string>>({});
+  // Which events have the per-round hero/format editor open (keyed by origIdx).
+  const [segEditorEvents, setSegEditorEvents] = useState<Record<number, boolean>>({});
   // Snapshot of the matches array taken when the user clicks Import. Used by
   // the loader so the count text never disagrees with what the preview showed
   // (defensive: avoids a useMemo recompute desync between click + paint).
@@ -340,8 +449,13 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
     const oppHero = opponentHeroOverrides[key];
     const hasTurnOrder = Object.prototype.hasOwnProperty.call(turnOrderOverrides, key);
     const hasNote = Object.prototype.hasOwnProperty.call(matchNotesOverrides, key);
+    const matchHero = matchHeroOverrides[key];
+    const matchFormat = matchFormatOverrides[key];
     let updated = { ...match };
     if (hero && hero !== ACKNOWLEDGED_UNKNOWN) updated = { ...updated, heroPlayed: hero };
+    // Per-round (per-match) hero wins over the event-level hero.
+    if (matchHero && matchHero !== ACKNOWLEDGED_UNKNOWN) updated = { ...updated, heroPlayed: matchHero };
+    if (matchFormat) updated = { ...updated, format: matchFormat as GameFormat };
     if (oppHero) updated = { ...updated, opponentHero: oppHero };
     if (hasTurnOrder) updated = { ...updated, goingFirst: turnOrderOverrides[key] };
     if (hasNote) {
@@ -353,13 +467,38 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
       updated = { ...updated, day2: true };
     }
     return updated;
-  }, [heroOverrides, opponentHeroOverrides, turnOrderOverrides, matchNotesOverrides, day2Boundaries]);
+  }, [heroOverrides, opponentHeroOverrides, turnOrderOverrides, matchNotesOverrides, matchHeroOverrides, matchFormatOverrides, day2Boundaries]);
 
   const filteredMatches = useMemo(() => {
     return filteredEvents.flatMap(({ event, origIdx }) =>
       event.matches.map((m, matchIdx) => applyImportOverrides(m, origIdx, matchIdx))
     );
   }, [filteredEvents, applyImportOverrides]);
+
+  // Apply per-round segment assignments → write match hero/format overrides.
+  const applySegmentAssignments = useCallback(
+    (origIdx: number, assignments: { matchIdx: number; hero?: string; format?: string }[]) => {
+      setMatchHeroOverrides((prev) => {
+        const next = { ...prev };
+        for (const a of assignments) {
+          const key = `${origIdx}-${a.matchIdx}`;
+          if (a.hero) next[key] = a.hero;
+          else delete next[key];
+        }
+        return next;
+      });
+      setMatchFormatOverrides((prev) => {
+        const next = { ...prev };
+        for (const a of assignments) {
+          const key = `${origIdx}-${a.matchIdx}`;
+          if (a.format) next[key] = a.format;
+          else delete next[key];
+        }
+        return next;
+      });
+    },
+    [],
+  );
 
   // Events missing hero selection (for validation + UI)
   const missingHeroEvents = useMemo(() => {
@@ -713,6 +852,8 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
     setOpponentHeroOverrides({});
     setTurnOrderOverrides({});
     setDay2BoundaryOverrides({});
+    setMatchHeroOverrides({});
+    setMatchFormatOverrides({});
     setSessionRecap(null);
     setNewAchievements([]);
     setNewPlacements([]);
@@ -964,6 +1105,26 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
                         })}
                       />
                     )}
+                    {/* Per-round hero/format editor for multi-format / draft events */}
+                    <div onClick={(e) => e.stopPropagation()}>
+                      <button
+                        type="button"
+                        onClick={() => setSegEditorEvents((prev) => ({ ...prev, [origIdx]: !prev[origIdx] }))}
+                        className="text-xs font-semibold text-fab-gold/90 hover:text-fab-gold"
+                      >
+                        {segEditorEvents[origIdx] ? "− Hide per-round hero/format" : "+ Multiple heroes or formats? Set by round"}
+                      </button>
+                      {segEditorEvents[origIdx] && (
+                        <div className="mt-2">
+                          <ImportSegmentEditor
+                            matchCount={event.matches.length}
+                            defaultHero={heroValue || ""}
+                            defaultFormat={event.format}
+                            onApply={(a) => applySegmentAssignments(origIdx, a)}
+                          />
+                        </div>
+                      )}
+                    </div>
                     {/* Matches with opponent hero editing */}
                     <div className="space-y-2">
                       {reviewMatches.map(({ match, matchIdx }) => {
@@ -1055,7 +1216,9 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
             </svg>
             <p className="text-fab-muted">
-              Some opponent heroes are unknown. They&apos;ll auto-fill when matches link with opponents who use FaB Stats.
+              <span className="font-semibold text-fab-text">Some opponent heroes are unknown.</span>{" "}
+              They&apos;ll auto-fill once your opponents (who use FaB Stats) import their side.{" "}
+              <span className="font-semibold text-fab-draw">Click Import again to add them anyway.</span>
             </p>
           </div>
         )}
@@ -1066,6 +1229,7 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
             getQuickReviewMatches(event).some(({ match, matchIdx }) => match.result !== MatchResult.Bye && (!match.opponentHero || match.opponentHero === "Unknown") && !opponentHeroOverrides[`${origIdx}-${matchIdx}`])
           );
           const showConfirm = hasUnknownOpp && !quickConfirmImport;
+          const confirming = hasUnknownOpp && quickConfirmImport;
           return (
             <button
               onClick={() => {
@@ -1075,7 +1239,7 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
               disabled={importing}
               className="w-full py-3 rounded-md font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors disabled:opacity-50"
             >
-              {importing ? "Importing..." : `Import ${quickNewMatchLabel}`}
+              {importing ? "Importing..." : confirming ? `Import ${quickNewMatchLabel} anyway` : `Import ${quickNewMatchLabel}`}
             </button>
           );
         })()}
@@ -1869,6 +2033,26 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
                               })}
                             />
                           )}
+                          {/* Per-round hero/format editor for multi-format / draft events */}
+                          <div onClick={(e) => e.stopPropagation()}>
+                            <button
+                              type="button"
+                              onClick={() => setSegEditorEvents((prev) => ({ ...prev, [origIdx]: !prev[origIdx] }))}
+                              className="text-xs font-semibold text-fab-gold/90 hover:text-fab-gold"
+                            >
+                              {segEditorEvents[origIdx] ? "− Hide per-round hero/format" : "+ Multiple heroes or formats? Set by round"}
+                            </button>
+                            {segEditorEvents[origIdx] && (
+                              <div className="mt-2">
+                                <ImportSegmentEditor
+                                  matchCount={event.matches.length}
+                                  defaultHero={heroValue || ""}
+                                  defaultFormat={event.format}
+                                  onApply={(a) => applySegmentAssignments(origIdx, a)}
+                                />
+                              </div>
+                            )}
+                          </div>
                           <div className="space-y-2">
                             {event.matches.map((match, j) => {
                               const oppKey = `${origIdx}-${j}`;
