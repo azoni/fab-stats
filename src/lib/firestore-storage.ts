@@ -274,9 +274,15 @@ export async function getProfileByUsername(
 }
 
 export async function getMatchesByUserId(
-  userId: string
+  userId: string,
+  max?: number
 ): Promise<MatchRecord[]> {
-  const q = query(matchesCollection(userId), orderBy("createdAt", "desc"));
+  // `max` is opt-in: callers that only need recent matches (e.g. the import
+  // pre-fill scanning another player's history) can bound the read. Default
+  // stays unbounded so a user's own match list is never silently truncated.
+  const q = max && max > 0
+    ? query(matchesCollection(userId), orderBy("createdAt", "desc"), limit(max))
+    : query(matchesCollection(userId), orderBy("createdAt", "desc"));
   const snap = await getDocs(q);
   return snap.docs.map((d) => ({ id: d.id, ...d.data() })) as MatchRecord[];
 }

@@ -3,7 +3,13 @@ import {
   getMatchesByUserId,
   updateOpponentHeroForUser,
 } from "@/lib/firestore-storage";
+import { getHeroByName } from "@/lib/heroes";
 import { MatchResult, type MatchRecord } from "@/types";
+
+// Cap an opponent's history read during review pre-fill. Their recent matches
+// (ordered by createdAt desc) include the event you just played, so a bound of
+// 1500 covers virtually everyone while keeping worst-case reads in check.
+const REVIEW_OPPONENT_MATCH_LIMIT = 1500;
 
 const OPPOSITE_RESULT: Record<string, string> = {
   [MatchResult.Win]: MatchResult.Loss,
@@ -140,9 +146,112 @@ export async function propagateHeroToOpponent(
   }
 }
 
-/** Build a lookup key from a match record: "date|eventName|round" */
-function matchKey(m: MatchRecord): string {
+/** Build a lookup key from a match's date + notes: "date|eventName|round".
+ *  Accepts the minimal shape so import drafts (no id yet) can reuse it. */
+function matchKey(m: { date: string; notes?: string }): string {
   const eventName = m.notes?.split(" | ")[0] || "";
   const round = m.notes?.split(" | ")[1] || "";
   return `${m.date}|${eventName.toLowerCase()}|${round.toLowerCase()}`;
+}
+
+/** Minimal per-match shape the review resolver needs. `key` is a caller-owned
+ *  stable identifier (e.g. `${origIdx}-${matchIdx}`) echoed back in results. */
+export interface ReviewMatchRef {
+  key: string;
+  date: string;
+  notes?: string;
+  result: MatchResult | string;
+  opponentGemId?: string;
+}
+
+/**
+ * READ-ONLY pre-fill: for import-review matches that are missing an opponent
+ * hero, look up whether the opponent is a FaB Stats user and read the hero
+ * they recorded for our shared match. Writes nothing — purely enriches the
+ * review UI before import.
+ *
+ * Designed to never block the preview: the caller runs this in the background
+ * and applies results progressively via `onResolved`. Bounded by `maxOpponents`
+ * and `concurrency` so a large import can't fan out into thousands of reads.
+ * Opponents with private profiles simply fail the matches read and are skipped
+ * (same constraint as the post-import linker).
+ */
+export async function resolveOpponentHeroesForReview(
+  selfUserId: string | null,
+  matches: ReviewMatchRef[],
+  opts?: {
+    maxOpponents?: number;
+    concurrency?: number;
+    onResolved?: (key: string, hero: string) => void;
+    signal?: { aborted: boolean };
+  },
+): Promise<Map<string, string>> {
+  const result = new Map<string, string>();
+
+  // Group the missing-hero matches by opponent GEM ID (one lookup per opponent).
+  const byGemId = new Map<string, ReviewMatchRef[]>();
+  for (const m of matches) {
+    if (!m.opponentGemId) continue;
+    const list = byGemId.get(m.opponentGemId) || [];
+    list.push(m);
+    byGemId.set(m.opponentGemId, list);
+  }
+
+  let gemIds = [...byGemId.keys()];
+  const maxOpponents = opts?.maxOpponents ?? 60;
+  if (gemIds.length > maxOpponents) gemIds = gemIds.slice(0, maxOpponents);
+  if (gemIds.length === 0) return result;
+
+  const concurrency = Math.max(1, Math.min(opts?.concurrency ?? 6, gemIds.length));
+  // Shared cursor. JS is single-threaded so `cursor++` between awaits is atomic,
+  // but a local read makes the per-worker claim explicit and bound-safe.
+  let cursor = 0;
+
+  async function worker() {
+    for (;;) {
+      if (opts?.signal?.aborted) return;
+      const idx = cursor++;
+      if (idx >= gemIds.length) return;
+      const gemId = gemIds[idx];
+      const myRefs = byGemId.get(gemId)!;
+
+      let opponentUserId: string | null;
+      try {
+        opponentUserId = await lookupGemId(gemId);
+      } catch {
+        continue;
+      }
+      if (!opponentUserId || opponentUserId === selfUserId) continue;
+      if (opts?.signal?.aborted) return;
+
+      let oppMatches: MatchRecord[];
+      try {
+        oppMatches = await getMatchesByUserId(opponentUserId, REVIEW_OPPONENT_MATCH_LIMIT);
+      } catch {
+        continue; // private profile / permission denied — skip
+      }
+      if (opts?.signal?.aborted) return;
+
+      const oppIndex = new Map<string, MatchRecord[]>();
+      for (const om of oppMatches) {
+        const k = matchKey(om);
+        const list = oppIndex.get(k) || [];
+        list.push(om);
+        oppIndex.set(k, list);
+      }
+
+      for (const ref of myRefs) {
+        const candidates = oppIndex.get(matchKey(ref)) || [];
+        const linked = candidates.find((om) => om.result === OPPOSITE_RESULT[ref.result]);
+        const hero = linked?.heroPlayed;
+        // Only accept a real, known hero — never "Unknown" or a corrupted name.
+        if (!hero || hero === "Unknown" || !getHeroByName(hero)) continue;
+        result.set(ref.key, hero);
+        if (!opts?.signal?.aborted) opts?.onResolved?.(ref.key, hero);
+      }
+    }
+  }
+
+  await Promise.all(Array.from({ length: concurrency }, worker));
+  return result;
 }

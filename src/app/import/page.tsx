@@ -9,7 +9,7 @@ import { createImportFeedEvent, createPlacementFeedEvent, deleteAllFeedEventsFor
 import { detectNewAchievements } from "@/lib/achievement-tracking";
 import { evaluateAchievements } from "@/lib/achievements";
 import { computeOverallStats, computeHeroStats, computeOpponentStats, computeEventStats, computePlayoffFinishes, getEventName, isDay2Match, computeDay2Boundary, couldBeDay2, suggestedManualDay2Round, type PlayoffFinish } from "@/lib/stats";
-import { linkMatchesWithOpponents } from "@/lib/match-linking";
+import { linkMatchesWithOpponents, resolveOpponentHeroesForReview, type ReviewMatchRef } from "@/lib/match-linking";
 import { computeH2HForUser } from "@/lib/h2h";
 import { updateCommunityHeroMatchups } from "@/lib/hero-matchups";
 import type { GemMetadata } from "@/lib/gem-import";
@@ -247,6 +247,29 @@ function ImportSegmentEditor({ matchCount, defaultHero, defaultFormat, onApply }
   );
 }
 
+/** Subtle status for the background opponent-hero pre-fill. */
+function PrefillStatus({ state, count }: { state: "idle" | "running" | "done"; count: number }) {
+  if (state === "running") {
+    return (
+      <p className="flex items-center gap-1.5 text-xs text-fab-muted">
+        <span className="inline-block w-3 h-3 rounded-full border-2 border-fab-border border-t-fab-gold animate-spin" />
+        Matching opponent heroes from players who use FaB Stats…
+      </p>
+    );
+  }
+  if (state === "done" && count > 0) {
+    return (
+      <p className="flex items-center gap-1.5 text-xs text-fab-win">
+        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+        </svg>
+        Auto-filled {count} opponent hero{count === 1 ? "" : "es"} from linked players.
+      </p>
+    );
+  }
+  return null;
+}
+
 function ImportFlowDiagram({ activeStep }: { activeStep: number }) {
   const steps = [
     { label: "Pull", detail: "export from GEM" },
@@ -321,6 +344,13 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
   const [matchFormatOverrides, setMatchFormatOverrides] = useState<Record<string, string>>({});
   // Which events have the per-round hero/format editor open (keyed by origIdx).
   const [segEditorEvents, setSegEditorEvents] = useState<Record<number, boolean>>({});
+  // Background pre-fill of opponent heroes from linked FaB Stats players.
+  const [prefillState, setPrefillState] = useState<"idle" | "running" | "done">("idle");
+  const [prefilledCount, setPrefilledCount] = useState(0);
+  const prefillRunRef = useRef<PasteImportResult | null>(null);
+  // Opp-hero keys the user has manually set OR cleared — the background pre-fill
+  // must never re-fill these, even if the user cleared a field mid-resolution.
+  const userTouchedOppKeysRef = useRef<Set<string>>(new Set());
   // Snapshot of the matches array taken when the user clicks Import. Used by
   // the loader so the count text never disagrees with what the preview showed
   // (defensive: avoids a useMemo recompute desync between click + paint).
@@ -417,6 +447,48 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
       })();
     }
   }, [quickMode, pasteResult, user, isGuest]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Background pre-fill: once the preview is up, look up unknown opponent heroes
+  // from opponents who use FaB Stats and fill them in live. Never blocks the
+  // preview — runs async, bounded, and skips fields the user has already set.
+  useEffect(() => {
+    if (!pasteResult || !user || imported) return;
+    if (quickMode && !quickPreviewReady) return;
+    if (prefillRunRef.current === pasteResult) return; // run once per parsed result
+    prefillRunRef.current = pasteResult;
+
+    const refs: ReviewMatchRef[] = [];
+    pasteResult.events.forEach((event, origIdx) => {
+      event.matches.forEach((m, matchIdx) => {
+        if (m.result === MatchResult.Bye) return;
+        if (!m.opponentGemId) return;
+        if (m.opponentHero && m.opponentHero !== "Unknown") return;
+        refs.push({ key: `${origIdx}-${matchIdx}`, date: m.date, notes: m.notes, result: m.result, opponentGemId: m.opponentGemId });
+      });
+    });
+    if (refs.length === 0) return;
+
+    const signal = { aborted: false };
+    (async () => {
+      setPrefillState("running");
+      setPrefilledCount(0);
+      try {
+        await resolveOpponentHeroesForReview(user.uid, refs, {
+          signal,
+          onResolved: (key, hero) => {
+            // Never override a field the user has manually set or cleared.
+            if (userTouchedOppKeysRef.current.has(key)) return;
+            setOpponentHeroOverrides((prev) => (prev[key] ? prev : { ...prev, [key]: hero }));
+            setPrefilledCount((c) => c + 1);
+          },
+        });
+      } finally {
+        if (!signal.aborted) setPrefillState("done");
+      }
+    })();
+
+    return () => { signal.aborted = true; };
+  }, [pasteResult, user, imported, quickMode, quickPreviewReady]);
 
   // Filtered events (with original index for hero overrides)
   const filteredEvents = useMemo(() => {
@@ -1023,6 +1095,7 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
           <p className="text-fab-muted text-sm">
             {quickFilteredEvents.length} new event{quickFilteredEvents.length === 1 ? "" : "s"} found ({quickNewMatchLabel}). Review and confirm.
           </p>
+          <div className="mt-1"><PrefillStatus state={prefillState} count={prefilledCount} /></div>
         </div>
 
         {/* Hero warning */}
@@ -1157,6 +1230,7 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
                                 <HeroSelect
                                   value={oppHero === "Unknown" ? "" : oppHero}
                                   onChange={(val) => {
+                                    userTouchedOppKeysRef.current.add(oppKey);
                                     setOpponentHeroOverrides((prev) => val && val !== "Unknown" ? { ...prev, [oppKey]: val } : (() => { const { [oppKey]: _, ...rest } = prev; return rest; })());
                                   }}
                                   label="Opp Hero"
@@ -1839,6 +1913,7 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
       {/* ── Results Preview ─────────────────────────────────────── */}
       {hasResults && (
         <div className="space-y-6">
+          <PrefillStatus state={prefillState} count={prefilledCount} />
           {/* Auto-detected from extension */}
           {autoDetected && (
             <div className="bg-fab-gold/10 border border-fab-gold/30 rounded-lg p-4 text-sm">
@@ -2084,6 +2159,7 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
                                       <HeroSelect
                                         value={oppHero === "Unknown" ? "" : oppHero}
                                         onChange={(val) => {
+                                          userTouchedOppKeysRef.current.add(oppKey);
                                           setOpponentHeroOverrides((prev) => val && val !== "Unknown" ? { ...prev, [oppKey]: val } : (() => { const { [oppKey]: _, ...rest } = prev; return rest; })());
                                         }}
                                         label="Opp Hero"
