@@ -67,6 +67,8 @@ const PORTRAIT_CDN = "https://dgmi4fxzalveh.cloudfront.net/media/images/heroes";
 // Only heroes whose CDN filename doesn't match their canonical name
 const PORTRAIT_OVERRIDES: Record<string, string> = {
   // Non-standard filenames (typos, underscores, alternate names on CDN)
+  "Aurora, Emissary of Lightning": `${PORTRAIT_CDN}/Aurora_Emissary_of_Lightning.jpg`,
+  "Aurora, Legacy of Tempest": `${PORTRAIT_CDN}/Aurora_Legacy_of_Tempest.jpg`,
   "Aurora, Shooting Star": `${PORTRAIT_CDN}/Aurora_Shooting_Star.jpg`,
   "Arakni, 5L!p3d 7hRu 7h3 cR4X": `${PORTRAIT_CDN}/Arakni_Slipped_thru_the_Cracks.jpg`,
   "Dash I/O": `${PORTRAIT_CDN}/Dash%20I%3AO.jpg`,
@@ -85,6 +87,8 @@ const PORTRAIT_OVERRIDES: Record<string, string> = {
   "Lyath Goldmane, Vile Savant": `${PORTRAIT_CDN}/Lyath_Goldmane_Vile_Savant.jpg`,
   "Marlynn, Treasure Hunter": `${PORTRAIT_CDN}/Marlynn_Treasure_Hunter.jpg`,
   "Maxx Nitro": `${PORTRAIT_CDN}/Maxx%20%27The%20Hype%27%20Nitro.jpg`,
+  "Oscilio, Forked Continuum": `${PORTRAIT_CDN}/Oscilio_Forked_Continuum.jpg`,
+  "Oscilio, Scion of the Third Age": `${PORTRAIT_CDN}/Oscilio_Scion_of_the_Third_Age.jpg`,
   "Pleiades, Superstar": `${PORTRAIT_CDN}/Pleiades_Superstar.jpg`,
   "Puffin, Hightail": `${PORTRAIT_CDN}/Puffin_Hightail.jpg`,
   "Scurv, Stowaway": `${PORTRAIT_CDN}/Scurv_Stowaway.jpg`,
@@ -92,6 +96,7 @@ const PORTRAIT_OVERRIDES: Record<string, string> = {
   "Valda Brightaxe": `${PORTRAIT_CDN}/Valda_Seismic_Impact_cWNA1HW.jpg`,
   "Valda, Seismic Impact": `${PORTRAIT_CDN}/Valda_Seismic_Impact_cWNA1HW.jpg`,
   "Verdance, Thorn of the Rose": `${PORTRAIT_CDN}/Verdance%2C%20Thorn%20of%20Rose.jpg`,
+  "Zyggy Starlight": `${PORTRAIT_CDN}/Zyggy_Starlight.jpg`,
 };
 
 // Dynamic portraits from Firestore (populated by auto-scrape, catches new heroes)
