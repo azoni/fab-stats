@@ -219,7 +219,13 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
         if (result.totalMatches > 0) {
           setPasteResult(result);
           setAutoDetected(true);
-          setMethod(isQuick ? "bookmarklet" : "extension");
+          // Method derives from where the payload came from, not from whether
+          // it's Quick Sync. The parser tags each match's `source` from its
+          // extensionVersion ("bookmarklet..." prefix → bookmarklet, else
+          // extension), so use that as the source of truth.
+          const firstMatch = result.events[0]?.matches[0];
+          const detectedSource = firstMatch?.source === "bookmarklet" ? "bookmarklet" : "extension";
+          setMethod(detectedSource);
           if (isQuick) setQuickMode(true);
         }
       } catch (e) {
