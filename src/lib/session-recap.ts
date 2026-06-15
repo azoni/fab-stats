@@ -23,6 +23,8 @@ export interface SessionRecap {
   missingOpponentHeroCount: number;
   /** Distinct events imported this session (drives full-vs-compact recap) */
   eventCount: number;
+  /** Distinct day-2 events in this import — celebrated in the recap */
+  day2EventCount: number;
   /** Overall stats after import */
   newOverallWinRate: number;
   newTotalMatches: number;
@@ -165,12 +167,13 @@ export function computeSessionRecap(
   ).length;
 
   // Distinct events imported (eventName|date), drives full-vs-compact recap.
-  const eventCount = new Set(
-    sessionMatches.map((m) => {
-      const eventName = m.notes?.split(" | ")[0]?.trim() || `${m.date}-${m.format}`;
-      return `${eventName}|${m.date}`;
-    }),
-  ).size;
+  const eventKey = (m: MatchRecord) => {
+    const eventName = m.notes?.split(" | ")[0]?.trim() || `${m.date}-${m.format}`;
+    return `${eventName}|${m.date}`;
+  };
+  const eventCount = new Set(sessionMatches.map(eventKey)).size;
+  // Distinct day-2 events imported — a brag-worthy result worth celebrating.
+  const day2EventCount = new Set(sessionMatches.filter((m) => m.day2).map(eventKey)).size;
 
   // Overall stats after
   const afterOverall = computeOverallStats(afterMatches);
@@ -190,6 +193,7 @@ export function computeSessionRecap(
     sessionMatchups,
     missingOpponentHeroCount,
     eventCount,
+    day2EventCount,
     newOverallWinRate: afterOverall.overallWinRate,
     newTotalMatches: afterOverall.totalMatches,
     currentStreak: afterStreaks.currentStreak

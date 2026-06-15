@@ -8,7 +8,7 @@ import { importMatchesLocal } from "@/lib/storage";
 import { createImportFeedEvent, createPlacementFeedEvent, deleteAllFeedEventsForUser } from "@/lib/feed";
 import { detectNewAchievements } from "@/lib/achievement-tracking";
 import { evaluateAchievements } from "@/lib/achievements";
-import { computeOverallStats, computeHeroStats, computeOpponentStats, computeEventStats, computePlayoffFinishes, getEventName, getRoundNumber, computeDay2Boundary, type PlayoffFinish } from "@/lib/stats";
+import { computeOverallStats, computeHeroStats, computeOpponentStats, computeEventStats, computePlayoffFinishes, getEventName, isDay2Match, computeDay2Boundary, couldBeDay2, suggestedManualDay2Round, type PlayoffFinish } from "@/lib/stats";
 import { linkMatchesWithOpponents } from "@/lib/match-linking";
 import { computeH2HForUser } from "@/lib/h2h";
 import { updateCommunityHeroMatchups } from "@/lib/hero-matchups";
@@ -95,19 +95,25 @@ function TurnOrderPicker({ value, onChange }: { value: boolean | undefined; onCh
   );
 }
 
-/** Day-2 boundary control shown on multi-day events in the import preview.
- *  `boundary` is the effective day-2 start round, or null when turned off. */
-function Day2Control({ boundary, onSetRound, onTurnOff, onTurnOn }: {
+/** Day-2 boundary control shown on import preview events.
+ *  - `boundary != null` → Day 2 is on; show the editable start-round.
+ *  - `boundary == null` && `auto` → auto-detected but turned off; offer re-enable.
+ *  - `boundary == null` && `!auto` → opt-in for events that didn't auto-detect.
+ *  `onEnable` is wired by the parent to do the right thing for each case. */
+function Day2Control({ boundary, auto, onSetRound, onTurnOff, onEnable }: {
   boundary: number | null;
+  auto: boolean;
   onSetRound: (n: number) => void;
   onTurnOff: () => void;
-  onTurnOn: () => void;
+  onEnable: () => void;
 }) {
-  return (
-    <div onClick={(e) => e.stopPropagation()} className="rounded-lg border border-indigo-500/30 bg-indigo-500/[0.06] p-3">
-      {boundary != null ? (
+  if (boundary != null) {
+    return (
+      <div onClick={(e) => e.stopPropagation()} className="rounded-lg border border-indigo-500/30 bg-indigo-500/[0.06] p-3">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-          <span className="text-xs font-bold uppercase tracking-wide text-indigo-300">Day 2 detected</span>
+          <span className="text-xs font-bold uppercase tracking-wide text-indigo-300">
+            {auto ? "Day 2 detected" : "Day 2"}
+          </span>
           <label className="flex items-center gap-1.5 text-xs text-fab-muted">
             starts at round
             <input
@@ -125,14 +131,16 @@ function Day2Control({ boundary, onSetRound, onTurnOff, onTurnOn }: {
             Not a Day 2
           </button>
         </div>
-      ) : (
-        <div className="flex items-center justify-between gap-2">
-          <span className="text-xs text-fab-muted">Day 2 turned off for this event.</span>
-          <button type="button" onClick={onTurnOn} className="text-xs font-semibold text-indigo-300 hover:text-indigo-200">
-            Mark as Day 2
-          </button>
-        </div>
-      )}
+      </div>
+    );
+  }
+  // Off / opt-in — keep it subtle so it doesn't clutter normal 1-day events.
+  return (
+    <div onClick={(e) => e.stopPropagation()} className="flex items-center justify-between gap-2 rounded-lg border border-fab-border/60 bg-fab-bg/40 px-3 py-2">
+      <span className="text-xs text-fab-muted">{auto ? "Day 2 turned off." : "Was this a 2-day event?"}</span>
+      <button type="button" onClick={onEnable} className="text-xs font-semibold text-indigo-300 hover:text-indigo-200">
+        {auto ? "Mark as Day 2" : "Mark Day 2"}
+      </button>
     </div>
   );
 }
@@ -341,7 +349,7 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
       updated = { ...updated, matchNotes: trimmed || undefined };
     }
     const day2Start = day2Boundaries.get(origIdx);
-    if (day2Start != null && getRoundNumber(match as MatchRecord) >= day2Start) {
+    if (day2Start != null && isDay2Match(match as MatchRecord, day2Start)) {
       updated = { ...updated, day2: true };
     }
     return updated;
@@ -944,12 +952,16 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
                       />
                     </div>
                     {/* Day 2 control */}
-                    {(qDay2Auto != null || day2BoundaryOverrides[origIdx] != null) && (
+                    {(qDay2Auto != null || day2BoundaryOverrides[origIdx] != null || couldBeDay2(event.matches as MatchRecord[])) && (
                       <Day2Control
                         boundary={qDay2Boundary}
+                        auto={qDay2Auto != null}
                         onSetRound={(n) => setDay2BoundaryOverrides((prev) => ({ ...prev, [origIdx]: n }))}
                         onTurnOff={() => setDay2BoundaryOverrides((prev) => ({ ...prev, [origIdx]: "off" }))}
-                        onTurnOn={() => setDay2BoundaryOverrides((prev) => { const { [origIdx]: _, ...rest } = prev; return rest; })}
+                        onEnable={() => setDay2BoundaryOverrides((prev) => {
+                          if (qDay2Auto != null) { const { [origIdx]: _, ...rest } = prev; return rest; }
+                          return { ...prev, [origIdx]: suggestedManualDay2Round(event.matches as MatchRecord[]) };
+                        })}
                       />
                     )}
                     {/* Matches with opponent hero editing */}
@@ -1845,12 +1857,16 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
                             />
                           </div>
                           {/* Day 2 control — shown for multi-day events (>10 swiss rounds) */}
-                          {(day2Auto != null || day2BoundaryOverrides[origIdx] != null) && (
+                          {(day2Auto != null || day2BoundaryOverrides[origIdx] != null || couldBeDay2(event.matches as MatchRecord[])) && (
                             <Day2Control
                               boundary={day2Boundary}
+                              auto={day2Auto != null}
                               onSetRound={(n) => setDay2BoundaryOverrides((prev) => ({ ...prev, [origIdx]: n }))}
                               onTurnOff={() => setDay2BoundaryOverrides((prev) => ({ ...prev, [origIdx]: "off" }))}
-                              onTurnOn={() => setDay2BoundaryOverrides((prev) => { const { [origIdx]: _, ...rest } = prev; return rest; })}
+                              onEnable={() => setDay2BoundaryOverrides((prev) => {
+                                if (day2Auto != null) { const { [origIdx]: _, ...rest } = prev; return rest; } // re-enable auto
+                                return { ...prev, [origIdx]: suggestedManualDay2Round(event.matches as MatchRecord[]) };
+                              })}
                             />
                           )}
                           <div className="space-y-2">

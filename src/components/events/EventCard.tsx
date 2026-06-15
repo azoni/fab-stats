@@ -1,5 +1,5 @@
 "use client";
-import { useState, Fragment } from "react";
+import { useState, useMemo, Fragment } from "react";
 import Link from "next/link";
 import { ChevronDownIcon, ChevronUpIcon } from "@/components/icons/NavIcons";
 import { HeroSelect } from "@/components/heroes/HeroSelect";
@@ -11,7 +11,7 @@ import type { EventStats, MatchRecord } from "@/types";
 import { EventShareModal } from "@/components/events/EventShareCard";
 import { BracketView } from "@/components/events/BracketView";
 import { getAllowedEventTypes, getOriginalEventType } from "@/lib/event-types";
-import { getRoundNumber, computeDay2Boundary } from "@/lib/stats";
+import { getRoundNumber, computeDay2Boundary, suggestedManualDay2Round, isDay2Match } from "@/lib/stats";
 import { toast } from "sonner";
 
 interface EventCardProps {
@@ -74,14 +74,18 @@ export function EventCard({ event, playerName, obfuscateOpponents = false, visib
   const [editingOppHeroId, setEditingOppHeroId] = useState<string | null>(null);
   const [savingOppHeroId, setSavingOppHeroId] = useState<string | null>(null);
   const [savingDay2, setSavingDay2] = useState(false);
-  // Default day-2 boundary for the editor: the round of the first existing
-  // day-2 match, else the auto heuristic, else 10.
-  const day2DefaultRound = (() => {
+  // Effective day-2 start round, always derived fresh from the current matches:
+  // the round of the first existing day-2 match, else the auto heuristic, else
+  // a sensible manual suggestion. Deriving (not storing) avoids a stale input
+  // after Apply changes the underlying matches.
+  const day2CurrentRound = useMemo(() => {
     const existing = event.matches.find((m) => m.day2);
     if (existing) return getRoundNumber(existing);
-    return computeDay2Boundary(event.matches) ?? 10;
-  })();
-  const [day2RoundInput, setDay2RoundInput] = useState(String(day2DefaultRound));
+    return computeDay2Boundary(event.matches) ?? suggestedManualDay2Round(event.matches);
+  }, [event.matches]);
+  // The user's in-progress edit. null = not editing → show the derived value.
+  const [day2RoundEdit, setDay2RoundEdit] = useState<string | null>(null);
+  const day2RoundInput = day2RoundEdit ?? String(day2CurrentRound);
   const [showBracket, setShowBracket] = useState(false);
 
   // Determine best playoff placement from match rounds
@@ -684,7 +688,9 @@ export function EventCard({ event, playerName, obfuscateOpponents = false, visib
             </div>
           )}
 
-          {/* Edit Day 2 — set or clear which rounds belong to day two */}
+          {/* Edit Day 2 — mark or clear which rounds belong to day two. Available
+              for every event so users can correct any tournament (the import
+              heuristic only auto-detects >10-round events). */}
           {editable && onBatchUpdateDay2 && (
             <div className="px-4 py-3 border-t border-fab-border/50">
               <div className="flex flex-wrap items-center gap-2">
@@ -693,7 +699,7 @@ export function EventCard({ event, playerName, obfuscateOpponents = false, visib
                   type="number"
                   min={2}
                   value={day2RoundInput}
-                  onChange={(e) => setDay2RoundInput(e.target.value)}
+                  onChange={(e) => setDay2RoundEdit(e.target.value)}
                   disabled={savingDay2}
                   className="w-16 bg-fab-surface border border-fab-border rounded-md px-2 py-1.5 text-fab-text text-xs outline-none focus:border-fab-gold/50 disabled:opacity-50"
                 />
@@ -703,13 +709,18 @@ export function EventCard({ event, playerName, obfuscateOpponents = false, visib
                   onClick={async () => {
                     const n = parseInt(day2RoundInput, 10);
                     if (!Number.isFinite(n) || n < 2) { toast.error("Enter a round number (2+)."); return; }
+                    const day2Ids = event.matches.filter((m) => isDay2Match(m, n)).map((m) => m.id);
+                    if (day2Ids.length === 0) {
+                      toast.error(`No rounds at or past round ${n} in this event.`);
+                      return;
+                    }
                     setSavingDay2(true);
                     try {
-                      const day2Ids = event.matches.filter((m) => getRoundNumber(m) >= n).map((m) => m.id);
-                      const dayOneIds = event.matches.filter((m) => getRoundNumber(m) < n).map((m) => m.id);
-                      if (day2Ids.length > 0) await onBatchUpdateDay2(day2Ids, true);
+                      const dayOneIds = event.matches.filter((m) => !isDay2Match(m, n)).map((m) => m.id);
+                      await onBatchUpdateDay2(day2Ids, true);
                       if (dayOneIds.length > 0) await onBatchUpdateDay2(dayOneIds, false);
-                      toast.success("Day 2 updated.");
+                      setDay2RoundEdit(null); // snap back to the derived value
+                      toast.success(`Day 2 set — ${day2Ids.length} match${day2Ids.length === 1 ? "" : "es"} from round ${n} on.`);
                     } catch {
                       toast.error("Failed to update Day 2.");
                     }
@@ -727,6 +738,7 @@ export function EventCard({ event, playerName, obfuscateOpponents = false, visib
                       setSavingDay2(true);
                       try {
                         await onBatchUpdateDay2(event.matches.map((m) => m.id), false);
+                        setDay2RoundEdit(null);
                         toast.success("Day 2 cleared.");
                       } catch {
                         toast.error("Failed to clear Day 2.");

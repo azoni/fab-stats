@@ -40,7 +40,7 @@ interface Props {
 }
 
 export function PostEventRecap({ recap, onViewOpponents, onDashboard, onImportMore, skippedCount, newAchievements, newPlacements, playerName, matchBadgeTierUp, quickMode }: Props) {
-  const { wins, losses, draws, winRate, bestStreak, heroInsights, newOpponents, sessionMatchups, missingOpponentHeroCount, eventCount, newOverallWinRate, newTotalMatches, currentStreak } = recap;
+  const { wins, losses, draws, winRate, bestStreak, heroInsights, newOpponents, sessionMatchups, missingOpponentHeroCount, eventCount, day2EventCount, newOverallWinRate, newTotalMatches, currentStreak } = recap;
   const total = wins + losses + draws;
 
   // Big imports (a new user dumping years of history) get a compact recap so
@@ -157,6 +157,21 @@ export function PostEventRecap({ recap, onViewOpponents, onDashboard, onImportMo
               )}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Day 2 celebration — making day two is a big deal */}
+      {day2EventCount > 0 && (
+        <div className="flex items-center gap-3 rounded-lg border border-indigo-500/40 bg-indigo-500/10 p-4">
+          <AchievementIcon icon="trophy" className="w-6 h-6 text-indigo-300 shrink-0" />
+          <div className="min-w-0">
+            <p className="text-sm font-bold text-indigo-200">
+              You made Day 2{day2EventCount > 1 ? ` ×${day2EventCount}` : ""}!
+            </p>
+            <p className="text-xs text-fab-muted">
+              {day2EventCount > 1 ? "Multi-day runs" : "A multi-day run"} — only the top players grind into day two.
+            </p>
+          </div>
         </div>
       )}
 

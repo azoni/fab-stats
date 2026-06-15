@@ -839,7 +839,34 @@ export function computeDay2Boundary(eventMatches: MatchRecord[]): number | null 
   const swiss = rounds.filter((r) => r < 1000);
   const maxSwiss = swiss.length ? Math.max(...swiss) : 0;
   if (maxSwiss <= DAY2_SWISS_THRESHOLD) return null;
-  return Math.min(10, maxSwiss);
+  // Cap at the threshold so day two starts at round 10 even for very long events.
+  return Math.min(DAY2_SWISS_THRESHOLD, maxSwiss);
+}
+
+/** A match belongs to day two when its round is at or past the boundary.
+ *  Single source of truth shared by import, the event editor, and backfill. */
+export function isDay2Match(match: MatchRecord, boundary: number): boolean {
+  return getRoundNumber(match) >= boundary;
+}
+
+/** Whether an event is substantial enough to plausibly span two days — used to
+ *  decide whether to offer a manual "Mark Day 2" opt-in for events that didn't
+ *  auto-detect (<=10 swiss rounds). Tiny armories (<=5 matches) are excluded. */
+export function couldBeDay2(eventMatches: MatchRecord[]): boolean {
+  if (eventMatches.length < 6) return false;
+  return eventMatches.some((m) => getRoundNumber(m) > 0);
+}
+
+/** Sensible default day-two start round when a user manually opts in for an
+ *  event that didn't auto-detect. If the event has a playoff cut, day two
+ *  defaults to the cut; otherwise the back half of swiss. */
+export function suggestedManualDay2Round(eventMatches: MatchRecord[]): number {
+  const rounds = eventMatches.map(getRoundNumber).filter((r) => r > 0);
+  const swiss = rounds.filter((r) => r < 1000);
+  const maxSwiss = swiss.length ? Math.max(...swiss) : 0;
+  const hasPlayoff = rounds.some((r) => r >= 1000);
+  if (hasPlayoff) return Math.max(2, maxSwiss + 1); // day two = the cut
+  return Math.max(2, Math.ceil(maxSwiss / 2) + 1); // back half of swiss
 }
 
 /** Check if the match has an explicit event name (from GEM/notes) vs a generated fallback. */

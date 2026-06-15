@@ -16,7 +16,7 @@ import { computeH2HForUser } from "./h2h";
 import { updateCommunityHeroMatchups } from "./hero-matchups";
 import { getOrCreateConversation, sendMessage, sendMessageNotification } from "./messages";
 import { getUserVisitData } from "./analytics";
-import { computeEventStats, getEventType, computeDay2Boundary, getRoundNumber } from "./stats";
+import { computeEventStats, getEventType, computeDay2Boundary, isDay2Match } from "./stats";
 import { batchUpdateMatchesFirestore } from "./firestore-storage";
 import type { UserProfile, MatchRecord } from "@/types";
 
@@ -327,7 +327,7 @@ export async function backfillDay2(
           if (ev.matches.some((m) => m.day2)) continue;
           const boundary = computeDay2Boundary(ev.matches);
           if (boundary == null) continue;
-          const day2Ids = ev.matches.filter((m) => getRoundNumber(m) >= boundary).map((m) => m.id);
+          const day2Ids = ev.matches.filter((m) => isDay2Match(m, boundary)).map((m) => m.id);
           if (day2Ids.length > 0) {
             idsToFlag.push(...day2Ids);
             flaggedEvents++;
