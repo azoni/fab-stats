@@ -319,16 +319,18 @@ export default function Dashboard() {
                     </div>
                     {profile && (
                       profile.gemId ? (
-                        <p className="mt-0.5 text-[11px] text-fab-dim truncate" title="Your GEM ID">
-                          <span className="font-mono">{profile.gemId}</span>
+                        <p className="mt-0.5 flex items-center gap-1 text-[11px] text-fab-dim truncate">
+                          <span className="font-semibold uppercase tracking-wide text-fab-muted">GEM ID</span>
+                          <span className="font-mono text-fab-text">{profile.gemId}</span>
                         </p>
                       ) : (
                         <Link
                           href="/settings"
                           onClick={(e) => e.stopPropagation()}
                           className="mt-0.5 inline-flex items-center gap-1 text-[11px] font-semibold text-fab-gold/80 hover:text-fab-gold"
+                          title="Link your GEM ID so opponents' heroes auto-fill and your matches link up"
                         >
-                          + Add GEM ID
+                          + Add your GEM ID
                         </Link>
                       )
                     )}
