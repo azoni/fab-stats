@@ -317,6 +317,21 @@ export default function Dashboard() {
                       {myTeam && <TeamBadge teamName={myTeam.name} teamIconUrl={myTeam.iconUrl} teamNameLower={myTeam.nameLower} size="xs" isPrivate={myTeam.visibility === "private"} isSiteAdmin={isAdmin} />}
                       {heroCompletion && <HeroShieldBadge pct={heroCompletion.pct} withHero={heroCompletion.withHero} total={heroCompletion.total} />}
                     </div>
+                    {profile && (
+                      profile.gemId ? (
+                        <p className="mt-0.5 text-[11px] text-fab-dim truncate" title="Your GEM ID">
+                          <span className="font-mono">{profile.gemId}</span>
+                        </p>
+                      ) : (
+                        <Link
+                          href="/settings"
+                          onClick={(e) => e.stopPropagation()}
+                          className="mt-0.5 inline-flex items-center gap-1 text-[11px] font-semibold text-fab-gold/80 hover:text-fab-gold"
+                        >
+                          + Add GEM ID
+                        </Link>
+                      )
+                    )}
                   </div>
                   {topHero && (
                     <div className="flex items-center gap-2 shrink-0">
