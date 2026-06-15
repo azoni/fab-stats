@@ -8,7 +8,7 @@
   // Prevent double injection
   if (document.getElementById("fab-stats-exporter")) return;
 
-  const VERSION = "2.1.0";
+  const VERSION = "2.2.2";
   const FABSTATS_IMPORT_URL = "https://www.fabstats.net/import";
 
   // ── Known FaB Hero Names ──────────────────────────────────────
@@ -477,19 +477,12 @@
     const maxPages = opts.maxPages || 0;
     const maxEvents = opts.maxEvents || 0;
 
-    // Fetch page 1 (use current page if already on history page 1, otherwise fetch)
-    const onHistoryPage = location.pathname.startsWith("/profile/history");
-    const currentPage = (() => {
-      const m = location.search.match(/page=(\d+)/);
-      return m ? parseInt(m[1]) : 1;
-    })();
-
-    let doc1;
-    if (onHistoryPage && currentPage === 1) {
-      doc1 = document;
-    } else {
-      doc1 = await fetchPage(1);
-    }
+    // Always fetch page 1 from the history endpoint. We deliberately do NOT
+    // reuse the current DOM even when already on the history page: GEM's live
+    // view can be a condensed/lazy-rendered listing (only the most recent few
+    // events), whereas a clean server fetch of /profile/history/?page=1 returns
+    // the full page (~10 events). This keeps "1 page" == one full history page.
+    const doc1 = await fetchPage(1);
 
     const detectedPages = detectTotalPages(doc1);
     const totalPages = maxPages ? Math.min(detectedPages, maxPages) : detectedPages;
