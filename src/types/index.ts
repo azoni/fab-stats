@@ -556,7 +556,16 @@ export interface LeaderboardEntry {
   uniqueOpponents?: number;
   longestLossStreak?: number;
   uniqueVenues?: number;
-  venueBreakdown?: { venue: string; matches: number; wins: number; winRate: number }[];
+  venueBreakdown?: {
+    venue: string;
+    matches: number;
+    wins: number;
+    winRate: number;
+    /** Per-venue hero mix (top heroes the player ran here). Added later, so optional. */
+    heroes?: { hero: string; matches: number; wins: number }[];
+    /** Per-venue format mix. Added later, so optional. */
+    formats?: { format: string; matches: number }[];
+  }[];
   /** Flat slugified venue list — top-level for fast `array-contains` queries.
    *  Mirrors the venues in `venueBreakdown`. */
   venueSlugs?: string[];

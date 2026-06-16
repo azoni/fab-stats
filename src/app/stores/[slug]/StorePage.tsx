@@ -8,7 +8,8 @@ import type { League } from "@/types";
 import { PageHero } from "@/components/ui/PageHero";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
-import { ArrowLeft, Crown, Flame, Search, Store as StoreIcon, Trophy, Users } from "lucide-react";
+import { HeroImg } from "@/components/heroes/HeroImg";
+import { ArrowLeft, Crown, Flame, Layers, Search, Store as StoreIcon, Swords, Trophy, Users } from "lucide-react";
 
 /** Best-effort: turn "mishrasworkshop" into something display-worthy.
  *  Used only as a placeholder while real data loads. */
@@ -135,29 +136,89 @@ export default function StorePage() {
       {/* Highlights */}
       {stats && <Spotlight mostActive={mostActive} bestWinRate={bestWinRate} />}
 
-      <div className="grid gap-5 lg:grid-cols-3">
-        <div className="lg:col-span-2">
-          {stats ? (
-            <StorePlayersTable players={stats.players} />
-          ) : (
-            <SkeletonTable rows={8} />
-          )}
-        </div>
+      {/* Hero + format breakdown (populates as players' leaderboard docs refresh) */}
+      {stats && (stats.heroes.length > 0 || stats.formats.length > 0) && (
+        <StoreBreakdown heroes={stats.heroes} formats={stats.formats} />
+      )}
 
-        <aside className="space-y-5">
-          <LeaguesPanel leagues={leagues} />
-          <Card padding="sm">
-            <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-fab-dim">
-              About this store
-            </p>
-            <p className="mt-2 text-xs leading-relaxed text-fab-muted">
-              FaB Stats doesn&apos;t track stores formally — this page is built entirely from
-              the &quot;venue&quot; field on players&apos; matches. Duplicate store names
-              appear as separate entries.
-            </p>
-          </Card>
-        </aside>
-      </div>
+      {/* Players — the main interactive table, full width */}
+      {stats ? (
+        <StorePlayersTable players={stats.players} />
+      ) : (
+        <SkeletonTable rows={8} />
+      )}
+
+      {/* Leagues — only when there are any */}
+      {leagues.length > 0 && <LeaguesPanel leagues={leagues} />}
+
+      <p className="px-1 text-[11px] leading-relaxed text-fab-dim">
+        FaB Stats doesn&apos;t track stores formally — this page is built entirely from the
+        &quot;venue&quot; field on players&apos; imported matches, so duplicate store spellings
+        can appear as separate entries.
+      </p>
+    </div>
+  );
+}
+
+function StoreBreakdown({ heroes, formats }: { heroes: StoreStats["heroes"]; formats: StoreStats["formats"] }) {
+  const topHeroes = heroes.slice(0, 8);
+  const formatTotal = formats.reduce((a, f) => a + f.matches, 0) || 1;
+  return (
+    <div className="grid gap-5 lg:grid-cols-2">
+      {topHeroes.length > 0 && (
+        <Card padding="none" className="overflow-hidden">
+          <div className="flex items-center justify-between border-b border-fab-border/60 bg-fab-bg/50 px-3 py-2.5">
+            <h2 className="flex items-center gap-1.5 text-sm font-bold text-fab-text">
+              <Swords className="h-4 w-4 text-rose-300" /> Most played heroes
+            </h2>
+            <span className="text-[10px] text-fab-dim">matches · win rate</span>
+          </div>
+          <ul className="divide-y divide-fab-border/30">
+            {topHeroes.map((h, i) => (
+              <li key={h.hero} className="flex items-center gap-2.5 px-3 py-2">
+                <span className="w-4 text-center text-[11px] font-bold tabular-nums text-fab-dim">{i + 1}</span>
+                <HeroImg name={h.hero} size="sm" />
+                <span className="min-w-0 flex-1 truncate text-sm font-semibold text-fab-text">{h.hero}</span>
+                <span className="tabular-nums text-xs text-fab-muted">{h.matches}</span>
+                <span
+                  className={`w-10 text-right tabular-nums text-xs font-bold ${
+                    h.winRate >= 55 ? "text-fab-win" : h.winRate < 45 ? "text-fab-loss" : "text-fab-text"
+                  }`}
+                >
+                  {h.winRate}%
+                </span>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
+      {formats.length > 0 && (
+        <Card padding="sm">
+          <h2 className="flex items-center gap-1.5 text-sm font-bold text-fab-text">
+            <Layers className="h-4 w-4 text-fab-gold" /> Formats played
+          </h2>
+          <ul className="mt-3 space-y-2.5">
+            {formats.map((f) => {
+              const pct = Math.round((f.matches / formatTotal) * 100);
+              return (
+                <li key={f.format}>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-medium text-fab-text">
+                      {f.format === "Classic Constructed" ? "Classic Constructed (CC)" : f.format}
+                    </span>
+                    <span className="tabular-nums text-fab-muted">
+                      {f.matches} · {pct}%
+                    </span>
+                  </div>
+                  <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-fab-border/40">
+                    <div className="h-full rounded-full bg-fab-gold/70" style={{ width: `${pct}%` }} />
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </Card>
+      )}
     </div>
   );
 }

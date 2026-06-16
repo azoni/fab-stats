@@ -33,6 +33,18 @@ export interface StorePlayerStat {
   winRate: number;
 }
 
+export interface StoreHeroStat {
+  hero: string;
+  matches: number;
+  wins: number;
+  winRate: number;
+}
+
+export interface StoreFormatStat {
+  format: string;
+  matches: number;
+}
+
 export interface StoreStats {
   slug: string;
   name: string;
@@ -41,6 +53,9 @@ export interface StoreStats {
   players: StorePlayerStat[];
   topByWinRate: StorePlayerStat[];
   topByActivity: StorePlayerStat[];
+  /** Store-wide hero + format mix. Populated as leaderboard docs refresh; may be empty. */
+  heroes: StoreHeroStat[];
+  formats: StoreFormatStat[];
 }
 
 type DirectoryAcc = {
@@ -326,6 +341,8 @@ async function getStoreStatsViaIndex(slug: string): Promise<StoreStats | null> {
         .filter((p) => p.matches >= 5)
         .sort((a, b) => b.winRate - a.winRate)
         .slice(0, 10),
+      heroes: [],
+      formats: [],
     };
   } catch {
     // Missing index, rule denial, or any other failure → let the caller
@@ -346,6 +363,8 @@ async function getStoreStatsFromAggregate(slug: string): Promise<StoreStats | nu
       totalMatches: number;
       uniquePlayers: number;
       players?: StorePlayerStat[];
+      heroes?: StoreHeroStat[];
+      formats?: StoreFormatStat[];
     };
     // Defensive: drop blocked users even if a stale aggregate doc still names them.
     const players = (data.players || []).filter((p) => !isBlockedUser(p.userId));
@@ -360,6 +379,8 @@ async function getStoreStatsFromAggregate(slug: string): Promise<StoreStats | nu
         .filter((p) => p.matches >= 5)
         .sort((a, b) => b.winRate - a.winRate)
         .slice(0, 10),
+      heroes: data.heroes || [],
+      formats: data.formats || [],
     };
   } catch {
     return null;
@@ -397,5 +418,7 @@ export async function getStoreStats(slug: string): Promise<StoreStats | null> {
       .filter((p) => p.matches >= 5)
       .sort((a, b) => b.winRate - a.winRate)
       .slice(0, 10),
+    heroes: [],
+    formats: [],
   };
 }

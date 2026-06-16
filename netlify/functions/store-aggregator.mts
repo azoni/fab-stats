@@ -31,6 +31,19 @@ interface VenueBreakdownEntry {
   matches: number;
   wins: number;
   winRate: number;
+  heroes?: { hero: string; matches: number; wins: number }[];
+  formats?: { format: string; matches: number }[];
+}
+
+interface HeroStat {
+  hero: string;
+  matches: number;
+  wins: number;
+  winRate: number;
+}
+interface FormatStat {
+  format: string;
+  matches: number;
 }
 
 interface LeaderboardDoc {
@@ -61,6 +74,8 @@ interface StoreAggregate {
   totalMatches: number;
   uniquePlayers: number;
   players: PlayerStat[];
+  heroes?: HeroStat[];
+  formats?: FormatStat[];
 }
 
 /** Compact directory entry — short field names to keep the listing doc
@@ -121,6 +136,9 @@ function aggregate(docs: LeaderboardDoc[]): Map<string, StoreAggregate> {
       playerIds: Set<string>;
       // Public players only — the named leaderboard shown on the store page.
       players: Map<string, PlayerStat>;
+      // Aggregate hero + format mix (anonymous — includes private players' counts).
+      heroes: Map<string, { matches: number; wins: number }>;
+      formats: Map<string, number>;
     }
   >();
 
@@ -140,12 +158,23 @@ function aggregate(docs: LeaderboardDoc[]): Map<string, StoreAggregate> {
           totalMatches: 0,
           playerIds: new Set<string>(),
           players: new Map<string, PlayerStat>(),
+          heroes: new Map<string, { matches: number; wins: number }>(),
+          formats: new Map<string, number>(),
         };
         buckets.set(slug, bucket);
       }
       bucket.nameVariants.set(displayName, (bucket.nameVariants.get(displayName) || 0) + 1);
       bucket.totalMatches += v.matches;
       bucket.playerIds.add(entry.userId);
+      for (const h of v.heroes || []) {
+        const cur = bucket.heroes.get(h.hero) || { matches: 0, wins: 0 };
+        cur.matches += h.matches;
+        cur.wins += h.wins;
+        bucket.heroes.set(h.hero, cur);
+      }
+      for (const f of v.formats || []) {
+        bucket.formats.set(f.format, (bucket.formats.get(f.format) || 0) + f.matches);
+      }
 
       // Only explicitly-public profiles appear in the named list — private (or
       // unset) players are counted above but never identified. Matches the
@@ -182,6 +211,18 @@ function aggregate(docs: LeaderboardDoc[]): Map<string, StoreAggregate> {
       totalMatches: bucket.totalMatches,
       uniquePlayers: bucket.playerIds.size,
       players,
+      heroes: [...bucket.heroes.entries()]
+        .sort((a, b) => b[1].matches - a[1].matches)
+        .slice(0, 12)
+        .map(([hero, d]) => ({
+          hero,
+          matches: d.matches,
+          wins: d.wins,
+          winRate: d.matches > 0 ? Math.round((d.wins / d.matches) * 1000) / 10 : 0,
+        })),
+      formats: [...bucket.formats.entries()]
+        .sort((a, b) => b[1] - a[1])
+        .map(([format, matches]) => ({ format, matches })),
     });
   }
   return result;

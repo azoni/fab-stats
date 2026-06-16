@@ -272,17 +272,27 @@ export async function updateLeaderboardEntry(
     }
   }
 
-  // Unique venues + venue breakdown
+  // Unique venues + venue breakdown (incl. per-venue hero + format mix, which
+  // the store-aggregator rolls up into a store-wide breakdown).
   const venueNames = new Set<string>();
-  const venueAgg = new Map<string, { matches: number; wins: number }>();
+  type VenueAcc = { matches: number; wins: number; heroes: Map<string, { matches: number; wins: number }>; formats: Map<string, number> };
+  const venueAgg = new Map<string, VenueAcc>();
   for (const m of matches) {
     const v = m.venue?.trim();
     if (v && v.toLowerCase() !== "unknown") {
       venueNames.add(v.toLowerCase());
       if (m.result !== MatchResult.Bye) {
-        const cur = venueAgg.get(v) || { matches: 0, wins: 0 };
+        const cur = venueAgg.get(v) || { matches: 0, wins: 0, heroes: new Map(), formats: new Map() };
+        const win = m.result === MatchResult.Win;
         cur.matches++;
-        if (m.result === MatchResult.Win) cur.wins++;
+        if (win) cur.wins++;
+        if (m.heroPlayed && m.heroPlayed !== "Unknown") {
+          const h = cur.heroes.get(m.heroPlayed) || { matches: 0, wins: 0 };
+          h.matches++;
+          if (win) h.wins++;
+          cur.heroes.set(m.heroPlayed, h);
+        }
+        if (m.format) cur.formats.set(m.format, (cur.formats.get(m.format) || 0) + 1);
         venueAgg.set(v, cur);
       }
     }
@@ -299,6 +309,13 @@ export async function updateLeaderboardEntry(
       matches: data.matches,
       wins: data.wins,
       winRate: data.matches > 0 ? Math.round((data.wins / data.matches) * 1000) / 10 : 0,
+      heroes: [...data.heroes.entries()]
+        .sort((a, b) => b[1].matches - a[1].matches)
+        .slice(0, 6)
+        .map(([hero, d]) => ({ hero, matches: d.matches, wins: d.wins })),
+      formats: [...data.formats.entries()]
+        .sort((a, b) => b[1] - a[1])
+        .map(([format, matches]) => ({ format, matches })),
     }));
 
   // Flat slugified venue list for store-directory lookups. Lets us query
