@@ -134,6 +134,23 @@ function isNotVenue(line: string): boolean {
   return false;
 }
 
+/** Conservative cleanup for the FINAL venue value (not the event-name candidate
+ *  filter, so event names are unaffected). Returns "" for obvious non-venues —
+ *  prizes, legality/website notes, event-hype titles — so they don't pollute the
+ *  store directory. Never rejects a normal store name. Applied to every import
+ *  path (paste result + extension/bookmarklet entries). */
+export function cleanParsedVenue(raw: string | undefined): string {
+  const v = (raw || "").trim();
+  if (v.length < 2) return "";
+  if (isMetadataLine(v) || isNotVenue(v)) return "";
+  // Format-legality / website notes mistaken for a venue (e.g. "Living Legend!
+  // Please check the fabtcg.com website for card legality").
+  if (/please (check|look|visit|see)|fabtcg\.com|card legality|legal(ity)? (in|for) the/i.test(v)) return "";
+  // Event-hype titles — real store names don't have repeated bangs ("...CALLING!!!").
+  if (/!\s*!/.test(v)) return "";
+  return v;
+}
+
 export function parseDate(dateStr: string): string {
   const cleaned = dateStr
     .replace(/,\s*\d{1,2}:\d{2}\s*(AM|PM)/i, "")
@@ -201,12 +218,12 @@ function extractEventNameAndVenue(
   if (eventLine) {
     // The event-keyword line is the event name; the other is likely the venue
     const venueLine = qualifying.find((l) => l !== eventLine && !isEventNameLike(l));
-    return { eventName: eventLine, venue: venueLine || "" };
+    return { eventName: eventLine, venue: cleanParsedVenue(venueLine) };
   }
 
   // No event keywords found — use the longest line as event name, other as venue
   const sorted = [...qualifying].sort((a, b) => b.length - a.length);
-  return { eventName: sorted[0], venue: sorted.length > 1 ? sorted[1] : "" };
+  return { eventName: sorted[0], venue: cleanParsedVenue(sorted.length > 1 ? sorted[1] : "") };
 }
 
 export function parseGemPaste(text: string): PasteImportResult {
@@ -535,6 +552,9 @@ export function parseExtensionJson(json: string): PasteImportResult {
     if (format === GameFormat.Other) {
       format = guessFormat(eventName);
     }
+    // Drop obvious non-venues (event hype, legality notes, prizes) that the
+    // extension/bookmarklet sometimes capture, so they don't pollute stores.
+    const cleanedVenue = cleanParsedVenue(entry.venue);
 
     if (!eventMap.has(groupKey)) {
       eventMap.set(groupKey, {
@@ -543,7 +563,7 @@ export function parseExtensionJson(json: string): PasteImportResult {
           date: eventDate,
           format,
           rated: entry.rated || false,
-          venue: entry.venue || "",
+          venue: cleanedVenue,
           eventType: entry.eventType || "Other",
         },
         matches: [],
@@ -568,7 +588,7 @@ export function parseExtensionJson(json: string): PasteImportResult {
       result,
       format,
       notes: `${eventName} | ${roundInfo}`,
-      venue: entry.venue || undefined,
+      venue: cleanedVenue || undefined,
       eventType: entry.eventType || undefined,
       rated: entry.rated,
       source: (entry.extensionVersion || "").startsWith("bookmarklet") ? "bookmarklet" : "extension",
