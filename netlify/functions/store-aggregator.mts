@@ -73,6 +73,12 @@ interface CompactDirectoryEntry {
   p: number; // uniquePlayers
 }
 
+// Hard-blocked test/spam accounts — never counted or named in store aggregates.
+// Mirror of src/lib/blocked-users.ts (the function is a separate bundle).
+const BLOCKED_USER_IDS = new Set<string>([
+  "L7Vd2uSxm8dKW2TSwo9Rd8ZFEYB3", // testtest / agentazoni — test account
+]);
+
 const FULL_SYNC_INTERVAL_MS = 24 * 60 * 60 * 1000;
 const MAX_PLAYERS_PER_STORE = 100;
 // Single-match "stores" are usually one-off venues or typos. Skip them
@@ -119,6 +125,7 @@ function aggregate(docs: LeaderboardDoc[]): Map<string, StoreAggregate> {
   >();
 
   for (const entry of docs) {
+    if (BLOCKED_USER_IDS.has(entry.userId)) continue;
     if (!entry.venueBreakdown || entry.venueBreakdown.length === 0) continue;
     for (const v of entry.venueBreakdown) {
       const displayName = normalizeForDisplay(v.venue);

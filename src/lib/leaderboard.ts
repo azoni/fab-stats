@@ -10,6 +10,7 @@ import {
 import { db } from "./firebase";
 import { computeOverallStats, computeEventStats, computeOpponentStats, computePlayoffFinishes, computeMinorEventFinishes, getEventType } from "./stats";
 import { computeEloRating } from "./elo";
+import { isBlockedUser } from "./blocked-users";
 import type { LeaderboardEntry, MatchRecord, UserProfile } from "@/types";
 import { MatchResult } from "@/types";
 
@@ -417,7 +418,7 @@ function sanitizeEntries(docs: LeaderboardEntry[]): LeaderboardEntry[] {
   const weeklyCutoff = localDateStr(14);  // 7-day window written >7 days before current start → no overlap
   const monthlyCutoff = localDateStr(60); // 30-day window written >30 days before current start → no overlap
 
-  return docs.map((entry) => {
+  return docs.filter((entry) => !isBlockedUser(entry.userId)).map((entry) => {
     // Backfill heroCompletionPct for entries that predate the field
     if (entry.heroCompletionPct === undefined) {
       // Estimate from hero breakdown: matches with known heroes vs total

@@ -1,4 +1,5 @@
 import type { LeaderboardEntry } from "@/types";
+import { isBlockedUser } from "./blocked-users";
 
 export interface FeaturedProfile {
   entry: LeaderboardEntry;
@@ -13,7 +14,7 @@ interface CandidatePool {
 }
 
 export function selectFeaturedProfiles(entries: LeaderboardEntry[]): FeaturedProfile[] {
-  const publicEntries = entries.filter((e) => e.isPublic && e.username && !e.hideFromSpotlight);
+  const publicEntries = entries.filter((e) => e.isPublic && e.username && !e.hideFromSpotlight && !isBlockedUser(e.userId));
   if (publicEntries.length === 0) return [];
 
   const pools: CandidatePool[] = [
