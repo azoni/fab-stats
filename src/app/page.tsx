@@ -631,38 +631,36 @@ export default function Dashboard() {
 function HomeCommandCenter() {
   const [showActions, setShowActions] = useState(false);
   return (
-    <section className="section-reveal relative overflow-hidden rounded-xl border border-fab-border/80 bg-[linear-gradient(135deg,rgba(25,23,18,0.96),rgba(14,15,14,0.95)_58%,rgba(17,24,22,0.92))] p-3 shadow-[0_18px_54px_rgba(0,0,0,0.24)] sm:p-4" style={{ "--stagger": 0 } as React.CSSProperties}>
+    <section className="section-reveal relative overflow-hidden rounded-xl border border-fab-border/80 bg-[linear-gradient(135deg,rgba(25,23,18,0.96),rgba(14,15,14,0.95)_58%,rgba(17,24,22,0.92))] px-3 py-2.5 shadow-[0_18px_54px_rgba(0,0,0,0.24)] sm:px-4 sm:py-3" style={{ "--stagger": 0 } as React.CSSProperties}>
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_16%_0%,rgba(245,179,57,0.16),transparent_30%),radial-gradient(circle_at_86%_20%,rgba(38,211,177,0.11),transparent_28%)]" />
-      <div className="relative grid gap-4 xl:grid-cols-[minmax(0,0.8fr)_minmax(520px,1fr)] xl:items-center">
+      <div className="relative grid gap-3 xl:grid-cols-[minmax(0,0.7fr)_minmax(500px,1fr)] xl:items-center">
         <div className="min-w-0">
-          <p className="text-[10px] font-black uppercase tracking-[0.16em] text-fab-gold">Match command center</p>
-          <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <h2 className="text-2xl font-black tracking-tight text-fab-text sm:text-3xl">Ready for the next round.</h2>
-              <p className="mt-1 text-sm leading-6 text-fab-muted">
-                Jump straight to GEM, bring the event back here, or log a quick match.
-              </p>
-              <a
-                href="https://chromewebstore.google.com/detail/fab-stats-gem-exporter/kcaaaibikofempdbphoeeljdbjakhmjh"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-3 hidden items-center gap-2 rounded-lg border border-fab-border/70 bg-fab-bg/60 px-3 py-1.5 text-xs font-bold text-fab-muted transition-colors hover:border-fab-gold/45 hover:bg-fab-gold/10 hover:text-fab-gold sm:inline-flex"
-              >
-                <Puzzle className="h-3.5 w-3.5" />
-                <span>Get the Chrome extension</span>
-                <ExternalLink className="h-3 w-3 opacity-60" />
-              </a>
-              <button
-                type="button"
-                onClick={() => setShowActions((v) => !v)}
-                aria-expanded={showActions}
-                className="mt-3 flex w-full items-center justify-between gap-2 rounded-lg border border-fab-border/70 bg-fab-bg/60 px-3 py-2 text-xs font-bold text-fab-muted transition-colors hover:border-fab-gold/45 hover:text-fab-gold sm:hidden"
-              >
-                <span>{showActions ? "Hide quick actions" : "Show quick actions"}</span>
-                <ChevronDown className={`h-4 w-4 transition-transform ${showActions ? "rotate-180" : ""}`} />
-              </button>
-            </div>
+          <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-fab-gold">Match command center</p>
+            <h2 className="text-base font-black tracking-tight text-fab-text sm:text-lg">Ready for the next round.</h2>
           </div>
+          <p className="mt-0.5 text-xs leading-5 text-fab-muted">
+            Jump to GEM, import results, or log a quick match.
+          </p>
+          <a
+            href="https://chromewebstore.google.com/detail/fab-stats-gem-exporter/kcaaaibikofempdbphoeeljdbjakhmjh"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-2 hidden items-center gap-1.5 rounded-lg border border-fab-border/70 bg-fab-bg/60 px-2.5 py-1 text-[11px] font-bold text-fab-muted transition-colors hover:border-fab-gold/45 hover:bg-fab-gold/10 hover:text-fab-gold sm:inline-flex"
+          >
+            <Puzzle className="h-3.5 w-3.5" />
+            <span>Get the Chrome extension</span>
+            <ExternalLink className="h-3 w-3 opacity-60" />
+          </a>
+          <button
+            type="button"
+            onClick={() => setShowActions((v) => !v)}
+            aria-expanded={showActions}
+            className="mt-2 flex w-full items-center justify-between gap-2 rounded-lg border border-fab-border/70 bg-fab-bg/60 px-3 py-1.5 text-xs font-bold text-fab-muted transition-colors hover:border-fab-gold/45 hover:text-fab-gold sm:hidden"
+          >
+            <span>{showActions ? "Hide quick actions" : "Show quick actions"}</span>
+            <ChevronDown className={`h-4 w-4 transition-transform ${showActions ? "rotate-180" : ""}`} />
+          </button>
         </div>
 
         <div className={`${showActions ? "grid" : "hidden"} grid-cols-1 gap-2 sm:!grid sm:grid-cols-3`}>
@@ -670,33 +668,33 @@ function HomeCommandCenter() {
             href="https://gem.fabtcg.com/profile/player/"
             target="_blank"
             rel="noopener noreferrer"
-            className="group flex min-h-[72px] items-center justify-between gap-3 rounded-lg border border-fab-gold/55 bg-fab-gold px-4 py-3 text-fab-bg shadow-[0_14px_34px_rgba(245,179,57,0.18)] transition-colors hover:bg-fab-gold-light"
+            className="group flex min-h-[48px] items-center justify-between gap-3 rounded-lg border border-fab-gold/55 bg-fab-gold px-3.5 py-2 text-fab-bg shadow-[0_14px_34px_rgba(245,179,57,0.18)] transition-colors hover:bg-fab-gold-light"
           >
             <span className="min-w-0">
-              <span className="block text-base font-black">Open GEM</span>
+              <span className="block text-sm font-black">Open GEM</span>
               <span className="block truncate text-[11px] font-semibold opacity-80">Grab your latest event results</span>
             </span>
-            <ExternalLink className="h-5 w-5 shrink-0 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+            <ExternalLink className="h-4 w-4 shrink-0 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
           </a>
           <Link
             href="/import"
-            className="group flex min-h-[72px] items-center justify-between gap-3 rounded-lg border border-emerald-400/35 bg-emerald-400/12 px-4 py-3 text-emerald-300 transition-colors hover:border-emerald-300/55 hover:bg-emerald-400/18"
+            className="group flex min-h-[48px] items-center justify-between gap-3 rounded-lg border border-emerald-400/35 bg-emerald-400/12 px-3.5 py-2 text-emerald-300 transition-colors hover:border-emerald-300/55 hover:bg-emerald-400/18"
           >
             <span className="min-w-0">
-              <span className="block text-base font-black">Import Matches</span>
+              <span className="block text-sm font-black">Import Matches</span>
               <span className="block truncate text-[11px] font-semibold text-fab-muted">Paste or sync your GEM export</span>
             </span>
-            <UploadCloud className="h-5 w-5 shrink-0 transition-transform group-hover:-translate-y-0.5" />
+            <UploadCloud className="h-4 w-4 shrink-0 transition-transform group-hover:-translate-y-0.5" />
           </Link>
           <Link
             href="/matches/new"
-            className="group flex min-h-[72px] items-center justify-between gap-3 rounded-lg border border-fab-border bg-fab-bg/70 px-4 py-3 text-fab-muted transition-colors hover:border-fab-gold/45 hover:bg-fab-surface-hover hover:text-fab-gold"
+            className="group flex min-h-[48px] items-center justify-between gap-3 rounded-lg border border-fab-border bg-fab-bg/70 px-3.5 py-2 text-fab-muted transition-colors hover:border-fab-gold/45 hover:bg-fab-surface-hover hover:text-fab-gold"
           >
             <span className="min-w-0">
-              <span className="block text-base font-black text-fab-text group-hover:text-fab-gold">Add Match</span>
+              <span className="block text-sm font-black text-fab-text group-hover:text-fab-gold">Add Match</span>
               <span className="block truncate text-[11px] font-semibold text-fab-muted">Quick practice log</span>
             </span>
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-fab-border bg-fab-bg transition-colors group-hover:border-fab-gold/45">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-fab-border bg-fab-bg transition-colors group-hover:border-fab-gold/45">
               <PlusCircle className="h-4 w-4" />
             </span>
           </Link>
