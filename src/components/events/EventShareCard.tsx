@@ -15,6 +15,7 @@ import {
   renderTrophyDesign,
 } from "@/components/profile/TrophyCase";
 import { CornerFiligree, OrnamentalDivider, CardBackgroundPattern, AccentTopBar, InnerVignette } from "@/components/share/CardOrnaments";
+import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 
 // ── Card ──
 
@@ -241,7 +242,12 @@ export function EventShareModal({ event, playerName, onClose }: EventShareModalP
         {/* Card preview */}
         <div className="px-4 pt-3 pb-2 sm:p-4 flex justify-center overflow-x-auto">
           <div ref={cardRef}>
-            <EventShareCardInner data={cardData} theme={selectedTheme} />
+            <ErrorBoundary
+              label="EventShareCard"
+              fallback={<div className="w-[380px] max-w-full rounded-xl border border-fab-border bg-fab-bg p-6 text-center text-sm text-fab-muted">Couldn&apos;t render the share card for this event.</div>}
+            >
+              <EventShareCardInner data={cardData} theme={selectedTheme} />
+            </ErrorBoundary>
           </div>
         </div>
 

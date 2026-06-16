@@ -65,6 +65,8 @@ function col(type: PlayoffFinish["type"]) {
     case "finalist": return { from: "#E5E7EB", to: "#9CA3AF", stroke: "#6B7280", text: "#F9FAFB" };
     case "top4":     return { from: "#F59E0B", to: "#92400E", stroke: "#78350F", text: "#FFFBEB" };
     case "top8":     return { from: "#60A5FA", to: "#1E40AF", stroke: "#1E3A8A", text: "#EFF6FF" };
+    // Defensive default so an unexpected type can never return undefined (callers read .from).
+    default:         return { from: "#60A5FA", to: "#1E40AF", stroke: "#1E3A8A", text: "#EFF6FF" };
   }
 }
 
@@ -74,6 +76,7 @@ function glowFilter(type: PlayoffFinish["type"]) {
     case "finalist": return "drop-shadow(0 0 4px rgba(192,192,192,0.25))";
     case "top4":     return "drop-shadow(0 0 4px rgba(245,158,11,0.25))";
     case "top8":     return "drop-shadow(0 0 4px rgba(96,165,250,0.25))";
+    default:         return "drop-shadow(0 0 4px rgba(96,165,250,0.25))";
   }
 }
 
