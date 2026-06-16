@@ -821,10 +821,15 @@ export function getRoundNumber(match: MatchRecord): number {
  *  means the player advanced to day two. */
 export const DAY2_SWISS_THRESHOLD = 10;
 
+/** Default round at which day two begins. FaB majors (Callings, Battle Hardened,
+ *  Pro Tours) play 8 swiss rounds on day one, so day two starts at round 9.
+ *  This is only a default — it's editable per-event on import and in the editor. */
+export const DAY2_START_ROUND = 9;
+
 /**
  * Returns the round number (getRoundNumber value) at which day two begins for
- * an event, or null if the event is single-day. Day-1 swiss for FaB majors is
- * almost always 8-9 rounds, so day two starts at round 10. Playoff rounds
+ * an event, or null if the event is single-day. Day one of a FaB major is
+ * 8 swiss rounds, so day two starts at round 9. Playoff rounds
  * (getRoundNumber >= 1000) always exceed the swiss boundary, so they fall into
  * day two automatically.
  *
@@ -839,8 +844,9 @@ export function computeDay2Boundary(eventMatches: MatchRecord[]): number | null 
   const swiss = rounds.filter((r) => r < 1000);
   const maxSwiss = swiss.length ? Math.max(...swiss) : 0;
   if (maxSwiss <= DAY2_SWISS_THRESHOLD) return null;
-  // Cap at the threshold so day two starts at round 10 even for very long events.
-  return Math.min(DAY2_SWISS_THRESHOLD, maxSwiss);
+  // Day one is 8 swiss rounds for FaB majors → day two starts at round 9
+  // (clamped to the data so it never exceeds the rounds actually played).
+  return Math.min(DAY2_START_ROUND, maxSwiss);
 }
 
 /** A match belongs to day two when its round is at or past the boundary.
@@ -866,7 +872,10 @@ export function suggestedManualDay2Round(eventMatches: MatchRecord[]): number {
   const maxSwiss = swiss.length ? Math.max(...swiss) : 0;
   const hasPlayoff = rounds.some((r) => r >= 1000);
   if (hasPlayoff) return Math.max(2, maxSwiss + 1); // day two = the cut
-  return Math.max(2, Math.ceil(maxSwiss / 2) + 1); // back half of swiss
+  // Standard FaB day one is 8 swiss rounds → default to round 9 when the event
+  // is long enough; fall back to the back half of swiss for shorter events.
+  if (maxSwiss >= DAY2_START_ROUND) return DAY2_START_ROUND;
+  return Math.max(2, Math.ceil(maxSwiss / 2) + 1);
 }
 
 /** Check if the match has an explicit event name (from GEM/notes) vs a generated fallback. */

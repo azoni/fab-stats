@@ -149,16 +149,28 @@ function Day2Control({ boundary, auto, onSetRound, onTurnOff, onEnable }: {
  *  import (draft re-picks, sealed→draft Callings, day-2 format changes).
  *  Each segment assigns a hero + format to a round range; Apply writes the
  *  per-match overrides in the parent. */
-function ImportSegmentEditor({ matchCount, defaultHero, defaultFormat, onApply }: {
+function ImportSegmentEditor({ matchCount, defaultHero, defaultFormat, splitAt, onApply }: {
   matchCount: number;
   defaultHero: string;
   defaultFormat: string;
+  /** 1-based MATCH POSITION where day two begins (not a round number — the caller
+   *  converts the day-2 round to a position). When set, the editor opens pre-split
+   *  into a Day 1 and a Day 2 segment so the user only has to pick heroes/formats. */
+  splitAt?: number;
   onApply: (assignments: { matchIdx: number; hero?: string; format?: string }[]) => void;
 }) {
   type Seg = { hero: string; format: string; from: string; to: string };
-  const [segments, setSegments] = useState<Seg[]>([
-    { hero: defaultHero === "Unknown" ? "" : defaultHero, format: defaultFormat || "", from: "1", to: String(matchCount) },
-  ]);
+  const [segments, setSegments] = useState<Seg[]>(() => {
+    const d1Hero = defaultHero === "Unknown" ? "" : defaultHero;
+    // Pre-seed a Day 1 / Day 2 split when the event spans two days.
+    if (splitAt && splitAt > 1 && splitAt <= matchCount) {
+      return [
+        { hero: d1Hero, format: defaultFormat || "", from: "1", to: String(splitAt - 1) },
+        { hero: "", format: "", from: String(splitAt), to: String(matchCount) },
+      ];
+    }
+    return [{ hero: d1Hero, format: defaultFormat || "", from: "1", to: String(matchCount) }];
+  });
   const [applied, setApplied] = useState(false);
 
   const clamp = (v: string) => {
@@ -243,6 +255,56 @@ function ImportSegmentEditor({ matchCount, defaultHero, defaultFormat, onApply }
           {applied ? "Applied ✓" : "Apply to rounds"}
         </button>
       </div>
+    </div>
+  );
+}
+
+/** Toggle + per-round hero/format editor. The toggle reads as a real button so
+ *  users notice it, and the copy adapts when a Day 2 split is available. */
+function PerRoundEditor({ open, onToggle, matchCount, defaultHero, defaultFormat, splitAt, onApply }: {
+  open: boolean;
+  onToggle: () => void;
+  matchCount: number;
+  defaultHero: string;
+  defaultFormat: string;
+  splitAt?: number;
+  onApply: (assignments: { matchIdx: number; hero?: string; format?: string }[]) => void;
+}) {
+  const hasSplit = !!splitAt && splitAt > 1 && splitAt <= matchCount;
+  const label = open
+    ? "Hide per-round hero / format"
+    : hasSplit
+      ? "Set Day 1 / Day 2 hero & format"
+      : "Different hero or format by round?";
+  return (
+    <div onClick={(e) => e.stopPropagation()}>
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={open}
+        className="inline-flex items-center gap-1.5 rounded-md border border-fab-gold/40 bg-fab-gold/[0.08] px-2.5 py-1.5 text-xs font-semibold text-fab-gold transition-colors hover:border-fab-gold/70 hover:bg-fab-gold/[0.15]"
+      >
+        {/* split / layers icon */}
+        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          {open ? (
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14" />
+          ) : (
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+          )}
+        </svg>
+        {label}
+      </button>
+      {open && (
+        <div className="mt-2">
+          <ImportSegmentEditor
+            matchCount={matchCount}
+            defaultHero={defaultHero}
+            defaultFormat={defaultFormat}
+            splitAt={splitAt}
+            onApply={onApply}
+          />
+        </div>
+      )}
     </div>
   );
 }
@@ -1121,6 +1183,12 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
             const needsHero = !heroOverrides[origIdx] && reviewMatches.every(({ match }) => match.heroPlayed === "Unknown");
             const qDay2Boundary = day2Boundaries.get(origIdx) ?? null;
             const qDay2Auto = computeDay2Boundary(event.matches as MatchRecord[]);
+            // Day-2 boundary is a round NUMBER; the segment editor works in match
+            // POSITIONS. Convert to the 1-based position of the first day-2 match
+            // so the pre-seeded split is correct even with byes / non-contiguous rounds.
+            const qDay2SplitPos = qDay2Boundary != null
+              ? (event.matches.findIndex((m) => isDay2Match(m as MatchRecord, qDay2Boundary)) + 1) || undefined
+              : undefined;
 
             return (
               <div key={i} ref={(el) => { eventCardRefs.current[i] = el; }} className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden">
@@ -1179,25 +1247,15 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
                       />
                     )}
                     {/* Per-round hero/format editor for multi-format / draft events */}
-                    <div onClick={(e) => e.stopPropagation()}>
-                      <button
-                        type="button"
-                        onClick={() => setSegEditorEvents((prev) => ({ ...prev, [origIdx]: !prev[origIdx] }))}
-                        className="text-xs font-semibold text-fab-gold/90 hover:text-fab-gold"
-                      >
-                        {segEditorEvents[origIdx] ? "− Hide per-round hero/format" : "+ Multiple heroes or formats? Set by round"}
-                      </button>
-                      {segEditorEvents[origIdx] && (
-                        <div className="mt-2">
-                          <ImportSegmentEditor
-                            matchCount={event.matches.length}
-                            defaultHero={heroValue || ""}
-                            defaultFormat={event.format}
-                            onApply={(a) => applySegmentAssignments(origIdx, a)}
-                          />
-                        </div>
-                      )}
-                    </div>
+                    <PerRoundEditor
+                      open={!!segEditorEvents[origIdx]}
+                      onToggle={() => setSegEditorEvents((prev) => ({ ...prev, [origIdx]: !prev[origIdx] }))}
+                      matchCount={event.matches.length}
+                      defaultHero={heroValue || ""}
+                      defaultFormat={event.format}
+                      splitAt={qDay2SplitPos}
+                      onApply={(a) => applySegmentAssignments(origIdx, a)}
+                    />
                     {/* Matches with opponent hero editing */}
                     <div className="space-y-2">
                       {reviewMatches.map(({ match, matchIdx }) => {
@@ -2023,6 +2081,10 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
 
                   const day2Boundary = day2Boundaries.get(origIdx) ?? null;
                   const day2Auto = computeDay2Boundary(event.matches as MatchRecord[]);
+                  // Round number → 1-based match position for the pre-seeded split.
+                  const day2SplitPos = day2Boundary != null
+                    ? (event.matches.findIndex((m) => isDay2Match(m as MatchRecord, day2Boundary)) + 1) || undefined
+                    : undefined;
 
                   // Detect playoff placement from match round labels
                   const playoffRanks: Record<string, number> = { "Finals": 4, "Top 4": 3, "Top 8": 2, "Playoff": 2 };
@@ -2109,25 +2171,15 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
                             />
                           )}
                           {/* Per-round hero/format editor for multi-format / draft events */}
-                          <div onClick={(e) => e.stopPropagation()}>
-                            <button
-                              type="button"
-                              onClick={() => setSegEditorEvents((prev) => ({ ...prev, [origIdx]: !prev[origIdx] }))}
-                              className="text-xs font-semibold text-fab-gold/90 hover:text-fab-gold"
-                            >
-                              {segEditorEvents[origIdx] ? "− Hide per-round hero/format" : "+ Multiple heroes or formats? Set by round"}
-                            </button>
-                            {segEditorEvents[origIdx] && (
-                              <div className="mt-2">
-                                <ImportSegmentEditor
-                                  matchCount={event.matches.length}
-                                  defaultHero={heroValue || ""}
-                                  defaultFormat={event.format}
-                                  onApply={(a) => applySegmentAssignments(origIdx, a)}
-                                />
-                              </div>
-                            )}
-                          </div>
+                          <PerRoundEditor
+                            open={!!segEditorEvents[origIdx]}
+                            onToggle={() => setSegEditorEvents((prev) => ({ ...prev, [origIdx]: !prev[origIdx] }))}
+                            matchCount={event.matches.length}
+                            defaultHero={heroValue || ""}
+                            defaultFormat={event.format}
+                            splitAt={day2SplitPos}
+                            onApply={(a) => applySegmentAssignments(origIdx, a)}
+                          />
                           <div className="space-y-2">
                             {event.matches.map((match, j) => {
                               const oppKey = `${origIdx}-${j}`;
