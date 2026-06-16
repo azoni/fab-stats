@@ -887,31 +887,172 @@ function renderArticleCard(article: ArticleCardData | null): VNode {
   };
 }
 
+// ── Brand header (shared) ──
+
+function brandHeader(): VNode {
+  return {
+    type: "div",
+    props: {
+      style: { display: "flex", alignItems: "center", marginBottom: 36 },
+      children: [
+        {
+          type: "div",
+          props: {
+            style: { width: 32, height: 32, marginRight: 12, display: "flex" },
+            children: {
+              type: "svg",
+              props: {
+                width: 32, height: 32, viewBox: "0 0 24 24", fill: "none",
+                children: [
+                  { type: "rect", props: { x: 5, y: 2, width: 14, height: 20, rx: 2, stroke: "#D9A05B", strokeWidth: 2 } },
+                  { type: "rect", props: { x: 8, y: 13, width: 2, height: 3, fill: "#E53935" } },
+                  { type: "rect", props: { x: 12, y: 10, width: 2, height: 6, fill: "#FBC02D" } },
+                  { type: "rect", props: { x: 16, y: 6, width: 2, height: 10, fill: "#1E88E5" } },
+                ],
+              },
+            },
+          },
+        },
+        { type: "span", props: { style: { fontSize: 22, fontWeight: 700, color: "#c9a84c", letterSpacing: "-0.02em" }, children: "FaB Stats" } },
+      ],
+    },
+  };
+}
+
+/** Generic "title + stat boxes + footer" card used for stores, leagues, teams, groups. */
+function renderEntityCard(opts: {
+  eyebrow: string;
+  title: string;
+  subtitle?: string;
+  stats: { label: string; value: string; color?: string }[];
+  footerPath: string;
+  footerNote: string;
+}): VNode {
+  const gold = "#c9a84c";
+  const muted = "#6b6580";
+  const cardBg = "#1a1625";
+  const cardBorder = "#2a2435";
+  const textLight = "#e8e4f0";
+  const title = truncate(opts.title, 42);
+  return {
+    type: "div",
+    props: {
+      style: { width: 1200, height: 630, display: "flex", flexDirection: "column" as const, background: "linear-gradient(135deg, #0c0a0e 0%, #161222 100%)", fontFamily: "Inter" },
+      children: [
+        { type: "div", props: { style: { width: 1200, height: 4, background: "linear-gradient(90deg, #c9a84c, #e8c860)" } } },
+        {
+          type: "div",
+          props: {
+            style: { display: "flex", flexDirection: "column" as const, padding: "48px 64px", flex: 1 },
+            children: [
+              brandHeader(),
+              {
+                type: "div",
+                props: {
+                  style: { display: "flex", flexDirection: "column" as const, marginBottom: 32 },
+                  children: [
+                    { type: "span", props: { style: { fontSize: 14, fontWeight: 700, color: gold, letterSpacing: "0.18em", marginBottom: 10 }, children: opts.eyebrow } },
+                    { type: "div", props: { style: { fontSize: title.length > 30 ? 46 : 58, fontWeight: 700, color: textLight, letterSpacing: "-0.02em", lineHeight: 1.05 }, children: title } },
+                    opts.subtitle ? { type: "div", props: { style: { fontSize: 22, color: muted, marginTop: 12 }, children: truncate(opts.subtitle, 70) } } : null,
+                  ].filter(Boolean),
+                },
+              },
+              {
+                type: "div",
+                props: {
+                  style: { display: "flex", gap: 20, flex: 1 },
+                  children: opts.stats.slice(0, 4).map((s) => statBox(s.label, s.value, s.color || textLight, cardBg, cardBorder)),
+                },
+              },
+              {
+                type: "div",
+                props: {
+                  style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 24 },
+                  children: [
+                    { type: "span", props: { style: { fontSize: 18, color: muted }, children: opts.footerPath } },
+                    { type: "span", props: { style: { fontSize: 16, color: muted }, children: opts.footerNote } },
+                  ],
+                },
+              },
+            ],
+          },
+        },
+        { type: "div", props: { style: { width: 1200, height: 4, background: "linear-gradient(90deg, #c9a84c, #e8c860)" } } },
+      ],
+    },
+  };
+}
+
+// ── Store / league / team / group data ──
+
+async function fetchDoc(path: string): Promise<Record<string, unknown> | null> {
+  const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+  const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
+  if (!projectId || !apiKey) return null;
+  try {
+    const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/${path}?key=${apiKey}`;
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const doc = await res.json();
+    return doc?.fields || null;
+  } catch {
+    return null;
+  }
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function fInt(f: any): number { return Number(f?.integerValue ?? f?.doubleValue ?? 0); }
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function fStr(f: any): string { return f?.stringValue || ""; }
+
+async function renderStore(slug: string): Promise<VNode> {
+  const f = await fetchDoc(`storeAggregates/${encodeURIComponent(slug)}`);
+  if (!f) return renderGenericCard();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const players: any[] = (f.players as any)?.arrayValue?.values || [];
+  const topP = players[0]?.mapValue?.fields;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const heroes: any[] = (f.heroes as any)?.arrayValue?.values || [];
+  const topH = heroes[0]?.mapValue?.fields;
+  const stats = [
+    { label: "MATCHES", value: fInt(f.totalMatches).toLocaleString() },
+    { label: "PLAYERS", value: String(fInt(f.uniquePlayers)), color: "#c9a84c" },
+  ];
+  if (topH) stats.push({ label: "TOP HERO", value: truncate(fStr(topH.hero), 18), color: "#c9a84c" });
+  if (topP) stats.push({ label: "MOST ACTIVE", value: truncate(fStr(topP.displayName), 16) });
+  return renderEntityCard({
+    eyebrow: "GAME STORE",
+    title: fStr(f.name) || slug,
+    stats,
+    footerPath: `fabstats.net/stores/${slug}`,
+    footerNote: "Flesh and Blood store stats",
+  });
+}
+
 // ── Handler ──
 
 export default async function handler(req: Request) {
   const url = new URL(req.url);
   let type = url.searchParams.get("type") || "";
   let username = url.searchParams.get("username") || "";
-  let articleSlug = url.searchParams.get("slug") || "";
+  let slug = url.searchParams.get("slug") || "";
 
   // Netlify rewrites may pass the original URL path instead of query params.
-  // Parse username/type/slug from the path as fallback: /og/player/:username.png,
-  // /og/meta.png, /og/article/:slug.png
-  if (!username && !type && !articleSlug) {
-    const playerMatch = url.pathname.match(/\/og\/player\/([^/]+)\.png$/i);
-    const articleMatch = url.pathname.match(/\/og\/article\/([^/]+)\.png$/i);
-    if (playerMatch) username = decodeURIComponent(playerMatch[1]);
-    else if (articleMatch) {
-      type = "article";
-      articleSlug = decodeURIComponent(articleMatch[1]);
+  // Parse type/slug from the path as fallback: /og/<type>/<slug>.png, /og/meta.png
+  if (!username && !type && !slug) {
+    const m = url.pathname.match(/\/og\/(player|article|store|league|team|group)\/([^/]+)\.png$/i);
+    if (m) {
+      const kind = m[1].toLowerCase();
+      const val = decodeURIComponent(m[2]);
+      if (kind === "player") username = val;
+      else { type = kind; slug = val; }
     } else if (/\/og\/meta\.png$/i.test(url.pathname)) type = "meta";
   }
 
-  if (type === "article" && !articleSlug) {
-    return new Response("Missing article slug", { status: 400 });
+  if ((type === "article" || type === "store" || type === "league" || type === "team" || type === "group") && !slug) {
+    return new Response("Missing slug", { status: 400 });
   }
-  if (!username && type !== "meta" && type !== "article") {
+  if (!username && type !== "meta" && type !== "article" && type !== "store" && type !== "league" && type !== "team" && type !== "group") {
     return new Response("Missing username", { status: 400 });
   }
 
@@ -922,8 +1063,10 @@ export default async function handler(req: Request) {
       const meta = await fetchMetaData();
       card = renderMetaCard(meta);
     } else if (type === "article") {
-      const article = await fetchArticle(articleSlug);
+      const article = await fetchArticle(slug);
       card = renderArticleCard(article);
+    } else if (type === "store") {
+      card = await renderStore(slug);
     } else {
       const player = await fetchPlayer(username);
       card = renderCard(player);

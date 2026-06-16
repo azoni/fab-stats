@@ -18,6 +18,11 @@
   path = "/meta"
   function = "og-rewrite-meta"
 
+# Edge function rewrites OG meta tags for individual store pages
+[[edge_functions]]
+  path = "/stores/*"
+  function = "og-rewrite-store"
+
 # Proxy OG image function through clean URLs for crawler compatibility + CDN caching
 [[redirects]]
   from = "/og/player/:username.png"
@@ -27,6 +32,11 @@
 [[redirects]]
   from = "/og/meta.png"
   to = "/.netlify/functions/og-image?type=meta"
+  status = 200
+
+[[redirects]]
+  from = "/og/store/:slug.png"
+  to = "/.netlify/functions/og-image?type=store&slug=:slug"
   status = 200
 
 # JSON-LD endpoint — exposes KG entities as schema.org structured data
