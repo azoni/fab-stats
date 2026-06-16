@@ -2,6 +2,7 @@ import { collection, doc, getDoc, getDocs, query, where, limit as fLimit } from 
 import { db } from "./firebase";
 import type { LeaderboardEntry } from "@/types";
 import { getLeaderboardEntries } from "./leaderboard";
+import { isBlockedUser } from "./blocked-users";
 
 export function slugifyStoreName(raw: string): string {
   return raw.toLowerCase().replace(/[^a-z0-9]/g, "");
@@ -141,6 +142,7 @@ export function invalidateStoreDirectoryCache() {
 function buildDirectoryFromEntries(entries: LeaderboardEntry[]): Map<string, DirectoryAcc> {
   const map = new Map<string, DirectoryAcc>();
   for (const entry of entries) {
+    if (isBlockedUser(entry.userId)) continue;
     if (!entry.venueBreakdown || entry.venueBreakdown.length === 0) continue;
     for (const v of entry.venueBreakdown) {
       const displayName = normalizeForDisplay(v.venue);
@@ -345,7 +347,8 @@ async function getStoreStatsFromAggregate(slug: string): Promise<StoreStats | nu
       uniquePlayers: number;
       players?: StorePlayerStat[];
     };
-    const players = data.players || [];
+    // Defensive: drop blocked users even if a stale aggregate doc still names them.
+    const players = (data.players || []).filter((p) => !isBlockedUser(p.userId));
     return {
       slug: data.slug,
       name: data.name,
