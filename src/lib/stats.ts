@@ -440,9 +440,23 @@ function sanitizeVenue(raw: string): string | null {
   return trimmed;
 }
 
-function getVenue(match: MatchRecord): string {
+/** A match's display venue: the sanitized venue string, or "Unknown". Shared by
+ *  venue stats and the venue filters so they all bucket venues identically. */
+export function getMatchVenue(match: MatchRecord): string {
   if (!match.venue) return "Unknown";
   return sanitizeVenue(match.venue) || "Unknown";
+}
+
+/** Distinct real venues across the given matches, sorted by match count (desc).
+ *  Excludes "Unknown". Used to populate venue-filter dropdowns consistently. */
+export function getVenueOptions(matches: MatchRecord[]): string[] {
+  const counts = new Map<string, number>();
+  for (const m of matches) {
+    const v = getMatchVenue(m);
+    if (v === "Unknown") continue;
+    counts.set(v, (counts.get(v) || 0) + 1);
+  }
+  return [...counts.entries()].sort((a, b) => b[1] - a[1]).map(([v]) => v);
 }
 
 export function computeEventTypeStats(matches: MatchRecord[]): EventTypeStats[] {
@@ -475,7 +489,7 @@ export function computeVenueStats(matches: MatchRecord[]): VenueStats[] {
   const map = new Map<string, MatchRecord[]>();
 
   for (const match of matches) {
-    const v = getVenue(match);
+    const v = getMatchVenue(match);
     const existing = map.get(v) ?? [];
     existing.push(match);
     map.set(v, existing);

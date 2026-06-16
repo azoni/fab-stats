@@ -11,7 +11,7 @@ import { ChevronUpIcon, ChevronDownIcon } from "@/components/icons/NavIcons";
 import { MatchResult, type MatchRecord, type OpponentStats, type UserProfile } from "@/types";
 import { localDate } from "@/lib/constants";
 import { allHeroes as knownHeroes } from "@/lib/heroes";
-import { getEventType } from "@/lib/stats";
+import { getEventType, getMatchVenue, getVenueOptions } from "@/lib/stats";
 import { RivalryCard, buildRivalryUrl, CARD_THEMES, type CardTheme } from "@/components/opponents/RivalryCard";
 import { buildOptimizedImageUrl, resolveBackgroundPositionForImage } from "@/lib/profile-backgrounds";
 import type { User } from "firebase/auth";
@@ -62,6 +62,7 @@ export function OpponentsTab({ matches, user, profile, updateMatch, deleteMatch 
   const [filterFormat, setFilterFormat] = useState("all");
   const [filterEventType, setFilterEventType] = useState("all");
   const [filterHero, setFilterHero] = useState("all");
+  const [filterVenue, setFilterVenue] = useState("all");
   const [search, setSearch] = useState("");
   const [minMatches, setMinMatches] = useState(1);
   const [page, setPage] = useState(1);
@@ -78,7 +79,7 @@ export function OpponentsTab({ matches, user, profile, updateMatch, deleteMatch 
   // Reset to page 1 when filters/search/sort change
   useEffect(() => {
     setPage(1);
-  }, [filterFormat, filterEventType, filterHero, sortBy, search, minMatches]);
+  }, [filterFormat, filterEventType, filterHero, filterVenue, sortBy, search, minMatches]);
 
   const allFormats = useMemo(() => {
     return [...new Set(matches.map((m) => m.format))];
@@ -99,6 +100,8 @@ export function OpponentsTab({ matches, user, profile, updateMatch, deleteMatch 
     return Array.from(heroes).sort();
   }, [matches]);
 
+  const allVenues = useMemo(() => getVenueOptions(matches), [matches]);
+
   const filteredMatches = useMemo(() => {
     let filtered = matches;
     if (filterFormat !== "all") {
@@ -113,8 +116,12 @@ export function OpponentsTab({ matches, user, profile, updateMatch, deleteMatch 
     if (filterHero !== "all") {
       filtered = filtered.filter((m) => m.heroPlayed === filterHero);
     }
+    // Restrict to a venue BEFORE aggregating opponents → "opponents I faced here".
+    if (filterVenue !== "all") {
+      filtered = filtered.filter((m) => getMatchVenue(m) === filterVenue);
+    }
     return filtered;
-  }, [matches, filterFormat, filterEventType, filterHero]);
+  }, [matches, filterFormat, filterEventType, filterHero, filterVenue]);
 
   const opponentStats = useMemo(() => computeOpponentStats(filteredMatches), [filteredMatches]);
 
@@ -410,6 +417,20 @@ export function OpponentsTab({ matches, user, profile, updateMatch, deleteMatch 
             <option value="all">All Heroes</option>
             {allHeroes.map((h) => (
               <option key={h} value={h}>{h}</option>
+            ))}
+          </select>
+        )}
+
+        {/* Venue dropdown */}
+        {allVenues.length > 0 && (
+          <select
+            value={filterVenue}
+            onChange={(e) => setFilterVenue(e.target.value)}
+            className="bg-fab-surface border border-fab-border rounded-md px-3 py-1.5 text-fab-text text-sm outline-none"
+          >
+            <option value="all">All Venues</option>
+            {allVenues.map((v) => (
+              <option key={v} value={v}>{v}</option>
             ))}
           </select>
         )}

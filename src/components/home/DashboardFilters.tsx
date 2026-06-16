@@ -6,14 +6,18 @@ interface DashboardFiltersProps {
   formats: string[];
   eventTypes: string[];
   heroes: string[];
+  /** Optional venue list. When provided (and non-empty), a Venue select is shown. */
+  venues?: string[];
   filterFormat: string;
   filterEventType: string;
   filterTier: string;
   filterHero: string;
+  filterVenue?: string;
   onFormatChange: (v: string) => void;
   onEventTypeChange: (v: string) => void;
   onTierChange: (v: string) => void;
   onHeroChange: (v: string) => void;
+  onVenueChange?: (v: string) => void;
   onReset?: () => void;
   showHeader?: boolean;
 }
@@ -24,22 +28,50 @@ export function DashboardFilters({
   formats,
   eventTypes,
   heroes,
+  venues,
   filterFormat,
   filterEventType,
   filterTier,
   filterHero,
+  filterVenue = "all",
   onFormatChange,
   onEventTypeChange,
   onTierChange,
   onHeroChange,
+  onVenueChange,
   onReset,
   showHeader = false,
 }: DashboardFiltersProps) {
-  const activeCount = [filterFormat, filterEventType, filterTier, filterHero].filter((value) => value !== "all").length;
+  const hasVenue = !!venues && venues.length > 0 && !!onVenueChange;
+  const activeCount = [filterFormat, filterEventType, filterTier, filterHero, ...(hasVenue ? [filterVenue] : [])].filter((value) => value !== "all").length;
+  // Grid grows to 5 columns when the venue select is present.
+  const compactCols = hasVenue ? "md:grid-cols-5" : "md:grid-cols-4";
+  const headerCols = activeCount > 0 && onReset
+    ? (hasVenue ? "md:grid-cols-[repeat(5,minmax(0,1fr))_auto]" : "md:grid-cols-[repeat(4,minmax(0,1fr))_auto]")
+    : (hasVenue ? "md:grid-cols-5" : "md:grid-cols-4");
+
+  const venueSelect = (withLabel: boolean) => {
+    if (!hasVenue) return null;
+    const select = (
+      <select value={filterVenue} onChange={(e) => onVenueChange!(e.target.value)} className={selectClass}>
+        <option value="all">All Venues</option>
+        {venues!.map((v) => (
+          <option key={v} value={v}>{v}</option>
+        ))}
+      </select>
+    );
+    if (!withLabel) return select;
+    return (
+      <label className="min-w-0">
+        <span className="mb-1 block text-[10px] font-bold uppercase tracking-[0.12em] text-fab-dim">Venue</span>
+        {select}
+      </label>
+    );
+  };
 
   if (!showHeader) {
     return (
-      <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
+      <div className={`grid grid-cols-2 gap-2 ${compactCols}`}>
         <select
           value={filterTier}
           onChange={(e) => onTierChange(e.target.value)}
@@ -86,13 +118,15 @@ export function DashboardFilters({
             <option key={h} value={h}>{h}</option>
           ))}
         </select>
+
+        {venueSelect(false)}
       </div>
     );
   }
 
   return (
     <section className="rounded-xl border border-fab-border/80 bg-fab-surface/80 p-3 shadow-[0_14px_38px_rgba(0,0,0,0.14)]">
-      <div className={`grid grid-cols-2 gap-2 ${activeCount > 0 && onReset ? "md:grid-cols-[repeat(4,minmax(0,1fr))_auto]" : "md:grid-cols-4"}`}>
+      <div className={`grid grid-cols-2 gap-2 ${headerCols}`}>
         <label className="min-w-0">
           <span className="mb-1 block text-[10px] font-bold uppercase tracking-[0.12em] text-fab-dim">Tier</span>
           <select
@@ -151,6 +185,8 @@ export function DashboardFilters({
             ))}
           </select>
         </label>
+
+        {venueSelect(true)}
 
         {activeCount > 0 && onReset && (
           <button

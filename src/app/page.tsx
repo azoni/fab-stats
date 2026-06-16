@@ -7,7 +7,7 @@ import { ChevronDown, ExternalLink, PlusCircle, Puzzle, UploadCloud } from "luci
 import { useMatches } from "@/hooks/useMatches";
 import { useCommunityStats } from "@/hooks/useCommunityStats";
 import { useAuth } from "@/contexts/AuthContext";
-import { computeOverallStats, computeHeroStats, computeEventStats, computeOpponentStats, computeBestFinish, computePlayoffFinishes, computeMinorEventFinishes, computeTournamentAnalytics, getRoundNumber, getEventType, isTournamentEvent, type TournamentAnalytics } from "@/lib/stats";
+import { computeOverallStats, computeHeroStats, computeEventStats, computeOpponentStats, computeBestFinish, computePlayoffFinishes, computeMinorEventFinishes, computeTournamentAnalytics, getRoundNumber, getEventType, getMatchVenue, isTournamentEvent, type TournamentAnalytics } from "@/lib/stats";
 import { getEventTier, TIER_LABELS } from "@/lib/events";
 import { updateLeaderboardEntry } from "@/lib/leaderboard";
 import { useLeaderboard } from "@/hooks/useLeaderboard";
@@ -54,6 +54,7 @@ export default function Dashboard() {
   const [filterEventType, setFilterEventType] = useState("all");
   const [filterTier, setFilterTier] = useState("all");
   const [filterHero, setFilterHero] = useState("all");
+  const [filterVenue, setFilterVenue] = useState("all");
   const leaderboardUpdated = useRef(false);
 
   // Load kudos total for the current user
@@ -82,45 +83,53 @@ export default function Dashboard() {
     else if (filterTier === "unrated") filtered = filtered.filter((m) => m.rated !== true);
     else if (filterTier !== "all") filtered = filtered.filter((m) => getEventTier(getEventType(m)) === Number(filterTier));
     if (filterHero !== "all") filtered = filtered.filter((m) => m.heroPlayed === filterHero);
+    if (filterVenue !== "all") filtered = filtered.filter((m) => getMatchVenue(m) === filterVenue);
     return filtered;
-  }, [matches, filterFormat, filterEventType, filterTier, filterHero]);
+  }, [matches, filterFormat, filterEventType, filterTier, filterHero, filterVenue]);
 
   // Filter options — single pass: compute all three cross-filtered option lists at once
-  const { allFormats, allEventTypes, allHeroes } = useMemo(() => {
+  const { allFormats, allEventTypes, allHeroes, allVenues } = useMemo(() => {
     const formats = new Set<string>();
     const eventTypes = new Set<string>();
     const heroes = new Set<string>();
+    const venueCounts = new Map<string, number>();
 
     for (const m of matches) {
       const matchFormat = m.format;
       const matchEventType = getEventType(m);
       const matchTier = getEventTier(matchEventType);
       const matchHero = m.heroPlayed;
+      const matchVenue = getMatchVenue(m);
 
       const passFormat = filterFormat === "all" || matchFormat === filterFormat;
       const passEventType = filterEventType === "all" || matchEventType === filterEventType;
       const passTier = filterTier === "all" || matchTier === Number(filterTier);
       const passHero = filterHero === "all" || matchHero === filterHero;
+      const passVenue = filterVenue === "all" || matchVenue === filterVenue;
 
       // For each filter option list, include if all OTHER filters pass
-      if (passEventType && passTier && passHero && matchFormat) formats.add(matchFormat);
-      if (passFormat && passTier && passHero && matchEventType !== "Unknown") eventTypes.add(matchEventType);
-      if (passFormat && passEventType && passTier && matchHero && matchHero !== "Unknown") heroes.add(matchHero);
+      if (passEventType && passTier && passHero && passVenue && matchFormat) formats.add(matchFormat);
+      if (passFormat && passTier && passHero && passVenue && matchEventType !== "Unknown") eventTypes.add(matchEventType);
+      if (passFormat && passEventType && passTier && passVenue && matchHero && matchHero !== "Unknown") heroes.add(matchHero);
+      if (passFormat && passEventType && passTier && passHero && matchVenue !== "Unknown") venueCounts.set(matchVenue, (venueCounts.get(matchVenue) || 0) + 1);
     }
 
     return {
       allFormats: [...formats].sort(),
       allEventTypes: [...eventTypes].sort(),
       allHeroes: [...heroes].sort(),
+      // Venues sorted by frequency (desc) — the most-played stores surface first.
+      allVenues: [...venueCounts.entries()].sort((a, b) => b[1] - a[1]).map(([v]) => v),
     };
-  }, [matches, filterFormat, filterEventType, filterTier, filterHero]);
+  }, [matches, filterFormat, filterEventType, filterTier, filterHero, filterVenue]);
 
   // Reset filters whose selected value is no longer available
   useEffect(() => {
     if (filterFormat !== "all" && !(allFormats as string[]).includes(filterFormat)) setFilterFormat("all");
     if (filterEventType !== "all" && !allEventTypes.includes(filterEventType)) setFilterEventType("all");
     if (filterHero !== "all" && !allHeroes.includes(filterHero)) setFilterHero("all");
-  }, [allFormats, allEventTypes, allHeroes, filterFormat, filterEventType, filterHero]);
+    if (filterVenue !== "all" && !allVenues.includes(filterVenue)) setFilterVenue("all");
+  }, [allFormats, allEventTypes, allHeroes, allVenues, filterFormat, filterEventType, filterHero, filterVenue]);
 
   // Defer heavy stat computations so the profile card renders immediately
   const deferredMatches = useDeferredValue(filteredMatches);
@@ -134,8 +143,9 @@ export default function Dashboard() {
     else if (filterTier !== "all") parts.push(TIER_LABELS[Number(filterTier)] || `Tier ${filterTier}`);
     if (filterEventType !== "all") parts.push(filterEventType);
     if (filterHero !== "all") parts.push(filterHero.split(",")[0]);
+    if (filterVenue !== "all") parts.push(filterVenue);
     return parts.length > 0 ? parts.join(" · ") : undefined;
-  }, [filterFormat, filterTier, filterEventType, filterHero]);
+  }, [filterFormat, filterTier, filterEventType, filterHero, filterVenue]);
 
   const overall = useMemo(() => computeOverallStats(deferredMatches), [deferredMatches]);
   const heroStats = useMemo(() => computeHeroStats(deferredMatches), [deferredMatches]);
@@ -466,20 +476,24 @@ export default function Dashboard() {
             formats={allFormats}
             eventTypes={allEventTypes}
             heroes={allHeroes}
+            venues={allVenues}
             filterFormat={filterFormat}
             filterEventType={filterEventType}
             filterTier={filterTier}
             filterHero={filterHero}
+            filterVenue={filterVenue}
             onFormatChange={setFilterFormat}
             onEventTypeChange={setFilterEventType}
             onTierChange={setFilterTier}
             onHeroChange={setFilterHero}
+            onVenueChange={setFilterVenue}
             showHeader
             onReset={() => {
               setFilterFormat("all");
               setFilterEventType("all");
               setFilterTier("all");
               setFilterHero("all");
+              setFilterVenue("all");
             }}
           />
           </div>

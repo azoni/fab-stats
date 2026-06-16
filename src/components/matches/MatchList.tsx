@@ -3,7 +3,7 @@ import { useState, useMemo, useEffect } from "react";
 import { MatchCard } from "./MatchCard";
 import { MatchResult, type MatchRecord } from "@/types";
 import { allHeroes as knownHeroes } from "@/lib/heroes";
-import { getEventType, getRoundNumber } from "@/lib/stats";
+import { getEventType, getRoundNumber, getMatchVenue, getVenueOptions } from "@/lib/stats";
 import { localDate } from "@/lib/constants";
 import { WinRateRing } from "@/components/charts/WinRateRing";
 import { SegmentedBar } from "@/components/charts/SegmentedBar";
@@ -38,6 +38,7 @@ export function MatchList({ matches, matchOwnerUid, enableComments, editable, on
   const [filterOpponentHero, setFilterOpponentHero] = useState<string>("all");
   const [filterMissing, setFilterMissing] = useState<string>("all");
   const [filterEventType, setFilterEventType] = useState<string>("all");
+  const [filterVenue, setFilterVenue] = useState<string>("all");
   const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -45,7 +46,7 @@ export function MatchList({ matches, matchOwnerUid, enableComments, editable, on
   // Reset to page 1 when filters/search/sort change
   useEffect(() => {
     setPage(1);
-  }, [filterResult, filterFormat, filterHero, filterOpponentHero, filterMissing, filterEventType, sortOrder, search]);
+  }, [filterResult, filterFormat, filterHero, filterOpponentHero, filterMissing, filterEventType, filterVenue, sortOrder, search]);
 
   const allFormats = useMemo(() => {
     return [...new Set(matches.map((m) => m.format))].sort();
@@ -70,6 +71,8 @@ export function MatchList({ matches, matchOwnerUid, enableComments, editable, on
     const types = new Set(matches.map((m) => getEventType(m)).filter(Boolean));
     return Array.from(types).sort();
   }, [matches]);
+
+  const allVenues = useMemo(() => getVenueOptions(matches), [matches]);
 
   // Result counts from unfiltered matches (always show total distribution)
   const resultCounts = useMemo(() => {
@@ -105,6 +108,9 @@ export function MatchList({ matches, matchOwnerUid, enableComments, editable, on
     if (filterEventType !== "all") {
       result = result.filter((m) => getEventType(m) === filterEventType);
     }
+    if (filterVenue !== "all") {
+      result = result.filter((m) => getMatchVenue(m) === filterVenue);
+    }
 
     // Smart search across all fields
     const q = search.trim().toLowerCase();
@@ -138,7 +144,7 @@ export function MatchList({ matches, matchOwnerUid, enableComments, editable, on
     });
 
     return result;
-  }, [matches, filterResult, filterFormat, filterHero, filterOpponentHero, filterMissing, filterEventType, sortOrder, search]);
+  }, [matches, filterResult, filterFormat, filterHero, filterOpponentHero, filterMissing, filterEventType, filterVenue, sortOrder, search]);
 
   // Stats from filtered matches (reflects current view)
   const stats = useMemo(() => {
@@ -217,6 +223,19 @@ export function MatchList({ matches, matchOwnerUid, enableComments, editable, on
               <option value="all">All Opp. Heroes</option>
               {allOpponentHeroes.map((h) => (
                 <option key={h} value={h}>vs {h}</option>
+              ))}
+            </select>
+          )}
+
+          {allVenues.length > 0 && (
+            <select
+              value={filterVenue}
+              onChange={(e) => setFilterVenue(e.target.value)}
+              className="bg-fab-surface border border-fab-border rounded-md px-3 py-1.5 text-fab-text text-sm outline-none"
+            >
+              <option value="all">All Venues</option>
+              {allVenues.map((v) => (
+                <option key={v} value={v}>{v}</option>
               ))}
             </select>
           )}

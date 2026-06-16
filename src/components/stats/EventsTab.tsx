@@ -3,7 +3,7 @@ import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { computeEventStats, computeOverallStats, computePlayoffFinishes, computeBestFinish } from "@/lib/stats";
+import { computeEventStats, computeOverallStats, computePlayoffFinishes, computeBestFinish, getMatchVenue, getVenueOptions } from "@/lib/stats";
 import { updateLeaderboardEntry } from "@/lib/leaderboard";
 import { propagateHeroToOpponent } from "@/lib/match-linking";
 import { adjustHeroMatchupOnEdit, adjustOpponentHeroMatchupOnEdit } from "@/lib/hero-matchups";
@@ -45,6 +45,7 @@ export function EventsTab({ matches, user, profile, updateMatch, deleteMatch, re
   const [page, setPage] = useState(1);
   const [filterTop8, setFilterTop8] = useState(false);
   const [filterDay2, setFilterDay2] = useState(false);
+  const [filterVenue, setFilterVenue] = useState("all");
   const [importModalOpen, setImportModalOpen] = useState(false);
 
   const handleBatchUpdateHero = useCallback(
@@ -183,7 +184,7 @@ export function EventsTab({ matches, user, profile, updateMatch, deleteMatch, re
   // Reset to page 1 when filters/search/sort change
   useEffect(() => {
     setPage(1);
-  }, [filterFormat, filterEventType, filterHero, filterTop8, filterDay2, search, sortBy]);
+  }, [filterFormat, filterEventType, filterHero, filterTop8, filterDay2, filterVenue, search, sortBy]);
 
   const eventStats = useMemo(() => computeEventStats(matches), [matches]);
 
@@ -208,6 +209,8 @@ export function EventsTab({ matches, user, profile, updateMatch, deleteMatch, re
   const hasUnsetHeroes = useMemo(() => {
     return eventStats.some((e) => !getEventHero(e));
   }, [eventStats, getEventHero]);
+
+  const allVenues = useMemo(() => getVenueOptions(eventStats.flatMap((e) => e.matches)), [eventStats]);
 
   const playoffEventKeys = useMemo(() => {
     const finishes = computePlayoffFinishes(eventStats);
@@ -241,6 +244,9 @@ export function EventsTab({ matches, user, profile, updateMatch, deleteMatch, re
     if (filterDay2) {
       result = result.filter((e) => day2EventKeys.has(`${e.eventName}|${e.eventDate}`));
     }
+    if (filterVenue !== "all") {
+      result = result.filter((e) => e.matches.some((m) => getMatchVenue(m) === filterVenue));
+    }
     const q = search.trim().toLowerCase();
     if (q) {
       result = result.filter((e) => {
@@ -252,7 +258,7 @@ export function EventsTab({ matches, user, profile, updateMatch, deleteMatch, re
       });
     }
     return result;
-  }, [eventStats, filterFormat, filterEventType, filterHero, filterTop8, filterDay2, playoffEventKeys, day2EventKeys, getEventHero, search]);
+  }, [eventStats, filterFormat, filterEventType, filterHero, filterTop8, filterDay2, filterVenue, playoffEventKeys, day2EventKeys, getEventHero, search]);
 
   const filteredMatches = useMemo(() => filtered.flatMap((e) => e.matches), [filtered]);
   const summaryStats = useMemo(() => computeOverallStats(filteredMatches), [filteredMatches]);
@@ -438,6 +444,19 @@ export function EventsTab({ matches, user, profile, updateMatch, deleteMatch, re
             {hasUnsetHeroes && <option value="none">No Hero Set</option>}
             {allHeroes.map((h) => (
               <option key={h} value={h}>{h}</option>
+            ))}
+          </select>
+        )}
+
+        {allVenues.length > 0 && (
+          <select
+            value={filterVenue}
+            onChange={(e) => setFilterVenue(e.target.value)}
+            className="bg-fab-surface border border-fab-border rounded-md px-3 py-1.5 text-fab-text text-sm outline-none"
+          >
+            <option value="all">All Venues</option>
+            {allVenues.map((v) => (
+              <option key={v} value={v}>{v}</option>
             ))}
           </select>
         )}
