@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { getStoreStats, type StoreStats } from "@/lib/store-directory";
 import { getLeaguesForStore } from "@/lib/leagues";
@@ -49,8 +49,11 @@ function StatusBadge({ status }: { status: League["status"] }) {
 }
 
 export default function StorePage() {
-  const params = useParams<{ slug: string }>();
-  const slug = params?.slug || "";
+  // Read the slug from the URL, not useParams: in static export this page is
+  // served from the /stores/_.html placeholder, so useParams returns "_" and the
+  // real venue slug is only in the pathname. (Matches the player/group pattern.)
+  const pathname = usePathname();
+  const slug = decodeURIComponent(pathname?.split("/").pop() || "");
 
   const [stats, setStats] = useState<StoreStats | null>(null);
   const [leagues, setLeagues] = useState<League[]>([]);

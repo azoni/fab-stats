@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
-import { useParams } from "next/navigation";
+import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -48,8 +48,11 @@ function formatDateRange(start: string, end: string) {
 }
 
 export default function LeaguePage() {
-  const params = useParams<{ slug: string }>();
-  const slug = params?.slug || "";
+  // Read the slug from the URL, not useParams: in static export this page is
+  // served from the /leagues/_.html placeholder, so useParams returns "_" and the
+  // real league slug is only in the pathname. (Matches the player/group pattern.)
+  const pathname = usePathname();
+  const slug = decodeURIComponent(pathname?.split("/").pop() || "");
   const { user, profile, isAdmin } = useAuth();
 
   const [leagueId, setLeagueId] = useState<string | null>(null);
