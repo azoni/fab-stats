@@ -12,6 +12,7 @@ import { EventShareModal } from "@/components/events/EventShareCard";
 import { BracketView } from "@/components/events/BracketView";
 import { getAllowedEventTypes, getOriginalEventType } from "@/lib/event-types";
 import { getRoundNumber, computeDay2Boundary, suggestedManualDay2Round, isDay2Match } from "@/lib/stats";
+import { slugifyStoreName } from "@/lib/store-directory";
 import { toast } from "sonner";
 
 interface EventCardProps {
@@ -216,7 +217,19 @@ export function EventCard({ event, playerName, obfuscateOpponents = false, visib
             </div>
             <div className="flex items-center gap-2 mt-1 text-xs text-fab-dim">
               <span>{localDate(event.eventDate).toLocaleDateString()}</span>
-              {event.venue && event.venue !== "Unknown" && <span>at {event.venue}</span>}
+              {event.venue && event.venue !== "Unknown" && (
+                <Link
+                  href={`/stores/${slugifyStoreName(event.venue)}`}
+                  onClick={(e) => e.stopPropagation()}
+                  className="inline-flex items-center gap-1 hover:text-fab-gold hover:underline transition-colors"
+                  title={`View the ${event.venue} store page`}
+                >
+                  at {event.venue}
+                  <svg className="h-2.5 w-2.5 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                </Link>
+              )}
             </div>
           </div>
           <div className="flex items-center gap-2 sm:gap-3 shrink-0">
