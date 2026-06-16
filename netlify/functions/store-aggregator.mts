@@ -402,6 +402,45 @@ async function getMeta(): Promise<{ lastFullSyncAt?: string; lastIncrementalAt?:
   return (snap.data() as { lastFullSyncAt?: string; lastIncrementalAt?: string }) || {};
 }
 
+/** One-time corrective: re-derive venueSlugs from venueBreakdown on every
+ *  leaderboard doc. Older docs were written before venueSlugs existed (or with an
+ *  empty array), so the incremental aggregator — which finds a store's players via
+ *  `venueSlugs array-contains` — silently dropped them even though venueBreakdown
+ *  listed the venue. (The full sync, which reads venueBreakdown, included them, so
+ *  such players flickered in after each full sync and back out on the next
+ *  incremental.) Pure doc transform — reads no match data. */
+async function backfillVenueSlugs(): Promise<{ scanned: number; fixed: number; ms: number }> {
+  const t0 = Date.now();
+  const db = getAdminDb();
+  const snap = await db.collection("leaderboard").get();
+  let scanned = 0;
+  let fixed = 0;
+  const toFix: { id: string; venueSlugs: string[] }[] = [];
+  for (const ds of snap.docs) {
+    scanned++;
+    const data = ds.data() as LeaderboardDoc;
+    const derived = [
+      ...new Set(
+        (data.venueBreakdown || [])
+          .map((v) => slugifyStoreName(v.venue))
+          .filter((s) => s.length >= 2),
+      ),
+    ];
+    const current = data.venueSlugs || [];
+    const same = current.length === derived.length && derived.every((s) => current.includes(s));
+    if (!same) toFix.push({ id: ds.id, venueSlugs: derived });
+  }
+  for (let i = 0; i < toFix.length; i += 400) {
+    const batch = db.batch();
+    for (const d of toFix.slice(i, i + 400)) {
+      batch.update(db.collection("leaderboard").doc(d.id), { venueSlugs: d.venueSlugs });
+      fixed++;
+    }
+    await batch.commit();
+  }
+  return { scanned, fixed, ms: Date.now() - t0 };
+}
+
 export default async function handler(req: Request) {
   const url = new URL(req.url);
   const tokenParam = url.searchParams.get("token");
@@ -427,7 +466,14 @@ export default async function handler(req: Request) {
     const forceIncremental = requestedMode === "incremental";
 
     let result: unknown;
-    if (forceFull || (!forceIncremental && (staleFull || !meta.lastIncrementalAt))) {
+    if (requestedMode === "backfill-slugs") {
+      // Re-sync the venueSlugs index from venueBreakdown on every leaderboard doc,
+      // then full-aggregate so the now-discoverable players land in store docs.
+      console.log("[store-aggregator] Running venueSlugs BACKFILL + full sync");
+      const backfill = await backfillVenueSlugs();
+      const full = await runFull();
+      result = { backfill, full };
+    } else if (forceFull || (!forceIncremental && (staleFull || !meta.lastIncrementalAt))) {
       console.log("[store-aggregator] Running FULL sync");
       result = await runFull();
     } else {
