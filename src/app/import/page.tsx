@@ -1191,10 +1191,10 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
               : undefined;
 
             return (
-              <div key={i} ref={(el) => { eventCardRefs.current[i] = el; }} className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden">
+              <div key={i} ref={(el) => { eventCardRefs.current[i] = el; }} className="bg-fab-surface border border-fab-border rounded-lg">
                 <button
                   onClick={() => setExpandedEvent(isExpanded ? null : i)}
-                  className="w-full p-4 text-left hover:bg-fab-surface-hover transition-colors"
+                  className={`w-full p-4 text-left hover:bg-fab-surface-hover transition-colors ${isExpanded ? "rounded-t-lg" : "rounded-lg"}`}
                 >
                   <div className="flex items-center justify-between">
                     <div className="min-w-0">
@@ -2100,10 +2100,10 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
                   }
 
                   return (
-                    <div key={i} ref={(el) => { eventCardRefs.current[i] = el; }} className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden">
+                    <div key={i} ref={(el) => { eventCardRefs.current[i] = el; }} className="bg-fab-surface border border-fab-border rounded-lg">
                       <button
                         onClick={() => setExpandedEvent(isExpanded ? null : i)}
-                        className="w-full p-4 text-left hover:bg-fab-surface-hover transition-colors"
+                        className={`w-full p-4 text-left hover:bg-fab-surface-hover transition-colors ${isExpanded ? "rounded-t-lg" : "rounded-lg"}`}
                       >
                         <div className="flex items-center justify-between">
                           <div className="min-w-0">
