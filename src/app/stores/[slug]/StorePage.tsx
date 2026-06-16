@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { getStoreStats, type StoreStats } from "@/lib/store-directory";
@@ -8,7 +8,7 @@ import type { League } from "@/types";
 import { PageHero } from "@/components/ui/PageHero";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
-import { ArrowLeft, Crown, Flame, Store as StoreIcon, Trophy, Users } from "lucide-react";
+import { ArrowLeft, Crown, Flame, Search, Store as StoreIcon, Trophy, Users } from "lucide-react";
 
 /** Best-effort: turn "mishrasworkshop" into something display-worthy.
  *  Used only as a placeholder while real data loads. */
@@ -132,35 +132,19 @@ export default function StorePage() {
         </Card>
       )}
 
+      {/* Highlights */}
+      {stats && <Spotlight mostActive={mostActive} bestWinRate={bestWinRate} />}
+
       <div className="grid gap-5 lg:grid-cols-3">
-        <div className="space-y-5 lg:col-span-2">
+        <div className="lg:col-span-2">
           {stats ? (
-            <>
-              <TopPlayersTable
-                title="Top players by activity"
-                icon={<Flame className="h-4 w-4 text-rose-300" />}
-                entries={stats.topByActivity}
-                highlight="matches"
-              />
-              <TopPlayersTable
-                title="Top players by win rate"
-                icon={<Crown className="h-4 w-4 text-fab-gold" />}
-                entries={stats.topByWinRate}
-                highlight="winRate"
-                note="Minimum 5 matches at this store."
-              />
-              {stats.players.length > 10 && <AllPlayersTable players={stats.players} />}
-            </>
+            <StorePlayersTable players={stats.players} />
           ) : (
-            <>
-              <SkeletonTable rows={5} />
-              <SkeletonTable rows={5} />
-            </>
+            <SkeletonTable rows={8} />
           )}
         </div>
 
         <aside className="space-y-5">
-          <Spotlight mostActive={mostActive} bestWinRate={bestWinRate} />
           <LeaguesPanel leagues={leagues} />
           <Card padding="sm">
             <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-fab-dim">
@@ -178,106 +162,181 @@ export default function StorePage() {
   );
 }
 
-function TopPlayersTable({
-  title,
-  icon,
-  entries,
-  highlight,
-  note,
-}: {
-  title: string;
-  icon: React.ReactNode;
-  entries: StoreStats["topByActivity"];
-  highlight: "matches" | "winRate";
-  note?: string;
-}) {
+type StorePlayer = StoreStats["players"][number];
+type SortKey = "matches" | "record" | "winRate" | "name";
+
+function Avatar({ p }: { p: StorePlayer }) {
+  if (p.photoUrl) {
+    // eslint-disable-next-line @next/next/no-img-element
+    return <img src={p.photoUrl} alt="" className="h-7 w-7 shrink-0 rounded-full object-cover" />;
+  }
+  return (
+    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-fab-gold/15 text-xs font-bold text-fab-gold">
+      {(p.displayName || "?").charAt(0).toUpperCase()}
+    </span>
+  );
+}
+
+/** One sortable, searchable, filterable table for everyone at the store. */
+function StorePlayersTable({ players }: { players: StoreStats["players"] }) {
+  const [search, setSearch] = useState("");
+  const [minMatches, setMinMatches] = useState(1);
+  const [sortKey, setSortKey] = useState<SortKey>("matches");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const [showAll, setShowAll] = useState(false);
+
+  const rows = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    const list = players.filter(
+      (p) =>
+        p.matches >= minMatches &&
+        (!q || p.displayName.toLowerCase().includes(q) || p.username.toLowerCase().includes(q)),
+    );
+    list.sort((a, b) => {
+      let cmp = 0;
+      if (sortKey === "name") cmp = a.displayName.localeCompare(b.displayName);
+      else if (sortKey === "matches") cmp = a.matches - b.matches;
+      else if (sortKey === "record") cmp = a.wins - b.wins;
+      else cmp = a.winRate - b.winRate;
+      if (cmp === 0) cmp = a.matches - b.matches; // tiebreak by volume
+      return sortDir === "asc" ? cmp : -cmp;
+    });
+    return list;
+  }, [players, search, minMatches, sortKey, sortDir]);
+
+  const visible = showAll ? rows : rows.slice(0, 20);
+
+  function sortBy(key: SortKey) {
+    if (sortKey === key) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    else {
+      setSortKey(key);
+      setSortDir(key === "name" ? "asc" : "desc");
+    }
+  }
+
+  const SortHead = ({ k, label, align = "right", thClass = "" }: { k: SortKey; label: string; align?: "left" | "right"; thClass?: string }) => (
+    <th className={`px-2 py-2 ${align === "left" ? "text-left" : "text-right"} font-semibold ${thClass}`}>
+      <button
+        type="button"
+        onClick={() => sortBy(k)}
+        className={`inline-flex items-center gap-1 hover:text-fab-text ${sortKey === k ? "text-fab-gold" : ""}`}
+      >
+        {label}
+        <span className="text-[8px]">{sortKey === k ? (sortDir === "asc" ? "▲" : "▼") : "↕"}</span>
+      </button>
+    </th>
+  );
+
   return (
     <Card padding="none" className="overflow-hidden">
-      <div className="flex items-center justify-between gap-2 border-b border-fab-border/60 bg-fab-bg/50 px-3 py-2">
-        <div className="flex items-center gap-2">
-          {icon}
-          <h2 className="text-sm font-bold text-fab-text">{title}</h2>
+      {/* Controls */}
+      <div className="flex flex-wrap items-center gap-2 border-b border-fab-border/60 bg-fab-bg/50 px-3 py-2.5">
+        <h2 className="flex items-center gap-1.5 text-sm font-bold text-fab-text">
+          <Users className="h-4 w-4 text-fab-dim" /> Players
+          <span className="text-xs font-normal text-fab-dim">({rows.length})</span>
+        </h2>
+        <div className="relative ml-auto min-w-[130px] flex-1 sm:max-w-[200px]">
+          <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-fab-dim" />
+          <input
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setShowAll(true);
+            }}
+            placeholder="Find a player…"
+            className="w-full rounded-md border border-fab-border bg-fab-bg py-1.5 pl-7 pr-2 text-xs text-fab-text placeholder:text-fab-dim focus:border-fab-gold/60 focus:outline-none"
+          />
         </div>
-        {note && <span className="text-[10px] text-fab-dim">{note}</span>}
+        <select
+          value={minMatches}
+          onChange={(e) => setMinMatches(Number(e.target.value))}
+          className="rounded-md border border-fab-border bg-fab-bg px-2 py-1.5 text-xs text-fab-text focus:border-fab-gold/60 focus:outline-none"
+        >
+          {[1, 3, 5, 10, 25].map((n) => (
+            <option key={n} value={n}>{n}+ matches</option>
+          ))}
+        </select>
       </div>
-      {entries.length === 0 ? (
-        <p className="px-3 py-4 text-xs text-fab-muted">No qualifying players yet.</p>
+
+      {rows.length === 0 ? (
+        <p className="px-3 py-6 text-center text-xs text-fab-muted">No players match these filters.</p>
       ) : (
         <table className="w-full text-sm">
           <thead className="bg-fab-bg/30 text-[10px] uppercase tracking-[0.1em] text-fab-dim">
             <tr>
-              <th className="px-3 py-2 text-left">#</th>
-              <th className="px-3 py-2 text-left">Player</th>
-              <th className="px-2 py-2 text-right">Matches</th>
-              <th className="px-2 py-2 text-right">W–L</th>
-              <th className="px-2 py-2 text-right">W/R</th>
+              <th className="px-3 py-2 text-left font-semibold">#</th>
+              <SortHead k="name" label="Player" align="left" />
+              <SortHead k="matches" label="Matches" />
+              <SortHead k="record" label="W–L" thClass="hidden sm:table-cell" />
+              <SortHead k="winRate" label="Win rate" />
             </tr>
           </thead>
           <tbody>
-            {entries.map((p, i) => (
-              <tr
-                key={p.userId}
-                className={`border-t border-fab-border/40 ${i === 0 ? "bg-fab-gold/[0.05]" : ""}`}
-              >
-                <td className="px-3 py-2 font-semibold text-fab-dim tabular-nums">{i + 1}</td>
-                <td className="px-3 py-2">
-                  <Link
-                    href={`/player/${p.username}`}
-                    className="font-semibold text-fab-text hover:text-fab-gold"
-                  >
-                    {p.displayName}
-                  </Link>
-                  <p className="text-[10px] text-fab-dim">@{p.username}</p>
-                </td>
-                <td className="px-2 py-2 text-right tabular-nums text-fab-text">{p.matches}</td>
-                <td className="px-2 py-2 text-right tabular-nums text-fab-text">
-                  {p.wins}–{p.matches - p.wins}
-                </td>
-                <td
-                  className={`px-2 py-2 text-right tabular-nums font-bold ${
-                    highlight === "winRate" ? "text-fab-gold" : "text-fab-text"
-                  }`}
-                >
-                  {p.winRate}%
-                </td>
-              </tr>
-            ))}
+            {visible.map((p, i) => {
+              const rank = i + 1;
+              return (
+                <tr key={p.userId} className="border-t border-fab-border/40 transition-colors hover:bg-fab-surface-hover/40">
+                  <td className="px-3 py-2">
+                    <span
+                      className={`inline-flex h-5 w-5 items-center justify-center rounded text-[11px] font-bold tabular-nums ${
+                        rank === 1
+                          ? "bg-fab-gold/20 text-fab-gold"
+                          : rank === 2
+                            ? "bg-gray-400/20 text-gray-300"
+                            : rank === 3
+                              ? "bg-amber-700/25 text-amber-500"
+                              : "text-fab-dim"
+                      }`}
+                    >
+                      {rank}
+                    </span>
+                  </td>
+                  <td className="px-2 py-2">
+                    <Link href={`/player/${p.username}`} className="group/p flex items-center gap-2">
+                      <Avatar p={p} />
+                      <span className="min-w-0">
+                        <span className="block truncate font-semibold text-fab-text group-hover/p:text-fab-gold">{p.displayName}</span>
+                        <span className="block truncate text-[10px] text-fab-dim">@{p.username}</span>
+                      </span>
+                    </Link>
+                  </td>
+                  <td className="px-2 py-2 text-right tabular-nums text-fab-text">{p.matches}</td>
+                  <td className="hidden px-2 py-2 text-right tabular-nums text-fab-muted sm:table-cell">
+                    {p.wins}–{p.matches - p.wins}
+                  </td>
+                  <td className="px-2 py-2">
+                    <div className="flex items-center justify-end gap-2">
+                      <span className="hidden h-1.5 w-14 overflow-hidden rounded-full bg-fab-border/40 sm:block">
+                        <span
+                          className={`block h-full rounded-full ${p.winRate >= 50 ? "bg-fab-win" : "bg-fab-loss"}`}
+                          style={{ width: `${Math.min(100, Math.max(0, p.winRate))}%` }}
+                        />
+                      </span>
+                      <span
+                        className={`w-10 text-right tabular-nums font-bold ${
+                          p.winRate >= 55 ? "text-fab-win" : p.winRate < 45 ? "text-fab-loss" : "text-fab-text"
+                        }`}
+                      >
+                        {p.winRate}%
+                      </span>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       )}
-    </Card>
-  );
-}
 
-function AllPlayersTable({ players }: { players: StoreStats["players"] }) {
-  const [expanded, setExpanded] = useState(false);
-  const visible = expanded ? players : players.slice(0, 5);
-  return (
-    <Card padding="none" className="overflow-hidden">
-      <div className="flex items-center justify-between border-b border-fab-border/60 bg-fab-bg/50 px-3 py-2">
-        <h2 className="flex items-center gap-1.5 text-sm font-bold text-fab-text">
-          <Users className="h-3.5 w-3.5 text-fab-dim" /> All players ({players.length})
-        </h2>
+      {rows.length > 20 && !showAll && (
         <button
           type="button"
-          onClick={() => setExpanded(!expanded)}
-          className="text-xs text-fab-muted hover:text-fab-text"
+          onClick={() => setShowAll(true)}
+          className="w-full border-t border-fab-border/40 py-2 text-xs font-semibold text-fab-muted hover:bg-fab-surface-hover/40 hover:text-fab-text"
         >
-          {expanded ? "Collapse" : `Show all ${players.length}`}
+          Show all {rows.length} players
         </button>
-      </div>
-      <ul className="divide-y divide-fab-border/30">
-        {visible.map((p) => (
-          <li key={p.userId} className="flex items-center justify-between px-3 py-2 text-sm">
-            <Link href={`/player/${p.username}`} className="text-fab-text hover:text-fab-gold">
-              {p.displayName}
-            </Link>
-            <span className="text-xs text-fab-dim tabular-nums">
-              {p.matches} match{p.matches === 1 ? "" : "es"} · {p.winRate}% W/R
-            </span>
-          </li>
-        ))}
-      </ul>
+      )}
     </Card>
   );
 }
@@ -291,7 +350,7 @@ function Spotlight({
 }) {
   if (!mostActive && !bestWinRate) return null;
   return (
-    <div className="space-y-3">
+    <div className="grid gap-3 sm:grid-cols-2">
       {mostActive && (
         <Card padding="sm" className="border-rose-500/30 bg-rose-500/[0.04]">
           <p className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.12em] text-rose-300">

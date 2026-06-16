@@ -1,23 +1,39 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { getStoreDirectory, type StoreDirectoryEntry } from "@/lib/store-directory";
+import { getStoreDirectory, slugifyStoreName, type StoreDirectoryEntry } from "@/lib/store-directory";
+import { getMatchVenue } from "@/lib/stats";
+import { useMatches } from "@/hooks/useMatches";
+import { useAuth } from "@/contexts/AuthContext";
 import { PageHero } from "@/components/ui/PageHero";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
-import { ChevronLeft, ChevronRight, Search, Store as StoreIcon, Trophy, Users } from "lucide-react";
+import { ChevronLeft, ChevronRight, MapPin, Search, Store as StoreIcon, Trophy, Users } from "lucide-react";
 
 type SortMode = "matches" | "players" | "alpha";
 
 const PAGE_SIZE = 30;
 
 export default function StoresHub() {
+  const { user } = useAuth();
+  const { matches } = useMatches();
   const [directory, setDirectory] = useState<StoreDirectoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQueryRaw] = useState("");
   const [sort, setSortRaw] = useState<SortMode>("matches");
+  const [mineOnly, setMineOnlyRaw] = useState(false);
   const [page, setPage] = useState(0);
+
+  // Slugs of the stores the signed-in user has actually played at.
+  const myStoreSlugs = useMemo(() => {
+    const set = new Set<string>();
+    for (const m of matches) {
+      const slug = slugifyStoreName(getMatchVenue(m));
+      if (slug.length >= 2) set.add(slug);
+    }
+    return set;
+  }, [matches]);
 
   // Wrappers reset pagination on filter/sort changes — avoids the lint warning
   // about setState-in-effect while keeping the UX intuitive.
@@ -27,6 +43,10 @@ export default function StoresHub() {
   };
   const setSort = (v: SortMode) => {
     setSortRaw(v);
+    setPage(0);
+  };
+  const setMineOnly = (v: boolean) => {
+    setMineOnlyRaw(v);
     setPage(0);
   };
 
@@ -48,12 +68,13 @@ export default function StoresHub() {
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     let list = q ? directory.filter((d) => d.name.toLowerCase().includes(q)) : directory;
+    if (mineOnly) list = list.filter((d) => myStoreSlugs.has(d.slug));
     list = [...list];
     if (sort === "matches") list.sort((a, b) => b.totalMatches - a.totalMatches);
     else if (sort === "players") list.sort((a, b) => b.uniquePlayers - a.uniquePlayers);
     else list.sort((a, b) => a.name.localeCompare(b.name));
     return list;
-  }, [directory, query, sort]);
+  }, [directory, query, sort, mineOnly, myStoreSlugs]);
 
   const totalMatches = directory.reduce((acc, d) => acc + d.totalMatches, 0);
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
@@ -83,7 +104,25 @@ export default function StoresHub() {
 
       <Card padding="sm">
         <div className="flex flex-wrap items-center gap-2">
-          <div className="relative min-w-[200px] flex-1">
+          {user && myStoreSlugs.size > 0 && (
+            <button
+              type="button"
+              onClick={() => setMineOnly(!mineOnly)}
+              aria-pressed={mineOnly}
+              className={`inline-flex items-center gap-1.5 rounded-md border px-3 py-2.5 text-xs font-semibold transition-colors ${
+                mineOnly
+                  ? "border-fab-gold/60 bg-fab-gold/15 text-fab-gold"
+                  : "border-fab-border bg-fab-bg text-fab-muted hover:border-fab-gold/40 hover:text-fab-text"
+              }`}
+            >
+              <MapPin className="h-3.5 w-3.5" />
+              My stores
+              <span className={`rounded px-1 text-[10px] tabular-nums ${mineOnly ? "bg-fab-gold/20" : "bg-fab-border/40 text-fab-dim"}`}>
+                {myStoreSlugs.size}
+              </span>
+            </button>
+          )}
+          <div className="relative min-w-[180px] flex-1">
             <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-fab-dim" />
             <input
               className="w-full rounded-md border border-fab-border bg-fab-bg py-2.5 pl-9 pr-3 text-sm text-fab-text placeholder:text-fab-dim focus:border-fab-gold/60 focus:outline-none focus:ring-2 focus:ring-fab-gold/30"
@@ -119,9 +158,11 @@ export default function StoresHub() {
       ) : filtered.length === 0 ? (
         <Card padding="md">
           <p className="text-sm text-fab-muted">
-            {query
-              ? "No stores match that search."
-              : "No stores yet — once players import matches, their venues will show up here."}
+            {mineOnly
+              ? "None of your stores match. Clear filters to browse every store."
+              : query
+                ? "No stores match that search."
+                : "No stores yet — once players import matches, their venues will show up here."}
           </p>
         </Card>
       ) : (
