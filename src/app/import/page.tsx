@@ -149,7 +149,9 @@ function Day2Control({ boundary, auto, onSetRound, onTurnOff, onEnable }: {
  *  import (draft re-picks, sealed→draft Callings, day-2 format changes).
  *  Each segment assigns a hero + format to a round range; Apply writes the
  *  per-match overrides in the parent. */
-function ImportSegmentEditor({ matchCount, defaultHero, defaultFormat, splitAt, onApply }: {
+type Seg = { hero: string; format: string; from: string; to: string };
+
+function ImportSegmentEditor({ matchCount, defaultHero, defaultFormat, splitAt, onApply, initialSegments }: {
   matchCount: number;
   defaultHero: string;
   defaultFormat: string;
@@ -157,10 +159,12 @@ function ImportSegmentEditor({ matchCount, defaultHero, defaultFormat, splitAt, 
    *  converts the day-2 round to a position). When set, the editor opens pre-split
    *  into a Day 1 and a Day 2 segment so the user only has to pick heroes/formats. */
   splitAt?: number;
-  onApply: (assignments: { matchIdx: number; hero?: string; format?: string }[]) => void;
+  onApply: (assignments: { matchIdx: number; hero?: string; format?: string }[], segments: Seg[]) => void;
+  /** Restore previously-entered segments (the editor unmounts when collapsed). */
+  initialSegments?: Seg[];
 }) {
-  type Seg = { hero: string; format: string; from: string; to: string };
   const [segments, setSegments] = useState<Seg[]>(() => {
+    if (initialSegments && initialSegments.length > 0) return initialSegments;
     const d1Hero = defaultHero === "Unknown" ? "" : defaultHero;
     // Pre-seed a Day 1 / Day 2 split when the event spans two days.
     if (splitAt && splitAt > 1 && splitAt <= matchCount) {
@@ -171,7 +175,6 @@ function ImportSegmentEditor({ matchCount, defaultHero, defaultFormat, splitAt, 
     }
     return [{ hero: d1Hero, format: defaultFormat || "", from: "1", to: String(matchCount) }];
   });
-  const [applied, setApplied] = useState(false);
 
   const clamp = (v: string) => {
     const n = parseInt(v, 10);
@@ -188,11 +191,19 @@ function ImportSegmentEditor({ matchCount, defaultHero, defaultFormat, splitAt, 
     });
   const remove = (i: number) => setSegments((prev) => prev.filter((_, idx) => idx !== i));
 
-  function apply() {
+  // Auto-apply on every change (like the rest of the import fields) + persist the
+  // segments to the parent so they survive collapsing/expanding the editor.
+  const onApplyRef = useRef(onApply);
+  onApplyRef.current = onApply;
+  useEffect(() => {
+    const clampN = (v: string) => {
+      const n = parseInt(v, 10);
+      return Number.isFinite(n) ? Math.min(Math.max(n, 1), matchCount) : 1;
+    };
     const assignments: { matchIdx: number; hero?: string; format?: string }[] = [];
     for (const seg of segments) {
-      const from = parseInt(clamp(seg.from), 10);
-      const to = parseInt(clamp(seg.to), 10);
+      const from = clampN(seg.from);
+      const to = clampN(seg.to);
       const lo = Math.min(from, to);
       const hi = Math.max(from, to);
       for (let round = lo; round <= hi; round++) {
@@ -203,10 +214,8 @@ function ImportSegmentEditor({ matchCount, defaultHero, defaultFormat, splitAt, 
         });
       }
     }
-    onApply(assignments);
-    setApplied(true);
-    setTimeout(() => setApplied(false), 1500);
-  }
+    onApplyRef.current(assignments, segments);
+  }, [segments, matchCount]);
 
   return (
     <div onClick={(e) => e.stopPropagation()} className="rounded-lg border border-fab-border/60 bg-fab-bg/40 p-3 space-y-2">
@@ -251,9 +260,12 @@ function ImportSegmentEditor({ matchCount, defaultHero, defaultFormat, splitAt, 
         <button type="button" onClick={add} className="text-xs font-semibold text-fab-gold hover:text-fab-gold-light">
           + Add segment
         </button>
-        <button type="button" onClick={apply} className="ml-auto rounded-md bg-fab-gold px-3 py-1 text-xs font-bold text-fab-bg hover:bg-fab-gold-light">
-          {applied ? "Applied ✓" : "Apply to rounds"}
-        </button>
+        <span className="ml-auto inline-flex items-center gap-1 text-[11px] font-semibold text-fab-win">
+          <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+          </svg>
+          Saved automatically
+        </span>
       </div>
     </div>
   );
@@ -261,14 +273,15 @@ function ImportSegmentEditor({ matchCount, defaultHero, defaultFormat, splitAt, 
 
 /** Toggle + per-round hero/format editor. The toggle reads as a real button so
  *  users notice it, and the copy adapts when a Day 2 split is available. */
-function PerRoundEditor({ open, onToggle, matchCount, defaultHero, defaultFormat, splitAt, onApply }: {
+function PerRoundEditor({ open, onToggle, matchCount, defaultHero, defaultFormat, splitAt, onApply, initialSegments }: {
   open: boolean;
   onToggle: () => void;
   matchCount: number;
   defaultHero: string;
   defaultFormat: string;
   splitAt?: number;
-  onApply: (assignments: { matchIdx: number; hero?: string; format?: string }[]) => void;
+  onApply: (assignments: { matchIdx: number; hero?: string; format?: string }[], segments: Seg[]) => void;
+  initialSegments?: Seg[];
 }) {
   const hasSplit = !!splitAt && splitAt > 1 && splitAt <= matchCount;
   const label = open
@@ -302,6 +315,7 @@ function PerRoundEditor({ open, onToggle, matchCount, defaultHero, defaultFormat
             defaultFormat={defaultFormat}
             splitAt={splitAt}
             onApply={onApply}
+            initialSegments={initialSegments}
           />
         </div>
       )}
@@ -406,6 +420,8 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
   const [matchFormatOverrides, setMatchFormatOverrides] = useState<Record<string, string>>({});
   // Which events have the per-round hero/format editor open (keyed by origIdx).
   const [segEditorEvents, setSegEditorEvents] = useState<Record<number, boolean>>({});
+  // Per-event segment definitions, persisted so the editor restores when reopened.
+  const [segmentsByEvent, setSegmentsByEvent] = useState<Record<number, Seg[]>>({});
   // Background pre-fill of opponent heroes from linked FaB Stats players.
   const [prefillState, setPrefillState] = useState<"idle" | "running" | "done">("idle");
   const [prefilledCount, setPrefilledCount] = useState(0);
@@ -611,7 +627,8 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
 
   // Apply per-round segment assignments → write match hero/format overrides.
   const applySegmentAssignments = useCallback(
-    (origIdx: number, assignments: { matchIdx: number; hero?: string; format?: string }[]) => {
+    (origIdx: number, assignments: { matchIdx: number; hero?: string; format?: string }[], segments?: Seg[]) => {
+      if (segments) setSegmentsByEvent((prev) => ({ ...prev, [origIdx]: segments }));
       setMatchHeroOverrides((prev) => {
         const next = { ...prev };
         for (const a of assignments) {
@@ -865,54 +882,57 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
     let detectedNew: Achievement[] = [];
     let freshFinishes: PlayoffFinish[] = [];
 
-    if (count > 0) {
-      try {
-        if (user) {
-          afterMatches = await getMatchesByUserId(user.uid);
-        } else {
-          afterMatches = getLocalMatches();
-        }
-        const beforeIds = new Set(beforeMatches.map((m) => m.id));
-        newlyImported = afterMatches.filter((m) => !beforeIds.has(m.id));
-        const recap = computeSessionRecap(beforeMatches, afterMatches, newlyImported);
-        setSessionRecap(recap);
-
-        // Detect match badge tier-up
-        const tierUp = detectTierUp("first-match", beforeMatches.length, afterMatches.length);
-        if (tierUp) setMatchBadgeTierUp({ tier: tierUp, count: afterMatches.length });
-      } catch {
-        // Recap computation failed — will fall back to basic completion screen
+    // Session recap always runs — even on a pure re-import where dedup wrote
+    // nothing (count 0) — so the user still gets a summary of what they imported.
+    try {
+      if (user) {
+        afterMatches = await getMatchesByUserId(user.uid);
+      } else {
+        afterMatches = getLocalMatches();
       }
+      const beforeIds = new Set(beforeMatches.map((m) => m.id));
+      newlyImported = afterMatches.filter((m) => !beforeIds.has(m.id));
+      // If nothing new was written (re-import), recap the matches just imported
+      // so the summary still reflects this session.
+      const sessionMatches = newlyImported.length > 0 ? newlyImported : (matches as unknown as MatchRecord[]);
+      const recap = computeSessionRecap(beforeMatches, afterMatches, sessionMatches);
+      setSessionRecap(recap);
 
-      // Compute achievements & placements (only for signed-in users with profile)
-      if (user && profile && afterMatches.length > 0) {
-        try {
-          const beforeEarnedIds = beforeMatchesLoaded
-            ? new Set(evaluateImportAchievements(beforeMatches).map((a) => a.id))
-            : new Set<string>();
-          const earned = evaluateImportAchievements(afterMatches);
-          const sessionNewIds = new Set(
-            earned.filter((a) => !beforeEarnedIds.has(a.id)).map((a) => a.id)
-          );
-          const storedNew = await detectNewAchievements(user.uid, earned);
-          detectedNew = beforeMatchesLoaded
-            ? storedNew.filter((a) => sessionNewIds.has(a.id))
-            : [];
-          setNewAchievements(detectedNew);
+      // Detect match badge tier-up
+      const tierUp = detectTierUp("first-match", beforeMatches.length, afterMatches.length);
+      if (tierUp) setMatchBadgeTierUp({ tier: tierUp, count: afterMatches.length });
+    } catch {
+      // Recap computation failed — will fall back to basic completion screen
+    }
 
-          const eventStats = computeEventStats(afterMatches);
-          const allFinishes = computePlayoffFinishes(eventStats);
-          // Only show placements for events that contain newly imported matches
-          const newEventKeys = new Set(
-            newlyImported.map((m) => `${getEventName(m)}|${m.date}`)
-          );
-          freshFinishes = allFinishes.filter((f) =>
-            newEventKeys.has(`${f.eventName}|${f.eventDate}`)
-          );
-          setNewPlacements(freshFinishes);
-        } catch {
-          // Non-critical: celebration just won't show achievements/placements
-        }
+    // Achievements & placements only when real writes happened (count > 0)
+    if (count > 0 && user && profile && afterMatches.length > 0) {
+      try {
+        const beforeEarnedIds = beforeMatchesLoaded
+          ? new Set(evaluateImportAchievements(beforeMatches).map((a) => a.id))
+          : new Set<string>();
+        const earned = evaluateImportAchievements(afterMatches);
+        const sessionNewIds = new Set(
+          earned.filter((a) => !beforeEarnedIds.has(a.id)).map((a) => a.id)
+        );
+        const storedNew = await detectNewAchievements(user.uid, earned);
+        detectedNew = beforeMatchesLoaded
+          ? storedNew.filter((a) => sessionNewIds.has(a.id))
+          : [];
+        setNewAchievements(detectedNew);
+
+        const eventStats = computeEventStats(afterMatches);
+        const allFinishes = computePlayoffFinishes(eventStats);
+        // Only show placements for events that contain newly imported matches
+        const newEventKeys = new Set(
+          newlyImported.map((m) => `${getEventName(m)}|${m.date}`)
+        );
+        freshFinishes = allFinishes.filter((f) =>
+          newEventKeys.has(`${f.eventName}|${f.eventDate}`)
+        );
+        setNewPlacements(freshFinishes);
+      } catch {
+        // Non-critical: celebration just won't show achievements/placements
       }
     }
 
@@ -1254,7 +1274,8 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
                       defaultHero={heroValue || ""}
                       defaultFormat={event.format}
                       splitAt={qDay2SplitPos}
-                      onApply={(a) => applySegmentAssignments(origIdx, a)}
+                      onApply={(a, segs) => applySegmentAssignments(origIdx, a, segs)}
+                      initialSegments={segmentsByEvent[origIdx]}
                     />
                     {/* Matches with opponent hero editing */}
                     <div className="space-y-2">
@@ -2178,7 +2199,8 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
                             defaultHero={heroValue || ""}
                             defaultFormat={event.format}
                             splitAt={day2SplitPos}
-                            onApply={(a) => applySegmentAssignments(origIdx, a)}
+                            onApply={(a, segs) => applySegmentAssignments(origIdx, a, segs)}
+                            initialSegments={segmentsByEvent[origIdx]}
                           />
                           <div className="space-y-2">
                             {event.matches.map((match, j) => {
