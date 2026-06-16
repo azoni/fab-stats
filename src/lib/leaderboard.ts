@@ -288,7 +288,11 @@ export async function updateLeaderboardEntry(
   }
   const venueBreakdown = [...venueAgg.entries()]
     .sort((a, b) => b[1].matches - a[1].matches)
-    .slice(0, 10)
+    // Cap generously (was 10). This list drives store membership: a player only
+    // counts toward a store if it's in their venueBreakdown, so a low cap dropped
+    // multi-venue grinders from their less-frequent stores. 50 covers virtually
+    // everyone while keeping the doc + venueSlugs index small.
+    .slice(0, 50)
     .map(([venue, data]) => ({
       venue,
       matches: data.matches,

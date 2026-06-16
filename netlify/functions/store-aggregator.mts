@@ -108,7 +108,14 @@ function pickCanonical(variants: Map<string, number>): string {
 function aggregate(docs: LeaderboardDoc[]): Map<string, StoreAggregate> {
   const buckets = new Map<
     string,
-    { nameVariants: Map<string, number>; totalMatches: number; players: Map<string, PlayerStat> }
+    {
+      nameVariants: Map<string, number>;
+      totalMatches: number;
+      // Every player who logged matches here (public + private) — the honest count.
+      playerIds: Set<string>;
+      // Public players only — the named leaderboard shown on the store page.
+      players: Map<string, PlayerStat>;
+    }
   >();
 
   for (const entry of docs) {
@@ -124,13 +131,19 @@ function aggregate(docs: LeaderboardDoc[]): Map<string, StoreAggregate> {
         bucket = {
           nameVariants: new Map<string, number>(),
           totalMatches: 0,
+          playerIds: new Set<string>(),
           players: new Map<string, PlayerStat>(),
         };
         buckets.set(slug, bucket);
       }
       bucket.nameVariants.set(displayName, (bucket.nameVariants.get(displayName) || 0) + 1);
       bucket.totalMatches += v.matches;
+      bucket.playerIds.add(entry.userId);
 
+      // Only explicitly-public profiles appear in the named list — private (or
+      // unset) players are counted above but never identified. Matches the
+      // client's `where("isPublic", "==", true)` exactly.
+      if (entry.isPublic !== true) continue;
       const existing = bucket.players.get(entry.userId);
       if (existing) {
         existing.matches += v.matches;
@@ -160,18 +173,20 @@ function aggregate(docs: LeaderboardDoc[]): Map<string, StoreAggregate> {
       slug,
       name: pickCanonical(bucket.nameVariants),
       totalMatches: bucket.totalMatches,
-      uniquePlayers: bucket.players.size,
+      uniquePlayers: bucket.playerIds.size,
       players,
     });
   }
   return result;
 }
 
-async function fetchAllPublicLeaderboard(): Promise<LeaderboardDoc[]> {
+// NOTE: these read ALL leaderboard docs (public + private). The admin SDK
+// bypasses security rules so it can. Private players are COUNTED in a store's
+// uniquePlayers/totalMatches (they did log matches there), but aggregate() omits
+// them from the named `players` list so no private identity is exposed.
+async function fetchAllLeaderboard(): Promise<LeaderboardDoc[]> {
   const db = getAdminDb();
-  // Admin SDK bypasses security rules; isPublic filter keeps the aggregate
-  // honest with what the client would have seen.
-  const snap = await db.collection("leaderboard").where("isPublic", "==", true).get();
+  const snap = await db.collection("leaderboard").get();
   return snap.docs.map((d) => d.data() as LeaderboardDoc);
 }
 
@@ -179,7 +194,6 @@ async function fetchChangedLeaderboard(sinceIso: string): Promise<LeaderboardDoc
   const db = getAdminDb();
   const snap = await db
     .collection("leaderboard")
-    .where("isPublic", "==", true)
     .where("updatedAt", ">", sinceIso)
     .get();
   return snap.docs.map((d) => d.data() as LeaderboardDoc);
@@ -189,7 +203,6 @@ async function fetchLeaderboardByVenueSlug(slug: string): Promise<LeaderboardDoc
   const db = getAdminDb();
   const snap = await db
     .collection("leaderboard")
-    .where("isPublic", "==", true)
     .where("venueSlugs", "array-contains", slug)
     .get();
   return snap.docs.map((d) => d.data() as LeaderboardDoc);
@@ -293,7 +306,7 @@ async function rebuildDirectoryFromAggregates(): Promise<number> {
 
 async function runFull(): Promise<{ stores: number; written: number; deleted: number; ms: number }> {
   const t0 = Date.now();
-  const docs = await fetchAllPublicLeaderboard();
+  const docs = await fetchAllLeaderboard();
   const aggregates = aggregate(docs);
   const { written, deleted } = await writeAggregates(aggregates, "full");
   const stores = await rebuildDirectoryFromAggregates();
