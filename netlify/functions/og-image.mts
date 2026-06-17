@@ -1005,6 +1005,27 @@ function fInt(f: any): number { return Number(f?.integerValue ?? f?.doubleValue 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function fStr(f: any): string { return f?.stringValue || ""; }
 
+async function fetchQuery(collection: string, field: string, value: string): Promise<Record<string, unknown> | null> {
+  const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+  const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
+  if (!projectId || !apiKey) return null;
+  try {
+    const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents:runQuery?key=${apiKey}`;
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ structuredQuery: { from: [{ collectionId: collection }], where: { fieldFilter: { field: { fieldPath: field }, op: "EQUAL", value: { stringValue: value } } }, limit: 1 } }),
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data?.[0]?.document?.fields || null;
+  } catch {
+    return null;
+  }
+}
+
+const GOLD = "#c9a84c";
+
 async function renderStore(slug: string): Promise<VNode> {
   const f = await fetchDoc(`storeAggregates/${encodeURIComponent(slug)}`);
   if (!f) return renderGenericCard();
@@ -1016,16 +1037,58 @@ async function renderStore(slug: string): Promise<VNode> {
   const topH = heroes[0]?.mapValue?.fields;
   const stats = [
     { label: "MATCHES", value: fInt(f.totalMatches).toLocaleString() },
-    { label: "PLAYERS", value: String(fInt(f.uniquePlayers)), color: "#c9a84c" },
+    { label: "PLAYERS", value: String(fInt(f.uniquePlayers)), color: GOLD },
   ];
-  if (topH) stats.push({ label: "TOP HERO", value: truncate(fStr(topH.hero), 18), color: "#c9a84c" });
+  if (topH) stats.push({ label: "TOP HERO", value: truncate(fStr(topH.hero), 18), color: GOLD });
   if (topP) stats.push({ label: "MOST ACTIVE", value: truncate(fStr(topP.displayName), 16) });
+  return renderEntityCard({ eyebrow: "GAME STORE", title: fStr(f.name) || slug, stats, footerPath: `fabstats.net/stores/${slug}`, footerNote: "Flesh and Blood store stats" });
+}
+
+function capitalize(s: string): string {
+  return s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
+}
+
+async function renderLeague(slug: string): Promise<VNode> {
+  const f = await fetchQuery("leagues", "slug", slug);
+  if (!f) return renderGenericCard();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const storeSlugs: any[] = (f.storeSlugs as any)?.arrayValue?.values || [];
+  const stats = [
+    { label: "PLAYERS", value: String(fInt(f.memberCount)), color: GOLD },
+    { label: "STORES", value: String(storeSlugs.length) },
+    { label: "STATUS", value: capitalize(fStr(f.status) || "draft"), color: GOLD },
+  ];
+  const start = fStr(f.startDate);
+  const end = fStr(f.endDate);
+  if (start) stats.push({ label: "WINDOW", value: `${start}${end ? ` – ${end}` : ""}` });
+  return renderEntityCard({ eyebrow: "COMMUNITY LEAGUE", title: fStr(f.name) || slug, stats, footerPath: `fabstats.net/leagues/${slug}`, footerNote: "Flesh and Blood league" });
+}
+
+async function renderTeam(slug: string): Promise<VNode> {
+  const nameDoc = await fetchDoc(`teamnames/${encodeURIComponent(slug)}`);
+  const teamId = nameDoc ? fStr(nameDoc.teamId) : "";
+  const f = teamId ? await fetchDoc(`teams/${teamId}`) : null;
+  if (!f) return renderGenericCard();
   return renderEntityCard({
-    eyebrow: "GAME STORE",
+    eyebrow: "TEAM",
     title: fStr(f.name) || slug,
-    stats,
-    footerPath: `fabstats.net/stores/${slug}`,
-    footerNote: "Flesh and Blood store stats",
+    stats: [{ label: "MEMBERS", value: String(fInt(f.memberCount)), color: GOLD }],
+    footerPath: `fabstats.net/teams/${slug}`,
+    footerNote: "Flesh and Blood team",
+  });
+}
+
+async function renderGroup(slug: string): Promise<VNode> {
+  const nameDoc = await fetchDoc(`groupnames/${encodeURIComponent(slug)}`);
+  const groupId = nameDoc ? fStr(nameDoc.groupId) : "";
+  const f = groupId ? await fetchDoc(`groups/${groupId}`) : null;
+  if (!f) return renderGenericCard();
+  return renderEntityCard({
+    eyebrow: "GROUP",
+    title: fStr(f.name) || slug,
+    stats: [{ label: "MEMBERS", value: String(fInt(f.memberCount)), color: GOLD }],
+    footerPath: `fabstats.net/group/${slug}`,
+    footerNote: "Flesh and Blood group",
   });
 }
 
@@ -1067,6 +1130,12 @@ export default async function handler(req: Request) {
       card = renderArticleCard(article);
     } else if (type === "store") {
       card = await renderStore(slug);
+    } else if (type === "league") {
+      card = await renderLeague(slug);
+    } else if (type === "team") {
+      card = await renderTeam(slug);
+    } else if (type === "group") {
+      card = await renderGroup(slug);
     } else {
       const player = await fetchPlayer(username);
       card = renderCard(player);
