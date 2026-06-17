@@ -86,7 +86,7 @@ export function Navbar() {
       </div>
 
       <div className="fab-sidebar-actions px-3 py-3 border-b border-fab-border/70">
-        <SmartSearch placeholder="Search players or teams..." className="text-xs" />
+        <SmartSearch placeholder="Search players, teams, or stores..." className="text-xs" />
       </div>
 
       <div className="fab-sidebar-nav flex-1 overflow-y-auto px-2 py-3">

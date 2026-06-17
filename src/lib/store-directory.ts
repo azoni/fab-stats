@@ -308,6 +308,18 @@ export async function getStoreDirectory(): Promise<StoreDirectoryEntry[]> {
   return directory;
 }
 
+/** Search the store directory by name (for the global search box). The directory
+ *  is cached, so this is cheap after the first load. */
+export async function searchStores(query: string, max = 5): Promise<StoreDirectoryEntry[]> {
+  const q = query.trim().toLowerCase();
+  if (q.length < 2) return [];
+  const dir = await getStoreDirectory().catch(() => [] as StoreDirectoryEntry[]);
+  return dir
+    .filter((s) => s.name.toLowerCase().includes(q))
+    .sort((a, b) => b.totalMatches - a.totalMatches)
+    .slice(0, max);
+}
+
 /** Fast path: query just the players who logged at this venue via the
  *  top-level `venueSlugs` array on each leaderboard doc. Avoids reading
  *  the entire leaderboard collection for a single store page. Returns

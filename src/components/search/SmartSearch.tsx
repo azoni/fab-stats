@@ -3,7 +3,8 @@ import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { getProfile, searchUsernames } from "@/lib/firestore-storage";
 import { getTeam, searchTeams } from "@/lib/teams";
-import { Search, X, Users } from "lucide-react";
+import { searchStores } from "@/lib/store-directory";
+import { Search, X, Users, Store } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -24,7 +25,15 @@ interface TeamResult {
   memberCount?: number;
 }
 
-type SearchResult = PlayerResult | TeamResult;
+interface StoreResult {
+  type: "store";
+  slug: string;
+  name: string;
+  totalMatches: number;
+  uniquePlayers: number;
+}
+
+type SearchResult = PlayerResult | TeamResult | StoreResult;
 
 interface SmartSearchProps {
   placeholder?: string;
@@ -32,7 +41,7 @@ interface SmartSearchProps {
   autoFocus?: boolean;
 }
 
-export function SmartSearch({ placeholder = "Search players or teams...", className = "", autoFocus = false }: SmartSearchProps) {
+export function SmartSearch({ placeholder = "Search players, teams, or stores...", className = "", autoFocus = false }: SmartSearchProps) {
   const router = useRouter();
   const { user, isAdmin } = useAuth();
   const [query, setQuery] = useState("");
@@ -68,9 +77,10 @@ export function SmartSearch({ placeholder = "Search players or teams...", classN
     debounceRef.current = setTimeout(async () => {
       setSearching(true);
       try {
-        const [players, teams] = await Promise.all([
+        const [players, teams, stores] = await Promise.all([
           searchUsernames(query.trim(), 8).catch(() => []),
           searchTeams(query.trim(), 5).catch(() => []),
+          searchStores(query.trim(), 4).catch(() => []),
         ]);
 
         const [playersWithProfiles, teamsWithData] = await Promise.all([
@@ -103,8 +113,17 @@ export function SmartSearch({ placeholder = "Search players or teams...", classN
           ),
         ]);
 
+        const storeResults: StoreResult[] = stores.map((s) => ({
+          type: "store",
+          slug: s.slug,
+          name: s.name,
+          totalMatches: s.totalMatches,
+          uniquePlayers: s.uniquePlayers,
+        }));
+
         const combined: SearchResult[] = [
           ...teamsWithData,
+          ...storeResults,
           ...playersWithProfiles.filter((p): p is PlayerResult => Boolean(p)),
         ];
 
@@ -129,8 +148,10 @@ export function SmartSearch({ placeholder = "Search players or teams...", classN
   function navigate(result: SearchResult) {
     if (result.type === "player") {
       router.push(`/player/${result.username}`);
-    } else {
+    } else if (result.type === "team") {
       router.push(`/teams/${result.nameLower}`);
+    } else {
+      router.push(`/stores/${result.slug}`);
     }
     setQuery("");
     setResults([]);
@@ -223,6 +244,29 @@ export function SmartSearch({ placeholder = "Search players or teams...", classN
                     <p className="text-sm font-medium text-fab-text truncate">{r.name}</p>
                     <p className="text-[10px] text-fab-dim">
                       Team{typeof r.memberCount === "number" ? ` - ${r.memberCount} member${r.memberCount === 1 ? "" : "s"}` : ""}
+                    </p>
+                  </div>
+                </Link>
+              );
+            }
+
+            if (r.type === "store") {
+              return (
+                <Link
+                  key={`store-${r.slug}`}
+                  href={`/stores/${r.slug}`}
+                  onClick={() => { setQuery(""); setIsOpen(false); }}
+                  className={`flex items-center gap-3 px-3 py-2.5 transition-colors ${
+                    isHighlighted ? "bg-fab-gold/10" : "hover:bg-fab-surface-hover/85"
+                  }`}
+                >
+                  <div className="w-8 h-8 rounded-lg bg-emerald-500/15 flex items-center justify-center shrink-0">
+                    <Store className="w-4 h-4 text-emerald-400" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-fab-text truncate">{r.name}</p>
+                    <p className="text-[10px] text-fab-dim">
+                      Store - {r.totalMatches.toLocaleString()} match{r.totalMatches === 1 ? "" : "es"} · {r.uniquePlayers} player{r.uniquePlayers === 1 ? "" : "s"}
                     </p>
                   </div>
                 </Link>

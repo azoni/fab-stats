@@ -2,11 +2,12 @@
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Search as SearchIcon, Users } from "lucide-react";
+import { Search as SearchIcon, Store, Users } from "lucide-react";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { PageHero } from "@/components/ui/PageHero";
 import { searchUsernames, getProfile } from "@/lib/firestore-storage";
 import { searchTeams, getTeam } from "@/lib/teams";
+import { searchStores, type StoreDirectoryEntry } from "@/lib/store-directory";
 import { playerHref } from "@/lib/constants";
 import { useAuth } from "@/contexts/AuthContext";
 import type { UserProfile, Team } from "@/types";
@@ -47,6 +48,7 @@ function SearchContent() {
   const [query, setQuery] = useState(initialQuery);
   const [results, setResults] = useState<SearchResult[]>([]);
   const [teamResults, setTeamResults] = useState<TeamSearchResult[]>([]);
+  const [storeResults, setStoreResults] = useState<StoreDirectoryEntry[]>([]);
   const [searched, setSearched] = useState(false);
   const [loading, setLoading] = useState(false);
   const { isAdmin, user } = useAuth();
@@ -55,15 +57,17 @@ function SearchContent() {
     if (!q.trim()) {
       setResults([]);
       setTeamResults([]);
+      setStoreResults([]);
       setSearched(false);
       return;
     }
     setLoading(true);
     setSearched(true);
 
-    const [usernames, teams] = await Promise.all([
+    const [usernames, teams, stores] = await Promise.all([
       searchUsernames(q.trim()).catch(() => []),
       searchTeams(q.trim(), 10).catch(() => []),
+      searchStores(q.trim(), 10).catch(() => []),
     ]);
 
     const withProfiles = await Promise.all(
@@ -86,13 +90,14 @@ function SearchContent() {
       })),
     );
 
-    if (autoRedirect && filtered.length === 1 && teamsWithData.length === 0) {
+    if (autoRedirect && filtered.length === 1 && teamsWithData.length === 0 && stores.length === 0) {
       router.replace(`/player/${filtered[0].username}`);
       return;
     }
 
     setResults(filtered);
     setTeamResults(teamsWithData);
+    setStoreResults(stores);
     setLoading(false);
   }
 
@@ -108,6 +113,7 @@ function SearchContent() {
     if (!query.trim()) {
       setResults([]);
       setTeamResults([]);
+      setStoreResults([]);
       setSearched(false);
       return;
     }
@@ -121,18 +127,18 @@ function SearchContent() {
     doSearch(query);
   }
 
-  const resultCount = results.length + teamResults.length;
+  const resultCount = results.length + teamResults.length + storeResults.length;
 
   return (
     <div className="mx-auto max-w-5xl space-y-5">
       <PageHero
         eyebrow="Discover"
-        title="Find players and teams"
+        title="Find players, teams, and stores"
         icon={<SearchIcon className="h-4 w-4" />}
         metrics={[
           { label: "Players", value: results.length, sub: searched ? "matching search" : "ready" },
           { label: "Teams", value: teamResults.length, sub: searched ? "matching search" : "ready" },
-          { label: "Results", value: resultCount, sub: loading ? "searching" : "current view" },
+          { label: "Stores", value: storeResults.length, sub: searched ? "matching search" : "ready" },
         ]}
       />
 
@@ -143,7 +149,7 @@ function SearchContent() {
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search by player, username, or team..."
+            placeholder="Search by player, team, or store..."
             className="w-full rounded-md border border-fab-border bg-fab-bg px-10 py-3 text-sm text-fab-text placeholder:text-fab-dim focus:border-fab-gold focus:outline-none"
           />
           {query && (
@@ -174,12 +180,39 @@ function SearchContent() {
         </div>
       )}
 
-      {!loading && searched && results.length === 0 && teamResults.length === 0 && (
+      {!loading && searched && results.length === 0 && teamResults.length === 0 && storeResults.length === 0 && (
         <EmptyState
           icon={<SearchIcon className="h-5 w-5" />}
           title="No results found"
-          description={`No players or teams matching "${query}". Try a username, display name, or team name.`}
+          description={`No players, teams, or stores matching "${query}". Try a username, team name, or store name.`}
         />
+      )}
+
+      {!loading && storeResults.length > 0 && (
+        <section>
+          <h2 className="mb-2 text-xs font-bold uppercase tracking-[0.14em] text-fab-muted">Stores</h2>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {storeResults.map((s) => (
+              <Link
+                key={s.slug}
+                href={`/stores/${s.slug}`}
+                className="block rounded-lg border border-fab-border bg-fab-surface/95 p-4 transition-colors hover:border-fab-gold/30 hover:bg-fab-surface-hover"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-emerald-500/15">
+                    <Store className="h-5 w-5 text-emerald-400" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="truncate font-semibold text-fab-text">{s.name}</p>
+                    <p className="text-sm text-fab-dim">
+                      {s.totalMatches.toLocaleString()} match{s.totalMatches === 1 ? "" : "es"} · {s.uniquePlayers} player{s.uniquePlayers === 1 ? "" : "s"}
+                    </p>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
       )}
 
       {!loading && teamResults.length > 0 && (
@@ -216,7 +249,7 @@ function SearchContent() {
 
       {!loading && results.length > 0 && (
         <section>
-          {teamResults.length > 0 && <h2 className="mb-2 text-xs font-bold uppercase tracking-[0.14em] text-fab-muted">Players</h2>}
+          {(teamResults.length > 0 || storeResults.length > 0) && <h2 className="mb-2 text-xs font-bold uppercase tracking-[0.14em] text-fab-muted">Players</h2>}
           <div className="grid gap-2 sm:grid-cols-2">
             {results.map((r) => (
               <Link
