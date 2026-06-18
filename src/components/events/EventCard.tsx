@@ -47,6 +47,28 @@ const resultLabels: Record<string, string> = {
 
 const playoffRank: Record<string, number> = { "Finals": 4, "Top 4": 3, "Top 8": 2, "Playoff": 2, "Skirmish": 1 };
 
+/** Win/loss/draw tally for a slice of matches. Byes are excluded, matching the
+ *  overall event record (event.wins/losses/draws). */
+function sliceRecord(matches: MatchRecord[]): { w: number; l: number; d: number } {
+  let w = 0, l = 0, d = 0;
+  for (const m of matches) {
+    if (m.result === MatchResult.Win) w++;
+    else if (m.result === MatchResult.Loss) l++;
+    else if (m.result === MatchResult.Draw) d++;
+  }
+  return { w, l, d };
+}
+
+/** "3-2" or, when there are draws, "3-2-1". */
+function fmtRecord(r: { w: number; l: number; d: number }): string {
+  return r.d > 0 ? `${r.w}-${r.l}-${r.d}` : `${r.w}-${r.l}`;
+}
+
+/** Tailwind text colour for a record, mirroring the event header's coloring. */
+function recordColor(r: { w: number; l: number }): string {
+  return r.w > r.l ? "text-fab-win" : r.w < r.l ? "text-fab-loss" : "text-fab-draw";
+}
+
 interface HeroSegment {
   hero: string;
   format: string;
@@ -173,16 +195,28 @@ export function EventCard({ event, playerName, obfuscateOpponents = false, visib
 
   // Compute format segments for divider rows (groups of consecutive matches with same format)
   const isMultiFormat = event.formats.length > 1;
-  const formatSegments: { format: string; startIdx: number; endIdx: number }[] = [];
+  const formatSegments: { format: string; startIdx: number; endIdx: number; record: { w: number; l: number; d: number } }[] = [];
   if (isMultiFormat) {
     let segStart = 0;
     for (let i = 1; i <= event.matches.length; i++) {
       if (i === event.matches.length || event.matches[i].format !== event.matches[segStart].format) {
-        formatSegments.push({ format: event.matches[segStart].format, startIdx: segStart, endIdx: i - 1 });
+        formatSegments.push({
+          format: event.matches[segStart].format,
+          startIdx: segStart,
+          endIdx: i - 1,
+          record: sliceRecord(event.matches.slice(segStart, i)),
+        });
         segStart = i;
       }
     }
   }
+
+  // Per-format record (aggregated across all rounds of each format), in the same
+  // first-appearance order as event.formats. Drives the per-format header badges.
+  const formatRecords = useMemo(() => {
+    if (!isMultiFormat) return [];
+    return event.formats.map((f) => ({ format: f, ...sliceRecord(event.matches.filter((m) => m.format === f)) }));
+  }, [isMultiFormat, event.formats, event.matches]);
 
   return (
     <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden">
@@ -233,9 +267,17 @@ export function EventCard({ event, playerName, obfuscateOpponents = false, visib
             </div>
           </div>
           <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-            {event.formats.map((f) => (
-              <span key={f} className="hidden sm:inline px-2 py-0.5 rounded bg-fab-bg text-fab-dim text-xs">{f}</span>
-            ))}
+            {event.formats.map((f) => {
+              const rec = isMultiFormat ? formatRecords.find((r) => r.format === f) : null;
+              return (
+                <span key={f} className="hidden sm:inline px-2 py-0.5 rounded bg-fab-bg text-fab-dim text-xs">
+                  {f}
+                  {rec && (
+                    <span className={`ml-1 font-semibold ${recordColor(rec)}`}>{fmtRecord(rec)}</span>
+                  )}
+                </span>
+              );
+            })}
             {editable && onBatchUpdateEventType && editingEventType ? (
               <select
                 value={event.matches[0]?.eventTypeOverride || getOriginalEventType(event.matches[0])}
@@ -466,6 +508,8 @@ export function EventCard({ event, playerName, obfuscateOpponents = false, visib
                       <td colSpan={colSpan} className="px-4 py-1.5 text-center">
                         <span className="text-xs font-medium text-fab-muted">
                           {segment.format} (Rounds {segment.startIdx + 1}–{segment.endIdx + 1})
+                          <span className="text-fab-dim"> · </span>
+                          <span className={`font-semibold ${recordColor(segment.record)}`}>{fmtRecord(segment.record)}</span>
                         </span>
                       </td>
                     </tr>
