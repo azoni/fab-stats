@@ -285,13 +285,21 @@ export default function AdminPage() {
         title="Admin Dashboard"
         description="A lighter control room for users, content, feedback, analytics, and maintenance jobs."
         actions={(
-          <button
-            onClick={fetchData}
-            disabled={fetching}
-            className="inline-flex min-h-10 items-center rounded-md border border-fab-border bg-fab-bg px-4 text-sm font-semibold text-fab-text hover:border-fab-gold/40 disabled:opacity-50"
-          >
-            {fetching ? "Loading..." : "Refresh"}
-          </button>
+          <div className="flex items-center gap-2">
+            <Link
+              href="/admin/sandbox"
+              className="inline-flex min-h-10 items-center rounded-md border border-purple-500/40 bg-purple-500/10 px-4 text-sm font-semibold text-purple-200 hover:bg-purple-500/20"
+            >
+              🧪 Import Sandbox
+            </Link>
+            <button
+              onClick={fetchData}
+              disabled={fetching}
+              className="inline-flex min-h-10 items-center rounded-md border border-fab-border bg-fab-bg px-4 text-sm font-semibold text-fab-text hover:border-fab-gold/40 disabled:opacity-50"
+            >
+              {fetching ? "Loading..." : "Refresh"}
+            </button>
+          </div>
         )}
         metrics={data ? [
           { label: "Users", value: data.totalUsers },

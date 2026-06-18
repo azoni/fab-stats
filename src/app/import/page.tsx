@@ -25,6 +25,7 @@ import { HeroSelect } from "@/components/heroes/HeroSelect";
 import { computeSessionRecap, type SessionRecap } from "@/lib/session-recap";
 import { PostEventRecap } from "@/components/import/PostEventRecap";
 import { getAllMatches as getLocalMatches } from "@/lib/storage";
+import { getSandboxMatches, importSandboxMatches, clearSandboxMatches } from "@/lib/sandbox-store";
 import { detectTierUp, type BadgeTierInfo } from "@/lib/badge-tiers";
 import { GemAutoSync } from "@/components/import/GemAutoSync";
 import { PageHero } from "@/components/ui/PageHero";
@@ -453,6 +454,21 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
   // Per-event day-2 boundary override, keyed by origIdx. "off" disables day 2;
   // a number sets the round where day 2 starts; absent → use the auto heuristic.
   const [day2BoundaryOverrides, setDay2BoundaryOverrides] = useState<Record<number, number | "off">>({});
+  // Admin-only import sandbox: when on, all reads/writes route to the isolated
+  // sandbox store (src/lib/sandbox-store.ts) and every Firestore side-effect
+  // (feed, leaderboard, achievements, cross-player links) is skipped — so the
+  // full import → review → recap flow can be tested without touching real data.
+  const [sandboxMode, setSandboxMode] = useState(false);
+  const sandboxActive = isAdmin && sandboxMode;
+
+  // Enable sandbox mode from ?sandbox=1 (or #sandbox) for admins only.
+  useEffect(() => {
+    if (!isAdmin || typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("sandbox") === "1" || window.location.hash.includes("sandbox")) {
+      setSandboxMode(true);
+    }
+  }, [isAdmin]);
 
   // Detect mobile viewport
   useEffect(() => {
@@ -511,7 +527,9 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
       (async () => {
         try {
           let existing: MatchRecord[] = [];
-          if (user) {
+          if (isAdmin && sandboxMode) {
+            existing = getSandboxMatches();
+          } else if (user) {
             existing = await getMatchesByUserId(user.uid);
           } else {
             existing = getLocalMatches();
@@ -524,7 +542,7 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
         setQuickPreviewReady(true);
       })();
     }
-  }, [quickMode, pasteResult, user, isGuest]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [quickMode, pasteResult, user, isGuest, isAdmin, sandboxMode]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Background pre-fill: once the preview is up, look up unknown opponent heroes
   // from opponents who use FaB Stats and fill them in live. Never blocks the
@@ -815,17 +833,27 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
     setImportingMatches(matches);
     setImporting(true);
 
+    // Admin sandbox: route every read/write to the isolated store and skip all
+    // Firestore side-effects below. Real account data is never touched.
+    const sandbox = isAdmin && sandboxMode;
+
     // Clear existing data first if requested
-    if (clearBeforeImport && user) {
-      await clearAllMatchesFirestore(user.uid);
-      await deleteAllFeedEventsForUser(user.uid);
+    if (clearBeforeImport) {
+      if (sandbox) {
+        clearSandboxMatches();
+      } else if (user) {
+        await clearAllMatchesFirestore(user.uid);
+        await deleteAllFeedEventsForUser(user.uid);
+      }
     }
 
     // Capture matches before import for recap
     let beforeMatches: MatchRecord[] = [];
     let beforeMatchesLoaded = false;
     try {
-      if (user) {
+      if (sandbox) {
+        beforeMatches = getSandboxMatches();
+      } else if (user) {
         beforeMatches = await getMatchesByUserId(user.uid);
       } else {
         beforeMatches = getLocalMatches();
@@ -865,7 +893,9 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
     }
 
     let count: number;
-    if (user) {
+    if (sandbox) {
+      count = importSandboxMatches(matches);
+    } else if (user) {
       count = await importMatchesFirestore(user.uid, matches);
     } else {
       count = importMatchesLocal(matches);
@@ -885,7 +915,9 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
     // Session recap always runs — even on a pure re-import where dedup wrote
     // nothing (count 0) — so the user still gets a summary of what they imported.
     try {
-      if (user) {
+      if (sandbox) {
+        afterMatches = getSandboxMatches();
+      } else if (user) {
         afterMatches = await getMatchesByUserId(user.uid);
       } else {
         afterMatches = getLocalMatches();
@@ -905,8 +937,9 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
       // Recap computation failed — will fall back to basic completion screen
     }
 
-    // Achievements & placements only when real writes happened (count > 0)
-    if (count > 0 && user && profile && afterMatches.length > 0) {
+    // Achievements & placements only when real writes happened (count > 0).
+    // Skipped in sandbox mode — detectNewAchievements reads/writes Firestore.
+    if (!sandbox && count > 0 && user && profile && afterMatches.length > 0) {
       try {
         const beforeEarnedIds = beforeMatchesLoaded
           ? new Set(evaluateImportAchievements(beforeMatches).map((a) => a.id))
@@ -940,8 +973,9 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
     setImported(true);
     setImporting(false);
 
-    // Post to activity feed + update leaderboard (non-blocking, only for signed-in users with a profile)
-    if (user && profile && count > 0) {
+    // Post to activity feed + update leaderboard (non-blocking, only for signed-in users with a profile).
+    // Skipped in sandbox mode — these all write Firestore / cross-player data.
+    if (!sandbox && user && profile && count > 0) {
       const heroCounts: Record<string, number> = {};
       const heroSource = newlyImported.length > 0 ? newlyImported : matches;
       for (const m of heroSource) {
@@ -1015,6 +1049,14 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
   }
 
   async function handleClearAll() {
+    if (isAdmin && sandboxMode) {
+      setClearing(true);
+      clearSandboxMatches();
+      setCleared(true);
+      setConfirmClear(false);
+      setClearing(false);
+      return;
+    }
     if (!user) return;
     setClearing(true);
     try {
@@ -1495,6 +1537,41 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
       />
       <ImportFlowDiagram activeStep={flowStep} />
 
+      {/* Admin-only import sandbox controls */}
+      {isAdmin && (
+        sandboxActive ? (
+          <div className="flex flex-wrap items-center gap-3 rounded-lg border border-purple-500/40 bg-purple-500/10 px-4 py-3">
+            <span className="inline-flex items-center gap-1.5 rounded bg-purple-500/20 px-2 py-0.5 text-xs font-bold uppercase tracking-wide text-purple-300">
+              🧪 Sandbox mode
+            </span>
+            <p className="min-w-0 flex-1 text-sm text-purple-200">
+              Imports go to an <strong>isolated test store</strong> — your real account, leaderboard, feed and stats are untouched.
+            </p>
+            <Link href="/admin/sandbox" className="shrink-0 text-sm font-semibold text-purple-300 underline hover:text-purple-200">
+              View sandbox →
+            </Link>
+            <button
+              type="button"
+              onClick={() => setSandboxMode(false)}
+              className="shrink-0 rounded-md border border-purple-500/40 px-2.5 py-1 text-xs font-semibold text-purple-200 hover:bg-purple-500/20"
+            >
+              Turn off
+            </button>
+          </div>
+        ) : (
+          <div className="flex justify-end">
+            <button
+              type="button"
+              onClick={() => setSandboxMode(true)}
+              className="rounded-md border border-fab-border bg-fab-bg px-3 py-1.5 text-xs font-medium text-fab-dim hover:border-purple-500/40 hover:text-purple-300"
+              title="Import into an isolated test store instead of your account"
+            >
+              🧪 Enable sandbox mode
+            </button>
+          </div>
+        )
+      )}
+
       <h1 className="sr-only">{shareMode ? "Share your tournament result" : "Import Your Matches"}</h1>
       <p className="sr-only">
         {shareMode ? "Paste your latest event from " : "Pull in your match history from "}
@@ -1523,8 +1600,8 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
         <div className="bg-fab-loss/10 border border-fab-loss/30 text-fab-loss rounded-md px-4 py-3 text-sm mb-4">{error}</div>
       )}
 
-      {/* GEM Auto-Sync */}
-      {user && !isGuest && !hasResults && (
+      {/* GEM Auto-Sync (hidden in sandbox mode — it syncs the real account) */}
+      {user && !isGuest && !hasResults && !sandboxActive && (
         <div className="mb-6">
           <GemAutoSync />
         </div>
