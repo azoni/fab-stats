@@ -4,6 +4,8 @@
 > network, and daily-games platform for the *Flesh and Blood* TCG. Written as a system-design
 > walkthrough: the big bet, the data model, every subsystem, the key request flows, the tradeoffs,
 > and where it would break at scale.
+>
+> 📊 Prefer the pictures? See **[ARCHITECTURE.md](ARCHITECTURE.md)** for a diagram-only quick reference.
 
 ---
 
