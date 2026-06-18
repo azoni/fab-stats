@@ -22,6 +22,8 @@ import {
   deleteSandboxMatch,
   batchDeleteSandboxMatches,
   exportSandboxJson,
+  isSandboxEnabled,
+  setSandboxEnabled,
 } from "@/lib/sandbox-store";
 
 type Draft = Omit<MatchRecord, "id" | "createdAt">;
@@ -72,12 +74,23 @@ function SandboxInner({ user }: { user: User }) {
   const [msg, setMsg] = useState("");
   const [confirmWipe, setConfirmWipe] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [routeImports, setRouteImports] = useState(false);
 
   const refresh = useCallback(() => setMatches(getSandboxMatches()), []);
 
   useEffect(() => {
     refresh();
+    setRouteImports(isSandboxEnabled());
   }, [refresh]);
+
+  function toggleRouteImports() {
+    const next = !routeImports;
+    setSandboxEnabled(next);
+    setRouteImports(next);
+    setMsg(next
+      ? "Imports now route to the sandbox — the extension, bookmarklet, quick sync and paste on /import all land here until you turn this off."
+      : "Imports route to your real account again.");
+  }
 
   const eventStats = useMemo(() => computeEventStats(matches), [matches]);
 
@@ -187,6 +200,28 @@ function SandboxInner({ user }: { user: User }) {
           { label: "Real data", value: "Safe", sub: "never written" },
         ]}
       />
+
+      {/* Route-imports toggle — the key control for testing the extension/bookmarklet,
+          which open /import in a fresh tab and otherwise hit the real account. */}
+      <div className={`flex flex-wrap items-center gap-3 rounded-lg border p-4 ${routeImports ? "border-purple-500/50 bg-purple-500/10" : "border-fab-border bg-fab-surface"}`}>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={routeImports}
+          onClick={toggleRouteImports}
+          className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${routeImports ? "bg-purple-500" : "bg-fab-border"}`}
+        >
+          <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition-transform ${routeImports ? "translate-x-5" : "translate-x-0.5"}`} />
+        </button>
+        <div className="min-w-0 flex-1">
+          <p className={`text-sm font-semibold ${routeImports ? "text-purple-200" : "text-fab-text"}`}>
+            Route imports to the sandbox {routeImports ? "· ON" : "· OFF"}
+          </p>
+          <p className="text-xs text-fab-muted">
+            When on, every import on <span className="text-fab-text">/import</span> — including the <strong>browser extension</strong> and bookmarklet (which open a new tab) — lands in this sandbox instead of your real account. Persists across tabs until you turn it off.
+          </p>
+        </div>
+      </div>
 
       {/* Controls */}
       <div className="rounded-lg border border-fab-border bg-fab-surface p-4 space-y-4">

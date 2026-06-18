@@ -21,6 +21,35 @@ import { normalizeNotes } from "@/lib/firestore-storage";
 const SANDBOX_KEY = "fab-stats-sandbox-data";
 const SANDBOX_VERSION = 1;
 
+/**
+ * Persistent "route imports to the sandbox" flag.
+ *
+ * Stored in localStorage (shared across tabs) so that sandbox mode survives the
+ * fresh page load the browser extension / bookmarklet trigger when they open
+ * /import in a new tab. Without this, the extension import would land in the
+ * real account. Admin-gated at every read site.
+ */
+const SANDBOX_FLAG_KEY = "fab-stats-sandbox-enabled";
+
+export function isSandboxEnabled(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    return localStorage.getItem(SANDBOX_FLAG_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+export function setSandboxEnabled(on: boolean): void {
+  if (typeof window === "undefined") return;
+  try {
+    if (on) localStorage.setItem(SANDBOX_FLAG_KEY, "1");
+    else localStorage.removeItem(SANDBOX_FLAG_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
 type MatchDraft = Omit<MatchRecord, "id" | "createdAt">;
 
 function read(): MatchRecord[] {

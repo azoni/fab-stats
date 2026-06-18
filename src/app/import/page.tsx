@@ -26,7 +26,7 @@ import { HeroSelect } from "@/components/heroes/HeroSelect";
 import { computeSessionRecap, type SessionRecap } from "@/lib/session-recap";
 import { PostEventRecap } from "@/components/import/PostEventRecap";
 import { getAllMatches as getLocalMatches } from "@/lib/storage";
-import { getSandboxMatches, importSandboxMatches, clearSandboxMatches } from "@/lib/sandbox-store";
+import { getSandboxMatches, importSandboxMatches, clearSandboxMatches, isSandboxEnabled, setSandboxEnabled } from "@/lib/sandbox-store";
 import { detectTierUp, type BadgeTierInfo } from "@/lib/badge-tiers";
 import { GemAutoSync } from "@/components/import/GemAutoSync";
 import { PageHero } from "@/components/ui/PageHero";
@@ -465,14 +465,24 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
   const [sandboxMode, setSandboxMode] = useState(false);
   const sandboxActive = isAdmin && sandboxMode;
 
-  // Enable sandbox mode from ?sandbox=1 (or #sandbox) for admins only.
+  // Turn sandbox mode on/off AND persist it (localStorage), so the choice
+  // survives the fresh tab the extension/bookmarklet open. Admin-only.
+  const setSandbox = useCallback((on: boolean) => {
+    setSandboxMode(on);
+    setSandboxEnabled(on);
+  }, []);
+
+  // Enable sandbox mode for admins from ?sandbox=1 / #sandbox, OR from the
+  // persisted flag (so an extension/bookmarklet import lands in the sandbox).
   useEffect(() => {
     if (!isAdmin || typeof window === "undefined") return;
     const params = new URLSearchParams(window.location.search);
     if (params.get("sandbox") === "1" || window.location.hash.includes("sandbox")) {
+      setSandbox(true); // also persists, so the next extension tab inherits it
+    } else if (isSandboxEnabled()) {
       setSandboxMode(true);
     }
-  }, [isAdmin]);
+  }, [isAdmin, setSandbox]);
 
   // Detect mobile viewport
   useEffect(() => {
@@ -1052,6 +1062,43 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
     }
   }
 
+  // Admin-only sandbox banner/toggle, shared by the main page and the Quick
+  // Sync preview (the screen the extension/bookmarklet land on).
+  function renderSandboxBar() {
+    if (!isAdmin) return null;
+    return sandboxActive ? (
+      <div className="flex flex-wrap items-center gap-3 rounded-lg border border-purple-500/40 bg-purple-500/10 px-4 py-3">
+        <span className="inline-flex items-center gap-1.5 rounded bg-purple-500/20 px-2 py-0.5 text-xs font-bold uppercase tracking-wide text-purple-300">
+          🧪 Sandbox mode
+        </span>
+        <p className="min-w-0 flex-1 text-sm text-purple-200">
+          <strong>All imports</strong> (extension, bookmarklet, quick sync, paste) go to an <strong>isolated test store</strong> until you turn this off — your real account, leaderboard, feed and stats are untouched.
+        </p>
+        <Link href="/admin/sandbox" className="shrink-0 text-sm font-semibold text-purple-300 underline hover:text-purple-200">
+          View sandbox →
+        </Link>
+        <button
+          type="button"
+          onClick={() => setSandbox(false)}
+          className="shrink-0 rounded-md border border-purple-500/40 px-2.5 py-1 text-xs font-semibold text-purple-200 hover:bg-purple-500/20"
+        >
+          Turn off
+        </button>
+      </div>
+    ) : (
+      <div className="flex justify-end">
+        <button
+          type="button"
+          onClick={() => setSandbox(true)}
+          className="rounded-md border border-fab-border bg-fab-bg px-3 py-1.5 text-xs font-medium text-fab-dim hover:border-purple-500/40 hover:text-purple-300"
+          title="Route all imports (including the extension) into an isolated test store instead of your account"
+        >
+          🧪 Enable sandbox mode
+        </button>
+      </div>
+    );
+  }
+
   function handleReset() {
     setPasteResult(null);
     setCsvMatches(null);
@@ -1262,6 +1309,7 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
     return (
       <>
       <div className="space-y-6">
+        {renderSandboxBar()}
         <div>
           <h1 className="text-2xl font-bold text-fab-gold mb-1">Quick Sync</h1>
           <p className="text-fab-muted text-sm">
@@ -1615,39 +1663,7 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
       <ImportFlowDiagram activeStep={flowStep} />
 
       {/* Admin-only import sandbox controls */}
-      {isAdmin && (
-        sandboxActive ? (
-          <div className="flex flex-wrap items-center gap-3 rounded-lg border border-purple-500/40 bg-purple-500/10 px-4 py-3">
-            <span className="inline-flex items-center gap-1.5 rounded bg-purple-500/20 px-2 py-0.5 text-xs font-bold uppercase tracking-wide text-purple-300">
-              🧪 Sandbox mode
-            </span>
-            <p className="min-w-0 flex-1 text-sm text-purple-200">
-              Imports go to an <strong>isolated test store</strong> — your real account, leaderboard, feed and stats are untouched.
-            </p>
-            <Link href="/admin/sandbox" className="shrink-0 text-sm font-semibold text-purple-300 underline hover:text-purple-200">
-              View sandbox →
-            </Link>
-            <button
-              type="button"
-              onClick={() => setSandboxMode(false)}
-              className="shrink-0 rounded-md border border-purple-500/40 px-2.5 py-1 text-xs font-semibold text-purple-200 hover:bg-purple-500/20"
-            >
-              Turn off
-            </button>
-          </div>
-        ) : (
-          <div className="flex justify-end">
-            <button
-              type="button"
-              onClick={() => setSandboxMode(true)}
-              className="rounded-md border border-fab-border bg-fab-bg px-3 py-1.5 text-xs font-medium text-fab-dim hover:border-purple-500/40 hover:text-purple-300"
-              title="Import into an isolated test store instead of your account"
-            >
-              🧪 Enable sandbox mode
-            </button>
-          </div>
-        )
-      )}
+      {renderSandboxBar()}
 
       <h1 className="sr-only">{shareMode ? "Share your tournament result" : "Import Your Matches"}</h1>
       <p className="sr-only">
