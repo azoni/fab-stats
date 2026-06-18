@@ -25,6 +25,8 @@ export interface SessionRecap {
   eventCount: number;
   /** Distinct day-2 events in this import — celebrated in the recap */
   day2EventCount: number;
+  /** Names of the day-2 events (for the recap "you made Day 2 at X" line) */
+  day2EventNames: string[];
   /** Overall stats after import */
   newOverallWinRate: number;
   newTotalMatches: number;
@@ -173,7 +175,15 @@ export function computeSessionRecap(
   };
   const eventCount = new Set(sessionMatches.map(eventKey)).size;
   // Distinct day-2 events imported — a brag-worthy result worth celebrating.
-  const day2EventCount = new Set(sessionMatches.filter((m) => m.day2).map(eventKey)).size;
+  // Track names (not just a count) so the recap can say which event it was.
+  const eventNameOf = (m: MatchRecord) => m.notes?.split(" | ")[0]?.trim() || `${m.date} ${m.format}`;
+  const day2NameByKey = new Map<string, string>();
+  for (const m of sessionMatches) {
+    if (!m.day2) continue;
+    day2NameByKey.set(eventKey(m), eventNameOf(m));
+  }
+  const day2EventNames = [...day2NameByKey.values()];
+  const day2EventCount = day2NameByKey.size;
 
   // Overall stats after
   const afterOverall = computeOverallStats(afterMatches);
@@ -194,6 +204,7 @@ export function computeSessionRecap(
     missingOpponentHeroCount,
     eventCount,
     day2EventCount,
+    day2EventNames,
     newOverallWinRate: afterOverall.overallWinRate,
     newTotalMatches: afterOverall.totalMatches,
     currentStreak: afterStreaks.currentStreak

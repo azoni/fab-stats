@@ -40,7 +40,7 @@ interface Props {
 }
 
 export function PostEventRecap({ recap, onViewOpponents, onDashboard, onImportMore, skippedCount, newAchievements, newPlacements, playerName, matchBadgeTierUp, quickMode }: Props) {
-  const { wins, losses, draws, winRate, bestStreak, heroInsights, newOpponents, sessionMatchups, missingOpponentHeroCount, eventCount, day2EventCount, newOverallWinRate, newTotalMatches, currentStreak } = recap;
+  const { wins, losses, draws, winRate, bestStreak, heroInsights, newOpponents, sessionMatchups, missingOpponentHeroCount, eventCount, day2EventCount, day2EventNames, newOverallWinRate, newTotalMatches, currentStreak } = recap;
   const total = wins + losses + draws;
 
   // Big imports (a new user dumping years of history) get a compact recap so
@@ -169,7 +169,14 @@ export function PostEventRecap({ recap, onViewOpponents, onDashboard, onImportMo
               You made Day 2{day2EventCount > 1 ? ` ×${day2EventCount}` : ""}!
             </p>
             <p className="text-xs text-fab-muted">
-              {day2EventCount > 1 ? "Multi-day runs" : "A multi-day run"} — only the top players grind into day two.
+              {day2EventNames.length > 0 ? (
+                <>
+                  <span className="text-fab-text font-medium">{day2EventNames.join(", ")}</span>
+                  {" — only the top players grind into day two."}
+                </>
+              ) : (
+                <>{day2EventCount > 1 ? "Multi-day runs" : "A multi-day run"} — only the top players grind into day two.</>
+              )}
             </p>
           </div>
         </div>
@@ -305,8 +312,8 @@ export function PostEventRecap({ recap, onViewOpponents, onDashboard, onImportMo
         </div>
       )}
 
-      {/* New opponents — full recap only */}
-      {!compact && !quickMode && newOpponents.length > 0 && (
+      {/* New opponents — shown in both full and quick recaps */}
+      {!compact && newOpponents.length > 0 && (
         <div className="bg-fab-surface border border-fab-border rounded-lg p-5">
           <h2 className="text-xs font-semibold text-fab-dim uppercase tracking-wider mb-3">
             {newOpponents.length} New Opponent{newOpponents.length === 1 ? "" : "s"} Faced

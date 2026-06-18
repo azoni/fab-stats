@@ -21,6 +21,7 @@ import Link from "next/link";
 import { CheckCircleIcon, FileIcon, ChevronDownIcon, ChevronUpIcon } from "@/components/icons/NavIcons";
 import { MatchResult, GameFormat, type MatchRecord, type Achievement } from "@/types";
 import { HERO_REQUIRED_CUTOFF } from "@/lib/constants";
+import { computeHeroGate } from "@/lib/import-hero-gate";
 import { HeroSelect } from "@/components/heroes/HeroSelect";
 import { computeSessionRecap, type SessionRecap } from "@/lib/session-recap";
 import { PostEventRecap } from "@/components/import/PostEventRecap";
@@ -454,6 +455,9 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
   // Per-event day-2 boundary override, keyed by origIdx. "off" disables day 2;
   // a number sets the round where day 2 starts; absent → use the auto heuristic.
   const [day2BoundaryOverrides, setDay2BoundaryOverrides] = useState<Record<number, number | "off">>({});
+  // Events the user removed from this import (by origIdx) — excluded from both
+  // the preview list and what actually gets imported. Restorable before import.
+  const [excludedEventIdxs, setExcludedEventIdxs] = useState<Set<number>>(new Set());
   // Admin-only import sandbox: when on, all reads/writes route to the isolated
   // sandbox store (src/lib/sandbox-store.ts) and every Firestore side-effect
   // (feed, leaderboard, achievements, cross-player links) is skipped — so the
@@ -697,26 +701,30 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
     return [...new Set(pasteResult.events.map((e) => e.eventType))];
   }, [pasteResult]);
 
-  // Quick mode: filter events to only those with at least one non-duplicate match
+  // Quick mode: filter events to only those with at least one non-duplicate match,
+  // and drop any the user removed from this sync.
   const quickFilteredEvents = useMemo(() => {
     if (!quickMode || !existingFingerprints) return filteredEvents;
-    return filteredEvents.filter(({ event }) =>
+    return filteredEvents.filter(({ event, origIdx }) =>
+      !excludedEventIdxs.has(origIdx) &&
       event.matches.some((m) => {
         return !existingFingerprints.has(importFingerprint(m));
       })
     );
-  }, [quickMode, existingFingerprints, filteredEvents]);
+  }, [quickMode, existingFingerprints, filteredEvents, excludedEventIdxs]);
 
   const quickImportMatches = useMemo(() => {
     if (!quickMode || !existingFingerprints) return filteredMatches;
     return filteredEvents.flatMap(({ event, origIdx }) =>
-      event.matches.flatMap((m, matchIdx) =>
-        existingFingerprints.has(importFingerprint(m))
-          ? []
-          : [applyImportOverrides(m, origIdx, matchIdx)]
-      )
+      excludedEventIdxs.has(origIdx)
+        ? []
+        : event.matches.flatMap((m, matchIdx) =>
+            existingFingerprints.has(importFingerprint(m))
+              ? []
+              : [applyImportOverrides(m, origIdx, matchIdx)]
+          )
     );
-  }, [quickMode, existingFingerprints, filteredEvents, filteredMatches, applyImportOverrides]);
+  }, [quickMode, existingFingerprints, filteredEvents, filteredMatches, applyImportOverrides, excludedEventIdxs]);
 
   // In quick mode, use the filtered (non-duplicate) events for display
   const displayEvents = quickMode ? quickFilteredEvents : filteredEvents;
@@ -808,10 +816,32 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
     const matches = pasteResult ? (quickMode ? quickImportMatches : filteredMatches) : csvMatches;
     if (!matches) return;
 
-    // For post-cutoff matches, check if hero was auto-detected or user explicitly chose one
-    const hasPostCutoffMissing = matches.some((m) => m.heroPlayed === "Unknown" && m.date >= HERO_REQUIRED_CUTOFF);
+    // Whether any match still needs a hero before importing. Events the user
+    // explicitly cleared via "No hero (clear)" are stored as ACKNOWLEDGED_UNKNOWN:
+    // their matches keep heroPlayed === "Unknown", but the user HAS resolved them,
+    // so they must not block the import. A raw per-match scan can't tell an
+    // acknowledged unknown from an unresolved one (both read "Unknown"), which is
+    // why clearing every post-cutoff event used to leave the user stuck on a
+    // contradictory "0 events need a hero" hard warning. For the paste/extension
+    // flow we build per-match gate items with overrides applied and the event's
+    // resolved state (heroOverrides) attached; CSV has no per-event review UI, so
+    // every match is treated as unresolved.
+    const gateItems = pasteResult
+      ? (quickMode ? quickFilteredEvents : filteredEvents).flatMap(({ event, origIdx }) =>
+          event.matches
+            .map((m, matchIdx) => ({ m, matchIdx }))
+            // Quick mode only imports non-duplicate matches.
+            .filter(({ m }) => !quickMode || !existingFingerprints?.has(importFingerprint(m)))
+            .map(({ m, matchIdx }) => ({
+              date: m.date,
+              heroPlayed: applyImportOverrides(m, origIdx, matchIdx).heroPlayed,
+              // An entry in heroOverrides means the user set a hero or cleared it.
+              resolved: Boolean(heroOverrides[origIdx]),
+            }))
+        )
+      : matches.map((m) => ({ date: m.date, heroPlayed: m.heroPlayed, resolved: false }));
 
-    const hasAnyMissing = matches.some((m) => m.heroPlayed === "Unknown");
+    const { hasAnyMissing, hasPostCutoffMissing } = computeHeroGate(gateItems);
 
     if (hasPostCutoffMissing) {
       setShowHeroWarning(true);
@@ -1040,6 +1070,7 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
     setOpponentHeroOverrides({});
     setTurnOrderOverrides({});
     setDay2BoundaryOverrides({});
+    setExcludedEventIdxs(new Set());
     setMatchHeroOverrides({});
     setMatchFormatOverrides({});
     setSessionRecap(null);
@@ -1187,8 +1218,25 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
       );
     }
 
-    // No new events
+    // No new events. If the user removed every event, offer to restore rather
+    // than implying they were all duplicates.
     if (quickFilteredEvents.length === 0) {
+      if (excludedEventIdxs.size > 0) {
+        return (
+          <div className="text-center py-16">
+            <h1 className="text-2xl font-bold text-fab-gold mb-2">All events removed</h1>
+            <p className="text-fab-muted mb-6">You removed every event from this sync. Restore them to import.</p>
+            <div className="flex gap-3 justify-center flex-wrap">
+              <button onClick={() => setExcludedEventIdxs(new Set())} className="px-6 min-h-[48px] py-3 rounded-md font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light active:bg-fab-gold-light transition-colors">
+                Restore all events
+              </button>
+              <button onClick={() => router.push("/")} className="px-6 min-h-[48px] py-3 rounded-md font-semibold bg-fab-surface border border-fab-border text-fab-text hover:bg-fab-surface-hover transition-colors">
+                Dashboard
+              </button>
+            </div>
+          </div>
+        );
+      }
       return (
         <div className="text-center py-16">
           <CheckCircleIcon className="w-14 h-14 text-fab-win mb-4 mx-auto" />
@@ -1230,6 +1278,22 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
           <div className="bg-fab-draw/10 border border-fab-draw/30 rounded-lg p-4 text-sm">
             <p className="text-fab-draw font-medium mb-1">Some events are missing hero info</p>
             <p className="text-fab-muted">Expand events below to set your hero. You can also edit after importing.</p>
+          </div>
+        )}
+
+        {/* Removed-events restore bar */}
+        {excludedEventIdxs.size > 0 && (
+          <div className="flex items-center justify-between gap-3 rounded-lg border border-fab-border bg-fab-bg/60 px-4 py-2.5 text-sm">
+            <span className="text-fab-muted">
+              {excludedEventIdxs.size} event{excludedEventIdxs.size === 1 ? "" : "s"} removed from this sync
+            </span>
+            <button
+              type="button"
+              onClick={() => setExcludedEventIdxs(new Set())}
+              className="font-semibold text-fab-gold hover:text-fab-gold-light transition-colors"
+            >
+              Restore all
+            </button>
           </div>
         )}
 
@@ -1276,6 +1340,19 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
                       <span className="px-2 py-0.5 rounded bg-fab-bg text-fab-dim text-xs">{event.eventType}</span>
                       <span className={`text-sm font-bold ${wins > losses ? "text-fab-win" : wins < losses ? "text-fab-loss" : "text-fab-draw"}`}>
                         {wins}W-{losses}L
+                      </span>
+                      <span
+                        role="button"
+                        tabIndex={0}
+                        aria-label="Remove this event from the sync"
+                        title="Remove from this sync"
+                        onClick={(e) => { e.stopPropagation(); setExcludedEventIdxs((prev) => new Set(prev).add(origIdx)); }}
+                        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); setExcludedEventIdxs((prev) => new Set(prev).add(origIdx)); } }}
+                        className="text-fab-dim hover:text-fab-loss transition-colors cursor-pointer"
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
                       </span>
                       {isExpanded ? <ChevronUpIcon className="w-4 h-4 text-fab-dim" /> : <ChevronDownIcon className="w-4 h-4 text-fab-dim" />}
                     </div>
@@ -1708,7 +1785,7 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
                     Install from the Chrome Web Store. Also works on Edge, Brave, and Arc.
                   </p>
 
-                  {/* Firefox fallback */}
+                  {/* Firefox install */}
                   <button
                     onClick={() => setShowOtherBrowsers(!showOtherBrowsers)}
                     className="w-full flex items-center justify-between bg-fab-bg rounded-lg p-4 text-left hover:bg-fab-bg/80 transition-colors"
@@ -1720,23 +1797,46 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
                   </button>
                   {showOtherBrowsers && (
                     <div className="bg-fab-bg rounded-lg p-4 space-y-3">
-                      <ol className="text-sm text-fab-muted space-y-2.5 list-decimal list-inside">
-                        <li>
-                          <a href="/fab-stats-extension.zip" download className="text-fab-gold hover:underline font-semibold">Download the extension zip</a>{" "}
-                          and <strong className="text-fab-text">unzip</strong> it
-                        </li>
-                        <li>
-                          Type{" "}
-                          <code className="px-1.5 py-0.5 rounded bg-fab-surface text-fab-gold text-xs font-mono select-all">about:debugging#/runtime/this-firefox</code>{" "}
-                          in the address bar
-                        </li>
-                        <li>
-                          Click{" "}
-                          <strong className="text-fab-text">&quot;Load Temporary Add-on&quot;</strong>{" "}
-                          and select <strong className="text-fab-text">manifest.json</strong> from the unzipped folder
-                        </li>
-                      </ol>
-                      <p className="text-xs text-fab-dim">Temporary add-ons reset when Firefox restarts — you&apos;ll need to reload each session.</p>
+                      {/* NOTE: link goes live once the AMO listing is approved. When
+                          creating the listing, use the slug "fab-stats-gem-exporter"
+                          so this URL resolves. See SUBMITTING-FIREFOX.md in the repo root. */}
+                      <a
+                        href="https://addons.mozilla.org/firefox/addon/fab-stats-gem-exporter/"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-fab-gold text-fab-bg font-semibold hover:bg-fab-gold-light transition-colors text-sm"
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                        </svg>
+                        Add to Firefox
+                      </a>
+                      <p className="text-xs text-fab-muted">
+                        Install from Firefox Add-ons — permanent, with automatic updates. Same one-click export as Chrome.
+                      </p>
+
+                      <details className="group">
+                        <summary className="text-xs text-fab-dim cursor-pointer hover:text-fab-muted select-none">
+                          Prefer a manual install?
+                        </summary>
+                        <ol className="text-sm text-fab-muted space-y-2.5 list-decimal list-inside mt-3">
+                          <li>
+                            <a href="/fab-stats-extension.zip" download className="text-fab-gold hover:underline font-semibold">Download the extension zip</a>{" "}
+                            and <strong className="text-fab-text">unzip</strong> it
+                          </li>
+                          <li>
+                            Type{" "}
+                            <code className="px-1.5 py-0.5 rounded bg-fab-surface text-fab-gold text-xs font-mono select-all">about:debugging#/runtime/this-firefox</code>{" "}
+                            in the address bar
+                          </li>
+                          <li>
+                            Click{" "}
+                            <strong className="text-fab-text">&quot;Load Temporary Add-on&quot;</strong>{" "}
+                            and select <strong className="text-fab-text">manifest.json</strong> from the unzipped folder
+                          </li>
+                        </ol>
+                        <p className="text-xs text-fab-dim mt-2">Temporary add-ons reset when Firefox restarts — you&apos;ll need to reload each session.</p>
+                      </details>
                     </div>
                   )}
 

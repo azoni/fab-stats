@@ -1,5 +1,5 @@
 "use client";
-import { useState, useMemo, Fragment } from "react";
+import { useState, useMemo, useEffect, Fragment } from "react";
 import Link from "next/link";
 import { ChevronDownIcon, ChevronUpIcon } from "@/components/icons/NavIcons";
 import { HeroSelect } from "@/components/heroes/HeroSelect";
@@ -69,6 +69,31 @@ function recordColor(r: { w: number; l: number }): string {
   return r.w > r.l ? "text-fab-win" : r.w < r.l ? "text-fab-loss" : "text-fab-draw";
 }
 
+/** Build the initial hero/format segments from the event's ACTUAL per-round
+ *  data, grouping consecutive rounds that share a hero + format. This makes the
+ *  "Set hero & format for rounds" editor reflect what's really saved (so it
+ *  never looks like edits were lost) and surfaces the played hero. Unknown
+ *  heroes become an empty field. */
+function deriveSegments(matches: MatchRecord[]): HeroSegment[] {
+  if (matches.length === 0) return [{ hero: "", format: "", fromRound: "1", toRound: "1" }];
+  const heroOf = (m: MatchRecord) => (m.heroPlayed && m.heroPlayed !== "Unknown" ? m.heroPlayed : "");
+  const keyOf = (m: MatchRecord) => `${heroOf(m)}|${m.format || ""}`;
+  const segs: HeroSegment[] = [];
+  let start = 0;
+  for (let i = 1; i <= matches.length; i++) {
+    if (i === matches.length || keyOf(matches[i]) !== keyOf(matches[start])) {
+      segs.push({
+        hero: heroOf(matches[start]),
+        format: matches[start].format || "",
+        fromRound: String(start + 1),
+        toRound: String(i),
+      });
+      start = i;
+    }
+  }
+  return segs;
+}
+
 interface HeroSegment {
   hero: string;
   format: string;
@@ -81,13 +106,15 @@ export function EventCard({ event, playerName, obfuscateOpponents = false, visib
   const [showShareModal, setShowShareModal] = useState(false);
   const [editingEventType, setEditingEventType] = useState(false);
   const [savingEventType, setSavingEventType] = useState(false);
-  const initHero = (() => {
-    const h = new Set(event.matches.map((m) => m.heroPlayed).filter((h) => h && h !== "Unknown"));
-    return h.size === 1 ? [...h][0]! : "";
-  })();
-  const [segments, setSegments] = useState<HeroSegment[]>([
-    { hero: initHero, format: event.format || "", fromRound: "1", toRound: String(event.matches.length) },
-  ]);
+  const [segments, setSegments] = useState<HeroSegment[]>(() => deriveSegments(event.matches));
+  // Keep the editor matching the real saved data: re-derive whenever the actual
+  // per-round hero/format changes (e.g. after an Apply). In-progress typing never
+  // changes event.matches, so it's never clobbered.
+  const matchSignature = event.matches.map((m) => `${m.heroPlayed || ""}|${m.format || ""}`).join(",");
+  useEffect(() => {
+    setSegments(deriveSegments(event.matches));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [matchSignature]);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [showGemNudge, setShowGemNudge] = useState(false);
