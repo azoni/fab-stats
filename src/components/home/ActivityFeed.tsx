@@ -169,7 +169,11 @@ export function ActivityFeed({ rankMap, eventTierMap, underlineTierMap, heroComp
             <div className="flex flex-wrap items-center gap-2">
               <h2 className="text-lg font-black text-fab-text leading-tight">Activity Feed</h2>
               {!loading && (
-                <span className="rounded-full border border-fab-border/70 bg-fab-bg/55 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-fab-dim">
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-fab-border/70 bg-fab-bg/55 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-fab-dim">
+                  <span className="relative flex h-1.5 w-1.5">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400/70" />
+                    <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                  </span>
                   {allGroups.length} updates
                 </span>
               )}
@@ -305,13 +309,25 @@ export function ActivityFeed({ rankMap, eventTierMap, underlineTierMap, heroComp
           ))}
         </div>
       ) : groups.length === 0 ? (
-        <div className="bg-fab-surface border border-fab-border rounded-lg p-4 text-center">
-          <p className="text-xs text-fab-dim">
+        <div className="flex min-h-[280px] flex-col items-center justify-center rounded-xl border border-dashed border-fab-border/70 bg-fab-bg/30 p-8 text-center">
+          <span className="mb-3 flex h-11 w-11 items-center justify-center rounded-full border border-fab-border/70 bg-fab-surface/70 text-fab-dim">
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
+            </svg>
+          </span>
+          <p className="text-sm font-semibold text-fab-text">
             {scope === "friends"
-              ? "No recent activity from friends yet."
+              ? "No friend activity yet"
               : typeFilter !== "all"
-              ? `No ${TYPE_FILTERS.find((f) => f.value === typeFilter)?.label ?? typeFilter} activity yet.`
-              : "No recent activity yet. Import some matches to get started!"}
+              ? `No ${TYPE_FILTERS.find((f) => f.value === typeFilter)?.label ?? typeFilter} activity yet`
+              : "It's quiet here"}
+          </p>
+          <p className="mt-1 max-w-xs text-xs text-fab-muted">
+            {scope === "friends"
+              ? "Add friends or favorites to build a feed around the players you follow."
+              : typeFilter !== "all"
+              ? "Try another filter, or check back soon."
+              : "Import some matches to kick off the community feed."}
           </p>
         </div>
       ) : (
@@ -330,7 +346,7 @@ export function ActivityFeed({ rankMap, eventTierMap, underlineTierMap, heroComp
                   const t = firstEvent.type;
                   router.push(GAME_EVENT_TYPES.has(t) ? `/${t}` : t === "import" ? `/search?type=${t}` : `/search?type=${t}`);
                 }}
-                className="cursor-pointer"
+                className="cursor-pointer transition-transform duration-150 hover:-translate-y-0.5"
               >
                 <GroupedFeedCard group={group} compact rankMap={rankMap} eventTierMap={eventTierMap} underlineTierMap={underlineTierMap} heroCompletionMap={heroCompletionMap} userId={user?.uid} isAdmin={isAdmin} onDelete={handleDelete} />
               </div>

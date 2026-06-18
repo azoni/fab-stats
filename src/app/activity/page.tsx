@@ -163,7 +163,7 @@ export default function ActivityPage() {
             </section>
           )}
 
-          <CommunityHighlights />
+          <CommunityHighlights entries={lbEntries} />
         </aside>
       </div>
     </div>
