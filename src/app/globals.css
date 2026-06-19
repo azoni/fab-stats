@@ -38,10 +38,38 @@
   --font-mono: var(--font-geist-mono);
   --font-display: var(--font-nunito), var(--font-geist-sans), sans-serif;
   --font-serif: var(--font-cinzel), Georgia, "Times New Roman", serif;
+  --font-display-heraldic: var(--font-cinzel), Georgia, "Times New Roman", serif;
   --fab-user-bg-image: none;
   --fab-user-bg-overlay: rgba(0, 0, 0, 0);
   --fab-user-bg-opacity: 1;
   --fab-user-bg-position: center top;
+}
+
+/* ── Heraldic cosmetic kit (ornate redesign) ──
+   The kit is "engraved metal, not emitted light": ornament is drawn SVG line-art
+   + material gradients, with no box-shadow glow and no animation by default — so
+   it degrades cleanly under every live theme. The only theme-sensitive bits are
+   the engraving ink tone and whether the optional specular sweep is allowed
+   (used by later phases; the champion pilot is fully static). */
+:root {
+  --heraldic-ink: #d8c8a0;
+  --heraldic-specular: rgba(255, 255, 255, 0.55);
+  --heraldic-motion: 1;
+}
+[data-theme="rosetta"] {
+  --heraldic-ink: #a0a0a0;
+  --heraldic-specular: transparent;
+  --heraldic-motion: 0;
+}
+[data-theme="daylight"] {
+  --heraldic-ink: #4a3f30;
+  --heraldic-specular: rgba(0, 0, 0, 0.18);
+  --heraldic-motion: 0;
+}
+
+.font-heraldic {
+  font-family: var(--font-display-heraldic);
+  letter-spacing: 0.01em;
 }
 
 body {

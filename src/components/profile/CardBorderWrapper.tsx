@@ -1,12 +1,16 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useId, type ReactNode } from "react";
+import { HeraldicFrame, FiligreeUnderline } from "@/components/cosmetics/Ornaments";
+import { materialForRgb, materialForEvent, spec, type Material } from "@/components/cosmetics/materials";
 
 export interface CardBorderConfig {
   border: string;
   shadow: string;
   rgb: string;
   placement: number;
+  /** Heraldic material (added for the ornate redesign; optional/back-compat). */
+  material?: Material;
 }
 
 export interface UnderlineConfig {
@@ -137,9 +141,15 @@ function InnerAccent({ p }: { p: number }) {
 // ── Underline bar — SVG ornamental dividers ──
 
 function UnderlineBar({ underline }: { underline: UnderlineConfig | null | undefined }) {
+  const uid = useId().replace(/:/g, "");
   if (!underline) return null;
   const p = underline.placement;
   const { color, rgb } = underline;
+
+  // ── Champion: heraldic crown filigree (ornate redesign — engraved, no glow) ──
+  if (p === 4) {
+    return <FiligreeUnderline idPrefix={`${uid}ul`} material={materialForRgb(rgb)} tier={4} />;
+  }
 
   // ── T8 / Undefeated: Simple line with center diamond ──
   if (p <= 1) {
@@ -395,6 +405,7 @@ export function CardBorderWrapper({
 }) {
   const p = cardBorder?.placement ?? 0;
   const rgb = cardBorder?.rgb;
+  const uid = useId().replace(/:/g, "");
 
   const keyframes = `
     @keyframes cb-spin { to { transform: rotate(1turn); } }
@@ -417,6 +428,27 @@ export function CardBorderWrapper({
       <div className={`relative border border-fab-border rounded-lg overflow-hidden ${contentClassName}`}>
         {children}
         <UnderlineBar underline={underline} />
+      </div>
+    );
+  }
+
+  // --- Champion (p=4): heraldic frame (ornate redesign pilot) ---
+  // Engraved metal + drawn ornament, fully static so it degrades cleanly across
+  // every live theme. Lower tiers (0-3) keep the existing renderer for now.
+  if (p === 4) {
+    const material = cardBorder.material ?? materialForRgb(rgb);
+    const s = spec(material);
+    const finish = borderStyle === "glow" ? "inlaid" : "engraved";
+    return (
+      <div className="relative">
+        <div
+          className={`relative rounded-lg overflow-hidden ${contentClassName}`}
+          style={{ borderWidth: 2, borderStyle: "solid", borderColor: s.edge }}
+        >
+          {children}
+          <UnderlineBar underline={underline} />
+        </div>
+        <HeraldicFrame idPrefix={uid} material={material} finish={finish} />
       </div>
     );
   }
@@ -874,6 +906,7 @@ export function buildCardBorder(eventType: string, placement: string): CardBorde
     shadow: `0 0 8px rgba(${tier.rgb},0.3)`,
     rgb: tier.rgb,
     placement: rank,
+    material: materialForEvent(eventType),
   };
 }
 
