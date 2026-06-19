@@ -353,15 +353,15 @@ export function countQualifyingTabs(entry: LeaderboardEntry): number {
   return RANK_TABS.filter((tab) => tab.filter(entry)).length;
 }
 
-/** Returns a CSS border-color value matching the rank's avatar glow color. */
+/** Returns a CSS border-color value matching the rank's engraved-metal material. */
 export function rankBorderColor(rank: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | null | undefined): string | undefined {
   if (!rank) return undefined;
-  return rank === 1 ? "rgba(255, 50, 150, 0.5)"
-    : rank === 2 ? "rgba(56, 189, 248, 0.45)"
-    : rank === 3 ? "rgba(250, 204, 21, 0.45)"
-    : rank === 4 ? "rgba(192, 192, 210, 0.35)"
-    : rank === 5 ? "rgba(205, 127, 50, 0.4)"
-    : "rgba(160, 160, 180, 0.25)";
+  return rank === 1 ? "rgba(123, 95, 200, 0.7)" // mythic
+    : rank === 2 ? "rgba(125, 163, 191, 0.7)" // diamond
+    : rank === 3 ? "rgba(194, 144, 47, 0.7)" // gold
+    : rank === 4 ? "rgba(154, 163, 177, 0.6)" // silver
+    : rank === 5 ? "rgba(169, 113, 47, 0.65)" // bronze
+    : "rgba(154, 163, 177, 0.35)"; // muted
 }
 
 // ── Event-tier card borders (matching PlayerProfile cardBorder logic) ──

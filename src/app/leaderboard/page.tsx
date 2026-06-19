@@ -20,6 +20,8 @@ import { WinRateRing } from "@/components/charts/WinRateRing";
 import { HeroImg } from "@/components/heroes/HeroImg";
 import { Tooltip } from "@/components/ui/tooltip";
 import { PageHero } from "@/components/ui/PageHero";
+import { Crest } from "@/components/cosmetics/Ornaments";
+import { spec, type Material } from "@/components/cosmetics/materials";
 
 const SITE_CREATOR = "azoni";
 
@@ -1067,6 +1069,8 @@ export default function LeaderboardPage() {
                 const gameEntry = gamesMap.get(entry.userId);
                 const stat = isGameTab(activeTab) && gameEntry ? getGameStat(gameEntry, activeTab) : (isKudosTab(activeTab) || isKudosGivenTab(activeTab)) && kudosEntry ? getKudosStat(kudosEntry, activeTab) : getStat(entry, activeTab);
                 const isCenter = place === 1;
+                const podMat: Material = place === 1 ? "mythic" : place === 2 ? "silver" : "gold";
+                const podSpec = spec(podMat);
                 return (
                   <Link
                     key={entry.userId}
@@ -1079,17 +1083,23 @@ export default function LeaderboardPage() {
                       : "leaderboard-card-gold"
                     }`}
                   >
-                    {/* Place indicator */}
-                    <span className={`text-xs font-bold uppercase tracking-widest mb-2 ${
-                      place === 1 ? "text-fuchsia-400" : place === 2 ? "text-sky-400" : "text-yellow-400"
-                    }`}>
-                      {place === 1 ? "1st" : place === 2 ? "2nd" : "3rd"}
-                    </span>
+                    {/* Rank crest + place indicator */}
+                    <div className="mb-2 flex flex-col items-center gap-1" style={{ lineHeight: 0 }}>
+                      <Crest
+                        idPrefix={`pod-${entry.userId}`}
+                        material={podMat}
+                        glyph={place === 1 ? "crown" : "star"}
+                        size={isCenter ? 30 : 24}
+                      />
+                      <span className="text-xs font-bold uppercase tracking-widest" style={{ color: podSpec.mid }}>
+                        {place === 1 ? "1st" : place === 2 ? "2nd" : "3rd"}
+                      </span>
+                    </div>
 
                     {/* Avatar */}
                     <div className="relative mb-2">
                       {entry.username === SITE_CREATOR && (
-                        <svg className="absolute -top-3.5 left-1/2 -translate-x-1/2 w-5 h-5 text-fab-gold drop-shadow-[0_0_4px_rgba(201,168,76,0.6)]" viewBox="0 0 24 24" fill="currentColor">
+                        <svg className="absolute -top-3.5 left-1/2 -translate-x-1/2 w-5 h-5 text-fab-gold" viewBox="0 0 24 24" fill="currentColor">
                           <path d="M2.5 19h19v3h-19zM22.5 7l-5 4-5.5-7-5.5 7-5-4 2 12h17z" />
                         </svg>
                       )}
@@ -1097,18 +1107,16 @@ export default function LeaderboardPage() {
                         <img
                           src={entry.photoUrl}
                           alt=""
-                          className={`rounded-full border-2 ${
-                            isCenter ? "w-16 h-16" : "w-12 h-12"
-                          } ${
-                            place === 1 ? "border-fuchsia-400/60" : place === 2 ? "border-sky-400/60" : "border-yellow-400/60"
-                          }`}
+                          className={`rounded-full border-2 ${isCenter ? "w-16 h-16" : "w-12 h-12"}`}
+                          style={{ borderColor: podSpec.mid }}
                         />
                       ) : (
-                        <div className={`rounded-full bg-fab-gold/20 flex items-center justify-center text-fab-gold font-bold border-2 ${
-                          isCenter ? "w-16 h-16 text-xl" : "w-12 h-12 text-sm"
-                        } ${
-                          place === 1 ? "border-fuchsia-400/60" : place === 2 ? "border-sky-400/60" : "border-yellow-400/60"
-                        }`}>
+                        <div
+                          className={`rounded-full bg-fab-gold/20 flex items-center justify-center text-fab-gold font-bold border-2 ${
+                            isCenter ? "w-16 h-16 text-xl" : "w-12 h-12 text-sm"
+                          }`}
+                          style={{ borderColor: podSpec.mid }}
+                        >
                           {entry.displayName.split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2)}
                         </div>
                       )}
@@ -1227,13 +1235,13 @@ function LeaderboardRow({
   const showBar = isRateTab(tab) && stat.rate !== undefined;
   const isCreator = entry.username === SITE_CREATOR;
 
-  const medal =
-    rank === 1 ? "text-fuchsia-400"
-    : rank === 2 ? "text-sky-400"
-    : rank === 3 ? "text-yellow-400"
-    : rank === 4 ? "text-gray-300"
-    : rank === 5 ? "text-amber-600"
-    : "text-fab-dim";
+  const medalColor =
+    rank === 1 ? "#7b5fc8" // mythic
+    : rank === 2 ? "#7da3bf" // diamond
+    : rank === 3 ? "#c2902f" // gold
+    : rank === 4 ? "#9aa3b1" // silver
+    : rank === 5 ? "#a9712f" // bronze
+    : undefined;
 
   const rankBorder =
     rank === 1 ? "rank-border-grandmaster"
@@ -1258,7 +1266,10 @@ function LeaderboardRow({
       className={`flex items-center gap-3 rounded-lg px-4 py-3 hover:border-fab-gold/30 transition-colors ${cardClass} ${isMe ? "ring-1 ring-fab-gold/30" : ""}`}
     >
       {/* Rank */}
-      <span className={`text-sm font-black w-7 text-center shrink-0 ${medal}`}>
+      <span
+        className={`text-sm font-black w-7 text-center shrink-0 ${medalColor ? "" : "text-fab-dim"}`}
+        style={medalColor ? { color: medalColor } : undefined}
+      >
         {rank}
       </span>
 
