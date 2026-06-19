@@ -1,6 +1,8 @@
 "use client";
+import { useId } from "react";
 import type { BadgeTier, TierVisual } from "@/lib/badge-tiers";
 import { TIER_VISUALS } from "@/lib/badge-tiers";
+import { spec } from "@/components/cosmetics/materials";
 
 interface Props {
   tier?: BadgeTier;
@@ -18,77 +20,51 @@ const SIZE_MAP = {
 export function BadgeTierWrapper({ tier, visual: visualOverride, children, size = "sm" }: Props) {
   const visual = visualOverride || TIER_VISUALS[tier || "base"];
   const s = SIZE_MAP[size];
+  const rawId = useId().replace(/:/g, "");
 
-  if (!visualOverride && tier === "base") {
+  // No material (base tier / untiered) → bare icon, no ring.
+  if (!visual.material) {
     return <div className={`relative ${s.outer} flex items-center justify-center`}>{children}</div>;
   }
 
-  const animClass = visual.animate ? "badge-tier-animate" : "";
+  const m = spec(visual.material);
+  const gid = `bt-${rawId}`;
+  const c = s.ring; // centre
+  const lozenge = (cx: number, cy: number, h = 1.6) =>
+    `M${cx},${cy - h} L${cx + h},${cy} L${cx},${cy + h} L${cx - h},${cy} Z`;
 
   return (
-    <div className={`relative ${s.outer} flex items-center justify-center ${animClass}`}>
-      {/* Glow layer */}
-      {visual.glowOpacity > 0 && (
-        <div
-          className="absolute inset-0 rounded-full"
-          style={{
-            boxShadow: `0 0 ${visual.animate ? 8 : 4}px rgba(${hexToRgb(visual.glowColor)},${visual.glowOpacity})`,
-          }}
-        />
-      )}
-      {/* Ring */}
-      <svg
-        className="absolute inset-0 w-full h-full"
-        viewBox={`0 0 ${s.ring * 2} ${s.ring * 2}`}
-        fill="none"
-      >
-        <circle
-          cx={s.ring}
-          cy={s.ring}
-          r={s.r}
-          stroke={visual.ringColor}
-          strokeWidth={s.sw}
-          fill="none"
-          opacity={(tier === "special" || visual === TIER_VISUALS.special) ? 0.6 : 0.8}
-        />
+    <div className={`relative ${s.outer} flex items-center justify-center`}>
+      {/* Engraved metal ring: dark containment edge + material-gradient rim +
+          inner specular keyline. No glow, no animation — degrades cleanly. */}
+      <svg className="absolute inset-0 w-full h-full" viewBox={`0 0 ${s.ring * 2} ${s.ring * 2}`} fill="none">
+        <defs>
+          <linearGradient id={gid} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={m.stops[0]} />
+            <stop offset="30%" stopColor={m.stops[1]} />
+            <stop offset="50%" stopColor={m.stops[2]} />
+            <stop offset="70%" stopColor={m.stops[3]} />
+            <stop offset="100%" stopColor={m.stops[4]} />
+          </linearGradient>
+        </defs>
+        {/* dark containment edge just outside the rim */}
+        <circle cx={c} cy={c} r={s.r + 0.5} stroke={m.edge} strokeWidth={s.sw * 0.6} fill="none" opacity={0.9} />
+        {/* material-gradient rim */}
+        <circle cx={c} cy={c} r={s.r} stroke={`url(#${gid})`} strokeWidth={s.sw} fill="none" />
+        {/* inner specular keyline */}
+        <circle cx={c} cy={c} r={s.r - 1} stroke={m.specular} strokeWidth={0.5} fill="none" opacity={0.4} />
+        {/* drawn lozenge nodes at the cardinal points (top tiers) */}
+        {visual.cornerAccents && (
+          <g fill={m.specular} opacity={0.85}>
+            <path d={lozenge(c, 1.6)} />
+            <path d={lozenge(c, s.ring * 2 - 1.6)} />
+            <path d={lozenge(1.6, c)} />
+            <path d={lozenge(s.ring * 2 - 1.6, c)} />
+          </g>
+        )}
       </svg>
-      {/* Corner accents for champion tier */}
-      {visual.cornerAccents && (
-        <svg
-          className="absolute inset-0 w-full h-full"
-          viewBox={`0 0 ${s.ring * 2} ${s.ring * 2}`}
-          fill="none"
-        >
-          {/* 4 small diamond accents at corners */}
-          <circle cx={s.ring} cy={1.5} r={1} fill={visual.ringColor} opacity={0.7} />
-          <circle cx={s.ring} cy={s.ring * 2 - 1.5} r={1} fill={visual.ringColor} opacity={0.7} />
-          <circle cx={1.5} cy={s.ring} r={1} fill={visual.ringColor} opacity={0.7} />
-          <circle cx={s.ring * 2 - 1.5} cy={s.ring} r={1} fill={visual.ringColor} opacity={0.7} />
-        </svg>
-      )}
       {/* Badge icon */}
       <div className="relative z-10">{children}</div>
-
-      {/* Inline keyframes for animated tiers */}
-      {visual.animate && (
-        <style jsx>{`
-          .badge-tier-animate {
-            animation: badge-pulse 3s ease-in-out infinite;
-          }
-          @keyframes badge-pulse {
-            0%, 100% { filter: brightness(1); }
-            50% { filter: brightness(1.15); }
-          }
-        `}</style>
-      )}
     </div>
   );
-}
-
-function hexToRgb(hex: string): string {
-  const h = hex.replace("#", "");
-  const r = parseInt(h.substring(0, 2), 16);
-  const g = parseInt(h.substring(2, 4), 16);
-  const b = parseInt(h.substring(4, 6), 16);
-  return `${r},${g},${b}`;
 }

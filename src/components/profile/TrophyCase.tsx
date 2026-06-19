@@ -59,25 +59,25 @@ const PLACEMENT_TEXT: Record<PlayoffFinish["type"], string> = {
 const TIER_SORT: Record<FinishTier, number> = { trophy: 0, medal: 1, badge: 2, marble: 3 };
 const TYPE_SORT: Record<PlayoffFinish["type"], number> = { champion: 0, finalist: 1, top4: 2, top8: 3 };
 
+// Placement → engraved-metal ramp (top highlight → dark edge). Matches the
+// heraldic material vocabulary: gold / silver / bronze, plus a cool steel for
+// top 8 so it stays distinct from the silver finalist.
 function col(type: PlayoffFinish["type"]) {
   switch (type) {
-    case "champion": return { from: "#FFD700", to: "#B8860B", stroke: "#8B6914", text: "#FFF8DC" };
-    case "finalist": return { from: "#E5E7EB", to: "#9CA3AF", stroke: "#6B7280", text: "#F9FAFB" };
-    case "top4":     return { from: "#F59E0B", to: "#92400E", stroke: "#78350F", text: "#FFFBEB" };
-    case "top8":     return { from: "#60A5FA", to: "#1E40AF", stroke: "#1E3A8A", text: "#EFF6FF" };
+    case "champion": return { from: "#f0cf6a", to: "#7a5c18", stroke: "#5a4413", text: "#fbeec0" };
+    case "finalist": return { from: "#dfe5ed", to: "#5b626e", stroke: "#3d424b", text: "#f4f7fb" };
+    case "top4":     return { from: "#dca878", to: "#5a3a1c", stroke: "#3c2613", text: "#f0d3a6" };
+    case "top8":     return { from: "#9fb2c4", to: "#39434f", stroke: "#283038", text: "#eef3f8" };
     // Defensive default so an unexpected type can never return undefined (callers read .from).
-    default:         return { from: "#60A5FA", to: "#1E40AF", stroke: "#1E3A8A", text: "#EFF6FF" };
+    default:         return { from: "#9fb2c4", to: "#39434f", stroke: "#283038", text: "#eef3f8" };
   }
 }
 
+// Depth shadow, not a glow — engraved metal sits with a contact shadow.
 function glowFilter(type: PlayoffFinish["type"]) {
-  switch (type) {
-    case "champion": return "drop-shadow(0 0 8px rgba(255,215,0,0.5)) drop-shadow(0 0 3px rgba(255,215,0,0.3))";
-    case "finalist": return "drop-shadow(0 0 4px rgba(192,192,192,0.25))";
-    case "top4":     return "drop-shadow(0 0 4px rgba(245,158,11,0.25))";
-    case "top8":     return "drop-shadow(0 0 4px rgba(96,165,250,0.25))";
-    default:         return "drop-shadow(0 0 4px rgba(96,165,250,0.25))";
-  }
+  return type === "champion"
+    ? "drop-shadow(0 1.5px 2px rgba(0,0,0,0.5))"
+    : "drop-shadow(0 1px 1.5px rgba(0,0,0,0.4))";
 }
 
 // Exports for reuse (e.g. share cards, design picker)
@@ -135,8 +135,9 @@ export function renderTrophyDesign(
 const GROUP_LABEL: Record<PlayoffFinish["type"], string> = {
   champion: "Wins", finalist: "Finals", top4: "Top 4", top8: "Top 8",
 };
+// Material mids matching col() — gold / silver / bronze / steel.
 const GROUP_COLOR: Record<PlayoffFinish["type"], string> = {
-  champion: "text-amber-400", finalist: "text-gray-400", top4: "text-amber-600", top8: "text-blue-400",
+  champion: "#c2902f", finalist: "#9aa3b1", top4: "#a9712f", top8: "#7d96aa",
 };
 
 export function TrophyCase({
@@ -197,7 +198,7 @@ export function TrophyCase({
           {groups.map((g) => (
             <div key={g.type}>
               <div className="flex items-center gap-1.5 mb-1">
-                <span className={`text-[9px] font-semibold uppercase tracking-wider ${GROUP_COLOR[g.type]}`}>
+                <span className="text-[9px] font-semibold uppercase tracking-wider" style={{ color: GROUP_COLOR[g.type] }}>
                   {GROUP_LABEL[g.type]}
                 </span>
                 <span className="text-[9px] text-fab-dim">({g.items.length})</span>

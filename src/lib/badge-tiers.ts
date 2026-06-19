@@ -1,3 +1,5 @@
+import type { Material } from "@/components/cosmetics/materials";
+
 export type BadgeTier = "base" | "bronze" | "silver" | "gold" | "diamond" | "master" | "champion" | "special";
 
 export interface BadgeTierInfo {
@@ -82,31 +84,37 @@ export function detectTierUp(badgeId: string, oldCount: number, newCount: number
   return null;
 }
 
-/** Tier visual config for rendering */
+/** Tier visual config for rendering.
+ *  `ringColor`/`glowColor` are kept as the badge's accent color (read by the
+ *  tier-up popup, badge strips, recap, etc.) but now point at the heraldic
+ *  material palette. `material` drives the engraved metal ring in
+ *  BadgeTierWrapper. `glowOpacity`/`animate` are retained for back-compat but
+ *  the wrapper no longer emits glow or pulse — engraved metal, not light. */
 export interface TierVisual {
   ringColor: string;
   glowColor: string;
   glowOpacity: number;
   animate: boolean;
   cornerAccents: boolean;
+  material?: Material;
 }
 
 export const TIER_VISUALS: Record<BadgeTier, TierVisual> = {
   base: { ringColor: "transparent", glowColor: "transparent", glowOpacity: 0, animate: false, cornerAccents: false },
-  bronze: { ringColor: "#CD7F32", glowColor: "#CD7F32", glowOpacity: 0.15, animate: false, cornerAccents: false },
-  silver: { ringColor: "#C0C0C0", glowColor: "#C0C0C0", glowOpacity: 0.2, animate: false, cornerAccents: false },
-  gold: { ringColor: "#FFD700", glowColor: "#FFD700", glowOpacity: 0.3, animate: false, cornerAccents: false },
-  diamond: { ringColor: "#B9F2FF", glowColor: "#B9F2FF", glowOpacity: 0.4, animate: true, cornerAccents: false },
-  master: { ringColor: "#E040FB", glowColor: "#E040FB", glowOpacity: 0.45, animate: true, cornerAccents: false },
-  champion: { ringColor: "#FF6D00", glowColor: "#FF6D00", glowOpacity: 0.5, animate: true, cornerAccents: true },
-  special: { ringColor: "#ec4899", glowColor: "#ec4899", glowOpacity: 0.25, animate: false, cornerAccents: false },
+  bronze: { ringColor: "#a9712f", glowColor: "#a9712f", glowOpacity: 0, animate: false, cornerAccents: false, material: "bronze" },
+  silver: { ringColor: "#9aa3b1", glowColor: "#9aa3b1", glowOpacity: 0, animate: false, cornerAccents: false, material: "silver" },
+  gold: { ringColor: "#c2902f", glowColor: "#c2902f", glowOpacity: 0, animate: false, cornerAccents: false, material: "gold" },
+  diamond: { ringColor: "#7da3bf", glowColor: "#7da3bf", glowOpacity: 0, animate: false, cornerAccents: false, material: "silver" },
+  master: { ringColor: "#7b5fc8", glowColor: "#7b5fc8", glowOpacity: 0, animate: false, cornerAccents: false, material: "mythic" },
+  champion: { ringColor: "#e0b34e", glowColor: "#e0b34e", glowOpacity: 0, animate: false, cornerAccents: true, material: "gold" },
+  special: { ringColor: "#9a7fd8", glowColor: "#9a7fd8", glowOpacity: 0, animate: false, cornerAccents: false, material: "mythic" },
 };
 
 /** Map achievement rarity to visual styling for badge strip */
 export const RARITY_VISUALS: Record<string, TierVisual> = {
-  common:    { ringColor: "#cd7f32", glowColor: "#cd7f32", glowOpacity: 0.1,  animate: false, cornerAccents: false },
-  uncommon:  { ringColor: "#60a5fa", glowColor: "#60a5fa", glowOpacity: 0.2,  animate: false, cornerAccents: false },
-  rare:      { ringColor: "#f87171", glowColor: "#f87171", glowOpacity: 0.3,  animate: false, cornerAccents: false },
-  epic:      { ringColor: "#a78bfa", glowColor: "#a78bfa", glowOpacity: 0.4,  animate: true,  cornerAccents: false },
-  legendary: { ringColor: "#fbbf24", glowColor: "#fbbf24", glowOpacity: 0.5,  animate: true,  cornerAccents: true  },
+  common:    { ringColor: "#a9712f", glowColor: "#a9712f", glowOpacity: 0, animate: false, cornerAccents: false, material: "bronze" },
+  uncommon:  { ringColor: "#9aa3b1", glowColor: "#9aa3b1", glowOpacity: 0, animate: false, cornerAccents: false, material: "silver" },
+  rare:      { ringColor: "#c2902f", glowColor: "#c2902f", glowOpacity: 0, animate: false, cornerAccents: false, material: "gold" },
+  epic:      { ringColor: "#7b5fc8", glowColor: "#7b5fc8", glowOpacity: 0, animate: false, cornerAccents: false, material: "mythic" },
+  legendary: { ringColor: "#e0b34e", glowColor: "#e0b34e", glowOpacity: 0, animate: false, cornerAccents: true,  material: "gold" },
 };
