@@ -12,8 +12,10 @@ import { SYSTEM_PROMPT, FORCE_FINAL_NUDGE } from "./prompts";
 import { TOOLS, TOOL_BY_NAME } from "./tools";
 import type { AskResult, Citation, ToolContext } from "./defs";
 
-const MAX_STEPS = 4;
-const MAX_TOKENS = 1024;
+// Tuned for a ~26s Netlify Pro function budget: room for a couple of tool
+// rounds + a fuller synthesized answer, while staying comfortably under the cap.
+const MAX_STEPS = 5;
+const MAX_TOKENS = 1500;
 
 function textFrom(content: Anthropic.ContentBlock[]): string {
   return content
