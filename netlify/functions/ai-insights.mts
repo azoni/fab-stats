@@ -20,12 +20,40 @@ function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json", ...CORS } });
 }
 
+interface ChatTurn {
+  role: "user" | "assistant";
+  content: string;
+}
+
+/** Validate client-supplied history → clean alternating turns starting with user. */
+function sanitizeHistory(raw: unknown): ChatTurn[] {
+  if (!Array.isArray(raw)) return [];
+  const turns: ChatTurn[] = [];
+  for (const item of raw) {
+    const role = (item as { role?: unknown })?.role;
+    const content = (item as { content?: unknown })?.content;
+    if ((role === "user" || role === "assistant") && typeof content === "string" && content.trim()) {
+      turns.push({ role, content: content.slice(0, 4000) });
+    }
+  }
+  const out: ChatTurn[] = [];
+  for (const t of turns) {
+    const last = out[out.length - 1];
+    if (last && last.role === t.role) continue; // no consecutive same-role
+    if (out.length === 0 && t.role !== "user") continue; // must start with user
+    out.push(t);
+  }
+  let capped = out.slice(-12); // bound token cost (also enforced by the budget cap)
+  if (capped[0]?.role === "assistant") capped = capped.slice(1);
+  return capped;
+}
+
 export default async function handler(req: Request): Promise<Response> {
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS });
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
   if (!process.env.ANTHROPIC_API_KEY) return json({ error: "Assistant not configured (ANTHROPIC_API_KEY missing)." }, 503);
 
-  let body: { question?: string };
+  let body: { question?: string; history?: unknown };
   try {
     body = await req.json();
   } catch {
@@ -34,6 +62,7 @@ export default async function handler(req: Request): Promise<Response> {
   const question = (body.question ?? "").trim();
   if (!question) return json({ error: "question is required" }, 400);
   if (question.length > 1000) return json({ error: "question too long" }, 400);
+  const history = sanitizeHistory(body.history);
 
   // Admin-only beta.
   const auth = await verifyFirebaseToken(req);
@@ -57,7 +86,7 @@ export default async function handler(req: Request): Promise<Response> {
 
   const t0 = Date.now();
   try {
-    const result = await ask(question, { uid: auth.uid, db, model });
+    const result = await ask(question, { uid: auth.uid, db, model, history });
     const latencyMs = Date.now() - t0;
 
     // Best-effort trace for the admin AI monitor (never fails the response).

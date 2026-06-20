@@ -30,9 +30,14 @@ function dedupe(cs: Citation[]): Citation[] {
   return cs.filter((c) => (seen.has(c.id) ? false : (seen.add(c.id), true)));
 }
 
+export interface ChatTurn {
+  role: "user" | "assistant";
+  content: string;
+}
+
 export async function ask(
   question: string,
-  opts: { uid: string | null; db: Firestore; maxSteps?: number; model?: string },
+  opts: { uid: string | null; db: Firestore; maxSteps?: number; model?: string; history?: ChatTurn[] },
 ): Promise<AskResult> {
   const client = anthropic();
   const maxSteps = opts.maxSteps ?? MAX_STEPS;
@@ -46,7 +51,10 @@ export async function ask(
     ...(i === TOOLS.length - 1 ? { cache_control: { type: "ephemeral" as const } } : {}),
   }));
   const system: Anthropic.TextBlockParam[] = [{ type: "text", text: SYSTEM_PROMPT, cache_control: { type: "ephemeral" } }];
-  const messages: Anthropic.MessageParam[] = [{ role: "user", content: question }];
+  const messages: Anthropic.MessageParam[] = [
+    ...(opts.history ?? []).map((t) => ({ role: t.role, content: t.content })),
+    { role: "user", content: question },
+  ];
 
   const ctx: ToolContext = { uid: opts.uid, db: opts.db, trace: () => {} };
   const citations: Citation[] = [];
