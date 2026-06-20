@@ -3,8 +3,13 @@ import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
 import { AI_MODELS, estPerQueryUsd, getModel } from "@/lib/ai-models";
-import { Brain, Activity, DollarSign, Clock, AlertTriangle, ChevronLeft } from "lucide-react";
+import { Brain, Activity, DollarSign, Clock, AlertTriangle, ChevronLeft, ShieldAlert } from "lucide-react";
 
+interface Config {
+  model: string | null;
+  monthlyBudgetUsd: number | null;
+  dailyQueryLimit: number | null;
+}
 interface Summary {
   total: number;
   totalCostUsd: number;
@@ -12,6 +17,10 @@ interface Summary {
   last7dCostUsd: number;
   errors: number;
   byModel: Record<string, { count: number; costUsd: number }>;
+  monthSpendUsd: number;
+  monthCount: number;
+  todayCount: number;
+  todaySpendUsd: number;
 }
 interface TraceRow {
   ts: string;
@@ -25,11 +34,15 @@ interface TraceRow {
   error?: string;
 }
 
+const fmtUsd = (n: number) => `$${n.toFixed(n < 1 ? 4 : 2)}`;
+
 export function AiAdmin() {
   const { user } = useAuth();
-  const [model, setModel] = useState<string | null>(null);
+  const [config, setConfig] = useState<Config | null>(null);
   const [summary, setSummary] = useState<Summary | null>(null);
   const [traces, setTraces] = useState<TraceRow[]>([]);
+  const [budgetInput, setBudgetInput] = useState("");
+  const [limitInput, setLimitInput] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -53,9 +66,11 @@ export function AiAdmin() {
     setError(null);
     try {
       const data = await call("stats");
-      setModel(data.config?.model ?? null);
+      setConfig(data.config);
       setSummary(data.summary ?? null);
       setTraces(data.traces ?? []);
+      setBudgetInput(data.config?.monthlyBudgetUsd != null ? String(data.config.monthlyBudgetUsd) : "");
+      setLimitInput(data.config?.dailyQueryLimit != null ? String(data.config.dailyQueryLimit) : "");
     } catch (e) {
       setError((e as Error)?.message ?? "Failed to load");
     } finally {
@@ -68,12 +83,12 @@ export function AiAdmin() {
   }, [user, refresh]);
 
   async function chooseModel(id: string) {
-    if (id === model || saving) return;
+    if (id === config?.model || saving) return;
     setSaving(true);
     setError(null);
     try {
       await call("set-model", { model: id });
-      setModel(id);
+      setConfig((c) => (c ? { ...c, model: id } : c));
     } catch (e) {
       setError((e as Error)?.message ?? "Failed to save");
     } finally {
@@ -81,7 +96,21 @@ export function AiAdmin() {
     }
   }
 
-  const fmtUsd = (n: number) => `$${n.toFixed(n < 1 ? 4 : 2)}`;
+  async function saveLimits() {
+    setSaving(true);
+    setError(null);
+    try {
+      const monthlyBudgetUsd = budgetInput.trim() ? Number(budgetInput) : null;
+      const dailyQueryLimit = limitInput.trim() ? Number(limitInput) : null;
+      await call("set-limits", { monthlyBudgetUsd, dailyQueryLimit });
+      await refresh();
+    } catch (e) {
+      setError((e as Error)?.message ?? "Failed to save");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   const fmtTime = (ts: string) => {
     try {
       return new Date(ts).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
@@ -89,6 +118,12 @@ export function AiAdmin() {
       return ts;
     }
   };
+
+  const budget = config?.monthlyBudgetUsd ?? null;
+  const monthSpend = summary?.monthSpendUsd ?? 0;
+  const budgetPct = budget ? Math.min(100, (monthSpend / budget) * 100) : 0;
+  const dailyLimit = config?.dailyQueryLimit ?? null;
+  const todayCount = summary?.todayCount ?? 0;
 
   return (
     <div className="max-w-5xl mx-auto space-y-5 py-2">
@@ -107,10 +142,10 @@ export function AiAdmin() {
       {/* Model switcher */}
       <section className="rounded-xl border border-fab-border bg-fab-surface p-5">
         <h2 className="text-sm font-semibold text-fab-text mb-1">Model</h2>
-        <p className="text-xs text-fab-dim mb-4">The model the assistant runs. Cheaper models cost less per question; pick what balances quality and spend.</p>
+        <p className="text-xs text-fab-dim mb-4">The model the assistant runs. Cheaper models cost less per question.</p>
         <div className="grid gap-3 sm:grid-cols-3">
           {AI_MODELS.map((m) => {
-            const selected = m.id === model;
+            const selected = m.id === config?.model;
             return (
               <button
                 key={m.id}
@@ -133,6 +168,75 @@ export function AiAdmin() {
             );
           })}
         </div>
+      </section>
+
+      {/* Budget & limits */}
+      <section className="rounded-xl border border-fab-border bg-fab-surface p-5">
+        <div className="flex items-center gap-2 mb-1">
+          <ShieldAlert className="h-4 w-4 text-fab-gold" />
+          <h2 className="text-sm font-semibold text-fab-text">Budget &amp; limits</h2>
+        </div>
+        <p className="text-xs text-fab-dim mb-4">Hard caps the assistant enforces. Leave blank for no cap. A reached cap politely declines until you raise it (or the month/day rolls over).</p>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <label className="block">
+            <span className="mb-1 block text-xs text-fab-muted">Monthly budget (USD)</span>
+            <div className="flex items-center gap-1">
+              <span className="text-fab-dim">$</span>
+              <input
+                type="number"
+                min="0"
+                step="0.5"
+                value={budgetInput}
+                onChange={(e) => setBudgetInput(e.target.value)}
+                placeholder="no cap"
+                className="w-full rounded-lg border border-fab-border bg-fab-bg px-3 py-2 text-sm text-fab-text placeholder:text-fab-dim focus:border-fab-gold focus:outline-none"
+              />
+            </div>
+          </label>
+          <label className="block">
+            <span className="mb-1 block text-xs text-fab-muted">Daily query limit</span>
+            <input
+              type="number"
+              min="0"
+              step="1"
+              value={limitInput}
+              onChange={(e) => setLimitInput(e.target.value)}
+              placeholder="no cap"
+              className="w-full rounded-lg border border-fab-border bg-fab-bg px-3 py-2 text-sm text-fab-text placeholder:text-fab-dim focus:border-fab-gold focus:outline-none"
+            />
+          </label>
+        </div>
+
+        {/* Live usage vs caps */}
+        {summary && (
+          <div className="mt-4 space-y-2">
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-fab-muted">
+                This month: <span className="font-semibold text-fab-text">{fmtUsd(monthSpend)}</span>
+                {budget != null && <span className="text-fab-dim"> / {fmtUsd(budget)}</span>}
+                <span className="text-fab-dim"> · {summary.monthCount} queries</span>
+              </span>
+              <span className="text-fab-muted">
+                Today: <span className="font-semibold text-fab-text">{todayCount}</span>
+                {dailyLimit != null && <span className="text-fab-dim"> / {dailyLimit}</span>}
+              </span>
+            </div>
+            {budget != null && (
+              <div className="h-2 w-full overflow-hidden rounded-full bg-fab-bg border border-fab-border">
+                <div className={`h-full rounded-full ${budgetPct >= 90 ? "bg-fab-loss" : budgetPct >= 70 ? "bg-amber-400" : "bg-fab-win"}`} style={{ width: `${budgetPct}%` }} />
+              </div>
+            )}
+          </div>
+        )}
+
+        <button
+          onClick={saveLimits}
+          disabled={saving}
+          className="mt-4 rounded-lg bg-fab-gold px-4 py-2 text-sm font-bold text-fab-bg transition-colors hover:bg-fab-gold-light disabled:opacity-50"
+        >
+          {saving ? "Saving…" : "Save caps"}
+        </button>
       </section>
 
       {/* Monitoring */}
@@ -163,7 +267,6 @@ export function AiAdmin() {
               </div>
             )}
 
-            {/* Recent traces */}
             <div className="mt-5 overflow-x-auto">
               <table className="w-full text-xs">
                 <thead>

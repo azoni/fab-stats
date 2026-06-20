@@ -13,12 +13,12 @@ export interface AiModelOption {
 }
 
 export const AI_MODELS: AiModelOption[] = [
-  { id: "claude-haiku-4-5-20251001", label: "Haiku 4.5", blurb: "Cheapest + fastest. Great for routing/lookups.", inPerM: 1, outPerM: 5 },
-  { id: "claude-sonnet-4-6", label: "Sonnet 4.6", blurb: "Balanced — strong reasoning at ~1/5 of Opus. Default.", inPerM: 3, outPerM: 15 },
+  { id: "claude-haiku-4-5-20251001", label: "Haiku 4.5", blurb: "Cheapest + fastest. Default — great for grounded lookups.", inPerM: 1, outPerM: 5 },
+  { id: "claude-sonnet-4-6", label: "Sonnet 4.6", blurb: "Balanced — stronger reasoning at ~5x the cost.", inPerM: 3, outPerM: 15 },
   { id: "claude-opus-4-7", label: "Opus 4.7", blurb: "Most capable, most expensive.", inPerM: 15, outPerM: 75 },
 ];
 
-export const DEFAULT_AI_MODEL = "claude-sonnet-4-6";
+export const DEFAULT_AI_MODEL = "claude-haiku-4-5-20251001";
 
 export function getModel(id: string | undefined | null): AiModelOption | undefined {
   return AI_MODELS.find((m) => m.id === id);

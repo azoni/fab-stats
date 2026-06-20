@@ -8,19 +8,7 @@ import { isAdminEmail } from "./lib/admin-check.ts";
 import { getAdminDb } from "./firebase-admin.ts";
 import { ask } from "./lib/agent/core.ts";
 import { AI_MODELS, DEFAULT_AI_MODEL } from "../../src/lib/ai-models.ts";
-import type { Firestore } from "firebase-admin/firestore";
-
-/** The admin-selected model (admin/aiConfig), validated; falls back to default. */
-async function getAiModel(db: Firestore): Promise<string> {
-  try {
-    const snap = await db.doc("admin/aiConfig").get();
-    const m = snap.data()?.model;
-    if (typeof m === "string" && AI_MODELS.some((x) => x.id === m)) return m;
-  } catch {
-    /* fall through */
-  }
-  return process.env.FAB_AGENT_MODEL || DEFAULT_AI_MODEL;
-}
+import { readAiConfig, getUsage } from "./lib/ai-usage.ts";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -53,7 +41,20 @@ export default async function handler(req: Request): Promise<Response> {
   if (!(await isAdminEmail(auth.email))) return json({ error: "The assistant is in a private admin beta." }, 403);
 
   const db = getAdminDb();
-  const model = await getAiModel(db);
+  const cfg = await readAiConfig(db);
+  const model = cfg.model && AI_MODELS.some((m) => m.id === cfg.model) ? cfg.model : process.env.FAB_AGENT_MODEL || DEFAULT_AI_MODEL;
+
+  // Enforce admin budget / rate caps before spending anything.
+  if (cfg.monthlyBudgetUsd != null || cfg.dailyQueryLimit != null) {
+    const usage = await getUsage(db);
+    if (cfg.monthlyBudgetUsd != null && usage.monthSpendUsd >= cfg.monthlyBudgetUsd) {
+      return json({ error: `The monthly AI budget ($${cfg.monthlyBudgetUsd}) has been reached. Raise it in Admin → AI.` }, 429);
+    }
+    if (cfg.dailyQueryLimit != null && usage.todayCount >= cfg.dailyQueryLimit) {
+      return json({ error: `The daily query limit (${cfg.dailyQueryLimit}) has been reached. Raise it in Admin → AI or try tomorrow.` }, 429);
+    }
+  }
+
   const t0 = Date.now();
   try {
     const result = await ask(question, { uid: auth.uid, db, model });

@@ -9,6 +9,7 @@ import { verifyFirebaseToken } from "./verify-auth.js";
 import { isAdminEmail } from "./lib/admin-check.ts";
 import { getAdminDb } from "./firebase-admin.ts";
 import { AI_MODELS, DEFAULT_AI_MODEL } from "../../src/lib/ai-models.ts";
+import { readAiConfig, getUsage } from "./lib/ai-usage.ts";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -42,7 +43,7 @@ export default async function handler(req: Request): Promise<Response> {
   if (!auth) return json({ error: "Sign in required." }, 401);
   if (!(await isAdminEmail(auth.email))) return json({ error: "Admins only." }, 403);
 
-  let body: { action?: string; model?: string };
+  let body: { action?: string; model?: string; monthlyBudgetUsd?: number | null; dailyQueryLimit?: number | null };
   try {
     body = await req.json();
   } catch {
@@ -59,9 +60,25 @@ export default async function handler(req: Request): Promise<Response> {
     return json({ ok: true, model });
   }
 
+  // ── set budget / rate caps (a value <= 0 or null clears the cap) ──
+  if (body.action === "set-limits") {
+    const clean = (v: number | null | undefined): number | null => (typeof v === "number" && v > 0 ? v : null);
+    await db.doc("admin/aiConfig").set(
+      {
+        monthlyBudgetUsd: clean(body.monthlyBudgetUsd),
+        dailyQueryLimit: body.dailyQueryLimit && body.dailyQueryLimit > 0 ? Math.floor(body.dailyQueryLimit) : null,
+        updatedAt: new Date().toISOString(),
+        updatedBy: auth.email,
+      },
+      { merge: true },
+    );
+    return json({ ok: true });
+  }
+
   // ── stats (default) ──
-  const configSnap = await db.doc("admin/aiConfig").get();
-  const model = (configSnap.data()?.model as string) || DEFAULT_AI_MODEL;
+  const cfg = await readAiConfig(db);
+  const model = cfg.model && AI_MODELS.some((m) => m.id === cfg.model) ? cfg.model : DEFAULT_AI_MODEL;
+  const usage = await getUsage(db);
 
   const snap = await db.collection("aiTraces").orderBy("ts", "desc").limit(200).get();
   const docs = snap.docs.map((d) => d.data() as TraceDoc);
@@ -88,7 +105,7 @@ export default async function handler(req: Request): Promise<Response> {
   }
 
   return json({
-    config: { model },
+    config: { model, monthlyBudgetUsd: cfg.monthlyBudgetUsd ?? null, dailyQueryLimit: cfg.dailyQueryLimit ?? null },
     summary: {
       total: docs.length,
       totalCostUsd: totalCost,
@@ -96,6 +113,10 @@ export default async function handler(req: Request): Promise<Response> {
       last7dCostUsd: last7dCost,
       errors,
       byModel,
+      monthSpendUsd: usage.monthSpendUsd,
+      monthCount: usage.monthCount,
+      todayCount: usage.todayCount,
+      todaySpendUsd: usage.todaySpendUsd,
     },
     traces: docs.slice(0, 50).map((t) => ({
       ts: t.ts,
