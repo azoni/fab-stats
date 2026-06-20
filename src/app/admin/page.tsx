@@ -287,6 +287,12 @@ export default function AdminPage() {
         actions={(
           <div className="flex items-center gap-2">
             <Link
+              href="/admin/ai"
+              className="inline-flex min-h-10 items-center rounded-md border border-fab-gold/40 bg-fab-gold/10 px-4 text-sm font-semibold text-fab-gold hover:bg-fab-gold/20"
+            >
+              🧠 AI Assistant
+            </Link>
+            <Link
               href="/admin/sandbox"
               className="inline-flex min-h-10 items-center rounded-md border border-purple-500/40 bg-purple-500/10 px-4 text-sm font-semibold text-purple-200 hover:bg-purple-500/20"
             >
