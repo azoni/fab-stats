@@ -2,7 +2,7 @@
 import { useState, useRef, useEffect, useCallback, type ReactNode } from "react";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
-import { Sparkles, Send, BookOpen, Lock, Plus } from "lucide-react";
+import { Sparkles, Send, BookOpen, Lock, Plus, Square } from "lucide-react";
 
 interface Citation {
   id: string;
@@ -16,6 +16,8 @@ interface ChatMsg {
   content: string;
   citations?: Citation[];
   pending?: boolean;
+  streaming?: boolean;
+  status?: string;
   error?: boolean;
 }
 
@@ -93,6 +95,7 @@ export default function InsightsPage() {
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
@@ -108,27 +111,97 @@ export default function InsightsPage() {
       setMessages((prev) => [
         ...prev,
         { id: crypto.randomUUID(), role: "user", content: q },
-        { id: pendingId, role: "assistant", content: "", pending: true },
+        { id: pendingId, role: "assistant", content: "", pending: true, streaming: true },
       ]);
       setBusy(true);
+      const patch = (p: Partial<ChatMsg>) => setMessages((prev) => prev.map((m) => (m.id === pendingId ? { ...m, ...p } : m)));
+      const ac = new AbortController();
+      abortRef.current = ac;
       try {
         const token = await user.getIdToken();
         const res = await fetch("/.netlify/functions/ai-insights", {
           method: "POST",
-          headers: { "content-type": "application/json", Authorization: `Bearer ${token}` },
-          body: JSON.stringify({ question: q, history }),
+          headers: { "content-type": "application/json", Authorization: `Bearer ${token}`, Accept: "text/event-stream" },
+          body: JSON.stringify({ question: q, history, stream: true }),
+          signal: ac.signal,
         });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data?.error ?? "Something went wrong.");
-        setMessages((prev) => prev.map((m) => (m.id === pendingId ? { ...m, pending: false, content: data.answer, citations: data.citations } : m)));
+
+        // Caps / auth / config errors come back as a non-200 JSON body.
+        if (!res.ok) {
+          let msg = `Request failed (${res.status}).`;
+          try {
+            const d = await res.json();
+            msg = d?.error ?? msg;
+          } catch {
+            /* non-JSON */
+          }
+          throw new Error(msg);
+        }
+
+        // Graceful fallback: server answered JSON (streaming unavailable).
+        const ct = res.headers.get("content-type") ?? "";
+        if (!res.body || ct.includes("application/json")) {
+          const data = await res.json();
+          patch({ pending: false, streaming: false, status: undefined, content: data.answer, citations: data.citations });
+          return;
+        }
+
+        // SSE: read `data: {...}\n\n` frames and apply each event.
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buf = "";
+        let answer = "";
+        let finished = false;
+        while (!finished) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          buf += decoder.decode(value, { stream: true });
+          const frames = buf.split("\n\n");
+          buf = frames.pop() ?? "";
+          for (const frame of frames) {
+            const line = frame.split("\n").find((l) => l.startsWith("data:"));
+            if (!line) continue;
+            let ev: { type: string; text?: string; value?: string; answer?: string; citations?: Citation[]; error?: string };
+            try {
+              ev = JSON.parse(line.slice(5).trim());
+            } catch {
+              continue;
+            }
+            if (ev.type === "delta") {
+              answer += ev.text ?? "";
+              patch({ content: answer, pending: false, status: undefined });
+            } else if (ev.type === "status") {
+              patch({ status: ev.value });
+            } else if (ev.type === "reset") {
+              answer = "";
+              patch({ content: "", pending: true });
+            } else if (ev.type === "done") {
+              patch({ content: ev.answer ?? answer, citations: ev.citations, pending: false, streaming: false, status: undefined });
+              finished = true;
+            } else if (ev.type === "error") {
+              patch({ error: true, content: ev.error ?? "Something went wrong.", pending: false, streaming: false, status: undefined });
+              finished = true;
+            }
+          }
+        }
+        // Stream ended without an explicit done/error (e.g. truncated) — settle the bubble.
+        patch({ pending: false, streaming: false, status: undefined });
       } catch (e) {
-        setMessages((prev) => prev.map((m) => (m.id === pendingId ? { ...m, pending: false, error: true, content: (e as Error)?.message ?? "Something went wrong." } : m)));
+        if ((e as Error)?.name === "AbortError") {
+          // User pressed Stop — keep whatever streamed so far.
+          setMessages((prev) => prev.map((m) => (m.id === pendingId ? { ...m, pending: false, streaming: false, status: undefined, content: m.content || "_Stopped._" } : m)));
+        } else {
+          patch({ pending: false, streaming: false, status: undefined, error: true, content: (e as Error)?.message ?? "Something went wrong." });
+        }
       } finally {
         setBusy(false);
+        abortRef.current = null;
       }
     },
     [busy, user, messages],
   );
+
+  const stop = useCallback(() => abortRef.current?.abort(), []);
 
   // Admin-only gate.
   if (!isAdmin) {
@@ -222,14 +295,26 @@ export default function InsightsPage() {
             className="max-h-40 flex-1 resize-none bg-transparent px-2 py-1.5 text-sm text-fab-text placeholder:text-fab-dim focus:outline-none"
             maxLength={1000}
           />
-          <button
-            type="submit"
-            disabled={busy || !input.trim()}
-            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-fab-gold text-fab-bg transition-colors hover:bg-fab-gold-light disabled:opacity-40"
-            aria-label="Send"
-          >
-            <Send className="h-4 w-4" />
-          </button>
+          {busy ? (
+            <button
+              type="button"
+              onClick={stop}
+              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-fab-border bg-fab-bg text-fab-text transition-colors hover:border-fab-gold/50"
+              aria-label="Stop"
+              title="Stop generating"
+            >
+              <Square className="h-3.5 w-3.5 fill-current" />
+            </button>
+          ) : (
+            <button
+              type="submit"
+              disabled={!input.trim()}
+              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-fab-gold text-fab-bg transition-colors hover:bg-fab-gold-light disabled:opacity-40"
+              aria-label="Send"
+            >
+              <Send className="h-4 w-4" />
+            </button>
+          )}
         </form>
       </div>
     </div>
@@ -247,13 +332,19 @@ function Bubble({ msg }: { msg: ChatMsg }) {
   return (
     <div className="flex justify-start">
       <div className="max-w-[88%] rounded-2xl rounded-bl-sm border border-fab-border bg-fab-surface px-4 py-3">
-        {msg.pending ? (
-          <Typing />
-        ) : msg.error ? (
+        {msg.error ? (
           <p className="text-sm text-fab-loss">{msg.content}</p>
+        ) : !msg.content ? (
+          <div className="flex items-center gap-2">
+            <Typing />
+            {msg.status && <span className="text-xs text-fab-dim">{msg.status}</span>}
+          </div>
         ) : (
           <>
-            <ChatText content={msg.content} />
+            <div className="relative">
+              <ChatText content={msg.content} />
+              {msg.streaming && <span className="ml-0.5 inline-block h-3.5 w-[3px] translate-y-0.5 animate-pulse rounded-sm bg-fab-gold align-text-bottom" aria-hidden />}
+            </div>
             {msg.citations && msg.citations.length > 0 && (
               <div className="mt-3 border-t border-fab-border pt-2">
                 <p className="mb-1 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-fab-dim">

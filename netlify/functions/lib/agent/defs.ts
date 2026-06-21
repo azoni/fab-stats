@@ -35,3 +35,13 @@ export interface AskResult {
   traceId: string;
   usage: { inputTokens: number; outputTokens: number; costUsd: number };
 }
+
+/**
+ * Events streamed out of `askStream` while the agent runs.
+ * - `delta`  — a chunk of model-generated answer text (append to the bubble)
+ * - `status` — a short human label for what the agent is doing (a tool round)
+ * - `reset`  — discard any answer text streamed so far (it was tool-call
+ *              preamble, not the final answer); fall back to the status line
+ * The transport layer adds `start`/`done`/`error` envelope events around these.
+ */
+export type AgentEvent = { type: "delta"; text: string } | { type: "status"; value: string } | { type: "reset" };
