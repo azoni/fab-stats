@@ -6,6 +6,7 @@ import type { User } from "firebase/auth";
 import type { LeaderboardEntry } from "@/types";
 import type { HeroMetaStats, CommunityOverview } from "@/lib/meta-stats";
 import { VISIBLE_GAMES as GAMES } from "@/lib/games";
+import { isLivingLegendHero } from "@/lib/heroes";
 import { HeroImg } from "@/components/heroes/HeroImg";
 import { ShieldIcon } from "@/components/icons/NavIcons";
 
@@ -55,32 +56,42 @@ export function LoggedOutHome({ user, communityMeta, lbEntries, communityCounts 
   const totalPlayers = Math.max(overview.totalPlayers, communityCounts?.userCount ?? 0);
   const totalMatches = Math.max(overview.totalMatches, communityCounts?.matchCount ?? 0);
 
+  // Surface players who've actually been playing lately, not all-time ELO
+  // leaders who may be inactive: sort by rolling activity (last 30d, then 7d),
+  // with the last-updated timestamp as a final tiebreaker.
   const topPlayers = useMemo(() =>
     lbEntries
       .filter((entry) => entry.isPublic && entry.username && entry.totalMatches >= 20)
-      .sort((a, b) => (b.eloRating ?? 0) - (a.eloRating ?? 0))
+      .sort((a, b) =>
+        (b.monthlyMatches ?? 0) - (a.monthlyMatches ?? 0) ||
+        (b.weeklyMatches ?? 0) - (a.weeklyMatches ?? 0) ||
+        (b.updatedAt ?? "").localeCompare(a.updatedAt ?? "")
+      )
       .slice(0, 6),
     [lbEntries],
   );
 
-  const topHeroes = useMemo(() => heroStats.slice(0, 6), [heroStats]);
+  // Exclude Living Legend heroes — they're rotated out of active competitive
+  // play, so they'd skew the "what's being played now" community snapshot.
+  const topHeroes = useMemo(
+    () => heroStats.filter((hero) => !isLivingLegendHero(hero.hero)).slice(0, 6),
+    [heroStats],
+  );
   const maxMetaShare = Math.max(1, ...topHeroes.map((hero) => hero.metaShare));
   const featuredGames = useMemo(() => GAMES.slice(0, 6), []);
 
   return (
     <div className="space-y-8">
-      {/* Hero banner — overlay is hardcoded dark on every theme so the
-          painted warrior reads. Inside the banner we use theme-independent
-          light text (zinc-*) and frosted-dark chrome so it stays readable
-          on daylight, where fab-text would otherwise be dark ink. */}
+      {/* Hero banner — a dark gradient (no illustration) with warm gold and
+          cool teal glows echoing the accent lines below. The banner is
+          hardcoded dark on every theme, so inside we use theme-independent
+          light text (zinc-*) and frosted-dark chrome to stay readable on
+          daylight, where fab-text would otherwise be dark ink. */}
       <section
         className="relative min-h-[420px] overflow-hidden rounded-xl border border-white/10 bg-zinc-950 shadow-[0_24px_60px_-48px_rgba(0,0,0,0.95)]"
         style={{
           backgroundImage:
-            "linear-gradient(90deg, rgba(18,16,12,0.98) 0%, rgba(18,16,12,0.9) 44%, rgba(18,16,12,0.58) 72%, rgba(18,16,12,0.86) 100%), url('/brand/hero-marquee.png')",
-          backgroundPosition: "center, 112% center",
-          backgroundRepeat: "no-repeat, no-repeat",
-          backgroundSize: "cover, auto 118%",
+            "radial-gradient(120% 130% at 88% 12%, rgba(240,189,85,0.12) 0%, transparent 55%), radial-gradient(110% 130% at 6% 92%, rgba(45,212,191,0.08) 0%, transparent 52%), linear-gradient(120deg, #14110c 0%, #0a0a09 58%, #131109 100%)",
         }}
       >
         <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-amber-300/50 to-transparent" />
@@ -195,8 +206,8 @@ export function LoggedOutHome({ user, communityMeta, lbEntries, communityCounts 
         <div className="fab-card rounded-xl border border-fab-border bg-fab-surface/95 p-4 sm:p-5">
           <div className="mb-4 flex items-center justify-between gap-3">
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-amber-400/80">Leaderboard</p>
-              <h2 className="mt-1 text-lg font-bold tracking-tight text-fab-text">Players to Watch</h2>
+              <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-amber-400/80">Active Now</p>
+              <h2 className="mt-1 text-lg font-bold tracking-tight text-fab-text">Recently Active</h2>
             </div>
             <Link href="/leaderboard" className="text-xs font-semibold text-fab-gold transition-colors hover:text-fab-gold-light">
               Rankings
@@ -229,7 +240,9 @@ export function LoggedOutHome({ user, communityMeta, lbEntries, communityCounts 
                     <p className={`text-xs font-black tabular-nums ${player.winRate >= 50 ? "text-fab-win" : "text-fab-loss"}`}>
                       {player.winRate.toFixed(1)}%
                     </p>
-                    <p className="text-[10px] text-fab-dim tabular-nums">{player.totalMatches} matches</p>
+                    <p className="text-[10px] text-fab-dim tabular-nums">
+                      {player.monthlyMatches > 0 ? `${player.monthlyMatches} this month` : `${player.totalMatches} total`}
+                    </p>
                   </div>
                 </Link>
               ))}

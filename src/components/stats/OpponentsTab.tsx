@@ -342,21 +342,22 @@ export function OpponentsTab({ matches, user, profile, updateMatch, deleteMatch 
         </div>
       )}
 
-      {/* Search + Filters + Sort */}
-      <div className="flex flex-wrap items-center gap-2">
-        <div className="relative">
-          <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-fab-dim pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search opponents..."
-            className="bg-fab-surface border border-fab-border rounded-md pl-8 pr-3 py-1.5 text-fab-text text-sm placeholder:text-fab-dim focus:outline-none focus:border-fab-gold w-36 sm:w-44"
-          />
-        </div>
+      {/* Search — prominent, full-width bar on its own row */}
+      <div className="relative mb-3 w-full sm:max-w-md">
+        <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-fab-dim pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search opponents by name..."
+          className="w-full bg-fab-surface border border-fab-border rounded-lg pl-10 pr-3 py-2.5 text-fab-text text-sm placeholder:text-fab-dim focus:outline-none focus:border-fab-gold focus:ring-1 focus:ring-fab-gold/40 transition-colors"
+        />
+      </div>
 
+      {/* Filters + Sort */}
+      <div className="flex flex-wrap items-center gap-2">
         {/* Format pills */}
         {allFormats.length > 1 && (
           <div className="flex gap-0.5 bg-fab-bg rounded-lg p-0.5 border border-fab-border">

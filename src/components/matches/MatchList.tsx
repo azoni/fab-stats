@@ -36,7 +36,15 @@ export function MatchList({ matches, matchOwnerUid, enableComments, editable, on
   const [filterFormat, setFilterFormat] = useState<string>("all");
   const [filterHero, setFilterHero] = useState<string>("all");
   const [filterOpponentHero, setFilterOpponentHero] = useState<string>("all");
-  const [filterMissing, setFilterMissing] = useState<string>("all");
+  // Deep-link support: /matches?filter=no-opp-hero (or no-hero) pre-applies the
+  // "Missing Data" filter so CTAs elsewhere can drop users onto the exact matches.
+  // MatchList only mounts client-side (behind StatsHub's isLoaded gate), so
+  // reading the URL in a lazy initializer is hydration-safe.
+  const [filterMissing, setFilterMissing] = useState<string>(() => {
+    if (typeof window === "undefined") return "all";
+    const f = new URLSearchParams(window.location.search).get("filter");
+    return f === "no-opp-hero" || f === "no-hero" ? f : "all";
+  });
   const [filterEventType, setFilterEventType] = useState<string>("all");
   const [filterVenue, setFilterVenue] = useState<string>("all");
   const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");

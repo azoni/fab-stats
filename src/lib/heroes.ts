@@ -157,6 +157,21 @@ export function getHeroByName(name: string): HeroInfo | undefined {
 }
 
 /**
+ * A hero is "Living Legend only" when they're legal in the Living Legend
+ * format but no longer legal in Classic Constructed or Blitz — i.e. rotated
+ * out of the active competitive formats.
+ */
+export function isLivingLegendHero(name: string): boolean {
+  const hero = getHeroByName(name);
+  if (!hero) return false;
+  return (
+    hero.legalFormats.includes("Living Legend") &&
+    !hero.legalFormats.includes("Classic Constructed") &&
+    !hero.legalFormats.includes("Blitz")
+  );
+}
+
+/**
  * Try to resolve an arbitrary string to a canonical hero name.
  * Handles case differences, partial names (e.g. "Briar" → "Briar, Warden of Thorns"),
  * and minor typos. Returns null only if no reasonable match is found.

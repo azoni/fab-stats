@@ -36,7 +36,7 @@ function getDateRange(daysAgo?: number): { since?: string; until?: string } {
 type Tab = "community" | "personal";
 
 export default function MatchupsPageContent() {
-  const [tab, setTab] = useState<Tab>("community");
+  const [userTab, setUserTab] = useState<Tab | null>(null);
   const [format, setFormat] = useState("");
   const [eventType, setEventType] = useState("");
   const [ratedFilter, setRatedFilter] = useState<"" | "rated" | "unrated">("");
@@ -46,6 +46,10 @@ export default function MatchupsPageContent() {
   const { entries, loading: lbLoading } = useLeaderboard();
 
   const isAuthenticated = !!user && !isGuest;
+
+  // Default signed-in users to their own matchups; guests can't see personal
+  // data, so they fall back to Community. A manual pick (userTab) always wins.
+  const tab: Tab = userTab ?? (isAuthenticated ? "personal" : "community");
   const selectedTime = TIME_PRESETS.find((t) => t.id === timePreset) || TIME_PRESETS[0];
   const { since, until } = getDateRange("daysAgo" in selectedTime ? selectedTime.daysAgo : undefined);
   const eventTypes = getAvailableEventTypes(entries);
@@ -62,7 +66,7 @@ export default function MatchupsPageContent() {
       {/* Tabs */}
       <div className="flex items-center gap-1 mb-4">
         <button
-          onClick={() => setTab("community")}
+          onClick={() => setUserTab("community")}
           className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
             tab === "community" ? "bg-fab-gold/15 text-fab-gold" : "text-fab-muted hover:text-fab-text"
           }`}
@@ -70,7 +74,7 @@ export default function MatchupsPageContent() {
           Community
         </button>
         <button
-          onClick={() => setTab("personal")}
+          onClick={() => setUserTab("personal")}
           className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
             tab === "personal" ? "bg-fab-gold/15 text-fab-gold" : "text-fab-muted hover:text-fab-text"
           }`}
