@@ -8,7 +8,9 @@ export function PageVisitTracker() {
   useEffect(() => {
     if (!sessionStorage.getItem("_av")) {
       sessionStorage.setItem("_av", "1");
-      logToEcosystem("site_visit", "Site visit");
+      // Portfolio traffic beacon — one visit/session to the shared leaderboard sink,
+      // via a same-origin proxy (strict CSP blocks a direct cross-origin post).
+      fetch("/.netlify/functions/log-visit", { method: "POST" }).catch(() => {});
 
       // Send today's page view total as a summary event
       getDailyPageViewTrend(1)
