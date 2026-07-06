@@ -42,3 +42,6 @@ next-env.d.ts
 
 # Local Netlify folder
 .netlify
+
+# Locally-downloaded FAB asset cache (scraped via scripts/download-fab-assets*.ps1)
+/vendor/
