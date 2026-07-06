@@ -385,6 +385,21 @@ interface ImportPageProps {
   shareMode?: boolean;
 }
 
+// The newest GEM event in a Quick Sync payload (by event date). After a
+// confirmed import, everything up to this event is logged — so the extension
+// can Smart-Sync only newer matches next time, keyed by this event id.
+function computeSyncWatermark(
+  result: PasteImportResult
+): { eventId: string; date: string } | null {
+  let best: { eventId: string; date: string } | null = null;
+  for (const ev of result.events) {
+    const eventId = ev.matches.find((m) => m.gemEventId)?.gemEventId;
+    if (!eventId) continue;
+    if (!best || ev.eventDate > best.date) best = { eventId, date: ev.eventDate };
+  }
+  return best;
+}
+
 export default function ImportPage({ shareMode = false }: ImportPageProps = {}) {
   const router = useRouter();
   const { user, profile, isGuest, isAdmin } = useAuth();
@@ -739,6 +754,35 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
   // In quick mode, use the filtered (non-duplicate) events for display
   const displayEvents = quickMode ? quickFilteredEvents : filteredEvents;
 
+  // Quick sync found nothing new (e.g. first run on a new machine whose account
+  // is already fully synced): still advance the extension's Smart Sync watermark
+  // so it doesn't re-pull full history on every future sync. Safe because every
+  // event in the payload is already logged. The normal (has-new-matches) path
+  // fires the same ping from handleImport after a confirmed import.
+  useEffect(() => {
+    if (
+      quickMode &&
+      quickPreviewReady &&
+      !imported &&
+      !importing &&
+      pasteResult &&
+      quickFilteredEvents.length === 0 &&
+      excludedEventIdxs.size === 0
+    ) {
+      try {
+        const wm = computeSyncWatermark(pasteResult);
+        if (wm) {
+          window.postMessage(
+            { __fabstats: "sync-confirmed", eventId: wm.eventId, date: wm.date },
+            window.location.origin
+          );
+        }
+      } catch {
+        // best-effort — extension falls back to a full fetch
+      }
+    }
+  }, [quickMode, quickPreviewReady, imported, importing, pasteResult, quickFilteredEvents, excludedEventIdxs]);
+
   function handleParsePaste() {
     setError("");
     setPasteResult(null);
@@ -1012,6 +1056,24 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
     // Now show the results
     setImported(true);
     setImporting(false);
+
+    // Tell the browser extension this Quick Sync was confirmed, so its Smart
+    // Sync fetches only newer matches next time. The extension's relay content
+    // script (fabstats-relay.js) listens for this message and stores the
+    // watermark. Best-effort — if nobody's listening, nothing happens.
+    if (quickMode && pasteResult) {
+      try {
+        const wm = computeSyncWatermark(pasteResult);
+        if (wm) {
+          window.postMessage(
+            { __fabstats: "sync-confirmed", eventId: wm.eventId, date: wm.date },
+            window.location.origin
+          );
+        }
+      } catch {
+        // ignore — extension falls back to a full fetch
+      }
+    }
 
     // Post to activity feed + update leaderboard (non-blocking, only for signed-in users with a profile).
     // Skipped in sandbox mode — these all write Firestore / cross-player data.

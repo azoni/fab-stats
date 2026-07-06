@@ -1,8 +1,9 @@
 {
   "manifest_version": 3,
   "name": "FaB Stats - GEM Exporter",
-  "version": "2.2.3",
+  "version": "2.3.0",
   "description": "Export your Flesh and Blood match history from GEM to FaB Stats. Uses structured parsing for accurate data extraction.",
+  "permissions": ["storage"],
   "browser_specific_settings": {
     "gecko": {
       "id": "fabstats@fabstats.net",
@@ -24,6 +25,14 @@
     {
       "matches": ["https://gem.fabtcg.com/*"],
       "js": ["content.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://www.fabstats.net/import*",
+        "https://fabstats.net/import*"
+      ],
+      "js": ["fabstats-relay.js"],
       "run_at": "document_idle"
     }
   ]
