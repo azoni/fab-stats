@@ -218,13 +218,27 @@ export function searchHeroes(query: string, format?: string): HeroInfo[] {
   );
 }
 
-/** Filter heroes by game format. Returns all heroes if format has no mapping.
- *  Living Legend heroes are always included for constructed formats since users
- *  may need to record historical matches played before the hero was LL'd. */
+// Rotating constructed formats where a hero that has since moved to Living
+// Legend may still appear in *historical* match records — so LL heroes stay
+// selectable. Limited/other formats (Draft, Sealed, Clash, Ultimate Pit Fight)
+// are strict: a hero must actually be legal in that format to be picked. This
+// keeps e.g. Arakni (a CC/LL hero) out of a Draft event's hero picker.
+const LL_HISTORICAL_FORMATS = new Set<string>([
+  "Classic Constructed",
+  "Blitz",
+  "Silver Age",
+]);
+
+/** Filter heroes by game format. Returns all heroes if format has no mapping
+ *  ("Other"/unknown). For rotating constructed formats, Living Legend heroes
+ *  are also included so historical matches remain recordable. */
 export function getHeroesForFormat(format: string): HeroInfo[] {
   // "Other" or unknown formats → show all heroes
   if (!format || format === "Other") return allHeroes;
+  const includeLivingLegend = LL_HISTORICAL_FORMATS.has(format);
   return allHeroes.filter(
-    (h) => h.legalFormats.includes(format) || h.legalFormats.includes("Living Legend")
+    (h) =>
+      h.legalFormats.includes(format) ||
+      (includeLivingLegend && h.legalFormats.includes("Living Legend"))
   );
 }
