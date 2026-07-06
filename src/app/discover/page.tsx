@@ -32,7 +32,7 @@ const FILTERS: { id: LinkFilter; label: string }[] = [
 
 const SITE_CREATOR_USERNAME = "azoni";
 const SITE_CREATOR_DISCOVER_LINKS: NonNullable<UserProfile["socialLinks"]> = {
-  twitter: "azoniNFT",
+  twitter: "azoniTCG",
   discord: "azonii",
   metafyGuide: "https://mfy.gg/@azoni/members?membershipId=99383fe4-b403-4f05-a041-c3212bd7ea30",
   metafyGuideTitle: "Azoni's Competitive Hala",
