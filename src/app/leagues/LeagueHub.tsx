@@ -16,6 +16,7 @@ type Tab = "browse" | "about" | "create";
 
 const FORMAT_OPTIONS = [
   "Classic Constructed",
+  "Silver Age",
   "Blitz",
   "Sealed",
   "Draft",

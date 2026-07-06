@@ -59,6 +59,17 @@ export function HeroSelect({ value, onChange, label, format, allowClear }: HeroS
     setIsOpen(false);
   }
 
+  function commitQueryIfUnambiguous() {
+    const trimmed = query.trim().toLowerCase();
+    if (!trimmed) return false;
+    const exact = results.find((hero) => hero.name.toLowerCase() === trimmed);
+    const unique = results.length === 1 ? results[0] : undefined;
+    const hero = exact || unique;
+    if (!hero) return false;
+    handleSelect(hero);
+    return true;
+  }
+
   function handleKeyDown(e: React.KeyboardEvent) {
     if (e.key === "ArrowDown") {
       e.preventDefault();
@@ -69,6 +80,8 @@ export function HeroSelect({ value, onChange, label, format, allowClear }: HeroS
     } else if (e.key === "Enter" && results[highlighted]) {
       e.preventDefault();
       handleSelect(results[highlighted]);
+    } else if (e.key === "Tab") {
+      commitQueryIfUnambiguous();
     } else if (e.key === "Escape") {
       setIsOpen(false);
     }
@@ -111,6 +124,13 @@ export function HeroSelect({ value, onChange, label, format, allowClear }: HeroS
               setIsOpen(true);
             }}
             onFocus={() => setIsOpen(true)}
+            onBlur={() => {
+              window.setTimeout(() => {
+                if (wrapperRef.current?.contains(document.activeElement)) return;
+                commitQueryIfUnambiguous();
+                setIsOpen(false);
+              }, 0);
+            }}
             onKeyDown={handleKeyDown}
             placeholder="Search heroes..."
             className="flex-1 bg-transparent outline-none text-fab-text placeholder:text-fab-dim text-sm"

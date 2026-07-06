@@ -772,6 +772,7 @@ function OrganizerEditor({
 
   const FORMAT_OPTIONS = [
     "Classic Constructed",
+    "Silver Age",
     "Blitz",
     "Sealed",
     "Draft",
