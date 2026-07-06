@@ -66,7 +66,7 @@ const SHOP_LINKS: SupportLink[] = [
   {
     title: "Shop Amazon",
     description: "Start Amazon shopping here. You pay the same price and Amazon sends a small percentage to FaB Stats.",
-    href: "https://www.amazon.com/?tag=oldwaystoda00-20",
+    href: "https://www.amazon.com/?tag=fabstats-20",
     trackKey: "amazon",
     color: "text-orange-400",
     bgColor: "bg-orange-400/10",
