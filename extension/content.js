@@ -8,8 +8,24 @@
   // Prevent double injection
   if (document.getElementById("fab-stats-exporter")) return;
 
-  const VERSION = "2.2.3";
+  const VERSION = "2.3.0";
   const FABSTATS_IMPORT_URL = "https://www.fabstats.net/import";
+
+  // Cross-browser extension storage (Firefox exposes `browser`, Chrome `chrome`).
+  // Used to remember the newest event we've confirmed-synced so "Smart Sync"
+  // can fetch only the gap since last time instead of a guessed page count.
+  const extStorage = (typeof browser !== "undefined" ? browser : chrome).storage.local;
+  const SYNC_WATERMARK_KEY = "fabStatsSyncWatermark";
+
+  async function getSyncWatermark() {
+    try {
+      const out = await extStorage.get(SYNC_WATERMARK_KEY);
+      const wm = out && out[SYNC_WATERMARK_KEY];
+      return wm && wm.eventId ? wm : null;
+    } catch {
+      return null;
+    }
+  }
 
   // ── Known FaB Hero Names ──────────────────────────────────────
   const KNOWN_HEROES = new Set([
@@ -476,6 +492,10 @@
   async function fetchAllPages(onProgress, opts) {
     const maxPages = opts.maxPages || 0;
     const maxEvents = opts.maxEvents || 0;
+    // Smart Sync: keep pulling history (newest-first) until we reach the event
+    // we last confirmed-synced, then stop. Empty string = no watermark → behaves
+    // like a full fetch (first-ever sync, or watermark scrolled off history).
+    const untilEventId = opts.untilEventId || "";
 
     // Always fetch page 1 from the history endpoint. We deliberately do NOT
     // reuse the current DOM even when already on the history page: GEM's live
@@ -489,10 +509,12 @@
     let allEvents = await parseEventsFromDoc(doc1);
     onProgress(1, totalPages, allEvents.length);
 
+    let reachedWatermark = !!untilEventId && allEvents.some(e => e.gemEventId === untilEventId);
+
     // If maxEvents is set and we already have enough, stop early
     if (maxEvents && allEvents.length >= maxEvents) {
       allEvents = allEvents.slice(0, maxEvents);
-    } else {
+    } else if (!reachedWatermark) {
       // Fetch remaining pages in batches of 3
       for (let batch = 2; batch <= totalPages; batch += 3) {
         if (maxEvents && allEvents.length >= maxEvents) break;
@@ -517,11 +539,24 @@
           if (maxEvents && allEvents.length >= maxEvents) break;
         }
         onProgress(Math.min(batch + 2, totalPages), totalPages, allEvents.length);
+
+        // Smart Sync: once the last-synced event appears, we've bridged the gap.
+        if (untilEventId && allEvents.some(e => e.gemEventId === untilEventId)) {
+          reachedWatermark = true;
+          break;
+        }
       }
 
       if (maxEvents && allEvents.length > maxEvents) {
         allEvents = allEvents.slice(0, maxEvents);
       }
+    }
+
+    // Drop everything older than the watermark event (inclusive keep) — those
+    // are already logged. Dedup on import handles the watermark event itself.
+    if (untilEventId && reachedWatermark) {
+      const idx = allEvents.findIndex(e => e.gemEventId === untilEventId);
+      if (idx >= 0) allEvents = allEvents.slice(0, idx + 1);
     }
 
     // Also check the player page for in-progress events
@@ -690,7 +725,8 @@
   // ── Quick Sync Button (primary — used most often) ──────────────
 
   const quickBtn = document.createElement("button");
-  quickBtn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;margin-right:6px;"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>Quick Sync';
+  const QUICK_ICON = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;margin-right:6px;"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>';
+  quickBtn.innerHTML = QUICK_ICON + "Smart Sync";
   Object.assign(quickBtn.style, {
     width: "100%",
     boxSizing: "border-box",
@@ -749,20 +785,32 @@
 
   // ── Quick Sync Selector ─────────────────────────────────────
 
-  // Sync mode: "latest" (first GEM history page) or "pages" (N pages)
+  // Sync mode: "smart" (auto-detect only new events since last sync) or
+  // "pages" (manual N-page pull).
   const stored = JSON.parse(localStorage.getItem("fab-stats-quick-opts") || "null");
-  let syncMode = (stored && stored.mode) || "latest";
+  let syncMode = (stored && stored.mode) || "smart";
   let syncCount = (stored && stored.count) || 1;
-  // Migrate old "events" mode to "latest"
-  if (syncMode === "events") { syncMode = "latest"; syncCount = 4; }
+  // Migrate retired modes ("latest" 1-page, "events") to Smart Sync.
+  if (syncMode === "latest" || syncMode === "events") { syncMode = "smart"; }
 
   function saveSyncOpts() {
     localStorage.setItem("fab-stats-quick-opts", JSON.stringify({ mode: syncMode, count: syncCount }));
   }
 
-  function getSyncOpts() {
-    if (syncMode === "latest") return { maxPages: 1 };
-    return { maxPages: syncCount };
+  // Resolve fetch options for a Quick Sync. Async because Smart mode reads the
+  // stored watermark. No watermark (first sync / cleared) → {} = full history.
+  async function getSyncOpts() {
+    if (syncMode === "pages") return { maxPages: syncCount };
+    const wm = await getSyncWatermark();
+    return wm ? { untilEventId: wm.eventId } : {};
+  }
+
+  function quickBtnLabel() {
+    if (syncMode === "pages") return "Sync " + syncCount + " Page" + (syncCount === 1 ? "" : "s");
+    return "Smart Sync";
+  }
+  function updateQuickLabel() {
+    quickBtn.innerHTML = QUICK_ICON + quickBtnLabel();
   }
 
   const selectorWrap = document.createElement("div");
@@ -783,16 +831,17 @@
       alignItems: "center",
     });
 
-    // ─ Latest button ─
-    const latestBtn = document.createElement("button");
-    latestBtn.textContent = "Latest";
-    const isLatest = syncMode === "latest";
-    Object.assign(latestBtn.style, {
+    // ─ Smart button ─
+    const smartBtn = document.createElement("button");
+    smartBtn.textContent = "Smart";
+    smartBtn.title = "Auto-sync only matches added since your last sync";
+    const isSmart = syncMode === "smart";
+    Object.assign(smartBtn.style, {
       flex: "1",
       padding: "5px 0",
-      background: isLatest ? "rgba(96,165,250,0.2)" : "transparent",
-      color: isLatest ? "#60a5fa" : "#666",
-      border: isLatest ? "1px solid #60a5fa" : "1px solid #444",
+      background: isSmart ? "rgba(96,165,250,0.2)" : "transparent",
+      color: isSmart ? "#60a5fa" : "#666",
+      border: isSmart ? "1px solid #60a5fa" : "1px solid #444",
       borderRadius: "6px",
       fontSize: "11px",
       fontWeight: "700",
@@ -800,8 +849,8 @@
       fontFamily: "inherit",
       transition: "all 0.15s",
     });
-    latestBtn.addEventListener("click", () => {
-      syncMode = "latest";
+    smartBtn.addEventListener("click", () => {
+      syncMode = "smart";
       saveSyncOpts();
       renderSelector();
     });
@@ -870,6 +919,7 @@
         syncMode = "pages";
         syncCount = v;
         saveSyncOpts();
+        updateQuickLabel();
       }
     });
 
@@ -887,9 +937,10 @@
     pagesWrap.appendChild(pagesLabel);
     pagesWrap.appendChild(pagesInput);
 
-    row.appendChild(latestBtn);
+    row.appendChild(smartBtn);
     row.appendChild(pagesWrap);
     selectorWrap.appendChild(row);
+    updateQuickLabel();
   }
   renderSelector();
 
@@ -1167,7 +1218,7 @@
       const label = quickMode ? "Quick Syncing..." : "Fetching match history...";
       showOverlay(label, "Reading page 1", 0);
 
-      const fetchOpts = quickMode ? getSyncOpts() : {};
+      const fetchOpts = quickMode ? await getSyncOpts() : {};
 
       const [allEvents, userGemId] = await Promise.all([
         fetchAllPages((current, total, matchCount) => {
