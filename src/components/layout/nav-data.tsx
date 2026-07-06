@@ -54,13 +54,13 @@ export const navLinks: NavLink[] = [
   { href: "/teams", label: "Teams", icon: <NavAssetIcon name="teams" />, color: "text-sky-400", bg: "bg-sky-400/10" },
   { href: "/achievements", label: "Achievements", icon: <NavAssetIcon name="achievements" />, color: "text-yellow-400", bg: "bg-yellow-400/10" },
   { href: "/support", label: "Support", icon: <NavAssetIcon name="support" />, color: "text-pink-400", bg: "bg-pink-400/10", iconOnly: true, subItems: [
+    { href: "https://www.amazon.com/?tag=fabstats-20", label: "Shop Amazon", badge: "Free", icon: <ShoppingCart className="w-3.5 h-3.5" /> },
+    { href: "https://partner.tcgplayer.com/fabstats", label: "Shop TCGplayer", badge: "Free", icon: <ShoppingCart className="w-3.5 h-3.5" /> },
+    { href: "/feedback", label: "Send Feedback", icon: <MessageCircle className="w-3.5 h-3.5" /> },
     { href: "https://discord.gg/WPP5aqCUHY", label: "Join Discord", icon: <DiscordIcon /> },
     { href: "https://discord.com/oauth2/authorize?client_id=1478583612537573479&permissions=0&scope=bot+applications.commands", label: "Add Discord Bot", icon: <Bot className="w-3.5 h-3.5" /> },
     { href: "https://x.com/FabStats", label: "Follow on X", icon: <XIcon /> },
     { href: "https://mfy.gg/@azoni/members?membershipId=99383fe4-b403-4f05-a041-c3212bd7ea30", label: "Metafy Membership", icon: <Users className="w-3.5 h-3.5" /> },
-    { href: "https://www.amazon.com/?tag=fabstats-20", label: "Shop Amazon", badge: "Free", icon: <ShoppingCart className="w-3.5 h-3.5" /> },
-    { href: "https://partner.tcgplayer.com/fabstats", label: "Shop TCGplayer", badge: "Free", icon: <ShoppingCart className="w-3.5 h-3.5" /> },
-    { href: "/feedback", label: "Send Feedback", icon: <MessageCircle className="w-3.5 h-3.5" /> },
   ] },
   { href: "/extras", label: "Extras", icon: <NavAssetIcon name="extras" />, color: "text-violet-400", bg: "bg-violet-400/10", subItems: [
     { href: "/games", label: "Daily Games", icon: <Gamepad2 className="w-3.5 h-3.5" /> },
