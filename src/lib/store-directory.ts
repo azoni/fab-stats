@@ -29,6 +29,18 @@ export interface StoreDirectoryEntry {
   uniquePlayers: number;
 }
 
+/** Match a store name against a search query, tolerant of spacing and
+ *  punctuation: "On Play Games" finds "OnPlay Games" (both slugify to
+ *  onplaygames), and "duende verde" finds a longer venue that contains it.
+ *  Falls back to a plain case-insensitive substring for short queries. */
+export function storeNameMatchesQuery(name: string, query: string): boolean {
+  const q = query.trim().toLowerCase();
+  if (!q) return false;
+  if (name.toLowerCase().includes(q)) return true;
+  const qSlug = slugifyStoreName(query);
+  return qSlug.length >= 2 && slugifyStoreName(name).includes(qSlug);
+}
+
 /** Bounded Levenshtein — returns max+1 as soon as the distance exceeds `max`. */
 function editDistance(a: string, b: string, max: number): number {
   if (Math.abs(a.length - b.length) > max) return max + 1;

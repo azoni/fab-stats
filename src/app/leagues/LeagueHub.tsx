@@ -3,7 +3,7 @@ import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
 import { getAllLeagues, createLeague, joinLeague } from "@/lib/leagues";
-import { getStoreDirectory, slugifyStoreName, findNearMatchStore, type StoreDirectoryEntry } from "@/lib/store-directory";
+import { getStoreDirectory, slugifyStoreName, findNearMatchStore, storeNameMatchesQuery, type StoreDirectoryEntry } from "@/lib/store-directory";
 import type { League, LeagueScoringRules } from "@/types";
 import { toast } from "sonner";
 import { PageHero } from "@/components/ui/PageHero";
@@ -196,11 +196,10 @@ export default function LeagueHub() {
   }, []);
 
   const filteredDirectory = useMemo(() => {
-    const q = storeSearch.trim().toLowerCase();
     // Don't show any stores until the user actually types — the directory has
     // potentially thousands of entries and picking is sparse.
-    if (!q) return [];
-    return directory.filter((d) => d.name.toLowerCase().includes(q));
+    if (!storeSearch.trim()) return [];
+    return directory.filter((d) => storeNameMatchesQuery(d.name, storeSearch));
   }, [directory, storeSearch]);
 
   // Whether the typed search resolves to a store that isn't already in the
