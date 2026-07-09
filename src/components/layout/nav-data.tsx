@@ -8,8 +8,6 @@ import {
   Settings,
   ShoppingCart,
   Star,
-  Store,
-  Trophy,
   Users,
 } from "lucide-react";
 
@@ -51,7 +49,6 @@ export const navLinks: NavLink[] = [
   ] },
   { href: "/leaderboard", label: "Rankings", icon: <NavAssetIcon name="rankings" />, color: "text-amber-400", bg: "bg-amber-400/10" },
   { href: "/discover", label: "Discover", icon: <NavAssetIcon name="discover" />, color: "text-emerald-400", bg: "bg-emerald-400/10" },
-  { href: "/teams", label: "Teams", icon: <NavAssetIcon name="teams" />, color: "text-sky-400", bg: "bg-sky-400/10" },
   { href: "/achievements", label: "Achievements", icon: <NavAssetIcon name="achievements" />, color: "text-yellow-400", bg: "bg-yellow-400/10" },
   { href: "/support", label: "Support", icon: <NavAssetIcon name="support" />, color: "text-pink-400", bg: "bg-pink-400/10", iconOnly: true, subItems: [
     { href: "https://www.amazon.com/?tag=fabstats-20", label: "Shop Amazon", badge: "Free", icon: <ShoppingCart className="w-3.5 h-3.5" /> },
@@ -64,8 +61,6 @@ export const navLinks: NavLink[] = [
   ] },
   { href: "/extras", label: "Extras", icon: <NavAssetIcon name="extras" />, color: "text-violet-400", bg: "bg-violet-400/10", subItems: [
     { href: "/games", label: "Daily Games", icon: <Gamepad2 className="w-3.5 h-3.5" /> },
-    { href: "/leagues", label: "Leagues", badge: "Beta", icon: <Trophy className="w-3.5 h-3.5" /> },
-    { href: "/stores", label: "Stores", badge: "Beta", icon: <Store className="w-3.5 h-3.5" /> },
     { href: "/compare", label: "Versus" },
     { href: "/docs", label: "Docs" },
     { href: "/changelog", label: "Changelog" },

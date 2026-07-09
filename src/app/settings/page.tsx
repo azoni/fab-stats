@@ -693,14 +693,14 @@ export default function SettingsPage() {
 
             <div className="flex flex-col gap-3 border-t border-fab-border pt-4 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-xs leading-5 text-fab-muted">
-                Tags are comma separated and searchable on Discover. Your Discord stays on the profile card so people can connect without turning it into a public link.
+                Tags are comma separated and searchable on the Players page. Your Discord stays on the profile card so people can connect without turning it into a public link.
               </p>
               <div className="flex shrink-0 gap-2">
                 <Link
-                  href="/discover"
+                  href="/players"
                   className="inline-flex items-center justify-center rounded-lg border border-fab-border bg-fab-bg px-4 py-2 text-sm font-semibold text-fab-muted transition-colors hover:border-fab-gold/40 hover:text-fab-text"
                 >
-                  View Discover
+                  View Players
                 </Link>
                 <button
                   type="submit"
