@@ -344,6 +344,10 @@ export interface League {
   /** Slugified venue names — matches resolve against `slugify(match.venue)`.
    *  Slugs come from the auto-derived store directory. */
   storeSlugs: string[];
+  /** Display names for stores that aren't in the auto-directory (organizer typed
+   *  them in). Keyed by slug. Directory stores resolve their name from the
+   *  directory, so only free-typed slugs need an entry here. Optional/back-compat. */
+  storeNames?: Record<string, string>;
   scoringRules: LeagueScoringRules;
   status: "draft" | "active" | "completed";
   memberCount: number;

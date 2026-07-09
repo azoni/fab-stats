@@ -13,7 +13,7 @@ import {
   subscribeToLeagueMembers,
   updateLeague,
 } from "@/lib/leagues";
-import { getStoreDirectory, type StoreDirectoryEntry } from "@/lib/store-directory";
+import { getStoreDirectory, slugifyStoreName, type StoreDirectoryEntry } from "@/lib/store-directory";
 import { computeLeagueStandings, recomputeAndStoreStandings } from "@/lib/leagues-scoring";
 import { doc, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
@@ -123,7 +123,13 @@ export default function LeaguePage() {
     if (!league) return [];
     const bySlug = new Map(directory.map((d) => [d.slug, d]));
     return league.storeSlugs.map(
-      (slug) => bySlug.get(slug) || { slug, name: slug, totalMatches: 0, uniquePlayers: 0 },
+      (slug) =>
+        bySlug.get(slug) || {
+          slug,
+          name: league.storeNames?.[slug] || slug,
+          totalMatches: 0,
+          uniquePlayers: 0,
+        },
     );
   }, [league, directory]);
 
@@ -698,6 +704,7 @@ function OrganizerEditor({
     league.scoringRules.eligibleFormats || [],
   );
   const [storeSlugs, setStoreSlugs] = useState<string[]>(league.storeSlugs);
+  const [storeNames, setStoreNames] = useState<Record<string, string>>(league.storeNames || {});
   const [storeSearch, setStoreSearch] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -710,6 +717,34 @@ function OrganizerEditor({
     if (!q) return directory;
     return directory.filter((d) => d.name.toLowerCase().includes(q));
   }, [directory, storeSearch]);
+
+  const typedStoreSlug = slugifyStoreName(storeSearch);
+  const canAddTypedStore =
+    !!storeSearch.trim() &&
+    typedStoreSlug.length >= 2 &&
+    !directory.some((d) => d.slug === typedStoreSlug) &&
+    !storeSlugs.includes(typedStoreSlug);
+
+  // Add a store by typed name (not in the auto-directory). Matches count by slug.
+  function addTypedStore() {
+    const nm = storeSearch.trim().replace(/\s+/g, " ");
+    const slug = slugifyStoreName(nm);
+    if (!slug || slug.length < 2) {
+      toast.error("Store name is too short.");
+      return;
+    }
+    const inDir = directory.find((d) => d.slug === slug);
+    if (inDir) {
+      if (!storeSlugs.includes(slug)) setStoreSlugs((s) => [...s, slug]);
+      setStoreSearch("");
+      return;
+    }
+    if (!storeSlugs.includes(slug)) {
+      setStoreSlugs((s) => [...s, slug]);
+      setStoreNames((n) => ({ ...n, [slug]: nm }));
+    }
+    setStoreSearch("");
+  }
 
   async function handleSave() {
     // Pre-flight validation — same checks as the create form so an organizer
@@ -750,6 +785,8 @@ function OrganizerEditor({
         eligibleEventTypes: eligibleEventTypes.length > 0 ? eligibleEventTypes : undefined,
         eligibleFormats: eligibleFormats.length > 0 ? eligibleFormats : undefined,
       };
+      const prunedNames: Record<string, string> = {};
+      for (const s of storeSlugs) if (storeNames[s]) prunedNames[s] = storeNames[s];
       await updateLeague(league.id, {
         name: name.trim(),
         description: description.trim(),
@@ -759,6 +796,7 @@ function OrganizerEditor({
         startDate,
         endDate,
         storeSlugs,
+        storeNames: prunedNames,
         scoringRules,
         status,
       });
@@ -958,7 +996,7 @@ function OrganizerEditor({
           <div className="mt-2 flex flex-wrap gap-1.5">
             {storeSlugs.map((slug) => {
               const entry = directory.find((d) => d.slug === slug);
-              const label = entry?.name || slug;
+              const label = entry?.name || storeNames[slug] || slug;
               return (
                 <button
                   key={slug}
@@ -979,10 +1017,28 @@ function OrganizerEditor({
 
         <input
           className="mt-2 w-full rounded-md border border-fab-border bg-fab-bg px-3 py-2 text-sm text-fab-text placeholder:text-fab-dim focus:border-fab-gold/60 focus:outline-none focus:ring-2 focus:ring-fab-gold/30"
-          placeholder="Search store directory to add or remove…"
+          placeholder="Search the directory, or type a name to add…"
           value={storeSearch}
           onChange={(e) => setStoreSearch(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && canAddTypedStore) {
+              e.preventDefault();
+              addTypedStore();
+            }
+          }}
         />
+        {canAddTypedStore && (
+          <button
+            type="button"
+            onClick={addTypedStore}
+            className="mt-2 inline-flex w-full items-center justify-between gap-2 rounded-md border border-dashed border-fab-gold/50 bg-fab-gold/[0.06] px-3 py-2 text-left text-sm text-fab-gold hover:bg-fab-gold/[0.12]"
+          >
+            <span>
+              Add “<span className="font-semibold">{storeSearch.trim()}</span>” by name
+            </span>
+            <span className="text-[16px] leading-none">＋</span>
+          </button>
+        )}
         {!storeSearch.trim() ? (
           <p className="mt-2 rounded-md border border-dashed border-fab-border bg-fab-bg/40 px-3 py-3 text-center text-[11px] text-fab-muted">
             Type to search the directory of {directory.length} stores.

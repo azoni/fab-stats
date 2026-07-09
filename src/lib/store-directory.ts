@@ -1,5 +1,5 @@
 import { collection, doc, getDoc, getDocs, query, where, limit as fLimit } from "firebase/firestore";
-import { db } from "./firebase";
+import { db, auth } from "./firebase";
 import type { LeaderboardEntry } from "@/types";
 import { getLeaderboardEntries } from "./leaderboard";
 import { isBlockedUser } from "./blocked-users";
@@ -62,6 +62,9 @@ type DirectoryAcc = {
   slug: string;
   nameVariants: Map<string, number>;
   totalMatches: number;
+  // Every player who logged here (public + private) — the honest unique count.
+  playerIds: Set<string>;
+  // Public players only — the named roster shown on the store page.
   players: Map<string, StorePlayerStat>;
 };
 
@@ -81,7 +84,7 @@ let cachedMap: Map<string, DirectoryAcc> | null = null;
 let cachedMapAt = 0;
 let refreshInFlight = false;
 const CACHE_TTL_MS = 15 * 60_000;
-const STORAGE_KEY = "fabstats.store-directory.v3";
+const STORAGE_KEY = "fabstats.store-directory.v4";
 
 interface SerializedAcc {
   slug: string;
@@ -90,6 +93,8 @@ interface SerializedAcc {
   tm: number;
   // [userId, StorePlayerStat] pairs
   pl: Array<[string, StorePlayerStat]>;
+  // all player ids (public + private) for the honest unique count
+  pi: string[];
 }
 interface SerializedCache {
   at: number;
@@ -116,6 +121,8 @@ function hydrateFromStorage(): Map<string, DirectoryAcc> | null {
       slug: b.slug,
       nameVariants: new Map(b.nv),
       totalMatches: b.tm,
+      // Older payloads (pre-v4) have no `pi` — default to the named players.
+      playerIds: new Set(b.pi ?? b.pl.map(([id]) => id)),
       players: new Map(b.pl),
     });
   }
@@ -133,6 +140,7 @@ function writeStorage(map: Map<string, DirectoryAcc>, at: number) {
         nv: [...acc.nameVariants.entries()],
         tm: acc.totalMatches,
         pl: [...acc.players.entries()],
+        pi: [...acc.playerIds],
       });
     }
     const payload: SerializedCache = { at, buckets };
@@ -171,12 +179,19 @@ function buildDirectoryFromEntries(entries: LeaderboardEntry[]): Map<string, Dir
           slug,
           nameVariants: new Map(),
           totalMatches: 0,
+          playerIds: new Set(),
           players: new Map(),
         };
         map.set(slug, acc);
       }
       acc.nameVariants.set(displayName, (acc.nameVariants.get(displayName) || 0) + 1);
       acc.totalMatches += v.matches;
+      acc.playerIds.add(entry.userId);
+
+      // Private players are counted above (totals + unique count) but never named,
+      // mirroring the server aggregator. Guests are only ever fed public entries,
+      // so this is a no-op for them.
+      if (entry.isPublic !== true) continue;
 
       const existing = acc.players.get(entry.userId);
       if (existing) {
@@ -213,9 +228,17 @@ function pickCanonicalName(variants: Map<string, number>): string {
 }
 
 async function fetchAndCache(): Promise<Map<string, DirectoryAcc>> {
-  const entries = await getLeaderboardEntries(false, true).catch(() =>
-    getLeaderboardEntries(false, false).catch(() => [] as LeaderboardEntry[]),
-  );
+  // Signed-in users may read every leaderboard doc (rules allow it), so we can
+  // include private importers' venues — counted anonymously by
+  // buildDirectoryFromEntries. Guests may only read public docs, so they rely on
+  // the precomputed `storeAggregates/_directory` (which already includes private
+  // stores anonymously) and this fallback stays public-only.
+  const signedIn = !!auth.currentUser;
+  const entries = signedIn
+    ? await getLeaderboardEntries(true, true).catch(() =>
+        getLeaderboardEntries(false, true).catch(() => [] as LeaderboardEntry[]),
+      )
+    : await getLeaderboardEntries(false, false).catch(() => [] as LeaderboardEntry[]);
   const built = buildDirectoryFromEntries(entries);
   const at = Date.now();
   cachedMap = built;
@@ -301,7 +324,7 @@ export async function getStoreDirectory(): Promise<StoreDirectoryEntry[]> {
       slug: acc.slug,
       name: pickCanonicalName(acc.nameVariants),
       totalMatches: acc.totalMatches,
-      uniquePlayers: acc.players.size,
+      uniquePlayers: acc.playerIds.size,
     });
   }
   directory.sort((a, b) => b.totalMatches - a.totalMatches);
@@ -327,14 +350,23 @@ export async function searchStores(query: string, max = 5): Promise<StoreDirecto
  *  before the field existed will be picked up by the directory fallback). */
 async function getStoreStatsViaIndex(slug: string): Promise<StoreStats | null> {
   try {
-    const snap = await getDocs(
-      query(
-        collection(db, "leaderboard"),
-        where("isPublic", "==", true),
-        where("venueSlugs", "array-contains", slug),
-        fLimit(500),
-      ),
-    );
+    // Signed-in users read public + private docs for this venue (private counted
+    // anonymously by buildDirectoryFromEntries); guests keep the isPublic filter
+    // that the rules require. On rule denial the catch below falls through to the
+    // aggregate/directory path.
+    const q = auth.currentUser
+      ? query(
+          collection(db, "leaderboard"),
+          where("venueSlugs", "array-contains", slug),
+          fLimit(500),
+        )
+      : query(
+          collection(db, "leaderboard"),
+          where("isPublic", "==", true),
+          where("venueSlugs", "array-contains", slug),
+          fLimit(500),
+        );
+    const snap = await getDocs(q);
     if (snap.empty) return null;
     const entries = snap.docs.map((d) => d.data() as LeaderboardEntry);
     const map = buildDirectoryFromEntries(entries);
@@ -346,7 +378,7 @@ async function getStoreStatsViaIndex(slug: string): Promise<StoreStats | null> {
       slug,
       name: pickCanonicalName(acc.nameVariants),
       totalMatches: acc.totalMatches,
-      uniquePlayers: acc.players.size,
+      uniquePlayers: acc.playerIds.size,
       players: allPlayers,
       topByActivity: allPlayers.slice(0, 10),
       topByWinRate: [...allPlayers]

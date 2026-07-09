@@ -58,6 +58,8 @@ export async function createLeague(
     startDate: string;
     endDate: string;
     storeSlugs: string[];
+    /** Display names for free-typed stores not in the auto-directory, keyed by slug. */
+    storeNames?: Record<string, string>;
     scoringRules?: LeagueScoringRules;
     accentColor?: string;
   },
@@ -125,6 +127,12 @@ export async function createLeague(
   if (opts.region) leagueData.region = opts.region.trim();
   if (opts.country) leagueData.country = opts.country.trim();
   if (opts.accentColor) leagueData.accentColor = opts.accentColor;
+  // Only persist display names for stores still in the slug list (free-typed ones).
+  if (opts.storeNames) {
+    const pruned: Record<string, string> = {};
+    for (const s of opts.storeSlugs) if (opts.storeNames[s]) pruned[s] = opts.storeNames[s];
+    if (Object.keys(pruned).length) leagueData.storeNames = pruned;
+  }
 
   const memberData: Record<string, unknown> = {
     uid: profile.uid,
@@ -158,6 +166,7 @@ export async function updateLeague(
       | "startDate"
       | "endDate"
       | "storeSlugs"
+      | "storeNames"
       | "scoringRules"
       | "status"
       | "accentColor"
@@ -189,6 +198,7 @@ export async function updateLeague(
   if (updates.startDate !== undefined) updateData.startDate = updates.startDate;
   if (updates.endDate !== undefined) updateData.endDate = updates.endDate;
   if (updates.storeSlugs !== undefined) updateData.storeSlugs = updates.storeSlugs;
+  if (updates.storeNames !== undefined) updateData.storeNames = updates.storeNames;
   if (updates.scoringRules !== undefined) updateData.scoringRules = updates.scoringRules;
   if (updates.status !== undefined) updateData.status = updates.status;
   if (updates.accentColor !== undefined) updateData.accentColor = updates.accentColor;
