@@ -3,7 +3,7 @@ import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
 import { getAllLeagues, createLeague, joinLeague } from "@/lib/leagues";
-import { getStoreDirectory, slugifyStoreName, type StoreDirectoryEntry } from "@/lib/store-directory";
+import { getStoreDirectory, slugifyStoreName, findNearMatchStore, type StoreDirectoryEntry } from "@/lib/store-directory";
 import type { League, LeagueScoringRules } from "@/types";
 import { toast } from "sonner";
 import { PageHero } from "@/components/ui/PageHero";
@@ -211,6 +211,8 @@ export default function LeagueHub() {
     typedStoreSlug.length >= 2 &&
     !directory.some((d) => d.slug === typedStoreSlug) &&
     !form.selectedStoreSlugs.includes(typedStoreSlug);
+  // Catch typos (e.g. "vudugaminng" → "vudugaming") before a phantom store is added.
+  const storeNearMatch = canAddTypedStore ? findNearMatchStore(typedStoreSlug, directory) : null;
 
   // Stores already selected by the user (keep at top, even when filtered out).
   const selectedStoreEntries = useMemo(() => {
@@ -777,6 +779,24 @@ export default function LeagueHub() {
 
             {canAddTypedStore && (
               <div className="mt-2">
+                {storeNearMatch && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      toggleStore(storeNearMatch.slug);
+                      setStoreSearch("");
+                    }}
+                    className="mb-2 flex w-full items-center justify-between gap-2 rounded-md border border-fab-draw/50 bg-fab-draw/10 px-3 py-2 text-left text-sm text-fab-draw hover:bg-fab-draw/20"
+                  >
+                    <span>
+                      Did you mean “<span className="font-semibold">{storeNearMatch.name}</span>”?
+                      Use the existing store.
+                    </span>
+                    <span className="shrink-0 text-[11px] opacity-80">
+                      {storeNearMatch.totalMatches} matches
+                    </span>
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={addTypedStore}
@@ -788,8 +808,8 @@ export default function LeagueHub() {
                   <PlusCircle className="h-4 w-4 shrink-0" />
                 </button>
                 <p className="mt-1 text-[11px] text-fab-dim">
-                  Adds a store by name. Matches count when a player&apos;s match venue reads
-                  exactly this (as it appears in GEM).
+                  Adds as <span className="font-mono text-fab-muted">{typedStoreSlug}</span> — matches
+                  count when a player&apos;s match venue reads exactly this (as it appears in GEM).
                 </p>
               </div>
             )}
