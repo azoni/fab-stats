@@ -198,7 +198,13 @@ export async function updateLeague(
   if (updates.country !== undefined) updateData.country = updates.country.trim();
   if (updates.startDate !== undefined) updateData.startDate = updates.startDate;
   if (updates.endDate !== undefined) updateData.endDate = updates.endDate;
-  if (updates.storeSlugs !== undefined) updateData.storeSlugs = updates.storeSlugs;
+  if (updates.storeSlugs !== undefined) {
+    // Never let an edit leave a league with zero stores — that silently makes
+    // every match ineligible and zeroes all standings. Mirrors createLeague.
+    const cleaned = Array.from(new Set(updates.storeSlugs.filter(Boolean)));
+    if (cleaned.length === 0) throw new Error("A league must have at least one store.");
+    updateData.storeSlugs = cleaned;
+  }
   if (updates.storeNames !== undefined) updateData.storeNames = updates.storeNames;
   if (updates.scoringRules !== undefined) updateData.scoringRules = updates.scoringRules;
   if (updates.status !== undefined) updateData.status = updates.status;
@@ -310,9 +316,15 @@ export async function kickLeagueMember(
   }
   if (targetUid === organizerUid) throw new Error("Cannot remove the organizer.");
 
+  // Verify the target is actually a member before decrementing memberCount,
+  // otherwise a stale/duplicate kick drives the count below the real total.
+  const memberRef = doc(leagueMembersCollection(leagueId), targetUid);
+  const memberSnap = await getDoc(memberRef);
+  if (!memberSnap.exists()) throw new Error("That player is not a member of this league.");
+
   const now = new Date().toISOString();
   const batch = writeBatch(db);
-  batch.delete(doc(leagueMembersCollection(leagueId), targetUid));
+  batch.delete(memberRef);
   batch.update(doc(db, "leagues", leagueId), { memberCount: increment(-1), updatedAt: now });
   await batch.commit();
 }

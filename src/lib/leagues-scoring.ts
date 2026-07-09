@@ -1,4 +1,4 @@
-import { doc, setDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "./firebase";
 import { getLeague, getLeagueMembers } from "./leagues";
 import { slugifyStoreName } from "./store-directory";
@@ -75,13 +75,41 @@ export async function computeLeagueStandings(leagueId: string): Promise<LeagueSt
   const aliasIndex = buildAliasIndex(await getStoreAliases());
   const storeSlugSet = expandSlugSet(league.storeSlugs, aliasIndex);
 
+  // Prior standings, keyed by uid. A member whose matches we CAN'T read (private
+  // profile — only the owner can read them — or a transient error) keeps their
+  // last-known score instead of being zeroed into the shared standings doc.
+  // Without this, whenever a different member refreshes, private members flip to 0.
+  const priorByUid = new Map<string, LeagueStandingEntry>();
+  try {
+    const snap = await getDoc(doc(db, "leagues", leagueId, "standings", "current"));
+    if (snap.exists()) {
+      for (const e of (snap.data().entries || []) as LeagueStandingEntry[]) priorByUid.set(e.uid, e);
+    }
+  } catch {
+    /* no prior standings yet */
+  }
+
   const entries: LeagueStandingEntry[] = await Promise.all(
     members.map(async (member) => {
+      const identity = {
+        uid: member.uid,
+        username: member.username,
+        displayName: member.displayName,
+        photoUrl: member.photoUrl,
+      };
       let matches: MatchRecord[] = [];
+      let readFailed = false;
       try {
         matches = await getMatchesByUserId(member.uid);
       } catch {
-        matches = [];
+        readFailed = true;
+      }
+      // Couldn't read this member's matches: preserve their prior standing (with
+      // refreshed identity) rather than overwriting it with zeros. They'll get an
+      // accurate score whenever they themselves refresh (owners can read).
+      if (readFailed) {
+        const prior = priorByUid.get(member.uid);
+        if (prior) return { ...prior, ...identity };
       }
       const qualifying = matches.filter((m) => matchQualifiesForLeague(m, league, storeSlugSet));
 
@@ -103,10 +131,7 @@ export async function computeLeagueStandings(leagueId: string): Promise<LeagueSt
       }
 
       return {
-        uid: member.uid,
-        username: member.username,
-        displayName: member.displayName,
-        photoUrl: member.photoUrl,
+        ...identity,
         matches: qualifying.length,
         wins,
         losses,
@@ -118,11 +143,17 @@ export async function computeLeagueStandings(leagueId: string): Promise<LeagueSt
     }),
   );
 
-  // Sort: points desc, win rate desc, wins desc, fewer matches first
+  // Sort: points desc, win rate desc, wins desc, fewer matches first.
+  // Win rate uses DECISIVE matches (excl. byes) so earning a bye — which adds
+  // points but no win — can never drop a player below an otherwise-equal one.
+  const winRate = (e: LeagueStandingEntry) => {
+    const decisive = e.matches - e.byes;
+    return decisive > 0 ? e.wins / decisive : 0;
+  };
   entries.sort((a, b) => {
     if (b.points !== a.points) return b.points - a.points;
-    const aWinRate = a.matches > 0 ? a.wins / a.matches : 0;
-    const bWinRate = b.matches > 0 ? b.wins / b.matches : 0;
+    const aWinRate = winRate(a);
+    const bWinRate = winRate(b);
     if (bWinRate !== aWinRate) return bWinRate - aWinRate;
     if (b.wins !== a.wins) return b.wins - a.wins;
     return a.matches - b.matches;
