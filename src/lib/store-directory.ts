@@ -29,6 +29,49 @@ export interface StoreDirectoryEntry {
   uniquePlayers: number;
 }
 
+/** Bounded Levenshtein — returns max+1 as soon as the distance exceeds `max`. */
+function editDistance(a: string, b: string, max: number): number {
+  if (Math.abs(a.length - b.length) > max) return max + 1;
+  let prev = Array.from({ length: b.length + 1 }, (_, i) => i);
+  let curr = new Array<number>(b.length + 1);
+  for (let i = 1; i <= a.length; i++) {
+    curr[0] = i;
+    let rowMin = curr[0];
+    for (let j = 1; j <= b.length; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      curr[j] = Math.min(prev[j] + 1, curr[j - 1] + 1, prev[j - 1] + cost);
+      if (curr[j] < rowMin) rowMin = curr[j];
+    }
+    if (rowMin > max) return max + 1;
+    [prev, curr] = [curr, prev];
+  }
+  return prev[b.length];
+}
+
+/** Suggest a directory store whose slug is a near-match to a typed slug, to catch
+ *  typos like "vudugaminng" → "vudugaming" before an organizer adds a phantom
+ *  store. Returns null when the exact slug already exists or nothing is close. */
+export function findNearMatchStore(
+  typedSlug: string,
+  directory: StoreDirectoryEntry[],
+): StoreDirectoryEntry | null {
+  if (typedSlug.length < 4) return null;
+  const prefix = typedSlug.slice(0, 3);
+  let best: StoreDirectoryEntry | null = null;
+  let bestDist = 3;
+  for (const d of directory) {
+    if (d.slug === typedSlug) return null; // exact store exists — no suggestion
+    if (Math.abs(d.slug.length - typedSlug.length) > 2) continue;
+    if (!d.slug.startsWith(prefix)) continue;
+    const dist = editDistance(typedSlug, d.slug, 2);
+    if (dist <= 2 && dist < bestDist) {
+      bestDist = dist;
+      best = d;
+    }
+  }
+  return best;
+}
+
 export interface StorePlayerStat {
   userId: string;
   username: string;
