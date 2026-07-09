@@ -3,6 +3,12 @@ import { db, auth } from "./firebase";
 import type { LeaderboardEntry } from "@/types";
 import { getLeaderboardEntries } from "./leaderboard";
 import { isBlockedUser } from "./blocked-users";
+import {
+  getStoreAliases,
+  buildAliasIndex,
+  groupForSlug,
+  type StoreAliasIndex,
+} from "./store-aliases";
 
 export function slugifyStoreName(raw: string): string {
   return raw.toLowerCase().replace(/[^a-z0-9]/g, "");
@@ -309,12 +315,51 @@ async function getStoreDirectoryFromAggregate(): Promise<StoreDirectoryEntry[] |
   }
 }
 
+/** Fold member-store rows into their canonical store (admin merge groups), then
+ *  sort by matches. When the server aggregator has already baked the merge, most
+ *  member rows won't exist and this is a near no-op. uniquePlayers is summed and
+ *  may slightly over-count a player active at two merged venues — the detail page
+ *  (getStoreStats) dedupes named players exactly. */
+function mergeDirectoryByAlias(
+  entries: StoreDirectoryEntry[],
+  index: StoreAliasIndex,
+): StoreDirectoryEntry[] {
+  const byCanonical = new Map<string, StoreDirectoryEntry>();
+  const out: StoreDirectoryEntry[] = [];
+  for (const e of entries) {
+    const group = groupForSlug(e.slug, index);
+    if (!group) {
+      out.push(e);
+      continue;
+    }
+    const existing = byCanonical.get(group.canonicalSlug);
+    if (existing) {
+      existing.totalMatches += e.totalMatches;
+      existing.uniquePlayers += e.uniquePlayers;
+    } else {
+      const merged: StoreDirectoryEntry = {
+        slug: group.canonicalSlug,
+        name: group.displayName,
+        totalMatches: e.totalMatches,
+        uniquePlayers: e.uniquePlayers,
+      };
+      byCanonical.set(group.canonicalSlug, merged);
+      out.push(merged);
+    }
+  }
+  out.sort((a, b) => b.totalMatches - a.totalMatches);
+  return out;
+}
+
 /** Fetch the public auto-directory of stores derived from match venue data.
  *  Tries the precomputed aggregate first; falls back to live aggregation
- *  from the leaderboard collection (slow on cold cache, instant after). */
+ *  from the leaderboard collection (slow on cold cache, instant after).
+ *  Admin store merges are folded in on either path. */
 export async function getStoreDirectory(): Promise<StoreDirectoryEntry[]> {
+  const aliasesPromise = getStoreAliases();
   const fromAggregate = await getStoreDirectoryFromAggregate();
-  if (fromAggregate) return fromAggregate;
+  const index = buildAliasIndex(await aliasesPromise);
+  if (fromAggregate) return mergeDirectoryByAlias(fromAggregate, index);
 
   // Fallback: live aggregation (cached via localStorage + SWR).
   const map = await getDirectoryMap();
@@ -327,8 +372,7 @@ export async function getStoreDirectory(): Promise<StoreDirectoryEntry[]> {
       uniquePlayers: acc.playerIds.size,
     });
   }
-  directory.sort((a, b) => b.totalMatches - a.totalMatches);
-  return directory;
+  return mergeDirectoryByAlias(directory, index);
 }
 
 /** Search the store directory by name (for the global search box). The directory
@@ -431,15 +475,9 @@ async function getStoreStatsFromAggregate(slug: string): Promise<StoreStats | nu
   }
 }
 
-/** Fetch detailed stats for a single store. Three-tier fallback:
- *  1. Precomputed aggregate doc (one read, instant) — the happy path.
- *  2. venueSlugs array-contains query (small read, fast).
- *  3. Full leaderboard scan via the cached directory map (slow on cold).
- */
-export async function getStoreStats(slug: string): Promise<StoreStats | null> {
-  const normalizedSlug = slugifyStoreName(slug);
-  if (!normalizedSlug) return null;
-
+/** Detailed stats for a SINGLE store slug (no alias resolution). Three-tier
+ *  fallback: aggregate doc → venueSlugs array-contains → full leaderboard scan. */
+async function getStoreStatsForSlug(normalizedSlug: string): Promise<StoreStats | null> {
   const fromAggregate = await getStoreStatsFromAggregate(normalizedSlug);
   if (fromAggregate) return fromAggregate;
 
@@ -455,7 +493,7 @@ export async function getStoreStats(slug: string): Promise<StoreStats | null> {
     slug: normalizedSlug,
     name: pickCanonicalName(acc.nameVariants),
     totalMatches: acc.totalMatches,
-    uniquePlayers: acc.players.size,
+    uniquePlayers: acc.playerIds.size,
     players: allPlayers,
     topByActivity: allPlayers.slice(0, 10),
     topByWinRate: [...allPlayers]
@@ -465,4 +503,75 @@ export async function getStoreStats(slug: string): Promise<StoreStats | null> {
     heroes: [],
     formats: [],
   };
+}
+
+/** Combine several member-store stat blocks into one merged store. Named public
+ *  players are deduped by userId; anonymous (private) counts are summed. */
+function combineStoreStats(slug: string, name: string, parts: StoreStats[]): StoreStats {
+  const players = new Map<string, StorePlayerStat>();
+  const heroes = new Map<string, StoreHeroStat>();
+  const formats = new Map<string, number>();
+  let totalMatches = 0;
+  let anonymous = 0;
+  for (const p of parts) {
+    totalMatches += p.totalMatches;
+    anonymous += Math.max(0, p.uniquePlayers - p.players.length);
+    for (const pl of p.players) {
+      const ex = players.get(pl.userId);
+      if (ex) {
+        ex.matches += pl.matches;
+        ex.wins += pl.wins;
+        ex.winRate = ex.matches > 0 ? Math.round((ex.wins / ex.matches) * 1000) / 10 : 0;
+      } else {
+        players.set(pl.userId, { ...pl });
+      }
+    }
+    for (const h of p.heroes) {
+      const ex = heroes.get(h.hero);
+      if (ex) {
+        ex.matches += h.matches;
+        ex.wins += h.wins;
+        ex.winRate = ex.matches > 0 ? Math.round((ex.wins / ex.matches) * 1000) / 10 : 0;
+      } else {
+        heroes.set(h.hero, { ...h });
+      }
+    }
+    for (const f of p.formats) formats.set(f.format, (formats.get(f.format) || 0) + f.matches);
+  }
+  const allPlayers = [...players.values()].sort((a, b) => b.matches - a.matches);
+  return {
+    slug,
+    name,
+    totalMatches,
+    uniquePlayers: players.size + anonymous,
+    players: allPlayers,
+    topByActivity: allPlayers.slice(0, 10),
+    topByWinRate: [...allPlayers]
+      .filter((p) => p.matches >= 5)
+      .sort((a, b) => b.winRate - a.winRate)
+      .slice(0, 10),
+    heroes: [...heroes.values()].sort((a, b) => b.matches - a.matches).slice(0, 12),
+    formats: [...formats.entries()]
+      .map(([format, matches]) => ({ format, matches }))
+      .sort((a, b) => b.matches - a.matches),
+  };
+}
+
+/** Fetch detailed stats for a store. Resolves admin merge groups: a member slug
+ *  URL loads the merged canonical store (combining every member's stats). */
+export async function getStoreStats(slug: string): Promise<StoreStats | null> {
+  const normalizedSlug = slugifyStoreName(slug);
+  if (!normalizedSlug) return null;
+
+  const index = buildAliasIndex(await getStoreAliases());
+  const group = groupForSlug(normalizedSlug, index);
+  if (!group) return getStoreStatsForSlug(normalizedSlug);
+
+  // Combine every member store into the canonical. After the server bake,
+  // non-canonical member docs are gone, so this collapses to the merged doc.
+  const parts = (
+    await Promise.all(group.memberSlugs.map((m) => getStoreStatsForSlug(m)))
+  ).filter((s): s is StoreStats => s !== null);
+  if (parts.length === 0) return null;
+  return combineStoreStats(group.canonicalSlug, group.displayName, parts);
 }

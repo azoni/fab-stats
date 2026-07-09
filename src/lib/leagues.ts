@@ -18,6 +18,7 @@ import {
 } from "firebase/firestore";
 import { db } from "./firebase";
 import { containsProfanity } from "./profanity-filter";
+import { getStoreAliases, buildAliasIndex, groupForSlug } from "./store-aliases";
 import type { League, LeagueMember, LeagueScoringRules, UserProfile } from "@/types";
 
 function leaguesCollection() {
@@ -341,10 +342,24 @@ export async function getLeagueMembers(leagueId: string): Promise<LeagueMember[]
 }
 
 export async function getLeaguesForStore(storeSlug: string): Promise<League[]> {
-  const snap = await getDocs(
-    query(leaguesCollection(), where("storeSlugs", "array-contains", storeSlug), limit(50)),
+  // Include leagues that reference any member of this store's admin-merge group
+  // (a league may store the canonical slug or any member slug), deduped by id.
+  const index = buildAliasIndex(await getStoreAliases());
+  const group = groupForSlug(storeSlug, index);
+  const slugs = group ? group.memberSlugs : [storeSlug];
+  const snaps = await Promise.all(
+    slugs.map((s) =>
+      getDocs(query(leaguesCollection(), where("storeSlugs", "array-contains", s), limit(50))),
+    ),
   );
-  return snap.docs.map((d) => d.data() as League);
+  const byId = new Map<string, League>();
+  for (const snap of snaps) {
+    for (const d of snap.docs) {
+      const l = d.data() as League;
+      byId.set(l.id, l);
+    }
+  }
+  return [...byId.values()];
 }
 
 // ── Subscriptions ──

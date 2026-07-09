@@ -575,6 +575,11 @@ service cloud.firestore {
     match /admin/seasons {
       allow read: if true;
     }
+    // Store merge/alias map is public (applied on /stores + league scoring for
+    // all visitors). Writes still governed by the admin/{docId} isAdmin() rule.
+    match /admin/storeAliases {
+      allow read: if true;
+    }
     // Poll config is public (shown on homepage); votes are per-user
     match /admin/poll {
       allow read: if true;

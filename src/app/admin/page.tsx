@@ -19,6 +19,7 @@ import { loadBotAnalytics, loadDailyUsage, loadCommandLog, type BotAnalytics, ty
 import { ADMIN_BADGES } from "@/lib/badges";
 import { BackgroundCatalogManager } from "@/components/admin/BackgroundCatalogManager";
 import { EventTypeManager } from "@/components/admin/EventTypeManager";
+import { StoreAliasManager } from "@/components/admin/StoreAliasManager";
 import { PageHero } from "@/components/ui/PageHero";
 import { GameFormat } from "@/types";
 import type { Season } from "@/types";
@@ -1079,6 +1080,7 @@ export default function AdminPage() {
 
           {/* ── Content Tab ── */}
           {activeTab === "content" && <>
+          <StoreAliasManager />
           {/* Site Banner */}
           <div className="bg-fab-surface border border-fab-border rounded-lg overflow-hidden mb-6">
             <div className="px-4 py-3 border-b border-fab-border flex items-center justify-between">
