@@ -13,7 +13,7 @@ import {
   subscribeToLeagueMembers,
   updateLeague,
 } from "@/lib/leagues";
-import { getStoreDirectory, slugifyStoreName, findNearMatchStore, type StoreDirectoryEntry } from "@/lib/store-directory";
+import { getStoreDirectory, slugifyStoreName, findNearMatchStore, storeNameMatchesQuery, type StoreDirectoryEntry } from "@/lib/store-directory";
 import { computeLeagueStandings, recomputeAndStoreStandings } from "@/lib/leagues-scoring";
 import { doc, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
@@ -713,9 +713,8 @@ function OrganizerEditor({
   }
 
   const filteredDirectory = useMemo(() => {
-    const q = storeSearch.trim().toLowerCase();
-    if (!q) return directory;
-    return directory.filter((d) => d.name.toLowerCase().includes(q));
+    if (!storeSearch.trim()) return directory;
+    return directory.filter((d) => storeNameMatchesQuery(d.name, storeSearch));
   }, [directory, storeSearch]);
 
   const typedStoreSlug = slugifyStoreName(storeSearch);
