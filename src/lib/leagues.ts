@@ -18,6 +18,7 @@ import {
 } from "firebase/firestore";
 import { db } from "./firebase";
 import { containsProfanity } from "./profanity-filter";
+import { getStoreAliases, buildAliasIndex, groupForSlug } from "./store-aliases";
 import type { League, LeagueMember, LeagueScoringRules, UserProfile } from "@/types";
 
 function leaguesCollection() {
@@ -58,6 +59,8 @@ export async function createLeague(
     startDate: string;
     endDate: string;
     storeSlugs: string[];
+    /** Display names for free-typed stores not in the auto-directory, keyed by slug. */
+    storeNames?: Record<string, string>;
     scoringRules?: LeagueScoringRules;
     accentColor?: string;
   },
@@ -125,6 +128,12 @@ export async function createLeague(
   if (opts.region) leagueData.region = opts.region.trim();
   if (opts.country) leagueData.country = opts.country.trim();
   if (opts.accentColor) leagueData.accentColor = opts.accentColor;
+  // Only persist display names for stores still in the slug list (free-typed ones).
+  if (opts.storeNames) {
+    const pruned: Record<string, string> = {};
+    for (const s of opts.storeSlugs) if (opts.storeNames[s]) pruned[s] = opts.storeNames[s];
+    if (Object.keys(pruned).length) leagueData.storeNames = pruned;
+  }
 
   const memberData: Record<string, unknown> = {
     uid: profile.uid,
@@ -158,6 +167,7 @@ export async function updateLeague(
       | "startDate"
       | "endDate"
       | "storeSlugs"
+      | "storeNames"
       | "scoringRules"
       | "status"
       | "accentColor"
@@ -189,6 +199,7 @@ export async function updateLeague(
   if (updates.startDate !== undefined) updateData.startDate = updates.startDate;
   if (updates.endDate !== undefined) updateData.endDate = updates.endDate;
   if (updates.storeSlugs !== undefined) updateData.storeSlugs = updates.storeSlugs;
+  if (updates.storeNames !== undefined) updateData.storeNames = updates.storeNames;
   if (updates.scoringRules !== undefined) updateData.scoringRules = updates.scoringRules;
   if (updates.status !== undefined) updateData.status = updates.status;
   if (updates.accentColor !== undefined) updateData.accentColor = updates.accentColor;
@@ -331,10 +342,24 @@ export async function getLeagueMembers(leagueId: string): Promise<LeagueMember[]
 }
 
 export async function getLeaguesForStore(storeSlug: string): Promise<League[]> {
-  const snap = await getDocs(
-    query(leaguesCollection(), where("storeSlugs", "array-contains", storeSlug), limit(50)),
+  // Include leagues that reference any member of this store's admin-merge group
+  // (a league may store the canonical slug or any member slug), deduped by id.
+  const index = buildAliasIndex(await getStoreAliases());
+  const group = groupForSlug(storeSlug, index);
+  const slugs = group ? group.memberSlugs : [storeSlug];
+  const snaps = await Promise.all(
+    slugs.map((s) =>
+      getDocs(query(leaguesCollection(), where("storeSlugs", "array-contains", s), limit(50))),
+    ),
   );
-  return snap.docs.map((d) => d.data() as League);
+  const byId = new Map<string, League>();
+  for (const snap of snaps) {
+    for (const d of snap.docs) {
+      const l = d.data() as League;
+      byId.set(l.id, l);
+    }
+  }
+  return [...byId.values()];
 }
 
 // ── Subscriptions ──

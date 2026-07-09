@@ -1,8 +1,14 @@
 import { collection, doc, getDoc, getDocs, query, where, limit as fLimit } from "firebase/firestore";
-import { db } from "./firebase";
+import { db, auth } from "./firebase";
 import type { LeaderboardEntry } from "@/types";
 import { getLeaderboardEntries } from "./leaderboard";
 import { isBlockedUser } from "./blocked-users";
+import {
+  getStoreAliases,
+  buildAliasIndex,
+  groupForSlug,
+  type StoreAliasIndex,
+} from "./store-aliases";
 
 export function slugifyStoreName(raw: string): string {
   return raw.toLowerCase().replace(/[^a-z0-9]/g, "");
@@ -62,6 +68,9 @@ type DirectoryAcc = {
   slug: string;
   nameVariants: Map<string, number>;
   totalMatches: number;
+  // Every player who logged here (public + private) — the honest unique count.
+  playerIds: Set<string>;
+  // Public players only — the named roster shown on the store page.
   players: Map<string, StorePlayerStat>;
 };
 
@@ -81,7 +90,7 @@ let cachedMap: Map<string, DirectoryAcc> | null = null;
 let cachedMapAt = 0;
 let refreshInFlight = false;
 const CACHE_TTL_MS = 15 * 60_000;
-const STORAGE_KEY = "fabstats.store-directory.v3";
+const STORAGE_KEY = "fabstats.store-directory.v4";
 
 interface SerializedAcc {
   slug: string;
@@ -90,6 +99,8 @@ interface SerializedAcc {
   tm: number;
   // [userId, StorePlayerStat] pairs
   pl: Array<[string, StorePlayerStat]>;
+  // all player ids (public + private) for the honest unique count
+  pi: string[];
 }
 interface SerializedCache {
   at: number;
@@ -116,6 +127,8 @@ function hydrateFromStorage(): Map<string, DirectoryAcc> | null {
       slug: b.slug,
       nameVariants: new Map(b.nv),
       totalMatches: b.tm,
+      // Older payloads (pre-v4) have no `pi` — default to the named players.
+      playerIds: new Set(b.pi ?? b.pl.map(([id]) => id)),
       players: new Map(b.pl),
     });
   }
@@ -133,6 +146,7 @@ function writeStorage(map: Map<string, DirectoryAcc>, at: number) {
         nv: [...acc.nameVariants.entries()],
         tm: acc.totalMatches,
         pl: [...acc.players.entries()],
+        pi: [...acc.playerIds],
       });
     }
     const payload: SerializedCache = { at, buckets };
@@ -171,12 +185,19 @@ function buildDirectoryFromEntries(entries: LeaderboardEntry[]): Map<string, Dir
           slug,
           nameVariants: new Map(),
           totalMatches: 0,
+          playerIds: new Set(),
           players: new Map(),
         };
         map.set(slug, acc);
       }
       acc.nameVariants.set(displayName, (acc.nameVariants.get(displayName) || 0) + 1);
       acc.totalMatches += v.matches;
+      acc.playerIds.add(entry.userId);
+
+      // Private players are counted above (totals + unique count) but never named,
+      // mirroring the server aggregator. Guests are only ever fed public entries,
+      // so this is a no-op for them.
+      if (entry.isPublic !== true) continue;
 
       const existing = acc.players.get(entry.userId);
       if (existing) {
@@ -213,9 +234,17 @@ function pickCanonicalName(variants: Map<string, number>): string {
 }
 
 async function fetchAndCache(): Promise<Map<string, DirectoryAcc>> {
-  const entries = await getLeaderboardEntries(false, true).catch(() =>
-    getLeaderboardEntries(false, false).catch(() => [] as LeaderboardEntry[]),
-  );
+  // Signed-in users may read every leaderboard doc (rules allow it), so we can
+  // include private importers' venues — counted anonymously by
+  // buildDirectoryFromEntries. Guests may only read public docs, so they rely on
+  // the precomputed `storeAggregates/_directory` (which already includes private
+  // stores anonymously) and this fallback stays public-only.
+  const signedIn = !!auth.currentUser;
+  const entries = signedIn
+    ? await getLeaderboardEntries(true, true).catch(() =>
+        getLeaderboardEntries(false, true).catch(() => [] as LeaderboardEntry[]),
+      )
+    : await getLeaderboardEntries(false, false).catch(() => [] as LeaderboardEntry[]);
   const built = buildDirectoryFromEntries(entries);
   const at = Date.now();
   cachedMap = built;
@@ -286,12 +315,51 @@ async function getStoreDirectoryFromAggregate(): Promise<StoreDirectoryEntry[] |
   }
 }
 
+/** Fold member-store rows into their canonical store (admin merge groups), then
+ *  sort by matches. When the server aggregator has already baked the merge, most
+ *  member rows won't exist and this is a near no-op. uniquePlayers is summed and
+ *  may slightly over-count a player active at two merged venues — the detail page
+ *  (getStoreStats) dedupes named players exactly. */
+function mergeDirectoryByAlias(
+  entries: StoreDirectoryEntry[],
+  index: StoreAliasIndex,
+): StoreDirectoryEntry[] {
+  const byCanonical = new Map<string, StoreDirectoryEntry>();
+  const out: StoreDirectoryEntry[] = [];
+  for (const e of entries) {
+    const group = groupForSlug(e.slug, index);
+    if (!group) {
+      out.push(e);
+      continue;
+    }
+    const existing = byCanonical.get(group.canonicalSlug);
+    if (existing) {
+      existing.totalMatches += e.totalMatches;
+      existing.uniquePlayers += e.uniquePlayers;
+    } else {
+      const merged: StoreDirectoryEntry = {
+        slug: group.canonicalSlug,
+        name: group.displayName,
+        totalMatches: e.totalMatches,
+        uniquePlayers: e.uniquePlayers,
+      };
+      byCanonical.set(group.canonicalSlug, merged);
+      out.push(merged);
+    }
+  }
+  out.sort((a, b) => b.totalMatches - a.totalMatches);
+  return out;
+}
+
 /** Fetch the public auto-directory of stores derived from match venue data.
  *  Tries the precomputed aggregate first; falls back to live aggregation
- *  from the leaderboard collection (slow on cold cache, instant after). */
+ *  from the leaderboard collection (slow on cold cache, instant after).
+ *  Admin store merges are folded in on either path. */
 export async function getStoreDirectory(): Promise<StoreDirectoryEntry[]> {
+  const aliasesPromise = getStoreAliases();
   const fromAggregate = await getStoreDirectoryFromAggregate();
-  if (fromAggregate) return fromAggregate;
+  const index = buildAliasIndex(await aliasesPromise);
+  if (fromAggregate) return mergeDirectoryByAlias(fromAggregate, index);
 
   // Fallback: live aggregation (cached via localStorage + SWR).
   const map = await getDirectoryMap();
@@ -301,11 +369,10 @@ export async function getStoreDirectory(): Promise<StoreDirectoryEntry[]> {
       slug: acc.slug,
       name: pickCanonicalName(acc.nameVariants),
       totalMatches: acc.totalMatches,
-      uniquePlayers: acc.players.size,
+      uniquePlayers: acc.playerIds.size,
     });
   }
-  directory.sort((a, b) => b.totalMatches - a.totalMatches);
-  return directory;
+  return mergeDirectoryByAlias(directory, index);
 }
 
 /** Search the store directory by name (for the global search box). The directory
@@ -327,14 +394,23 @@ export async function searchStores(query: string, max = 5): Promise<StoreDirecto
  *  before the field existed will be picked up by the directory fallback). */
 async function getStoreStatsViaIndex(slug: string): Promise<StoreStats | null> {
   try {
-    const snap = await getDocs(
-      query(
-        collection(db, "leaderboard"),
-        where("isPublic", "==", true),
-        where("venueSlugs", "array-contains", slug),
-        fLimit(500),
-      ),
-    );
+    // Signed-in users read public + private docs for this venue (private counted
+    // anonymously by buildDirectoryFromEntries); guests keep the isPublic filter
+    // that the rules require. On rule denial the catch below falls through to the
+    // aggregate/directory path.
+    const q = auth.currentUser
+      ? query(
+          collection(db, "leaderboard"),
+          where("venueSlugs", "array-contains", slug),
+          fLimit(500),
+        )
+      : query(
+          collection(db, "leaderboard"),
+          where("isPublic", "==", true),
+          where("venueSlugs", "array-contains", slug),
+          fLimit(500),
+        );
+    const snap = await getDocs(q);
     if (snap.empty) return null;
     const entries = snap.docs.map((d) => d.data() as LeaderboardEntry);
     const map = buildDirectoryFromEntries(entries);
@@ -346,7 +422,7 @@ async function getStoreStatsViaIndex(slug: string): Promise<StoreStats | null> {
       slug,
       name: pickCanonicalName(acc.nameVariants),
       totalMatches: acc.totalMatches,
-      uniquePlayers: acc.players.size,
+      uniquePlayers: acc.playerIds.size,
       players: allPlayers,
       topByActivity: allPlayers.slice(0, 10),
       topByWinRate: [...allPlayers]
@@ -399,15 +475,9 @@ async function getStoreStatsFromAggregate(slug: string): Promise<StoreStats | nu
   }
 }
 
-/** Fetch detailed stats for a single store. Three-tier fallback:
- *  1. Precomputed aggregate doc (one read, instant) — the happy path.
- *  2. venueSlugs array-contains query (small read, fast).
- *  3. Full leaderboard scan via the cached directory map (slow on cold).
- */
-export async function getStoreStats(slug: string): Promise<StoreStats | null> {
-  const normalizedSlug = slugifyStoreName(slug);
-  if (!normalizedSlug) return null;
-
+/** Detailed stats for a SINGLE store slug (no alias resolution). Three-tier
+ *  fallback: aggregate doc → venueSlugs array-contains → full leaderboard scan. */
+async function getStoreStatsForSlug(normalizedSlug: string): Promise<StoreStats | null> {
   const fromAggregate = await getStoreStatsFromAggregate(normalizedSlug);
   if (fromAggregate) return fromAggregate;
 
@@ -423,7 +493,7 @@ export async function getStoreStats(slug: string): Promise<StoreStats | null> {
     slug: normalizedSlug,
     name: pickCanonicalName(acc.nameVariants),
     totalMatches: acc.totalMatches,
-    uniquePlayers: acc.players.size,
+    uniquePlayers: acc.playerIds.size,
     players: allPlayers,
     topByActivity: allPlayers.slice(0, 10),
     topByWinRate: [...allPlayers]
@@ -433,4 +503,75 @@ export async function getStoreStats(slug: string): Promise<StoreStats | null> {
     heroes: [],
     formats: [],
   };
+}
+
+/** Combine several member-store stat blocks into one merged store. Named public
+ *  players are deduped by userId; anonymous (private) counts are summed. */
+function combineStoreStats(slug: string, name: string, parts: StoreStats[]): StoreStats {
+  const players = new Map<string, StorePlayerStat>();
+  const heroes = new Map<string, StoreHeroStat>();
+  const formats = new Map<string, number>();
+  let totalMatches = 0;
+  let anonymous = 0;
+  for (const p of parts) {
+    totalMatches += p.totalMatches;
+    anonymous += Math.max(0, p.uniquePlayers - p.players.length);
+    for (const pl of p.players) {
+      const ex = players.get(pl.userId);
+      if (ex) {
+        ex.matches += pl.matches;
+        ex.wins += pl.wins;
+        ex.winRate = ex.matches > 0 ? Math.round((ex.wins / ex.matches) * 1000) / 10 : 0;
+      } else {
+        players.set(pl.userId, { ...pl });
+      }
+    }
+    for (const h of p.heroes) {
+      const ex = heroes.get(h.hero);
+      if (ex) {
+        ex.matches += h.matches;
+        ex.wins += h.wins;
+        ex.winRate = ex.matches > 0 ? Math.round((ex.wins / ex.matches) * 1000) / 10 : 0;
+      } else {
+        heroes.set(h.hero, { ...h });
+      }
+    }
+    for (const f of p.formats) formats.set(f.format, (formats.get(f.format) || 0) + f.matches);
+  }
+  const allPlayers = [...players.values()].sort((a, b) => b.matches - a.matches);
+  return {
+    slug,
+    name,
+    totalMatches,
+    uniquePlayers: players.size + anonymous,
+    players: allPlayers,
+    topByActivity: allPlayers.slice(0, 10),
+    topByWinRate: [...allPlayers]
+      .filter((p) => p.matches >= 5)
+      .sort((a, b) => b.winRate - a.winRate)
+      .slice(0, 10),
+    heroes: [...heroes.values()].sort((a, b) => b.matches - a.matches).slice(0, 12),
+    formats: [...formats.entries()]
+      .map(([format, matches]) => ({ format, matches }))
+      .sort((a, b) => b.matches - a.matches),
+  };
+}
+
+/** Fetch detailed stats for a store. Resolves admin merge groups: a member slug
+ *  URL loads the merged canonical store (combining every member's stats). */
+export async function getStoreStats(slug: string): Promise<StoreStats | null> {
+  const normalizedSlug = slugifyStoreName(slug);
+  if (!normalizedSlug) return null;
+
+  const index = buildAliasIndex(await getStoreAliases());
+  const group = groupForSlug(normalizedSlug, index);
+  if (!group) return getStoreStatsForSlug(normalizedSlug);
+
+  // Combine every member store into the canonical. After the server bake,
+  // non-canonical member docs are gone, so this collapses to the merged doc.
+  const parts = (
+    await Promise.all(group.memberSlugs.map((m) => getStoreStatsForSlug(m)))
+  ).filter((s): s is StoreStats => s !== null);
+  if (parts.length === 0) return null;
+  return combineStoreStats(group.canonicalSlug, group.displayName, parts);
 }

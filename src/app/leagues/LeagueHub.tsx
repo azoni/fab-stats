@@ -3,7 +3,7 @@ import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
 import { getAllLeagues, createLeague, joinLeague } from "@/lib/leagues";
-import { getStoreDirectory, type StoreDirectoryEntry } from "@/lib/store-directory";
+import { getStoreDirectory, slugifyStoreName, type StoreDirectoryEntry } from "@/lib/store-directory";
 import type { League, LeagueScoringRules } from "@/types";
 import { toast } from "sonner";
 import { PageHero } from "@/components/ui/PageHero";
@@ -51,6 +51,8 @@ interface CreateFormState {
   eligibleEventTypes: string[];
   eligibleFormats: string[];
   selectedStoreSlugs: string[];
+  /** Display names for free-typed stores not in the directory, keyed by slug. */
+  storeNames: Record<string, string>;
 }
 
 const INITIAL_FORM: CreateFormState = {
@@ -69,6 +71,7 @@ const INITIAL_FORM: CreateFormState = {
   eligibleEventTypes: ["Armory"],
   eligibleFormats: [],
   selectedStoreSlugs: [],
+  storeNames: {},
 };
 
 function StatusBadge({ status }: { status: League["status"] }) {
@@ -200,15 +203,29 @@ export default function LeagueHub() {
     return directory.filter((d) => d.name.toLowerCase().includes(q));
   }, [directory, storeSearch]);
 
+  // Whether the typed search resolves to a store that isn't already in the
+  // directory or selected — i.e. it can be added by name.
+  const typedStoreSlug = slugifyStoreName(storeSearch);
+  const canAddTypedStore =
+    !!storeSearch.trim() &&
+    typedStoreSlug.length >= 2 &&
+    !directory.some((d) => d.slug === typedStoreSlug) &&
+    !form.selectedStoreSlugs.includes(typedStoreSlug);
+
   // Stores already selected by the user (keep at top, even when filtered out).
   const selectedStoreEntries = useMemo(() => {
     const byId = new Map(directory.map((d) => [d.slug, d]));
     return form.selectedStoreSlugs
       .map(
         (slug) =>
-          byId.get(slug) || { slug, name: slug, totalMatches: 0, uniquePlayers: 0 },
+          byId.get(slug) || {
+            slug,
+            name: form.storeNames[slug] || slug,
+            totalMatches: 0,
+            uniquePlayers: 0,
+          },
       );
-  }, [directory, form.selectedStoreSlugs]);
+  }, [directory, form.selectedStoreSlugs, form.storeNames]);
 
   function update<K extends keyof CreateFormState>(key: K, value: CreateFormState[K]) {
     setForm((f) => ({ ...f, [key]: value }));
@@ -221,6 +238,33 @@ export default function LeagueHub() {
         ? f.selectedStoreSlugs.filter((s) => s !== slug)
         : [...f.selectedStoreSlugs, slug],
     }));
+  }
+
+  // Add a store the organizer typed that isn't in the auto-directory (e.g. its
+  // only importer is private, or it hasn't been aggregated yet). Matches count
+  // by venue-name slug, so no directory presence is required.
+  function addTypedStore() {
+    const name = storeSearch.trim().replace(/\s+/g, " ");
+    const slug = slugifyStoreName(name);
+    if (!slug || slug.length < 2) {
+      toast.error("Store name is too short.");
+      return;
+    }
+    // If the typed name collides with a directory store, just select that one.
+    const inDir = directory.find((d) => d.slug === slug);
+    if (inDir) {
+      if (!form.selectedStoreSlugs.includes(slug)) toggleStore(slug);
+      setStoreSearch("");
+      return;
+    }
+    if (!form.selectedStoreSlugs.includes(slug)) {
+      setForm((f) => ({
+        ...f,
+        selectedStoreSlugs: [...f.selectedStoreSlugs, slug],
+        storeNames: { ...f.storeNames, [slug]: name },
+      }));
+    }
+    setStoreSearch("");
   }
 
   function toggleArrayItem(key: "eligibleEventTypes" | "eligibleFormats", item: string) {
@@ -266,6 +310,7 @@ export default function LeagueHub() {
         startDate: form.startDate,
         endDate: form.endDate,
         storeSlugs: form.selectedStoreSlugs,
+        storeNames: form.storeNames,
         scoringRules,
       });
       toast.success("League created!");
@@ -678,8 +723,8 @@ export default function LeagueHub() {
                   <StoreIcon className="h-4 w-4 text-fab-gold" /> Participating stores
                 </h2>
                 <p className="mt-0.5 text-xs text-fab-muted">
-                  Pick stores from the directory. They show up automatically once any player
-                  imports a match from that venue.
+                  Search the directory, or type a store name to add one that isn&apos;t listed
+                  yet. Matches are counted by venue name.
                 </p>
               </div>
               <Badge
@@ -721,8 +766,33 @@ export default function LeagueHub() {
                 placeholder="Search the store directory…"
                 value={storeSearch}
                 onChange={(e) => setStoreSearch(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && canAddTypedStore) {
+                    e.preventDefault();
+                    addTypedStore();
+                  }
+                }}
               />
             </div>
+
+            {canAddTypedStore && (
+              <div className="mt-2">
+                <button
+                  type="button"
+                  onClick={addTypedStore}
+                  className="inline-flex w-full items-center justify-between gap-2 rounded-md border border-dashed border-fab-gold/50 bg-fab-gold/[0.06] px-3 py-2 text-left text-sm text-fab-gold hover:bg-fab-gold/[0.12]"
+                >
+                  <span>
+                    Add “<span className="font-semibold">{storeSearch.trim()}</span>”
+                  </span>
+                  <PlusCircle className="h-4 w-4 shrink-0" />
+                </button>
+                <p className="mt-1 text-[11px] text-fab-dim">
+                  Adds a store by name. Matches count when a player&apos;s match venue reads
+                  exactly this (as it appears in GEM).
+                </p>
+              </div>
+            )}
 
             <div className="mt-3">
               {directoryLoading ? (

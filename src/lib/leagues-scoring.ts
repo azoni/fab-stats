@@ -2,6 +2,7 @@ import { doc, setDoc } from "firebase/firestore";
 import { db } from "./firebase";
 import { getLeague, getLeagueMembers } from "./leagues";
 import { slugifyStoreName } from "./store-directory";
+import { getStoreAliases, buildAliasIndex, expandSlugSet, resolveCanonicalSlug } from "./store-aliases";
 import { getMatchesByUserId } from "./firestore-storage";
 import { getEventType } from "./stats";
 import { MatchResult, type League, type LeagueStandingEntry, type MatchRecord } from "@/types";
@@ -69,7 +70,10 @@ export async function computeLeagueStandings(leagueId: string): Promise<LeagueSt
   if (!league) throw new Error("League not found.");
 
   const members = await getLeagueMembers(leagueId);
-  const storeSlugSet = new Set(league.storeSlugs);
+  // Expand each league store slug to its admin-merge group so matches at any
+  // member venue count toward the league (back-compat: unmerged slugs pass through).
+  const aliasIndex = buildAliasIndex(await getStoreAliases());
+  const storeSlugSet = expandSlugSet(league.storeSlugs, aliasIndex);
 
   const entries: LeagueStandingEntry[] = await Promise.all(
     members.map(async (member) => {
@@ -94,7 +98,8 @@ export async function computeLeagueStandings(leagueId: string): Promise<LeagueSt
         else if (m.result === MatchResult.Draw) draws++;
         else if (m.result === MatchResult.Bye) byes++;
         points += pointsForMatch(m, league);
-        if (m.venue) storeSlugsPlayed.add(slugifyStoreName(m.venue));
+        // Canonicalize so two merged venues count as one distinct store.
+        if (m.venue) storeSlugsPlayed.add(resolveCanonicalSlug(slugifyStoreName(m.venue), aliasIndex));
       }
 
       return {

@@ -125,22 +125,82 @@ function pickCanonical(variants: Map<string, number>): string {
   return best;
 }
 
-/** Given a list of leaderboard docs, build per-slug aggregates. */
-function aggregate(docs: LeaderboardDoc[]): Map<string, StoreAggregate> {
-  const buckets = new Map<
-    string,
-    {
-      nameVariants: Map<string, number>;
-      totalMatches: number;
-      // Every player who logged matches here (public + private) — the honest count.
-      playerIds: Set<string>;
-      // Public players only — the named leaderboard shown on the store page.
-      players: Map<string, PlayerStat>;
-      // Aggregate hero + format mix (anonymous — includes private players' counts).
-      heroes: Map<string, { matches: number; wins: number }>;
-      formats: Map<string, number>;
+/** Admin-defined store merge group (mirror of src/lib/store-aliases.ts). */
+interface StoreAliasGroup {
+  canonicalSlug: string;
+  displayName: string;
+  memberSlugs: string[];
+}
+
+type StoreBucket = {
+  nameVariants: Map<string, number>;
+  totalMatches: number;
+  // Every player who logged matches here (public + private) — the honest count.
+  playerIds: Set<string>;
+  // Public players only — the named leaderboard shown on the store page.
+  players: Map<string, PlayerStat>;
+  // Aggregate hero + format mix (anonymous — includes private players' counts).
+  heroes: Map<string, { matches: number; wins: number }>;
+  formats: Map<string, number>;
+};
+
+function newBucket(): StoreBucket {
+  return {
+    nameVariants: new Map(),
+    totalMatches: 0,
+    playerIds: new Set(),
+    players: new Map(),
+    heroes: new Map(),
+    formats: new Map(),
+  };
+}
+
+/** Fold every member bucket into its canonical bucket, drop the members, and
+ *  force the canonical display name. Runs before the top-N slice so merged data
+ *  is ranked. Member docs then disappear from the directory automatically. */
+function foldAliases(buckets: Map<string, StoreBucket>, groups: StoreAliasGroup[]): void {
+  for (const g of groups) {
+    const present = g.memberSlugs.filter((s) => buckets.has(s));
+    if (present.length === 0) continue;
+    let target = buckets.get(g.canonicalSlug);
+    if (!target) {
+      target = newBucket();
+      buckets.set(g.canonicalSlug, target);
     }
-  >();
+    for (const slug of present) {
+      if (slug === g.canonicalSlug) continue;
+      const src = buckets.get(slug)!;
+      target.totalMatches += src.totalMatches;
+      for (const id of src.playerIds) target.playerIds.add(id);
+      for (const [uid, p] of src.players) {
+        const ex = target.players.get(uid);
+        if (ex) {
+          ex.matches += p.matches;
+          ex.wins += p.wins;
+          ex.winRate = ex.matches > 0 ? Math.round((ex.wins / ex.matches) * 1000) / 10 : 0;
+        } else {
+          target.players.set(uid, { ...p });
+        }
+      }
+      for (const [hero, d] of src.heroes) {
+        const ex = target.heroes.get(hero);
+        if (ex) {
+          ex.matches += d.matches;
+          ex.wins += d.wins;
+        } else {
+          target.heroes.set(hero, { ...d });
+        }
+      }
+      for (const [fmt, m] of src.formats) target.formats.set(fmt, (target.formats.get(fmt) || 0) + m);
+      buckets.delete(slug);
+    }
+    target.nameVariants = new Map([[g.displayName, Number.MAX_SAFE_INTEGER]]);
+  }
+}
+
+/** Given a list of leaderboard docs, build per-slug aggregates (with merges applied). */
+function aggregate(docs: LeaderboardDoc[], aliasGroups: StoreAliasGroup[] = []): Map<string, StoreAggregate> {
+  const buckets = new Map<string, StoreBucket>();
 
   for (const entry of docs) {
     if (BLOCKED_USER_IDS.has(entry.userId)) continue;
@@ -200,6 +260,9 @@ function aggregate(docs: LeaderboardDoc[]): Map<string, StoreAggregate> {
     }
   }
 
+  // Apply admin store merges before ranking/slicing so combined data wins.
+  foldAliases(buckets, aliasGroups);
+
   const result = new Map<string, StoreAggregate>();
   for (const [slug, bucket] of buckets.entries()) {
     const players = [...bucket.players.values()]
@@ -236,6 +299,13 @@ async function fetchAllLeaderboard(): Promise<LeaderboardDoc[]> {
   const db = getAdminDb();
   const snap = await db.collection("leaderboard").get();
   return snap.docs.map((d) => d.data() as LeaderboardDoc);
+}
+
+async function fetchStoreAliases(): Promise<StoreAliasGroup[]> {
+  const snap = await getAdminDb().collection("admin").doc("storeAliases").get();
+  return ((snap.data()?.groups as StoreAliasGroup[]) || []).filter(
+    (g) => g.canonicalSlug && g.memberSlugs?.length,
+  );
 }
 
 async function fetchChangedLeaderboard(sinceIso: string): Promise<LeaderboardDoc[]> {
@@ -354,8 +424,8 @@ async function rebuildDirectoryFromAggregates(): Promise<number> {
 
 async function runFull(): Promise<{ stores: number; written: number; deleted: number; ms: number }> {
   const t0 = Date.now();
-  const docs = await fetchAllLeaderboard();
-  const aggregates = aggregate(docs);
+  const [docs, aliasGroups] = await Promise.all([fetchAllLeaderboard(), fetchStoreAliases()]);
+  const aggregates = aggregate(docs, aliasGroups);
   const { written, deleted } = await writeAggregates(aggregates, "full");
   const stores = await rebuildDirectoryFromAggregates();
   const now = new Date().toISOString();
@@ -378,7 +448,10 @@ async function runIncremental(sinceIso: string): Promise<{
   ms: number;
 }> {
   const t0 = Date.now();
-  const changed = await fetchChangedLeaderboard(sinceIso);
+  const [changed, aliasGroups] = await Promise.all([
+    fetchChangedLeaderboard(sinceIso),
+    fetchStoreAliases(),
+  ]);
   if (changed.length === 0) {
     const now = new Date().toISOString();
     await getAdminDb()
@@ -402,6 +475,18 @@ async function runIncremental(sinceIso: string): Promise<{
     }
   }
 
+  // Expand affected slugs to full merge groups so the canonical doc recomputes
+  // and stale member docs get deleted (they're absent from the folded aggregate).
+  const memberToGroup = new Map<string, StoreAliasGroup>();
+  for (const g of aliasGroups) for (const m of g.memberSlugs) memberToGroup.set(m, g);
+  for (const slug of [...affectedSlugs]) {
+    const g = memberToGroup.get(slug);
+    if (g) {
+      affectedSlugs.add(g.canonicalSlug);
+      for (const m of g.memberSlugs) affectedSlugs.add(m);
+    }
+  }
+
   // For each affected slug, fetch the current full player set via the
   // array-contains index and rebuild that store's aggregate.
   const allDocsForAffectedStores: LeaderboardDoc[] = [];
@@ -420,7 +505,7 @@ async function runIncremental(sinceIso: string): Promise<{
       unique.push(d);
     }
   }
-  const aggregates = aggregate(unique);
+  const aggregates = aggregate(unique, aliasGroups);
   // Restrict to only the affected slugs (don't accidentally touch unrelated
   // stores that happened to be in the joined doc set).
   for (const slug of [...aggregates.keys()]) {
