@@ -35,7 +35,8 @@ const tabs: TabSpec[] = [
     href: "/discover",
     label: "Discover",
     icon: <NavAssetIcon name="discover" />,
-    match: (p) => p.startsWith("/discover") || p.startsWith("/player") || p.startsWith("/search"),
+    // Discover is the hub for players/stores/leagues. `/player` also covers `/players`.
+    match: (p) => p.startsWith("/discover") || p.startsWith("/player") || p.startsWith("/search") || p.startsWith("/stores") || p.startsWith("/leagues"),
   },
   {
     href: "/activity",
