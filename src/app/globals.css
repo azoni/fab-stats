@@ -226,6 +226,12 @@ body::after {
   opacity: 1;
 }
 
+/* Pinned groups (Support) are always expanded — no hover, no clipping. */
+.fab-sidebar-group[data-always-open="true"] > .fab-sidebar-subnav {
+  max-height: none;
+  opacity: 1;
+}
+
 .fab-sidebar-subitem {
   border: 1px solid transparent;
   position: relative;

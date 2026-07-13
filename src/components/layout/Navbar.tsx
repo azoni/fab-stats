@@ -112,6 +112,7 @@ export function Navbar() {
                 <section
                   key={link.href}
                   data-active-section={parentActive ? "true" : undefined}
+                  data-always-open={link.alwaysOpen ? "true" : undefined}
                   className="fab-sidebar-group space-y-1"
                 >
                   {isParentExternal ? (

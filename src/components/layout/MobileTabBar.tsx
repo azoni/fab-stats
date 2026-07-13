@@ -35,20 +35,14 @@ const tabs: TabSpec[] = [
     href: "/discover",
     label: "Discover",
     icon: <NavAssetIcon name="discover" />,
-    // Discover is the hub for players/stores/leagues. `/player` also covers `/players`.
-    match: (p) => p.startsWith("/discover") || p.startsWith("/player") || p.startsWith("/search") || p.startsWith("/stores") || p.startsWith("/leagues"),
+    // Discover is the hub for players/stores/leagues/teams. `/player` also covers `/players`.
+    match: (p) => p.startsWith("/discover") || p.startsWith("/player") || p.startsWith("/search") || p.startsWith("/stores") || p.startsWith("/leagues") || p.startsWith("/teams") || p.startsWith("/group"),
   },
   {
     href: "/activity",
     label: "Activity",
     icon: <NavAssetIcon name="activity" />,
     match: (p) => p.startsWith("/activity") || p.startsWith("/community") || p.startsWith("/friends") || p.startsWith("/feed"),
-  },
-  {
-    href: "/teams",
-    label: "Teams",
-    icon: <NavAssetIcon name="teams" />,
-    match: (p) => p.startsWith("/teams") || p.startsWith("/group"),
   },
   {
     href: "/extras",
@@ -66,7 +60,7 @@ export function MobileTabBar() {
       aria-label="Primary"
       className="fab-mobile-shell md:hidden fixed bottom-0 inset-x-0 z-50 bg-fab-bg/95 backdrop-blur border-t border-fab-border pb-[env(safe-area-inset-bottom)]"
     >
-      <div className="grid grid-cols-6 items-stretch px-0.5">
+      <div className="grid grid-cols-5 items-stretch px-0.5">
         {tabs.map((tab) => (
           <TabLink key={tab.href} tab={tab} active={tab.match(pathname)} />
         ))}
