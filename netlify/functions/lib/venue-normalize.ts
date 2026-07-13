@@ -18,7 +18,7 @@ const LEGAL_SUFFIX =
   /(\bl\.?l\.?c\.?|\binc\.?|\bltd\.?|\bllp\.?|\bgmbh|\bs\.?r\.?l\.?|\bs\.?a\.?s\.?|\bs\.?n\.?c\.?|\bpty\.?|\bcorp\.?|\bkft|\boy|\bd\.?o\.?o\.?|&\s*c\.?)\s*$/i;
 
 const BLURB =
-  /\b(entry fee|table fee|store credit|booster packs?|will receive|players? (will|receive|must|can|should)|construct a deck|deck of exactly|deck ?list|card legality|legal as defined|prize support|participation prize|promo(tional)? cards?|proxies|pre-?registration|please register|sign ?up (at|via|online|here)|register (at|via|online|through|here)|refreshments|livestream|per person|per player|prizes? (are|will|be|awarded)|100% of|round the pool|1st place|first place|top \d+ (will|receive|get)|doors open|check.?in)\b/i;
+  /\b(entry fee|table fee|store credit|booster packs?|will receive|players? (will|receive|must|can|should)|construct a deck|deck of exactly|deck ?list|card legality|legal as defined|prize support|participation prize|promo(tional)? cards?|proxies|pre-?registration|please register|sign ?up (at|via|online|here)|register (at|via|online|through|here)|refreshments|livestream|per person|per player|prizes? (are|will|be|awarded)|100% of|round the pool|top \d+ (will|receive|get)|doors open|check.?in)\b/i;
 
 const URL_RE = /https?:\/\/|www\.\S/i;
 
@@ -44,7 +44,10 @@ export function normalizeVenueName(raw: string | null | undefined): string {
   const storey = legal || STORE_TOKEN.test(stripped);
   if (!storey && CURRENCY.test(stripped)) return "";
   if (!legal && BLURB.test(stripped)) return "";
-  if (hadId && !storey && /^[^\d]+$/.test(stripped) && stripped.split(/\s+/).length <= 4) return "";
+  if (hadId && !storey && /^[^\d]+$/.test(stripped)) {
+    const nameWords = stripped.split(/\s+/).length;
+    if (nameWords >= 2 && nameWords <= 4) return "";
+  }
   return stripped;
 }
 

@@ -48,8 +48,21 @@ interface LeaderboardDoc {
   teamVisibility?: "public" | "private";
   hideFromSpotlight?: boolean;
   hideFromGuests?: boolean;
+  isPublic?: boolean;
   createdAt?: string;
   updatedAt?: string;
+}
+
+/** users/{uid}/profile/main — the source of truth for privacy flags (the
+ *  leaderboard mirror can be stale, and account-only users have no leaderboard
+ *  doc at all). */
+interface ProfileDoc {
+  uid?: string;
+  displayName?: string;
+  isPublic?: boolean;
+  profileVisibility?: string;
+  hideFromSpotlight?: boolean;
+  hideFromGuests?: boolean;
 }
 
 /** Compact directory record — short keys to fit thousands of players in one
@@ -63,17 +76,22 @@ interface CompactPlayer {
   r?: number; // eloRating
   p?: string; // photoUrl
   t?: string; // teamName (public only)
-  g?: 1; // hideFromGuests — client hides these from signed-out visitors
   c?: number; // createdAt (epoch seconds) — for "newest" sort
-  v?: number; // lastVisit (epoch seconds) — for "recently active" default sort
+  v?: number; // lastVisit (epoch DAY seconds) — for "recently active" default sort
 }
 
-async function buildPlayers(): Promise<{ players: CompactPlayer[]; total: number; withStats: number }> {
+async function buildPlayers(): Promise<{
+  all: CompactPlayer[];
+  guest: CompactPlayer[];
+  total: number;
+  withStats: number;
+}> {
   const db = getAdminDb();
-  const [unameSnap, lbSnap, visitSnap] = await Promise.all([
+  const [unameSnap, lbSnap, visitSnap, profileSnap] = await Promise.all([
     db.collection("usernames").get(),
     db.collection("leaderboard").get(),
     db.collection("analytics").doc("userLastVisit").get(),
+    db.collectionGroup("profile").get(),
   ]);
 
   // uid -> last site-visit ISO timestamp (written on each signed-in page view).
@@ -85,7 +103,16 @@ async function buildPlayers(): Promise<{ players: CompactPlayer[]; total: number
     if (data.userId) lbByUid.set(data.userId, data);
   }
 
-  const players: CompactPlayer[] = [];
+  // Profile is the privacy source of truth (users/{uid}/profile/main).
+  const profByUid = new Map<string, ProfileDoc>();
+  for (const doc of profileSnap.docs) {
+    const data = doc.data() as ProfileDoc;
+    const uid = data.uid || doc.ref.parent.parent?.id;
+    if (uid) profByUid.set(uid, data);
+  }
+
+  const all: CompactPlayer[] = []; // includes hideFromGuests players (auth-only doc)
+  const guest: CompactPlayer[] = []; // excludes hideFromGuests players (public doc)
   let withStats = 0;
 
   for (const doc of unameSnap.docs) {
@@ -96,13 +123,31 @@ async function buildPlayers(): Promise<{ players: CompactPlayer[]; total: number
     if (!uid || BLOCKED_USER_IDS.has(uid)) continue;
 
     const lb = lbByUid.get(uid);
-    if (lb?.hideFromSpotlight) continue; // respect the "hide me" opt-out entirely
+    const prof = profByUid.get(uid);
+
+    // ── Privacy gate ──────────────────────────────────────────────────────
+    // Never publish anyone who is explicitly private or opted out of the
+    // spotlight. Profile is source of truth; the leaderboard mirror can be
+    // stale and account-only users have no leaderboard doc.
+    const explicitlyPrivate =
+      prof?.isPublic === false ||
+      prof?.profileVisibility === "private" ||
+      prof?.profileVisibility === "friends";
+    if (explicitlyPrivate) continue;
+    if (prof?.hideFromSpotlight || lb?.hideFromSpotlight) continue;
+    // Require a positive public signal (signup default is public).
+    const publicIntent =
+      prof?.isPublic === true || prof?.profileVisibility === "public" || lb?.isPublic === true;
+    if (!publicIntent) continue;
+
+    const hideGuests = !!(prof?.hideFromGuests || lb?.hideFromGuests);
 
     const rec: CompactPlayer = {
       u: uname,
-      d: (lb?.displayName || urec.displayName || uname).slice(0, 60),
+      d: (lb?.displayName || prof?.displayName || urec.displayName || uname).slice(0, 60),
     };
-    if (lb) {
+    // Only surface stats from a public leaderboard doc.
+    if (lb && lb.isPublic !== false) {
       if (lb.topHero && lb.topHero !== "Unknown") rec.h = lb.topHero;
       if (lb.totalMatches && lb.totalMatches > 0) {
         rec.m = lb.totalMatches;
@@ -116,27 +161,30 @@ async function buildPlayers(): Promise<{ players: CompactPlayer[]; total: number
       }
       if (lb.photoUrl) rec.p = lb.photoUrl;
       if (lb.teamName && lb.teamVisibility !== "private") rec.t = lb.teamName;
-      if (lb.hideFromGuests) rec.g = 1;
       if (lb.createdAt) {
         const t = Date.parse(lb.createdAt);
         if (!Number.isNaN(t)) rec.c = Math.floor(t / 1000);
       }
     }
     // Recency for the "recently active" sort: prefer real last site-visit,
-    // fall back to the leaderboard's last-recompute time so players who
-    // predate visit tracking still get an ordering.
+    // fall back to the leaderboard's last-recompute time. Bucketed to the day
+    // so the world-readable doc doesn't republish precise last-visit times.
     const recency = lastVisitByUid[uid] || lb?.updatedAt;
     if (recency) {
       const t = Date.parse(recency);
-      if (!Number.isNaN(t)) rec.v = Math.floor(t / 1000);
+      if (!Number.isNaN(t)) rec.v = Math.floor(t / 86_400_000) * 86_400;
     }
-    players.push(rec);
+
+    all.push(rec);
+    if (!hideGuests) guest.push(rec);
   }
 
   // Default order: most-active first. Also makes the size-guard drop the
   // least-active tail if we ever approach the doc limit.
-  players.sort((a, b) => (b.m || 0) - (a.m || 0));
-  return { players, total: players.length, withStats };
+  const byMatches = (a: CompactPlayer, b: CompactPlayer) => (b.m || 0) - (a.m || 0);
+  all.sort(byMatches);
+  guest.sort(byMatches);
+  return { all, guest, total: all.length, withStats };
 }
 
 /** Serialize under the doc-size limit: drop photo URLs first, then truncate the
@@ -160,21 +208,47 @@ function fitToLimit(players: CompactPlayer[]): { list: CompactPlayer[]; truncate
 }
 
 async function run() {
-  const { players, total, withStats } = await buildPlayers();
-  const { list, truncated, bytes } = fitToLimit(players);
-  await getAdminDb()
-    .collection("community")
-    .doc("_players")
-    .set({
-      v: 1,
-      players: list,
+  const { all, guest, total, withStats } = await buildPlayers();
+  const db = getAdminDb();
+  const now = new Date().toISOString();
+
+  // Two docs enforce hideFromGuests at the rules layer (a client-side flag on a
+  // world-readable doc is not a real barrier):
+  //   community/_players       — guest-safe (hideFromGuests excluded), public read
+  //   community/_players_auth  — full list, gated to authenticated readers
+  const guestFit = fitToLimit(guest);
+  const authFit = fitToLimit(all);
+
+  await Promise.all([
+    db.collection("community").doc("_players").set({
+      v: 2,
+      players: guestFit.list,
+      count: guest.length,
+      withStats,
+      truncated: guestFit.truncated,
+      bytes: guestFit.bytes,
+      updatedAt: now,
+    }),
+    db.collection("community").doc("_players_auth").set({
+      v: 2,
+      players: authFit.list,
       count: total,
       withStats,
-      truncated,
-      bytes,
-      updatedAt: new Date().toISOString(),
-    });
-  return { total, withStats, written: list.length, truncated, bytes };
+      truncated: authFit.truncated,
+      bytes: authFit.bytes,
+      updatedAt: now,
+    }),
+  ]);
+
+  return {
+    total,
+    guestCount: guest.length,
+    withStats,
+    guestWritten: guestFit.list.length,
+    authWritten: authFit.list.length,
+    guestTruncated: guestFit.truncated,
+    authTruncated: authFit.truncated,
+  };
 }
 
 export default async function handler(req: Request) {

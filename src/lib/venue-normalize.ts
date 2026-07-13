@@ -40,7 +40,7 @@ const LEGAL_SUFFIX =
 /** High-precision vocabulary that only appears in leaked GEM event descriptions,
  *  prize/entry blurbs, and rules text — not in real store names. */
 const BLURB =
-  /\b(entry fee|table fee|store credit|booster packs?|will receive|players? (will|receive|must|can|should)|construct a deck|deck of exactly|deck ?list|card legality|legal as defined|prize support|participation prize|promo(tional)? cards?|proxies|pre-?registration|please register|sign ?up (at|via|online|here)|register (at|via|online|through|here)|refreshments|livestream|per person|per player|prizes? (are|will|be|awarded)|100% of|round the pool|1st place|first place|top \d+ (will|receive|get)|doors open|check.?in)\b/i;
+  /\b(entry fee|table fee|store credit|booster packs?|will receive|players? (will|receive|must|can|should)|construct a deck|deck of exactly|deck ?list|card legality|legal as defined|prize support|participation prize|promo(tional)? cards?|proxies|pre-?registration|please register|sign ?up (at|via|online|here)|register (at|via|online|through|here)|refreshments|livestream|per person|per player|prizes? (are|will|be|awarded)|100% of|round the pool|top \d+ (will|receive|get)|doors open|check.?in)\b/i;
 
 const URL_RE = /https?:\/\/|www\.\S/i;
 
@@ -78,9 +78,11 @@ export function normalizeVenueName(raw: string | null | undefined): string {
   if (!storey && CURRENCY.test(stripped)) return "";
   // Leaked event/prize/rules blurb (legal-entity names are protected).
   if (!legal && BLURB.test(stripped)) return "";
-  // Id-suffixed, no store word, short person-name shape -> mis-parsed player.
-  if (hadId && !storey && /^[^\d]+$/.test(stripped) && stripped.split(/\s+/).length <= 4) {
-    return "";
+  // Id-suffixed, no store word, 2-4 word person-name shape -> mis-parsed player.
+  // (A single word with an id is far more likely a real store than a person.)
+  if (hadId && !storey && /^[^\d]+$/.test(stripped)) {
+    const nameWords = stripped.split(/\s+/).length;
+    if (nameWords >= 2 && nameWords <= 4) return "";
   }
 
   return stripped;

@@ -5,8 +5,8 @@ import { isBlockedUser } from "./blocked-users";
 import type { LeaderboardEntry } from "@/types";
 
 /** A player row in the /players directory. Sourced from the precomputed
- *  community/_players doc (all ~3.7k registered players), or derived live from
- *  the leaderboard as a fallback before the aggregator's first run. */
+ *  community/_players(_auth) doc (all public registered players), or derived
+ *  live from the leaderboard as a fallback before the aggregator's first run. */
 export interface DirectoryPlayer {
   username: string;
   displayName: string;
@@ -16,11 +16,9 @@ export interface DirectoryPlayer {
   rating?: number;
   photoUrl?: string;
   teamName?: string;
-  /** Hidden from signed-out visitors (mirrors leaderboard hideFromGuests). */
-  hideFromGuests?: boolean;
   /** Registration/first-seen time, epoch seconds — for "newest" sort. */
   createdAt?: number;
-  /** Last site visit, epoch seconds — for the "recently active" default sort. */
+  /** Last site visit, epoch seconds (day-bucketed) — "recently active" sort. */
   lastVisit?: number;
 }
 
@@ -33,7 +31,6 @@ interface CompactPlayer {
   r?: number;
   p?: string;
   t?: string;
-  g?: 1;
   c?: number;
   v?: number;
 }
@@ -48,24 +45,30 @@ function expand(c: CompactPlayer): DirectoryPlayer {
     rating: c.r,
     photoUrl: c.p,
     teamName: c.t,
-    hideFromGuests: c.g === 1,
     createdAt: c.c,
     lastVisit: c.v,
   };
 }
 
-const STORAGE_KEY = "fabstats.community-players.v1";
+const STORAGE_KEY = "fabstats.community-players.v2";
 const CACHE_TTL = 30 * 60_000; // 30 minutes
 
 let cached: DirectoryPlayer[] | null = null;
 let cachedAt = 0;
+let cachedAuth: boolean | null = null;
 
-function readStorage(): { players: DirectoryPlayer[]; at: number } | null {
+interface StoragePayload {
+  players: DirectoryPlayer[];
+  at: number;
+  auth: boolean;
+}
+
+function readStorage(): StoragePayload | null {
   if (typeof window === "undefined") return null;
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
-    const parsed = JSON.parse(raw) as { players: DirectoryPlayer[]; at: number };
+    const parsed = JSON.parse(raw) as StoragePayload;
     if (!Array.isArray(parsed.players)) return null;
     return parsed;
   } catch {
@@ -73,22 +76,22 @@ function readStorage(): { players: DirectoryPlayer[]; at: number } | null {
   }
 }
 
-function writeStorage(players: DirectoryPlayer[], at: number) {
+function writeStorage(players: DirectoryPlayer[], at: number, auth: boolean) {
   if (typeof window === "undefined") return;
   try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ players, at }));
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ players, at, auth }));
   } catch {
     /* quota / disabled — in-memory only */
   }
 }
 
-/** Fallback: derive a directory from the public leaderboard when the
- *  precomputed doc doesn't exist yet. Only covers players with stats (~2.5k),
- *  which is fine until the aggregator publishes the full list. */
+/** Fallback: derive a directory from the public leaderboard when the precomputed
+ *  doc isn't readable yet. getLeaderboardEntries already applies the correct auth
+ *  gating (guests get isPublic==true AND hideFromGuests==false; authed get all
+ *  public), so no extra guest filtering is needed here. Throws on hard failure
+ *  so the caller can tell a failed load apart from a genuinely empty result. */
 async function fromLeaderboard(isAuthenticated: boolean): Promise<DirectoryPlayer[]> {
-  const entries = await getLeaderboardEntries(false, isAuthenticated).catch(
-    () => [] as LeaderboardEntry[],
-  );
+  const entries: LeaderboardEntry[] = await getLeaderboardEntries(false, isAuthenticated);
   const out: DirectoryPlayer[] = [];
   for (const e of entries) {
     if (!e.username || isBlockedUser(e.userId)) continue;
@@ -102,11 +105,9 @@ async function fromLeaderboard(isAuthenticated: boolean): Promise<DirectoryPlaye
       rating: typeof e.eloRating === "number" ? Math.round(e.eloRating) : undefined,
       photoUrl: e.photoUrl,
       teamName: e.teamVisibility !== "private" ? e.teamName : undefined,
-      hideFromGuests: e.hideFromGuests,
       createdAt: e.createdAt ? Math.floor(Date.parse(e.createdAt) / 1000) || undefined : undefined,
-      // No cheap client read for analytics/userLastVisit here — approximate
-      // "recently active" with the leaderboard's updatedAt until the aggregator
-      // publishes real lastVisit values.
+      // No cheap client read for analytics/userLastVisit — approximate "recently
+      // active" with the leaderboard's updatedAt until the aggregator publishes.
       lastVisit: e.updatedAt ? Math.floor(Date.parse(e.updatedAt) / 1000) || undefined : undefined,
     });
   }
@@ -114,9 +115,12 @@ async function fromLeaderboard(isAuthenticated: boolean): Promise<DirectoryPlaye
   return out;
 }
 
-async function fetchFresh(isAuthenticated: boolean): Promise<DirectoryPlayer[]> {
+/** Returns the directory, or null on hard failure (both the precomputed doc and
+ *  the leaderboard fallback failed) so callers never cache an empty list. */
+async function fetchFresh(isAuthenticated: boolean): Promise<DirectoryPlayer[] | null> {
+  const docId = isAuthenticated ? "_players_auth" : "_players";
   try {
-    const snap = await getDoc(doc(db, "community", "_players"));
+    const snap = await getDoc(doc(db, "community", docId));
     if (snap.exists()) {
       const data = snap.data() as { players?: CompactPlayer[] };
       if (Array.isArray(data.players) && data.players.length > 0) {
@@ -126,45 +130,55 @@ async function fetchFresh(isAuthenticated: boolean): Promise<DirectoryPlayer[]> 
   } catch {
     /* fall through to leaderboard */
   }
-  return fromLeaderboard(isAuthenticated);
+  try {
+    return await fromLeaderboard(isAuthenticated);
+  } catch {
+    return null;
+  }
 }
 
-/** All directory players. Cached (in-memory + localStorage, 30-min SWR). Pass
- *  the viewer's auth state so `hideFromGuests` players are dropped for guests.
- *  The cache stores the full list; guest filtering is applied per call. */
+/** All directory players. Cached (in-memory + localStorage, 30-min SWR) and
+ *  keyed by auth state — guests and signed-in users read different docs, so a
+ *  guest→sign-in transition must re-fetch. Rejects on hard load failure so the
+ *  UI can show an error instead of a misleading "no players found". */
 export async function getCommunityPlayers(isAuthenticated: boolean): Promise<DirectoryPlayer[]> {
   const now = Date.now();
-  const filter = (list: DirectoryPlayer[]) =>
-    isAuthenticated ? list : list.filter((p) => !p.hideFromGuests);
 
-  if (cached && now - cachedAt < CACHE_TTL) return filter(cached);
+  if (cached && cachedAuth === isAuthenticated && now - cachedAt < CACHE_TTL) return cached;
 
   const stored = readStorage();
-  if (stored) {
+  if (stored && stored.auth === isAuthenticated) {
     cached = stored.players;
     cachedAt = stored.at;
-    if (now - stored.at < CACHE_TTL) return filter(stored.players);
+    cachedAuth = stored.auth;
+    if (now - stored.at < CACHE_TTL) return stored.players;
     // Stale — refresh in the background, return stale now.
     fetchFresh(isAuthenticated)
       .then((fresh) => {
-        cached = fresh;
-        cachedAt = Date.now();
-        writeStorage(fresh, cachedAt);
+        if (fresh) {
+          cached = fresh;
+          cachedAt = Date.now();
+          cachedAuth = isAuthenticated;
+          writeStorage(fresh, cachedAt, isAuthenticated);
+        }
       })
       .catch(() => {});
-    return filter(stored.players);
+    return stored.players;
   }
 
   const fresh = await fetchFresh(isAuthenticated);
+  if (!fresh) throw new Error("Failed to load player directory");
   cached = fresh;
   cachedAt = Date.now();
-  writeStorage(fresh, cachedAt);
-  return filter(fresh);
+  cachedAuth = isAuthenticated;
+  writeStorage(fresh, cachedAt, isAuthenticated);
+  return fresh;
 }
 
 export function invalidateCommunityPlayersCache() {
   cached = null;
   cachedAt = 0;
+  cachedAuth = null;
   if (typeof window !== "undefined") {
     try {
       window.localStorage.removeItem(STORAGE_KEY);

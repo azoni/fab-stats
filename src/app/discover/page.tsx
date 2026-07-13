@@ -3,10 +3,10 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ArrowRight, Compass, Shield, Store, Trophy, Users } from "lucide-react";
+import { collection, getCountFromServer, query, where } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 import { useCommunityStats } from "@/hooks/useCommunityStats";
 import { getStoreDirectory } from "@/lib/store-directory";
-import { getAllLeagues } from "@/lib/leagues";
-import { getAllTeams } from "@/lib/teams";
 
 type Accent = {
   iconWrap: string;
@@ -60,7 +60,7 @@ const DESTINATIONS: Dest[] = [
   { key: "teams", href: "/teams", title: "Teams", unit: "teams", desc: "Team hubs, rosters, and shared stats for your crew.", icon: Shield, accent: ACCENTS.sky },
 ];
 
-const CACHE_KEY = "fabstats.discover-counts.v1";
+const CACHE_KEY = "fabstats.discover-counts.v2";
 const CACHE_TTL = 10 * 60_000;
 
 type Counts = { stores?: number; leagues?: number; teams?: number };
@@ -72,6 +72,7 @@ function formatCount(n: number): string {
 export default function DiscoverPage() {
   const { userCount } = useCommunityStats();
   const [counts, setCounts] = useState<Counts | null>(null);
+  const [settled, setSettled] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -81,6 +82,7 @@ export default function DiscoverPage() {
       if (raw) {
         const { c, ts } = JSON.parse(raw);
         setCounts(c);
+        setSettled(true);
         fresh = Date.now() - ts < CACHE_TTL;
       }
     } catch {
@@ -88,18 +90,29 @@ export default function DiscoverPage() {
     }
     if (fresh) return;
 
-    Promise.allSettled([getStoreDirectory(), getAllLeagues(), getAllTeams()]).then((r) => {
+    // Count aggregations (~1 read each) instead of downloading up to 150 full
+    // league/team docs; also returns the true, uncapped totals.
+    Promise.allSettled([
+      getStoreDirectory(),
+      getCountFromServer(collection(db, "leagues")),
+      getCountFromServer(query(collection(db, "teams"), where("memberCount", ">", 0))),
+    ]).then((r) => {
       if (cancelled) return;
       const c: Counts = {
         stores: r[0].status === "fulfilled" ? r[0].value.length : undefined,
-        leagues: r[1].status === "fulfilled" ? r[1].value.length : undefined,
-        teams: r[2].status === "fulfilled" ? r[2].value.length : undefined,
+        leagues: r[1].status === "fulfilled" ? r[1].value.data().count : undefined,
+        teams: r[2].status === "fulfilled" ? r[2].value.data().count : undefined,
       };
       setCounts(c);
-      try {
-        localStorage.setItem(CACHE_KEY, JSON.stringify({ c, ts: Date.now() }));
-      } catch {
-        /* no storage */
+      setSettled(true);
+      // Only cache a fully-successful result — caching a partial failure would
+      // freeze a stuck skeleton for the whole TTL.
+      if (r.every((x) => x.status === "fulfilled")) {
+        try {
+          localStorage.setItem(CACHE_KEY, JSON.stringify({ c, ts: Date.now() }));
+        } catch {
+          /* no storage */
+        }
       }
     });
     return () => {
@@ -159,10 +172,12 @@ export default function DiscoverPage() {
               <p className="relative mt-1 text-sm leading-6 text-fab-muted">{d.desc}</p>
 
               <div className="relative mt-4 flex items-baseline gap-1.5">
-                {count == null ? (
-                  <span className="h-6 w-12 animate-pulse rounded bg-fab-border/60" />
-                ) : (
+                {count != null ? (
                   <span className={`text-2xl font-black tabular-nums ${d.accent.text}`}>{formatCount(count)}</span>
+                ) : settled ? (
+                  <span className={`text-2xl font-black ${d.accent.text}`}>—</span>
+                ) : (
+                  <span className="h-6 w-12 animate-pulse rounded bg-fab-border/60" />
                 )}
                 <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-fab-dim">{d.unit}</span>
               </div>
