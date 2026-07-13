@@ -122,8 +122,12 @@ async function fetchFresh(isAuthenticated: boolean): Promise<DirectoryPlayer[] |
   try {
     const snap = await getDoc(doc(db, "community", docId));
     if (snap.exists()) {
-      const data = snap.data() as { players?: CompactPlayer[] };
-      if (Array.isArray(data.players) && data.players.length > 0) {
+      const data = snap.data() as { v?: number; players?: CompactPlayer[] };
+      // Only trust a v>=2 doc. The pre-fix v:1 `_players` bundled hideFromGuests
+      // players (guarded only by a since-removed client filter), so a stale v:1
+      // doc must NOT be shown to guests — fall through to the gated leaderboard
+      // until the aggregator republishes the guest-safe v:2 docs.
+      if ((data.v ?? 1) >= 2 && Array.isArray(data.players) && data.players.length > 0) {
         return data.players.map(expand);
       }
     }

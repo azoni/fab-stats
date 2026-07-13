@@ -91,7 +91,11 @@ async function buildPlayers(): Promise<{
     db.collection("usernames").get(),
     db.collection("leaderboard").get(),
     db.collection("analytics").doc("userLastVisit").get(),
-    db.collectionGroup("profile").get(),
+    // Only the privacy fields — avoids pulling full profile docs (bios, links…).
+    db
+      .collectionGroup("profile")
+      .select("uid", "isPublic", "profileVisibility", "hideFromSpotlight", "hideFromGuests", "displayName")
+      .get(),
   ]);
 
   // uid -> last site-visit ISO timestamp (written on each signed-in page view).

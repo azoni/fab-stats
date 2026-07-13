@@ -171,7 +171,7 @@ function PlayerRow({ p, links }: { p: DirectoryPlayer; links?: DiscoverLink[] })
 }
 
 export default function PlayersPage() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const isAuthenticated = !!user;
   const { userCount } = useCommunityStats();
 
@@ -189,7 +189,10 @@ export default function PlayersPage() {
 
   // Single-doc directory read (fast). No full leaderboard load. getCommunityPlayers
   // rejects on a hard failure so we can show an error state (not a false "empty").
+  // Wait for auth to resolve so a signed-in hard-load doesn't fetch the guest doc
+  // then immediately re-fetch the authed doc (skeleton flash + wasted read).
   useEffect(() => {
+    if (authLoading) return;
     let cancelled = false;
     setPlayers(null);
     setLoadError(false);
@@ -197,7 +200,7 @@ export default function PlayersPage() {
       .then((items) => !cancelled && setPlayers(items))
       .catch(() => !cancelled && setLoadError(true));
     return () => { cancelled = true; };
-  }, [isAuthenticated, retryKey]);
+  }, [isAuthenticated, authLoading, retryKey]);
 
   const retry = () => {
     invalidateCommunityPlayersCache();
