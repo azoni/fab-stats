@@ -13,6 +13,7 @@
  * and sees the needsRecompute flag.
  */
 import { getAdminDb } from "../firebase-admin.ts";
+import { sanitizeVenueForWrite } from "./venue-normalize.ts";
 import type { AutoSyncMatch } from "./gem-scraper.ts";
 
 interface ImportResult {
@@ -69,7 +70,9 @@ function toMatchDoc(m: AutoSyncMatch) {
   };
 
   if (m.opponentGemId) doc.opponentGemId = m.opponentGemId;
-  if (m.venue) doc.venue = m.venue;
+  // Drop junk venue strings (mis-parsed player names, dates, event blurbs).
+  const cleanVenue = sanitizeVenueForWrite(m.venue);
+  if (cleanVenue) doc.venue = cleanVenue;
   if (m.eventType) doc.eventType = m.eventType;
   if (m.rated !== undefined) doc.rated = m.rated;
   if (m.gemEventId) doc.gemEventId = m.gemEventId;

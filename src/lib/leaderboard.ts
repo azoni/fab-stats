@@ -11,6 +11,7 @@ import { db } from "./firebase";
 import { computeOverallStats, computeEventStats, computeOpponentStats, computePlayoffFinishes, computeMinorEventFinishes, getEventType } from "./stats";
 import { computeEloRating } from "./elo";
 import { isBlockedUser } from "./blocked-users";
+import { normalizeVenueName } from "./venue-normalize";
 import type { LeaderboardEntry, MatchRecord, UserProfile } from "@/types";
 import { MatchResult } from "@/types";
 
@@ -278,7 +279,9 @@ export async function updateLeaderboardEntry(
   type VenueAcc = { matches: number; wins: number; heroes: Map<string, { matches: number; wins: number }>; formats: Map<string, number> };
   const venueAgg = new Map<string, VenueAcc>();
   for (const m of matches) {
-    const v = m.venue?.trim();
+    // Normalize + drop junk venues (mis-parsed player names, dates, event
+    // blurbs) so they never enter venueBreakdown / venueSlugs.
+    const v = normalizeVenueName(m.venue);
     if (v && v.toLowerCase() !== "unknown") {
       venueNames.add(v.toLowerCase());
       if (m.result !== MatchResult.Bye) {

@@ -25,6 +25,7 @@
 
 import type { Config } from "@netlify/functions";
 import { getAdminDb } from "./firebase-admin.ts";
+import { normalizeVenueName } from "./lib/venue-normalize.ts";
 
 interface VenueBreakdownEntry {
   venue: string;
@@ -109,8 +110,11 @@ function slugifyStoreName(raw: string): string {
   return raw.toLowerCase().replace(/[^a-z0-9]/g, "");
 }
 
+// Drops mis-parsed player names, dates, URLs, and leaked GEM event/prize blurbs
+// that would otherwise surface as fake stores; strips trailing GEM ids so
+// id-suffixed real stores merge onto their clean slug. See ./lib/venue-normalize.ts.
 function normalizeForDisplay(raw: string): string {
-  return raw.trim().replace(/\s+/g, " ");
+  return normalizeVenueName(raw);
 }
 
 function pickCanonical(variants: Map<string, number>): string {

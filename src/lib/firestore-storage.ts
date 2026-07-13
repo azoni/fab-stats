@@ -22,6 +22,7 @@ import {
 import { db } from "./firebase";
 import { logActivity } from "./activity-log";
 import { logToEcosystem } from "./mcp-webhook";
+import { sanitizeVenueForWrite } from "./venue-normalize";
 import type { MatchRecord, UserProfile } from "@/types";
 
 /** Normalize round info so "Round P1" and "Playoff" match as duplicates */
@@ -82,6 +83,12 @@ export async function addMatchFirestore(
   for (const [k, v] of Object.entries(match)) {
     if (v !== undefined) clean[k] = v;
   }
+  // Drop junk venue strings (mis-parsed player names, dates, event blurbs).
+  if (typeof clean.venue === "string") {
+    const cv = sanitizeVenueForWrite(clean.venue);
+    if (cv) clean.venue = cv;
+    else delete clean.venue;
+  }
   const docRef = await addDoc(matchesCollection(userId), clean);
   logToEcosystem("match_logged", `Match logged: ${match.heroPlayed || "hero"}`, `vs ${match.opponentHero || "opponent"} — ${match.result}`);
   return { ...match, id: docRef.id, createdAt: now };
@@ -97,6 +104,12 @@ export async function updateMatchFirestore(
   for (const [k, v] of Object.entries(updates)) {
     if (v !== undefined) clean[k] = v;
     else clean[k] = deleteField(); // Remove field from Firestore document
+  }
+  // Drop junk venue strings if this edit sets one.
+  if (typeof clean.venue === "string") {
+    const cv = sanitizeVenueForWrite(clean.venue);
+    if (cv) clean.venue = cv;
+    else clean.venue = deleteField();
   }
   await updateDoc(docRef, clean);
 }
@@ -148,6 +161,12 @@ export async function importMatchesFirestore(
       const clean: Record<string, unknown> = { createdAt: now };
       for (const [k, v] of Object.entries(match)) {
         if (v !== undefined) clean[k] = v;
+      }
+      // Drop junk venue strings (mis-parsed player names, dates, event blurbs).
+      if (typeof clean.venue === "string") {
+        const cv = sanitizeVenueForWrite(clean.venue);
+        if (cv) clean.venue = cv;
+        else delete clean.venue;
       }
       batch.set(docRef, clean);
     }
