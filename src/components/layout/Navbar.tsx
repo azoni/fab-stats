@@ -109,7 +109,11 @@ export function Navbar() {
                 </>
               );
               return (
-                <section key={link.href} className="space-y-1">
+                <section
+                  key={link.href}
+                  data-active-section={parentActive ? "true" : undefined}
+                  className="fab-sidebar-group space-y-1"
+                >
                   {isParentExternal ? (
                     <a
                       href={link.href}

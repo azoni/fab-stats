@@ -207,6 +207,23 @@ body::after {
 
 .fab-sidebar-subnav {
   border-left-color: color-mix(in srgb, var(--color-fab-border) 62%, transparent);
+  /* Collapsed by default. The parent group reveals it on hover/keyboard focus,
+     and the section matching the current route stays open (data-active-section)
+     so you can see where you are. Kept in the DOM (not display:none) so sub-links
+     stay keyboard-focusable and focus-within can reveal them. */
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition:
+    max-height 0.2s ease,
+    opacity 0.16s ease;
+}
+
+.fab-sidebar-group:hover > .fab-sidebar-subnav,
+.fab-sidebar-group:focus-within > .fab-sidebar-subnav,
+.fab-sidebar-group[data-active-section="true"] > .fab-sidebar-subnav {
+  max-height: 22rem;
+  opacity: 1;
 }
 
 .fab-sidebar-subitem {
