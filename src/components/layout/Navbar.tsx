@@ -190,8 +190,8 @@ export function Navbar() {
                   data-active-section={parentActive ? "true" : undefined}
                   data-always-open={link.alwaysOpen ? "true" : undefined}
                   className="fab-sidebar-group space-y-1"
-                  onMouseEnter={link.visibleSubs.length > 0 && !link.alwaysOpen ? (e) => openFlyout(link.href, e.currentTarget) : undefined}
-                  onMouseLeave={link.visibleSubs.length > 0 && !link.alwaysOpen ? closeFlyoutSoon : undefined}
+                  onMouseEnter={link.visibleSubs.length > 0 && !link.alwaysOpen && !parentActive ? (e) => openFlyout(link.href, e.currentTarget) : undefined}
+                  onMouseLeave={link.visibleSubs.length > 0 && !link.alwaysOpen && !parentActive ? closeFlyoutSoon : undefined}
                 >
                   {isParentExternal ? (
                     <a
@@ -215,9 +215,10 @@ export function Navbar() {
                     </Link>
                   )}
 
-                  {/* Pinned groups (Support) show sub-links inline & always open.
-                      Every other group reveals them in the hover flyout below. */}
-                  {link.alwaysOpen && link.visibleSubs.length > 0 && (
+                  {/* Sub-links show inline when this is the group you're currently in
+                      (orientation) or it's pinned (Support). Other groups reveal them
+                      in the hover flyout instead, so the sidebar doesn't shift. */}
+                  {(link.alwaysOpen || parentActive) && link.visibleSubs.length > 0 && (
                     <div className="fab-sidebar-subnav ml-4 pl-3 border-l space-y-0.5">
                       {link.visibleSubs.map(renderSub)}
                     </div>
