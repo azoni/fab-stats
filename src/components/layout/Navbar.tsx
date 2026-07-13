@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ImportIcon } from "@/components/icons/NavIcons";
@@ -15,7 +15,7 @@ import { ExternalLink } from "lucide-react";
 import dynamic from "next/dynamic";
 const FeedbackModal = dynamic(() => import("@/components/feedback/FeedbackModal").then(m => ({ default: m.FeedbackModal })), { ssr: false });
 import { SmartSearch } from "@/components/search/SmartSearch";
-import { navLinks, userMenuLinks } from "./nav-data";
+import { navLinks, userMenuLinks, type NavSubItem } from "./nav-data";
 
 export function Navbar() {
   const pathname = usePathname();
@@ -68,6 +68,82 @@ export function Navbar() {
   const initial = displayName.charAt(0).toUpperCase();
   const visibleUserLinks = userMenuLinks.filter((l) => !l.adminOnly || isAdmin);
 
+  // ── Sidebar sub-menu flyout (hover-intent) ──────────────────────────────
+  // Non-pinned groups reveal their sub-links in a floating panel to the RIGHT of
+  // the sidebar on hover, so nothing on the sidebar shifts. Small open/close
+  // delays keep it from firing while the cursor just passes over a group.
+  const [flyout, setFlyout] = useState<{ href: string; top: number; left: number } | null>(null);
+  const flyoutTimers = useRef<{ open?: number; close?: number }>({});
+  useEffect(() => {
+    const t = flyoutTimers.current;
+    return () => { window.clearTimeout(t.open); window.clearTimeout(t.close); };
+  }, []);
+
+  function openFlyout(href: string, anchor: HTMLElement) {
+    window.clearTimeout(flyoutTimers.current.close);
+    window.clearTimeout(flyoutTimers.current.open);
+    flyoutTimers.current.open = window.setTimeout(() => {
+      const r = anchor.getBoundingClientRect();
+      // Align to the group's top; clamp so a long menu near the bottom fits.
+      const top = Math.max(8, Math.min(r.top - 4, window.innerHeight - 340));
+      setFlyout({ href, top, left: r.right });
+    }, 110);
+  }
+  function keepFlyout() { window.clearTimeout(flyoutTimers.current.close); }
+  function closeFlyoutSoon() {
+    window.clearTimeout(flyoutTimers.current.open);
+    flyoutTimers.current.close = window.setTimeout(() => setFlyout(null), 180);
+  }
+
+  function renderSub(sub: NavSubItem) {
+    const trackKey = getExternalTrackKey(sub.href);
+    if (sub.href.startsWith("http")) {
+      return (
+        <a
+          key={sub.href}
+          href={sub.href}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={() => { if (trackKey) trackSupportClick(trackKey); }}
+          className="fab-sidebar-subitem flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium text-fab-muted hover:text-fab-text transition-colors"
+        >
+          {sub.icon && <span className="text-fab-dim shrink-0">{sub.icon}</span>}
+          <span className="flex-1 truncate">{sub.label}</span>
+          {sub.badge && <span className="text-[8px] font-bold uppercase tracking-wider text-emerald-400 bg-emerald-400/15 px-1.5 py-0.5 rounded-full">{sub.badge}</span>}
+          <ExternalLink className="w-3 h-3 text-fab-dim shrink-0" />
+        </a>
+      );
+    }
+    if (sub.href === "/feedback") {
+      return (
+        <button
+          key={sub.href}
+          onClick={() => setFeedbackOpen(true)}
+          className="fab-sidebar-subitem flex items-center gap-2 w-full text-left px-3 py-1.5 rounded-md text-xs font-medium text-fab-muted hover:text-fab-text transition-colors"
+        >
+          {sub.icon && <span className="text-fab-dim shrink-0">{sub.icon}</span>}
+          <span className="truncate">{sub.label}</span>
+        </button>
+      );
+    }
+    const active = isActiveRoute(pathname, sub.href);
+    return (
+      <Link
+        key={sub.href}
+        href={sub.href}
+        data-active={active}
+        className={`fab-sidebar-subitem flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+          active ? "text-fab-text bg-fab-surface-hover/75 border-fab-border/70" : "text-fab-muted hover:text-fab-text"
+        }`}
+      >
+        {sub.icon && <span className="text-fab-dim shrink-0">{sub.icon}</span>}
+        <span className="flex-1 truncate">{sub.label}</span>
+        {sub.badge && <span className="text-[8px] font-bold uppercase tracking-wider text-emerald-400 bg-emerald-400/15 px-1.5 py-0.5 rounded-full">{sub.badge}</span>}
+      </Link>
+    );
+  }
+  const flyoutLink = flyout ? visibleNavLinks.find((l) => l.href === flyout.href) : null;
+
   return (<>
     <nav className="fab-sidebar hidden md:flex fixed inset-y-0 left-0 z-50 w-64 flex-col bg-fab-surface/95 backdrop-blur-md border-r border-fab-border/80">
       <div className="fab-sidebar-brand shrink-0 px-4 py-3 border-b border-fab-border/70">
@@ -114,6 +190,8 @@ export function Navbar() {
                   data-active-section={parentActive ? "true" : undefined}
                   data-always-open={link.alwaysOpen ? "true" : undefined}
                   className="fab-sidebar-group space-y-1"
+                  onMouseEnter={link.visibleSubs.length > 0 && !link.alwaysOpen ? (e) => openFlyout(link.href, e.currentTarget) : undefined}
+                  onMouseLeave={link.visibleSubs.length > 0 && !link.alwaysOpen ? closeFlyoutSoon : undefined}
                 >
                   {isParentExternal ? (
                     <a
@@ -137,61 +215,11 @@ export function Navbar() {
                     </Link>
                   )}
 
-                  {link.visibleSubs.length > 0 && (
+                  {/* Pinned groups (Support) show sub-links inline & always open.
+                      Every other group reveals them in the hover flyout below. */}
+                  {link.alwaysOpen && link.visibleSubs.length > 0 && (
                     <div className="fab-sidebar-subnav ml-4 pl-3 border-l space-y-0.5">
-                      {link.visibleSubs.map((sub) => {
-                        const isExternal = sub.href.startsWith("http");
-                        const trackKey = getExternalTrackKey(sub.href);
-
-                        if (isExternal) {
-                          return (
-                            <a
-                              key={sub.href}
-                              href={sub.href}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              onClick={() => { if (trackKey) trackSupportClick(trackKey); }}
-                              className="fab-sidebar-subitem flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium text-fab-muted hover:text-fab-text transition-colors"
-                            >
-                              {sub.icon && <span className="text-fab-dim shrink-0">{sub.icon}</span>}
-                              <span className="flex-1 truncate">{sub.label}</span>
-                              {sub.badge && <span className="text-[8px] font-bold uppercase tracking-wider text-emerald-400 bg-emerald-400/15 px-1.5 py-0.5 rounded-full">{sub.badge}</span>}
-                              <ExternalLink className="w-3 h-3 text-fab-dim shrink-0" />
-                            </a>
-                          );
-                        }
-
-                        if (sub.href === "/feedback") {
-                          return (
-                            <button
-                              key={sub.href}
-                              onClick={() => setFeedbackOpen(true)}
-                              className="fab-sidebar-subitem flex items-center gap-2 w-full text-left px-3 py-1.5 rounded-md text-xs font-medium text-fab-muted hover:text-fab-text transition-colors"
-                            >
-                              {sub.icon && <span className="text-fab-dim shrink-0">{sub.icon}</span>}
-                              <span className="truncate">{sub.label}</span>
-                            </button>
-                          );
-                        }
-
-                        const active = isActiveRoute(pathname, sub.href);
-                        return (
-                          <Link
-                            key={sub.href}
-                            href={sub.href}
-                            data-active={active}
-                            className={`fab-sidebar-subitem flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
-                              active
-                                ? "text-fab-text bg-fab-surface-hover/75 border-fab-border/70"
-                                : "text-fab-muted hover:text-fab-text"
-                            }`}
-                          >
-                            {sub.icon && <span className="text-fab-dim shrink-0">{sub.icon}</span>}
-                            <span className="flex-1 truncate">{sub.label}</span>
-                            {sub.badge && <span className="text-[8px] font-bold uppercase tracking-wider text-emerald-400 bg-emerald-400/15 px-1.5 py-0.5 rounded-full">{sub.badge}</span>}
-                          </Link>
-                        );
-                      })}
+                      {link.visibleSubs.map(renderSub)}
                     </div>
                   )}
                 </section>
@@ -336,6 +364,20 @@ export function Navbar() {
         )}
       </div>
     </nav>
+
+    {/* Hover flyout: a group's sub-links, floated to the right of the sidebar so
+        nothing on the sidebar shifts. Rendered outside the scroll container. */}
+    {flyoutLink && flyout && flyoutLink.visibleSubs.length > 0 && (
+      <div
+        className="fab-sidebar-flyout hidden md:block fixed z-[60] w-56 rounded-xl border border-fab-border bg-fab-surface/98 backdrop-blur-md shadow-xl p-1.5"
+        style={{ top: flyout.top, left: flyout.left }}
+        onMouseEnter={keepFlyout}
+        onMouseLeave={closeFlyoutSoon}
+      >
+        <p className="px-2 pt-1 pb-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-fab-dim">{flyoutLink.label}</p>
+        <div className="space-y-0.5">{flyoutLink.visibleSubs.map(renderSub)}</div>
+      </div>
+    )}
 
     {feedbackOpen && <FeedbackModal open={feedbackOpen} onClose={() => setFeedbackOpen(false)} />}
   </>
