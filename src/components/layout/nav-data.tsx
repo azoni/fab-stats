@@ -1,7 +1,9 @@
 "use client";
 import type { ReactNode } from "react";
 import {
+  BarChart3,
   Bot,
+  CalendarDays,
   Gamepad2,
   Mail,
   MessageCircle,
@@ -10,12 +12,14 @@ import {
   ShoppingCart,
   Star,
   Store,
+  Swords,
+  TrendingUp,
   Trophy,
   Users,
 } from "lucide-react";
 
 export type NavSubItem = { href: string; label: string; adminOnly?: boolean; authOnly?: boolean; badge?: string; icon?: ReactNode };
-export type NavLink = { href: string; label: string; icon: ReactNode; color: string; bg: string; authOnly?: boolean; iconOnly?: boolean; subItems?: NavSubItem[] };
+export type NavLink = { href: string; label: string; icon: ReactNode; color: string; bg: string; authOnly?: boolean; iconOnly?: boolean; alwaysOpen?: boolean; subItems?: NavSubItem[] };
 export type MoreLink = { href: string; label: string; icon: ReactNode; authOnly?: boolean; adminOnly?: boolean; badge?: string; divider?: boolean; sectionLabel?: string; subItems?: { href: string; label: string }[] };
 export type UserMenuLink = { href: string; label: string; icon: ReactNode; adminOnly?: boolean };
 
@@ -45,20 +49,33 @@ function XIcon() {
 }
 
 export const navLinks: NavLink[] = [
-  { href: "/", label: "Home", icon: <NavAssetIcon name="home" />, color: "text-fab-gold", bg: "bg-fab-gold/10" },
-  { href: "/activity", label: "Activity", icon: <NavAssetIcon name="activity" />, color: "text-indigo-400", bg: "bg-indigo-400/10" },
-  { href: "/meta", label: "Meta", icon: <NavAssetIcon name="meta" />, color: "text-teal-400", bg: "bg-teal-400/10", subItems: [
-    { href: "/matchups", label: "Matchup Matrix" },
+  { href: "/", label: "Home", icon: <NavAssetIcon name="home" />, color: "text-fab-gold", bg: "bg-fab-gold/10", subItems: [
+    { href: "/matches", label: "Matches", icon: <Swords className="w-3.5 h-3.5" /> },
+    { href: "/events", label: "Events", icon: <CalendarDays className="w-3.5 h-3.5" /> },
+    { href: "/opponents", label: "Opponents", icon: <Users className="w-3.5 h-3.5" /> },
+    { href: "/trends", label: "Trends", icon: <TrendingUp className="w-3.5 h-3.5" /> },
+    { href: "/tournament-stats", label: "Tournament Stats", icon: <BarChart3 className="w-3.5 h-3.5" /> },
   ] },
-  { href: "/leaderboard", label: "Rankings", icon: <NavAssetIcon name="rankings" />, color: "text-amber-400", bg: "bg-amber-400/10" },
+  { href: "/activity", label: "Activity", icon: <NavAssetIcon name="activity" />, color: "text-indigo-400", bg: "bg-indigo-400/10" },
   { href: "/discover", label: "Discover", icon: <NavAssetIcon name="discover" />, color: "text-emerald-400", bg: "bg-emerald-400/10", subItems: [
     { href: "/players", label: "Players", icon: <Users className="w-3.5 h-3.5" /> },
     { href: "/stores", label: "Stores", badge: "Beta", icon: <Store className="w-3.5 h-3.5" /> },
     { href: "/leagues", label: "Leagues", badge: "Beta", icon: <Trophy className="w-3.5 h-3.5" /> },
     { href: "/teams", label: "Teams", icon: <Shield className="w-3.5 h-3.5" /> },
   ] },
+  { href: "/meta", label: "Meta", icon: <NavAssetIcon name="meta" />, color: "text-teal-400", bg: "bg-teal-400/10", subItems: [
+    { href: "/matchups", label: "Matchup Matrix" },
+  ] },
+  { href: "/leaderboard", label: "Rankings", icon: <NavAssetIcon name="rankings" />, color: "text-amber-400", bg: "bg-amber-400/10" },
   { href: "/achievements", label: "Achievements", icon: <NavAssetIcon name="achievements" />, color: "text-yellow-400", bg: "bg-yellow-400/10" },
-  { href: "/support", label: "Support", icon: <NavAssetIcon name="support" />, color: "text-pink-400", bg: "bg-pink-400/10", iconOnly: true, subItems: [
+  { href: "/extras", label: "Extras", icon: <NavAssetIcon name="extras" />, color: "text-violet-400", bg: "bg-violet-400/10", subItems: [
+    { href: "/games", label: "Daily Games", icon: <Gamepad2 className="w-3.5 h-3.5" /> },
+    { href: "/compare", label: "Versus" },
+    { href: "/docs", label: "Docs" },
+    { href: "/changelog", label: "Changelog" },
+  ] },
+  // Support pinned at the bottom and always expanded (no hover needed).
+  { href: "/support", label: "Support", icon: <NavAssetIcon name="support" />, color: "text-pink-400", bg: "bg-pink-400/10", alwaysOpen: true, subItems: [
     { href: "https://www.amazon.com/?tag=fabstats-20", label: "Shop Amazon", badge: "Free", icon: <ShoppingCart className="w-3.5 h-3.5" /> },
     { href: "https://partner.tcgplayer.com/fabstats", label: "Shop TCGplayer", badge: "Free", icon: <ShoppingCart className="w-3.5 h-3.5" /> },
     { href: "/feedback", label: "Send Feedback", icon: <MessageCircle className="w-3.5 h-3.5" /> },
@@ -66,12 +83,6 @@ export const navLinks: NavLink[] = [
     { href: "https://discord.com/oauth2/authorize?client_id=1478583612537573479&permissions=0&scope=bot+applications.commands", label: "Add Discord Bot", icon: <Bot className="w-3.5 h-3.5" /> },
     { href: "https://x.com/FabStats", label: "Follow on X", icon: <XIcon /> },
     { href: "https://mfy.gg/@azoni/members?membershipId=99383fe4-b403-4f05-a041-c3212bd7ea30", label: "Metafy Membership", icon: <Users className="w-3.5 h-3.5" /> },
-  ] },
-  { href: "/extras", label: "Extras", icon: <NavAssetIcon name="extras" />, color: "text-violet-400", bg: "bg-violet-400/10", subItems: [
-    { href: "/games", label: "Daily Games", icon: <Gamepad2 className="w-3.5 h-3.5" /> },
-    { href: "/compare", label: "Versus" },
-    { href: "/docs", label: "Docs" },
-    { href: "/changelog", label: "Changelog" },
   ] },
 ];
 
