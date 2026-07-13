@@ -64,14 +64,19 @@ interface CompactPlayer {
   t?: string; // teamName (public only)
   g?: 1; // hideFromGuests — client hides these from signed-out visitors
   c?: number; // createdAt (epoch seconds) — for "newest" sort
+  v?: number; // lastVisit (epoch seconds) — for "recently active" default sort
 }
 
 async function buildPlayers(): Promise<{ players: CompactPlayer[]; total: number; withStats: number }> {
   const db = getAdminDb();
-  const [unameSnap, lbSnap] = await Promise.all([
+  const [unameSnap, lbSnap, visitSnap] = await Promise.all([
     db.collection("usernames").get(),
     db.collection("leaderboard").get(),
+    db.collection("analytics").doc("userLastVisit").get(),
   ]);
+
+  // uid -> last site-visit ISO timestamp (written on each signed-in page view).
+  const lastVisitByUid = (visitSnap.data() as Record<string, string> | undefined) || {};
 
   const lbByUid = new Map<string, LeaderboardDoc>();
   for (const doc of lbSnap.docs) {
@@ -115,6 +120,11 @@ async function buildPlayers(): Promise<{ players: CompactPlayer[]; total: number
         const t = Date.parse(lb.createdAt);
         if (!Number.isNaN(t)) rec.c = Math.floor(t / 1000);
       }
+    }
+    const lv = lastVisitByUid[uid];
+    if (lv) {
+      const t = Date.parse(lv);
+      if (!Number.isNaN(t)) rec.v = Math.floor(t / 1000);
     }
     players.push(rec);
   }
