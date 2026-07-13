@@ -20,6 +20,8 @@ export interface DirectoryPlayer {
   hideFromGuests?: boolean;
   /** Registration/first-seen time, epoch seconds — for "newest" sort. */
   createdAt?: number;
+  /** Last site visit, epoch seconds — for the "recently active" default sort. */
+  lastVisit?: number;
 }
 
 interface CompactPlayer {
@@ -33,6 +35,7 @@ interface CompactPlayer {
   t?: string;
   g?: 1;
   c?: number;
+  v?: number;
 }
 
 function expand(c: CompactPlayer): DirectoryPlayer {
@@ -47,6 +50,7 @@ function expand(c: CompactPlayer): DirectoryPlayer {
     teamName: c.t,
     hideFromGuests: c.g === 1,
     createdAt: c.c,
+    lastVisit: c.v,
   };
 }
 
@@ -100,6 +104,10 @@ async function fromLeaderboard(isAuthenticated: boolean): Promise<DirectoryPlaye
       teamName: e.teamVisibility !== "private" ? e.teamName : undefined,
       hideFromGuests: e.hideFromGuests,
       createdAt: e.createdAt ? Math.floor(Date.parse(e.createdAt) / 1000) || undefined : undefined,
+      // No cheap client read for analytics/userLastVisit here — approximate
+      // "recently active" with the leaderboard's updatedAt until the aggregator
+      // publishes real lastVisit values.
+      lastVisit: e.updatedAt ? Math.floor(Date.parse(e.updatedAt) / 1000) || undefined : undefined,
     });
   }
   out.sort((a, b) => b.matches - a.matches);
