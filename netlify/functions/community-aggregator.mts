@@ -49,6 +49,7 @@ interface LeaderboardDoc {
   hideFromSpotlight?: boolean;
   hideFromGuests?: boolean;
   createdAt?: string;
+  updatedAt?: string;
 }
 
 /** Compact directory record — short keys to fit thousands of players in one
@@ -121,9 +122,12 @@ async function buildPlayers(): Promise<{ players: CompactPlayer[]; total: number
         if (!Number.isNaN(t)) rec.c = Math.floor(t / 1000);
       }
     }
-    const lv = lastVisitByUid[uid];
-    if (lv) {
-      const t = Date.parse(lv);
+    // Recency for the "recently active" sort: prefer real last site-visit,
+    // fall back to the leaderboard's last-recompute time so players who
+    // predate visit tracking still get an ordering.
+    const recency = lastVisitByUid[uid] || lb?.updatedAt;
+    if (recency) {
+      const t = Date.parse(recency);
       if (!Number.isNaN(t)) rec.v = Math.floor(t / 1000);
     }
     players.push(rec);
