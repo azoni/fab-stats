@@ -1,5 +1,5 @@
 "use client";
-import { useMemo, useState, useRef } from "react";
+import { useMemo, useState, useRef, useEffect } from "react";
 import { MatchResult, type MatchRecord } from "@/types";
 import { localDate } from "@/lib/constants";
 import { getRoundNumber } from "@/lib/stats";
@@ -130,6 +130,21 @@ export function OnThisDay({ matches }: OnThisDayProps) {
   const [showShareModal, setShowShareModal] = useState(false);
   const [collapsed, setCollapsed] = useState(true);
 
+  // Soft glow to draw the eye — until the user opens it (once per calendar day).
+  const [seen, setSeen] = useState(true);
+  const seenKey = useMemo(() => {
+    const d = new Date();
+    return `fabstats.otd-seen.${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+  }, []);
+  useEffect(() => {
+    try { if (!localStorage.getItem(seenKey)) setSeen(false); } catch { /* no storage */ }
+  }, [seenKey]);
+  function markSeen() {
+    if (seen) return;
+    setSeen(true);
+    try { localStorage.setItem(seenKey, "1"); } catch { /* no storage */ }
+  }
+
   const memories = useMemo(() => {
     const today = new Date();
     let todayMonth = today.getMonth();
@@ -233,12 +248,12 @@ export function OnThisDay({ matches }: OnThisDayProps) {
   };
 
   return (
-    <div className="relative bg-fab-surface border border-fab-border rounded-lg p-4 overflow-hidden">
+    <div className={`relative bg-fab-surface rounded-lg p-4 overflow-hidden transition-shadow border ${seen ? "border-fab-border" : "border-amber-400/40 otd-glow"}`}>
       {/* Pitch strip accent */}
       <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-amber-400/30 to-transparent" />
       {/* Header — clickable to collapse */}
       <button
-        onClick={() => setCollapsed(!collapsed)}
+        onClick={() => { setCollapsed(!collapsed); markSeen(); }}
         className="w-full flex items-center gap-2"
       >
         <div className="w-6 h-6 rounded-md bg-amber-500/10 flex items-center justify-center ring-1 ring-inset ring-amber-500/20 shrink-0">
@@ -309,6 +324,15 @@ export function OnThisDay({ matches }: OnThisDayProps) {
                       );
                     })()}
                   </div>
+
+                  {/* Hero(es) you played — the matchup context for the rows below */}
+                  {mem.heroes.length > 0 && (
+                    <p className="mb-1.5 flex items-center gap-1 text-[11px] truncate">
+                      <svg className="w-3 h-3 shrink-0 text-fab-gold/80" viewBox="0 0 24 24" fill="currentColor"><path d="M6.92 5H5l9 9 1.92-1.92L6.92 5zM19 5l-4.6 4.6 1.4 1.4L20 6.4 19 5zm-6.06 8.06L11.53 14.47l-1.42-1.42-1.41 1.41 1.42 1.42-3.11 3.11 1.41 1.41 3.11-3.11 1.42 1.42 1.41-1.41-1.42-1.42 1.41-1.41-1.4-1.41z" /></svg>
+                      <span className="text-fab-dim">as</span>
+                      <span className="font-semibold text-fab-text truncate">{mem.heroes.map((h) => h.split(",")[0]).join(", ")}</span>
+                    </p>
+                  )}
 
                   {/* Event name */}
                   {mem.events.length > 0 && (
