@@ -4,7 +4,7 @@ import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { BookOpen, GraduationCap, Search, Settings, UserCircle, Users } from "lucide-react";
 import { getDiscoverProfiles } from "@/lib/firestore-storage";
-import { getCommunityPlayers, type DirectoryPlayer } from "@/lib/community-directory";
+import { getCommunityPlayers, invalidateCommunityPlayersCache, type DirectoryPlayer } from "@/lib/community-directory";
 import { useCommunityStats } from "@/hooks/useCommunityStats";
 import { useAuth } from "@/contexts/AuthContext";
 import { HeroAvatar } from "@/components/heroes/HeroAvatar";
@@ -171,11 +171,13 @@ function PlayerRow({ p, links }: { p: DirectoryPlayer; links?: DiscoverLink[] })
 }
 
 export default function PlayersPage() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const isAuthenticated = !!user;
   const { userCount } = useCommunityStats();
 
   const [players, setPlayers] = useState<DirectoryPlayer[] | null>(null);
+  const [loadError, setLoadError] = useState(false);
+  const [retryKey, setRetryKey] = useState(0);
   const [profiles, setProfiles] = useState<UserProfile[]>([]);
   const [query, setQuery] = useState("");
   const [linkFilter, setLinkFilter] = useState<LinkFilter>("all");
@@ -185,17 +187,29 @@ export default function PlayersPage() {
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const deferredQuery = useDeferredValue(query);
 
-  // Single-doc directory read (fast). No full leaderboard load.
+  // Single-doc directory read (fast). No full leaderboard load. getCommunityPlayers
+  // rejects on a hard failure so we can show an error state (not a false "empty").
+  // Wait for auth to resolve so a signed-in hard-load doesn't fetch the guest doc
+  // then immediately re-fetch the authed doc (skeleton flash + wasted read).
   useEffect(() => {
+    if (authLoading) return;
     let cancelled = false;
+    setPlayers(null);
+    setLoadError(false);
     getCommunityPlayers(isAuthenticated)
       .then((items) => !cancelled && setPlayers(items))
-      .catch(() => !cancelled && setPlayers([]));
+      .catch(() => !cancelled && setLoadError(true));
     return () => { cancelled = true; };
-  }, [isAuthenticated]);
+  }, [isAuthenticated, authLoading, retryKey]);
 
-  // Link data comes from the cheap server-filtered discover query (only the
-  // handful of players with links), so it's fine to load client-side.
+  const retry = () => {
+    invalidateCommunityPlayersCache();
+    setRetryKey((k) => k + 1);
+  };
+
+  // Link chips come from the discover-links query (server-filtered on
+  // hasDiscoverLinks). It is cached, but note it can fan out to a broad profile
+  // scan while link adoption is low — see getDiscoverProfiles.
   useEffect(() => {
     let cancelled = false;
     getDiscoverProfiles()
@@ -219,13 +233,23 @@ export default function PlayersPage() {
     return map;
   }, [profiles]);
 
+  // Count over the intersection with the directory so each badge matches the
+  // number of rows its filter actually shows.
   const linkCounts = useMemo(() => {
     const base: Record<LinkType, number> = { "metafy-guide": 0, "metafy-profile": 0, fabrary: 0, twitter: 0 };
-    for (const links of linkInfo.values()) {
+    if (!players) return base;
+    for (const p of players) {
+      const links = linkInfo.get(p.username);
+      if (!links) continue;
       for (const type of new Set(links.map((l) => l.type))) base[type] += 1;
     }
     return base;
-  }, [linkInfo]);
+  }, [players, linkInfo]);
+
+  const linkedCount = useMemo(
+    () => (players ? players.filter((p) => linkInfo.has(p.username)).length : 0),
+    [players, linkInfo],
+  );
 
   const heroOptions = useMemo(() => {
     if (!players) return [] as { hero: string; count: number }[];
@@ -254,7 +278,10 @@ export default function PlayersPage() {
     }
     const sorted = [...list];
     if (sort === "active") {
-      sorted.sort((a, b) => (b.lastVisit ?? 0) - (a.lastVisit ?? 0) || b.matches - a.matches);
+      // Gate recency on having played so zero-game signups don't top the
+      // discovery view purely by visiting.
+      const key = (p: DirectoryPlayer) => (p.matches > 0 ? (p.lastVisit ?? 0) : -1);
+      sorted.sort((a, b) => key(b) - key(a) || b.matches - a.matches);
     } else if (sort === "winRate") {
       const wr = (p: DirectoryPlayer) => (p.matches >= 10 && typeof p.winRate === "number" ? p.winRate : -1);
       sorted.sort((a, b) => wr(b) - wr(a) || b.matches - a.matches);
@@ -311,9 +338,9 @@ export default function PlayersPage() {
             </p>
           </div>
           <div className="grid grid-cols-3 gap-1.5 sm:min-w-[22rem] sm:gap-2">
-            <Metric label="Players" value={(userCount || players?.length || 0).toLocaleString()} />
+            <Metric label="Players" value={(players ? players.length : userCount || 0).toLocaleString()} />
             <Metric label="With stats" value={activeCount.toLocaleString()} tone="green" />
-            <Metric label="With links" value={linkInfo.size.toLocaleString()} tone="blue" />
+            <Metric label="With links" value={linkedCount.toLocaleString()} tone="blue" />
           </div>
         </div>
       </section>
@@ -325,6 +352,7 @@ export default function PlayersPage() {
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
+            aria-label="Search players"
             placeholder="Search all players by name or @username..."
             className="w-full rounded-lg border border-fab-border bg-fab-bg py-2.5 pl-9 pr-3 text-sm text-fab-text placeholder:text-fab-dim focus:border-fab-gold/60 focus:outline-none"
           />
@@ -337,6 +365,7 @@ export default function PlayersPage() {
                 <button
                   key={item.id}
                   onClick={() => setLinkFilter(item.id)}
+                  aria-pressed={linkFilter === item.id}
                   className={`whitespace-nowrap rounded-md px-2.5 py-1.5 text-xs font-bold transition-colors ${
                     linkFilter === item.id ? "bg-fab-gold/15 text-fab-gold" : "text-fab-muted hover:bg-fab-surface-hover hover:text-fab-text"
                   }`}
@@ -368,7 +397,20 @@ export default function PlayersPage() {
       </section>
 
       {/* Directory */}
-      {players === null ? (
+      {loadError ? (
+        <div className="rounded-xl border border-fab-border bg-fab-surface/80 p-10 text-center">
+          <Users className="mx-auto h-10 w-10 text-fab-dim" />
+          <p className="mt-3 text-sm font-bold text-fab-text">Couldn&apos;t load the player directory</p>
+          <p className="mt-1 text-sm text-fab-muted">Check your connection and try again.</p>
+          <button
+            type="button"
+            onClick={retry}
+            className="mt-4 inline-flex items-center justify-center rounded-lg border border-fab-border bg-fab-bg px-4 py-2 text-sm font-bold text-fab-muted transition-colors hover:border-fab-gold/45 hover:text-fab-gold"
+          >
+            Retry
+          </button>
+        </div>
+      ) : players === null ? (
         <div className="space-y-2">
           {[...Array(10)].map((_, i) => (
             <div key={i} className="h-16 animate-pulse rounded-xl border border-fab-border bg-fab-surface" />
@@ -377,8 +419,17 @@ export default function PlayersPage() {
       ) : rows.length === 0 ? (
         <div className="rounded-xl border border-fab-border bg-fab-surface/80 p-10 text-center">
           <Users className="mx-auto h-10 w-10 text-fab-dim" />
-          <p className="mt-3 text-sm font-bold text-fab-text">No players found</p>
-          <p className="mt-1 text-sm text-fab-muted">Try a different filter, hero, or search term.</p>
+          {query || linkFilter !== "all" || heroFilter ? (
+            <>
+              <p className="mt-3 text-sm font-bold text-fab-text">No players match</p>
+              <p className="mt-1 text-sm text-fab-muted">Try a different filter, hero, or search term.</p>
+            </>
+          ) : (
+            <>
+              <p className="mt-3 text-sm font-bold text-fab-text">No players yet</p>
+              <p className="mt-1 text-sm text-fab-muted">The directory will fill in as players log matches.</p>
+            </>
+          )}
         </div>
       ) : (
         <>

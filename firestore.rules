@@ -1201,11 +1201,13 @@ service cloud.firestore {
       allow write: if false;
     }
 
-    // Precomputed community player directory (community/_players), written by
-    // the community-aggregator Netlify function (Admin SDK). Public read so the
-    // /players directory is a single-doc fetch; client never writes.
+    // Precomputed community player directory, written by the community-aggregator
+    // Netlify function (Admin SDK); client never writes.
+    //   community/_players       — guest-safe list (hideFromGuests excluded): public read
+    //   community/_players_auth  — full list incl. hideFromGuests players: authed read only
+    // This enforces hideFromGuests at the rules layer instead of a client filter.
     match /community/{docId} {
-      allow read: if true;
+      allow read: if request.auth != null || docId != "_players_auth";
       allow write: if false;
     }
   }
