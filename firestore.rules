@@ -1200,5 +1200,13 @@ service cloud.firestore {
       allow read: if true;
       allow write: if false;
     }
+
+    // Precomputed community player directory (community/_players), written by
+    // the community-aggregator Netlify function (Admin SDK). Public read so the
+    // /players directory is a single-doc fetch; client never writes.
+    match /community/{docId} {
+      allow read: if true;
+      allow write: if false;
+    }
   }
 }

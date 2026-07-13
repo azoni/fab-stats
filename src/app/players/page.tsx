@@ -4,9 +4,12 @@ import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { BookOpen, Crown, ExternalLink, GraduationCap, Search, Settings, Sparkles, UserCircle, Users } from "lucide-react";
 import { getDiscoverProfiles } from "@/lib/firestore-storage";
+import { getCommunityPlayers, type DirectoryPlayer } from "@/lib/community-directory";
 import { useLeaderboard } from "@/hooks/useLeaderboard";
+import { useCommunityStats } from "@/hooks/useCommunityStats";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCreators } from "@/hooks/useCreators";
+import { HeroAvatar } from "@/components/heroes/HeroAvatar";
 import { HeroShieldBadge } from "@/components/profile/HeroShieldBadge";
 import { TeamBadge } from "@/components/profile/TeamBadge";
 import { EMBLEM_COMPONENTS, EMBLEM_COLORS } from "@/components/profile/EmblemIcons";
@@ -14,6 +17,7 @@ import { computeRankMap, rankBorderClass } from "@/lib/leaderboard-ranks";
 import type { Creator, LeaderboardEntry, UserProfile } from "@/types";
 
 type LinkFilter = "all" | "metafy-guide" | "metafy-profile" | "fabrary" | "twitter";
+type SortKey = "matches" | "winRate" | "rating" | "newest" | "name";
 
 interface DiscoverLink {
   type: Exclude<LinkFilter, "all">;
@@ -28,6 +32,14 @@ const FILTERS: { id: LinkFilter; label: string }[] = [
   { id: "metafy-profile", label: "Metafy Profiles" },
   { id: "fabrary", label: "Decklists" },
   { id: "twitter", label: "X" },
+];
+
+const SORTS: { id: SortKey; label: string }[] = [
+  { id: "matches", label: "Most games" },
+  { id: "winRate", label: "Best win rate" },
+  { id: "rating", label: "Highest rating" },
+  { id: "newest", label: "Newest" },
+  { id: "name", label: "Name A–Z" },
 ];
 
 const SITE_CREATOR_USERNAME = "azoni";
@@ -186,35 +198,30 @@ const LINK_TONES: Record<DiscoverLink["type"], { label: string; border: string; 
   },
 };
 
-function LinkPreview({ link, featured = false }: { link: DiscoverLink; featured?: boolean }) {
+function LinkPreview({ link }: { link: DiscoverLink }) {
   const tone = LINK_TONES[link.type];
   return (
     <a
       href={link.href}
       target="_blank"
       rel="noopener noreferrer"
-      className={`group flex ${featured ? "min-h-[110px] flex-col items-stretch justify-between p-4" : "items-center gap-2 px-3 py-2"} rounded-lg border bg-fab-bg/65 transition-colors ${tone.border} ${featured ? tone.bg : "hover:bg-fab-surface-hover/70"}`}
+      className={`group flex items-center gap-2 rounded-lg border bg-fab-bg/65 px-3 py-2 transition-colors ${tone.border} hover:bg-fab-surface-hover/70`}
     >
-      <span className={`flex items-center ${featured ? "justify-between" : "gap-2"}`}>
-        <span className={`inline-flex items-center gap-1.5 rounded-full ${featured ? "border px-2.5 py-1" : ""} text-[10px] font-black uppercase tracking-[0.12em] ${featured ? tone.icon : tone.text}`}>
-          {linkIcon(link.type)}
-          {tone.label}
-        </span>
-        {featured && <ExternalLink className="h-4 w-4 text-fab-dim transition-colors group-hover:text-fab-gold" />}
+      <span className={`inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.12em] ${tone.text}`}>
+        {linkIcon(link.type)}
+        {tone.label}
       </span>
-      <span className={featured ? "mt-4 block min-w-0" : "min-w-0 flex-1"}>
-        <span className={`block truncate font-black text-fab-text ${featured ? "text-lg" : "text-sm"}`}>{link.label}</span>
-        <span className="mt-1 block truncate text-[10px] font-bold uppercase tracking-[0.12em] text-fab-dim">
-          {featured ? linkDomain(link.href) : link.meta}
-        </span>
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-sm font-black text-fab-text">{link.label}</span>
+        <span className="mt-0.5 block truncate text-[10px] font-bold uppercase tracking-[0.12em] text-fab-dim">{link.meta}</span>
       </span>
-      {!featured && <ExternalLink className="h-3.5 w-3.5 shrink-0 text-fab-dim transition-colors group-hover:text-fab-gold" />}
+      <ExternalLink className="h-3.5 w-3.5 shrink-0 text-fab-dim transition-colors group-hover:text-fab-gold" />
     </a>
   );
 }
 
-function playerInitial(profile: UserProfile): string {
-  return (profile.displayName || profile.username || "?").charAt(0).toUpperCase();
+function playerInitial(name: string): string {
+  return (name || "?").charAt(0).toUpperCase();
 }
 
 function isSiteAdminProfile(profile: UserProfile): boolean {
@@ -268,127 +275,205 @@ function MiniEmblems({ profile }: { profile: UserProfile }) {
   );
 }
 
-function DiscoverProfileHeader({
+function FeaturedCard({
   profile,
   entry,
   creator,
   avatarBorder,
   shieldPct,
-  teamName,
   isAdmin,
-  isSiteAdmin,
-  compact = false,
 }: {
   profile: UserProfile;
   entry?: LeaderboardEntry;
   creator?: Creator;
   avatarBorder: string;
   shieldPct: number;
-  teamName?: string;
   isAdmin: boolean;
-  isSiteAdmin: boolean;
-  compact?: boolean;
 }) {
-  const avatarSize = compact ? "h-9 w-9" : "h-11 w-11";
-
+  const isSiteAdmin = isSiteAdminProfile(profile);
+  const links = profileLinks(profile);
   return (
-    <div className="flex min-w-0 items-center gap-3">
-      <Link href={`/player/${profile.username}`} className="relative shrink-0">
-        {isSiteAdmin && (
-          <Crown className="absolute -top-2 left-1/2 z-10 h-4 w-4 -translate-x-1/2 fill-current text-fab-gold drop-shadow-[0_0_6px_rgba(201,168,76,0.6)]" />
-        )}
-        {profile.photoUrl ? (
-          <img src={profile.photoUrl} alt="" className={`${avatarSize} rounded-full border border-fab-border object-cover ${avatarBorder}`} />
-        ) : (
-          <span className={`${avatarSize} flex items-center justify-center rounded-full border border-fab-border bg-fab-bg text-sm font-black text-fab-gold ${avatarBorder}`}>
-            {playerInitial(profile)}
-          </span>
-        )}
-      </Link>
-      <div className="min-w-0 flex-1">
-        <div className="flex min-w-0 items-center gap-1.5">
-          <Link href={`/player/${profile.username}`} className="min-w-0">
-            <h2 className={`${compact ? "text-sm" : "text-base"} truncate font-black text-fab-text transition-colors hover:text-fab-gold`}>{profile.displayName}</h2>
-          </Link>
-          {teamName && (
-            <TeamBadge
-              teamName={teamName}
-              teamIconUrl={entry?.teamIconUrl}
-              size="sm"
-              isPrivate={entry?.teamVisibility === "private"}
-              isSiteAdmin={isAdmin}
-            />
-          )}
-          {shieldPct >= 35 && <HeroShieldBadge pct={shieldPct} />}
-        </div>
-        <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-fab-dim">
-          <span>@{profile.username}</span>
-          {entry && (
-            <>
-              <span className="text-fab-border">/</span>
-              <span>{formatWinRate(entry)} WR</span>
-              <span className="text-fab-border">/</span>
-              <span>{formatMatches(entry)} matches</span>
-            </>
-          )}
+    <article className="rounded-xl border border-fab-border bg-fab-surface/90 p-3 transition-colors hover:border-fab-gold/45 hover:bg-fab-surface-hover/80">
+      <div className="flex min-w-0 items-center gap-3">
+        <Link href={`/player/${profile.username}`} className="relative shrink-0">
           {isSiteAdmin && (
-            <span className="inline-flex items-center gap-1 rounded-full border border-fab-gold/35 bg-fab-gold/10 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-[0.08em] text-fab-gold">
-              <Crown className="h-2.5 w-2.5 fill-current" />
-              Admin
+            <Crown className="absolute -top-2 left-1/2 z-10 h-4 w-4 -translate-x-1/2 fill-current text-fab-gold drop-shadow-[0_0_6px_rgba(201,168,76,0.6)]" />
+          )}
+          {profile.photoUrl ? (
+            <img src={profile.photoUrl} alt="" className={`h-11 w-11 rounded-full border border-fab-border object-cover ${avatarBorder}`} />
+          ) : (
+            <span className={`flex h-11 w-11 items-center justify-center rounded-full border border-fab-border bg-fab-bg text-sm font-black text-fab-gold ${avatarBorder}`}>
+              {playerInitial(profile.displayName || profile.username)}
             </span>
           )}
-          {creator && <CreatorChip creator={creator} />}
-        </div>
-        {!compact && (
+        </Link>
+        <div className="min-w-0 flex-1">
+          <div className="flex min-w-0 items-center gap-1.5">
+            <Link href={`/player/${profile.username}`} className="min-w-0">
+              <h3 className="truncate text-base font-black text-fab-text transition-colors hover:text-fab-gold">{profile.displayName}</h3>
+            </Link>
+            {entry?.teamName && (
+              <TeamBadge teamName={entry.teamName} teamIconUrl={entry.teamIconUrl} size="sm" isPrivate={entry.teamVisibility === "private"} isSiteAdmin={isAdmin} />
+            )}
+            {shieldPct >= 35 && <HeroShieldBadge pct={shieldPct} />}
+          </div>
+          <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-fab-dim">
+            <span>@{profile.username}</span>
+            {entry && (
+              <>
+                <span className="text-fab-border">/</span>
+                <span>{formatWinRate(entry)} WR</span>
+                <span className="text-fab-border">/</span>
+                <span>{formatMatches(entry)} matches</span>
+              </>
+            )}
+            {isSiteAdmin && (
+              <span className="inline-flex items-center gap-1 rounded-full border border-fab-gold/35 bg-fab-gold/10 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-[0.08em] text-fab-gold">
+                <Crown className="h-2.5 w-2.5 fill-current" />
+                Admin
+              </span>
+            )}
+            {creator && <CreatorChip creator={creator} />}
+          </div>
           <div className="mt-2">
             <MiniEmblems profile={profile} />
           </div>
+        </div>
+      </div>
+
+      {(profile.socialLinks?.discord || (profile.socialLinks?.discoverTags?.length ?? 0) > 0) && (
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {profile.socialLinks?.discord && (
+            <span className="rounded-full border border-fab-border bg-fab-bg/70 px-2 py-0.5 text-[10px] font-semibold text-fab-muted">
+              Discord: {profile.socialLinks.discord}
+            </span>
+          )}
+          {profile.socialLinks?.discoverTags?.slice(0, 3).map((tag) => (
+            <span key={tag} className="rounded-full border border-fab-border bg-fab-bg/70 px-2 py-0.5 text-[10px] font-semibold text-fab-muted">
+              {tag}
+            </span>
+          ))}
+        </div>
+      )}
+
+      <div className="mt-3 space-y-2">
+        {links.length > 0 ? (
+          links.map((link) => <LinkPreview key={`${profile.uid}-${link.type}-${link.href}`} link={link} />)
+        ) : (
+          <Link
+            href={`/player/${profile.username}`}
+            className="flex items-center justify-between rounded-lg border border-fab-border bg-fab-bg/65 px-3 py-2 text-sm font-bold text-fab-muted transition-colors hover:border-fab-gold/45 hover:text-fab-gold"
+          >
+            View profile
+            <ExternalLink className="h-3.5 w-3.5 shrink-0 text-fab-dim" />
+          </Link>
         )}
       </div>
-    </div>
+    </article>
+  );
+}
+
+function PlayerRow({ p, rank }: { p: DirectoryPlayer; rank?: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 }) {
+  const border = rankBorderClass(rank);
+  return (
+    <Link
+      href={`/player/${p.username}`}
+      className="group flex items-center gap-3 rounded-xl border border-fab-border bg-fab-surface/90 px-3 py-2.5 transition-colors hover:border-fab-gold/45 hover:bg-fab-surface-hover/80"
+    >
+      {p.photoUrl ? (
+        <img src={p.photoUrl} alt="" className={`h-9 w-9 shrink-0 rounded-full border border-fab-border object-cover ${border}`} />
+      ) : (
+        <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-fab-border bg-fab-bg text-sm font-black text-fab-gold ${border}`}>
+          {playerInitial(p.displayName || p.username)}
+        </span>
+      )}
+      <div className="min-w-0 flex-1">
+        <div className="flex min-w-0 items-center gap-1.5">
+          <span className="truncate text-sm font-black text-fab-text transition-colors group-hover:text-fab-gold">{p.displayName}</span>
+          {p.teamName && (
+            <span className="hidden shrink-0 rounded-full border border-fab-border bg-fab-bg/70 px-1.5 py-0.5 text-[9px] font-bold text-fab-muted sm:inline">{p.teamName}</span>
+          )}
+        </div>
+        <div className="mt-0.5 flex min-w-0 items-center gap-1.5 text-xs text-fab-dim">
+          <span className="truncate">@{p.username}</span>
+          {p.topHero && <HeroAvatar heroName={p.topHero} />}
+        </div>
+      </div>
+      <div className="shrink-0 text-right">
+        {p.matches > 0 ? (
+          <>
+            <p className="text-sm font-black tabular-nums text-fab-text">
+              {p.matches.toLocaleString()}
+              <span className="ml-1 text-[10px] font-bold uppercase text-fab-dim">gp</span>
+            </p>
+            {typeof p.winRate === "number" && <p className="text-[11px] font-bold text-fab-muted">{p.winRate.toFixed(1)}% WR</p>}
+          </>
+        ) : (
+          <span className="rounded-full border border-fab-border bg-fab-bg/70 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-fab-dim">New</span>
+        )}
+      </div>
+    </Link>
   );
 }
 
 export default function PlayersPage() {
-  const { profile, isAdmin } = useAuth();
+  const { profile, isAdmin, user } = useAuth();
+  const isAuthenticated = !!user;
+  const { userCount } = useCommunityStats();
+
+  // Featured (coaches / creators / link-rich profiles)
   const [profiles, setProfiles] = useState<UserProfile[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<LinkFilter>("all");
-  const [query, setQuery] = useState("");
-  const [visibleCount, setVisibleCount] = useState(24);
-  const sentinelRef = useRef<HTMLDivElement | null>(null);
-  const { entries } = useLeaderboard(false);
+  const [featuredLoading, setFeaturedLoading] = useState(true);
+  const [linkFilter, setLinkFilter] = useState<LinkFilter>("all");
   const creators = useCreators({ lazy: true }) as Creator[] & { load: () => void };
+  const { entries } = useLeaderboard(false);
+
+  // Directory (all registered players)
+  const [players, setPlayers] = useState<DirectoryPlayer[] | null>(null);
+  const [query, setQuery] = useState("");
+  const [heroFilter, setHeroFilter] = useState("");
+  const [sort, setSort] = useState<SortKey>("matches");
+  const [visibleCount, setVisibleCount] = useState(30);
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
+  const deferredQuery = useDeferredValue(query);
 
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
+    setFeaturedLoading(true);
     getDiscoverProfiles()
-      .then((items) => {
-        if (!cancelled) setProfiles(items);
-      })
-      .catch(() => {
-        if (!cancelled) setProfiles([]);
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
+      .then((items) => !cancelled && setProfiles(items))
+      .catch(() => !cancelled && setProfiles([]))
+      .finally(() => !cancelled && setFeaturedLoading(false));
+    return () => { cancelled = true; };
   }, []);
 
   useEffect(() => {
-    if (!loading && profiles.length > 0) creators.load();
-  }, [creators, loading, profiles.length]);
+    let cancelled = false;
+    getCommunityPlayers(isAuthenticated)
+      .then((items) => !cancelled && setPlayers(items))
+      .catch(() => !cancelled && setPlayers([]));
+    return () => { cancelled = true; };
+  }, [isAuthenticated]);
 
   useEffect(() => {
-    setVisibleCount(24);
-  }, [filter, query]);
+    if (!featuredLoading && profiles.length > 0) creators.load();
+  }, [creators, featuredLoading, profiles.length]);
+
+  useEffect(() => {
+    setVisibleCount(30);
+  }, [deferredQuery, heroFilter, sort]);
 
   const entryByUid = useMemo(() => new Map(entries.map((entry) => [entry.userId, entry])), [entries]);
   const deferredEntries = useDeferredValue(entries);
   const rankMap = useMemo(() => computeRankMap(deferredEntries), [deferredEntries]);
+  const rankByUsername = useMemo(() => {
+    const map = new Map<string, 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8>();
+    for (const e of deferredEntries) {
+      const r = rankMap.get(e.userId);
+      if (r && e.username) map.set(e.username.toLowerCase(), r);
+    }
+    return map;
+  }, [deferredEntries, rankMap]);
   const creatorByUsername = useMemo(() => {
     const map = new Map<string, Creator>();
     for (const creator of creators) {
@@ -396,12 +481,11 @@ export default function PlayersPage() {
     }
     return map;
   }, [creators]);
-  const discoverRows = useMemo(() => {
+
+  const featured = useMemo(() => {
     const merged = new Map<string, UserProfile>();
     const siteCreatorEntry = entries.find((entry) => entry.username?.toLowerCase() === SITE_CREATOR_USERNAME);
-    const siteCreator = makeSiteCreatorProfile(siteCreatorEntry);
-
-    merged.set(profileKey(siteCreator), siteCreator);
+    merged.set(SITE_CREATOR_USERNAME, makeSiteCreatorProfile(siteCreatorEntry));
     for (const item of profiles) merged.set(profileKey(item), item);
     if (profile?.uid) merged.set(profileKey(profile), profile);
 
@@ -413,55 +497,80 @@ export default function PlayersPage() {
     return result;
   }, [entries, profile, profiles]);
 
-  const rows = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return discoverRows
-      .filter((row) => filter === "all" || row.links.some((link) => link.type === filter))
-      .filter((row) => {
-        if (!q) return true;
-        const haystack = [
-          row.profile.displayName,
-          row.profile.username,
-          row.profile.socialLinks?.twitter,
-          row.profile.socialLinks?.discord,
-          row.profile.socialLinks?.fabrary,
-          row.profile.socialLinks?.fabraryName,
-          row.profile.socialLinks?.metafy,
-          row.profile.socialLinks?.metafyGuide,
-          row.profile.socialLinks?.metafyTitle,
-          row.profile.socialLinks?.metafyGuideTitle,
-          row.profile.socialLinks?.metafyProfile,
-          ...(row.profile.socialLinks?.discoverTags || []),
-        ].filter(Boolean).join(" ").toLowerCase();
-        return haystack.includes(q);
-      })
+  const featuredRows = useMemo(() => {
+    return featured
+      .filter((row) => linkFilter === "all" || row.links.some((link) => link.type === linkFilter))
       .map((row) => ({ ...row, entry: entryByUid.get(row.profile.uid) }))
       .sort((a, b) => (b.entry?.totalMatches ?? 0) - (a.entry?.totalMatches ?? 0));
-  }, [discoverRows, entryByUid, filter, query]);
+  }, [featured, entryByUid, linkFilter]);
 
-  const counts = useMemo(() => {
+  const featuredCounts = useMemo(() => {
     const base: Record<LinkFilter, number> = { all: 0, "metafy-guide": 0, "metafy-profile": 0, fabrary: 0, twitter: 0 };
-    for (const row of discoverRows) {
+    for (const row of featured) {
       base.all += 1;
       for (const type of new Set(row.links.map((link) => link.type))) base[type] += 1;
     }
     return base;
-  }, [discoverRows]);
+  }, [featured]);
+
+  const heroOptions = useMemo(() => {
+    if (!players) return [] as { hero: string; count: number }[];
+    const counts = new Map<string, number>();
+    for (const p of players) if (p.topHero) counts.set(p.topHero, (counts.get(p.topHero) || 0) + 1);
+    return [...counts.entries()].sort((a, b) => b[1] - a[1]).map(([hero, count]) => ({ hero, count }));
+  }, [players]);
+
+  const activeCount = useMemo(() => (players ? players.filter((p) => p.matches > 0).length : 0), [players]);
+
+  const rows = useMemo(() => {
+    if (!players) return [] as DirectoryPlayer[];
+    const q = deferredQuery.trim().toLowerCase();
+    let list = players;
+    if (heroFilter) list = list.filter((p) => p.topHero === heroFilter);
+    if (q) {
+      list = list.filter(
+        (p) =>
+          p.displayName.toLowerCase().includes(q) ||
+          p.username.includes(q) ||
+          (p.topHero?.toLowerCase().includes(q) ?? false),
+      );
+    }
+    const sorted = [...list];
+    if (sort === "winRate") {
+      // Gate low-sample players so a 100%-from-1-game doesn't top the list.
+      const wr = (p: DirectoryPlayer) => (p.matches >= 10 && typeof p.winRate === "number" ? p.winRate : -1);
+      sorted.sort((a, b) => wr(b) - wr(a) || b.matches - a.matches);
+    } else if (sort === "rating") {
+      sorted.sort((a, b) => (b.rating ?? -1) - (a.rating ?? -1) || b.matches - a.matches);
+    } else if (sort === "newest") {
+      sorted.sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0));
+    } else if (sort === "name") {
+      sorted.sort((a, b) => a.displayName.localeCompare(b.displayName));
+    } else {
+      sorted.sort((a, b) => b.matches - a.matches);
+    }
+    return sorted;
+  }, [players, deferredQuery, heroFilter, sort]);
 
   useEffect(() => {
     const node = sentinelRef.current;
     if (!node || typeof IntersectionObserver === "undefined") return;
-    const observer = new IntersectionObserver((entries) => {
-      if (entries.some((e) => e.isIntersecting)) {
-        setVisibleCount((n) => n + 24);
-      }
-    }, { rootMargin: "400px" });
+    const observer = new IntersectionObserver(
+      (obsEntries) => {
+        if (obsEntries.some((e) => e.isIntersecting)) setVisibleCount((n) => n + 30);
+      },
+      { rootMargin: "600px" },
+    );
     observer.observe(node);
     return () => observer.disconnect();
   }, [visibleCount, rows.length]);
 
+  const selectClass =
+    "rounded-lg border border-fab-border bg-fab-bg px-3 py-2.5 text-sm font-bold text-fab-text focus:border-fab-gold/60 focus:outline-none";
+
   return (
-    <div className="mx-auto max-w-6xl space-y-4">
+    <div className="mx-auto max-w-5xl space-y-4">
+      {/* Header */}
       <section className="rounded-xl border border-fab-border bg-fab-surface/95 p-3 sm:p-4">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-2xl">
@@ -475,166 +584,137 @@ export default function PlayersPage() {
                 className="inline-flex items-center gap-1.5 rounded-lg border border-fab-border/70 bg-fab-bg/60 px-2.5 py-1.5 text-[10px] font-bold text-fab-muted transition-colors hover:border-fab-gold/45 hover:text-fab-gold sm:px-3 sm:py-2 sm:text-xs"
               >
                 <Settings className="h-3.5 w-3.5" />
-                Edit links
+                Edit my links
               </Link>
             </div>
-            <h1 className="mt-2 text-lg font-black text-fab-text sm:mt-3 sm:text-3xl">Find players, guides, and decks</h1>
+            <h1 className="mt-2 text-lg font-black text-fab-text sm:mt-3 sm:text-3xl">Browse the player directory</h1>
             <p className="mt-2 hidden text-sm leading-6 text-fab-muted sm:block">
-              Browse public profiles that have shared Metafy resources, Fabrary decklists, X handles, Discord names, or tags.
+              Search every player, filter by their most-played hero, and find coaches, guides, and decklists from the community.
             </p>
           </div>
-          <div className="grid grid-cols-4 gap-1.5 sm:min-w-[28rem] sm:gap-2">
-            <Metric label="Profiles" value={counts.all.toString()} />
-            <Metric label="Guides" value={counts["metafy-guide"].toString()} tone="green" />
-            <Metric label="Decks" value={counts.fabrary.toString()} tone="blue" />
-            <Metric label="X" value={counts.twitter.toString()} tone="blue" />
+          <div className="grid grid-cols-3 gap-1.5 sm:min-w-[22rem] sm:gap-2">
+            <Metric label="Players" value={(userCount || players?.length || 0).toLocaleString()} />
+            <Metric label="With stats" value={activeCount.toLocaleString()} tone="green" />
+            <Metric label="Featured" value={featuredCounts.all.toLocaleString()} tone="blue" />
           </div>
         </div>
       </section>
 
-      <section className="rounded-xl border border-fab-border bg-fab-surface/90 p-3">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <div className="relative min-w-0 flex-1">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fab-dim" />
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search players, guides, deck names..."
-              className="w-full rounded-lg border border-fab-border bg-fab-bg py-2.5 pl-9 pr-3 text-sm text-fab-text placeholder:text-fab-dim focus:border-fab-gold/60 focus:outline-none"
-            />
+      {/* Featured — coaches & creators */}
+      <section className="rounded-xl border border-fab-border bg-fab-surface/90 p-3 sm:p-4">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-fab-gold" />
+            <h2 className="text-sm font-black uppercase tracking-[0.1em] text-fab-text">Coaches &amp; creators</h2>
           </div>
           <div className="flex gap-1 overflow-x-auto rounded-lg border border-fab-border bg-fab-bg/65 p-1">
             {FILTERS.map((item) => (
               <button
                 key={item.id}
-                onClick={() => setFilter(item.id)}
-                className={`whitespace-nowrap rounded-md px-3 py-2 text-xs font-bold transition-colors ${
-                  filter === item.id
-                    ? "bg-fab-gold/15 text-fab-gold"
-                    : "text-fab-muted hover:bg-fab-surface-hover hover:text-fab-text"
+                onClick={() => setLinkFilter(item.id)}
+                className={`whitespace-nowrap rounded-md px-2.5 py-1.5 text-xs font-bold transition-colors ${
+                  linkFilter === item.id ? "bg-fab-gold/15 text-fab-gold" : "text-fab-muted hover:bg-fab-surface-hover hover:text-fab-text"
                 }`}
               >
                 {item.label}
-                <span className="ml-2 text-fab-dim">{counts[item.id]}</span>
+                <span className="ml-1.5 text-fab-dim">{featuredCounts[item.id]}</span>
               </button>
             ))}
           </div>
         </div>
-      </section>
 
-      {loading ? (
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          {[...Array(6)].map((_, i) => (
-            <div key={i} className="h-48 animate-pulse rounded-xl border border-fab-border bg-fab-surface" />
-          ))}
-        </div>
-      ) : rows.length === 0 ? (
-        <div className="rounded-xl border border-fab-border bg-fab-surface/80 p-10 text-center">
-          <Users className="mx-auto h-10 w-10 text-fab-dim" />
-          <p className="mt-3 text-sm font-bold text-fab-text">No profiles found</p>
-          <p className="mt-1 text-sm text-fab-muted">Try a different filter or search term.</p>
-          <Link href="/settings#discover" className="mt-4 inline-flex items-center justify-center rounded-lg border border-fab-border bg-fab-bg px-4 py-2 text-sm font-bold text-fab-muted transition-colors hover:border-fab-gold/45 hover:text-fab-gold">
-            Edit your Discover links
-          </Link>
-        </div>
-      ) : (
-        <>
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          {rows.slice(0, visibleCount).map(({ profile, links, entry }) => {
-            const creator = creatorByUsername.get(profile.username.toLowerCase());
-            const shieldPct = entry?.heroCompletionPct ?? entry?.bothHeroesCompletionPct ?? 0;
-            const avatarBorder = rankBorderClass(rankMap.get(profile.uid));
-            const teamName = entry?.teamName;
-            const isSiteAdmin = isSiteAdminProfile(profile);
-            const visibleLinks = links.filter((link) => filter === "all" || link.type === filter);
-            const focusedContent = filter !== "all";
-
-            return (
-              <article key={profile.uid} className="rounded-xl border border-fab-border bg-fab-surface/90 p-3 transition-colors hover:border-fab-gold/45 hover:bg-fab-surface-hover/80">
-                {focusedContent ? (
-                  <>
-                    <div className="space-y-2">
-                      {visibleLinks.map((link) => (
-                        <LinkPreview key={`${profile.uid}-${link.type}-${link.href}`} link={link} featured />
-                      ))}
-                    </div>
-                    <div className="mt-3 border-t border-fab-border/60 pt-3">
-                      <DiscoverProfileHeader
-                        profile={profile}
-                        entry={entry}
-                        creator={creator}
-                        avatarBorder={avatarBorder}
-                        shieldPct={shieldPct}
-                        teamName={teamName}
-                        isAdmin={isAdmin}
-                        isSiteAdmin={isSiteAdmin}
-                        compact
-                      />
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <DiscoverProfileHeader
-                      profile={profile}
-                      entry={entry}
-                      creator={creator}
-                      avatarBorder={avatarBorder}
-                      shieldPct={shieldPct}
-                      teamName={teamName}
-                      isAdmin={isAdmin}
-                      isSiteAdmin={isSiteAdmin}
-                    />
-
-                    {(profile.socialLinks?.discord || (profile.socialLinks?.discoverTags?.length ?? 0) > 0) && (
-                      <div className="mt-3 flex flex-wrap gap-1.5">
-                        {profile.socialLinks?.discord && (
-                          <span className="rounded-full border border-fab-border bg-fab-bg/70 px-2 py-0.5 text-[10px] font-semibold text-fab-muted">
-                            Discord: {profile.socialLinks.discord}
-                          </span>
-                        )}
-                        {profile.socialLinks?.discoverTags?.slice(0, 3).map((tag) => (
-                          <span key={tag} className="rounded-full border border-fab-border bg-fab-bg/70 px-2 py-0.5 text-[10px] font-semibold text-fab-muted">
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-
-                    <div className="mt-3 space-y-2">
-                      {visibleLinks.length > 0 ? (
-                        visibleLinks.map((link) => (
-                          <LinkPreview key={`${profile.uid}-${link.type}-${link.href}`} link={link} />
-                        ))
-                      ) : (
-                        <Link
-                          href={`/player/${profile.username}`}
-                          className="flex items-center justify-between rounded-lg border border-fab-border bg-fab-bg/65 px-3 py-2 text-sm font-bold text-fab-muted transition-colors hover:border-fab-gold/45 hover:text-fab-gold"
-                        >
-                          View profile
-                          <ExternalLink className="h-3.5 w-3.5 shrink-0 text-fab-dim" />
-                        </Link>
-                      )}
-                    </div>
-                  </>
-                )}
-              </article>
-            );
-          })}
-        </div>
-        {visibleCount < rows.length && (
-          <div ref={sentinelRef} className="flex flex-col items-center gap-2 py-4 text-xs text-fab-muted">
-            <span>Showing {visibleCount} of {rows.length}</span>
-            <button
-              type="button"
-              onClick={() => setVisibleCount((n) => n + 24)}
-              className="rounded-lg border border-fab-border bg-fab-bg px-4 py-2 text-sm font-bold text-fab-muted transition-colors hover:border-fab-gold/45 hover:text-fab-gold"
-            >
-              Load more
-            </button>
+        {featuredLoading ? (
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="h-40 animate-pulse rounded-xl border border-fab-border bg-fab-surface" />
+            ))}
+          </div>
+        ) : featuredRows.length === 0 ? (
+          <p className="mt-3 rounded-lg border border-fab-border bg-fab-bg/50 p-4 text-center text-sm text-fab-muted">
+            No featured profiles for this filter.
+          </p>
+        ) : (
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            {featuredRows.map(({ profile: p, entry }) => (
+              <FeaturedCard
+                key={p.uid}
+                profile={p}
+                entry={entry}
+                creator={creatorByUsername.get(p.username.toLowerCase())}
+                avatarBorder={rankBorderClass(rankMap.get(p.uid))}
+                shieldPct={entry?.heroCompletionPct ?? entry?.bothHeroesCompletionPct ?? 0}
+                isAdmin={isAdmin}
+              />
+            ))}
           </div>
         )}
-        </>
-      )}
+      </section>
+
+      {/* Directory */}
+      <section className="rounded-xl border border-fab-border bg-fab-surface/90 p-3 sm:p-4">
+        <div className="flex flex-col gap-2 lg:flex-row lg:items-center">
+          <div className="relative min-w-0 flex-1">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fab-dim" />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search all players by name or @username..."
+              className="w-full rounded-lg border border-fab-border bg-fab-bg py-2.5 pl-9 pr-3 text-sm text-fab-text placeholder:text-fab-dim focus:border-fab-gold/60 focus:outline-none"
+            />
+          </div>
+          <select value={heroFilter} onChange={(e) => setHeroFilter(e.target.value)} className={selectClass} aria-label="Filter by hero">
+            <option value="">All heroes</option>
+            {heroOptions.map((h) => (
+              <option key={h.hero} value={h.hero}>
+                {h.hero} ({h.count})
+              </option>
+            ))}
+          </select>
+          <select value={sort} onChange={(e) => setSort(e.target.value as SortKey)} className={selectClass} aria-label="Sort players">
+            {SORTS.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {players === null ? (
+          <div className="mt-3 space-y-2">
+            {[...Array(8)].map((_, i) => (
+              <div key={i} className="h-16 animate-pulse rounded-xl border border-fab-border bg-fab-surface" />
+            ))}
+          </div>
+        ) : rows.length === 0 ? (
+          <div className="mt-3 rounded-lg border border-fab-border bg-fab-bg/50 p-8 text-center">
+            <Users className="mx-auto h-9 w-9 text-fab-dim" />
+            <p className="mt-3 text-sm font-bold text-fab-text">No players found</p>
+            <p className="mt-1 text-sm text-fab-muted">Try a different hero or search term.</p>
+          </div>
+        ) : (
+          <>
+            <div className="mt-3 space-y-2">
+              {rows.slice(0, visibleCount).map((p) => (
+                <PlayerRow key={p.username} p={p} rank={rankByUsername.get(p.username)} />
+              ))}
+            </div>
+            {visibleCount < rows.length ? (
+              <div ref={sentinelRef} className="flex flex-col items-center gap-2 py-4 text-xs text-fab-muted">
+                <span>Showing {Math.min(visibleCount, rows.length).toLocaleString()} of {rows.length.toLocaleString()}</span>
+                <button
+                  type="button"
+                  onClick={() => setVisibleCount((n) => n + 30)}
+                  className="rounded-lg border border-fab-border bg-fab-bg px-4 py-2 text-sm font-bold text-fab-muted transition-colors hover:border-fab-gold/45 hover:text-fab-gold"
+                >
+                  Load more
+                </button>
+              </div>
+            ) : (
+              <p className="py-4 text-center text-xs text-fab-dim">{rows.length.toLocaleString()} players</p>
+            )}
+          </>
+        )}
+      </section>
     </div>
   );
 }
