@@ -3,6 +3,7 @@ import { db, auth } from "./firebase";
 import type { LeaderboardEntry } from "@/types";
 import { getLeaderboardEntries } from "./leaderboard";
 import { isBlockedUser } from "./blocked-users";
+import { normalizeVenueName } from "./venue-normalize";
 import {
   getStoreAliases,
   buildAliasIndex,
@@ -14,12 +15,12 @@ export function slugifyStoreName(raw: string): string {
   return raw.toLowerCase().replace(/[^a-z0-9]/g, "");
 }
 
-/** Display-friendly normalization: trims, collapses whitespace. Used for the
- *  canonical name we show in the directory (since the same store may appear
- *  under slight capitalization variants across user matches — we pick the
- *  most common variant). */
+/** Display-friendly normalization: trims/collapses whitespace, strips GEM id
+ *  suffixes, and returns "" for junk venues (mis-parsed player names, dates,
+ *  URLs, leaked event blurbs) so both directory builders drop them. See
+ *  `venue-normalize.ts` for the rules. */
 function normalizeForDisplay(raw: string): string {
-  return raw.trim().replace(/\s+/g, " ");
+  return normalizeVenueName(raw);
 }
 
 export interface StoreDirectoryEntry {
@@ -406,6 +407,38 @@ function mergeDirectoryByAlias(
   return out;
 }
 
+/** Drop junk rows (mis-parsed player names, dates, URLs, event blurbs) from the
+ *  precomputed aggregate and re-merge id-suffixed stores onto their clean slug.
+ *  The server aggregator applies the same rules, but this keeps the directory,
+ *  the count, and the picker correct immediately on deploy — before the next
+ *  aggregator run/backfill rewrites `_directory`. */
+function sanitizeAggregateRows(rows: StoreDirectoryEntry[]): StoreDirectoryEntry[] {
+  const bySlug = new Map<string, StoreDirectoryEntry>();
+  const out: StoreDirectoryEntry[] = [];
+  for (const r of rows) {
+    const clean = normalizeVenueName(r.name);
+    if (!clean) continue; // junk
+    const slug = slugifyStoreName(clean);
+    if (!slug || slug.length < 2) continue;
+    const existing = bySlug.get(slug);
+    if (existing) {
+      existing.totalMatches += r.totalMatches;
+      existing.uniquePlayers += r.uniquePlayers;
+    } else {
+      const entry: StoreDirectoryEntry = {
+        slug,
+        name: clean,
+        totalMatches: r.totalMatches,
+        uniquePlayers: r.uniquePlayers,
+      };
+      bySlug.set(slug, entry);
+      out.push(entry);
+    }
+  }
+  out.sort((a, b) => b.totalMatches - a.totalMatches);
+  return out;
+}
+
 /** Fetch the public auto-directory of stores derived from match venue data.
  *  Tries the precomputed aggregate first; falls back to live aggregation
  *  from the leaderboard collection (slow on cold cache, instant after).
@@ -414,7 +447,7 @@ export async function getStoreDirectory(): Promise<StoreDirectoryEntry[]> {
   const aliasesPromise = getStoreAliases();
   const fromAggregate = await getStoreDirectoryFromAggregate();
   const index = buildAliasIndex(await aliasesPromise);
-  if (fromAggregate) return mergeDirectoryByAlias(fromAggregate, index);
+  if (fromAggregate) return mergeDirectoryByAlias(sanitizeAggregateRows(fromAggregate), index);
 
   // Fallback: live aggregation (cached via localStorage + SWR).
   const map = await getDirectoryMap();
