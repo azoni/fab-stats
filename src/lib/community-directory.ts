@@ -16,6 +16,7 @@ export interface DirectoryPlayer {
   rating?: number;
   photoUrl?: string;
   teamName?: string;
+  teamIconUrl?: string;
   /** Registration/first-seen time, epoch seconds — for "newest" sort. */
   createdAt?: number;
   /** Last site visit, epoch seconds (day-bucketed) — "recently active" sort. */
@@ -31,6 +32,7 @@ interface CompactPlayer {
   r?: number;
   p?: string;
   t?: string;
+  ti?: string;
   c?: number;
   v?: number;
 }
@@ -45,6 +47,7 @@ function expand(c: CompactPlayer): DirectoryPlayer {
     rating: c.r,
     photoUrl: c.p,
     teamName: c.t,
+    teamIconUrl: c.ti,
     createdAt: c.c,
     lastVisit: c.v,
   };
@@ -105,6 +108,7 @@ async function fromLeaderboard(isAuthenticated: boolean): Promise<DirectoryPlaye
       rating: typeof e.eloRating === "number" ? Math.round(e.eloRating) : undefined,
       photoUrl: e.photoUrl,
       teamName: e.teamVisibility !== "private" ? e.teamName : undefined,
+      teamIconUrl: e.teamVisibility !== "private" ? e.teamIconUrl : undefined,
       createdAt: e.createdAt ? Math.floor(Date.parse(e.createdAt) / 1000) || undefined : undefined,
       // No cheap client read for analytics/userLastVisit — approximate "recently
       // active" with the leaderboard's updatedAt until the aggregator publishes.

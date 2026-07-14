@@ -7,7 +7,8 @@ import { getDiscoverProfiles } from "@/lib/firestore-storage";
 import { getCommunityPlayers, invalidateCommunityPlayersCache, type DirectoryPlayer } from "@/lib/community-directory";
 import { useCommunityStats } from "@/hooks/useCommunityStats";
 import { useAuth } from "@/contexts/AuthContext";
-import { HeroAvatar } from "@/components/heroes/HeroAvatar";
+import { TeamBadge } from "@/components/profile/TeamBadge";
+import { getHeroPortraitUrl, resolveHeroName } from "@/lib/heroes";
 import type { UserProfile } from "@/types";
 
 /** DiscoverLink types double as the link-filter ids. */
@@ -120,31 +121,55 @@ function LinkChip({ link }: { link: DiscoverLink }) {
   );
 }
 
-function PlayerRow({ p, links }: { p: DirectoryPlayer; links?: DiscoverLink[] }) {
+function shortHero(name: string): string {
+  return name.split(",")[0].trim();
+}
+
+function PlayerRow({ p, hero, links }: { p: DirectoryPlayer; hero?: string; links?: DiscoverLink[] }) {
+  const portrait = hero ? getHeroPortraitUrl(hero) : null;
   return (
-    <div className="rounded-xl border border-fab-border bg-fab-surface/90 px-3 py-2.5 transition-colors hover:border-fab-gold/45 hover:bg-fab-surface-hover/80">
+    <div className="group relative rounded-xl border border-fab-border bg-fab-surface/90 px-3 py-2.5 transition-colors hover:border-fab-gold/45 hover:bg-fab-surface-hover/80">
       <div className="flex items-center gap-3">
-        <Link href={`/player/${p.username}`} className="group flex min-w-0 flex-1 items-center gap-3">
-          {p.photoUrl ? (
-            <img src={p.photoUrl} alt="" className="h-9 w-9 shrink-0 rounded-full border border-fab-border object-cover" />
-          ) : (
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-fab-border bg-fab-bg text-sm font-black text-fab-gold">
-              {playerInitial(p.displayName || p.username)}
-            </span>
-          )}
-          <div className="min-w-0 flex-1">
-            <div className="flex min-w-0 items-center gap-1.5">
-              <span className="truncate text-sm font-black text-fab-text transition-colors group-hover:text-fab-gold">{p.displayName}</span>
-              {p.teamName && (
-                <span className="hidden shrink-0 rounded-full border border-fab-border bg-fab-bg/70 px-1.5 py-0.5 text-[9px] font-bold text-fab-muted sm:inline">{p.teamName}</span>
-              )}
-            </div>
-            <div className="mt-0.5 flex min-w-0 items-center gap-1.5 text-xs text-fab-dim">
-              <span className="truncate">@{p.username}</span>
-              {p.topHero && <HeroAvatar heroName={p.topHero} />}
-            </div>
+        {p.photoUrl ? (
+          <img src={p.photoUrl} alt="" className="h-9 w-9 shrink-0 rounded-full border border-fab-border object-cover" />
+        ) : (
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-fab-border bg-fab-bg text-sm font-black text-fab-gold">
+            {playerInitial(p.displayName || p.username)}
+          </span>
+        )}
+        <div className="min-w-0 flex-1">
+          <div className="flex min-w-0 items-center gap-1.5">
+            {/* Stretched link — the whole card navigates to the profile. */}
+            <Link
+              href={`/player/${p.username}`}
+              className="truncate text-sm font-black text-fab-text transition-colors after:absolute after:inset-0 group-hover:text-fab-gold"
+            >
+              {p.displayName}
+            </Link>
+            {p.teamName && (
+              <span className="relative z-10 shrink-0">
+                <TeamBadge teamName={p.teamName} teamIconUrl={p.teamIconUrl} size="sm" />
+              </span>
+            )}
           </div>
-        </Link>
+          <div className="mt-0.5 flex min-w-0 items-center gap-1.5 text-xs text-fab-dim">
+            <span className="shrink-0">@{p.username}</span>
+            {hero && portrait && (
+              <span className="flex min-w-0 items-center gap-1">
+                <img
+                  src={portrait}
+                  alt=""
+                  loading="lazy"
+                  className="h-5 w-5 shrink-0 rounded-full border border-fab-border object-cover"
+                  onError={(e) => {
+                    e.currentTarget.style.display = "none";
+                  }}
+                />
+                <span className="truncate">{shortHero(hero)}</span>
+              </span>
+            )}
+          </div>
+        </div>
         <div className="shrink-0 text-right">
           {p.matches > 0 ? (
             <>
@@ -160,7 +185,7 @@ function PlayerRow({ p, links }: { p: DirectoryPlayer; links?: DiscoverLink[] })
         </div>
       </div>
       {links && links.length > 0 && (
-        <div className="mt-2 flex flex-wrap gap-1 pl-12">
+        <div className="relative z-10 mt-2 flex flex-wrap gap-1 pl-12">
           {links.map((link) => (
             <LinkChip key={`${p.username}-${link.type}-${link.href}`} link={link} />
           ))}
@@ -251,12 +276,27 @@ export default function PlayersPage() {
     [players, linkInfo],
   );
 
-  const heroOptions = useMemo(() => {
-    if (!players) return [] as { hero: string; count: number }[];
-    const counts = new Map<string, number>();
-    for (const p of players) if (p.topHero) counts.set(p.topHero, (counts.get(p.topHero) || 0) + 1);
-    return [...counts.entries()].sort((a, b) => b[1] - a[1]).map(([hero, count]) => ({ hero, count }));
+  // Resolve each player's topHero to a canonical FaB hero, dropping gibberish
+  // (mis-parsed import values that don't match any real hero).
+  const heroByUsername = useMemo(() => {
+    const map = new Map<string, string>();
+    if (!players) return map;
+    const cache = new Map<string, string | null>();
+    for (const p of players) {
+      const raw = p.topHero;
+      if (!raw) continue;
+      if (!cache.has(raw)) cache.set(raw, resolveHeroName(raw));
+      const canonical = cache.get(raw);
+      if (canonical) map.set(p.username, canonical);
+    }
+    return map;
   }, [players]);
+
+  const heroOptions = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const hero of heroByUsername.values()) counts.set(hero, (counts.get(hero) || 0) + 1);
+    return [...counts.entries()].sort((a, b) => b[1] - a[1]).map(([hero, count]) => ({ hero, count }));
+  }, [heroByUsername]);
 
   const activeCount = useMemo(() => (players ? players.filter((p) => p.matches > 0).length : 0), [players]);
 
@@ -267,13 +307,13 @@ export default function PlayersPage() {
     if (linkFilter !== "all") {
       list = list.filter((p) => linkInfo.get(p.username)?.some((l) => l.type === linkFilter) ?? false);
     }
-    if (heroFilter) list = list.filter((p) => p.topHero === heroFilter);
+    if (heroFilter) list = list.filter((p) => heroByUsername.get(p.username) === heroFilter);
     if (q) {
       list = list.filter(
         (p) =>
           p.displayName.toLowerCase().includes(q) ||
           p.username.includes(q) ||
-          (p.topHero?.toLowerCase().includes(q) ?? false),
+          (heroByUsername.get(p.username)?.toLowerCase().includes(q) ?? false),
       );
     }
     const sorted = [...list];
@@ -295,7 +335,7 @@ export default function PlayersPage() {
       sorted.sort((a, b) => b.matches - a.matches);
     }
     return sorted;
-  }, [players, deferredQuery, linkFilter, heroFilter, sort, linkInfo]);
+  }, [players, deferredQuery, linkFilter, heroFilter, sort, linkInfo, heroByUsername]);
 
   useEffect(() => {
     const node = sentinelRef.current;
@@ -435,7 +475,7 @@ export default function PlayersPage() {
         <>
           <div className="space-y-2">
             {rows.slice(0, visibleCount).map((p) => (
-              <PlayerRow key={p.username} p={p} links={linkInfo.get(p.username)} />
+              <PlayerRow key={p.username} p={p} hero={heroByUsername.get(p.username)} links={linkInfo.get(p.username)} />
             ))}
           </div>
           {visibleCount < rows.length ? (

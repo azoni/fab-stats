@@ -466,13 +466,13 @@ export default function LeagueHub() {
                   const timeBadge = timeRemainingLabel(l);
                   return (
                     <li key={l.id}>
-                      <Card padding="sm">
+                      <Card padding="sm" className="relative">
                         <div className="flex flex-wrap items-start justify-between gap-3">
                           <div className="min-w-0">
                             <div className="flex flex-wrap items-center gap-2">
                               <Link
                                 href={`/leagues/${l.slug}`}
-                                className="text-base font-bold text-fab-text hover:text-fab-gold"
+                                className="text-base font-bold text-fab-text after:absolute after:inset-0 hover:text-fab-gold"
                               >
                                 {l.name}
                               </Link>
@@ -499,7 +499,7 @@ export default function LeagueHub() {
                               </p>
                             )}
                           </div>
-                          <div className="flex flex-col items-end gap-1.5">
+                          <div className="relative z-10 flex flex-col items-end gap-1.5">
                             <div className="flex gap-1.5">
                               <Badge size="xs" variant="muted">
                                 <Users className="h-3 w-3" /> {l.memberCount}
