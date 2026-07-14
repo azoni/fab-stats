@@ -1,12 +1,21 @@
 "use client";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { getProfileByUsername, getMatchesByUserId, updateMatchFirestore } from "@/lib/firestore-storage";
+import { getProfileByUsername, getMatchesByUserId, batchUpdateMatchesFirestore } from "@/lib/firestore-storage";
 import type { MatchRecord } from "@/types";
 
-/** Admin-only tool: look up any player and fix a match's venue (or clear it).
- *  Uses the admin read/update rules on users/{uid}/matches. Handy for repairing
- *  imports where a venue was mis-parsed or dropped. */
+/** Admin-only tool: look up a player and fix a venue for a whole EVENT (all its
+ *  rounds at once). Venue is an event-level thing, so we group matches by event.
+ *  Uses admin read/update rules on users/{uid}/matches. */
+interface EventGroup {
+  key: string;
+  eventName: string;
+  date: string;
+  matchIds: string[];
+  venue: string; // representative current venue ("" if none)
+  mixed: boolean;
+}
+
 export function MatchEditor() {
   const [username, setUsername] = useState("");
   const [uid, setUid] = useState<string | null>(null);
@@ -15,7 +24,7 @@ export function MatchEditor() {
   const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState("");
   const [drafts, setDrafts] = useState<Record<string, string>>({});
-  const [savingId, setSavingId] = useState<string | null>(null);
+  const [savingKey, setSavingKey] = useState<string | null>(null);
 
   async function load() {
     const uname = username.trim().toLowerCase();
@@ -32,8 +41,7 @@ export function MatchEditor() {
       const ms = await getMatchesByUserId(profile.uid);
       setUid(profile.uid);
       setLoadedName(profile.displayName || profile.username);
-      // Newest first.
-      setMatches([...ms].sort((a, b) => (b.date || "").localeCompare(a.date || "")));
+      setMatches(ms);
       setDrafts({});
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to load matches.");
@@ -42,44 +50,74 @@ export function MatchEditor() {
     }
   }
 
-  async function saveVenue(m: MatchRecord) {
-    if (!uid) return;
-    const v = (drafts[m.id] ?? m.venue ?? "").trim();
-    setSavingId(m.id);
-    try {
-      await updateMatchFirestore(uid, m.id, { venue: v || undefined });
-      setMatches((prev) => prev.map((x) => (x.id === m.id ? { ...x, venue: v || undefined } : x)));
-      setDrafts((prev) => {
-        const next = { ...prev };
-        delete next[m.id];
-        return next;
-      });
-      toast.success(v ? `Venue set to "${v}".` : "Venue cleared.");
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to save.");
-    } finally {
-      setSavingId(null);
+  const events = useMemo<EventGroup[]>(() => {
+    const map = new Map<string, { eventName: string; date: string; matchIds: string[]; venues: Set<string> }>();
+    for (const m of matches) {
+      const eventName = (m.notes || "").split(" | ")[0].trim() || "(no event)";
+      const date = (m.date || "").slice(0, 10);
+      const key = `${date}__${eventName}`;
+      let g = map.get(key);
+      if (!g) {
+        g = { eventName, date, matchIds: [], venues: new Set() };
+        map.set(key, g);
+      }
+      g.matchIds.push(m.id);
+      g.venues.add((m.venue || "").trim());
     }
-  }
+    return [...map.values()]
+      .map((g) => {
+        const nonEmpty = [...g.venues].filter(Boolean);
+        const mixed = g.venues.size > 1;
+        return {
+          key: `${g.date}__${g.eventName}`,
+          eventName: g.eventName,
+          date: g.date,
+          matchIds: g.matchIds,
+          venue: nonEmpty[0] || "",
+          mixed,
+        };
+      })
+      .sort((a, b) => b.date.localeCompare(a.date));
+  }, [matches]);
 
   const shown = useMemo(() => {
     const q = filter.trim().toLowerCase();
-    if (!q) return matches;
-    return matches.filter(
-      (m) =>
-        (m.notes || "").toLowerCase().includes(q) ||
-        (m.date || "").includes(q) ||
-        (m.venue || "").toLowerCase().includes(q) ||
-        (m.opponentName || "").toLowerCase().includes(q),
+    if (!q) return events;
+    return events.filter(
+      (e) => e.eventName.toLowerCase().includes(q) || e.date.includes(q) || e.venue.toLowerCase().includes(q),
     );
-  }, [matches, filter]);
+  }, [events, filter]);
+
+  async function saveVenue(e: EventGroup) {
+    if (!uid) return;
+    const v = (drafts[e.key] ?? e.venue).trim();
+    setSavingKey(e.key);
+    try {
+      await batchUpdateMatchesFirestore(uid, e.matchIds, { venue: v || undefined });
+      setMatches((prev) => prev.map((m) => (e.matchIds.includes(m.id) ? { ...m, venue: v || undefined } : m)));
+      setDrafts((prev) => {
+        const next = { ...prev };
+        delete next[e.key];
+        return next;
+      });
+      toast.success(
+        v
+          ? `Set venue "${v}" on ${e.matchIds.length} match${e.matchIds.length === 1 ? "" : "es"}.`
+          : `Cleared venue on ${e.matchIds.length} match${e.matchIds.length === 1 ? "" : "es"}.`,
+      );
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to save.");
+    } finally {
+      setSavingKey(null);
+    }
+  }
 
   return (
     <div className="rounded-lg border border-fab-border bg-fab-surface p-4">
       <h3 className="text-sm font-bold text-fab-text">Match editor</h3>
       <p className="mt-0.5 text-xs text-fab-muted">
-        Look up a player and repair a match&apos;s venue (fixes mis-parsed/dropped imports so league
-        store matching works). Admin-only.
+        Look up a player and repair a venue for a whole event (all its rounds at once) — fixes
+        mis-parsed/dropped imports so league store matching works. Admin-only.
       </p>
 
       <div className="mt-3 flex flex-wrap gap-2">
@@ -95,7 +133,7 @@ export function MatchEditor() {
           disabled={loading || !username.trim()}
           className="rounded-md border border-fab-border bg-fab-bg px-3 py-1.5 text-xs font-bold text-fab-text hover:border-fab-gold/40 hover:text-fab-gold disabled:opacity-50"
         >
-          {loading ? "Loading…" : "Load matches"}
+          {loading ? "Loading…" : "Load events"}
         </button>
       </div>
 
@@ -103,7 +141,8 @@ export function MatchEditor() {
         <div className="mt-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="text-xs text-fab-muted">
-              Editing <span className="font-bold text-fab-text">{loadedName}</span> · {matches.length} matches
+              Editing <span className="font-bold text-fab-text">{loadedName}</span> · {events.length} events ·{" "}
+              {matches.length} matches
             </p>
             <input
               value={filter}
@@ -113,38 +152,39 @@ export function MatchEditor() {
             />
           </div>
 
-          <div className="mt-2 max-h-[420px] space-y-1.5 overflow-y-auto pr-1">
-            {shown.slice(0, 150).map((m) => {
-              const draft = drafts[m.id] ?? m.venue ?? "";
-              const dirty = draft.trim() !== (m.venue ?? "").trim();
+          <div className="mt-2 max-h-[440px] space-y-1.5 overflow-y-auto pr-1">
+            {shown.slice(0, 200).map((e) => {
+              const draft = drafts[e.key] ?? e.venue;
+              const dirty = draft.trim() !== e.venue.trim();
               return (
-                <div key={m.id} className="flex flex-wrap items-center gap-2 rounded-md border border-fab-border/60 bg-fab-bg/50 px-2.5 py-1.5">
-                  <div className="min-w-[200px] flex-1 text-xs">
-                    <span className="font-bold text-fab-text">{m.date}</span>
-                    <span className="text-fab-dim"> · {(m.notes || "").split(" | ")[0] || "—"} · {m.result}</span>
-                    {!m.venue && <span className="ml-1 rounded bg-rose-500/15 px-1 text-[10px] font-bold text-rose-300">no venue</span>}
+                <div key={e.key} className="flex flex-wrap items-center gap-2 rounded-md border border-fab-border/60 bg-fab-bg/50 px-2.5 py-1.5">
+                  <div className="min-w-[220px] flex-1 text-xs">
+                    <span className="font-bold text-fab-text">{e.eventName}</span>
+                    <span className="text-fab-dim"> · {e.date} · {e.matchIds.length} match{e.matchIds.length === 1 ? "" : "es"}</span>
+                    {!e.venue && <span className="ml-1 rounded bg-rose-500/15 px-1 text-[10px] font-bold text-rose-300">no venue</span>}
+                    {e.mixed && <span className="ml-1 rounded bg-amber-500/15 px-1 text-[10px] font-bold text-amber-300">mixed venues</span>}
                   </div>
                   <input
                     value={draft}
-                    onChange={(e) => setDrafts((prev) => ({ ...prev, [m.id]: e.target.value }))}
-                    onKeyDown={(e) => e.key === "Enter" && saveVenue(m)}
+                    onChange={(ev) => setDrafts((prev) => ({ ...prev, [e.key]: ev.target.value }))}
+                    onKeyDown={(ev) => ev.key === "Enter" && saveVenue(e)}
                     placeholder="venue"
-                    className="w-40 rounded-md border border-fab-border bg-fab-bg px-2 py-1 text-xs text-fab-text placeholder:text-fab-dim focus:border-fab-gold/60 focus:outline-none"
+                    className="w-44 rounded-md border border-fab-border bg-fab-bg px-2 py-1 text-xs text-fab-text placeholder:text-fab-dim focus:border-fab-gold/60 focus:outline-none"
                   />
                   <button
-                    onClick={() => saveVenue(m)}
-                    disabled={savingId === m.id || !dirty}
+                    onClick={() => saveVenue(e)}
+                    disabled={savingKey === e.key || !dirty}
                     className="rounded-md border border-fab-border bg-fab-bg px-2.5 py-1 text-[11px] font-bold text-fab-text hover:border-fab-gold/40 hover:text-fab-gold disabled:opacity-40"
                   >
-                    {savingId === m.id ? "…" : "Save"}
+                    {savingKey === e.key ? "…" : "Save"}
                   </button>
                 </div>
               );
             })}
-            {shown.length > 150 && (
-              <p className="py-1 text-center text-[11px] text-fab-dim">Showing 150 of {shown.length} — filter to narrow.</p>
+            {shown.length > 200 && (
+              <p className="py-1 text-center text-[11px] text-fab-dim">Showing 200 of {shown.length} — filter to narrow.</p>
             )}
-            {shown.length === 0 && <p className="py-2 text-center text-xs text-fab-dim">No matches for that filter.</p>}
+            {shown.length === 0 && <p className="py-2 text-center text-xs text-fab-dim">No events for that filter.</p>}
           </div>
         </div>
       )}
