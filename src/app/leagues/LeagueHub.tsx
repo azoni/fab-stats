@@ -140,7 +140,7 @@ function timeRemainingLabel(league: League): { label: string; tone: "gold" | "mu
 export default function LeagueHub() {
   const { user, profile } = useAuth();
 
-  const [activeTab, setActiveTab] = useState<Tab>("about");
+  const [activeTab, setActiveTab] = useState<Tab>("browse");
   const [leagues, setLeagues] = useState<League[]>([]);
   const [loading, setLoading] = useState(true);
   const [browseFilter, setBrowseFilter] = useState<BrowseFilter>("all");
@@ -365,7 +365,7 @@ export default function LeagueHub() {
       />
 
       <div className="flex gap-1 overflow-x-auto border-b border-fab-border">
-        {(["about", "browse", "create"] as Tab[]).map((t) => (
+        {(["browse", "about", "create"] as Tab[]).map((t) => (
           <button
             key={t}
             type="button"
