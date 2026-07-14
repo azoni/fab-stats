@@ -331,6 +331,8 @@ export interface League {
   slug: string;
   description?: string;
   iconUrl?: string;
+  /** Wide banner image shown on the league page header. */
+  bannerUrl?: string;
   accentColor?: string;
   city?: string;
   region?: string;

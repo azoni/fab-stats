@@ -19,7 +19,8 @@ import {
   leagueRequiresApproval,
 } from "@/lib/leagues";
 import { getStoreDirectory, slugifyStoreName, findNearMatchStore, storeNameMatchesQuery, type StoreDirectoryEntry } from "@/lib/store-directory";
-import { computeLeagueStandings, recomputeAndStoreStandings } from "@/lib/leagues-scoring";
+import { uploadLeagueBanner, removeLeagueBanner } from "@/lib/league-images";
+import { recomputeAndStoreStandings } from "@/lib/leagues-scoring";
 import { doc, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import type {
@@ -33,6 +34,7 @@ import { toast } from "sonner";
 import {
   ArrowLeft,
   CalendarDays,
+  Image as ImageIcon,
   MapPin,
   RefreshCw,
   Settings,
@@ -186,19 +188,6 @@ export default function LeaguePage() {
     setRecomputing(false);
   }
 
-  async function handlePreviewMyStandings() {
-    if (!league) return;
-    setRecomputing(true);
-    try {
-      const entries = await computeLeagueStandings(league.id);
-      setStandings(entries);
-      toast.success("Standings computed (local preview).");
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to compute standings.");
-    }
-    setRecomputing(false);
-  }
-
   async function handleJoin() {
     if (!user || !profile || !league) {
       toast.error("Sign in to join the league.");
@@ -292,6 +281,12 @@ export default function LeaguePage() {
           <ArrowLeft className="h-3.5 w-3.5" /> All leagues
         </Link>
       </div>
+
+      {league.bannerUrl && (
+        <div className="mb-3 overflow-hidden rounded-lg border border-fab-border/70">
+          <img src={league.bannerUrl} alt="" className="h-32 w-full object-cover sm:h-44" />
+        </div>
+      )}
 
       <header
         className="rounded-lg border border-fab-border/70 bg-fab-bg/45 p-5"
@@ -402,7 +397,7 @@ export default function LeaguePage() {
                   })}
                 </span>
               )}
-              {isMember || isOrganizer ? (
+              {(isMember || isOrganizer) && (
                 <button
                   type="button"
                   onClick={handleRecompute}
@@ -411,16 +406,6 @@ export default function LeaguePage() {
                 >
                   <RefreshCw className={`h-3 w-3 ${recomputing ? "animate-spin" : ""}`} />
                   Refresh
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={handlePreviewMyStandings}
-                  disabled={recomputing}
-                  className="inline-flex items-center gap-1 rounded-md border border-fab-border/60 bg-fab-bg/60 px-2 py-1 text-fab-text hover:text-fab-gold disabled:opacity-50"
-                >
-                  <RefreshCw className={`h-3 w-3 ${recomputing ? "animate-spin" : ""}`} />
-                  Preview
                 </button>
               )}
             </div>
@@ -850,6 +835,30 @@ function OrganizerEditor({
   const [storeNames, setStoreNames] = useState<Record<string, string>>(league.storeNames || {});
   const [storeSearch, setStoreSearch] = useState("");
   const [saving, setSaving] = useState(false);
+  const [bannerBusy, setBannerBusy] = useState(false);
+
+  async function handleBannerFile(file: File | undefined) {
+    if (!file) return;
+    setBannerBusy(true);
+    try {
+      await uploadLeagueBanner(league.id, file);
+      toast.success("Banner updated.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to upload banner.");
+    }
+    setBannerBusy(false);
+  }
+
+  async function handleRemoveBanner() {
+    setBannerBusy(true);
+    try {
+      await removeLeagueBanner(league.id);
+      toast.success("Banner removed.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to remove banner.");
+    }
+    setBannerBusy(false);
+  }
 
   function toggleArrayItem(arr: string[], item: string, setter: (v: string[]) => void) {
     setter(arr.includes(item) ? arr.filter((x) => x !== item) : [...arr, item]);
@@ -976,6 +985,49 @@ function OrganizerEditor({
     <div className="mt-4 rounded-lg border border-fab-gold/40 bg-fab-gold/[0.04] p-4">
       <h2 className="text-base font-bold text-fab-gold">Edit league</h2>
       <div className="mt-3 grid gap-3 sm:grid-cols-2">
+        <div className="sm:col-span-2">
+          <label className="mb-1 block text-xs font-semibold text-fab-dim">Banner image</label>
+          {league.bannerUrl && (
+            <img
+              src={league.bannerUrl}
+              alt=""
+              className="mb-2 h-24 w-full rounded-md border border-fab-border object-cover"
+            />
+          )}
+          <div className="flex flex-wrap items-center gap-2">
+            <label
+              className={`inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-fab-border bg-fab-bg px-3 py-1.5 text-xs font-bold text-fab-text hover:border-fab-gold/40 hover:text-fab-gold ${
+                bannerBusy ? "pointer-events-none opacity-50" : ""
+              }`}
+            >
+              <ImageIcon className="h-3.5 w-3.5" />
+              {bannerBusy ? "Uploading…" : league.bannerUrl ? "Replace banner" : "Upload banner"}
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                className="hidden"
+                disabled={bannerBusy}
+                onChange={(e) => {
+                  handleBannerFile(e.target.files?.[0]);
+                  e.target.value = "";
+                }}
+              />
+            </label>
+            {league.bannerUrl && (
+              <button
+                type="button"
+                onClick={handleRemoveBanner}
+                disabled={bannerBusy}
+                className="rounded-md border border-fab-border px-3 py-1.5 text-xs font-bold text-fab-dim hover:text-rose-300 disabled:opacity-50"
+              >
+                Remove
+              </button>
+            )}
+          </div>
+          <p className="mt-1 text-[11px] text-fab-dim">
+            Wide image (JPEG/PNG/WebP, up to 8MB) shown at the top of the league page.
+          </p>
+        </div>
         <EditField label="Name">
           <input
             className="w-full rounded-md border border-fab-border bg-fab-bg px-3 py-2 text-sm text-fab-text placeholder:text-fab-dim focus:border-fab-gold/60 focus:outline-none focus:ring-2 focus:ring-fab-gold/30"
