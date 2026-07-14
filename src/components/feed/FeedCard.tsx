@@ -1,5 +1,6 @@
 "use client";
 import { useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import type { FeedEvent, ImportFeedEvent, FaBdokuFeedEvent, FaBdokuCardFeedEvent, CrosswordFeedEvent, HeroGuesserFeedEvent, MatchupManiaFeedEvent, TriviaFeedEvent, TimelineFeedEvent, ConnectionsFeedEvent, RampageFeedEvent, KnockoutFeedEvent, BrawlFeedEvent, NinjaComboFeedEvent, ShadowStrikeFeedEvent, BladeDashFeedEvent } from "@/types";
 import { rankBorderClass } from "@/lib/leaderboard-ranks";
@@ -401,6 +402,7 @@ function HeroPill({ hero, compact }: { hero: string; compact?: boolean }) {
 // ── Content components ──
 
 export function FeedCard({ event, compact, rankMap, eventTierMap, underlineTierMap, heroCompletionMap, userId, isAdmin, onDelete }: { event: FeedEvent; compact?: boolean; rankMap?: Map<string, 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8>; eventTierMap?: Map<string, { border: string; shadow: string }>; underlineTierMap?: Map<string, { color: string; rgb: string }>; heroCompletionMap?: Map<string, number>; userId?: string; isAdmin?: boolean; onDelete?: (eventId: string) => void }) {
+  const router = useRouter();
   const tierStyle = eventTierMap?.get(event.userId);
   const underlineStyle = underlineTierMap?.get(event.userId);
   const canDelete = isAdmin || (userId && userId === event.userId);
@@ -427,7 +429,14 @@ export function FeedCard({ event, compact, rankMap, eventTierMap, underlineTierM
 
   return (
     <div
-      className={`bg-fab-surface border border-fab-border rounded-lg ${compact ? "px-3 py-2" : "p-4"} relative group/feed overflow-hidden ${majorStyle && isChampion && !compact ? "feed-shimmer" : ""}`}
+      onClick={(e) => {
+        // Whole-card click opens the poster's profile, but ignore clicks that
+        // land on an interactive element (links, buttons, inputs) so reactions,
+        // comments, header links, game links, delete, etc. still work.
+        if ((e.target as HTMLElement).closest("a, button, input, textarea, select, [role='button']")) return;
+        if (event.username) router.push(playerHref(event.username));
+      }}
+      className={`bg-fab-surface border border-fab-border rounded-lg ${compact ? "px-3 py-2" : "p-4"} relative group/feed overflow-hidden ${event.username ? "cursor-pointer" : ""} ${majorStyle && isChampion && !compact ? "feed-shimmer" : ""}`}
       style={cardStyle}
     >
       {/* Major event accent top bar */}
