@@ -126,30 +126,60 @@ export async function importMatchesFirestore(
   userId: string,
   matches: Omit<MatchRecord, "id" | "createdAt">[]
 ): Promise<number> {
-  // Fetch existing matches to detect duplicates
+  // Fetch existing matches to detect duplicates (and to heal missing venues).
   const existing = await getDocs(query(matchesCollection(userId)));
-  const existingFingerprints = new Set(
-    existing.docs.map((d) => {
-      const data = d.data();
-      return matchFingerprint({
-        date: data.date,
-        opponentName: data.opponentName,
-        notes: data.notes,
-        result: data.result,
+  type Ref = (typeof existing.docs)[number]["ref"];
+  const existingByFingerprint = new Map<string, { ref: Ref; venue?: string }>();
+  for (const d of existing.docs) {
+    const data = d.data();
+    const fp = matchFingerprint({
+      date: data.date,
+      opponentName: data.opponentName,
+      notes: data.notes,
+      result: data.result,
+    });
+    if (!existingByFingerprint.has(fp)) {
+      existingByFingerprint.set(fp, {
+        ref: d.ref,
+        venue: typeof data.venue === "string" ? data.venue : undefined,
       });
-    })
-  );
+    }
+  }
 
-  // Filter out duplicates
-  const newMatches = matches.filter(
-    (m) => !existingFingerprints.has(matchFingerprint(m))
-  );
-
-  if (newMatches.length === 0) return 0;
+  // Split incoming into brand-new matches vs duplicates. For duplicates, backfill
+  // a venue that an earlier import dropped (e.g. the over-aggressive venue filter)
+  // when the re-imported copy carries a valid one — so a re-sync heals it.
+  const newMatches: Omit<MatchRecord, "id" | "createdAt">[] = [];
+  const venueHeals: { ref: Ref; venue: string }[] = [];
+  for (const m of matches) {
+    const dup = existingByFingerprint.get(matchFingerprint(m));
+    if (dup) {
+      if (!dup.venue) {
+        const cv = sanitizeVenueForWrite((m as { venue?: string }).venue);
+        if (cv) {
+          venueHeals.push({ ref: dup.ref, venue: cv });
+          dup.venue = cv; // don't heal the same doc twice in one import
+        }
+      }
+      continue;
+    }
+    newMatches.push(m);
+  }
 
   const batchSize = 500;
   let imported = 0;
+  let healed = 0;
 
+  // Backfill venues on existing (duplicate) matches that were missing one.
+  for (let i = 0; i < venueHeals.length; i += batchSize) {
+    const batch = writeBatch(db);
+    const chunk = venueHeals.slice(i, i + batchSize);
+    for (const h of chunk) batch.update(h.ref, { venue: h.venue });
+    await batch.commit();
+    healed += chunk.length;
+  }
+
+  // Create the brand-new matches.
   for (let i = 0; i < newMatches.length; i += batchSize) {
     const batch = writeBatch(db);
     const chunk = newMatches.slice(i, i + batchSize);
@@ -175,8 +205,12 @@ export async function importMatchesFirestore(
     imported += chunk.length;
   }
 
-  if (imported > 0) {
-    logToEcosystem("matches_imported", `${imported} matches imported`, `Batch import of ${imported} match records`);
+  if (imported > 0 || healed > 0) {
+    logToEcosystem(
+      "matches_imported",
+      `${imported} matches imported`,
+      `Batch import: ${imported} new, ${healed} venue backfill${healed === 1 ? "" : "s"}`,
+    );
   }
 
   return imported;
