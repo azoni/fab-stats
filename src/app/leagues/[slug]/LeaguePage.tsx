@@ -20,7 +20,7 @@ import {
 } from "@/lib/leagues";
 import { getStoreDirectory, slugifyStoreName, findNearMatchStore, storeNameMatchesQuery, type StoreDirectoryEntry } from "@/lib/store-directory";
 import { uploadLeagueBanner, removeLeagueBanner } from "@/lib/league-images";
-import { recomputeAndStoreStandings } from "@/lib/leagues-scoring";
+import { recomputeAndStoreStandings, computeLeagueMatchups, type LeagueMatchupData } from "@/lib/leagues-scoring";
 import { doc, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import type {
@@ -76,6 +76,7 @@ export default function LeaguePage() {
 
   const [recomputing, setRecomputing] = useState(false);
   const [editing, setEditing] = useState(false);
+  const [leagueTab, setLeagueTab] = useState<"standings" | "members" | "matchups">("standings");
 
   useEffect(() => {
     if (!slug || slug === "_") return;
@@ -380,59 +381,85 @@ export default function LeaguePage() {
         />
       )}
 
-      <section className="mt-6 grid gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2">
-          <div className="mb-2 flex items-center justify-between">
-            <h2 className="text-lg font-bold text-fab-gold">Standings</h2>
-            <div className="flex items-center gap-2 text-xs text-fab-dim">
-              {standingsAt && (
-                <span>
-                  Updated{" "}
-                  {new Date(standingsAt).toLocaleString(undefined, {
-                    year: "numeric",
-                    month: "short",
-                    day: "numeric",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </span>
-              )}
-              {(isMember || isOrganizer) && (
-                <button
-                  type="button"
-                  onClick={handleRecompute}
-                  disabled={recomputing}
-                  className="inline-flex items-center gap-1 rounded-md border border-fab-border/60 bg-fab-bg/60 px-2 py-1 text-fab-text hover:text-fab-gold disabled:opacity-50"
-                >
-                  <RefreshCw className={`h-3 w-3 ${recomputing ? "animate-spin" : ""}`} />
-                  Refresh
-                </button>
-              )}
-            </div>
-          </div>
-          <StandingsTable standings={standings} league={league} />
-        </div>
+      {/* Tabs */}
+      <div className="mt-6 flex gap-1 overflow-x-auto border-b border-fab-border">
+        {(["standings", "members", "matchups"] as const).map((t) => (
+          <button
+            key={t}
+            type="button"
+            onClick={() => setLeagueTab(t)}
+            className={`px-3 py-2 text-sm font-semibold uppercase tracking-wide transition-colors ${
+              leagueTab === t ? "border-b-2 border-fab-gold text-fab-gold" : "text-fab-muted hover:text-fab-text"
+            }`}
+          >
+            {t === "standings" ? "Standings" : t === "members" ? `Players (${members.length})` : "Matchups"}
+          </button>
+        ))}
+      </div>
 
-        <aside className="space-y-5">
-          <ScoringSummary scoringRules={league.scoringRules} />
-          <StoresList stores={storeRows} />
+      {leagueTab === "standings" && (
+        <section className="mt-4 grid gap-6 lg:grid-cols-3">
+          <div className="lg:col-span-2">
+            <div className="mb-2 flex items-center justify-between">
+              <h2 className="text-lg font-bold text-fab-gold">Standings</h2>
+              <div className="flex items-center gap-2 text-xs text-fab-dim">
+                {standingsAt && (
+                  <span>
+                    Updated{" "}
+                    {new Date(standingsAt).toLocaleString(undefined, {
+                      year: "numeric",
+                      month: "short",
+                      day: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </span>
+                )}
+                {(isMember || isOrganizer) && (
+                  <button
+                    type="button"
+                    onClick={handleRecompute}
+                    disabled={recomputing}
+                    className="inline-flex items-center gap-1 rounded-md border border-fab-border/60 bg-fab-bg/60 px-2 py-1 text-fab-text hover:text-fab-gold disabled:opacity-50"
+                  >
+                    <RefreshCw className={`h-3 w-3 ${recomputing ? "animate-spin" : ""}`} />
+                    Refresh
+                  </button>
+                )}
+              </div>
+            </div>
+            <StandingsTable standings={standings} league={league} />
+          </div>
+
+          <aside className="space-y-5">
+            <ScoringSummary scoringRules={league.scoringRules} />
+            <StoresList stores={storeRows} />
+          </aside>
+        </section>
+      )}
+
+      {leagueTab === "members" && (
+        <section className="mt-4 space-y-5">
           {isOrganizer && (
-            <JoinRequestsPanel
-              requests={joinRequests}
-              onApprove={handleApprove}
-              onReject={handleRejectRequest}
-            />
+            <JoinRequestsPanel requests={joinRequests} onApprove={handleApprove} onReject={handleRejectRequest} />
           )}
-          <MembersList
+          <PlayerCards
             members={members}
-            currentUid={user?.uid || null}
+            standings={standings}
             organizerUid={league.organizerUid}
             isOrganizer={isOrganizer}
+            currentUid={user?.uid || null}
             onKick={handleKick}
           />
           {canEdit && <DisbandPanel leagueId={league.id} ownerUid={league.organizerUid} />}
-        </aside>
-      </section>
+        </section>
+      )}
+
+      {leagueTab === "matchups" && (
+        <section className="mt-4">
+          <MatchupMatrix leagueId={league.id} />
+        </section>
+      )}
     </div>
   );
 }
@@ -687,6 +714,184 @@ function JoinRequestsPanel({
           ))}
         </ul>
       )}
+    </div>
+  );
+}
+
+function PlayerCards({
+  members,
+  standings,
+  organizerUid,
+  isOrganizer,
+  currentUid,
+  onKick,
+}: {
+  members: LeagueMember[];
+  standings: LeagueStandingEntry[] | null;
+  organizerUid: string;
+  isOrganizer: boolean;
+  currentUid: string | null;
+  onKick: (uid: string) => void;
+}) {
+  const ranked = !!(standings && standings.length);
+  const rows = ranked
+    ? standings!
+    : members.map((m) => ({
+        uid: m.uid,
+        username: m.username,
+        displayName: m.displayName,
+        photoUrl: m.photoUrl,
+        matches: 0,
+        wins: 0,
+        losses: 0,
+        draws: 0,
+        byes: 0,
+        points: 0,
+        storesPlayed: 0,
+      }));
+
+  return (
+    <div>
+      <h2 className="mb-2 text-lg font-bold text-fab-gold">Players</h2>
+      <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+        {rows.map((p, i) => {
+          const isOrg = p.uid === organizerUid;
+          const isSelf = currentUid === p.uid;
+          const decisive = p.matches - p.byes;
+          const wr = decisive > 0 ? Math.round((p.wins / decisive) * 100) : null;
+          const initial = (p.displayName || p.username || "?").charAt(0).toUpperCase();
+          return (
+            <div key={p.uid} className="relative rounded-lg border border-fab-border bg-fab-bg/45 p-3">
+              <div className="flex items-center gap-2.5">
+                {p.photoUrl ? (
+                  <img src={p.photoUrl} alt="" className="h-10 w-10 shrink-0 rounded-full border border-fab-border object-cover" />
+                ) : (
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-fab-border bg-fab-surface text-sm font-black text-fab-gold">
+                    {initial}
+                  </span>
+                )}
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5">
+                    <Link href={`/player/${p.username}`} className="truncate text-sm font-black text-fab-text hover:text-fab-gold">
+                      {p.displayName}
+                    </Link>
+                    {isOrg && <span className="shrink-0 rounded bg-fab-gold/15 px-1 text-[9px] font-bold text-fab-gold">organizer</span>}
+                    {isSelf && !isOrg && <span className="shrink-0 text-[9px] text-fab-dim">(you)</span>}
+                  </div>
+                  <p className="truncate text-[11px] text-fab-dim">@{p.username}</p>
+                </div>
+                {ranked && <span className="shrink-0 rounded-md bg-fab-gold/10 px-2 py-0.5 text-sm font-black text-fab-gold">#{i + 1}</span>}
+              </div>
+              <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] text-fab-muted">
+                <span><b className="text-fab-text">{p.points}</b> pts</span>
+                <span>{p.wins}-{p.losses}{p.draws ? `-${p.draws}` : ""}</span>
+                {wr !== null && <span>{wr}% WR</span>}
+                <span>{p.matches} gp</span>
+                {p.storesPlayed > 0 && <span>{p.storesPlayed} store{p.storesPlayed === 1 ? "" : "s"}</span>}
+              </div>
+              {isOrganizer && !isOrg && (
+                <button
+                  type="button"
+                  onClick={() => onKick(p.uid)}
+                  title="Remove member"
+                  className="absolute right-2 top-2 rounded p-1 text-fab-dim hover:text-rose-300"
+                >
+                  <UserMinus className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function MatchupMatrix({ leagueId }: { leagueId: string }) {
+  const [data, setData] = useState<LeagueMatchupData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setError(false);
+    computeLeagueMatchups(leagueId)
+      .then((d) => !cancelled && setData(d))
+      .catch(() => !cancelled && setError(true))
+      .finally(() => !cancelled && setLoading(false));
+    return () => {
+      cancelled = true;
+    };
+  }, [leagueId]);
+
+  if (loading) return <p className="text-sm text-fab-muted">Computing matchups…</p>;
+  if (error || !data) return <p className="text-sm text-fab-muted">Couldn&apos;t compute matchups.</p>;
+  if (data.totalMatches === 0) {
+    return (
+      <p className="text-sm text-fab-muted">
+        No hero-vs-hero data yet — matchups appear once members log league matches with both heroes recorded.
+      </p>
+    );
+  }
+
+  const top = data.heroes.slice(0, 12);
+  const names = top.map((h) => h.name);
+  const shortName = (n: string) => n.split(",")[0].trim();
+  const cellColor = (wr: number) =>
+    wr >= 60 ? "bg-emerald-500/25 text-emerald-100" : wr >= 50 ? "bg-emerald-500/10 text-emerald-200" : wr >= 40 ? "bg-rose-500/10 text-rose-200" : "bg-rose-500/25 text-rose-100";
+
+  return (
+    <div>
+      <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
+        <h2 className="text-lg font-bold text-fab-gold">Hero matchups</h2>
+        <span className="text-xs text-fab-dim">{data.totalMatches} decisive matches · top {top.length} heroes</span>
+      </div>
+      <p className="mb-2 text-xs text-fab-muted">Row hero&apos;s win rate vs the column hero across league matches (W–L below).</p>
+      <div className="overflow-x-auto rounded-lg border border-fab-border">
+        <table className="min-w-full border-collapse text-[11px]">
+          <thead>
+            <tr>
+              <th className="sticky left-0 z-10 bg-fab-surface p-1.5 text-left font-bold text-fab-dim">hero ＼ vs</th>
+              {names.map((n) => (
+                <th key={n} className="bg-fab-surface p-1.5 font-semibold text-fab-dim" title={n}>
+                  <div className="mx-auto max-w-[56px] truncate">{shortName(n)}</div>
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {top.map((rowHero) => (
+              <tr key={rowHero.name}>
+                <th className="sticky left-0 z-10 whitespace-nowrap bg-fab-surface p-1.5 text-left font-bold text-fab-text" title={rowHero.name}>
+                  <span className="block max-w-[120px] truncate">{shortName(rowHero.name)}</span>
+                </th>
+                {names.map((colName) => {
+                  const cell = data.matrix[rowHero.name]?.[colName];
+                  const wr = cell && cell.total > 0 ? Math.round((cell.wins / cell.total) * 100) : null;
+                  const isSelf = rowHero.name === colName;
+                  return (
+                    <td
+                      key={colName}
+                      className={`border border-fab-border/40 p-1 text-center ${isSelf ? "bg-fab-bg/40" : wr !== null ? cellColor(wr) : ""}`}
+                      title={cell ? `${cell.wins}-${cell.losses}${cell.draws ? `-${cell.draws}` : ""} (${cell.total} games)` : "no games"}
+                    >
+                      {wr === null ? (
+                        <span className="text-fab-dim">·</span>
+                      ) : (
+                        <>
+                          <div className="font-bold">{wr}%</div>
+                          <div className="text-[9px] opacity-75">{cell!.wins}-{cell!.losses}</div>
+                        </>
+                      )}
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

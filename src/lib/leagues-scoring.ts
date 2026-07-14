@@ -174,3 +174,66 @@ export async function recomputeAndStoreStandings(leagueId: string): Promise<Leag
   });
   return entries;
 }
+
+export interface LeagueMatchupCell {
+  wins: number;
+  losses: number;
+  draws: number;
+  total: number;
+}
+
+export interface LeagueMatchupData {
+  /** Heroes seen in league matches, most-played first. */
+  heroes: { name: string; played: number; wins: number }[];
+  /** matrix[heroPlayed][opponentHero] = record from the row hero's perspective. */
+  matrix: Record<string, Record<string, LeagueMatchupCell>>;
+  totalMatches: number;
+}
+
+/** Hero-vs-hero matchup matrix across all qualifying league matches. Reads each
+ *  member's matches (same visibility limits as standings — only readable matches
+ *  count). Only decisive matches with both heroes known are included. */
+export async function computeLeagueMatchups(leagueId: string): Promise<LeagueMatchupData> {
+  const league = await getLeague(leagueId);
+  if (!league) throw new Error("League not found.");
+  const members = await getLeagueMembers(leagueId);
+  const aliasIndex = buildAliasIndex(await getStoreAliases());
+  const storeSlugSet = expandSlugSet(league.storeSlugs, aliasIndex);
+
+  const matrix: Record<string, Record<string, LeagueMatchupCell>> = {};
+  const heroStat: Record<string, { played: number; wins: number }> = {};
+  let totalMatches = 0;
+
+  const perMember = await Promise.all(
+    members.map((m) => getMatchesByUserId(m.uid).catch(() => [] as MatchRecord[])),
+  );
+
+  for (const matches of perMember) {
+    for (const m of matches) {
+      if (m.result === MatchResult.Bye) continue;
+      if (!matchQualifiesForLeague(m, league, storeSlugSet)) continue;
+      const hero = m.heroPlayed;
+      const opp = m.opponentHero;
+      if (!hero || hero === "Unknown" || !opp || opp === "Unknown") continue;
+
+      totalMatches++;
+      const win = m.result === MatchResult.Win;
+      const stat = (heroStat[hero] ||= { played: 0, wins: 0 });
+      stat.played++;
+      if (win) stat.wins++;
+
+      const row = (matrix[hero] ||= {});
+      const cell = (row[opp] ||= { wins: 0, losses: 0, draws: 0, total: 0 });
+      cell.total++;
+      if (win) cell.wins++;
+      else if (m.result === MatchResult.Loss) cell.losses++;
+      else if (m.result === MatchResult.Draw) cell.draws++;
+    }
+  }
+
+  const heroes = Object.entries(heroStat)
+    .map(([name, s]) => ({ name, played: s.played, wins: s.wins }))
+    .sort((a, b) => b.played - a.played);
+
+  return { heroes, matrix, totalMatches };
+}
