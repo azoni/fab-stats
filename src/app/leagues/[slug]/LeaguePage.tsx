@@ -12,6 +12,11 @@ import {
   subscribeToLeague,
   subscribeToLeagueMembers,
   updateLeague,
+  approveJoinRequest,
+  removeJoinRequest,
+  hasPendingJoinRequest,
+  subscribeToJoinRequests,
+  leagueRequiresApproval,
 } from "@/lib/leagues";
 import { getStoreDirectory, slugifyStoreName, findNearMatchStore, storeNameMatchesQuery, type StoreDirectoryEntry } from "@/lib/store-directory";
 import { computeLeagueStandings, recomputeAndStoreStandings } from "@/lib/leagues-scoring";
@@ -20,6 +25,7 @@ import { db } from "@/lib/firebase";
 import type {
   League,
   LeagueMember,
+  LeagueJoinRequest,
   LeagueScoringRules,
   LeagueStandingEntry,
 } from "@/types";
@@ -58,6 +64,8 @@ export default function LeaguePage() {
   const [leagueId, setLeagueId] = useState<string | null>(null);
   const [league, setLeague] = useState<League | null>(null);
   const [members, setMembers] = useState<LeagueMember[]>([]);
+  const [joinRequests, setJoinRequests] = useState<LeagueJoinRequest[]>([]);
+  const [myRequestPending, setMyRequestPending] = useState(false);
   const [directory, setDirectory] = useState<StoreDirectoryEntry[]>([]);
   const [standings, setStandings] = useState<LeagueStandingEntry[] | null>(null);
   const [standingsAt, setStandingsAt] = useState<string | null>(null);
@@ -141,6 +149,30 @@ export default function LeaguePage() {
     [user, members],
   );
 
+  // Organizer: live pending join requests for the approval panel.
+  useEffect(() => {
+    if (!leagueId || !isOrganizer) {
+      setJoinRequests([]);
+      return;
+    }
+    return subscribeToJoinRequests(leagueId, setJoinRequests);
+  }, [leagueId, isOrganizer]);
+
+  // Non-member: do I already have a pending request?
+  useEffect(() => {
+    if (!user || !leagueId || isMember || isOrganizer) {
+      setMyRequestPending(false);
+      return;
+    }
+    let cancelled = false;
+    hasPendingJoinRequest(leagueId, user.uid)
+      .then((p) => !cancelled && setMyRequestPending(p))
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [user, leagueId, isMember, isOrganizer]);
+
   async function handleRecompute() {
     if (!league) return;
     setRecomputing(true);
@@ -173,10 +205,46 @@ export default function LeaguePage() {
       return;
     }
     try {
-      await joinLeague(league.id, profile);
-      toast.success(`Joined ${league.name}.`);
+      const result = await joinLeague(league, profile);
+      if (result === "requested") {
+        setMyRequestPending(true);
+        toast.success("Request sent. The organizer will review it.");
+      } else {
+        toast.success(`Joined ${league.name}.`);
+      }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to join.");
+    }
+  }
+
+  async function handleCancelRequest() {
+    if (!user || !league) return;
+    try {
+      await removeJoinRequest(league.id, user.uid);
+      setMyRequestPending(false);
+      toast.success("Request cancelled.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to cancel request.");
+    }
+  }
+
+  async function handleApprove(request: LeagueJoinRequest) {
+    if (!league) return;
+    try {
+      await approveJoinRequest(league.id, request);
+      toast.success(`Approved ${request.displayName}.`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to approve.");
+    }
+  }
+
+  async function handleRejectRequest(uid: string, name: string) {
+    if (!league) return;
+    try {
+      await removeJoinRequest(league.id, uid);
+      toast.success(`Declined ${name}.`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to decline.");
     }
   }
 
@@ -262,16 +330,30 @@ export default function LeaguePage() {
           </div>
 
           <div className="flex flex-col gap-2">
-            {!isMember && (
-              <button
-                type="button"
-                onClick={handleJoin}
-                disabled={!user}
-                className="rounded-md bg-fab-gold px-3 py-1.5 text-sm font-bold text-black hover:bg-fab-gold/80 disabled:opacity-50"
-              >
-                Join league
-              </button>
-            )}
+            {!isMember &&
+              (myRequestPending ? (
+                <div className="flex flex-col items-stretch gap-1">
+                  <span className="rounded-md border border-fab-gold/40 bg-fab-gold/10 px-3 py-1.5 text-center text-sm font-bold text-fab-gold">
+                    Request pending
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleCancelRequest}
+                    className="text-[11px] font-bold text-fab-dim hover:text-rose-300"
+                  >
+                    Cancel request
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleJoin}
+                  disabled={!user}
+                  className="rounded-md bg-fab-gold px-3 py-1.5 text-sm font-bold text-black hover:bg-fab-gold/80 disabled:opacity-50"
+                >
+                  {leagueRequiresApproval(league) ? "Request to join" : "Join league"}
+                </button>
+              ))}
             {isMember && !isOrganizer && (
               <button
                 type="button"
@@ -349,6 +431,13 @@ export default function LeaguePage() {
         <aside className="space-y-5">
           <ScoringSummary scoringRules={league.scoringRules} />
           <StoresList stores={storeRows} />
+          {isOrganizer && (
+            <JoinRequestsPanel
+              requests={joinRequests}
+              onApprove={handleApprove}
+              onReject={handleRejectRequest}
+            />
+          )}
           <MembersList
             members={members}
             currentUid={user?.uid || null}
@@ -566,6 +655,57 @@ function StoresList({ stores }: { stores: StoreDirectoryEntry[] }) {
   );
 }
 
+function JoinRequestsPanel({
+  requests,
+  onApprove,
+  onReject,
+}: {
+  requests: LeagueJoinRequest[];
+  onApprove: (request: LeagueJoinRequest) => void;
+  onReject: (uid: string, name: string) => void;
+}) {
+  return (
+    <div className="rounded-lg border border-fab-border/70 bg-fab-bg/45 p-4">
+      <h3 className="text-sm font-bold uppercase tracking-wider text-fab-dim">
+        Join requests ({requests.length})
+      </h3>
+      {requests.length === 0 ? (
+        <p className="mt-2 text-xs text-fab-muted">No pending requests.</p>
+      ) : (
+        <ul className="mt-2 space-y-2 text-sm">
+          {requests.map((r) => (
+            <li key={r.uid} className="flex items-center justify-between gap-2">
+              <Link
+                href={`/player/${r.username}`}
+                className="min-w-0 flex-1 truncate text-fab-text hover:text-fab-gold"
+              >
+                {r.displayName}
+                <span className="ml-1 text-[10px] text-fab-dim">@{r.username}</span>
+              </Link>
+              <div className="flex shrink-0 items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => onApprove(r)}
+                  className="rounded-md bg-fab-gold px-2 py-1 text-[11px] font-bold text-black hover:bg-fab-gold/80"
+                >
+                  Approve
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onReject(r.uid, r.displayName)}
+                  className="rounded-md border border-fab-border px-2 py-1 text-[11px] font-bold text-fab-dim hover:text-rose-300"
+                >
+                  Decline
+                </button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 function MembersList({
   members,
   currentUid,
@@ -692,6 +832,9 @@ function OrganizerEditor({
   const [startDate, setStartDate] = useState(league.startDate);
   const [endDate, setEndDate] = useState(league.endDate);
   const [status, setStatus] = useState<League["status"]>(league.status);
+  const [joinPolicy, setJoinPolicy] = useState<"open" | "approval">(
+    league.joinPolicy === "open" ? "open" : "approval",
+  );
   const [pointsWin, setPointsWin] = useState(league.scoringRules.pointsPerWin);
   const [pointsLoss, setPointsLoss] = useState(league.scoringRules.pointsPerLoss);
   const [pointsDraw, setPointsDraw] = useState(league.scoringRules.pointsPerDraw);
@@ -799,6 +942,7 @@ function OrganizerEditor({
         storeNames: prunedNames,
         scoringRules,
         status,
+        joinPolicy,
       });
       toast.success("League updated.");
       onClose();
@@ -849,6 +993,16 @@ function OrganizerEditor({
             <option value="active">Active</option>
             <option value="draft">Draft</option>
             <option value="completed">Completed</option>
+          </select>
+        </EditField>
+        <EditField label="Joining">
+          <select
+            className="w-full rounded-md border border-fab-border bg-fab-bg px-3 py-2 text-sm text-fab-text focus:border-fab-gold/60 focus:outline-none focus:ring-2 focus:ring-fab-gold/30"
+            value={joinPolicy}
+            onChange={(e) => setJoinPolicy(e.target.value as "open" | "approval")}
+          >
+            <option value="approval">Require approval</option>
+            <option value="open">Open to anyone</option>
           </select>
         </EditField>
         <EditField label="City">

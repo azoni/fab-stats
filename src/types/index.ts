@@ -350,6 +350,9 @@ export interface League {
   storeNames?: Record<string, string>;
   scoringRules: LeagueScoringRules;
   status: "draft" | "active" | "completed";
+  /** How players join. "approval" (default) requires organizer approval; "open"
+   *  lets anyone self-join. Absent on legacy leagues → treated as "approval". */
+  joinPolicy?: "open" | "approval";
   memberCount: number;
   createdAt: string;
   updatedAt: string;
@@ -363,6 +366,14 @@ export interface LeagueMember {
   /** organizer = league owner with edit rights; player = competing member */
   role: "organizer" | "player";
   joinedAt: string;
+}
+
+export interface LeagueJoinRequest {
+  uid: string;
+  username: string;
+  displayName: string;
+  photoUrl?: string;
+  requestedAt: string;
 }
 
 export interface LeagueStandingEntry {
