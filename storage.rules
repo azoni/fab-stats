@@ -95,6 +95,16 @@ service firebase.storage {
         );
     }
 
+    // League banners: public read, authenticated write with size limits
+    match /league-images/banners/{leagueId}/{fileName} {
+      allow read: if true;
+      allow write: if signedIn()
+        && (
+          request.resource == null
+          || validImageUpload(8 * 1024 * 1024)
+        );
+    }
+
     match /article-images/{userId}/{articleId}/{fileName} {
       allow read: if true;
       allow write: if request.auth != null

@@ -1,5 +1,6 @@
 import {
   collection,
+  collectionGroup,
   doc,
   getDoc,
   getDocs,
@@ -38,6 +39,18 @@ function leagueJoinRequestsCollection(leagueId: string) {
  *  Legacy leagues with no joinPolicy are treated as approval-required. */
 export function leagueRequiresApproval(league: Pick<League, "joinPolicy">): boolean {
   return league.joinPolicy !== "open";
+}
+
+/** All league IDs the user belongs to (organizer or player). One collection-group
+ *  read over `members` — members subcollections are public-readable. */
+export async function getMyLeagueIds(uid: string): Promise<Set<string>> {
+  const ids = new Set<string>();
+  const snap = await getDocs(query(collectionGroup(db, "members"), where("uid", "==", uid)));
+  for (const d of snap.docs) {
+    const leagueDoc = d.ref.parent.parent; // e.g. leagues/{id} (or teams/groups)
+    if (leagueDoc?.parent.id === "leagues") ids.add(leagueDoc.id);
+  }
+  return ids;
 }
 
 export function slugifyLeague(name: string): string {

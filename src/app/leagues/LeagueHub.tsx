@@ -2,7 +2,7 @@
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
-import { getAllLeagues, createLeague, joinLeague, leagueRequiresApproval } from "@/lib/leagues";
+import { getAllLeagues, createLeague, joinLeague, leagueRequiresApproval, getMyLeagueIds } from "@/lib/leagues";
 import { getStoreDirectory, slugifyStoreName, findNearMatchStore, storeNameMatchesQuery, type StoreDirectoryEntry } from "@/lib/store-directory";
 import type { League, LeagueScoringRules } from "@/types";
 import { toast } from "sonner";
@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { AlertCircle, CalendarDays, ListChecks, MapPin, PlusCircle, Search, Store as StoreIcon, Trophy, Users, X } from "lucide-react";
 
-type Tab = "browse" | "about" | "create";
+type Tab = "browse" | "my" | "about" | "create";
 
 const FORMAT_OPTIONS = [
   "Classic Constructed",
@@ -165,6 +165,21 @@ export default function LeagueHub() {
 
   const [joiningId, setJoiningId] = useState<string | null>(null);
   const [requestedIds, setRequestedIds] = useState<Set<string>>(new Set());
+  const [myLeagueIds, setMyLeagueIds] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (!user) {
+      setMyLeagueIds(new Set());
+      return;
+    }
+    let cancelled = false;
+    getMyLeagueIds(user.uid)
+      .then((s) => !cancelled && setMyLeagueIds(s))
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
 
   useEffect(() => {
     let cancelled = false;
@@ -374,7 +389,7 @@ export default function LeagueHub() {
       />
 
       <div className="flex gap-1 overflow-x-auto border-b border-fab-border">
-        {(["browse", "about", "create"] as Tab[]).map((t) => (
+        {((user ? ["browse", "my", "about", "create"] : ["browse", "about", "create"]) as Tab[]).map((t) => (
           <button
             key={t}
             type="button"
@@ -385,7 +400,13 @@ export default function LeagueHub() {
                 : "text-fab-muted hover:text-fab-text"
             }`}
           >
-            {t === "about" ? "How leagues work" : t === "browse" ? "Browse" : "Create a league"}
+            {t === "about"
+              ? "How leagues work"
+              : t === "browse"
+                ? "Browse"
+                : t === "my"
+                  ? "My leagues"
+                  : "Create a league"}
           </button>
         ))}
       </div>
@@ -459,6 +480,13 @@ export default function LeagueHub() {
               return true;
             });
 
+            // Leagues you're already in float to the top of Browse.
+            if (myLeagueIds.size > 0) {
+              filtered.sort(
+                (a, b) => (myLeagueIds.has(b.id) ? 1 : 0) - (myLeagueIds.has(a.id) ? 1 : 0),
+              );
+            }
+
             if (filtered.length === 0) {
               return (
                 <Card padding="md">
@@ -531,6 +559,80 @@ export default function LeagueHub() {
                                     ? "Request"
                                     : "Join"}
                             </Button>
+                          </div>
+                        </div>
+                      </Card>
+                    </li>
+                  );
+                })}
+              </ul>
+            );
+          })()}
+        </section>
+      )}
+
+      {activeTab === "my" && (
+        <section className="space-y-3">
+          {(() => {
+            const mine = leagues.filter((l) => myLeagueIds.has(l.id));
+            if (mine.length === 0) {
+              return (
+                <Card padding="md" className="text-center">
+                  <p className="text-sm text-fab-text">You haven&apos;t joined any leagues yet.</p>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab("browse")}
+                    className="mt-2 text-sm font-semibold text-fab-gold underline"
+                  >
+                    Browse leagues
+                  </button>
+                </Card>
+              );
+            }
+            return (
+              <ul className="space-y-2.5">
+                {mine.map((l) => {
+                  const organizer = !!user && l.organizerUid === user.uid;
+                  const timeBadge = timeRemainingLabel(l);
+                  return (
+                    <li key={l.id}>
+                      <Card padding="sm" className="relative">
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                          <div className="min-w-0">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <Link
+                                href={`/leagues/${l.slug}`}
+                                className="text-base font-bold text-fab-text after:absolute after:inset-0 hover:text-fab-gold"
+                              >
+                                {l.name}
+                              </Link>
+                              <StatusBadge status={l.status} />
+                              <Badge size="xs" variant={organizer ? "gold" : "muted"}>
+                                {organizer ? "Organizer" : "Player"}
+                              </Badge>
+                              {timeBadge && (
+                                <Badge variant={timeBadge.tone} size="xs">
+                                  {timeBadge.label}
+                                </Badge>
+                              )}
+                            </div>
+                            {(l.city || l.region || l.country) && (
+                              <p className="mt-0.5 flex items-center gap-1 text-[11px] text-fab-muted">
+                                <MapPin className="h-3 w-3" />
+                                {[l.city, l.region, l.country].filter(Boolean).join(", ")}
+                              </p>
+                            )}
+                          </div>
+                          <div className="relative z-10 flex items-center gap-1.5">
+                            <Badge size="xs" variant="muted">
+                              <Users className="h-3 w-3" /> {l.memberCount}
+                            </Badge>
+                            <Link
+                              href={`/leagues/${l.slug}`}
+                              className="rounded-md border border-fab-border bg-fab-bg px-2.5 py-1 text-xs font-bold text-fab-text hover:border-fab-gold/40 hover:text-fab-gold"
+                            >
+                              {organizer ? "Manage" : "Open"}
+                            </Link>
                           </div>
                         </div>
                       </Card>
