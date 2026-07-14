@@ -2,7 +2,7 @@
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
-import { getAllLeagues, createLeague, joinLeague } from "@/lib/leagues";
+import { getAllLeagues, createLeague, joinLeague, leagueRequiresApproval } from "@/lib/leagues";
 import { getStoreDirectory, slugifyStoreName, findNearMatchStore, storeNameMatchesQuery, type StoreDirectoryEntry } from "@/lib/store-directory";
 import type { League, LeagueScoringRules } from "@/types";
 import { toast } from "sonner";
@@ -53,6 +53,7 @@ interface CreateFormState {
   selectedStoreSlugs: string[];
   /** Display names for free-typed stores not in the directory, keyed by slug. */
   storeNames: Record<string, string>;
+  joinPolicy: "open" | "approval";
 }
 
 const INITIAL_FORM: CreateFormState = {
@@ -72,6 +73,7 @@ const INITIAL_FORM: CreateFormState = {
   eligibleFormats: [],
   selectedStoreSlugs: [],
   storeNames: {},
+  joinPolicy: "approval",
 };
 
 function StatusBadge({ status }: { status: League["status"] }) {
@@ -162,6 +164,7 @@ export default function LeagueHub() {
   const [storeSearch, setStoreSearch] = useState("");
 
   const [joiningId, setJoiningId] = useState<string | null>(null);
+  const [requestedIds, setRequestedIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     let cancelled = false;
@@ -313,6 +316,7 @@ export default function LeagueHub() {
         storeSlugs: form.selectedStoreSlugs,
         storeNames: form.storeNames,
         scoringRules,
+        joinPolicy: form.joinPolicy,
       });
       toast.success("League created!");
       setForm(INITIAL_FORM);
@@ -333,10 +337,15 @@ export default function LeagueHub() {
     }
     setJoiningId(league.id);
     try {
-      await joinLeague(league.id, profile);
-      toast.success(`Joined ${league.name}.`);
-      const refreshed = await getAllLeagues();
-      setLeagues(refreshed);
+      const result = await joinLeague(league, profile);
+      if (result === "requested") {
+        setRequestedIds((prev) => new Set(prev).add(league.id));
+        toast.success(`Requested to join ${league.name}. The organizer will review it.`);
+      } else {
+        toast.success(`Joined ${league.name}.`);
+        const refreshed = await getAllLeagues();
+        setLeagues(refreshed);
+      }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to join.");
     }
@@ -511,10 +520,16 @@ export default function LeagueHub() {
                             <Button
                               variant="primary"
                               size="sm"
-                              disabled={joiningId === l.id || !user}
+                              disabled={joiningId === l.id || !user || requestedIds.has(l.id)}
                               onClick={() => handleJoin(l)}
                             >
-                              {joiningId === l.id ? "Joining…" : "Join"}
+                              {requestedIds.has(l.id)
+                                ? "Requested"
+                                : joiningId === l.id
+                                  ? "…"
+                                  : leagueRequiresApproval(l)
+                                    ? "Request"
+                                    : "Join"}
                             </Button>
                           </div>
                         </div>
@@ -616,6 +631,43 @@ export default function LeagueHub() {
                   maxLength={1000}
                 />
               </Field>
+            </div>
+          </Card>
+
+          {/* Membership */}
+          <Card padding="md">
+            <h2 className="text-base font-bold text-fab-text">Membership</h2>
+            <p className="mt-0.5 text-xs text-fab-muted">
+              Control who can join. Approval is recommended so only players you recognize
+              show up in your standings.
+            </p>
+            <div className="mt-3 grid gap-2 sm:grid-cols-2">
+              {(
+                [
+                  { value: "approval", title: "Require approval", desc: "Players request to join; you approve each one." },
+                  { value: "open", title: "Open to anyone", desc: "Any signed-in player can join instantly." },
+                ] as const
+              ).map((opt) => {
+                const active = form.joinPolicy === opt.value;
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => update("joinPolicy", opt.value)}
+                    aria-pressed={active}
+                    className={`rounded-md border p-3 text-left transition-colors ${
+                      active
+                        ? "border-fab-gold/60 bg-fab-gold/10"
+                        : "border-fab-border bg-fab-bg hover:border-fab-gold/30"
+                    }`}
+                  >
+                    <span className={`block text-sm font-bold ${active ? "text-fab-gold" : "text-fab-text"}`}>
+                      {opt.title}
+                    </span>
+                    <span className="mt-0.5 block text-xs text-fab-muted">{opt.desc}</span>
+                  </button>
+                );
+              })}
             </div>
           </Card>
 

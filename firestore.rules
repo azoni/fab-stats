@@ -1161,10 +1161,15 @@ service cloud.firestore {
           && request.auth.uid == memberId
           && request.resource.data.role == "organizer"
           && get(/databases/$(database)/documents/leagues/$(leagueId)).data.organizerUid == request.auth.uid;
-        // Self-join (leagues are open join)
+        // Self-join ONLY for open-policy leagues (legacy/absent policy = approval).
         allow create: if request.auth != null
           && request.auth.uid == memberId
-          && request.resource.data.role == "player";
+          && request.resource.data.role == "player"
+          && get(/databases/$(database)/documents/leagues/$(leagueId)).data.joinPolicy == "open";
+        // Organizer adds a player (approving a join request).
+        allow create: if request.auth != null
+          && request.resource.data.role == "player"
+          && get(/databases/$(database)/documents/leagues/$(leagueId)).data.organizerUid == request.auth.uid;
         // Self-leave or organizer-kick
         allow delete: if request.auth != null
           && (request.auth.uid == memberId
@@ -1172,6 +1177,21 @@ service cloud.firestore {
         // Organizer can update roles (none in v1, but reserved)
         allow update: if request.auth != null
           && get(/databases/$(database)/documents/leagues/$(leagueId)).data.organizerUid == request.auth.uid;
+      }
+
+      // Join requests for approval-required leagues. Requester + organizer read;
+      // a user creates only their own; requester (cancel) or organizer (reject/
+      // approve) deletes.
+      match /joinRequests/{reqId} {
+        allow read: if request.auth != null
+          && (request.auth.uid == reqId
+              || get(/databases/$(database)/documents/leagues/$(leagueId)).data.organizerUid == request.auth.uid);
+        allow create: if request.auth != null
+          && request.auth.uid == reqId
+          && request.resource.data.uid == reqId;
+        allow delete: if request.auth != null
+          && (request.auth.uid == reqId
+              || get(/databases/$(database)/documents/leagues/$(leagueId)).data.organizerUid == request.auth.uid);
       }
 
       // Standings: readable by anyone, writable by any league member (so the

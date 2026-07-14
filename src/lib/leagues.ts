@@ -5,6 +5,7 @@ import {
   getDocs,
   setDoc,
   updateDoc,
+  deleteDoc,
   onSnapshot,
   query,
   where,
@@ -19,7 +20,7 @@ import {
 import { db } from "./firebase";
 import { containsProfanity } from "./profanity-filter";
 import { getStoreAliases, buildAliasIndex, groupForSlug } from "./store-aliases";
-import type { League, LeagueMember, LeagueScoringRules, UserProfile } from "@/types";
+import type { League, LeagueMember, LeagueJoinRequest, LeagueScoringRules, UserProfile } from "@/types";
 
 function leaguesCollection() {
   return collection(db, "leagues");
@@ -27,6 +28,16 @@ function leaguesCollection() {
 
 function leagueMembersCollection(leagueId: string) {
   return collection(db, "leagues", leagueId, "members");
+}
+
+function leagueJoinRequestsCollection(leagueId: string) {
+  return collection(db, "leagues", leagueId, "joinRequests");
+}
+
+/** A league requires organizer approval unless it explicitly opts into open join.
+ *  Legacy leagues with no joinPolicy are treated as approval-required. */
+export function leagueRequiresApproval(league: Pick<League, "joinPolicy">): boolean {
+  return league.joinPolicy !== "open";
 }
 
 export function slugifyLeague(name: string): string {
@@ -63,6 +74,7 @@ export async function createLeague(
     storeNames?: Record<string, string>;
     scoringRules?: LeagueScoringRules;
     accentColor?: string;
+    joinPolicy?: "open" | "approval";
   },
 ): Promise<string> {
   const trimmedName = opts.name.trim();
@@ -119,6 +131,7 @@ export async function createLeague(
     storeSlugs: opts.storeSlugs,
     scoringRules,
     status: "active",
+    joinPolicy: opts.joinPolicy === "open" ? "open" : "approval",
     memberCount: 1,
     createdAt: now,
     updatedAt: now,
@@ -171,6 +184,7 @@ export async function updateLeague(
       | "scoringRules"
       | "status"
       | "accentColor"
+      | "joinPolicy"
     >
   >,
 ): Promise<void> {
@@ -268,12 +282,30 @@ export async function disbandLeague(leagueId: string, organizerUid: string): Pro
 
 // ── Members (open join) ──
 
-export async function joinLeague(leagueId: string, profile: UserProfile): Promise<void> {
-  const memberRef = doc(leagueMembersCollection(leagueId), profile.uid);
+/** Join a league. Open leagues add the member immediately ("joined");
+ *  approval leagues create a pending join request instead ("requested"). */
+export async function joinLeague(
+  league: League,
+  profile: UserProfile,
+): Promise<"joined" | "requested"> {
+  const memberRef = doc(leagueMembersCollection(league.id), profile.uid);
   const existing = await getDoc(memberRef);
-  if (existing.exists()) return;
+  if (existing.exists()) return "joined";
 
   const now = new Date().toISOString();
+
+  if (leagueRequiresApproval(league)) {
+    const reqData: Record<string, unknown> = {
+      uid: profile.uid,
+      username: profile.username,
+      displayName: profile.displayName,
+      requestedAt: now,
+    };
+    if (profile.photoUrl) reqData.photoUrl = profile.photoUrl;
+    await setDoc(doc(leagueJoinRequestsCollection(league.id), profile.uid), reqData);
+    return "requested";
+  }
+
   const memberData: Record<string, unknown> = {
     uid: profile.uid,
     username: profile.username,
@@ -285,8 +317,62 @@ export async function joinLeague(leagueId: string, profile: UserProfile): Promis
 
   const batch = writeBatch(db);
   batch.set(memberRef, memberData);
+  batch.update(doc(db, "leagues", league.id), { memberCount: increment(1), updatedAt: now });
+  await batch.commit();
+  return "joined";
+}
+
+/** Organizer approves a pending request: adds the player and removes the request. */
+export async function approveJoinRequest(
+  leagueId: string,
+  request: LeagueJoinRequest,
+): Promise<void> {
+  const now = new Date().toISOString();
+  const memberData: Record<string, unknown> = {
+    uid: request.uid,
+    username: request.username,
+    displayName: request.displayName,
+    role: "player",
+    joinedAt: now,
+  };
+  if (request.photoUrl) memberData.photoUrl = request.photoUrl;
+
+  const batch = writeBatch(db);
+  batch.set(doc(leagueMembersCollection(leagueId), request.uid), memberData);
+  batch.delete(doc(leagueJoinRequestsCollection(leagueId), request.uid));
   batch.update(doc(db, "leagues", leagueId), { memberCount: increment(1), updatedAt: now });
   await batch.commit();
+}
+
+/** Organizer rejects, or a requester cancels, a pending join request. */
+export async function removeJoinRequest(leagueId: string, uid: string): Promise<void> {
+  await deleteDoc(doc(leagueJoinRequestsCollection(leagueId), uid));
+}
+
+/** Whether the given user currently has a pending join request. */
+export async function hasPendingJoinRequest(leagueId: string, uid: string): Promise<boolean> {
+  const snap = await getDoc(doc(leagueJoinRequestsCollection(leagueId), uid));
+  return snap.exists();
+}
+
+export async function getJoinRequests(leagueId: string): Promise<LeagueJoinRequest[]> {
+  const snap = await getDocs(leagueJoinRequestsCollection(leagueId));
+  return snap.docs
+    .map((d) => d.data() as LeagueJoinRequest)
+    .sort((a, b) => a.requestedAt.localeCompare(b.requestedAt));
+}
+
+export function subscribeToJoinRequests(
+  leagueId: string,
+  cb: (requests: LeagueJoinRequest[]) => void,
+): Unsubscribe {
+  return onSnapshot(leagueJoinRequestsCollection(leagueId), (snap) => {
+    cb(
+      snap.docs
+        .map((d) => d.data() as LeagueJoinRequest)
+        .sort((a, b) => a.requestedAt.localeCompare(b.requestedAt)),
+    );
+  });
 }
 
 export async function leaveLeague(leagueId: string, uid: string): Promise<void> {
