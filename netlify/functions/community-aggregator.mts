@@ -45,6 +45,7 @@ interface LeaderboardDoc {
   winRate?: number;
   eloRating?: number;
   teamName?: string;
+  teamIconUrl?: string;
   teamVisibility?: "public" | "private";
   hideFromSpotlight?: boolean;
   hideFromGuests?: boolean;
@@ -76,6 +77,7 @@ interface CompactPlayer {
   r?: number; // eloRating
   p?: string; // photoUrl
   t?: string; // teamName (public only)
+  ti?: string; // teamIconUrl (public team only)
   c?: number; // createdAt (epoch seconds) — for "newest" sort
   v?: number; // lastVisit (epoch DAY seconds) — for "recently active" default sort
 }
@@ -164,7 +166,10 @@ async function buildPlayers(): Promise<{
         rec.r = Math.round(lb.eloRating);
       }
       if (lb.photoUrl) rec.p = lb.photoUrl;
-      if (lb.teamName && lb.teamVisibility !== "private") rec.t = lb.teamName;
+      if (lb.teamName && lb.teamVisibility !== "private") {
+        rec.t = lb.teamName;
+        if (lb.teamIconUrl) rec.ti = lb.teamIconUrl;
+      }
       if (lb.createdAt) {
         const t = Date.parse(lb.createdAt);
         if (!Number.isNaN(t)) rec.c = Math.floor(t / 1000);
