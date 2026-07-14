@@ -2,7 +2,7 @@
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
-import { getAllLeagues, createLeague, joinLeague, leagueRequiresApproval, getMyLeagueIds } from "@/lib/leagues";
+import { getAllLeagues, createLeague, joinLeague, leagueRequiresApproval, getMyLeagueIds, getLeaguesByIds } from "@/lib/leagues";
 import { getStoreDirectory, slugifyStoreName, findNearMatchStore, storeNameMatchesQuery, type StoreDirectoryEntry } from "@/lib/store-directory";
 import type { League, LeagueScoringRules } from "@/types";
 import { toast } from "sonner";
@@ -166,16 +166,34 @@ export default function LeagueHub() {
   const [joiningId, setJoiningId] = useState<string | null>(null);
   const [requestedIds, setRequestedIds] = useState<Set<string>>(new Set());
   const [myLeagueIds, setMyLeagueIds] = useState<Set<string>>(new Set());
+  const [myLeagues, setMyLeagues] = useState<League[]>([]);
+  const [myLeaguesLoading, setMyLeaguesLoading] = useState(false);
 
   useEffect(() => {
     if (!user) {
       setMyLeagueIds(new Set());
+      setMyLeagues([]);
+      setMyLeaguesLoading(false);
+      setActiveTab((t) => (t === "my" ? "browse" : t));
       return;
     }
     let cancelled = false;
+    setMyLeaguesLoading(true);
     getMyLeagueIds(user.uid)
-      .then((s) => !cancelled && setMyLeagueIds(s))
-      .catch(() => {});
+      .then(async (ids) => {
+        if (cancelled) return;
+        setMyLeagueIds(ids);
+        // Fetch the actual docs by id so "My leagues" isn't limited by the
+        // newest-100 cap on getAllLeagues().
+        const docs = await getLeaguesByIds([...ids]);
+        if (!cancelled) setMyLeagues(docs);
+      })
+      .catch((e) => {
+        console.warn("Failed to load your leagues:", e);
+      })
+      .finally(() => {
+        if (!cancelled) setMyLeaguesLoading(false);
+      });
     return () => {
       cancelled = true;
     };
@@ -358,6 +376,8 @@ export default function LeagueHub() {
         toast.success(`Requested to join ${league.name}. The organizer will review it.`);
       } else {
         toast.success(`Joined ${league.name}.`);
+        setMyLeagueIds((prev) => new Set(prev).add(league.id));
+        setMyLeagues((prev) => (prev.some((l) => l.id === league.id) ? prev : [...prev, league]));
         const refreshed = await getAllLeagues();
         setLeagues(refreshed);
       }
@@ -574,7 +594,14 @@ export default function LeagueHub() {
       {activeTab === "my" && (
         <section className="space-y-3">
           {(() => {
-            const mine = leagues.filter((l) => myLeagueIds.has(l.id));
+            if (myLeaguesLoading && myLeagues.length === 0) {
+              return (
+                <Card padding="md">
+                  <p className="text-sm text-fab-muted">Loading your leagues…</p>
+                </Card>
+              );
+            }
+            const mine = [...myLeagues].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
             if (mine.length === 0) {
               return (
                 <Card padding="md" className="text-center">

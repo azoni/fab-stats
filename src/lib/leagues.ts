@@ -2,6 +2,7 @@ import {
   collection,
   collectionGroup,
   doc,
+  documentId,
   getDoc,
   getDocs,
   setDoc,
@@ -42,7 +43,8 @@ export function leagueRequiresApproval(league: Pick<League, "joinPolicy">): bool
 }
 
 /** All league IDs the user belongs to (organizer or player). One collection-group
- *  read over `members` — members subcollections are public-readable. */
+ *  read over `members` — members subcollections are public-readable, and the
+ *  collection-group query is authorized by the /{path=**}/members rule. */
 export async function getMyLeagueIds(uid: string): Promise<Set<string>> {
   const ids = new Set<string>();
   const snap = await getDocs(query(collectionGroup(db, "members"), where("uid", "==", uid)));
@@ -51,6 +53,19 @@ export async function getMyLeagueIds(uid: string): Promise<Set<string>> {
     if (leagueDoc?.parent.id === "leagues") ids.add(leagueDoc.id);
   }
   return ids;
+}
+
+/** Fetch league docs by id (chunked into `in` queries of 10). Used for the
+ *  "My leagues" list so it isn't limited by getAllLeagues()'s newest-100 cap. */
+export async function getLeaguesByIds(ids: string[]): Promise<League[]> {
+  if (ids.length === 0) return [];
+  const out: League[] = [];
+  for (let i = 0; i < ids.length; i += 10) {
+    const chunk = ids.slice(i, i + 10);
+    const snap = await getDocs(query(leaguesCollection(), where(documentId(), "in", chunk)));
+    for (const d of snap.docs) out.push(d.data() as League);
+  }
+  return out;
 }
 
 export function slugifyLeague(name: string): string {

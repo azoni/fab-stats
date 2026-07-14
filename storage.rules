@@ -95,10 +95,16 @@ service firebase.storage {
         );
     }
 
-    // League banners: public read, authenticated write with size limits
+    // League banners: public read; only the league organizer (or admin) may
+    // upload/replace/delete, so a random signed-in user can't grief another
+    // league's banner. (Storage rules can read Firestore — see adminConfig.)
     match /league-images/banners/{leagueId}/{fileName} {
       allow read: if true;
       allow write: if signedIn()
+        && (
+          isAdmin()
+          || firestore.get(/databases/(default)/documents/leagues/$(leagueId)).data.organizerUid == request.auth.uid
+        )
         && (
           request.resource == null
           || validImageUpload(8 * 1024 * 1024)

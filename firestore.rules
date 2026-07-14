@@ -141,6 +141,15 @@ service cloud.firestore {
       allow read: if isAdmin();
     }
 
+    // Collection-group reads over member docs (e.g. getMyLeagueIds via
+    // collectionGroup(db, "members")). Every anchored members subcollection
+    // (teams/groups/leagues) is already public-read, so this only authorizes the
+    // group query — it adds no new exposure. Writes stay governed by the anchored
+    // per-collection rules.
+    match /{path=**}/members/{memberId} {
+      allow read: if true;
+    }
+
     match /users/{userId}/matches/{matchId} {
       // Owner can read their own matches
       allow read: if request.auth != null && request.auth.uid == userId;
