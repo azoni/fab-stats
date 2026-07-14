@@ -226,6 +226,12 @@ export async function batchUpdateMatchesFirestore(
     if (v !== undefined) clean[k] = v;
     else clean[k] = deleteField(); // Remove field from Firestore document
   }
+  // Sanitize/clear a venue when one is being set (mirror the other write paths).
+  if (typeof clean.venue === "string") {
+    const cv = sanitizeVenueForWrite(clean.venue);
+    if (cv) clean.venue = cv;
+    else clean.venue = deleteField();
+  }
   const batchSize = 500;
   for (let i = 0; i < matchIds.length; i += batchSize) {
     const batch = writeBatch(db);
