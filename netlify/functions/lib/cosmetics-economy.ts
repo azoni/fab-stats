@@ -32,10 +32,17 @@ export function coinsForMatchCount(n: number): number {
   return c;
 }
 
-/** One-time payout for already-earned achievements, weighted by rarity. */
+/** One-time payout for already-earned achievements, weighted by rarity.
+ *  De-duplicates ids: earnedAchievements/main is a client-writable cache, so a
+ *  user could stuff `ids` with repeats of a real (e.g. legendary) id. A Set caps
+ *  the payout at the true one-time value — each real achievement counts once,
+ *  unknown ids count zero. (The match-count input is bounded by the live count();
+ *  a create-grant-delete of fake matches remains possible but is self-incriminating
+ *  — it floods the user's own public stats/leaderboard — and the currency is
+ *  cosmetic-only, so it's an accepted residual risk for now.) */
 export function coinsForAchievements(ids: string[]): number {
   let total = 0;
-  for (const id of ids) {
+  for (const id of new Set(ids)) {
     const r = ACHIEVEMENT_RARITY[id];
     if (r) total += ACHIEVEMENT_PAYOUT[r];
   }

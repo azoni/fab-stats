@@ -80,6 +80,20 @@ function applyToProfile(profile: UserProfile, item: CosmeticItem): UserProfile {
 }
 
 export function ShopClient() {
+  // Flag gate BEFORE any data hooks, so wallet/inventory/catalog listeners never
+  // open in production (flag off).
+  if (!COSMETICS_ENABLED) {
+    return (
+      <div className="mx-auto max-w-md py-20 text-center">
+        <h1 className="text-xl font-bold text-fab-gold">The Reliquary</h1>
+        <p className="mt-2 text-sm text-fab-muted">Coming soon.</p>
+      </div>
+    );
+  }
+  return <ShopClientInner />;
+}
+
+function ShopClientInner() {
   const { user, profile } = useAuth();
   const { wallet } = useWallet(user?.uid);
   const { catalog, loading } = useCosmeticCatalog();
@@ -96,15 +110,6 @@ export function ShopClient() {
       catalog.filter((i) => i.shopVisible && i.isActive && (tab === "all" || tab === "collection" || i.category === tab)),
     [catalog, tab],
   );
-
-  if (!COSMETICS_ENABLED) {
-    return (
-      <div className="mx-auto max-w-md py-20 text-center">
-        <h1 className="text-xl font-bold text-fab-gold">The Reliquary</h1>
-        <p className="mt-2 text-sm text-fab-muted">Coming soon.</p>
-      </div>
-    );
-  }
 
   if (!user || !profile) {
     return (

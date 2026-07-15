@@ -42,7 +42,9 @@ export function EquippedAvatar({
   const frame = byId.get(profile.selectedAvatarFrameId ?? "");
   const comp = byId.get(profile.selectedCompanionId ?? "");
   return (
-    <div className="relative shrink-0" style={{ width: size, height: size }}>
+    // `isolate` forms a stacking context so the aura's -z-10 backdrop paints
+    // behind the photo but ABOVE the profile card's opaque background.
+    <div className="relative isolate shrink-0" style={{ width: size, height: size }}>
       {aura && <CosmeticPreview item={aura} context="avatar" size={size} />}
       <div className="relative z-10">{children}</div>
       {frame && <CosmeticPreview item={frame} context="avatar" size={size} />}

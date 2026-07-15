@@ -108,7 +108,7 @@ export function CosmeticPreview({
       const el = <AuraCosmetic idPrefix={idPrefix} {...a} />;
       if (context === "avatar") return el;
       return (
-        <div className="relative grid place-items-center" style={{ width: size, height: size }}>
+        <div className="relative isolate grid place-items-center" style={{ width: size, height: size }}>
           {el}
           <div className="relative z-10 rounded-full bg-fab-surface" style={{ width: size * 0.66, height: size * 0.66 }} />
         </div>
