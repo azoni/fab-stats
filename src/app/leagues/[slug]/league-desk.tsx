@@ -8,13 +8,16 @@ import { useMemo, type ReactNode, type CSSProperties } from "react";
 import Link from "next/link";
 import { HeroImg } from "@/components/heroes/HeroImg";
 import {
+  BarChart3,
   CalendarDays,
   Crown,
+  Filter,
   Flame,
   MapPin,
   Swords,
   Target,
   Trophy,
+  Users,
   X,
 } from "lucide-react";
 import { MatchResult, type League, type LeagueMember, type LeagueStandingEntry } from "@/types";
@@ -356,10 +359,10 @@ function Chip({
     <button
       type="button"
       onClick={onClick}
-      className={`rounded-full border px-2.5 py-1 text-[11px] font-bold transition-colors ${
+      className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-bold transition-all active:scale-[0.97] ${
         active
-          ? "border-fab-gold bg-fab-gold/15 text-fab-gold"
-          : "border-fab-border/60 bg-fab-bg/60 text-fab-dim hover:text-fab-text"
+          ? "border-fab-gold/70 bg-fab-gold/15 text-fab-gold ring-1 ring-inset ring-fab-gold/20"
+          : "border-fab-border/60 bg-fab-bg/60 text-fab-dim hover:border-fab-border hover:text-fab-text"
       }`}
     >
       {children}
@@ -367,88 +370,139 @@ function Chip({
   );
 }
 
-export function LeagueFilterBar({
+export function LeagueControlBar({
+  tab,
+  setTab,
+  memberCount,
   options,
   filters,
   setFilters,
   summary,
+  filtersActive,
+  leagueActive,
+  poolReady,
 }: {
+  tab: "standings" | "meta" | "players";
+  setTab: (t: "standings" | "meta" | "players") => void;
+  memberCount: number;
   options: FilterOptions;
   filters: LeagueFilters;
   setFilters: (f: LeagueFilters) => void;
   summary: { matches: number; players: number; events: number };
+  filtersActive: boolean;
+  leagueActive: boolean;
+  poolReady: boolean;
 }) {
   const toggle = (key: "stores" | "formats" | "eventTypes", value: string) => {
     const cur = new Set(filters[key] || []);
     cur.has(value) ? cur.delete(value) : cur.add(value);
     setFilters({ ...filters, [key]: [...cur] });
   };
-  const active =
-    !!filters.stores?.length ||
-    !!filters.formats?.length ||
-    !!filters.eventTypes?.length ||
-    !!filters.startDate ||
-    !!filters.endDate;
-
   const showStores = options.stores.length > 1;
   const showFormats = options.formats.length > 1;
   const showTypes = options.eventTypes.length > 1;
-  if (!showStores && !showFormats && !showTypes) {
-    return (
-      <div className="z-20 md:sticky md:top-0 -mx-4 border-b border-fab-border bg-fab-surface/90 px-4 py-2 text-[11px] text-fab-dim backdrop-blur sm:-mx-6 sm:px-6">
-        <span className="tabular-nums">
-          {summary.matches} matches · {summary.players} players · {summary.events} events
-        </span>
-      </div>
-    );
-  }
+  const showFilterRow = showStores || showFormats || showTypes;
+
+  const TABS: { id: "standings" | "meta" | "players"; label: string; Icon: typeof Trophy; count?: number }[] = [
+    { id: "standings", label: "Standings", Icon: Trophy },
+    { id: "meta", label: "Meta", Icon: BarChart3 },
+    { id: "players", label: "Players", Icon: Users, count: memberCount },
+  ];
 
   return (
-    <div className="z-20 md:sticky md:top-0 -mx-4 border-b border-fab-border bg-fab-surface/90 px-4 py-2.5 backdrop-blur sm:-mx-6 sm:px-6">
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-        {showStores && (
-          <FilterGroup label="Store">
-            {options.stores.map((s) => (
-              <Chip key={s.slug} active={!!filters.stores?.includes(s.slug)} onClick={() => toggle("stores", s.slug)}>
-                {s.name} <span className="opacity-60">{s.count}</span>
-              </Chip>
-            ))}
-          </FilterGroup>
+    <nav aria-label="League views and filters" className="mt-4 overflow-hidden rounded-xl border border-fab-border bg-fab-surface">
+      {/* Row 1 — segmented tabs (left) + live summary (right) */}
+      <div className="flex items-center justify-between gap-2 p-2">
+        <div role="tablist" aria-label="League views" className="flex items-center gap-1 overflow-x-auto rounded-lg bg-fab-bg/60 p-1 ring-1 ring-inset ring-fab-border/40">
+          {TABS.map(({ id, label, Icon, count }) => {
+            const active = tab === id;
+            return (
+              <button
+                key={id}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                aria-label={label}
+                onClick={() => setTab(id)}
+                className={`group relative inline-flex shrink-0 items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[13px] font-bold transition-all duration-200 active:scale-[0.97] ${
+                  active
+                    ? "bg-fab-surface text-fab-gold shadow-sm ring-1 ring-inset ring-fab-gold/25 before:absolute before:inset-x-3 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-fab-gold/70 before:to-transparent"
+                    : "text-fab-dim hover:bg-fab-surface/60 hover:text-fab-text"
+                }`}
+              >
+                <Icon className="h-4 w-4 sm:h-3.5 sm:w-3.5" strokeWidth={2.5} />
+                <span className="hidden sm:inline">{label}</span>
+                {typeof count === "number" && (
+                  <span className={`ml-0.5 rounded px-1 text-[11px] font-black tabular-nums ${active ? "bg-fab-gold/20 text-fab-gold" : "bg-fab-border/50 text-fab-muted"}`}>{count}</span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {poolReady && (
+          <div className="flex shrink-0 items-center gap-1.5 pr-0.5 text-xs tabular-nums text-fab-dim">
+            {leagueActive && <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" title="Live" />}
+            <Swords className="h-3.5 w-3.5 text-fab-dim/70" />
+            <span className={filtersActive ? "font-bold text-fab-gold" : "text-fab-text"}>{summary.matches}</span>
+            <span className="hidden text-fab-dim sm:inline">matches</span>
+            <span className="text-fab-border">·</span>
+            <span className="text-fab-text">{summary.players}</span>
+            <span className="hidden text-fab-dim sm:inline">players</span>
+            {summary.events > 1 && (
+              <>
+                <span className="text-fab-border">·</span>
+                <span className="text-fab-text">{summary.events}</span>
+                <span className="hidden text-fab-dim sm:inline">events</span>
+              </>
+            )}
+          </div>
         )}
-        {showFormats && (
-          <FilterGroup label="Format">
-            {options.formats.map((f) => (
-              <Chip key={f.value} active={!!filters.formats?.includes(f.value)} onClick={() => toggle("formats", f.value)}>
-                {f.value} <span className="opacity-60">{f.count}</span>
-              </Chip>
-            ))}
-          </FilterGroup>
-        )}
-        {showTypes && (
-          <FilterGroup label="Event">
-            {options.eventTypes.map((t) => (
-              <Chip key={t.value} active={!!filters.eventTypes?.includes(t.value)} onClick={() => toggle("eventTypes", t.value)}>
-                {t.value} <span className="opacity-60">{t.count}</span>
-              </Chip>
-            ))}
-          </FilterGroup>
-        )}
-        <div className="ml-auto flex items-center gap-3 text-[11px] text-fab-dim">
-          <span className="tabular-nums">
-            {summary.matches} matches · {summary.players} players · {summary.events} events
-          </span>
-          {active && (
+      </div>
+
+      {/* Row 2 — filters, only when a dimension has >1 option */}
+      {showFilterRow && (
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 border-t border-fab-border/60 bg-fab-bg/20 px-3 py-2">
+          <Filter className="h-3.5 w-3.5 shrink-0 text-fab-dim" />
+          {showStores && (
+            <FilterGroup label="Store">
+              {options.stores.map((s) => (
+                <Chip key={s.slug} active={!!filters.stores?.includes(s.slug)} onClick={() => toggle("stores", s.slug)}>
+                  {s.name} <span className="tabular-nums opacity-60">{s.count}</span>
+                </Chip>
+              ))}
+            </FilterGroup>
+          )}
+          {showFormats && (
+            <FilterGroup label="Format">
+              {options.formats.map((f) => (
+                <Chip key={f.value} active={!!filters.formats?.includes(f.value)} onClick={() => toggle("formats", f.value)}>
+                  {f.value} <span className="tabular-nums opacity-60">{f.count}</span>
+                </Chip>
+              ))}
+            </FilterGroup>
+          )}
+          {showTypes && (
+            <FilterGroup label="Event">
+              {options.eventTypes.map((t) => (
+                <Chip key={t.value} active={!!filters.eventTypes?.includes(t.value)} onClick={() => toggle("eventTypes", t.value)}>
+                  {t.value} <span className="tabular-nums opacity-60">{t.count}</span>
+                </Chip>
+              ))}
+            </FilterGroup>
+          )}
+          {filtersActive && (
             <button
               type="button"
               onClick={() => setFilters({})}
-              className="inline-flex items-center gap-1 font-bold text-fab-muted hover:text-fab-gold"
+              className="group ml-auto inline-flex items-center gap-1 text-[11px] font-bold text-fab-muted transition-colors hover:text-fab-gold"
             >
-              <X className="h-3 w-3" /> Reset
+              <X className="h-3 w-3 transition-transform group-hover:rotate-90" /> Reset
             </button>
           )}
         </div>
-      </div>
-    </div>
+      )}
+    </nav>
   );
 }
 
