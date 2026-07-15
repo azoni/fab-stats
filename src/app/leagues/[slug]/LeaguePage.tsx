@@ -453,7 +453,7 @@ export default function LeaguePage() {
                     })}
                   </span>
                 )}
-                {(isMember || isOrganizer) && (
+                {(isMember || canEdit) && (
                   <button
                     type="button"
                     onClick={handleRecompute}
