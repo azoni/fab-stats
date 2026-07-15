@@ -801,6 +801,23 @@ body::after {
   }
 }
 
+/* ── Cosmetics: the ONE aura animation (legendary auras only). Static by
+   default so screenshots/OG images are identical; only spins for users who
+   have not requested reduced motion. ── */
+.aura-spin {
+  transform-origin: 50% 50%;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .aura-spin {
+    animation: aura-rotate 60s linear infinite;
+  }
+}
+@keyframes aura-rotate {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 /* ── Bold card borders (icon art outline style) ── */
 
 [class*="bg-fab-surface"][class*="border-fab-border"]:not(nav):not(td):not(tr) {

@@ -18,6 +18,7 @@ import { getDefaultTheme, saveDefaultTheme, resetAllUserThemes, THEME_OPTIONS, t
 import { loadBotAnalytics, loadDailyUsage, loadCommandLog, type BotAnalytics, type DailyUsage, type CommandLogEntry } from "@/lib/discord-analytics";
 import { ADMIN_BADGES } from "@/lib/badges";
 import { BackgroundCatalogManager } from "@/components/admin/BackgroundCatalogManager";
+import { CosmeticCatalogManager } from "@/components/admin/CosmeticCatalogManager";
 import { EventTypeManager } from "@/components/admin/EventTypeManager";
 import { StoreAliasManager } from "@/components/admin/StoreAliasManager";
 import { MatchEditor } from "@/components/admin/MatchEditor";
@@ -564,6 +565,8 @@ export default function AdminPage() {
           <EventTypeManager />
 
           <BackgroundCatalogManager />
+
+          <CosmeticCatalogManager />
         </div>
       )}
 

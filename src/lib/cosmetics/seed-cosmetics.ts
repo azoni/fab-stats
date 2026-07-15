@@ -1,0 +1,70 @@
+/**
+ * Seed catalog for the cosmetics shop — the "Heraldic Reliquary" set. 33
+ * code-rendered SKUs across the 4 new categories × all rarities, plus 9 secondary
+ * SKUs that reuse existing dormant systems. Seeded into Firestore via
+ * `seedCosmeticCatalog(SEED_COSMETICS)` from the admin catalog manager.
+ *
+ * Prices follow PRICE_BY_RARITY (300/800/2000/5000/12000). sortOrder = category
+ * block × 100 + row. Gacha: primary common/uncommon/rare → `standard`,
+ * epic/legendary → `premium` (weights rarity-inverse); secondary = direct-buy only.
+ * Everything is also individually buyable — RNG is opt-in, never a paywall.
+ */
+import type { CosmeticItem } from "./catalog";
+
+export const SEED_COSMETICS: CosmeticItem[] = [
+  // ── avatarFrame ──
+  { id: "frame-keyline-bronze", category: "avatarFrame", rarity: "common", name: "Bronze Keyline", description: "A cleanly bevelled bronze ring.", price: 300, previewKind: "avatarFrame", previewValue: "keyline|bronze|1", gachaPool: "standard", gachaWeight: 1000, isActive: true, shopVisible: true, sortOrder: 101 },
+  { id: "frame-studded-bronze", category: "avatarFrame", rarity: "common", name: "Riveted Bronze", description: "A bronze band pinned with four studs.", price: 300, previewKind: "avatarFrame", previewValue: "studded|bronze|1", gachaPool: "standard", gachaWeight: 1000, isActive: true, shopVisible: true, sortOrder: 102 },
+  { id: "frame-rope-silver", category: "avatarFrame", rarity: "uncommon", name: "Corded Silver", description: "A twisted silver cord ring.", price: 800, previewKind: "avatarFrame", previewValue: "rope|silver|2", gachaPool: "standard", gachaWeight: 400, isActive: true, shopVisible: true, sortOrder: 103 },
+  { id: "frame-laurel-silver", category: "avatarFrame", rarity: "uncommon", name: "Silver Laurel", description: "Victory laurels struck in silver.", price: 800, previewKind: "avatarFrame", previewValue: "laurel|silver|2", gachaPool: "standard", gachaWeight: 400, isActive: true, shopVisible: true, sortOrder: 104 },
+  { id: "frame-filigree-gold", category: "avatarFrame", rarity: "rare", name: "Gilded Filigree", description: "Gold scrollwork beneath a star crest.", price: 2000, previewKind: "avatarFrame", previewValue: "filigree|gold|3", gachaPool: "standard", gachaWeight: 150, isActive: true, shopVisible: true, sortOrder: 105 },
+  { id: "frame-heraldic-gold", category: "avatarFrame", rarity: "rare", name: "Golden Escutcheon", description: "A crested gold ring with a shield notch.", price: 2000, previewKind: "avatarFrame", previewValue: "heraldic|gold|3", gachaPool: "standard", gachaWeight: 150, isActive: true, shopVisible: true, sortOrder: 106 },
+  { id: "frame-runic-mythic", category: "avatarFrame", rarity: "epic", name: "Runed Aether", description: "A mythic band inscribed with cardinal runes.", price: 5000, previewKind: "avatarFrame", previewValue: "runic|mythic|3", gachaPool: "premium", gachaWeight: 40, isActive: true, shopVisible: true, sortOrder: 107 },
+  { id: "frame-filigree-mythic", category: "avatarFrame", rarity: "epic", name: "Arcane Filigree", description: "Voidsteel scrollwork, crown-crested.", price: 5000, previewKind: "avatarFrame", previewValue: "filigree|mythic|4", gachaPool: "premium", gachaWeight: 40, isActive: true, shopVisible: true, sortOrder: 108 },
+  { id: "frame-sovereign-gold", category: "avatarFrame", rarity: "legendary", name: "Sovereign's Crown", description: "A crowned gold ring, twelve studs set as jewels.", price: 12000, previewKind: "avatarFrame", previewValue: "heraldic|gold|4|inlaid", gachaPool: "premium", gachaWeight: 8, isActive: true, shopVisible: true, sortOrder: 109 },
+
+  // ── companion ──
+  { id: "comp-fleur-bronze", category: "companion", rarity: "common", name: "Bronze Fleur", description: "A fleur-de-lis struck on a bronze roundel.", price: 300, previewKind: "companion", previewValue: "fleur|bronze|roundel", gachaPool: "standard", gachaWeight: 1000, isActive: true, shopVisible: true, sortOrder: 201 },
+  { id: "comp-rose-bronze", category: "companion", rarity: "common", name: "Bronze Rose", description: "A heraldic rose on a bronze roundel.", price: 300, previewKind: "companion", previewValue: "rose|bronze|roundel", gachaPool: "standard", gachaWeight: 1000, isActive: true, shopVisible: true, sortOrder: 202 },
+  { id: "comp-crescent-silver", category: "companion", rarity: "uncommon", name: "Silver Crescent", description: "A crescent moon on a silver roundel.", price: 800, previewKind: "companion", previewValue: "crescent|silver|roundel", gachaPool: "standard", gachaWeight: 400, isActive: true, shopVisible: true, sortOrder: 203 },
+  { id: "comp-wolf-silver", category: "companion", rarity: "uncommon", name: "Silver Wolf", description: "A wolf's head erased on a studded roundel.", price: 800, previewKind: "companion", previewValue: "wolf|silver|studded", gachaPool: "standard", gachaWeight: 400, isActive: true, shopVisible: true, sortOrder: 204 },
+  { id: "comp-stag-gold", category: "companion", rarity: "rare", name: "Golden Stag", description: "A stag's head on a studded gold roundel.", price: 2000, previewKind: "companion", previewValue: "stag|gold|studded", gachaPool: "standard", gachaWeight: 150, isActive: true, shopVisible: true, sortOrder: 205 },
+  { id: "comp-sun-gold", category: "companion", rarity: "rare", name: "Gilded Sun", description: "A sun-in-splendour on a gold roundel.", price: 2000, previewKind: "companion", previewValue: "sun|gold|studded", gachaPool: "standard", gachaWeight: 150, isActive: true, shopVisible: true, sortOrder: 206 },
+  { id: "comp-lion-mythic", category: "companion", rarity: "epic", name: "Aether Lion", description: "A lion passant on a mythic escutcheon.", price: 5000, previewKind: "companion", previewValue: "lion|mythic|escutcheon", gachaPool: "premium", gachaWeight: 40, isActive: true, shopVisible: true, sortOrder: 207 },
+  { id: "comp-phoenix-mythic", category: "companion", rarity: "epic", name: "Voidfire Phoenix", description: "A phoenix displayed on a mythic escutcheon.", price: 5000, previewKind: "companion", previewValue: "phoenix|mythic|escutcheon", gachaPool: "premium", gachaWeight: 40, isActive: true, shopVisible: true, sortOrder: 208 },
+  { id: "comp-dragon-sovereign", category: "companion", rarity: "legendary", name: "Sovereign Dragon", description: "A dragon rampant, inlaid on an escutcheon.", price: 12000, previewKind: "companion", previewValue: "dragon|mythic|escutcheon|inlaid", gachaPool: "premium", gachaWeight: 8, isActive: true, shopVisible: true, sortOrder: 209 },
+
+  // ── aura ──
+  { id: "aura-halo-bronze", category: "aura", rarity: "common", name: "Ember Halo", description: "A soft bronze halo.", price: 300, previewKind: "aura", previewValue: "halo|bronze|1", gachaPool: "standard", gachaWeight: 1000, isActive: true, shopVisible: true, sortOrder: 301 },
+  { id: "aura-halo-silver", category: "aura", rarity: "uncommon", name: "Moonlit Halo", description: "A cool silver halo.", price: 800, previewKind: "aura", previewValue: "halo|silver|1", gachaPool: "standard", gachaWeight: 400, isActive: true, shopVisible: true, sortOrder: 302 },
+  { id: "aura-motes-silver", category: "aura", rarity: "uncommon", name: "Silver Motes", description: "A scatter of still silver motes.", price: 800, previewKind: "aura", previewValue: "motes|silver|2", gachaPool: "standard", gachaWeight: 400, isActive: true, shopVisible: true, sortOrder: 303 },
+  { id: "aura-motes-gold", category: "aura", rarity: "rare", name: "Emberfall", description: "Faint gold sparks held at rest.", price: 2000, previewKind: "aura", previewValue: "motes|gold|2", gachaPool: "standard", gachaWeight: 150, isActive: true, shopVisible: true, sortOrder: 304 },
+  { id: "aura-rays-gold", category: "aura", rarity: "rare", name: "Gilded Radiance", description: "Sixteen engraved gold rays.", price: 2000, previewKind: "aura", previewValue: "rays|gold|2", gachaPool: "standard", gachaWeight: 150, isActive: true, shopVisible: true, sortOrder: 305 },
+  { id: "aura-sunburst-mythic", category: "aura", rarity: "epic", name: "Arcane Sunburst", description: "A mythic sun-in-splendour of alternating rays.", price: 5000, previewKind: "aura", previewValue: "sunburst|mythic|2", gachaPool: "premium", gachaWeight: 40, isActive: true, shopVisible: true, sortOrder: 306 },
+  { id: "aura-corona-gold", category: "aura", rarity: "legendary", name: "Sovereign Corona", description: "An inlaid gold corona that slowly turns.", price: 12000, previewKind: "aura", previewValue: "sunburst|gold|3|inlaid", gachaPool: "premium", gachaWeight: 8, isActive: true, shopVisible: true, sortOrder: 307 },
+
+  // ── nameplate ──
+  { id: "plate-rule-bronze", category: "nameplate", rarity: "common", name: "Bronze Rule", description: "An engraved rule with a centre lozenge.", price: 300, previewKind: "nameplate", previewValue: "rule|bronze|plain", gachaPool: "standard", gachaWeight: 1000, isActive: true, shopVisible: true, sortOrder: 401 },
+  { id: "plate-runes-bronze", category: "nameplate", rarity: "common", name: "Runed Bronze", description: "A bronze plate with rune endcaps.", price: 300, previewKind: "nameplate", previewValue: "plate|bronze|runes", gachaPool: "standard", gachaWeight: 1000, isActive: true, shopVisible: true, sortOrder: 402 },
+  { id: "plate-plain-silver", category: "nameplate", rarity: "uncommon", name: "Silver Plate", description: "A crisp silver plate with a chiselled rim.", price: 800, previewKind: "nameplate", previewValue: "plate|silver|plain", gachaPool: "standard", gachaWeight: 400, isActive: true, shopVisible: true, sortOrder: 403 },
+  { id: "plate-laurel-silver", category: "nameplate", rarity: "uncommon", name: "Silver Laurel Banner", description: "A silver ribbon flanked by laurel.", price: 800, previewKind: "nameplate", previewValue: "banner|silver|laurel", gachaPool: "standard", gachaWeight: 400, isActive: true, shopVisible: true, sortOrder: 404 },
+  { id: "plate-guilloche-gold", category: "nameplate", rarity: "rare", name: "Gilt Guilloche", description: "An engine-turned gold banner.", price: 2000, previewKind: "nameplate", previewValue: "banner|gold|guilloche", gachaPool: "standard", gachaWeight: 150, isActive: true, shopVisible: true, sortOrder: 405 },
+  { id: "plate-diamonds-gold", category: "nameplate", rarity: "rare", name: "Studded Gold Plate", description: "A gold plate set with a lozenge row.", price: 2000, previewKind: "nameplate", previewValue: "plate|gold|diamonds", gachaPool: "standard", gachaWeight: 150, isActive: true, shopVisible: true, sortOrder: 406 },
+  { id: "plate-tablet-mythic", category: "nameplate", rarity: "epic", name: "Arcane Tablet", description: "A mythic stone tablet cut with diamonds.", price: 5000, previewKind: "nameplate", previewValue: "tablet|mythic|diamonds", gachaPool: "premium", gachaWeight: 40, isActive: true, shopVisible: true, sortOrder: 407 },
+  { id: "plate-sovereign-gold", category: "nameplate", rarity: "legendary", name: "Sovereign Standard", description: "A crowned, jewelled gold banner wreathed in laurel.", price: 12000, previewKind: "nameplate", previewValue: "banner|gold|crownlaurel|inlaid", gachaPool: "premium", gachaWeight: 8, isActive: true, shopVisible: true, sortOrder: 408 },
+
+  // ── background (secondary; grantsId → siteBackgroundId) ──
+  { id: "bg-aria-playmat", category: "background", rarity: "common", name: "Aria Playmat", description: "Equip the Aria lore playmat as your profile backdrop.", price: 300, previewKind: "background", previewValue: "playmat-aria", grantsId: "playmat-aria", isActive: true, shopVisible: true, sortOrder: 501 },
+  { id: "bg-arcane-rising", category: "background", rarity: "uncommon", name: "Arcane Rising", description: "Equip the Arcane Rising key art backdrop.", price: 800, previewKind: "background", previewValue: "arcane-rising-key-art", grantsId: "arcane-rising-key-art", isActive: true, shopVisible: true, sortOrder: 502 },
+  { id: "bg-monarch", category: "background", rarity: "rare", name: "Monarch", description: "Equip the Monarch key art backdrop.", price: 2000, previewKind: "background", previewValue: "monarch-key-art", grantsId: "monarch-key-art", isActive: true, shopVisible: true, sortOrder: 503 },
+
+  // ── trophySkin (secondary; grantsId → trophyDesigns[event]=index; inert until earned) ──
+  { id: "trophy-bh-helm", category: "trophySkin", rarity: "uncommon", name: "Battle Helm", description: "Reskin your Battle Hardened trophy (applies once earned).", price: 800, previewKind: "trophySkin", previewValue: "Battle Hardened|1", grantsId: "bh-helm", isActive: true, shopVisible: true, sortOrder: 601 },
+  { id: "trophy-pt-standard", category: "trophySkin", rarity: "rare", name: "War Standard", description: "Reskin your Pro Tour trophy (applies once earned).", price: 2000, previewKind: "trophySkin", previewValue: "Pro Tour|1", grantsId: "pt-standard", isActive: true, shopVisible: true, sortOrder: 602 },
+  { id: "trophy-worlds-crown", category: "trophySkin", rarity: "epic", name: "Celestial Crown", description: "Reskin your Worlds trophy (applies once earned).", price: 5000, previewKind: "trophySkin", previewValue: "Worlds|1", grantsId: "worlds-crown", isActive: true, shopVisible: true, sortOrder: 603 },
+
+  // ── cursor (secondary; grantsId → unlockedCans) ──
+  { id: "cursor-golden", category: "cursor", rarity: "uncommon", name: "Golden Can", description: "A garden cursor that rains liquid gold.", price: 800, previewKind: "cursor", previewValue: "golden", grantsId: "golden", isActive: true, shopVisible: true, sortOrder: 701 },
+  { id: "cursor-crystal", category: "cursor", rarity: "rare", name: "Crystal Can", description: "A translucent teal garden cursor.", price: 2000, previewKind: "cursor", previewValue: "crystal", grantsId: "crystal", isActive: true, shopVisible: true, sortOrder: 702 },
+  { id: "cursor-rainbow", category: "cursor", rarity: "epic", name: "Prismatic Can", description: "A spectral rainbow garden cursor.", price: 5000, previewKind: "cursor", previewValue: "rainbow", grantsId: "rainbow", isActive: true, shopVisible: true, sortOrder: 703 },
+];

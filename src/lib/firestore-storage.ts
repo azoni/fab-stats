@@ -641,7 +641,7 @@ export async function getDiscoverProfiles(
 
 export async function updateProfile(
   userId: string,
-  updates: Partial<Pick<UserProfile, "displayName" | "photoUrl" | "isPublic" | "profileVisibility" | "firstName" | "lastName" | "searchName" | "earnings" | "showNameOnProfiles" | "hideFromSpotlight" | "hideFromFeed" | "hideFromGuests" | "gemId" | "hasDiscoverLinks" | "unlockedCans" | "showcase" | "showcaseSecondary" | "selectedEmblem" | "selectedClassEmblem" | "notificationsEnabled" | "socialLinks" | "borderStyle" | "borderEventType" | "borderPlacement" | "underlineEventType" | "underlinePlacement" | "selectedBadgeIds" | "siteBackgroundId" | "needsRecompute" | "trophyDesigns">>
+  updates: Partial<Pick<UserProfile, "displayName" | "photoUrl" | "isPublic" | "profileVisibility" | "firstName" | "lastName" | "searchName" | "earnings" | "showNameOnProfiles" | "hideFromSpotlight" | "hideFromFeed" | "hideFromGuests" | "gemId" | "hasDiscoverLinks" | "unlockedCans" | "showcase" | "showcaseSecondary" | "selectedEmblem" | "selectedClassEmblem" | "notificationsEnabled" | "socialLinks" | "borderStyle" | "borderEventType" | "borderPlacement" | "underlineEventType" | "underlinePlacement" | "selectedBadgeIds" | "siteBackgroundId" | "selectedAvatarFrameId" | "selectedCompanionId" | "selectedAuraId" | "selectedNameplateId" | "needsRecompute" | "trophyDesigns">>
 ): Promise<void> {
   const profileRef = doc(db, "users", userId, "profile", "main");
   // Strip undefined values — Firestore rejects them
@@ -654,7 +654,7 @@ export async function updateProfile(
   }
   await updateDoc(profileRef, clean);
 
-  const DISCOVER_FIELDS = ["isPublic", "profileVisibility", "hideFromGuests", "socialLinks", "displayName", "photoUrl", "selectedEmblem", "selectedClassEmblem", "borderStyle", "borderEventType", "borderPlacement", "underlineEventType", "underlinePlacement", "selectedBadgeIds", "trophyDesigns"] as const;
+  const DISCOVER_FIELDS = ["isPublic", "profileVisibility", "hideFromGuests", "socialLinks", "displayName", "photoUrl", "selectedEmblem", "selectedClassEmblem", "borderStyle", "borderEventType", "borderPlacement", "underlineEventType", "underlinePlacement", "selectedBadgeIds", "trophyDesigns", "selectedAvatarFrameId", "selectedCompanionId", "selectedAuraId", "selectedNameplateId"] as const;
   if (DISCOVER_FIELDS.some((field) => field in updates)) {
     invalidateDiscoverProfilesCache();
   }
