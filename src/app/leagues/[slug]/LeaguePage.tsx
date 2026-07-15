@@ -32,7 +32,7 @@ import {
 } from "@/lib/leagues-insights";
 import {
   Marquee,
-  LeagueFilterBar,
+  LeagueControlBar,
   Podium,
   BroadcastStandings,
   StorylineCards,
@@ -443,35 +443,21 @@ export default function LeaguePage() {
         />
       )}
 
-      {pool && (
-        <div className="mt-4">
-          <LeagueFilterBar
-            options={filterOptions}
-            filters={filters}
-            setFilters={setFilters}
-            summary={filterSummary}
-          />
-        </div>
-      )}
-
-      {/* Tabs */}
-      <div className="mt-4 flex gap-1 overflow-x-auto border-b border-fab-border">
-        {(["standings", "meta", "players"] as const).map((t) => (
-          <button
-            key={t}
-            type="button"
-            onClick={() => setLeagueTab(t)}
-            className={`px-3 py-2 text-sm font-semibold uppercase tracking-wide transition-colors ${
-              leagueTab === t ? "border-b-2 border-fab-gold text-fab-gold" : "text-fab-muted hover:text-fab-text"
-            }`}
-          >
-            {t === "standings" ? "Standings" : t === "meta" ? "Meta" : `Players (${members.length})`}
-          </button>
-        ))}
-      </div>
+      <LeagueControlBar
+        tab={leagueTab}
+        setTab={setLeagueTab}
+        memberCount={members.length}
+        options={filterOptions}
+        filters={filters}
+        setFilters={setFilters}
+        summary={filterSummary}
+        filtersActive={filtersActive}
+        leagueActive={leagueActive}
+        poolReady={!!pool}
+      />
 
       {leagueTab === "standings" && (
-        <section className="mt-4 space-y-4">
+        <section className="mt-5 space-y-4">
           <div className="flex items-center justify-between gap-2">
             <h2 className="text-lg font-bold text-fab-gold">
               Standings{filtersActive && <span className="ml-1 text-xs font-normal text-fab-dim">(filtered)</span>}
@@ -525,7 +511,7 @@ export default function LeaguePage() {
       )}
 
       {leagueTab === "meta" && (
-        <section className="mt-4 space-y-5">
+        <section className="mt-5 space-y-5">
           {!pool ? (
             <p className="text-sm text-fab-muted">Loading match data…</p>
           ) : filteredMatches.length === 0 ? (
@@ -554,7 +540,7 @@ export default function LeaguePage() {
       )}
 
       {leagueTab === "players" && (
-        <section className="mt-4 space-y-5">
+        <section className="mt-5 space-y-5">
           {isOrganizer && (
             <JoinRequestsPanel requests={joinRequests} onApprove={handleApprove} onReject={handleRejectRequest} />
           )}
