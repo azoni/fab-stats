@@ -6,7 +6,7 @@
  */
 import { getAdminDb } from "./firebase-admin.ts";
 import { verifyFirebaseToken } from "./verify-auth.ts";
-import { reconcileWallet, purgeWallet, purchaseCosmetic } from "./lib/cosmetics-economy.ts";
+import { reconcileWallet, purgeWallet, purchaseCosmetic, gachaPull } from "./lib/cosmetics-economy.ts";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -24,6 +24,7 @@ function json(data: unknown, status = 200) {
 interface WalletRequestBody {
   action?: string;
   itemId?: string;
+  poolId?: string;
 }
 
 export default async function handler(req: Request) {
@@ -59,6 +60,11 @@ export default async function handler(req: Request) {
         // Client-facing outcomes (insufficient/owned/etc.) return 200 with ok:false
         // so the client can show a friendly message instead of treating it as an error.
         return json(await purchaseCosmetic(db, auth.uid, itemId));
+      }
+      case "gacha": {
+        const poolId = typeof body.poolId === "string" ? body.poolId.trim() : "";
+        if (!poolId || poolId.length > 40) return json({ ok: false, error: "invalid_pool" }, 400);
+        return json(await gachaPull(db, auth.uid, poolId));
       }
       case "deleteAccount": {
         // Called during account deletion; the caller can only purge their OWN

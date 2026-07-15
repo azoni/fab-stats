@@ -19,11 +19,13 @@ import { CoinBalance } from "@/components/cosmetics/CoinBalance";
 import { EquippedAvatar, NameWithPlate } from "@/components/cosmetics/EquippedAvatar";
 import { ShopCard } from "@/components/shop/ShopCard";
 import { CollectionPanel } from "@/components/shop/CollectionPanel";
+import { GachaReliquary } from "@/components/shop/GachaReliquary";
 
-type Tab = "all" | CosmeticCategory | "collection";
+type Tab = "all" | CosmeticCategory | "collection" | "reliquary";
 
 const TABS: { key: Tab; label: string }[] = [
   { key: "all", label: "All" },
+  { key: "reliquary", label: "✦ Reliquary" },
   { key: "avatarFrame", label: "Frames" },
   { key: "companion", label: "Companions" },
   { key: "aura", label: "Auras" },
@@ -202,10 +204,8 @@ function ShopClientInner() {
         <div>
           {loading && catalog.length === 0 ? (
             <p className="py-12 text-center text-sm text-fab-dim">Loading the Reliquary…</p>
-          ) : catalog.length === 0 ? (
-            <p className="py-12 text-center text-sm text-fab-dim">
-              The catalog is empty. An admin can seed it from the admin page.
-            </p>
+          ) : tab === "reliquary" ? (
+            <GachaReliquary catalog={catalog} wallet={wallet} />
           ) : tab === "collection" ? (
             <CollectionPanel
               catalog={catalog}

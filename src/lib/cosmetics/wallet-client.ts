@@ -13,6 +13,7 @@ export interface Wallet {
   lifetimeEarned: number;
   lifetimeSpent: number;
   pullCount: number;
+  pullsSinceRarePlus: number;
 }
 
 async function callWallet(
@@ -62,6 +63,38 @@ export async function purchaseCosmetic(itemId: string): Promise<PurchaseOutcome>
     error: r.error as PurchaseOutcome["error"],
     balance: Number(r.balance ?? -1),
     itemId: typeof r.itemId === "string" ? r.itemId : undefined,
+  };
+}
+
+// Gacha config (mirrors the server constants in cosmetics-economy.ts).
+export const GACHA_PULL_COST = 500;
+export const GACHA_PITY_THRESHOLD = 10;
+export const GACHA_DUPE_REFUND_PCT = 0.4;
+
+export interface GachaOutcome {
+  ok: boolean;
+  error?: "insufficient" | "empty_pool" | "invalid_pool";
+  itemId?: string;
+  rarity?: "common" | "uncommon" | "rare" | "epic" | "legendary";
+  duplicate?: boolean;
+  refund?: number;
+  balance: number;
+  pity?: boolean;
+}
+
+/** One gacha pull from a pool. Server draws + grants; the client only reveals. */
+export async function gachaPull(poolId: string): Promise<GachaOutcome> {
+  const r = await callWallet("gacha", { poolId }, { allowFalse: true });
+  if (!r) return { ok: false, error: "invalid_pool", balance: -1 };
+  return {
+    ok: r.ok === true,
+    error: r.error as GachaOutcome["error"],
+    itemId: typeof r.itemId === "string" ? r.itemId : undefined,
+    rarity: r.rarity as GachaOutcome["rarity"],
+    duplicate: r.duplicate === true,
+    refund: Number(r.refund ?? 0),
+    balance: Number(r.balance ?? -1),
+    pity: r.pity === true,
   };
 }
 
