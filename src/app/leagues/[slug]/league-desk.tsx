@@ -4,7 +4,7 @@
  * Every module reads the same in-memory match pool (see leagues-insights.ts), so
  * one filter bar re-casts the whole page with no extra Firestore reads.
  */
-import { useMemo, type ReactNode } from "react";
+import { useMemo, type ReactNode, type CSSProperties } from "react";
 import Link from "next/link";
 import { HeroImg } from "@/components/heroes/HeroImg";
 import {
@@ -12,13 +12,12 @@ import {
   Crown,
   Flame,
   MapPin,
-  Store as StoreIcon,
   Swords,
   Target,
-  Users,
+  Trophy,
   X,
 } from "lucide-react";
-import { MatchResult, type League, type LeagueStandingEntry } from "@/types";
+import { MatchResult, type League, type LeagueMember, type LeagueStandingEntry } from "@/types";
 import { type LeagueMatchupData } from "@/lib/leagues-scoring";
 import {
   type PooledMatch,
@@ -137,17 +136,32 @@ const winRatePct = (e: { wins: number; losses: number; draws: number }) => {
 
 // ── Marquee header ────────────────────────────────────────────────────────────
 
+function StatCell({ label, value, children }: { label: string; value: string; children?: ReactNode }) {
+  return (
+    <div className="px-4 py-2.5">
+      <p className="flex items-center text-lg font-black tabular-nums leading-none text-fab-text">
+        {value}
+        {children}
+      </p>
+      <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-fab-dim">{label}</p>
+    </div>
+  );
+}
+
 export function Marquee({
   league,
   organizerName,
   memberCount,
+  members,
+  matchCount,
   leader,
-  leaderHero,
   actions,
 }: {
   league: League;
   organizerName: string;
   memberCount: number;
+  members?: LeagueMember[];
+  matchCount?: number;
   leader: LeagueStandingEntry | null;
   leaderHero?: string;
   actions: ReactNode;
@@ -155,90 +169,174 @@ export function Marquee({
   const today = new Date().toISOString().slice(0, 10);
   const status = statusInfo(league, today);
   const prog = seasonProgress(league, today);
-  const accent = league.accentColor || undefined;
-  const bg = league.bannerUrl
-    ? { backgroundImage: `url(${league.bannerUrl})` }
-    : { backgroundImage: `linear-gradient(135deg, ${accent || "#3b3320"}40, var(--fab-bg, #0c0c0f))` };
+  // Accent: default to the theme token (so alternate themes stay coherent);
+  // clamp a custom accent toward gold and never use it for text.
+  const accent = league.accentColor
+    ? `color-mix(in srgb, ${league.accentColor} 82%, var(--color-fab-gold, #e0b34d))`
+    : "var(--color-fab-gold, #e0b34d)";
+  // Up to two initials for the crest/watermark (unicode-safe).
+  const initials =
+    (league.name.trim().split(/\s+/).filter((w) => /[\p{L}\p{N}]/u.test(w)).slice(0, 2).map((w) => [...w][0]).join("") ||
+      [...league.name.trim()].slice(0, 2).join("")).toUpperCase();
+  const locationStr = [league.city, league.region, league.country].filter(Boolean).join(", ");
+  const patternId = `ley-${league.id}`;
+  const hasBanner = !!league.bannerUrl;
+
+  // progress ring geometry (r=22 → C≈138.2), and the bottom meter width.
+  const R = 22;
+  const C = 2 * Math.PI * R;
+  const dash = C * (1 - Math.min(1, Math.max(0, prog.pct / 100)));
+  const seasonCaption =
+    status.label === "Upcoming"
+      ? "Starts soon"
+      : status.label === "Final"
+        ? "Season complete"
+        : status.label === "Draft"
+          ? "Draft season"
+          : `Week ${prog.week} of ${prog.totalWeeks} · ${prog.pct}%`;
 
   return (
-    <div className="overflow-hidden rounded-xl border border-fab-border bg-fab-surface">
-      <div className="relative h-40 bg-cover bg-center sm:h-56" style={bg}>
-        <div className="absolute inset-0 bg-gradient-to-t from-fab-bg via-fab-bg/70 to-transparent" />
-        <div className="absolute right-3 top-3 z-10">
+    <div
+      className="relative isolate overflow-hidden rounded-2xl border bg-fab-surface"
+      style={{ ["--accent" as string]: accent, borderColor: `color-mix(in srgb, ${accent} 26%, var(--color-fab-border, #2a2a30))` } as CSSProperties}
+    >
+      {/* ── Background: a real photo if one exists, else pure-CSS accent craft ── */}
+      {hasBanner ? (
+        <>
+          <div aria-hidden className="absolute inset-0 -z-30 bg-cover bg-center" style={{ backgroundImage: `url(${league.bannerUrl})` }} />
+          <div aria-hidden className="absolute inset-0 -z-20 bg-gradient-to-t from-fab-bg via-fab-bg/85 to-fab-bg/40" />
+        </>
+      ) : (
+        <>
+          {/* A — accent mesh (never pure black; three blooms give it depth) */}
+          <div aria-hidden className="absolute inset-0 -z-30" style={{ background:
+            "radial-gradient(120% 140% at 6% -25%, color-mix(in srgb,var(--accent) 22%,transparent), transparent 55%)," +
+            "radial-gradient(90% 120% at 100% 0%, color-mix(in srgb,var(--accent) 13%,transparent), transparent 50%)," +
+            "radial-gradient(90% 130% at 92% 122%, color-mix(in srgb,var(--accent) 10%,transparent), transparent 55%)," +
+            "linear-gradient(160deg, var(--color-fab-surface,#17171c), var(--color-fab-bg,#0c0c0f) 76%)" }} />
+          {/* B — leyline lattice, masked to fade out under the title */}
+          <svg aria-hidden className="absolute inset-0 -z-20 h-full w-full opacity-40" style={{
+            color: "color-mix(in srgb,var(--accent) 45%,transparent)",
+            maskImage: "linear-gradient(105deg,transparent 20%,#000 82%)",
+            WebkitMaskImage: "linear-gradient(105deg,transparent 20%,#000 82%)" }}>
+            <defs>
+              <pattern id={patternId} width="34" height="20" patternUnits="userSpaceOnUse">
+                <path d="M0 20 L17 0 L34 20" fill="none" stroke="currentColor" strokeWidth="1" strokeOpacity="0.3" />
+                <circle cx="17" cy="0" r="1" fill="currentColor" fillOpacity="0.45" />
+              </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill={`url(#${patternId})`} />
+          </svg>
+          {/* C — engraved monogram watermark bleeding off the right */}
+          <svg aria-hidden className="pointer-events-none absolute inset-y-0 right-0 -z-20 h-full w-2/3 select-none"
+            viewBox="0 0 120 120" preserveAspectRatio="xMaxYMid meet"
+            style={{ maskImage: "linear-gradient(90deg,transparent,#000 72%)", WebkitMaskImage: "linear-gradient(90deg,transparent,#000 72%)" }}>
+            <text x="116" y="64" textAnchor="end" dominantBaseline="central" fontSize="92" fontWeight="900" letterSpacing="-4" strokeWidth="0.8"
+              style={{ fill: "color-mix(in srgb,var(--accent) 7%,transparent)", stroke: "color-mix(in srgb,var(--accent) 14%,transparent)" }}>{initials}</text>
+          </svg>
+        </>
+      )}
+      {/* top accent sheen (pulses when Live) */}
+      <div aria-hidden className={`absolute inset-x-0 top-0 z-20 h-px ${status.live ? "league-sheen" : ""}`}
+        style={{ background: "linear-gradient(90deg, transparent, color-mix(in srgb,var(--accent) 85%,transparent), transparent)" }} />
+
+      {/* ── Identity row ── */}
+      <div className="relative z-10 flex flex-wrap items-start gap-3 p-4 sm:gap-4 sm:p-5">
+        {/* minted crest tile */}
+        <div className="relative grid h-16 w-16 shrink-0 place-items-center overflow-hidden rounded-2xl sm:h-20 sm:w-20"
+          style={{
+            background:
+              "radial-gradient(120% 120% at 20% 12%, color-mix(in srgb,var(--accent) 55%,transparent), transparent 58%)," +
+              "radial-gradient(130% 130% at 82% 92%, color-mix(in srgb,var(--accent) 28%,#000), transparent 52%)," +
+              "linear-gradient(150deg, color-mix(in srgb,var(--accent) 22%,var(--color-fab-surface,#17171c)), var(--color-fab-bg,#0c0c0f))",
+            boxShadow: "inset 0 1px 0 color-mix(in srgb,var(--accent) 40%,transparent), inset 0 0 0 1px color-mix(in srgb,var(--accent) 18%,transparent)",
+          }}>
+          {league.iconUrl ? (
+            <img src={league.iconUrl} alt="" className="h-full w-full object-cover" />
+          ) : (
+            <span className="text-2xl font-black tracking-tight text-fab-text sm:text-3xl" style={{ textShadow: "0 1px 2px rgba(0,0,0,0.5)" }}>{initials}</span>
+          )}
+        </div>
+
+        {/* title + meta */}
+        <div className="min-w-0 flex-1">
+          <h1 className="text-2xl font-black leading-tight text-fab-text sm:text-3xl">{league.name}</h1>
+          <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-fab-dim">
+            <span>Organized by <span className="font-bold text-fab-text">{organizerName}</span></span>
+            <span className="inline-flex items-center gap-1"><CalendarDays className="h-3.5 w-3.5" /> {formatDateRange(league.startDate, league.endDate)}</span>
+            {locationStr && <span className="inline-flex items-center gap-1"><MapPin className="h-3.5 w-3.5" /> {locationStr}</span>}
+          </div>
+          {league.description && <p className="mt-2 line-clamp-2 max-w-2xl text-xs text-fab-muted">{league.description}</p>}
+        </div>
+
+        {/* status pill + actions */}
+        <div className="flex shrink-0 flex-col items-end gap-2">
           <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-black uppercase tracking-wide ${status.cls}`}>
             {status.live && <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-300" />}
             {status.label}
           </span>
+          {actions}
         </div>
+      </div>
 
-        <div className="absolute inset-x-0 bottom-0 z-10 flex flex-wrap items-end justify-between gap-3 p-4 sm:p-5">
-          <div className="min-w-0">
-            <h1 className="text-2xl font-black leading-tight text-fab-text sm:text-4xl">{league.name}</h1>
-            <div
-              className="mt-1 h-[3px] w-16 rounded-full"
-              style={{ backgroundColor: accent || "var(--fab-gold, #e0b34d)" }}
-            />
-            <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-fab-dim">
-              <span>
-                Organized by <span className="font-bold text-fab-text">{organizerName}</span>
-              </span>
-              <span className="inline-flex items-center gap-1">
-                <CalendarDays className="h-3.5 w-3.5" /> {formatDateRange(league.startDate, league.endDate)}
-              </span>
-              {(league.city || league.region || league.country) && (
-                <span className="inline-flex items-center gap-1">
-                  <MapPin className="h-3.5 w-3.5" />
-                  {[league.city, league.region, league.country].filter(Boolean).join(", ")}
+      {/* ── Stat band ── */}
+      <div className="relative z-10 grid grid-cols-2 border-t border-fab-border/60 bg-fab-bg/40 sm:flex sm:divide-x sm:divide-fab-border/40">
+        <StatCell label="Players" value={String(memberCount)}>
+          {members && members.length > 0 && (
+            <span className="ml-2 inline-flex -space-x-1.5 align-middle">
+              {members.slice(0, 3).map((m) => (
+                <span key={m.uid} className="rounded-full ring-1 ring-fab-bg">
+                  <Avatar photoUrl={m.photoUrl} name={m.displayName} size={16} />
                 </span>
-              )}
-              <span className="inline-flex items-center gap-1">
-                <Users className="h-3.5 w-3.5" /> {memberCount}
-              </span>
-              <span className="inline-flex items-center gap-1">
-                <StoreIcon className="h-3.5 w-3.5" /> {league.storeSlugs.length}
-              </span>
-            </div>
-          </div>
-          <div className="flex shrink-0 flex-col items-end gap-2">{actions}</div>
-        </div>
-      </div>
-
-      {/* Season meter + leader chip */}
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-fab-border/60 px-4 py-2.5">
-        <div className="min-w-[180px] flex-1">
-          <div className="mb-1 flex items-center justify-between text-[10px] uppercase tracking-wider text-fab-dim">
-            <span>
-              {status.label === "Upcoming"
-                ? "Starts soon"
-                : status.label === "Final"
-                  ? "Season complete"
-                  : `Week ${prog.week} of ${prog.totalWeeks}`}
+              ))}
             </span>
-            <span className="tabular-nums">{prog.pct}%</span>
+          )}
+        </StatCell>
+        <StatCell label="Stores" value={String(league.storeSlugs.length)} />
+        {typeof matchCount === "number" && matchCount > 0 && <StatCell label="Matches" value={String(matchCount)} />}
+
+        {/* fused leader + season-progress jewel */}
+        <div className="col-span-2 flex items-center gap-3 border-t border-fab-border/40 px-4 py-2.5 sm:flex-[1.6] sm:border-t-0">
+          <div className="relative h-14 w-14 shrink-0">
+            <svg viewBox="0 0 52 52" className="h-14 w-14 -rotate-90">
+              <circle cx="26" cy="26" r={R} fill="none" strokeWidth="3.5" style={{ stroke: "var(--color-fab-border,#2a2a30)" }} />
+              <circle cx="26" cy="26" r={R} fill="none" strokeWidth="3.5" strokeLinecap="round"
+                strokeDasharray={C} strokeDashoffset={dash}
+                style={{ stroke: "var(--accent)", filter: "drop-shadow(0 0 3px color-mix(in srgb,var(--accent) 60%,transparent))" }} />
+            </svg>
+            <span className="absolute inset-0 grid place-items-center">
+              {leader ? (
+                <Avatar photoUrl={leader.photoUrl} name={leader.displayName} size={36} />
+              ) : (
+                <Trophy className="h-5 w-5 text-fab-dim" />
+              )}
+            </span>
+            {leader && (
+              <Crown className="absolute -top-1 left-1/2 h-3.5 w-3.5 -translate-x-1/2 text-fab-gold"
+                style={{ filter: "drop-shadow(0 1px 1px rgba(0,0,0,0.5))" }} />
+            )}
           </div>
-          <div className="h-1.5 overflow-hidden rounded-full bg-fab-border">
-            <div
-              className="h-full rounded-full"
-              style={{ width: `${prog.pct}%`, backgroundColor: accent || "var(--fab-gold, #e0b34d)" }}
-            />
+          <div className="min-w-0">
+            {leader ? (
+              <Link href={`/player/${leader.username}`} className="block truncate text-sm font-black text-fab-text hover:text-fab-gold">
+                <span className="text-fab-dim">#1 </span>
+                {leader.displayName}
+              </Link>
+            ) : (
+              <p className="text-sm font-bold text-fab-text">Standings pending</p>
+            )}
+            <p className="truncate text-[11px] text-fab-muted">
+              {leader && <span className="font-black text-fab-gold tabular-nums">{leader.points} pts · </span>}
+              {seasonCaption}
+            </p>
           </div>
         </div>
-        {leader && (
-          <Link
-            href={`/player/${leader.username}`}
-            className="inline-flex items-center gap-2 rounded-full border border-fab-border bg-fab-bg/60 py-1 pl-1 pr-3 text-xs hover:border-fab-gold/50"
-          >
-            <CrestedAvatar photoUrl={leader.photoUrl} name={leader.displayName} hero={leaderHero} size={24} />
-            <span className="font-bold text-fab-text">{leader.displayName}</span>
-            <span className="text-fab-dim">leads · </span>
-            <span className="font-black text-fab-gold tabular-nums">{leader.points} pts</span>
-          </Link>
-        )}
       </div>
 
-      {league.description && (
-        <p className="border-t border-fab-border/60 px-4 py-2 text-xs text-fab-muted">{league.description}</p>
-      )}
+      {/* bottom progress meter */}
+      <div aria-hidden className="relative z-10 h-0.5 w-full bg-fab-border/50">
+        <div className="h-full" style={{ width: `${prog.pct}%`, background: "var(--accent)", boxShadow: "0 0 6px color-mix(in srgb,var(--accent) 70%,transparent)" }} />
+      </div>
     </div>
   );
 }

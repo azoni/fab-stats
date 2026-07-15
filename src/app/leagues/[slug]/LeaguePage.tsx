@@ -382,6 +382,8 @@ export default function LeaguePage() {
         league={league}
         organizerName={league.organizerName}
         memberCount={league.memberCount}
+        members={members}
+        matchCount={pool?.matches.length}
         leader={standings?.[0] || null}
         leaderHero={standings?.[0] ? signatureHeroes[standings[0].uid] : undefined}
         actions={
