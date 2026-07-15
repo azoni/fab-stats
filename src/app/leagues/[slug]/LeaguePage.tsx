@@ -165,9 +165,20 @@ export default function LeaguePage() {
   //   • once per league per mount (ref keyed by leagueId — survives league switches);
   //   • only when the snapshot is missing or older than STANDINGS_STALE_MS, so we
   //     don't re-read every member's matches on every view.
+  // Only auto-refresh while the league is live (today inside its window and not a
+  // draft). Draft / future / completed leagues gain no new matches, so an on-view
+  // recompute would just re-read every member's matches for nothing. Manual
+  // Refresh still works for those (e.g. backfilling a finished league).
+  const leagueActive = useMemo(() => {
+    if (!league) return false;
+    const today = new Date().toISOString().slice(0, 10);
+    return league.status !== "draft" && league.startDate <= today && league.endDate >= today;
+  }, [league]);
+
   const autoRefreshedForRef = useRef<string | null>(null);
   useEffect(() => {
     if (!leagueId || !standingsLoaded) return;
+    if (!leagueActive) return;
     if (!(isMember || canEdit)) return;
     if (autoRefreshedForRef.current === leagueId) return;
     const STANDINGS_STALE_MS = 10 * 60 * 1000;
@@ -186,7 +197,7 @@ export default function LeaguePage() {
     return () => {
       cancelled = true;
     };
-  }, [leagueId, standingsLoaded, standingsAt, isMember, canEdit]);
+  }, [leagueId, standingsLoaded, standingsAt, isMember, canEdit, leagueActive]);
 
   // Organizer: live pending join requests for the approval panel.
   useEffect(() => {
