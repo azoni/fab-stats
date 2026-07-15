@@ -17,7 +17,6 @@ import {
   limit,
   query,
   setDoc,
-  where,
   writeBatch,
 } from "firebase/firestore";
 import { SEED_COSMETICS } from "./seed-cosmetics";
@@ -209,22 +208,14 @@ function writePersisted(items: CosmeticItem[]) {
 async function fetchActiveFromFirestore(): Promise<CosmeticItem[]> {
   // Equipped cosmetics must be renderable even when not shop-visible, so we fetch
   // ALL active SKUs; the shop UI filters on `shopVisible` separately.
+  // Fetch ALL docs (not active-only) so an admin override of isActive:false can
+  // retire a bundled default — mergeWithSeed overlays by id then drops inactive.
   try {
-    const q = query(collection(db, CATALOG_COLLECTION), where("isActive", "==", true), limit(MAX_ITEMS));
-    const snap = await getDocs(q);
+    const snap = await getDocs(query(collection(db, CATALOG_COLLECTION), limit(MAX_ITEMS)));
     const remote = snap.docs.map((d) => sanitizeCosmetic({ id: d.id, ...d.data() })).filter(Boolean) as CosmeticItem[];
     return mergeWithSeed(remote);
   } catch {
-    // Missing index / offline: fall back to the bundled defaults (never empty).
-    try {
-      const snap = await getDocs(query(collection(db, CATALOG_COLLECTION), limit(MAX_ITEMS)));
-      const remote = snap.docs
-        .map((d) => sanitizeCosmetic({ id: d.id, ...d.data() }))
-        .filter((x): x is CosmeticItem => !!x && x.isActive);
-      return mergeWithSeed(remote);
-    } catch {
-      return mergeWithSeed([]);
-    }
+    return mergeWithSeed([]);
   }
 }
 

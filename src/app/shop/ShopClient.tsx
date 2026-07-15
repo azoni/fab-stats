@@ -131,10 +131,11 @@ function ShopClientInner() {
   async function handleBuy(item: CosmeticItem) {
     setBusyId(item.id);
     try {
-      const r = await purchaseCosmetic(item.id);
+      const r = await purchaseCosmetic(item.id, item.price);
       if (r.ok) toast.success(`Unlocked ${item.name}!`);
       else if (r.error === "insufficient") toast.error("Not enough coins yet.");
       else if (r.error === "already_owned") toast(`You already own ${item.name}.`);
+      else if (r.error === "price_changed") toast.error(`Price changed to ${r.price?.toLocaleString()} — refresh and try again.`);
       else toast.error("Purchase failed. Try again.");
     } catch {
       toast.error("Purchase failed. Try again.");

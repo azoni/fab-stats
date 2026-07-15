@@ -8,7 +8,7 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
   gachaPull,
-  GACHA_PULL_COST,
+  gachaPoolCost,
   GACHA_PITY_THRESHOLD,
   GACHA_DUPE_REFUND_PCT,
   type GachaOutcome,
@@ -47,7 +47,7 @@ export function GachaReliquary({ catalog, wallet }: { catalog: CosmeticItem[]; w
   );
 
   async function pull(poolId: string) {
-    if (coins < GACHA_PULL_COST) {
+    if (coins < gachaPoolCost(poolId)) {
       toast.error("Not enough coins for a pull.");
       return;
     }
@@ -69,8 +69,8 @@ export function GachaReliquary({ catalog, wallet }: { catalog: CosmeticItem[]; w
     <div>
       <div className="mb-3 flex items-center justify-between gap-2">
         <p className="text-xs text-fab-muted">
-          {GACHA_PULL_COST} coins per pull · duplicates refund {Math.round(GACHA_DUPE_REFUND_PCT * 100)}% · a rare+ is
-          guaranteed at least every {GACHA_PITY_THRESHOLD} pulls.
+          Cost varies by pool · duplicates refund {Math.round(GACHA_DUPE_REFUND_PCT * 100)}% · a rare+ is guaranteed at
+          least every {GACHA_PITY_THRESHOLD} pulls.
         </p>
       </div>
 
@@ -93,7 +93,8 @@ export function GachaReliquary({ catalog, wallet }: { catalog: CosmeticItem[]; w
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         {POOLS.map((p) => {
           const odds = oddsByPool[p.id] ?? [];
-          const affordable = coins >= GACHA_PULL_COST;
+          const cost = gachaPoolCost(p.id);
+          const affordable = coins >= cost;
           return (
             <div key={p.id} className="flex flex-col rounded-xl border border-fab-border bg-fab-surface p-4">
               <p className="font-semibold text-fab-text">{p.name}</p>
@@ -120,11 +121,11 @@ export function GachaReliquary({ catalog, wallet }: { catalog: CosmeticItem[]; w
                   "Drawing…"
                 ) : (
                   <>
-                    Pull <CoinIcon size={14} /> {GACHA_PULL_COST}
+                    Pull <CoinIcon size={14} /> {cost.toLocaleString()}
                   </>
                 )}
               </button>
-              {!affordable && <p className="mt-1 text-center text-[10px] text-fab-dim">Need {(GACHA_PULL_COST - coins).toLocaleString()} more</p>}
+              {!affordable && <p className="mt-1 text-center text-[10px] text-fab-dim">Need {(cost - coins).toLocaleString()} more</p>}
             </div>
           );
         })}

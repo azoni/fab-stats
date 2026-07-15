@@ -130,9 +130,10 @@ export async function reconcileWallet(
 
 export interface PurchaseResult {
   ok: boolean;
-  error?: "not_found" | "inactive" | "already_owned" | "insufficient";
+  error?: "not_found" | "inactive" | "already_owned" | "insufficient" | "price_changed";
   balance: number;
   itemId?: string;
+  price?: number;
 }
 
 /**
@@ -141,7 +142,12 @@ export interface PurchaseResult {
  * item to the inventory. Idempotent-safe: re-buying an owned item is a no-op
  * (returns already_owned), so a double-submit never double-charges.
  */
-export async function purchaseCosmetic(db: Firestore, uid: string, itemId: string): Promise<PurchaseResult> {
+export async function purchaseCosmetic(
+  db: Firestore,
+  uid: string,
+  itemId: string,
+  expectedPrice?: number,
+): Promise<PurchaseResult> {
   // Price/isActive source of truth: a Firestore cosmeticCatalog doc (admin
   // override) if present, else the bundled default seed — so purchases work
   // WITHOUT the catalog ever being seeded into the DB.
@@ -152,6 +158,10 @@ export async function purchaseCosmetic(db: Firestore, uid: string, itemId: strin
   const isActive = catData ? catData.isActive !== false : seed.isActive !== false;
   if (!isActive) return { ok: false, error: "inactive", balance: -1 };
   const price = Math.max(0, Math.round(Number(catData ? catData.price : seed.price) || 0));
+  // Guard against a stale client price (cache up to 12h old vs. an admin override).
+  if (typeof expectedPrice === "number" && Number.isFinite(expectedPrice) && Math.round(expectedPrice) !== price) {
+    return { ok: false, error: "price_changed", balance: -1, price };
+  }
 
   const walletRef = db.collection("users").doc(uid).collection("wallet").doc("main");
   const invRef = db.collection("users").doc(uid).collection("inventory").doc("main");
@@ -178,7 +188,13 @@ export async function purchaseCosmetic(db: Firestore, uid: string, itemId: strin
 }
 
 // ── Gacha (the Reliquary) ──
-export const GACHA_PULL_COST = 500;
+// Per-pool pull cost — premium is priced near its expected value so pulling it
+// isn't strictly-dominant free value over the shop / the standard pool.
+export const GACHA_POOL_COST: Record<string, number> = { standard: 500, premium: 4000 };
+export const GACHA_DEFAULT_PULL_COST = 500;
+export function gachaPoolCost(poolId: string): number {
+  return GACHA_POOL_COST[poolId] ?? GACHA_DEFAULT_PULL_COST;
+}
 export const GACHA_PITY_THRESHOLD = 10; // guarantee a rare+ at least every 10 pulls
 export const GACHA_DUPE_REFUND_PCT = 0.4;
 
@@ -190,11 +206,42 @@ interface PoolEntry {
   weight: number;
 }
 
-function buildPool(poolId: string): PoolEntry[] {
-  const out: PoolEntry[] = [];
+interface PoolFields {
+  rarity: Rarity;
+  isActive: boolean;
+  gachaPool?: string;
+  gachaWeight?: number;
+}
+
+/**
+ * Build a draw pool from the bundled seed OVERLAID with Firestore cosmeticCatalog
+ * overrides (doc wins by id) — the same contract purchaseCosmetic + the client
+ * catalog honor, so the odds the player sees match the odds the server draws.
+ */
+async function buildPool(db: Firestore, poolId: string): Promise<PoolEntry[]> {
+  const merged = new Map<string, PoolFields>();
   for (const [id, e] of Object.entries(COSMETIC_SEED)) {
-    if (e.isActive !== false && e.gachaPool === poolId && (e.gachaWeight ?? 0) > 0) {
-      out.push({ id, rarity: e.rarity as Rarity, weight: e.gachaWeight ?? 0 });
+    merged.set(id, { rarity: e.rarity as Rarity, isActive: e.isActive !== false, gachaPool: e.gachaPool, gachaWeight: e.gachaWeight });
+  }
+  try {
+    const snap = await db.collection("cosmeticCatalog").get();
+    snap.forEach((d) => {
+      const data = d.data();
+      const base = merged.get(d.id);
+      merged.set(d.id, {
+        rarity: (typeof data.rarity === "string" ? data.rarity : base?.rarity ?? "common") as Rarity,
+        isActive: data.isActive !== false,
+        gachaPool: typeof data.gachaPool === "string" ? data.gachaPool : base?.gachaPool,
+        gachaWeight: typeof data.gachaWeight === "number" ? data.gachaWeight : base?.gachaWeight,
+      });
+    });
+  } catch {
+    /* Firestore unavailable → seed-only pool */
+  }
+  const out: PoolEntry[] = [];
+  for (const [id, e] of merged) {
+    if (e.isActive && e.gachaPool === poolId && (e.gachaWeight ?? 0) > 0) {
+      out.push({ id, rarity: e.rarity, weight: e.gachaWeight ?? 0 });
     }
   }
   return out;
@@ -229,8 +276,9 @@ export interface GachaResult {
  * threshold and the natural draw is below rare, redraw from the rare+ subset.
  */
 export async function gachaPull(db: Firestore, uid: string, poolId: string): Promise<GachaResult> {
-  const pool = buildPool(poolId);
+  const pool = await buildPool(db, poolId);
   if (pool.length === 0) return { ok: false, error: "empty_pool", balance: -1 };
+  const cost = gachaPoolCost(poolId);
 
   const walletRef = db.collection("users").doc(uid).collection("wallet").doc("main");
   const invRef = db.collection("users").doc(uid).collection("inventory").doc("main");
@@ -240,7 +288,7 @@ export async function gachaPull(db: Firestore, uid: string, poolId: string): Pro
     const w: WalletDoc = wSnap.exists ? { ...zeroWallet(), ...(wSnap.data() as WalletDoc) } : zeroWallet();
     const items: string[] = iSnap.exists ? ((iSnap.data()?.items as string[]) ?? []) : [];
 
-    if (w.coins < GACHA_PULL_COST) return { ok: false, error: "insufficient", balance: w.coins };
+    if (w.coins < cost) return { ok: false, error: "insufficient", balance: w.coins };
 
     let drawn = weightedDraw(pool);
     const pityTriggered = w.pullsSinceRarePlus + 1 >= GACHA_PITY_THRESHOLD && !RARE_PLUS.has(drawn.rarity);
@@ -250,8 +298,8 @@ export async function gachaPull(db: Firestore, uid: string, poolId: string): Pro
     }
     const isRarePlus = RARE_PLUS.has(drawn.rarity);
     const duplicate = items.includes(drawn.id);
-    const refund = duplicate ? Math.round(GACHA_PULL_COST * GACHA_DUPE_REFUND_PCT) : 0;
-    const coinsAfter = w.coins - GACHA_PULL_COST + refund;
+    const refund = duplicate ? Math.round(cost * GACHA_DUPE_REFUND_PCT) : 0;
+    const coinsAfter = w.coins - cost + refund;
     const now = new Date().toISOString();
 
     tx.set(
@@ -259,7 +307,7 @@ export async function gachaPull(db: Firestore, uid: string, poolId: string): Pro
       {
         ...w,
         coins: coinsAfter,
-        lifetimeSpent: w.lifetimeSpent + GACHA_PULL_COST,
+        lifetimeSpent: w.lifetimeSpent + cost,
         lifetimeEarned: w.lifetimeEarned + refund,
         pullCount: w.pullCount + 1,
         pullsSinceRarePlus: isRarePlus ? 0 : w.pullsSinceRarePlus + 1,
