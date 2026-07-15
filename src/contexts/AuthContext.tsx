@@ -83,16 +83,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const unsubscribe = onAuthStateChanged(auth, async (u) => {
       setUser(u);
 
-      // Migrate guest data to Firestore when user signs in
+      // Migrate guest data to Firestore when user signs in. This must NEVER throw
+      // out of the auth callback: a failed import used to reject before the
+      // setLoading(false) below ran, leaving AuthGuard on a permanent spinner at
+      // the exact moment a guest converts to an account. On failure we keep the
+      // guest data in localStorage (nothing lost — they can retry the import) and
+      // fall through to the normal profile fetch.
       if (u && isGuestRef.current) {
-        const localMatches = getAllMatches();
-        if (localMatches.length > 0) {
-          await importMatchesFirestore(u.uid, localMatches);
+        try {
+          const localMatches = getAllMatches();
+          if (localMatches.length > 0) {
+            await importMatchesFirestore(u.uid, localMatches);
+          }
+          clearAllData();
+          localStorage.removeItem(GUEST_KEY);
+        } catch (err) {
+          console.error("Guest → account data migration failed; keeping local data:", err);
+        } finally {
+          setIsGuest(false);
+          isGuestRef.current = false;
         }
-        clearAllData();
-        localStorage.removeItem(GUEST_KEY);
-        setIsGuest(false);
-        isGuestRef.current = false;
       }
 
       if (!u) {

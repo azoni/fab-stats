@@ -100,7 +100,7 @@ export function GroupHeader({ group, members, viewerRole, onJoin, onLeave, onSha
           <div className="shrink-0 sm:self-center flex items-center gap-2">
             {(viewerRole === "owner" || viewerRole === "admin") && (
               <Link
-                href="/settings#groups"
+                href="/group"
                 className="p-2 rounded-xl bg-white/10 backdrop-blur border border-white/10 text-white/70 hover:text-white hover:bg-white/15 transition-all"
                 title="Manage group"
               >

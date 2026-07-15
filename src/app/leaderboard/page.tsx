@@ -825,17 +825,20 @@ export default function LeaderboardPage() {
     setSearch("");
   }
 
-  // Podium entries (top 3 when not searching and on page 0)
-  const showPodium = !isSearching && page === 0 && filtered.length >= 3;
-  const podium = showPodium ? filtered.slice(0, 3) : [];
-  const listEntries = showPodium ? filtered.slice(3) : filtered;
+  // Podium (top 3) + paginated list. The podium is PAGE-INDEPENDENT: it exists
+  // whenever we're not searching and there are ≥3 entries, and it always occupies
+  // ranks 1–3. The list below indexes ONLY into the remaining entries
+  // (listEntries), so pages never overlap and the total/rank don't shift as you
+  // navigate. (The old code re-sliced `filtered` per page, duplicating 3 rows at
+  // each boundary and flipping the page count.) `showPodium` is render-only.
+  const hasPodium = !isSearching && filtered.length >= 3;
+  const podium = hasPodium ? filtered.slice(0, 3) : [];
+  const listEntries = hasPodium ? filtered.slice(3) : filtered;
+  const showPodium = hasPodium && page === 0;
 
-  const pageStart = page === 0 && showPodium ? 0 : page * PAGE_SIZE;
-  const pageEntries = showPodium && page === 0
-    ? listEntries.slice(0, PAGE_SIZE)
-    : filtered.slice(pageStart, pageStart + PAGE_SIZE);
-  const totalFiltered = isSearching ? filtered.length : (showPodium ? listEntries.length : filtered.length);
-  const totalPages = Math.ceil(totalFiltered / PAGE_SIZE);
+  const pageEntries = listEntries.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE);
+  const totalFiltered = listEntries.length;
+  const totalPages = Math.max(1, Math.ceil(totalFiltered / PAGE_SIZE));
 
   return (
     <div className="space-y-5">
@@ -1037,7 +1040,7 @@ export default function LeaderboardPage() {
           {myRank && !isSearching && (
             <button
               onClick={() => {
-                const myPage = showPodium && myRank <= 3 ? 0 : Math.floor((showPodium ? myRank - 4 : myRank - 1) / PAGE_SIZE);
+                const myPage = hasPodium && myRank <= 3 ? 0 : Math.floor((hasPodium ? myRank - 4 : myRank - 1) / PAGE_SIZE);
                 setPage(myPage);
                 setTimeout(() => {
                   const el = document.getElementById(`lb-row-${user?.uid}`);
@@ -1154,11 +1157,9 @@ export default function LeaderboardPage() {
           {/* ── List ── */}
           <div ref={listRef} className="space-y-1.5">
             {pageEntries.map((entry, i) => {
-              const globalRank = showPodium && page === 0
-                ? i + 4
-                : isSearching
-                  ? ranked.indexOf(entry) + 1
-                  : pageStart + i + 1;
+              const globalRank = isSearching
+                ? ranked.indexOf(entry) + 1
+                : (hasPodium ? 4 : 1) + page * PAGE_SIZE + i;
               return (
                 <LeaderboardRow
                   key={entry.userId}

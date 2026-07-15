@@ -261,11 +261,10 @@ export default function SettingsPage() {
     e.preventDefault();
     if (!user || !displayName.trim()) return;
     setError("");
+    // GEM ID is optional — setup never collects it (it's filled from the first
+    // import), so requiring it here dead-ended every pre-import user out of
+    // editing their name/photo/privacy. Display name is the only hard requirement.
     const trimmedGemId = gemId.trim();
-    if (!trimmedGemId) {
-      toast.error("GEM ID is required.");
-      return;
-    }
     setSaving(true);
     try {
       const searchName = [firstName, lastName, displayName].filter(Boolean).join(" ").toLowerCase();
@@ -277,7 +276,7 @@ export default function SettingsPage() {
         lastName: lastName.trim() || undefined,
         searchName: searchName || undefined,
         earnings: earnings ? parseFloat(earnings) : undefined,
-        gemId: trimmedGemId,
+        gemId: trimmedGemId || undefined,
       });
 
       // Update gemIds lookup collection if GEM ID changed
@@ -437,7 +436,7 @@ export default function SettingsPage() {
         icon={<Settings className="h-4 w-4" />}
         metrics={[
           { label: "Username", value: `@${profile.username}`, sub: "profile URL" },
-          { label: "GEM ID", value: gemId.trim() ? "Linked" : "Required", sub: gemId.trim() || "add before saving" },
+          { label: "GEM ID", value: gemId.trim() ? "Linked" : "Not linked", sub: gemId.trim() || "optional — set on import" },
           { label: "Visibility", value: profileVisibility, sub: "profile privacy" },
         ]}
       />
@@ -592,14 +591,13 @@ export default function SettingsPage() {
 
         <div className="mb-4">
           <label htmlFor="gemId" className="block text-sm text-fab-muted mb-1">
-            GEM ID <span className="ml-1 rounded bg-fab-gold/15 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-fab-gold">Required</span>
+            GEM ID <span className="ml-1 rounded bg-fab-surface px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-fab-dim">Optional</span>
           </label>
           <input
             id="gemId"
             type="text"
             inputMode="numeric"
-            pattern="[0-9]+"
-            required
+            pattern="[0-9]*"
             value={gemId}
             onChange={(e) => setGemId(e.target.value.replace(/\D/g, ""))}
             placeholder="e.g. 12345678"
@@ -617,7 +615,7 @@ export default function SettingsPage() {
 
         <button
           type="submit"
-          disabled={saving || !displayName.trim() || !gemId.trim()}
+          disabled={saving || !displayName.trim()}
           className="px-6 py-2 rounded-lg font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors disabled:opacity-50"
         >
           {saving ? "Saving..." : "Save Changes"}

@@ -16,7 +16,12 @@ function hasPlayedToday(slug: string): boolean {
   const today = getTodayDateStr();
   const key = `${slug}-${today}`;
   try {
-    return localStorage.getItem(key) !== null;
+    const raw = localStorage.getItem(key);
+    if (!raw) return false;
+    // Games persist state on the first move, so key-existence over-counts
+    // abandoned games as "done" (and lights the ✓). Require an explicit
+    // completion flag — mirrors AllGamesShareCard.
+    return JSON.parse(raw).completed === true;
   } catch {
     return false;
   }
