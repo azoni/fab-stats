@@ -1207,8 +1207,17 @@ service cloud.firestore {
       // "Refresh" button works for organizers and players alike).
       match /standings/{standingsId} {
         allow read: if true;
+        // Standings are a derived doc (recomputed from members' real matches).
+        // Members, the organizer, and site admins may write it. Admin/organizer
+        // are included so they can refresh a league they moderate but haven't
+        // joined — without this, their recompute write is rejected by the server
+        // and the optimistic local write rolls back (UI flashes 10pts then reverts).
         allow write: if request.auth != null
-          && exists(/databases/$(database)/documents/leagues/$(leagueId)/members/$(request.auth.uid));
+          && (
+            exists(/databases/$(database)/documents/leagues/$(leagueId)/members/$(request.auth.uid))
+            || get(/databases/$(database)/documents/leagues/$(leagueId)).data.organizerUid == request.auth.uid
+            || isAdmin()
+          );
       }
     }
 
