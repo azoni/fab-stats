@@ -1020,6 +1020,18 @@ table thead tr {
 .stagger-grid > *:nth-child(11) { animation-delay: 400ms; }
 .stagger-grid > *:nth-child(12) { animation-delay: 440ms; }
 
+/* ── League marquee: Live top-edge sheen ── */
+@keyframes league-sheen {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+.league-sheen {
+  animation: league-sheen 3s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .league-sheen { animation: none; opacity: 1; }
+}
+
 /* ── Global keyboard-focus baseline (WCAG 2.4.7) ──
    Focus styling previously existed only on inputs + ui/Button, so the sidebar
    nav, mobile tab bar, and the many inline <Link> buttons showed no visible
