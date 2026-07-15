@@ -209,6 +209,15 @@ export default function TrendsPage() {
     }).filter((d) => d.total > 0);
   }, [filteredMatches]);
 
+  // "Best Day" needs a minimum sample or a single lucky 100% day becomes the
+  // headline over a weekday with 200 matches at 55% (same min-N guard used for
+  // heroStats/venues elsewhere).
+  const bestDay = useMemo(() => {
+    const eligible = dayOfWeekData.filter((d) => d.total >= 5);
+    if (eligible.length === 0) return null;
+    return eligible.reduce((best, d) => (d.winRate > best.winRate ? d : best));
+  }, [dayOfWeekData]);
+
   // Win Rate by Event Type
   const eventTypeWinRate = useMemo(() => {
     const map = new Map<string, { w: number; l: number; d: number }>();
@@ -680,8 +689,8 @@ export default function TrendsPage() {
         />
         <StatCard
           label="Best Day"
-          value={dayOfWeekData.length > 0 ? dayOfWeekData.reduce((best, d) => d.winRate > best.winRate ? d : best).day : "-"}
-          sub={dayOfWeekData.length > 0 ? `${dayOfWeekData.reduce((best, d) => d.winRate > best.winRate ? d : best).winRate}% WR` : undefined}
+          value={bestDay ? bestDay.day : "—"}
+          sub={bestDay ? `${bestDay.winRate}% WR` : undefined}
         />
         {halfComparison && (
           <StatCard

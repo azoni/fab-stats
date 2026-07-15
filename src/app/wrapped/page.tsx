@@ -95,7 +95,17 @@ function HeroImage({ heroName }: { heroName: string }) {
 export default function WrappedPage() {
   const { matches, isLoaded } = useMatches();
   const searchParams = useSearchParams();
-  const year = searchParams.get("year") || "2025";
+  // Default to the most recent year the player has matches for (falling back to
+  // the current year) instead of a hardcoded "2025" that goes stale each Jan 1.
+  const latestYear = useMemo(() => {
+    let y = 0;
+    for (const m of matches) {
+      const my = parseInt((m.date || "").slice(0, 4), 10);
+      if (my > y) y = my;
+    }
+    return y || new Date().getUTCFullYear();
+  }, [matches]);
+  const year = searchParams.get("year") || String(latestYear);
 
   const yearMatches = useMemo(
     () => matches.filter((m) => m.date.startsWith(year)),

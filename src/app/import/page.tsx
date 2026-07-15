@@ -1091,9 +1091,10 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
         .map(([hero]) => hero);
       createImportFeedEvent(profile, count, topHeroes, method || undefined).catch(() => {});
       trackImportMethod(method || "unknown", count);
-      getMatchesByUserId(user.uid)
-        .then((allUserMatches) => updateLeaderboardEntry(profile, allUserMatches))
-        .catch(() => {});
+      // Reuse the post-import match set already loaded above (afterMatches)
+      // instead of re-reading the whole collection — this is the app's most-used
+      // write path and it was fetching the full history 3× per import.
+      updateLeaderboardEntry(profile, afterMatches).catch(() => {});
 
       // Auto-save GEM ID from CSV metadata or extension metadata
       const newGemId = csvMetadata?.gemId || pasteResult?.extensionMeta?.userGemId;
@@ -1113,14 +1114,15 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
         createPlacementFeedEvent(profile, finish, hero).catch(() => {});
       }
 
-      // Cross-player match linking + H2H + community matchups (non-blocking)
-      getMatchesByUserId(user.uid)
-        .then((allMatches) => {
-          linkMatchesWithOpponents(user.uid, allMatches);
-          computeH2HForUser(user.uid, allMatches);
-          updateCommunityHeroMatchups(user.uid, allMatches);
-        })
-        .catch(() => {});
+      // Cross-player match linking + H2H + community matchups (non-blocking).
+      // Reuse afterMatches (already the full post-import set) — no extra read.
+      try {
+        linkMatchesWithOpponents(user.uid, afterMatches);
+        computeH2HForUser(user.uid, afterMatches);
+        updateCommunityHeroMatchups(user.uid, afterMatches);
+      } catch {
+        /* non-blocking */
+      }
     }
   }
 

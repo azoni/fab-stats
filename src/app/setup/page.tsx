@@ -11,9 +11,12 @@ export default function SetupPage() {
   const { user, profile, refreshProfile } = useAuth();
   const router = useRouter();
 
-  // Navigate to dashboard once profile subscription confirms creation
+  // A freshly-created account lands on /import — the app's value loop is
+  // import → stats, and the marketing home is a dead end for someone who just
+  // signed up. (Guests already go straight to /import; this aligns the funnel
+  // for registered sign-ups, which previously bounced to the home page.)
   useEffect(() => {
-    if (profile) router.replace("/");
+    if (profile) router.replace("/import");
   }, [profile, router]);
   const [username, setUsername] = useState("");
   const [firstName, setFirstName] = useState("");
@@ -28,30 +31,37 @@ export default function SetupPage() {
   const [isPublic, setIsPublic] = useState(true);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
 
-  async function checkUsername(value: string) {
-    const lower = value.toLowerCase();
-    if (!USERNAME_REGEX.test(lower)) {
-      setAvailable(null);
-      return;
-    }
-    setChecking(true);
-    const taken = await isUsernameTaken(lower);
-    setAvailable(!taken);
-    setChecking(false);
-  }
-
   function handleUsernameChange(value: string) {
     const lower = value.toLowerCase().replace(/[^a-z0-9_-]/g, "");
     setUsername(lower);
     setAvailable(null);
     setError("");
-
-    // Debounce check
-    if (USERNAME_REGEX.test(lower)) {
-      const timeout = setTimeout(() => checkUsername(lower), 400);
-      return () => clearTimeout(timeout);
-    }
   }
+
+  // Debounced availability check. This lives in an effect, not the onChange
+  // handler: a cleanup returned from onChange is ignored by React, so the old
+  // timer was never cancelled — every keystroke fired its own isUsernameTaken()
+  // read and an earlier response could overwrite a later one (a stale "Taken" on
+  // an available name). The `cancelled` flag drops out-of-order responses.
+  useEffect(() => {
+    if (!USERNAME_REGEX.test(username)) {
+      setAvailable(null);
+      return;
+    }
+    let cancelled = false;
+    setChecking(true);
+    const t = setTimeout(async () => {
+      const taken = await isUsernameTaken(username);
+      if (!cancelled) {
+        setAvailable(!taken);
+        setChecking(false);
+      }
+    }, 400);
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
+  }, [username]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

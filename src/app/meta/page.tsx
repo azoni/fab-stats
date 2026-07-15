@@ -161,8 +161,19 @@ export default function MetaPage() {
       list = list.filter((h) => h.hero.toLowerCase().includes(q));
     }
     switch (sortBy) {
-      case "winrate":
-        return list.sort((a, b) => b.avgWinRate - a.avgWinRate || b.totalMatches - a.totalMatches);
+      case "winrate": {
+        // Minimum-sample floor: a hero with a single 1-0 community record used to
+        // top the win-rate board above a 300-match hero at 60%. Rank heroes with
+        // enough games (≥10) above low-sample ones so the top is trustworthy;
+        // low-sample heroes still appear, just below the proven decks.
+        const MIN_WR_SAMPLE = 10;
+        return list.sort((a, b) => {
+          const aQ = a.totalMatches >= MIN_WR_SAMPLE;
+          const bQ = b.totalMatches >= MIN_WR_SAMPLE;
+          if (aQ !== bQ) return aQ ? -1 : 1;
+          return b.avgWinRate - a.avgWinRate || b.totalMatches - a.totalMatches;
+        });
+      }
       default:
         return list.sort((a, b) => b.totalMatches - a.totalMatches);
     }
@@ -220,26 +231,6 @@ export default function MetaPage() {
           )}
         </div>
       </section>
-      <div className="hidden">
-        <img src="/assets/icons/globe.webp" alt="" className="absolute right-0 top-1/2 -translate-y-1/2 w-20 h-20 object-contain opacity-[0.12] pointer-events-none" />
-        <div className="w-8 h-8 rounded-lg bg-teal-500/10 flex items-center justify-center ring-1 ring-inset ring-teal-500/20">
-          <svg className="w-4 h-4 text-teal-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-        </div>
-        <div className="flex items-center gap-2">
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-lg font-bold text-fab-text leading-tight">Community Meta</h1>
-              <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-fab-gold/15 text-fab-gold">Beta</span>
-            </div>
-            <p className="text-xs text-fab-muted leading-tight">
-              {overview.totalPlayers} public players{basePeriod !== "all" && " · recent imports only"}
-              {activeSeason && ` · ${activeSeason.format}`}
-            </p>
-          </div>
-        </div>
-      </div>
 
       {/* Period tabs */}
       <div className="flex gap-1 mb-4 flex-wrap items-center">
