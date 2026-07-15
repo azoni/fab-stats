@@ -1182,6 +1182,7 @@ function GroupedImportRow({ event }: { event: ImportFeedEvent }) {
 
 export function GroupedFeedCard({ group, compact, rankMap, eventTierMap, underlineTierMap, heroCompletionMap, userId, isAdmin, onDelete }: { group: FeedGroup; compact?: boolean; rankMap?: Map<string, 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8>; eventTierMap?: Map<string, { border: string; shadow: string }>; underlineTierMap?: Map<string, { color: string; rgb: string }>; heroCompletionMap?: Map<string, number>; userId?: string; isAdmin?: boolean; onDelete?: (eventId: string) => void }) {
   const [expanded, setExpanded] = useState(false);
+  const router = useRouter();
   const first = group.events[0];
   const isSingle = group.events.length === 1;
 
@@ -1198,7 +1199,14 @@ export function GroupedFeedCard({ group, compact, rankMap, eventTierMap, underli
 
   return (
     <div
-      className={`bg-fab-surface border border-fab-border rounded-lg ${compact ? "px-3 py-2" : "p-4"} relative overflow-hidden`}
+      onClick={(e) => {
+        // Whole-card click → player profile (mirrors FeedCard). Skip when the
+        // click landed on an interactive element (reactions, comments, expand,
+        // links, delete) so those keep working.
+        if ((e.target as HTMLElement).closest("a, button, input, textarea, select, [role='button']")) return;
+        if (first.username) router.push(playerHref(first.username));
+      }}
+      className={`bg-fab-surface border border-fab-border rounded-lg ${compact ? "px-3 py-2" : "p-4"} relative overflow-hidden ${first.username ? "cursor-pointer" : ""}`}
       style={tierStyle ? { borderColor: tierStyle.border, boxShadow: tierStyle.shadow } : undefined}
     >
       {underlineStyle && (
