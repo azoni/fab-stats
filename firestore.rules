@@ -95,6 +95,35 @@ service cloud.firestore {
       && (!('updatedAt' in data) || maxLen(data.updatedAt, 40));
     }
 
+    function validCosmeticRarity(r) {
+      return r in ["common", "uncommon", "rare", "epic", "legendary"];
+    }
+    function validCosmeticCategory(c) {
+      return c in ["avatarFrame", "companion", "aura", "nameplate", "background", "trophySkin", "cursor"];
+    }
+    function validCosmeticCatalogDoc(data, itemId) {
+      return data.keys().hasOnly([
+        'id', 'category', 'rarity', 'name', 'description', 'price',
+        'previewKind', 'previewValue', 'grantsId',
+        'gachaPool', 'gachaWeight', 'isActive', 'shopVisible', 'sortOrder', 'updatedAt'
+      ])
+      && ('id' in data) && data.id == itemId && data.id is string && data.id.size() <= 80
+      && ('name' in data) && maxLen(data.name, 80)
+      && validCosmeticCategory(data.category)
+      && validCosmeticRarity(data.rarity)
+      && data.price is int && data.price >= 0 && data.price <= 1000000
+      && (!('description' in data) || maxLen(data.description, 300))
+      && (!('previewKind' in data) || maxLen(data.previewKind, 40))
+      && (!('previewValue' in data) || maxLen(data.previewValue, 600))
+      && (!('grantsId' in data) || maxLen(data.grantsId, 120))
+      && (!('gachaPool' in data) || maxLen(data.gachaPool, 60))
+      && (!('gachaWeight' in data) || (data.gachaWeight is int && data.gachaWeight >= 0 && data.gachaWeight <= 100000))
+      && (!('isActive' in data) || data.isActive is bool)
+      && (!('shopVisible' in data) || data.shopVisible is bool)
+      && (!('sortOrder' in data) || (data.sortOrder is int && data.sortOrder >= 0 && data.sortOrder <= 100000))
+      && (!('updatedAt' in data) || maxLen(data.updatedAt, 40));
+    }
+
     function articleDocData(articleId) {
       return get(/databases/$(database)/documents/articles/$(articleId)).data;
     }
@@ -494,6 +523,34 @@ service cloud.firestore {
     match /users/{userId}/earnedAchievements/{docId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
+    // ── Cosmetics wallet (server-minted, write-locked) ──
+    // Coins/ledger live here; ONLY the cosmetics-wallet Netlify function (admin
+    // SDK, bypasses rules) may write, so a client can never mint itself coins.
+    // Owner + admin read their own balance (private — no wealth leaderboard).
+    match /users/{userId}/wallet/{docId} {
+      allow read: if request.auth != null && (request.auth.uid == userId || isAdmin());
+      allow write: if false;
+    }
+    // Owned cosmetics — PUBLIC read so equipped items render on other players'
+    // profiles; still server-written only (via the wallet function).
+    match /users/{userId}/inventory/{docId} {
+      allow read: if true;
+      allow write: if false;
+    }
+    // Recent profile visitors — a viewer may write ONLY their own record onto
+    // another user's profile (id pinned to their uid to prevent spoofing);
+    // publicly readable so the "who stopped by" avatar row renders for everyone.
+    match /users/{userId}/profileVisitors/{viewerId} {
+      allow read: if true;
+      allow create, update: if request.auth != null
+        && request.auth.uid == viewerId
+        && request.auth.uid != userId
+        && request.resource.data.uid == request.auth.uid
+        && (!("displayName" in request.resource.data) || maxLen(request.resource.data.displayName, 80))
+        && (!("username" in request.resource.data) || maxLen(request.resource.data.username, 60))
+        && (!("photoUrl" in request.resource.data) || maxLen(request.resource.data.photoUrl, 600));
+      allow delete: if request.auth != null && (request.auth.uid == userId || request.auth.uid == viewerId);
+    }
     match /users/{userId}/predictions/{docId} {
       allow read: if request.auth != null && request.auth.uid == userId;
       // Admin writes (granting via prediction-service), user can also read
@@ -623,6 +680,14 @@ service cloud.firestore {
       allow read: if true;
       allow create, update: if isAdmin()
         && validProfileBackgroundCatalogDoc(request.resource.data, backgroundId);
+      allow delete: if isAdmin();
+    }
+
+    // Cosmetic shop/gacha catalog (SKUs) — public read (store renders for all,
+    // incl. guests), admin-only + validated writes.
+    match /cosmeticCatalog/{itemId} {
+      allow read: if true;
+      allow create, update: if isAdmin() && validCosmeticCatalogDoc(request.resource.data, itemId);
       allow delete: if isAdmin();
     }
 

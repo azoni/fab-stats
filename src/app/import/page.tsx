@@ -14,6 +14,8 @@ import { computeH2HForUser } from "@/lib/h2h";
 import { updateCommunityHeroMatchups } from "@/lib/hero-matchups";
 import type { GemMetadata } from "@/lib/gem-import";
 import { updateLeaderboardEntry } from "@/lib/leaderboard";
+import { COSMETICS_ENABLED } from "@/lib/cosmetics/flags";
+import { reconcileWallet } from "@/lib/cosmetics/wallet-client";
 import { trackImportMethod } from "@/lib/analytics";
 import { getMatchesByUserId } from "@/lib/firestore-storage";
 import { useRouter } from "next/navigation";
@@ -1095,6 +1097,9 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
       // instead of re-reading the whole collection — this is the app's most-used
       // write path and it was fetching the full history 3× per import.
       updateLeaderboardEntry(profile, afterMatches).catch(() => {});
+      // Mint any coins owed for the new matches (idempotent server grant). Silent
+      // here — the app-load WalletReconcile surfaces the "+coins" toast.
+      if (COSMETICS_ENABLED) reconcileWallet().catch(() => {});
 
       // Auto-save GEM ID from CSV metadata or extension metadata
       const newGemId = csvMetadata?.gemId || pasteResult?.extensionMeta?.userGemId;

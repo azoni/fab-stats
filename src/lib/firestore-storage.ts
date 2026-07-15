@@ -23,6 +23,7 @@ import { db } from "./firebase";
 import { logActivity } from "./activity-log";
 import { logToEcosystem } from "./mcp-webhook";
 import { sanitizeVenueForWrite } from "./venue-normalize";
+import { COSMETICS_ENABLED } from "./cosmetics/flags";
 import type { MatchRecord, UserProfile } from "@/types";
 
 /** Normalize round info so "Round P1" and "Playoff" match as duplicates */
@@ -756,6 +757,15 @@ export async function deleteAccountData(userId: string): Promise<void> {
       await friendBatch.commit();
     }
   } catch { /* may not exist */ }
+
+  // Purge cosmetics economy docs (write-locked, so server-side). Best-effort and
+  // flag-gated — a no-op while the cosmetics feature is dormant.
+  if (COSMETICS_ENABLED) {
+    try {
+      const { purgeWalletOnDelete } = await import("./cosmetics/wallet-client");
+      await purgeWalletOnDelete();
+    } catch { /* non-critical; docs are unreadable once the account is gone */ }
+  }
 
   // Track deletion count for admin stats
   try {

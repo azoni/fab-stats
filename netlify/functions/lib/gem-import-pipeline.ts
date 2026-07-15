@@ -15,6 +15,7 @@
 import { getAdminDb } from "../firebase-admin.ts";
 import { sanitizeVenueForWrite } from "./venue-normalize.ts";
 import type { AutoSyncMatch } from "./gem-scraper.ts";
+import { reconcileWallet } from "./cosmetics-economy.ts";
 
 interface ImportResult {
   imported: number;
@@ -161,6 +162,14 @@ export async function processServerImport(
     "gemSyncStatus.matchesImported": imported,
     needsRecompute: true,
   });
+
+  // Mint any coins owed for the newly imported matches (idempotent; safe no-op
+  // if the achievement/wallet docs aren't set up yet). Never block the import.
+  try {
+    await reconcileWallet(db, userId);
+  } catch {
+    /* economy is best-effort; import already succeeded */
+  }
 
   return {
     imported,
