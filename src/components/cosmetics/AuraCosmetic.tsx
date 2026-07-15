@@ -30,16 +30,21 @@ export function AuraCosmetic({
   const cap = CAP[intensity - 1] ?? 0.28;
 
   if (motif === "halo") {
+    // Rendered in an oversized (150%) centered box so the ring band falls
+    // OUTSIDE the opaque avatar photo (r≈40%) instead of hiding beneath it.
     return (
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 -z-10 rounded-full"
-        style={{
-          background: `radial-gradient(circle at 50% 50%, color-mix(in srgb, ${s.specular} ${Math.round(
-            cap * 100,
-          )}%, transparent) 44%, transparent 66%)`,
-        }}
-      />
+      <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 grid place-items-center">
+        <div
+          className="rounded-full"
+          style={{
+            width: "150%",
+            height: "150%",
+            background: `radial-gradient(circle at 50% 50%, transparent 58%, color-mix(in srgb, ${s.specular} ${Math.round(
+              cap * 100,
+            )}%, transparent) 72%, transparent 90%)`,
+          }}
+        />
+      </div>
     );
   }
 

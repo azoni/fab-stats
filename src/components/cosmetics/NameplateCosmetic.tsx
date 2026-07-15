@@ -90,7 +90,7 @@ export function NameplateCosmetic({
   const ornate = pattern === "laurel" || pattern === "crownlaurel";
 
   return (
-    <span className="relative inline-flex items-center px-5 py-0.5">
+    <span className="relative isolate inline-flex items-center px-5 py-0.5">
       <svg
         className="absolute inset-0 h-full w-full -z-10"
         viewBox="0 0 300 44"
@@ -108,6 +108,7 @@ export function NameplateCosmetic({
           <path d={d} fill="var(--color-fab-surface, #12110f)" fillOpacity="0.55" stroke={s.edge} strokeWidth="1.4" />
         )}
         <path d={d} fill="none" stroke={`url(#${idPrefix}-mh)`} strokeWidth={isRule ? 1.2 : 2} />
+        {isRule && <path d="M150,15 L156,22 L150,29 L144,22 Z" fill={`url(#${idPrefix}-mh)`} />}
         {!isRule && flank && (
           <g clipPath={`url(#${idPrefix}-np)`}>
             {flank}

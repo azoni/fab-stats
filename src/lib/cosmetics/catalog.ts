@@ -300,17 +300,19 @@ function toDocPayload(item: CosmeticItem): Record<string, unknown> {
     rarity: item.rarity,
     name: item.name,
     description: item.description ?? "",
-    price: Math.max(0, Math.round(item.price)),
+    // Clamp to the bounds in firestore.rules' validCosmeticCatalogDoc so an
+    // out-of-range admin edit can't trigger a PERMISSION_DENIED on save.
+    price: Math.min(1_000_000, Math.max(0, Math.round(item.price))),
     previewKind: item.previewKind,
     previewValue: item.previewValue,
     isActive: item.isActive !== false,
     shopVisible: item.shopVisible !== false,
-    sortOrder: item.sortOrder ?? 0,
+    sortOrder: Math.min(100_000, Math.max(0, Math.round(Number(item.sortOrder) || 0))),
     updatedAt: new Date().toISOString(),
   };
   if (item.grantsId) out.grantsId = item.grantsId;
   if (item.gachaPool) out.gachaPool = item.gachaPool;
-  if (typeof item.gachaWeight === "number") out.gachaWeight = Math.max(0, Math.round(item.gachaWeight));
+  if (typeof item.gachaWeight === "number") out.gachaWeight = Math.min(100_000, Math.max(0, Math.round(item.gachaWeight)));
   return out;
 }
 
