@@ -338,13 +338,19 @@ export function computeRollingWinRate(
 const COMPETITIVE_EVENT_TYPES: [RegExp, string][] = [
   [/super armory|super armorys/i, "Super Armory"],
   [/skirmish/i, "Skirmish"],
-  [/road to national|\brtn\b/i, "Road to Nationals"],
+  // "Road to Nationals" incl. localized names (es: "Camino a Nacionales"). Must
+  // stay ABOVE the Nationals row so a RTN event isn't caught as a full Nationals.
+  [/road to national|road to nacional|camino a(l)? nacional|\brtn\b/i, "Road to Nationals"],
   [/proquest|pro quest|\bpq\b/i, "ProQuest"],
   [/showdown/i, "Showdown"],
   [/battleground/i, "Battlegrounds"],
   [/battle hardened|\bbh\b/i, "Battle Hardened"],
   [/\bcalling\b/i, "The Calling"],
-  [/\bnational/i, "Nationals"],
+  // National championships — English "National(s)" + localized spellings so a
+  // country's Nationals classifies (and unlocks its achievements) regardless of
+  // language: es/pt "Nacional(es)/Nacionais", it "Nazionale". (fr/de "National"
+  // shares the English spelling and is already covered.)
+  [/\bnational|\bnacional|\bnacionais|\bnazionale/i, "Nationals"],
   [/pro tour/i, "Pro Tour"],
   [/worlds|world championship/i, "Worlds"],
   [/path to.*(pro tour)|convention.*5k|\bldxp\b/i, "Path to Pro Tour"],
