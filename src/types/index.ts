@@ -198,6 +198,13 @@ export interface UserProfile {
   underlinePlacement?: string;
   selectedBadgeIds?: string[];
   siteBackgroundId?: string;
+  /** Equipped cosmetics (SKU ids from the cosmeticCatalog). Purely decorative;
+   *  render is a pure function of the id so it also renders on other players'
+   *  profiles. Ownership is enforced at equip time (only owned items selectable). */
+  selectedAvatarFrameId?: string;
+  selectedCompanionId?: string;
+  selectedAuraId?: string;
+  selectedNameplateId?: string;
   gemSyncStatus?: {
     enabled: boolean;
     lastSyncAt?: string;

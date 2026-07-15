@@ -6,7 +6,7 @@
  */
 import { getAdminDb } from "./firebase-admin.ts";
 import { verifyFirebaseToken } from "./verify-auth.ts";
-import { reconcileWallet, purgeWallet } from "./lib/cosmetics-economy.ts";
+import { reconcileWallet, purgeWallet, purchaseCosmetic } from "./lib/cosmetics-economy.ts";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -23,6 +23,7 @@ function json(data: unknown, status = 200) {
 
 interface WalletRequestBody {
   action?: string;
+  itemId?: string;
 }
 
 export default async function handler(req: Request) {
@@ -51,6 +52,13 @@ export default async function handler(req: Request) {
       case "grant": {
         const { minted, balance } = await reconcileWallet(db, auth.uid);
         return json({ ok: true, minted, balance });
+      }
+      case "purchase": {
+        const itemId = typeof body.itemId === "string" ? body.itemId.trim() : "";
+        if (!itemId || itemId.length > 80) return json({ ok: false, error: "invalid_item" }, 400);
+        // Client-facing outcomes (insufficient/owned/etc.) return 200 with ok:false
+        // so the client can show a friendly message instead of treating it as an error.
+        return json(await purchaseCosmetic(db, auth.uid, itemId));
       }
       case "deleteAccount": {
         // Called during account deletion; the caller can only purge their OWN

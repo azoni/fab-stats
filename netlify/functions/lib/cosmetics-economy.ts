@@ -119,6 +119,50 @@ export async function reconcileWallet(
   });
 }
 
+export interface PurchaseResult {
+  ok: boolean;
+  error?: "not_found" | "inactive" | "already_owned" | "insufficient";
+  balance: number;
+  itemId?: string;
+}
+
+/**
+ * Buy a cosmetic SKU: server reads the catalog doc (price + isActive are NEVER
+ * trusted from the client), then in a transaction deducts coins and grants the
+ * item to the inventory. Idempotent-safe: re-buying an owned item is a no-op
+ * (returns already_owned), so a double-submit never double-charges.
+ */
+export async function purchaseCosmetic(db: Firestore, uid: string, itemId: string): Promise<PurchaseResult> {
+  const catSnap = await db.collection("cosmeticCatalog").doc(itemId).get();
+  if (!catSnap.exists) return { ok: false, error: "not_found", balance: -1 };
+  const item = catSnap.data() ?? {};
+  if (item.isActive === false) return { ok: false, error: "inactive", balance: -1 };
+  const price = Math.max(0, Math.round(Number(item.price ?? 0)));
+
+  const walletRef = db.collection("users").doc(uid).collection("wallet").doc("main");
+  const invRef = db.collection("users").doc(uid).collection("inventory").doc("main");
+
+  return db.runTransaction(async (tx) => {
+    const [wSnap, iSnap] = await tx.getAll(walletRef, invRef);
+    const w: WalletDoc = wSnap.exists ? { ...zeroWallet(), ...(wSnap.data() as WalletDoc) } : zeroWallet();
+    const items: string[] = iSnap.exists ? ((iSnap.data()?.items as string[]) ?? []) : [];
+
+    if (items.includes(itemId)) return { ok: false, error: "already_owned", balance: w.coins, itemId };
+    if (w.coins < price) return { ok: false, error: "insufficient", balance: w.coins };
+
+    const now = new Date().toISOString();
+    tx.set(
+      walletRef,
+      { ...w, coins: w.coins - price, lifetimeSpent: w.lifetimeSpent + price, updatedAt: now },
+      { merge: true },
+    );
+    const invPayload: Record<string, unknown> = { items: [...items, itemId], updatedAt: now };
+    if (!iSnap.exists) invPayload.createdAt = now;
+    tx.set(invRef, invPayload, { merge: true });
+    return { ok: true, balance: w.coins - price, itemId };
+  });
+}
+
 /**
  * Remove a user's economy docs (used only during account deletion). Deletes
  * inventory FIRST, then the wallet — so a partial failure leaves the items gone

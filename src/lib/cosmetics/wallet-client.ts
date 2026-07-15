@@ -15,7 +15,11 @@ export interface Wallet {
   pullCount: number;
 }
 
-async function callWallet(action: string, extra: Record<string, unknown> = {}): Promise<Record<string, unknown> | null> {
+async function callWallet(
+  action: string,
+  extra: Record<string, unknown> = {},
+  opts: { allowFalse?: boolean } = {},
+): Promise<Record<string, unknown> | null> {
   const user = auth.currentUser;
   if (!user) return null;
   const idToken = await user.getIdToken();
@@ -25,7 +29,9 @@ async function callWallet(action: string, extra: Record<string, unknown> = {}): 
     body: JSON.stringify({ action, ...extra }),
   });
   const payload = await res.json().catch(() => ({}));
-  if (!res.ok || payload?.ok === false) {
+  // HTTP errors always throw. `ok:false` is a soft outcome (e.g. "insufficient")
+  // that some actions (purchase) want to handle instead of throw.
+  if (!res.ok || (!opts.allowFalse && payload?.ok === false)) {
     throw new Error(typeof payload?.error === "string" ? payload.error : "wallet request failed");
   }
   return payload;
@@ -37,6 +43,26 @@ export async function reconcileWallet(): Promise<{ minted: number; balance: numb
   const r = await callWallet("grant");
   if (!r) return null;
   return { minted: Number(r.minted ?? 0), balance: Number(r.balance ?? 0) };
+}
+
+export interface PurchaseOutcome {
+  ok: boolean;
+  error?: "not_found" | "inactive" | "already_owned" | "insufficient" | "invalid_item";
+  balance: number;
+  itemId?: string;
+}
+
+/** Buy a cosmetic SKU. The server reads price/isActive from the catalog and
+ *  deducts coins + grants inventory in one transaction (never trusts the client). */
+export async function purchaseCosmetic(itemId: string): Promise<PurchaseOutcome> {
+  const r = await callWallet("purchase", { itemId }, { allowFalse: true });
+  if (!r) return { ok: false, error: "invalid_item", balance: -1 };
+  return {
+    ok: r.ok === true,
+    error: r.error as PurchaseOutcome["error"],
+    balance: Number(r.balance ?? -1),
+    itemId: typeof r.itemId === "string" ? r.itemId : undefined,
+  };
 }
 
 /** Purge the caller's wallet + inventory (account-deletion cleanup). Best-effort:
