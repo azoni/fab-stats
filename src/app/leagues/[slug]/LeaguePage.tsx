@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
@@ -71,6 +71,9 @@ export default function LeaguePage() {
   const [directory, setDirectory] = useState<StoreDirectoryEntry[]>([]);
   const [standings, setStandings] = useState<LeagueStandingEntry[] | null>(null);
   const [standingsAt, setStandingsAt] = useState<string | null>(null);
+  // True once the standings snapshot has resolved (whether or not a doc exists),
+  // so the auto-refresh effect knows the current freshness before deciding.
+  const [standingsLoaded, setStandingsLoaded] = useState(false);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
 
@@ -109,6 +112,7 @@ export default function LeaguePage() {
         setStandings(data.entries);
         setStandingsAt(data.computedAt);
       }
+      setStandingsLoaded(true);
     });
     return () => {
       unsubL();
@@ -151,6 +155,38 @@ export default function LeaguePage() {
     () => !!user && members.some((m) => m.uid === user.uid),
     [user, members],
   );
+
+  // Auto-refresh the standings snapshot when it's stale, so imported matches show
+  // up without anyone clicking "Refresh". Standings are otherwise a manual, on-click
+  // snapshot: a member imports, but the leaderboard stays frozen until someone
+  // recomputes. Here, opening the league self-heals it. Guardrails:
+  //   • only members / organizer / admin fire it (Firestore rules only let them
+  //     write the standings doc);
+  //   • once per league per mount (ref keyed by leagueId — survives league switches);
+  //   • only when the snapshot is missing or older than STANDINGS_STALE_MS, so we
+  //     don't re-read every member's matches on every view.
+  const autoRefreshedForRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!leagueId || !standingsLoaded) return;
+    if (!(isMember || canEdit)) return;
+    if (autoRefreshedForRef.current === leagueId) return;
+    const STANDINGS_STALE_MS = 10 * 60 * 1000;
+    const ageMs = standingsAt ? Date.now() - Date.parse(standingsAt) : Infinity;
+    if (ageMs < STANDINGS_STALE_MS) return;
+    autoRefreshedForRef.current = leagueId;
+    let cancelled = false;
+    (async () => {
+      try {
+        const entries = await recomputeAndStoreStandings(leagueId);
+        if (!cancelled) setStandings(entries);
+      } catch {
+        // Silent: the manual "Refresh" button stays available as a fallback.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [leagueId, standingsLoaded, standingsAt, isMember, canEdit]);
 
   // Organizer: live pending join requests for the approval panel.
   useEffect(() => {
@@ -404,7 +440,9 @@ export default function LeaguePage() {
               <h2 className="text-lg font-bold text-fab-gold">Standings</h2>
               <div className="flex items-center gap-2 text-xs text-fab-dim">
                 {standingsAt && (
-                  <span>
+                  <span
+                    title="Standings recompute automatically when a member opens this page (at most once every 10 min). Refresh forces it now."
+                  >
                     Updated{" "}
                     {new Date(standingsAt).toLocaleString(undefined, {
                       year: "numeric",
@@ -479,8 +517,9 @@ function StandingsTable({
   if (!standings) {
     return (
       <div className="rounded-lg border border-fab-border/70 bg-fab-bg/45 p-4 text-sm text-fab-dim">
-        Standings haven&apos;t been computed yet. Click <strong>Refresh</strong> (organizer / member)
-        or <strong>Preview</strong> (guest) to compute from imported matches.
+        Standings compute automatically from imported matches the next time a member
+        opens this page. A member or organizer can also click <strong>Refresh</strong> to
+        recompute now.
       </div>
     );
   }
