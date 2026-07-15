@@ -29,8 +29,11 @@ export async function saveResult(uid: string, result: CrosswordResult): Promise<
   if (prev.lastPlayedDate === result.date) return;
 
   const yesterday = getDateOffset(result.date, -1);
-  const streakContinues = prev.lastPlayedDate === yesterday && result.won;
-  const newStreak = result.won ? (streakContinues ? prev.currentStreak + 1 : 1) : 0;
+  // Play streak: continues as long as you played yesterday (win OR loss) and
+  // breaks only when a day is missed — a loss or an unlucky roll no longer
+  // erases a long chain. (The "already played today" case returns above.)
+  const streakContinues = prev.lastPlayedDate === yesterday;
+  const newStreak = streakContinues ? prev.currentStreak + 1 : 1;
 
   const updated: CrosswordStats = {
     gamesPlayed: prev.gamesPlayed + 1,

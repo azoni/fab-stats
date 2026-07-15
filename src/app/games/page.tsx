@@ -11,20 +11,48 @@ function getTodayDateStr(): string {
   return `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}-${String(now.getUTCDate()).padStart(2, "0")}`;
 }
 
-function hasPlayedToday(slug: string): boolean {
-  if (typeof window === "undefined") return false;
-  const today = getTodayDateStr();
-  const key = `${slug}-${today}`;
+function dateOffsetStr(dateStr: string, days: number): string {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d + days));
+  return `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, "0")}-${String(dt.getUTCDate()).padStart(2, "0")}`;
+}
+
+function completedOn(slug: string, dateStr: string): boolean {
   try {
-    const raw = localStorage.getItem(key);
-    if (!raw) return false;
+    const raw = localStorage.getItem(`${slug}-${dateStr}`);
     // Games persist state on the first move, so key-existence over-counts
-    // abandoned games as "done" (and lights the ✓). Require an explicit
-    // completion flag — mirrors AllGamesShareCard.
-    return JSON.parse(raw).completed === true;
+    // abandoned games as "done". Require an explicit completion flag.
+    return raw ? JSON.parse(raw).completed === true : false;
   } catch {
     return false;
   }
+}
+
+function hasPlayedToday(slug: string): boolean {
+  if (typeof window === "undefined") return false;
+  return completedOn(slug, getTodayDateStr());
+}
+
+function playedAnyOn(dateStr: string): boolean {
+  return VISIBLE_GAMES.some((g) => completedOn(g.slug, dateStr));
+}
+
+/**
+ * Overall daily-play streak from localStorage: consecutive days on which you
+ * completed at least one game. Counts today if done, and doesn't break until a
+ * full day is actually missed (so an as-yet-unplayed today still shows the
+ * streak earned through yesterday). Free + client-side — no Firestore reads.
+ */
+function computeOverallStreak(): number {
+  if (typeof window === "undefined") return 0;
+  const today = getTodayDateStr();
+  let cursor = playedAnyOn(today) ? today : dateOffsetStr(today, -1);
+  let streak = 0;
+  for (let i = 0; i < 400 && playedAnyOn(cursor); i++) {
+    streak++;
+    cursor = dateOffsetStr(cursor, -1);
+  }
+  return streak;
 }
 
 const CATEGORY_BORDER_COLORS: Record<string, string> = {
@@ -37,12 +65,15 @@ const CATEGORY_BORDER_COLORS: Record<string, string> = {
 export default function GamesPage() {
   const [showShare, setShowShare] = useState(false);
   const [playedSlugs, setPlayedSlugs] = useState<Set<string>>(() => new Set());
+  const [streak, setStreak] = useState(0);
 
   useEffect(() => {
     setPlayedSlugs(new Set(VISIBLE_GAMES.filter((game) => hasPlayedToday(game.slug)).map((game) => game.slug)));
+    setStreak(computeOverallStreak());
   }, []);
 
   const completed = playedSlugs.size;
+  const playedToday = completed > 0;
   const remaining = Math.max(0, VISIBLE_GAMES.length - completed);
   const categoryStats = useMemo(
     () =>
@@ -69,7 +100,8 @@ export default function GamesPage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-3 gap-1.5 sm:min-w-[24rem] sm:gap-2">
+          <div className="grid grid-cols-2 gap-1.5 sm:min-w-[28rem] sm:grid-cols-4 sm:gap-2">
+            <GameMetric label="Day streak" value={`🔥 ${streak}`} tone="flame" />
             <GameMetric label="Games" value={VISIBLE_GAMES.length.toString()} />
             <GameMetric label="Done" value={completed.toString()} tone="green" />
             <GameMetric label="Left" value={remaining.toString()} tone="blue" />
@@ -84,7 +116,13 @@ export default function GamesPage() {
           </span>
           <div>
             <p className="text-sm font-black uppercase tracking-[0.12em] text-fab-text">Today&apos;s run</p>
-            <p className="text-xs text-fab-muted">New challenges refresh at midnight UTC.</p>
+            <p className="text-xs text-fab-muted">
+              {streak > 0
+                ? playedToday
+                  ? `🔥 ${streak}-day streak going — new challenges at midnight UTC.`
+                  : `🔥 ${streak}-day streak — play one today to keep it alive.`
+                : "Play any game daily to start a streak. Refreshes at midnight UTC."}
+            </p>
           </div>
         </div>
         {completed >= 2 && (
@@ -149,8 +187,8 @@ export default function GamesPage() {
   );
 }
 
-function GameMetric({ label, value, tone = "gold" }: { label: string; value: string; tone?: "gold" | "green" | "blue" }) {
-  const color = tone === "green" ? "text-emerald-300" : tone === "blue" ? "text-sky-300" : "text-fab-gold";
+function GameMetric({ label, value, tone = "gold" }: { label: string; value: string; tone?: "gold" | "green" | "blue" | "flame" }) {
+  const color = tone === "green" ? "text-emerald-300" : tone === "blue" ? "text-sky-300" : tone === "flame" ? "text-orange-300" : "text-fab-gold";
   return (
     <div className="rounded-lg border border-fab-border/70 bg-fab-bg/45 px-3 py-2 shadow-inner shadow-black/10">
       <p className={`text-lg font-black leading-none sm:text-xl ${color}`}>{value}</p>
