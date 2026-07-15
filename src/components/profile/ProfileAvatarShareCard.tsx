@@ -5,7 +5,7 @@
  * size. Card is a pure presentational component (for html-to-image capture); the
  * modal owns data + copy/download. Only surfaced when COSMETICS_ENABLED.
  */
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { UserProfile } from "@/types";
 import { EquippedAvatar, NameWithPlate } from "@/components/cosmetics/EquippedAvatar";
 import { useInventory } from "@/lib/cosmetics/inventory";
@@ -138,9 +138,21 @@ export function AvatarShareModal({
   onClose: () => void;
 }) {
   const cardRef = useRef<HTMLDivElement>(null);
+  const copyRef = useRef<HTMLButtonElement>(null);
   const { items } = useInventory(profile.uid);
   const [status, setStatus] = useState<"idle" | "working" | "done" | "text" | "failed">("idle");
   const cosmeticsCount = useMemo(() => items.length, [items]);
+
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", h);
+    const prev = document.activeElement as HTMLElement | null;
+    copyRef.current?.focus();
+    return () => {
+      window.removeEventListener("keydown", h);
+      prev?.focus?.();
+    };
+  }, [onClose]);
 
   const profileUrl =
     typeof window !== "undefined" ? `${window.location.origin}/player/${encodeURIComponent(profile.username || "")}` : "";
@@ -173,7 +185,13 @@ export function AvatarShareModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-black/70 p-4" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-50 grid place-items-center bg-black/70 p-4"
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Share your avatar card"
+    >
       <div
         className="w-full max-w-sm rounded-2xl border border-fab-border bg-fab-surface p-4"
         onClick={(e) => e.stopPropagation()}
@@ -195,10 +213,11 @@ export function AvatarShareModal({
 
         <div className="mt-4 flex items-center gap-2">
           <button
+            ref={copyRef}
             type="button"
             onClick={handleCopy}
             disabled={status === "working"}
-            className="flex-1 rounded-lg border border-fab-gold/40 bg-fab-gold/20 px-3 py-2 text-sm font-semibold text-fab-gold hover:bg-fab-gold/25 disabled:opacity-50"
+            className="flex-1 rounded-lg border border-fab-gold/40 bg-fab-gold/20 px-3 py-2 text-sm font-semibold text-fab-gold hover:bg-fab-gold/25 focus:outline-none focus:ring-2 focus:ring-fab-gold/50 disabled:opacity-50"
           >
             {status === "working"
               ? "Capturing…"
