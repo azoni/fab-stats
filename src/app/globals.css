@@ -1020,6 +1020,21 @@ table thead tr {
 .stagger-grid > *:nth-child(11) { animation-delay: 400ms; }
 .stagger-grid > *:nth-child(12) { animation-delay: 440ms; }
 
+/* ── Global keyboard-focus baseline (WCAG 2.4.7) ──
+   Focus styling previously existed only on inputs + ui/Button, so the sidebar
+   nav, mobile tab bar, and the many inline <Link> buttons showed no visible
+   focus. Element-level selectors apply to those plain elements while any
+   component that opts out with `focus:outline-none` (utility class) still wins
+   with its own ring. Only shows for keyboard/AT users (:focus-visible). */
+a:focus-visible,
+button:focus-visible,
+[role="button"]:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--color-fab-gold);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
 /* ── Input focus glow ── */
 input[class*="border-fab-border"]:focus,
 select[class*="border-fab-border"]:focus,
@@ -1191,8 +1206,11 @@ button:active:not(:disabled) {
   --color-fab-loss: #f87171;
   --color-fab-draw: #a0b0ff;
   --color-fab-text: #e0e4f0;
-  --color-fab-muted: #6b7094;
-  --color-fab-dim: #3a3d54;
+  /* Raised for WCAG AA: prior values were ~4.1:1 (muted) and ~1.9:1 (dim) over
+     fab-bg — and these tokens carry nearly all secondary text (timestamps,
+     @usernames, captions), often at 10-11px. Now ≈5.5:1 and ≈4.6:1. */
+  --color-fab-muted: #8b90b4;
+  --color-fab-dim: #6d7398;
   --radius-sm: 0.625rem;
   --radius-md: 0.875rem;
   --radius-lg: 1.125rem;
