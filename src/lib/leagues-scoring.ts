@@ -3,7 +3,7 @@ import { db } from "./firebase";
 import { getLeague, getLeagueMembers } from "./leagues";
 import { slugifyStoreName } from "./store-directory";
 import { getStoreAliases, buildAliasIndex, expandSlugSet, resolveCanonicalSlug } from "./store-aliases";
-import { getMatchesByUserId } from "./firestore-storage";
+import { getMatchesInDateRange } from "./firestore-storage";
 import { getEventType } from "./stats";
 import { MatchResult, type League, type LeagueStandingEntry, type MatchRecord } from "@/types";
 
@@ -89,7 +89,7 @@ export async function computeLeagueStandings(leagueId: string): Promise<LeagueSt
     /* no prior standings yet */
   }
 
-  const entries: LeagueStandingEntry[] = await Promise.all(
+  const rawEntries: (LeagueStandingEntry | null)[] = await Promise.all(
     members.map(async (member) => {
       const identity = {
         uid: member.uid,
@@ -100,16 +100,18 @@ export async function computeLeagueStandings(leagueId: string): Promise<LeagueSt
       let matches: MatchRecord[] = [];
       let readFailed = false;
       try {
-        matches = await getMatchesByUserId(member.uid);
+        // Read only the league window, not the member's whole career.
+        matches = await getMatchesInDateRange(member.uid, league.startDate, league.endDate);
       } catch {
         readFailed = true;
       }
-      // Couldn't read this member's matches: preserve their prior standing (with
-      // refreshed identity) rather than overwriting it with zeros. They'll get an
-      // accurate score whenever they themselves refresh (owners can read).
+      // Couldn't read this member's matches (private profile, or transient error):
+      // preserve their prior standing (with refreshed identity) rather than
+      // overwriting it with zeros. With NO prior, omit them entirely instead of
+      // fabricating a 0 that would pin them at zero until they refresh themselves.
       if (readFailed) {
         const prior = priorByUid.get(member.uid);
-        if (prior) return { ...prior, ...identity };
+        return prior ? { ...prior, ...identity } : null;
       }
       const qualifying = matches.filter((m) => matchQualifiesForLeague(m, league, storeSlugSet));
 
@@ -141,6 +143,11 @@ export async function computeLeagueStandings(leagueId: string): Promise<LeagueSt
         storesPlayed: storeSlugsPlayed.size,
       };
     }),
+  );
+
+  // Drop omitted members (unreadable with no prior score — see above).
+  const entries: LeagueStandingEntry[] = rawEntries.filter(
+    (e): e is LeagueStandingEntry => e !== null,
   );
 
   // Sort: points desc, win rate desc, wins desc, fewer matches first.
@@ -205,7 +212,11 @@ export async function computeLeagueMatchups(leagueId: string): Promise<LeagueMat
   let totalMatches = 0;
 
   const perMember = await Promise.all(
-    members.map((m) => getMatchesByUserId(m.uid).catch(() => [] as MatchRecord[])),
+    members.map((m) =>
+      getMatchesInDateRange(m.uid, league.startDate, league.endDate).catch(
+        () => [] as MatchRecord[],
+      ),
+    ),
   );
 
   for (const matches of perMember) {

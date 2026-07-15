@@ -346,6 +346,31 @@ export async function getMatchesByUserId(
   return snap.docs.map((d) => ({ id: d.id, ...d.data() })) as MatchRecord[];
 }
 
+/**
+ * Read only the matches whose event `date` falls in [startDate, endDate]
+ * (inclusive). `date` is stored as a plain `YYYY-MM-DD` string, so a lexical
+ * range query is exact and needs no composite index (single-field auto-index).
+ *
+ * This exists for league scoring, which otherwise reads every member's ENTIRE
+ * career history just to score the few matches inside a league's date window
+ * (e.g. 878 docs read to use 4). Callers that legitimately need the full history
+ * should keep using getMatchesByUserId. A match with no `date` can't qualify for
+ * a league anyway, so excluding it here is correct.
+ */
+export async function getMatchesInDateRange(
+  userId: string,
+  startDate: string,
+  endDate: string,
+): Promise<MatchRecord[]> {
+  const q = query(
+    matchesCollection(userId),
+    where("date", ">=", startDate),
+    where("date", "<=", endDate),
+  );
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() })) as MatchRecord[];
+}
+
 export async function searchUsernames(
   prefix: string,
   maxResults = 20
