@@ -10,6 +10,7 @@ import {
   onSnapshot,
   query,
   where,
+  limit,
   type Unsubscribe,
 } from "firebase/firestore";
 import { db } from "./firebase";
@@ -133,7 +134,11 @@ export function subscribeFriendships(
 ): Unsubscribe {
   const q = query(
     collection(db, "friendships"),
-    where("participants", "array-contains", userId)
+    where("participants", "array-contains", userId),
+    // Always-mounted (via the Navbar) for the whole session — bound it so it
+    // can't grow unbounded as the social graph does. (notifications/conversations
+    // already cap at 50.)
+    limit(200)
   );
   return onSnapshot(q, (snapshot) => {
     const friendships = snapshot.docs.map((d) => ({

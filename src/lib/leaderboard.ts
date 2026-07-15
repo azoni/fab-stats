@@ -417,7 +417,12 @@ export async function updateLeaderboardEntry(
   }
 
   await setDoc(doc(leaderboardCollection(), profile.uid), clean);
-  invalidateLeaderboardCache();
+  // Intentionally NOT invalidating the cache here. The home page fires this
+  // self-sync write on load (throttled ~10 min), and a blanket invalidation
+  // nuked all three cache tiers every time — so the next /activity or
+  // /leaderboard visit paid a fresh full-collection (~3.7k-doc) read. A user's
+  // own rank being ≤15 min stale (the cache TTL) is harmless. Explicit admin /
+  // data-reset flows still call invalidateLeaderboardCache() directly.
 }
 
 // ── Cached one-time fetch (replaces real-time subscription) ──
