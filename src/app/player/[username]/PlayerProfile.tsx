@@ -7,7 +7,7 @@ import { BadgeStrip } from "@/components/profile/BadgeStrip";
 import { EquippedAvatar, NameWithPlate } from "@/components/cosmetics/EquippedAvatar";
 import { VisitorsRow } from "@/components/profile/VisitorsRow";
 import { AvatarShareModal } from "@/components/profile/ProfileAvatarShareCard";
-import { ProfileCosmeticsPanel } from "@/components/profile/ProfileCosmeticsPanel";
+import { ProfileCustomizeDrawer } from "@/components/profile/ProfileCustomizeDrawer";
 import { recordProfileVisit } from "@/lib/cosmetics/visitors";
 import { COSMETICS_ENABLED } from "@/lib/cosmetics/flags";
 import { HeroShieldBadge } from "@/components/profile/HeroShieldBadge";
@@ -49,8 +49,8 @@ import { ProfileShareModal } from "@/components/profile/ProfileCard";
 import { BackgroundChooser } from "@/components/profile/BackgroundChooser";
 import { ShowcaseSection } from "@/components/profile/ShowcaseSection";
 import { KudosSection } from "@/components/profile/KudosSection";
-import { CardBorderWrapper, BorderPicker, UnderlinePicker } from "@/components/profile/CardBorderWrapper";
-import type { BorderStyleType, BorderSelection, UnderlineConfig, UnderlineSelection } from "@/components/profile/CardBorderWrapper";
+import { CardBorderWrapper } from "@/components/profile/CardBorderWrapper";
+import type { UnderlineConfig } from "@/components/profile/CardBorderWrapper";
 import { loadKudosCounts, loadGivenKudos, loadKudosGivenCounts } from "@/lib/kudos";
 import type { MatchRecord, UserProfile, Achievement } from "@/types";
 import { MatchResult } from "@/types";
@@ -103,6 +103,7 @@ export default function PlayerProfile() {
   const [bestFinishShareOpen, setBestFinishShareOpen] = useState(false);
   const [profileShareOpen, setProfileShareOpen] = useState(false);
   const [avatarShareOpen, setAvatarShareOpen] = useState(false);
+  const [customizeOpen, setCustomizeOpen] = useState(false);
   const [emblemPickerMode, setEmblemPickerMode] = useState<"talent" | "class" | null>(null);
   const [showBadgePicker, setShowBadgePicker] = useState(false);
   const [achievementsExpanded, setAchievementsExpanded] = useState(false);
@@ -144,10 +145,6 @@ export default function PlayerProfile() {
 
   const [gaveFeedback, setGaveFeedback] = useState(false);
   const [previewAsVisitor, setPreviewAsVisitor] = useState(false);
-  const [editingSocials, setEditingSocials] = useState(false);
-  const [editingBorder, setEditingBorder] = useState(false);
-  const [editingUnderline, setEditingUnderline] = useState(false);
-  const [socialDraft, setSocialDraft] = useState<{ twitter: string; discord: string; fabrary: string; fabraryName: string; metafy: string; metafyTitle: string }>({ twitter: "", discord: "", fabrary: "", fabraryName: "", metafy: "", metafyTitle: "" });
   const [discordCopied, setDiscordCopied] = useState(false);
 
   // Auto-expand achievements if navigated with #achievements hash
@@ -293,18 +290,6 @@ export default function PlayerProfile() {
 
         if (!cancelled) {
           setState({ status: "loaded", profile, matches, isOwner });
-
-          // Populate social link draft for owner
-          if (isOwner) {
-            setSocialDraft({
-              twitter: profile.socialLinks?.twitter || "",
-              discord: profile.socialLinks?.discord || "",
-              fabrary: profile.socialLinks?.fabrary || "",
-              fabraryName: profile.socialLinks?.fabraryName || "",
-              metafy: profile.socialLinks?.metafy || "",
-              metafyTitle: profile.socialLinks?.metafyTitle || "",
-            });
-          }
 
           // Sync leaderboard entry when the owner views their profile
           if (isOwner && matches.length > 0) {
@@ -698,38 +683,34 @@ export default function PlayerProfile() {
               <span className="text-xs font-semibold text-fab-dim">Private Profile — only visible to you (admin) and the owner</span>
             </div>
           )}
-          {/* View as visitor toggle */}
-          {actualIsOwner && (
-            <div className={`flex items-center justify-between mb-4 px-3 py-2 rounded-lg ${previewAsVisitor ? "bg-indigo-500/10 border border-indigo-500/25" : "border border-transparent"}`}>
-              {previewAsVisitor && (
-                <span className="text-xs font-medium text-indigo-300">Viewing as visitor</span>
-              )}
+          {/* Owner: Customize button (all editing lives in the drawer). While
+              previewing as a visitor, show the exit banner instead. */}
+          {actualIsOwner && previewAsVisitor && (
+            <div className="flex items-center justify-between mb-4 px-3 py-2 rounded-lg bg-indigo-500/10 border border-indigo-500/25">
+              <span className="text-xs font-medium text-indigo-300">Viewing as visitor</span>
               <button
-                onClick={() => setPreviewAsVisitor((v) => !v)}
-                className={`inline-flex items-center gap-1.5 text-xs font-medium transition-colors ${previewAsVisitor ? "text-indigo-300 hover:text-indigo-200 ml-auto" : "text-fab-dim hover:text-fab-text ml-auto"}`}
+                onClick={() => setPreviewAsVisitor(false)}
+                className="inline-flex items-center gap-1.5 text-xs font-medium text-indigo-300 hover:text-indigo-200"
               >
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  {previewAsVisitor ? (
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.451 10.451 0 0 1 12 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 0 1-4.293 5.774M6.228 6.228 3 3m3.228 3.228 3.65 3.65m7.894 7.894L21 21m-3.228-3.228-3.65-3.65m0 0a3 3 0 1 0-4.243-4.243m4.242 4.242L9.88 9.88" />
-                  ) : (
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178ZM15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-                  )}
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />
                 </svg>
-                {previewAsVisitor ? "Back to my view" : "View as visitor"}
+                Back to my view
               </button>
             </div>
           )}
-          {isOwner && (
+          {actualIsOwner && !previewAsVisitor && (
             <div className="flex justify-end mb-3">
               <button
-                onClick={() => setShowBackgroundPicker(true)}
-                className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-md border border-fab-border text-fab-dim hover:text-fab-text hover:border-fab-muted transition-colors"
-                title="Change profile background"
+                onClick={() => setCustomizeOpen(true)}
+                className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border border-fab-gold/40 bg-fab-gold/15 text-fab-gold hover:bg-fab-gold/25 transition-colors"
+                title="Customize your profile"
               >
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="m2.25 15 5.159-5.159a2.25 2.25 0 0 1 3.182 0L15 14.25m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0L21.75 15m-10.5-6h.008v.008h-.008V9Zm-8.25 9h18a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5h-18A1.5 1.5 0 0 0 1.5 6v10.5A1.5 1.5 0 0 0 3 18Z" />
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
                 </svg>
-                Change Background
+                Customize
               </button>
             </div>
           )}
@@ -745,7 +726,7 @@ export default function PlayerProfile() {
                     Updated {new Date(lastUpdated).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                   </span>
                 )}
-                <BadgeStrip selectedBadgeIds={profile.selectedBadgeIds} earnedAchievementIds={achievements.map((a) => a.id)} isOwner={isOwner && !previewAsVisitor} onEdit={() => setShowBadgePicker(true)} />
+                <BadgeStrip selectedBadgeIds={profile.selectedBadgeIds} earnedAchievementIds={achievements.map((a) => a.id)} isOwner={false} />
               </div>
               <VisitorsRow profileUid={profile.uid} />
               {COSMETICS_ENABLED && (actualIsOwner || isAdmin) && (
@@ -761,88 +742,7 @@ export default function PlayerProfile() {
                 </button>
               )}
               {/* Social links — always-visible inputs for owner, display-only for visitors */}
-              {isOwner && !previewAsVisitor ? (
-                <div className="mt-2 space-y-1.5">
-                  <p className="text-[10px] text-fab-dim uppercase tracking-wider font-medium">Links</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    <div className="flex items-center gap-1 bg-fab-bg border border-fab-border rounded-lg px-2 py-1">
-                      <svg className="w-3 h-3 text-fab-dim shrink-0" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
-                      <input type="text" placeholder="X handle" value={socialDraft.twitter} onChange={(e) => setSocialDraft((d) => ({ ...d, twitter: e.target.value }))}
-                        className="w-20 bg-transparent text-[11px] text-fab-text placeholder:text-fab-dim focus:outline-none" />
-                    </div>
-                    <div className="flex items-center gap-1 bg-fab-bg border border-fab-border rounded-lg px-2 py-1">
-                      <svg className="w-3 h-3 text-fab-dim shrink-0" viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.37a19.791 19.791 0 00-4.885-1.515.074.074 0 00-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 00-5.487 0 12.64 12.64 0 00-.617-1.25.077.077 0 00-.079-.037A19.736 19.736 0 003.677 4.37a.07.07 0 00-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 00.031.057 19.9 19.9 0 005.993 3.03.078.078 0 00.084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 00-.041-.106 13.107 13.107 0 01-1.872-.892.077.077 0 01-.008-.128 10.2 10.2 0 00.372-.292.074.074 0 01.077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 01.078.01c.12.098.246.198.373.292a.077.077 0 01-.006.127 12.299 12.299 0 01-1.873.892.077.077 0 00-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 00.084.028 19.839 19.839 0 006.002-3.03.077.077 0 00.032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 00-.031-.03z"/></svg>
-                      <input type="text" placeholder="Discord" value={socialDraft.discord} onChange={(e) => setSocialDraft((d) => ({ ...d, discord: e.target.value }))}
-                        className="w-20 bg-transparent text-[11px] text-fab-text placeholder:text-fab-dim focus:outline-none" />
-                    </div>
-                    <div className="flex items-center gap-1 bg-fab-bg border border-fab-border rounded-lg px-2 py-1">
-                      <svg className="w-3 h-3 text-fab-dim shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
-                      <input type="text" placeholder="Deck URL" value={socialDraft.fabrary} onChange={(e) => setSocialDraft((d) => ({ ...d, fabrary: e.target.value }))}
-                        className="w-24 bg-transparent text-[11px] text-fab-text placeholder:text-fab-dim focus:outline-none" />
-                    </div>
-                    {socialDraft.fabrary.trim() && (
-                      <div className="flex items-center gap-1 bg-fab-bg border border-fab-border rounded-lg px-2 py-1">
-                        <input type="text" placeholder="Deck name" value={socialDraft.fabraryName} onChange={(e) => setSocialDraft((d) => ({ ...d, fabraryName: e.target.value }))}
-                          className="w-20 bg-transparent text-[11px] text-fab-text placeholder:text-fab-dim focus:outline-none" />
-                      </div>
-                    )}
-                    <div className="flex items-center gap-1 bg-fab-bg border border-fab-border rounded-lg px-2 py-1">
-                      <svg className="w-3 h-3 text-fab-dim shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3l7 4v10l-7 4-7-4V7l7-4z"/><path d="M12 7v10"/><path d="M8.5 9.5l3.5 2 3.5-2"/></svg>
-                      <input type="text" placeholder="Metafy URL" value={socialDraft.metafy} onChange={(e) => setSocialDraft((d) => ({ ...d, metafy: e.target.value }))}
-                        className="w-24 bg-transparent text-[11px] text-fab-text placeholder:text-fab-dim focus:outline-none" />
-                    </div>
-                    {socialDraft.metafy.trim() && (
-                      <div className="flex items-center gap-1 bg-fab-bg border border-fab-border rounded-lg px-2 py-1">
-                        <input type="text" placeholder="Guide title" value={socialDraft.metafyTitle} onChange={(e) => setSocialDraft((d) => ({ ...d, metafyTitle: e.target.value }))}
-                          className="w-24 bg-transparent text-[11px] text-fab-text placeholder:text-fab-dim focus:outline-none" />
-                      </div>
-                    )}
-                  </div>
-                  {(socialDraft.twitter !== (profile.socialLinks?.twitter || "") ||
-                    socialDraft.discord !== (profile.socialLinks?.discord || "") ||
-                    socialDraft.fabrary !== (profile.socialLinks?.fabrary || "") ||
-                    socialDraft.fabraryName !== (profile.socialLinks?.fabraryName || "") ||
-                    socialDraft.metafy !== (profile.socialLinks?.metafy || "") ||
-                    socialDraft.metafyTitle !== (profile.socialLinks?.metafyTitle || "")) && (
-                    <button
-                      onClick={async () => {
-                        const links: Record<string, string | string[]> = { ...(profile.socialLinks || {}) };
-                        const setText = (key: string, value: string) => {
-                          const trimmed = value.trim();
-                          if (trimmed) links[key] = trimmed;
-                          else delete links[key];
-                        };
-                        setText("twitter", socialDraft.twitter.trim().replace(/^@/, ""));
-                        setText("discord", socialDraft.discord);
-                        setText("fabrary", socialDraft.fabrary);
-                        setText("fabraryName", socialDraft.fabraryName);
-                        const metafy = socialDraft.metafy.trim();
-                        if (metafy) {
-                          links.metafy = metafy;
-                          links.metafyGuide = metafy;
-                        } else {
-                          delete links.metafy;
-                          delete links.metafyGuide;
-                        }
-                        const metafyTitle = socialDraft.metafyTitle.trim();
-                        if (metafyTitle) {
-                          links.metafyTitle = metafyTitle;
-                          links.metafyGuideTitle = metafyTitle;
-                        } else {
-                          delete links.metafyTitle;
-                          delete links.metafyGuideTitle;
-                        }
-                        const nextLinks = Object.keys(links).length > 0 ? (links as NonNullable<typeof profile.socialLinks>) : {};
-                        await updateProfile(profile.uid, { socialLinks: nextLinks });
-                        setState((prev) => prev.status === "loaded" ? { ...prev, profile: { ...prev.profile, socialLinks: nextLinks } } : prev);
-                      }}
-                      className="px-2.5 py-1 rounded-lg text-[11px] font-medium bg-fab-gold/20 text-fab-gold hover:bg-fab-gold/30 transition-colors"
-                    >
-                      Save Links
-                    </button>
-                  )}
-                </div>
-              ) : (profile.socialLinks?.twitter || profile.socialLinks?.discord || profile.socialLinks?.fabrary || profile.socialLinks?.metafy || profile.socialLinks?.metafyGuide || profile.socialLinks?.metafyProfile) ? (
+              {(profile.socialLinks?.twitter || profile.socialLinks?.discord || profile.socialLinks?.fabrary || profile.socialLinks?.metafy || profile.socialLinks?.metafyGuide || profile.socialLinks?.metafyProfile) ? (
                 <div className="flex items-center gap-2 mt-1 flex-wrap">
                   {profile.socialLinks?.twitter && (
                     <a href={`https://x.com/${profile.socialLinks.twitter.replace(/^@/, "")}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-[11px] text-fab-muted hover:text-fab-text transition-colors">
@@ -900,7 +800,7 @@ export default function PlayerProfile() {
                   isAdmin={isAdmin}
                 />
               )}
-              <EmblemDisplay talentEmblemId={profile.selectedEmblem} classEmblemId={profile.selectedClassEmblem} isOwner={isOwner} onClickTalent={() => setEmblemPickerMode("talent")} onClickClass={() => setEmblemPickerMode("class")} />
+              <EmblemDisplay talentEmblemId={profile.selectedEmblem} classEmblemId={profile.selectedClassEmblem} isOwner={false} />
             </div>
           </div>
           {/* Score badges — bottom right */}
@@ -928,75 +828,6 @@ export default function PlayerProfile() {
               </Link>
             )}
           </div>
-          {/* Border picker toggle — inside card for owner with playoff finishes (admin gets all) */}
-          {isOwner && (playoffFinishes.length > 0 || isAdmin) && (
-            <div className="flex flex-col items-center gap-1 mt-1">
-              <button
-                onClick={() => setEditingBorder((v) => !v)}
-                className="flex items-center gap-1 text-fab-muted hover:text-fab-gold transition-colors"
-                title="Edit border style"
-              >
-                <span className="text-[9px] uppercase tracking-wider font-medium">Border</span>
-                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
-                </svg>
-              </button>
-              {editingBorder && (
-                <BorderPicker
-                  playoffFinishes={isAdmin ? [
-                    ...playoffFinishes,
-                    ...["Battle Hardened", "The Calling", "Nationals", "Pro Tour", "Worlds"].flatMap(et =>
-                      (["top8", "top4", "finalist", "champion"] as const).map(pl => ({ type: pl, eventType: et, eventName: `${et} (test)`, eventDate: "", format: "" }))
-                    ),
-                  ] : playoffFinishes}
-                  current={{
-                    eventType: profile.borderEventType || (() => { const tierRank: Record<string, number> = { "Battle Hardened": 1, "The Calling": 2, Nationals: 3, "Pro Tour": 4, Worlds: 5 }; let best = ""; let bestScore = 0; for (const f of playoffFinishes) { const s = tierRank[f.eventType] || 0; if (s > bestScore) { best = f.eventType; bestScore = s; } } return best; })(),
-                    placement: profile.borderPlacement || (() => { const pr: Record<string, number> = { top8: 1, top4: 2, finalist: 3, champion: 4 }; let best = "top8"; let bestR = 0; for (const f of playoffFinishes) { const r = pr[f.type] || 0; if (r > bestR) { best = f.type; bestR = r; } } return best; })(),
-                    style: (profile.borderStyle || "beam") as BorderStyleType,
-                  }}
-                  onChange={async (sel: BorderSelection) => {
-                    await updateProfile(profile.uid, { borderStyle: sel.style, borderEventType: sel.eventType, borderPlacement: sel.placement });
-                    setState((prev) => prev.status === "loaded" ? { ...prev, profile: { ...prev.profile, borderStyle: sel.style, borderEventType: sel.eventType, borderPlacement: sel.placement } } : prev);
-                  }}
-                />
-              )}
-            </div>
-          )}
-          {/* Underline picker toggle — inside card for owner with minor event finishes (admin gets all) */}
-          {isOwner && (minorFinishes.length > 0 || isAdmin) && (
-            <div className="flex flex-col items-center gap-1 mt-1">
-              <button
-                onClick={() => setEditingUnderline((v) => !v)}
-                className="flex items-center gap-1 text-fab-muted hover:text-fab-gold transition-colors"
-                title="Edit underline style"
-              >
-                <span className="text-[9px] uppercase tracking-wider font-medium">Underline</span>
-                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
-                </svg>
-              </button>
-              {editingUnderline && (
-                <UnderlinePicker
-                  minorFinishes={isAdmin ? [
-                    ...minorFinishes,
-                    // Admin test combos — Armory only gets "undefeated", others get full placements
-                    { type: "undefeated" as const, eventType: "Armory", eventName: "Armory (test)", eventDate: "", format: "" },
-                    ...["Skirmish", "Road to Nationals", "ProQuest"].flatMap(et =>
-                      (["top8", "top4", "finalist", "champion"] as const).map(pl => ({ type: pl, eventType: et, eventName: `${et} (test)`, eventDate: "", format: "" }))
-                    ),
-                  ] : minorFinishes}
-                  current={{
-                    eventType: profileObj?.underlineEventType ?? (() => { const tierRank: Record<string, number> = { Armory: 1, Skirmish: 2, "Road to Nationals": 3, ProQuest: 4 }; let best = ""; let bestScore = 0; for (const f of minorFinishes) { const s = tierRank[f.eventType] || 0; if (s > bestScore) { best = f.eventType; bestScore = s; } } return best; })(),
-                    placement: profileObj?.underlinePlacement ?? (() => { const pr: Record<string, number> = { undefeated: 1, top8: 1, top4: 2, finalist: 3, champion: 4 }; let best = ""; let bestR = 0; for (const f of minorFinishes) { const r = pr[f.type] || 0; if (r > bestR) { best = f.type; bestR = r; } } return best; })(),
-                  }}
-                  onChange={async (sel: UnderlineSelection) => {
-                    await updateProfile(profile.uid, { underlineEventType: sel.eventType, underlinePlacement: sel.placement });
-                    setState((prev) => prev.status === "loaded" ? { ...prev, profile: { ...prev.profile, underlineEventType: sel.eventType, underlinePlacement: sel.placement } } : prev);
-                  }}
-                />
-              )}
-            </div>
-          )}
         </CardBorderWrapper>
 
         {/* Creator spotlight card */}
@@ -1173,22 +1004,6 @@ export default function PlayerProfile() {
         </div>
       )}
 
-      {fm.length === 0 && isFiltered ? (
-        <div className="text-center py-16">
-          <p className="text-fab-muted text-lg">No matches found for this filter.</p>
-          <button
-            onClick={() => { setFilterFormat("all"); setFilterTier("all"); setFilterEventType("all"); setFilterHero("all"); }}
-            className="mt-4 text-fab-gold hover:underline text-sm"
-          >
-            Clear Filters
-          </button>
-        </div>
-      ) : (
-      <>
-      {/* Leaderboard Rankings */}
-      <LeaderboardCrowns ranks={userRanks} />
-
-
       {/* Profile background picker modal */}
       {showBackgroundPicker && isOwner && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setShowBackgroundPicker(false)}>
@@ -1317,6 +1132,50 @@ export default function PlayerProfile() {
         />
       )}
 
+      {actualIsOwner && (
+        <ProfileCustomizeDrawer
+          open={customizeOpen}
+          onClose={() => setCustomizeOpen(false)}
+          profile={profile}
+          isAdmin={isAdmin}
+          overlayOpen={showBackgroundPicker || showBadgePicker || !!emblemPickerMode}
+          playoffFinishes={playoffFinishes}
+          minorFinishes={minorFinishes}
+          onEditBackground={() => setShowBackgroundPicker(true)}
+          onEditBadges={() => setShowBadgePicker(true)}
+          onEditEmblem={(mode) => setEmblemPickerMode(mode)}
+          onEnterPreview={() => { setCustomizeOpen(false); setPreviewAsVisitor(true); }}
+          onSaveLinks={async (links) => {
+            await updateProfile(profile.uid, { socialLinks: links });
+            setState((prev) => prev.status === "loaded" ? { ...prev, profile: { ...prev.profile, socialLinks: links } } : prev);
+          }}
+          onSaveBorder={async (sel) => {
+            await updateProfile(profile.uid, { borderStyle: sel.style, borderEventType: sel.eventType, borderPlacement: sel.placement });
+            setState((prev) => prev.status === "loaded" ? { ...prev, profile: { ...prev.profile, borderStyle: sel.style, borderEventType: sel.eventType, borderPlacement: sel.placement } } : prev);
+          }}
+          onSaveUnderline={async (sel) => {
+            await updateProfile(profile.uid, { underlineEventType: sel.eventType, underlinePlacement: sel.placement });
+            setState((prev) => prev.status === "loaded" ? { ...prev, profile: { ...prev.profile, underlineEventType: sel.eventType, underlinePlacement: sel.placement } } : prev);
+          }}
+        />
+      )}
+
+      {fm.length === 0 && isFiltered ? (
+        <div className="text-center py-16">
+          <p className="text-fab-muted text-lg">No matches found for this filter.</p>
+          <button
+            onClick={() => { setFilterFormat("all"); setFilterTier("all"); setFilterEventType("all"); setFilterHero("all"); }}
+            className="mt-4 text-fab-gold hover:underline text-sm"
+          >
+            Clear Filters
+          </button>
+        </div>
+      ) : (
+      <>
+      {/* Leaderboard Rankings */}
+      <LeaderboardCrowns ranks={userRanks} />
+
+
       {/* Major Event Badges — collapsible */}
       {eventBadges.length > 0 && (
         <div className="bg-fab-surface/50 border border-fab-border rounded-lg overflow-hidden">
@@ -1343,9 +1202,6 @@ export default function PlayerProfile() {
           )}
         </div>
       )}
-
-      {/* Owner cosmetics manager (flag-gated) */}
-      {isOwner && !previewAsVisitor && <ProfileCosmeticsPanel profile={profile} />}
 
       {/* Admin badge management panel */}
       {isAdmin && !isOwner && profileUid && (
