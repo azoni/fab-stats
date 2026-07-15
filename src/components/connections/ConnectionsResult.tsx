@@ -1,4 +1,5 @@
 "use client";
+import { NextPuzzleCountdown } from "@/components/games/NextPuzzleCountdown";
 import type { ConnectionsStats } from "@/lib/connections/types";
 import { MAX_MISTAKES } from "@/lib/connections/puzzle-generator";
 
@@ -10,16 +11,7 @@ const DIFFICULTY_COLORS: Record<number, string> = {
 };
 
 function CountdownToMidnight() {
-  const now = new Date();
-  const tomorrow = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1));
-  const diff = tomorrow.getTime() - now.getTime();
-  const h = Math.floor(diff / 3600000);
-  const m = Math.floor((diff % 3600000) / 60000);
-  return (
-    <p className="text-[10px] text-fab-dim text-center">
-      Next puzzle in {h}h {m}m
-    </p>
-  );
+  return <NextPuzzleCountdown label="Next puzzle in" />;
 }
 
 export function ConnectionsResult({
