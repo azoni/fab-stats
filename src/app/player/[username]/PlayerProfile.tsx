@@ -748,7 +748,7 @@ export default function PlayerProfile() {
                 <BadgeStrip selectedBadgeIds={profile.selectedBadgeIds} earnedAchievementIds={achievements.map((a) => a.id)} isOwner={isOwner && !previewAsVisitor} onEdit={() => setShowBadgePicker(true)} />
               </div>
               <VisitorsRow profileUid={profile.uid} />
-              {COSMETICS_ENABLED && (
+              {COSMETICS_ENABLED && (actualIsOwner || isAdmin) && (
                 <button
                   onClick={() => setAvatarShareOpen(true)}
                   className="mt-2 inline-flex items-center gap-1.5 rounded-md border border-fab-border px-2.5 py-1 text-xs font-medium text-fab-dim transition-colors hover:border-fab-gold hover:text-fab-gold"

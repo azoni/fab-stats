@@ -139,9 +139,11 @@ export function AvatarShareModal({
 }) {
   const cardRef = useRef<HTMLDivElement>(null);
   const copyRef = useRef<HTMLButtonElement>(null);
-  const { items } = useInventory(profile.uid);
+  const { items, loading: inventoryLoading } = useInventory(profile.uid);
   const [status, setStatus] = useState<"idle" | "working" | "done" | "text" | "failed">("idle");
   const cosmeticsCount = useMemo(() => items.length, [items]);
+  // Don't let a capture run before inventory resolves, or the PNG bakes "0 collected".
+  const busy = status === "working" || inventoryLoading;
 
   useEffect(() => {
     const h = (e: KeyboardEvent) => e.key === "Escape" && onClose();
@@ -216,7 +218,7 @@ export function AvatarShareModal({
             ref={copyRef}
             type="button"
             onClick={handleCopy}
-            disabled={status === "working"}
+            disabled={busy}
             className="flex-1 rounded-lg border border-fab-gold/40 bg-fab-gold/20 px-3 py-2 text-sm font-semibold text-fab-gold hover:bg-fab-gold/25 focus:outline-none focus:ring-2 focus:ring-fab-gold/50 disabled:opacity-50"
           >
             {status === "working"
@@ -232,7 +234,7 @@ export function AvatarShareModal({
           <button
             type="button"
             onClick={handleDownload}
-            disabled={status === "working"}
+            disabled={busy}
             className="rounded-lg border border-fab-border px-3 py-2 text-fab-muted hover:text-fab-text disabled:opacity-50"
             title="Download PNG"
             aria-label="Download PNG"
