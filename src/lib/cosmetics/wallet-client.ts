@@ -13,6 +13,7 @@ export interface Wallet {
   lifetimeEarned: number;
   lifetimeSpent: number;
   pullCount: number;
+  pullsSinceRarePlus: number;
 }
 
 async function callWallet(
@@ -47,21 +48,60 @@ export async function reconcileWallet(): Promise<{ minted: number; balance: numb
 
 export interface PurchaseOutcome {
   ok: boolean;
-  error?: "not_found" | "inactive" | "already_owned" | "insufficient" | "invalid_item";
+  error?: "not_found" | "inactive" | "already_owned" | "insufficient" | "invalid_item" | "price_changed";
   balance: number;
   itemId?: string;
+  price?: number;
 }
 
 /** Buy a cosmetic SKU. The server reads price/isActive from the catalog and
- *  deducts coins + grants inventory in one transaction (never trusts the client). */
-export async function purchaseCosmetic(itemId: string): Promise<PurchaseOutcome> {
-  const r = await callWallet("purchase", { itemId }, { allowFalse: true });
+ *  deducts coins + grants inventory in one transaction (never trusts the client).
+ *  `expectedPrice` (what the shop displayed) guards against a stale client price. */
+export async function purchaseCosmetic(itemId: string, expectedPrice?: number): Promise<PurchaseOutcome> {
+  const r = await callWallet("purchase", { itemId, expectedPrice }, { allowFalse: true });
   if (!r) return { ok: false, error: "invalid_item", balance: -1 };
   return {
     ok: r.ok === true,
     error: r.error as PurchaseOutcome["error"],
     balance: Number(r.balance ?? -1),
     itemId: typeof r.itemId === "string" ? r.itemId : undefined,
+    price: typeof r.price === "number" ? r.price : undefined,
+  };
+}
+
+// Gacha config (mirrors the server constants in cosmetics-economy.ts).
+export const GACHA_POOL_COST: Record<string, number> = { standard: 500, premium: 4000 };
+export const GACHA_DEFAULT_PULL_COST = 500;
+export function gachaPoolCost(poolId: string): number {
+  return GACHA_POOL_COST[poolId] ?? GACHA_DEFAULT_PULL_COST;
+}
+export const GACHA_PITY_THRESHOLD = 10;
+export const GACHA_DUPE_REFUND_PCT = 0.4;
+
+export interface GachaOutcome {
+  ok: boolean;
+  error?: "insufficient" | "empty_pool" | "invalid_pool";
+  itemId?: string;
+  rarity?: "common" | "uncommon" | "rare" | "epic" | "legendary";
+  duplicate?: boolean;
+  refund?: number;
+  balance: number;
+  pity?: boolean;
+}
+
+/** One gacha pull from a pool. Server draws + grants; the client only reveals. */
+export async function gachaPull(poolId: string): Promise<GachaOutcome> {
+  const r = await callWallet("gacha", { poolId }, { allowFalse: true });
+  if (!r) return { ok: false, error: "invalid_pool", balance: -1 };
+  return {
+    ok: r.ok === true,
+    error: r.error as GachaOutcome["error"],
+    itemId: typeof r.itemId === "string" ? r.itemId : undefined,
+    rarity: r.rarity as GachaOutcome["rarity"],
+    duplicate: r.duplicate === true,
+    refund: Number(r.refund ?? 0),
+    balance: Number(r.balance ?? -1),
+    pity: r.pity === true,
   };
 }
 

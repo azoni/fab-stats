@@ -17,9 +17,9 @@ import {
   limit,
   query,
   setDoc,
-  where,
   writeBatch,
 } from "firebase/firestore";
+import { SEED_COSMETICS } from "./seed-cosmetics";
 
 export type CosmeticCategory =
   | "avatarFrame"
@@ -168,6 +168,20 @@ function indexById(items: CosmeticItem[]) {
   for (const it of items) byId.set(it.id, it);
 }
 
+/** The default catalog is the bundled SEED_COSMETICS — so the shop, rendering,
+ *  and purchases all work with ZERO admin seeding. Any Firestore cosmeticCatalog
+ *  doc (admin override / custom SKU) takes precedence by id. */
+function mergeWithSeed(remote: CosmeticItem[]): CosmeticItem[] {
+  const map = new Map<string, CosmeticItem>();
+  for (const it of SEED_COSMETICS) map.set(it.id, it);
+  for (const it of remote) map.set(it.id, it);
+  return [...map.values()].filter((i) => i.isActive !== false);
+}
+
+// Seed the id index immediately so getCosmeticById resolves before any fetch
+// (e.g. rendering an equipped cosmetic on a profile on first paint).
+indexById(sortCatalog(SEED_COSMETICS));
+
 function readPersisted(): CosmeticItem[] | null {
   if (typeof window === "undefined") return null;
   try {
@@ -194,20 +208,14 @@ function writePersisted(items: CosmeticItem[]) {
 async function fetchActiveFromFirestore(): Promise<CosmeticItem[]> {
   // Equipped cosmetics must be renderable even when not shop-visible, so we fetch
   // ALL active SKUs; the shop UI filters on `shopVisible` separately.
+  // Fetch ALL docs (not active-only) so an admin override of isActive:false can
+  // retire a bundled default — mergeWithSeed overlays by id then drops inactive.
   try {
-    const q = query(collection(db, CATALOG_COLLECTION), where("isActive", "==", true), limit(MAX_ITEMS));
-    const snap = await getDocs(q);
-    return snap.docs.map((d) => sanitizeCosmetic({ id: d.id, ...d.data() })).filter(Boolean) as CosmeticItem[];
+    const snap = await getDocs(query(collection(db, CATALOG_COLLECTION), limit(MAX_ITEMS)));
+    const remote = snap.docs.map((d) => sanitizeCosmetic({ id: d.id, ...d.data() })).filter(Boolean) as CosmeticItem[];
+    return mergeWithSeed(remote);
   } catch {
-    // Missing index / offline: best-effort full read + client filter.
-    try {
-      const snap = await getDocs(query(collection(db, CATALOG_COLLECTION), limit(MAX_ITEMS)));
-      return snap.docs
-        .map((d) => sanitizeCosmetic({ id: d.id, ...d.data() }))
-        .filter((x): x is CosmeticItem => !!x && x.isActive);
-    } catch {
-      return [];
-    }
+    return mergeWithSeed([]);
   }
 }
 
@@ -249,17 +257,16 @@ export async function loadCosmeticCatalog(forceRefresh = false): Promise<Cosmeti
   return inFlight;
 }
 
-/** Synchronous best-effort accessor (cache/persisted/empty). */
+/** Synchronous best-effort accessor. Falls back to the bundled defaults (never
+ *  empty), so the shop and rendering work before any Firestore fetch resolves. */
 export function getCachedCosmeticCatalog(): CosmeticItem[] {
   if (memCache) return memCache.items;
   const persisted = readPersisted();
-  if (persisted) {
-    const sorted = sortCatalog(persisted);
-    memCache = { items: sorted, at: 0 }; // at:0 → next load() refreshes
-    indexById(sorted);
-    return sorted;
-  }
-  return [];
+  const base = persisted && persisted.length ? mergeWithSeed(persisted) : sortCatalog(SEED_COSMETICS);
+  const sorted = sortCatalog(base);
+  memCache = { items: sorted, at: 0 }; // at:0 → next load() refreshes
+  indexById(sorted);
+  return sorted;
 }
 
 /** Resolve a SKU by id from the loaded catalog (undefined if unknown/inactive). */
