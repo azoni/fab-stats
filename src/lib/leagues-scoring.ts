@@ -46,7 +46,7 @@ export function matchQualifiesForLeague(
   return true;
 }
 
-function pointsForMatch(match: MatchRecord, league: League): number {
+export function pointsForMatch(match: MatchRecord, league: League): number {
   const r = league.scoringRules;
   // Byes use their own flat value — no participation bonus or format multipliers.
   if (match.result === MatchResult.Bye) return r.pointsPerBye || 0;
