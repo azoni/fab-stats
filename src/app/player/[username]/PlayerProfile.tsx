@@ -4,6 +4,7 @@ import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import { getProfileByUsername, getMatchesByUserId, updateProfile, searchUsernames, getProfile } from "@/lib/firestore-storage";
 import { BadgeStrip } from "@/components/profile/BadgeStrip";
+import { EquippedAvatar, NameWithPlate } from "@/components/cosmetics/EquippedAvatar";
 import { HeroShieldBadge } from "@/components/profile/HeroShieldBadge";
 import { TeamBadge } from "@/components/profile/TeamBadge";
 import { useTeamOnce } from "@/hooks/useTeam";
@@ -1359,7 +1360,7 @@ function ProfileHeader({ profile, bestRank, isAdmin, isOwner, isFavorited, onTog
   const { team: profileTeam } = useTeamOnce(profile.teamId || null);
   return (
     <div className="flex items-center gap-4 flex-1 min-w-0">
-      <div className="relative shrink-0">
+      <EquippedAvatar profile={profile} size={80}>
         {isSiteCreator && (
           <svg className="absolute -top-4 left-1/2 -translate-x-1/2 w-7 h-7 text-fab-gold drop-shadow-[0_0_6px_rgba(201,168,76,0.6)] z-10" viewBox="0 0 24 24" fill="currentColor">
             <path d="M2.5 19h19v3h-19zM22.5 7l-5 4-5.5-7-5.5 7-5-4 2 12h17z" />
@@ -1372,10 +1373,12 @@ function ProfileHeader({ profile, bestRank, isAdmin, isOwner, isFavorited, onTog
             {profile.displayName.charAt(0).toUpperCase()}
           </div>
         )}
-      </div>
+      </EquippedAvatar>
       <div>
         <div className="flex items-center gap-2 flex-wrap">
-          <h1 className="text-2xl font-bold text-fab-gold">{profile.displayName}</h1>
+          <NameWithPlate profile={profile}>
+            <h1 className="text-2xl font-bold text-fab-gold">{profile.displayName}</h1>
+          </NameWithPlate>
           {profileTeam && <TeamBadge teamName={profileTeam.name} teamIconUrl={profileTeam.iconUrl} teamNameLower={profileTeam.nameLower} size="sm" isPrivate={profileTeam.visibility === "private"} isSiteAdmin={isAdmin} />}
           {heroCompletion && <HeroShieldBadge pct={heroCompletion.pct} size="md" withHero={heroCompletion.withHero} total={heroCompletion.total} />}
           {onToggleFavorite && (
