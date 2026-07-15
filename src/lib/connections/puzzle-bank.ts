@@ -5,7 +5,7 @@ export const CONNECTIONS_PUZZLES: ConnectionsPuzzle[] = [
     id: 1,
     groups: [
       { name: "Ninja Heroes", words: ["Katsu", "Benji", "Zen", "Fai"], difficulty: 1 },
-      { name: "Warrior Heroes", words: ["Dorinthea", "Kassai", "Boltyn", "Victor"], difficulty: 2 },
+      { name: "Warrior Heroes", words: ["Dorinthea", "Kassai", "Boltyn", "Olympia"], difficulty: 2 },
       { name: "Shadow Heroes", words: ["Chane", "Levia", "Vynnset", "Ursur"], difficulty: 3 },
       { name: "Mechanologist Heroes", words: ["Dash", "Maxx", "Teklovossen", "Data Doll"], difficulty: 4 },
     ],
@@ -32,17 +32,17 @@ export const CONNECTIONS_PUZZLES: ConnectionsPuzzle[] = [
     id: 4,
     groups: [
       { name: "Guardian Heroes", words: ["Bravo", "Oldhim", "Betsy", "Victor Goldmane"], difficulty: 1 },
-      { name: "Ranger Heroes", words: ["Azalea", "Lexi", "Riptide", "Death Dealer"], difficulty: 2 },
+      { name: "Ranger Heroes", words: ["Azalea", "Lexi", "Riptide", "Marlynn"], difficulty: 2 },
       { name: "Wizard Heroes", words: ["Kano", "Iyslander", "Oscilio", "Verdance"], difficulty: 3 },
-      { name: "Illusionist Heroes", words: ["Prism", "Dromai", "Nuu", "Enigma"], difficulty: 4 },
+      { name: "Illusionist Heroes", words: ["Prism", "Dromai", "Zyggy", "Enigma"], difficulty: 4 },
     ],
   },
   {
     id: 5,
     groups: [
       { name: "Monarch Heroes", words: ["Prism", "Levia", "Chane", "Boltyn"], difficulty: 1 },
-      { name: "Uprising Heroes", words: ["Fai", "Dromai", "Iyslander", "Lexi"], difficulty: 2 },
-      { name: "Bright Lights Heroes", words: ["Dash I/O", "Maxx", "Teklovossen", "Data Doll"], difficulty: 3 },
+      { name: "Rosetta Heroes", words: ["Verdance", "Florian", "Oscilio", "Aurora"], difficulty: 2 },
+      { name: "Mechanologist Heroes", words: ["Dash I/O", "Maxx", "Teklovossen", "Data Doll"], difficulty: 3 },
       { name: "Heavy Hitters Heroes", words: ["Victor", "Betsy", "Kayo", "Rhinar"], difficulty: 4 },
     ],
   },
@@ -58,10 +58,10 @@ export const CONNECTIONS_PUZZLES: ConnectionsPuzzle[] = [
   {
     id: 7,
     groups: [
-      { name: "Brute Heroes", words: ["Rhinar", "Kayo", "Levia", "Ursur"], difficulty: 1 },
+      { name: "Brute Heroes", words: ["Rhinar", "Kayo", "Levia", "Tuffnut"], difficulty: 1 },
       { name: "Runeblade Heroes", words: ["Chane", "Viserai", "Briar", "Vynnset"], difficulty: 2 },
-      { name: "Light Talent Heroes", words: ["Boltyn", "Prism", "Dorinthea", "Victor Goldmane"], difficulty: 3 },
-      { name: "Ice Talent Heroes", words: ["Oldhim", "Iyslander", "Lexi", "Oscilio"], difficulty: 4 },
+      { name: "Wizard Heroes", words: ["Kano", "Iyslander", "Oscilio", "Verdance"], difficulty: 3 },
+      { name: "Ninja Heroes", words: ["Katsu", "Fai", "Zen", "Cindra"], difficulty: 4 },
     ],
   },
   {
@@ -212,7 +212,7 @@ export const CONNECTIONS_PUZZLES: ConnectionsPuzzle[] = [
     id: 24,
     groups: [
       { name: "Outsiders Heroes", words: ["Uzuri", "Riptide", "Arakni", "Azalea"], difficulty: 1 },
-      { name: "Uprising Heroes", words: ["Dromai", "Fai", "Emperor", "Iyslander"], difficulty: 2 },
+      { name: "Brute Heroes", words: ["Kayo", "Levia", "Rhinar", "Tuffnut"], difficulty: 2 },
       { name: "Heroes Debuting 2021-2022", words: ["Bravo Star", "Lexi", "Oldhim", "Briar"], difficulty: 3 },
       { name: "Monarch Talents", words: ["Light", "Shadow", "Light Warrior", "Shadow Brute"], difficulty: 4 },
     ],
@@ -463,10 +463,10 @@ export const CONNECTIONS_PUZZLES: ConnectionsPuzzle[] = [
   {
     id: 52,
     groups: [
-      { name: "Rosetta Heroes", words: ["Verdance", "Florian", "Briar", "Tierra"], difficulty: 1 },
-      { name: "Part the Mistveil Heroes", words: ["Enigma", "Nuu", "Zen", "Oscilio"], difficulty: 2 },
-      { name: "Dusk till Dawn Content", words: ["Vynnset", "Prism", "Ursur", "Advent of Thrones"], difficulty: 3 },
-      { name: "Hunted Heroes", words: ["Arakni", "Riptide", "Uzuri", "Fang"], difficulty: 4 },
+      { name: "Rosetta Heroes", words: ["Verdance", "Florian", "Oscilio", "Aurora"], difficulty: 1 },
+      { name: "Outsiders Heroes", words: ["Azalea", "Katsu", "Riptide", "Uzuri"], difficulty: 2 },
+      { name: "Illusionist Heroes", words: ["Prism", "Dromai", "Enigma", "Zyggy"], difficulty: 3 },
+      { name: "Guardian Heroes", words: ["Bravo", "Oldhim", "Betsy", "Victor Goldmane"], difficulty: 4 },
     ],
   },
   {
@@ -709,7 +709,7 @@ export const CONNECTIONS_PUZZLES: ConnectionsPuzzle[] = [
       { name: "WTR Heroes", words: ["Rhinar", "Dorinthea", "Bravo", "Katsu"], difficulty: 1 },
       { name: "ARC Heroes", words: ["Dash", "Viserai", "Kano", "Azalea"], difficulty: 2 },
       { name: "MON Heroes", words: ["Prism", "Boltyn", "Chane", "Levia"], difficulty: 3 },
-      { name: "Tales of Aria Content", words: ["Briar", "Oldhim", "Lexi", "Aria"], difficulty: 4 },
+      { name: "Rosetta Heroes", words: ["Verdance", "Florian", "Oscilio", "Aurora"], difficulty: 4 },
     ],
   },
   {
