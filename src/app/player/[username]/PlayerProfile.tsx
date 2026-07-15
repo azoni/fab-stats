@@ -6,7 +6,10 @@ import { getProfileByUsername, getMatchesByUserId, updateProfile, searchUsername
 import { BadgeStrip } from "@/components/profile/BadgeStrip";
 import { EquippedAvatar, NameWithPlate } from "@/components/cosmetics/EquippedAvatar";
 import { VisitorsRow } from "@/components/profile/VisitorsRow";
+import { AvatarShareModal } from "@/components/profile/ProfileAvatarShareCard";
+import { ProfileCosmeticsPanel } from "@/components/profile/ProfileCosmeticsPanel";
 import { recordProfileVisit } from "@/lib/cosmetics/visitors";
+import { COSMETICS_ENABLED } from "@/lib/cosmetics/flags";
 import { HeroShieldBadge } from "@/components/profile/HeroShieldBadge";
 import { TeamBadge } from "@/components/profile/TeamBadge";
 import { useTeamOnce } from "@/hooks/useTeam";
@@ -99,6 +102,7 @@ export default function PlayerProfile() {
   const [showRawData, setShowRawData] = useState(false);
   const [bestFinishShareOpen, setBestFinishShareOpen] = useState(false);
   const [profileShareOpen, setProfileShareOpen] = useState(false);
+  const [avatarShareOpen, setAvatarShareOpen] = useState(false);
   const [emblemPickerMode, setEmblemPickerMode] = useState<"talent" | "class" | null>(null);
   const [showBadgePicker, setShowBadgePicker] = useState(false);
   const [achievementsExpanded, setAchievementsExpanded] = useState(false);
@@ -744,6 +748,18 @@ export default function PlayerProfile() {
                 <BadgeStrip selectedBadgeIds={profile.selectedBadgeIds} earnedAchievementIds={achievements.map((a) => a.id)} isOwner={isOwner && !previewAsVisitor} onEdit={() => setShowBadgePicker(true)} />
               </div>
               <VisitorsRow profileUid={profile.uid} />
+              {COSMETICS_ENABLED && (actualIsOwner || isAdmin) && (
+                <button
+                  onClick={() => setAvatarShareOpen(true)}
+                  className="mt-2 inline-flex items-center gap-1.5 rounded-md border border-fab-border px-2.5 py-1 text-xs font-medium text-fab-dim transition-colors hover:border-fab-gold hover:text-fab-gold"
+                  title="Share your decorated avatar"
+                >
+                  <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M7.217 10.907a2.25 2.25 0 1 0 0 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186 9.566-5.314m-9.566 7.5 9.566 5.314m0 0a2.25 2.25 0 1 0 3.935 2.186 2.25 2.25 0 0 0-3.935-2.186Zm0-12.814a2.25 2.25 0 1 0 3.933-2.185 2.25 2.25 0 0 0-3.933 2.185Z" />
+                  </svg>
+                  Share avatar
+                </button>
+              )}
               {/* Social links — always-visible inputs for owner, display-only for visitors */}
               {isOwner && !previewAsVisitor ? (
                 <div className="mt-2 space-y-1.5">
@@ -1286,6 +1302,21 @@ export default function PlayerProfile() {
         />
       )}
 
+      {avatarShareOpen && (
+        <AvatarShareModal
+          profile={profile}
+          stats={{
+            winRate: overall.overallWinRate,
+            totalMatches: overall.totalMatches + overall.totalByes,
+            wins: overall.totalWins,
+            losses: overall.totalLosses,
+            topHero: topHero?.heroName || null,
+            achievementsCount: achievements.length,
+          }}
+          onClose={() => setAvatarShareOpen(false)}
+        />
+      )}
+
       {/* Major Event Badges — collapsible */}
       {eventBadges.length > 0 && (
         <div className="bg-fab-surface/50 border border-fab-border rounded-lg overflow-hidden">
@@ -1312,6 +1343,9 @@ export default function PlayerProfile() {
           )}
         </div>
       )}
+
+      {/* Owner cosmetics manager (flag-gated) */}
+      {isOwner && !previewAsVisitor && <ProfileCosmeticsPanel profile={profile} />}
 
       {/* Admin badge management panel */}
       {isAdmin && !isOwner && profileUid && (
