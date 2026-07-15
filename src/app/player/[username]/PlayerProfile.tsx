@@ -1004,22 +1004,6 @@ export default function PlayerProfile() {
         </div>
       )}
 
-      {fm.length === 0 && isFiltered ? (
-        <div className="text-center py-16">
-          <p className="text-fab-muted text-lg">No matches found for this filter.</p>
-          <button
-            onClick={() => { setFilterFormat("all"); setFilterTier("all"); setFilterEventType("all"); setFilterHero("all"); }}
-            className="mt-4 text-fab-gold hover:underline text-sm"
-          >
-            Clear Filters
-          </button>
-        </div>
-      ) : (
-      <>
-      {/* Leaderboard Rankings */}
-      <LeaderboardCrowns ranks={userRanks} />
-
-
       {/* Profile background picker modal */}
       {showBackgroundPicker && isOwner && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setShowBackgroundPicker(false)}>
@@ -1154,6 +1138,7 @@ export default function PlayerProfile() {
           onClose={() => setCustomizeOpen(false)}
           profile={profile}
           isAdmin={isAdmin}
+          overlayOpen={showBackgroundPicker || showBadgePicker || !!emblemPickerMode}
           playoffFinishes={playoffFinishes}
           minorFinishes={minorFinishes}
           onEditBackground={() => setShowBackgroundPicker(true)}
@@ -1174,6 +1159,22 @@ export default function PlayerProfile() {
           }}
         />
       )}
+
+      {fm.length === 0 && isFiltered ? (
+        <div className="text-center py-16">
+          <p className="text-fab-muted text-lg">No matches found for this filter.</p>
+          <button
+            onClick={() => { setFilterFormat("all"); setFilterTier("all"); setFilterEventType("all"); setFilterHero("all"); }}
+            className="mt-4 text-fab-gold hover:underline text-sm"
+          >
+            Clear Filters
+          </button>
+        </div>
+      ) : (
+      <>
+      {/* Leaderboard Rankings */}
+      <LeaderboardCrowns ranks={userRanks} />
+
 
       {/* Major Event Badges — collapsible */}
       {eventBadges.length > 0 && (

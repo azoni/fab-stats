@@ -120,6 +120,7 @@ export function ProfileCustomizeDrawer({
   onClose,
   profile,
   isAdmin,
+  overlayOpen = false,
   playoffFinishes,
   minorFinishes,
   onEditBackground,
@@ -134,6 +135,9 @@ export function ProfileCustomizeDrawer({
   onClose: () => void;
   profile: UserProfile;
   isAdmin: boolean;
+  /** True while a picker launched FROM the drawer (background/badge/emblem) is on
+   *  top — so Escape dismisses that picker without also closing the drawer. */
+  overlayOpen?: boolean;
   playoffFinishes: PlayoffFinish[];
   minorFinishes: MinorEventFinish[];
   onEditBackground: () => void;
@@ -147,6 +151,8 @@ export function ProfileCustomizeDrawer({
   const [draft, setDraft] = useState<SocialDraft>(() => draftFromProfile(profile));
   const [savingLinks, setSavingLinks] = useState(false);
   const closeRef = useRef<HTMLButtonElement>(null);
+  const overlayOpenRef = useRef(overlayOpen);
+  overlayOpenRef.current = overlayOpen;
 
   // Re-hydrate the links draft each time the drawer opens (reflect latest saves).
   useEffect(() => {
@@ -156,7 +162,11 @@ export function ProfileCustomizeDrawer({
 
   useEffect(() => {
     if (!open) return;
-    const h = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    const h = (e: KeyboardEvent) => {
+      // Ignore Escape if a picker opened from the drawer is on top (it handles
+      // its own dismissal) — don't close the drawer + lose the links draft.
+      if (e.key === "Escape" && !overlayOpenRef.current) onClose();
+    };
     window.addEventListener("keydown", h);
     const prev = document.activeElement as HTMLElement | null;
     closeRef.current?.focus();
