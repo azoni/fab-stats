@@ -68,3 +68,25 @@ export function equippedIdFor(profile: UserProfile, category: CosmeticCategory):
       return undefined;
   }
 }
+
+/** Whether a specific SKU is the one currently equipped in its slot. Shared by
+ *  the shop and the profile cosmetics panel so their "equipped" state agrees. */
+export function isCosmeticEquipped(profile: UserProfile, item: CosmeticItem): boolean {
+  switch (item.category) {
+    case "avatarFrame":
+    case "companion":
+    case "aura":
+    case "nameplate":
+      return equippedIdFor(profile, item.category) === item.id;
+    case "background":
+      return profile.siteBackgroundId === (item.grantsId || item.previewValue);
+    case "trophySkin": {
+      const [ev, ix] = item.previewValue.split("|");
+      return (profile.trophyDesigns?.[ev] ?? -1) === (parseInt(ix, 10) || 0);
+    }
+    case "cursor":
+      return (profile.unlockedCans || []).includes(item.grantsId || item.previewValue);
+    default:
+      return false;
+  }
+}

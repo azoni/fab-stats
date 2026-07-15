@@ -7,6 +7,7 @@ import { BadgeStrip } from "@/components/profile/BadgeStrip";
 import { EquippedAvatar, NameWithPlate } from "@/components/cosmetics/EquippedAvatar";
 import { VisitorsRow } from "@/components/profile/VisitorsRow";
 import { AvatarShareModal } from "@/components/profile/ProfileAvatarShareCard";
+import { ProfileCosmeticsPanel } from "@/components/profile/ProfileCosmeticsPanel";
 import { recordProfileVisit } from "@/lib/cosmetics/visitors";
 import { COSMETICS_ENABLED } from "@/lib/cosmetics/flags";
 import { HeroShieldBadge } from "@/components/profile/HeroShieldBadge";
@@ -1342,6 +1343,9 @@ export default function PlayerProfile() {
           )}
         </div>
       )}
+
+      {/* Owner cosmetics manager (flag-gated) */}
+      {isOwner && !previewAsVisitor && <ProfileCosmeticsPanel profile={profile} />}
 
       {/* Admin badge management panel */}
       {isAdmin && !isOwner && profileUid && (
