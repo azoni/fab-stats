@@ -19,8 +19,32 @@ import {
   leagueRequiresApproval,
 } from "@/lib/leagues";
 import { getStoreDirectory, slugifyStoreName, findNearMatchStore, storeNameMatchesQuery, type StoreDirectoryEntry } from "@/lib/store-directory";
+import { HeroImg } from "@/components/heroes/HeroImg";
 import { uploadLeagueBanner, removeLeagueBanner } from "@/lib/league-images";
-import { recomputeAndStoreStandings, computeLeagueMatchups, type LeagueMatchupData } from "@/lib/leagues-scoring";
+import { recomputeAndStoreStandings } from "@/lib/leagues-scoring";
+import {
+  getLeagueMatchPool,
+  deriveFilterOptions,
+  applyFilters,
+  poolSummary,
+  type LeagueMatchPool,
+  type LeagueFilters,
+} from "@/lib/leagues-insights";
+import {
+  Marquee,
+  LeagueFilterBar,
+  Podium,
+  BroadcastStandings,
+  StorylineCards,
+  KpiStrip,
+  HeroMetaBars,
+  MatchupGrid,
+  StoreTurf,
+  ActivityPulse,
+  standingsFromPool,
+  signatureHeroByUid,
+  recentFormByUid,
+} from "./league-desk";
 import { doc, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import type {
@@ -33,27 +57,11 @@ import type {
 import { toast } from "sonner";
 import {
   ArrowLeft,
-  CalendarDays,
   Image as ImageIcon,
-  MapPin,
   RefreshCw,
   Settings,
-  Store as StoreIcon,
-  Trophy,
   UserMinus,
-  Users,
 } from "lucide-react";
-
-function formatDateRange(start: string, end: string) {
-  const fmt = (s: string) =>
-    new Date(s + "T00:00:00Z").toLocaleDateString(undefined, {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      timeZone: "UTC",
-    });
-  return `${fmt(start)} → ${fmt(end)}`;
-}
 
 export default function LeaguePage() {
   // Read the slug from the URL, not useParams: in static export this page is
@@ -79,7 +87,9 @@ export default function LeaguePage() {
 
   const [recomputing, setRecomputing] = useState(false);
   const [editing, setEditing] = useState(false);
-  const [leagueTab, setLeagueTab] = useState<"standings" | "members" | "matchups">("standings");
+  const [leagueTab, setLeagueTab] = useState<"standings" | "meta" | "players">("standings");
+  const [pool, setPool] = useState<LeagueMatchPool | null>(null);
+  const [filters, setFilters] = useState<LeagueFilters>({});
 
   useEffect(() => {
     if (!slug || slug === "_") return;
@@ -156,6 +166,43 @@ export default function LeaguePage() {
     [user, members],
   );
 
+  // One windowed read of every member's in-window matches → the match pool that
+  // powers filters, stats, matchups and filtered standings (all in memory).
+  useEffect(() => {
+    if (!leagueId) return;
+    let cancelled = false;
+    getLeagueMatchPool(leagueId)
+      .then((p) => !cancelled && setPool(p))
+      .catch(() => !cancelled && setPool(null));
+    return () => {
+      cancelled = true;
+    };
+  }, [leagueId]);
+
+  const filtersActive =
+    !!(filters.stores?.length || filters.formats?.length || filters.eventTypes?.length || filters.startDate || filters.endDate);
+  const filterOptions = useMemo(
+    () => (pool ? deriveFilterOptions(pool.matches) : { stores: [], formats: [], eventTypes: [] }),
+    [pool],
+  );
+  const filteredMatches = useMemo(
+    () => (pool ? applyFilters(pool.matches, filters) : []),
+    [pool, filters],
+  );
+  // Signature-hero crests are stable across filters → derive from the full pool.
+  const signatureHeroes = useMemo(() => (pool ? signatureHeroByUid(pool.matches) : {}), [pool]);
+  const form = useMemo(() => recentFormByUid(filteredMatches), [filteredMatches]);
+  const filterSummary = useMemo(() => {
+    const s = poolSummary(filteredMatches);
+    return { matches: s.totalMatches, players: s.players, events: s.events };
+  }, [filteredMatches]);
+  // Unfiltered → canonical persisted standings (preserves private members).
+  // Any filter active → derive from the (readable) pool + an honesty note.
+  const displayStandings = useMemo(() => {
+    if (filtersActive && pool) return standingsFromPool(filteredMatches, pool.league);
+    return standings || [];
+  }, [filtersActive, pool, filteredMatches, standings]);
+
   // Auto-refresh the standings snapshot when it's stale, so imported matches show
   // up without anyone clicking "Refresh". Standings are otherwise a manual, on-click
   // snapshot: a member imports, but the leaderboard stays frozen until someone
@@ -229,6 +276,7 @@ export default function LeaguePage() {
     try {
       const entries = await recomputeAndStoreStandings(league.id);
       setStandings(entries);
+      getLeagueMatchPool(league.id).then(setPool).catch(() => {});
       toast.success("Standings refreshed.");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to refresh standings.");
@@ -330,49 +378,14 @@ export default function LeaguePage() {
         </Link>
       </div>
 
-      {league.bannerUrl && (
-        <div className="mb-3 overflow-hidden rounded-lg border border-fab-border/70">
-          <img src={league.bannerUrl} alt="" className="h-32 w-full object-cover sm:h-44" />
-        </div>
-      )}
-
-      <header
-        className="rounded-lg border border-fab-border/70 bg-fab-bg/45 p-5"
-        style={league.accentColor ? { borderColor: league.accentColor + "60" } : undefined}
-      >
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="min-w-0 flex-1">
-            <h1 className="flex flex-wrap items-center gap-2 text-2xl font-black text-fab-gold sm:text-3xl">
-              <Trophy className="inline h-6 w-6" /> {league.name}
-            </h1>
-            <p className="mt-1 text-xs text-fab-dim">
-              Organized by <span className="font-bold text-fab-text">{league.organizerName}</span>
-            </p>
-            <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-fab-dim">
-              <span className="inline-flex items-center gap-1">
-                <CalendarDays className="h-3.5 w-3.5" /> {formatDateRange(league.startDate, league.endDate)}
-              </span>
-              {(league.city || league.region || league.country) && (
-                <span className="inline-flex items-center gap-1">
-                  <MapPin className="h-3.5 w-3.5" />
-                  {[league.city, league.region, league.country].filter(Boolean).join(", ")}
-                </span>
-              )}
-              <span className="inline-flex items-center gap-1">
-                <Users className="h-3.5 w-3.5" /> {league.memberCount} players
-              </span>
-              <span className="inline-flex items-center gap-1">
-                <StoreIcon className="h-3.5 w-3.5" /> {league.storeSlugs.length} stores
-              </span>
-            </div>
-            {league.description && (
-              <p className="mt-3 max-w-3xl whitespace-pre-line text-sm text-fab-text">
-                {league.description}
-              </p>
-            )}
-          </div>
-
-          <div className="flex flex-col gap-2">
+      <Marquee
+        league={league}
+        organizerName={league.organizerName}
+        memberCount={league.memberCount}
+        leader={standings?.[0] || null}
+        leaderHero={standings?.[0] ? signatureHeroes[standings[0].uid] : undefined}
+        actions={
+          <>
             {!isMember &&
               (myRequestPending ? (
                 <div className="flex flex-col items-stretch gap-1">
@@ -416,9 +429,9 @@ export default function LeaguePage() {
                 {!isOrganizer && isAdmin && <span className="ml-1 text-[10px]">(admin)</span>}
               </button>
             )}
-          </div>
-        </div>
-      </header>
+          </>
+        }
+      />
 
       {canEdit && editing && (
         <OrganizerEditor
@@ -428,9 +441,20 @@ export default function LeaguePage() {
         />
       )}
 
+      {pool && (
+        <div className="mt-4">
+          <LeagueFilterBar
+            options={filterOptions}
+            filters={filters}
+            setFilters={setFilters}
+            summary={filterSummary}
+          />
+        </div>
+      )}
+
       {/* Tabs */}
-      <div className="mt-6 flex gap-1 overflow-x-auto border-b border-fab-border">
-        {(["standings", "members", "matchups"] as const).map((t) => (
+      <div className="mt-4 flex gap-1 overflow-x-auto border-b border-fab-border">
+        {(["standings", "meta", "players"] as const).map((t) => (
           <button
             key={t}
             type="button"
@@ -439,55 +463,95 @@ export default function LeaguePage() {
               leagueTab === t ? "border-b-2 border-fab-gold text-fab-gold" : "text-fab-muted hover:text-fab-text"
             }`}
           >
-            {t === "standings" ? "Standings" : t === "members" ? `Players (${members.length})` : "Matchups"}
+            {t === "standings" ? "Standings" : t === "meta" ? "Meta" : `Players (${members.length})`}
           </button>
         ))}
       </div>
 
       {leagueTab === "standings" && (
-        <section className="mt-4 grid gap-6 lg:grid-cols-3">
-          <div className="lg:col-span-2">
-            <div className="mb-2 flex items-center justify-between">
-              <h2 className="text-lg font-bold text-fab-gold">Standings</h2>
-              <div className="flex items-center gap-2 text-xs text-fab-dim">
-                {standingsAt && (
-                  <span
-                    title="Standings recompute automatically when a member opens this page (at most once every 10 min). Refresh forces it now."
-                  >
-                    Updated{" "}
-                    {new Date(standingsAt).toLocaleString(undefined, {
-                      year: "numeric",
-                      month: "short",
-                      day: "numeric",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </span>
-                )}
-                {(isMember || canEdit) && (
-                  <button
-                    type="button"
-                    onClick={handleRecompute}
-                    disabled={recomputing}
-                    className="inline-flex items-center gap-1 rounded-md border border-fab-border/60 bg-fab-bg/60 px-2 py-1 text-fab-text hover:text-fab-gold disabled:opacity-50"
-                  >
-                    <RefreshCw className={`h-3 w-3 ${recomputing ? "animate-spin" : ""}`} />
-                    Refresh
-                  </button>
-                )}
-              </div>
+        <section className="mt-4 space-y-4">
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="text-lg font-bold text-fab-gold">
+              Standings{filtersActive && <span className="ml-1 text-xs font-normal text-fab-dim">(filtered)</span>}
+            </h2>
+            <div className="flex items-center gap-2 text-xs text-fab-dim">
+              {standingsAt && !filtersActive && (
+                <span title="Standings recompute automatically when a member opens this page (at most once every 10 min). Refresh forces it now.">
+                  Updated{" "}
+                  {new Date(standingsAt).toLocaleString(undefined, {
+                    month: "short",
+                    day: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </span>
+              )}
+              {(isMember || canEdit) && !filtersActive && (
+                <button
+                  type="button"
+                  onClick={handleRecompute}
+                  disabled={recomputing}
+                  className="inline-flex items-center gap-1 rounded-md border border-fab-border/60 bg-fab-bg/60 px-2 py-1 text-fab-text hover:text-fab-gold disabled:opacity-50"
+                >
+                  <RefreshCw className={`h-3 w-3 ${recomputing ? "animate-spin" : ""}`} />
+                  Refresh
+                </button>
+              )}
             </div>
-            <StandingsTable standings={standings} league={league} />
           </div>
 
-          <aside className="space-y-5">
-            <ScoringSummary scoringRules={league.scoringRules} />
-            <StoresList stores={storeRows} />
-          </aside>
+          {filtersActive && pool && pool.unreadableMemberUids.length + pool.readableMemberUids.length > 0 && (
+            <p className="text-[11px] text-fab-dim">
+              Filtered view — derived from {pool.readableMemberUids.length} of {members.length} members&apos; visible matches.
+            </p>
+          )}
+
+          {displayStandings.length > 0 ? (
+            <>
+              <Podium standings={displayStandings} signatureHeroes={signatureHeroes} />
+              <StorylineCards matches={filteredMatches} standings={displayStandings} />
+              <BroadcastStandings standings={displayStandings} signatureHeroes={signatureHeroes} form={form} />
+            </>
+          ) : filtersActive ? (
+            <p className="rounded-xl border border-fab-border bg-fab-surface p-4 text-sm text-fab-muted">
+              No matches for these filters.
+            </p>
+          ) : (
+            <StandingsTable standings={standings} league={league} />
+          )}
         </section>
       )}
 
-      {leagueTab === "members" && (
+      {leagueTab === "meta" && (
+        <section className="mt-4 space-y-5">
+          {!pool ? (
+            <p className="text-sm text-fab-muted">Loading match data…</p>
+          ) : filteredMatches.length === 0 ? (
+            <p className="rounded-xl border border-fab-border bg-fab-surface p-4 text-sm text-fab-muted">
+              No matches in view yet. Meta fills in as members log league matches.
+            </p>
+          ) : (
+            <>
+              <KpiStrip matches={filteredMatches} />
+              <div className="grid gap-5 lg:grid-cols-2">
+                <div className="rounded-xl border border-fab-border bg-fab-surface p-4">
+                  <h3 className="mb-2 text-sm font-bold uppercase tracking-wider text-fab-dim">Most-played heroes</h3>
+                  <HeroMetaBars matches={filteredMatches} />
+                </div>
+                <div className="rounded-xl border border-fab-border bg-fab-surface p-4">
+                  <MatchupGrid matches={filteredMatches} />
+                </div>
+              </div>
+              <div className="grid gap-5 lg:grid-cols-2">
+                <StoreTurf matches={filteredMatches} />
+                <ActivityPulse matches={filteredMatches} />
+              </div>
+            </>
+          )}
+        </section>
+      )}
+
+      {leagueTab === "players" && (
         <section className="mt-4 space-y-5">
           {isOrganizer && (
             <JoinRequestsPanel requests={joinRequests} onApprove={handleApprove} onReject={handleRejectRequest} />
@@ -495,18 +559,17 @@ export default function LeaguePage() {
           <PlayerCards
             members={members}
             standings={standings}
+            signatureHeroes={signatureHeroes}
             organizerUid={league.organizerUid}
             isOrganizer={isOrganizer}
             currentUid={user?.uid || null}
             onKick={handleKick}
           />
+          <div className="grid gap-5 lg:grid-cols-2">
+            <ScoringSummary scoringRules={league.scoringRules} />
+            <StoresList stores={storeRows} />
+          </div>
           {canEdit && <DisbandPanel leagueId={league.id} ownerUid={league.organizerUid} />}
-        </section>
-      )}
-
-      {leagueTab === "matchups" && (
-        <section className="mt-4">
-          <MatchupMatrix leagueId={league.id} />
         </section>
       )}
     </div>
@@ -771,6 +834,7 @@ function JoinRequestsPanel({
 function PlayerCards({
   members,
   standings,
+  signatureHeroes,
   organizerUid,
   isOrganizer,
   currentUid,
@@ -778,6 +842,7 @@ function PlayerCards({
 }: {
   members: LeagueMember[];
   standings: LeagueStandingEntry[] | null;
+  signatureHeroes: Record<string, string>;
   organizerUid: string;
   isOrganizer: boolean;
   currentUid: string | null;
@@ -813,13 +878,20 @@ function PlayerCards({
           return (
             <div key={p.uid} className="relative rounded-lg border border-fab-border bg-fab-bg/45 p-3">
               <div className="flex items-center gap-2.5">
-                {p.photoUrl ? (
-                  <img src={p.photoUrl} alt="" className="h-10 w-10 shrink-0 rounded-full border border-fab-border object-cover" />
-                ) : (
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-fab-border bg-fab-surface text-sm font-black text-fab-gold">
-                    {initial}
-                  </span>
-                )}
+                <span className="relative inline-block h-10 w-10 shrink-0">
+                  {p.photoUrl ? (
+                    <img src={p.photoUrl} alt="" className="h-10 w-10 rounded-full border border-fab-border object-cover" />
+                  ) : (
+                    <span className="flex h-10 w-10 items-center justify-center rounded-full border border-fab-border bg-fab-surface text-sm font-black text-fab-gold">
+                      {initial}
+                    </span>
+                  )}
+                  {signatureHeroes[p.uid] && (
+                    <span className="absolute -bottom-1 -right-1 rounded-full ring-2 ring-fab-bg">
+                      <HeroImg name={signatureHeroes[p.uid]} size="sm" />
+                    </span>
+                  )}
+                </span>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1.5">
                     <Link href={`/player/${p.username}`} className="truncate text-sm font-black text-fab-text hover:text-fab-gold">
@@ -853,151 +925,6 @@ function PlayerCards({
           );
         })}
       </div>
-    </div>
-  );
-}
-
-function MatchupMatrix({ leagueId }: { leagueId: string }) {
-  const [data, setData] = useState<LeagueMatchupData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    setError(false);
-    computeLeagueMatchups(leagueId)
-      .then((d) => !cancelled && setData(d))
-      .catch(() => !cancelled && setError(true))
-      .finally(() => !cancelled && setLoading(false));
-    return () => {
-      cancelled = true;
-    };
-  }, [leagueId]);
-
-  if (loading) return <p className="text-sm text-fab-muted">Computing matchups…</p>;
-  if (error || !data) return <p className="text-sm text-fab-muted">Couldn&apos;t compute matchups.</p>;
-  if (data.totalMatches === 0) {
-    return (
-      <p className="text-sm text-fab-muted">
-        No hero-vs-hero data yet — matchups appear once members log league matches with both heroes recorded.
-      </p>
-    );
-  }
-
-  const top = data.heroes.slice(0, 12);
-  const names = top.map((h) => h.name);
-  const shortName = (n: string) => n.split(",")[0].trim();
-  const cellColor = (wr: number) =>
-    wr >= 60 ? "bg-emerald-500/25 text-emerald-100" : wr >= 50 ? "bg-emerald-500/10 text-emerald-200" : wr >= 40 ? "bg-rose-500/10 text-rose-200" : "bg-rose-500/25 text-rose-100";
-
-  return (
-    <div>
-      <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-lg font-bold text-fab-gold">Hero matchups</h2>
-        <span className="text-xs text-fab-dim">{data.totalMatches} decisive matches · top {top.length} heroes</span>
-      </div>
-      <p className="mb-2 text-xs text-fab-muted">Row hero&apos;s win rate vs the column hero across league matches (W–L below).</p>
-      <div className="overflow-x-auto rounded-lg border border-fab-border">
-        <table className="min-w-full border-collapse text-[11px]">
-          <thead>
-            <tr>
-              <th className="sticky left-0 z-10 bg-fab-surface p-1.5 text-left font-bold text-fab-dim">hero ＼ vs</th>
-              {names.map((n) => (
-                <th key={n} className="bg-fab-surface p-1.5 font-semibold text-fab-dim" title={n}>
-                  <div className="mx-auto max-w-[56px] truncate">{shortName(n)}</div>
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {top.map((rowHero) => (
-              <tr key={rowHero.name}>
-                <th className="sticky left-0 z-10 whitespace-nowrap bg-fab-surface p-1.5 text-left font-bold text-fab-text" title={rowHero.name}>
-                  <span className="block max-w-[120px] truncate">{shortName(rowHero.name)}</span>
-                </th>
-                {names.map((colName) => {
-                  const cell = data.matrix[rowHero.name]?.[colName];
-                  const wr = cell && cell.total > 0 ? Math.round((cell.wins / cell.total) * 100) : null;
-                  const isSelf = rowHero.name === colName;
-                  return (
-                    <td
-                      key={colName}
-                      className={`border border-fab-border/40 p-1 text-center ${isSelf ? "bg-fab-bg/40" : wr !== null ? cellColor(wr) : ""}`}
-                      title={cell ? `${cell.wins}-${cell.losses}${cell.draws ? `-${cell.draws}` : ""} (${cell.total} games)` : "no games"}
-                    >
-                      {wr === null ? (
-                        <span className="text-fab-dim">·</span>
-                      ) : (
-                        <>
-                          <div className="font-bold">{wr}%</div>
-                          <div className="text-[9px] opacity-75">{cell!.wins}-{cell!.losses}</div>
-                        </>
-                      )}
-                    </td>
-                  );
-                })}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-}
-
-function MembersList({
-  members,
-  currentUid,
-  organizerUid,
-  isOrganizer,
-  onKick,
-}: {
-  members: LeagueMember[];
-  currentUid: string | null;
-  organizerUid: string;
-  isOrganizer: boolean;
-  onKick: (uid: string) => void;
-}) {
-  return (
-    <div className="rounded-lg border border-fab-border/70 bg-fab-bg/45 p-4">
-      <h3 className="text-sm font-bold uppercase tracking-wider text-fab-dim">
-        Players ({members.length})
-      </h3>
-      <ul className="mt-2 space-y-1.5 text-sm">
-        {members.map((m) => {
-          const isOrg = m.uid === organizerUid;
-          const isSelf = currentUid && m.uid === currentUid;
-          return (
-            <li key={m.uid} className="flex items-center justify-between gap-2">
-              <Link
-                href={`/player/${m.username}`}
-                className="min-w-0 flex-1 truncate text-fab-text hover:text-fab-gold"
-              >
-                {m.displayName}
-                {isOrg && (
-                  <span className="ml-1 rounded bg-fab-gold/15 px-1 text-[10px] font-bold text-fab-gold">
-                    organizer
-                  </span>
-                )}
-                {isSelf && !isOrg && (
-                  <span className="ml-1 text-[10px] text-fab-dim">(you)</span>
-                )}
-              </Link>
-              {isOrganizer && !isOrg && (
-                <button
-                  type="button"
-                  onClick={() => onKick(m.uid)}
-                  className="rounded p-1 text-fab-dim hover:text-rose-300"
-                  title="Remove member"
-                >
-                  <UserMinus className="h-3.5 w-3.5" />
-                </button>
-              )}
-            </li>
-          );
-        })}
-      </ul>
     </div>
   );
 }
