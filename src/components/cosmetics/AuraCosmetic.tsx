@@ -13,6 +13,16 @@ import type { Finish } from "@/lib/cosmetics/preview-dsl";
 
 const CAP = [0.28, 0.36, 0.5];
 
+/** Hex → rgba. Used instead of CSS color-mix() so the halo captures reliably in
+ *  html-to-image (share cards) — color-mix is unreliable inside foreignObject. */
+function hexToRgba(hex: string, alpha: number): string {
+  const h = hex.replace("#", "");
+  const r = parseInt(h.slice(0, 2), 16);
+  const g = parseInt(h.slice(2, 4), 16);
+  const b = parseInt(h.slice(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
 export function AuraCosmetic({
   idPrefix,
   motif,
@@ -39,9 +49,7 @@ export function AuraCosmetic({
           style={{
             width: "150%",
             height: "150%",
-            background: `radial-gradient(circle at 50% 50%, transparent 58%, color-mix(in srgb, ${s.specular} ${Math.round(
-              cap * 100,
-            )}%, transparent) 72%, transparent 90%)`,
+            background: `radial-gradient(circle at 50% 50%, transparent 58%, ${hexToRgba(s.specular, cap)} 72%, transparent 90%)`,
           }}
         />
       </div>
