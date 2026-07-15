@@ -17,6 +17,8 @@ import { allHeroes } from "@/lib/heroes";
 import { MatchResult, type MatchRecord } from "@/types";
 import { localDate, HERO_REQUIRED_CUTOFF } from "@/lib/constants";
 import type { PasteImportEvent } from "@/lib/gem-paste-import";
+import { COSMETICS_ENABLED } from "@/lib/cosmetics/flags";
+import { reconcileWallet } from "@/lib/cosmetics/wallet-client";
 
 const VALID_HERO_NAMES = allHeroes.map((h) => h.name).sort();
 
@@ -203,6 +205,8 @@ export function QuickEventImportModal({ open, onClose, onImportComplete }: Quick
       const hero = heroPlayed !== "Unknown" ? heroPlayed : undefined;
       const topHeroes = hero ? [hero] : [];
       createImportFeedEvent(profile, count, topHeroes, "paste").catch(() => {});
+      // Mint any coins owed for the new matches (idempotent server grant).
+      if (COSMETICS_ENABLED) reconcileWallet().catch(() => {});
       getMatchesByUserId(user.uid)
         .then((allMatches) => {
           updateLeaderboardEntry(profile, allMatches);

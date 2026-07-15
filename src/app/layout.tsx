@@ -17,6 +17,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { PageVisitTracker } from "@/components/PageVisitTracker";
 import { ScrollProgress } from "@/components/ui/ScrollProgress";
 import { AutoSyncRecompute } from "@/components/AutoSyncRecompute";
+import { WalletReconcile } from "@/components/WalletReconcile";
 import { AprilFoolsProvider, FoolsBanner } from "@/contexts/AprilFoolsContext";
 import { FoolsScrambler } from "@/components/april-fools/FoolsScrambler";
 import { websiteJsonLd, renderJsonLdScript } from "@/lib/kg/json-ld";
@@ -192,6 +193,7 @@ export default function RootLayout({
           <MobileTabBar />
           <PageVisitTracker />
           <AutoSyncRecompute />
+          <WalletReconcile />
           <SonnerProvider />
         </TooltipProvider>
         </AprilFoolsProvider>
