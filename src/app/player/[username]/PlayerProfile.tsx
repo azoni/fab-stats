@@ -5,6 +5,8 @@ import Link from "next/link";
 import { getProfileByUsername, getMatchesByUserId, updateProfile, searchUsernames, getProfile } from "@/lib/firestore-storage";
 import { BadgeStrip } from "@/components/profile/BadgeStrip";
 import { EquippedAvatar, NameWithPlate } from "@/components/cosmetics/EquippedAvatar";
+import { VisitorsRow } from "@/components/profile/VisitorsRow";
+import { recordProfileVisit } from "@/lib/cosmetics/visitors";
 import { HeroShieldBadge } from "@/components/profile/HeroShieldBadge";
 import { TeamBadge } from "@/components/profile/TeamBadge";
 import { useTeamOnce } from "@/hooks/useTeam";
@@ -326,6 +328,15 @@ export default function PlayerProfile() {
   }, [username]);
 
   const profileUid = state.status === "loaded" ? state.profile.uid : "";
+
+  // Log this visit (fire-and-forget; guards on flag/self/private/throttle inside).
+  useEffect(() => {
+    if (state.status !== "loaded" || !currentUser?.uid) return;
+    recordProfileVisit(state.profile, currentUser.uid, myProfile
+      ? { username: myProfile.username, displayName: myProfile.displayName, photoUrl: myProfile.photoUrl, frameId: myProfile.selectedAvatarFrameId }
+      : null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profileUid, currentUser?.uid]);
 
   useEffect(() => {
     if (!profileUid) return;
@@ -732,6 +743,7 @@ export default function PlayerProfile() {
                 )}
                 <BadgeStrip selectedBadgeIds={profile.selectedBadgeIds} earnedAchievementIds={achievements.map((a) => a.id)} isOwner={isOwner && !previewAsVisitor} onEdit={() => setShowBadgePicker(true)} />
               </div>
+              <VisitorsRow profileUid={profile.uid} />
               {/* Social links — always-visible inputs for owner, display-only for visitors */}
               {isOwner && !previewAsVisitor ? (
                 <div className="mt-2 space-y-1.5">
