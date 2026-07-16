@@ -22,6 +22,18 @@ import { COSMETICS_ENABLED } from "@/lib/cosmetics/flags";
 import { ProfileCosmeticsPanel } from "@/components/profile/ProfileCosmeticsPanel";
 
 type SocialLinks = NonNullable<UserProfile["socialLinks"]>;
+export type AccountUpdates = Partial<
+  Pick<
+    UserProfile,
+    "displayName" | "searchName" | "isPublic" | "profileVisibility" | "hideFromGuests" | "hideFromSpotlight" | "hideFromFeed" | "gemId"
+  >
+>;
+
+const VISIBILITY: { key: "public" | "friends" | "private"; label: string }[] = [
+  { key: "public", label: "Public" },
+  { key: "friends", label: "Friends" },
+  { key: "private", label: "Private" },
+];
 
 interface SocialDraft {
   twitter: string;
@@ -130,6 +142,7 @@ export function ProfileCustomizeDrawer({
   onSaveLinks,
   onSaveBorder,
   onSaveUnderline,
+  onSaveAccount,
 }: {
   open: boolean;
   onClose: () => void;
@@ -147,16 +160,26 @@ export function ProfileCustomizeDrawer({
   onSaveLinks: (links: SocialLinks) => Promise<void>;
   onSaveBorder: (sel: BorderSelection) => Promise<void>;
   onSaveUnderline: (sel: UnderlineSelection) => Promise<void>;
+  /** Writes account fields (display name / visibility / hide toggles / GEM ID)
+   *  and handles the derived searchName + feed-visibility sync + GEM-ID reservation. */
+  onSaveAccount: (updates: AccountUpdates) => Promise<void>;
 }) {
   const [draft, setDraft] = useState<SocialDraft>(() => draftFromProfile(profile));
   const [savingLinks, setSavingLinks] = useState(false);
+  const [nameDraft, setNameDraft] = useState(profile.displayName || "");
+  const [gemDraft, setGemDraft] = useState(profile.gemId || "");
+  const [savingAccount, setSavingAccount] = useState(false);
   const closeRef = useRef<HTMLButtonElement>(null);
   const overlayOpenRef = useRef(overlayOpen);
   overlayOpenRef.current = overlayOpen;
 
-  // Re-hydrate the links draft each time the drawer opens (reflect latest saves).
+  // Re-hydrate the drafts each time the drawer opens (reflect latest saves).
   useEffect(() => {
-    if (open) setDraft(draftFromProfile(profile));
+    if (open) {
+      setDraft(draftFromProfile(profile));
+      setNameDraft(profile.displayName || "");
+      setGemDraft(profile.gemId || "");
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
@@ -192,6 +215,18 @@ export function ProfileCustomizeDrawer({
       await onSaveLinks(buildLinks(profile, draft));
     } finally {
       setSavingLinks(false);
+    }
+  }
+
+  const visibility = profile.profileVisibility ?? (profile.isPublic ? "public" : "private");
+  const nameDirty = nameDraft.trim().length > 0 && nameDraft.trim() !== (profile.displayName || "");
+  const gemDirty = gemDraft.trim() !== (profile.gemId || "");
+  async function saveAccount(updates: AccountUpdates) {
+    setSavingAccount(true);
+    try {
+      await onSaveAccount(updates);
+    } finally {
+      setSavingAccount(false);
     }
   }
 
@@ -304,11 +339,95 @@ export function ProfileCustomizeDrawer({
               <Erow label="Badge strip" value={`${profile.selectedBadgeIds?.length || 0} pinned`} onClick={onEditBadges} actionLabel="Edit" />
             </div>
           </section>
+
+          <section>
+            <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-fab-gold/80">Account</p>
+            <div className="space-y-3 rounded-lg border border-fab-border bg-fab-bg/30 p-3">
+              <div>
+                <label className="text-[11px] text-fab-dim">Display name</label>
+                <div className="mt-1 flex gap-1.5">
+                  <input className={inputCls} maxLength={50} value={nameDraft} onChange={(e) => setNameDraft(e.target.value)} />
+                  {nameDirty && (
+                    <button
+                      type="button"
+                      disabled={savingAccount}
+                      onClick={() => saveAccount({ displayName: nameDraft.trim() })}
+                      className="shrink-0 rounded-md bg-fab-gold/20 px-2.5 py-1 text-xs font-semibold text-fab-gold hover:bg-fab-gold/30 disabled:opacity-50"
+                    >
+                      Save
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[11px] text-fab-dim">Profile visibility</label>
+                <div className="mt-1 flex gap-1">
+                  {VISIBILITY.map((v) => (
+                    <button
+                      key={v.key}
+                      type="button"
+                      disabled={savingAccount}
+                      onClick={() => visibility !== v.key && saveAccount({ isPublic: v.key === "public", profileVisibility: v.key })}
+                      className={`flex-1 rounded-md border px-2 py-1 text-xs font-medium transition-colors disabled:opacity-50 ${
+                        visibility === v.key
+                          ? "border-fab-gold/50 bg-fab-gold/15 text-fab-gold"
+                          : "border-fab-border text-fab-muted hover:text-fab-text"
+                      }`}
+                    >
+                      {v.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                {([
+                  ["hideFromGuests", "Hide from guests"],
+                  ["hideFromSpotlight", "Hide from spotlight"],
+                  ["hideFromFeed", "Hide from feed"],
+                ] as const).map(([field, label]) => (
+                  <label key={field} className="flex items-center gap-2 text-xs text-fab-muted">
+                    <input
+                      type="checkbox"
+                      disabled={savingAccount}
+                      checked={!!profile[field]}
+                      onChange={(e) => saveAccount({ [field]: e.target.checked } as AccountUpdates)}
+                    />
+                    {label}
+                  </label>
+                ))}
+              </div>
+
+              <div>
+                <label className="text-[11px] text-fab-dim">GEM ID</label>
+                <div className="mt-1 flex gap-1.5">
+                  <input
+                    className={inputCls}
+                    inputMode="numeric"
+                    placeholder="Usually filled from your first import"
+                    value={gemDraft}
+                    onChange={(e) => setGemDraft(e.target.value.replace(/\D/g, ""))}
+                  />
+                  {gemDirty && (
+                    <button
+                      type="button"
+                      disabled={savingAccount}
+                      onClick={() => saveAccount({ gemId: gemDraft.trim() })}
+                      className="shrink-0 rounded-md bg-fab-gold/20 px-2.5 py-1 text-xs font-semibold text-fab-gold hover:bg-fab-gold/30 disabled:opacity-50"
+                    >
+                      Save
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </section>
         </div>
 
         <div className="flex items-center justify-between gap-2 border-t border-fab-border bg-fab-bg/40 px-4 py-3">
           <Link href="/settings" className="text-xs text-fab-muted underline decoration-fab-border hover:text-fab-text">
-            Name & privacy → Settings
+            More in Settings →
           </Link>
           <div className="flex items-center gap-2">
             <button

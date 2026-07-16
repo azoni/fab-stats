@@ -6,6 +6,7 @@
 import { useEffect, useState } from "react";
 import { db } from "@/lib/firebase";
 import { doc, getDoc, onSnapshot, type Unsubscribe } from "firebase/firestore";
+import { COSMETICS_ENABLED } from "./flags";
 
 export interface Inventory {
   items: string[];
@@ -44,7 +45,9 @@ export function useInventory(uid: string | undefined | null): {
   const [items, setItems] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   useEffect(() => {
-    if (!uid) {
+    // Dormant when the feature is off — don't open an inventory listener on every
+    // profile view (useOwnedGrants calls this outside any flag gate).
+    if (!COSMETICS_ENABLED || !uid) {
       setItems([]);
       setLoading(false);
       return;

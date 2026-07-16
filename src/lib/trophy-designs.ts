@@ -82,10 +82,16 @@ export function getSelectedDesign(eventType: string, trophyDesigns?: Record<stri
   return trophyDesigns[eventType] ?? 0;
 }
 
-/** Check if a design is unlocked (index 0 always, admins always) */
-export function isDesignUnlocked(index: number, isAdmin?: boolean): boolean {
+/** Check if a design is unlocked (index 0 always, admins always, or owned via a
+ *  purchased cosmetic SKU whose grantsId === the design id). */
+export function isDesignUnlocked(
+  index: number,
+  isAdmin?: boolean,
+  unlockedIds?: ReadonlySet<string>,
+  designId?: string,
+): boolean {
   if (index === 0) return true;
   if (isAdmin) return true;
-  // Future: check unlock conditions per design
+  if (designId && unlockedIds?.has(designId)) return true;
   return false;
 }

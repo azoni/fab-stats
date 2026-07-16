@@ -2,7 +2,8 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
-import { getProfileByUsername, getMatchesByUserId, updateProfile, searchUsernames, getProfile } from "@/lib/firestore-storage";
+import { getProfileByUsername, getMatchesByUserId, updateProfile, searchUsernames, getProfile, registerGemId, deleteGemId } from "@/lib/firestore-storage";
+import { syncFeedEventsVisibility } from "@/lib/feed";
 import { BadgeStrip } from "@/components/profile/BadgeStrip";
 import { EquippedAvatar, NameWithPlate } from "@/components/cosmetics/EquippedAvatar";
 import { VisitorsRow } from "@/components/profile/VisitorsRow";
@@ -10,6 +11,7 @@ import { AvatarShareModal } from "@/components/profile/ProfileAvatarShareCard";
 import { ProfileCustomizeDrawer } from "@/components/profile/ProfileCustomizeDrawer";
 import { recordProfileVisit } from "@/lib/cosmetics/visitors";
 import { COSMETICS_ENABLED } from "@/lib/cosmetics/flags";
+import { useOwnedGrants } from "@/lib/cosmetics/grants";
 import { HeroShieldBadge } from "@/components/profile/HeroShieldBadge";
 import { TeamBadge } from "@/components/profile/TeamBadge";
 import { useTeamOnce } from "@/hooks/useTeam";
@@ -317,6 +319,9 @@ export default function PlayerProfile() {
   }, [username]);
 
   const profileUid = state.status === "loaded" ? state.profile.uid : "";
+  // Legacy ids (backgrounds/trophy-designs) unlocked by owning a purchased SKU —
+  // surfaces shop items in the existing pickers. Empty while the flag is off.
+  const ownedGrants = useOwnedGrants(profileUid);
 
   // Log this visit (fire-and-forget; guards on flag/self/private/throttle inside).
   useEffect(() => {
@@ -967,6 +972,7 @@ export default function PlayerProfile() {
               trophyDesigns={profile.trophyDesigns}
               isOwner={isOwner}
               isAdmin={isAdmin}
+              unlockedDesignIds={ownedGrants.trophyDesigns}
               onDesignChange={isOwner ? async (eventType, designIndex) => {
                 const current = profile.trophyDesigns || {};
                 const updated = { ...current, [eventType]: designIndex };
@@ -1023,6 +1029,7 @@ export default function PlayerProfile() {
               <BackgroundChooser
                 selectedId={profile.siteBackgroundId || "none"}
                 isAdmin={isAdmin}
+                unlockedBackgroundIds={ownedGrants.backgrounds}
                 disabled={savingBackground}
                 onSelect={async (id) => {
                   if (savingBackground) return;
@@ -1156,6 +1163,26 @@ export default function PlayerProfile() {
           onSaveUnderline={async (sel) => {
             await updateProfile(profile.uid, { underlineEventType: sel.eventType, underlinePlacement: sel.placement });
             setState((prev) => prev.status === "loaded" ? { ...prev, profile: { ...prev.profile, underlineEventType: sel.eventType, underlinePlacement: sel.placement } } : prev);
+          }}
+          onSaveAccount={async (updates) => {
+            const next = { ...updates };
+            // Keep searchName consistent with the settings page when the name changes.
+            if (typeof updates.displayName === "string") {
+              next.searchName = [profile.firstName, profile.lastName, updates.displayName].filter(Boolean).join(" ").toLowerCase() || undefined;
+            }
+            const gemChanged = "gemId" in updates && (updates.gemId || "") !== (profile.gemId || "");
+            const oldGemId = profile.gemId;
+            await updateProfile(profile.uid, next);
+            // GEM ID reservation sync (mirror the settings page).
+            if (gemChanged) {
+              if (oldGemId) deleteGemId(oldGemId).catch(() => {});
+              if (updates.gemId) registerGemId(profile.uid, updates.gemId).catch(() => {});
+            }
+            // Feed visibility follows profile visibility.
+            if ("profileVisibility" in updates || "isPublic" in updates) {
+              syncFeedEventsVisibility({ ...profile, ...next }, matches).catch(() => {});
+            }
+            setState((prev) => prev.status === "loaded" ? { ...prev, profile: { ...prev.profile, ...next } } : prev);
           }}
         />
       )}

@@ -105,9 +105,12 @@ export function getCanById(id: string): WateringCanDef {
   return WATERING_CANS.find((c) => c.id === id) ?? WATERING_CANS[0];
 }
 
-export function getUnlockedCanIds(profile: { username: string; unlockedCans?: string[] }): string[] {
+export function getUnlockedCanIds(
+  profile: { username: string; unlockedCans?: string[] },
+  ownedCanIds?: Iterable<string>,
+): string[] {
   if (profile.username === "azoni") return ALL_CAN_IDS;
-  const set = new Set(["classic", ...(profile.unlockedCans ?? [])]);
+  const set = new Set(["classic", ...(profile.unlockedCans ?? []), ...(ownedCanIds ?? [])]);
   return ALL_CAN_IDS.filter((id) => set.has(id));
 }
 

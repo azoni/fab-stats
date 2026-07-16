@@ -11,7 +11,10 @@ interface UseProfileBackgroundCatalogResult {
   refreshCatalog: () => Promise<void>;
 }
 
-export function useProfileBackgroundCatalog(isAdmin: boolean): UseProfileBackgroundCatalogResult {
+export function useProfileBackgroundCatalog(
+  isAdmin: boolean,
+  unlockedIds?: ReadonlySet<string>,
+): UseProfileBackgroundCatalogResult {
   const [allOptions, setAllOptions] = useState<ProfileBackgroundOption[]>(
     () => getCachedProfileBackgroundCatalog({ includeAdmin: isAdmin }),
   );
@@ -51,8 +54,14 @@ export function useProfileBackgroundCatalog(isAdmin: boolean): UseProfileBackgro
   }, [isAdmin]);
 
   const options = useMemo(
-    () => allOptions.filter((opt) => opt.isActive !== false && (isAdmin || !opt.adminOnly) && (isAdmin || !opt.unlockType)),
-    [allOptions, isAdmin],
+    () =>
+      allOptions.filter(
+        (opt) =>
+          opt.isActive !== false &&
+          (isAdmin || !opt.adminOnly || unlockedIds?.has(opt.id)) &&
+          (isAdmin || !opt.unlockType || unlockedIds?.has(opt.id)),
+      ),
+    [allOptions, isAdmin, unlockedIds],
   );
 
   return { options, allOptions, loading, refreshCatalog };
