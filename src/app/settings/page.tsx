@@ -276,7 +276,9 @@ export default function SettingsPage() {
         lastName: lastName.trim() || undefined,
         searchName: searchName || undefined,
         earnings: earnings ? parseFloat(earnings) : undefined,
-        gemId: trimmedGemId || undefined,
+        // Write "" (not undefined) on clear so the field is actually blanked and
+        // stays consistent with the gemIds reservation delete below.
+        gemId: trimmedGemId,
       });
 
       // Update gemIds lookup collection if GEM ID changed

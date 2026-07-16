@@ -1178,11 +1178,17 @@ export default function PlayerProfile() {
               if (oldGemId) deleteGemId(oldGemId).catch(() => {});
               if (updates.gemId) registerGemId(profile.uid, updates.gemId).catch(() => {});
             }
-            // Feed visibility follows profile visibility.
+            // Feed visibility follows profile visibility (re-fetch matches like
+            // /settings so a just-imported placement gets its feed event).
             if ("profileVisibility" in updates || "isPublic" in updates) {
-              syncFeedEventsVisibility({ ...profile, ...next }, matches).catch(() => {});
+              getMatchesByUserId(profile.uid)
+                .then((m) => syncFeedEventsVisibility({ ...profile, ...next }, m))
+                .catch(() => {});
             }
             setState((prev) => prev.status === "loaded" ? { ...prev, profile: { ...prev.profile, ...next } } : prev);
+            // Keep AuthContext (nav avatar, homepage, /settings) in sync — its
+            // profile is a one-shot load only updated by refreshProfile().
+            await refreshProfile().catch(() => {});
           }}
         />
       )}
