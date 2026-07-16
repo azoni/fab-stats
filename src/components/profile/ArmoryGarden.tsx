@@ -2,6 +2,7 @@
 import { useState, useMemo, useCallback, useRef } from "react";
 import type { EventStats, UserProfile } from "@/types";
 import { WATERING_CANS, DEFAULT_CAN_ID, getCanById, getUnlockedCanIds } from "@/lib/watering-cans";
+import { useOwnedGrants } from "@/lib/cosmetics/grants";
 
 /* ── petal palette ─────────────────────────────────────── */
 const COLORS = [
@@ -253,9 +254,12 @@ export function ArmoryGarden({ eventStats, ownerProfile, isOwner }: { eventStats
   const [selectedCanId, setSelectedCanId] = useState(DEFAULT_CAN_ID);
   const selectedCan = useMemo(() => getCanById(selectedCanId), [selectedCanId]);
 
+  // Cans unlocked by owning a purchased "cursor" cosmetic SKU (empty flag-off /
+  // for a synthetic profile without a uid, e.g. TeamPage).
+  const ownedGrants = useOwnedGrants(ownerProfile?.uid);
   const unlockedIds = useMemo(
-    () => getUnlockedCanIds(ownerProfile),
-    [ownerProfile],
+    () => getUnlockedCanIds(ownerProfile, ownedGrants.cans),
+    [ownerProfile, ownedGrants],
   );
 
   // Visitors see only unlocked cans; owners also see locked ones

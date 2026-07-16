@@ -16,6 +16,9 @@ interface BackgroundChooserProps {
   isAdmin: boolean;
   onSelect: (id: string) => void;
   disabled?: boolean;
+  /** Background option ids the user has unlocked via a purchased cosmetic SKU —
+   *  shown as selectable even if normally gated. */
+  unlockedBackgroundIds?: ReadonlySet<string>;
 }
 
 const PAGE_SIZE = 12;
@@ -24,8 +27,8 @@ function toVisualKey(opt: ProfileBackgroundOption): string {
   return (opt.thumbnailUrl || opt.imageUrl || "").trim().toLowerCase();
 }
 
-export function BackgroundChooser({ selectedId, isAdmin, onSelect, disabled }: BackgroundChooserProps) {
-  const { options, loading, refreshCatalog } = useProfileBackgroundCatalog(isAdmin);
+export function BackgroundChooser({ selectedId, isAdmin, onSelect, disabled, unlockedBackgroundIds }: BackgroundChooserProps) {
+  const { options, loading, refreshCatalog } = useProfileBackgroundCatalog(isAdmin, unlockedBackgroundIds);
   const [previewMode, setPreviewMode] = useState<"fit" | "fill">("fit");
   const [searchQuery, setSearchQuery] = useState("");
   const [hideDuplicateVisuals, setHideDuplicateVisuals] = useState(true);
@@ -82,8 +85,9 @@ export function BackgroundChooser({ selectedId, isAdmin, onSelect, disabled }: B
     return options.filter((opt) => {
       const adminOnly = opt.adminOnly === true;
       const gated = Boolean(opt.unlockType);
+      const owned = unlockedBackgroundIds?.has(opt.id) === true;
 
-      if (!isAdmin && gated) return false;
+      if (!isAdmin && gated && !owned) return false;
       if (isAdmin) {
         if (adminVisibilityFilter === "public" && adminOnly) return false;
         if (adminVisibilityFilter === "admin" && !adminOnly) return false;
@@ -99,7 +103,7 @@ export function BackgroundChooser({ selectedId, isAdmin, onSelect, disabled }: B
         || opt.kind.toLowerCase().includes(query)
       );
     });
-  }, [options, isAdmin, searchQuery, adminVisibilityFilter, adminUnlockFilter, adminKindFilter]);
+  }, [options, isAdmin, searchQuery, adminVisibilityFilter, adminUnlockFilter, adminKindFilter, unlockedBackgroundIds]);
 
   const dedupedOptions = useMemo(() => {
     if (!hideDuplicateVisuals) return filteredOptions;

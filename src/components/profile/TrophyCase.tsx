@@ -146,12 +146,14 @@ export function TrophyCase({
   isOwner,
   isAdmin,
   onDesignChange,
+  unlockedDesignIds,
 }: {
   finishes: PlayoffFinish[];
   trophyDesigns?: Record<string, number>;
   isOwner?: boolean;
   isAdmin?: boolean;
   onDesignChange?: (eventType: string, designIndex: number) => void;
+  unlockedDesignIds?: ReadonlySet<string>;
 }) {
   const [pickerEventType, setPickerEventType] = useState<string | null>(null);
 
@@ -236,6 +238,7 @@ export function TrophyCase({
         <TrophyDesignPicker
           trophyDesigns={trophyDesigns}
           isAdmin={isAdmin}
+          unlockedDesignIds={unlockedDesignIds}
           highlightEventType={pickerEventType}
           onSelect={(eventType, index) => {
             onDesignChange(eventType, index);

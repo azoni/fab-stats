@@ -9,6 +9,8 @@ interface TrophyDesignPickerProps {
   onSelect: (eventType: string, index: number) => void;
   onClose: () => void;
   highlightEventType?: string | null;
+  /** Trophy design ids unlocked via a purchased cosmetic SKU (grantsId). */
+  unlockedDesignIds?: ReadonlySet<string>;
 }
 
 const EVENT_ORDER = [
@@ -27,7 +29,7 @@ const TIER_LABELS: Record<string, { label: string; color: string }> = {
 
 const TIER_BREAKS = new Set(["Worlds", "Showdown", "ProQuest", "Championship"]);
 
-export function TrophyDesignPicker({ trophyDesigns, isAdmin, onSelect, onClose, highlightEventType }: TrophyDesignPickerProps) {
+export function TrophyDesignPicker({ trophyDesigns, isAdmin, onSelect, onClose, highlightEventType, unlockedDesignIds }: TrophyDesignPickerProps) {
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
       <div className="bg-fab-surface border border-fab-border rounded-xl max-w-2xl w-full mx-4 p-5 max-h-[85vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
@@ -69,7 +71,7 @@ export function TrophyDesignPicker({ trophyDesigns, isAdmin, onSelect, onClose, 
                   {/* 3 design options */}
                   <div className="flex gap-2 flex-1">
                     {designs.map((design) => {
-                      const unlocked = isDesignUnlocked(design.index, isAdmin);
+                      const unlocked = isDesignUnlocked(design.index, isAdmin, unlockedDesignIds, design.id);
                       const isSelected = selectedIndex === design.index;
 
                       return (
