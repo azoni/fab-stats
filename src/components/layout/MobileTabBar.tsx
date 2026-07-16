@@ -26,10 +26,10 @@ const tabs: TabSpec[] = [
     match: (p) => p === "/" || p.startsWith("/matches") || p.startsWith("/events") || p.startsWith("/opponents") || p.startsWith("/trends") || p.startsWith("/tournament-stats") || p.startsWith("/wrapped"),
   },
   {
-    href: "/meta",
-    label: "Meta",
-    icon: <NavAssetIcon name="meta" />,
-    match: (p) => p.startsWith("/meta") || p.startsWith("/leaderboard") || p.startsWith("/matchups"),
+    href: "/activity",
+    label: "Activity",
+    icon: <NavAssetIcon name="activity" />,
+    match: (p) => p.startsWith("/activity") || p.startsWith("/community") || p.startsWith("/friends") || p.startsWith("/feed"),
   },
   {
     href: "/discover",
@@ -39,10 +39,10 @@ const tabs: TabSpec[] = [
     match: (p) => p.startsWith("/discover") || p.startsWith("/player") || p.startsWith("/search") || p.startsWith("/stores") || p.startsWith("/leagues") || p.startsWith("/teams") || p.startsWith("/group"),
   },
   {
-    href: "/activity",
-    label: "Activity",
-    icon: <NavAssetIcon name="activity" />,
-    match: (p) => p.startsWith("/activity") || p.startsWith("/community") || p.startsWith("/friends") || p.startsWith("/feed"),
+    href: "/meta",
+    label: "Meta",
+    icon: <NavAssetIcon name="meta" />,
+    match: (p) => p.startsWith("/meta") || p.startsWith("/leaderboard") || p.startsWith("/matchups"),
   },
   {
     href: "/extras",
