@@ -5,7 +5,6 @@ import {
   Bot,
   CalendarDays,
   Gamepad2,
-  Gem,
   Mail,
   MessageCircle,
   Settings,
@@ -18,7 +17,6 @@ import {
   Trophy,
   Users,
 } from "lucide-react";
-import { COSMETICS_ENABLED } from "@/lib/cosmetics/flags";
 
 export type NavSubItem = { href: string; label: string; adminOnly?: boolean; authOnly?: boolean; badge?: string; icon?: ReactNode };
 export type NavLink = { href: string; label: string; icon: ReactNode; color: string; bg: string; authOnly?: boolean; iconOnly?: boolean; alwaysOpen?: boolean; subItems?: NavSubItem[] };
@@ -70,9 +68,8 @@ export const navLinks: NavLink[] = [
   ] },
   { href: "/leaderboard", label: "Rankings", icon: <NavAssetIcon name="rankings" />, color: "text-amber-400", bg: "bg-amber-400/10" },
   { href: "/achievements", label: "Achievements", icon: <NavAssetIcon name="achievements" />, color: "text-yellow-400", bg: "bg-yellow-400/10" },
-  ...(COSMETICS_ENABLED
-    ? [{ href: "/shop", label: "Shop", icon: <Gem className="w-5 h-5" />, color: "text-fuchsia-400", bg: "bg-fuchsia-400/10" } as NavLink]
-    : []),
+  // Shop/Reliquary intentionally NOT in the sidebar for now — /shop still works by
+  // URL (the cosmetics flag stays on). Re-add a flag-gated link here to reveal it.
   { href: "/extras", label: "Extras", icon: <NavAssetIcon name="extras" />, color: "text-violet-400", bg: "bg-violet-400/10", subItems: [
     { href: "/games", label: "Daily Games", icon: <Gamepad2 className="w-3.5 h-3.5" /> },
     { href: "/compare", label: "Versus" },
