@@ -20,6 +20,7 @@ const TOC = [
   { id: "event-detection", label: "Event Detection" },
   { id: "hero-mastery", label: "Hero Mastery" },
   { id: "achievements", label: "Achievements" },
+  { id: "cosmetics", label: "Cosmetics & Shop" },
   { id: "hero-shield", label: "Hero Data Shield" },
   { id: "formats", label: "Supported Formats" },
   { id: "leaderboard", label: "Leaderboard" },
@@ -668,6 +669,39 @@ export default function DocsPage() {
                 </span>
               ))}
             </div>
+          </section>
+
+          {/* ─── Cosmetics & Shop ─── */}
+          <section id="cosmetics">
+            <h2 className="text-xl font-semibold text-fab-text mb-3 pb-2 border-b border-fab-border">Cosmetics &amp; Shop</h2>
+            <p className="text-sm text-fab-muted mb-3">
+              Importing matches and earning achievements mints <span className="text-fab-gold">coins</span> — a
+              cosmetic-only currency you spend in the Shop (&ldquo;The Reliquary&rdquo;) to decorate your profile.
+              Everything is code-rendered heraldic art, so it stays crisp on every theme. Your balance is shown in
+              the Shop header.
+            </p>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
+              {[
+                ["Avatar frames", "Engraved rings around your photo"],
+                ["Companions", "Heraldic charges beside your avatar"],
+                ["Auras", "A subtle backdrop glow"],
+                ["Nameplates", "A chiselled banner behind your name"],
+              ].map(([name, desc]) => (
+                <div key={name} className="p-2.5 rounded-lg bg-fab-surface border border-fab-border">
+                  <div className="text-sm font-medium text-fab-text">{name}</div>
+                  <div className="text-xs text-fab-dim mt-0.5">{desc}</div>
+                </div>
+              ))}
+            </div>
+            <ul className="text-sm text-fab-muted space-y-1.5 list-disc list-inside mb-3">
+              <li><span className="text-fab-text">Buy directly</span> with coins, or try the <span className="text-fab-text">Reliquary pulls</span> (gacha) — published odds, a pity guarantee for rare-or-better, and coin refunds on duplicates.</li>
+              <li><span className="text-fab-text">Equip</span> from the Shop or your profile&rsquo;s Customize drawer; equipped cosmetics render on your public profile and shareable avatar card.</li>
+              <li>Coins are earned automatically and can&rsquo;t be bought with money — they&rsquo;re purely for fun.</li>
+            </ul>
+            <p className="text-xs text-fab-dim">
+              Coins are server-authoritative: they&rsquo;re minted and spent on the server, so your balance and
+              collection can&rsquo;t be tampered with from the browser.
+            </p>
           </section>
 
           {/* ─── Hero Data Shield ─── */}

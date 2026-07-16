@@ -4,6 +4,9 @@
 
 [build.environment]
   SECRETS_SCAN_SMART_DETECTION_ENABLED = "false"
+  # Profile cosmetics economy (coins, shop, gacha, cosmetics). Set to "false" to
+  # hide the whole system again (the /shop route + nav link + coin earning).
+  NEXT_PUBLIC_FEATURE_COSMETICS = "true"
 
 [functions]
   included_files = ["node_modules/@resvg/resvg-js-*/**", "netlify/functions/fonts/*"]

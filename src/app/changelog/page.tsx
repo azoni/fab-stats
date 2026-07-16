@@ -33,6 +33,19 @@ const badgeLabels: Record<ChangeType, string> = {
 
 const changelog: Entry[] = [
   {
+    date: "July 2026",
+    id: "july-2026",
+    changes: [
+      { type: "new", text: "Profile cosmetics! Earn coins by importing matches and completing achievements, then spend them in the new Shop." },
+      { type: "new", text: "The Reliquary: buy code-rendered cosmetics — avatar frames, heraldic companions, auras, and nameplates — that decorate your profile." },
+      { type: "new", text: "Gacha pulls with published odds, a pity guarantee for rare-or-better, and coin refunds on duplicates." },
+      { type: "new", text: "Recent visitors row on profiles shows who recently stopped by, each with their equipped frame." },
+      { type: "new", text: "Shareable avatar cards: copy or download a card of your decorated avatar and stats." },
+      { type: "new", text: "Redesigned profile: one Customize drawer now holds background, border, emblems, links, badges, cosmetics, and account settings." },
+      { type: "improved", text: "Shop-purchased backgrounds, trophy skins, and garden cursors now appear unlocked in their existing pickers." },
+    ],
+  },
+  {
     date: "May 2026",
     id: "may-2026",
     changes: [
