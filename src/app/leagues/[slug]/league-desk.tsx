@@ -244,49 +244,52 @@ export function Marquee({
         style={{ background: "linear-gradient(90deg, transparent, color-mix(in srgb,var(--accent) 85%,transparent), transparent)" }} />
 
       {/* ── Identity row ── */}
-      <div className="relative z-10 flex flex-wrap items-start gap-3 p-4 sm:gap-4 sm:p-5">
-        {/* minted crest tile */}
-        <div className="relative grid h-16 w-16 shrink-0 place-items-center overflow-hidden rounded-2xl sm:h-20 sm:w-20"
-          style={{
-            background:
-              "radial-gradient(120% 120% at 20% 12%, color-mix(in srgb,var(--accent) 55%,transparent), transparent 58%)," +
-              "radial-gradient(130% 130% at 82% 92%, color-mix(in srgb,var(--accent) 28%,#000), transparent 52%)," +
-              "linear-gradient(150deg, color-mix(in srgb,var(--accent) 22%,var(--color-fab-surface,#17171c)), var(--color-fab-bg,#0c0c0f))",
-            boxShadow: "inset 0 1px 0 color-mix(in srgb,var(--accent) 40%,transparent), inset 0 0 0 1px color-mix(in srgb,var(--accent) 18%,transparent)",
-          }}>
-          {league.iconUrl ? (
-            <img src={league.iconUrl} alt="" className="h-full w-full object-cover" />
-          ) : (
-            <span className="text-2xl font-black tracking-tight text-fab-text sm:text-3xl" style={{ textShadow: "0 1px 2px rgba(0,0,0,0.5)" }}>{initials}</span>
-          )}
-        </div>
-
-        {/* title + meta */}
-        <div className="min-w-0 flex-1">
-          <h1 className="text-2xl font-black leading-tight text-fab-text sm:text-3xl">{league.name}</h1>
-          <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-fab-dim">
-            <span>Organized by <span className="font-bold text-fab-text">{organizerName}</span></span>
-            <span className="inline-flex items-center gap-1"><CalendarDays className="h-3.5 w-3.5" /> {formatDateRange(league.startDate, league.endDate)}</span>
-            {locationStr && <span className="inline-flex items-center gap-1"><MapPin className="h-3.5 w-3.5" /> {locationStr}</span>}
+      <div className="relative z-10 p-4 sm:p-5">
+        <div className="flex items-start gap-3 sm:gap-4">
+          {/* minted crest tile */}
+          <div className="relative grid h-16 w-16 shrink-0 place-items-center overflow-hidden rounded-2xl sm:h-20 sm:w-20"
+            style={{
+              background:
+                "radial-gradient(120% 120% at 20% 12%, color-mix(in srgb,var(--accent) 55%,transparent), transparent 58%)," +
+                "radial-gradient(130% 130% at 82% 92%, color-mix(in srgb,var(--accent) 28%,#000), transparent 52%)," +
+                "linear-gradient(150deg, color-mix(in srgb,var(--accent) 22%,var(--color-fab-surface,#17171c)), var(--color-fab-bg,#0c0c0f))",
+              boxShadow: "inset 0 1px 0 color-mix(in srgb,var(--accent) 40%,transparent), inset 0 0 0 1px color-mix(in srgb,var(--accent) 18%,transparent)",
+            }}>
+            {league.iconUrl ? (
+              <img src={league.iconUrl} alt="" className="h-full w-full object-cover" />
+            ) : (
+              <span className="text-2xl font-black tracking-tight text-fab-text sm:text-3xl" style={{ textShadow: "0 1px 2px rgba(0,0,0,0.5)" }}>{initials}</span>
+            )}
           </div>
-          {league.description && <p className="mt-2 line-clamp-2 max-w-2xl text-xs text-fab-muted">{league.description}</p>}
+
+          {/* title + status pill + meta */}
+          <div className="min-w-0 flex-1">
+            <div className="flex items-start justify-between gap-2">
+              <h1 className="min-w-0 text-xl font-black leading-tight text-fab-text sm:text-3xl">{league.name}</h1>
+              <span className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-black uppercase tracking-wide ${status.cls}`}>
+                {status.live && <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-300" />}
+                {status.label}
+              </span>
+            </div>
+            <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-fab-dim">
+              <span>Organized by <span className="font-bold text-fab-text">{organizerName}</span></span>
+              <span className="inline-flex items-center gap-1"><CalendarDays className="h-3.5 w-3.5" /> {formatDateRange(league.startDate, league.endDate)}</span>
+              {locationStr && <span className="inline-flex items-center gap-1"><MapPin className="h-3.5 w-3.5" /> {locationStr}</span>}
+            </div>
+            {league.description && <p className="mt-2 line-clamp-2 max-w-2xl text-xs text-fab-muted">{league.description}</p>}
+          </div>
         </div>
 
-        {/* status pill + actions */}
-        <div className="flex shrink-0 flex-col items-end gap-2">
-          <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-black uppercase tracking-wide ${status.cls}`}>
-            {status.live && <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-300" />}
-            {status.label}
-          </span>
-          {actions}
-        </div>
+        {/* actions — a full-width row below the identity (right-aligned on desktop),
+            so the join / manage buttons never overlap a wrapping title on mobile. */}
+        {actions && <div className="mt-3 flex flex-wrap items-center gap-2 sm:mt-4 sm:justify-end">{actions}</div>}
       </div>
 
       {/* ── Stat band ── */}
       <div className="relative z-10 grid grid-cols-2 border-t border-fab-border/60 bg-fab-bg/40 sm:flex sm:divide-x sm:divide-fab-border/40">
         <StatCell label="Players" value={String(memberCount)}>
           {members && members.length > 0 && (
-            <span className="ml-2 inline-flex -space-x-1.5 align-middle">
+            <span className="ml-2 hidden -space-x-1.5 align-middle sm:inline-flex">
               {members.slice(0, 3).map((m) => (
                 <span key={m.uid} className="rounded-full ring-1 ring-fab-bg">
                   <Avatar photoUrl={m.photoUrl} name={m.displayName} size={16} />
