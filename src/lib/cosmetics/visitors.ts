@@ -54,7 +54,12 @@ export function recordProfileVisit(profile: UserProfile, viewerUid: string | und
   const data: Record<string, unknown> = { uid: viewerUid, ts: serverTimestamp() };
   if (viewer?.username) data.username = viewer.username.slice(0, 60);
   if (viewer?.displayName) data.displayName = viewer.displayName.slice(0, 80);
-  if (viewer?.photoUrl) data.photoUrl = viewer.photoUrl.slice(0, 600);
+  // Only store a real URL. Some avatars are base64 data-URIs (thousands of chars);
+  // slicing those to fit the doc/rule limit produces a broken image, so we skip
+  // them and let the row fall back to the player's initial.
+  if (viewer?.photoUrl && !viewer.photoUrl.startsWith("data:") && viewer.photoUrl.length <= 600) {
+    data.photoUrl = viewer.photoUrl;
+  }
   if (viewer?.frameId) data.frameId = viewer.frameId.slice(0, 80);
 
   setDoc(doc(db, "users", profile.uid, "profileVisitors", viewerUid), data, { merge: true }).catch(() => {});
