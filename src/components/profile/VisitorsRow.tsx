@@ -13,14 +13,23 @@ import { useCosmeticCatalog } from "@/lib/cosmetics/use-cosmetics";
 import { CosmeticPreview } from "@/components/cosmetics/CosmeticPreview";
 
 function VisitorAvatar({ v }: { v: VisitorEntry }) {
+  const [imgOk, setImgOk] = useState(true);
   const frame = getCosmeticById(v.frameId);
   const initial = (v.displayName || "?").charAt(0).toUpperCase();
   const size = 34;
+  // Fall back to the initial if the photo is missing OR fails to load (e.g. a
+  // legacy record that stored a truncated data-URI, or a blocked cross-origin URL).
   return (
     <div className="relative isolate shrink-0" style={{ width: size, height: size }} title={v.displayName || "Player"}>
       <div className="relative z-10">
-        {v.photoUrl ? (
-          <img src={v.photoUrl} alt="" className="h-[34px] w-[34px] rounded-full border border-fab-bg object-cover" />
+        {v.photoUrl && imgOk ? (
+          <img
+            src={v.photoUrl}
+            alt=""
+            referrerPolicy="no-referrer"
+            onError={() => setImgOk(false)}
+            className="h-[34px] w-[34px] rounded-full border border-fab-bg object-cover"
+          />
         ) : (
           <div className="flex h-[34px] w-[34px] items-center justify-center rounded-full border border-fab-bg bg-fab-gold/20 text-xs font-bold text-fab-gold">
             {initial}
