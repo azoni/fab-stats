@@ -51,7 +51,7 @@ export function normalizeNotes(notes: string): string {
 }
 
 /** Build a fingerprint to detect duplicate matches */
-function matchFingerprint(m: { date: string; opponentName?: string; notes?: string; result: string }): string {
+export function matchFingerprint(m: { date: string; opponentName?: string; notes?: string; result: string }): string {
   const normalizedNotes = m.notes ? normalizeNotes(m.notes) : "";
   return `${m.date}|${(m.opponentName || "").toLowerCase()}|${normalizedNotes}|${m.result}`;
 }
