@@ -462,6 +462,11 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
   const [isMobile, setIsMobile] = useState(false);
   const [showPasteSteps, setShowPasteSteps] = useState(false);
   const [clearBeforeImport, setClearBeforeImport] = useState(false);
+  // Guard for the destructive "clear all existing matches before importing" path:
+  // deleting is irreversible, so require an explicit confirmation that shows how
+  // many matches will be wiped before anything is touched.
+  const [confirmClearImport, setConfirmClearImport] = useState(false);
+  const [existingMatchCount, setExistingMatchCount] = useState<number | null>(null);
   const [quickMode, setQuickMode] = useState(false);
   const [showHeroWarning, setShowHeroWarning] = useState(false);
   const [confirmSkipHero, setConfirmSkipHero] = useState(false);
@@ -869,6 +874,26 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
   }
 
   function handleImportClick() {
+    const matches = pasteResult ? (quickMode ? quickImportMatches : filteredMatches) : csvMatches;
+    if (!matches) return;
+
+    // "Clear all existing matches" permanently deletes everything before importing.
+    // People have wiped their whole history while only meaning to add a pasted event,
+    // so confirm first — and show the real count of what's about to be deleted.
+    const willClear = clearBeforeImport && !!user && !(isAdmin && sandboxMode);
+    if (willClear && !confirmClearImport) {
+      setConfirmClearImport(true);
+      setExistingMatchCount(null);
+      getMatchesByUserId(user!.uid)
+        .then((existing) => setExistingMatchCount(existing.length))
+        .catch(() => setExistingMatchCount(null));
+      return;
+    }
+
+    proceedToHeroGate();
+  }
+
+  function proceedToHeroGate() {
     const matches = pasteResult ? (quickMode ? quickImportMatches : filteredMatches) : csvMatches;
     if (!matches) return;
 
@@ -1318,6 +1343,50 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
     );
   };
 
+  // Confirmation for the destructive "clear all existing matches before importing"
+  // path. Deleting is permanent, so we spell out exactly what's lost vs. imported.
+  const renderClearImportConfirmModal = () => {
+    if (!confirmClearImport) return null;
+    return (
+      <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
+        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setConfirmClearImport(false)} />
+        <div className="relative bg-fab-bg border border-fab-loss/40 rounded-xl shadow-2xl w-full max-w-md p-6">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-10 h-10 rounded-full bg-fab-loss/15 flex items-center justify-center shrink-0">
+              <svg className="w-5 h-5 text-fab-loss" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-bold text-fab-text">Delete all existing matches?</h3>
+          </div>
+          <p className="text-sm text-fab-muted mb-2">
+            You have <span className="text-fab-loss font-semibold">Clear all existing matches</span> checked. This will{" "}
+            <span className="text-fab-loss font-semibold">permanently delete
+            {existingMatchCount === null ? " all your existing matches" : ` all ${existingMatchCount} of your existing matches`}</span>{" "}
+            and then import the {totalToImport} match{totalToImport !== 1 ? "es" : ""} shown above.
+          </p>
+          <p className="text-sm text-fab-muted mb-5">
+            This cannot be undone. If you only want to <span className="text-fab-text font-medium">add</span> these matches, cancel and uncheck that box — importing already skips duplicates automatically.
+          </p>
+          <div className="flex flex-col gap-2">
+            <button
+              onClick={() => setConfirmClearImport(false)}
+              className="w-full min-h-[44px] py-2.5 rounded-lg font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors text-sm"
+            >
+              Cancel — keep my matches
+            </button>
+            <button
+              onClick={() => { setConfirmClearImport(false); proceedToHeroGate(); }}
+              className="w-full min-h-[44px] py-2.5 rounded-lg font-semibold bg-fab-loss/20 border border-fab-loss/30 text-fab-loss hover:bg-fab-loss/30 transition-colors text-sm"
+            >
+              {existingMatchCount === null ? "Yes, delete all and import" : `Yes, delete all ${existingMatchCount} and import`}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   // ── Quick Mode Preview Screen ──────────────────────────────────
 
   if (quickMode && !imported) {
@@ -1634,6 +1703,7 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
         })()}
       </div>
       {renderHeroWarningModal()}
+      {renderClearImportConfirmModal()}
       </>
     );
   }
@@ -2617,6 +2687,7 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
 
       {/* Hero Warning Dialog */}
       {renderHeroWarningModal()}
+      {renderClearImportConfirmModal()}
     </div>
   );
 }
