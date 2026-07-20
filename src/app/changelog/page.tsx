@@ -43,6 +43,8 @@ const changelog: Entry[] = [
       { type: "new", text: "Shareable avatar cards: copy or download a card of your decorated avatar and stats." },
       { type: "new", text: "Redesigned profile: one Customize drawer now holds background, border, emblems, links, badges, cosmetics, and account settings." },
       { type: "improved", text: "Shop-purchased backgrounds, trophy skins, and garden cursors now appear unlocked in their existing pickers." },
+      { type: "new", text: "Match recycle bin: clearing your matches (including \"Clear & Import\") now moves them to a recycle bin you can restore from Settings for 30 days, instead of deleting them for good." },
+      { type: "fixed", text: "\"Clear & Import\" now asks you to confirm — showing exactly how many matches will be removed — so a paste import can't wipe your history by accident." },
     ],
   },
   {

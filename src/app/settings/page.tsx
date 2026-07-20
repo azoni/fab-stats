@@ -1,9 +1,17 @@
 "use client";
-import { useEffect, useState, useRef, useMemo } from "react";
+import { useEffect, useState, useRef, useMemo, useCallback } from "react";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
 import { useMatches } from "@/hooks/useMatches";
-import { updateProfile, uploadProfilePhoto, deleteAccountData, getMatchesByUserId, clearAllMatchesFirestore, registerGemId, deleteGemId } from "@/lib/firestore-storage";
+import { updateProfile, uploadProfilePhoto, deleteAccountData, getMatchesByUserId, registerGemId, deleteGemId } from "@/lib/firestore-storage";
+import {
+  softClearAllMatches,
+  restoreDeletedMatches,
+  listDeletedMatchBatches,
+  purgeExpiredDeletedMatches,
+  RECYCLE_BIN_RETENTION_DAYS,
+  type DeletedMatchBatch,
+} from "@/lib/match-recycle-bin";
 import {
   deleteUser,
   reauthenticateWithPopup,
@@ -21,6 +29,12 @@ import { Collapsible } from "@/components/ui/collapsible";
 import { PageHero } from "@/components/ui/PageHero";
 import { Camera, CheckCircle, ChevronRight, Compass, Save, Settings } from "lucide-react";
 import { toast } from "sonner";
+
+function formatDeletedAt(iso: string): string {
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "recently";
+  return d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+}
 
 function resizeImage(file: File, maxSize: number): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -235,6 +249,46 @@ export default function SettingsPage() {
   const [confirmClear, setConfirmClear] = useState(false);
   const [clearing, setClearing] = useState(false);
   const [clearConfirmText, setClearConfirmText] = useState("");
+  // Recycle bin: batches of soft-deleted matches recoverable for a retention window.
+  const [deletedBatches, setDeletedBatches] = useState<DeletedMatchBatch[]>([]);
+  const [restoringBatch, setRestoringBatch] = useState<string | null>(null);
+
+  const reloadDeletedBatches = useCallback(async () => {
+    if (!user) {
+      setDeletedBatches([]);
+      return;
+    }
+    try {
+      await purgeExpiredDeletedMatches(user.uid).catch(() => {});
+      setDeletedBatches(await listDeletedMatchBatches(user.uid));
+    } catch {
+      setDeletedBatches([]);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    reloadDeletedBatches();
+  }, [reloadDeletedBatches]);
+
+  async function handleRestoreBatch(batchId: string) {
+    if (!user) return;
+    setRestoringBatch(batchId);
+    setError("");
+    try {
+      const { restored, skipped } = await restoreDeletedMatches(user.uid, profile, batchId);
+      await refreshMatches();
+      await reloadDeletedBatches();
+      toast.success(
+        restored > 0
+          ? `Restored ${restored} match${restored === 1 ? "" : "es"}${skipped > 0 ? ` (${skipped} already present)` : ""}.`
+          : "Those matches were already back — nothing to restore.",
+      );
+    } catch {
+      setError("Failed to restore matches. Please try again.");
+    } finally {
+      setRestoringBatch(null);
+    }
+  }
   const [discoverSaving, setDiscoverSaving] = useState(false);
   const [discoverTwitter, setDiscoverTwitter] = useState(profile?.socialLinks?.twitter || "");
   const [discoverDiscord, setDiscoverDiscord] = useState(profile?.socialLinks?.discord || "");
@@ -961,7 +1015,7 @@ export default function SettingsPage() {
           <div className="pt-5 border-t border-fab-border">
             <h3 className="text-sm font-semibold text-fab-loss mb-2">Clear All Match Data</h3>
             <p className="text-xs text-fab-dim mb-3">
-              Delete all your match history. Your profile and account will be kept. You can re-import afterwards.
+              Clear all your match history. Your profile and account will be kept, and cleared matches can be restored below for {RECYCLE_BIN_RETENTION_DAYS} days. You can re-import afterwards.
             </p>
             {!confirmClear ? (
               <button
@@ -973,7 +1027,7 @@ export default function SettingsPage() {
             ) : (
               <div className="bg-fab-loss/10 border border-fab-loss/30 rounded-lg p-4">
                 <p className="text-sm text-fab-loss font-semibold mb-2">
-                  This will permanently delete all your match history.
+                  This clears all your match history (recoverable below for {RECYCLE_BIN_RETENTION_DAYS} days).
                 </p>
                 <p className="text-xs text-fab-muted mb-2">
                   Type <strong className="text-fab-loss">clear</strong> to confirm:
@@ -992,11 +1046,13 @@ export default function SettingsPage() {
                       setClearing(true);
                       setError("");
                       try {
-                        await clearAllMatchesFirestore(user.uid);
+                        await softClearAllMatches(user.uid, "clear-all-settings");
                         await deleteAllFeedEventsForUser(user.uid);
                         await refreshMatches();
+                        await reloadDeletedBatches();
                         setConfirmClear(false);
                         setClearConfirmText("");
+                        toast.success(`Matches cleared — recoverable below for ${RECYCLE_BIN_RETENTION_DAYS} days.`);
                       } catch {
                         setError("Failed to clear data. Please try again.");
                       } finally {
@@ -1021,6 +1077,37 @@ export default function SettingsPage() {
               </div>
             )}
           </div>
+
+          {deletedBatches.length > 0 && (
+            <div className="pt-5 border-t border-fab-border">
+              <h3 className="text-sm font-semibold text-fab-text mb-2">Recently deleted matches</h3>
+              <p className="text-xs text-fab-dim mb-3">
+                Cleared matches are kept here for {RECYCLE_BIN_RETENTION_DAYS} days. Restore a batch to bring those matches — and their stats — back.
+              </p>
+              <div className="space-y-2">
+                {deletedBatches.map((b) => (
+                  <div
+                    key={b.batchId}
+                    className="flex items-center justify-between gap-3 rounded-lg border border-fab-border bg-fab-bg px-3 py-2"
+                  >
+                    <div className="min-w-0">
+                      <p className="text-sm text-fab-text">
+                        {b.count} match{b.count === 1 ? "" : "es"}
+                      </p>
+                      <p className="text-xs text-fab-dim">Cleared {formatDeletedAt(b.deletedAt)}</p>
+                    </div>
+                    <button
+                      onClick={() => handleRestoreBatch(b.batchId)}
+                      disabled={restoringBatch !== null}
+                      className="shrink-0 px-3 py-1.5 rounded-md text-sm font-semibold bg-fab-gold text-fab-bg hover:bg-fab-gold-light transition-colors disabled:opacity-50"
+                    >
+                      {restoringBatch === b.batchId ? "Restoring..." : "Restore"}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

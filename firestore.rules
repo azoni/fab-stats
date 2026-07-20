@@ -236,6 +236,38 @@ service cloud.firestore {
       }
     }
 
+    // ── Soft-deleted matches (recycle bin / restore) ──
+    // Owner-only trash bin for matches cleared via "Clear All Matches". Field
+    // limits MIRROR /users/{userId}/matches so a client cannot bloat storage by
+    // writing oversized text into a soft-deleted doc. Private (owner-read only).
+    match /users/{userId}/deletedMatches/{matchId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow create: if request.auth != null && request.auth.uid == userId
+        && (!("notes" in request.resource.data) || maxLen(request.resource.data.notes, 2000))
+        && (!("matchNotes" in request.resource.data) || maxLen(request.resource.data.matchNotes, 2000))
+        && (!("opponentName" in request.resource.data) || maxLen(request.resource.data.opponentName, 100))
+        && (!("venue" in request.resource.data) || maxLen(request.resource.data.venue, 200))
+        && (!("eventType" in request.resource.data) || maxLen(request.resource.data.eventType, 50))
+        && (!("winCondition" in request.resource.data) || maxLen(request.resource.data.winCondition, 20))
+        && (!("via" in request.resource.data) || maxLen(request.resource.data.via, 50))
+        && (!("goingFirst" in request.resource.data) || request.resource.data.goingFirst is bool);
+      // Owner can re-write their own bin doc (idempotent retry of a partial backup),
+      // same field limits as create.
+      allow update: if request.auth != null && request.auth.uid == userId
+        && (!("notes" in request.resource.data) || maxLen(request.resource.data.notes, 2000))
+        && (!("matchNotes" in request.resource.data) || maxLen(request.resource.data.matchNotes, 2000))
+        && (!("opponentName" in request.resource.data) || maxLen(request.resource.data.opponentName, 100))
+        && (!("venue" in request.resource.data) || maxLen(request.resource.data.venue, 200))
+        && (!("eventType" in request.resource.data) || maxLen(request.resource.data.eventType, 50))
+        && (!("winCondition" in request.resource.data) || maxLen(request.resource.data.winCondition, 20))
+        && (!("via" in request.resource.data) || maxLen(request.resource.data.via, 50))
+        && (!("goingFirst" in request.resource.data) || request.resource.data.goingFirst is bool);
+      // Owner purges (restore or expiry) their own soft-deleted matches.
+      allow delete: if request.auth != null && request.auth.uid == userId;
+      // Admin can read/delete any user's recycle bin (for data fixes).
+      allow read, delete: if isAdmin();
+    }
+
     // ── Notifications ──
     match /users/{userId}/notifications/{notificationId} {
       allow read, update, delete: if request.auth != null && request.auth.uid == userId;

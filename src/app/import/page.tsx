@@ -3,7 +3,8 @@ import { useState, useRef, useMemo, useCallback, useEffect } from "react";
 import { parseGemCsv } from "@/lib/gem-import";
 import { parseGemPaste, parseExtensionJson, type PasteImportResult } from "@/lib/gem-paste-import";
 import { useAuth } from "@/contexts/AuthContext";
-import { importMatchesFirestore, clearAllMatchesFirestore, updateProfile, registerGemId, normalizeNotes } from "@/lib/firestore-storage";
+import { importMatchesFirestore, updateProfile, registerGemId, normalizeNotes } from "@/lib/firestore-storage";
+import { softClearAllMatches, RECYCLE_BIN_RETENTION_DAYS } from "@/lib/match-recycle-bin";
 import { importMatchesLocal } from "@/lib/storage";
 import { createImportFeedEvent, createPlacementFeedEvent, deleteAllFeedEventsForUser } from "@/lib/feed";
 import { detectNewAchievements } from "@/lib/achievement-tracking";
@@ -467,6 +468,9 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
   // many matches will be wiped before anything is touched.
   const [confirmClearImport, setConfirmClearImport] = useState(false);
   const [existingMatchCount, setExistingMatchCount] = useState<number | null>(null);
+  // How many matches the most recent "Clear & Import" moved to the recycle bin,
+  // surfaced on the success screen so the user knows they're recoverable.
+  const [recycledCount, setRecycledCount] = useState<number | null>(null);
   const [quickMode, setQuickMode] = useState(false);
   const [showHeroWarning, setShowHeroWarning] = useState(false);
   const [confirmSkipHero, setConfirmSkipHero] = useState(false);
@@ -943,17 +947,23 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
     // useMemo dependency causes quickImportMatches to recompute mid-import.
     setImportingMatches(matches);
     setImporting(true);
+    // Fresh each import — only the clear-before-import branch below sets it, so a
+    // later import without a clear won't show a stale recycle-bin note.
+    setRecycledCount(null);
 
     // Admin sandbox: route every read/write to the isolated store and skip all
     // Firestore side-effects below. Real account data is never touched.
     const sandbox = isAdmin && sandboxMode;
 
-    // Clear existing data first if requested
+    // Clear existing data first if requested. Real matches go to the recycle bin
+    // (recoverable in Settings for 30 days) rather than being hard-deleted, so a
+    // mistaken "Clear & Import" can be undone.
     if (clearBeforeImport) {
       if (sandbox) {
         clearSandboxMatches();
       } else if (user) {
-        await clearAllMatchesFirestore(user.uid);
+        const { count } = await softClearAllMatches(user.uid, "clear-before-import");
+        setRecycledCount(count);
         await deleteAllFeedEventsForUser(user.uid);
       }
     }
@@ -1232,7 +1242,7 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
     if (!user) return;
     setClearing(true);
     try {
-      await clearAllMatchesFirestore(user.uid);
+      await softClearAllMatches(user.uid, "clear-all-import");
       await deleteAllFeedEventsForUser(user.uid);
       setCleared(true);
       setConfirmClear(false);
@@ -1731,18 +1741,25 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
 
     if (sessionRecap && sessionRecap.sessionMatches.length > 0) {
       return (
-        <PostEventRecap
-          recap={sessionRecap}
-          onViewOpponents={() => router.push("/opponents")}
-          onDashboard={() => router.push("/")}
-          onImportMore={handleReset}
-          skippedCount={skippedCount}
-          newAchievements={newAchievements}
-          newPlacements={newPlacements}
-          playerName={profile?.displayName || profile?.username}
-          matchBadgeTierUp={matchBadgeTierUp}
-          quickMode={quickMode}
-        />
+        <>
+          {recycledCount ? (
+            <div className="mb-4 rounded-lg border border-fab-gold/30 bg-fab-gold/10 p-3 text-sm text-fab-muted">
+              Your previous {recycledCount} match{recycledCount === 1 ? "" : "es"} were moved to the recycle bin — restore them any time from <Link href="/settings" className="text-fab-gold hover:underline">Settings</Link> for {RECYCLE_BIN_RETENTION_DAYS} days.
+            </div>
+          ) : null}
+          <PostEventRecap
+            recap={sessionRecap}
+            onViewOpponents={() => router.push("/opponents")}
+            onDashboard={() => router.push("/")}
+            onImportMore={handleReset}
+            skippedCount={skippedCount}
+            newAchievements={newAchievements}
+            newPlacements={newPlacements}
+            playerName={profile?.displayName || profile?.username}
+            matchBadgeTierUp={matchBadgeTierUp}
+            quickMode={quickMode}
+          />
+        </>
       );
     }
 
@@ -1751,6 +1768,9 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
         <CheckCircleIcon className="w-14 h-14 text-fab-win mb-4 mx-auto" />
         <h1 className="text-2xl font-bold text-fab-gold mb-2">{quickMode ? "Sync Complete!" : "Import Complete!"}</h1>
         <p className="text-fab-muted mb-2">{importedCount} matches imported successfully.</p>
+        {recycledCount ? (
+          <p className="text-fab-dim text-sm mb-2">Your previous {recycledCount} match{recycledCount === 1 ? "" : "es"} were moved to the recycle bin — restore from <Link href="/settings" className="text-fab-gold hover:underline">Settings</Link> for {RECYCLE_BIN_RETENTION_DAYS} days.</p>
+        ) : null}
         {skippedCount > 0 && (
           <p className="text-fab-dim text-sm mb-2">{skippedCount} duplicate{skippedCount === 1 ? "" : "s"} skipped.</p>
         )}
@@ -2291,7 +2311,7 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
             <div className="bg-fab-loss/10 border border-fab-loss/30 rounded-lg p-4">
               <p className="text-sm text-fab-loss font-semibold mb-2">Are you sure?</p>
               <p className="text-xs text-fab-muted mb-3">
-                This will permanently delete all your match data. You&apos;ll need to re-import from GEM afterward.
+                This clears all your matches so you can re-import from GEM. They&apos;re moved to a recycle bin and can be restored from Settings for {RECYCLE_BIN_RETENTION_DAYS} days.
               </p>
               <div className="flex gap-2">
                 <button
@@ -2317,7 +2337,7 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
       {cleared && !hasResults && (
         <div className="bg-fab-win/10 border border-fab-win/30 rounded-lg p-4 mb-6">
           <p className="text-fab-win font-semibold mb-1">All matches cleared!</p>
-          <p className="text-fab-muted text-sm">Now re-import your matches using the Browser Extension above for the best results.</p>
+          <p className="text-fab-muted text-sm">Now re-import your matches using the Browser Extension above for the best results. Cleared matches stay recoverable in <Link href="/settings" className="text-fab-gold hover:underline">Settings</Link> for {RECYCLE_BIN_RETENTION_DAYS} days.</p>
         </div>
       )}
 
