@@ -1123,7 +1123,13 @@ function OrganizerEditor({
         status,
         joinPolicy,
       });
-      toast.success("League updated.");
+      // Recompute standings so new scoring rules / date window / stores take
+      // effect right away instead of waiting for an on-view auto-refresh (which
+      // never fires for ended leagues). The parent's live standings subscription
+      // reflects the result; best-effort — the "Refresh Standings" button is the
+      // fallback if this fails (e.g. an organizer who isn't a league member).
+      recomputeAndStoreStandings(league.id).catch(() => {});
+      toast.success("League updated. Standings recalculating…");
       onClose();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to update.");
