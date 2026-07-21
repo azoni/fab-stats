@@ -1,6 +1,7 @@
 import type { MatchRecord } from "@/types";
 import { MatchResult, GameFormat } from "@/types";
 import { resolveHeroName } from "@/lib/heroes";
+import { expandEventName } from "@/lib/event-name";
 
 export interface PasteImportEvent {
   eventName: string;
@@ -60,23 +61,10 @@ export function guessFormat(text: string): GameFormat {
   return GameFormat.Other;
 }
 
-const EVENT_ABBREVIATIONS: Record<string, string> = {
-  "rtn": "Road to Nationals",
-  "pq": "ProQuest",
-  "bh": "Battle Hardened",
-  "upf": "Ultimate Pit Fight",
-};
-
-/** Expand known abbreviations in event names */
-export function expandEventName(name: string): string {
-  const lowerFull = name.trim().toLowerCase();
-  if (EVENT_ABBREVIATIONS[lowerFull]) return EVENT_ABBREVIATIONS[lowerFull];
-  let result = name;
-  for (const [abbr, expanded] of Object.entries(EVENT_ABBREVIATIONS)) {
-    result = result.replace(new RegExp("\\b" + abbr + "\\b", "gi"), expanded);
-  }
-  return result;
-}
+// Event-name expansion lives in a dependency-free module (@/lib/event-name) so the
+// dedup fingerprint (firestore-storage.ts) can share it. Re-exported for existing
+// importers of this module.
+export { expandEventName };
 
 /** Competitive event types ordered by prestige (lowest first).
  *  When multiple keywords match, the lowest tier wins. */

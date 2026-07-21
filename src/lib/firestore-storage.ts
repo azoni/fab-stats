@@ -23,30 +23,30 @@ import { db } from "./firebase";
 import { logActivity } from "./activity-log";
 import { logToEcosystem } from "./mcp-webhook";
 import { sanitizeVenueForWrite } from "./venue-normalize";
+import { expandEventName } from "./event-name";
 import { COSMETICS_ENABLED } from "./cosmetics/flags";
 import type { MatchRecord, UserProfile } from "@/types";
 
-/** Normalize round info so "Round P1" and "Playoff" match as duplicates */
+/** Normalize an event's notes ("EventName | Round") for dedup fingerprints so the
+ *  same match imported by different methods matches: expand event-name
+ *  abbreviations (CSV keeps "PQ", extension expands to "ProQuest") and canonicalize
+ *  playoff round labels ("Playoff"/"Top 8" → "P1"). */
 export function normalizeNotes(notes: string): string {
   const parts = notes.split(" | ");
-  const eventName = parts[0]?.trim() || "";
+  const eventName = expandEventName(parts[0]?.trim() || "");
   const round = parts[1]?.trim() || "";
-  // Normalize playoff round labels to a canonical form
+  // Strip an optional "Round " prefix before classifying playoff labels: the CSV
+  // parser emits "Round Top 8" while the extension emits a bare "Top 8", so both
+  // must collapse to the same "P1". A Swiss "Round N" has no playoff match, so it
+  // falls through unchanged (the extension also emits "Round N").
+  const core = round.replace(/^Round\s+/i, "");
   let normalizedRound = round;
-  if (/^Round\s+P(\d+)$/i.test(round)) {
-    const n = round.match(/P(\d+)/i)![1];
-    normalizedRound = `P${n}`;
-  } else if (/^Playoff$/i.test(round)) {
-    normalizedRound = "P1";
-  } else if (/^Top\s*8$/i.test(round)) {
-    normalizedRound = "P1";
-  } else if (/^(Quarter|Top\s*4)$/i.test(round)) {
-    normalizedRound = "P2";
-  } else if (/^Semi/i.test(round)) {
-    normalizedRound = "P2";
-  } else if (/^Finals?$/i.test(round)) {
-    normalizedRound = "P3";
-  }
+  if (/^P(\d+)$/i.test(core)) normalizedRound = `P${core.match(/(\d+)/)![1]}`;
+  else if (/^Playoff$/i.test(core)) normalizedRound = "P1";
+  else if (/^Top\s*8$/i.test(core)) normalizedRound = "P1";
+  else if (/^(Quarter|Top\s*4)$/i.test(core)) normalizedRound = "P2";
+  else if (/^Semi/i.test(core)) normalizedRound = "P2";
+  else if (/^Finals?$/i.test(core)) normalizedRound = "P3";
   return `${eventName}|${normalizedRound}`;
 }
 
