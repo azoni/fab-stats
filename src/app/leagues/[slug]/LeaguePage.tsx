@@ -577,6 +577,10 @@ export default function LeaguePage() {
               )}
             </>
           )}
+
+          {/* Scoring is directly relevant to the standings, so surface it here
+              (rather than only under the Players tab). Reflects the viewed season. */}
+          <ScoringSummary scoringRules={viewingSeason ? viewingSeason.scoringRules : league.scoringRules} />
         </section>
         );
       })()}
@@ -624,10 +628,7 @@ export default function LeaguePage() {
             currentUid={user?.uid || null}
             onKick={handleKick}
           />
-          <div className="grid gap-5 lg:grid-cols-2">
-            <ScoringSummary scoringRules={league.scoringRules} />
-            <StoresList stores={storeRows} />
-          </div>
+          <StoresList stores={storeRows} />
           {canEdit && <DisbandPanel leagueId={league.id} ownerUid={league.organizerUid} />}
         </section>
       )}
