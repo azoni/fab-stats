@@ -714,7 +714,7 @@
 
   const quickBtn = document.createElement("button");
   const QUICK_ICON = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-2px;margin-right:6px;"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>';
-  quickBtn.innerHTML = QUICK_ICON + "Smart Sync";
+  quickBtn.innerHTML = QUICK_ICON + "Quick Sync";
   Object.assign(quickBtn.style, {
     width: "100%",
     boxSizing: "border-box",
@@ -773,30 +773,38 @@
 
   // ── Quick Sync Selector ─────────────────────────────────────
 
-  // Sync mode: "quick" (newest history page), "since" (events on/after a date),
-  // or "pages" (manual N-page pull).
+  // Quick Sync range: "latest" (newest history page), "since" (events on/after a
+  // date), or "pages" (manual N-page pull).
   const stored = JSON.parse(localStorage.getItem("fab-stats-quick-opts") || "null");
-  let syncMode = (stored && stored.mode) || "quick";
+  let syncMode = (stored && stored.mode) || "latest";
   let syncCount = (stored && stored.count) || 1;
   let syncSince = (stored && stored.since) || "";
-  // Migrate retired modes (smart / latest / events) to Quick.
-  if (syncMode === "smart" || syncMode === "latest" || syncMode === "events") { syncMode = "quick"; }
+  // Migrate retired modes (smart / quick / events) to Latest.
+  if (syncMode === "smart" || syncMode === "quick" || syncMode === "events") { syncMode = "latest"; }
 
   function saveSyncOpts() {
     localStorage.setItem("fab-stats-quick-opts", JSON.stringify({ mode: syncMode, count: syncCount, since: syncSince }));
   }
 
-  // Resolve fetch options for the configured sync mode: quick = newest page only,
+  // Resolve fetch options for the configured range: latest = newest page only,
   // since = everything on/after a date, pages = N history pages.
   function getSyncOpts() {
     if (syncMode === "pages") return { maxPages: syncCount };
     if (syncMode === "since") return syncSince ? { sinceDate: syncSince } : { maxPages: 1 };
-    return { maxPages: 1 };
+    return { maxPages: 1 }; // "latest"
   }
 
+  // "2026-07-01" → "Jul 1" for a compact button label (the date input below shows
+  // the full date). Parsed by parts to avoid any timezone shift.
+  function fmtSince(iso) {
+    const p = (iso || "").split("-");
+    if (p.length !== 3) return iso;
+    const mo = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][+p[1] - 1];
+    return mo ? mo + " " + (+p[2]) : iso;
+  }
   function quickBtnLabel() {
     if (syncMode === "pages") return "Sync " + syncCount + " Page" + (syncCount === 1 ? "" : "s");
-    if (syncMode === "since") return syncSince ? "Sync Since " + syncSince : "Quick Sync";
+    if (syncMode === "since") return syncSince ? "Sync Since " + fmtSince(syncSince) : "Quick Sync";
     return "Quick Sync";
   }
   function updateQuickLabel() {
@@ -814,6 +822,21 @@
   function renderSelector() {
     selectorWrap.innerHTML = "";
 
+    // Caption tying the range options to the Quick Sync button above (and making
+    // it clear they do NOT affect Export All below).
+    const caption = document.createElement("div");
+    caption.textContent = "Quick Sync range";
+    Object.assign(caption.style, {
+      fontSize: "10px",
+      color: "#8a8aa0",
+      fontWeight: "700",
+      letterSpacing: "0.04em",
+      textTransform: "uppercase",
+      textAlign: "center",
+      marginBottom: "5px",
+    });
+    selectorWrap.appendChild(caption);
+
     const row = document.createElement("div");
     Object.assign(row.style, {
       display: "flex",
@@ -821,17 +844,17 @@
       alignItems: "center",
     });
 
-    // ─ Quick button (newest history page) ─
-    const quickToggle = document.createElement("button");
-    quickToggle.textContent = "Quick";
-    quickToggle.title = "Sync your most recent GEM history page (~10 events)";
-    const isQuick = syncMode === "quick";
-    Object.assign(quickToggle.style, {
+    // ─ Latest button (newest history page) ─
+    const latestToggle = document.createElement("button");
+    latestToggle.textContent = "Latest";
+    latestToggle.title = "Sync your most recent GEM history page (~10 events)";
+    const isLatest = syncMode === "latest";
+    Object.assign(latestToggle.style, {
       flex: "1",
       padding: "5px 0",
-      background: isQuick ? "rgba(96,165,250,0.2)" : "transparent",
-      color: isQuick ? "#60a5fa" : "#666",
-      border: isQuick ? "1px solid #60a5fa" : "1px solid #444",
+      background: isLatest ? "rgba(96,165,250,0.2)" : "transparent",
+      color: isLatest ? "#60a5fa" : "#666",
+      border: isLatest ? "1px solid #60a5fa" : "1px solid #444",
       borderRadius: "6px",
       fontSize: "11px",
       fontWeight: "700",
@@ -839,8 +862,8 @@
       fontFamily: "inherit",
       transition: "all 0.15s",
     });
-    quickToggle.addEventListener("click", () => {
-      syncMode = "quick";
+    latestToggle.addEventListener("click", () => {
+      syncMode = "latest";
       saveSyncOpts();
       renderSelector();
     });
@@ -928,7 +951,7 @@
     pagesWrap.appendChild(pagesLabel);
     pagesWrap.appendChild(pagesInput);
 
-    row.appendChild(quickToggle);
+    row.appendChild(latestToggle);
     row.appendChild(pagesWrap);
     selectorWrap.appendChild(row);
 
@@ -1052,7 +1075,24 @@
 
   btnContainer.appendChild(quickBtn);
   btnContainer.appendChild(selectorWrap);
+
+  // Divider — Export All is a separate action and ignores the range above.
+  const divider = document.createElement("div");
+  Object.assign(divider.style, { height: "1px", background: "#333", margin: "3px 0 1px" });
+  btnContainer.appendChild(divider);
+
   btnContainer.appendChild(btn);
+
+  const allCaption = document.createElement("div");
+  allCaption.textContent = "your entire GEM history";
+  Object.assign(allCaption.style, {
+    fontSize: "10px",
+    color: "#8a8aa0",
+    textAlign: "center",
+    marginTop: "-1px",
+  });
+  btnContainer.appendChild(allCaption);
+
   btnContainer.appendChild(helpRow);
   document.body.appendChild(btnContainer);
 
@@ -1212,21 +1252,19 @@
       '<div style="background:#1a1a2e;border:2px solid #60a5fa;border-radius:16px;padding:28px 32px;max-width:440px;width:90%;text-align:left;box-shadow:0 16px 48px rgba(0,0,0,0.6);">' +
         '<div style="font-size:16px;font-weight:800;color:#60a5fa;margin-bottom:14px;text-align:center;">FaB Stats Extension</div>' +
 
+        '<div style="font-size:12px;color:#e8e0cc;font-weight:700;margin-bottom:4px;">Quick Sync <span style="color:#8a8aa0;font-weight:600;">(pick a range)</span></div>' +
+        '<div style="font-size:11px;color:#aaa;margin-bottom:8px;line-height:1.6;">' +
+          'Sends recent events to FaB Stats to review before importing. Use the range buttons to choose how far back:' +
+        '</div>' +
+        '<div style="font-size:11px;color:#aaa;margin-bottom:12px;line-height:1.7;padding-left:4px;">' +
+          '<span style="color:#60a5fa;font-weight:700;">Latest</span> \u2014 your most recent history page (~10 events). Best right after a tournament.<br>' +
+          '<span style="color:#60a5fa;font-weight:700;">Since</span> \u2014 everything on or after a date you pick. Best when you haven\u2019t synced in a while.<br>' +
+          '<span style="color:#60a5fa;font-weight:700;">Pages</span> \u2014 a set number of history pages (~10 events each).' +
+        '</div>' +
+
         '<div style="font-size:12px;color:#e8e0cc;font-weight:700;margin-bottom:4px;">Export All</div>' +
         '<div style="font-size:11px;color:#aaa;margin-bottom:12px;line-height:1.6;">' +
-          'Full export of your entire GEM history. Scrapes all pages, then opens FaB Stats with a preview where you can review before importing.' +
-        '</div>' +
-
-        '<div style="font-size:12px;color:#e8e0cc;font-weight:700;margin-bottom:4px;">Quick Sync</div>' +
-        '<div style="font-size:11px;color:#aaa;margin-bottom:12px;line-height:1.6;">' +
-          'Sends recent events to FaB Stats, where you review them before importing. Choose how far back to look:' +
-        '</div>' +
-
-        '<div style="font-size:12px;color:#e8e0cc;font-weight:700;margin-bottom:4px;">Sync Options</div>' +
-        '<div style="font-size:11px;color:#aaa;margin-bottom:12px;line-height:1.6;">' +
-          '<span style="color:#60a5fa;">Quick</span> \u2014 Your most recent history page (~10 events). Best right after a tournament.<br>' +
-          '<span style="color:#60a5fa;">Since</span> \u2014 Everything on or after a date you pick. Best when you haven\u2019t synced in a while.<br>' +
-          '<span style="color:#60a5fa;">Pages</span> \u2014 A set number of history pages (~10 events each).' +
+          'Your entire GEM history in one go \u2014 also previewed before importing. The range above doesn\u2019t apply here.' +
         '</div>' +
 
         '<div style="font-size:12px;color:#e8e0cc;font-weight:700;margin-bottom:4px;">Duplicates</div>' +
