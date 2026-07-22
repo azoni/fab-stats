@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
@@ -17,7 +17,9 @@ import {
   hasPendingJoinRequest,
   subscribeToJoinRequests,
   leagueRequiresApproval,
+  listLeagueSeasons,
 } from "@/lib/leagues";
+import { NewSeasonModal } from "@/components/leagues/NewSeasonModal";
 import { getStoreDirectory, slugifyStoreName, findNearMatchStore, storeNameMatchesQuery, type StoreDirectoryEntry } from "@/lib/store-directory";
 import { HeroImg } from "@/components/heroes/HeroImg";
 import { uploadLeagueBanner, removeLeagueBanner } from "@/lib/league-images";
@@ -53,6 +55,7 @@ import type {
   LeagueJoinRequest,
   LeagueScoringRules,
   LeagueSession,
+  LeagueSeasonArchive,
   LeagueStandingEntry,
 } from "@/types";
 import { LeagueScheduleBuilder } from "@/components/leagues/LeagueScheduleBuilder";
@@ -89,6 +92,9 @@ export default function LeaguePage() {
 
   const [recomputing, setRecomputing] = useState(false);
   const [editing, setEditing] = useState(false);
+  const [seasons, setSeasons] = useState<LeagueSeasonArchive[]>([]);
+  const [viewingSeasonId, setViewingSeasonId] = useState<string | null>(null);
+  const [showNewSeason, setShowNewSeason] = useState(false);
   const [leagueTab, setLeagueTab] = useState<"standings" | "meta" | "players">("standings");
   const [pool, setPool] = useState<LeagueMatchPool | null>(null);
   const [filters, setFilters] = useState<LeagueFilters>({});
@@ -132,6 +138,18 @@ export default function LeaguePage() {
       unsubS();
     };
   }, [leagueId]);
+
+  const reloadSeasons = useCallback(async () => {
+    if (!leagueId) return;
+    try {
+      setSeasons(await listLeagueSeasons(leagueId));
+    } catch {
+      setSeasons([]);
+    }
+  }, [leagueId]);
+  useEffect(() => {
+    reloadSeasons();
+  }, [reloadSeasons]);
 
   // Resolve store names from the directory
   useEffect(() => {
@@ -433,6 +451,16 @@ export default function LeaguePage() {
                 {!isOrganizer && isAdmin && <span className="ml-1 text-[10px]">(admin)</span>}
               </button>
             )}
+            {canEdit && (
+              <button
+                type="button"
+                onClick={() => setShowNewSeason(true)}
+                title="Archive the current standings and start a fresh season (same members & stores)"
+                className="rounded-md border border-fab-border/60 bg-fab-bg/60 px-3 py-1.5 text-xs font-bold text-fab-dim hover:text-fab-gold"
+              >
+                New season
+              </button>
+            )}
           </>
         }
       />
@@ -442,6 +470,18 @@ export default function LeaguePage() {
           league={league}
           directory={directory}
           onClose={() => setEditing(false)}
+        />
+      )}
+
+      {canEdit && showNewSeason && (
+        <NewSeasonModal
+          league={league}
+          stores={storeRows.map((r) => ({ slug: r.slug, name: r.name }))}
+          onClose={() => setShowNewSeason(false)}
+          onDone={() => {
+            setShowNewSeason(false);
+            reloadSeasons();
+          }}
         />
       )}
 
@@ -458,14 +498,31 @@ export default function LeaguePage() {
         poolReady={!!pool}
       />
 
-      {leagueTab === "standings" && (
+      {leagueTab === "standings" && (() => {
+        const viewingSeason = viewingSeasonId ? seasons.find((s) => s.id === viewingSeasonId) : null;
+        return (
         <section className="mt-5 space-y-4">
           <div className="flex items-center justify-between gap-2">
             <h2 className="text-lg font-bold text-fab-gold">
-              Standings{filtersActive && <span className="ml-1 text-xs font-normal text-fab-dim">(filtered)</span>}
+              Standings{filtersActive && !viewingSeason && <span className="ml-1 text-xs font-normal text-fab-dim">(filtered)</span>}
             </h2>
             <div className="flex items-center gap-2 text-xs text-fab-dim">
-              {standingsAt && !filtersActive && (
+              {seasons.length > 0 && (
+                <select
+                  value={viewingSeasonId || "current"}
+                  onChange={(e) => setViewingSeasonId(e.target.value === "current" ? null : e.target.value)}
+                  title="View a past season's final standings"
+                  className="rounded-md border border-fab-border/60 bg-fab-bg/60 px-2 py-1 text-fab-text focus:border-fab-gold focus:outline-none"
+                >
+                  <option value="current">
+                    Current{league.seasonName ? ` — ${league.seasonName}` : (league.seasonNumber || 1) > 1 ? ` — Season ${league.seasonNumber}` : ""}
+                  </option>
+                  {seasons.map((s) => (
+                    <option key={s.id} value={s.id}>{s.name} (final)</option>
+                  ))}
+                </select>
+              )}
+              {!viewingSeason && standingsAt && !filtersActive && (
                 <span title="Standings recompute automatically when a member opens this page (at most once every 10 min). Refresh forces it now.">
                   Updated{" "}
                   {new Date(standingsAt).toLocaleString(undefined, {
@@ -476,7 +533,7 @@ export default function LeaguePage() {
                   })}
                 </span>
               )}
-              {(isMember || canEdit) && !filtersActive && (
+              {!viewingSeason && (isMember || canEdit) && !filtersActive && (
                 <button
                   type="button"
                   onClick={handleRecompute}
@@ -490,27 +547,39 @@ export default function LeaguePage() {
             </div>
           </div>
 
-          {filtersActive && pool && pool.unreadableMemberUids.length + pool.readableMemberUids.length > 0 && (
-            <p className="text-[11px] text-fab-dim">
-              Filtered view — derived from {pool.readableMemberUids.length} of {members.length} members&apos; visible matches.
-            </p>
-          )}
-
-          {displayStandings.length > 0 ? (
+          {viewingSeason ? (
             <>
-              <Podium standings={displayStandings} signatureHeroes={signatureHeroes} />
-              <StorylineCards matches={filteredMatches} standings={displayStandings} />
-              <BroadcastStandings standings={displayStandings} signatureHeroes={signatureHeroes} form={form} />
+              <p className="text-[11px] text-fab-dim">
+                Final standings — {viewingSeason.name} ({viewingSeason.startDate} → {viewingSeason.endDate}).
+              </p>
+              <StandingsTable standings={viewingSeason.entries} league={league} />
             </>
-          ) : filtersActive ? (
-            <p className="rounded-xl border border-fab-border bg-fab-surface p-4 text-sm text-fab-muted">
-              No matches for these filters.
-            </p>
           ) : (
-            <StandingsTable standings={standings} league={league} />
+            <>
+              {filtersActive && pool && pool.unreadableMemberUids.length + pool.readableMemberUids.length > 0 && (
+                <p className="text-[11px] text-fab-dim">
+                  Filtered view — derived from {pool.readableMemberUids.length} of {members.length} members&apos; visible matches.
+                </p>
+              )}
+
+              {displayStandings.length > 0 ? (
+                <>
+                  <Podium standings={displayStandings} signatureHeroes={signatureHeroes} />
+                  <StorylineCards matches={filteredMatches} standings={displayStandings} />
+                  <BroadcastStandings standings={displayStandings} signatureHeroes={signatureHeroes} form={form} />
+                </>
+              ) : filtersActive ? (
+                <p className="rounded-xl border border-fab-border bg-fab-surface p-4 text-sm text-fab-muted">
+                  No matches for these filters.
+                </p>
+              ) : (
+                <StandingsTable standings={standings} league={league} />
+              )}
+            </>
           )}
         </section>
-      )}
+        );
+      })()}
 
       {leagueTab === "meta" && (
         <section className="mt-5 space-y-5">

@@ -1,11 +1,11 @@
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "./firebase";
-import { getLeague, getLeagueMembers } from "./leagues";
+import { getLeague, getLeagueMembers, updateLeague, leagueSeasonsCollection } from "./leagues";
 import { slugifyStoreName } from "./store-directory";
 import { getStoreAliases, buildAliasIndex, expandSlugSet, resolveCanonicalSlug, type StoreAliasIndex } from "./store-aliases";
 import { getMatchesInDateRange } from "./firestore-storage";
 import { getEventType } from "./stats";
-import { MatchResult, type League, type LeagueStandingEntry, type LeagueSession, type MatchRecord } from "@/types";
+import { MatchResult, type League, type LeagueScoringRules, type LeagueStandingEntry, type LeagueSession, type MatchRecord } from "@/types";
 
 /** Build the set of allowed "slug|date" keys from a league's scheduled sessions,
  *  alias-expanding each session's store the same way `storeSlugSet` is expanded. */
@@ -205,6 +205,58 @@ export async function recomputeAndStoreStandings(leagueId: string): Promise<Leag
     computedAt: new Date().toISOString(),
   });
   return entries;
+}
+
+/** Close the current season and roll the league into a fresh one — SAME league,
+ *  members, stores and URL. Freezes the closing standings into
+ *  leagues/{id}/seasons/{seasonId}, then updates the window/schedule/scoring and
+ *  recomputes a clean slate. Returns the new season number. */
+export async function startNewSeason(
+  leagueId: string,
+  next: {
+    name?: string;
+    startDate: string;
+    endDate: string;
+    sessions?: LeagueSession[];
+    storeSlugs?: string[];
+    scoringRules?: LeagueScoringRules;
+  },
+): Promise<number> {
+  const league = await getLeague(leagueId);
+  if (!league) throw new Error("League not found.");
+  const prevNumber = league.seasonNumber || 1;
+
+  // 1) Freeze the closing standings and archive them with the season's config.
+  const entries = await recomputeAndStoreStandings(leagueId);
+  await setDoc(doc(leagueSeasonsCollection(leagueId)), {
+    seasonNumber: prevNumber,
+    name: league.seasonName || `Season ${prevNumber}`,
+    startDate: league.startDate,
+    endDate: league.endDate,
+    sessions: league.sessions || [],
+    scoringRules: league.scoringRules,
+    entries,
+    memberCountAtClose: league.memberCount,
+    archivedAt: new Date().toISOString(),
+  });
+
+  // 2) Roll into the new season (updateLeague derives storeSlugs/window from
+  //    `sessions` when provided; otherwise the given start/end/stores apply).
+  const updates: Parameters<typeof updateLeague>[1] = {
+    startDate: next.startDate,
+    endDate: next.endDate,
+    seasonNumber: prevNumber + 1,
+    status: "active",
+  };
+  if (next.name !== undefined) updates.seasonName = next.name;
+  if (next.sessions !== undefined) updates.sessions = next.sessions;
+  if (next.storeSlugs !== undefined) updates.storeSlugs = next.storeSlugs;
+  if (next.scoringRules !== undefined) updates.scoringRules = next.scoringRules;
+  await updateLeague(leagueId, updates);
+
+  // 3) Fresh standings for the new season.
+  await recomputeAndStoreStandings(leagueId);
+  return prevNumber + 1;
 }
 
 export interface LeagueMatchupCell {

@@ -23,7 +23,18 @@ import {
 import { db } from "./firebase";
 import { containsProfanity } from "./profanity-filter";
 import { getStoreAliases, buildAliasIndex, groupForSlug } from "./store-aliases";
-import type { League, LeagueMember, LeagueJoinRequest, LeagueScoringRules, LeagueSession, UserProfile } from "@/types";
+import type { League, LeagueMember, LeagueJoinRequest, LeagueScoringRules, LeagueSession, LeagueSeasonArchive, UserProfile } from "@/types";
+
+/** Archived past seasons for a league (leagues/{id}/seasons/{seasonId}). */
+export function leagueSeasonsCollection(leagueId: string) {
+  return collection(db, "leagues", leagueId, "seasons");
+}
+
+/** Past (archived) seasons of a league, newest first. Each carries its final standings. */
+export async function listLeagueSeasons(leagueId: string): Promise<LeagueSeasonArchive[]> {
+  const snap = await getDocs(query(leagueSeasonsCollection(leagueId), orderBy("seasonNumber", "desc")));
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as LeagueSeasonArchive);
+}
 
 /** Drop malformed/duplicate sessions and normalize to {storeSlug, date}. */
 export function cleanLeagueSessions(sessions: LeagueSession[] | undefined): LeagueSession[] {
@@ -252,6 +263,8 @@ export async function updateLeague(
       | "status"
       | "accentColor"
       | "joinPolicy"
+      | "seasonNumber"
+      | "seasonName"
     >
   >,
 ): Promise<void> {
@@ -291,6 +304,8 @@ export async function updateLeague(
   if (updates.status !== undefined) updateData.status = updates.status;
   if (updates.accentColor !== undefined) updateData.accentColor = updates.accentColor;
   if (updates.joinPolicy !== undefined) updateData.joinPolicy = updates.joinPolicy === "open" ? "open" : "approval";
+  if (updates.seasonNumber !== undefined) updateData.seasonNumber = updates.seasonNumber;
+  if (updates.seasonName !== undefined) updateData.seasonName = updates.seasonName;
   // A schedule supersedes the flat store list + window; derive & override them so
   // legacy consumers stay consistent. Clearing it (empty) falls back to the window.
   if (updates.sessions !== undefined) {

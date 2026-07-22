@@ -376,9 +376,29 @@ export interface League {
   /** How players join. "approval" (default) requires organizer approval; "open"
    *  lets anyone self-join. Absent on legacy leagues → treated as "approval". */
   joinPolicy?: "open" | "approval";
+  /** Current season number (1-based). Absent on legacy leagues → treated as 1. */
+  seasonNumber?: number;
+  /** Optional label for the current season, e.g. "Spring 2026". */
+  seasonName?: string;
   memberCount: number;
   createdAt: string;
   updatedAt: string;
+}
+
+/** A frozen snapshot of a past league season, archived when a new season starts.
+ *  Lives at leagues/{leagueId}/seasons/{seasonId}. */
+export interface LeagueSeasonArchive {
+  id: string;
+  seasonNumber: number;
+  name: string;
+  startDate: string;
+  endDate: string;
+  sessions?: LeagueSession[];
+  scoringRules: LeagueScoringRules;
+  /** Final standings at the time the season closed. */
+  entries: LeagueStandingEntry[];
+  memberCountAtClose: number;
+  archivedAt: string;
 }
 
 export interface LeagueMember {

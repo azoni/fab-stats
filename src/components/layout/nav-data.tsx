@@ -60,10 +60,11 @@ export const navLinks: NavLink[] = [
   { href: "/discover", label: "Discover", icon: <NavAssetIcon name="discover" />, color: "text-emerald-400", bg: "bg-emerald-400/10", subItems: [
     { href: "/players", label: "Players", icon: <Users className="w-3.5 h-3.5" /> },
     { href: "/stores", label: "Stores", badge: "Beta", icon: <Store className="w-3.5 h-3.5" /> },
+    { href: "/leagues", label: "Leagues", badge: "Beta", icon: <Trophy className="w-3.5 h-3.5" /> },
     { href: "/teams", label: "Teams", icon: <Shield className="w-3.5 h-3.5" /> },
   ] },
-  // Leagues is a top-level destination (was buried under Discover) — one click from
-  // the sidebar. /leagues → "My leagues" tab floats the leagues you're in to the top.
+  // Also a top-level destination for quick access (Discover keeps it as a directory
+  // entry). /leagues → "My leagues" tab floats the leagues you're in to the top.
   { href: "/leagues", label: "Leagues", icon: <Trophy className="w-5 h-5" />, color: "text-orange-400", bg: "bg-orange-400/10" },
   { href: "/meta", label: "Meta", icon: <NavAssetIcon name="meta" />, color: "text-teal-400", bg: "bg-teal-400/10", subItems: [
     { href: "/matchups", label: "Matchup Matrix" },
