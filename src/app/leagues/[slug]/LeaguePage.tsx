@@ -52,8 +52,10 @@ import type {
   LeagueMember,
   LeagueJoinRequest,
   LeagueScoringRules,
+  LeagueSession,
   LeagueStandingEntry,
 } from "@/types";
+import { LeagueScheduleBuilder } from "@/components/leagues/LeagueScheduleBuilder";
 import { toast } from "sonner";
 import {
   ArrowLeft,
@@ -1004,6 +1006,15 @@ function OrganizerEditor({
   const [storeSlugs, setStoreSlugs] = useState<string[]>(league.storeSlugs);
   const [storeNames, setStoreNames] = useState<Record<string, string>>(league.storeNames || {});
   const [storeSearch, setStoreSearch] = useState("");
+  const [sessions, setSessions] = useState<LeagueSession[]>(league.sessions || []);
+  const availableStores = useMemo(
+    () =>
+      storeSlugs.map((slug) => ({
+        slug,
+        name: directory.find((d) => d.slug === slug)?.name || storeNames[slug] || slug,
+      })),
+    [storeSlugs, storeNames, directory],
+  );
   const [saving, setSaving] = useState(false);
   const [bannerBusy, setBannerBusy] = useState(false);
 
@@ -1075,17 +1086,21 @@ function OrganizerEditor({
       toast.error("League name is required.");
       return;
     }
-    if (!startDate || !endDate) {
-      toast.error("Start and end dates are required.");
-      return;
-    }
-    if (startDate > endDate) {
-      toast.error("End date must be after start date.");
-      return;
-    }
-    if (storeSlugs.length === 0) {
-      toast.error("Add at least one store to the league.");
-      return;
+    // With a per-store schedule, the stores + date window are derived from it, so
+    // skip the flat-window checks (the schedule guarantees ≥1 store and valid dates).
+    if (sessions.length === 0) {
+      if (!startDate || !endDate) {
+        toast.error("Start and end dates are required.");
+        return;
+      }
+      if (startDate > endDate) {
+        toast.error("End date must be after start date.");
+        return;
+      }
+      if (storeSlugs.length === 0) {
+        toast.error("Add at least one store to the league.");
+        return;
+      }
     }
 
     // Confirm if marking the league completed — that's a meaningful change
@@ -1119,6 +1134,7 @@ function OrganizerEditor({
         endDate,
         storeSlugs,
         storeNames: prunedNames,
+        sessions,
         scoringRules,
         status,
         joinPolicy,
@@ -1487,6 +1503,12 @@ function OrganizerEditor({
             })}
           </ul>
         )}
+      </div>
+
+      {/* Per-store date schedule (optional) — supersedes the flat window above */}
+      <div className="mt-4">
+        <label className="mb-1 block text-sm font-semibold text-fab-text">Schedule specific dates (optional)</label>
+        <LeagueScheduleBuilder sessions={sessions} onChange={setSessions} stores={availableStores} />
       </div>
 
       <div className="mt-4 flex justify-end gap-2">

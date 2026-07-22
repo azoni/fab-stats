@@ -17,12 +17,37 @@ import {
   orderBy,
   arrayUnion,
   arrayRemove,
+  deleteField,
   type Unsubscribe,
 } from "firebase/firestore";
 import { db } from "./firebase";
 import { containsProfanity } from "./profanity-filter";
 import { getStoreAliases, buildAliasIndex, groupForSlug } from "./store-aliases";
-import type { League, LeagueMember, LeagueJoinRequest, LeagueScoringRules, UserProfile } from "@/types";
+import type { League, LeagueMember, LeagueJoinRequest, LeagueScoringRules, LeagueSession, UserProfile } from "@/types";
+
+/** Drop malformed/duplicate sessions and normalize to {storeSlug, date}. */
+export function cleanLeagueSessions(sessions: LeagueSession[] | undefined): LeagueSession[] {
+  if (!sessions) return [];
+  const seen = new Set<string>();
+  const out: LeagueSession[] = [];
+  for (const s of sessions) {
+    if (!s || !s.storeSlug || !/^\d{4}-\d{2}-\d{2}$/.test(s.date || "")) continue;
+    const key = `${s.storeSlug}|${s.date}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push({ storeSlug: s.storeSlug, date: s.date });
+  }
+  return out;
+}
+
+/** Derive the flat storeSlugs + inclusive date window from a schedule so legacy
+ *  consumers (store picker, windowed reads, status gating) stay consistent. */
+export function deriveFromSessions(sessions: LeagueSession[]): { storeSlugs: string[]; startDate: string; endDate: string } | null {
+  if (sessions.length === 0) return null;
+  const storeSlugs = Array.from(new Set(sessions.map((s) => s.storeSlug)));
+  const dates = sessions.map((s) => s.date).sort();
+  return { storeSlugs, startDate: dates[0], endDate: dates[dates.length - 1] };
+}
 
 function leaguesCollection() {
   return collection(db, "leagues");
@@ -100,12 +125,24 @@ export async function createLeague(
     storeSlugs: string[];
     /** Display names for free-typed stores not in the auto-directory, keyed by slug. */
     storeNames?: Record<string, string>;
+    /** Optional per-store date schedule; when set, storeSlugs/startDate/endDate
+     *  are derived from it for consistency. */
+    sessions?: LeagueSession[];
     scoringRules?: LeagueScoringRules;
     accentColor?: string;
     joinPolicy?: "open" | "approval";
   },
 ): Promise<string> {
   const trimmedName = opts.name.trim();
+  // A schedule supersedes the flat store list + window: derive them so the rest
+  // of validation/persistence (and every legacy consumer) stays consistent.
+  const cleanedSessions = cleanLeagueSessions(opts.sessions);
+  if (cleanedSessions.length > 0) {
+    const d = deriveFromSessions(cleanedSessions)!;
+    opts.storeSlugs = d.storeSlugs;
+    opts.startDate = d.startDate;
+    opts.endDate = d.endDate;
+  }
   if (!trimmedName || trimmedName.length > 80) {
     throw new Error("League name must be 1-80 characters.");
   }
@@ -175,6 +212,7 @@ export async function createLeague(
     for (const s of opts.storeSlugs) if (opts.storeNames[s]) pruned[s] = opts.storeNames[s];
     if (Object.keys(pruned).length) leagueData.storeNames = pruned;
   }
+  if (cleanedSessions.length > 0) leagueData.sessions = cleanedSessions;
 
   const memberData: Record<string, unknown> = {
     uid: profile.uid,
@@ -209,6 +247,7 @@ export async function updateLeague(
       | "endDate"
       | "storeSlugs"
       | "storeNames"
+      | "sessions"
       | "scoringRules"
       | "status"
       | "accentColor"
@@ -251,6 +290,21 @@ export async function updateLeague(
   if (updates.scoringRules !== undefined) updateData.scoringRules = updates.scoringRules;
   if (updates.status !== undefined) updateData.status = updates.status;
   if (updates.accentColor !== undefined) updateData.accentColor = updates.accentColor;
+  if (updates.joinPolicy !== undefined) updateData.joinPolicy = updates.joinPolicy === "open" ? "open" : "approval";
+  // A schedule supersedes the flat store list + window; derive & override them so
+  // legacy consumers stay consistent. Clearing it (empty) falls back to the window.
+  if (updates.sessions !== undefined) {
+    const cleaned = cleanLeagueSessions(updates.sessions);
+    if (cleaned.length > 0) {
+      const d = deriveFromSessions(cleaned)!;
+      updateData.sessions = cleaned;
+      updateData.storeSlugs = d.storeSlugs;
+      updateData.startDate = d.startDate;
+      updateData.endDate = d.endDate;
+    } else {
+      updateData.sessions = deleteField();
+    }
+  }
 
   if (
     updateData.startDate &&
