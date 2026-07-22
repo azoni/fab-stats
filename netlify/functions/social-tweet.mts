@@ -428,6 +428,25 @@ export default async function handler(req: Request) {
       imageRecommendation = "Attach: Matchup grid screenshot from fabstats.net/meta";
     }
 
+    // Cross-site content tracking for the azoni.ai hub. Threads are posted to
+    // X manually right after generation, so generation is the closest signal
+    // we have for "content shipped". Short timeout, never fails the response.
+    const hookSecret = process.env.AGENT_WEBHOOK_SECRET;
+    if (hookSecret && tweets.length > 0) {
+      await fetch("https://azoni.ai/.netlify/functions/log-agent-activity", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "content_posted",
+          source: "fabstats",
+          title: `Tweet thread generated (${tweets.length} tweet${tweets.length === 1 ? "" : "s"})`,
+          metadata: { channel: "social", platform: "x" },
+          secret: hookSecret,
+        }),
+        signal: AbortSignal.timeout(4000),
+      }).catch(() => {});
+    }
+
     return jsonResponse({ tweets, imageRecommendation }, 200);
 
   } catch (err: any) {
