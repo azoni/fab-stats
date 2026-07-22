@@ -34,26 +34,43 @@ import type { MatchRecord, UserProfile } from "@/types";
 export function normalizeNotes(notes: string): string {
   const parts = notes.split(" | ");
   const eventName = expandEventName(parts[0]?.trim() || "");
-  const round = parts[1]?.trim() || "";
-  // Strip an optional "Round " prefix before classifying playoff labels: the CSV
-  // parser emits "Round Top 8" while the extension emits a bare "Top 8", so both
-  // must collapse to the same "P1". A Swiss "Round N" has no playoff match, so it
-  // falls through unchanged (the extension also emits "Round N").
+  return `${eventName}|${normalizeRoundLabel(parts[1]?.trim() || "")}`;
+}
+
+/** Canonicalize a round label so playoff variants dedup. Strips an optional
+ *  "Round " prefix first (CSV emits "Round Top 8", the extension a bare "Top 8"),
+ *  then maps playoff labels to "P1/P2/P3". A Swiss "Round N" is returned as-is. */
+function normalizeRoundLabel(roundRaw: string): string {
+  const round = roundRaw.trim();
   const core = round.replace(/^Round\s+/i, "");
-  let normalizedRound = round;
-  if (/^P(\d+)$/i.test(core)) normalizedRound = `P${core.match(/(\d+)/)![1]}`;
-  else if (/^Playoff$/i.test(core)) normalizedRound = "P1";
-  else if (/^Top\s*8$/i.test(core)) normalizedRound = "P1";
-  else if (/^(Quarter|Top\s*4)$/i.test(core)) normalizedRound = "P2";
-  else if (/^Semi/i.test(core)) normalizedRound = "P2";
-  else if (/^Finals?$/i.test(core)) normalizedRound = "P3";
-  return `${eventName}|${normalizedRound}`;
+  if (/^P(\d+)$/i.test(core)) return `P${core.match(/(\d+)/)![1]}`;
+  if (/^Playoff$/i.test(core)) return "P1";
+  if (/^Top\s*8$/i.test(core)) return "P1";
+  if (/^(Quarter|Top\s*4)$/i.test(core)) return "P2";
+  if (/^Semi/i.test(core)) return "P2";
+  if (/^Finals?$/i.test(core)) return "P3";
+  return round;
 }
 
 /** Build a fingerprint to detect duplicate matches */
 export function matchFingerprint(m: { date: string; opponentName?: string; notes?: string; result: string }): string {
   const normalizedNotes = m.notes ? normalizeNotes(m.notes) : "";
   return `${m.date}|${(m.opponentName || "").toLowerCase()}|${normalizedNotes}|${m.result}`;
+}
+
+/**
+ * Event-scoped dedup key that IGNORES the event date and name — robust to GEM
+ * relabeling a multi-day event or a date range parsing to a different day between
+ * imports (which would otherwise re-import an already-logged event). Only defined
+ * for matches carrying a stable gemEventId (extension imports); returns null
+ * otherwise so the caller falls back to the notes/date fingerprint. gemEventId +
+ * round + opponent + result uniquely identifies a match within an event, so this
+ * never collapses two distinct matches.
+ */
+export function gemDedupKey(m: { gemEventId?: string; notes?: string; opponentName?: string; result: string }): string | null {
+  if (!m.gemEventId) return null;
+  const round = normalizeRoundLabel((m.notes || "").split(" | ")[1]?.trim() || "");
+  return `${m.gemEventId}|${round}|${(m.opponentName || "").toLowerCase()}|${m.result}`;
 }
 
 function matchesCollection(userId: string) {
@@ -131,6 +148,10 @@ export async function importMatchesFirestore(
   const existing = await getDocs(query(matchesCollection(userId)));
   type Ref = (typeof existing.docs)[number]["ref"];
   const existingByFingerprint = new Map<string, { ref: Ref; venue?: string }>();
+  // Second, date/name-independent index keyed by the stable gemEventId (extension
+  // imports) so re-importing an event whose date or name drifted (e.g. a multi-day
+  // major) is still recognized as a duplicate.
+  const existingGemKeys = new Set<string>();
   for (const d of existing.docs) {
     const data = d.data();
     const fp = matchFingerprint({
@@ -145,6 +166,13 @@ export async function importMatchesFirestore(
         venue: typeof data.venue === "string" ? data.venue : undefined,
       });
     }
+    const gk = gemDedupKey({
+      gemEventId: data.gemEventId,
+      notes: data.notes,
+      opponentName: data.opponentName,
+      result: data.result,
+    });
+    if (gk) existingGemKeys.add(gk);
   }
 
   // Split incoming into brand-new matches vs duplicates. For duplicates, backfill
@@ -164,6 +192,10 @@ export async function importMatchesFirestore(
       }
       continue;
     }
+    // Not a notes/date match — but if the stable gemEventId key already exists,
+    // it's the same match with a drifted date/name. Skip it (no venue heal ref).
+    const gk = gemDedupKey(m);
+    if (gk && existingGemKeys.has(gk)) continue;
     newMatches.push(m);
   }
 

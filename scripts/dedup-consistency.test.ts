@@ -26,23 +26,29 @@ type Draft = Omit<MatchRecord, "id" | "createdAt">;
 
 // ── Mirror of src/lib/firestore-storage.ts normalizeNotes/matchFingerprint ──
 // (includes the expandEventName fix so raw "PQ" and expanded "ProQuest" collapse)
+function normalizeRoundLabel(roundRaw: string): string {
+  const round = roundRaw.trim();
+  const core = round.replace(/^Round\s+/i, "");
+  if (/^P(\d+)$/i.test(core)) return `P${core.match(/(\d+)/)![1]}`;
+  if (/^Playoff$/i.test(core)) return "P1";
+  if (/^Top\s*8$/i.test(core)) return "P1";
+  if (/^(Quarter|Top\s*4)$/i.test(core)) return "P2";
+  if (/^Semi/i.test(core)) return "P2";
+  if (/^Finals?$/i.test(core)) return "P3";
+  return round;
+}
 function normalizeNotes(notes: string): string {
   const parts = notes.split(" | ");
-  const eventName = expandEventName(parts[0]?.trim() || "");
-  const round = parts[1]?.trim() || "";
-  const core = round.replace(/^Round\s+/i, "");
-  let r = round;
-  if (/^P(\d+)$/i.test(core)) r = `P${core.match(/(\d+)/)![1]}`;
-  else if (/^Playoff$/i.test(core)) r = "P1";
-  else if (/^Top\s*8$/i.test(core)) r = "P1";
-  else if (/^(Quarter|Top\s*4)$/i.test(core)) r = "P2";
-  else if (/^Semi/i.test(core)) r = "P2";
-  else if (/^Finals?$/i.test(core)) r = "P3";
-  return `${eventName}|${r}`;
+  return `${expandEventName(parts[0]?.trim() || "")}|${normalizeRoundLabel(parts[1]?.trim() || "")}`;
 }
 function fingerprint(m: Draft): string {
   const n = m.notes ? normalizeNotes(m.notes) : "";
   return `${m.date}|${(m.opponentName || "").toLowerCase()}|${n}|${m.result}`;
+}
+function gemDedupKey(m: Draft): string | null {
+  if (!m.gemEventId) return null;
+  const round = normalizeRoundLabel((m.notes || "").split(" | ")[1]?.trim() || "");
+  return `${m.gemEventId}|${round}|${(m.opponentName || "").toLowerCase()}|${m.result}`;
 }
 // Extension content.js parseDate (replicated) — must agree with the app parsers.
 function extensionParseDate(text: string): string {
@@ -51,14 +57,15 @@ function extensionParseDate(text: string): string {
   const d = new Date(normalized + " UTC");
   return isNaN(d.getTime()) ? "" : d.toISOString().split("T")[0];
 }
-// Mirror of importMatchesFirestore's dedup split.
+// Mirror of importMatchesFirestore's dedup split (notes fingerprint OR gemEventId key).
 function dedupSplit(existing: Draft[], incoming: Draft[]) {
   const seen = new Set(existing.map(fingerprint));
+  const gemSeen = new Set(existing.map(gemDedupKey).filter((k): k is string => !!k));
   let imported = 0, skipped = 0;
   for (const m of incoming) {
-    const fp = fingerprint(m);
-    if (seen.has(fp)) skipped++;
-    else { seen.add(fp); imported++; }
+    const gk = gemDedupKey(m);
+    if (seen.has(fingerprint(m)) || (gk && gemSeen.has(gk))) skipped++;
+    else { seen.add(fingerprint(m)); if (gk) gemSeen.add(gk); imported++; }
   }
   return { imported, skipped };
 }
@@ -129,6 +136,19 @@ console.log("\n5. Playoff round: CSV \"Round Top 8\" == extension \"Top 8\" (bot
     { event: "Season Finale", date: "2026-09-01", opponent: "Kai P", opponentGemId: "33333", round: 0, roundLabel: "Top 8", result: "win", eventType: "Armory", format: "Classic Constructed" }] })).events[0].matches[0];
   check("playoff top-cut match dedups cross-method", !!csvP && !!extP && fingerprint(csvP) === fingerprint(extP),
     `\n      csv=${csvP && fingerprint(csvP)}\n      ext=${extP && fingerprint(extP)}`);
+}
+
+console.log("\n6. gemEventId dedup: same event re-pulled with a DRIFTED date + name still dedups");
+{
+  // Real scenario: US Nationals stored in June as "US National Championship" @ 2026-06-12,
+  // re-pulled later as "US National Championship 2026" @ a different day (multi-day event).
+  const stored = parseExtensionJson(JSON.stringify({ fabStatsVersion: 2, matches: [
+    { event: "US National Championship", date: "2026-06-12", opponent: "Schoenberg, Edward", opponentGemId: "99589223", round: 1, roundLabel: "", result: "win", gemEventId: "439750", eventType: "Nationals", format: "Classic Constructed" }] })).events[0].matches;
+  const repull = parseExtensionJson(JSON.stringify({ fabStatsVersion: 2, matches: [
+    { event: "US National Championship 2026", date: "2026-06-13", opponent: "Schoenberg, Edward", opponentGemId: "99589223", round: 1, roundLabel: "", result: "win", gemEventId: "439750", eventType: "Nationals", format: "Classic Constructed" }] })).events[0].matches;
+  check("notes/date fingerprint differs (drifted)", fingerprint(stored[0]) !== fingerprint(repull[0]));
+  const { imported, skipped } = dedupSplit(stored, repull);
+  check("re-pull dedups via gemEventId (0 imported, 1 skipped)", imported === 0 && skipped === 1, `imported=${imported} skipped=${skipped}`);
 }
 
 console.log(`\n${failures === 0 ? "ALL PASS ✓" : failures + " FAILURE(S) ✗"}\n`);
