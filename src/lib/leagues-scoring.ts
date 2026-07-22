@@ -2,28 +2,49 @@ import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "./firebase";
 import { getLeague, getLeagueMembers } from "./leagues";
 import { slugifyStoreName } from "./store-directory";
-import { getStoreAliases, buildAliasIndex, expandSlugSet, resolveCanonicalSlug } from "./store-aliases";
+import { getStoreAliases, buildAliasIndex, expandSlugSet, resolveCanonicalSlug, type StoreAliasIndex } from "./store-aliases";
 import { getMatchesInDateRange } from "./firestore-storage";
 import { getEventType } from "./stats";
-import { MatchResult, type League, type LeagueStandingEntry, type MatchRecord } from "@/types";
+import { MatchResult, type League, type LeagueStandingEntry, type LeagueSession, type MatchRecord } from "@/types";
 
-/** Returns true if a match qualifies for the league: store match, in date window,
- *  matching event type/format filters. */
+/** Build the set of allowed "slug|date" keys from a league's scheduled sessions,
+ *  alias-expanding each session's store the same way `storeSlugSet` is expanded. */
+export function buildSessionKeys(sessions: LeagueSession[], aliasIndex: StoreAliasIndex): Set<string> {
+  const keys = new Set<string>();
+  for (const s of sessions) {
+    for (const member of expandSlugSet([s.storeSlug], aliasIndex)) {
+      keys.add(`${member}|${s.date}`);
+    }
+  }
+  return keys;
+}
+
+/** Returns true if a match qualifies for the league. With a scheduled `sessionKeys`
+ *  set, the match's (store, date) must be a scheduled session; otherwise the legacy
+ *  rule applies (store in the league set AND date within the global window). Event
+ *  type / format / bye filters apply either way. */
 export function matchQualifiesForLeague(
   match: MatchRecord,
   league: League,
   storeSlugSet: Set<string>,
+  sessionKeys?: Set<string> | null,
 ): boolean {
   // Must have a venue that maps to a registered store
   if (!match.venue) return false;
   const slug = slugifyStoreName(match.venue);
-  if (!storeSlugSet.has(slug)) return false;
-
-  // Date window (inclusive). MatchRecord.date is an ISO string; compare YYYY-MM-DD.
+  // MatchRecord.date is an ISO string; compare YYYY-MM-DD.
   const matchDate = (match.date || "").slice(0, 10);
   if (!matchDate) return false;
-  if (matchDate < league.startDate) return false;
-  if (matchDate > league.endDate) return false;
+
+  if (sessionKeys) {
+    // Scheduled sessions: the exact (store, date) pairing must be on the schedule.
+    if (!sessionKeys.has(`${slug}|${matchDate}`)) return false;
+  } else {
+    // Legacy: store in the league set AND date within the inclusive global window.
+    if (!storeSlugSet.has(slug)) return false;
+    if (matchDate < league.startDate) return false;
+    if (matchDate > league.endDate) return false;
+  }
 
   // Event type filter
   const eligibleTypes = league.scoringRules.eligibleEventTypes;
@@ -74,6 +95,10 @@ export async function computeLeagueStandings(leagueId: string): Promise<LeagueSt
   // member venue count toward the league (back-compat: unmerged slugs pass through).
   const aliasIndex = buildAliasIndex(await getStoreAliases());
   const storeSlugSet = expandSlugSet(league.storeSlugs, aliasIndex);
+  // If the league has a per-store schedule, qualify on (store, date) pairs instead
+  // of the flat store list + window. startDate/endDate still span min→max session
+  // dates, so the windowed read below stays correct.
+  const sessionKeys = league.sessions?.length ? buildSessionKeys(league.sessions, aliasIndex) : null;
 
   // Prior standings, keyed by uid. A member whose matches we CAN'T read (private
   // profile — only the owner can read them — or a transient error) keeps their
@@ -113,7 +138,7 @@ export async function computeLeagueStandings(leagueId: string): Promise<LeagueSt
         const prior = priorByUid.get(member.uid);
         return prior ? { ...prior, ...identity } : null;
       }
-      const qualifying = matches.filter((m) => matchQualifiesForLeague(m, league, storeSlugSet));
+      const qualifying = matches.filter((m) => matchQualifiesForLeague(m, league, storeSlugSet, sessionKeys));
 
       let wins = 0;
       let losses = 0;
@@ -206,6 +231,7 @@ export async function computeLeagueMatchups(leagueId: string): Promise<LeagueMat
   const members = await getLeagueMembers(leagueId);
   const aliasIndex = buildAliasIndex(await getStoreAliases());
   const storeSlugSet = expandSlugSet(league.storeSlugs, aliasIndex);
+  const sessionKeys = league.sessions?.length ? buildSessionKeys(league.sessions, aliasIndex) : null;
 
   const matrix: Record<string, Record<string, LeagueMatchupCell>> = {};
   const heroStat: Record<string, { played: number; wins: number }> = {};
@@ -222,7 +248,7 @@ export async function computeLeagueMatchups(leagueId: string): Promise<LeagueMat
   for (const matches of perMember) {
     for (const m of matches) {
       if (m.result === MatchResult.Bye) continue;
-      if (!matchQualifiesForLeague(m, league, storeSlugSet)) continue;
+      if (!matchQualifiesForLeague(m, league, storeSlugSet, sessionKeys)) continue;
       const hero = m.heroPlayed;
       const opp = m.opponentHero;
       if (!hero || hero === "Unknown" || !opp || opp === "Unknown") continue;

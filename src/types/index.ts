@@ -332,6 +332,14 @@ export interface LeagueScoringRules {
   eligibleFormats?: string[];
 }
 
+/** One scheduled league session: a specific store on a specific date. */
+export interface LeagueSession {
+  /** Slugified store name (matches `slugifyStoreName(match.venue)`). */
+  storeSlug: string;
+  /** ISO date YYYY-MM-DD. */
+  date: string;
+}
+
 export interface League {
   id: string;
   name: string;
@@ -357,6 +365,12 @@ export interface League {
    *  them in). Keyed by slug. Directory stores resolve their name from the
    *  directory, so only free-typed slugs need an entry here. Optional/back-compat. */
   storeNames?: Record<string, string>;
+  /** Optional per-store date schedule. When non-empty, a match qualifies only if
+   *  its (venue slug, date) matches a scheduled session — instead of the flat
+   *  storeSlugs + start/end window. `storeSlugs`, `startDate`, `endDate` are kept
+   *  derived from the schedule (distinct stores; min/max dates) so every existing
+   *  consumer keeps working. Absent/empty → legacy window behavior. */
+  sessions?: LeagueSession[];
   scoringRules: LeagueScoringRules;
   status: "draft" | "active" | "completed";
   /** How players join. "approval" (default) requires organizer approval; "open"

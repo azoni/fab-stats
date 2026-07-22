@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
 import { getAllLeagues, createLeague, joinLeague, leagueRequiresApproval, getMyLeagueIds, getLeaguesByIds } from "@/lib/leagues";
 import { getStoreDirectory, slugifyStoreName, findNearMatchStore, storeNameMatchesQuery, type StoreDirectoryEntry } from "@/lib/store-directory";
-import type { League, LeagueScoringRules } from "@/types";
+import type { League, LeagueScoringRules, LeagueSession } from "@/types";
+import { LeagueScheduleBuilder } from "@/components/leagues/LeagueScheduleBuilder";
 import { toast } from "sonner";
 import { PageHero } from "@/components/ui/PageHero";
 import { Card } from "@/components/ui/Card";
@@ -53,6 +54,8 @@ interface CreateFormState {
   selectedStoreSlugs: string[];
   /** Display names for free-typed stores not in the directory, keyed by slug. */
   storeNames: Record<string, string>;
+  /** Optional per-store date schedule. */
+  sessions: LeagueSession[];
   joinPolicy: "open" | "approval";
 }
 
@@ -73,6 +76,7 @@ const INITIAL_FORM: CreateFormState = {
   eligibleFormats: [],
   selectedStoreSlugs: [],
   storeNames: {},
+  sessions: [],
   joinPolicy: "approval",
 };
 
@@ -105,12 +109,15 @@ function validateForm(form: CreateFormState): Record<string, string> {
   if (!form.name.trim()) errors.name = "League name is required.";
   else if (form.name.trim().length > 80) errors.name = "Max 80 characters.";
   if (form.description.length > 1000) errors.description = "Max 1000 characters.";
-  if (!form.startDate) errors.startDate = "Start date is required.";
-  if (!form.endDate) errors.endDate = "End date is required.";
-  if (form.startDate && form.endDate && form.startDate > form.endDate) {
-    errors.endDate = "End date must be after start date.";
+  // With a per-store schedule, stores + the date window are derived from it.
+  if (form.sessions.length === 0) {
+    if (!form.startDate) errors.startDate = "Start date is required.";
+    if (!form.endDate) errors.endDate = "End date is required.";
+    if (form.startDate && form.endDate && form.startDate > form.endDate) {
+      errors.endDate = "End date must be after start date.";
+    }
+    if (form.selectedStoreSlugs.length === 0) errors.stores = "Pick at least one store.";
   }
-  if (form.selectedStoreSlugs.length === 0) errors.stores = "Pick at least one store.";
   if (!Number.isFinite(form.pointsWin)) errors.pointsWin = "Number required.";
   if (!Number.isFinite(form.pointsLoss)) errors.pointsLoss = "Number required.";
   if (!Number.isFinite(form.pointsDraw)) errors.pointsDraw = "Number required.";
@@ -348,6 +355,7 @@ export default function LeagueHub() {
         endDate: form.endDate,
         storeSlugs: form.selectedStoreSlugs,
         storeNames: form.storeNames,
+        sessions: form.sessions,
         scoringRules,
         joinPolicy: form.joinPolicy,
       });
@@ -1045,6 +1053,19 @@ export default function LeagueHub() {
                 </p>
               )}
             </div>
+          </Card>
+
+          {/* Per-store date schedule (optional) — supersedes the flat window above */}
+          <Card padding="md">
+            <label className="mb-1 block text-sm font-semibold text-fab-text">Schedule specific dates (optional)</label>
+            <LeagueScheduleBuilder
+              sessions={form.sessions}
+              onChange={(sessions) => setForm((f) => ({ ...f, sessions }))}
+              stores={form.selectedStoreSlugs.map((slug) => ({
+                slug,
+                name: directory.find((d) => d.slug === slug)?.name || form.storeNames[slug] || slug,
+              }))}
+            />
           </Card>
 
           <div className="flex flex-wrap items-center justify-end gap-3">

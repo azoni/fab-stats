@@ -8,7 +8,7 @@
     "build": "npm run build:ext && next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "tsx scripts/dedup-consistency.test.ts",
+    "test": "tsx scripts/dedup-consistency.test.ts && tsx scripts/league-schedule.test.ts",
     "format": "prettier --write \"src/**/*.{ts,tsx}\"",
     "format:check": "prettier --check \"src/**/*.{ts,tsx}\""
   },
