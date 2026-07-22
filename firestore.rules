@@ -1316,6 +1316,17 @@ service cloud.firestore {
             || isAdmin()
           );
       }
+
+      // Past-season archives (frozen final standings), written when the organizer
+      // starts a new season. Public read; only the organizer / admin may write.
+      match /seasons/{seasonId} {
+        allow read: if true;
+        allow write: if request.auth != null
+          && (
+            get(/databases/$(database)/documents/leagues/$(leagueId)).data.organizerUid == request.auth.uid
+            || isAdmin()
+          );
+      }
     }
 
     match /leaguenames/{slug} {
