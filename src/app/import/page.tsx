@@ -3,7 +3,7 @@ import { useState, useRef, useMemo, useCallback, useEffect } from "react";
 import { parseGemCsv } from "@/lib/gem-import";
 import { parseGemPaste, parseExtensionJson, type PasteImportResult } from "@/lib/gem-paste-import";
 import { useAuth } from "@/contexts/AuthContext";
-import { importMatchesFirestore, updateProfile, registerGemId, normalizeNotes } from "@/lib/firestore-storage";
+import { importMatchesFirestore, updateProfile, registerGemId, normalizeNotes, gemDedupKey } from "@/lib/firestore-storage";
 import { softClearAllMatches, RECYCLE_BIN_RETENTION_DAYS } from "@/lib/match-recycle-bin";
 import { importMatchesLocal } from "@/lib/storage";
 import { createImportFeedEvent, createPlacementFeedEvent, deleteAllFeedEventsForUser } from "@/lib/feed";
@@ -46,6 +46,14 @@ type ImportMatchDraft = Omit<MatchRecord, "id" | "createdAt">;
 
 function importFingerprint(match: Pick<ImportMatchDraft, "date" | "opponentName" | "notes" | "result">): string {
   return `${match.date}|${(match.opponentName || "").toLowerCase()}|${match.notes ? normalizeNotes(match.notes) : ""}|${match.result}`;
+}
+
+/** Already stored? Checks the notes/date fingerprint OR the date/name-independent
+ *  gemEventId key — mirrors the server dedup so the preview matches what imports. */
+function isExistingMatch(m: ImportMatchDraft, fps: Set<string>, gemKeys: Set<string>): boolean {
+  if (fps.has(importFingerprint(m))) return true;
+  const gk = gemDedupKey(m);
+  return !!(gk && gemKeys.has(gk));
 }
 
 function formatImportCount(matches: ImportMatchDraft[]): string {
@@ -456,6 +464,7 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
   const [quickPreviewReady, setQuickPreviewReady] = useState(false);
   const [quickConfirmImport, setQuickConfirmImport] = useState(false);
   const [existingFingerprints, setExistingFingerprints] = useState<Set<string> | null>(null);
+  const [existingGemKeys, setExistingGemKeys] = useState<Set<string>>(new Set());
   const [sessionRecap, setSessionRecap] = useState<SessionRecap | null>(null);
   const [newAchievements, setNewAchievements] = useState<Achievement[]>([]);
   const [newPlacements, setNewPlacements] = useState<PlayoffFinish[]>([]);
@@ -574,10 +583,11 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
           } else {
             existing = getLocalMatches();
           }
-          const fps = new Set(existing.map(importFingerprint));
-          setExistingFingerprints(fps);
+          setExistingFingerprints(new Set(existing.map(importFingerprint)));
+          setExistingGemKeys(new Set(existing.map(gemDedupKey).filter((k): k is string => !!k)));
         } catch {
           setExistingFingerprints(new Set());
+          setExistingGemKeys(new Set());
         }
         setQuickPreviewReady(true);
       })();
@@ -744,10 +754,10 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
     return filteredEvents.filter(({ event, origIdx }) =>
       !excludedEventIdxs.has(origIdx) &&
       event.matches.some((m) => {
-        return !existingFingerprints.has(importFingerprint(m));
+        return !isExistingMatch(m, existingFingerprints, existingGemKeys);
       })
     );
-  }, [quickMode, existingFingerprints, filteredEvents, excludedEventIdxs]);
+  }, [quickMode, existingFingerprints, existingGemKeys, filteredEvents, excludedEventIdxs]);
 
   const quickImportMatches = useMemo(() => {
     if (!quickMode || !existingFingerprints) return filteredMatches;
@@ -755,12 +765,12 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
       excludedEventIdxs.has(origIdx)
         ? []
         : event.matches.flatMap((m, matchIdx) =>
-            existingFingerprints.has(importFingerprint(m))
+            isExistingMatch(m, existingFingerprints, existingGemKeys)
               ? []
               : [applyImportOverrides(m, origIdx, matchIdx)]
           )
     );
-  }, [quickMode, existingFingerprints, filteredEvents, filteredMatches, applyImportOverrides, excludedEventIdxs]);
+  }, [quickMode, existingFingerprints, existingGemKeys, filteredEvents, filteredMatches, applyImportOverrides, excludedEventIdxs]);
 
   // In quick mode, use the filtered (non-duplicate) events for display
   const displayEvents = quickMode ? quickFilteredEvents : filteredEvents;
@@ -916,7 +926,7 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
           event.matches
             .map((m, matchIdx) => ({ m, matchIdx }))
             // Quick mode only imports non-duplicate matches.
-            .filter(({ m }) => !quickMode || !existingFingerprints?.has(importFingerprint(m)))
+            .filter(({ m }) => !quickMode || !existingFingerprints || !isExistingMatch(m, existingFingerprints, existingGemKeys))
             .map(({ m, matchIdx }) => ({
               date: m.date,
               heroPlayed: applyImportOverrides(m, origIdx, matchIdx).heroPlayed,
@@ -1451,7 +1461,7 @@ export default function ImportPage({ shareMode = false }: ImportPageProps = {}) 
     const getQuickReviewMatches = (event: PasteImportResult["events"][number]) =>
       event.matches
         .map((match, matchIdx) => ({ match, matchIdx }))
-        .filter(({ match }) => !existingFingerprints?.has(importFingerprint(match)));
+        .filter(({ match }) => !existingFingerprints || !isExistingMatch(match, existingFingerprints, existingGemKeys));
     const quickNewMatchLabel = formatImportCount(quickImportMatches);
 
     return (
