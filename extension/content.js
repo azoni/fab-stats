@@ -8,24 +8,8 @@
   // Prevent double injection
   if (document.getElementById("fab-stats-exporter")) return;
 
-  const VERSION = "2.3.0";
+  const VERSION = "2.4.0";
   const FABSTATS_IMPORT_URL = "https://www.fabstats.net/import";
-
-  // Cross-browser extension storage (Firefox exposes `browser`, Chrome `chrome`).
-  // Used to remember the newest event we've confirmed-synced so "Smart Sync"
-  // can fetch only the gap since last time instead of a guessed page count.
-  const extStorage = (typeof browser !== "undefined" ? browser : chrome).storage.local;
-  const SYNC_WATERMARK_KEY = "fabStatsSyncWatermark";
-
-  async function getSyncWatermark() {
-    try {
-      const out = await extStorage.get(SYNC_WATERMARK_KEY);
-      const wm = out && out[SYNC_WATERMARK_KEY];
-      return wm && wm.eventId ? wm : null;
-    } catch {
-      return null;
-    }
-  }
 
   // ── Known FaB Hero Names ──────────────────────────────────────
   const KNOWN_HEROES = new Set([
@@ -492,10 +476,11 @@
   async function fetchAllPages(onProgress, opts) {
     const maxPages = opts.maxPages || 0;
     const maxEvents = opts.maxEvents || 0;
-    // Smart Sync: keep pulling history (newest-first) until we reach the event
-    // we last confirmed-synced, then stop. Empty string = no watermark → behaves
-    // like a full fetch (first-ever sync, or watermark scrolled off history).
-    const untilEventId = opts.untilEventId || "";
+    // "Since" mode: history is newest-first, so keep pulling until a page contains
+    // an event dated before sinceDate ("YYYY-MM-DD"), then stop — everything beyond
+    // is older. Empty string = no lower bound.
+    const sinceDate = opts.sinceDate || "";
+    const olderThanSince = (evs) => !!sinceDate && evs.some((e) => e.date && e.date < sinceDate);
 
     // Always fetch page 1 from the history endpoint. We deliberately do NOT
     // reuse the current DOM even when already on the history page: GEM's live
@@ -509,12 +494,12 @@
     let allEvents = await parseEventsFromDoc(doc1);
     onProgress(1, totalPages, allEvents.length);
 
-    let reachedWatermark = !!untilEventId && allEvents.some(e => e.gemEventId === untilEventId);
+    let reachedSince = olderThanSince(allEvents);
 
     // If maxEvents is set and we already have enough, stop early
     if (maxEvents && allEvents.length >= maxEvents) {
       allEvents = allEvents.slice(0, maxEvents);
-    } else if (!reachedWatermark) {
+    } else if (!reachedSince) {
       // Fetch remaining pages in batches of 3
       for (let batch = 2; batch <= totalPages; batch += 3) {
         if (maxEvents && allEvents.length >= maxEvents) break;
@@ -540,9 +525,9 @@
         }
         onProgress(Math.min(batch + 2, totalPages), totalPages, allEvents.length);
 
-        // Smart Sync: once the last-synced event appears, we've bridged the gap.
-        if (untilEventId && allEvents.some(e => e.gemEventId === untilEventId)) {
-          reachedWatermark = true;
+        // "Since" mode: once we page into events older than the cutoff, stop.
+        if (olderThanSince(allEvents)) {
+          reachedSince = true;
           break;
         }
       }
@@ -552,11 +537,11 @@
       }
     }
 
-    // Drop everything older than the watermark event (inclusive keep) — those
-    // are already logged. Dedup on import handles the watermark event itself.
-    if (untilEventId && reachedWatermark) {
-      const idx = allEvents.findIndex(e => e.gemEventId === untilEventId);
-      if (idx >= 0) allEvents = allEvents.slice(0, idx + 1);
+    // "Since" mode: drop events older than the cutoff. Keep undated events (a date
+    // that failed to parse) rather than risk dropping a real recent one — dedup
+    // handles any overlap on import.
+    if (sinceDate) {
+      allEvents = allEvents.filter((e) => !e.date || e.date >= sinceDate);
     }
 
     // Also check the player page for in-progress events
@@ -577,9 +562,12 @@
     if (playerDoc) {
       const playerEvents = await parseEventsFromDoc(playerDoc);
       for (const evt of playerEvents) {
-        if (!existingIds.has(evt.gemEventId)) {
-          allEvents.push(evt);
-        }
+        if (existingIds.has(evt.gemEventId)) continue;
+        // "Since" mode: the player page also surfaces recent COMPLETED events, so
+        // apply the same cutoff here — otherwise dated events older than sinceDate
+        // would slip back in. Undated events (parse failures) are kept.
+        if (sinceDate && evt.date && evt.date < sinceDate) continue;
+        allEvents.push(evt);
       }
     }
 
@@ -785,29 +773,31 @@
 
   // ── Quick Sync Selector ─────────────────────────────────────
 
-  // Sync mode: "smart" (auto-detect only new events since last sync) or
-  // "pages" (manual N-page pull).
+  // Sync mode: "quick" (newest history page), "since" (events on/after a date),
+  // or "pages" (manual N-page pull).
   const stored = JSON.parse(localStorage.getItem("fab-stats-quick-opts") || "null");
-  let syncMode = (stored && stored.mode) || "smart";
+  let syncMode = (stored && stored.mode) || "quick";
   let syncCount = (stored && stored.count) || 1;
-  // Migrate retired modes ("latest" 1-page, "events") to Smart Sync.
-  if (syncMode === "latest" || syncMode === "events") { syncMode = "smart"; }
+  let syncSince = (stored && stored.since) || "";
+  // Migrate retired modes (smart / latest / events) to Quick.
+  if (syncMode === "smart" || syncMode === "latest" || syncMode === "events") { syncMode = "quick"; }
 
   function saveSyncOpts() {
-    localStorage.setItem("fab-stats-quick-opts", JSON.stringify({ mode: syncMode, count: syncCount }));
+    localStorage.setItem("fab-stats-quick-opts", JSON.stringify({ mode: syncMode, count: syncCount, since: syncSince }));
   }
 
-  // Resolve fetch options for a Quick Sync. Async because Smart mode reads the
-  // stored watermark. No watermark (first sync / cleared) → {} = full history.
-  async function getSyncOpts() {
+  // Resolve fetch options for the configured sync mode: quick = newest page only,
+  // since = everything on/after a date, pages = N history pages.
+  function getSyncOpts() {
     if (syncMode === "pages") return { maxPages: syncCount };
-    const wm = await getSyncWatermark();
-    return wm ? { untilEventId: wm.eventId } : {};
+    if (syncMode === "since") return syncSince ? { sinceDate: syncSince } : { maxPages: 1 };
+    return { maxPages: 1 };
   }
 
   function quickBtnLabel() {
     if (syncMode === "pages") return "Sync " + syncCount + " Page" + (syncCount === 1 ? "" : "s");
-    return "Smart Sync";
+    if (syncMode === "since") return syncSince ? "Sync Since " + syncSince : "Quick Sync";
+    return "Quick Sync";
   }
   function updateQuickLabel() {
     quickBtn.innerHTML = QUICK_ICON + quickBtnLabel();
@@ -831,17 +821,17 @@
       alignItems: "center",
     });
 
-    // ─ Smart button ─
-    const smartBtn = document.createElement("button");
-    smartBtn.textContent = "Smart";
-    smartBtn.title = "Auto-sync only matches added since your last sync";
-    const isSmart = syncMode === "smart";
-    Object.assign(smartBtn.style, {
+    // ─ Quick button (newest history page) ─
+    const quickToggle = document.createElement("button");
+    quickToggle.textContent = "Quick";
+    quickToggle.title = "Sync your most recent GEM history page (~10 events)";
+    const isQuick = syncMode === "quick";
+    Object.assign(quickToggle.style, {
       flex: "1",
       padding: "5px 0",
-      background: isSmart ? "rgba(96,165,250,0.2)" : "transparent",
-      color: isSmart ? "#60a5fa" : "#666",
-      border: isSmart ? "1px solid #60a5fa" : "1px solid #444",
+      background: isQuick ? "rgba(96,165,250,0.2)" : "transparent",
+      color: isQuick ? "#60a5fa" : "#666",
+      border: isQuick ? "1px solid #60a5fa" : "1px solid #444",
       borderRadius: "6px",
       fontSize: "11px",
       fontWeight: "700",
@@ -849,8 +839,8 @@
       fontFamily: "inherit",
       transition: "all 0.15s",
     });
-    smartBtn.addEventListener("click", () => {
-      syncMode = "smart";
+    quickToggle.addEventListener("click", () => {
+      syncMode = "quick";
       saveSyncOpts();
       renderSelector();
     });
@@ -907,7 +897,7 @@
         saveSyncOpts();
         renderSelector();
         setTimeout(() => {
-          const inp = selectorWrap.querySelector("input");
+          const inp = selectorWrap.querySelector('input[type="number"]');
           if (inp) inp.focus();
         }, 0);
       }
@@ -930,16 +920,89 @@
         saveSyncOpts();
         renderSelector();
       }
-      // Focus the input so user can type immediately
-      pagesInput.focus();
+      // Focus the (possibly rebuilt) input so the user can type immediately.
+      const inp = selectorWrap.querySelector('input[type="number"]');
+      if (inp) inp.focus();
     });
 
     pagesWrap.appendChild(pagesLabel);
     pagesWrap.appendChild(pagesInput);
 
-    row.appendChild(smartBtn);
+    row.appendChild(quickToggle);
     row.appendChild(pagesWrap);
     selectorWrap.appendChild(row);
+
+    // ─ "Since date" row ─
+    const isSince = syncMode === "since";
+    const sinceWrap = document.createElement("div");
+    Object.assign(sinceWrap.style, {
+      display: "flex",
+      gap: "5px",
+      alignItems: "center",
+      marginTop: "5px",
+      padding: "4px 6px",
+      background: isSince ? "rgba(96,165,250,0.2)" : "transparent",
+      border: isSince ? "1px solid #60a5fa" : "1px solid #444",
+      borderRadius: "6px",
+      cursor: "pointer",
+      transition: "all 0.15s",
+    });
+    const sinceLabel = document.createElement("span");
+    sinceLabel.textContent = "Since";
+    Object.assign(sinceLabel.style, {
+      color: isSince ? "#60a5fa" : "#666",
+      fontSize: "11px",
+      fontWeight: "700",
+      fontFamily: "inherit",
+      whiteSpace: "nowrap",
+    });
+    const sinceInput = document.createElement("input");
+    sinceInput.type = "date";
+    if (syncSince) sinceInput.value = syncSince;
+    Object.assign(sinceInput.style, {
+      flex: "1",
+      padding: "2px 4px",
+      background: isSince ? "rgba(0,0,0,0.3)" : "rgba(0,0,0,0.2)",
+      color: isSince ? "#60a5fa" : "#888",
+      border: "1px solid " + (isSince ? "rgba(96,165,250,0.5)" : "#333"),
+      borderRadius: "4px",
+      fontSize: "11px",
+      fontWeight: "600",
+      fontFamily: "inherit",
+      outline: "none",
+      colorScheme: "dark",
+    });
+    // Activating "since" rebuilds the selector (to restyle), which detaches the
+    // clicked input — so after the rebuild we re-focus the FRESH date input and
+    // open its native picker within the same user gesture (showPicker), otherwise
+    // the calendar wouldn't appear on the first click.
+    const activateSince = () => {
+      if (syncMode !== "since") {
+        syncMode = "since";
+        saveSyncOpts();
+        renderSelector();
+      }
+      const inp = selectorWrap.querySelector('input[type="date"]');
+      if (inp) {
+        inp.focus();
+        try { inp.showPicker(); } catch (_) { /* not supported / no activation */ }
+      }
+    };
+    sinceInput.addEventListener("focus", () => { if (syncMode !== "since") activateSince(); });
+    sinceInput.addEventListener("change", () => {
+      syncSince = sinceInput.value;
+      syncMode = "since";
+      saveSyncOpts();
+      renderSelector();
+    });
+    sinceWrap.addEventListener("click", (e) => {
+      if (e.target === sinceInput) return;
+      activateSince();
+    });
+    sinceWrap.appendChild(sinceLabel);
+    sinceWrap.appendChild(sinceInput);
+    selectorWrap.appendChild(sinceWrap);
+
     updateQuickLabel();
   }
   renderSelector();
@@ -1156,13 +1219,14 @@
 
         '<div style="font-size:12px;color:#e8e0cc;font-weight:700;margin-bottom:4px;">Quick Sync</div>' +
         '<div style="font-size:11px;color:#aaa;margin-bottom:12px;line-height:1.6;">' +
-          'Fast sync of recent events. Sends data directly to FaB Stats and auto-imports \u2014 no preview step. Use after each tournament to stay up to date.' +
+          'Sends recent events to FaB Stats, where you review them before importing. Choose how far back to look:' +
         '</div>' +
 
         '<div style="font-size:12px;color:#e8e0cc;font-weight:700;margin-bottom:4px;">Sync Options</div>' +
         '<div style="font-size:11px;color:#aaa;margin-bottom:12px;line-height:1.6;">' +
-          '<span style="color:#60a5fa;">Latest</span> \u2014 Syncs your most recent GEM history page (~10 events). Best for staying up to date after a tournament.<br>' +
-          '<span style="color:#60a5fa;">Pages</span> \u2014 Sync by GEM history pages (~10 events per page). Enter how many pages to fetch.' +
+          '<span style="color:#60a5fa;">Quick</span> \u2014 Your most recent history page (~10 events). Best right after a tournament.<br>' +
+          '<span style="color:#60a5fa;">Since</span> \u2014 Everything on or after a date you pick. Best when you haven\u2019t synced in a while.<br>' +
+          '<span style="color:#60a5fa;">Pages</span> \u2014 A set number of history pages (~10 events each).' +
         '</div>' +
 
         '<div style="font-size:12px;color:#e8e0cc;font-weight:700;margin-bottom:4px;">Duplicates</div>' +
@@ -1218,7 +1282,7 @@
       const label = quickMode ? "Quick Syncing..." : "Fetching match history...";
       showOverlay(label, "Reading page 1", 0);
 
-      const fetchOpts = quickMode ? await getSyncOpts() : {};
+      const fetchOpts = quickMode ? getSyncOpts() : {};
 
       const [allEvents, userGemId] = await Promise.all([
         fetchAllPages((current, total, matchCount) => {
