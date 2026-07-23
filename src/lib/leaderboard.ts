@@ -416,6 +416,25 @@ export async function updateLeaderboardEntry(
     } catch { /* skip if team fetch fails */ }
   }
 
+  // Write the "worn" league badge (opt-in primaryLeagueId). setDoc overwrites the
+  // whole doc, so clearing primaryLeagueId (or losing membership) drops these on the
+  // next write. Only badge when the league has an icon AND the user is a member —
+  // verified here so a stale (kicked) or console-forged value can't fake it.
+  if (profile.primaryLeagueId) {
+    try {
+      const leagueSnap = await getDoc(doc(db, "leagues", profile.primaryLeagueId));
+      const l = leagueSnap.data();
+      if (leagueSnap.exists() && l?.iconUrl) {
+        const memberSnap = await getDoc(doc(db, "leagues", profile.primaryLeagueId, "members", profile.uid));
+        if (memberSnap.exists()) {
+          if (l.name) clean.leagueName = l.name;
+          if (l.slug) clean.leagueSlug = l.slug;
+          clean.leagueIconUrl = l.iconUrl;
+        }
+      }
+    } catch { /* skip if league fetch fails */ }
+  }
+
   await setDoc(doc(leaderboardCollection(), profile.uid), clean);
   // Intentionally NOT invalidating the cache here. The home page fires this
   // self-sync write on load (throttled ~10 min), and a blanket invalidation

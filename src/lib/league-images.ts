@@ -4,6 +4,8 @@ import { db } from "./firebase";
 
 const BANNER_MAX_SIZE = 1600; // wide hero image
 const BANNER_MAX_BYTES = 8 * 1024 * 1024;
+const ICON_MAX_SIZE = 256; // small square-ish emblem (CSS object-cover crops)
+const ICON_MAX_BYTES = 2 * 1024 * 1024;
 
 function resizeImageToBlob(file: File, maxSize: number): Promise<Blob> {
   return new Promise((resolve, reject) => {
@@ -67,6 +69,37 @@ export async function uploadLeagueBanner(leagueId: string, file: File): Promise<
     updatedAt: new Date().toISOString(),
   });
   return bannerUrl;
+}
+
+/** Upload a league icon (emblem), persist iconUrl on the league doc, return the URL. */
+export async function uploadLeagueIcon(leagueId: string, file: File): Promise<string> {
+  validateImageFile(file, ICON_MAX_BYTES);
+  const storage = getStorage();
+  const blob = await resizeImageToBlob(file, ICON_MAX_SIZE);
+  const ref = storageRef(storage, `league-images/icons/${leagueId}/icon.webp`);
+  await uploadBytes(ref, blob, { contentType: "image/webp" });
+  const iconUrl = await getDownloadURL(ref);
+  await updateDoc(doc(db, "leagues", leagueId), {
+    iconUrl,
+    updatedAt: new Date().toISOString(),
+  });
+  return iconUrl;
+}
+
+/** Remove the stored icon image + clear iconUrl. */
+export async function removeLeagueIcon(leagueId: string): Promise<void> {
+  const storage = getStorage();
+  try {
+    const dirRef = storageRef(storage, `league-images/icons/${leagueId}`);
+    const result = await listAll(dirRef);
+    await Promise.all(result.items.map((item) => deleteObject(item)));
+  } catch {
+    // Directory may not exist — ignore.
+  }
+  await updateDoc(doc(db, "leagues", leagueId), {
+    iconUrl: "",
+    updatedAt: new Date().toISOString(),
+  });
 }
 
 /** Remove the stored banner image + clear bannerUrl. */
