@@ -1,10 +1,10 @@
 "use client";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { ChevronDown, MessageCircle, Send, Trash2 } from "lucide-react";
 import type { FeedEvent, WallComment } from "@/types";
 import { useAuth } from "@/contexts/AuthContext";
-import { listFeedComments, addFeedComment, deleteFeedComment } from "@/lib/feed-comments";
+import { listFeedComments, addFeedComment, deleteFeedComment, syncFeedCommentCount } from "@/lib/feed-comments";
 import { summarizeFeedEvent } from "@/lib/feed";
 import { playerHref } from "@/lib/constants";
 
@@ -25,13 +25,19 @@ export function FeedCommentSection({ event, currentUserId, compact }: { event: F
   const { profile, isAdmin } = useAuth();
   const [expanded, setExpanded] = useState(false);
   const [comments, setComments] = useState<WallComment[]>([]);
-  const [loaded, setLoaded] = useState(false);
+  const [loaded, setLoaded] = useState(false); // full thread loaded (vs. preview only)
+  const [previewTried, setPreviewTried] = useState(false);
   const [loading, setLoading] = useState(false);
   const [input, setInput] = useState("");
   const [posting, setPosting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const isOwner = currentUserId === event.userId;
+  const serverCount = event.commentCount;
+  // Known count: the loaded thread length once we have it, else the denormalized
+  // count (null when the event predates commentCount → show a neutral "Comments").
+  const count = loaded ? comments.length : (serverCount ?? null);
+  const PREVIEW_COUNT = 2;
 
   const ensureLoaded = useCallback(async () => {
     if (loaded || loading) return;
@@ -40,13 +46,25 @@ export function FeedCommentSection({ event, currentUserId, compact }: { event: F
       const items = await listFeedComments(event.id);
       setComments(items);
       setLoaded(true);
+      // Reconcile the denormalized count if we got the whole thread (not truncated).
+      if (items.length < 30 && items.length !== (event.commentCount ?? -1)) {
+        syncFeedCommentCount(event.id, items.length);
+      }
     } catch {
-      setComments([]);
       setLoaded(true);
     } finally {
       setLoading(false);
     }
-  }, [event.id, loaded, loading]);
+  }, [event.id, event.commentCount, loaded, loading]);
+
+  // Load a small preview so a few recent comments show without expanding.
+  useEffect(() => {
+    if (previewTried || loaded || expanded || !((serverCount ?? 0) > 0)) return;
+    setPreviewTried(true);
+    listFeedComments(event.id, PREVIEW_COUNT)
+      .then((items) => setComments((prev) => (prev.length ? prev : items)))
+      .catch(() => {});
+  }, [previewTried, loaded, expanded, serverCount, event.id]);
 
   const toggle = useCallback(async (e?: React.MouseEvent) => {
     e?.stopPropagation();
@@ -100,8 +118,8 @@ export function FeedCommentSection({ event, currentUserId, compact }: { event: F
     }
   }, [event.id]);
 
-  const count = loaded ? comments.length : null;
   const padded = compact ? "px-2" : "px-3";
+  const previewComments = !expanded ? comments.slice(-PREVIEW_COUNT) : [];
 
   return (
     // Stop clicks anywhere in the comment area (input padding, empty space, the
@@ -124,9 +142,33 @@ export function FeedCommentSection({ event, currentUserId, compact }: { event: F
         <ChevronDown className={`h-3.5 w-3.5 transition-transform ${expanded ? "rotate-180" : ""}`} />
       </button>
 
+      {/* Collapsed preview — a couple of recent comments, tap to see the rest. */}
+      {!expanded && previewComments.length > 0 && (
+        <div className={`mt-1 space-y-1.5 ${padded}`}>
+          {previewComments.map((c) => (
+            <div key={c.id} className="flex items-baseline gap-1.5 text-xs">
+              <Link href={playerHref(c.authorName)} className="shrink-0 font-bold text-fab-text hover:text-fab-gold">
+                {c.authorName}
+              </Link>
+              <span className="min-w-0 flex-1 truncate text-fab-muted">{c.text}</span>
+              <span className="shrink-0 text-[10px] text-fab-dim">{timeAgoShort(c.createdAt)}</span>
+            </div>
+          ))}
+          {(count ?? 0) > previewComments.length && (
+            <button
+              type="button"
+              onClick={(e) => { void toggle(e); }}
+              className="text-[11px] font-bold text-fab-muted hover:text-fab-gold"
+            >
+              View {(count ?? 0) - previewComments.length} more comment{(count ?? 0) - previewComments.length === 1 ? "" : "s"}
+            </button>
+          )}
+        </div>
+      )}
+
       {expanded && (
         <div className={`mt-2 space-y-2 ${padded}`}>
-          {loading ? (
+          {loading && comments.length === 0 ? (
             <p className="text-xs text-fab-dim">Loading comments…</p>
           ) : comments.length === 0 ? (
             <p className="text-xs text-fab-dim">No comments yet.</p>
