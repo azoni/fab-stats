@@ -21,7 +21,10 @@ import { getMatchesInDateRange } from "./firestore-storage";
 import { getEventType } from "./stats";
 import {
   matchQualifiesForLeague,
+  buildSessionKeys,
   pointsForMatch,
+  eventScore,
+  usesEventScoring,
   type LeagueMatchupData,
   type LeagueMatchupCell,
 } from "./leagues-scoring";
@@ -64,6 +67,10 @@ export async function getLeagueMatchPool(leagueId: string): Promise<LeagueMatchP
   const members = await getLeagueMembers(leagueId);
   const aliasIndex = buildAliasIndex(await getStoreAliases());
   const storeSlugSet = expandSlugSet(league.storeSlugs, aliasIndex);
+  // Match computeLeagueStandings: a scheduled league qualifies matches on exact
+  // (store, date) session pairs, not the flat store list + window. Without this the
+  // live view would include off-schedule matches the authoritative path excludes.
+  const sessionKeys = league.sessions?.length ? buildSessionKeys(league.sessions, aliasIndex) : null;
   const nameFor = (slug: string) => league.storeNames?.[slug] || slug;
 
   const readableMemberUids: string[] = [];
@@ -81,7 +88,7 @@ export async function getLeagueMatchPool(leagueId: string): Promise<LeagueMatchP
       }
       readableMemberUids.push(member.uid);
       for (const m of raw) {
-        if (!matchQualifiesForLeague(m, league, storeSlugSet)) continue;
+        if (!matchQualifiesForLeague(m, league, storeSlugSet, sessionKeys)) continue;
         const canonical = m.venue
           ? resolveCanonicalSlug(slugifyStoreName(m.venue), aliasIndex)
           : "";
@@ -174,6 +181,9 @@ const winRateDecisive = (wins: number, losses: number, draws: number) => {
 export function standingsFromPool(matches: PooledMatch[], league: League): LeagueStandingEntry[] {
   const byUid = new Map<string, LeagueStandingEntry>();
   const storesByUid = new Map<string, Set<string>>();
+  // Per member → per event → summed match points, so min/attendance apply per
+  // event (mirrors computeLeagueStandings' leagueEventKey: date | event | store).
+  const eventEarned = new Map<string, Map<string, number>>();
   for (const m of matches) {
     let e = byUid.get(m.memberUid);
     if (!e) {
@@ -197,12 +207,26 @@ export function standingsFromPool(matches: PooledMatch[], league: League): Leagu
     else if (m.result === MatchResult.Loss) e.losses++;
     else if (m.result === MatchResult.Draw) e.draws++;
     else if (m.result === MatchResult.Bye) e.byes++;
-    e.points += pointsForMatch(m, league);
+    let ev = eventEarned.get(m.memberUid);
+    if (!ev) eventEarned.set(m.memberUid, (ev = new Map()));
+    const eventKey = `${(m.date || "").slice(0, 10)}|${m.eventName || ""}|${m.storeSlug || ""}`;
+    ev.set(eventKey, (ev.get(eventKey) || 0) + pointsForMatch(m, league));
     if (m.storeSlug) {
       let set = storesByUid.get(m.memberUid);
       if (!set) storesByUid.set(m.memberUid, (set = new Set()));
       set.add(m.storeSlug);
     }
+  }
+  // Mirror scoreMatches: only apply the per-event floor/attendance when the league
+  // opts in. Otherwise sum raw event totals — eventScore's max(earned, 0) would
+  // otherwise silently clamp a negative event (e.g. penalized losses) to 0.
+  const eventScoring = usesEventScoring(league.scoringRules);
+  for (const [uid, ev] of eventEarned) {
+    const e = byUid.get(uid);
+    if (!e) continue;
+    let pts = 0;
+    for (const earned of ev.values()) pts += eventScoring ? eventScore(earned, league.scoringRules) : earned;
+    e.points = pts;
   }
   for (const [uid, set] of storesByUid) {
     const e = byUid.get(uid);

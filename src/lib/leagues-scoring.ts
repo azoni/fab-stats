@@ -84,6 +84,58 @@ export function pointsForMatch(match: MatchRecord, league: League): number {
   return typeof mult === "number" ? base * mult : base;
 }
 
+/** Finalize one event's score from its summed match points: floor at
+ *  minPointsPerEvent (a max, NOT additive) then add pointsPerEvent (attendance).
+ *  With neither set this is just the summed match points. */
+export function eventScore(earnedMatchPoints: number, rules: LeagueScoringRules): number {
+  return Math.max(earnedMatchPoints, rules.minPointsPerEvent || 0) + (rules.pointsPerEvent || 0);
+}
+
+/** Whether a league uses per-event scoring (a floor and/or attendance bonus). */
+export function usesEventScoring(rules: LeagueScoringRules): boolean {
+  return (rules.minPointsPerEvent || 0) > 0 || (rules.pointsPerEvent || 0) > 0;
+}
+
+/** Event name for grouping — the first "notes" segment, mirroring how the live
+ *  pool derives it (leagues-insights.ts). Blank when there are no notes; we do NOT
+ *  fall back to "date - format" so both scoring paths partition events identically. */
+export function leagueEventName(m: { notes?: string }): string {
+  return (m.notes || "").split(" | ")[0]?.trim() || "";
+}
+
+/** Grouping key for "one event a member attended" — date + event name + CANONICAL
+ *  (alias-merged) store, so each armory/day counts as a single event for
+ *  min/attendance scoring. Must match the live pool's key (leagues-insights.ts):
+ *  pass the same aliasIndex so alias-merged venues collapse to one event on both
+ *  paths (without it, two spellings of one store would double-count attendance). */
+export function leagueEventKey(
+  m: { date?: string; notes?: string; venue?: string },
+  aliasIndex?: StoreAliasIndex,
+): string {
+  const slug = slugifyStoreName(m.venue || "");
+  const store = aliasIndex ? resolveCanonicalSlug(slug, aliasIndex) : slug;
+  return `${(m.date || "").slice(0, 10)}|${leagueEventName(m)}|${store}`;
+}
+
+/** Total league points for a member's qualifying matches, applying per-event
+ *  min/attendance. Byes only appear here when they qualify (pointsPerBye > 0).
+ *  Pass the league's aliasIndex so event grouping matches the live standings view. */
+export function scoreMatches(matches: MatchRecord[], league: League, aliasIndex?: StoreAliasIndex): number {
+  if (!usesEventScoring(league.scoringRules)) {
+    let pts = 0;
+    for (const m of matches) pts += pointsForMatch(m, league);
+    return pts;
+  }
+  const earnedByEvent = new Map<string, number>();
+  for (const m of matches) {
+    const k = leagueEventKey(m, aliasIndex);
+    earnedByEvent.set(k, (earnedByEvent.get(k) || 0) + pointsForMatch(m, league));
+  }
+  let pts = 0;
+  for (const earned of earnedByEvent.values()) pts += eventScore(earned, league.scoringRules);
+  return pts;
+}
+
 /** Compute the full standings for a league. Reads every member's matches.
  *  Members with private profiles return zero (silent skip). */
 export async function computeLeagueStandings(leagueId: string): Promise<LeagueStandingEntry[]> {
@@ -144,7 +196,6 @@ export async function computeLeagueStandings(leagueId: string): Promise<LeagueSt
       let losses = 0;
       let draws = 0;
       let byes = 0;
-      let points = 0;
       const storeSlugsPlayed = new Set<string>();
 
       for (const m of qualifying) {
@@ -152,10 +203,10 @@ export async function computeLeagueStandings(leagueId: string): Promise<LeagueSt
         else if (m.result === MatchResult.Loss) losses++;
         else if (m.result === MatchResult.Draw) draws++;
         else if (m.result === MatchResult.Bye) byes++;
-        points += pointsForMatch(m, league);
         // Canonicalize so two merged venues count as one distinct store.
         if (m.venue) storeSlugsPlayed.add(resolveCanonicalSlug(slugifyStoreName(m.venue), aliasIndex));
       }
+      const points = scoreMatches(qualifying, league, aliasIndex);
 
       return {
         ...identity,
