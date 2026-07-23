@@ -207,6 +207,8 @@ export async function computeLeagueStandings(leagueId: string): Promise<LeagueSt
         if (m.venue) storeSlugsPlayed.add(resolveCanonicalSlug(slugifyStoreName(m.venue), aliasIndex));
       }
       const points = scoreMatches(qualifying, league, aliasIndex);
+      // Distinct events attended — same grouping used for min/attendance scoring.
+      const events = new Set(qualifying.map((m) => leagueEventKey(m, aliasIndex))).size;
 
       return {
         ...identity,
@@ -217,6 +219,7 @@ export async function computeLeagueStandings(leagueId: string): Promise<LeagueSt
         byes,
         points,
         storesPlayed: storeSlugsPlayed.size,
+        events,
       };
     }),
   );

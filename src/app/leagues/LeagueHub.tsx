@@ -861,7 +861,7 @@ export default function LeagueHub() {
               </Field>
               <Field
                 label="Participation bonus"
-                hint="Added to every W/L/D match (not byes)."
+                hint="Added to every W/L/D match you play — per game, not per event (byes excluded)."
               >
                 <input
                   type="number"
@@ -883,7 +883,7 @@ export default function LeagueHub() {
               </Field>
               <Field
                 label="Attendance points"
-                hint="Added once per event attended, ON TOP of match points."
+                hint="Added once per event attended — per event, not per game. ON TOP of match points."
               >
                 <input
                   type="number"
