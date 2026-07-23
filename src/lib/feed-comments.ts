@@ -7,6 +7,8 @@ import {
   query,
   orderBy,
   limit,
+  updateDoc,
+  increment,
 } from "firebase/firestore";
 import { db } from "./firebase";
 import { containsProfanity } from "./profanity-filter";
@@ -50,6 +52,8 @@ export async function addFeedComment(
   if (comment.authorPhoto) data.authorPhoto = comment.authorPhoto;
 
   const ref = await addDoc(feedCommentsRef(eventId), data);
+  // Keep the denormalized count fresh (best-effort — the comment write is what matters).
+  updateDoc(doc(db, "feedEvents", eventId), { commentCount: increment(1) }).catch(() => {});
 
   if (ctx?.ownerUid && ctx.ownerUid !== comment.authorUid) {
     const payload: Record<string, unknown> = {
@@ -72,4 +76,11 @@ export async function addFeedComment(
 /** Delete a feed comment. Rules-side allows only the author or the event owner. */
 export async function deleteFeedComment(eventId: string, commentId: string): Promise<void> {
   await deleteDoc(doc(db, "feedEvents", eventId, "comments", commentId));
+  updateDoc(doc(db, "feedEvents", eventId), { commentCount: increment(-1) }).catch(() => {});
+}
+
+/** Best-effort reconcile of the denormalized count with a freshly-loaded full list —
+ *  backfills events created before commentCount existed and corrects any drift. */
+export function syncFeedCommentCount(eventId: string, count: number): void {
+  updateDoc(doc(db, "feedEvents", eventId), { commentCount: count }).catch(() => {});
 }

@@ -678,6 +678,9 @@ interface FeedEventBase {
   leagueIconUrl?: string;
   createdAt: string;
   reactions?: Record<string, string[]>;
+  /** Denormalized comment count, maintained on post/delete so the feed can show it
+   *  without loading the comments subcollection. May be absent on older events. */
+  commentCount?: number;
 }
 
 export interface ImportFeedEvent extends FeedEventBase {

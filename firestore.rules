@@ -521,12 +521,18 @@ service cloud.firestore {
         && request.resource.data.userId == request.auth.uid
         && request.resource.data.type in ["import", "achievement", "placement", "article", "fabdoku", "fabdoku-cards", "crossword", "heroguesser", "matchupmania", "trivia", "timeline", "connections", "rampage", "kayosknockout", "brutebrawl", "ninjacombo", "shadowstrike", "bladedash"]
         && request.resource.data.isPublic == true;
-      // Reactions: any authenticated user can toggle reactions.
-      // Decklist: the owner may set/clear only the decklistUrl on their own event
-      // (used to attach a Fabrary link to a placement after import).
+      // Reactions + comment count: any authenticated user can toggle reactions and/or
+      // bump the denormalized commentCount (kept in step with the comments subcollection).
+      // Decklist: the owner may set/clear only the decklistUrl on their own event.
       allow update: if request.auth != null
         && (
-          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reactions'])
+          (
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reactions', 'commentCount'])
+            && (
+              !request.resource.data.diff(resource.data).affectedKeys().hasAny(['commentCount'])
+              || (request.resource.data.commentCount is int && request.resource.data.commentCount >= 0)
+            )
+          )
           || (
             resource.data.userId == request.auth.uid
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['decklistUrl'])
