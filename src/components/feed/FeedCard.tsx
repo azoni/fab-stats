@@ -8,6 +8,7 @@ import { playerHref } from "@/lib/constants";
 import { HeroShieldBadge } from "@/components/profile/HeroShieldBadge";
 import { TeamBadge } from "@/components/profile/TeamBadge";
 import { FEED_REACTIONS, addFeedReaction, removeFeedReaction, deleteFeedEvent, summarizeFeedEvent, type ReactionContext } from "@/lib/feed";
+import { normalizeDecklistUrl } from "@/lib/decklist";
 import { FeedCommentSection } from "@/components/feed/FeedCommentSection";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -399,6 +400,31 @@ function HeroPill({ hero, compact }: { hero: string; compact?: boolean }) {
   );
 }
 
+// ── Decklist link ── a clickable pill on placement cards. The card-level click
+// handler ignores clicks on <a>, so this navigates without triggering the card.
+// Re-validates the URL at render: only http(s) links become an href, so a
+// hand-written `javascript:`/`data:` value in the feed doc can never execute.
+function DecklistLink({ url, compact }: { url: string; compact?: boolean }) {
+  const norm = normalizeDecklistUrl(url);
+  if (!norm) return null;
+  return (
+    <a
+      href={norm.url}
+      target="_blank"
+      rel="noopener noreferrer nofollow"
+      title={`View decklist on ${norm.label}`}
+      className={`inline-flex items-center gap-1 rounded-full border border-fab-gold/30 bg-fab-gold/10 font-medium text-fab-gold hover:bg-fab-gold/20 transition-colors ${
+        compact ? "px-1.5 py-0 text-[10px]" : "px-2 py-0.5 text-xs"
+      }`}
+    >
+      <svg className={compact ? "w-2.5 h-2.5" : "w-3 h-3"} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+      </svg>
+      {compact ? "Deck" : "View decklist"}
+    </a>
+  );
+}
+
 // ── Content components ──
 
 export function FeedCard({ event, compact, rankMap, eventTierMap, underlineTierMap, heroCompletionMap, userId, isAdmin, onDelete }: { event: FeedEvent; compact?: boolean; rankMap?: Map<string, 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8>; eventTierMap?: Map<string, { border: string; shadow: string }>; underlineTierMap?: Map<string, { color: string; rgb: string }>; heroCompletionMap?: Map<string, number>; userId?: string; isAdmin?: boolean; onDelete?: (eventId: string) => void }) {
@@ -637,6 +663,7 @@ function PlacementContent({ event, compact }: { event: FeedEvent & { type: "plac
         </span>{" "}
         at {event.eventName}
         {event.hero && <span className="ml-1"><HeroPill hero={event.hero} compact /></span>}
+        {event.decklistUrl && <span className="ml-1"><DecklistLink url={event.decklistUrl} compact /></span>}
       </p>
     );
   }
@@ -688,6 +715,7 @@ function PlacementContent({ event, compact }: { event: FeedEvent & { type: "plac
           >
             {event.eventType}
           </span>
+          {event.decklistUrl && <DecklistLink url={event.decklistUrl} />}
         </div>
       </>
     );
@@ -710,6 +738,7 @@ function PlacementContent({ event, compact }: { event: FeedEvent & { type: "plac
         <span className="px-2 py-0.5 rounded-full bg-fab-surface text-fab-dim text-xs">
           {event.eventType}
         </span>
+        {event.decklistUrl && <DecklistLink url={event.decklistUrl} />}
       </div>
     </>
   );

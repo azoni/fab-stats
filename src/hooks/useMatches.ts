@@ -268,6 +268,33 @@ export function useMatches() {
     [user, isGuest]
   );
 
+  const batchUpdateDecklist = useCallback(
+    async (matchIds: string[], decklistUrl: string | null) => {
+      // null/"" → undefined so batchUpdateMatchesFirestore clears the field.
+      const value = decklistUrl || undefined;
+      if (isGuest) {
+        for (const id of matchIds) storageUpdateMatch(id, { decklistUrl: value });
+        setMatches(getAllMatches());
+        return;
+      }
+      if (!user) return;
+      try {
+        setError(null);
+        await batchUpdateMatchesFirestore(user.uid, matchIds, { decklistUrl: value });
+        const idSet = new Set(matchIds);
+        const updated = (cachedMatches || []).map((m) => (idSet.has(m.id) ? { ...m, decklistUrl: value } : m));
+        updateCache(user.uid, updated);
+        setMatches(updated);
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : "Failed to update decklist link";
+        console.error("batchUpdateDecklist failed:", e);
+        setError(msg);
+        throw e;
+      }
+    },
+    [user, isGuest]
+  );
+
   const batchDeleteMatches = useCallback(
     async (matchIds: string[]) => {
       if (isGuest) {
@@ -310,5 +337,5 @@ export function useMatches() {
 
   const clearError = useCallback(() => setError(null), []);
 
-  return { matches, isLoaded, error, clearError, addMatch, deleteMatch, updateMatch, batchUpdateHero, batchUpdateFormat, batchUpdateEventType, batchUpdateDay2, batchDeleteMatches, refreshMatches };
+  return { matches, isLoaded, error, clearError, addMatch, deleteMatch, updateMatch, batchUpdateHero, batchUpdateFormat, batchUpdateEventType, batchUpdateDay2, batchUpdateDecklist, batchDeleteMatches, refreshMatches };
 }

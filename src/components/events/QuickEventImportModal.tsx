@@ -8,12 +8,13 @@ import { importMatchesLocal } from "@/lib/storage";
 import { createImportFeedEvent, createPlacementFeedEvent } from "@/lib/feed";
 import { detectNewAchievements } from "@/lib/achievement-tracking";
 import { evaluateAchievements } from "@/lib/achievements";
-import { computeOverallStats, computeHeroStats, computeOpponentStats, computeEventStats, computePlayoffFinishes, getEventName } from "@/lib/stats";
+import { computeOverallStats, computeHeroStats, computeOpponentStats, computeEventStats, computePlayoffFinishes, hasPlayoffFinish, getEventName } from "@/lib/stats";
 import { updateLeaderboardEntry } from "@/lib/leaderboard";
 import { computeH2HForUser } from "@/lib/h2h";
 import { updateCommunityHeroMatchups } from "@/lib/hero-matchups";
 import { trackImportMethod } from "@/lib/analytics";
 import { allHeroes } from "@/lib/heroes";
+import { normalizeDecklistUrl } from "@/lib/decklist";
 import { MatchResult, type MatchRecord } from "@/types";
 import { localDate, HERO_REQUIRED_CUTOFF } from "@/lib/constants";
 import type { PasteImportEvent } from "@/lib/gem-paste-import";
@@ -63,6 +64,9 @@ export function QuickEventImportModal({ open, onClose, onImportComplete }: Quick
   const [heroTouched, setHeroTouched] = useState(false);
   const [heroRequiredHard, setHeroRequiredHard] = useState(false);
   const [opponentHeroOverrides, setOpponentHeroOverrides] = useState<Record<number, string>>({});
+  const [decklistUrl, setDecklistUrl] = useState("");
+  const [decklistError, setDecklistError] = useState("");
+  const [decklistWarning, setDecklistWarning] = useState("");
 
   function handleReset() {
     setPhase("input");
@@ -79,6 +83,9 @@ export function QuickEventImportModal({ open, onClose, onImportComplete }: Quick
     setHeroTouched(false);
     setHeroRequiredHard(false);
     setOpponentHeroOverrides({});
+    setDecklistUrl("");
+    setDecklistError("");
+    setDecklistWarning("");
   }
 
   function handleClose() {
@@ -88,6 +95,8 @@ export function QuickEventImportModal({ open, onClose, onImportComplete }: Quick
 
   function handleParse() {
     setError("");
+    // Fresh event → drop any decklist entered for a previously parsed event.
+    setDecklistUrl(""); setDecklistError(""); setDecklistWarning("");
     if (!pasteText.trim()) {
       setError("Please paste the event text.");
       return;
@@ -177,13 +186,30 @@ export function QuickEventImportModal({ open, onClose, onImportComplete }: Quick
   async function handleImport() {
     if (!parsedEvent || (!user && !isGuest)) return;
 
+    // Validate the optional decklist link — only when this event will actually
+    // place (the field is only shown then), so a value left over from a prior
+    // parsed event can never be stamped onto a non-placement event. Block only on
+    // an unparseable URL; an unrecognized-but-valid host is allowed (soft warning).
+    const eventPlaces = hasPlayoffFinish(parsedEvent.matches as MatchRecord[]);
+    let decklist: string | undefined;
+    if (eventPlaces && decklistUrl.trim()) {
+      const norm = normalizeDecklistUrl(decklistUrl);
+      if (!norm) {
+        setDecklistError("That doesn't look like a valid link — paste the full URL (e.g. https://fabrary.net/decks/...).");
+        return;
+      }
+      decklist = norm.url;
+    }
+
     setPhase("importing");
 
-    // Apply hero + opponent hero overrides
+    // Apply hero + opponent hero overrides (+ the decklist link on every match of
+    // the event, so it survives feed regeneration and is editable from Events).
     const matches = parsedEvent.matches.map((m, i) => ({
       ...m,
       heroPlayed: heroPlayed !== "Unknown" ? heroPlayed : m.heroPlayed,
       opponentHero: opponentHeroOverrides[i] || m.opponentHero,
+      ...(decklist ? { decklistUrl: decklist } : {}),
     }));
 
     let count: number;
@@ -231,7 +257,7 @@ export function QuickEventImportModal({ open, onClose, onImportComplete }: Quick
             `${f.eventName}::${f.eventDate}` === eventKey,
           );
           for (const finish of newFinishes) {
-            createPlacementFeedEvent(profile, finish, hero).catch(() => {});
+            createPlacementFeedEvent(profile, finish, hero, decklist).catch(() => {});
           }
         })
         .catch(() => {});
@@ -246,6 +272,9 @@ export function QuickEventImportModal({ open, onClose, onImportComplete }: Quick
   const losses = parsedEvent?.matches.filter((m) => m.result === MatchResult.Loss).length ?? 0;
   const draws = parsedEvent?.matches.filter((m) => m.result === MatchResult.Draw).length ?? 0;
   const hasPlayoff = parsedEvent?.matches.some((m) => /Round P/i.test(m.notes?.split(" | ")[1] ?? "")) ?? false;
+  // Show the decklist field whenever this event will produce a placement feed card
+  // (broader than hasPlayoff — also catches an undefeated Skirmish champion).
+  const willPlace = parsedEvent ? hasPlayoffFinish(parsedEvent.matches as MatchRecord[]) : false;
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
@@ -398,6 +427,39 @@ export function QuickEventImportModal({ open, onClose, onImportComplete }: Quick
                 </select>
               </div>
 
+              {/* Decklist link — only for placement events (a finish that generates a
+                  feed card), since it renders on that placement card in the feed. */}
+              {willPlace && (
+                <div className="mb-4">
+                  <label className="block text-sm text-fab-muted mb-1">
+                    Decklist link <span className="text-fab-dim">(optional)</span>
+                  </label>
+                  <input
+                    type="url"
+                    inputMode="url"
+                    value={decklistUrl}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      setDecklistUrl(v);
+                      setDecklistError("");
+                      const norm = v.trim() ? normalizeDecklistUrl(v) : null;
+                      setDecklistWarning(
+                        norm && !norm.known
+                          ? `Unrecognized decklist site (${norm.host}) — the link will still be saved.`
+                          : "",
+                      );
+                    }}
+                    placeholder="https://fabrary.net/decks/..."
+                    className="w-full bg-fab-surface border border-fab-border text-fab-text text-sm rounded-lg px-3 py-2 placeholder:text-fab-dim focus:outline-none focus:border-fab-gold"
+                  />
+                  <p className="text-xs text-fab-dim mt-1">
+                    Paste your Fabrary (or other) decklist — it shows as a clickable link on your finish in the activity feed.
+                  </p>
+                  {decklistError && <p className="text-fab-loss text-xs mt-1">{decklistError}</p>}
+                  {decklistWarning && <p className="text-amber-400 text-xs mt-1">{decklistWarning}</p>}
+                </div>
+              )}
+
               {/* Match summary */}
               <p className="text-sm text-fab-muted mb-2">
                 {parsedEvent.matches.length} match{parsedEvent.matches.length !== 1 ? "es" : ""}{" "}
@@ -464,7 +526,10 @@ export function QuickEventImportModal({ open, onClose, onImportComplete }: Quick
 
               <div className="flex justify-end gap-2">
                 <button
-                  onClick={() => { setParsedEvent(null); setPhase("input"); setError(""); }}
+                  onClick={() => {
+                    setParsedEvent(null); setPhase("input"); setError("");
+                    setDecklistUrl(""); setDecklistError(""); setDecklistWarning("");
+                  }}
                   className="px-4 py-2 rounded-lg text-sm text-fab-muted hover:text-fab-text transition-colors"
                 >
                   Back

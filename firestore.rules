@@ -521,9 +521,21 @@ service cloud.firestore {
         && request.resource.data.userId == request.auth.uid
         && request.resource.data.type in ["import", "achievement", "placement", "article", "fabdoku", "fabdoku-cards", "crossword", "heroguesser", "matchupmania", "trivia", "timeline", "connections", "rampage", "kayosknockout", "brutebrawl", "ninjacombo", "shadowstrike", "bladedash"]
         && request.resource.data.isPublic == true;
-      // Reactions: any authenticated user can toggle reactions
+      // Reactions: any authenticated user can toggle reactions.
+      // Decklist: the owner may set/clear only the decklistUrl on their own event
+      // (used to attach a Fabrary link to a placement after import).
       allow update: if request.auth != null
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reactions']);
+        && (
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reactions'])
+          || (
+            resource.data.userId == request.auth.uid
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['decklistUrl'])
+            && (
+              !('decklistUrl' in request.resource.data)
+              || (request.resource.data.decklistUrl is string && request.resource.data.decklistUrl.size() < 500)
+            )
+          )
+        );
       // Owner or admin can delete feed events
       allow delete: if request.auth != null
         && (resource.data.userId == request.auth.uid || isAdmin());

@@ -11,8 +11,9 @@ import type { EventStats, MatchRecord } from "@/types";
 import { EventShareModal } from "@/components/events/EventShareCard";
 import { BracketView } from "@/components/events/BracketView";
 import { getAllowedEventTypes, getOriginalEventType } from "@/lib/event-types";
-import { getRoundNumber, computeDay2Boundary, suggestedManualDay2Round, isDay2Match } from "@/lib/stats";
+import { getRoundNumber, computeDay2Boundary, suggestedManualDay2Round, isDay2Match, hasPlayoffFinish } from "@/lib/stats";
 import { slugifyStoreName } from "@/lib/store-directory";
+import { normalizeDecklistUrl, decklistLabel } from "@/lib/decklist";
 import { toast } from "sonner";
 
 interface EventCardProps {
@@ -25,6 +26,7 @@ interface EventCardProps {
   onBatchUpdateFormat?: (matchIds: string[], format: GameFormat) => Promise<void>;
   onBatchUpdateEventType?: (matchIds: string[], eventTypeOverride: string) => Promise<void>;
   onBatchUpdateDay2?: (matchIds: string[], day2: boolean) => Promise<void>;
+  onSetDecklist?: (event: EventStats, decklistUrl: string | null) => Promise<void>;
   onDeleteEvent?: (matchIds: string[], eventName: string, eventDate: string) => Promise<void>;
   onUpdateMatch?: (id: string, updates: Partial<Omit<MatchRecord, "id" | "createdAt">>) => Promise<void>;
   onDeleteMatch?: (id: string) => Promise<void>;
@@ -101,7 +103,7 @@ interface HeroSegment {
   toRound: string;
 }
 
-export function EventCard({ event, playerName, obfuscateOpponents = false, visibleOpponents, editable = false, onBatchUpdateHero, onBatchUpdateFormat, onBatchUpdateEventType, onBatchUpdateDay2, onDeleteEvent, onUpdateMatch, onDeleteMatch, missingGemId }: EventCardProps) {
+export function EventCard({ event, playerName, obfuscateOpponents = false, visibleOpponents, editable = false, onBatchUpdateHero, onBatchUpdateFormat, onBatchUpdateEventType, onBatchUpdateDay2, onSetDecklist, onDeleteEvent, onUpdateMatch, onDeleteMatch, missingGemId }: EventCardProps) {
   const [expanded, setExpanded] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [editingEventType, setEditingEventType] = useState(false);
@@ -137,6 +139,35 @@ export function EventCard({ event, playerName, obfuscateOpponents = false, visib
   const [day2RoundEdit, setDay2RoundEdit] = useState<string | null>(null);
   const day2RoundInput = day2RoundEdit ?? String(day2CurrentRound);
   const [showBracket, setShowBracket] = useState(false);
+  const [decklistEditing, setDecklistEditing] = useState(false);
+  const [decklistInput, setDecklistInput] = useState("");
+  const [savingDecklist, setSavingDecklist] = useState(false);
+  const currentDecklist = event.matches.find((m) => m.decklistUrl)?.decklistUrl || "";
+  // Show the decklist editor for any event that produces a placement feed card
+  // (broader than bestPlayoff — also catches an undefeated Skirmish champion).
+  const hasPlacement = useMemo(() => hasPlayoffFinish(event.matches), [event.matches]);
+
+  async function saveDecklist(raw: string | null) {
+    if (!onSetDecklist) return;
+    let url: string | null = null;
+    if (raw && raw.trim()) {
+      const norm = normalizeDecklistUrl(raw);
+      if (!norm) {
+        toast.error("That doesn't look like a valid link — paste the full URL.");
+        return;
+      }
+      url = norm.url;
+    }
+    setSavingDecklist(true);
+    try {
+      await onSetDecklist(event, url);
+      setDecklistEditing(false);
+      toast.success(url ? "Decklist link saved." : "Decklist link removed.");
+    } catch {
+      toast.error("Failed to save decklist link.");
+    }
+    setSavingDecklist(false);
+  }
 
   // Determine best playoff placement from match rounds
   let bestPlayoff: string | null = null;
@@ -768,6 +799,75 @@ export function EventCard({ event, playerName, obfuscateOpponents = false, visib
                   })()}
                 </select>
                 {savingEventType && <span className="text-xs text-fab-dim">Saving...</span>}
+              </div>
+            </div>
+          )}
+
+          {/* Decklist link — only for placement events (a playoff finish), since it
+              renders on the placement card in the activity feed. Add/edit/remove. */}
+          {editable && onSetDecklist && hasPlacement && (
+            <div className="px-4 py-3 border-t border-fab-border/50">
+              <div className="flex flex-wrap items-center gap-2">
+                <label className="text-xs font-medium text-fab-muted whitespace-nowrap">Decklist link</label>
+                {!decklistEditing ? (
+                  <>
+                    {currentDecklist ? (
+                      <a
+                        href={currentDecklist}
+                        target="_blank"
+                        rel="noopener noreferrer nofollow"
+                        className="max-w-[220px] truncate text-xs font-medium text-fab-gold hover:underline"
+                      >
+                        {decklistLabel(currentDecklist)} ↗
+                      </a>
+                    ) : (
+                      <span className="text-xs text-fab-dim">None — shows on your placement in the feed.</span>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => { setDecklistInput(currentDecklist); setDecklistEditing(true); }}
+                      className="px-2.5 py-1 rounded-md text-xs font-semibold bg-fab-gold/15 text-fab-gold border border-fab-gold/30 hover:bg-fab-gold/25"
+                    >
+                      {currentDecklist ? "Edit" : "Add"}
+                    </button>
+                    {currentDecklist && (
+                      <button
+                        type="button"
+                        disabled={savingDecklist}
+                        onClick={() => saveDecklist(null)}
+                        className="px-2.5 py-1 rounded-md text-xs font-semibold text-fab-dim hover:text-fab-loss disabled:opacity-50"
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <input
+                      type="url"
+                      inputMode="url"
+                      value={decklistInput}
+                      onChange={(e) => setDecklistInput(e.target.value)}
+                      placeholder="https://fabrary.net/decks/..."
+                      className="min-w-[180px] flex-1 bg-fab-surface border border-fab-border rounded-md px-2 py-1.5 text-fab-text text-xs outline-none focus:border-fab-gold/50"
+                    />
+                    <button
+                      type="button"
+                      disabled={savingDecklist}
+                      onClick={() => saveDecklist(decklistInput)}
+                      className="px-2.5 py-1 rounded-md text-xs font-semibold bg-fab-gold/15 text-fab-gold border border-fab-gold/30 hover:bg-fab-gold/25 disabled:opacity-50"
+                    >
+                      {savingDecklist ? "Saving…" : "Save"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDecklistEditing(false)}
+                      className="px-2.5 py-1 rounded-md text-xs font-semibold text-fab-dim hover:text-fab-text"
+                    >
+                      Cancel
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           )}

@@ -7,8 +7,9 @@ import { computeEventStats, computeOverallStats, computePlayoffFinishes, compute
 import { updateLeaderboardEntry } from "@/lib/leaderboard";
 import { propagateHeroToOpponent } from "@/lib/match-linking";
 import { adjustHeroMatchupOnEdit, adjustOpponentHeroMatchupOnEdit } from "@/lib/hero-matchups";
-import { deleteFeedEventsForEvent } from "@/lib/feed";
+import { deleteFeedEventsForEvent, setPlacementDecklistUrl } from "@/lib/feed";
 import { EventCard } from "@/components/events/EventCard";
+import type { EventStats } from "@/types";
 import { localDate } from "@/lib/constants";
 import { type GameFormat, type MatchRecord, type UserProfile } from "@/types";
 import { QuickEventImportModal } from "@/components/events/QuickEventImportModal";
@@ -29,12 +30,13 @@ interface EventsTabProps {
   batchUpdateFormat: (matchIds: string[], format: GameFormat) => Promise<void>;
   batchUpdateDay2?: (matchIds: string[], day2: boolean) => Promise<void>;
   batchUpdateEventType: (matchIds: string[], eventTypeOverride: string) => Promise<void>;
+  batchUpdateDecklist?: (matchIds: string[], decklistUrl: string | null) => Promise<void>;
   batchDeleteMatches: (matchIds: string[]) => Promise<void>;
   hideOpponentNames?: boolean;
   privacyControl?: ReactNode;
 }
 
-export function EventsTab({ matches, user, profile, updateMatch, deleteMatch, refreshMatches, batchUpdateHero, batchUpdateFormat, batchUpdateEventType, batchUpdateDay2, batchDeleteMatches, hideOpponentNames = false, privacyControl }: EventsTabProps) {
+export function EventsTab({ matches, user, profile, updateMatch, deleteMatch, refreshMatches, batchUpdateHero, batchUpdateFormat, batchUpdateEventType, batchUpdateDay2, batchUpdateDecklist, batchDeleteMatches, hideOpponentNames = false, privacyControl }: EventsTabProps) {
   const searchParams = useSearchParams();
   const [filterFormat, setFilterFormat] = useState("all");
   const [filterEventType, setFilterEventType] = useState("all");
@@ -103,6 +105,19 @@ export function EventsTab({ matches, user, profile, updateMatch, deleteMatch, re
       }
     },
     [batchUpdateEventType, profile, matches]
+  );
+
+  const handleSetDecklist = useCallback(
+    async (event: EventStats, decklistUrl: string | null) => {
+      if (!batchUpdateDecklist) return;
+      // Stamp the URL on every match of the event (durable + editor source of
+      // truth), then reflect it onto the placement feed card if one exists.
+      await batchUpdateDecklist(event.matches.map((m) => m.id), decklistUrl);
+      if (user) {
+        setPlacementDecklistUrl(user.uid, event.eventName, event.eventDate, decklistUrl).catch(console.error);
+      }
+    },
+    [batchUpdateDecklist, user]
   );
 
   const handleDeleteEvent = useCallback(
@@ -535,7 +550,7 @@ export function EventsTab({ matches, user, profile, updateMatch, deleteMatch, re
           </p>
           <div className="space-y-2">
             {pageEvents.map((event) => (
-              <EventCard key={`${event.eventName}-${event.eventDate}`} event={event} playerName={profile?.displayName || profile?.username} editable={!!user} onBatchUpdateHero={handleBatchUpdateHero} onBatchUpdateFormat={handleBatchUpdateFormat} onBatchUpdateEventType={handleBatchUpdateEventType} onBatchUpdateDay2={batchUpdateDay2 ? handleBatchUpdateDay2 : undefined} onDeleteEvent={handleDeleteEvent} onUpdateMatch={handleUpdateMatch} onDeleteMatch={deleteMatch ? handleDeleteMatch : undefined} missingGemId={!!user && !profile?.gemId} obfuscateOpponents={hideOpponentNames} />
+              <EventCard key={`${event.eventName}-${event.eventDate}`} event={event} playerName={profile?.displayName || profile?.username} editable={!!user} onBatchUpdateHero={handleBatchUpdateHero} onBatchUpdateFormat={handleBatchUpdateFormat} onBatchUpdateEventType={handleBatchUpdateEventType} onBatchUpdateDay2={batchUpdateDay2 ? handleBatchUpdateDay2 : undefined} onSetDecklist={batchUpdateDecklist ? handleSetDecklist : undefined} onDeleteEvent={handleDeleteEvent} onUpdateMatch={handleUpdateMatch} onDeleteMatch={deleteMatch ? handleDeleteMatch : undefined} missingGemId={!!user && !profile?.gemId} obfuscateOpponents={hideOpponentNames} />
             ))}
           </div>
         </>
