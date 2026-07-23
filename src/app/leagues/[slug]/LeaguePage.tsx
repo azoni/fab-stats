@@ -23,7 +23,7 @@ import { NewSeasonModal } from "@/components/leagues/NewSeasonModal";
 import { getStoreDirectory, slugifyStoreName, findNearMatchStore, storeNameMatchesQuery, type StoreDirectoryEntry } from "@/lib/store-directory";
 import { HeroImg } from "@/components/heroes/HeroImg";
 import { uploadLeagueBanner, removeLeagueBanner } from "@/lib/league-images";
-import { recomputeAndStoreStandings } from "@/lib/leagues-scoring";
+import { recomputeAndStoreStandings, TIEBREAKER_TEXT } from "@/lib/leagues-scoring";
 import {
   getLeagueMatchPool,
   deriveFilterOptions,
@@ -698,7 +698,7 @@ function StandingsTable({
           {standings.length} player{standings.length === 1 ? "" : "s"} ranked
         </span>
         <span
-          title="Tie-breakers: 1) Points, 2) Win rate, 3) Wins, 4) Fewer matches first"
+          title={TIEBREAKER_TEXT}
           className="cursor-help underline decoration-dotted underline-offset-2"
         >
           tie-breakers ⓘ
@@ -790,9 +790,9 @@ function ScoringSummary({ scoringRules }: { scoringRules: LeagueScoringRules }) 
       )}
       {minPerEvent > 0 && (
         <p className="mt-2 text-[11px] text-fab-muted">
-          <span className="font-semibold text-fab-text">Minimum {minPerEvent} per event:</span>{" "}
-          each event scores at least {minPerEvent} — a floor, not a bonus. Score more from
-          wins and it replaces this; it never adds on top.
+          <span className="font-semibold text-fab-text">Minimum {minPerEvent}:</span>{" "}
+          anyone who plays an event scores at least {minPerEvent} total — a floor, not a bonus.
+          Win more and your wins stand; it never adds on top of them.
         </p>
       )}
       {attendance > 0 && (
@@ -821,6 +821,9 @@ function ScoringSummary({ scoringRules }: { scoringRules: LeagueScoringRules }) 
             .join(", ")}
         </p>
       )}
+      <p className="mt-3 border-t border-fab-border/40 pt-2 text-[11px] text-fab-dim">
+        {TIEBREAKER_TEXT}
+      </p>
     </div>
   );
 }
@@ -1427,7 +1430,7 @@ function OrganizerEditor({
             Added to every W/L/D match you play — per game, not per event (byes excluded).
           </p>
         </EditField>
-        <EditField label="Minimum per event">
+        <EditField label="Minimum points">
           <input
             type="number"
             className="w-full rounded-md border border-fab-border bg-fab-bg px-3 py-2 text-sm text-fab-text placeholder:text-fab-dim focus:border-fab-gold/60 focus:outline-none focus:ring-2 focus:ring-fab-gold/30"
@@ -1435,7 +1438,7 @@ function OrganizerEditor({
             onChange={(e) => setMinPointsPerEvent(Number(e.target.value))}
           />
           <p className="mt-1 text-[11px] leading-tight text-fab-dim">
-            A floor per event — a winless attendee still scores this. NOT added on top of wins.
+            A floor on a player&apos;s total — a winless attendee still scores this. Never adds on top of wins.
           </p>
         </EditField>
         <EditField label="Attendance points">

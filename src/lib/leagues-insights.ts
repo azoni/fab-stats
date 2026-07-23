@@ -23,8 +23,8 @@ import {
   matchQualifiesForLeague,
   buildSessionKeys,
   pointsForMatch,
-  eventScore,
-  usesEventScoring,
+  scoreTotals,
+  compareStandings,
   type LeagueMatchupData,
   type LeagueMatchupCell,
 } from "./leagues-scoring";
@@ -218,16 +218,15 @@ export function standingsFromPool(matches: PooledMatch[], league: League): Leagu
       set.add(m.storeSlug);
     }
   }
-  // Mirror scoreMatches: only apply the per-event floor/attendance when the league
-  // opts in. Otherwise sum raw event totals — eventScore's max(earned, 0) would
-  // otherwise silently clamp a negative event (e.g. penalized losses) to 0.
-  const eventScoring = usesEventScoring(league.scoringRules);
+  // Mirror scoreMatches: sum each member's match points, then apply the total
+  // minimum floor + per-event attendance via scoreTotals (kept identical so the
+  // live view and the persisted standings agree).
   for (const [uid, ev] of eventEarned) {
     const e = byUid.get(uid);
     if (!e) continue;
-    let pts = 0;
-    for (const earned of ev.values()) pts += eventScoring ? eventScore(earned, league.scoringRules) : earned;
-    e.points = pts;
+    let base = 0;
+    for (const earned of ev.values()) base += earned;
+    e.points = scoreTotals(base, ev.size, league.scoringRules);
     e.events = ev.size; // distinct events attended (same grouping as scoring)
   }
   for (const [uid, set] of storesByUid) {
@@ -235,13 +234,7 @@ export function standingsFromPool(matches: PooledMatch[], league: League): Leagu
     if (e) e.storesPlayed = set.size;
   }
   const entries = [...byUid.values()];
-  entries.sort((a, b) => {
-    if (b.points !== a.points) return b.points - a.points;
-    const wr = winRateDecisive(b.wins, b.losses, b.draws) - winRateDecisive(a.wins, a.losses, a.draws);
-    if (wr !== 0) return wr;
-    if (b.wins !== a.wins) return b.wins - a.wins;
-    return a.matches - b.matches;
-  });
+  entries.sort(compareStandings);
   return entries;
 }
 
