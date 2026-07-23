@@ -104,7 +104,13 @@ export function FeedCommentSection({ event, currentUserId, compact }: { event: F
   const padded = compact ? "px-2" : "px-3";
 
   return (
-    <div className={`mt-2 border-t border-fab-border/60 pt-2 ${compact ? "text-[12px]" : "text-sm"}`}>
+    // Stop clicks anywhere in the comment area (input padding, empty space, the
+    // "No comments yet" text, etc.) from bubbling to the card's navigate-to-player
+    // handler — otherwise interacting with comments jumps to the player/search page.
+    <div
+      className={`mt-2 border-t border-fab-border/60 pt-2 ${compact ? "text-[12px]" : "text-sm"}`}
+      onClick={(e) => e.stopPropagation()}
+    >
       <button
         type="button"
         onClick={(e) => { void toggle(e); }}
