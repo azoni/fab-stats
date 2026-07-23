@@ -49,6 +49,8 @@ interface CreateFormState {
   pointsDraw: number;
   pointsBye: number;
   pointsPerMatch: number;
+  minPointsPerEvent: number;
+  pointsPerEvent: number;
   eligibleEventTypes: string[];
   eligibleFormats: string[];
   selectedStoreSlugs: string[];
@@ -72,6 +74,8 @@ const INITIAL_FORM: CreateFormState = {
   pointsDraw: 1,
   pointsBye: 0,
   pointsPerMatch: 0,
+  minPointsPerEvent: 0,
+  pointsPerEvent: 0,
   eligibleEventTypes: ["Armory"],
   eligibleFormats: [],
   selectedStoreSlugs: [],
@@ -123,6 +127,8 @@ function validateForm(form: CreateFormState): Record<string, string> {
   if (!Number.isFinite(form.pointsDraw)) errors.pointsDraw = "Number required.";
   if (!Number.isFinite(form.pointsBye)) errors.pointsBye = "Number required.";
   if (!Number.isFinite(form.pointsPerMatch)) errors.pointsPerMatch = "Number required.";
+  if (!Number.isFinite(form.minPointsPerEvent)) errors.minPointsPerEvent = "Number required.";
+  if (!Number.isFinite(form.pointsPerEvent)) errors.pointsPerEvent = "Number required.";
   return errors;
 }
 
@@ -341,6 +347,8 @@ export default function LeagueHub() {
         pointsPerDraw: form.pointsDraw,
         pointsPerBye: form.pointsBye > 0 ? form.pointsBye : undefined,
         pointsPerMatch: form.pointsPerMatch > 0 ? form.pointsPerMatch : undefined,
+        minPointsPerEvent: form.minPointsPerEvent > 0 ? form.minPointsPerEvent : undefined,
+        pointsPerEvent: form.pointsPerEvent > 0 ? form.pointsPerEvent : undefined,
         eligibleEventTypes:
           form.eligibleEventTypes.length > 0 ? form.eligibleEventTypes : undefined,
         eligibleFormats: form.eligibleFormats.length > 0 ? form.eligibleFormats : undefined,
@@ -860,6 +868,28 @@ export default function LeagueHub() {
                   className="w-full rounded-md border border-fab-border bg-fab-bg px-3 py-2 text-sm text-fab-text placeholder:text-fab-dim focus:border-fab-gold/60 focus:outline-none focus:ring-2 focus:ring-fab-gold/30 aria-invalid:border-fab-red/70"
                   value={form.pointsPerMatch}
                   onChange={(e) => update("pointsPerMatch", Number(e.target.value))}
+                />
+              </Field>
+              <Field
+                label="Minimum per event"
+                hint="A floor per event — a winless attendee still scores this. NOT added to wins."
+              >
+                <input
+                  type="number"
+                  className="w-full rounded-md border border-fab-border bg-fab-bg px-3 py-2 text-sm text-fab-text placeholder:text-fab-dim focus:border-fab-gold/60 focus:outline-none focus:ring-2 focus:ring-fab-gold/30 aria-invalid:border-fab-red/70"
+                  value={form.minPointsPerEvent}
+                  onChange={(e) => update("minPointsPerEvent", Number(e.target.value))}
+                />
+              </Field>
+              <Field
+                label="Attendance points"
+                hint="Added once per event attended, ON TOP of match points."
+              >
+                <input
+                  type="number"
+                  className="w-full rounded-md border border-fab-border bg-fab-bg px-3 py-2 text-sm text-fab-text placeholder:text-fab-dim focus:border-fab-gold/60 focus:outline-none focus:ring-2 focus:ring-fab-gold/30 aria-invalid:border-fab-red/70"
+                  value={form.pointsPerEvent}
+                  onChange={(e) => update("pointsPerEvent", Number(e.target.value))}
                 />
               </Field>
             </div>

@@ -323,6 +323,15 @@ export interface LeagueScoringRules {
   /** Flat bonus added to every qualifying W/L/D match regardless of result.
    *  Doesn't apply to byes. Defaults to 0. */
   pointsPerMatch?: number;
+  /** Minimum points for an event — a FLOOR on that event's summed match points
+   *  (max(earned, min)), NOT additive. e.g. min 1 → a winless attendee still scores
+   *  1 for the event; a 2-win attendee already above the floor keeps their higher
+   *  score. Defaults to 0 (no floor). */
+  minPointsPerEvent?: number;
+  /** Flat attendance points ADDED per event a member has a qualifying match in —
+   *  on top of the event's match points/floor. Distinct from minPointsPerEvent.
+   *  Defaults to 0. */
+  pointsPerEvent?: number;
   /** Optional multipliers keyed by GameFormat string (e.g. "Classic Constructed": 1.5).
    *  When unset, all formats score equally. */
   formatMultipliers?: Record<string, number>;

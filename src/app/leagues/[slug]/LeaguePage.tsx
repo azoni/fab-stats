@@ -756,6 +756,8 @@ function StandingsTable({
 function ScoringSummary({ scoringRules }: { scoringRules: LeagueScoringRules }) {
   const hasBye = (scoringRules.pointsPerBye || 0) > 0;
   const hasParticipation = (scoringRules.pointsPerMatch || 0) > 0;
+  const minPerEvent = scoringRules.minPointsPerEvent || 0;
+  const attendance = scoringRules.pointsPerEvent || 0;
   return (
     <div className="rounded-lg border border-fab-border/70 bg-fab-bg/45 p-4">
       <h3 className="text-sm font-bold uppercase tracking-wider text-fab-dim">Scoring</h3>
@@ -782,6 +784,19 @@ function ScoringSummary({ scoringRules }: { scoringRules: LeagueScoringRules }) 
       {hasParticipation && (
         <p className="mt-2 text-[11px] text-fab-muted">
           +{scoringRules.pointsPerMatch} participation bonus per W/L/D match
+        </p>
+      )}
+      {minPerEvent > 0 && (
+        <p className="mt-2 text-[11px] text-fab-muted">
+          <span className="font-semibold text-fab-text">Minimum {minPerEvent} per event:</span>{" "}
+          each event scores at least {minPerEvent} — a floor, not a bonus. Score more from
+          wins and it replaces this; it never adds on top.
+        </p>
+      )}
+      {attendance > 0 && (
+        <p className="mt-2 text-[11px] text-fab-muted">
+          <span className="font-semibold text-fab-text">+{attendance} attendance:</span> added
+          once per event you play in, on top of your match points.
         </p>
       )}
       {(scoringRules.eligibleEventTypes?.length || 0) > 0 && (
@@ -1067,6 +1082,8 @@ function OrganizerEditor({
   const [pointsDraw, setPointsDraw] = useState(league.scoringRules.pointsPerDraw);
   const [pointsBye, setPointsBye] = useState(league.scoringRules.pointsPerBye || 0);
   const [pointsPerMatch, setPointsPerMatch] = useState(league.scoringRules.pointsPerMatch || 0);
+  const [minPointsPerEvent, setMinPointsPerEvent] = useState(league.scoringRules.minPointsPerEvent || 0);
+  const [pointsPerEvent, setPointsPerEvent] = useState(league.scoringRules.pointsPerEvent || 0);
   const [eligibleEventTypes, setEligibleEventTypes] = useState<string[]>(
     league.scoringRules.eligibleEventTypes || [],
   );
@@ -1189,6 +1206,8 @@ function OrganizerEditor({
         pointsPerDraw: pointsDraw,
         pointsPerBye: pointsBye > 0 ? pointsBye : undefined,
         pointsPerMatch: pointsPerMatch > 0 ? pointsPerMatch : undefined,
+        minPointsPerEvent: minPointsPerEvent > 0 ? minPointsPerEvent : undefined,
+        pointsPerEvent: pointsPerEvent > 0 ? pointsPerEvent : undefined,
         eligibleEventTypes: eligibleEventTypes.length > 0 ? eligibleEventTypes : undefined,
         eligibleFormats: eligibleFormats.length > 0 ? eligibleFormats : undefined,
       };
@@ -1400,6 +1419,28 @@ function OrganizerEditor({
             value={pointsPerMatch}
             onChange={(e) => setPointsPerMatch(Number(e.target.value))}
           />
+        </EditField>
+        <EditField label="Minimum per event">
+          <input
+            type="number"
+            className="w-full rounded-md border border-fab-border bg-fab-bg px-3 py-2 text-sm text-fab-text placeholder:text-fab-dim focus:border-fab-gold/60 focus:outline-none focus:ring-2 focus:ring-fab-gold/30"
+            value={minPointsPerEvent}
+            onChange={(e) => setMinPointsPerEvent(Number(e.target.value))}
+          />
+          <p className="mt-1 text-[11px] leading-tight text-fab-dim">
+            A floor per event — a winless attendee still scores this. NOT added on top of wins.
+          </p>
+        </EditField>
+        <EditField label="Attendance points">
+          <input
+            type="number"
+            className="w-full rounded-md border border-fab-border bg-fab-bg px-3 py-2 text-sm text-fab-text placeholder:text-fab-dim focus:border-fab-gold/60 focus:outline-none focus:ring-2 focus:ring-fab-gold/30"
+            value={pointsPerEvent}
+            onChange={(e) => setPointsPerEvent(Number(e.target.value))}
+          />
+          <p className="mt-1 text-[11px] leading-tight text-fab-dim">
+            Added once per event attended, ON TOP of match points.
+          </p>
         </EditField>
       </div>
 
