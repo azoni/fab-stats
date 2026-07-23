@@ -229,6 +229,9 @@ export interface UserProfile {
    * @deprecated Use primaryTeamId.
    */
   teamId?: string;
+  /** The league whose icon the user chooses to "wear" as a badge next to their name
+   *  (feed + leaderboard). Opt-in; must be a league they belong to. */
+  primaryLeagueId?: string;
   trophyDesigns?: Record<string, number>;
 }
 
@@ -649,6 +652,10 @@ export interface LeaderboardEntry {
   teamName?: string;
   teamIconUrl?: string;
   teamVisibility?: "public" | "private";
+  /** Denormalized "worn" league badge (see UserProfile.primaryLeagueId). */
+  leagueName?: string;
+  leagueSlug?: string;
+  leagueIconUrl?: string;
   createdAt?: string;
   updatedAt: string;
 }
@@ -665,6 +672,10 @@ interface FeedEventBase {
   teamId?: string;
   teamName?: string;
   teamIconUrl?: string;
+  /** Denormalized "worn" league badge (see UserProfile.primaryLeagueId). */
+  leagueName?: string;
+  leagueSlug?: string;
+  leagueIconUrl?: string;
   createdAt: string;
   reactions?: Record<string, string[]>;
 }

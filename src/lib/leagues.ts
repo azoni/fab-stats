@@ -91,6 +91,19 @@ export async function getMyLeagueIds(uid: string): Promise<Set<string>> {
   return ids;
 }
 
+/** Set (or clear, pass null) the league the user "wears" as a badge next to their
+ *  name. Denormalizes onto future feed events + the next leaderboard write. You can
+ *  only wear a league you belong to (so the badge can't be used to fake membership). */
+export async function setPrimaryLeague(uid: string, leagueId: string | null): Promise<void> {
+  if (leagueId) {
+    const memberDoc = await getDoc(doc(leagueMembersCollection(leagueId), uid));
+    if (!memberDoc.exists()) throw new Error("You must be a member of the league to wear its badge.");
+  }
+  await updateDoc(doc(db, "users", uid, "profile", "main"), {
+    primaryLeagueId: leagueId ?? deleteField(),
+  });
+}
+
 /** Fetch league docs by id (chunked into `in` queries of 10). Used for the
  *  "My leagues" list so it isn't limited by getAllLeagues()'s newest-100 cap. */
 export async function getLeaguesByIds(ids: string[]): Promise<League[]> {
@@ -485,6 +498,15 @@ export async function leaveLeague(leagueId: string, uid: string): Promise<void> 
   batch.delete(doc(leagueMembersCollection(leagueId), uid));
   batch.update(doc(db, "leagues", leagueId), { memberCount: increment(-1), updatedAt: now });
   await batch.commit();
+
+  // Stop wearing this league's badge if it was the worn one (best-effort self-write).
+  try {
+    const profRef = doc(db, "users", uid, "profile", "main");
+    const profSnap = await getDoc(profRef);
+    if (profSnap.exists() && profSnap.data().primaryLeagueId === leagueId) {
+      await updateDoc(profRef, { primaryLeagueId: deleteField() });
+    }
+  } catch { /* best-effort */ }
 }
 
 export async function kickLeagueMember(

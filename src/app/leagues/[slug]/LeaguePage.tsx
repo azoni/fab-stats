@@ -18,11 +18,12 @@ import {
   subscribeToJoinRequests,
   leagueRequiresApproval,
   listLeagueSeasons,
+  setPrimaryLeague,
 } from "@/lib/leagues";
 import { NewSeasonModal } from "@/components/leagues/NewSeasonModal";
 import { getStoreDirectory, slugifyStoreName, findNearMatchStore, storeNameMatchesQuery, type StoreDirectoryEntry } from "@/lib/store-directory";
 import { HeroImg } from "@/components/heroes/HeroImg";
-import { uploadLeagueBanner, removeLeagueBanner } from "@/lib/league-images";
+import { uploadLeagueBanner, removeLeagueBanner, uploadLeagueIcon, removeLeagueIcon } from "@/lib/league-images";
 import { recomputeAndStoreStandings, TIEBREAKER_TEXT } from "@/lib/leagues-scoring";
 import {
   getLeagueMatchPool,
@@ -74,7 +75,7 @@ export default function LeaguePage() {
   // real league slug is only in the pathname. (Matches the player/group pattern.)
   const pathname = usePathname();
   const slug = decodeURIComponent(pathname?.split("/").pop() || "");
-  const { user, profile, isAdmin } = useAuth();
+  const { user, profile, isAdmin, refreshProfile } = useAuth();
 
   const [leagueId, setLeagueId] = useState<string | null>(null);
   const [league, setLeague] = useState<League | null>(null);
@@ -363,6 +364,29 @@ export default function LeaguePage() {
     }
   }
 
+  // "Wear" this league's icon as a badge next to your name (feed + leaderboard).
+  const [wearing, setWearing] = useState(false);
+  const [wearBusy, setWearBusy] = useState(false);
+  useEffect(() => {
+    setWearing(!!profile && !!league && profile.primaryLeagueId === league.id);
+  }, [profile, league]);
+  async function handleToggleWear() {
+    if (!user || !league) return;
+    const next = wearing ? null : league.id;
+    setWearBusy(true);
+    try {
+      await setPrimaryLeague(user.uid, next);
+      setWearing(!!next);
+      // AuthContext.profile is a one-shot fetch — refresh it so the worn state (and
+      // any later leaderboard write that reads profile.primaryLeagueId) is current.
+      await refreshProfile();
+      toast.success(next ? "Now wearing this league's badge." : "League badge removed.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to update badge.");
+    }
+    setWearBusy(false);
+  }
+
   async function handleKick(uid: string) {
     if (!user || !league) return;
     if (!confirm("Remove this member from the league?")) return;
@@ -432,6 +456,22 @@ export default function LeaguePage() {
                   {leagueRequiresApproval(league) ? "Request to join" : "Join league"}
                 </button>
               ))}
+            {isMember && (league.iconUrl || wearing) && (
+              <button
+                type="button"
+                onClick={handleToggleWear}
+                disabled={wearBusy}
+                title={wearing ? "Remove this league's badge from your name" : "Show this league's icon next to your name in the feed & leaderboard"}
+                className={`inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-bold disabled:opacity-50 ${
+                  wearing
+                    ? "border-fab-gold/60 bg-fab-gold/10 text-fab-gold hover:bg-fab-gold/20"
+                    : "border-fab-border bg-fab-bg/60 text-fab-dim hover:text-fab-gold"
+                }`}
+              >
+                {league.iconUrl && <img src={league.iconUrl} alt="" className="h-4 w-4 rounded object-cover" />}
+                {wearing ? "Wearing badge" : "Wear badge"}
+              </button>
+            )}
             {isMember && !isOrganizer && (
               <button
                 type="button"
@@ -1111,6 +1151,30 @@ function OrganizerEditor({
   );
   const [saving, setSaving] = useState(false);
   const [bannerBusy, setBannerBusy] = useState(false);
+  const [iconBusy, setIconBusy] = useState(false);
+
+  async function handleIconFile(file: File | undefined) {
+    if (!file) return;
+    setIconBusy(true);
+    try {
+      await uploadLeagueIcon(league.id, file);
+      toast.success("Icon updated.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to upload icon.");
+    }
+    setIconBusy(false);
+  }
+
+  async function handleRemoveIcon() {
+    setIconBusy(true);
+    try {
+      await removeLeagueIcon(league.id);
+      toast.success("Icon removed.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to remove icon.");
+    }
+    setIconBusy(false);
+  }
 
   async function handleBannerFile(file: File | undefined) {
     if (!file) return;
@@ -1273,6 +1337,55 @@ function OrganizerEditor({
     <div className="mt-4 rounded-lg border border-fab-gold/40 bg-fab-gold/[0.04] p-4">
       <h2 className="text-base font-bold text-fab-gold">Edit league</h2>
       <div className="mt-3 grid gap-3 sm:grid-cols-2">
+        <div className="sm:col-span-2">
+          <label className="mb-1 block text-xs font-semibold text-fab-dim">League icon</label>
+          <div className="flex items-center gap-3">
+            {league.iconUrl ? (
+              <img
+                src={league.iconUrl}
+                alt=""
+                className="h-14 w-14 shrink-0 rounded-lg border border-fab-border object-cover"
+              />
+            ) : (
+              <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg border border-fab-border bg-fab-bg text-lg font-black text-fab-dim">
+                {league.name.slice(0, 2).toUpperCase()}
+              </span>
+            )}
+            <div className="flex flex-wrap items-center gap-2">
+              <label
+                className={`inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-fab-border bg-fab-bg px-3 py-1.5 text-xs font-bold text-fab-text hover:border-fab-gold/40 hover:text-fab-gold ${
+                  iconBusy ? "pointer-events-none opacity-50" : ""
+                }`}
+              >
+                <ImageIcon className="h-3.5 w-3.5" />
+                {iconBusy ? "Uploading…" : league.iconUrl ? "Replace icon" : "Upload icon"}
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  className="hidden"
+                  disabled={iconBusy}
+                  onChange={(e) => {
+                    handleIconFile(e.target.files?.[0]);
+                    e.target.value = "";
+                  }}
+                />
+              </label>
+              {league.iconUrl && (
+                <button
+                  type="button"
+                  onClick={handleRemoveIcon}
+                  disabled={iconBusy}
+                  className="rounded-md border border-fab-border px-3 py-1.5 text-xs font-bold text-fab-dim hover:text-rose-300 disabled:opacity-50"
+                >
+                  Remove
+                </button>
+              )}
+            </div>
+          </div>
+          <p className="mt-1 text-[11px] text-fab-dim">
+            Square emblem (JPEG/PNG/WebP, up to 2MB) shown by the league name and next to players.
+          </p>
+        </div>
         <div className="sm:col-span-2">
           <label className="mb-1 block text-xs font-semibold text-fab-dim">Banner image</label>
           {league.bannerUrl && (

@@ -7,6 +7,7 @@ import { rankBorderClass } from "@/lib/leaderboard-ranks";
 import { playerHref } from "@/lib/constants";
 import { HeroShieldBadge } from "@/components/profile/HeroShieldBadge";
 import { TeamBadge } from "@/components/profile/TeamBadge";
+import { LeagueBadge } from "@/components/leagues/LeagueBadge";
 import { FEED_REACTIONS, addFeedReaction, removeFeedReaction, deleteFeedEvent, summarizeFeedEvent, type ReactionContext } from "@/lib/feed";
 import { normalizeDecklistUrl } from "@/lib/decklist";
 import { FeedCommentSection } from "@/components/feed/FeedCommentSection";
@@ -181,6 +182,7 @@ function NameAndTime({ event, compact, heroCompletionMap }: { event: FeedEvent; 
         <span className={`font-semibold text-fab-text ${compact ? "text-xs" : ""}`}>{event.displayName}</span>
       )}
       {event.teamName && <TeamBadge teamName={event.teamName} teamIconUrl={event.teamIconUrl} size="xs" />}
+      {event.leagueName && <LeagueBadge leagueName={event.leagueName} leagueSlug={event.leagueSlug} iconUrl={event.leagueIconUrl} size="xs" />}
       {pct >= 35 && <HeroShieldBadge pct={pct} />}
       {compact ? (
         <span className="text-[10px] text-fab-dim">{formatTimeAgo(event.createdAt)}</span>

@@ -541,7 +541,15 @@ export default function LeagueHub() {
                     <li key={l.id}>
                       <Card padding="sm" className="relative">
                         <div className="flex flex-wrap items-start justify-between gap-3">
-                          <div className="min-w-0">
+                          <div className="flex min-w-0 items-start gap-2.5">
+                            {l.iconUrl && (
+                              <img
+                                src={l.iconUrl}
+                                alt=""
+                                className="mt-0.5 h-9 w-9 shrink-0 rounded-md border border-fab-border object-cover"
+                              />
+                            )}
+                            <div className="min-w-0">
                             <div className="flex flex-wrap items-center gap-2">
                               <Link
                                 href={`/leagues/${l.slug}`}
@@ -571,6 +579,7 @@ export default function LeagueHub() {
                                 {l.description}
                               </p>
                             )}
+                            </div>
                           </div>
                           <div className="relative z-10 flex flex-col items-end gap-1.5">
                             <div className="flex gap-1.5">
@@ -641,7 +650,15 @@ export default function LeagueHub() {
                     <li key={l.id}>
                       <Card padding="sm" className="relative">
                         <div className="flex flex-wrap items-center justify-between gap-3">
-                          <div className="min-w-0">
+                          <div className="flex min-w-0 items-center gap-2.5">
+                            {l.iconUrl && (
+                              <img
+                                src={l.iconUrl}
+                                alt=""
+                                className="h-9 w-9 shrink-0 rounded-md border border-fab-border object-cover"
+                              />
+                            )}
+                            <div className="min-w-0">
                             <div className="flex flex-wrap items-center gap-2">
                               <Link
                                 href={`/leagues/${l.slug}`}
@@ -665,6 +682,7 @@ export default function LeagueHub() {
                                 {[l.city, l.region, l.country].filter(Boolean).join(", ")}
                               </p>
                             )}
+                            </div>
                           </div>
                           <div className="relative z-10 flex items-center gap-1.5">
                             <Badge size="xs" variant="muted">

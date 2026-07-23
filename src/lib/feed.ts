@@ -39,7 +39,7 @@ function logFirestoreError(context: string, error: unknown): void {
   }
 }
 
-/** Enrich feed event data with optional team + photo fields from profile */
+/** Enrich feed event data with optional team, league, + photo fields from profile */
 async function enrichWithProfileFields(clean: Record<string, unknown>, profile: UserProfile): Promise<void> {
   if (profile.photoUrl) clean.photoUrl = profile.photoUrl;
   if (profile.teamId) {
@@ -52,6 +52,23 @@ async function enrichWithProfileFields(clean: Record<string, unknown>, profile: 
         if (teamData.iconUrl) clean.teamIconUrl = teamData.iconUrl;
       }
     } catch { /* team fetch is best-effort */ }
+  }
+  // The league the user chose to "wear" as a badge (opt-in primaryLeagueId). Only
+  // badge when the league has an icon AND the user is currently a member — verified
+  // here so a stale (kicked) or console-forged primaryLeagueId can't fake it.
+  if (profile.primaryLeagueId) {
+    try {
+      const leagueSnap = await getDoc(doc(db, "leagues", profile.primaryLeagueId));
+      const l = leagueSnap.data();
+      if (leagueSnap.exists() && l?.iconUrl) {
+        const memberSnap = await getDoc(doc(db, "leagues", profile.primaryLeagueId, "members", profile.uid));
+        if (memberSnap.exists()) {
+          if (l.name) clean.leagueName = l.name;
+          if (l.slug) clean.leagueSlug = l.slug;
+          clean.leagueIconUrl = l.iconUrl;
+        }
+      }
+    } catch { /* league fetch is best-effort */ }
   }
 }
 
