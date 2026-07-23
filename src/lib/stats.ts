@@ -732,6 +732,14 @@ export function computePlayoffFinishes(
   return finishes.sort((a, b) => new Date(b.eventDate).getTime() - new Date(a.eventDate).getTime());
 }
 
+/** Whether one event's worth of matches produces a playoff placement — i.e. would
+ *  generate a placement feed card. Use this (not a raw "Round P" note check) to
+ *  gate placement-only UI, so it also catches cases like an undefeated Skirmish
+ *  champion that has no explicit playoff rounds. */
+export function hasPlayoffFinish(matches: MatchRecord[]): boolean {
+  return computePlayoffFinishes(computeEventStats(matches)).length > 0;
+}
+
 export interface MinorEventFinish {
   type: "undefeated" | "champion" | "finalist" | "top4" | "top8";
   eventName: string;

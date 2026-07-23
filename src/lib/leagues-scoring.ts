@@ -84,16 +84,16 @@ export function pointsForMatch(match: MatchRecord, league: League): number {
   return typeof mult === "number" ? base * mult : base;
 }
 
-/** Finalize one event's score from its summed match points: floor at
- *  minPointsPerEvent (a max, NOT additive) then add pointsPerEvent (attendance).
- *  With neither set this is just the summed match points. */
-export function eventScore(earnedMatchPoints: number, rules: LeagueScoringRules): number {
-  return Math.max(earnedMatchPoints, rules.minPointsPerEvent || 0) + (rules.pointsPerEvent || 0);
-}
-
-/** Whether a league uses per-event scoring (a floor and/or attendance bonus). */
-export function usesEventScoring(rules: LeagueScoringRules): boolean {
-  return (rules.minPointsPerEvent || 0) > 0 || (rules.pointsPerEvent || 0) > 0;
+/** Combine a member's summed match points with the league minimum and attendance.
+ *  The minimum is a floor on the player's TOTAL — for anyone who attended, it lifts
+ *  a winless total up to `min`, but it NEVER adds on top of a player who already
+ *  scored more (max, not sum). So win 0 → min, win 1 → 1, win 2 → 2 (with min 1).
+ *  The floor only applies when min > 0, so a league with negative loss points and
+ *  no floor keeps genuinely negative totals. Attendance adds per event attended. */
+export function scoreTotals(basePoints: number, eventCount: number, rules: LeagueScoringRules): number {
+  const floor = rules.minPointsPerEvent || 0;
+  const floored = eventCount > 0 && floor > 0 ? Math.max(basePoints, floor) : basePoints;
+  return floored + (rules.pointsPerEvent || 0) * eventCount;
 }
 
 /** Event name for grouping — the first "notes" segment, mirroring how the live
@@ -117,24 +117,41 @@ export function leagueEventKey(
   return `${(m.date || "").slice(0, 10)}|${leagueEventName(m)}|${store}`;
 }
 
-/** Total league points for a member's qualifying matches, applying per-event
- *  min/attendance. Byes only appear here when they qualify (pointsPerBye > 0).
- *  Pass the league's aliasIndex so event grouping matches the live standings view. */
+/** Total league points for a member's qualifying matches: summed match points,
+ *  floored at the league minimum (a total floor, not per event), plus a per-event
+ *  attendance bonus. Byes only appear here when they qualify (pointsPerBye > 0).
+ *  Pass the league's aliasIndex so the event count matches the live standings view. */
 export function scoreMatches(matches: MatchRecord[], league: League, aliasIndex?: StoreAliasIndex): number {
-  if (!usesEventScoring(league.scoringRules)) {
-    let pts = 0;
-    for (const m of matches) pts += pointsForMatch(m, league);
-    return pts;
-  }
-  const earnedByEvent = new Map<string, number>();
+  let base = 0;
+  const events = new Set<string>();
   for (const m of matches) {
-    const k = leagueEventKey(m, aliasIndex);
-    earnedByEvent.set(k, (earnedByEvent.get(k) || 0) + pointsForMatch(m, league));
+    base += pointsForMatch(m, league);
+    events.add(leagueEventKey(m, aliasIndex));
   }
-  let pts = 0;
-  for (const earned of earnedByEvent.values()) pts += eventScore(earned, league.scoringRules);
-  return pts;
+  return scoreTotals(base, events.size, league.scoringRules);
 }
+
+/** Standings sort order, shared by the authoritative (computeLeagueStandings) and
+ *  the live (standingsFromPool) views so they always agree. Order:
+ *    1) points, 2) more wins, 3) fewer losses, 4) higher win rate (over decisive
+ *    matches, so a bye never lowers it), 5) fewer matches, 6) username (stable). */
+export function compareStandings(a: LeagueStandingEntry, b: LeagueStandingEntry): number {
+  if (b.points !== a.points) return b.points - a.points;
+  if (b.wins !== a.wins) return b.wins - a.wins;
+  if (a.losses !== b.losses) return a.losses - b.losses;
+  const winRate = (e: LeagueStandingEntry) => {
+    const decisive = e.matches - e.byes;
+    return decisive > 0 ? e.wins / decisive : 0;
+  };
+  const wr = winRate(b) - winRate(a);
+  if (wr !== 0) return wr;
+  if (a.matches !== b.matches) return a.matches - b.matches;
+  return (a.username || "").localeCompare(b.username || "");
+}
+
+/** Human-readable tie-breaker order (keep in sync with compareStandings). */
+export const TIEBREAKER_TEXT =
+  "Tie-breakers: 1) Points, 2) Most wins, 3) Fewest losses, 4) Win rate, 5) Fewest games played.";
 
 /** Compute the full standings for a league. Reads every member's matches.
  *  Members with private profiles return zero (silent skip). */
@@ -230,20 +247,7 @@ export async function computeLeagueStandings(leagueId: string): Promise<LeagueSt
   );
 
   // Sort: points desc, win rate desc, wins desc, fewer matches first.
-  // Win rate uses DECISIVE matches (excl. byes) so earning a bye — which adds
-  // points but no win — can never drop a player below an otherwise-equal one.
-  const winRate = (e: LeagueStandingEntry) => {
-    const decisive = e.matches - e.byes;
-    return decisive > 0 ? e.wins / decisive : 0;
-  };
-  entries.sort((a, b) => {
-    if (b.points !== a.points) return b.points - a.points;
-    const aWinRate = winRate(a);
-    const bWinRate = winRate(b);
-    if (bWinRate !== aWinRate) return bWinRate - aWinRate;
-    if (b.wins !== a.wins) return b.wins - a.wins;
-    return a.matches - b.matches;
-  });
+  entries.sort(compareStandings);
 
   return entries;
 }

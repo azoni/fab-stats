@@ -30,6 +30,10 @@ export interface MatchRecord {
    *  (omitted) for day-one matches. Set on import via the >10-swiss-round
    *  heuristic (user-adjustable) and editable per-event afterward. */
   day2?: boolean;
+  /** Optional decklist URL (typically Fabrary) the player attached to this event.
+   *  Stamped onto every match of the event so it survives feed regeneration and can
+   *  be edited from the Events tab; forwarded onto the placement feed event. */
+  decklistUrl?: string;
   createdAt: string;
 }
 
@@ -323,13 +327,14 @@ export interface LeagueScoringRules {
   /** Flat bonus added to every qualifying W/L/D match regardless of result.
    *  Doesn't apply to byes. Defaults to 0. */
   pointsPerMatch?: number;
-  /** Minimum points for an event — a FLOOR on that event's summed match points
-   *  (max(earned, min)), NOT additive. e.g. min 1 → a winless attendee still scores
-   *  1 for the event; a 2-win attendee already above the floor keeps their higher
-   *  score. Defaults to 0 (no floor). */
+  /** Minimum points — a FLOOR on a member's TOTAL (max(total, min)), applied only
+   *  to players who attended ≥1 event and NOT additive. e.g. min 1 → a winless
+   *  attendee scores 1, but an 11-win player keeps 11 (the floor never adds on top
+   *  of wins). Defaults to 0 (no floor). (Field name kept for back-compat; the
+   *  minimum is a total floor, not per event.) */
   minPointsPerEvent?: number;
   /** Flat attendance points ADDED per event a member has a qualifying match in —
-   *  on top of the event's match points/floor. Distinct from minPointsPerEvent.
+   *  on top of their match points. Distinct from minPointsPerEvent (a floor).
    *  Defaults to 0. */
   pointsPerEvent?: number;
   /** Optional multipliers keyed by GameFormat string (e.g. "Classic Constructed": 1.5).
@@ -683,6 +688,9 @@ export interface PlacementFeedEvent extends FeedEventBase {
   eventDate: string;
   eventType: string;
   hero?: string;
+  /** Optional decklist URL (typically Fabrary) the player attached to this finish;
+   *  rendered as a clickable "View decklist" link on the placement card. */
+  decklistUrl?: string;
 }
 
 export interface FaBdokuFeedEvent extends FeedEventBase {

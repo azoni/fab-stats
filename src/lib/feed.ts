@@ -15,6 +15,7 @@ import {
   where,
   startAfter,
   writeBatch,
+  deleteField,
   type QueryConstraint,
 } from "firebase/firestore";
 import { db } from "./firebase";
@@ -121,6 +122,7 @@ export async function createPlacementFeedEvent(
   profile: UserProfile,
   finish: PlayoffFinish,
   hero?: string,
+  decklistUrl?: string,
 ): Promise<void> {
   if (!profile.isPublic || profile.hideFromFeed) return;
 
@@ -155,8 +157,33 @@ export async function createPlacementFeedEvent(
   }
   await enrichWithProfileFields(clean, profile);
   if (hero && hero !== "Unknown") clean.hero = hero;
+  if (decklistUrl) clean.decklistUrl = decklistUrl;
 
   await addDoc(feedCollection(), clean);
+  invalidateFeedCache();
+}
+
+/** Attach, replace, or clear (pass null) the decklist URL on this user's existing
+ *  placement feed event for a given event. No-op when no placement doc exists (e.g.
+ *  a private profile, or an event with no playoff finish). Used by the Events-tab
+ *  "add decklist" editor to backfill finishes imported before the URL was provided. */
+export async function setPlacementDecklistUrl(
+  userId: string,
+  eventName: string,
+  eventDate: string,
+  decklistUrl: string | null,
+): Promise<void> {
+  const q = query(
+    feedCollection(),
+    where("userId", "==", userId),
+    where("type", "==", "placement"),
+    where("eventDate", "==", eventDate),
+    where("eventName", "==", eventName),
+    limit(1),
+  );
+  const snap = await getDocs(q);
+  if (snap.empty) return;
+  await updateDoc(snap.docs[0].ref, { decklistUrl: decklistUrl ?? deleteField() });
   invalidateFeedCache();
 }
 
