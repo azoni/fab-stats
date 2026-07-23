@@ -602,6 +602,7 @@ export function BroadcastStandings({
               <th className="px-2 py-2 text-right">D</th>
               {showByes && <th className="px-2 py-2 text-right">B</th>}
               <th className="px-2 py-2 text-right">Mch</th>
+              <th className="px-2 py-2 text-right" title="Distinct events attended">Evt</th>
               <th className="hidden px-2 py-2 text-right sm:table-cell">Stores</th>
             </tr>
           </thead>
@@ -636,6 +637,7 @@ export function BroadcastStandings({
                   <td className="px-2 py-2 text-right tabular-nums text-sky-300">{e.draws}</td>
                   {showByes && <td className="px-2 py-2 text-right tabular-nums text-fab-muted">{e.byes || 0}</td>}
                   <td className="px-2 py-2 text-right tabular-nums text-fab-text">{e.matches}</td>
+                  <td className="px-2 py-2 text-right tabular-nums text-fab-text">{e.events ?? "—"}</td>
                   <td className="hidden px-2 py-2 text-right tabular-nums text-fab-text sm:table-cell">{e.storesPlayed}</td>
                 </tr>
               );
