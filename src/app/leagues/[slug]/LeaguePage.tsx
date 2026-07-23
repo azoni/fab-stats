@@ -716,6 +716,7 @@ function StandingsTable({
             <th className="px-2 py-2 text-right">D</th>
             {showByes && <th className="px-2 py-2 text-right">B</th>}
             <th className="px-2 py-2 text-right">Mch</th>
+            <th className="px-2 py-2 text-right" title="Distinct events attended">Evt</th>
             <th className="px-2 py-2 text-right">Stores</th>
           </tr>
         </thead>
@@ -743,6 +744,7 @@ function StandingsTable({
                 <td className="px-2 py-2 text-right text-fab-muted tabular-nums">{e.byes || 0}</td>
               )}
               <td className="px-2 py-2 text-right text-fab-text tabular-nums">{e.matches}</td>
+              <td className="px-2 py-2 text-right text-fab-text tabular-nums">{e.events ?? "—"}</td>
               <td className="px-2 py-2 text-right text-fab-text tabular-nums">{e.storesPlayed}</td>
             </tr>
           ))}
@@ -938,6 +940,7 @@ function PlayerCards({
         byes: 0,
         points: 0,
         storesPlayed: 0,
+        events: 0,
       }));
 
   return (
@@ -984,6 +987,7 @@ function PlayerCards({
                 <span>{p.wins}-{p.losses}{p.draws ? `-${p.draws}` : ""}</span>
                 {wr !== null && <span>{wr}% WR</span>}
                 <span>{p.matches} gp</span>
+                {(p.events ?? 0) > 0 && <span>{p.events} event{p.events === 1 ? "" : "s"}</span>}
                 {p.storesPlayed > 0 && <span>{p.storesPlayed} store{p.storesPlayed === 1 ? "" : "s"}</span>}
               </div>
               {isOrganizer && !isOrg && (
@@ -1419,6 +1423,9 @@ function OrganizerEditor({
             value={pointsPerMatch}
             onChange={(e) => setPointsPerMatch(Number(e.target.value))}
           />
+          <p className="mt-1 text-[11px] leading-tight text-fab-dim">
+            Added to every W/L/D match you play — per game, not per event (byes excluded).
+          </p>
         </EditField>
         <EditField label="Minimum per event">
           <input
@@ -1439,7 +1446,7 @@ function OrganizerEditor({
             onChange={(e) => setPointsPerEvent(Number(e.target.value))}
           />
           <p className="mt-1 text-[11px] leading-tight text-fab-dim">
-            Added once per event attended, ON TOP of match points.
+            Added once per event attended — per event, not per game. ON TOP of match points.
           </p>
         </EditField>
       </div>

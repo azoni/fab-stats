@@ -440,6 +440,9 @@ export interface LeagueStandingEntry {
   byes: number;
   points: number;
   storesPlayed: number;
+  /** Distinct events (date + event name + store) the member has qualifying matches
+   *  in. Optional for back-compat with standings docs written before this field. */
+  events?: number;
 }
 
 export interface LeagueStandings {

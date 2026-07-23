@@ -199,6 +199,7 @@ export function standingsFromPool(matches: PooledMatch[], league: League): Leagu
         byes: 0,
         points: 0,
         storesPlayed: 0,
+        events: 0,
       };
       byUid.set(m.memberUid, e);
     }
@@ -227,6 +228,7 @@ export function standingsFromPool(matches: PooledMatch[], league: League): Leagu
     let pts = 0;
     for (const earned of ev.values()) pts += eventScoring ? eventScore(earned, league.scoringRules) : earned;
     e.points = pts;
+    e.events = ev.size; // distinct events attended (same grouping as scoring)
   }
   for (const [uid, set] of storesByUid) {
     const e = byUid.get(uid);
