@@ -1355,6 +1355,16 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/leagues/$(resource.data.leagueId)).data.organizerUid == request.auth.uid;
     }
 
+    // ── Tier lists ── public (shareable by link) once saved; owner-only writes.
+    match /tierLists/{id} {
+      allow read: if resource.data.isPublic == true
+        || (request.auth != null && request.auth.uid == resource.data.ownerUid);
+      allow create: if request.auth != null
+        && request.resource.data.ownerUid == request.auth.uid;
+      allow update, delete: if request.auth != null
+        && resource.data.ownerUid == request.auth.uid;
+    }
+
     // ── Store Aggregates (written by store-aggregator Netlify function only) ──
     // Public read so /stores and /stores/[slug] can fetch precomputed
     // directory + per-store stats with a single doc read instead of scanning

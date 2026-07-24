@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { BookOpen, CalendarClock, Gamepad2, Swords, Trophy } from "lucide-react";
+import { BookOpen, CalendarClock, Gamepad2, ListOrdered, Swords, Trophy } from "lucide-react";
 import { PageHero } from "@/components/ui/PageHero";
 
 const extras = [
@@ -11,6 +11,13 @@ const extras = [
     text: "Quick puzzles for hero knowledge, matchups, trivia, and pattern recognition.",
     icon: <Gamepad2 className="h-5 w-5" />,
     accent: "text-emerald-300",
+  },
+  {
+    href: "/tierlist",
+    title: "Tier List Maker",
+    text: "Rank heroes, cards, sets — or spoilers — with drag-and-drop tiers, then save & share.",
+    icon: <ListOrdered className="h-5 w-5" />,
+    accent: "text-fuchsia-300",
   },
   {
     href: "/achievements",

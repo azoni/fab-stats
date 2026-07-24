@@ -5,6 +5,7 @@ import {
   Bot,
   CalendarDays,
   Gamepad2,
+  ListOrdered,
   Mail,
   MessageCircle,
   Settings,
@@ -74,6 +75,7 @@ export const navLinks: NavLink[] = [
   // URL (the cosmetics flag stays on). Re-add a flag-gated link here to reveal it.
   { href: "/extras", label: "Extras", icon: <NavAssetIcon name="extras" />, color: "text-violet-400", bg: "bg-violet-400/10", subItems: [
     { href: "/games", label: "Daily Games", icon: <Gamepad2 className="w-3.5 h-3.5" /> },
+    { href: "/tierlist", label: "Tier Lists", icon: <ListOrdered className="w-3.5 h-3.5" /> },
     { href: "/compare", label: "Versus" },
     { href: "/docs", label: "Docs" },
     { href: "/changelog", label: "Changelog" },
