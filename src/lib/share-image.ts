@@ -50,14 +50,22 @@ export async function captureCardBlob(
   const defaultRatio = isMobile ? 1.5 : 2;
   const base = { pixelRatio: opts.pixelRatio ?? defaultRatio, backgroundColor: opts.backgroundColor, cacheBust: true };
 
+  // A 1x1 transparent GIF — used to blank an image that can't be inlined so it
+  // can't taint the canvas (which would otherwise force ALL images to be dropped).
+  const TRANSPARENT_PX =
+    "data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==";
+
   // Inline all <img> src attributes as data URLs to avoid CORS issues
   const images = Array.from(el.querySelectorAll("img"));
   const originalSrcs: string[] = images.map((img) => img.src);
   try {
     await Promise.all(
       images.map(async (img) => {
+        if (img.src.startsWith("data:")) return; // already inline — leave it
         const dataUrl = await inlineImageSrc(img);
-        if (dataUrl) img.src = dataUrl;
+        // Inline what we can; blank anything that fails (e.g. a non-CORS custom
+        // image) so a single bad image doesn't wipe every image from the export.
+        img.src = dataUrl || TRANSPARENT_PX;
       }),
     );
     return await toBlob(el, base);
