@@ -580,7 +580,7 @@ export default function PlayerProfile() {
         <QuestionCircleIcon className="w-14 h-14 text-fab-muted mb-4 mx-auto" />
         <h1 className="text-2xl font-bold text-fab-text mb-2">Player Not Found</h1>
         <p className="text-fab-muted mb-6">No player with the username &quot;{username}&quot; exists.</p>
-        <Link href="/search" className="text-fab-gold hover:text-fab-gold-light">
+        <Link href={`/search?q=${encodeURIComponent(username)}`} className="text-fab-gold hover:text-fab-gold-light">
           Search for players
         </Link>
       </div>
