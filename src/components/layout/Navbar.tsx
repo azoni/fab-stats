@@ -11,7 +11,7 @@ import { useCommunityStats } from "@/hooks/useCommunityStats";
 import { useFriends } from "@/hooks/useFriends";
 import type { ReactNode } from "react";
 import type { Creator } from "@/types";
-import { ExternalLink } from "lucide-react";
+import { ChevronRight, ExternalLink } from "lucide-react";
 import dynamic from "next/dynamic";
 const FeedbackModal = dynamic(() => import("@/components/feedback/FeedbackModal").then(m => ({ default: m.FeedbackModal })), { ssr: false });
 import { SmartSearch } from "@/components/search/SmartSearch";
@@ -171,6 +171,9 @@ export function Navbar() {
             {visibleNavLinks.map((link) => {
               const parentActive = isActiveRoute(pathname, link.href) || link.visibleSubs.some((sub) => !sub.href.startsWith("http") && isActiveRoute(pathname, sub.href));
               const isParentExternal = link.href.startsWith("http");
+              // Groups (except pinned Support) reveal their sub-links in the hover
+              // flyout — including the active one — so nothing expands inline.
+              const hasFlyout = link.visibleSubs.length > 0 && !link.alwaysOpen;
               const parentTrackKey = getExternalTrackKey(link.href);
               const parentClassName = `fab-sidebar-link flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-semibold transition-all ${
                 parentActive
@@ -182,6 +185,7 @@ export function Navbar() {
                   <span className="shrink-0 flex items-center justify-center">{link.icon}</span>
                   <span className="truncate">{link.label}</span>
                   {isParentExternal && <ExternalLink className="w-3 h-3 text-fab-dim shrink-0 ml-auto" />}
+                  {hasFlyout && <ChevronRight className="fab-sidebar-caret w-3.5 h-3.5 shrink-0 ml-auto" aria-hidden="true" />}
                 </>
               );
               return (
@@ -190,8 +194,8 @@ export function Navbar() {
                   data-active-section={parentActive ? "true" : undefined}
                   data-always-open={link.alwaysOpen ? "true" : undefined}
                   className="fab-sidebar-group space-y-1"
-                  onMouseEnter={link.visibleSubs.length > 0 && !link.alwaysOpen && !parentActive ? (e) => openFlyout(link.href, e.currentTarget) : undefined}
-                  onMouseLeave={link.visibleSubs.length > 0 && !link.alwaysOpen && !parentActive ? closeFlyoutSoon : undefined}
+                  onMouseEnter={hasFlyout ? (e) => openFlyout(link.href, e.currentTarget) : undefined}
+                  onMouseLeave={hasFlyout ? closeFlyoutSoon : undefined}
                 >
                   {isParentExternal ? (
                     <a
@@ -215,10 +219,10 @@ export function Navbar() {
                     </Link>
                   )}
 
-                  {/* Sub-links show inline when this is the group you're currently in
-                      (orientation) or it's pinned (Support). Other groups reveal them
-                      in the hover flyout instead, so the sidebar doesn't shift. */}
-                  {(link.alwaysOpen || parentActive) && link.visibleSubs.length > 0 && (
+                  {/* Only pinned Support shows sub-links inline; every other group —
+                      active or not — reveals them in the hover flyout, so the sidebar
+                      stays compact and nothing shifts. */}
+                  {link.alwaysOpen && link.visibleSubs.length > 0 && (
                     <div className="fab-sidebar-subnav ml-4 pl-3 border-l space-y-0.5">
                       {link.visibleSubs.map(renderSub)}
                     </div>
