@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { ArrowRight, Compass, Shield, Store, Trophy, Users } from "lucide-react";
+import { ArrowRight, Compass, ListOrdered, Shield, Store, Trophy, Users } from "lucide-react";
 import { collection, getCountFromServer, query, where } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useCommunityStats } from "@/hooks/useCommunityStats";
@@ -40,10 +40,16 @@ const ACCENTS: Record<string, Accent> = {
     glow: "bg-sky-400/25",
     hover: "hover:border-sky-400/55 hover:shadow-[0_16px_44px_-18px_rgba(56,189,248,0.45)]",
   },
+  fuchsia: {
+    iconWrap: "text-fuchsia-300 bg-fuchsia-400/12 border-fuchsia-400/25",
+    text: "text-fuchsia-300",
+    glow: "bg-fuchsia-400/25",
+    hover: "hover:border-fuchsia-400/55 hover:shadow-[0_16px_44px_-18px_rgba(232,121,249,0.45)]",
+  },
 };
 
 type Dest = {
-  key: "players" | "stores" | "leagues" | "teams";
+  key: "players" | "stores" | "leagues" | "teams" | "tierlist";
   href: string;
   title: string;
   desc: string;
@@ -58,12 +64,13 @@ const DESTINATIONS: Dest[] = [
   { key: "stores", href: "/stores", title: "Stores", unit: "stores", badge: "Beta", desc: "Browse game stores and the players who log their matches there.", icon: Store, accent: ACCENTS.amber },
   { key: "leagues", href: "/leagues", title: "Leagues", unit: "leagues", badge: "Beta", desc: "Join or run a store league and follow the live standings.", icon: Trophy, accent: ACCENTS.gold },
   { key: "teams", href: "/teams", title: "Teams", unit: "teams", desc: "Team hubs, rosters, and shared stats for your crew.", icon: Shield, accent: ACCENTS.sky },
+  { key: "tierlist", href: "/tierlist", title: "Tier Lists", unit: "tier lists", desc: "Community rankings of heroes, cards, and spoilers — or build your own.", icon: ListOrdered, accent: ACCENTS.fuchsia },
 ];
 
 const CACHE_KEY = "fabstats.discover-counts.v2";
 const CACHE_TTL = 10 * 60_000;
 
-type Counts = { stores?: number; leagues?: number; teams?: number };
+type Counts = { stores?: number; leagues?: number; teams?: number; tierlist?: number };
 
 function formatCount(n: number): string {
   return new Intl.NumberFormat("en-US", { notation: n >= 10000 ? "compact" : "standard", maximumFractionDigits: 1 }).format(n);
@@ -96,12 +103,14 @@ export default function DiscoverPage() {
       getStoreDirectory(),
       getCountFromServer(collection(db, "leagues")),
       getCountFromServer(query(collection(db, "teams"), where("memberCount", ">", 0))),
+      getCountFromServer(query(collection(db, "tierLists"), where("isPublic", "==", true))),
     ]).then((r) => {
       if (cancelled) return;
       const c: Counts = {
         stores: r[0].status === "fulfilled" ? r[0].value.length : undefined,
         leagues: r[1].status === "fulfilled" ? r[1].value.data().count : undefined,
         teams: r[2].status === "fulfilled" ? r[2].value.data().count : undefined,
+        tierlist: r[3].status === "fulfilled" ? r[3].value.data().count : undefined,
       };
       setCounts(c);
       setSettled(true);

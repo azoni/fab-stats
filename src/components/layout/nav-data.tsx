@@ -62,6 +62,7 @@ export const navLinks: NavLink[] = [
     { href: "/players", label: "Players", icon: <Users className="w-3.5 h-3.5" /> },
     { href: "/stores", label: "Stores", badge: "Beta", icon: <Store className="w-3.5 h-3.5" /> },
     { href: "/teams", label: "Teams", icon: <Shield className="w-3.5 h-3.5" /> },
+    { href: "/tierlist", label: "Tier Lists", icon: <ListOrdered className="w-3.5 h-3.5" /> },
   ] },
   // Top-level destination (the /discover page still has a Leagues card for mobile).
   // /leagues → "My leagues" tab floats the leagues you're in to the top.
