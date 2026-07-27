@@ -830,9 +830,8 @@ function ScoringSummary({ scoringRules }: { scoringRules: LeagueScoringRules }) 
       )}
       {minPerEvent > 0 && (
         <p className="mt-2 text-[11px] text-fab-muted">
-          <span className="font-semibold text-fab-text">Minimum {minPerEvent}:</span>{" "}
-          anyone who plays an event scores at least {minPerEvent} total — a floor, not a bonus.
-          Win more and your wins stand; it never adds on top of them.
+          <span className="font-semibold text-fab-text">Minimum {minPerEvent} per event:</span>{" "}
+          every event a player attends scores at least {minPerEvent} — so a winless night still earns {minPerEvent}.
         </p>
       )}
       {attendance > 0 && (
@@ -1543,7 +1542,7 @@ function OrganizerEditor({
             Added to every W/L/D match you play — per game, not per event (byes excluded).
           </p>
         </EditField>
-        <EditField label="Minimum points">
+        <EditField label="Minimum per event">
           <input
             type="number"
             className="w-full rounded-md border border-fab-border bg-fab-bg px-3 py-2 text-sm text-fab-text placeholder:text-fab-dim focus:border-fab-gold/60 focus:outline-none focus:ring-2 focus:ring-fab-gold/30"
@@ -1551,7 +1550,7 @@ function OrganizerEditor({
             onChange={(e) => setMinPointsPerEvent(Number(e.target.value))}
           />
           <p className="mt-1 text-[11px] leading-tight text-fab-dim">
-            A floor on a player&apos;s total — a winless attendee still scores this. Never adds on top of wins.
+            A floor on each event a player attends — a winless night still scores at least this.
           </p>
         </EditField>
         <EditField label="Attendance points">

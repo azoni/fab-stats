@@ -45,28 +45,27 @@ check("Store A on a NON-scheduled in-window date does NOT", !qualifies("Store A"
 check("Store B on ITS scheduled date counts", qualifies("Store B", "2026-07-12", sch));
 check("Store B on Store A's date does NOT", !qualifies("Store B", "2026-07-05", sch));
 
-// ---- Minimum (TOTAL floor) + per-event attendance (mirror: scoreTotals, leagues-scoring.ts) ----
+// ---- Minimum = a PER-EVENT floor + per-event attendance (mirror: eventScore, leagues-scoring.ts) ----
 type Rules = { minPointsPerEvent?: number; pointsPerEvent?: number };
-// The minimum is a floor on a player's TOTAL (only for attendees, only when >0);
-// attendance adds per event. Mirrors scoreTotals(base, eventCount, rules).
-const scoreTotals = (base: number, eventCount: number, r: Rules): number => {
+// Every event you play scores at least `min` (when min > 0); attendance adds per event.
+const eventScore = (earned: number, r: Rules): number => {
   const floor = r.minPointsPerEvent || 0;
-  const floored = eventCount > 0 && floor > 0 ? Math.max(base, floor) : base;
-  return floored + (r.pointsPerEvent || 0) * eventCount;
+  const floored = floor > 0 ? Math.max(earned, floor) : earned;
+  return floored + (r.pointsPerEvent || 0);
 };
 // events = list of events, each the list of per-match points earned at that event
 const scoreEvents = (events: number[][], r: Rules): number =>
-  scoreTotals(events.flat().reduce((a, b) => a + b, 0), events.length, r);
+  events.reduce((tot, ev) => tot + eventScore(ev.reduce((a, b) => a + b, 0), r), 0);
 
-console.log("\n3. Minimum = a TOTAL floor (never adds on top of wins) — pointsPerWin=1, min=1");
+console.log("\n3. Minimum = a PER-EVENT floor (every event you play ≥ min) — pointsPerWin=1, min=1");
 const floor: Rules = { minPointsPerEvent: 1 };
-check("0 wins, 1 event → floor gives 1", scoreEvents([[]], floor) === 1); // winless attendee
-check("1 win → still 1 (min replaces, not adds)", scoreEvents([[1]], floor) === 1);
-check("2 wins → 2 (total beats the floor)", scoreEvents([[1, 1]], floor) === 2);
-check("floor is a TOTAL, not per event: two winless events → 1", scoreEvents([[], []], floor) === 1);
-check("Seront case: 11 wins across 5 events, one winless → 11 (NOT 12)",
-  scoreEvents([[1, 1, 1], [1, 1, 1], [1, 1], [1, 1, 1], []], floor) === 11);
-check("non-attendee (0 events) gets 0, not the minimum", scoreEvents([], floor) === 0);
+check("0 wins → floor gives 1", scoreEvents([[]], floor) === 1); // winless event
+check("1 win → 1", scoreEvents([[1]], floor) === 1);
+check("2 wins → 2 (beats the floor)", scoreEvents([[1, 1]], floor) === 2);
+check("two winless events → 2 (floor per event)", scoreEvents([[], []], floor) === 2);
+check("Seront: 11 wins over 6 events incl. TWO winless → 13",
+  scoreEvents([[1, 1, 1], [1, 1, 1, 1], [], [1, 1, 1], [1], []], floor) === 13);
+check("non-attendee (0 events) gets 0", scoreEvents([], floor) === 0);
 
 console.log("\n4. Attendance points (added ON TOP, per event) — pointsPerWin=1, attendance=2");
 const att: Rules = { pointsPerEvent: 2 };
@@ -77,14 +76,12 @@ console.log("\n5. Floor AND attendance together — min=1, attendance=2");
 const both: Rules = { minPointsPerEvent: 1, pointsPerEvent: 2 };
 check("winless, 1 event → max(0,1)+2 = 3", scoreEvents([[]], both) === 3);
 check("3 wins, 1 event → max(3,1)+2 = 5", scoreEvents([[1, 1, 1]], both) === 5);
-check("winless, 2 events → max(0,1)=1 + 2×2 = 5", scoreEvents([[], []], both) === 5);
 
 console.log("\n6. Neither set → plain sum of match points (NO hidden 0-floor)");
 const plain: Rules = {};
 check("two events [1,1] and [1] → 3", scoreEvents([[1, 1], [1]], plain) === 3);
-// Regression: with no floor, a negative total (e.g. penalized losses, win=3/loss=-1
-// → +3-4 = -1) must NOT be clamped to 0. Both standings paths sum raw.
-check("negative total with no floor stays negative → -1", scoreEvents([[3, -1, -1, -1, -1]], plain) === -1);
+// Regression: with no floor, a negative event (penalized losses) must NOT clamp to 0.
+check("negative event with no floor stays negative → -1", scoreEvents([[3, -1, -1, -1, -1]], plain) === -1);
 
 console.log(`\n${fail === 0 ? "ALL PASS ✓" : fail + " FAILURE(S) ✗"}\n`);
 process.exit(fail === 0 ? 0 : 1);

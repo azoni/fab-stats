@@ -889,8 +889,8 @@ export default function LeagueHub() {
                 />
               </Field>
               <Field
-                label="Minimum points"
-                hint="A floor on a player's total — a winless attendee still scores this. Never adds on top of wins."
+                label="Minimum per event"
+                hint="A floor on each event a player attends — a winless night still scores at least this."
               >
                 <input
                   type="number"
