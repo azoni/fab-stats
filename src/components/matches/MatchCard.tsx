@@ -6,7 +6,7 @@ import { HeroSelect } from "@/components/heroes/HeroSelect";
 import { getHeroByName } from "@/lib/heroes";
 import { HeroAvatar } from "@/components/heroes/HeroAvatar";
 import { HeroImg } from "@/components/heroes/HeroImg";
-import { MatchResult, type MatchRecord } from "@/types";
+import { MatchResult, GameFormat, type MatchRecord } from "@/types";
 import { localDate } from "@/lib/constants";
 import { lookupGemId, sendHeroCorrectionNotification, getMatchesByUserId } from "@/lib/firestore-storage";
 import { toast } from "sonner";
@@ -79,6 +79,7 @@ export function MatchCard({ match, matchOwnerUid, enableComments = false, obfusc
   const [editResult, setEditResult] = useState<MatchResult>(match.result);
   const [editWinCondition, setEditWinCondition] = useState<MatchRecord["winCondition"]>(match.winCondition);
   const [editGoingFirst, setEditGoingFirst] = useState<boolean | undefined>(match.goingFirst);
+  const [editFormat, setEditFormat] = useState<GameFormat>(match.format);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [showGemNudge, setShowGemNudge] = useState(false);
@@ -121,6 +122,7 @@ export function MatchCard({ match, matchOwnerUid, enableComments = false, obfusc
       if (editResult !== match.result) updates.result = editResult;
       if (editWinCondition !== match.winCondition) updates.winCondition = editWinCondition || undefined;
       if (editGoingFirst !== match.goingFirst) updates.goingFirst = editGoingFirst;
+      if (editFormat !== match.format) updates.format = editFormat;
       if (Object.keys(updates).length > 0) {
         // Stamp the edit timestamp so the UI can show a transparency badge.
         updates.editedAt = new Date().toISOString();
@@ -152,6 +154,7 @@ export function MatchCard({ match, matchOwnerUid, enableComments = false, obfusc
     setEditResult(match.result);
     setEditWinCondition(match.winCondition);
     setEditGoingFirst(match.goingFirst);
+    setEditFormat(match.format);
     setEditing(true);
   }
 
@@ -427,8 +430,22 @@ export function MatchCard({ match, matchOwnerUid, enableComments = false, obfusc
             </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            <HeroSelect value={editHero} onChange={setEditHero} label="Your Hero" format={match.format} />
-            <HeroSelect value={editOppHero} onChange={setEditOppHero} label="Opponent's Hero" format={match.format} />
+            <HeroSelect value={editHero} onChange={setEditHero} label="Your Hero" format={editFormat} />
+            <HeroSelect value={editOppHero} onChange={setEditOppHero} label="Opponent's Hero" format={editFormat} />
+          </div>
+          {/* Format — the whole event is imported with one guessed format, so fix a
+              mis-labeled round here (e.g. draft rounds inside a national tagged CC). */}
+          <div>
+            <label className="text-[11px] text-fab-dim mb-1 block">Format</label>
+            <select
+              value={editFormat}
+              onChange={(e) => setEditFormat(e.target.value as GameFormat)}
+              className="w-full bg-fab-bg border border-fab-border/50 rounded px-2 py-1 text-xs text-fab-text focus:outline-none focus:border-fab-gold"
+            >
+              {Object.values(GameFormat).map((f) => (
+                <option key={f} value={f}>{f}</option>
+              ))}
+            </select>
           </div>
           {/* Win condition + going first */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
