@@ -11,7 +11,7 @@ import {
   limit as fbLimit,
 } from "firebase/firestore";
 import { db } from "./firebase";
-import { searchCards } from "./cards";
+import { searchCards, getCardById } from "./cards";
 import { searchHeroes, getHeroPortraitUrl } from "./heroes";
 
 export type TierItemKind = "card" | "hero" | "custom";
@@ -141,6 +141,25 @@ export function suggestionToItem(s: ItemSuggestion): TierItem {
 
 export function makeCustomItem(label: string, imageUrl: string): TierItem {
   return { id: uid(), label: label.trim() || "Item", imageUrl: imageUrl.trim(), kind: "custom" };
+}
+
+/** Ordered, de-duplicated image URLs a tile should try, best first.
+ *
+ * For CARD items we re-derive the CDN + TCGplayer URLs from the live card DB (via
+ * refId), not just the stored fields — so a card whose community-CDN render 404s
+ * still falls back to its TCGplayer scan even when the item was saved before the
+ * fallback field existed (or the field never got written). Heroes/custom items just
+ * use whatever image they carry. Empty/duplicate entries are dropped. */
+export function itemImageSources(item: TierItem): string[] {
+  const out: string[] = [];
+  if (item.imageUrl) out.push(item.imageUrl);
+  if (item.imageUrlFallback) out.push(item.imageUrlFallback);
+  if (item.refId?.startsWith("card:")) {
+    const card = getCardById(item.refId.slice(5));
+    if (card?.imageUrl) out.push(card.imageUrl);
+    if (card?.imageUrlFallback) out.push(card.imageUrlFallback);
+  }
+  return [...new Set(out.filter(Boolean))];
 }
 
 /** A readable label from an image URL's filename, or a provided alt text. */
