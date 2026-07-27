@@ -1,4 +1,7 @@
-import { allHeroes } from "@/lib/heroes";
+// Frozen pool: FaBdoku cell validity + answers derive from this hero list, so it must not
+// shift when the card package adds heroes (that would rewrite past puzzles). See
+// lib/games/frozen-pool.ts.
+import { frozenHeroes as allHeroes } from "@/lib/games/frozen-pool";
 import type { HeroInfo } from "@/types";
 import {
   CLASS_CATEGORIES,

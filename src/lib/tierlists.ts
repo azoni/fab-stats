@@ -24,6 +24,8 @@ export interface TierItem {
   kind: TierItemKind;
   /** Source ref for dedup ("card:<id>" / "hero:<name>"); absent for custom. */
   refId?: string;
+  /** Alternate art tried if `imageUrl` fails to load (newest sets not on the CDN). */
+  imageUrlFallback?: string;
 }
 
 export interface Tier {
@@ -88,6 +90,7 @@ export interface ItemSuggestion {
   kind: "card" | "hero";
   refId: string;
   sub: string; // class / "Hero" — shown dim in the dropdown
+  imageUrlFallback?: string;
 }
 
 /** Combined, relevance-ranked suggestions across heroes + released cards. */
@@ -113,6 +116,7 @@ export function searchItems(q: string, max = 24): ItemSuggestion[] {
       kind: "card",
       refId: `card:${c.cardIdentifier}`,
       sub: c.classes[0] || c.types[0] || "Card",
+      imageUrlFallback: c.imageUrlFallback,
     });
   }
 
@@ -129,7 +133,10 @@ export function searchItems(q: string, max = 24): ItemSuggestion[] {
 }
 
 export function suggestionToItem(s: ItemSuggestion): TierItem {
-  return { id: uid(), label: s.label, imageUrl: s.imageUrl, kind: s.kind, refId: s.refId };
+  const item: TierItem = { id: uid(), label: s.label, imageUrl: s.imageUrl, kind: s.kind, refId: s.refId };
+  // Only set optional keys when defined — Firestore setDoc rejects `undefined`.
+  if (s.imageUrlFallback) item.imageUrlFallback = s.imageUrlFallback;
+  return item;
 }
 
 export function makeCustomItem(label: string, imageUrl: string): TierItem {
@@ -245,19 +252,27 @@ export function tierListItemCount(list: TierListDoc): number {
   return Object.keys(list.items || {}).length;
 }
 
-/** First N item images across tiers (top tiers first) for a directory thumbnail. */
-export function tierListPreviewImages(list: TierListDoc, n = 6): string[] {
-  const out: string[] = [];
+export interface PreviewImage {
+  src: string;
+  fallback?: string;
+}
+
+/** First N item images across tiers (top tiers first) for a directory thumbnail,
+ *  each with its optional fallback art. */
+export function tierListPreviewImages(list: TierListDoc, n = 6): PreviewImage[] {
+  const out: PreviewImage[] = [];
+  const push = (id: string) => {
+    const it = list.items?.[id];
+    if (it?.imageUrl) out.push({ src: it.imageUrl, fallback: it.imageUrlFallback });
+  };
   for (const t of list.tiers || []) {
     for (const id of list.placement?.[t.id] || []) {
-      const url = list.items?.[id]?.imageUrl;
-      if (url) out.push(url);
+      push(id);
       if (out.length >= n) return out;
     }
   }
   for (const id of list.placement?.[POOL_ID] || []) {
-    const url = list.items?.[id]?.imageUrl;
-    if (url) out.push(url);
+    push(id);
     if (out.length >= n) break;
   }
   return out;

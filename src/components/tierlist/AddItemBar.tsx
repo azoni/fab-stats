@@ -9,6 +9,17 @@ import {
   type ItemSuggestion,
 } from "@/lib/tierlists";
 
+/** Dropdown thumbnail with the same primary→TCGplayer→blank fallback as the tiles. */
+function SuggestionThumb({ srcs }: { srcs: string[] }) {
+  const [i, setI] = useState(0);
+  const src = srcs[i];
+  if (!src) return <div className="h-9 w-7 shrink-0 rounded border border-fab-border bg-fab-bg" />;
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img src={src} alt="" onError={() => setI((n) => n + 1)} className="h-9 w-7 shrink-0 rounded border border-fab-border object-cover object-top" />
+  );
+}
+
 export function AddItemBar({ onAdd }: { onAdd: (item: TierItem) => void }) {
   const [q, setQ] = useState("");
   const [open, setOpen] = useState(false);
@@ -99,12 +110,8 @@ export function AddItemBar({ onAdd }: { onAdd: (item: TierItem) => void }) {
                   i === active ? "bg-fab-gold/15" : "hover:bg-fab-bg/60"
                 }`}
               >
-                {s.imageUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={s.imageUrl} alt="" className="h-9 w-7 shrink-0 rounded border border-fab-border object-cover" />
-                ) : (
-                  <div className="h-9 w-7 shrink-0 rounded border border-fab-border bg-fab-bg" />
-                )}
+                <SuggestionThumb srcs={[s.imageUrl, s.imageUrlFallback].filter(Boolean) as string[]} />
+
                 <span className="min-w-0 flex-1 truncate text-sm font-medium text-fab-text">{s.label}</span>
                 <span className="shrink-0 text-[10px] uppercase tracking-wide text-fab-dim">{s.sub}</span>
               </button>

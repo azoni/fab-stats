@@ -1,10 +1,14 @@
-import { allHeroes } from "@/lib/heroes";
+import { frozenHeroes } from "@/lib/games/frozen-pool";
 import type { HeroInfo } from "@/types";
 import { mulberry32, dateToSeed } from "@/lib/games/seeded-random";
 import type { HeroGuessClues, ClueResult, NumericClueResult } from "./types";
 
-// Filter to heroes with life + intellect defined (needed for meaningful clues)
-const HERO_POOL = allHeroes.filter((h) => h.life != null && h.intellect != null);
+// Pull from the FROZEN pool, not the live hero list — the daily answer is chosen by
+// indexing into this pool, so its size/order must not shift when the card package adds
+// heroes (that would silently rewrite every past day's answer). See lib/games/frozen-pool.ts.
+// Filter to heroes with life + intellect defined (needed for meaningful clues).
+const HERO_POOL = frozenHeroes.filter((h) => h.life != null && h.intellect != null);
+const HERO_POOL_BY_NAME = new Map(HERO_POOL.map((h) => [h.name, h]));
 
 const cache = new Map<string, HeroInfo>();
 
@@ -59,4 +63,11 @@ export function compareHeroes(guess: HeroInfo, answer: HeroInfo): HeroGuessClues
 
 export function getHeroPool(): HeroInfo[] {
   return HERO_POOL;
+}
+
+/** Resolve a guessed hero name against the FROZEN pool so a guess is compared with the
+ *  same (frozen) attributes as the answer — otherwise a hero whose legal formats the card
+ *  package later changed would score its format clue inconsistently. */
+export function getPoolHero(name: string): HeroInfo | undefined {
+  return HERO_POOL_BY_NAME.get(name);
 }

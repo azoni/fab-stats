@@ -13,6 +13,17 @@ const INCLUDED_TYPES = new Set<string>([
   Type.AttackReaction,
 ]);
 
+/** A TCGplayer card scan (portrait, card-ratio) to fall back on when the community
+ *  image CDN has no render yet — chiefly the newest sets (Omens of the Third Age,
+ *  Mastery Pack: Warrior, …). Derived from the card's TCGplayer product id. */
+function tcgplayerImage(card: { printings?: { tcgplayer?: { productId?: string } }[] }): string | undefined {
+  for (const p of card.printings || []) {
+    const id = p.tcgplayer?.productId;
+    if (id) return `https://tcgplayer-cdn.tcgplayer.com/product/${id}_in_1000x1000.jpg`;
+  }
+  return undefined;
+}
+
 /** Map raw type enums to display-friendly names. */
 function getDisplayType(types: string[]): string {
   if (types.includes(Type.DefenseReaction)) return "Defense Reaction";
@@ -46,6 +57,7 @@ for (const card of cardPool) {
     defense: card.defense,
     legalFormats: (card.legalFormats || []).map(String),
     imageUrl: imageId ? `${CARD_IMAGE_CDN}/${imageId}.webp` : "",
+    imageUrlFallback: tcgplayerImage(card),
   });
 }
 

@@ -10,14 +10,18 @@ import {
   useSensor,
   useSensors,
   useDroppable,
-  closestCorners,
+  pointerWithin,
+  rectIntersection,
+  closestCenter,
+  getFirstCollision,
+  type CollisionDetection,
   type DragStartEvent,
   type DragOverEvent,
   type DragEndEvent,
 } from "@dnd-kit/core";
 import { SortableContext, arrayMove, rectSortingStrategy, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { useRouter } from "next/navigation";
-import { Download, Save, Share2, Plus, Trash2, ChevronUp, ChevronDown, RotateCcw } from "lucide-react";
+import { Download, Save, Share2, Plus, Trash2, ChevronUp, ChevronDown, RotateCcw, Globe, Lock } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { downloadCardImage } from "@/lib/share-image";
 import {
@@ -65,7 +69,10 @@ function DroppableArea({ id, itemIds, className, children }: { id: string; itemI
   const { setNodeRef, isOver } = useDroppable({ id });
   return (
     <SortableContext id={id} items={itemIds} strategy={rectSortingStrategy}>
-      <div ref={setNodeRef} className={`${className} ${isOver ? "bg-fab-gold/5" : ""}`}>
+      <div
+        ref={setNodeRef}
+        className={`${className} rounded-md transition-colors ${isOver ? "bg-fab-gold/15 outline-dashed outline-2 -outline-offset-2 outline-fab-gold/70" : ""}`}
+      >
         {children}
       </div>
     </SortableContext>
@@ -83,6 +90,7 @@ export function TierListMaker({ initial }: { initial?: TierListDoc }) {
   const [items, setItems] = useState<Record<string, TierItem>>(start.items);
   const [placement, setPlacement] = useState<Placement>(start.placement);
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [isPublic, setIsPublic] = useState(initial?.isPublic ?? true);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [exporting, setExporting] = useState(false);
@@ -91,6 +99,10 @@ export function TierListMaker({ initial }: { initial?: TierListDoc }) {
   const captureRef = useRef<HTMLDivElement>(null);
   const savingRef = useRef(false);
   const createdAtRef = useRef(initial?.createdAt || "");
+  // Current placement for the collision detector (a stable [] useCallback can't
+  // close over the live state).
+  const placementRef = useRef(placement);
+  placementRef.current = placement;
 
   const ownsList = !!user && (!initial || initial.ownerUid === user.uid);
   const readOnly = !!initial && !ownsList;
@@ -98,10 +110,36 @@ export function TierListMaker({ initial }: { initial?: TierListDoc }) {
   // Mouse drags on a small move; touch needs a short press-hold so a swipe still
   // scrolls the page (tiles have no touch-action:none). Keyboard for a11y.
   const sensors = useSensors(
-    useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
-    useSensor(TouchSensor, { activationConstraint: { delay: 180, tolerance: 8 } }),
+    useSensor(MouseSensor, { activationConstraint: { distance: 4 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 160, tolerance: 6 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
+
+  // "Drop where the pointer is": prefer droppables under the pointer (steadier than
+  // closest-corner while rows reflow mid-drag), falling back to rectangle overlap
+  // when the pointer is off every container. When the hit is a *container* (a tier
+  // or the tray) that has cards, retarget to the closest card inside it — otherwise
+  // releasing in a tier's gap/trailing space resolves to the whole container, which
+  // gives no make-room preview and drops nothing on release.
+  const collisionDetection: CollisionDetection = useCallback((args) => {
+    const pointer = pointerWithin(args);
+    const collisions = pointer.length ? pointer : rectIntersection(args);
+    const overId = getFirstCollision(collisions, "id");
+    if (overId == null) return collisions;
+    const pl = placementRef.current;
+    if (typeof overId === "string" && overId in pl && (pl[overId]?.length ?? 0) > 0) {
+      const childIds = pl[overId];
+      const closest = closestCenter({
+        ...args,
+        droppableContainers: args.droppableContainers.filter(
+          (c) => c.id !== overId && childIds.includes(String(c.id)),
+        ),
+      });
+      const closestId = getFirstCollision(closest, "id");
+      if (closestId != null) return [{ id: closestId }];
+    }
+    return [{ id: overId }];
+  }, []);
 
   const findContainer = useCallback(
     (id: string): string | undefined => {
@@ -151,8 +189,10 @@ export function TierListMaker({ initial }: { initial?: TierListDoc }) {
       setPlacement((prev) => {
         const arr = prev[from];
         const oldIndex = arr.indexOf(activeId);
-        const newIndex = arr.indexOf(overId);
-        if (oldIndex < 0 || newIndex < 0) return prev;
+        if (oldIndex < 0) return prev;
+        const overIndex = arr.indexOf(overId);
+        // over === the container (released in empty/trailing space) → move to the end.
+        const newIndex = overIndex >= 0 ? overIndex : arr.length - 1;
         return { ...prev, [from]: arrayMove(arr, oldIndex, newIndex) };
       });
     }
@@ -294,7 +334,7 @@ export function TierListMaker({ initial }: { initial?: TierListDoc }) {
         items,
         ownerUid: user.uid,
         ownerName: profile.displayName || profile.username,
-        isPublic: true,
+        isPublic,
         createdAt: createdAtRef.current,
         updatedAt: now,
       };
@@ -321,12 +361,19 @@ export function TierListMaker({ initial }: { initial?: TierListDoc }) {
   }
 
   async function share() {
-    const id = docId || (await save()); // use the id save() returns — not stale state
+    // Always persist first so the link reflects what's on screen — the visibility
+    // toggle only lives in state until a save, so sharing without saving could hand
+    // out a link that's actually Private (or mislabel a Public one).
+    const id = await save();
     if (!id) return;
     const url = `${window.location.origin}/tierlist?id=${id}`;
     try {
       await navigator.clipboard.writeText(url);
-      toast.success("Share link copied.");
+      toast.success(
+        isPublic
+          ? "Share link copied."
+          : "Link copied — but this list is Private, so only you can open it. Switch it to Public to share.",
+      );
     } catch {
       toast.info(url);
     }
@@ -352,20 +399,33 @@ export function TierListMaker({ initial }: { initial?: TierListDoc }) {
     <div
       className={`space-y-4 rounded-xl transition-[outline] ${dropActive ? "outline-dashed outline-2 outline-offset-4 outline-fab-gold" : ""}`}
       onDragOver={(e) => {
-        // Only react to images dragged in from outside — dnd-kit's own drag is
-        // pointer-based and never fires native drag events.
-        if (readOnly) return;
-        if (e.dataTransfer.types.some((t) => ["Files", "text/uri-list", "text/html", "text/plain"].includes(t))) {
-          e.preventDefault();
-          setDropActive(true);
-        }
+        // dnd-kit's own drag is pointer-based and fires no native drag events, so a
+        // native dragover here is always something coming from outside. Call
+        // preventDefault on any external drag so the drop is actually accepted —
+        // sniffing dataTransfer.types during dragover is unreliable across browsers,
+        // and skipping it silently drops the drop. Let real inputs keep native
+        // text-drop behavior, but ALWAYS grab file drops (else dropping a file on the
+        // title input navigates the tab to the file and loses the unsaved list).
+        if (readOnly || e.dataTransfer.types.length === 0) return;
+        const isFile = e.dataTransfer.types.includes("Files");
+        const tag = (e.target as HTMLElement)?.tagName;
+        if (!isFile && (tag === "INPUT" || tag === "TEXTAREA")) return;
+        e.preventDefault();
+        setDropActive(true);
       }}
-      onDragLeave={() => setDropActive(false)}
+      onDragLeave={(e) => {
+        // Only clear when the pointer actually leaves the board, not when it crosses
+        // between child elements (relatedTarget still inside) — otherwise it flickers.
+        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setDropActive(false);
+      }}
       onDrop={(e) => {
+        setDropActive(false); // always clear — the drop bubbles here even from an input
         if (readOnly) return;
+        const isFile = e.dataTransfer.types.includes("Files");
+        const tag = (e.target as HTMLElement)?.tagName;
+        if (!isFile && (tag === "INPUT" || tag === "TEXTAREA")) return;
         if (e.dataTransfer.types.length) {
           e.preventDefault();
-          setDropActive(false);
           addFromTransfer(e.dataTransfer);
         }
       }}
@@ -381,6 +441,23 @@ export function TierListMaker({ initial }: { initial?: TierListDoc }) {
         />
         {!readOnly && (
           <>
+            <button
+              type="button"
+              onClick={() => setIsPublic((v) => !v)}
+              title={
+                isPublic
+                  ? "Public — shows in Discover and anyone with the link can view. Tap to make private."
+                  : "Private — only you can see it (hidden from Discover, share link won't open for others). Tap to make public."
+              }
+              className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-bold transition-colors ${
+                isPublic
+                  ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-300 hover:border-emerald-500/70"
+                  : "border-fab-border bg-fab-bg text-fab-muted hover:text-fab-text"
+              }`}
+            >
+              {isPublic ? <Globe className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
+              {isPublic ? "Public" : "Private"}
+            </button>
             <ToolbarBtn onClick={save} disabled={saving} icon={<Save className="h-4 w-4" />} label={saving ? "Saving…" : "Save"} />
             <ToolbarBtn onClick={share} icon={<Share2 className="h-4 w-4" />} label="Share" />
           </>
@@ -391,21 +468,21 @@ export function TierListMaker({ initial }: { initial?: TierListDoc }) {
         )}
       </div>
 
-      <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={onDragStart} onDragOver={onDragOver} onDragEnd={onDragEnd}>
+      <DndContext sensors={sensors} collisionDetection={collisionDetection} onDragStart={onDragStart} onDragOver={onDragOver} onDragEnd={onDragEnd}>
         {/* Capture area: title + tier rows */}
         <div ref={captureRef} className="overflow-hidden rounded-xl border border-fab-border bg-fab-bg">
           <div className="border-b border-fab-border bg-fab-surface px-4 py-2.5 text-center text-base font-black tracking-wide text-fab-text">
             {title || "Tier List"}
           </div>
           {tiers.map((tier, idx) => (
-            <div key={tier.id} className="group/row flex items-stretch border-b border-fab-border last:border-b-0">
+            <div key={tier.id} className="group/row relative flex items-stretch border-b border-fab-border last:border-b-0">
               {/* Tier label */}
-              <div className="relative flex w-[72px] shrink-0 items-center justify-center" style={{ backgroundColor: tier.color }}>
+              <div className="relative flex w-12 shrink-0 items-center justify-center sm:w-[72px]" style={{ backgroundColor: tier.color }}>
                 <input
                   value={tier.label}
                   onChange={(e) => updateTier(tier.id, { label: e.target.value })}
                   disabled={readOnly}
-                  className="w-full bg-transparent px-1 py-3 text-center text-xl font-black text-black/85 focus:outline-none"
+                  className="w-full bg-transparent px-1 py-3 text-center text-lg font-black text-black/85 focus:outline-none sm:text-xl"
                   style={{ minWidth: 0 }}
                 />
               </div>

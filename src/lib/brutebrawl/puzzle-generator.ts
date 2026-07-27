@@ -1,5 +1,7 @@
 import { mulberry32, dateToSeed } from "@/lib/games/seeded-random";
-import { allHeroes } from "@/lib/heroes";
+// Frozen pool: the daily defender is chosen by indexing this list, so it must not shift
+// when the card package adds heroes. See lib/games/frozen-pool.ts.
+import { frozenHeroes as allHeroes } from "@/lib/games/frozen-pool";
 import { getTaunt, type TauntEvent } from "./taunts";
 
 const SEED_OFFSET = 3_000_003;

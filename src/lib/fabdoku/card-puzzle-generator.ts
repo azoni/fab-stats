@@ -1,4 +1,7 @@
-import { allCards } from "@/lib/cards";
+// Frozen pool: card FaBdoku cell validity + answers derive from this card list, so it must
+// not shift when the card package adds sets (that would rewrite past puzzles). See
+// lib/games/frozen-pool.ts.
+import { frozenCards as allCards } from "@/lib/games/frozen-pool";
 import type { CardInfo } from "@/types";
 import {
   CARD_AXIS_PAIRS,
