@@ -21,7 +21,7 @@ import {
 } from "@dnd-kit/core";
 import { SortableContext, arrayMove, rectSortingStrategy, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { useRouter } from "next/navigation";
-import { Link2, Save, Share2, Plus, Trash2, ChevronUp, ChevronDown, RotateCcw, Globe, Lock } from "lucide-react";
+import { Link2, Save, Share2, Copy, Plus, Trash2, ChevronUp, ChevronDown, RotateCcw, Globe, Lock } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { captureCardBlob } from "@/lib/share-image";
 import {
@@ -94,6 +94,7 @@ export function TierListMaker({ initial }: { initial?: TierListDoc }) {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [isPublic, setIsPublic] = useState(initial?.isPublic ?? true);
   const [saving, setSaving] = useState(false);
+  const [copying, setCopying] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [dropActive, setDropActive] = useState(false);
@@ -105,9 +106,74 @@ export function TierListMaker({ initial }: { initial?: TierListDoc }) {
   // close over the live state).
   const placementRef = useRef(placement);
   placementRef.current = placement;
+  // Per-list localStorage draft key + a once-guard for restore-on-mount.
+  const draftKeyRef = useRef(`fab-tl-draft:${initial?.id || "new"}`);
+  const restoredRef = useRef(false);
 
   const ownsList = !!user && (!initial || initial.ownerUid === user.uid);
   const readOnly = !!initial && !ownsList;
+
+  // ── Crash-safe autosave ──────────────────────────────────────────────────
+  // The live board is only in React state until you hit Save, so a crash or an
+  // accidental reload loses everything. Debounce-write the working list to
+  // localStorage and restore it on mount, so nothing is lost between saves.
+  useEffect(() => {
+    if (readOnly) return;
+    const t = window.setTimeout(() => {
+      try {
+        const json = JSON.stringify({ id: docId, title, description, tiers, items, placement, isPublic, at: Date.now() });
+        // Skip drafts too big for localStorage (>~2.5MB); those can't be saved anyway.
+        if (json.length < 2_500_000) localStorage.setItem(draftKeyRef.current, json);
+      } catch {
+        /* quota / private-mode — nothing we can do, skip */
+      }
+    }, 700);
+    return () => window.clearTimeout(t);
+  }, [readOnly, docId, title, description, tiers, items, placement, isPublic]);
+
+  useEffect(() => {
+    if (readOnly || restoredRef.current) return;
+    restoredRef.current = true;
+    let draft: { id?: string; title?: string; description?: string; tiers?: Tier[]; items?: Record<string, TierItem>; placement?: Placement; isPublic?: boolean; at?: number } | null = null;
+    try {
+      const raw = localStorage.getItem(draftKeyRef.current);
+      if (raw) draft = JSON.parse(raw);
+    } catch {
+      return;
+    }
+    if (!draft || !Array.isArray(draft.tiers) || !draft.items || !draft.placement) return;
+    // Only restore when the draft genuinely differs from the freshly-loaded state.
+    // A plain load (or a Discard) also autosaves, so a timestamp check would misfire
+    // and re-toast a no-op "restore" on every reload. Compare content instead.
+    const norm = (t?: string, d?: string, ti?: unknown, it?: unknown, pl?: unknown, pub?: boolean) =>
+      JSON.stringify([t ?? "", d ?? "", ti, it, pl, pub ?? true]);
+    const draftSig = norm(draft.title, draft.description, draft.tiers, draft.items, draft.placement, draft.isPublic);
+    const startSig = norm(start.title, start.description, start.tiers, start.items, start.placement, initial?.isPublic ?? true);
+    if (draftSig === startSig) return;
+    if (draft.id) setDocId(draft.id);
+    if (typeof draft.title === "string") setTitle(draft.title);
+    setDescription(draft.description ?? "");
+    setTiers(draft.tiers);
+    setItems(draft.items);
+    setPlacement(draft.placement);
+    if (typeof draft.isPublic === "boolean") setIsPublic(draft.isPublic);
+    toast("Restored your unsaved changes.", {
+      action: {
+        label: "Discard",
+        onClick: () => {
+          try { localStorage.removeItem(draftKeyRef.current); } catch {}
+          setDocId(start.id);
+          setTitle(start.title);
+          setDescription(start.description);
+          setTiers(start.tiers);
+          setItems(start.items);
+          setPlacement(start.placement);
+          setIsPublic(initial?.isPublic ?? true);
+        },
+      },
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [readOnly]);
 
   // Mouse drags on a small move; touch needs a short press-hold so a swipe still
   // scrolls the page (tiles have no touch-action:none). Keyboard for a11y.
@@ -408,7 +474,18 @@ export function TierListMaker({ initial }: { initial?: TierListDoc }) {
       // Keep the id in component state only — we deliberately don't rewrite the URL,
       // so saving never remounts/reloads the live board. Share copies the link from
       // this id, and the saved list appears in the Discover directory.
-      if (!docId) setDocId(id);
+      if (!docId) {
+        setDocId(id);
+        // A brand-new list autosaves under the shared "fab-tl-draft:new" key. Once it
+        // has a real id, move future autosaves onto that id — otherwise the NEXT
+        // brand-new list would restore this one's content (and its docId) and could
+        // overwrite it on save.
+        draftKeyRef.current = `fab-tl-draft:${id}`;
+        try { localStorage.removeItem("fab-tl-draft:new"); } catch {}
+      }
+      // The saved doc is now the source of truth — drop the crash-recovery draft
+      // (the next edit re-creates it, under the id-specific key).
+      try { localStorage.removeItem(draftKeyRef.current); } catch {}
       toast.success("Tier list saved.");
       return id;
     } catch {
@@ -417,6 +494,45 @@ export function TierListMaker({ initial }: { initial?: TierListDoc }) {
     } finally {
       setSaving(false);
       savingRef.current = false;
+    }
+  }
+
+  /** Duplicate this list (yours or someone else's) into a new list you own, then open it. */
+  async function copy() {
+    if (!user || !profile) {
+      toast.error("Sign in to make a copy.");
+      return;
+    }
+    if (copying) return;
+    setCopying(true);
+    try {
+      const newId = newTierListId();
+      const now = new Date().toISOString();
+      const dup: TierListDoc = {
+        id: newId,
+        title: `${title.trim() || "Tier List"} (Copy)`.slice(0, 120),
+        description: description.trim(),
+        // Deep-clone so the new doc never shares references with the live board.
+        tiers: JSON.parse(JSON.stringify(tiers)),
+        placement: JSON.parse(JSON.stringify(placement)),
+        items: JSON.parse(JSON.stringify(items)),
+        ownerUid: user.uid,
+        ownerName: profile.displayName || profile.username,
+        isPublic,
+        createdAt: now,
+        updatedAt: now,
+      };
+      if (JSON.stringify(dup).length > 950_000) {
+        toast.error("This list has too many embedded images to copy — remove some first.");
+        return;
+      }
+      await saveTierList(dup);
+      toast.success("Copied to your tier lists.");
+      router.push(`/tierlist?id=${newId}`);
+    } catch {
+      toast.error("Failed to copy.");
+    } finally {
+      setCopying(false);
     }
   }
 
@@ -445,6 +561,7 @@ export function TierListMaker({ initial }: { initial?: TierListDoc }) {
     setDeleting(true);
     try {
       await deleteTierList(docId);
+      try { localStorage.removeItem(draftKeyRef.current); } catch {}
       toast.success("Tier list deleted.");
       router.push("/tierlist");
     } catch {
@@ -521,6 +638,9 @@ export function TierListMaker({ initial }: { initial?: TierListDoc }) {
             <ToolbarBtn onClick={save} disabled={saving} icon={<Save className="h-4 w-4" />} label={saving ? "Saving…" : "Save"} />
             <ToolbarBtn onClick={share} icon={<Link2 className="h-4 w-4" />} label="Link" />
           </>
+        )}
+        {user && (
+          <ToolbarBtn onClick={copy} disabled={copying} icon={<Copy className="h-4 w-4" />} label={copying ? "Copying…" : "Copy"} />
         )}
         <ToolbarBtn onClick={shareImage} disabled={exporting} icon={<Share2 className="h-4 w-4" />} label={exporting ? "…" : "Share"} />
         {!readOnly && docId && ownsList && (
