@@ -5,7 +5,9 @@ export const CURRENT_VERSION = 1;
 export const HERO_REQUIRED_CUTOFF = "2026-02-24";
 
 /** Valid username slug pattern (lowercase alphanumeric, underscores, hyphens). */
-const VALID_USERNAME = /^[a-z0-9_-]+$/i;
+// Usernames may contain dots (e.g. "diego.santiago1802") — without allowing them,
+// playerHref sent those players to /search instead of their profile.
+const VALID_USERNAME = /^[a-z0-9._-]+$/i;
 
 /** Returns the correct href for a player link. Invalid usernames redirect to search. */
 export function playerHref(username: string): string {

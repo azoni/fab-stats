@@ -46,8 +46,10 @@ export interface TierListDoc {
   updatedAt: string;
 }
 
-/** The unranked tray. */
-export const POOL_ID = "__pool__";
+/** The unranked tray. NOTE: this is used as a Firestore map key in `placement`, so it
+ *  must NOT match /__.*__/ (Firestore reserves double-underscore field names) — a
+ *  reserved key makes every setDoc reject with a generic failure. */
+export const POOL_ID = "unranked";
 
 /** Classic S→F red-to-green ramp. */
 export const DEFAULT_TIERS: Tier[] = [
