@@ -152,6 +152,18 @@ function timeRemainingLabel(league: League): { label: string; tone: "gold" | "mu
   return { label: `${days}d left`, tone: "win" };
 }
 
+/** League banner as a subtle card background: the photo under a left-heavy scrim so
+ *  the title/description (left) stay fully readable while the art bleeds in on the
+ *  right. Sits behind the card content (negative z within the card's stacking context). */
+function LeagueCardBg({ url }: { url: string }) {
+  return (
+    <>
+      <div aria-hidden className="absolute inset-0 -z-20 bg-cover bg-center" style={{ backgroundImage: `url(${url})` }} />
+      <div aria-hidden className="absolute inset-0 -z-10 bg-gradient-to-r from-fab-bg/95 via-fab-bg/90 to-fab-bg/55" />
+    </>
+  );
+}
+
 export default function LeagueHub() {
   const { user, profile } = useAuth();
 
@@ -539,8 +551,9 @@ export default function LeagueHub() {
                   const timeBadge = timeRemainingLabel(l);
                   return (
                     <li key={l.id}>
-                      <Card padding="sm" className="relative">
-                        <div className="flex flex-wrap items-start justify-between gap-3">
+                      <Card padding="none" className="relative isolate overflow-hidden">
+                        {l.bannerUrl && <LeagueCardBg url={l.bannerUrl} />}
+                        <div className="flex flex-wrap items-start justify-between gap-3 p-3">
                           <div className="flex min-w-0 items-start gap-2.5">
                             {l.iconUrl && (
                               <img
@@ -648,8 +661,9 @@ export default function LeagueHub() {
                   const timeBadge = timeRemainingLabel(l);
                   return (
                     <li key={l.id}>
-                      <Card padding="sm" className="relative">
-                        <div className="flex flex-wrap items-center justify-between gap-3">
+                      <Card padding="none" className="relative isolate overflow-hidden">
+                        {l.bannerUrl && <LeagueCardBg url={l.bannerUrl} />}
+                        <div className="flex flex-wrap items-center justify-between gap-3 p-3">
                           <div className="flex min-w-0 items-center gap-2.5">
                             {l.iconUrl && (
                               <img
