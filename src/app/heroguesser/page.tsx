@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { GameNav } from "@/components/games/GameNav";
 import { HeroGuesserBoard } from "@/components/heroguesser/HeroGuesserBoard";
 import { HeroGuesserResult } from "@/components/heroguesser/HeroGuesserResult";
-import { generateDailyHero, compareHeroes, getHeroPool } from "@/lib/heroguesser/puzzle-generator";
+import { generateDailyHero, compareHeroes, getHeroPool, getPoolHero } from "@/lib/heroguesser/puzzle-generator";
 import { createFreshGameState, loadGameState, saveGameState, cleanupOldStates } from "@/lib/heroguesser/game-state";
 import { saveResult, loadStats, markShared } from "@/lib/heroguesser/firestore";
 import { createHeroGuesserFeedEvent } from "@/lib/feed";
@@ -47,7 +47,8 @@ export default function HeroGuesserPage() {
   const handleGuess = useCallback((heroName: string) => {
     if (gameState.completed || gameState.guesses.length >= gameState.maxGuesses) return;
 
-    const guessHero = getHeroByName(heroName);
+    // Resolve against the frozen pool so the guess's attributes match the frozen answer's.
+    const guessHero = getPoolHero(heroName) ?? getHeroByName(heroName);
     if (!guessHero) return;
 
     const clues = compareHeroes(guessHero, answer);

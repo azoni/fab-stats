@@ -2,7 +2,7 @@
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
-import { Plus, Trash2, Pencil, Eye } from "lucide-react";
+import { Plus, Trash2, Pencil, Eye, Lock } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   listPublicTierLists,
@@ -12,6 +12,17 @@ import {
   tierListPreviewImages,
   type TierListDoc,
 } from "@/lib/tierlists";
+
+/** Thumbnail that falls back to alternate art (newest sets) then a blank tile. */
+function PreviewThumb({ srcs }: { srcs: string[] }) {
+  const [i, setI] = useState(0);
+  const src = srcs[i];
+  if (!src) return <div className="h-16 w-11 shrink-0 rounded border border-fab-border bg-fab-bg" />;
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img src={src} alt="" onError={() => setI((n) => n + 1)} className="h-16 w-11 shrink-0 rounded border border-fab-border object-cover object-top" />
+  );
+}
 
 function TierCard({ list, mine, onDeleted }: { list: TierListDoc; mine: boolean; onDeleted: (id: string) => void }) {
   const [busy, setBusy] = useState(false);
@@ -34,15 +45,17 @@ function TierCard({ list, mine, onDeleted }: { list: TierListDoc; mine: boolean;
 
   return (
     <div className="group relative flex flex-col overflow-hidden rounded-xl border border-fab-border bg-fab-surface transition-colors hover:border-fab-gold/40">
+      {mine && !list.isPublic && (
+        <span className="absolute left-2 top-2 z-10 inline-flex items-center gap-1 rounded-full bg-black/75 px-2 py-0.5 text-[10px] font-bold text-fab-muted backdrop-blur-sm">
+          <Lock className="h-2.5 w-2.5" /> Private
+        </span>
+      )}
       <Link href={`/tierlist?id=${list.id}`} className="block">
         <div className="flex h-20 items-center gap-1 overflow-hidden border-b border-fab-border/60 bg-fab-bg px-2">
           {preview.length === 0 ? (
             <span className="w-full text-center text-xs text-fab-dim">Empty tier list</span>
           ) : (
-            preview.map((src, i) => (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img key={i} src={src} alt="" className="h-16 w-11 shrink-0 rounded border border-fab-border object-cover" />
-            ))
+            preview.map((p, i) => <PreviewThumb key={i} srcs={[p.src, p.fallback].filter(Boolean) as string[]} />)
           )}
         </div>
         <div className="p-3">

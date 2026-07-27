@@ -157,6 +157,9 @@ export interface CardInfo {
   defense?: number;
   legalFormats: string[];
   imageUrl: string;
+  /** Alternate art (TCGplayer scan) used when the primary CDN has no image yet —
+   *  e.g. the newest sets the community image CDN hasn't published. */
+  imageUrlFallback?: string;
 }
 
 export interface UserProfile {

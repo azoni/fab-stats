@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from "react";
 import type { HeroGuess } from "@/lib/heroguesser/types";
 import type { HeroInfo } from "@/types";
 import { getHeroByName, getHeroPortraitUrl } from "@/lib/heroes";
+import { getPoolHero } from "@/lib/heroguesser/puzzle-generator";
 
 const CLUE_BG: Record<string, string> = {
   correct: "bg-fab-win/25 text-fab-win",
@@ -21,7 +22,9 @@ const COLUMNS = [
 ] as const;
 
 function getDisplayValue(guess: HeroGuess, col: typeof COLUMNS[number]["key"]): string {
-  const hero = getHeroByName(guess.heroName);
+  // Resolve from the frozen pool so displayed values match the clue colors, which are
+  // scored against the frozen answer (their only difference is pinned legalFormats).
+  const hero = getPoolHero(guess.heroName) ?? getHeroByName(guess.heroName);
   if (!hero) return "?";
   switch (col) {
     case "class": return hero.classes.join(", ") || "—";
