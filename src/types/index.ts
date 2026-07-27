@@ -451,6 +451,19 @@ export interface LeagueStandingEntry {
   /** Distinct events (date + event name + store) the member has qualifying matches
    *  in. Optional for back-compat with standings docs written before this field. */
   events?: number;
+  /** Per-event scoring breakdown (what each event contributed to `points`), so the
+   *  standings can show how a total was earned. Optional (older docs lack it). */
+  breakdown?: LeagueEventBreakdown[];
+}
+
+/** One event's contribution to a member's league points. */
+export interface LeagueEventBreakdown {
+  date: string; // YYYY-MM-DD
+  name: string;
+  wins: number;
+  losses: number;
+  draws: number;
+  points: number; // eventScore for this event (after the per-event floor + attendance)
 }
 
 export interface LeagueStandings {
