@@ -4,9 +4,11 @@ import {
   BarChart3,
   Bot,
   CalendarDays,
+  Crown,
   Gamepad2,
   ListOrdered,
   Mail,
+  Medal,
   MessageCircle,
   Settings,
   Shield,
@@ -70,8 +72,11 @@ export const navLinks: NavLink[] = [
   { href: "/meta", label: "Meta", icon: <NavAssetIcon name="meta" />, color: "text-teal-400", bg: "bg-teal-400/10", subItems: [
     { href: "/matchups", label: "Matchup Matrix" },
   ] },
-  { href: "/leaderboard", label: "Rankings", icon: <NavAssetIcon name="rankings" />, color: "text-amber-400", bg: "bg-amber-400/10" },
-  { href: "/achievements", label: "Achievements", icon: <NavAssetIcon name="achievements" />, color: "text-yellow-400", bg: "bg-yellow-400/10" },
+  // Rankings + Achievements share one "Prestige" tab — hover reveals both pages.
+  { href: "/leaderboard", label: "Prestige", icon: <Crown className="w-5 h-5" />, color: "text-amber-400", bg: "bg-amber-400/10", subItems: [
+    { href: "/leaderboard", label: "Rankings", icon: <BarChart3 className="w-3.5 h-3.5" /> },
+    { href: "/achievements", label: "Achievements", icon: <Medal className="w-3.5 h-3.5" /> },
+  ] },
   // Shop/Reliquary intentionally NOT in the sidebar for now — /shop still works by
   // URL (the cosmetics flag stays on). Re-add a flag-gated link here to reveal it.
   { href: "/extras", label: "Extras", icon: <NavAssetIcon name="extras" />, color: "text-violet-400", bg: "bg-violet-400/10", subItems: [

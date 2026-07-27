@@ -209,21 +209,45 @@ body::after {
   border-left-color: color-mix(in srgb, var(--color-fab-border) 62%, transparent);
 }
 
-/* Sub-menu flyout: sub-links for a group float to the right of the sidebar on
-   hover (positioned in JS). Non-pinned groups show no inline subnav, so nothing
-   on the sidebar shifts. */
+/* Sub-menu flyout: a group's sub-links slide out to the right of the sidebar on
+   hover (positioned in JS). No group shows an inline subnav (except pinned
+   Support), so nothing on the sidebar shifts. */
 .fab-sidebar-flyout {
-  animation: fab-flyout-in 0.12s ease-out;
+  animation: fab-flyout-in 0.16s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 @keyframes fab-flyout-in {
   from {
     opacity: 0;
-    transform: translateX(-4px);
+    transform: translateX(-10px);
   }
   to {
     opacity: 1;
     transform: translateX(0);
+  }
+}
+
+/* Little arrow marking groups that have a hover flyout; nudges out on hover/active
+   to hint that the sub-menu slides out. */
+.fab-sidebar-caret {
+  opacity: 0.4;
+  transition: transform 0.16s ease, opacity 0.16s ease;
+}
+.fab-sidebar-group:hover .fab-sidebar-caret,
+.fab-sidebar-group .fab-sidebar-link[data-active="true"] .fab-sidebar-caret {
+  opacity: 0.9;
+  transform: translateX(3px);
+}
+@media (prefers-reduced-motion: reduce) {
+  .fab-sidebar-flyout {
+    animation: none;
+  }
+  .fab-sidebar-caret {
+    transition: opacity 0.16s ease;
+  }
+  .fab-sidebar-group:hover .fab-sidebar-caret,
+  .fab-sidebar-group .fab-sidebar-link[data-active="true"] .fab-sidebar-caret {
+    transform: none;
   }
 }
 
@@ -264,7 +288,9 @@ body::after {
   border-color: color-mix(in srgb, var(--color-fab-border) 82%, #fff 10%);
 }
 
-.fab-sidebar-subitem[data-active="true"]::before {
+/* Gold rail-dot only for the inline subnav (pinned Support), which has the left
+   rail this dot sits on. In the hover flyout there's no rail, so it's suppressed. */
+.fab-sidebar-subnav .fab-sidebar-subitem[data-active="true"]::before {
   content: "";
   position: absolute;
   left: -0.95rem;
