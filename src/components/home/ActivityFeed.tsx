@@ -337,14 +337,13 @@ export function ActivityFeed({ rankMap, eventTierMap, underlineTierMap, heroComp
               <div
                 key={group.events[0].id}
                 onClick={(e) => {
-                  if ((e.target as HTMLElement).closest("a")) return;
-                  if (group.events.length > 1 && GAME_EVENT_TYPES.has(group.events[0].type)) {
-                    router.push("/games");
-                    return;
-                  }
-                  const firstEvent = group.events[0];
-                  const t = firstEvent.type;
-                  router.push(GAME_EVENT_TYPES.has(t) ? `/${t}` : t === "import" ? `/search?type=${t}` : `/search?type=${t}`);
+                  // Only game activity routes elsewhere (the game, or the games hub for a
+                  // grouped card). Everything else falls through to the card's own click,
+                  // which opens the poster's profile — the same place the name links to.
+                  // Skip interactive elements so reactions/comments/links keep working.
+                  if ((e.target as HTMLElement).closest("a, button, input, textarea, select, [role='button']")) return;
+                  const t = group.events[0].type;
+                  if (GAME_EVENT_TYPES.has(t)) router.push(group.events.length > 1 ? "/games" : `/${t}`);
                 }}
                 className="cursor-pointer transition-transform duration-150 hover:-translate-y-0.5"
               >
