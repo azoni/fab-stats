@@ -321,29 +321,50 @@ export function TierListMaker({ initial }: { initial?: TierListDoc }) {
         return;
       }
       const fileName = `${title.replace(/[^a-z0-9]+/gi, "-").toLowerCase() || "tier-list"}-fabstats.png`;
-      const file = new File([blob], fileName, { type: "image/png" });
       const text = `${title.trim() || "My FaB tier list"} — made on fabstats.net`;
-      // Native share sheet with the image (mobile + Chrome desktop → X, Messages, etc.).
-      if (typeof navigator !== "undefined" && navigator.share && navigator.canShare?.({ files: [file] })) {
-        try {
-          await navigator.share({ title: title.trim() || "FaB Tier List", text, files: [file] });
-          return;
-        } catch (err) {
-          if (err instanceof DOMException && err.name === "AbortError") return; // user cancelled
-          // otherwise fall through to the download path
+      const isMobile = typeof navigator !== "undefined" && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+      // Mobile only: the native share sheet actually lists X / Instagram / Messages.
+      // On desktop it's the OS sheet (Phone Link, Outlook…) with no X, so we skip it.
+      if (isMobile && navigator.share) {
+        const file = new File([blob], fileName, { type: "image/png" });
+        if (navigator.canShare?.({ files: [file] })) {
+          try {
+            await navigator.share({ title: title.trim() || "FaB Tier List", text, files: [file] });
+            return;
+          } catch (err) {
+            if (err instanceof DOMException && err.name === "AbortError") return; // user cancelled
+          }
         }
       }
-      // Fallback: download the branded image + open an X compose window to attach it.
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = fileName;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, "_blank", "noopener,noreferrer");
-      toast.success("Image saved — attach it to your post on X.");
+
+      // Desktop: copy the branded image to the clipboard (while our tab still has focus),
+      // then open an X compose window to paste it into. Works for Discord too — paste
+      // anywhere. Clipboard blocked → fall back to a download.
+      let copied = false;
+      if (navigator.clipboard && "write" in navigator.clipboard && typeof ClipboardItem !== "undefined") {
+        try {
+          await navigator.clipboard.write([new ClipboardItem({ "image/png": Promise.resolve(blob) })]);
+          copied = true;
+        } catch {
+          /* clipboard blocked — download below */
+        }
+      }
+      if (copied) {
+        window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, "_blank", "noopener,noreferrer");
+        toast.success("Image copied — paste it into your post with Ctrl/⌘+V.");
+      } else {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, "_blank", "noopener,noreferrer");
+        toast.success("Image downloaded — attach it to your post.");
+      }
     } catch {
       toast.error("Share failed — custom images from other sites can block the export (CORS).");
     } finally {
