@@ -37,6 +37,8 @@ export interface Tier {
 export interface TierListDoc {
   id: string;
   title: string;
+  /** Short blurb shown on the Discover card before opening the list. */
+  description?: string;
   tiers: Tier[];
   /** container id (tier id or POOL_ID) → ordered item ids. */
   placement: Record<string, string[]>;

@@ -63,6 +63,7 @@ function TierCard({ list, mine, onDeleted }: { list: TierListDoc; mine: boolean;
           <p className="mt-0.5 truncate text-[11px] text-fab-dim">
             {list.ownerName ? `by ${list.ownerName}` : "—"} · {count} item{count === 1 ? "" : "s"}
           </p>
+          {list.description && <p className="mt-1 line-clamp-2 text-xs text-fab-muted">{list.description}</p>}
         </div>
       </Link>
       <div className="flex items-center gap-1.5 border-t border-fab-border/60 px-3 py-2">
