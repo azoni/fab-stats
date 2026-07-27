@@ -34,6 +34,7 @@ import {
   deleteTierList,
   itemsFromTransfer,
   itemFromFile,
+  collectImageFiles,
   type Tier,
   type TierItem,
   type TierListDoc,
@@ -208,20 +209,27 @@ export function TierListMaker({ initial }: { initial?: TierListDoc }) {
   const addFromTransfer = useCallback(
     (dt: DataTransfer | null) => {
       if (!dt || readOnly) return false;
+      // Prefer the actual image bytes when the browser provides them (dragging from a
+      // tab in Chrome/Edge, or any pasted/OS image) — embedding always displays, even
+      // when the source blocks hotlinking so its URL can't load in an <img>. Falls back
+      // to the source URL only when no bytes are available.
+      const files = collectImageFiles(dt);
+      if (files.length) {
+        // allSettled, not all: one undecodable image (HEIC, corrupt, over-size) must
+        // not discard the whole batch — add every image that reads, warn about the rest.
+        Promise.allSettled(files.map(itemFromFile)).then((results) => {
+          const added = results.filter((r): r is PromiseFulfilledResult<TierItem> => r.status === "fulfilled").map((r) => r.value);
+          added.forEach(addItem);
+          const failed = results.length - added.length;
+          if (added.length) toast.success(`Added ${added.length} image${added.length === 1 ? "" : "s"}.`);
+          if (failed) toast.error(`Couldn't read ${failed} image${failed === 1 ? "" : "s"}.`);
+        });
+        return true;
+      }
       const items = itemsFromTransfer(dt);
       if (items.length) {
         items.forEach(addItem);
         toast.success(`Added ${items.length} image${items.length === 1 ? "" : "s"}.`);
-        return true;
-      }
-      const files = Array.from(dt.files || []).filter((f) => f.type.startsWith("image/"));
-      if (files.length) {
-        Promise.all(files.map(itemFromFile))
-          .then((its) => {
-            its.forEach(addItem);
-            toast.success(`Added ${its.length} image${its.length === 1 ? "" : "s"}.`);
-          })
-          .catch(() => toast.error("Couldn't read one of those images."));
         return true;
       }
       return false;
@@ -341,7 +349,7 @@ export function TierListMaker({ initial }: { initial?: TierListDoc }) {
       // Firestore caps a doc at ~1MB. Pasted local images (data URLs) are the only
       // way to get near it; surface a clear message instead of a generic failure.
       if (JSON.stringify(list).length > 950_000) {
-        toast.error("Too many large pasted images to save — drag cards from a tab (uses their URL) or remove some custom images.");
+        toast.error("This list has too many embedded images to save — remove some pasted/dragged images, or add cards with the search bar (those stay small).");
         return null;
       }
       await saveTierList(list);
