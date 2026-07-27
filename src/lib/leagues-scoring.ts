@@ -5,7 +5,7 @@ import { slugifyStoreName } from "./store-directory";
 import { getStoreAliases, buildAliasIndex, expandSlugSet, resolveCanonicalSlug, type StoreAliasIndex } from "./store-aliases";
 import { getMatchesInDateRange } from "./firestore-storage";
 import { getEventType } from "./stats";
-import { MatchResult, type League, type LeagueScoringRules, type LeagueStandingEntry, type LeagueSession, type MatchRecord } from "@/types";
+import { MatchResult, type League, type LeagueScoringRules, type LeagueStandingEntry, type LeagueEventBreakdown, type LeagueSession, type MatchRecord } from "@/types";
 
 /** Build the set of allowed "slug|date" keys from a league's scheduled sessions,
  *  alias-expanding each session's store the same way `storeSlugSet` is expanded. */
@@ -121,14 +121,36 @@ export function leagueEventKey(
  *  Byes only appear here when they qualify (pointsPerBye > 0). Pass the league's
  *  aliasIndex so event grouping matches the live standings view. */
 export function scoreMatches(matches: MatchRecord[], league: League, aliasIndex?: StoreAliasIndex): number {
-  const earnedByEvent = new Map<string, number>();
+  return buildEventBreakdown(matches, league, aliasIndex).reduce((sum, e) => sum + e.points, 0);
+}
+
+/** Per-event scoring breakdown for a member's qualifying matches — one entry per
+ *  event with its W/L/D and the points it contributed (after the floor/attendance).
+ *  scoreMatches sums this, so the breakdown always adds up to the displayed total. */
+export function buildEventBreakdown(matches: MatchRecord[], league: League, aliasIndex?: StoreAliasIndex): LeagueEventBreakdown[] {
+  const byKey = new Map<string, { date: string; name: string; wins: number; losses: number; draws: number; earned: number }>();
   for (const m of matches) {
     const k = leagueEventKey(m, aliasIndex);
-    earnedByEvent.set(k, (earnedByEvent.get(k) || 0) + pointsForMatch(m, league));
+    let g = byKey.get(k);
+    if (!g) {
+      g = { date: (m.date || "").slice(0, 10), name: leagueEventName(m), wins: 0, losses: 0, draws: 0, earned: 0 };
+      byKey.set(k, g);
+    }
+    if (m.result === MatchResult.Win) g.wins++;
+    else if (m.result === MatchResult.Loss) g.losses++;
+    else if (m.result === MatchResult.Draw) g.draws++;
+    g.earned += pointsForMatch(m, league);
   }
-  let pts = 0;
-  for (const earned of earnedByEvent.values()) pts += eventScore(earned, league.scoringRules);
-  return pts;
+  return [...byKey.values()]
+    .map((g) => ({
+      date: g.date,
+      name: g.name || g.date || "Event",
+      wins: g.wins,
+      losses: g.losses,
+      draws: g.draws,
+      points: eventScore(g.earned, league.scoringRules),
+    }))
+    .sort((a, b) => a.date.localeCompare(b.date));
 }
 
 /** Standings sort order, shared by the authoritative (computeLeagueStandings) and
@@ -223,9 +245,9 @@ export async function computeLeagueStandings(leagueId: string): Promise<LeagueSt
         // Canonicalize so two merged venues count as one distinct store.
         if (m.venue) storeSlugsPlayed.add(resolveCanonicalSlug(slugifyStoreName(m.venue), aliasIndex));
       }
-      const points = scoreMatches(qualifying, league, aliasIndex);
-      // Distinct events attended — same grouping used for min/attendance scoring.
-      const events = new Set(qualifying.map((m) => leagueEventKey(m, aliasIndex))).size;
+      const breakdown = buildEventBreakdown(qualifying, league, aliasIndex);
+      const points = breakdown.reduce((s, e) => s + e.points, 0);
+      const events = breakdown.length;
 
       return {
         ...identity,
@@ -237,6 +259,7 @@ export async function computeLeagueStandings(leagueId: string): Promise<LeagueSt
         points,
         storesPlayed: storeSlugsPlayed.size,
         events,
+        breakdown,
       };
     }),
   );

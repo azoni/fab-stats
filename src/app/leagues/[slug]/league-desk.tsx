@@ -4,12 +4,13 @@
  * Every module reads the same in-memory match pool (see leagues-insights.ts), so
  * one filter bar re-casts the whole page with no extra Firestore reads.
  */
-import { useMemo, type ReactNode, type CSSProperties } from "react";
+import { useMemo, useState, Fragment, type ReactNode, type CSSProperties } from "react";
 import Link from "next/link";
 import { HeroImg } from "@/components/heroes/HeroImg";
 import {
   BarChart3,
   CalendarDays,
+  ChevronDown,
   Crown,
   Filter,
   Flame,
@@ -587,6 +588,8 @@ export function BroadcastStandings({
 }) {
   const showByes = standings.some((e) => (e.byes || 0) > 0);
   const leaderPts = standings[0]?.points || 0;
+  const [openUid, setOpenUid] = useState<string | null>(null);
+  const colCount = showByes ? 11 : 10;
   return (
     <div className="overflow-hidden rounded-xl border border-fab-border bg-fab-surface">
       <div className="overflow-x-auto">
@@ -609,8 +612,14 @@ export function BroadcastStandings({
           <tbody>
             {standings.map((e, i) => {
               const gap = leaderPts > 0 ? Math.max(0, Math.round((e.points / leaderPts) * 100)) : 0;
+              const hasBreakdown = !!e.breakdown?.length;
+              const open = openUid === e.uid;
               return (
-                <tr key={e.uid} className={`border-t border-fab-border/40 hover:bg-fab-bg/30 ${i < 3 ? "bg-fab-gold/[0.04]" : ""}`}>
+                <Fragment key={e.uid}>
+                <tr
+                  className={`border-t border-fab-border/40 hover:bg-fab-bg/30 ${i < 3 ? "bg-fab-gold/[0.04]" : ""} ${hasBreakdown ? "cursor-pointer" : ""}`}
+                  onClick={hasBreakdown ? () => setOpenUid(open ? null : e.uid) : undefined}
+                >
                   <td className="px-3 py-2 text-left font-black tabular-nums">
                     <span className={i === 0 ? "text-fab-gold" : i < 3 ? "text-fab-text" : "text-fab-dim"}>{i + 1}</span>
                   </td>
@@ -618,11 +627,14 @@ export function BroadcastStandings({
                     <div className="flex items-center gap-2">
                       <CrestedAvatar photoUrl={e.photoUrl} name={e.displayName} hero={signatureHeroes[e.uid]} size={30} />
                       <div className="min-w-0">
-                        <Link href={`/player/${e.username}`} className="block truncate font-bold text-fab-text hover:text-fab-gold">
+                        <Link href={`/player/${e.username}`} onClick={(ev) => ev.stopPropagation()} className="block truncate font-bold text-fab-text hover:text-fab-gold">
                           {e.displayName}
                         </Link>
                         <p className="truncate text-[10px] text-fab-dim">@{e.username}</p>
                       </div>
+                      {hasBreakdown && (
+                        <ChevronDown className={`ml-auto h-3.5 w-3.5 shrink-0 text-fab-dim transition-transform ${open ? "rotate-180" : ""}`} />
+                      )}
                     </div>
                   </td>
                   <td className="px-2 py-2 text-right align-middle">
@@ -640,6 +652,32 @@ export function BroadcastStandings({
                   <td className="px-2 py-2 text-right tabular-nums text-fab-text">{e.events ?? "—"}</td>
                   <td className="hidden px-2 py-2 text-right tabular-nums text-fab-text sm:table-cell">{e.storesPlayed}</td>
                 </tr>
+                {open && hasBreakdown && (
+                  <tr className="border-t border-fab-border/40 bg-fab-bg/40">
+                    <td colSpan={colCount} className="px-3 py-2">
+                      <p className="mb-1 text-[10px] font-bold uppercase tracking-wider text-fab-dim">Score breakdown — {e.points} pts</p>
+                      <div className="grid gap-1 sm:grid-cols-2">
+                        {e.breakdown!.map((ev, j) => {
+                          const shutout = ev.wins === 0 && ev.points > 0;
+                          return (
+                            <div key={j} className="flex items-center gap-2 rounded-md bg-fab-surface/70 px-2 py-1 text-xs">
+                              <span className="w-10 shrink-0 tabular-nums text-fab-dim">{ev.date.slice(5)}</span>
+                              <span className="min-w-0 flex-1 truncate text-fab-text" title={ev.name}>{ev.name}</span>
+                              <span className="shrink-0 tabular-nums text-fab-muted">
+                                {ev.wins}-{ev.losses}{ev.draws ? `-${ev.draws}` : ""}
+                              </span>
+                              <span className="w-10 shrink-0 text-right font-bold tabular-nums text-fab-gold">
+                                +{ev.points}
+                              </span>
+                              {shutout && <span className="shrink-0 rounded bg-fab-gold/15 px-1 text-[9px] font-bold text-fab-gold">min</span>}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </td>
+                  </tr>
+                )}
+                </Fragment>
               );
             })}
           </tbody>

@@ -181,9 +181,11 @@ const winRateDecisive = (wins: number, losses: number, draws: number) => {
 export function standingsFromPool(matches: PooledMatch[], league: League): LeagueStandingEntry[] {
   const byUid = new Map<string, LeagueStandingEntry>();
   const storesByUid = new Map<string, Set<string>>();
-  // Per member → per event → summed match points, so min/attendance apply per
-  // event (mirrors computeLeagueStandings' leagueEventKey: date | event | store).
-  const eventEarned = new Map<string, Map<string, number>>();
+  // Per member → per event → { record + summed points }, so we can both score
+  // (floor/attendance per event) and surface a breakdown. Mirrors
+  // computeLeagueStandings' leagueEventKey: date | event | store.
+  type Ev = { date: string; name: string; wins: number; losses: number; draws: number; earned: number };
+  const eventEarned = new Map<string, Map<string, Ev>>();
   for (const m of matches) {
     let e = byUid.get(m.memberUid);
     if (!e) {
@@ -210,23 +212,38 @@ export function standingsFromPool(matches: PooledMatch[], league: League): Leagu
     else if (m.result === MatchResult.Bye) e.byes++;
     let ev = eventEarned.get(m.memberUid);
     if (!ev) eventEarned.set(m.memberUid, (ev = new Map()));
-    const eventKey = `${(m.date || "").slice(0, 10)}|${m.eventName || ""}|${m.storeSlug || ""}`;
-    ev.set(eventKey, (ev.get(eventKey) || 0) + pointsForMatch(m, league));
+    const date = (m.date || "").slice(0, 10);
+    const eventKey = `${date}|${m.eventName || ""}|${m.storeSlug || ""}`;
+    let g = ev.get(eventKey);
+    if (!g) ev.set(eventKey, (g = { date, name: m.eventName || "", wins: 0, losses: 0, draws: 0, earned: 0 }));
+    if (m.result === MatchResult.Win) g.wins++;
+    else if (m.result === MatchResult.Loss) g.losses++;
+    else if (m.result === MatchResult.Draw) g.draws++;
+    g.earned += pointsForMatch(m, league);
     if (m.storeSlug) {
       let set = storesByUid.get(m.memberUid);
       if (!set) storesByUid.set(m.memberUid, (set = new Set()));
       set.add(m.storeSlug);
     }
   }
-  // Mirror scoreMatches: apply the per-event floor + attendance to each event and
-  // sum (kept identical so the live view and the persisted standings agree).
+  // Mirror computeLeagueStandings/buildEventBreakdown: one breakdown row per event
+  // (floor + attendance applied), and the total is their sum.
   for (const [uid, ev] of eventEarned) {
     const e = byUid.get(uid);
     if (!e) continue;
-    let pts = 0;
-    for (const earned of ev.values()) pts += eventScore(earned, league.scoringRules);
-    e.points = pts;
-    e.events = ev.size; // distinct events attended (same grouping as scoring)
+    const breakdown = [...ev.values()]
+      .map((g) => ({
+        date: g.date,
+        name: g.name || g.date || "Event",
+        wins: g.wins,
+        losses: g.losses,
+        draws: g.draws,
+        points: eventScore(g.earned, league.scoringRules),
+      }))
+      .sort((a, b) => a.date.localeCompare(b.date));
+    e.breakdown = breakdown;
+    e.points = breakdown.reduce((s, x) => s + x.points, 0);
+    e.events = breakdown.length;
   }
   for (const [uid, set] of storesByUid) {
     const e = byUid.get(uid);
