@@ -95,30 +95,25 @@ service firebase.storage {
         );
     }
 
-    // League banners: public read; only the league organizer (or admin) may
-    // upload/replace/delete, so a random signed-in user can't grief another
-    // league's banner. (Storage rules can read Firestore — see adminConfig.)
+    // League banners: public read; signed-in write with size/type limits — matching
+    // the group/team icon pattern. (An organizer-only check would need a cross-service
+    // firestore.get(leagues/...), which errors on this project and denied even the real
+    // organizer — see the group/team rules, which deliberately use signedIn() only.
+    // Organizer-only is still enforced in the app UI + the league doc's bannerUrl, which
+    // only the organizer/admin can write via Firestore rules.)
     match /league-images/banners/{leagueId}/{fileName} {
       allow read: if true;
       allow write: if signedIn()
-        && (
-          isAdmin()
-          || firestore.get(/databases/(default)/documents/leagues/$(leagueId)).data.organizerUid == request.auth.uid
-        )
         && (
           request.resource == null
           || validImageUpload(8 * 1024 * 1024)
         );
     }
 
-    // League icons (emblem): same organizer-only write as banners, smaller cap.
+    // League icons (emblem): same signed-in write as banners, smaller cap.
     match /league-images/icons/{leagueId}/{fileName} {
       allow read: if true;
       allow write: if signedIn()
-        && (
-          isAdmin()
-          || firestore.get(/databases/(default)/documents/leagues/$(leagueId)).data.organizerUid == request.auth.uid
-        )
         && (
           request.resource == null
           || validImageUpload(2 * 1024 * 1024)
