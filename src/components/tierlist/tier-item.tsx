@@ -2,35 +2,26 @@
 import { useState, useEffect } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import type { TierItem } from "@/lib/tierlists";
-
-/** Image URLs already known to 404 this session, so a remounted tile (e.g. the drag
- *  overlay) starts from the known-good source instead of re-flashing the broken one. */
-const failedSrc = new Set<string>();
+import { itemImageSources, type TierItem } from "@/lib/tierlists";
 
 /** Pure visual tile — used for placed items and the drag overlay. Big enough to
- *  read the card art, with the name always shown beneath it. Tries the primary CDN
- *  image, then a TCGplayer fallback (newest sets), then a clean name box — so a
- *  card the community CDN hasn't published never shows a broken-image icon. */
+ *  recognize the card, with the name always shown beneath it. Walks the item's image
+ *  sources (CDN render → TCGplayer scan, re-derived from the card DB) on load error,
+ *  then a clean name box — so a card the community CDN hasn't published never shows a
+ *  broken-image icon. No cross-tile failure cache, so a transient error self-heals on
+ *  the next mount instead of hiding the image for the whole session. */
 export function ItemTile({ item, dragging }: { item: TierItem; dragging?: boolean }) {
-  const sources = [item.imageUrl, item.imageUrlFallback].filter(Boolean) as string[];
-  const firstOk = (srcs: string[]) => {
-    let i = 0;
-    while (i < srcs.length && failedSrc.has(srcs[i])) i++;
-    return i;
-  };
-  const [srcIdx, setSrcIdx] = useState(() => firstOk(sources));
-  // Re-resolve when the tile is reused for a different item (the drag overlay),
-  // skipping sources already known to have failed this session.
-  useEffect(() => {
-    setSrcIdx(firstOk([item.imageUrl, item.imageUrlFallback].filter(Boolean) as string[]));
-  }, [item.imageUrl, item.imageUrlFallback]);
+  const sources = itemImageSources(item);
+  const [srcIdx, setSrcIdx] = useState(0);
+  // Restart from the best source when the tile is reused for a different item
+  // (the drag overlay) or the item's image changes.
+  useEffect(() => setSrcIdx(0), [item.id, item.imageUrl, item.imageUrlFallback, item.refId]);
   const src = sources[srcIdx];
 
   return (
-    <div className="w-[88px] shrink-0 select-none">
+    <div className="w-[96px] shrink-0 select-none sm:w-[112px]">
       <div
-        className={`relative h-[124px] w-full overflow-hidden rounded-md border border-fab-border bg-fab-bg ${
+        className={`relative h-[134px] w-full overflow-hidden rounded-md border border-fab-border bg-fab-bg sm:h-[157px] ${
           dragging ? "shadow-2xl ring-2 ring-fab-gold" : "shadow-sm"
         }`}
       >
@@ -40,19 +31,17 @@ export function ItemTile({ item, dragging }: { item: TierItem; dragging?: boolea
             src={src}
             alt={item.label}
             draggable={false}
-            onError={() => {
-              failedSrc.add(src);
-              setSrcIdx((i) => i + 1);
-            }}
+            loading="lazy"
+            onError={() => setSrcIdx((i) => i + 1)}
             className="h-full w-full object-cover object-top"
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center p-1 text-center text-[10px] font-bold text-fab-dim">
+          <div className="flex h-full w-full items-center justify-center p-1 text-center text-[11px] font-bold text-fab-dim">
             {item.label}
           </div>
         )}
       </div>
-      <div className="mt-0.5 line-clamp-2 text-center text-[10px] font-medium leading-[1.15] text-fab-text" title={item.label}>
+      <div className="mt-1 line-clamp-2 text-center text-[10px] font-medium leading-[1.15] text-fab-text sm:text-[11px]" title={item.label}>
         {item.label}
       </div>
     </div>
