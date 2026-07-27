@@ -4,15 +4,17 @@ export const CURRENT_VERSION = 1;
 /** Matches on or after this date require explicit hero selection during import. */
 export const HERO_REQUIRED_CUTOFF = "2026-02-24";
 
-/** Valid username slug pattern (lowercase alphanumeric, underscores, hyphens). */
-// Usernames may contain dots (e.g. "diego.santiago1802") — without allowing them,
-// playerHref sent those players to /search instead of their profile.
-const VALID_USERNAME = /^[a-z0-9._-]+$/i;
-
-/** Returns the correct href for a player link. Invalid usernames redirect to search. */
+/** Returns the href for a player link.
+ *
+ * Community players imported from GEM often have display-name-style usernames with
+ * spaces or accents (e.g. "Igueta Marreta") — a strict slug whitelist wrongly sent
+ * those to /search. Instead, route any non-empty identifier to the profile page,
+ * URL-encoded: /player resolves exact, stale/changed, and display-name usernames and
+ * shows a graceful "not found" (with a pre-filled search) only when nothing matches. */
 export function playerHref(username: string): string {
-  if (VALID_USERNAME.test(username)) return `/player/${username}`;
-  return `/search?q=${encodeURIComponent(username)}`;
+  const u = (username || "").trim();
+  if (!u) return "/search";
+  return `/player/${encodeURIComponent(u)}`;
 }
 
 /**
