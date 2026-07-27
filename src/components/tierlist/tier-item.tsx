@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { itemImageSources, type TierItem } from "@/lib/tierlists";
@@ -18,8 +19,31 @@ export function ItemTile({ item, dragging }: { item: TierItem; dragging?: boolea
   useEffect(() => setSrcIdx(0), [item.id, item.imageUrl, item.imageUrlFallback, item.refId]);
   const src = sources[srcIdx];
 
+  // Hover-zoom: the tiles stay small (many per tier), but hovering one shows the full
+  // card large + crisp in a fixed-position preview portaled to <body>, so it escapes
+  // the maker's overflow-hidden clipping. Desktop (hover) only.
+  const [zoom, setZoom] = useState<{ left: number; top: number; align: "left" | "right" } | null>(null);
+  function openZoom(e: React.MouseEvent<HTMLDivElement>) {
+    if (!src || dragging) return;
+    if (typeof window === "undefined" || !window.matchMedia("(hover: hover)").matches) return;
+    const r = e.currentTarget.getBoundingClientRect();
+    const W = 232;
+    const align: "left" | "right" = r.right + W <= window.innerWidth ? "right" : "left";
+    setZoom({
+      left: align === "right" ? r.right + 10 : r.left - 10,
+      top: Math.min(Math.max(r.top + r.height / 2, 12), window.innerHeight - 12),
+      align,
+    });
+  }
+  const closeZoom = () => setZoom(null);
+
   return (
-    <div className="w-[96px] shrink-0 select-none sm:w-[112px]">
+    <div
+      className="w-[96px] shrink-0 select-none sm:w-[112px]"
+      onMouseEnter={openZoom}
+      onMouseLeave={closeZoom}
+      onPointerDown={closeZoom}
+    >
       <div
         className={`relative h-[134px] w-full overflow-hidden rounded-md border border-fab-border bg-fab-bg sm:h-[157px] ${
           dragging ? "shadow-2xl ring-2 ring-fab-gold" : "shadow-sm"
@@ -44,6 +68,25 @@ export function ItemTile({ item, dragging }: { item: TierItem; dragging?: boolea
       <div className="mt-1 line-clamp-2 text-center text-[10px] font-medium leading-[1.15] text-fab-text sm:text-[11px]" title={item.label}>
         {item.label}
       </div>
+
+      {zoom && src && typeof document !== "undefined" &&
+        createPortal(
+          <div
+            style={{
+              position: "fixed",
+              left: zoom.left,
+              top: zoom.top,
+              transform: `translate(${zoom.align === "right" ? "0" : "-100%"}, -50%)`,
+              zIndex: 9999,
+            }}
+            className="pointer-events-none rounded-lg border border-fab-gold/40 bg-fab-bg p-1.5 shadow-2xl"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={src} alt="" className="block w-[210px] rounded-md" />
+            <p className="mt-1 w-[210px] truncate text-center text-xs font-semibold text-fab-text">{item.label}</p>
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }

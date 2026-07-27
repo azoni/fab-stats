@@ -181,6 +181,25 @@ export function deriveItemLabel(url: string, alt?: string): string {
  *  that would otherwise flood the tray with avatars, icons, and tracking pixels. */
 const MAX_TRANSFER_IMAGES = 16;
 
+/** Actual image files in a drop/paste. Dragging an image from another tab exposes its
+ *  bytes via `dataTransfer.items[].getAsFile()` in Chrome/Edge (and `.files` for OS/file
+ *  drags) — grabbing those lets us EMBED the image, which always displays, instead of
+ *  relying on the source URL (which won't load when the host blocks hotlinking). Must be
+ *  called synchronously inside the drop/paste handler while the DataTransfer is live. */
+export function collectImageFiles(dt: DataTransfer): File[] {
+  const out: File[] = [];
+  for (const f of Array.from(dt.files || [])) if (f.type.startsWith("image/")) out.push(f);
+  if (!out.length && dt.items) {
+    for (const it of Array.from(dt.items)) {
+      if (it.kind === "file" && it.type.startsWith("image/")) {
+        const f = it.getAsFile();
+        if (f) out.push(f);
+      }
+    }
+  }
+  return out;
+}
+
 export function itemsFromTransfer(dt: DataTransfer): TierItem[] {
   const html = dt.getData("text/html");
   if (html) {
@@ -202,10 +221,11 @@ export function itemsFromTransfer(dt: DataTransfer): TierItem[] {
   return [];
 }
 
-/** Read a local image File into a SMALL webp data-URL item. We downscale (client-side
- *  canvas) so a pasted screenshot/photo can't bloat the Firestore doc (base64 of a
- *  full-res image easily exceeds the 1MB doc limit). Dragging from a tab uses the
- *  image's URL instead (itemsFromTransfer) and never hits this path. */
+/** Read an image File (pasted, dropped, or dragged from a tab — see collectImageFiles)
+ *  into a SMALL webp data-URL item. We downscale (client-side canvas) so the embedded
+ *  bytes can't bloat the Firestore doc (base64 of a full-res image easily exceeds the
+ *  1MB limit). Embedding always displays; a source URL only loads if the host permits
+ *  hotlinking, so we prefer bytes whenever the browser provides them. */
 export function itemFromFile(file: File): Promise<TierItem> {
   const label = file.name.replace(/\.[a-z0-9]+$/i, "");
   return new Promise((resolve, reject) => {
@@ -215,7 +235,9 @@ export function itemFromFile(file: File): Promise<TierItem> {
       const img = new Image();
       img.onerror = () => reject(new Error("Could not load image"));
       img.onload = () => {
-        const MAX = 220;
+        // Big enough to stay crisp in the hover-zoom preview, small enough that many
+        // pasted/dragged images still fit under the ~1MB Firestore doc cap.
+        const MAX = 320;
         let w = img.width || MAX;
         let h = img.height || MAX;
         if (w > MAX || h > MAX) {
