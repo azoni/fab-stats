@@ -88,9 +88,11 @@ function escapeHtml(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 function setMeta(html: string, property: "property" | "name", key: string, value: string): string {
+  // Escape `$` so a value like "$20 League" isn't read as a replacement backreference.
+  const v = value.replace(/\$/g, "$$$$");
   const re = new RegExp(`(<meta\\s+${property}="${key}"\\s+content=")([^"]*?)(")`);
-  if (re.test(html)) return html.replace(re, `$1${value}$3`);
-  return html.replace("</head>", `<meta ${property}="${key}" content="${value}"/>\n</head>`);
+  if (re.test(html)) return html.replace(re, `$1${v}$3`);
+  return html.replace("</head>", `<meta ${property}="${key}" content="${v}"/>\n</head>`);
 }
 
 export default async function handler(request: Request, context: { next: () => Promise<Response> }) {
@@ -126,7 +128,7 @@ export default async function handler(request: Request, context: { next: () => P
     const imageUrl = `https://www.fabstats.net/og/${meta.ogType}/${encodeURIComponent(slug)}.png`;
     const canonicalUrl = `https://www.fabstats.net/${meta.routePrefix}/${encodeURIComponent(slug)}`;
 
-    html = html.replace(/(<title>)([^<]*?)(<\/title>)/, `$1${title}$3`);
+    html = html.replace(/(<title>)([^<]*?)(<\/title>)/, (_m, p1, _p2, p3) => p1 + title + p3);
     html = setMeta(html, "property", "og:title", title);
     html = setMeta(html, "name", "twitter:title", title);
     html = setMeta(html, "property", "og:description", desc);

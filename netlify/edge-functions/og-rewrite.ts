@@ -126,15 +126,17 @@ export default async function handler(
   // Try to fetch real player data
   const player = await fetchPlayer(username);
 
-  const title = player
+  // .replace(/\$/g, "$$$$") escapes `$` so a "$Money"-style display name isn't read as a
+  // replacement backreference when spliced into the meta/title below.
+  const title = (player
     ? escapeHtml(`${player.displayName} | FaB Stats`)
-    : `${escapeHtml(username)}'s FaB Stats | FaB Stats`;
+    : `${escapeHtml(username)}'s FaB Stats | FaB Stats`).replace(/\$/g, "$$$$");
 
-  const desc = player
+  const desc = (player
     ? escapeHtml(
         `${player.winRate.toFixed(1)}% win rate across ${player.totalMatches} matches · ${player.totalWins}W-${player.totalLosses}L · Playing ${player.topHero}${player.totalTop8s > 0 ? ` · ${player.totalTop8s} Top 8 finish${player.totalTop8s !== 1 ? "es" : ""}` : ""} · Track your stats at fabstats.net`
       )
-    : `View ${escapeHtml(username)}'s Flesh and Blood tournament stats, win rate, and match history on FaB Stats.`;
+    : `View ${escapeHtml(username)}'s Flesh and Blood tournament stats, win rate, and match history on FaB Stats.`).replace(/\$/g, "$$$$");
 
   const ogImageUrl = `https://www.fabstats.net/og/player/${encodeURIComponent(username)}.png`;
 
