@@ -1092,6 +1092,91 @@ async function renderGroup(slug: string): Promise<VNode> {
   });
 }
 
+/** Tier-list card: title + owner + a colored preview of each tier (label + card count). */
+async function renderTierList(id: string): Promise<VNode> {
+  const f = await fetchDoc(`tierLists/${id}`);
+  if (!f) return renderGenericCard();
+  const gold = "#c9a84c";
+  const muted = "#6b6580";
+  const cardBg = "#1a1625";
+  const cardBorder = "#2a2435";
+  const textLight = "#e8e4f0";
+  const title = truncate(fStr(f.title) || "Tier List", 40);
+  const owner = fStr(f.ownerName);
+  const description = fStr(f.description);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const tiersRaw: any[] = (f.tiers as any)?.arrayValue?.values || [];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const placement: any = (f.placement as any)?.mapValue?.fields || {};
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const itemsCount = Object.keys((f.items as any)?.mapValue?.fields || {}).length;
+  const tiers = tiersRaw.slice(0, 6).map((t) => {
+    const fields = t?.mapValue?.fields || {};
+    const tid = fields.id?.stringValue || "";
+    const count = (placement[tid]?.arrayValue?.values || []).length;
+    return { label: fields.label?.stringValue || "?", color: fields.color?.stringValue || "#666", count };
+  });
+  const metaLine = [owner ? `by ${truncate(owner, 30)}` : "", itemsCount ? `${itemsCount} card${itemsCount === 1 ? "" : "s"}` : ""].filter(Boolean).join("  ·  ");
+
+  return {
+    type: "div",
+    props: {
+      style: { width: 1200, height: 630, display: "flex", flexDirection: "column" as const, background: "linear-gradient(135deg, #0c0a0e 0%, #161222 100%)", fontFamily: "Inter" },
+      children: [
+        { type: "div", props: { style: { width: 1200, height: 4, background: "linear-gradient(90deg, #c9a84c, #e8c860)" } } },
+        {
+          type: "div",
+          props: {
+            style: { display: "flex", flexDirection: "column" as const, padding: "44px 64px", flex: 1 },
+            children: [
+              brandHeader(),
+              {
+                type: "div",
+                props: {
+                  style: { display: "flex", flexDirection: "column" as const, marginBottom: 24 },
+                  children: [
+                    { type: "span", props: { style: { fontSize: 14, fontWeight: 700, color: gold, letterSpacing: "0.18em", marginBottom: 10 }, children: "TIER LIST" } },
+                    { type: "div", props: { style: { fontSize: title.length > 26 ? 46 : 56, fontWeight: 700, color: textLight, letterSpacing: "-0.02em", lineHeight: 1.05 }, children: title } },
+                    metaLine ? { type: "div", props: { style: { fontSize: 22, color: muted, marginTop: 10 }, children: metaLine } } : null,
+                    description ? { type: "div", props: { style: { fontSize: 18, color: muted, marginTop: 6 }, children: truncate(description, 90) } } : null,
+                  ].filter(Boolean),
+                },
+              },
+              {
+                type: "div",
+                props: {
+                  style: { display: "flex", flexDirection: "column" as const, gap: 8, flex: 1 },
+                  children: tiers.map((t) => ({
+                    type: "div",
+                    props: {
+                      style: { display: "flex", alignItems: "center", height: 44 },
+                      children: [
+                        { type: "div", props: { style: { width: 58, height: 44, background: t.color, borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, fontWeight: 700, color: "#0c0a0e" }, children: truncate(t.label, 3) } },
+                        { type: "div", props: { style: { marginLeft: 12, flex: 1, height: 44, background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 6, display: "flex", alignItems: "center", paddingLeft: 18 }, children: { type: "span", props: { style: { fontSize: 18, color: t.count ? textLight : muted }, children: `${t.count} card${t.count === 1 ? "" : "s"}` } } } },
+                      ],
+                    },
+                  })),
+                },
+              },
+              {
+                type: "div",
+                props: {
+                  style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 20 },
+                  children: [
+                    { type: "span", props: { style: { fontSize: 18, color: muted }, children: "fabstats.net/tierlist" } },
+                    { type: "span", props: { style: { fontSize: 16, color: muted }, children: "Flesh and Blood tier list" } },
+                  ],
+                },
+              },
+            ],
+          },
+        },
+        { type: "div", props: { style: { width: 1200, height: 4, background: "linear-gradient(90deg, #c9a84c, #e8c860)" } } },
+      ],
+    },
+  };
+}
+
 // ── Handler ──
 
 export default async function handler(req: Request) {
@@ -1099,23 +1184,32 @@ export default async function handler(req: Request) {
   let type = url.searchParams.get("type") || "";
   let username = url.searchParams.get("username") || "";
   let slug = url.searchParams.get("slug") || "";
+  let id = url.searchParams.get("id") || "";
 
   // Netlify rewrites may pass the original URL path instead of query params.
   // Parse type/slug from the path as fallback: /og/<type>/<slug>.png, /og/meta.png
-  if (!username && !type && !slug) {
+  if (!username && !type && !slug && !id) {
     const m = url.pathname.match(/\/og\/(player|article|store|league|team|group)\/([^/]+)\.png$/i);
     if (m) {
       const kind = m[1].toLowerCase();
       const val = decodeURIComponent(m[2]);
       if (kind === "player") username = val;
       else { type = kind; slug = val; }
-    } else if (/\/og\/meta\.png$/i.test(url.pathname)) type = "meta";
+    } else if (/\/og\/meta\.png$/i.test(url.pathname)) {
+      type = "meta";
+    } else {
+      const tl = url.pathname.match(/\/og\/tierlist\/([^/]+)\.png$/i);
+      if (tl) { type = "tierlist"; id = decodeURIComponent(tl[1]); }
+    }
   }
 
   if ((type === "article" || type === "store" || type === "league" || type === "team" || type === "group") && !slug) {
     return new Response("Missing slug", { status: 400 });
   }
-  if (!username && type !== "meta" && type !== "article" && type !== "store" && type !== "league" && type !== "team" && type !== "group") {
+  if (type === "tierlist" && !id) {
+    return new Response("Missing id", { status: 400 });
+  }
+  if (!username && type !== "meta" && type !== "article" && type !== "store" && type !== "league" && type !== "team" && type !== "group" && type !== "tierlist") {
     return new Response("Missing username", { status: 400 });
   }
 
@@ -1136,6 +1230,8 @@ export default async function handler(req: Request) {
       card = await renderTeam(slug);
     } else if (type === "group") {
       card = await renderGroup(slug);
+    } else if (type === "tierlist") {
+      card = await renderTierList(id);
     } else {
       const player = await fetchPlayer(username);
       card = renderCard(player);

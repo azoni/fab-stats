@@ -1,41 +1,27 @@
-// Edge function: inject store-specific OG/meta tags for /stores/<slug> pages.
-// Mirrors og-rewrite.ts (player). Runs on Deno.
-
-interface StoreData {
-  name: string;
-  totalMatches: number;
-  uniquePlayers: number;
-  topPlayer: string | null;
-  topHero: string | null;
-}
+// Edge function: inject OG/meta tags for a shared tier list — /tierlist?id=<id>.
+// Runs on Deno. Private lists aren't readable unauthenticated, so their meta is left
+// as the site default (no leak).
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function fInt(f: any): number {
-  return Number(f?.integerValue ?? f?.doubleValue ?? 0);
+function fStr(f: any): string {
+  return f?.stringValue || "";
 }
 
-async function fetchStore(slug: string): Promise<StoreData | null> {
+function env(): { projectId: string; apiKey: string } | null {
   const projectId = Deno.env.get("NEXT_PUBLIC_FIREBASE_PROJECT_ID");
   const apiKey = Deno.env.get("NEXT_PUBLIC_FIREBASE_API_KEY");
   if (!projectId || !apiKey) return null;
+  return { projectId, apiKey };
+}
+
+async function fetchDoc(path: string): Promise<Record<string, unknown> | null> {
+  const e = env();
+  if (!e) return null;
   try {
-    const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/storeAggregates/${encodeURIComponent(slug)}?key=${apiKey}`;
-    const res = await fetch(url);
+    const res = await fetch(`https://firestore.googleapis.com/v1/projects/${e.projectId}/databases/(default)/documents/${path}?key=${e.apiKey}`);
     if (!res.ok) return null;
     const doc = await res.json();
-    const f = doc?.fields;
-    if (!f) return null;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const players: any[] = f.players?.arrayValue?.values || [];
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const heroes: any[] = f.heroes?.arrayValue?.values || [];
-    return {
-      name: f.name?.stringValue || slug,
-      totalMatches: fInt(f.totalMatches),
-      uniquePlayers: fInt(f.uniquePlayers),
-      topPlayer: players[0]?.mapValue?.fields?.displayName?.stringValue || null,
-      topHero: heroes[0]?.mapValue?.fields?.hero?.stringValue || null,
-    };
+    return doc?.fields || null;
   } catch {
     return null;
   }
@@ -44,9 +30,8 @@ async function fetchStore(slug: string): Promise<StoreData | null> {
 function escapeHtml(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
-
 function setMeta(html: string, property: "property" | "name", key: string, value: string): string {
-  // Escape `$` so a value with "$" isn't read as a replacement backreference.
+  // Escape `$` so a value like "$20 deck" isn't read as a replacement backreference.
   const v = value.replace(/\$/g, "$$$$");
   const re = new RegExp(`(<meta\\s+${property}="${key}"\\s+content=")([^"]*?)(")`);
   if (re.test(html)) return html.replace(re, `$1${v}$3`);
@@ -55,11 +40,10 @@ function setMeta(html: string, property: "property" | "name", key: string, value
 
 export default async function handler(request: Request, context: { next: () => Promise<Response> }) {
   const url = new URL(request.url);
-  const parts = url.pathname.split("/");
-  const slug = decodeURIComponent(parts[2] || "");
+  const id = url.searchParams.get("id") || "";
 
-  // No slug → the directory page; leave its default meta alone.
-  if (!slug || slug === "_") return context.next();
+  // Directory (/tierlist) or new-list (?new=1) → no specific list; leave default meta.
+  if (!id) return context.next();
 
   let response: Response;
   try {
@@ -77,19 +61,17 @@ export default async function handler(request: Request, context: { next: () => P
   }
 
   try {
-    const store = await fetchStore(slug);
-    const name = store ? store.name : decodeURIComponent(slug);
+    const f = await fetchDoc(`tierLists/${encodeURIComponent(id)}`);
+    if (!f) return new Response(html, { status: response.status, headers: response.headers });
+
+    const name = fStr(f.title) || "Tier List";
+    const owner = fStr(f.ownerName);
+    const rawDesc = fStr(f.description) || `${owner ? `${owner}'s ` : ""}Flesh and Blood tier list on FaB Stats.`;
+
     const title = escapeHtml(`${name} | FaB Stats`);
-    const desc = store
-      ? escapeHtml(
-          `${store.totalMatches.toLocaleString()} matches · ${store.uniquePlayers} player${store.uniquePlayers === 1 ? "" : "s"}` +
-            (store.topHero ? ` · Top hero: ${store.topHero}` : "") +
-            (store.topPlayer ? ` · Most active: ${store.topPlayer}` : "") +
-            " · Flesh and Blood store stats on FaB Stats",
-        )
-      : escapeHtml(`Flesh and Blood store stats, players, and leagues at ${name} on FaB Stats.`);
-    const imageUrl = `https://www.fabstats.net/og/store/${encodeURIComponent(slug)}.png`;
-    const canonicalUrl = `https://www.fabstats.net/stores/${encodeURIComponent(slug)}`;
+    const desc = escapeHtml(rawDesc);
+    const imageUrl = `https://www.fabstats.net/og/tierlist/${encodeURIComponent(id)}.png`;
+    const canonicalUrl = `https://www.fabstats.net/tierlist?id=${encodeURIComponent(id)}`;
 
     html = html.replace(/(<title>)([^<]*?)(<\/title>)/, (_m, p1, _p2, p3) => p1 + title + p3);
     html = setMeta(html, "property", "og:title", title);
@@ -112,9 +94,9 @@ export default async function handler(request: Request, context: { next: () => P
     headers.delete("content-encoding");
     return new Response(html, { status: response.status, headers });
   } catch (e) {
-    console.error("og-rewrite-store error:", e);
-    return context.next();
+    console.error("og-rewrite-tierlist error:", e);
+    return new Response(html, { status: response.status, headers: response.headers });
   }
 }
 
-export const config = { path: "/stores/*" };
+export const config = { path: ["/tierlist"] };
