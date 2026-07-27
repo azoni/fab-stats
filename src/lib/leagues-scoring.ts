@@ -84,16 +84,14 @@ export function pointsForMatch(match: MatchRecord, league: League): number {
   return typeof mult === "number" ? base * mult : base;
 }
 
-/** Combine a member's summed match points with the league minimum and attendance.
- *  The minimum is a floor on the player's TOTAL — for anyone who attended, it lifts
- *  a winless total up to `min`, but it NEVER adds on top of a player who already
- *  scored more (max, not sum). So win 0 → min, win 1 → 1, win 2 → 2 (with min 1).
- *  The floor only applies when min > 0, so a league with negative loss points and
- *  no floor keeps genuinely negative totals. Attendance adds per event attended. */
-export function scoreTotals(basePoints: number, eventCount: number, rules: LeagueScoringRules): number {
+/** Score one event from its summed match points: a PER-EVENT floor (every event you
+ *  play scores at least `minPointsPerEvent`) plus the per-event attendance bonus. The
+ *  floor only applies when min > 0, so a league with negative loss points and no floor
+ *  keeps genuinely negative event totals. */
+export function eventScore(earned: number, rules: LeagueScoringRules): number {
   const floor = rules.minPointsPerEvent || 0;
-  const floored = eventCount > 0 && floor > 0 ? Math.max(basePoints, floor) : basePoints;
-  return floored + (rules.pointsPerEvent || 0) * eventCount;
+  const floored = floor > 0 ? Math.max(earned, floor) : earned;
+  return floored + (rules.pointsPerEvent || 0);
 }
 
 /** Event name for grouping — the first "notes" segment, mirroring how the live
@@ -117,18 +115,20 @@ export function leagueEventKey(
   return `${(m.date || "").slice(0, 10)}|${leagueEventName(m)}|${store}`;
 }
 
-/** Total league points for a member's qualifying matches: summed match points,
- *  floored at the league minimum (a total floor, not per event), plus a per-event
- *  attendance bonus. Byes only appear here when they qualify (pointsPerBye > 0).
- *  Pass the league's aliasIndex so the event count matches the live standings view. */
+/** Total league points for a member's qualifying matches: group by event, apply the
+ *  per-event minimum floor + attendance to each, and sum. So every event you play in
+ *  scores at least `minPointsPerEvent` (e.g. a winless night still earns the floor).
+ *  Byes only appear here when they qualify (pointsPerBye > 0). Pass the league's
+ *  aliasIndex so event grouping matches the live standings view. */
 export function scoreMatches(matches: MatchRecord[], league: League, aliasIndex?: StoreAliasIndex): number {
-  let base = 0;
-  const events = new Set<string>();
+  const earnedByEvent = new Map<string, number>();
   for (const m of matches) {
-    base += pointsForMatch(m, league);
-    events.add(leagueEventKey(m, aliasIndex));
+    const k = leagueEventKey(m, aliasIndex);
+    earnedByEvent.set(k, (earnedByEvent.get(k) || 0) + pointsForMatch(m, league));
   }
-  return scoreTotals(base, events.size, league.scoringRules);
+  let pts = 0;
+  for (const earned of earnedByEvent.values()) pts += eventScore(earned, league.scoringRules);
+  return pts;
 }
 
 /** Standings sort order, shared by the authoritative (computeLeagueStandings) and

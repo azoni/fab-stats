@@ -31,6 +31,22 @@
         { "fieldPath": "profileVisibility", "order": "ASCENDING" },
         { "fieldPath": "hasDiscoverLinks", "order": "ASCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "tierLists",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "isPublic", "order": "ASCENDING" },
+        { "fieldPath": "updatedAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "tierLists",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "ownerUid", "order": "ASCENDING" },
+        { "fieldPath": "updatedAt", "order": "DESCENDING" }
+      ]
     }
   ],
   "fieldOverrides": [

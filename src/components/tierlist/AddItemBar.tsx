@@ -113,8 +113,10 @@ export function AddItemBar({ onAdd }: { onAdd: (item: TierItem) => void }) {
         )}
       </div>
 
-      <div className="mt-2 flex items-center justify-between">
-        <p className="text-[11px] text-fab-dim">Type to add. Not in the DB yet (spoilers)? Add a custom image.</p>
+      <div className="mt-2 flex items-center justify-between gap-2">
+        <p className="text-[11px] text-fab-dim">
+          Search released cards &amp; heroes. Spoilers? <span className="text-fab-muted">Drag a card image in from another tab</span>, paste one, or add a URL.
+        </p>
         <button
           type="button"
           onClick={() => setCustom((v) => !v)}

@@ -23,7 +23,7 @@ import {
   matchQualifiesForLeague,
   buildSessionKeys,
   pointsForMatch,
-  scoreTotals,
+  eventScore,
   compareStandings,
   type LeagueMatchupData,
   type LeagueMatchupCell,
@@ -218,15 +218,14 @@ export function standingsFromPool(matches: PooledMatch[], league: League): Leagu
       set.add(m.storeSlug);
     }
   }
-  // Mirror scoreMatches: sum each member's match points, then apply the total
-  // minimum floor + per-event attendance via scoreTotals (kept identical so the
-  // live view and the persisted standings agree).
+  // Mirror scoreMatches: apply the per-event floor + attendance to each event and
+  // sum (kept identical so the live view and the persisted standings agree).
   for (const [uid, ev] of eventEarned) {
     const e = byUid.get(uid);
     if (!e) continue;
-    let base = 0;
-    for (const earned of ev.values()) base += earned;
-    e.points = scoreTotals(base, ev.size, league.scoringRules);
+    let pts = 0;
+    for (const earned of ev.values()) pts += eventScore(earned, league.scoringRules);
+    e.points = pts;
     e.events = ev.size; // distinct events attended (same grouping as scoring)
   }
   for (const [uid, set] of storesByUid) {

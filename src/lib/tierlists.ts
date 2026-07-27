@@ -134,6 +134,83 @@ export function makeCustomItem(label: string, imageUrl: string): TierItem {
   return { id: uid(), label: label.trim() || "Item", imageUrl: imageUrl.trim(), kind: "custom" };
 }
 
+/** A readable label from an image URL's filename, or a provided alt text. */
+export function deriveItemLabel(url: string, alt?: string): string {
+  if (alt && alt.trim()) return alt.trim().slice(0, 60);
+  try {
+    const file = decodeURIComponent(new URL(url).pathname.split("/").pop() || "");
+    const name = file.replace(/\.[a-z0-9]+$/i, "").replace(/[-_]+/g, " ").trim();
+    return name ? name.slice(0, 60) : "Card";
+  } catch {
+    return "Card";
+  }
+}
+
+/** Build items from a native drag/paste DataTransfer — a card image dragged in
+ *  from another tab (text/html <img> or a URL). Local files are handled by
+ *  itemFromFile() separately (async). Returns [] when nothing usable is found. */
+/** Max images accepted from a single drop/paste — bounds a "select-all → paste"
+ *  that would otherwise flood the tray with avatars, icons, and tracking pixels. */
+const MAX_TRANSFER_IMAGES = 16;
+
+export function itemsFromTransfer(dt: DataTransfer): TierItem[] {
+  const html = dt.getData("text/html");
+  if (html) {
+    const out: TierItem[] = [];
+    const seen = new Set<string>();
+    const re = /<img\b[^>]*?\bsrc=["']([^"']+)["'][^>]*>/gi;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(html)) && out.length < MAX_TRANSFER_IMAGES) {
+      const src = m[1];
+      if (!/^https?:/i.test(src) || seen.has(src)) continue;
+      seen.add(src);
+      const alt = m[0].match(/\balt=["']([^"']*)["']/i)?.[1];
+      out.push(makeCustomItem(deriveItemLabel(src, alt), src));
+    }
+    if (out.length) return out;
+  }
+  const uri = (dt.getData("text/uri-list") || dt.getData("text/plain") || "").trim();
+  if (/^https?:\/\//i.test(uri)) return [makeCustomItem(deriveItemLabel(uri), uri)];
+  return [];
+}
+
+/** Read a local image File into a SMALL webp data-URL item. We downscale (client-side
+ *  canvas) so a pasted screenshot/photo can't bloat the Firestore doc (base64 of a
+ *  full-res image easily exceeds the 1MB doc limit). Dragging from a tab uses the
+ *  image's URL instead (itemsFromTransfer) and never hits this path. */
+export function itemFromFile(file: File): Promise<TierItem> {
+  const label = file.name.replace(/\.[a-z0-9]+$/i, "");
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("Could not read image"));
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = () => reject(new Error("Could not load image"));
+      img.onload = () => {
+        const MAX = 220;
+        let w = img.width || MAX;
+        let h = img.height || MAX;
+        if (w > MAX || h > MAX) {
+          if (w >= h) { h = Math.round((h * MAX) / w); w = MAX; }
+          else { w = Math.round((w * MAX) / h); h = MAX; }
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          resolve(makeCustomItem(label, String(reader.result)));
+          return;
+        }
+        ctx.drawImage(img, 0, 0, w, h);
+        resolve(makeCustomItem(label, canvas.toDataURL("image/webp", 0.8)));
+      };
+      img.src = String(reader.result);
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
 export function makeTier(label: string): Tier {
   return { id: uid("t"), label, color: TIER_COLORS[0] };
 }
@@ -152,6 +229,36 @@ export async function saveTierList(list: TierListDoc): Promise<void> {
 export async function getTierList(id: string): Promise<TierListDoc | null> {
   const snap = await getDoc(doc(db, "tierLists", id));
   return snap.exists() ? (snap.data() as TierListDoc) : null;
+}
+
+/** Public tier lists for the Discover directory, newest first. */
+export async function listPublicTierLists(max = 60): Promise<TierListDoc[]> {
+  const q = query(tierListsCol(), where("isPublic", "==", true), orderBy("updatedAt", "desc"), fbLimit(max));
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => d.data() as TierListDoc);
+}
+
+/** Total placed+unplaced item count for a list (for directory cards). */
+export function tierListItemCount(list: TierListDoc): number {
+  return Object.keys(list.items || {}).length;
+}
+
+/** First N item images across tiers (top tiers first) for a directory thumbnail. */
+export function tierListPreviewImages(list: TierListDoc, n = 6): string[] {
+  const out: string[] = [];
+  for (const t of list.tiers || []) {
+    for (const id of list.placement?.[t.id] || []) {
+      const url = list.items?.[id]?.imageUrl;
+      if (url) out.push(url);
+      if (out.length >= n) return out;
+    }
+  }
+  for (const id of list.placement?.[POOL_ID] || []) {
+    const url = list.items?.[id]?.imageUrl;
+    if (url) out.push(url);
+    if (out.length >= n) break;
+  }
+  return out;
 }
 
 export async function listMyTierLists(ownerUid: string): Promise<TierListDoc[]> {

@@ -1,5 +1,5 @@
 "use client";
-import { useState, useRef, useCallback, type ReactNode } from "react";
+import { useState, useRef, useCallback, useEffect, type ReactNode } from "react";
 import { toast } from "sonner";
 import {
   DndContext,
@@ -16,6 +16,7 @@ import {
   type DragEndEvent,
 } from "@dnd-kit/core";
 import { SortableContext, arrayMove, rectSortingStrategy, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
+import { useRouter } from "next/navigation";
 import { Download, Save, Share2, Plus, Trash2, ChevronUp, ChevronDown, RotateCcw } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { downloadCardImage } from "@/lib/share-image";
@@ -26,6 +27,9 @@ import {
   makeTier,
   newTierListId,
   saveTierList,
+  deleteTierList,
+  itemsFromTransfer,
+  itemFromFile,
   type Tier,
   type TierItem,
   type TierListDoc,
@@ -69,7 +73,8 @@ function DroppableArea({ id, itemIds, className, children }: { id: string; itemI
 }
 
 export function TierListMaker({ initial }: { initial?: TierListDoc }) {
-  const { user, profile, isGuest } = useAuth();
+  const { user, profile } = useAuth();
+  const router = useRouter();
   const start = initFrom(initial);
 
   const [docId, setDocId] = useState(start.id);
@@ -79,10 +84,13 @@ export function TierListMaker({ initial }: { initial?: TierListDoc }) {
   const [placement, setPlacement] = useState<Placement>(start.placement);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [dropActive, setDropActive] = useState(false);
   const [colorPickerFor, setColorPickerFor] = useState<string | null>(null);
   const captureRef = useRef<HTMLDivElement>(null);
   const savingRef = useRef(false);
+  const createdAtRef = useRef(initial?.createdAt || "");
 
   const ownsList = !!user && (!initial || initial.ownerUid === user.uid);
   const readOnly = !!initial && !ownsList;
@@ -155,6 +163,43 @@ export function TierListMaker({ initial }: { initial?: TierListDoc }) {
     setItems((prev) => ({ ...prev, [item.id]: item }));
     setPlacement((prev) => ({ ...prev, [POOL_ID]: [...prev[POOL_ID], item.id] }));
   }, []);
+
+  // Accept card images dragged in from another tab (spoilers), or pasted images/URLs.
+  const addFromTransfer = useCallback(
+    (dt: DataTransfer | null) => {
+      if (!dt || readOnly) return false;
+      const items = itemsFromTransfer(dt);
+      if (items.length) {
+        items.forEach(addItem);
+        toast.success(`Added ${items.length} image${items.length === 1 ? "" : "s"}.`);
+        return true;
+      }
+      const files = Array.from(dt.files || []).filter((f) => f.type.startsWith("image/"));
+      if (files.length) {
+        Promise.all(files.map(itemFromFile))
+          .then((its) => {
+            its.forEach(addItem);
+            toast.success(`Added ${its.length} image${its.length === 1 ? "" : "s"}.`);
+          })
+          .catch(() => toast.error("Couldn't read one of those images."));
+        return true;
+      }
+      return false;
+    },
+    [addItem, readOnly],
+  );
+
+  // Paste an image or image URL anywhere on the page (unless typing in a field).
+  useEffect(() => {
+    if (readOnly) return;
+    const onPaste = (e: ClipboardEvent) => {
+      const el = document.activeElement;
+      if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA")) return;
+      if (addFromTransfer(e.clipboardData)) e.preventDefault();
+    };
+    document.addEventListener("paste", onPaste);
+    return () => document.removeEventListener("paste", onPaste);
+  }, [readOnly, addFromTransfer]);
 
   const removeItem = useCallback((id: string) => {
     setItems((prev) => {
@@ -240,6 +285,7 @@ export function TierListMaker({ initial }: { initial?: TierListDoc }) {
     try {
       const id = docId || newTierListId();
       const now = new Date().toISOString();
+      if (!createdAtRef.current) createdAtRef.current = now; // stable across re-saves
       const list: TierListDoc = {
         id,
         title: title.trim() || "Untitled Tier List",
@@ -249,16 +295,20 @@ export function TierListMaker({ initial }: { initial?: TierListDoc }) {
         ownerUid: user.uid,
         ownerName: profile.displayName || profile.username,
         isPublic: true,
-        createdAt: initial?.createdAt || now,
+        createdAt: createdAtRef.current,
         updatedAt: now,
       };
-      await saveTierList(list);
-      if (!docId) {
-        setDocId(id);
-        // Update the URL for sharing without a router re-fetch (the page reads the
-        // id once on mount), so saving never remounts or reloads the live board.
-        window.history.replaceState(null, "", `/tierlist?id=${id}`);
+      // Firestore caps a doc at ~1MB. Pasted local images (data URLs) are the only
+      // way to get near it; surface a clear message instead of a generic failure.
+      if (JSON.stringify(list).length > 950_000) {
+        toast.error("Too many large pasted images to save — drag cards from a tab (uses their URL) or remove some custom images.");
+        return null;
       }
+      await saveTierList(list);
+      // Keep the id in component state only — we deliberately don't rewrite the URL,
+      // so saving never remounts/reloads the live board. Share copies the link from
+      // this id, and the saved list appears in the Discover directory.
+      if (!docId) setDocId(id);
       toast.success("Tier list saved.");
       return id;
     } catch {
@@ -282,10 +332,44 @@ export function TierListMaker({ initial }: { initial?: TierListDoc }) {
     }
   }
 
+  async function remove() {
+    if (!docId || !ownsList) return;
+    if (!confirm("Delete this tier list? This can't be undone.")) return;
+    setDeleting(true);
+    try {
+      await deleteTierList(docId);
+      toast.success("Tier list deleted.");
+      router.push("/tierlist");
+    } catch {
+      toast.error("Failed to delete.");
+      setDeleting(false);
+    }
+  }
+
   const activeItem = activeId ? items[activeId] : null;
 
   return (
-    <div className="space-y-4">
+    <div
+      className={`space-y-4 rounded-xl transition-[outline] ${dropActive ? "outline-dashed outline-2 outline-offset-4 outline-fab-gold" : ""}`}
+      onDragOver={(e) => {
+        // Only react to images dragged in from outside — dnd-kit's own drag is
+        // pointer-based and never fires native drag events.
+        if (readOnly) return;
+        if (e.dataTransfer.types.some((t) => ["Files", "text/uri-list", "text/html", "text/plain"].includes(t))) {
+          e.preventDefault();
+          setDropActive(true);
+        }
+      }}
+      onDragLeave={() => setDropActive(false)}
+      onDrop={(e) => {
+        if (readOnly) return;
+        if (e.dataTransfer.types.length) {
+          e.preventDefault();
+          setDropActive(false);
+          addFromTransfer(e.dataTransfer);
+        }
+      }}
+    >
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-2">
         <input
@@ -297,11 +381,14 @@ export function TierListMaker({ initial }: { initial?: TierListDoc }) {
         />
         {!readOnly && (
           <>
-            <ToolbarBtn onClick={save} disabled={saving || isGuest} icon={<Save className="h-4 w-4" />} label={saving ? "Saving…" : "Save"} />
+            <ToolbarBtn onClick={save} disabled={saving} icon={<Save className="h-4 w-4" />} label={saving ? "Saving…" : "Save"} />
             <ToolbarBtn onClick={share} icon={<Share2 className="h-4 w-4" />} label="Share" />
           </>
         )}
         <ToolbarBtn onClick={exportPng} disabled={exporting} icon={<Download className="h-4 w-4" />} label={exporting ? "…" : "PNG"} />
+        {!readOnly && docId && ownsList && (
+          <ToolbarBtn onClick={remove} disabled={deleting} icon={<Trash2 className="h-4 w-4" />} label={deleting ? "…" : "Delete"} />
+        )}
       </div>
 
       <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={onDragStart} onDragOver={onDragOver} onDragEnd={onDragEnd}>
@@ -325,11 +412,11 @@ export function TierListMaker({ initial }: { initial?: TierListDoc }) {
               {/* Items */}
               <DroppableArea id={tier.id} itemIds={placement[tier.id] || []} className="flex min-h-[88px] flex-1 flex-wrap content-start gap-1 p-1.5">
                 {(placement[tier.id] || []).map((iid) =>
-                  items[iid] ? <SortableItem key={iid} item={items[iid]} onRemove={readOnly ? undefined : removeItem} disabled={readOnly} /> : null,
+                  items[iid] ? <SortableItem key={iid} item={items[iid]} onRemove={readOnly ? undefined : removeItem} disabled={readOnly} hideRemove={exporting} /> : null,
                 )}
               </DroppableArea>
-              {/* Row controls (hover) */}
-              {!readOnly && (
+              {/* Row controls (hidden during PNG export for a clean image) */}
+              {!readOnly && !exporting && (
                 <div className="flex w-8 shrink-0 flex-col items-center justify-center gap-0.5 border-l border-fab-border/60 bg-fab-surface opacity-100 transition-opacity [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover/row:opacity-100">
                   <button type="button" title="Color" onClick={() => setColorPickerFor(colorPickerFor === tier.id ? null : tier.id)} className="h-4 w-4 rounded-full border border-black/20" style={{ backgroundColor: tier.color }} />
                   <button type="button" title="Move up" onClick={() => moveTier(tier.id, -1)} disabled={idx === 0} className="text-fab-dim hover:text-fab-text disabled:opacity-30"><ChevronUp className="h-3.5 w-3.5" /></button>
@@ -363,7 +450,7 @@ export function TierListMaker({ initial }: { initial?: TierListDoc }) {
               <p className="px-1 py-6 text-xs text-fab-dim">{readOnly ? "No unranked items." : "Search below to add heroes & cards, then drag them up."}</p>
             ) : (
               (placement[POOL_ID] || []).map((iid) =>
-                items[iid] ? <SortableItem key={iid} item={items[iid]} onRemove={readOnly ? undefined : removeItem} disabled={readOnly} /> : null,
+                items[iid] ? <SortableItem key={iid} item={items[iid]} onRemove={readOnly ? undefined : removeItem} disabled={readOnly} hideRemove={exporting} /> : null,
               )
             )}
           </DroppableArea>
