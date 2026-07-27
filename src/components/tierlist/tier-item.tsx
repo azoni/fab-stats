@@ -11,9 +11,16 @@ import { itemImageSources, type TierItem } from "@/lib/tierlists";
  *  then a clean name box — so a card the community CDN hasn't published never shows a
  *  broken-image icon. No cross-tile failure cache, so a transient error self-heals on
  *  the next mount instead of hiding the image for the whole session. */
-export function ItemTile({ item, dragging }: { item: TierItem; dragging?: boolean }) {
+export function ItemTile({ item, dragging, onRename }: { item: TierItem; dragging?: boolean; onRename?: (id: string, label: string) => void }) {
   const sources = itemImageSources(item);
   const [srcIdx, setSrcIdx] = useState(0);
+  const [editingLabel, setEditingLabel] = useState(false);
+  const [draftLabel, setDraftLabel] = useState(item.label);
+  function commitLabel() {
+    const v = draftLabel.trim();
+    if (v && v !== item.label) onRename?.(item.id, v);
+    setEditingLabel(false);
+  }
   // Restart from the best source when the tile is reused for a different item
   // (the drag overlay) or the item's image changes.
   useEffect(() => setSrcIdx(0), [item.id, item.imageUrl, item.imageUrlFallback, item.refId]);
@@ -27,7 +34,7 @@ export function ItemTile({ item, dragging }: { item: TierItem; dragging?: boolea
     if (!src || dragging) return;
     if (typeof window === "undefined" || !window.matchMedia("(hover: hover)").matches) return;
     const r = e.currentTarget.getBoundingClientRect();
-    const W = 232;
+    const W = 310;
     const align: "left" | "right" = r.right + W <= window.innerWidth ? "right" : "left";
     setZoom({
       left: align === "right" ? r.right + 10 : r.left - 10,
@@ -65,9 +72,35 @@ export function ItemTile({ item, dragging }: { item: TierItem; dragging?: boolea
           </div>
         )}
       </div>
-      <div className="mt-1 line-clamp-2 text-center text-[10px] font-medium leading-[1.15] text-fab-text sm:text-[11px]" title={item.label}>
-        {item.label}
-      </div>
+      {onRename && editingLabel ? (
+        <input
+          autoFocus
+          value={draftLabel}
+          onChange={(e) => setDraftLabel(e.target.value)}
+          // The board uses MouseSensor/TouchSensor (not PointerSensor), so stop those
+          // exact streams — otherwise click-dragging to select the text picks the tile up.
+          onMouseDown={(e) => e.stopPropagation()}
+          onTouchStart={(e) => e.stopPropagation()}
+          onClick={(e) => e.stopPropagation()}
+          onBlur={commitLabel}
+          onKeyDown={(e) => {
+            // Keep keys (esp. Space) from bubbling to dnd-kit's KeyboardSensor, which
+            // would otherwise pick the tile up for a keyboard drag while you're typing.
+            e.stopPropagation();
+            if (e.key === "Enter") { e.preventDefault(); commitLabel(); }
+            else if (e.key === "Escape") { setDraftLabel(item.label); setEditingLabel(false); }
+          }}
+          className="mt-1 w-full rounded bg-fab-bg px-1 py-0.5 text-center text-[10px] font-medium text-fab-text outline-none ring-1 ring-fab-gold/60 sm:text-[11px]"
+        />
+      ) : (
+        <div
+          className={`mt-1 line-clamp-2 text-center text-[10px] font-medium leading-[1.15] text-fab-text sm:text-[11px] ${onRename ? "cursor-text hover:text-fab-gold" : ""}`}
+          title={onRename ? "Click to rename" : item.label}
+          onClick={onRename ? (e) => { e.stopPropagation(); setDraftLabel(item.label); setEditingLabel(true); } : undefined}
+        >
+          {item.label}
+        </div>
+      )}
 
       {zoom && src && typeof document !== "undefined" &&
         createPortal(
@@ -82,8 +115,8 @@ export function ItemTile({ item, dragging }: { item: TierItem; dragging?: boolea
             className="pointer-events-none rounded-lg border border-fab-gold/40 bg-fab-bg p-1.5 shadow-2xl"
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={src} alt="" className="block w-[210px] rounded-md" />
-            <p className="mt-1 w-[210px] truncate text-center text-xs font-semibold text-fab-text">{item.label}</p>
+            <img src={src} alt="" className="block w-[288px] rounded-md" />
+            <p className="mt-1 w-[288px] truncate text-center text-xs font-semibold text-fab-text">{item.label}</p>
           </div>,
           document.body,
         )}
@@ -96,11 +129,13 @@ export function ItemTile({ item, dragging }: { item: TierItem; dragging?: boolea
 export function SortableItem({
   item,
   onRemove,
+  onRename,
   disabled,
   hideRemove,
 }: {
   item: TierItem;
   onRemove?: (id: string) => void;
+  onRename?: (id: string, label: string) => void;
   disabled?: boolean;
   hideRemove?: boolean;
 }) {
@@ -118,7 +153,7 @@ export function SortableItem({
       {...listeners}
       className={`group relative ${disabled ? "" : "cursor-grab active:cursor-grabbing"}`}
     >
-      <ItemTile item={item} />
+      <ItemTile item={item} onRename={onRename} />
       {onRemove && !hideRemove && (
         <button
           type="button"

@@ -1,5 +1,6 @@
 "use client";
 import { useState, useMemo, useRef, useEffect } from "react";
+import { toast } from "sonner";
 import { Plus, Search, X } from "lucide-react";
 import {
   searchItems,
@@ -69,7 +70,17 @@ export function AddItemBar({ onAdd }: { onAdd: (item: TierItem) => void }) {
 
   function addCustom() {
     if (!cUrl.trim() && !cLabel.trim()) return;
-    onAdd(makeCustomItem(cLabel || "Item", cUrl));
+    const url = cUrl.trim();
+    onAdd(makeCustomItem(cLabel || "Item", url));
+    // A pasted image *address* often won't load — many card sites block hotlinking, so
+    // the <img> is refused cross-origin. Probe it and, if it fails, nudge toward drag/
+    // paste (which embed the actual bytes and always display).
+    if (url) {
+      const probe = new Image();
+      probe.onerror = () =>
+        toast.error("That image address didn't load — many sites block embedding. Drag the image in from its tab, or copy the image and paste it here instead.");
+      probe.src = url;
+    }
     setCLabel("");
     setCUrl("");
   }
@@ -122,7 +133,7 @@ export function AddItemBar({ onAdd }: { onAdd: (item: TierItem) => void }) {
 
       <div className="mt-2 flex items-center justify-between gap-2">
         <p className="text-[11px] text-fab-dim">
-          Search released cards &amp; heroes. Spoilers? <span className="text-fab-muted">Drag a card image in from another tab</span>, paste one, or add a URL.
+          Search released cards &amp; heroes. Spoilers? <span className="text-fab-muted">Drag a card image in from another tab, or copy &amp; paste it</span> — most reliable. A pasted URL only works if the site allows embedding.
         </p>
         <button
           type="button"
@@ -145,7 +156,7 @@ export function AddItemBar({ onAdd }: { onAdd: (item: TierItem) => void }) {
             value={cUrl}
             onChange={(e) => setCUrl(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && addCustom()}
-            placeholder="Image URL (https://…)"
+            placeholder="Direct image URL (or better: drag/paste the image)"
             className="min-w-[180px] flex-[2] rounded-md border border-fab-border bg-fab-bg px-2 py-1.5 text-xs text-fab-text placeholder:text-fab-dim focus:border-fab-gold/60 focus:outline-none"
           />
           <button

@@ -21,9 +21,9 @@ import {
 } from "@dnd-kit/core";
 import { SortableContext, arrayMove, rectSortingStrategy, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { useRouter } from "next/navigation";
-import { Download, Save, Share2, Plus, Trash2, ChevronUp, ChevronDown, RotateCcw, Globe, Lock } from "lucide-react";
+import { Link2, Save, Share2, Plus, Trash2, ChevronUp, ChevronDown, RotateCcw, Globe, Lock } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { downloadCardImage } from "@/lib/share-image";
+import { captureCardBlob } from "@/lib/share-image";
 import {
   DEFAULT_TIERS,
   TIER_COLORS,
@@ -48,7 +48,7 @@ function initFrom(initial?: TierListDoc) {
   if (!initial) {
     const placement: Placement = { [POOL_ID]: [] };
     for (const t of DEFAULT_TIERS) placement[t.id] = [];
-    return { id: "", title: "My FaB Tier List", tiers: DEFAULT_TIERS, items: {} as Record<string, TierItem>, placement };
+    return { id: "", title: "My FaB Tier List", description: "", tiers: DEFAULT_TIERS, items: {} as Record<string, TierItem>, placement };
   }
   // Sanitize a saved/shared doc: every container gets an array; drop ids with no
   // item; keep each id in only one place; any unplaced item falls back to the pool.
@@ -62,7 +62,7 @@ function initFrom(initial?: TierListDoc) {
     placement[c] = arr;
   }
   for (const id of Object.keys(items)) if (!seen.has(id)) placement[POOL_ID].push(id);
-  return { id: initial.id, title: initial.title || "Tier List", tiers, items, placement };
+  return { id: initial.id, title: initial.title || "Tier List", description: initial.description || "", tiers, items, placement };
 }
 
 /** A droppable container (a tier row's items area or the pool). */
@@ -87,6 +87,7 @@ export function TierListMaker({ initial }: { initial?: TierListDoc }) {
 
   const [docId, setDocId] = useState(start.id);
   const [title, setTitle] = useState(start.title);
+  const [description, setDescription] = useState(start.description);
   const [tiers, setTiers] = useState<Tier[]>(start.tiers);
   const [items, setItems] = useState<Record<string, TierItem>>(start.items);
   const [placement, setPlacement] = useState<Placement>(start.placement);
@@ -205,6 +206,10 @@ export function TierListMaker({ initial }: { initial?: TierListDoc }) {
     setPlacement((prev) => ({ ...prev, [POOL_ID]: [...prev[POOL_ID], item.id] }));
   }, []);
 
+  const renameItem = useCallback((id: string, label: string) => {
+    setItems((prev) => (prev[id] ? { ...prev, [id]: { ...prev[id], label } } : prev));
+  }, []);
+
   // Accept card images dragged in from another tab (spoilers), or pasted images/URLs.
   const addFromTransfer = useCallback(
     (dt: DataTransfer | null) => {
@@ -304,21 +309,46 @@ export function TierListMaker({ initial }: { initial?: TierListDoc }) {
     });
   }
 
-  // ── Export / save / share ──
-  async function exportPng() {
-    setExporting(true);
+  // ── Share (a branded image) / save / copy link ──
+  async function shareImage() {
+    if (!captureRef.current) return;
+    setExporting(true); // renders the FaB Stats footer + hides the per-tile remove ×
     try {
       await new Promise((r) => setTimeout(r, 30)); // let the export chrome settle
-      const ok = await downloadCardImage(captureRef.current, {
-        fileName: `${title.replace(/[^a-z0-9]+/gi, "-").toLowerCase() || "tier-list"}.png`,
-        backgroundColor: "#0a0a0b",
-        pixelRatio: 2,
-      });
-      if (!ok) toast.error("Could not build the image.");
+      const blob = await captureCardBlob(captureRef.current, { backgroundColor: "#0a0a0b", pixelRatio: 2 });
+      if (!blob) {
+        toast.error("Could not build the image.");
+        return;
+      }
+      const fileName = `${title.replace(/[^a-z0-9]+/gi, "-").toLowerCase() || "tier-list"}-fabstats.png`;
+      const file = new File([blob], fileName, { type: "image/png" });
+      const text = `${title.trim() || "My FaB tier list"} — made on fabstats.net`;
+      // Native share sheet with the image (mobile + Chrome desktop → X, Messages, etc.).
+      if (typeof navigator !== "undefined" && navigator.share && navigator.canShare?.({ files: [file] })) {
+        try {
+          await navigator.share({ title: title.trim() || "FaB Tier List", text, files: [file] });
+          return;
+        } catch (err) {
+          if (err instanceof DOMException && err.name === "AbortError") return; // user cancelled
+          // otherwise fall through to the download path
+        }
+      }
+      // Fallback: download the branded image + open an X compose window to attach it.
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, "_blank", "noopener,noreferrer");
+      toast.success("Image saved — attach it to your post on X.");
     } catch {
-      toast.error("Export failed — custom images from other sites can block it (CORS).");
+      toast.error("Share failed — custom images from other sites can block the export (CORS).");
+    } finally {
+      setExporting(false);
     }
-    setExporting(false);
   }
 
   /** Persist and return the (possibly newly-minted) id, or null on failure. */
@@ -337,6 +367,7 @@ export function TierListMaker({ initial }: { initial?: TierListDoc }) {
       const list: TierListDoc = {
         id,
         title: title.trim() || "Untitled Tier List",
+        description: description.trim(),
         tiers,
         placement,
         items,
@@ -467,14 +498,27 @@ export function TierListMaker({ initial }: { initial?: TierListDoc }) {
               {isPublic ? "Public" : "Private"}
             </button>
             <ToolbarBtn onClick={save} disabled={saving} icon={<Save className="h-4 w-4" />} label={saving ? "Saving…" : "Save"} />
-            <ToolbarBtn onClick={share} icon={<Share2 className="h-4 w-4" />} label="Share" />
+            <ToolbarBtn onClick={share} icon={<Link2 className="h-4 w-4" />} label="Link" />
           </>
         )}
-        <ToolbarBtn onClick={exportPng} disabled={exporting} icon={<Download className="h-4 w-4" />} label={exporting ? "…" : "PNG"} />
+        <ToolbarBtn onClick={shareImage} disabled={exporting} icon={<Share2 className="h-4 w-4" />} label={exporting ? "…" : "Share"} />
         {!readOnly && docId && ownsList && (
           <ToolbarBtn onClick={remove} disabled={deleting} icon={<Trash2 className="h-4 w-4" />} label={deleting ? "…" : "Delete"} />
         )}
       </div>
+
+      {/* Description — shown on the Discover card before someone opens the list. */}
+      {!readOnly ? (
+        <textarea
+          value={description}
+          onChange={(e) => setDescription(e.target.value.slice(0, 300))}
+          rows={2}
+          placeholder="Add a description (shown in Discover before people open it)…"
+          className="w-full resize-none rounded-lg border border-fab-border bg-fab-bg px-3 py-2 text-sm text-fab-text placeholder:text-fab-dim focus:border-fab-gold/60 focus:outline-none"
+        />
+      ) : (
+        description && <p className="text-sm text-fab-muted">{description}</p>
+      )}
 
       <DndContext sensors={sensors} collisionDetection={collisionDetection} onDragStart={onDragStart} onDragOver={onDragOver} onDragEnd={onDragEnd}>
         {/* Capture area: title + tier rows */}
@@ -497,7 +541,7 @@ export function TierListMaker({ initial }: { initial?: TierListDoc }) {
               {/* Items */}
               <DroppableArea id={tier.id} itemIds={placement[tier.id] || []} className="flex min-h-[88px] flex-1 flex-wrap content-start gap-1 p-1.5">
                 {(placement[tier.id] || []).map((iid) =>
-                  items[iid] ? <SortableItem key={iid} item={items[iid]} onRemove={readOnly ? undefined : removeItem} disabled={readOnly} hideRemove={exporting} /> : null,
+                  items[iid] ? <SortableItem key={iid} item={items[iid]} onRemove={readOnly ? undefined : removeItem} onRename={readOnly ? undefined : renameItem} disabled={readOnly} hideRemove={exporting} /> : null,
                 )}
               </DroppableArea>
               {/* Row controls (hidden during PNG export for a clean image) */}
@@ -509,7 +553,7 @@ export function TierListMaker({ initial }: { initial?: TierListDoc }) {
                   <button type="button" title="Delete row" onClick={() => removeTier(tier.id)} className="text-fab-dim hover:text-rose-400"><Trash2 className="h-3.5 w-3.5" /></button>
                 </div>
               )}
-              {colorPickerFor === tier.id && !readOnly && (
+              {colorPickerFor === tier.id && !readOnly && !exporting && (
                 <div className="absolute right-8 z-30 mt-1 flex max-w-[160px] flex-wrap gap-1 rounded-md border border-fab-border bg-fab-surface p-1.5 shadow-xl">
                   {TIER_COLORS.map((c) => (
                     <button key={c} type="button" onClick={() => { updateTier(tier.id, { color: c }); setColorPickerFor(null); }} className="h-5 w-5 rounded border border-black/20" style={{ backgroundColor: c }} />
@@ -518,6 +562,19 @@ export function TierListMaker({ initial }: { initial?: TierListDoc }) {
               )}
             </div>
           ))}
+          {/* FaB Stats branding — only in the shared/exported image, not the live editor. */}
+          {exporting && (
+            <div className="flex items-center justify-center gap-2 border-t border-fab-border bg-fab-surface px-4 py-2.5 text-xs font-black tracking-wide">
+              <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <rect x="5" y="2" width="14" height="20" rx="2" stroke="#D9A05B" strokeWidth="2" />
+                <rect x="7.5" y="13" width="2" height="3" fill="#E53935" />
+                <rect x="11" y="10" width="2" height="6" fill="#FBC02D" />
+                <rect x="14.5" y="6" width="2" height="10" fill="#1E88E5" />
+              </svg>
+              <span className="text-fab-gold">FaB Stats</span>
+              <span className="font-bold text-fab-dim">· make your own at fabstats.net/tierlist</span>
+            </div>
+          )}
         </div>
 
         {!readOnly && (
@@ -535,7 +592,7 @@ export function TierListMaker({ initial }: { initial?: TierListDoc }) {
               <p className="px-1 py-6 text-xs text-fab-dim">{readOnly ? "No unranked items." : "Search below to add heroes & cards, then drag them up."}</p>
             ) : (
               (placement[POOL_ID] || []).map((iid) =>
-                items[iid] ? <SortableItem key={iid} item={items[iid]} onRemove={readOnly ? undefined : removeItem} disabled={readOnly} hideRemove={exporting} /> : null,
+                items[iid] ? <SortableItem key={iid} item={items[iid]} onRemove={readOnly ? undefined : removeItem} onRename={readOnly ? undefined : renameItem} disabled={readOnly} hideRemove={exporting} /> : null,
               )
             )}
           </DroppableArea>
