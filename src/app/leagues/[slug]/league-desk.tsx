@@ -22,6 +22,7 @@ import {
   X,
 } from "lucide-react";
 import { MatchResult, type League, type LeagueMember, type LeagueStandingEntry } from "@/types";
+import { bannerObjectPosition, LEAGUE_DESK_SCRIM } from "@/lib/league-images";
 import { type LeagueMatchupData } from "@/lib/leagues-scoring";
 import {
   type PooledMatch,
@@ -207,8 +208,12 @@ export function Marquee({
       {/* ── Background: a real photo if one exists, else pure-CSS accent craft ── */}
       {hasBanner ? (
         <>
-          <div aria-hidden className="absolute inset-0 -z-30 bg-cover bg-center" style={{ backgroundImage: `url(${league.bannerUrl})` }} />
-          <div aria-hidden className="absolute inset-0 -z-20 bg-gradient-to-t from-fab-bg via-fab-bg/85 to-fab-bg/40" />
+          <div
+            aria-hidden
+            className="absolute inset-0 -z-30 bg-cover"
+            style={{ backgroundImage: `url(${league.bannerUrl})`, backgroundPosition: bannerObjectPosition(league.bannerPosition) }}
+          />
+          <div aria-hidden className="absolute inset-0 -z-20" style={{ background: LEAGUE_DESK_SCRIM }} />
         </>
       ) : (
         <>
@@ -264,9 +269,16 @@ export function Marquee({
           </div>
 
           {/* title + status pill + meta */}
-          <div className="min-w-0 flex-1">
+          {/* Over a banner, a light shadow inherits to the meta + description too, so
+              they stay legible over a bright photo (the h1 keeps its own stronger one). */}
+          <div className="min-w-0 flex-1" style={hasBanner ? { textShadow: "0 1px 2px rgba(0,0,0,0.6)" } : undefined}>
             <div className="flex items-start justify-between gap-2">
-              <h1 className="min-w-0 text-xl font-black leading-tight text-fab-text sm:text-3xl">{league.name}</h1>
+              <h1
+                className="min-w-0 text-xl font-black leading-tight text-fab-text sm:text-3xl"
+                style={hasBanner ? { textShadow: "0 1px 3px rgba(0,0,0,0.55)" } : undefined}
+              >
+                {league.name}
+              </h1>
               <span className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-black uppercase tracking-wide ${status.cls}`}>
                 {status.live && <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-300" />}
                 {status.label}
@@ -287,7 +299,7 @@ export function Marquee({
       </div>
 
       {/* ── Stat band ── */}
-      <div className="relative z-10 grid grid-cols-2 border-t border-fab-border/60 bg-fab-bg/40 sm:flex sm:divide-x sm:divide-fab-border/40">
+      <div className={`relative z-10 grid grid-cols-2 border-t border-fab-border/60 sm:flex sm:divide-x sm:divide-fab-border/40 ${hasBanner ? "bg-fab-bg/70 backdrop-blur-sm" : "bg-fab-bg/40"}`}>
         <StatCell label="Players" value={String(memberCount)}>
           {members && members.length > 0 && (
             <span className="ml-2 hidden -space-x-1.5 align-middle sm:inline-flex">

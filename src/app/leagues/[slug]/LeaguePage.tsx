@@ -23,7 +23,8 @@ import {
 import { NewSeasonModal } from "@/components/leagues/NewSeasonModal";
 import { getStoreDirectory, slugifyStoreName, findNearMatchStore, storeNameMatchesQuery, type StoreDirectoryEntry } from "@/lib/store-directory";
 import { HeroImg } from "@/components/heroes/HeroImg";
-import { uploadLeagueBanner, removeLeagueBanner, uploadLeagueIcon, removeLeagueIcon } from "@/lib/league-images";
+import { uploadLeagueBanner, removeLeagueBanner, uploadLeagueIcon, removeLeagueIcon, bannerObjectPosition } from "@/lib/league-images";
+import { BannerFocalPicker } from "@/components/leagues/BannerFocalPicker";
 import { recomputeAndStoreStandings, TIEBREAKER_TEXT } from "@/lib/leagues-scoring";
 import {
   getLeagueMatchPool,
@@ -1392,6 +1393,7 @@ function OrganizerEditor({
               src={league.bannerUrl}
               alt=""
               className="mb-2 h-24 w-full rounded-md border border-fab-border object-cover"
+              style={{ objectPosition: bannerObjectPosition(league.bannerPosition) }}
             />
           )}
           <div className="flex flex-wrap items-center gap-2">
@@ -1427,6 +1429,18 @@ function OrganizerEditor({
           <p className="mt-1 text-[11px] text-fab-dim">
             Wide image (JPEG/PNG/WebP, up to 8MB) shown at the top of the league page.
           </p>
+          {league.bannerUrl && (
+            <div className="mt-3">
+              <label className="mb-1 block text-xs font-semibold text-fab-dim">Reposition banner</label>
+              {/* Keyed by URL so replacing the photo remounts with fresh framing state. */}
+              <BannerFocalPicker
+                key={league.bannerUrl}
+                leagueId={league.id}
+                url={league.bannerUrl}
+                value={league.bannerPosition}
+              />
+            </div>
+          )}
         </div>
         <EditField label="Name">
           <input
