@@ -254,6 +254,79 @@ export function standingsFromPool(matches: PooledMatch[], league: League): Leagu
   return entries;
 }
 
+// ── Points progression (for the league "Trending" tab) ───────────────────────
+
+export interface ProgressionSeries {
+  uid: string;
+  name: string; // displayName
+  username: string;
+  photoUrl?: string;
+  final: number; // === standings entry.points (scoring parity)
+  rank: number; // 1-based final rank (standingsFromPool order)
+}
+/** One recharts row: the "Start" baseline, then one row per event date. Each
+ *  player's uid maps to their cumulative points as of that date. */
+export interface ProgressionRow {
+  label: string; // "Start" or "MM-DD"
+  date: string; // "" for the baseline, else YYYY-MM-DD
+  [uid: string]: number | string;
+}
+export interface PointsProgressionResult {
+  rows: ProgressionRow[];
+  series: ProgressionSeries[]; // final-rank order (series[0] = leader)
+  eventDates: string[]; // sorted distinct event dates
+}
+
+/** Cumulative league-points progression per player over the sorted union of event
+ *  DATES. Built from standingsFromPool's per-event breakdown (floor + attendance
+ *  already applied), aggregated by date and carried forward — so each line ends at
+ *  the player's EXACT final standing (same scoring as the Standings tab). */
+export function pointsProgression(matches: PooledMatch[], league: League): PointsProgressionResult {
+  const standings = standingsFromPool(matches, league); // scoring parity + rank order
+
+  const dateSet = new Set<string>();
+  for (const e of standings) for (const b of e.breakdown || []) if (b.date) dateSet.add(b.date);
+  const eventDates = [...dateSet].sort((a, b) => a.localeCompare(b));
+
+  const series: ProgressionSeries[] = standings.map((e, i) => ({
+    uid: e.uid,
+    name: e.displayName,
+    username: e.username,
+    photoUrl: e.photoUrl,
+    final: e.points,
+    rank: i + 1,
+  }));
+
+  // Per-uid per-date point delta (two events on one date sum into that date).
+  const deltaByUid = new Map<string, Map<string, number>>();
+  for (const e of standings) {
+    const m = new Map<string, number>();
+    for (const b of e.breakdown || []) {
+      if (!b.date) continue;
+      m.set(b.date, (m.get(b.date) || 0) + b.points);
+    }
+    deltaByUid.set(e.uid, m);
+  }
+
+  const baseline: ProgressionRow = { label: "Start", date: "" };
+  for (const s of series) baseline[s.uid] = 0;
+  const rows: ProgressionRow[] = [baseline];
+
+  const running = new Map<string, number>(series.map((s) => [s.uid, 0]));
+  for (const d of eventDates) {
+    const row: ProgressionRow = { label: d.slice(5), date: d };
+    for (const s of series) {
+      // Carry-forward: unchanged when the player didn't play that night.
+      const next = (running.get(s.uid) || 0) + (deltaByUid.get(s.uid)?.get(d) || 0);
+      running.set(s.uid, next);
+      row[s.uid] = next;
+    }
+    rows.push(row);
+  }
+  // Invariant: running.get(uid) === series[uid].final (breakdown sums to points).
+  return { rows, series, eventDates };
+}
+
 export interface HeroMetaRow {
   hero: string;
   played: number;
