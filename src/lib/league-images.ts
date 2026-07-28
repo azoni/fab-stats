@@ -7,6 +7,57 @@ const BANNER_MAX_BYTES = 8 * 1024 * 1024;
 const ICON_MAX_SIZE = 256; // small square-ish emblem (CSS object-cover crops)
 const ICON_MAX_BYTES = 2 * 1024 * 1024;
 
+// ── Banner focal point ──────────────────────────────────────────────────────
+// The banner is drawn at object-fit: cover, so most photos overflow the frame
+// and only a slice shows. `bannerPosition` (percentages 0..100) is a focal
+// anchor: CSS aligns the image's {x,y}% point to the frame's {x,y}% point. One
+// value renders across the desk hero, the hub cards, and the editor preview —
+// only the visible crop differs per surface. Absent/corrupt → center.
+export type BannerPosition = { x: number; y: number };
+export const DEFAULT_BANNER_POSITION: BannerPosition = { x: 50, y: 50 };
+
+function clampPct(v: unknown, d: number): number {
+  return typeof v === "number" && Number.isFinite(v) ? Math.min(100, Math.max(0, v)) : d;
+}
+
+/** background-position / object-position string for a banner, clamped; center by default. */
+export function bannerObjectPosition(pos?: Partial<BannerPosition> | null): string {
+  return `${clampPct(pos?.x, 50)}% ${clampPct(pos?.y, 50)}%`;
+}
+
+/** Persist the banner focal point on the league doc (organizer-only, no rules change). */
+export async function updateLeagueBannerPosition(leagueId: string, pos: BannerPosition): Promise<void> {
+  await updateDoc(doc(db, "leagues", leagueId), {
+    bannerPosition: { x: Math.round(clampPct(pos.x, 50)), y: Math.round(clampPct(pos.y, 50)) },
+    updatedAt: new Date().toISOString(),
+  });
+}
+
+// ── Banner scrims (single source of truth) ──────────────────────────────────
+// Every stop is color-mix over the THEMED token var(--color-fab-bg) — not a
+// hardcoded rgba — because that token flips to light values under the daylight
+// / parchment themes; hardcoding would paint dark mud over a light page. The
+// picker imports LEAGUE_DESK_SCRIM verbatim so what the organizer frames is what
+// ships. Comma-stacked: first listed paints on top, so the flat floor is last.
+export const LEAGUE_DESK_SCRIM =
+  // 1) top cap — behind the status pill + accent-sheen hairline
+  "linear-gradient(to bottom, color-mix(in srgb,var(--color-fab-bg) 72%,transparent) 0%, " +
+  "color-mix(in srgb,var(--color-fab-bg) 20%,transparent) 20%, transparent 38%)," +
+  // 2) left protector — shields title/meta/description from busy right-side art
+  "linear-gradient(105deg, color-mix(in srgb,var(--color-fab-bg) 85%,transparent) 0%, " +
+  "color-mix(in srgb,var(--color-fab-bg) 50%,transparent) 40%, transparent 70%)," +
+  // 3) bottom anchor — solid under the stat band, fades up past the title
+  "linear-gradient(to top, var(--color-fab-bg) 2%, color-mix(in srgb,var(--color-fab-bg) 90%,transparent) 24%, " +
+  "color-mix(in srgb,var(--color-fab-bg) 42%,transparent) 60%, transparent 86%)," +
+  // 4) global floor — uniform wash so even a blown-out photo never blinds
+  "linear-gradient(0deg, color-mix(in srgb,var(--color-fab-bg) 30%,transparent), " +
+  "color-mix(in srgb,var(--color-fab-bg) 30%,transparent))";
+
+export const LEAGUE_HUB_SCRIM =
+  "linear-gradient(to right, var(--color-fab-bg) 0%, color-mix(in srgb,var(--color-fab-bg) 92%,transparent) 40%, " +
+  "color-mix(in srgb,var(--color-fab-bg) 58%,transparent) 76%, color-mix(in srgb,var(--color-fab-bg) 42%,transparent) 100%)," +
+  "linear-gradient(0deg, color-mix(in srgb,var(--color-fab-bg) 22%,transparent), color-mix(in srgb,var(--color-fab-bg) 22%,transparent))";
+
 function resizeImageToBlob(file: File, maxSize: number): Promise<Blob> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -66,6 +117,8 @@ export async function uploadLeagueBanner(leagueId: string, file: File): Promise<
   const bannerUrl = await getDownloadURL(ref);
   await updateDoc(doc(db, "leagues", leagueId), {
     bannerUrl,
+    // Recenter — a fresh photo shouldn't inherit the previous image's framing.
+    bannerPosition: DEFAULT_BANNER_POSITION,
     updatedAt: new Date().toISOString(),
   });
   return bannerUrl;

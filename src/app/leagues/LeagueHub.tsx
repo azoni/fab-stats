@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
 import { getAllLeagues, createLeague, joinLeague, leagueRequiresApproval, getMyLeagueIds, getLeaguesByIds } from "@/lib/leagues";
 import { getStoreDirectory, slugifyStoreName, findNearMatchStore, storeNameMatchesQuery, type StoreDirectoryEntry } from "@/lib/store-directory";
+import { bannerObjectPosition, LEAGUE_HUB_SCRIM } from "@/lib/league-images";
 import type { League, LeagueScoringRules, LeagueSession } from "@/types";
 import { LeagueScheduleBuilder } from "@/components/leagues/LeagueScheduleBuilder";
 import { toast } from "sonner";
@@ -155,11 +156,11 @@ function timeRemainingLabel(league: League): { label: string; tone: "gold" | "mu
 /** League banner as a subtle card background: the photo under a left-heavy scrim so
  *  the title/description (left) stay fully readable while the art bleeds in on the
  *  right. Sits behind the card content (negative z within the card's stacking context). */
-function LeagueCardBg({ url }: { url: string }) {
+function LeagueCardBg({ url, position }: { url: string; position: string }) {
   return (
     <>
-      <div aria-hidden className="absolute inset-0 -z-20 bg-cover bg-center" style={{ backgroundImage: `url(${url})` }} />
-      <div aria-hidden className="absolute inset-0 -z-10 bg-gradient-to-r from-fab-bg/95 via-fab-bg/90 to-fab-bg/55" />
+      <div aria-hidden className="absolute inset-0 -z-20 bg-cover" style={{ backgroundImage: `url(${url})`, backgroundPosition: position }} />
+      <div aria-hidden className="absolute inset-0 -z-10" style={{ background: LEAGUE_HUB_SCRIM }} />
     </>
   );
 }
@@ -552,7 +553,7 @@ export default function LeagueHub() {
                   return (
                     <li key={l.id}>
                       <Card padding="none" className="relative isolate overflow-hidden">
-                        {l.bannerUrl && <LeagueCardBg url={l.bannerUrl} />}
+                        {l.bannerUrl && <LeagueCardBg url={l.bannerUrl} position={bannerObjectPosition(l.bannerPosition)} />}
                         <div className="flex flex-wrap items-start justify-between gap-3 p-3">
                           <div className="flex min-w-0 items-start gap-2.5">
                             {l.iconUrl && (
@@ -662,7 +663,7 @@ export default function LeagueHub() {
                   return (
                     <li key={l.id}>
                       <Card padding="none" className="relative isolate overflow-hidden">
-                        {l.bannerUrl && <LeagueCardBg url={l.bannerUrl} />}
+                        {l.bannerUrl && <LeagueCardBg url={l.bannerUrl} position={bannerObjectPosition(l.bannerPosition)} />}
                         <div className="flex flex-wrap items-center justify-between gap-3 p-3">
                           <div className="flex min-w-0 items-center gap-2.5">
                             {l.iconUrl && (

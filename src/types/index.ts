@@ -368,6 +368,9 @@ export interface League {
   iconUrl?: string;
   /** Wide banner image shown on the league page header. */
   bannerUrl?: string;
+  /** Focal point for the banner, as background/object-position percentages 0..100.
+   *  Absent/legacy → treated as center {50,50}. Reset to center on a new upload. */
+  bannerPosition?: { x: number; y: number };
   accentColor?: string;
   city?: string;
   region?: string;
