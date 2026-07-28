@@ -17,6 +17,7 @@ import {
   MapPin,
   Swords,
   Target,
+  TrendingUp,
   Trophy,
   Users,
   X,
@@ -398,8 +399,8 @@ export function LeagueControlBar({
   leagueActive,
   poolReady,
 }: {
-  tab: "standings" | "meta" | "players";
-  setTab: (t: "standings" | "meta" | "players") => void;
+  tab: "standings" | "meta" | "players" | "trend";
+  setTab: (t: "standings" | "meta" | "players" | "trend") => void;
   memberCount: number;
   options: FilterOptions;
   filters: LeagueFilters;
@@ -419,9 +420,10 @@ export function LeagueControlBar({
   const showTypes = options.eventTypes.length > 1;
   const showFilterRow = showStores || showFormats || showTypes;
 
-  const TABS: { id: "standings" | "meta" | "players"; label: string; Icon: typeof Trophy; count?: number }[] = [
+  const TABS: { id: "standings" | "meta" | "players" | "trend"; label: string; Icon: typeof Trophy; count?: number }[] = [
     { id: "standings", label: "Standings", Icon: Trophy },
     { id: "meta", label: "Meta", Icon: BarChart3 },
+    { id: "trend", label: "Trending", Icon: TrendingUp },
     { id: "players", label: "Players", Icon: Users, count: memberCount },
   ];
 

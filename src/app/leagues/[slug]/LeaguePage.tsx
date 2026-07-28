@@ -25,6 +25,7 @@ import { getStoreDirectory, slugifyStoreName, findNearMatchStore, storeNameMatch
 import { HeroImg } from "@/components/heroes/HeroImg";
 import { uploadLeagueBanner, removeLeagueBanner, uploadLeagueIcon, removeLeagueIcon, bannerObjectPosition } from "@/lib/league-images";
 import { BannerFocalPicker } from "@/components/leagues/BannerFocalPicker";
+import { PointsProgression } from "@/components/leagues/PointsProgressionChart";
 import { recomputeAndStoreStandings, TIEBREAKER_TEXT } from "@/lib/leagues-scoring";
 import {
   getLeagueMatchPool,
@@ -97,7 +98,7 @@ export default function LeaguePage() {
   const [seasons, setSeasons] = useState<LeagueSeasonArchive[]>([]);
   const [viewingSeasonId, setViewingSeasonId] = useState<string | null>(null);
   const [showNewSeason, setShowNewSeason] = useState(false);
-  const [leagueTab, setLeagueTab] = useState<"standings" | "meta" | "players">("standings");
+  const [leagueTab, setLeagueTab] = useState<"standings" | "meta" | "players" | "trend">("standings");
   const [pool, setPool] = useState<LeagueMatchPool | null>(null);
   const [filters, setFilters] = useState<LeagueFilters>({});
 
@@ -651,6 +652,20 @@ export default function LeaguePage() {
                 <ActivityPulse matches={filteredMatches} />
               </div>
             </>
+          )}
+        </section>
+      )}
+
+      {leagueTab === "trend" && (
+        <section className="mt-5 space-y-4">
+          {!pool ? (
+            <p className="text-sm text-fab-muted">Loading match data…</p>
+          ) : filteredMatches.length === 0 ? (
+            <p className="rounded-xl border border-fab-border bg-fab-surface p-4 text-sm text-fab-muted">
+              No matches in view yet. The points race fills in as members log league matches.
+            </p>
+          ) : (
+            <PointsProgression matches={filteredMatches} league={pool.league} viewerUid={user?.uid || null} />
           )}
         </section>
       )}
