@@ -46,6 +46,13 @@ import {
 const UTC = (d: string) => new Date(d + "T00:00:00Z").getTime();
 const DAY = 86_400_000;
 
+// ── Shared card + label tokens ────────────────────────────────────────────────
+// One surface material and one label scale across every league card, so the tab
+// bodies read as a single designed system instead of separately-built boxes.
+export const CARD_CLS = "rounded-xl border border-fab-border bg-fab-surface";
+export const EYEBROW_CLS = "text-[10px] font-bold uppercase tracking-wider text-fab-dim";
+export const CARD_TITLE_CLS = "text-xs font-bold uppercase tracking-wider text-fab-dim";
+
 export function statusInfo(league: League, today: string) {
   if (league.status === "draft")
     return { label: "Draft", cls: "bg-fab-muted/15 text-fab-muted", live: false };
@@ -459,19 +466,24 @@ export function LeagueControlBar({
         </div>
 
         {poolReady && (
-          <div className="flex shrink-0 items-center gap-1.5 pr-0.5 text-xs tabular-nums text-fab-dim">
+          // The header stat band already owns the season totals. Idle, this only adds
+          // the live pulse + events (the one stat the header omits); filtered, it
+          // becomes the "in view" subset, gold, so the number means the filter.
+          <div className="hidden shrink-0 items-center gap-1.5 pr-0.5 text-xs tabular-nums text-fab-dim sm:flex">
             {leagueActive && <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" title="Live" />}
-            <Swords className="h-3.5 w-3.5 text-fab-dim/70" />
-            <span className={filtersActive ? "font-bold text-fab-gold" : "text-fab-text"}>{summary.matches}</span>
-            <span className="hidden text-fab-dim sm:inline">matches</span>
-            <span className="text-fab-border">·</span>
-            <span className="text-fab-text">{summary.players}</span>
-            <span className="hidden text-fab-dim sm:inline">players</span>
-            {summary.events > 1 && (
+            {filtersActive ? (
               <>
+                <span className="uppercase tracking-wide text-fab-dim">In view</span>
+                <span className="font-bold text-fab-gold">{summary.matches}</span>
+                <span className="text-fab-dim">matches</span>
                 <span className="text-fab-border">·</span>
+                <span className="font-bold text-fab-gold">{summary.players}</span>
+                <span className="text-fab-dim">players</span>
+              </>
+            ) : (
+              <>
                 <span className="text-fab-text">{summary.events}</span>
-                <span className="hidden text-fab-dim sm:inline">events</span>
+                <span className="text-fab-dim">{summary.events === 1 ? "event" : "events"}</span>
               </>
             )}
           </div>
@@ -576,7 +588,7 @@ export function Podium({
                 {rank === 1 && <Crown className="mr-0.5 inline h-4 w-4 text-fab-gold" />}
                 {e.displayName}
               </Link>
-              <p className="text-2xl font-black tabular-nums text-fab-gold">{e.points}</p>
+              <p className={`text-2xl font-black tabular-nums ${s.medal}`}>{e.points}</p>
               <p className="text-[11px] text-fab-muted tabular-nums">
                 {e.wins}-{e.losses}
                 {e.draws ? `-${e.draws}` : ""} {wr !== null && `· ${wr}%`}
@@ -612,14 +624,14 @@ export function BroadcastStandings({
             <tr>
               <th className="px-3 py-2 text-left">#</th>
               <th className="px-3 py-2 text-left">Player</th>
-              <th className="px-2 py-2 text-right">Pts</th>
+              <th className="px-2 pr-3 py-2 text-right">Pts</th>
               <th className="px-2 py-2 text-center">Form</th>
-              <th className="px-2 py-2 text-right">W</th>
-              <th className="px-2 py-2 text-right">L</th>
-              <th className="px-2 py-2 text-right">D</th>
-              {showByes && <th className="px-2 py-2 text-right">B</th>}
-              <th className="px-2 py-2 text-right">Mch</th>
-              <th className="px-2 py-2 text-right" title="Distinct events attended">Evt</th>
+              <th className="hidden px-2 py-2 text-right sm:table-cell">W</th>
+              <th className="hidden px-2 py-2 text-right sm:table-cell">L</th>
+              <th className="hidden px-2 py-2 text-right sm:table-cell">D</th>
+              {showByes && <th className="hidden px-2 py-2 text-right sm:table-cell">B</th>}
+              <th className="hidden px-2 py-2 text-right sm:table-cell">Mch</th>
+              <th className="hidden px-2 py-2 text-right sm:table-cell" title="Distinct events attended">Evt</th>
               <th className="hidden px-2 py-2 text-right sm:table-cell">Stores</th>
             </tr>
           </thead>
@@ -640,7 +652,8 @@ export function BroadcastStandings({
                   <td className="px-3 py-2">
                     <div className="flex items-center gap-2">
                       <CrestedAvatar photoUrl={e.photoUrl} name={e.displayName} hero={signatureHeroes[e.uid]} size={30} />
-                      <div className="min-w-0">
+                      {/* Cap the name on mobile so a long name can't widen the table and push Pts/Form off-screen. */}
+                      <div className="min-w-0 max-w-[104px] sm:max-w-none">
                         <Link href={`/player/${e.username}`} onClick={(ev) => ev.stopPropagation()} className="block truncate font-bold text-fab-text hover:text-fab-gold">
                           {e.displayName}
                         </Link>
@@ -651,19 +664,19 @@ export function BroadcastStandings({
                       )}
                     </div>
                   </td>
-                  <td className="px-2 py-2 text-right align-middle">
-                    <div className="font-black tabular-nums text-fab-gold">{e.points}</div>
+                  <td className="px-2 pr-3 py-2 text-right align-middle">
+                    <div className={`font-black tabular-nums ${i < 3 ? "text-fab-gold" : "text-fab-text"}`}>{e.points}</div>
                     <div className="ml-auto mt-1 h-1 w-14 overflow-hidden rounded-full bg-fab-border">
-                      <div className="h-full rounded-full bg-fab-gold/70" style={{ width: `${gap}%` }} />
+                      <div className={`h-full rounded-full ${i < 3 ? "bg-fab-gold/70" : "bg-fab-muted/40"}`} style={{ width: `${gap}%` }} />
                     </div>
                   </td>
                   <td className="px-2 py-2 text-center"><FormDots results={form[e.uid] || []} /></td>
-                  <td className="px-2 py-2 text-right tabular-nums text-emerald-300">{e.wins}</td>
-                  <td className="px-2 py-2 text-right tabular-nums text-rose-300">{e.losses}</td>
-                  <td className="px-2 py-2 text-right tabular-nums text-sky-300">{e.draws}</td>
-                  {showByes && <td className="px-2 py-2 text-right tabular-nums text-fab-muted">{e.byes || 0}</td>}
-                  <td className="px-2 py-2 text-right tabular-nums text-fab-text">{e.matches}</td>
-                  <td className="px-2 py-2 text-right tabular-nums text-fab-text">{e.events ?? "—"}</td>
+                  <td className="hidden px-2 py-2 text-right tabular-nums text-emerald-300 sm:table-cell">{e.wins}</td>
+                  <td className="hidden px-2 py-2 text-right tabular-nums text-rose-300 sm:table-cell">{e.losses}</td>
+                  <td className="hidden px-2 py-2 text-right tabular-nums text-sky-300 sm:table-cell">{e.draws}</td>
+                  {showByes && <td className="hidden px-2 py-2 text-right tabular-nums text-fab-muted sm:table-cell">{e.byes || 0}</td>}
+                  <td className="hidden px-2 py-2 text-right tabular-nums text-fab-text sm:table-cell">{e.matches}</td>
+                  <td className="hidden px-2 py-2 text-right tabular-nums text-fab-text sm:table-cell">{e.events ?? "—"}</td>
                   <td className="hidden px-2 py-2 text-right tabular-nums text-fab-text sm:table-cell">{e.storesPlayed}</td>
                 </tr>
                 {open && hasBreakdown && (
@@ -710,6 +723,7 @@ function StoryCard({
   name,
   hero,
   stat,
+  statCls,
   proof,
 }: {
   icon: ReactNode;
@@ -718,11 +732,12 @@ function StoryCard({
   name: string;
   hero?: string;
   stat: string;
+  statCls?: string;
   proof: string;
 }) {
   return (
-    <div className="rounded-xl border border-fab-border bg-fab-surface p-3">
-      <div className="mb-2 inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-fab-dim">
+    <div className={`${CARD_CLS} p-3`}>
+      <div className={`mb-2 inline-flex items-center gap-1.5 ${EYEBROW_CLS}`}>
         {icon} {kicker}
       </div>
       <div className="flex items-center gap-2.5">
@@ -731,7 +746,8 @@ function StoryCard({
           <p className="truncate text-sm font-black text-fab-text">{name}</p>
           <p className="text-[11px] text-fab-muted">{proof}</p>
         </div>
-        <span className="ml-auto text-xl font-black tabular-nums text-fab-gold">{stat}</span>
+        {/* Tie the number to its story's colour rather than making every stat gold. */}
+        <span className={`ml-auto text-xl font-black tabular-nums ${statCls || "text-fab-gold"}`}>{stat}</span>
       </div>
     </div>
   );
@@ -765,6 +781,7 @@ export function StorylineCards({
           name={s.memberName}
           hero={heroById[s.memberUid]}
           stat={`${s.streak}W`}
+          statCls="text-orange-300"
           proof="Longest win streak"
         />,
       );
@@ -785,6 +802,7 @@ export function StorylineCards({
           name={sharp.e.displayName}
           hero={heroById[sharp.e.uid]}
           stat={`${sharp.wr}%`}
+          statCls="text-emerald-300"
           proof={`${sharp.e.wins}-${sharp.e.losses} win rate`}
         />,
       );
@@ -803,6 +821,7 @@ export function StorylineCards({
           name={nameOf(iron[0])}
           hero={heroById[iron[0]]}
           stat={`${iron[1]}`}
+          statCls="text-sky-300"
           proof="Events attended"
         />,
       );
@@ -820,20 +839,26 @@ export function StorylineCards({
 export function KpiStrip({ matches }: { matches: PooledMatch[] }) {
   const s = useMemo(() => poolSummary(matches), [matches]);
   const topHero = useMemo(() => heroMetaFromPool(matches)[0], [matches]);
-  const tiles = [
+  const num = [
     { label: "Matches", value: s.totalMatches },
     { label: "Players", value: s.players },
     { label: "Heroes", value: s.heroes },
-    { label: "Top hero", value: topHero ? topHero.hero.split(",")[0] : "—", small: true },
   ];
   return (
     <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
-      {tiles.map((t) => (
-        <div key={t.label} className="rounded-xl border border-fab-border bg-fab-surface p-3">
-          <p className={`font-black tabular-nums text-fab-text ${t.small ? "truncate text-base" : "text-2xl"}`}>{t.value}</p>
-          <p className="text-[10px] uppercase tracking-wider text-fab-dim">{t.label}</p>
+      {num.map((t) => (
+        <div key={t.label} className={`${CARD_CLS} px-3 py-2.5`}>
+          <p className="text-3xl font-black tabular-nums text-fab-text">{t.value}</p>
+          <p className={EYEBROW_CLS}>{t.label}</p>
         </div>
       ))}
+      <div className={`${CARD_CLS} flex items-center gap-2 px-3 py-2.5`}>
+        {topHero && <HeroImg name={topHero.hero} size="sm" />}
+        <div className="min-w-0">
+          <p className="truncate text-base font-black text-fab-text">{topHero ? topHero.hero.split(",")[0] : "—"}</p>
+          <p className={EYEBROW_CLS}>Top hero</p>
+        </div>
+      </div>
     </div>
   );
 }
@@ -870,8 +895,8 @@ export function StoreTurf({ matches }: { matches: PooledMatch[] }) {
   if (rows.length < 2) return null;
   const max = rows[0].matches || 1;
   return (
-    <div className="rounded-xl border border-fab-border bg-fab-surface p-4">
-      <h3 className="mb-2 text-sm font-bold uppercase tracking-wider text-fab-dim">Store activity</h3>
+    <div className={`${CARD_CLS} p-4`}>
+      <h3 className={`mb-2 ${CARD_TITLE_CLS}`}>Store activity</h3>
       <div className="space-y-1.5">
         {rows.map((r) => (
           <div key={r.key} className="flex items-center gap-2">
@@ -895,14 +920,22 @@ export function ActivityPulse({ matches }: { matches: PooledMatch[] }) {
   const pts = useMemo(() => activityTimeline(matches), [matches]);
   if (pts.length < 2) return null;
   const max = Math.max(...pts.map((p) => p.matches), 1);
+  const total = pts.reduce((sum, p) => sum + p.matches, 0);
+  const lastIdx = pts.length - 1;
   return (
-    <div className="rounded-xl border border-fab-border bg-fab-surface p-4">
-      <h3 className="mb-2 text-sm font-bold uppercase tracking-wider text-fab-dim">Activity</h3>
-      <div className="flex h-24 items-end gap-1 overflow-x-auto">
-        {pts.map((p) => (
-          <div key={p.date} className="flex min-w-[10px] flex-1 flex-col items-center gap-1" title={`${p.date}: ${p.matches} matches`}>
-            <div className="w-full rounded-t bg-fab-gold/50" style={{ height: `${(p.matches / max) * 100}%` }} />
-            <span className="text-[8px] text-fab-dim">{p.date.slice(5)}</span>
+    <div className={`${CARD_CLS} p-4`}>
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <h3 className={CARD_TITLE_CLS}>Activity</h3>
+        <span className="text-[11px] tabular-nums text-fab-dim">{total} matches · {pts.length} days</span>
+      </div>
+      {/* Each night sits in its own track so sparse/quiet days still read as structure. */}
+      <div className="flex h-16 items-end gap-1">
+        {pts.map((p, i) => (
+          <div key={p.date} className="flex min-w-[8px] flex-1 flex-col items-center gap-1" title={`${p.date}: ${p.matches} matches`}>
+            <div className="relative h-12 w-full overflow-hidden rounded bg-fab-border/40">
+              <div className="absolute bottom-0 w-full rounded bg-fab-gold/80" style={{ height: `${Math.max(10, (p.matches / max) * 100)}%` }} />
+            </div>
+            <span className="h-3 text-[8px] text-fab-dim">{i === 0 || i === lastIdx ? p.date.slice(5) : ""}</span>
           </div>
         ))}
       </div>
@@ -928,7 +961,7 @@ export function MatchupGrid({ matches }: { matches: PooledMatch[] }) {
   return (
     <div>
       <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
-        <h3 className="text-sm font-bold uppercase tracking-wider text-fab-dim">Hero matchups</h3>
+        <h3 className={CARD_TITLE_CLS}>Hero matchups</h3>
         <span className="text-[11px] text-fab-dim">{data.totalMatches} decisive · top {top.length}</span>
       </div>
       {coverage < 0.5 && (
