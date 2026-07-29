@@ -38,7 +38,6 @@ import {
 import {
   Marquee,
   LeagueControlBar,
-  Podium,
   BroadcastStandings,
   StorylineCards,
   KpiStrip,
@@ -207,13 +206,34 @@ export default function LeaguePage() {
 
   const filtersActive =
     !!(filters.stores?.length || filters.formats?.length || filters.eventTypes?.length || filters.startDate || filters.endDate);
+  // The directory holds proper display names ("Vudugaming"); the pool falls back to
+  // the raw slug for directory stores. Re-tag storeName from the directory (an
+  // organizer's typed override wins) so the filter chips + Store activity read like
+  // the Players tab. storeSlug is untouched, so filtering/standings are unaffected.
+  const namedMatches = useMemo(() => {
+    if (!pool) return [];
+    if (!directory.length) return pool.matches;
+    const nameBySlug = new Map(directory.map((d) => [d.slug, d.name]));
+    const custom = pool.league.storeNames || {};
+    let changed = false;
+    const out = pool.matches.map((m) => {
+      if (!m.storeSlug) return m;
+      const better = custom[m.storeSlug] || nameBySlug.get(m.storeSlug);
+      if (better && better !== m.storeName) {
+        changed = true;
+        return { ...m, storeName: better };
+      }
+      return m;
+    });
+    return changed ? out : pool.matches;
+  }, [pool, directory]);
   const filterOptions = useMemo(
-    () => (pool ? deriveFilterOptions(pool.matches) : { stores: [], formats: [], eventTypes: [] }),
-    [pool],
+    () => (pool ? deriveFilterOptions(namedMatches) : { stores: [], formats: [], eventTypes: [] }),
+    [pool, namedMatches],
   );
   const filteredMatches = useMemo(
-    () => (pool ? applyFilters(pool.matches, filters) : []),
-    [pool, filters],
+    () => (pool ? applyFilters(namedMatches, filters) : []),
+    [pool, namedMatches, filters],
   );
   // Signature-hero crests are stable across filters → derive from the full pool.
   const signatureHeroes = useMemo(() => (pool ? signatureHeroByUid(pool.matches) : {}), [pool]);
@@ -609,7 +629,6 @@ export default function LeaguePage() {
 
               {displayStandings.length > 0 ? (
                 <>
-                  <Podium standings={displayStandings} signatureHeroes={signatureHeroes} />
                   <StorylineCards matches={filteredMatches} standings={displayStandings} />
                   <BroadcastStandings standings={displayStandings} signatureHeroes={signatureHeroes} form={form} />
                 </>
@@ -642,19 +661,28 @@ export default function LeaguePage() {
           ) : (
             <>
               <KpiStrip matches={filteredMatches} />
-              <div className="grid gap-5 lg:grid-cols-2 lg:items-start">
+              {/* Heroes + Store activity as two comfortable columns. A single-store
+                  league drops to one full-width heroes card (StoreTurf self-nulls
+                  under 2 stores) so there's no dead half-column. */}
+              {filterOptions.stores.length > 1 ? (
+                <div className="grid gap-5 lg:grid-cols-2 lg:items-start">
+                  <div className={`${CARD_CLS} p-4`}>
+                    <h3 className={`mb-2 ${CARD_TITLE_CLS}`}>Most-played heroes</h3>
+                    <HeroMetaBars matches={filteredMatches} />
+                  </div>
+                  <StoreTurf matches={filteredMatches} />
+                </div>
+              ) : (
                 <div className={`${CARD_CLS} p-4`}>
                   <h3 className={`mb-2 ${CARD_TITLE_CLS}`}>Most-played heroes</h3>
                   <HeroMetaBars matches={filteredMatches} />
                 </div>
-                <div className={`${CARD_CLS} p-4`}>
-                  <MatchupGrid matches={filteredMatches} />
-                </div>
+              )}
+              {/* The matchup matrix gets a full-width row so its columns stop truncating. */}
+              <div className={`${CARD_CLS} p-4`}>
+                <MatchupGrid matches={filteredMatches} />
               </div>
-              <div className="grid gap-5 lg:grid-cols-2 lg:items-start">
-                <StoreTurf matches={filteredMatches} />
-                <ActivityPulse matches={filteredMatches} />
-              </div>
+              <ActivityPulse matches={filteredMatches} />
             </>
           )}
         </section>
@@ -1012,8 +1040,10 @@ function PlayerCards({
           const decisive = p.matches - p.byes;
           const wr = decisive > 0 ? Math.round((p.wins / decisive) * 100) : null;
           const initial = (p.displayName || p.username || "?").charAt(0).toUpperCase();
+          // Gate on `ranked` so an uncomputed snapshot (every row 0-gp) doesn't brand everyone.
+          const notStarted = ranked && p.matches === 0;
           return (
-            <div key={p.uid} className={`relative ${CARD_CLS} p-3`}>
+            <div key={p.uid} className={`relative ${CARD_CLS} p-3 ${notStarted ? "opacity-60" : ""}`}>
               <div className="flex items-center gap-2.5">
                 <span className="relative inline-block h-10 w-10 shrink-0">
                   {p.photoUrl ? (
@@ -1036,6 +1066,7 @@ function PlayerCards({
                     </Link>
                     {isOrg && <span className="shrink-0 rounded bg-fab-gold/15 px-1 text-[9px] font-bold text-fab-gold">organizer</span>}
                     {isSelf && !isOrg && <span className="shrink-0 text-[9px] text-fab-dim">(you)</span>}
+                    {notStarted && <span className="shrink-0 rounded bg-fab-border/40 px-1 text-[9px] font-bold text-fab-dim">Not started</span>}
                   </div>
                   <p className="truncate text-[11px] text-fab-dim">@{p.username}</p>
                 </div>
