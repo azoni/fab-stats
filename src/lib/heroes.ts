@@ -208,6 +208,27 @@ export function resolveHeroName(input: string): string | null {
   return null;
 }
 
+/** Several heroes share a first name — FaB has three adult Araknis (Marionette,
+ *  Huntsman, "5L!p3d 7hRu 7h3 cR4X"), two Oscilios, and every character adds its
+ *  young hero in the mixed views. Labelling a matchup axis by the first word alone
+ *  makes them indistinguishable (a cross-hero cell then reads like an impossible
+ *  mirror), so when a first name is shared in the given set we tack on the subtitle. */
+export function buildHeroLabels(heroes: string[]): Map<string, { primary: string; secondary: string | null }> {
+  const firstCount = new Map<string, number>();
+  for (const h of heroes) {
+    const first = (h.split(",")[0] || h).trim();
+    firstCount.set(first, (firstCount.get(first) || 0) + 1);
+  }
+  const out = new Map<string, { primary: string; secondary: string | null }>();
+  for (const h of heroes) {
+    const idx = h.indexOf(",");
+    const first = (idx === -1 ? h : h.slice(0, idx)).trim();
+    const sub = idx === -1 ? "" : h.slice(idx + 1).trim();
+    out.set(h, { primary: first, secondary: sub && (firstCount.get(first) || 0) > 1 ? sub : null });
+  }
+  return out;
+}
+
 export function searchHeroes(query: string, format?: string): HeroInfo[] {
   const lower = query.toLowerCase();
   const pool = format ? getHeroesForFormat(format) : allHeroes;

@@ -1,7 +1,7 @@
 "use client";
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { getCommunityHeroMatchups, getMonthsForPreset, type CommunityMatchupCell } from "@/lib/hero-matchups";
-import { getHeroByName, resolveHeroName } from "@/lib/heroes";
+import { getHeroByName, resolveHeroName, buildHeroLabels } from "@/lib/heroes";
 import { HeroImg } from "@/components/heroes/HeroImg";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { useDragScroll } from "@/hooks/useDragScroll";
@@ -111,6 +111,10 @@ export function MetaMatchupMatrix({ format, eventType, sinceDate, untilDate, rat
     return { heroRows: rows, allHeroes: heroes, totalMatches: total };
   }, [data, ageFilter, excludeLL]);
 
+  // Disambiguate heroes that share a first name (e.g. the three adult Araknis), so a
+  // cross-hero cell no longer reads like an impossible "Arakni vs Arakni" mirror.
+  const heroLabels = useMemo(() => buildHeroLabels(allHeroes), [allHeroes]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -191,20 +195,27 @@ export function MetaMatchupMatrix({ format, eventType, sinceDate, untilDate, rat
               <th className="text-left p-2 text-fab-muted font-medium border-b border-fab-border sticky left-0 top-0 bg-fab-surface z-20">
                 Hero / vs
               </th>
-              {displayCols.map((hero) => (
+              {displayCols.map((hero) => {
+                const lbl = heroLabels.get(hero);
+                return (
                 <th
                   key={hero}
+                  title={hero}
                   onClick={() => setHighlightCol(highlightCol === hero ? null : hero)}
                   className={`p-2 text-fab-muted font-medium border-b border-fab-border text-center min-w-[80px] sticky top-0 bg-fab-surface z-10 cursor-pointer select-none transition-colors ${
                     highlightCol === hero ? "!bg-fab-gold/10 text-fab-gold" : "hover:text-fab-text"
                   }`}
                 >
-                  <div className="flex flex-col items-center gap-1">
+                  <div className="flex flex-col items-center gap-0.5">
                     <HeroImg name={hero} />
-                    <span className="text-[10px] leading-tight">{hero.split(",")[0]}</span>
+                    <span className="text-[10px] leading-tight">{lbl?.primary ?? hero.split(",")[0]}</span>
+                    {lbl?.secondary && (
+                      <span className="max-w-[76px] truncate text-[8px] leading-none text-fab-gold/70">{lbl.secondary}</span>
+                    )}
                   </div>
                 </th>
-              ))}
+                );
+              })}
             </tr>
           </thead>
           <tbody>
@@ -220,7 +231,12 @@ export function MetaMatchupMatrix({ format, eventType, sinceDate, untilDate, rat
                   >
                     <div className="flex items-center gap-1.5">
                       <HeroImg name={row.hero} />
-                      <span className="truncate max-w-[100px]" title={row.hero}>{row.hero.split(",")[0]}</span>
+                      <span className="truncate max-w-[140px]" title={row.hero}>
+                        {heroLabels.get(row.hero)?.primary ?? row.hero.split(",")[0]}
+                        {heroLabels.get(row.hero)?.secondary && (
+                          <span className="text-fab-gold/70"> · {heroLabels.get(row.hero)!.secondary}</span>
+                        )}
+                      </span>
                     </div>
                     <div className="flex items-center gap-1.5 text-[10px]">
                       <span className={row.overallWinRate >= 50 ? "text-fab-win" : "text-fab-loss"}>{row.overallWinRate.toFixed(0)}%</span>
