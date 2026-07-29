@@ -49,6 +49,9 @@ import {
   standingsFromPool,
   signatureHeroByUid,
   recentFormByUid,
+  CARD_CLS,
+  CARD_TITLE_CLS,
+  EYEBROW_CLS,
 } from "./league-desk";
 import { doc, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
@@ -628,26 +631,27 @@ export default function LeaguePage() {
       })()}
 
       {leagueTab === "meta" && (
-        <section className="mt-5 space-y-5">
+        <section className="mt-5 space-y-4">
+          <h2 className="text-lg font-bold text-fab-gold">Meta</h2>
           {!pool ? (
             <p className="text-sm text-fab-muted">Loading match data…</p>
           ) : filteredMatches.length === 0 ? (
-            <p className="rounded-xl border border-fab-border bg-fab-surface p-4 text-sm text-fab-muted">
+            <p className={`${CARD_CLS} p-4 text-sm text-fab-muted`}>
               No matches in view yet. Meta fills in as members log league matches.
             </p>
           ) : (
             <>
               <KpiStrip matches={filteredMatches} />
-              <div className="grid gap-5 lg:grid-cols-2">
-                <div className="rounded-xl border border-fab-border bg-fab-surface p-4">
-                  <h3 className="mb-2 text-sm font-bold uppercase tracking-wider text-fab-dim">Most-played heroes</h3>
+              <div className="grid gap-5 lg:grid-cols-2 lg:items-start">
+                <div className={`${CARD_CLS} p-4`}>
+                  <h3 className={`mb-2 ${CARD_TITLE_CLS}`}>Most-played heroes</h3>
                   <HeroMetaBars matches={filteredMatches} />
                 </div>
-                <div className="rounded-xl border border-fab-border bg-fab-surface p-4">
+                <div className={`${CARD_CLS} p-4`}>
                   <MatchupGrid matches={filteredMatches} />
                 </div>
               </div>
-              <div className="grid gap-5 lg:grid-cols-2">
+              <div className="grid gap-5 lg:grid-cols-2 lg:items-start">
                 <StoreTurf matches={filteredMatches} />
                 <ActivityPulse matches={filteredMatches} />
               </div>
@@ -658,10 +662,11 @@ export default function LeaguePage() {
 
       {leagueTab === "trend" && (
         <section className="mt-5 space-y-4">
+          <h2 className="text-lg font-bold text-fab-gold">Trending</h2>
           {!pool ? (
             <p className="text-sm text-fab-muted">Loading match data…</p>
           ) : filteredMatches.length === 0 ? (
-            <p className="rounded-xl border border-fab-border bg-fab-surface p-4 text-sm text-fab-muted">
+            <p className={`${CARD_CLS} p-4 text-sm text-fab-muted`}>
               No matches in view yet. The points race fills in as members log league matches.
             </p>
           ) : (
@@ -671,7 +676,7 @@ export default function LeaguePage() {
       )}
 
       {leagueTab === "players" && (
-        <section className="mt-5 space-y-5">
+        <section className="mt-5 space-y-4">
           {isOrganizer && (
             <JoinRequestsPanel requests={joinRequests} onApprove={handleApprove} onReject={handleRejectRequest} />
           )}
@@ -817,25 +822,25 @@ function ScoringSummary({ scoringRules }: { scoringRules: LeagueScoringRules }) 
   const minPerEvent = scoringRules.minPointsPerEvent || 0;
   const attendance = scoringRules.pointsPerEvent || 0;
   return (
-    <div className="rounded-lg border border-fab-border/70 bg-fab-bg/45 p-4">
-      <h3 className="text-sm font-bold uppercase tracking-wider text-fab-dim">Scoring</h3>
-      <div className={`mt-2 grid gap-2 text-center ${hasBye ? "grid-cols-4" : "grid-cols-3"}`}>
+    <div className={`${CARD_CLS} p-4`}>
+      <h3 className={CARD_TITLE_CLS}>Scoring</h3>
+      <div className={`mt-2 grid max-w-sm gap-2 text-center ${hasBye ? "grid-cols-4" : "grid-cols-3"}`}>
         <div>
           <p className="text-lg font-black text-emerald-300 tabular-nums">{scoringRules.pointsPerWin}</p>
-          <p className="text-[10px] uppercase tracking-wider text-fab-dim">Win</p>
+          <p className={EYEBROW_CLS}>Win</p>
         </div>
         <div>
           <p className="text-lg font-black text-rose-300 tabular-nums">{scoringRules.pointsPerLoss}</p>
-          <p className="text-[10px] uppercase tracking-wider text-fab-dim">Loss</p>
+          <p className={EYEBROW_CLS}>Loss</p>
         </div>
         <div>
           <p className="text-lg font-black text-sky-300 tabular-nums">{scoringRules.pointsPerDraw}</p>
-          <p className="text-[10px] uppercase tracking-wider text-fab-dim">Draw</p>
+          <p className={EYEBROW_CLS}>Draw</p>
         </div>
         {hasBye && (
           <div>
             <p className="text-lg font-black text-fab-text tabular-nums">{scoringRules.pointsPerBye}</p>
-            <p className="text-[10px] uppercase tracking-wider text-fab-dim">Bye</p>
+            <p className={EYEBROW_CLS}>Bye</p>
           </div>
         )}
       </div>
@@ -885,10 +890,8 @@ function ScoringSummary({ scoringRules }: { scoringRules: LeagueScoringRules }) 
 
 function StoresList({ stores }: { stores: StoreDirectoryEntry[] }) {
   return (
-    <div className="rounded-lg border border-fab-border/70 bg-fab-bg/45 p-4">
-      <h3 className="text-sm font-bold uppercase tracking-wider text-fab-dim">
-        Participating stores ({stores.length})
-      </h3>
+    <div className={`${CARD_CLS} p-4`}>
+      <h3 className={CARD_TITLE_CLS}>Participating stores ({stores.length})</h3>
       {stores.length === 0 ? (
         <p className="mt-2 text-xs text-fab-dim">No stores yet.</p>
       ) : (
@@ -925,10 +928,8 @@ function JoinRequestsPanel({
   onReject: (uid: string, name: string) => void;
 }) {
   return (
-    <div className="rounded-lg border border-fab-border/70 bg-fab-bg/45 p-4">
-      <h3 className="text-sm font-bold uppercase tracking-wider text-fab-dim">
-        Join requests ({requests.length})
-      </h3>
+    <div className={`${CARD_CLS} p-4`}>
+      <h3 className={CARD_TITLE_CLS}>Join requests ({requests.length})</h3>
       {requests.length === 0 ? (
         <p className="mt-2 text-xs text-fab-muted">No pending requests.</p>
       ) : (
@@ -1012,7 +1013,7 @@ function PlayerCards({
           const wr = decisive > 0 ? Math.round((p.wins / decisive) * 100) : null;
           const initial = (p.displayName || p.username || "?").charAt(0).toUpperCase();
           return (
-            <div key={p.uid} className="relative rounded-lg border border-fab-border bg-fab-bg/45 p-3">
+            <div key={p.uid} className={`relative ${CARD_CLS} p-3`}>
               <div className="flex items-center gap-2.5">
                 <span className="relative inline-block h-10 w-10 shrink-0">
                   {p.photoUrl ? (
